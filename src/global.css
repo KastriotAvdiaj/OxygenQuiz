@@ -1,0 +1,40 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body{
+    background-image: url("assets/backgroundImage.jpg");
+    height: 100%;
+  background-size: cover; 
+  background-position: center; 
+  background-repeat: no-repeat; 
+  background-attachment: fixed;
+  font-family: var(--main);
+}
+
+:root {
+  --border: rgb(76, 84, 89);
+  --input: rgb(40, 45, 48);
+  --ring: rgb(0, 127, 255);
+  --ring-foreground: rgb(2, 85, 168);
+  --dashboard: rgb(36,48,63);
+  --dashboard-darker: rgb(26,34,44);
+  --background: rgb(250, 250, 250);
+  --foreground: rgb(22, 27, 34);
+  --primary: rgb(0, 92, 204);
+  --primary-foreground: rgb(255, 255, 255);
+  --secondary: rgb(51, 102, 153);
+  --secondary-foreground: rgb(255, 255, 255);
+  --destructive: rgb(204, 0, 0);
+  --destructive-foreground: rgb(255, 255, 255);
+  --muted: rgb(179, 186, 191);
+  --muted-foreground: rgb(63, 70, 74);
+  --accent: rgb(0, 153, 89);
+  --accent-foreground: rgb(255, 255, 255);
+  --popover: rgb(246, 248, 250);
+  --popover-foreground: rgb(36, 40, 43);
+  --card: rgb(250, 252, 253);
+  --card-foreground: rgb(36, 40, 43);
+
+  --main: "Noto Sans", sans-serif;
+}
