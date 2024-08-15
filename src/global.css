@@ -20,6 +20,8 @@ body{
   --ring-foreground: rgb(2, 85, 168);
   --dashboard: rgb(36,48,63);
   --dashboard-darker: rgb(26,34,44);
+  --dashboard-lighter: rgb(77, 82, 87);
+
   --background: rgb(250, 250, 250);
   --foreground: rgb(22, 27, 34);
   --primary: rgb(0, 92, 204);
