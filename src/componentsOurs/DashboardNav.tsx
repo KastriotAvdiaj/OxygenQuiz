@@ -5,27 +5,49 @@ import { FaFolderOpen } from "react-icons/fa";
 import { FaUsers } from "react-icons/fa";
 import { Divider } from "./Divider";
 
-export const DashboardNav = () => {
+type DashboardNavProps = {
+  setActivePage: (page: string) => void;
+};
+
+export const DashboardNav: React.FC<DashboardNavProps> = ({ setActivePage }) => {
   return (
     <ul className="w-full px-3 text-lg flex flex-col gap-2">
       <p className="px-1 text-gray-400 mb-2">Menu</p>
       <Divider color="gray" />
-      <Button variant={"dashboard"} size={"dashboard"} className="mt-2">
+      <Button
+        variant={"dashboard"}
+        size={"dashboard"}
+        className="mt-2"
+        onClick={() => setActivePage("Application")}
+      >
         <FaChartLine />
         Application
       </Button>
-      <Button variant={"dashboard"} size={"dashboard"} className="">
+      <Button
+        variant={"dashboard"}
+        size={"dashboard"}
+        onClick={() => setActivePage("Questions")}
+      >
         <RiQuestionAnswerFill />
         Questions
       </Button>
-      <Button variant={"dashboard"} size={"dashboard"} className="">
+      <Button
+        variant={"dashboard"}
+        size={"dashboard"}
+        onClick={() => setActivePage("Quizzes")}
+      >
         <FaFolderOpen />
-        Quizes
+        Quizzes
       </Button>
-      <Button variant={"dashboard"} size={"dashboard"} className="">
+      <Button
+        variant={"dashboard"}
+        size={"dashboard"}
+        onClick={() => setActivePage("Users")}
+      >
         <FaUsers />
         Users
       </Button>
     </ul>
   );
 };
+
