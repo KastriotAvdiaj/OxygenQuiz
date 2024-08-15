@@ -1,5 +1,4 @@
 import { useState } from "react";
-import "../global.css";
 import { LoginForm } from "../../components/ui/LoginForm";
 import { Button } from "@/components/ui/button";
 

@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { DashboardNav } from "@/componentsOurs/DashboardNav";
-import { DashboardHeader } from "@/componentsOurs/DashboardHeader";
+import { DashboardNav } from "@/componentsOurs/DashboardComponents/DashboardNav";
+import { DashboardHeader } from "@/componentsOurs/DashboardComponents/DashboardHeader";
 import { Application } from "../DashboardPages/Application";
 import { Questions } from "../DashboardPages/Questions";
 import { Quizzes } from "../DashboardPages/Quizzes";
