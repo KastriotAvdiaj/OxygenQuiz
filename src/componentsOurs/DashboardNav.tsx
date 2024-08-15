@@ -7,11 +7,15 @@ import { Divider } from "./Divider";
 
 type DashboardNavProps = {
   setActivePage: (page: string) => void;
+  activePage: string;
 };
 
-export const DashboardNav: React.FC<DashboardNavProps> = ({ setActivePage }) => {
+export const DashboardNav: React.FC<DashboardNavProps> = ({
+  setActivePage,
+  activePage,
+}) => {
   return (
-    <ul className="w-full px-3 text-lg flex flex-col gap-2">
+    <ul className="w-full bg-[var(--dashboard)] mt-8 px-3 text-lg flex flex-col gap-2">
       <p className="px-1 text-gray-400 mb-2">Menu</p>
       <Divider color="gray" />
       <Button
@@ -19,6 +23,7 @@ export const DashboardNav: React.FC<DashboardNavProps> = ({ setActivePage }) => 
         size={"dashboard"}
         className="mt-2"
         onClick={() => setActivePage("Application")}
+        active={activePage === "Application"}
       >
         <FaChartLine />
         Application
@@ -27,6 +32,7 @@ export const DashboardNav: React.FC<DashboardNavProps> = ({ setActivePage }) => 
         variant={"dashboard"}
         size={"dashboard"}
         onClick={() => setActivePage("Questions")}
+        active={activePage === "Questions"}
       >
         <RiQuestionAnswerFill />
         Questions
@@ -35,6 +41,7 @@ export const DashboardNav: React.FC<DashboardNavProps> = ({ setActivePage }) => 
         variant={"dashboard"}
         size={"dashboard"}
         onClick={() => setActivePage("Quizzes")}
+        active={activePage === "Quizzes"}
       >
         <FaFolderOpen />
         Quizzes
@@ -43,6 +50,7 @@ export const DashboardNav: React.FC<DashboardNavProps> = ({ setActivePage }) => 
         variant={"dashboard"}
         size={"dashboard"}
         onClick={() => setActivePage("Users")}
+        active={activePage === "Users"}
       >
         <FaUsers />
         Users
@@ -50,4 +58,3 @@ export const DashboardNav: React.FC<DashboardNavProps> = ({ setActivePage }) => 
     </ul>
   );
 };
-

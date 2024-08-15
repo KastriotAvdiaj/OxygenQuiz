@@ -10,6 +10,7 @@ body{
   background-repeat: no-repeat; 
   background-attachment: fixed;
   font-family: var(--main);
+  color: white;
 }
 
 :root {
