@@ -1,5 +1,10 @@
-import React from "react";
+import { ModeToggle } from "@/components/ui/mode-toggle";
 
 export const Settings = () => {
-  return <div className="h-screen bg-[#f5f5f5]">Settings</div>;
+  return (
+    <div className="h-screen  pt-20">
+      {" "}
+      <ModeToggle />
+    </div>
+  );
 };

@@ -5,7 +5,7 @@ import Header from "./componentsOurs/Header";
 import { Dashboard } from "./pages/Dashboard/Dashboard";
 import { AboutUs } from "./pages/AboutUs/AboutUs";
 import { Settings } from "./pages/SettingsPage/Settings";
-import { ThemeProvider } from "./ThemeProvider/ThemeProvider";
+import { ThemeProvider } from "./components/ui/theme-provider";
 
 function AppContent() {
   const location = useLocation();
