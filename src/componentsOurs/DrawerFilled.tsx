@@ -15,6 +15,7 @@ import { IoSettings } from "react-icons/io5";
 import { LiaUserFriendsSolid } from "react-icons/lia";
 import { NavLink } from "react-router-dom";
 import { CgProfile } from "react-icons/cg";
+import { ModeToggle } from "@/components/ui/mode-toggle";
 
 export const DrawerFilled = () => {
   const isAdmin = true;
@@ -31,7 +32,7 @@ export const DrawerFilled = () => {
             <Button
               variant={"default"}
               size={"none"}
-              className="flex items-center gap-3 py-2 h-12 px-4 shadow-[0px_0px_10px_0px_rgba(0,0,0,0.2)] hover:ring-1 hover:ring-white"
+              className="flex items-center gap-3 py-2 h-12 px-4 shadow-[2px_2px_10px_0px_rgba(0,0,0,0.5)] hover:ring-1 hover:ring-[var(--border)]"
             >
               My Profile
               <Avatar className="cursor-pointer">
@@ -52,10 +53,9 @@ export const DrawerFilled = () => {
               <Divider
                 orientation="horizontal"
                 thickness="2px"
-                color="white"
+                // color="white"
                 length="100%"
               />
-
               <Button
                 variant={"drawer"}
                 size={"drawerSize"}
@@ -85,7 +85,6 @@ export const DrawerFilled = () => {
                   <IoSettings className="text-sm" /> Settings
                 </Button>
               </NavLink>
-
               {isAdmin && (
                 <NavLink
                   className="w-full"
@@ -101,11 +100,12 @@ export const DrawerFilled = () => {
                   </Button>
                 </NavLink>
               )}
+              <ModeToggle />
             </DrawerHeader>
             <DrawerFooter>
               <DrawerClose asChild>
                 <Button
-                  className="rounded hover:bg-[#FE2A2A]"
+                  className="rounded hover:bg-[#FE2A2A] hover:text-white"
                   onClick={() => {
                     setSignedIn(false);
                     // handleDrawerClose();

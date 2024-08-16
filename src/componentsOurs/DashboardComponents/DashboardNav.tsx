@@ -15,7 +15,7 @@ export const DashboardNav: React.FC<DashboardNavProps> = ({
   activePage,
 }) => {
   return (
-    <ul className="w-full bg-[var(--dashboard)] mt-8 px-3 text-lg flex flex-col gap-2">
+    <ul className="w-full  mt-8 px-3 text-lg flex flex-col gap-2">
       <p className="px-1 text-gray-400 mb-2">Menu</p>
       <Divider color="gray" />
       <Button

@@ -26,7 +26,7 @@ const Header = () => {
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-50 text-white text-lg shadow-md h-16 grid grid-cols-5 items-center px-4 transition-transform duration-300 ${
+      className={`fixed top-0 left-0 right-0 z-50 text-lg shadow-md h-16 grid grid-cols-5 items-center px-4 transition-transform duration-400 ${
         hidden ? "-translate-y-full" : "translate-y-0"
       }`}
     >
@@ -36,8 +36,8 @@ const Header = () => {
             to="/"
             className={({ isActive }) =>
               isActive
-                ? "text-blue-500 border-b-2 border-blue-500"
-                : "hover:text-blue-400"
+                ? "font-bold border-b-2 border-[var(--border)]"
+                : "hover:border-b-2 hover:border-[var(--border)]"
             }
           >
             <li className="cursor-pointer">Home</li>
@@ -46,8 +46,8 @@ const Header = () => {
             to="/about-us"
             className={({ isActive }) =>
               isActive
-                ? "text-blue-500 border-b-2 border-blue-500"
-                : "hover:text-blue-400"
+                ? "font-bold border-b-2 border-[var(--border)]"
+                : "hover:border-b-2 hover:border-[var(--border)]"
             }
           >
             <li className="cursor-pointer">About Us</li>

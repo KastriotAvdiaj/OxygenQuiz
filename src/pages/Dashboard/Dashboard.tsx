@@ -25,16 +25,14 @@ export const Dashboard = () => {
   };
 
   return (
-    <div className="text-white bg-[var(--dashboard)] grid grid-cols-[16%_84%] grid-rows-[auto_1fr] h-[100vh]">
-      <div className="col-span-2">
+    <div className="grid grid-cols-[16%_84%] grid-rows-[auto_1fr] h-[100vh]">
+      <div className="col-span-2 bg-[var(--background-secondary)]">
         <DashboardHeader />
       </div>
-      <div className="h-full  bg-[var(--dashboard)]">
+      <div className="h-full bg-[var(--background-secondary)]">
         <DashboardNav setActivePage={setActivePage} activePage={activePage} />
       </div>
-      <div className="bg-[var(--dashboard-darker)] overflow-y-auto">
-        {renderContent()}
-      </div>
+      <div className="overflow-y-auto">{renderContent()}</div>
     </div>
   );
 };

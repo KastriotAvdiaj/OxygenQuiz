@@ -9,21 +9,20 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-primary gap-2 text-white shadow hover:bg-primary/90  active:scale-95",
+          "bg-primary gap-2 shadow hover:bg-[var(--background)]/80  active:scale-95",
         destructive:
-          "bg-destructive  text-white shadow-sm hover:bg-destructive/90 active:scale-95",
+          "bg-destructive shadow-sm hover:bg-destructive/90 active:scale-95",
         addSave:
-          "flex justify-center items-center gap-2 text-white shadow bg-[var(--ring)] hover:bg-blue-700 rounded active:scale-95",
+          "flex justify-center items-center gap-2 text-white shadow bg-[var(--add-button)] hover:bg-blue-700 rounded active:scale-95",
         outline:
-          "border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground active:scale-95",
-        secondary:
-          "bg-secondary text-white shadow-sm hover:bg-secondary/80 active:scale-95",
+          "border border-input shadow-sm hover:bg-[var(--outline-button)]  active:scale-95",
+        secondary: "bg-secondary shadow-sm active:scale-95",
         ghost: "hover:bg-accent hover:text-accent-foreground active:scale-95",
         link: "text-white underline-offset-4 hover:underline active:scale-95",
         drawer:
-          "flex justify-start text-white gap-1.5 px-1 items-center bg-ring rounded hover:bg-[var(--muted-foreground)] text-sm active:scale-95",
+          "flex justify-start gap-1.5 px-1 items-center bg-ring rounded hover:bg-[var(--background)] text-sm active:scale-95",
         dashboard:
-          "flex w-full justify-start text-[17px] text-white gap-2.5 items-center bg-ring rounded hover:bg-[var(--muted-foreground)] active:scale-95",
+          "flex w-full justify-start text-[17px] gap-2.5 items-center bg-ring rounded hover:bg-[var(--background)] active:scale-95",
       },
       size: {
         dashboard: " px-2.5 py-2",
@@ -35,7 +34,7 @@ const buttonVariants = cva(
         none: "",
       },
       active: {
-        true: "bg-[var(--ring)] hover:bg-[var(--ring)]",
+        true: "bg-[var(--background)] hover:bg-[var(--background)]",
         false: "",
       },
     },

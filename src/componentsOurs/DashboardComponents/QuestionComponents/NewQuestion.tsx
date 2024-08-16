@@ -34,7 +34,7 @@ export const NewQuestion: React.FC<NewQuestionProps> = ({
 
   return (
     <Card
-      className={`w-[600px] m-6 border-none bg-[var(--dashboard)] rounded-sm ${
+      className={`w-[600px] m-6 border-none bg-[var(--background-secondary)] rounded-sm ${
         isOpen ? "visible" : "hidden"
       }`}
     >
@@ -104,28 +104,28 @@ export const NewQuestion: React.FC<NewQuestionProps> = ({
                 </SelectTrigger>
                 <SelectContent
                   position="popper"
-                  className="cursor-pointer bg-[var(--dashboard)]"
+                  className="cursor-pointer bg-[var(--background-secondary)]"
                 >
                   <SelectItem
-                    className="cursor-pointer hover:!bg-[var(--dashboard-lighter)]"
+                    className="cursor-pointer hover:!bg-[var(--background)]"
                     value="next"
                   >
                     Extra Hard
                   </SelectItem>
                   <SelectItem
-                    className="cursor-pointer hover:!bg-[var(--dashboard-lighter)]"
+                    className="cursor-pointer hover:!bg-[var(--background)]"
                     value="sveltekit"
                   >
                     Hard
                   </SelectItem>
                   <SelectItem
-                    className="cursor-pointer hover:!bg-[var(--dashboard-lighter)]"
+                    className="cursor-pointer hover:!bg-[var(--background)]"
                     value="astro"
                   >
                     Medium
                   </SelectItem>
                   <SelectItem
-                    className="cursor-pointer hover:!bg-[var(--dashboard-lighter)]"
+                    className="cursor-pointer hover:!bg-[var(--background)]"
                     value="nuxt"
                   >
                     Easy
@@ -137,7 +137,7 @@ export const NewQuestion: React.FC<NewQuestionProps> = ({
         </form>
       </CardContent>
       <CardFooter className="flex justify-between">
-        <Button variant="outline" onClick={() => setIsOpen(false)}>
+        <Button variant={"outline"} onClick={() => setIsOpen(false)}>
           Cancel
         </Button>
         <Button
