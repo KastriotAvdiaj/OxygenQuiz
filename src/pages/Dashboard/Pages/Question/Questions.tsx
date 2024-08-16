@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { IoAdd } from "react-icons/io5";
-import { NewQuestion } from "@/componentsOurs/DashboardComponents/QuestionComponents/NewQuestion";
+import { NewQuestion } from "@/pages/Dashboard/Pages/Question/Components/NewQuestion";
 
 export const Questions = () => {
   const [isOpen, setIsOpen] = useState(false);

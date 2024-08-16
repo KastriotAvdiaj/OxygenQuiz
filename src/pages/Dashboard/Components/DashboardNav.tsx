@@ -3,7 +3,8 @@ import { FaChartLine } from "react-icons/fa6";
 import { RiQuestionAnswerFill } from "react-icons/ri";
 import { FaFolderOpen } from "react-icons/fa";
 import { FaUsers } from "react-icons/fa";
-import { Divider } from "../Divider";
+import { Divider } from "../../../componentsOurs/Divider";
+
 
 type DashboardNavProps = {
   setActivePage: (page: string) => void;
@@ -28,6 +29,7 @@ export const DashboardNav: React.FC<DashboardNavProps> = ({
         <FaChartLine />
         Application
       </Button>
+
       <Button
         variant={"dashboard"}
         size={"dashboard"}

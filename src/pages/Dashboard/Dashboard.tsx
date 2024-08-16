@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { DashboardNav } from "@/componentsOurs/DashboardComponents/DashboardNav";
-import { DashboardHeader } from "@/componentsOurs/DashboardComponents/DashboardHeader";
-import { Application } from "../DashboardPages/Application";
-import { Questions } from "../DashboardPages/Questions";
-import { Quizzes } from "../DashboardPages/Quizzes";
-import { Users } from "../DashboardPages/Users";
+import { DashboardNav } from "@/pages/Dashboard/Components/DashboardNav";
+import { DashboardHeader } from "./Components/DashboardHeader";
+import { Application } from "./Pages/Application/Application";
+import { Questions } from "./Pages/Question/Questions";
+import { Quizzes } from "./Pages/Quiz/Quizzes";
+import { Users } from "./Pages/User/Users";
 
 export const Dashboard = () => {
   const [activePage, setActivePage] = useState("Application");
