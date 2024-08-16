@@ -16,7 +16,6 @@ import { LiaUserFriendsSolid } from "react-icons/lia";
 import { NavLink } from "react-router-dom";
 import { CgProfile } from "react-icons/cg";
 
-
 export const DrawerFilled = () => {
   const isAdmin = true;
   const [signedIn, setSignedIn] = useState(true);
@@ -73,14 +72,20 @@ export const DrawerFilled = () => {
               >
                 <LiaUserFriendsSolid className="text-sm" /> Friends
               </Button>
-              <Button
-                variant={"drawer"}
-                size={"drawerSize"}
-                className="w-full"
+              <NavLink
+                to={"/settings"}
                 onClick={handleDrawerClose}
+                className="w-full"
               >
-                <IoSettings className="text-sm" /> Settings
-              </Button>
+                <Button
+                  variant={"drawer"}
+                  size={"drawerSize"}
+                  className="w-full"
+                >
+                  <IoSettings className="text-sm" /> Settings
+                </Button>
+              </NavLink>
+
               {isAdmin && (
                 <NavLink
                   className="w-full"

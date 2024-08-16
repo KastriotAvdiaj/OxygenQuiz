@@ -56,7 +56,10 @@ export const NewQuestion: React.FC<NewQuestionProps> = ({
               <Label>Select the amount of wrong answers?</Label>
               <div className="flex space-x-4">
                 {[1, 2, 3].map((value) => (
-                  <label key={value} className="flex items-center space-x-2">
+                  <label
+                    key={value}
+                    className="flex items-center space-x-2 cursor-pointer"
+                  >
                     <Input
                       type="radio"
                       name="numWrongAnswers"
