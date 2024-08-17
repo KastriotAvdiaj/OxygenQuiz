@@ -1,7 +1,9 @@
 import { DrawerFilled } from "@/componentsOurs/DrawerFilled";
+import { HeaderComponent } from "@/componentsOurs/HeaderComponent";
+
 export const DashboardHeader = () => {
   return (
-    <div className="flex justify-between items-center">
+    <HeaderComponent className="">
       <div className="flex flex-col items-center">
         <p className="text-5xl font-bold pt-3 px-6 italic">OXYGEN</p>
         <p className="text-2xl">Dashboard</p>
@@ -9,6 +11,6 @@ export const DashboardHeader = () => {
       <div className="px-4">
         <DrawerFilled />
       </div>
-    </div>
+    </HeaderComponent>
   );
 };

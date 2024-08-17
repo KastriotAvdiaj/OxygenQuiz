@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { DrawerFilled } from "./DrawerFilled";
 import { NavLink } from "react-router-dom";
+import { HeaderComponent } from "./HeaderComponent";
 
 const Header = () => {
   const [hidden, setHidden] = useState(false);
@@ -25,7 +26,7 @@ const Header = () => {
   }, []);
 
   return (
-    <header
+    <HeaderComponent
       className={`fixed top-0 left-0 bg-[var(--background-secondary)] right-0 z-50 text-lg shadow-md h-16 grid grid-cols-5 items-center px-4 transition-transform duration-400 ${
         hidden ? "-translate-y-full" : "translate-y-0"
       }`}
@@ -60,7 +61,7 @@ const Header = () => {
       <div className="col-span-1 flex justify-end">
         <DrawerFilled />
       </div>
-    </header>
+    </HeaderComponent>
   );
 };
 
