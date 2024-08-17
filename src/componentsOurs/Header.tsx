@@ -26,7 +26,7 @@ const Header = () => {
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-50 text-lg shadow-md h-16 grid grid-cols-5 items-center px-4 transition-transform duration-400 ${
+      className={`fixed top-0 left-0 bg-[var(--background-secondary)] right-0 z-50 text-lg shadow-md h-16 grid grid-cols-5 items-center px-4 transition-transform duration-400 ${
         hidden ? "-translate-y-full" : "translate-y-0"
       }`}
     >

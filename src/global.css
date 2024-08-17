@@ -16,7 +16,8 @@ body{
 
 :root {
   --add-button:rgb(73, 103, 236);
-  --main: "Noto Sans", sans-serif;
+  /* --main: "Noto Sans", sans-serif; */
+  --main:  -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
 }
 
 

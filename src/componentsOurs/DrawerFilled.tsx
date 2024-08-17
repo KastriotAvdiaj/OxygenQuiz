@@ -32,7 +32,7 @@ export const DrawerFilled = () => {
             <Button
               variant={"default"}
               size={"none"}
-              className="flex items-center gap-3 py-2 h-12 px-4 shadow-[2px_2px_10px_0px_rgba(0,0,0,0.5)] hover:ring-1 hover:ring-[var(--border)]"
+              className="flex items-center rounded-[2rem] gap-3 py-2 h-12 px-4 shadow-[2px_2px_10px_0px_rgba(0,0,0,0.5)] hover:ring-1 hover:ring-[var(--border)]"
             >
               My Profile
               <Avatar className="cursor-pointer">
@@ -56,14 +56,20 @@ export const DrawerFilled = () => {
                 // color="white"
                 length="100%"
               />
-              <Button
-                variant={"drawer"}
-                size={"drawerSize"}
-                className="mt-6 w-full"
+              <NavLink
+                to={"/my-profile"}
                 onClick={handleDrawerClose}
+                className="w-full"
               >
-                <CgProfile className="text-sm" /> Your Profile
-              </Button>
+                <Button
+                  variant={"drawer"}
+                  size={"drawerSize"}
+                  className="mt-6 w-full"
+                  onClick={handleDrawerClose}
+                >
+                  <CgProfile className="text-sm" /> My Profile
+                </Button>
+              </NavLink>
               <Button
                 variant={"drawer"}
                 size={"drawerSize"}
