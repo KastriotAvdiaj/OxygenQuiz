@@ -1,4 +1,4 @@
-import { test, expect, vi } from 'vitest';
+import { test, expect} from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useDisclosure } from '../use-disclosure';
 
