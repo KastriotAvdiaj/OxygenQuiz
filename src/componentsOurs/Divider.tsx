@@ -3,7 +3,7 @@ import PropTypes from "prop-types";
 export const Divider = ({
   orientation = "horizontal",
   thickness = "1px",
-  color = "var(--text-lighter)",
+  color = "var(--divider)",
   length = "100%",
 }) => {
   const isHorizontal = orientation === "horizontal";
@@ -15,7 +15,7 @@ export const Divider = ({
         backgroundColor: color,
         margin: isHorizontal ? `${thickness} 0` : `0 ${thickness}`,
       }}
-      className="bg-[var-(--text)]"
+      className="bg-[var(--divider)] z-10"
     />
   );
 };

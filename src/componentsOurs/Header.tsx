@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { DrawerFilled } from "./DrawerFilled";
 import { NavLink } from "react-router-dom";
 import { HeaderComponent } from "./HeaderComponent";
+import { ModeToggle } from "@/components/ui/mode-toggle";
+import { Divider } from "./Divider";
 
 const Header = () => {
   const [hidden, setHidden] = useState(false);
@@ -32,13 +34,13 @@ const Header = () => {
       }`}
     >
       <div className="col-span-1">
-        <ul className="flex gap-4">
+        <ul className="flex gap-4 font-bold">
           <NavLink
             to="/"
             className={({ isActive }) =>
               isActive
-                ? "font-bold border-b-2 border-[var(--border)]"
-                : "hover:border-b-2 hover:border-[var(--border)]"
+                ? "text-[var(--text-hover)]"
+                : "hover:text-[var(--text-hover)]"
             }
           >
             <li className="cursor-pointer">Home</li>
@@ -47,8 +49,8 @@ const Header = () => {
             to="/about-us"
             className={({ isActive }) =>
               isActive
-                ? "font-bold border-b-2 border-[var(--border)]"
-                : "hover:border-b-2 hover:border-[var(--border)]"
+                ? "text-[var(--text-hover)]"
+                : "hover:text-[var(--text-hover)]"
             }
           >
             <li className="cursor-pointer">About Us</li>
@@ -58,7 +60,9 @@ const Header = () => {
       <div className="col-span-3 flex justify-center">
         <p className="text-3xl font-bold">OXYGEN</p>
       </div>
-      <div className="col-span-1 flex justify-end">
+      <div className="col-span-1 flex justify-end items-center gap-3">
+        <ModeToggle className="rounded-[2rem] px-2" />
+        <Divider orientation="vertical" thickness="1px" length="24px" />
         <DrawerFilled />
       </div>
     </HeaderComponent>

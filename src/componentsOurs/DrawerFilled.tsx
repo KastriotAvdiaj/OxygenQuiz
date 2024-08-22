@@ -15,7 +15,7 @@ import { IoSettings } from "react-icons/io5";
 import { LiaUserFriendsSolid } from "react-icons/lia";
 import { NavLink } from "react-router-dom";
 import { CgProfile } from "react-icons/cg";
-import { ModeToggle } from "@/components/ui/mode-toggle";
+// import { ModeToggle } from "@/components/ui/mode-toggle";
 
 export const DrawerFilled = () => {
   const isAdmin = true;
@@ -52,7 +52,7 @@ export const DrawerFilled = () => {
               </div>
               <Divider
                 orientation="horizontal"
-                thickness="2px"
+                thickness="1px"
                 // color="white"
                 length="100%"
               />
@@ -106,7 +106,7 @@ export const DrawerFilled = () => {
                   </Button>
                 </NavLink>
               )}
-              <ModeToggle />
+              {/* <ModeToggle /> */}
             </DrawerHeader>
             <DrawerFooter>
               <DrawerClose asChild>
@@ -128,7 +128,7 @@ export const DrawerFilled = () => {
         <div className="flex gap-4 items-center">
           <Button
             onClick={() => setSignedIn(true)}
-            className="bg-[#0E2178]"
+            className="bg-[#0E2178] text-white"
             variant={"default"}
           >
             Login

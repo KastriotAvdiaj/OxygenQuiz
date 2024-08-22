@@ -3,9 +3,7 @@ export const Application = () => {
     <div className="grid grid-rows-3 gap-10 h-full px-20 py-10">
       {" "}
       <div className="grid grid-cols-3 gap-8 ">
-        <div className="bg-[var(--background-secondary)] w-full">
-          Todays users
-        </div>
+        <div className="bg-[var(--background-secondary)] w-full"></div>
         <div className="bg-[var(--background-secondary)] w-full"></div>
         <div className="bg-[var(--background-secondary)] w-full "></div>
       </div>
