@@ -5,6 +5,7 @@ import Header from "./componentsOurs/Header";
 import "./global.css";
 // Lazy load components
 // Lazy load components
+
 const Home = lazy(() =>
   import("./pages/Home/Home").then((module) => ({ default: module.Home }))
 );
@@ -30,7 +31,6 @@ const MyProfile = lazy(() =>
   }))
 );
 
-
 const router = createBrowserRouter([
   {
     path: "/",
@@ -44,7 +44,7 @@ const router = createBrowserRouter([
     ),
   },
   {
-    path: "/dashboard",
+    path: "/dashboard/*",
     element: (
       <Suspense fallback={<div>Loading...</div>}>
         <Dashboard />

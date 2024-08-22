@@ -1,27 +1,32 @@
-import { useState } from "react";
+import { Suspense, lazy } from "react";
+import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import { DashboardNav } from "@/pages/Dashboard/Components/DashboardNav";
 import { DashboardHeader } from "./Components/DashboardHeader";
-import { Application } from "./Pages/Application/Application";
-import { Questions } from "./Pages/Question/Questions";
-import { Quizzes } from "./Pages/Quiz/Quizzes";
-import { Users } from "./Pages/User/Users";
+
+// Lazy load sub-pages
+const Application = lazy(() =>
+  import("./Pages/Application/Application").then((module) => ({
+    default: module.Application,
+  }))
+);
+const Questions = lazy(() =>
+  import("./Pages/Question/Questions").then((module) => ({
+    default: module.Questions,
+  }))
+);
+const Quizzes = lazy(() =>
+  import("./Pages/Quiz/Quizzes").then((module) => ({ default: module.Quizzes }))
+);
+const Users = lazy(() =>
+  import("./Pages/User/Users").then((module) => ({ default: module.Users }))
+);
 
 export const Dashboard = () => {
-  const [activePage, setActivePage] = useState("Application");
+  const navigate = useNavigate();
 
-  const renderContent = () => {
-    switch (activePage) {
-      case "Application":
-        return <Application />;
-      case "Questions":
-        return <Questions />;
-      case "Quizzes":
-        return <Quizzes />;
-      case "Users":
-        return <Users />;
-      default:
-        return <Application />;
-    }
+  const setActivePage = (page: string) => {
+    console.log(`/dashboard/${page}`);
+    navigate(`/dashboard/${page}`);
   };
 
   return (
@@ -30,9 +35,23 @@ export const Dashboard = () => {
         <DashboardHeader />
       </div>
       <div className="h-full bg-[var(--background-secondary)]">
-        <DashboardNav setActivePage={setActivePage} activePage={activePage} />
+        <DashboardNav
+          setActivePage={setActivePage}
+          activePage={location.pathname.split("/").pop() || "application"}
+        />
       </div>
-      <div className="overflow-y-auto">{renderContent()}</div>
+      <div className="overflow-y-auto">
+        <Suspense fallback={<div>Loading...</div>}>
+          <Routes>
+            <Route index element={<Navigate to="application" replace />} />
+            <Route path="application" element={<Application />} />
+            <Route path="questions" element={<Questions />} />
+            <Route path="quizzes" element={<Quizzes />} />
+            <Route path="users" element={<Users />} />
+            <Route path="*" element={<Navigate to="application" replace />} />
+          </Routes>
+        </Suspense>
+      </div>
     </div>
   );
 };
