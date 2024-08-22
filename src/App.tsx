@@ -1,39 +1,96 @@
-import "./global.css";
-import { Route, BrowserRouter, Routes, useLocation } from "react-router-dom";
-import { Home } from "./pages/Home/Home";
+import { lazy, Suspense } from "react";
+import { AppProvider } from "./Provider";
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import Header from "./componentsOurs/Header";
-import { Dashboard } from "./pages/Dashboard/Dashboard";
-import { AboutUs } from "./pages/AboutUs/AboutUs";
-import { Settings } from "./pages/SettingsPage/Settings";
-import { ThemeProvider } from "./components/ui/theme-provider";
-import { MyProfile } from "./pages/Profile/MyProfile";
+import "./global.css";
+// Lazy load components
+// Lazy load components
+const Home = lazy(() =>
+  import("./pages/Home/Home").then((module) => ({ default: module.Home }))
+);
+const Dashboard = lazy(() =>
+  import("./pages/Dashboard/Dashboard").then((module) => ({
+    default: module.Dashboard,
+  }))
+);
+const AboutUs = lazy(() =>
+  import("./pages/AboutUs/AboutUs").then((module) => ({
+    default: module.AboutUs,
+  }))
+);
+// Apply the same pattern for other lazy-loaded components
+const Settings = lazy(() =>
+  import("./pages/SettingsPage/Settings").then((module) => ({
+    default: module.Settings,
+  }))
+);
+const MyProfile = lazy(() =>
+  import("./pages/Profile/MyProfile").then((module) => ({
+    default: module.MyProfile,
+  }))
+);
 
-function AppContent() {
-  const location = useLocation();
 
-  return (
-    <>
-      <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-        {location.pathname !== "/dashboard" && <Header />}
-        <main className="">
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/about-us" element={<AboutUs />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/my-profile" element={<MyProfile />} />
-          </Routes>
-        </main>
-      </ThemeProvider>
-    </>
-  );
-}
+const router = createBrowserRouter([
+  {
+    path: "/",
+    element: (
+      <>
+        <Header />
+        <Suspense fallback={<div>Loading...</div>}>
+          <Home />
+        </Suspense>
+      </>
+    ),
+  },
+  {
+    path: "/dashboard",
+    element: (
+      <Suspense fallback={<div>Loading...</div>}>
+        <Dashboard />
+      </Suspense>
+    ),
+  },
+  {
+    path: "/about-us",
+    element: (
+      <>
+        <Header />
+        <Suspense fallback={<div>Loading...</div>}>
+          <AboutUs />
+        </Suspense>
+      </>
+    ),
+  },
+  {
+    path: "/settings",
+    element: (
+      <>
+        <Header />
+        <Suspense fallback={<div>Loading...</div>}>
+          <Settings />
+        </Suspense>
+      </>
+    ),
+  },
+  {
+    path: "/my-profile",
+    element: (
+      <>
+        <Header />
+        <Suspense fallback={<div>Loading...</div>}>
+          <MyProfile />
+        </Suspense>
+      </>
+    ),
+  },
+]);
 
 function App() {
   return (
-    <BrowserRouter>
-      <AppContent />
-    </BrowserRouter>
+    <AppProvider>
+      <RouterProvider router={router} />
+    </AppProvider>
   );
 }
 
