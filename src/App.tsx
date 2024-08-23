@@ -31,6 +31,12 @@ const MyProfile = lazy(() =>
   }))
 );
 
+const Signup = lazy(() =>
+  import("./pages/Signup/Signup").then((module) => ({
+    default: module.Signup,
+  }))
+);
+
 const router = createBrowserRouter([
   {
     path: "/",
@@ -80,6 +86,17 @@ const router = createBrowserRouter([
         <Header />
         <Suspense fallback={<div>Loading...</div>}>
           <MyProfile />
+        </Suspense>
+      </>
+    ),
+  },
+  {
+    path: "/signup",
+    element: (
+      <>
+        {/* <Header /> */}
+        <Suspense fallback={<div>Loading...</div>}>
+          <Signup />
         </Suspense>
       </>
     ),

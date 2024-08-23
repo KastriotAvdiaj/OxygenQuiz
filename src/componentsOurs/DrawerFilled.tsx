@@ -11,7 +11,6 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Divider } from "./Divider";
 import { RiDashboard2Fill } from "react-icons/ri";
-import { IoSettings } from "react-icons/io5";
 import { LiaUserFriendsSolid } from "react-icons/lia";
 import { NavLink } from "react-router-dom";
 import { Settings } from "lucide-react";
@@ -128,13 +127,15 @@ export const DrawerFilled = () => {
         <div className="flex gap-4 items-center">
           <Button
             onClick={() => setSignedIn(true)}
-            className="bg-[#0E2178] text-white"
+            className="bg-[#4B3EF3] text-white"
             variant={"default"}
           >
             Login
           </Button>
           or
-          <Button variant={"outline"}>Signup</Button>
+          <NavLink to={"/signup"}>
+            <Button variant={"outline"}>Signup</Button>
+          </NavLink>
         </div>
       )}
     </>

@@ -58,7 +58,7 @@ const Header = () => {
         </ul>
       </div>
       <div className="col-span-3 flex justify-center">
-        <p className="text-3xl font-bold">OXYGEN</p>
+        <p className="text-3xl font-bold text-[var(--text-hover)]">OXYGEN</p>
       </div>
       <div className="col-span-1 flex justify-end items-center gap-3">
         <ModeToggle className="rounded-[2rem] px-2" />

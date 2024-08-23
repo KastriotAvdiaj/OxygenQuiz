@@ -24,6 +24,8 @@ body{
 
 .dark {
   --text-hover: #FF6F61;
+  --text-hover-darker: #f75244;
+
   --background: rgb(22, 27, 34);
   --background-secondary: rgb(44, 49, 56);
   color: white;
