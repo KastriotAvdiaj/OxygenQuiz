@@ -10,14 +10,11 @@ const buttonVariants = cva(
       variant: {
         default:
           "bg-primary gap-2 shadow hover:bg-[var(--background)]/80  active:scale-95",
-        destructive:
-          "bg-destructive shadow-sm hover:bg-destructive/90 active:scale-95",
         addSave:
           "flex justify-center items-center gap-2  shadow bg-[var(--add-button)] hover:bg-blue-700 rounded active:scale-95",
         outline:
-          "border border-input shadow-sm hover:bg-[var(--outline-button)]  active:scale-95",
+          " flex justify-end items-center gap-3 border border-input shadow-sm hover:bg-[var(--outline-button)]  active:scale-95",
         secondary: "bg-secondary shadow-sm active:scale-95",
-        ghost: "hover:bg-accent hover:text-accent-foreground active:scale-95",
         link: " underline-offset-4 hover:underline active:scale-95",
         drawer:
           "flex justify-start gap-1.5 px-1 items-center bg-ring rounded hover:bg-[var(--background)] text-sm active:scale-95",

@@ -14,6 +14,7 @@ import { RiDashboard2Fill } from "react-icons/ri";
 import { IoSettings } from "react-icons/io5";
 import { LiaUserFriendsSolid } from "react-icons/lia";
 import { NavLink } from "react-router-dom";
+import { Settings } from "lucide-react";
 import { CgProfile } from "react-icons/cg";
 // import { ModeToggle } from "@/components/ui/mode-toggle";
 
@@ -88,7 +89,7 @@ export const DrawerFilled = () => {
                   size={"drawerSize"}
                   className="w-full"
                 >
-                  <IoSettings className="text-sm" /> Settings
+                  <Settings className="text-sm" size={14} /> Settings
                 </Button>
               </NavLink>
               {isAdmin && (
@@ -106,7 +107,6 @@ export const DrawerFilled = () => {
                   </Button>
                 </NavLink>
               )}
-              {/* <ModeToggle /> */}
             </DrawerHeader>
             <DrawerFooter>
               <DrawerClose asChild>
@@ -114,7 +114,7 @@ export const DrawerFilled = () => {
                   className="rounded hover:bg-[#FE2A2A] hover:text-white"
                   onClick={() => {
                     setSignedIn(false);
-                    // handleDrawerClose();
+                    handleDrawerClose();
                   }}
                   variant="outline"
                 >
