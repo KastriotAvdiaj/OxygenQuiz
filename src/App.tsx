@@ -39,7 +39,7 @@ const router = createBrowserRouter([
         <Header />
         <Suspense
           fallback={
-            <div className="flex size-full items-center justify-center">
+            <div className="flex h-screen w-screen items-center justify-center">
               <Spinner size="xl" />
             </div>
           }
@@ -54,7 +54,7 @@ const router = createBrowserRouter([
     element: (
       <Suspense
         fallback={
-          <div className="flex size-full items-center justify-center">
+          <div className="flex h-screen w-screen items-center justify-center">
             <Spinner size="xl" />
           </div>
         }
@@ -70,7 +70,7 @@ const router = createBrowserRouter([
         <Header />
         <Suspense
           fallback={
-            <div className="flex size-full items-center justify-center">
+            <div className="flex h-screen w-screen items-center justify-center">
               <Spinner size="xl" />
             </div>
           }
@@ -87,7 +87,7 @@ const router = createBrowserRouter([
         <Header />
         <Suspense
           fallback={
-            <div className="flex size-full items-center justify-center">
+            <div className="flex h-screen w-screen items-center justify-center">
               <Spinner size="xl" />
             </div>
           }
@@ -104,7 +104,7 @@ const router = createBrowserRouter([
         <Header />
         <Suspense
           fallback={
-            <div className="flex size-full items-center justify-center">
+            <div className="flex h-screen w-screen items-center justify-center">
               <Spinner size="xl" />
             </div>
           }
@@ -121,7 +121,7 @@ const router = createBrowserRouter([
         {/* <Header /> */}
         <Suspense
           fallback={
-            <div className="flex size-full items-center justify-center">
+            <div className="flex h-screen w-screen items-center justify-center">
               <Spinner size="xl" />
             </div>
           }
