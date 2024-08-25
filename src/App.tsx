@@ -3,8 +3,7 @@ import { AppProvider } from "./Provider";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import Header from "./componentsOurs/Header";
 import "./global.css";
-// Lazy load components
-// Lazy load components
+import { Spinner } from "./components/ui/Spinnter";
 
 const Home = lazy(() =>
   import("./pages/Home/Home").then((module) => ({ default: module.Home }))
@@ -19,7 +18,6 @@ const AboutUs = lazy(() =>
     default: module.AboutUs,
   }))
 );
-// Apply the same pattern for other lazy-loaded components
 const Settings = lazy(() =>
   import("./pages/SettingsPage/Settings").then((module) => ({
     default: module.Settings,
@@ -31,11 +29,7 @@ const MyProfile = lazy(() =>
   }))
 );
 
-const Signup = lazy(() =>
-  import("./pages/Signup/Signup").then((module) => ({
-    default: module.Signup,
-  }))
-);
+const Signup = lazy(() => import("./pages/Signup/Signup"));
 
 const router = createBrowserRouter([
   {
@@ -43,7 +37,13 @@ const router = createBrowserRouter([
     element: (
       <>
         <Header />
-        <Suspense fallback={<div>Loading...</div>}>
+        <Suspense
+          fallback={
+            <div className="flex size-full items-center justify-center">
+              <Spinner size="xl" />
+            </div>
+          }
+        >
           <Home />
         </Suspense>
       </>
@@ -52,7 +52,13 @@ const router = createBrowserRouter([
   {
     path: "/dashboard/*",
     element: (
-      <Suspense fallback={<div>Loading...</div>}>
+      <Suspense
+        fallback={
+          <div className="flex size-full items-center justify-center">
+            <Spinner size="xl" />
+          </div>
+        }
+      >
         <Dashboard />
       </Suspense>
     ),
@@ -62,7 +68,13 @@ const router = createBrowserRouter([
     element: (
       <>
         <Header />
-        <Suspense fallback={<div>Loading...</div>}>
+        <Suspense
+          fallback={
+            <div className="flex size-full items-center justify-center">
+              <Spinner size="xl" />
+            </div>
+          }
+        >
           <AboutUs />
         </Suspense>
       </>
@@ -73,7 +85,13 @@ const router = createBrowserRouter([
     element: (
       <>
         <Header />
-        <Suspense fallback={<div>Loading...</div>}>
+        <Suspense
+          fallback={
+            <div className="flex size-full items-center justify-center">
+              <Spinner size="xl" />
+            </div>
+          }
+        >
           <Settings />
         </Suspense>
       </>
@@ -84,7 +102,13 @@ const router = createBrowserRouter([
     element: (
       <>
         <Header />
-        <Suspense fallback={<div>Loading...</div>}>
+        <Suspense
+          fallback={
+            <div className="flex size-full items-center justify-center">
+              <Spinner size="xl" />
+            </div>
+          }
+        >
           <MyProfile />
         </Suspense>
       </>
@@ -95,7 +119,13 @@ const router = createBrowserRouter([
     element: (
       <>
         {/* <Header /> */}
-        <Suspense fallback={<div>Loading...</div>}>
+        <Suspense
+          fallback={
+            <div className="flex size-full items-center justify-center">
+              <Spinner size="xl" />
+            </div>
+          }
+        >
           <Signup />
         </Suspense>
       </>
