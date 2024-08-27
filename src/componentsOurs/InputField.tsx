@@ -17,7 +17,7 @@ const InputField: React.FC<InputFieldProps> = ({
   value,
   onChange,
   id,
-  name, 
+  name,
   ...props
 }) => (
   <div className="grid w-full gap-1.5">
@@ -26,12 +26,12 @@ const InputField: React.FC<InputFieldProps> = ({
     </Label>
     <Input
       id={id}
-      name={name} 
+      name={name}
       placeholder={placeholder}
       type={type}
       value={value}
       onChange={onChange}
-      className="rounded py-5"
+      className="rounded py-5 bg-[var(--background)]"
       {...props}
     />
   </div>

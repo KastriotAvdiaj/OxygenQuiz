@@ -36,6 +36,7 @@ const Step: React.FC<StepProps> = ({
       onChange={onChange}
       name={name}
     />
+
     <div className="flex justify-between mt-7">
       {onBack && (
         <Button

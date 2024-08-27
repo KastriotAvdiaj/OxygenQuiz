@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import SignupProgressDisplay from "./SignupProgressDisplay";
-import Step from "./Step";
+import SignupSteps from "./SignupSteps";
 
 export const SignupForm: React.FC = () => {
   const [step, setStep] = useState(1);
@@ -8,31 +8,8 @@ export const SignupForm: React.FC = () => {
     username: "",
     email: "",
     password: "",
+    confirmPassword: "",
   });
-
-  const steps = [
-    {
-      label: "Username",
-      name: "username",
-      type: "text",
-      placeholder: "Username",
-      value: formData.username,
-    },
-    {
-      label: "Email",
-      name: "email",
-      type: "email",
-      placeholder: "Email",
-      value: formData.email,
-    },
-    {
-      label: "Password",
-      name: "password",
-      type: "password",
-      placeholder: "Password",
-      value: formData.password,
-    },
-  ];
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -46,7 +23,7 @@ export const SignupForm: React.FC = () => {
     // Perform the final submission logic here
   };
 
-  const handleNext = step === steps.length ? handleFinalSubmit : handleNextStep;
+  const handleNext = step === 4 ? handleFinalSubmit : handleNextStep;
 
   return (
     <>
@@ -63,14 +40,12 @@ export const SignupForm: React.FC = () => {
           handleFinalSubmit();
         }}
       >
-        <Step
-          {...steps[step - 1]}
-          name={steps[step - 1].name}
-          onNext={handleNext}
-          onBack={step > 1 ? handlePreviousStep : undefined}
-          onChange={handleChange}
-          isLastStep={step === steps.length}
-          isFirstStep={step === 1}
+        <SignupSteps
+          step={step}
+          formData={formData}
+          handleChange={handleChange}
+          handleNext={handleNext}
+          handlePreviousStep={handlePreviousStep}
         />
       </form>
     </>
