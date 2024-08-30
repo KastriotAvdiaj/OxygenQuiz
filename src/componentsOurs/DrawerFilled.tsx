@@ -127,7 +127,7 @@ export const DrawerFilled = () => {
         <div className="flex gap-4 items-center">
           <Button
             onClick={() => setSignedIn(true)}
-            className="bg-[#4B3EF3] text-white"
+            className="bg-[#4B3EF3] text-white custom-button"
             variant={"default"}
           >
             Login

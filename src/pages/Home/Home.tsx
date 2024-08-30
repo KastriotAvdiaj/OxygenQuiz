@@ -15,6 +15,7 @@ export const Home = () => {
         >
           Login
         </Button>
+        <button className="custom-button">Hover me</button>
       </div>
     </>
   );

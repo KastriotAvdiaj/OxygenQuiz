@@ -71,7 +71,25 @@ module.exports = {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
       },
+      extend: {
+        utilities: {
+          '.before-content::before': {
+            content: '""',
+            position: 'absolute',
+            inset: '0',
+            backgroundColor: '#fc2f70',
+            transformOrigin: 'center bottom',
+            transform: 'scaleY(0)',
+            transition: 'transform 0.25s ease-in-out',
+            zIndex: '-1',
+          },
+          '.hover-before-content:hover::before': {
+            transformOrigin: 'center top',
+            transform: 'scaleY(1)',
+          },
+        },
+      },
     },
   },
   plugins: [require("tailwindcss-animate")],
-}
+};
