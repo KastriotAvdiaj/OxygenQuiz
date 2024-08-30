@@ -11,13 +11,28 @@ export type BaseEntity<TId = number> = {
   
 
   export type User = Entity<{
-    immutableName: string;
+    immutableName: string;  
     username: string;
     email: string;
     passwordHash: string;
+    registeredDate: string;
     userUpdatedAt: string | null;
     isDeleted: boolean;
     lastLogin: string | null;
     profileImageUrl: string;
-  }, string>; 
+    roleId: number; // Foreign key to Role
+    role?: Role; // Optional navigation property to Role
+  },string>;
+  
+  
+  export type Role = Entity<{
+    name: string;
+    isActive: boolean;
+    description: string;
+    createdById: string; // Foreign key to User
+    createdBy?: User; // Optional navigation property to User
+    roleUpdatedAt?: string[]; 
+  }>;
+
+  
   

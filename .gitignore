@@ -23,6 +23,8 @@ dist-ssr
 *.sln
 *.sw?
 
+.env
+
 #backend 
 
 /OxygenBackend/QuizAPI/Program.cs
