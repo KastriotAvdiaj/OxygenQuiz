@@ -130,6 +130,13 @@ const router = createBrowserRouter([
       </>
     ),
   },
+  {
+    path: "*",
+    lazy: async () => {
+      const { NotFoundRoute } = await import("./pages/NotFound/Not-Found");
+      return { Component: NotFoundRoute };
+    },
+  },
 ]);
 
 function App() {

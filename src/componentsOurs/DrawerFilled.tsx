@@ -19,7 +19,7 @@ import { CgProfile } from "react-icons/cg";
 
 export const DrawerFilled = () => {
   const isAdmin = true;
-  const [signedIn, setSignedIn] = useState(true);
+  const [signedIn, setSignedIn] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const handleDrawerClose = () => {
     setIsDrawerOpen(false);
