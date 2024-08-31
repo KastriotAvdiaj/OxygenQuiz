@@ -1,67 +1,89 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import { configureAuth } from 'react-query-auth';
 import { Navigate, useLocation } from 'react-router-dom';
+import { z } from 'zod';
+import { api } from './Api-client';
+import { AuthResponse, User } from '@/types/Api';
 
-interface User {
-  name: string;
-}
+// Define the API calls and validation schemas
+const getUser = async (): Promise<User> => {
+  const response = await api.get('/auth/me');
+  return response.data;
+};
 
-interface AuthContextType {
-  user: User | null;
-  login: () => void;
-  logout: () => void;
-}
+const logout = (): Promise<void> => {
+  return api.post('/auth/logout');
+};
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const loginInputSchema = z.object({
+  email: z.string().min(1, 'Required').email('Invalid email'),
+  password: z.string().min(5, 'Required'),
+});
 
-interface AuthProviderProps {
-  children: ReactNode;
-}
+export type LoginInput = z.infer<typeof loginInputSchema>;
 
-export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+const loginWithEmailAndPassword = (data: LoginInput): Promise<AuthResponse> => {
+  return api.post('/auth/login', data);
+};
 
-  const login = () => {
-    // Simulate a login by setting a dummy user object
-    setUser({ name: 'Test User' });
-  };
-
-  const logout = () => {
-    // Simulate a logout by clearing the user state
-    setUser(null);
-  };
-
-  return (
-    <AuthContext.Provider value={{ user, login, logout }}>
-      {children}
-    </AuthContext.Provider>
+export const registerInputSchema = z
+  .object({
+    email: z.string().min(1, 'Required'),
+    firstName: z.string().min(1, 'Required'),
+    lastName: z.string().min(1, 'Required'),
+    password: z.string().min(1, 'Required'),
+  })
+  .and(
+    z
+      .object({
+        teamId: z.string().min(1, 'Required'),
+        teamName: z.null().default(null),
+      })
+      .or(
+        z.object({
+          teamName: z.string().min(1, 'Required'),
+          teamId: z.null().default(null),
+        }),
+      ),
   );
+
+export type RegisterInput = z.infer<typeof registerInputSchema>;
+
+const registerWithEmailAndPassword = (
+  data: RegisterInput,
+): Promise<AuthResponse> => {
+  return api.post('/auth/register', data);
 };
 
-export const useAuth = (): AuthContextType => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
+// Configure auth with react-query-auth
+const authConfig = {
+  userFn: getUser,
+  loginFn: async (data: LoginInput) => {
+    const response = await loginWithEmailAndPassword(data);
+    return response.user;
+  },
+  registerFn: async (data: RegisterInput) => {
+    const response = await registerWithEmailAndPassword(data);
+    return response.user;
+  },
+  logoutFn: logout,
 };
 
+export const { useUser, useLogin, useLogout, useRegister, AuthLoader } =
+  configureAuth(authConfig);
 
-interface ProtectedRouteProps {
-    children: ReactNode;
+// ProtectedRoute component using useUser hook
+export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const user = useUser();
+  const location = useLocation();
+
+  if (!user.data) {
+    return (
+      <Navigate
+        to={`/auth/login?redirectTo=${encodeURIComponent(location.pathname)}`}
+        replace
+      />
+    );
   }
-  
-  export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-    const { user } = useAuth();
-    const location = useLocation();
-  
-    if (!user) {
-      return (
-        <Navigate
-          to={`/auth/login?redirectTo=${encodeURIComponent(location.pathname)}`}
-          replace
-        />
-      );
-    }
-  
-    return <>{children}</>;
-  };
+
+  return <>{children}</>;
+};

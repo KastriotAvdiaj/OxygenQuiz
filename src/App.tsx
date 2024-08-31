@@ -29,6 +29,8 @@ const MyProfile = lazy(() =>
   }))
 );
 
+const Login = lazy(() => import("./pages/Login/Login"));
+
 const Signup = lazy(() => import("./pages/Signup/Signup"));
 
 const router = createBrowserRouter([
@@ -126,6 +128,22 @@ const router = createBrowserRouter([
           }
         >
           <Signup />
+        </Suspense>
+      </>
+    ),
+  },
+  {
+    path: "/login",
+    element: (
+      <>
+        <Suspense
+          fallback={
+            <div className="flex h-screen w-screen items-center justify-center">
+              <Spinner size="xl" />
+            </div>
+          }
+        >
+          <Login />
         </Suspense>
       </>
     ),

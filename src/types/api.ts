@@ -34,5 +34,9 @@ export type BaseEntity<TId = number> = {
     roleUpdatedAt?: string[]; 
   }>;
 
+  export type AuthResponse = {
+    jwt: string;
+    user: User;
+  };
   
   

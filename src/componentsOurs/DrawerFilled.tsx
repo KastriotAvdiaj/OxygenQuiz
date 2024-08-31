@@ -125,13 +125,15 @@ export const DrawerFilled = () => {
         </Drawer>
       ) : (
         <div className="flex gap-4 items-center">
-          <Button
-            onClick={() => setSignedIn(true)}
-            className="bg-[#4B3EF3] text-white custom-button"
-            variant={"default"}
-          >
-            Login
-          </Button>
+          <NavLink to={"/login"}>
+            <Button
+              // onClick={() => setSignedIn(true)}
+              className="bg-[#4B3EF3] text-white custom-button"
+              variant={"default"}
+            >
+              Login
+            </Button>
+          </NavLink>
           or
           <NavLink to={"/signup"}>
             <Button variant={"outline"}>Signup</Button>
