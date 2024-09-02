@@ -1,31 +1,33 @@
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { IoAdd } from "react-icons/io5";
-import { NewQuestion } from "@/pages/Dashboard/Pages/Question/Components/NewQuestion";
+import { FormDrawer } from "@/common/Form-Drawer";
+import { NewQuestion } from "./Components/NewQuestion";
 
 export const Questions = () => {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
-  const handleToggle = () => {
-    setIsOpen((prevState) => !prevState);
+  const handleDrawer = () => {
+    setIsDrawerOpen((prevState) => !prevState);
   };
 
   return (
     <div>
-      {isOpen ? (
-        <NewQuestion isOpen={isOpen} setIsOpen={setIsOpen} />
-      ) : (
-        <div>
-          <Button
-            variant="addSave"
-            onClick={handleToggle}
-            aria-expanded={isOpen}
-            aria-controls="new-question-form"
-          >
-            <IoAdd className="text-xl" /> New Question
-          </Button>
-        </div>
-      )}
+      <Button
+        variant="addSave"
+        onClick={handleDrawer}
+        aria-expanded={isDrawerOpen}
+        className="w-fit"
+        aria-controls="new-question-form"
+      >
+        <IoAdd className="text-xl " /> New Question
+      </Button>
+      <FormDrawer
+        className="w-fit"
+        form={<NewQuestion />}
+        isOpen={isDrawerOpen}
+        setIsOpen={setIsDrawerOpen}
+      />
     </div>
   );
 };

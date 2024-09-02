@@ -1,7 +1,7 @@
 import { lazy, Suspense } from "react";
 import { AppProvider } from "./Provider";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
-import Header from "./componentsOurs/Header";
+import Header from "./common/Header";
 import "./global.css";
 import { Spinner } from "./components/ui/Spinnter";
 

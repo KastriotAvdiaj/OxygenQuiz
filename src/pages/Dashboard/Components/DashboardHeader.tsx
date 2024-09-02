@@ -1,7 +1,7 @@
-import { DrawerFilled } from "@/componentsOurs/DrawerFilled";
-import { Divider } from "@/componentsOurs/Divider";
+import { DrawerFilled } from "@/common/DrawerFilled";
+import { Divider } from "@/common/Divider";
 import { ModeToggle } from "@/components/ui/mode-toggle";
-import { HeaderComponent } from "@/componentsOurs/HeaderComponent";
+import { HeaderComponent } from "@/common/HeaderComponent";
 import { NavLink } from "react-router-dom";
 import { Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";

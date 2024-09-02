@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Divider } from "../../../componentsOurs/Divider";
+import { Divider } from "../../../common/Divider";
 import { dashboardNavButtons } from "./dashboardNavConfig";
 
 type DashboardNavProps = {

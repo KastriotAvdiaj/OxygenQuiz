@@ -5,6 +5,7 @@ import {
   DrawerFooter,
   DrawerHeader,
   DrawerTrigger,
+  DrawerTitle,
 } from "@/components/ui/drawer";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useState } from "react";
@@ -15,6 +16,7 @@ import { LiaUserFriendsSolid } from "react-icons/lia";
 import { NavLink } from "react-router-dom";
 import { Settings } from "lucide-react";
 import { CgProfile } from "react-icons/cg";
+
 // import { ModeToggle } from "@/components/ui/mode-toggle";
 
 export const DrawerFilled = () => {
@@ -42,6 +44,7 @@ export const DrawerFilled = () => {
             </Button>
           </DrawerTrigger>
           <DrawerContent>
+            <DrawerTitle></DrawerTitle>
             <DrawerHeader>
               <div className="flex justify-start gap-4 items-center font-bold mb-6 ">
                 <Avatar className="cursor-pointer ">
@@ -127,7 +130,6 @@ export const DrawerFilled = () => {
         <div className="flex gap-4 items-center">
           <NavLink to={"/login"}>
             <Button
-              // onClick={() => setSignedIn(true)}
               className="bg-[#4B3EF3] text-white custom-button"
               variant={"default"}
             >
@@ -138,6 +140,7 @@ export const DrawerFilled = () => {
           <NavLink to={"/signup"}>
             <Button variant={"outline"}>Signup</Button>
           </NavLink>
+          <Button onClick={() => setSignedIn(true)}>On/Off</Button>
         </div>
       )}
     </>

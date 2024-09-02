@@ -1,6 +1,6 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
-import InputField from "@/componentsOurs/InputField"; // Adjust the path based on your directory structure
+import InputField from "@/common/InputField"; // Adjust the path based on your directory structure
 
 interface StepProps {
   label: string;

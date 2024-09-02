@@ -17,15 +17,7 @@ import {
 } from "@/components/ui/select";
 import { useState } from "react";
 
-type NewQuestionProps = {
-  setIsOpen: (value: boolean) => void;
-  isOpen: boolean;
-};
-
-export const NewQuestion: React.FC<NewQuestionProps> = ({
-  isOpen,
-  setIsOpen,
-}) => {
+export const NewQuestion = () => {
   const [numWrongAnswers, setNumWrongAnswers] = useState<number>(3);
 
   const handleRadioChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -34,9 +26,7 @@ export const NewQuestion: React.FC<NewQuestionProps> = ({
 
   return (
     <Card
-      className={`w-[600px] m-6 border-none bg-[var(--background-secondary)] rounded-sm ${
-        isOpen ? "visible" : "hidden"
-      }`}
+      className={`w-fit m-6 border-none bg-[var(--background-secondary)] rounded-sm }`}
     >
       <CardHeader>
         <CardTitle>Create a new question</CardTitle>
@@ -61,7 +51,7 @@ export const NewQuestion: React.FC<NewQuestionProps> = ({
                     className="flex items-center space-x-2 cursor-pointer"
                   >
                     <Input
-                      type="radio"
+                      type="radio"  
                       name="numWrongAnswers"
                       value={value}
                       checked={numWrongAnswers === value}
@@ -137,14 +127,8 @@ export const NewQuestion: React.FC<NewQuestionProps> = ({
         </form>
       </CardContent>
       <CardFooter className="flex justify-between">
-        <Button variant={"outline"} onClick={() => setIsOpen(false)}>
-          Cancel
-        </Button>
-        <Button
-          variant={"addSave"}
-          className="rounded-sm"
-          onClick={() => setIsOpen(false)}
-        >
+        <Button variant={"outline"}>Cancel</Button>
+        <Button variant={"addSave"} className="rounded-sm w-fit">
           Create
         </Button>
       </CardFooter>

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import InputField from "@/componentsOurs/InputField";
+import InputField from "@/common/InputField";
 import { Button } from "@/components/ui/button";
 
 interface LoginFormProps {
@@ -48,7 +48,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
         />
       </div>
       <Button
-        type="submit"
+        onClick={handleSubmit}
         variant={"addSave"}
         className="w-full py-3 text-white"
       >

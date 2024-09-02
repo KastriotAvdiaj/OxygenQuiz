@@ -1,5 +1,5 @@
 import React from "react";
-import { Divider } from "@/componentsOurs/Divider";
+import { Divider } from "@/common/Divider";
 import {
   Tooltip,
   TooltipContent,
@@ -29,7 +29,8 @@ const SignupProgressDisplay: React.FC<SignupProgressDisplayProps> = ({
               className="text-lg text-[var(--text-hover)] bg-[var(--background)] p-1 cursor-pointer hover:scale-105 transition-transform duration-300"
               onClick={() => setStep(1)}
             >
-              <strong className="text-[var(--text)]">Username:</strong> {username}
+              <strong className="text-[var(--text)]">Username:</strong>{" "}
+              {username}
             </p>
           </TooltipTrigger>
           <TooltipContent>
