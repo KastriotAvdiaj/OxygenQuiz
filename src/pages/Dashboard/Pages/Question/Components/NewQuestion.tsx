@@ -51,7 +51,7 @@ export const NewQuestion = () => {
                     className="flex items-center space-x-2 cursor-pointer"
                   >
                     <Input
-                      type="radio"  
+                      type="radio"
                       name="numWrongAnswers"
                       value={value}
                       checked={numWrongAnswers === value}
@@ -128,7 +128,7 @@ export const NewQuestion = () => {
       </CardContent>
       <CardFooter className="flex justify-between">
         <Button variant={"outline"}>Cancel</Button>
-        <Button variant={"addSave"} className="rounded-sm w-fit">
+        <Button variant={"addSave"} className="rounded-sm w-fit text-white">
           Create
         </Button>
       </CardFooter>

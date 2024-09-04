@@ -44,8 +44,9 @@ namespace QuizAPI.Services
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
                 DateRegistered = DateTime.UtcNow,
                 LastLogin = DateTime.UtcNow,
+                RoleId = 2,
                 IsDeleted = false,
-                ImmutableName = Guid.NewGuid().ToString(), // Immutable Name
+                ImmutableName = username.ToLower(), // Immutable Name
                 ProfileImageUrl = string.Empty
             };
 

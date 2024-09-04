@@ -3,17 +3,31 @@ import { useNavigate, useLocation } from "react-router-dom";
 import SocialButtons from "@/lib/SocialButtons/SocialButtons";
 import { ModeToggle } from "@/components/ui/mode-toggle";
 import LoginForm from "./LoginForm";
+import { useLogin, loginInputSchema } from "@/lib/Auth";
+
+/**
+ * 
+ * @LoginPage '
+ * 
+ */
 
 export const Login: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const login = useLogin();
+  
 
-  const handleLogin = (email: string, password: string) => {
-    // login(); // Simulate login
-    const redirectTo = (location.state as { from?: { pathname: string } })?.from?.pathname || "/";
-    navigate(redirectTo, { replace: true });
+  const handleLogin = async (email: string, password: string) => {
+    try {
+      await login(email, password); // API call for login
+      const redirectTo =
+        (location.state as { from?: { pathname: string } })?.from?.pathname ||
+        "/";
+      navigate(redirectTo, { replace: true });
+    } catch (error) {
+      console.error("Login failed:", error);
+    }
   };
-
   return (
     <div className="h-screen w-full flex flex-col">
       <div className="relative flex justify-center pt-10">
