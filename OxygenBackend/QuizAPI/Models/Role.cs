@@ -1,4 +1,5 @@
 ﻿using QuizAPI.ManyToManyTables;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace QuizAPI.Models
 {
@@ -11,11 +12,6 @@ namespace QuizAPI.Models
 
         public bool isActive { get; set; }
         public string Description { get; set; }
-
-        public Guid CreatedById { get; set; }
-
-        // Navigation property to the User who created the role
-        public virtual User CreatedBy { get; set; }
 
         public Guid ConcurrencyStamp { get; set; }  
 

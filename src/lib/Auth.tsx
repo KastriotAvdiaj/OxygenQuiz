@@ -22,7 +22,7 @@ export const loginInputSchema = z.object({
 export type LoginInput = z.infer<typeof loginInputSchema>;
 
 const loginWithEmailAndPassword = (data: LoginInput): Promise<AuthResponse> => {
-  return api.post('/auth/login', data);
+  return api.post('/Authentication/login', data);
 };
 
 export const registerInputSchema = z
@@ -57,7 +57,12 @@ const registerWithEmailAndPassword = (
 // Configure auth with react-query-auth
 const authConfig = {
   userFn: getUser,
-  loginFn: async (data: LoginInput) => {
+  /**
+   * Logs in a user using their email and password.
+   * @param data - The login data containing the email and password.
+   * @returns The user object if the login is successful.
+   */
+  loginFn: async (data: LoginInput): Promise<User> => {
     const response = await loginWithEmailAndPassword(data);
     return response.user;
   },

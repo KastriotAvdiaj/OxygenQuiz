@@ -3,30 +3,27 @@ import { useState } from "react";
 import { IoAdd } from "react-icons/io5";
 import { FormDrawer } from "@/common/Form-Drawer";
 import { NewQuestion } from "./Components/NewQuestion";
+import { useDisclosure } from "@/hooks/use-disclosure";
 
 export const Questions = () => {
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-
-  const handleDrawer = () => {
-    setIsDrawerOpen((prevState) => !prevState);
-  };
-
+  const { isOpen, open, close, toggle } = useDisclosure();
   return (
     <div>
       <Button
         variant="addSave"
-        onClick={handleDrawer}
-        aria-expanded={isDrawerOpen}
-        className="w-fit"
+        onClick={open}
+        aria-expanded={isOpen}
+        className="w-fit text-white"
         aria-controls="new-question-form"
       >
-        <IoAdd className="text-xl " /> New Question
+        <IoAdd className="text-xl" /> New Question
       </Button>
       <FormDrawer
         className="w-fit"
         form={<NewQuestion />}
-        isOpen={isDrawerOpen}
-        setIsOpen={setIsDrawerOpen}
+        isOpen={isOpen}
+        toggle={toggle}
+        onClose={close}
       />
     </div>
   );

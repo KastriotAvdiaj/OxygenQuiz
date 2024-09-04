@@ -72,7 +72,7 @@ namespace QuizAPI.Services
 
             // Generate JWT token
             var token = GenerateJwtToken(user);
-            return new AuthResult { Success = true, Token = token };
+            return new AuthResult { Success = true, Token = token, User = user, Message="Successfully logged in!" };
         }
 
         private string GenerateJwtToken(User user)

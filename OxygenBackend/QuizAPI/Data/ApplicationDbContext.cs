@@ -28,7 +28,6 @@ namespace QuizAPI.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
-
             // Configure many-to-many relationship between Role and UpdatedAt tables.
             modelBuilder.Entity<RoleUpdatedAt>()
                 .HasKey(ru => new { ru.RoleId, ru.UpdatedAtId });

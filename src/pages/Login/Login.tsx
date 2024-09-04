@@ -5,7 +5,6 @@ import { ModeToggle } from "@/components/ui/mode-toggle";
 import LoginForm from "./LoginForm";
 
 export const Login: React.FC = () => {
-  // const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
