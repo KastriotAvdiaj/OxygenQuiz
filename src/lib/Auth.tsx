@@ -1,57 +1,57 @@
-import { configureAuth } from 'react-query-auth';
-import { Navigate, useLocation } from 'react-router-dom';
-import { z } from 'zod';
-import { api } from './Api-client';
-import { AuthResponse, User } from '@/types/Api';
+import { configureAuth } from "react-query-auth";
+import { Navigate, useLocation } from "react-router-dom";
+import { z } from "zod";
+import { api } from "./Api-client";
+import { AuthResponse, User } from "@/types/Api";
 
 // Define the API calls and validation schemas
 const getUser = async (): Promise<User> => {
-  const response = await api.get('/auth/me');
+  const response = await api.get("/auth/me");
   return response.data;
 };
 
 const logout = (): Promise<void> => {
-  return api.post('/auth/logout');
+  return api.post("/auth/logout");
 };
 
 export const loginInputSchema = z.object({
-  email: z.string().min(1, 'Required').email('Invalid email'),
-  password: z.string().min(5, 'Required'),
+  email: z.string().min(1, "Required").email("Invalid email"),
+  password: z.string().min(5, "Required"),
 });
 
 export type LoginInput = z.infer<typeof loginInputSchema>;
 
 const loginWithEmailAndPassword = (data: LoginInput): Promise<AuthResponse> => {
-  return api.post('/Authentication/login', data);
+  return api.post("Authentication/login", data);
 };
 
 export const registerInputSchema = z
   .object({
-    email: z.string().min(1, 'Required'),
-    firstName: z.string().min(1, 'Required'),
-    lastName: z.string().min(1, 'Required'),
-    password: z.string().min(1, 'Required'),
+    email: z.string().min(1, "Required"),
+    firstName: z.string().min(1, "Required"),
+    lastName: z.string().min(1, "Required"),
+    password: z.string().min(1, "Required"),
   })
   .and(
     z
       .object({
-        teamId: z.string().min(1, 'Required'),
+        teamId: z.string().min(1, "Required"),
         teamName: z.null().default(null),
       })
       .or(
         z.object({
-          teamName: z.string().min(1, 'Required'),
+          teamName: z.string().min(1, "Required"),
           teamId: z.null().default(null),
-        }),
-      ),
+        })
+      )
   );
 
 export type RegisterInput = z.infer<typeof registerInputSchema>;
 
 const registerWithEmailAndPassword = (
-  data: RegisterInput,
+  data: RegisterInput
 ): Promise<AuthResponse> => {
-  return api.post('/auth/register', data);
+  return api.post("/auth/register", data);
 };
 
 // Configure auth with react-query-auth

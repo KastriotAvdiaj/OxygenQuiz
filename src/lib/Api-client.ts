@@ -1,7 +1,6 @@
 import Axios, { InternalAxiosRequestConfig } from 'axios';
 
 // import { useNotifications } from '@/components/ui/notifications';
-import { env } from 'process';
 
 function authRequestInterceptor(config: InternalAxiosRequestConfig) {
   if (config.headers) {
@@ -13,7 +12,7 @@ function authRequestInterceptor(config: InternalAxiosRequestConfig) {
 }
 
 export const api = Axios.create({
-  baseURL: env.API_URL,
+  baseURL:"https://localhost:7153/api/",
 });
 
 api.interceptors.request.use(authRequestInterceptor);

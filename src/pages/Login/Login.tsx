@@ -3,31 +3,40 @@ import { useNavigate, useLocation } from "react-router-dom";
 import SocialButtons from "@/lib/SocialButtons/SocialButtons";
 import { ModeToggle } from "@/components/ui/mode-toggle";
 import LoginForm from "./LoginForm";
-import { useLogin, loginInputSchema } from "@/lib/Auth";
+import { useLogin } from "@/lib/Auth";
 
 /**
- * 
+ *
  * @LoginPage '
- * 
+ *
  */
 
-export const Login: React.FC = () => {
+const Login: React.FC = () => {
   const navigate = useNavigate();
-  const location = useLocation();
-  const login = useLogin();
-  
+  const location = useLocation(); 
+  const { mutate: login } = useLogin();
 
   const handleLogin = async (email: string, password: string) => {
     try {
-      await login(email, password); // API call for login
-      const redirectTo =
-        (location.state as { from?: { pathname: string } })?.from?.pathname ||
-        "/";
-      navigate(redirectTo, { replace: true });
+      await login(
+        { email, password },
+        {
+          onSuccess: () => {
+            const redirectTo =
+              (location.state as { from?: { pathname: string } })?.from
+                ?.pathname || "/";
+            navigate(redirectTo, { replace: true });
+          },
+          onError: (error: unknown) => {
+            console.error("Login failed:", error);
+          },
+        }
+      );
     } catch (error) {
       console.error("Login failed:", error);
     }
   };
+
   return (
     <div className="h-screen w-full flex flex-col">
       <div className="relative flex justify-center pt-10">
@@ -44,7 +53,10 @@ export const Login: React.FC = () => {
             <div className="text-center mt-4">
               <p className="text-sm">
                 Don't have an account?{" "}
-                <a href="/signup" className="text-[var(--text-hover)] underline">
+                <a
+                  href="/signup"
+                  className="text-[var(--text-hover)] underline"
+                >
                   Sign up
                 </a>
               </p>
