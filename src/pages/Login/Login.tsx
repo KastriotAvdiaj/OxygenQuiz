@@ -4,7 +4,7 @@ import SocialButtons from "@/lib/SocialButtons/SocialButtons";
 import { ModeToggle } from "@/components/ui/mode-toggle";
 import LoginForm from "./LoginForm";
 import { useLogin } from "@/lib/Auth";
-
+import { GoBackButton } from "@/common/Go-Back-Button";
 /**
  *
  * @LoginPage '
@@ -13,7 +13,7 @@ import { useLogin } from "@/lib/Auth";
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
-  const location = useLocation(); 
+  const location = useLocation();
   const { mutate: login } = useLogin();
 
   const handleLogin = async (email: string, password: string) => {
@@ -40,7 +40,10 @@ const Login: React.FC = () => {
   return (
     <div className="h-screen w-full flex flex-col">
       <div className="relative flex justify-center pt-10">
-        <ModeToggle className="absolute top-4 right-4" text={true} />
+        <div className="absolute top-4 flex justify-between gap-5 w-full px-5">
+          <GoBackButton className="bg-white text-center w-48 rounded-xl h-9 font-sans relative textblack text-sm font-semibold group" />
+          <ModeToggle text={true} />
+        </div>
         <h1 className="text-7xl font-bold text-[var(--text-hover)]">O₂</h1>
       </div>
       <div className="flex-grow flex items-center justify-center">
