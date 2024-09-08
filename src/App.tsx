@@ -1,13 +1,11 @@
 import { lazy, Suspense, useMemo } from "react";
 import { AppProvider } from "./Provider";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
-import {
-  QueryClient,
-  QueryClientProvider,
-} from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Header from "./common/Header";
 import "./global.css";
 import { Spinner } from "./components/ui/Spinnter";
+import { queryConfig } from "./lib/React-query";
 
 const Home = lazy(() =>
   import("./pages/Home/Home").then((module) => ({ default: module.Home }))
@@ -35,8 +33,7 @@ const MyProfile = lazy(() =>
 const Login = lazy(() => import("./pages/Login/Login"));
 const Signup = lazy(() => import("./pages/Signup/Signup"));
 
-// Using query client in routes
-const createAppRouter = (queryClient: QueryClient) =>
+const createAppRouter = () =>
   createBrowserRouter([
     {
       path: "/",
@@ -162,8 +159,12 @@ const createAppRouter = (queryClient: QueryClient) =>
   ]);
 
 function App() {
-  const queryClient = useMemo(() => new QueryClient(), []);
-  const router = useMemo(() => createAppRouter(queryClient), [queryClient]);
+  // Pass queryConfig when creating the QueryClient
+  const queryClient = useMemo(
+    () => new QueryClient({ defaultOptions: queryConfig }),
+    []
+  );
+  const router = useMemo(() => createAppRouter(), []);
 
   return (
     <QueryClientProvider client={queryClient}>
