@@ -1,11 +1,18 @@
+import { useNavigate } from "react-router-dom";
+
 interface BackButtonProps {
   className?: string;
 }
 
 export const GoBackButton: React.FC<BackButtonProps> = ({ className }) => {
+  const navigate = useNavigate();
+
+  const goBack = () => {
+    navigate(-1);
+  };
   return (
     <>
-      <button type="button" className={className}>
+      <button type="button" className={className} onClick={() => goBack()}>
         <div className="bg-[var(--text-hover)] rounded-xl h-7 w-1/4 flex items-center justify-center absolute left-1 top-[4px] group-hover:w-[184px] z-10 duration-500">
           <svg
             width="25px"
