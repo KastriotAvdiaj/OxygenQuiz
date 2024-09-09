@@ -1,11 +1,9 @@
 import { lazy, Suspense, useMemo } from "react";
 import { AppProvider } from "./Provider";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Header from "./common/Header";
 import "./global.css";
 import { Spinner } from "./components/ui/Spinnter";
-import { queryConfig } from "./lib/React-query";
 
 const Home = lazy(() =>
   import("./pages/Home/Home").then((module) => ({ default: module.Home }))
@@ -159,19 +157,12 @@ const createAppRouter = () =>
   ]);
 
 function App() {
-  // Pass queryConfig when creating the QueryClient
-  const queryClient = useMemo(
-    () => new QueryClient({ defaultOptions: queryConfig }),
-    []
-  );
   const router = useMemo(() => createAppRouter(), []);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <AppProvider>
-        <RouterProvider router={router} />
-      </AppProvider>
-    </QueryClientProvider>
+    <AppProvider>
+      <RouterProvider router={router} />
+    </AppProvider>
   );
 }
 

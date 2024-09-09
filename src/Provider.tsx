@@ -6,13 +6,20 @@ import { HelmetProvider } from "react-helmet-async";
 import { ThemeProvider } from "./components/ui/theme-provider";
 import { Spinner } from "./components/ui/Spinnter";
 import { MainErrorFallback } from "./pages/Error/Main";
+import { AuthLoader } from "./lib/Auth";
+import { queryConfig } from "./lib/React-query";
 
 type AppProviderProps = {
   children: React.ReactNode;
 };
 
 export const AppProvider = ({ children }: AppProviderProps) => {
-  const [queryClient] = React.useState(() => new QueryClient());
+  const [queryClient] = React.useState(
+    () =>
+      new QueryClient({
+        defaultOptions: queryConfig,
+      })
+  );
 
   return (
     <React.Suspense
@@ -25,9 +32,17 @@ export const AppProvider = ({ children }: AppProviderProps) => {
       <ErrorBoundary FallbackComponent={MainErrorFallback}>
         <HelmetProvider>
           <QueryClientProvider client={queryClient}>
-            {import.meta.env.DEV && <ReactQueryDevtools />}
+            <ReactQueryDevtools initialIsOpen={false} />
             <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-              {children}
+              <AuthLoader
+                renderLoading={() => (
+                  <div className="flex h-screen w-screen items-center justify-center">
+                    <Spinner size="xl" />
+                  </div>
+                )}
+              >
+                {children}
+              </AuthLoader>
             </ThemeProvider>
           </QueryClientProvider>
         </HelmetProvider>

@@ -12,7 +12,7 @@ import { UseMutationOptions, DefaultOptions } from '@tanstack/react-query';
 export const queryConfig = {
     queries: {
       // Uncommenting `throwOnError` would allow errors to be thrown instead of handled within query callbacks.
-      // throwOnError: true, 
+      throwOnError: true, 
       refetchOnWindowFocus: false, // Prevents refetching when the window is refocused, reducing unnecessary network requests.
       retry: false, // Disables automatic retries for failed requests.
       staleTime: 1000 * 60, // Data will be considered fresh for 1 minute before becoming stale.

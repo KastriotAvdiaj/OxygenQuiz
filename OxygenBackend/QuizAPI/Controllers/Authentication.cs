@@ -2,6 +2,10 @@
 using QuizAPI.Services;
 using QuizAPI.Models;
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
+using QuizAPI.Data;
 
 namespace QuizAPI.Controllers
 {
@@ -10,10 +14,29 @@ namespace QuizAPI.Controllers
     public class AuthenticationController : ControllerBase
     {
         private readonly IAuthenticationService _authService;
-
-        public AuthenticationController(IAuthenticationService authService)
+        private readonly ApplicationDbContext _context;
+        public AuthenticationController(IAuthenticationService authService, ApplicationDbContext context)
         {
             _authService = authService;
+            _context = context;
+        }
+
+        [HttpGet("me")] 
+        public async Task<IActionResult> GetCurrentUser()
+        {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value; 
+            if (userId == null)
+            {
+                return Ok();
+            }
+
+            var user = await _context.Users.FindAsync(Guid.Parse(userId));
+            if (user == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(user); 
         }
 
         [HttpPost("signup")]

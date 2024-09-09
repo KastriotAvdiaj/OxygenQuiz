@@ -6,7 +6,7 @@ import { AuthResponse, User } from "@/types/Api";
 
 // Define the API calls and validation schemas
 const getUser = async (): Promise<User> => {
-  const response = await api.get("/auth/me");
+  const response = await api.get("Authentication/me");
   return response.data;
 };
 
@@ -64,6 +64,7 @@ const authConfig = {
    */
   loginFn: async (data: LoginInput): Promise<User> => {
     const response = await loginWithEmailAndPassword(data);
+    console.log(response);
     return response.user;
   },
   registerFn: async (data: RegisterInput) => {

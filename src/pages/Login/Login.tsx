@@ -14,7 +14,7 @@ import { GoBackButton } from "@/common/Go-Back-Button";
 const Login: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { mutate: login } = useLogin();
+  const { mutate: login, isLoading, isError } = useLogin(); 
 
   const handleLogin = async (email: string, password: string) => {
     try {
@@ -29,6 +29,7 @@ const Login: React.FC = () => {
           },
           onError: (error: unknown) => {
             console.error("Login failed:", error);
+            alert("Login failed. Please try again.");
           },
         }
       );
@@ -52,7 +53,9 @@ const Login: React.FC = () => {
             <h2 className="text-3xl font-semibold mb-6 text-center">
               Welcome Back
             </h2>
+            {isError && <p className="text-red-500">Login failed. Please try again.</p>} {/* Display error */}
             <LoginForm onLogin={handleLogin} />
+            {isLoading && <p>Loading...</p>} {/* Show loading state */}
             <div className="text-center mt-4">
               <p className="text-sm">
                 Don't have an account?{" "}
