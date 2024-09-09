@@ -4,10 +4,20 @@ import { z } from "zod";
 import { api } from "./Api-client";
 import { AuthResponse, User } from "@/types/Api";
 
-// Define the API calls and validation schemas
-const getUser = async (): Promise<User> => {
-  const response = await api.get("Authentication/me");
-  return response.data;
+const getUser = async (): Promise<User | null> => {
+  try {
+    const response = await api.get("Authentication/me");
+    if (!response.data) {
+      return null;
+    }
+
+    return response.data;
+  } catch (error: any) {
+    if (error.response?.status === 401) {
+      return null;
+    }
+    throw error;
+  }
 };
 
 const logout = (): Promise<void> => {
@@ -82,10 +92,10 @@ export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const user = useUser();
   const location = useLocation();
 
-  if (!user.data) {
+  if (user.data) {
     return (
       <Navigate
-        to={`/auth/login?redirectTo=${encodeURIComponent(location.pathname)}`}
+        to={`/login?redirectTo=${encodeURIComponent(location.pathname)}`}
         replace
       />
     );

@@ -1,3 +1,6 @@
+//PAGE IS NOT BEING USED AT THE MOMENT
+
+
 import { Suspense, lazy } from "react";
 import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import { DashboardNav } from "@/pages/Dashboard/Components/DashboardNav";

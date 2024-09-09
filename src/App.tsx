@@ -2,30 +2,18 @@ import { lazy, Suspense, useMemo } from "react";
 import { AppProvider } from "./Provider";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import Header from "./common/Header";
+import { ProtectedRoute } from "./lib/Auth";
+import { AppRoot } from "./pages/AppRoot";
 import "./global.css";
 import { Spinner } from "./components/ui/Spinnter";
 
+// Lazy load components
 const Home = lazy(() =>
   import("./pages/Home/Home").then((module) => ({ default: module.Home }))
-);
-const Dashboard = lazy(() =>
-  import("./pages/Dashboard/Dashboard").then((module) => ({
-    default: module.Dashboard,
-  }))
 );
 const AboutUs = lazy(() =>
   import("./pages/AboutUs/AboutUs").then((module) => ({
     default: module.AboutUs,
-  }))
-);
-const Settings = lazy(() =>
-  import("./pages/SettingsPage/Settings").then((module) => ({
-    default: module.Settings,
-  }))
-);
-const MyProfile = lazy(() =>
-  import("./pages/Profile/MyProfile").then((module) => ({
-    default: module.MyProfile,
   }))
 );
 const Login = lazy(() => import("./pages/Login/Login"));
@@ -51,20 +39,6 @@ const createAppRouter = () =>
       ),
     },
     {
-      path: "/dashboard/*",
-      element: (
-        <Suspense
-          fallback={
-            <div className="flex h-screen w-screen items-center justify-center">
-              <Spinner size="xl" />
-            </div>
-          }
-        >
-          <Dashboard />
-        </Suspense>
-      ),
-    },
-    {
       path: "/about-us",
       element: (
         <>
@@ -82,47 +56,13 @@ const createAppRouter = () =>
       ),
     },
     {
-      path: "/settings",
-      element: (
-        <>
-          <Header />
-          <Suspense
-            fallback={
-              <div className="flex h-screen w-screen items-center justify-center">
-                <Spinner size="xl" />
-              </div>
-            }
-          >
-            <Settings />
-          </Suspense>
-        </>
-      ),
-    },
-    {
-      path: "/my-profile",
-      element: (
-        <>
-          <Header />
-          <Suspense
-            fallback={
-              <div className="flex h-screen w-screen items-center justify-center">
-                <Spinner size="xl" />
-              </div>
-            }
-          >
-            <MyProfile />
-          </Suspense>
-        </>
-      ),
-    },
-    {
       path: "/signup",
       element: (
         <>
-          <Suspense
-            fallback={
-              <div className="flex h-screen w-screen items-center justify-center">
-                <Spinner size="xl" />
+        <Suspense
+          fallback={
+            <div className="flex h-screen w-screen items-center justify-center">
+              <Spinner size="xl" />
               </div>
             }
           >
@@ -135,10 +75,10 @@ const createAppRouter = () =>
       path: "/login",
       element: (
         <>
-          <Suspense
-            fallback={
-              <div className="flex h-screen w-screen items-center justify-center">
-                <Spinner size="xl" />
+        <Suspense
+          fallback={
+            <div className="flex h-screen w-screen items-center justify-center">
+              <Spinner size="xl" />
               </div>
             }
           >
@@ -146,6 +86,44 @@ const createAppRouter = () =>
           </Suspense>
         </>
       ),
+    },
+    {
+      path: "/dashboard/*",
+      element: (
+        <ProtectedRoute>
+          <AppRoot /> 
+        </ProtectedRoute>
+      ),
+      children: [
+        {
+          path: "application",
+          lazy: async () => {
+            const { Application } = await import("./pages/Dashboard/Pages/Application/Application");
+            return { Component: Application };
+          },
+        },
+        {
+          path: "questions",
+          lazy: async () => {
+            const { Questions } = await import("./pages/Dashboard/Pages/Question/Questions");
+            return { Component: Questions };
+          },
+        },
+        {
+          path: "quizzes",
+          lazy: async () => {
+            const { Quizzes } = await import("./pages/Dashboard/Pages/Quiz/Quizzes");
+            return { Component: Quizzes };
+          },
+        },
+        {
+          path: "users",
+          lazy: async () => {
+            const { Users } = await import("./pages/Dashboard/Pages/User/Users");
+            return { Component: Users };
+          },
+        },
+      ],
     },
     {
       path: "*",

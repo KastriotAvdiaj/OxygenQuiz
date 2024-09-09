@@ -27,7 +27,7 @@ namespace QuizAPI.Controllers
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value; 
             if (userId == null)
             {
-                return Ok();
+                return Unauthorized();
             }
 
             var user = await _context.Users.FindAsync(Guid.Parse(userId));

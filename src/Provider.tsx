@@ -34,15 +34,15 @@ export const AppProvider = ({ children }: AppProviderProps) => {
           <QueryClientProvider client={queryClient}>
             <ReactQueryDevtools initialIsOpen={false} />
             <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-              <AuthLoader
+              {/* <AuthLoader
                 renderLoading={() => (
                   <div className="flex h-screen w-screen items-center justify-center">
                     <Spinner size="xl" />
                   </div>
                 )}
-              >
+              > */}
                 {children}
-              </AuthLoader>
+              {/* </AuthLoader> */}
             </ThemeProvider>
           </QueryClientProvider>
         </HelmetProvider>
