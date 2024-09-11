@@ -67,7 +67,7 @@ namespace QuizAPI.Controllers
             var result = await _authService.LoginAsync(model.Email, model.Password);
             if (result.Success)
             {
-                return Ok(new { Token = result.Token });
+                return Ok(new { Token = result.Token, User = result.User });
             }
 
             return Unauthorized(result.Message);

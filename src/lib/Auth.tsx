@@ -2,7 +2,7 @@ import { configureAuth } from "react-query-auth";
 import { Navigate, useLocation } from "react-router-dom";
 import { z } from "zod";
 import { api } from "./Api-client";
-import { AuthResponse, User } from "@/types/Api";
+import { AuthResponse, User } from "@/types/ApiTypes";
 
 const getUser = async (): Promise<User | null> => {
   try {
@@ -92,7 +92,7 @@ export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const user = useUser();
   const location = useLocation();
 
-  if (user.data) {
+  if (!user.data) {
     return (
       <Navigate
         to={`/login?redirectTo=${encodeURIComponent(location.pathname)}`}

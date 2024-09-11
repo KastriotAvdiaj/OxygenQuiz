@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using QuizAPI.Data;
+using QuizAPI.DTOs;
 using QuizAPI.Models;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -55,7 +56,7 @@ namespace QuizAPI.Services
 
             // Generate JWT token
             var token = GenerateJwtToken(user);
-            return new AuthResult { Success = true, User = user, Token = token };
+            return new AuthResult { Success = true, Token = token };
         }
 
         public async Task<AuthResult> LoginAsync(string email, string password)
@@ -67,13 +68,27 @@ namespace QuizAPI.Services
                 return new AuthResult { Success = false, Message = "Invalid credentials." };
             }
 
+            var role = await _context.Roles.SingleOrDefaultAsync(r => r.Id == user.RoleId);
+            if(role == null)
+            {
+                return new AuthResult { Success = false, Message = "Invalid credentials." };
+            }
+
+            var userDTO = new UserDTO
+            {
+                Id = user.Id,
+                Email = email,
+                Username = user.Username,
+                Role = role.Name,
+            };
+
             // Update last login
             user.LastLogin = DateTime.UtcNow;
             await _context.SaveChangesAsync();
 
             // Generate JWT token
             var token = GenerateJwtToken(user);
-            return new AuthResult { Success = true, Token = token, User = user, Message="Successfully logged in!" };
+            return new AuthResult { Success = true, Token = token, User = userDTO, Message="Successfully logged in!" };
         }
 
         private string GenerateJwtToken(User user)
@@ -103,7 +118,7 @@ namespace QuizAPI.Services
     {
         public bool Success { get; set; }
         public string Message { get; set; }
-        public User User { get; set; }
+        public UserDTO User { get; set; }
         public string Token { get; set; }
     }
 }

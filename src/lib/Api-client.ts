@@ -29,9 +29,10 @@ api.interceptors.response.use(
     // });
 
     if (error.response?.status === 401) {
+      console.log(error);
       const searchParams = new URLSearchParams();
       const redirectTo = searchParams.get('redirectTo');
-      window.location.href = `/signup?redirectTo=${redirectTo}`;
+      // window.location.href = `/login?redirectTo=${redirectTo}`;
     }
 
     return Promise.reject(error);

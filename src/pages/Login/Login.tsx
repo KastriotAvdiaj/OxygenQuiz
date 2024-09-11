@@ -1,10 +1,12 @@
 import React from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import SocialButtons from "@/lib/SocialButtons/SocialButtons";
 import { ModeToggle } from "@/components/ui/mode-toggle";
 import LoginForm from "./LoginForm";
 import { useLogin } from "@/lib/Auth";
 import { GoBackButton } from "@/common/Go-Back-Button";
+import { useSearchParams } from "react-router-dom";
+import { Spinner } from "@/components/ui/Spinnter";
 /**
  *
  * @LoginPage '
@@ -13,8 +15,8 @@ import { GoBackButton } from "@/common/Go-Back-Button";
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
-  const location = useLocation();
-  const { mutate: login, isLoading, isError } = useLogin(); 
+  const [searchParams] = useSearchParams();
+  const { mutate: login, isLoading, isError } = useLogin();
 
   const handleLogin = async (email: string, password: string) => {
     try {
@@ -22,10 +24,10 @@ const Login: React.FC = () => {
         { email, password },
         {
           onSuccess: () => {
-            const redirectTo =
-              (location.state as { from?: { pathname: string } })?.from
-                ?.pathname || "/";
-            navigate(redirectTo, { replace: true });
+            const redirectTo = searchParams.get("redirectTo");
+            navigate(`${redirectTo ? `${redirectTo}` : "/dashboard"}`, {
+              replace: true,
+            });
           },
           onError: (error: unknown) => {
             console.error("Login failed:", error);
@@ -53,9 +55,11 @@ const Login: React.FC = () => {
             <h2 className="text-3xl font-semibold mb-6 text-center">
               Welcome Back
             </h2>
-            {isError && <p className="text-red-500">Login failed. Please try again.</p>} {/* Display error */}
+            {isError && (
+              <p className="text-red-500">Login failed. Please try again.</p>
+            )}{" "}
             <LoginForm onLogin={handleLogin} />
-            {isLoading && <p>Loading...</p>} {/* Show loading state */}
+            {isLoading && <Spinner size="sm" />}
             <div className="text-center mt-4">
               <p className="text-sm">
                 Don't have an account?{" "}

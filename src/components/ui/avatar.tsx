@@ -1,6 +1,6 @@
 import * as React from "react";
 import * as AvatarPrimitive from "@radix-ui/react-avatar";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utils/cn";
 import { FaUser } from "react-icons/fa"; // Import the icon
 
 const Avatar = React.forwardRef<

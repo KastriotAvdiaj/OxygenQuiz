@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 interface BackButtonProps {
   className?: string;
@@ -6,9 +6,14 @@ interface BackButtonProps {
 
 export const GoBackButton: React.FC<BackButtonProps> = ({ className }) => {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const goBack = () => {
-    navigate(-1);
+    if (location.pathname.includes("redirect")) {
+      navigate(-2);
+    } else {
+      navigate(-1);
+    }
   };
   return (
     <>
