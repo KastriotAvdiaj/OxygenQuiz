@@ -55,6 +55,7 @@ const createAppRouter = () =>
         </>
       ),
     },
+    
     {
       path: "/signup",
       element: (
