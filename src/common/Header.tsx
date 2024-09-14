@@ -4,6 +4,7 @@ import { NavLink } from "react-router-dom";
 import { HeaderComponent } from "./HeaderComponent";
 import { ModeToggle } from "@/components/ui/mode-toggle";
 import { Divider } from "./Divider";
+import HoverEffect from "./HoverEffect";
 
 const Header = () => {
   const [hidden, setHidden] = useState(false);
@@ -43,8 +44,13 @@ const Header = () => {
                 : "hover:text-[var(--text-hover)]"
             }
           >
-            <li className="cursor-pointer">Home</li>
+            {({ isActive }) => (
+              <HoverEffect isActive={isActive}>
+                <li className="cursor-pointer">Home</li>
+              </HoverEffect>
+            )}
           </NavLink>
+
           <NavLink
             to="/about-us"
             className={({ isActive }) =>
@@ -53,7 +59,11 @@ const Header = () => {
                 : "hover:text-[var(--text-hover)]"
             }
           >
-            <li className="cursor-pointer">About Us</li>
+            {({ isActive }) => (
+              <HoverEffect isActive={isActive}>
+                <li className="cursor-pointer">About Us</li>
+              </HoverEffect>
+            )}
           </NavLink>
         </ul>
       </div>

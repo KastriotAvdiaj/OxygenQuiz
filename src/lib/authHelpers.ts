@@ -1,4 +1,4 @@
-import Cookies from 'js-cookie';
+// import Cookies from 'js-cookie';
 
 export const encode = (obj: any) => {
   const btoa =

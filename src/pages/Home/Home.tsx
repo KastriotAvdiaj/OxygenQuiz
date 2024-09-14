@@ -1,21 +1,18 @@
-import { Card } from "@/common/Card";
-import { Button } from "@/components/ui/button";
+// import { Card } from "@/common/Card";
+// import { Button } from "@/components/ui/button";
 
 export const Home = () => {
   return (
     <div
       className="flex justify-center items-center h-screen gap-6 bg-background"
-      style={{
-        backgroundImage: `
-          radial-gradient(circle, #999 15%, transparent 10%)`, // Adjust the circle size
-        backgroundSize: "40px 40px", // Adjust spacing between circles
-        maskImage:
-          "radial-gradient(circle, rgba(0, 0, 0, 1) 10%, rgba(0, 0, 0, 0) 100%)", // Control fade amount
-        maskSize: "100% 100%",
-        maskRepeat: "no-repeat",
-      }}
     >
-      <Card>
+      
+    </div>
+  );
+};
+
+
+{/* <Card>
         <h1 className="text-4xl font-bold tracking-wide text-center">
           Welcome to the Quiz App!
         </h1>
@@ -36,7 +33,4 @@ export const Home = () => {
             ></path>
           </svg>
         </Button>
-      </Card>
-    </div>
-  );
-};
+      </Card> */}
