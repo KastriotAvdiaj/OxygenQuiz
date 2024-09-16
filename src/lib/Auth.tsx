@@ -3,15 +3,17 @@ import { Navigate, useLocation } from "react-router-dom";
 import { z } from "zod";
 import { api } from "./Api-client";
 import { AuthResponse, User } from "@/types/ApiTypes";
+import Cookies from "js-cookie";
+import { AUTH_COOKIE } from "./authHelpers";
 
 const getUser = async (): Promise<User | null> => {
   try {
-    const response = await api.get("Authentication/me");
-    if (!response.data) {
+    const user = await api.get<User>("Authentication/me"); 
+    console.log(user); 
+    if (!user) {
       return null;
     }
-
-    return response.data;
+    return user.data; 
   } catch (error: any) {
     if (error.response?.status === 401) {
       return null;
@@ -21,6 +23,7 @@ const getUser = async (): Promise<User | null> => {
 };
 
 const logout = (): Promise<void> => {
+  Cookies.remove(AUTH_COOKIE);
   return api.post("/auth/logout");
 };
 
@@ -31,6 +34,11 @@ export const loginInputSchema = z.object({
 
 export type LoginInput = z.infer<typeof loginInputSchema>;
 
+/**
+ * Logs in a user using their email and password.
+ * @param data - The login data containing the email and password.
+ * @returns The user object if the login is successful.
+ */
 const loginWithEmailAndPassword = (data: LoginInput): Promise<AuthResponse> => {
   return api.post("Authentication/login", data);
 };
@@ -75,6 +83,15 @@ const authConfig = {
   loginFn: async (data: LoginInput): Promise<User> => {
     const response = await loginWithEmailAndPassword(data);
     console.log(response);
+    if (!response || !response.token) {
+      throw new Error("Authentication failed: Token not received");
+    }
+    Cookies.set(AUTH_COOKIE, response.token, {
+      secure: true, // Use HTTPS
+      sameSite: "strict", // CSRF protection
+      expires: 1, // Token expiration in days
+    });
+    console.log(response);
     return response.user;
   },
   registerFn: async (data: RegisterInput) => {
@@ -90,6 +107,7 @@ export const { useUser, useLogin, useLogout, useRegister, AuthLoader } =
 // ProtectedRoute component using useUser hook
 export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const user = useUser();
+  console.log(user);
   const location = useLocation();
 
   if (!user.data) {

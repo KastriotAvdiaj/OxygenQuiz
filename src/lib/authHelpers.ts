@@ -41,7 +41,7 @@ const omit = <T extends object>(obj: T, keys: string[]): T => {
 export const sanitizeUser = <O extends object>(user: O) =>
   omit<O>(user, ['password', 'iat']);
 
-export const AUTH_COOKIE = `bulletproof_react_app_token`;
+export const AUTH_COOKIE = `quiz_app_token`;
 
 // export function requireAuth(cookies: Record<string, string>) {
 //   try {

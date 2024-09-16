@@ -1,10 +1,18 @@
 import Axios, { InternalAxiosRequestConfig } from 'axios';
-
+import Cookies from 'js-cookie';
+import { AUTH_COOKIE } from './authHelpers';
 // import { useNotifications } from '@/components/ui/notifications';
 
 function authRequestInterceptor(config: InternalAxiosRequestConfig) {
   if (config.headers) {
     config.headers.Accept = 'application/json';
+
+       // Retrieve the token from the cookie
+ const token = Cookies.get(AUTH_COOKIE);
+    if (token) {
+      // Attach the token to the Authorization header
+      config.headers['Authorization'] = `Bearer ${token}`;
+    }
   }
 
   config.withCredentials = true;
@@ -30,8 +38,8 @@ api.interceptors.response.use(
 
     if (error.response?.status === 401) {
       console.log(error);
-      const searchParams = new URLSearchParams();
-      const redirectTo = searchParams.get('redirectTo');
+      // const searchParams = new URLSearchParams();
+      // const redirectTo = searchParams.get('redirectTo');
       // window.location.href = `/login?redirectTo=${redirectTo}`;
     }
 

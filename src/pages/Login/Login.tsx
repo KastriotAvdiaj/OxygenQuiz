@@ -56,7 +56,9 @@ const Login: React.FC = () => {
               Welcome Back
             </h2>
             {isError && (
-              <p className="text-red-500">Login failed. Please try again.</p>
+              <p className="text-red-500 font-semibold py-2">
+                Login failed. Please try again.
+              </p>
             )}{" "}
             <LoginForm onLogin={handleLogin} />
             {isLoading && <Spinner size="sm" />}

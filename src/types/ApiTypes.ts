@@ -11,6 +11,7 @@ export type BaseEntity<TId = number> = {
   
 
   export type User = Entity<{
+    concurrencyStamp: string;
     immutableName: string;  
     username: string;
     email: string;
@@ -35,7 +36,7 @@ export type BaseEntity<TId = number> = {
   }>;
 
   export type AuthResponse = {
-    jwt: string;
+    token: string;
     user: User;
   };
   

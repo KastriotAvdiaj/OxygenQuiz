@@ -6,7 +6,7 @@ import { HelmetProvider } from "react-helmet-async";
 import { ThemeProvider } from "./components/ui/theme-provider";
 import { Spinner } from "./components/ui/Spinnter";
 import { MainErrorFallback } from "./pages/Error/Main";
-// import { AuthLoader } from "./lib/Auth";
+import { AuthLoader } from "./lib/Auth";
 import { queryConfig } from "./lib/React-query";
 
 type AppProviderProps = {
@@ -34,15 +34,15 @@ export const AppProvider = ({ children }: AppProviderProps) => {
           <QueryClientProvider client={queryClient}>
             <ReactQueryDevtools initialIsOpen={false} />
             <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-              {/* <AuthLoader
+              <AuthLoader
                 renderLoading={() => (
                   <div className="flex h-screen w-screen items-center justify-center">
                     <Spinner size="xl" />
                   </div>
                 )}
-              > */}
+              >
                 {children}
-              {/* </AuthLoader> */}
+              </AuthLoader>
             </ThemeProvider>
           </QueryClientProvider>
         </HelmetProvider>
