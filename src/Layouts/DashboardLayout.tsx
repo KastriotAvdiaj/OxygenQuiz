@@ -10,7 +10,6 @@ export const DashboardLayout = ({
   const navigate = useNavigate();
 
   const setActivePage = (page: string) => {
-    console.log(`/dashboard/${page}`);
     navigate(`/dashboard/${page}`);
   };
   return (

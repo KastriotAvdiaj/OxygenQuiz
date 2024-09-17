@@ -4,8 +4,10 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import Header from "./common/Header";
 import { ProtectedRoute } from "./lib/Auth";
 import { AppRoot } from "./pages/AppRoot";
+
 import "./global.css";
 import { Spinner } from "./components/ui/Spinnter";
+import { Navigate } from "react-router-dom";
 
 // Lazy load components
 const Home = lazy(() =>
@@ -55,15 +57,15 @@ const createAppRouter = () =>
         </>
       ),
     },
-    
+
     {
       path: "/signup",
       element: (
         <>
-        <Suspense
-          fallback={
-            <div className="flex h-screen w-screen items-center justify-center">
-              <Spinner size="xl" />
+          <Suspense
+            fallback={
+              <div className="flex h-screen w-screen items-center justify-center">
+                <Spinner size="xl" />
               </div>
             }
           >
@@ -76,10 +78,10 @@ const createAppRouter = () =>
       path: "/login",
       element: (
         <>
-        <Suspense
-          fallback={
-            <div className="flex h-screen w-screen items-center justify-center">
-              <Spinner size="xl" />
+          <Suspense
+            fallback={
+              <div className="flex h-screen w-screen items-center justify-center">
+                <Spinner size="xl" />
               </div>
             }
           >
@@ -92,35 +94,47 @@ const createAppRouter = () =>
       path: "/dashboard/*",
       element: (
         <ProtectedRoute>
-          <AppRoot /> 
+          <AppRoot />
         </ProtectedRoute>
       ),
       children: [
         {
+          index: true,
+          element: <Navigate to="/dashboard/application" replace />,
+        },
+        {
           path: "application",
           lazy: async () => {
-            const { Application } = await import("./pages/Dashboard/Pages/Application/Application");
+            const { Application } = await import(
+              "./pages/Dashboard/Pages/Application/Application"
+            );
             return { Component: Application };
           },
         },
         {
           path: "questions",
           lazy: async () => {
-            const { Questions } = await import("./pages/Dashboard/Pages/Question/Questions");
+            const { Questions } = await import(
+              "./pages/Dashboard/Pages/Question/Questions"
+            );
             return { Component: Questions };
           },
         },
         {
           path: "quizzes",
           lazy: async () => {
-            const { Quizzes } = await import("./pages/Dashboard/Pages/Quiz/Quizzes");
+            const { Quizzes } = await import(
+              "./pages/Dashboard/Pages/Quiz/Quizzes"
+            );
             return { Component: Quizzes };
           },
         },
         {
           path: "users",
           lazy: async () => {
-            const { Users } = await import("./pages/Dashboard/Pages/User/Users");
+            const { Users } = await import(
+              "./pages/Dashboard/Pages/User/Users"
+            );
             return { Component: Users };
           },
         },
