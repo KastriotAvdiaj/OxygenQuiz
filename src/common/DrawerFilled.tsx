@@ -16,11 +16,14 @@ import { LiaUserFriendsSolid } from "react-icons/lia";
 import { NavLink } from "react-router-dom";
 import { Settings } from "lucide-react";
 import { CgProfile } from "react-icons/cg";
+import { useUser } from "@/lib/Auth";
 
 // import { ModeToggle } from "@/components/ui/mode-toggle";
 
 export const DrawerFilled = () => {
   const isAdmin = true;
+  const { data: user } = useUser();
+
   const [signedIn, setSignedIn] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const handleDrawerClose = () => {
@@ -28,7 +31,7 @@ export const DrawerFilled = () => {
   };
   return (
     <>
-      {signedIn ? (
+      {user ? (
         <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
           <DrawerTrigger asChild>
             <Button

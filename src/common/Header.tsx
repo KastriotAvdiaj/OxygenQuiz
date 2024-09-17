@@ -7,6 +7,7 @@ import { Divider } from "./Divider";
 import HoverEffect from "./HoverEffect";
 
 const Header = () => {
+
   const [hidden, setHidden] = useState(false);
 
   useEffect(() => {
