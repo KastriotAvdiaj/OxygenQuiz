@@ -8,12 +8,12 @@ import { AUTH_COOKIE } from "./authHelpers";
 
 const getUser = async (): Promise<User | null> => {
   try {
-    const user = await api.get<User>("Authentication/me"); 
-    console.log(user); 
+    const user: User = await api.get("Authentication/me");  // No need for `response.data` here
+    console.log(user);
     if (!user) {
       return null;
     }
-    return user.data; 
+    return user; // Since `user` is already the data returned from the backend
   } catch (error: any) {
     if (error.response?.status === 401) {
       return null;
@@ -21,6 +21,7 @@ const getUser = async (): Promise<User | null> => {
     throw error;
   }
 };
+
 
 const logout = (): Promise<void> => {
   Cookies.remove(AUTH_COOKIE);
