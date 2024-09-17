@@ -17,14 +17,13 @@ import { NavLink } from "react-router-dom";
 import { Settings } from "lucide-react";
 import { CgProfile } from "react-icons/cg";
 import { useUser } from "@/lib/Auth";
-
-// import { ModeToggle } from "@/components/ui/mode-toggle";
+import { useLogout } from "@/lib/Auth";
 
 export const DrawerFilled = () => {
   const isAdmin = true;
   const { data: user } = useUser();
+  const logout = useLogout();
 
-  const [signedIn, setSignedIn] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const handleDrawerClose = () => {
     setIsDrawerOpen(false);
@@ -118,7 +117,7 @@ export const DrawerFilled = () => {
                 <Button
                   className="rounded hover:bg-[#FE2A2A] hover:text-white"
                   onClick={() => {
-                    setSignedIn(false);
+                    logout.mutate();
                     handleDrawerClose();
                   }}
                   variant="outline"
@@ -143,7 +142,7 @@ export const DrawerFilled = () => {
           <NavLink to={"/signup"}>
             <Button variant={"outline"}>Signup</Button>
           </NavLink>
-          <Button onClick={() => setSignedIn(true)}>On/Off</Button>
+          {/* <Button onClick={() => setSignedIn(true)}>On/Off</Button> */}
         </div>
       )}
     </>

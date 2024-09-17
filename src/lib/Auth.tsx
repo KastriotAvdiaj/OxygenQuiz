@@ -8,7 +8,7 @@ import { AUTH_COOKIE } from "./authHelpers";
 
 const getUser = async (): Promise<User | null> => {
   try {
-    const user: User = await api.get("Authentication/me");  // No need for `response.data` here
+    const user: User = await api.get("Authentication/me"); // No need for `response.data` here
     console.log(user);
     if (!user) {
       return null;
@@ -22,10 +22,12 @@ const getUser = async (): Promise<User | null> => {
   }
 };
 
-
 const logout = (): Promise<void> => {
-  Cookies.remove(AUTH_COOKIE);
-  return api.post("/auth/logout");
+  return new Promise((resolve) => {
+    Cookies.remove(AUTH_COOKIE);
+    window.location.href = "/";
+    resolve();
+  });
 };
 
 export const loginInputSchema = z.object({
