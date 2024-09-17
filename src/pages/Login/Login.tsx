@@ -7,6 +7,7 @@ import { useLogin } from "@/lib/Auth";
 import { GoBackButton } from "@/common/Go-Back-Button";
 import { useSearchParams } from "react-router-dom";
 import { Spinner } from "@/components/ui/Spinnter";
+import { O2Button } from "@/common/O2Button";
 /**
  *
  * @LoginPage '
@@ -47,7 +48,8 @@ const Login: React.FC = () => {
           <GoBackButton className="bg-white text-center w-48 rounded-xl h-9 font-sans relative textblack text-sm font-semibold group" />
           <ModeToggle text={true} />
         </div>
-        <h1 className="text-7xl font-bold text-[var(--text-hover)]">O₂</h1>
+
+        <O2Button />
       </div>
       <div className="flex-grow flex items-center justify-center">
         <div className="bg-[var(--background-secondary)] p-8 rounded shadow-md w-[50%] max-w-lg flex-grow flex flex-col items-center justify-center">

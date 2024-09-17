@@ -2,13 +2,18 @@ import React from "react";
 import SignupForm from "./SignupComponents/SignupForm";
 import SocialButtons from "@/lib/SocialButtons/SocialButtons";
 import { ModeToggle } from "@/components/ui/mode-toggle";
+import { O2Button } from "@/common/O2Button";
+import { GoBackButton } from "@/common/Go-Back-Button";
 
 const Signup: React.FC = () => {
   return (
     <div className="h-screen w-full flex flex-col">
       <div className="relative flex justify-center pt-10">
-        <ModeToggle className="absolute top-4 right-4" text={true} />
-        <h1 className="text-7xl font-bold text-[var(--text-hover)]">O₂</h1>
+        <div className="absolute top-4 flex justify-between gap-5 w-full px-5">
+          <GoBackButton className="bg-white text-center w-48 rounded-xl h-9 font-sans relative textblack text-sm font-semibold group" />
+          <ModeToggle text={true} />
+        </div>
+        <O2Button />
       </div>
       <div className="flex-grow flex items-center justify-center">
         <div className="bg-[var(--background-secondary)] p-8 rounded shadow-md w-[50%] max-w-lg flex-grow flex flex-col items-center justify-center">
