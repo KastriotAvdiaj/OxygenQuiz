@@ -3,11 +3,10 @@ import InputField from "@/common/InputField";
 import { Button } from "@/components/ui/button";
 
 /**
- * 
+ *
  * @LoginForm '
- * 
+ *
  */
-
 
 interface LoginFormProps {
   onLogin: (email: string, password: string) => void;
@@ -15,8 +14,8 @@ interface LoginFormProps {
 
 const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
   const [formData, setFormData] = useState({
-    email: "",
-    password: "",
+    email: "string",
+    password: "string",
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {

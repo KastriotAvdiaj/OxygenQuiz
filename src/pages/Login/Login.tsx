@@ -26,9 +26,11 @@ const Login: React.FC = () => {
         {
           onSuccess: () => {
             const redirectTo = searchParams.get("redirectTo");
-            navigate(`${redirectTo ? `${redirectTo}` : "/dashboard"}`, {
-              replace: true,
-            });
+            if (redirectTo) {
+              navigate(redirectTo, { replace: true });
+            } else {
+              navigate(-1);
+            }
           },
           onError: (error: unknown) => {
             console.error("Login failed:", error);
