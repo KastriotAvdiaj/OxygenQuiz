@@ -24,7 +24,7 @@ namespace QuizAPI.Controllers
         [HttpGet("me")] 
         public async Task<IActionResult> GetCurrentUser()
         {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value; 
+           var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value; 
             if (userId == null)
             {
                 return Unauthorized();
