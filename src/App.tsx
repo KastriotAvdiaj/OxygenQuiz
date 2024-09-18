@@ -5,13 +5,20 @@ import Header from "./common/Header";
 import { ProtectedRoute } from "./lib/Auth";
 import { AppRoot } from "./pages/AppRoot";
 
+import { RedirectIfLoggedIn } from "./lib/Redirect";
 import "./global.css";
 import { Spinner } from "./components/ui/Spinnter";
 import { Navigate } from "react-router-dom";
 
 // Lazy load components
-const Home = lazy(() => import("./pages/Home/Home").then(module => ({ default: module.Home })));
-const AboutUs = lazy(() => import("./pages/AboutUs/AboutUs").then(module => ({ default: module.AboutUs })));
+const Home = lazy(() =>
+  import("./pages/Home/Home").then((module) => ({ default: module.Home }))
+);
+const AboutUs = lazy(() =>
+  import("./pages/AboutUs/AboutUs").then((module) => ({
+    default: module.AboutUs,
+  }))
+);
 const Login = lazy(() => import("./pages/Login/Login"));
 const Signup = lazy(() => import("./pages/Signup/Signup"));
 
@@ -37,11 +44,11 @@ const createAppRouter = () =>
     },
     {
       path: "/signup",
-      element: <Signup />,
+      element: <RedirectIfLoggedIn component={<Signup />} />,
     },
     {
       path: "/login",
-      element: <Login />,
+      element: <RedirectIfLoggedIn component={<Login />} />,
     },
     {
       path: "/dashboard/*",
@@ -58,28 +65,36 @@ const createAppRouter = () =>
         {
           path: "application",
           lazy: async () => {
-            const { Application } = await import("./pages/Dashboard/Pages/Application/Application");
+            const { Application } = await import(
+              "./pages/Dashboard/Pages/Application/Application"
+            );
             return { Component: Application };
           },
         },
         {
           path: "questions",
           lazy: async () => {
-            const { Questions } = await import("./pages/Dashboard/Pages/Question/Questions");
+            const { Questions } = await import(
+              "./pages/Dashboard/Pages/Question/Questions"
+            );
             return { Component: Questions };
           },
         },
         {
           path: "quizzes",
           lazy: async () => {
-            const { Quizzes } = await import("./pages/Dashboard/Pages/Quiz/Quizzes");
+            const { Quizzes } = await import(
+              "./pages/Dashboard/Pages/Quiz/Quizzes"
+            );
             return { Component: Quizzes };
           },
         },
         {
           path: "users",
           lazy: async () => {
-            const { Users } = await import("./pages/Dashboard/Pages/User/Users");
+            const { Users } = await import(
+              "./pages/Dashboard/Pages/User/Users"
+            );
             return { Component: Users };
           },
         },
