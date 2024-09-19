@@ -29,20 +29,20 @@ api.interceptors.response.use(
     return response.data;
   },
   (error) => {
+    const status = error.response?.status;
     const message = error.response?.data?.message || error.message;
-    useNotifications.getState().addNotification({
-      type: 'error',
-      title: 'Error',
-      message,
-    });
 
-    if (error.response?.status === 401) {
-      console.log(error);
-      // const searchParams = new URLSearchParams();
-      // const redirectTo = searchParams.get('redirectTo');
-      // window.location.href = `/login?redirectTo=${redirectTo}`;
+    if (status === 401) {
+      console.log('Unauthorized:', error); 
+    } else {
+      // Only add a notification for non-401 errors
+      useNotifications.getState().addNotification({
+        type: 'error',
+        title: 'Error',
+        message,
+      });
     }
 
     return Promise.reject(error);
-  },
+  }
 );
