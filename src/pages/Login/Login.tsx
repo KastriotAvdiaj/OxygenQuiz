@@ -26,6 +26,11 @@ const Login: React.FC = () => {
         { email, password },
         {
           onSuccess: () => {
+            useNotifications.getState().addNotification({
+              type: "success",
+              title: "Success",
+              message: "Logged in successfully!",
+            });
             const redirectTo = searchParams.get("redirectTo");
             if (redirectTo) {
               navigate(redirectTo, { replace: true });
@@ -39,7 +44,7 @@ const Login: React.FC = () => {
               type: "error",
               title: "Error",
               message: "Login failed. Please try again.",
-            })
+            });
           },
         }
       );
@@ -69,7 +74,7 @@ const Login: React.FC = () => {
                 Login failed. Please try again.
               </p>
             )}{" "}
-            <LoginForm onLogin={handleLogin} />
+            <LoginForm onLogin={handleLogin} isLoading={isLoading} />
             {isLoading && <Spinner size="sm" />}
             <div className="text-center mt-4">
               <p className="text-sm">

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import InputField from "@/common/InputField";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/Spinnter";
 
 /**
  *
@@ -10,9 +11,10 @@ import { Button } from "@/components/ui/button";
 
 interface LoginFormProps {
   onLogin: (email: string, password: string) => void;
+  isLoading: boolean;
 }
 
-const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
+const LoginForm: React.FC<LoginFormProps> = ({ onLogin, isLoading }) => {
   const [formData, setFormData] = useState({
     email: "string",
     password: "string",
@@ -58,7 +60,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin }) => {
         variant={"addSave"}
         className="w-full py-3 text-white"
       >
-        Log in
+        {isLoading ? <Spinner size="sm" /> : <>Log in</>}
       </Button>
     </form>
   );
