@@ -8,6 +8,7 @@ import { Spinner } from "./components/ui/Spinnter";
 import { MainErrorFallback } from "./pages/Error/Main";
 import { AuthLoader } from "./lib/Auth";
 import { queryConfig } from "./lib/React-query";
+import { Notifications } from "./common/Notifications";
 
 type AppProviderProps = {
   children: React.ReactNode;
@@ -34,6 +35,7 @@ export const AppProvider = ({ children }: AppProviderProps) => {
           <QueryClientProvider client={queryClient}>
             <ReactQueryDevtools initialIsOpen={false} />
             <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+              <Notifications />
               <AuthLoader
                 renderLoading={() => (
                   <div className="flex h-screen w-screen items-center justify-center">
