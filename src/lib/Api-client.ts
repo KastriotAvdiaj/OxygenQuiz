@@ -1,7 +1,7 @@
 import Axios, { InternalAxiosRequestConfig } from 'axios';
 import Cookies from 'js-cookie';
 import { AUTH_COOKIE } from './authHelpers';
-// import { useNotifications } from '@/components/ui/notifications';
+import { useNotifications } from '@/common/Notifications';
 
 function authRequestInterceptor(config: InternalAxiosRequestConfig) {
   if (config.headers) {
@@ -29,12 +29,12 @@ api.interceptors.response.use(
     return response.data;
   },
   (error) => {
-    // const message = error.response?.data?.message || error.message;
-    // useNotifications.getState().addNotification({
-    //   type: 'error',
-    //   title: 'Error',
-    //   message,
-    // });
+    const message = error.response?.data?.message || error.message;
+    useNotifications.getState().addNotification({
+      type: 'error',
+      title: 'Error',
+      message,
+    });
 
     if (error.response?.status === 401) {
       console.log(error);

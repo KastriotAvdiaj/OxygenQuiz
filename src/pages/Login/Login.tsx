@@ -8,6 +8,7 @@ import { GoBackButton } from "@/common/Go-Back-Button";
 import { useSearchParams } from "react-router-dom";
 import { Spinner } from "@/components/ui/Spinnter";
 import { O2Button } from "@/common/O2Button";
+import { useNotifications } from "@/common/Notifications";
 /**
  *
  * @LoginPage '
@@ -34,7 +35,11 @@ const Login: React.FC = () => {
           },
           onError: (error: unknown) => {
             console.error("Login failed:", error);
-            alert("Login failed. Please try again.");
+            useNotifications.getState().addNotification({
+              type: "error",
+              title: "Error",
+              message: "Login failed. Please try again.",
+            })
           },
         }
       );
