@@ -4,11 +4,13 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import Header from "./common/Header";
 import { ProtectedRoute } from "./lib/Auth";
 import { AppRoot } from "./pages/AppRoot";
+import { QueryClient, useQueryClient } from '@tanstack/react-query';
+
 
 import { RedirectIfLoggedIn } from "./lib/Redirect";
 import "./global.css";
 import { Spinner } from "./components/ui/Spinnter";
-import { Navigate } from "react-router-dom";
+import { Navigate ,LoaderFunctionArgs} from "react-router-dom";
 
 // Lazy load components
 const Home = lazy(() =>
@@ -21,8 +23,7 @@ const AboutUs = lazy(() =>
 );
 const Login = lazy(() => import("./pages/Login/Login"));
 const Signup = lazy(() => import("./pages/Signup/Signup"));
-
-const createAppRouter = () =>
+const createAppRouter = (queryClient: QueryClient) =>
   createBrowserRouter([
     {
       path: "/",
@@ -90,12 +91,14 @@ const createAppRouter = () =>
           },
         },
         {
-          path: "users",
+          path: 'users',
           lazy: async () => {
-            const { Users } = await import(
-              "./pages/Dashboard/Pages/User/Users"
-            );
+            const { Users } = await import('./pages/Dashboard/Pages/User/Users');
             return { Component: Users };
+          },
+          loader: async (args: LoaderFunctionArgs) => {
+            const { usersLoader } = await import('./pages/Dashboard/Pages/User/Users');
+            return usersLoader(queryClient)(args);
           },
         },
       ],
@@ -110,7 +113,10 @@ const createAppRouter = () =>
   ]);
 
 function App() {
-  const router = useMemo(() => createAppRouter(), []);
+  const queryClient = useQueryClient();
+
+  const router = useMemo(() => createAppRouter(queryClient), [queryClient]);
+
 
   return (
     <AppProvider>
