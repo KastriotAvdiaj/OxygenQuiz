@@ -1,5 +1,4 @@
 
-// Users.tsx
 import { QueryClient } from '@tanstack/react-query';
 import { LoaderFunctionArgs } from 'react-router-dom';
 
@@ -13,11 +12,10 @@ export const usersLoader =
     // Define your query options for fetching users
     // const query = getUsersQueryOptions({ page });
 
-    // Fetch or return cached data
-    return (
-      queryClient.getQueryData(query.queryKey) ??
-      (await queryClient.fetchQuery(query))
-    );
+    // return (
+    //   queryClient.getQueryData(query.queryKey) ??
+    //   (await queryClient.fetchQuery(query))
+    // );
   };
 
 export const Users = () => {

@@ -1,16 +1,13 @@
-import { lazy, Suspense, useMemo } from "react";
-import { AppProvider } from "./Provider";
+import { lazy, useMemo } from "react";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import Header from "./common/Header";
 import { ProtectedRoute } from "./lib/Auth";
 import { AppRoot } from "./pages/AppRoot";
-import { QueryClient, useQueryClient } from '@tanstack/react-query';
-
+import { QueryClient, useQueryClient } from "@tanstack/react-query";
 
 import { RedirectIfLoggedIn } from "./lib/Redirect";
 import "./global.css";
-import { Spinner } from "./components/ui/Spinnter";
-import { Navigate ,LoaderFunctionArgs} from "react-router-dom";
+import { Navigate, LoaderFunctionArgs } from "react-router-dom";
 
 // Lazy load components
 const Home = lazy(() =>
@@ -91,13 +88,17 @@ const createAppRouter = (queryClient: QueryClient) =>
           },
         },
         {
-          path: 'users',
+          path: "users",
           lazy: async () => {
-            const { Users } = await import('./pages/Dashboard/Pages/User/Users');
+            const { Users } = await import(
+              "./pages/Dashboard/Pages/User/Users"
+            );
             return { Component: Users };
           },
           loader: async (args: LoaderFunctionArgs) => {
-            const { usersLoader } = await import('./pages/Dashboard/Pages/User/Users');
+            const { usersLoader } = await import(
+              "./pages/Dashboard/Pages/User/Users"
+            );
             return usersLoader(queryClient)(args);
           },
         },
@@ -112,25 +113,10 @@ const createAppRouter = (queryClient: QueryClient) =>
     },
   ]);
 
-function App() {
+export function AppRouter() {
   const queryClient = useQueryClient();
 
   const router = useMemo(() => createAppRouter(queryClient), [queryClient]);
 
-
-  return (
-    <AppProvider>
-      <Suspense
-        fallback={
-          <div className="flex h-screen w-screen items-center justify-center">
-            <Spinner size="xl" />
-          </div>
-        }
-      >
-        <RouterProvider router={router} />
-      </Suspense>
-    </AppProvider>
-  );
+  return <RouterProvider router={router} />;
 }
-
-export default App;
