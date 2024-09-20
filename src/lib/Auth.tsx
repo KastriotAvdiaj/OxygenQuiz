@@ -9,7 +9,6 @@ import { AUTH_COOKIE } from "./authHelpers";
 const getUser = async (): Promise<User | null> => {
   try {
     const user: User = await api.get("Authentication/me"); // No need for `response.data` here
-    console.log(user);
     if (!user) {
       return null;
     }
@@ -85,7 +84,6 @@ const authConfig = {
    */
   loginFn: async (data: LoginInput): Promise<User> => {
     const response = await loginWithEmailAndPassword(data);
-    console.log(response);
     if (!response || !response.token) {
       throw new Error("Authentication failed: Token not received");
     }
@@ -94,7 +92,6 @@ const authConfig = {
       sameSite: "strict", // CSRF protection
       expires: 1, // Token expiration in days
     });
-    console.log(response);
     return response.user;
   },
   registerFn: async (data: RegisterInput) => {
@@ -110,7 +107,6 @@ export const { useUser, useLogin, useLogout, useRegister, AuthLoader } =
 // ProtectedRoute component using useUser hook
 export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const user = useUser();
-  console.log(user);
   const location = useLocation();
 
   if (!user.data) {

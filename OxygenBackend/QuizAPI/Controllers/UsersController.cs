@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using QuizAPI.Data;
+using QuizAPI.DTOs;
 using QuizAPI.Models;
 
 namespace QuizAPI.Controllers
@@ -23,14 +24,44 @@ namespace QuizAPI.Controllers
 
         // GET: api/Users
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<User>>> GetUsers()
+        public async Task<ActionResult<IEnumerable<FullUserDTO>>> GetUsers()
         {
-          if (_context.Users == null)
-          {
-              return NotFound();
-          }
-            return await _context.Users.ToListAsync();
+            if (_context.Users == null)
+            {
+                return NotFound();
+            }
+
+            var users = await _context.Users.Include(u => u.Role).ToListAsync(); 
+
+            var userDTOs = users.Select(user => new FullUserDTO
+            {
+                Id = user.Id,
+                ImmutableName = user.ImmutableName,
+                Username = user.Username,
+                Email = user.Email,
+                PasswordHash = user.PasswordHash,
+                DateRegistered = user.DateRegistered,
+                Role = MapRoleIdToRole(user.RoleId), // Map RoleId to Role string
+                ConcurrencyStamp = user.ConcurrencyStamp,
+                IsDeleted = user.IsDeleted,
+                LastLogin = user.LastLogin,
+                ProfileImageUrl = user.ProfileImageUrl
+            }).ToList();
+
+            return Ok(userDTOs);
         }
+
+        private static string MapRoleIdToRole(int roleId)
+        {
+            return roleId switch
+            {
+                1 => "admin",
+                2 => "user",
+                3 => "superadmin",
+                _ => "unknown" 
+            };
+        }
+
 
         // GET: api/Users/5
         [HttpGet("{id}")]

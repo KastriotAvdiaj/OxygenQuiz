@@ -16,13 +16,12 @@ export type BaseEntity<TId = number> = {
     username: string;
     email: string;
     passwordHash: string;
-    registeredDate: string;
+    dateRegistered: string;
     userUpdatedAt: string | null;
     isDeleted: boolean;
     lastLogin: string | null;
     profileImageUrl: string;
-    roleId: number; // Foreign key to Role
-    role?: Role; // Optional navigation property to Role
+    role : string;
   },string>;
   
   

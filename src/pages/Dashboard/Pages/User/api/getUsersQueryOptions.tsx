@@ -4,9 +4,7 @@ import { api } from "@/lib/Api-client";
 import { QueryConfig } from "@/lib/React-query";
 import { User } from "@/types/ApiTypes";
 
-export const getUsers = (): Promise<{
-  data: User[];
-}> => {
+export const getUsers = (): Promise<User[]> => {
   return api.get(`/users`);
 };
 
@@ -21,7 +19,7 @@ type UseUserOptions = {
   queryConfig?: QueryConfig<typeof getUsersQueryOptions>;
 };
 
-export const userUser = ({ queryConfig }: UseUserOptions) => {
+export const useUserData = ({ queryConfig }: UseUserOptions) => {
   return useQuery({
     ...getUsersQueryOptions(),
     ...queryConfig,
