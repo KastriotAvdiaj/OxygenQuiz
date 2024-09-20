@@ -41,8 +41,7 @@ namespace QuizAPI.Controllers
                 Email = user.Email,
                 PasswordHash = user.PasswordHash,
                 DateRegistered = user.DateRegistered,
-                Role = MapRoleIdToRole(user.RoleId), // Map RoleId to Role string
-                ConcurrencyStamp = user.ConcurrencyStamp,
+                Role = MapRoleIdToRole(user.RoleId), 
                 IsDeleted = user.IsDeleted,
                 LastLogin = user.LastLogin,
                 ProfileImageUrl = user.ProfileImageUrl

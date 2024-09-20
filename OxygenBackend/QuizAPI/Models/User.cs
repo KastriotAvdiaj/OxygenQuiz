@@ -31,7 +31,7 @@ namespace QuizAPI.Models
         public DateTime LastLogin { get; set; }
 
 
-        public string ProfileImageUrl { get; set; }
+        public string? ProfileImageUrl { get; set; }
 
         public User() {
             ConcurrencyStamp = Guid.NewGuid();

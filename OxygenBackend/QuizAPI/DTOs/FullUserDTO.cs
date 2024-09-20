@@ -18,8 +18,6 @@ namespace QuizAPI.DTOs
 
         public string Role { get; set; }
 
-        public Guid ConcurrencyStamp { get; set; }
-
         public bool IsDeleted { get; set; }
 
         public DateTime LastLogin { get; set; }
