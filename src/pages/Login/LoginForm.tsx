@@ -11,13 +11,13 @@ import { Spinner } from "@/components/ui/Spinnter";
 
 interface LoginFormProps {
   onLogin: (email: string, password: string) => void;
-  isLoading: boolean;
+  isPending: boolean;
 }
 
-const LoginForm: React.FC<LoginFormProps> = ({ onLogin, isLoading }) => {
+const LoginForm: React.FC<LoginFormProps> = ({ onLogin, isPending }) => {
   const [formData, setFormData] = useState({
-    email: "string",
-    password: "string",
+    email: "admin@example.com",
+    password: "admin",
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -58,9 +58,10 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, isLoading }) => {
       <Button
         onClick={handleSubmit}
         variant={"addSave"}
+        isPending={isPending}
         className="w-full py-3 text-white"
       >
-        {isLoading ? <Spinner size="sm" /> : <>Log in</>}
+        Log in
       </Button>
     </form>
   );

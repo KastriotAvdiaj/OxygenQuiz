@@ -6,7 +6,6 @@ import LoginForm from "./LoginForm";
 import { useLogin } from "@/lib/Auth";
 import { GoBackButton } from "@/common/Go-Back-Button";
 import { useSearchParams } from "react-router-dom";
-import { Spinner } from "@/components/ui/Spinnter";
 import { O2Button } from "@/common/O2Button";
 import { useNotifications } from "@/common/Notifications";
 /**
@@ -18,7 +17,7 @@ import { useNotifications } from "@/common/Notifications";
 const Login: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { mutate: login, isLoading, isError } = useLogin();
+  const { mutate: login, isPending, isError } = useLogin();
 
   const handleLogin = async (email: string, password: string) => {
     try {
@@ -74,8 +73,7 @@ const Login: React.FC = () => {
                 Login failed. Please try again.
               </p>
             )}{" "}
-            <LoginForm onLogin={handleLogin} isLoading={isLoading} />
-            {isLoading && <Spinner size="sm" />}
+            <LoginForm onLogin={handleLogin} isPending={isPending} />
             <div className="text-center mt-4">
               <p className="text-sm">
                 Don't have an account?{" "}

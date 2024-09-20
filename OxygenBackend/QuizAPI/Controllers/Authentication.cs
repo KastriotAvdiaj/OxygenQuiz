@@ -33,7 +33,8 @@ namespace QuizAPI.Controllers
             var user = await _context.Users.FindAsync(Guid.Parse(userId));
             if (user == null)
             {
-                return NotFound();
+                return Ok();
+                //Changed for a while because a deleted user was still logged in.
             }
 
             return Ok(user); 

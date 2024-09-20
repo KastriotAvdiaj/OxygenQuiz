@@ -12,6 +12,7 @@ const getUser = async (): Promise<User | null> => {
     if (!user) {
       return null;
     }
+    console.log(user);
     return user; // Since `user` is already the data returned from the backend
   } catch (error: any) {
     if (error.response?.status === 401) {
