@@ -2,7 +2,8 @@ import { QueryClient } from "@tanstack/react-query";
 import { getUsersQueryOptions } from "./api/getUsersQueryOptions";
 import { useUserData } from "./api/getUsersQueryOptions";
 import { Spinner } from "@/components/ui/Spinnter";
-import { UsersList } from "./Components/UsersList";
+import { columns } from "./Components/columns";
+import { DataTable } from "@/components/ui/data-table";
 
 export const usersLoader = (queryClient: QueryClient) => async () => {
   const query = getUsersQueryOptions();
@@ -31,7 +32,7 @@ export const Users = () => {
   return (
     <div>
       <h2>Users List</h2>
-      <UsersList users={users} />
+      <DataTable data={users} columns={columns} />
     </div>
   );
 };

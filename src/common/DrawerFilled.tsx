@@ -142,7 +142,6 @@ export const DrawerFilled = () => {
           <NavLink to={"/signup"}>
             <Button variant={"outline"}>Signup</Button>
           </NavLink>
-          {/* <Button onClick={() => setSignedIn(true)}>On/Off</Button> */}
         </div>
       )}
     </>

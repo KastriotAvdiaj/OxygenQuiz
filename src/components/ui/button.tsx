@@ -4,16 +4,16 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/utils/cn";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50",
+  "inline-flex items-center justify-center whitespace-nowrap text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
       variant: {
         default:
-          "bg-primary gap-2 shadow hover:bg-[var(--background)]/80  active:scale-95",
+          "bg-primary gap-2 shadow hover:bg-bacground  active:scale-95",
         addSave:
           "flex justify-center items-center gap-2 w-full shadow text-[var(--text)] bg-[var(--text-hover)] hover:bg-[var(--text-hover-darker)] rounded active:scale-95",
         outline:
-          " flex justify-center items-center gap-3 border border-input shadow-sm hover:bg-[var(--outline-button)]  active:scale-95",
+          " flex justify-center items-center gap-3 border border-input shadow-sm hover:bg-[var(--outline-button)] active:scale-95",
         secondary: "bg-secondary shadow-sm active:scale-95",
         link: " underline-offset-4 hover:underline active:scale-95",
         drawer:
