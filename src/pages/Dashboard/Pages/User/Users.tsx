@@ -30,7 +30,7 @@ export const Users = () => {
   if (!users) return null;
 
   return (
-    <div className="p-10">
+    <div className="p-20">
       <h2>Users List</h2>
       <DataTable data={users} columns={columns} />
     </div>
