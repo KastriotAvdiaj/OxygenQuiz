@@ -13,7 +13,7 @@ const buttonVariants = cva(
         addSave:
           "flex justify-center items-center gap-2 w-full shadow text-[var(--text)] bg-[var(--text-hover)] hover:bg-[var(--text-hover-darker)] rounded active:scale-95",
         outline:
-          "flex justify-center items-center gap-3 border border-input shadow-sm hover:bg-[var(--outline-button)] active:scale-95",
+          "flex justify-center items-center gap-3 border border-border shadow-sm hover:bg-[var(--outline-button)] active:scale-95",
         secondary: "bg-secondary shadow-sm active:scale-95",
         link: " underline-offset-4 hover:underline active:scale-95",
         drawer:
