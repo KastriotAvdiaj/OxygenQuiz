@@ -32,12 +32,8 @@ export const columns: ColumnDef<User>[] = [
     header: "Date Registered",
   },
   {
-    accessorKey: "role",
-    header: "Role",
-  },
-  {
     accessorKey: "isDeleted",
-    header: "Active",
+    header: "Deleted",
   },
   {
     accessorKey: "lastLogin",
