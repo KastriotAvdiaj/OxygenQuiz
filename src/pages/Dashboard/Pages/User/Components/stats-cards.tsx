@@ -9,7 +9,7 @@ interface StatsCardsProps {
 export function StatsCards({ className }: StatsCardsProps) {
   return (
     <div className={cn("grid gap-4 md:grid-cols-2 lg:grid-cols-4", className)}>
-      <Card className="bg-background-secondary">
+      <Card className="bg-background-secondary border-none">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Total Users</CardTitle>
           <Users className="h-4 w-4 text-muted-foreground" />
@@ -19,7 +19,7 @@ export function StatsCards({ className }: StatsCardsProps) {
           <p className="text-xs text-muted-foreground">+2.5% from last month</p>
         </CardContent>
       </Card>
-      <Card className="bg-background-secondary">
+      <Card className="bg-background-secondary border-none">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Active Today</CardTitle>
           <Activity className="h-4 w-4 text-muted-foreground" />
@@ -29,7 +29,7 @@ export function StatsCards({ className }: StatsCardsProps) {
           <p className="text-xs text-muted-foreground">+180 from yesterday</p>
         </CardContent>
       </Card>
-      <Card className="bg-background-secondary">
+      <Card className="bg-background-secondary border-none">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">New This Month</CardTitle>
           <TrendingUp className="h-4 w-4 text-muted-foreground" />
@@ -39,7 +39,7 @@ export function StatsCards({ className }: StatsCardsProps) {
           <p className="text-xs text-muted-foreground">+201 from last month</p>
         </CardContent>
       </Card>
-      <Card className="bg-background-secondary">
+      <Card className="bg-background-secondary border-none">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">
             Avg. Session Time

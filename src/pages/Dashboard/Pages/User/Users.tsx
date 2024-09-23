@@ -41,9 +41,9 @@ export const Users = () => {
   );
 
   return (
-    <div className="space-y-4">
-      <StatsCards className="m-6" />
-      <Card className="p-5 m-6 bg-background-secondary">
+    <div className="space-y-4 my-5 p-6">
+      <StatsCards className="" />
+      <Card className="p-5 bg-background-secondary border-none rounded-sm">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-2xl font-bold">Users Dashboard</CardTitle>
         </CardHeader>
