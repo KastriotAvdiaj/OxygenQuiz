@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { QueryClient } from "@tanstack/react-query";
-import { getUsersQueryOptions, useUserData } from "./api/getUsersQueryOptions";
+import { getUsersQueryOptions, useUserData } from "./api/get-users";
 import { Spinner } from "@/components/ui/Spinnter";
 import { columns } from "./Components/columns";
 import { DataTable } from "@/components/ui/data-table";
