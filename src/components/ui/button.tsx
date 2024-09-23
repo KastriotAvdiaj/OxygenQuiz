@@ -11,7 +11,7 @@ const buttonVariants = cva(
       variant: {
         default: "bg-primary gap-2 shadow hover:bg-bacground active:scale-95",
         addSave:
-          "flex justify-center items-center gap-2 w-full shadow text-[var(--text)] bg-[var(--text-hover)] hover:bg-[var(--text-hover-darker)] rounded active:scale-95",
+          "flex justify-center items-center gap-2  shadow text-[var(--text)] bg-[var(--text-hover)] hover:bg-[var(--text-hover-darker)] rounded active:scale-95",
         outline:
           "flex justify-center items-center gap-3 border border-border shadow-sm hover:bg-[var(--outline-button)] active:scale-95",
         secondary: "bg-secondary shadow-sm active:scale-95",
