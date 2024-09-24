@@ -57,7 +57,18 @@ namespace QuizAPI.Controllers
                 1 => "admin",
                 2 => "user",
                 3 => "superadmin",
-                _ => "unknown" 
+                _ => "user" 
+            };
+        }
+
+        private static int MapRoleToRoleId(string role)
+        {
+            return role.ToLower() switch
+            {
+                "admin" => 1,
+                "user" => 2,
+                "superadmin" => 3,
+                _ => 2 // default to user if role is unknown
             };
         }
 
@@ -114,16 +125,34 @@ namespace QuizAPI.Controllers
         // POST: api/Users
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<User>> PostUser(User user)
+        public async Task<ActionResult<User>> PostUser(TemporaryUserCR user)
         {
           if (_context.Users == null)
           {
               return Problem("Entity set 'ApplicationDbContext.Users'  is null.");
           }
-            _context.Users.Add(user);
+
+            int roleId = !string.IsNullOrEmpty(user.Role)
+                ? MapRoleToRoleId(user.Role)
+                : 2;
+
+            var newUser = new User
+            {
+                Id = Guid.NewGuid(),
+                Username = user.Username,
+                Email = user.Email,
+                ImmutableName = user.Username.ToLower(),
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(user.Password),
+                DateRegistered = DateTime.UtcNow,
+                LastLogin = DateTime.UtcNow,
+                RoleId = roleId,
+                IsDeleted = false,
+                ProfileImageUrl = string.Empty
+            };
+            _context.Users.Add(newUser);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetUser", new { id = user.Id }, user);
+            return CreatedAtAction("GetUser", new { id = newUser.Id }, newUser);
         }
 
         // DELETE: api/Users/5
