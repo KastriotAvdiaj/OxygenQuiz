@@ -4,7 +4,7 @@ import * as React from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { HelmetProvider } from "react-helmet-async";
 import { ThemeProvider } from "./components/ui/theme-provider";
-import { Spinner } from "./components/ui/Spinnter";
+import { Spinner } from "./components/ui/Spinner";
 import { MainErrorFallback } from "./pages/Error/Main";
 import { AuthLoader } from "./lib/Auth";
 import { queryConfig } from "./lib/React-query";

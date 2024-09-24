@@ -2,7 +2,7 @@ import * as React from "react";
 import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/utils/cn";
-import { Spinner } from "./Spinnter";
+import { Spinner } from "./Spinner";
 
 const buttonVariants = cva(
   "inline-flex items-center justify-center whitespace-nowrap text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50",
@@ -50,7 +50,7 @@ export interface ButtonProps
     VariantProps<typeof buttonVariants> {
   asChild?: boolean;
   active?: boolean;
-  isPending?: boolean; 
+  isPending?: boolean;
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
