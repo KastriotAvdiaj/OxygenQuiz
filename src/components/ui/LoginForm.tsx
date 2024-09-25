@@ -7,7 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { Input } from "./form";
 import { Label } from "@/components/ui/form/label";
 export function LoginForm() {
   return (

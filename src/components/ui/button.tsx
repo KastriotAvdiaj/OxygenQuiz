@@ -9,13 +9,13 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary gap-2 shadow hover:bg-bacground active:scale-95",
+        default: "bg-primary gap-2 shadow hover:bg-background active:scale-95",
         addSave:
           "flex justify-center items-center gap-2  shadow text-[var(--text)] bg-[var(--text-hover)] hover:bg-[var(--text-hover-darker)] rounded active:scale-95",
         outline:
           "flex justify-center items-center gap-3 border border-border shadow-sm hover:bg-[var(--outline-button)] active:scale-95",
         secondary: "bg-secondary shadow-sm active:scale-95",
-        link: " underline-offset-4 hover:underline active:scale-95",
+        link: "underline-offset-4 hover:underline active:scale-95",
         drawer:
           "flex justify-start gap-1.5 px-1 items-center bg-ring rounded hover:bg-[var(--background)] text-sm active:scale-95",
         dashboard:
@@ -24,7 +24,7 @@ const buttonVariants = cva(
           "font-sans flex justify-center gap-2 items-center mx-auto shadow-xl text-lg bg-[var(--background-secondary)] backdrop-blur-md lg:font-semibold isolation-auto border-gray-50 before:absolute before:w-full before:transition-all before:duration-700 before:hover:w-full before:-left-full before:hover:left-0 before:rounded-full before:bg-[var(--text-hover)] hover:text-gray-50 before:-z-10 before:aspect-square before:hover:scale-150 before:hover:duration-700 relative z-10 px-4 text-[var(--text)] overflow-hidden border-2 rounded-full group",
       },
       size: {
-        dashboard: " px-2.5 py-2",
+        dashboard: "px-2.5 py-2",
         drawerSize: "h-8 px-1.5 py-2",
         default: "h-9 px-4 py-2",
         sm: "h-8 rounded-md px-3 text-xs",
@@ -51,6 +51,7 @@ export interface ButtonProps
   asChild?: boolean;
   active?: boolean;
   isPending?: boolean;
+  icon?: React.ReactNode; 
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
@@ -62,6 +63,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       asChild = false,
       active = false,
       isPending = false,
+      icon, 
       children,
       ...props
     },
@@ -74,7 +76,14 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         {...props}
       >
-        {isPending ? <Spinner size="sm" variant="light" /> : children}
+        {isPending ? (
+          <Spinner size="sm" variant="light" />
+        ) : (
+          <>
+            {icon && <span className="mr-2">{icon}</span>} {/* Render icon */}
+            {children}
+          </>
+        )}
       </Comp>
     );
   }

@@ -25,9 +25,7 @@ export const NewQuestion = () => {
   };
 
   return (
-    <Card
-      className={`w-fit border-none shadow-none`}
-    >
+    <Card className={`w-fit border-none shadow-none`}>
       <CardHeader>
         <CardTitle>Create a new question</CardTitle>
       </CardHeader>
@@ -98,25 +96,25 @@ export const NewQuestion = () => {
                 >
                   <SelectItem
                     className="cursor-pointer hover:!bg-[var(--background)]"
-                    value="next"
+                    value="Extra Hard"
                   >
                     Extra Hard
                   </SelectItem>
                   <SelectItem
                     className="cursor-pointer hover:!bg-[var(--background)]"
-                    value="sveltekit"
+                    value="Hard"
                   >
                     Hard
                   </SelectItem>
                   <SelectItem
                     className="cursor-pointer hover:!bg-[var(--background)]"
-                    value="astro"
+                    value="Medium"
                   >
                     Medium
                   </SelectItem>
                   <SelectItem
                     className="cursor-pointer hover:!bg-[var(--background)]"
-                    value="nuxt"
+                    value="Easy"
                   >
                     Easy
                   </SelectItem>

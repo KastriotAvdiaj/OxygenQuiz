@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Download, Plus, RefreshCw, Search } from "lucide-react";
 import { StatsCards } from "./Components/stats-cards";
+import CreateUserForm from "./Components/create-user";
 
 export const usersLoader = (queryClient: QueryClient) => async () => {
   const query = getUsersQueryOptions();
@@ -61,10 +62,8 @@ export const Users = () => {
               </Button>
             </div>
             <div className="flex items-center space-x-2">
-              <Button variant="default" size="sm" className="bg-background">
-                <Plus className="mr-2 h-4 w-4" />
-                Add User
-              </Button>
+              <CreateUserForm />
+
               <Button
                 variant="default"
                 size="sm"
