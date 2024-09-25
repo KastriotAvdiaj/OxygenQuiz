@@ -6,7 +6,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { Input } from "@/components/ui/form";
 import { Label } from "@/components/ui/form/label";
 import {
   Select,
@@ -26,7 +26,7 @@ export const NewQuestion = () => {
 
   return (
     <Card
-      className={`w-fit m-6 border-none bg-[var(--background-secondary)] rounded-sm }`}
+      className={`w-fit border-none shadow-none`}
     >
       <CardHeader>
         <CardTitle>Create a new question</CardTitle>

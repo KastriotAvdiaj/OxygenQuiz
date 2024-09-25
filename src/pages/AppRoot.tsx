@@ -1,12 +1,13 @@
-import { Suspense } from 'react';
-import { ErrorBoundary } from 'react-error-boundary';
-import { Outlet, useLocation } from 'react-router-dom';
-import { Spinner } from '@/components/ui/Spinner';
-import { DashboardLayout } from '@/Layouts/DashboardLayout';
+import { Suspense } from "react";
+import { ErrorBoundary } from "react-error-boundary";
+import { Outlet, useLocation } from "react-router-dom";
+import { Spinner } from "@/components/ui/Spinner";
+import { DashboardLayout } from "@/Layouts/DashboardLayout";
+import { MainErrorFallback } from "./Error/Main";
 
 export const AppRoot = () => {
   const location = useLocation();
-  
+
   return (
     <DashboardLayout>
       <Suspense
@@ -16,10 +17,7 @@ export const AppRoot = () => {
           </div>
         }
       >
-        <ErrorBoundary
-          key={location.pathname}
-          fallback={<div>Something went wrong!</div>}
-        >
+        <ErrorBoundary key={location.pathname} fallback={<MainErrorFallback />}>
           <Outlet />
         </ErrorBoundary>
       </Suspense>

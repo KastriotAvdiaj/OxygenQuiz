@@ -1,10 +1,10 @@
 //PAGE IS NOT BEING USED AT THE MOMENT
 
-
 import { Suspense, lazy } from "react";
 import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import { DashboardNav } from "@/pages/Dashboard/Components/DashboardNav";
 import { DashboardHeader } from "./Components/DashboardHeader";
+import { Spinner } from "@/components/ui";
 
 // Lazy load sub-pages
 const Application = lazy(() =>
@@ -44,7 +44,7 @@ export const Dashboard = () => {
         />
       </div>
       <div className="overflow-y-auto">
-        <Suspense fallback={<div>Loading...</div>}>
+        <Suspense fallback={<Spinner size="xl" />}>
           <Routes>
             <Route index element={<Navigate to="application" replace />} />
             <Route path="application" element={<Application />} />

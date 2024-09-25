@@ -5,7 +5,7 @@ import { Spinner } from "@/components/ui/Spinner";
 import { columns } from "./Components/columns";
 import { DataTable } from "@/components/ui/data-table";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input } from "@/components/ui/form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Download, Plus, RefreshCw, Search } from "lucide-react";
 import { StatsCards } from "./Components/stats-cards";
