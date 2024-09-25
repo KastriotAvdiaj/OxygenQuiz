@@ -1,6 +1,12 @@
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Select } from "@/components/ui";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+  SelectValue,
+} from "@/components/ui";
 import { Form, FormDrawer, Input } from "@/components/ui/form";
 import { useNotifications } from "@/common/Notifications";
 import { createUserInputSchema, useCreateUser } from "../api/create-user";
@@ -58,22 +64,18 @@ export const CreateUserForm = () => {
       >
         {({ register, formState, setValue }) => (
           <>
-            {/* Username Field */}
             <Input
               label="Username"
               error={formState.errors["username"]}
               registration={register("username")}
             />
 
-            {/* Email Field */}
             <Input
               label="Email"
               type="email"
               error={formState.errors["email"]}
               registration={register("email")}
             />
-
-            {/* Password Field */}
             <Input
               label="Password"
               type="password"
@@ -81,7 +83,27 @@ export const CreateUserForm = () => {
               registration={register("password")}
             />
 
-            <Select />
+            <div className="flex flex-col space-y-1.5">
+              <label htmlFor="role">Role</label>
+              <Select
+                onValueChange={(value) => setValue("role", Number(value))}
+              >
+                <SelectTrigger id="role" className="border-gray-400">
+                  <SelectValue placeholder="Select Role" />
+                </SelectTrigger>
+                <SelectContent className="cursor-pointer bg-[var(--background-secondary)]">
+                  {roleOptions.map((role) => (
+                    <SelectItem
+                      key={role.value}
+                      value={role.value.toString()} 
+                      className="cursor-pointer hover:!bg-[var(--background)]"
+                    >
+                      {role.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </>
         )}
       </Form>
