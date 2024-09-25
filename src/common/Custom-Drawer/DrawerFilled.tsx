@@ -28,7 +28,7 @@ export const DrawerFilled = () => {
           <DrawerTrigger asChild>
             <ProfileButton />
           </DrawerTrigger>
-          <DrawerContent>
+          <DrawerContent className="w-[200px] flex flex-col justify-between">
             <DrawerHeader>
               <DrawerHeaderContent />
               <DrawerLinks close={close} isAdmin={isAdmin} />
@@ -36,7 +36,7 @@ export const DrawerFilled = () => {
             <DrawerFooter>
               <DrawerClose asChild>
                 <Button
-                  className="rounded hover:bg-[#FE2A2A] hover:text-white"
+                  className="rounded hover:bg-[#FE2A2A] hover:text-white w-full"
                   onClick={() => {
                     logout.mutate();
                     close();
