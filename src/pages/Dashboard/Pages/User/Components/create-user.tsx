@@ -46,9 +46,10 @@ export const CreateUserForm = () => {
       title="Create User"
       submitButton={
         <Button
-          form="create-user"
+          variant="addSave"
+          className="rounded-sm"
           type="submit"
-          size="sm"
+          size="default"
           isPending={createUserMutation.isPending}
         >
           Submit
@@ -95,7 +96,7 @@ export const CreateUserForm = () => {
                   {roleOptions.map((role) => (
                     <SelectItem
                       key={role.value}
-                      value={role.value.toString()} 
+                      value={role.value.toString()}
                       className="cursor-pointer hover:!bg-[var(--background)]"
                     >
                       {role.label}

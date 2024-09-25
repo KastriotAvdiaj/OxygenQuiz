@@ -1,8 +1,8 @@
-import * as React from 'react';
+import * as React from "react";
 
-import { useDisclosure } from '@/hooks/use-disclosure';
+import { useDisclosure } from "@/hooks/use-disclosure";
 
-import { Button } from '../button';
+import { Button } from "../button";
 import {
   Drawer,
   DrawerClose,
@@ -11,7 +11,7 @@ import {
   DrawerHeader,
   DrawerTrigger,
   DrawerTitle,
-} from '../drawer';
+} from "../drawer";
 
 type FormDrawerProps = {
   isDone: boolean;
@@ -36,6 +36,8 @@ export const FormDrawer = ({
     }
   }, [isDone, close]);
 
+  console.log(submitButton);
+
   return (
     <Drawer
       open={isOpen}
@@ -55,13 +57,13 @@ export const FormDrawer = ({
           </DrawerHeader>
           <div>{children}</div>
         </div>
-        <DrawerFooter>
+        <DrawerFooter className="gap-4"> 
+          {submitButton}
           <DrawerClose asChild>
             <Button variant="outline" type="submit">
               Close
             </Button>
           </DrawerClose>
-          {submitButton}
         </DrawerFooter>
       </DrawerContent>
     </Drawer>

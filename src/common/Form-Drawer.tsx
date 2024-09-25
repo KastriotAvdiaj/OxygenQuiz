@@ -27,10 +27,6 @@ export const FormDrawer: React.FC<FormDrawerProps> = ({
   return (
     <Drawer
       open={isOpen}
-      /**
-       * We don't use the toggle function because the toggle function simply flips the current state
-       * and onOpenChange is used to reflect the state of the drawer.
-       */
       onOpenChange={(open) => !open && onClose()}
       {...props}
     >

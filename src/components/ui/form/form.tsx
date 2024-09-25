@@ -194,7 +194,7 @@ const Form = <
   return (
     <FormProvider {...form}>
       <form
-        className={cn('space-y-6', className)}
+        className={cn('space-y-6 mt-7', className)}
         onSubmit={form.handleSubmit(onSubmit)}
         id={id}
       >
