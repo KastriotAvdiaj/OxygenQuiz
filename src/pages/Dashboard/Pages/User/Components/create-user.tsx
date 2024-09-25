@@ -28,7 +28,12 @@ export const CreateUserForm = () => {
     <FormDrawer
       isDone={createUserMutation.isSuccess}
       triggerButton={
-        <Button size="sm" icon={<Plus className="size-4" />}>
+        <Button
+          variant="default"
+          className="bg-background"
+          size="sm"
+          icon={<Plus className="size-4" />}
+        >
           Create User
         </Button>
       }
@@ -76,8 +81,7 @@ export const CreateUserForm = () => {
               registration={register("password")}
             />
 
-            {/* Role Dropdown */}
-            <Select/>
+            <Select />
           </>
         )}
       </Form>
