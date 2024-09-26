@@ -51,7 +51,7 @@ export interface ButtonProps
   asChild?: boolean;
   active?: boolean;
   isPending?: boolean;
-  icon?: React.ReactNode; 
+  icon?: React.ReactNode;
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
@@ -63,7 +63,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       asChild = false,
       active = false,
       isPending = false,
-      icon, 
+      icon,
       children,
       ...props
     },
@@ -77,7 +77,9 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         {...props}
       >
         {isPending ? (
-          <Spinner size="sm" variant="light" />
+          <>
+            <Spinner size="sm" variant="light" /> {children}
+          </>
         ) : (
           <>
             {icon && <span className="mr-2">{icon}</span>} {/* Render icon */}
