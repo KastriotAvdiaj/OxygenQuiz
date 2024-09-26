@@ -3,6 +3,8 @@ import { IoAdd } from "react-icons/io5";
 import { FormDrawer } from "@/common/Form-Drawer";
 import { NewQuestion } from "./Components/create-question";
 import { useDisclosure } from "@/hooks/use-disclosure";
+import { DataTable } from "@/components/ui";
+import { columns } from "./Components/columns";
 
 export const Questions = () => {
   const { isOpen, open, close, toggle } = useDisclosure();
@@ -24,6 +26,7 @@ export const Questions = () => {
         toggle={toggle}
         onClose={close}
       />
+      <DataTable columns={columns} data={[]} />
     </div>
   );
 };

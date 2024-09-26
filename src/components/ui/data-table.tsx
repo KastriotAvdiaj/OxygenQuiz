@@ -90,7 +90,7 @@ export function DataTable<TData>({ columns, data }: DataTableProps<TData>) {
                 colSpan={columns.length}
                 className="h-24 text-center text-text-lighter"
               >
-                No users found.
+                No data found.
               </TableCell>
             </TableRow>
           )}
