@@ -36,8 +36,6 @@ export const FormDrawer = ({
     }
   }, [isDone, close]);
 
-  console.log(submitButton);
-
   return (
     <Drawer
       open={isOpen}

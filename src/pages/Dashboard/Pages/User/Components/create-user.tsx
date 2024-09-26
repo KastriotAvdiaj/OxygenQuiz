@@ -12,9 +12,9 @@ import { useNotifications } from "@/common/Notifications";
 import { createUserInputSchema, useCreateUser } from "../api/create-user";
 
 const roleOptions = [
-  { value: 1, label: "User" },
-  { value: 2, label: "Admin" },
-  { value: 3, label: "Superadmin" },
+  { label: "User" },
+  { label: "Admin" },
+  { label: "Superadmin" },
 ];
 
 export const CreateUserForm = () => {
@@ -46,11 +46,13 @@ export const CreateUserForm = () => {
       title="Create User"
       submitButton={
         <Button
+          form="create-user"
           variant="addSave"
           className="rounded-sm"
           type="submit"
           size="default"
           isPending={createUserMutation.isPending}
+          disabled={createUserMutation.isPending}
         >
           Submit
         </Button>
@@ -59,7 +61,10 @@ export const CreateUserForm = () => {
       <Form
         id="create-user"
         onSubmit={(values) => {
-          createUserMutation.mutate({ data: values });
+          const role = values.role || "User";
+          createUserMutation.mutate({
+            data: { ...values, role: role },
+          });
         }}
         schema={createUserInputSchema}
       >
@@ -86,17 +91,15 @@ export const CreateUserForm = () => {
 
             <div className="flex flex-col space-y-1.5">
               <label htmlFor="role">Role</label>
-              <Select
-                onValueChange={(value) => setValue("role", Number(value))}
-              >
+              <Select onValueChange={(value) => setValue("role", value)}>
                 <SelectTrigger id="role" className="border-gray-400">
                   <SelectValue placeholder="Select Role" />
                 </SelectTrigger>
                 <SelectContent className="cursor-pointer bg-[var(--background-secondary)]">
-                  {roleOptions.map((role) => (
+                  {roleOptions.map((role, index) => (
                     <SelectItem
-                      key={role.value}
-                      value={role.value.toString()}
+                      key={index}
+                      value={role.label}
                       className="cursor-pointer hover:!bg-[var(--background)]"
                     >
                       {role.label}
