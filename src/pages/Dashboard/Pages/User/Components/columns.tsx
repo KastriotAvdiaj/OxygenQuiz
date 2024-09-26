@@ -1,10 +1,13 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { User } from "@/types/ApiTypes";
-import { MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { UserRoundPen } from "lucide-react";
-import { UserX } from "lucide-react";
-import { Copy } from "lucide-react";
+import {
+  Copy,
+  Activity,
+  UserX,
+  UserRoundPen,
+  MoreHorizontal,
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,7 +36,28 @@ export const columns: ColumnDef<User>[] = [
   },
   {
     accessorKey: "isDeleted",
-    header: "Deleted",
+    header: "Status",
+    cell: ({ row }) => {
+      const isDeleted = row.original.isDeleted;
+
+      return (
+        <div
+          className={`flex items-center justify-center p-2 rounded-[2rem] font-semibold border-[0.12rem] border-border ${
+            isDeleted ? "bg-red-100 text-red-700" : "bg-green-300 text-gray-700"
+          }`}
+        >
+          {isDeleted ? (
+            <>
+              <UserX className="w-4 h-4 mr-2" /> deleted
+            </>
+          ) : (
+            <>
+              <Activity className="w-4 h-4 mr-2" /> active
+            </>
+          )}
+        </div>
+      );
+    },
   },
   {
     accessorKey: "lastLogin",
