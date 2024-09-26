@@ -25,6 +25,7 @@ module.exports = {
         'button-cancel': 'var(--button-cancel)',
         'divider': 'var(--divider)',
         'list-hover' : 'var(--list-hover)',
+        'green-custom' : 'var(--green)'
       },
     },
   },

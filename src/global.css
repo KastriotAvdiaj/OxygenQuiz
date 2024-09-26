@@ -38,6 +38,7 @@ body{
   --button-cancel : rgba(250, 250, 250, 0);
   --divider:rgb(218, 218, 218);
   --list-hover: rgb(0, 0, 0);
+  --green: rgb(74, 222 ,128);
 
 }
 
@@ -56,6 +57,7 @@ body{
   --border: rgb(0, 0, 0);
   --text-lighter: rgb(47, 48, 49);
   --list-hover: rgb(133, 181, 252);
+  --green-custom : rgb(0, 156, 8);
 }
 
 .system {

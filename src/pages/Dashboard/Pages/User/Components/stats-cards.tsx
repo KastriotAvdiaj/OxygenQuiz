@@ -16,7 +16,10 @@ export function StatsCards({ className }: StatsCardsProps) {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">10,482</div>
-          <p className="text-xs text-muted-foreground">+2.5% from last month</p>
+          <p className="text-xs text-muted-foreground">
+            <span className="text-green-custom font-semibold">+2.5%</span> from
+            last month
+          </p>
         </CardContent>
       </Card>
       <Card className="bg-background-secondary border-none">
@@ -26,7 +29,10 @@ export function StatsCards({ className }: StatsCardsProps) {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">2,345</div>
-          <p className="text-xs text-muted-foreground">+180 from yesterday</p>
+          <p className="text-xs text-muted-foreground">
+            <span className="text-green-custom font-semibold">+180</span> from
+            yesterday
+          </p>
         </CardContent>
       </Card>
       <Card className="bg-background-secondary border-none">
@@ -36,7 +42,10 @@ export function StatsCards({ className }: StatsCardsProps) {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">573</div>
-          <p className="text-xs text-muted-foreground">+201 from last month</p>
+          <p className="text-xs text-muted-foreground">
+            <span className="text-green-custom font-semibold">+201</span> from
+            last month
+          </p>
         </CardContent>
       </Card>
       <Card className="bg-background-secondary border-none">
@@ -49,7 +58,8 @@ export function StatsCards({ className }: StatsCardsProps) {
         <CardContent>
           <div className="text-2xl font-bold">24m 13s</div>
           <p className="text-xs text-muted-foreground">
-            +1m 12s from last week
+            <span className="text-green-custom font-semibold">+1m 12s</span>{" "}
+            from last week
           </p>
         </CardContent>
       </Card>

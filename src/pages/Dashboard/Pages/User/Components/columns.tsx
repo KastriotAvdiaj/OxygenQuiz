@@ -42,17 +42,17 @@ export const columns: ColumnDef<User>[] = [
 
       return (
         <div
-          className={`flex items-center justify-center p-2 rounded-[2rem] font-semibold border-[0.12rem] border-border ${
-            isDeleted ? "bg-red-100 text-red-700" : "bg-green-300 text-gray-700"
+          className={`flex items-center justify-center p-1 rounded-[2rem] text-[12px] font-semibold  ${
+            isDeleted ? "bg-red-100 text-red-700" : "bg-text-hover text-white"
           }`}
         >
           {isDeleted ? (
             <>
-              <UserX className="w-4 h-4 mr-2" /> deleted
+              <UserX className="w-3 h-3 mr-2" /> deleted
             </>
           ) : (
             <>
-              <Activity className="w-4 h-4 mr-2" /> active
+              <Activity className="w-3 h-3 mr-2" /> active
             </>
           )}
         </div>
