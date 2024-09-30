@@ -1,4 +1,4 @@
-import { BesimCard } from "@/common/BesimCard";
+// import { BesimCard } from "@/common/BesimCard";
 
 export const Home = () => {
   return (
@@ -22,7 +22,7 @@ export const Home = () => {
           Get Started
         </button>
       </div>
-      <BesimCard />
+      {/* <BesimCard /> */}
     </div>
   );
 };  

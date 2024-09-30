@@ -57,7 +57,7 @@ body{
   --border: rgb(0, 0, 0);
   --text-lighter: rgb(47, 48, 49);
   --list-hover: rgb(133, 181, 252);
-  --green-custom : rgb(0, 156, 8);
+  --green : rgb(0, 156, 8);
 }
 
 .system {

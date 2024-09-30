@@ -36,7 +36,7 @@ export const NewQuestion = () => {
               <Label htmlFor="name">Question</Label>
               <Input
                 id="name"
-                placeholder="Question"
+                placeholder="Question..."
                 className="placeholder-gray-500 !placeholder-gray-400 border-gray-400"
               />
             </div>
@@ -48,7 +48,7 @@ export const NewQuestion = () => {
                     key={value}
                     className="flex items-center space-x-2 cursor-pointer"
                   >
-                    <Input
+                    <input
                       type="radio"
                       name="numWrongAnswers"
                       value={value}
@@ -66,18 +66,18 @@ export const NewQuestion = () => {
                 <Label htmlFor="correct-answer">Correct Answer *</Label>
                 <Input
                   id="correct-answer"
-                  placeholder="Correct Answer"
+                  placeholder="Correct Answer..."
                   className="placeholder-gray-500 !placeholder-gray-400 border-gray-400"
                 />
               </div>
               {[...Array(numWrongAnswers)].map((_, index) => (
                 <div key={index} className="flex flex-col space-y-1.5">
                   <Label htmlFor={`wrong-answer-${index + 1}`}>
-                    Wrong Answer {index + 1}
+                    Wrong Answer {index + 1} *
                   </Label>
                   <Input
                     id={`wrong-answer-${index + 1}`}
-                    placeholder={`Wrong Answer ${index + 1}`}
+                    placeholder={`Wrong Answer ${index + 1}...`}
                     className="placeholder-gray-500 !placeholder-gray-400 border-gray-400"
                   />
                 </div>

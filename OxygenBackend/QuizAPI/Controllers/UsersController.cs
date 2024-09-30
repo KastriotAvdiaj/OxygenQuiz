@@ -126,7 +126,7 @@ namespace QuizAPI.Controllers
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
         public async Task<ActionResult<User>> PostUser(TemporaryUserCR user)
-        {
+            {
           if (_context.Users == null)
           {
               return Problem("Entity set 'ApplicationDbContext.Users'  is null.");

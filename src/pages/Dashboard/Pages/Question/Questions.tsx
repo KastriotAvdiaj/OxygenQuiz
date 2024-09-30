@@ -20,7 +20,7 @@ export const Questions = () => {
           Create Question
         </Button>
       }
-      title="Create User"
+      title="Create Question"
       submitButton={
         <Button
           form="create-user"
