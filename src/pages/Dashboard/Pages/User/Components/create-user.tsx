@@ -60,6 +60,7 @@ export const CreateUserForm = () => {
     >
       <Form
         id="create-user"
+        className="w-[300px]"
         onSubmit={(values) => {
           const role = values.role || "User";
           createUserMutation.mutate({
@@ -71,18 +72,21 @@ export const CreateUserForm = () => {
         {({ register, formState, setValue }) => (
           <>
             <Input
+              placeholder="Username..."
               label="Username"
               error={formState.errors["username"]}
               registration={register("username")}
             />
 
             <Input
+              placeholder="Email..."
               label="Email"
               type="email"
               error={formState.errors["email"]}
               registration={register("email")}
             />
             <Input
+              placeholder="Password..."
               label="Password"
               type="password"
               error={formState.errors["password"]}
