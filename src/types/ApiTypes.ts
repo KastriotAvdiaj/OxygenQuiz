@@ -38,5 +38,5 @@ export type BaseEntity<TId = number> = {
     token: string;
     user: User;
   };
-  
+
   

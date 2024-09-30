@@ -125,10 +125,6 @@ export const NewQuestion = () => {
         </form>
       </CardContent>
       <CardFooter className="flex justify-between">
-        <Button variant={"outline"}>Cancel</Button>
-        <Button variant={"addSave"} className="rounded-sm w-fit text-white">
-          Create
-        </Button>
       </CardFooter>
     </Card>
   );

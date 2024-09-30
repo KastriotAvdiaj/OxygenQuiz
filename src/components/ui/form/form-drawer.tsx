@@ -51,7 +51,7 @@ export const FormDrawer = ({
       <DrawerTrigger asChild>{triggerButton}</DrawerTrigger>
       <DrawerContent className="flex max-w-[800px] flex-col justify-between sm:max-w-[540px]">
         <div className="flex flex-col">
-          <DrawerHeader>
+          <DrawerHeader className="px-3">
             <DrawerTitle>{title}</DrawerTitle>
           </DrawerHeader>
           <div>{children}</div>
