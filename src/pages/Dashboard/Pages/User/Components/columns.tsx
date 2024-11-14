@@ -16,6 +16,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { DeleteUser } from "./delete-user";
 
 export const columns: ColumnDef<User>[] = [
   {
@@ -71,7 +72,7 @@ export const columns: ColumnDef<User>[] = [
     id: "actions",
     header: "Actions",
     cell: ({ row }) => {
-      const payment = row.original;
+      const user = row.original;
 
       return (
         <DropdownMenu>
@@ -87,14 +88,15 @@ export const columns: ColumnDef<User>[] = [
           <DropdownMenuContent align="end" className=" bg-background-secondary">
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
             <DropdownMenuItem
-              onClick={() => navigator.clipboard.writeText(payment.id)}
+              onClick={() => navigator.clipboard.writeText(user.id)}
               className="hover:bg-background"
             >
               <Copy size={16} /> Copy ID
             </DropdownMenuItem>
             <DropdownMenuSeparator className="bg-background" />
             <DropdownMenuItem className="hover:bg-background">
-              <UserX size={16} /> Delete User
+              {/* <UserX size={16} /> Delete User */}
+              <DeleteUser id={user.id} />
             </DropdownMenuItem>
             <DropdownMenuSeparator className="bg-background" />
             <DropdownMenuItem className="hover:bg-background">

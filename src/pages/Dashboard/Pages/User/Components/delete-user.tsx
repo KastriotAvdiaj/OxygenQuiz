@@ -26,6 +26,7 @@ export const DeleteUser = ({ id }: DeleteUserProps) => {
 
   return (
     <ConfirmationDialog
+      isDone={deleteUserMutation.isSuccess}
       icon="danger"
       title="Delete User"
       body="Are you sure you want to delete this user?"
@@ -35,7 +36,10 @@ export const DeleteUser = ({ id }: DeleteUserProps) => {
           isPending={deleteUserMutation.isPending}
           type="button"
           variant="destructive"
-          onClick={() => deleteUserMutation.mutate({ userId: id })}
+          onClick={() => {
+            console.log("Deleting user with ID:", id);
+            deleteUserMutation.mutate({ userId: id });
+          }}
         >
           Delete User
         </Button>
