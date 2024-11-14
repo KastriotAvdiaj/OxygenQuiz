@@ -1,10 +1,9 @@
 import { CircleAlert, Info } from "lucide-react";
 import * as React from "react";
 import { useEffect } from "react";
-
 import { Button } from "@/components/ui/button";
-import { useDisclosure } from "@/hooks/use-disclosure";
 
+import { useDisclosure } from "@/hooks/use-disclosure";
 import {
   Dialog,
   DialogContent,
@@ -44,7 +43,6 @@ export const ConfirmationDialog = ({
 
   useEffect(() => {
     console.log("Dialog open state:", isOpen);
-    console.log("isDone", isDone);
   }, [isOpen]);
 
   return (
@@ -52,18 +50,22 @@ export const ConfirmationDialog = ({
       open={isOpen}
       onOpenChange={(isOpen) => {
         if (!isOpen) {
-          console.log("Dialog closed");
+          console.log("Dialog closed via onOpenChange");
           close();
         } else {
+          console.log("Dialog opened via onOpenChange");
           open();
         }
       }}
     >
       <DialogTrigger asChild>{triggerButton}</DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent
+        className="sm:max-w-[425px]"
+        aria-labelledby="dialog-title"
+        aria-describedby="dialog-description"
+      >
         <DialogHeader className="flex">
-          <DialogTitle className="flex items-center gap-2">
-            {" "}
+          <DialogTitle className="flex items-center gap-2" id="dialog-title">
             {icon === "danger" && (
               <CircleAlert className="size-6 text-red-600" aria-hidden="true" />
             )}
@@ -74,17 +76,22 @@ export const ConfirmationDialog = ({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
-          {body && (
-            <div className="mt-2">
-              <p>{body}</p>
-            </div>
-          )}
-        </div>
+        {body && (
+          <div className="mt-2" id="dialog-description">
+            <p>{body}</p>
+          </div>
+        )}
 
         <DialogFooter>
           {confirmButton}
-          <Button ref={cancelButtonRef} variant="outline" onClick={close}>
+          <Button
+            ref={cancelButtonRef}
+            variant="outline"
+            onClick={() => {
+              console.log("Cancel button clicked, closing dialog");
+              close();
+            }}
+          >
             {cancelButtonText}
           </Button>
         </DialogFooter>
