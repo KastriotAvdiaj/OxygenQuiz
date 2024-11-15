@@ -1,6 +1,7 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { User } from "@/types/ApiTypes";
 import { Button } from "@/components/ui/button";
+import { useDisclosure } from "@/hooks/use-disclosure";
 import {
   Copy,
   Activity,
@@ -73,9 +74,10 @@ export const columns: ColumnDef<User>[] = [
     header: "Actions",
     cell: ({ row }) => {
       const user = row.original;
+      const {open, isOpen } = useDisclosure();
 
       return (
-        <DropdownMenu>
+        <DropdownMenu open={isOpen} onOpenChange={open}>
           <DropdownMenuTrigger asChild>
             <Button
               variant="default"
@@ -96,13 +98,12 @@ export const columns: ColumnDef<User>[] = [
             <DropdownMenuSeparator className="bg-background" />
             <DropdownMenuItem
               onClick={(e) => {
-                e.stopPropagation(); // Prevent dropdown from closing
-                e.preventDefault(); // Prevent default behavior
+                e.stopPropagation();
+                e.preventDefault(); 
               }}
               className="hover:bg-background"
             >
-              {/* <UserX size={16} /> Delete User */}
-              <DeleteUser id={user.id} />
+              <DeleteUser id={user.id} setDropdownOpen={open} />
             </DropdownMenuItem>
             <DropdownMenuSeparator className="bg-background" />
             <DropdownMenuItem className="hover:bg-background">
