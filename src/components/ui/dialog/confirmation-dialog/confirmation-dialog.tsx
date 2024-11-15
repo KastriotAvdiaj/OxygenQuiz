@@ -47,55 +47,45 @@ export const ConfirmationDialog = ({
 
   return (
     <Dialog
-      open={isOpen}
-      onOpenChange={(isOpen) => {
-        if (!isOpen) {
-          console.log("Dialog closed via onOpenChange");
-          close();
-        } else {
-          console.log("Dialog opened via onOpenChange");
-          open();
-        }
-      }}
-    >
-      <DialogTrigger asChild>{triggerButton}</DialogTrigger>
-      <DialogContent
-        className="sm:max-w-[425px]"
-        aria-labelledby="dialog-title"
-        aria-describedby="dialog-description"
-      >
-        <DialogHeader className="flex">
-          <DialogTitle className="flex items-center gap-2" id="dialog-title">
-            {icon === "danger" && (
-              <CircleAlert className="size-6 text-red-600" aria-hidden="true" />
-            )}
-            {icon === "info" && (
-              <Info className="size-6 text-blue-600" aria-hidden="true" />
-            )}
-            {title}
-          </DialogTitle>
-        </DialogHeader>
+    open={isOpen}
+    onOpenChange={(isOpen) => {
+      if (!isOpen) {
+        close();
+      } else {
+        open();
+      }
+    }}
+  >
+    <DialogTrigger asChild>{triggerButton}</DialogTrigger>
+    <DialogContent className="sm:max-w-[425px]">
+      <DialogHeader className="flex">
+        <DialogTitle className="flex items-center gap-2">
+          {' '}
+          {icon === 'danger' && (
+            <CircleAlert className="size-6 text-red-600" aria-hidden="true" />
+          )}
+          {icon === 'info' && (
+            <Info className="size-6 text-blue-600" aria-hidden="true" />
+          )}
+          {title}
+        </DialogTitle>
+      </DialogHeader>
 
+      <div className="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
         {body && (
-          <div className="mt-2" id="dialog-description">
+          <div className="mt-2">
             <p>{body}</p>
           </div>
         )}
+      </div>
 
-        <DialogFooter>
-          {confirmButton}
-          <Button
-            ref={cancelButtonRef}
-            variant="outline"
-            onClick={() => {
-              console.log("Cancel button clicked, closing dialog");
-              close();
-            }}
-          >
-            {cancelButtonText}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      <DialogFooter>
+        {confirmButton}
+        <Button ref={cancelButtonRef} variant="outline" onClick={close}>
+          {cancelButtonText}
+        </Button>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>
   );
 };

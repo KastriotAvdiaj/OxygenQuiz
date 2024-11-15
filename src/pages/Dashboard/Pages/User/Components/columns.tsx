@@ -94,7 +94,13 @@ export const columns: ColumnDef<User>[] = [
               <Copy size={16} /> Copy ID
             </DropdownMenuItem>
             <DropdownMenuSeparator className="bg-background" />
-            <DropdownMenuItem className="hover:bg-background">
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation(); // Prevent dropdown from closing
+                e.preventDefault(); // Prevent default behavior
+              }}
+              className="hover:bg-background"
+            >
               {/* <UserX size={16} /> Delete User */}
               <DeleteUser id={user.id} />
             </DropdownMenuItem>
