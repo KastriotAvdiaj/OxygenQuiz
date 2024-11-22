@@ -11,7 +11,7 @@ export type BaseEntity<TId = number> = {
   
 
   export type User = Entity<{
-    concurrencyStamp: string;
+    // concurrencyStamp: string;
     immutableName: string;  
     username: string;
     email: string;
@@ -34,18 +34,19 @@ export type BaseEntity<TId = number> = {
     roleUpdatedAt?: string[]; 
   }>;
 
-  export type AnswerOption = Entity<{
+  export type AnswerOption = {
     id : number;
     text: string;
     isCorrect: boolean;
-  }>;
+  };
 
-  export type Question = Entity<{
+  export type Question ={
+    id: number;
     question: string;
     difficulty: number; 
     difficultyDisplay: string; 
     answerOptions: AnswerOption[];
-  }>;
+  };
 
   export type AuthResponse = {
     token: string;

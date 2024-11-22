@@ -2,10 +2,22 @@ import { Button } from "@/components/ui/button";
 import { FormDrawer } from "@/components/ui/form";
 import { NewQuestion } from "./Components/create-question";
 import { Plus } from "lucide-react";
-// import { DataTable } from "@/components/ui";
-// import { columns } from "./Components/columns";
+import { Question } from "@/types/ApiTypes";
+import { QuestionCard } from "@/common/Question-Ui/question-card";
 
 export const Questions = () => {
+
+  const sampleQuestion: Question = {
+    id: 2,
+    question: "What is the capital of France?",
+    difficulty: 2,
+    difficultyDisplay: "Hard",
+    answerOptions: [
+      { id: 1, text: "Paris", isCorrect: true },
+      { id: 2, text: "Berlin", isCorrect: false },
+    ],
+  };
+
   return (
     <div>
       <FormDrawer
@@ -37,7 +49,7 @@ export const Questions = () => {
     >
       <NewQuestion />
     </FormDrawer>
-      {/* <DataTable columns={columns} data={[]} /> */}
+     <QuestionCard question={sampleQuestion} />
     </div>
   );
 };
