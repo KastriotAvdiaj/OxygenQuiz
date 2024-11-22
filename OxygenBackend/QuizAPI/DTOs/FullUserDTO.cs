@@ -3,6 +3,7 @@ using QuizAPI.Models;
 
 namespace QuizAPI.DTOs
 {
+    // Used for getting the users
     public class FullUserDTO
     {
         public Guid Id { get; set; }

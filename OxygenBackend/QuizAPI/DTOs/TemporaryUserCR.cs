@@ -1,5 +1,7 @@
 ﻿namespace QuizAPI.DTOs
 {
+
+    // Used for creating a new User
     public class TemporaryUserCR
     {
         public string Username { get; set; }

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using QuizAPI.Data;
 
@@ -11,9 +12,11 @@ using QuizAPI.Data;
 namespace QuizAPI.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20241121054235_answerandquestionupdate")]
+    partial class answerandquestionupdate
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -75,9 +78,6 @@ namespace QuizAPI.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<bool>("IsCorrect")
-                        .HasColumnType("bit");
-
                     b.Property<int>("QuestionId")
                         .HasColumnType("int");
 
@@ -124,7 +124,7 @@ namespace QuizAPI.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("Difficulty")
+                    b.Property<int>("CorrectAnswerOptionId")
                         .HasColumnType("int");
 
                     b.Property<string>("Text")
@@ -132,6 +132,8 @@ namespace QuizAPI.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CorrectAnswerOptionId");
 
                     b.ToTable("Questions");
                 });
@@ -306,6 +308,17 @@ namespace QuizAPI.Migrations
                     b.Navigation("Question");
                 });
 
+            modelBuilder.Entity("QuizAPI.Models.Question", b =>
+                {
+                    b.HasOne("QuizAPI.Models.AnswerOption", "CorrectAnswerOption")
+                        .WithMany("QuestionsWhereCorrect")
+                        .HasForeignKey("CorrectAnswerOptionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("CorrectAnswerOption");
+                });
+
             modelBuilder.Entity("QuizAPI.Models.UpdatedAt", b =>
                 {
                     b.HasOne("QuizAPI.Models.User", "User")
@@ -326,6 +339,11 @@ namespace QuizAPI.Migrations
                         .IsRequired();
 
                     b.Navigation("Role");
+                });
+
+            modelBuilder.Entity("QuizAPI.Models.AnswerOption", b =>
+                {
+                    b.Navigation("QuestionsWhereCorrect");
                 });
 
             modelBuilder.Entity("QuizAPI.Models.Permission", b =>

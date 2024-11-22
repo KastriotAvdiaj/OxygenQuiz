@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using QuizAPI.ManyToManyTables;
 using QuizAPI.Models;
+using System;
 
 namespace QuizAPI.Data
 {
@@ -8,6 +9,10 @@ namespace QuizAPI.Data
     {
 
         public DbSet<User> Users { get; set; }
+
+        public DbSet<Question> Questions { get; set; }
+
+        public DbSet<AnswerOption> AnswerOptions { get; set; }
 
         public DbSet<Permission> Permissions { get; set; }
 
@@ -77,6 +82,18 @@ namespace QuizAPI.Data
                 .WithMany() // or WithMany(u => u.UpdatedAt) if a collection exists in User
                 .HasForeignKey(u => u.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+
+
+            // Configuration for Question-AnswerOptions relationship
+            modelBuilder.Entity<Question>()
+            .HasMany(q => q.AnswerOptions)
+            .WithOne(a => a.Question)
+            .HasForeignKey(a => a.QuestionId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+   
+
         }
     }
 }

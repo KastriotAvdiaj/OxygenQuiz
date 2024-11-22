@@ -1,5 +1,6 @@
 ﻿namespace QuizAPI.DTOs
 {
+    // Used for logging the User in
     public class UserDTO
     {
         public Guid Id { get; set; }
