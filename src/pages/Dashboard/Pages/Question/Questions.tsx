@@ -2,8 +2,8 @@ import { Button } from "@/components/ui/button";
 import { FormDrawer } from "@/components/ui/form";
 import { NewQuestion } from "./Components/create-question";
 import { Plus } from "lucide-react";
-import { DataTable } from "@/components/ui";
-import { columns } from "./Components/columns";
+// import { DataTable } from "@/components/ui";
+// import { columns } from "./Components/columns";
 
 export const Questions = () => {
   return (
@@ -28,7 +28,7 @@ export const Questions = () => {
           className="rounded-sm"
           type="submit"
           size="default"
-          isPending={true}
+          isPending={false}
           disabled={false}
         >
           Submit
@@ -37,7 +37,7 @@ export const Questions = () => {
     >
       <NewQuestion />
     </FormDrawer>
-      <DataTable columns={columns} data={[]} />
+      {/* <DataTable columns={columns} data={[]} /> */}
     </div>
   );
 };
