@@ -19,10 +19,27 @@ namespace QuizAPI.Controllers
 
         // GET: api/Questions
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Question>>> GetQuestions()
+        public async Task<ActionResult<IEnumerable<QuestionDTO>>> GetQuestions()
         {
-            return await _context.Questions.Include(q => q.AnswerOptions).ToListAsync();
+            var questionDTOs = await _context.Questions
+                .Select(q => new QuestionDTO
+                {
+                    ID = q.Id,
+                    Text = q.Text,
+                    Difficulty = q.Difficulty,
+                    AnswerOptions = q.AnswerOptions.Select(ao => new AnswerOptionDTO
+                    {
+                        ID = ao.Id,
+                        Text = ao.Text,
+                        IsCorrect = ao.IsCorrect
+                    }).ToList()
+                })
+                .ToListAsync();
+
+            return Ok(questionDTOs);
         }
+
+
 
         // GET: api/Questions/{id}
         [HttpGet("{id}")]
@@ -39,7 +56,7 @@ namespace QuizAPI.Controllers
 
         // POST: api/Questions
         [HttpPost]
-        public async Task<ActionResult<Question>> CreateQuestionWithDto(QuestionDto questionDto)
+        public async Task<ActionResult<Question>> CreateQuestionWithDto(QuestionCM questionDto)
         {
             // Validate the DTO
             if (questionDto == null)
@@ -89,7 +106,7 @@ namespace QuizAPI.Controllers
 
         // PUT: api/Questions/{id}
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateQuestion(int id, QuestionDto questionDto)
+        public async Task<IActionResult> UpdateQuestion(int id, QuestionCM questionDto)
         {
             var question = await _context.Questions.Include(q => q.AnswerOptions)
                 .FirstOrDefaultAsync(q => q.Id == id);
