@@ -34,17 +34,17 @@ export type BaseEntity<TId = number> = {
     roleUpdatedAt?: string[]; 
   }>;
 
+  export type AnswerOption = Entity<{
+    id : number;
+    text: string;
+    isCorrect: boolean;
+  }>;
+
   export type Question = Entity<{
     question: string;
-    questionType: string;
-    questionImage: string;
-    option1: string;
-    option2: string;
-    option3: string;
-    option4: string;
-    correctAnswer: string;
-    wrongAnswer1: string;
-    wrongAnswer2: string; 
+    difficulty: number; 
+    difficultyDisplay: string; 
+    answerOptions: AnswerOption[];
   }>;
 
   export type AuthResponse = {
