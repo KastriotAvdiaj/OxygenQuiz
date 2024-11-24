@@ -18,6 +18,7 @@ export const AdminQuestionCard: React.FC<QuestionAdminCardProps> = ({
   //   onDelete,
   // onUpdate,
 }) => {
+
   const [isEditing, setIsEditing] = useState(false);
 
   const handleEdit = () => setIsEditing(true);
@@ -45,7 +46,7 @@ export const AdminQuestionCard: React.FC<QuestionAdminCardProps> = ({
       <CardHeader>
         <div className="flex justify-between items-center">
           <CardTitle className="text-2xl font-bold">
-            {isEditing ? "Edit Question" : question.question}
+            {isEditing ? "Edit Question" : question.text}
           </CardTitle>
           <Badge
             className={`${getDifficultyColor(

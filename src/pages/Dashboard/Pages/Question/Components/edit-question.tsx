@@ -44,7 +44,7 @@ export const QuestionEditForm: React.FC<QuestionEditFormProps> = ({
         <Input
           id="question"
           name="question"
-          value={editedQuestion.question}
+          value={editedQuestion.text}
           onChange={handleInputChange}
           className="mt-1"
         />

@@ -42,7 +42,7 @@ export type BaseEntity<TId = number> = {
 
   export type Question ={
     id: number;
-    question: string;
+    text: string;
     difficulty: number; 
     difficultyDisplay: string; 
     answerOptions: AnswerOption[];
