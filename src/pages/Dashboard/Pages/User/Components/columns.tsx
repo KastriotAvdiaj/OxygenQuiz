@@ -74,10 +74,13 @@ export const columns: ColumnDef<User>[] = [
     header: "Actions",
     cell: ({ row }) => {
       const user = row.original;
-      const {open, isOpen } = useDisclosure();
+      const { open, isOpen, close } = useDisclosure();
 
       return (
-        <DropdownMenu open={isOpen} onOpenChange={open}>
+        <DropdownMenu
+          open={isOpen}
+          onOpenChange={(state) => (state ? open() : close())}
+        >
           <DropdownMenuTrigger asChild>
             <Button
               variant="default"
@@ -87,7 +90,7 @@ export const columns: ColumnDef<User>[] = [
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className=" bg-background-secondary">
+          <DropdownMenuContent align="end" className="bg-background-secondary">
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
             <DropdownMenuItem
               onClick={() => navigator.clipboard.writeText(user.id)}
@@ -99,11 +102,11 @@ export const columns: ColumnDef<User>[] = [
             <DropdownMenuItem
               onClick={(e) => {
                 e.stopPropagation();
-                e.preventDefault(); 
+                e.preventDefault();
               }}
               className="hover:bg-background"
             >
-              <DeleteUser id={user.id} setDropdownOpen={open} />
+              <DeleteUser id={user.id} closeDropDown={close} />
             </DropdownMenuItem>
             <DropdownMenuSeparator className="bg-background" />
             <DropdownMenuItem className="hover:bg-background">

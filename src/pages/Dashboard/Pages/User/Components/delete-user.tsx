@@ -7,10 +7,10 @@ import { UserX } from "lucide-react";
 
 type DeleteUserProps = {
   id: string;
-  setDropdownOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  closeDropDown: () => void;
 };
 
-export const DeleteUser = ({ id, setDropdownOpen }: DeleteUserProps) => {
+export const DeleteUser = ({ id, closeDropDown }: DeleteUserProps) => {
   const user = useUser();
   const { addNotification } = useNotifications();
   const deleteUserMutation = useDeleteUser({
@@ -20,14 +20,17 @@ export const DeleteUser = ({ id, setDropdownOpen }: DeleteUserProps) => {
           type: "success",
           title: "User Deleted",
         });
-        setDropdownOpen(false);
+        closeDropDown();
       },
     },
   });
 
   if (user.data?.id === id)
     return (
-      <Button className="" disabled>
+      <Button
+        className="gap-2 h-5 font-normal px-0 hover:bg-background hover:text-white]"
+        disabled
+      >
         <UserX size={16} /> Delete User
       </Button>
     );
@@ -39,10 +42,7 @@ export const DeleteUser = ({ id, setDropdownOpen }: DeleteUserProps) => {
       title="Delete User"
       body="Are you sure you want to delete this user?"
       triggerButton={
-        <Button
-          variant="default"
-          className="h-5 font-normal px-0"
-        >
+        <Button variant="userMenu" className="h-5 font-normal px-0">
           <UserX size={16} /> Delete User
         </Button>
       }
