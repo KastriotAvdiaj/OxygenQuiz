@@ -58,10 +58,10 @@ export const QuestionEditForm: React.FC<QuestionEditFormProps> = ({
           <SelectTrigger className="mt-1">
             <SelectValue placeholder="Select difficulty" />
           </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="Easy">Easy</SelectItem>
-            <SelectItem value="Medium">Medium</SelectItem>
-            <SelectItem value="Hard">Hard</SelectItem>
+          <SelectContent className="bg-background-secondary">
+            <SelectItem value="Easy" className="hover:bg-background cursor-pointer">Easy</SelectItem>
+            <SelectItem value="Medium" className="hover:bg-background cursor-pointer">Medium</SelectItem>
+            <SelectItem value="Hard" className="hover:bg-background  cursor-pointer">Hard</SelectItem>
           </SelectContent>
         </Select>
       </div>

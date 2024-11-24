@@ -1,15 +1,15 @@
-import React from 'react'
-import { AnswerOption } from '@/types/ApiTypes'
-import { Check, X, Trash2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/form'
-import { Label } from '@/components/ui/form'
-import { Switch } from '@/components/ui/switch'
+import React from "react";
+import { AnswerOption } from "@/types/ApiTypes";
+import { Check, X, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/form";
+import { Label } from "@/components/ui/form";
+import { Switch } from "@/components/ui/switch";
 
 interface AnswerOptionListProps {
-  options: AnswerOption[]
-  onUpdate?: (updatedOptions: AnswerOption[]) => void
-  isEditing?: boolean
+  options: AnswerOption[];
+  onUpdate?: (updatedOptions: AnswerOption[]) => void;
+  isEditing?: boolean;
 }
 
 export const AnswerOptionList: React.FC<AnswerOptionListProps> = ({
@@ -17,49 +17,60 @@ export const AnswerOptionList: React.FC<AnswerOptionListProps> = ({
   onUpdate,
   isEditing = false,
 }) => {
-  const handleOptionChange = (index: number, field: keyof AnswerOption, value: any) => {
+  const handleOptionChange = (
+    index: number,
+    field: keyof AnswerOption,
+    value: any
+  ) => {
     if (onUpdate) {
-      const updatedOptions = [...options]
-      updatedOptions[index] = { ...updatedOptions[index], [field]: value }
-      onUpdate(updatedOptions)
+      const updatedOptions = [...options];
+      updatedOptions[index] = { ...updatedOptions[index], [field]: value };
+      onUpdate(updatedOptions);
     }
-  }
+  };
 
   const handleAddOption = () => {
     if (onUpdate) {
       const newOption: AnswerOption = {
         id: Date.now(),
-        text: '',
+        text: "",
         isCorrect: false,
-      }
-      onUpdate([...options, newOption])
+      };
+      onUpdate([...options, newOption]);
     }
-  }
+  };
 
   const handleRemoveOption = (index: number) => {
     if (onUpdate) {
-      const updatedOptions = options.filter((_, i) => i !== index)
-      onUpdate(updatedOptions)
+      const updatedOptions = options.filter((_, i) => i !== index);
+      onUpdate(updatedOptions);
     }
-  }
+  };
 
   return (
     <div className="space-y-4">
       {options.map((option, index) => (
-        <div key={option.id} className="flex items-center space-x-2">
+        <div key={option.id} className="flex items-center justify-between space-x-4">
           {isEditing ? (
             <>
-              <Input
-                value={option.text}
-                onChange={(e) => handleOptionChange(index, 'text', e.target.value)}
-                className="flex-grow"
-              />
-              <div className="flex items-center space-x-2">
-                <Switch
-                  checked={option.isCorrect}
-                  onCheckedChange={(checked) => handleOptionChange(index, 'isCorrect', checked)}
+              <div className="flex items-center space-x-4">
+                <Input
+                  value={option.text}
+                  onChange={(e) =>
+                    handleOptionChange(index, "text", e.target.value)
+                  }
+                  className="flex-grow"
                 />
-                <Label>Correct</Label>
+                <div className="flex items-center space-x-3">
+                  <Switch
+                    className="border-text-hover"
+                    checked={option.isCorrect}
+                    onCheckedChange={(checked) =>
+                      handleOptionChange(index, "isCorrect", checked)
+                    }
+                  />
+                  <Label>Correct</Label>
+                </div>
               </div>
               <Button
                 type="button"
@@ -88,6 +99,5 @@ export const AnswerOptionList: React.FC<AnswerOptionListProps> = ({
         </Button>
       )}
     </div>
-  )
-}
-
+  );
+};
