@@ -3,10 +3,10 @@ import { FormDrawer } from "@/components/ui/form";
 import { NewQuestion } from "./Components/create-question";
 import { Plus } from "lucide-react";
 import { Question } from "@/types/ApiTypes";
-import { QuestionCard } from "@/common/Question-Ui/question-card";
+// import { UserQuestionCard } from "@/pages/Dashboard/Pages/Question/Components/user-question-card";
+import { AdminQuestionCard } from "@/pages/Dashboard/Pages/Question/Components/admin-question-card";
 
 export const Questions = () => {
-
   const sampleQuestion: Question = {
     id: 2,
     question: "What is the capital of France?",
@@ -21,35 +21,35 @@ export const Questions = () => {
   return (
     <div>
       <FormDrawer
-      isDone={false}
-      triggerButton={
-        <Button
-          variant="addSave"
-          className="bg-text-hover rounded-sm"
-          size="sm"
-          icon={<Plus className="size-4" />}
-        >
-          Create Question
-        </Button>
-      }
-      title="Create Question"
-      submitButton={
-        <Button
-          form="create-user"
-          variant="addSave"
-          className="rounded-sm"
-          type="submit"
-          size="default"
-          isPending={false}
-          disabled={false}
-        >
-          Submit
-        </Button>
-      }
-    >
-      <NewQuestion />
-    </FormDrawer>
-     <QuestionCard question={sampleQuestion} />
+        isDone={false}
+        triggerButton={
+          <Button
+            variant="addSave"
+            className="bg-text-hover rounded-sm text-white"
+            size="sm"
+            icon={<Plus className="size-4" />}
+          >
+            Create Question
+          </Button>
+        }
+        title="Create Question"
+        submitButton={
+          <Button
+            form="create-user"
+            variant="addSave"
+            className="rounded-sm text-white"
+            type="submit"
+            size="default"
+            isPending={false}
+            disabled={false}
+          >
+            Submit
+          </Button>
+        }
+      >
+        <NewQuestion />
+      </FormDrawer>
+      <AdminQuestionCard question={sampleQuestion} />
     </div>
   );
 };

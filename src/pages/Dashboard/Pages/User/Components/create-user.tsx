@@ -48,7 +48,7 @@ export const CreateUserForm = () => {
         <Button
           form="create-user"
           variant="addSave"
-          className="rounded-sm"
+          className="rounded-sm text-white"
           type="submit"
           size="default"
           isPending={createUserMutation.isPending}
