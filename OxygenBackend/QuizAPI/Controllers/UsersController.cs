@@ -169,7 +169,7 @@ namespace QuizAPI.Controllers
                 return NotFound();
             }
 
-            _context.Users.Remove(user);
+            user.IsDeleted = true;
             await _context.SaveChangesAsync();
 
             return NoContent();
