@@ -52,8 +52,8 @@ export const Questions = () => {
             <NewQuestion />
           </FormDrawer>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
+        <CardContent className="mt-10">
+          <div className="space-y-6">
             {questions.map((question) => (
               <AdminQuestionCard key={question.id} question={question} />
             ))}
