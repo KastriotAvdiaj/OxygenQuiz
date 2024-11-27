@@ -1,7 +1,6 @@
 
 export type BaseEntity<TId = number> = {
     id: TId;
-    createdAt: string;
     concurrencyStamp: string;
   };
   

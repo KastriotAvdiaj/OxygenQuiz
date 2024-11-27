@@ -28,6 +28,16 @@ export const Users = () => {
     );
   }
 
+  if (usersQuery.isError) {
+    return (
+      <div className="flex h-48 w-full items-center justify-center">
+        <p className="text-red-500">
+          Failed to load users. Please try again later.
+        </p>
+      </div>
+    );
+  }
+
   const users = usersQuery.data;
 
   if (!users) return null;

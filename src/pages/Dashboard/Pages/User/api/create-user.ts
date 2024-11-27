@@ -18,7 +18,6 @@ export const createUserInputSchema = z.object({
 export type CreateUserInput = z.infer<typeof createUserInputSchema>;
 
 export const createUser =({data }: {data: CreateUserInput}): Promise<User> => {
-  console.log("hello");
     return api.post('/Users', data);
 }
 
