@@ -8,13 +8,19 @@ import { Question } from "@/types/ApiTypes";
 import { getQuestionsQueryOptions } from "./get-questions";
 
 export const createQuestionInputSchema = z.object({
-  question: z.string().min(1, 'Required'),
-  difficulty: z.number().min(1, 'Required'),
-  answerOptions: z.array(z.object({
-    text: z.string().min(1, 'Required'),
-    isCorrect: z.boolean()
-  })).min(2, 'At least two answers are required')
+  text: z.string().min(1, "Required"), 
+  difficulty: z.number().min(0, "Difficulty must be 0 or greater"),
+  answerOptions: z
+    .array(
+      z.object({
+        text: z.string().min(1, "Answer text is required"),
+        isCorrect: z.boolean(),
+      })
+    )
+    .min(2, "At least one answer option is required")
+    .max(4, "No more than 4 answer options are allowed"), 
 });
+
 
 export type CreateQuestionInput = z.infer<typeof createQuestionInputSchema>;
 

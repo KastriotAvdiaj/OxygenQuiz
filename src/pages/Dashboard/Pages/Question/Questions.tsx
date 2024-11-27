@@ -1,7 +1,5 @@
-import { Button } from "@/components/ui/button";
-import { FormDrawer } from "@/components/ui/form";
+
 import { NewQuestion } from "./Components/create-question";
-import { Plus } from "lucide-react";
 import { AdminQuestionCard } from "./Components/admin-question-card";
 import { useQuestionData } from "./api/get-questions";
 import { Spinner } from "@/components/ui/Spinner";
@@ -25,32 +23,7 @@ export const Questions = () => {
       <Card className="p-5 bg-background-secondary border-none rounded-sm">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-2xl font-bold">Questions Dashboard</CardTitle>
-          <FormDrawer
-            isDone={false}
-            triggerButton={
-              <Button
-                variant="addSave"
-                className="bg-text-hover rounded-sm text-white"
-                size="sm"
-                icon={<Plus className="size-4" />}
-              >
-                Create Question
-              </Button>
-            }
-            title="Create Question"
-            submitButton={
-              <Button
-                form="create-question"
-                variant="addSave"
-                className="rounded-sm text-white"
-                type="submit"
-              >
-                Submit
-              </Button>
-            }
-          >
-            <NewQuestion />
-          </FormDrawer>
+          <NewQuestion/>
         </CardHeader>
         <CardContent className="mt-10">
           <div className="space-y-6">

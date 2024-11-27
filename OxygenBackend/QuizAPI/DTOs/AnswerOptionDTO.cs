@@ -7,7 +7,7 @@ namespace QuizAPI.DTOs
     {
         public string Text { get; set; } = string.Empty;
         public DifficultyLevel Difficulty { get; set; }
-        public List<AnswerOptionDTO> AnswerOptions { get; set; }
+        public List<AnswerOptionCM> AnswerOptions { get; set; }
     }
 
     // Used for sending the data - Transferring the model 

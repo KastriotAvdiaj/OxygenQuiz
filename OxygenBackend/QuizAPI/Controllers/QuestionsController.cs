@@ -86,7 +86,7 @@ namespace QuizAPI.Controllers
                 {
                     Text = optionDto.Text,
                     IsCorrect = optionDto.IsCorrect,
-                    Question = question // Set the navigation property
+                    Question = question 
                 };
                 question.AnswerOptions.Add(answerOption);
             }
@@ -98,7 +98,7 @@ namespace QuizAPI.Controllers
         }
 
         // Uses AnswerOptionDTO
-        private static bool ValidateAnswerOptions(ICollection<AnswerOptionDTO> options)
+        private static bool ValidateAnswerOptions(ICollection<AnswerOptionCM> options)
         {
             return options.Any(a => a.IsCorrect) && options.Any(a => !a.IsCorrect);
         }

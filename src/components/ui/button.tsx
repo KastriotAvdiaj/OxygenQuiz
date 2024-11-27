@@ -17,6 +17,7 @@ const buttonVariants = cva(
           "flex justify-center items-center gap-3 border border-border shadow-sm hover:bg-[var(--outline-button)] active:scale-95",
         secondary: "bg-secondary shadow-sm active:scale-95",
         link: "underline-offset-4 hover:underline active:scale-95",
+        ghost: "hover:bg-accent hover:text-accent-foreground",
         userMenu:
           "bg-primary gap-2 shadow hover:bg-background active:scale-95 h-5 font-normal px-0",
         drawer:
