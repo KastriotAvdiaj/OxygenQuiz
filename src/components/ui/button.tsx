@@ -12,7 +12,7 @@ const buttonVariants = cva(
         default: "bg-primary gap-2 shadow hover:bg-background active:scale-95",
         icon: "bg-background gap-2 shadow p-0 m-0",
         addSave:
-          "flex justify-center items-center gap-2 shadow text-text bg-text-hover hover:bg-text-hover-darker active:scale-95",
+          "flex justify-center items-center gap-2 shadow text-white bg-text-hover hover:bg-text-hover-darker active:scale-95",
         outline:
           "flex justify-center items-center gap-3 border border-border shadow-sm hover:bg-[var(--outline-button)] active:scale-95",
         secondary: "bg-secondary shadow-sm active:scale-95",
