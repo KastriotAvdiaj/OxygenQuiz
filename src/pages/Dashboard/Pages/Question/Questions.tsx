@@ -1,4 +1,3 @@
-
 import { CreateQuestionForm } from "./Components/create-question";
 import { AdminQuestionCard } from "./Components/admin-question-card";
 import { useQuestionData } from "./api/get-questions";
@@ -22,8 +21,10 @@ export const Questions = () => {
     <div className="space-y-4 my-5 p-6">
       <Card className="p-5 bg-background-secondary border-none rounded-sm">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-2xl font-bold">Questions Dashboard</CardTitle>
-          <CreateQuestionForm/>
+          <CardTitle className="text-2xl font-bold">
+            Questions Dashboard
+          </CardTitle>
+          <CreateQuestionForm />
         </CardHeader>
         <CardContent className="mt-10">
           <div className="space-y-6">

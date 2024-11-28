@@ -8,8 +8,8 @@ import { Question } from "@/types/ApiTypes";
 import { getQuestionsQueryOptions } from "./get-questions";
 
 export const createQuestionInputSchema = z.object({
-  text: z.string().min(1, "Required"), 
-  difficulty: z.number().min(0, "Difficulty must be 0 or greater"),
+  text: z.string().min(1, "Question is required"), 
+  difficulty: z.number().min(0, "Difficulty is required"),
   answerOptions: z
     .array(
       z.object({
@@ -19,7 +19,13 @@ export const createQuestionInputSchema = z.object({
     )
     .min(2, "At least one answer option is required")
     .max(4, "No more than 4 answer options are allowed"), 
-});
+}) .refine(
+  (data) => data.answerOptions.some((option) => option.isCorrect),
+  {
+    path: ["answerOptions"], // Points to the specific field causing the error
+    message: "At least one answer option must be marked as correct",
+  }
+);
 
 
 export type CreateQuestionInput = z.infer<typeof createQuestionInputSchema>;
