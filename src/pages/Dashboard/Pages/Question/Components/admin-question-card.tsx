@@ -1,5 +1,3 @@
-'use client'
-
 import React, { useState, useRef, useEffect } from "react"
 import { Question } from "@/types/ApiTypes"
 import { Card, CardContent } from "@/components/ui/card"
@@ -9,6 +7,7 @@ import { Pencil, Trash2, ChevronDown, ChevronUp } from 'lucide-react'
 import { QuestionEditForm } from "./edit-question"
 import { AnswerOptionList } from "./answer-otpion-list"
 import gsap from "gsap"
+import { Label } from "@/components/ui/form"
 
 interface QuestionAdminCardProps {
   question: Question
@@ -80,9 +79,13 @@ export const AdminQuestionCard: React.FC<QuestionAdminCardProps> = ({ question }
       <div className="flex items-start justify-between p-4">
         <div
           onClick={handleToggle}
-          className="flex-grow cursor-pointer flex items-center justify-between pr-4"
+          className="flex-grow cursor-pointer flex items-center h-full justify-between pr-4"
         >
-          <h3 className="text-xl font-semibold">{question.text}</h3>
+          <div onClick={handleToggle}>
+            <h3 className="text-xl font-semibold">{question.text}</h3>
+          <Label className="text-sm text-gray-300 ml-2">Category</Label>
+
+          </div>
           {isExpanded ? (
             <ChevronUp className="h-5 w-5 text-gray-500 ml-2" />
           ) : (
@@ -96,16 +99,27 @@ export const AdminQuestionCard: React.FC<QuestionAdminCardProps> = ({ question }
           >
             {question.difficultyDisplay}
           </Badge>
-          {isHovered && (
-            <div className="flex space-x-2">
-              <Button variant="ghost" size="icon" className="hover:text-blue-500" onClick={handleEdit}>
-                <Pencil className="h-4 w-4" />
-              </Button>
-              <Button variant="ghost" size="icon" className="hover:text-red-500">
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
-          )}
+          <div className="flex space-x-2 transition-opacity duration-200" style={{ opacity: isHovered ? 1 : 0 }}>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="hover:text-blue-500"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleEdit();
+              }}
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="hover:text-red-500"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
       <div ref={contentRef} className="overflow-hidden">
@@ -120,3 +134,4 @@ export const AdminQuestionCard: React.FC<QuestionAdminCardProps> = ({ question }
     </Card>
   )
 }
+

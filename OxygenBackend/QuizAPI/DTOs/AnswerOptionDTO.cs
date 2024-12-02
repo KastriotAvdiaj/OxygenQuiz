@@ -7,6 +7,8 @@ namespace QuizAPI.DTOs
     {
         public string Text { get; set; } = string.Empty;
         public DifficultyLevel Difficulty { get; set; }
+
+        public string Category { get; set; }
         public List<AnswerOptionCM> AnswerOptions { get; set; }
     }
 
@@ -18,6 +20,8 @@ namespace QuizAPI.DTOs
 
         public DifficultyLevel Difficulty { get; set; }
         public string DifficultyDisplay => Difficulty.ToDisplayString();
+    
+        public string Category {  get; set; }
 
         public List<AnswerOptionDTO> AnswerOptions { get; set; }
 

@@ -1,4 +1,6 @@
-﻿namespace QuizAPI.Models
+﻿using System.Text.Json.Serialization;
+
+namespace QuizAPI.Models
 {
     public enum DifficultyLevel
     {
@@ -12,5 +14,10 @@
             public string Text { get; set; } = string.Empty;
             public ICollection<AnswerOption> AnswerOptions { get; set; }
             public DifficultyLevel Difficulty { get; set; } 
+
+            public int CategoryId {  get; set; }
+
+            [JsonIgnore]
+            public QuestionCategory Category { get; set; }
         }
 }

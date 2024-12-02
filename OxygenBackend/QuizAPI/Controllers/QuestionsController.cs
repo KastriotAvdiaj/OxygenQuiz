@@ -71,12 +71,14 @@ namespace QuizAPI.Controllers
             if (!ValidateAnswerOptions(questionDto.AnswerOptions))
                 return BadRequest("Each question must have at least one correct and one incorrect answer.");
 
-            // Map DTO to Entity
+            var category = await _context.QuestionCategories.FirstOrDefaultAsync(c => c.Name == questionDto.Category);
+
             var question = new Question
             {
                 Text = questionDto.Text,
                 Difficulty = questionDto.Difficulty,
-                AnswerOptions = new List<AnswerOption>() 
+                AnswerOptions = new List<AnswerOption>(), 
+                CategoryId = category.Id
             };
 
             // Create and add each answer option
