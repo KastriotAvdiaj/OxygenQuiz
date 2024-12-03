@@ -91,7 +91,7 @@ namespace QuizAPI.Controllers
               return Problem("Entity set 'ApplicationDbContext.QuestionCategories'  is null.");
           }
             _context.QuestionCategories.Add(questionCategory);
-            await _context.SaveChangesAsync();+
+            await _context.SaveChangesAsync();
 
             return CreatedAtAction("GetQuestionCategory", new { id = questionCategory.Id }, questionCategory);
         }

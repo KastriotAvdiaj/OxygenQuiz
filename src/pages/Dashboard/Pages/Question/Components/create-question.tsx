@@ -7,6 +7,7 @@ import {
   createQuestionInputSchema,
   useCreateQuestion,
 } from "../api/create-question";
+import { QuestionCategory } from "@/types/ApiTypes";
 import { useFieldArray } from "react-hook-form";
 import {
   Select,
@@ -23,7 +24,13 @@ const difficultyOptions = [
   { label: "Hard", value: 2 },
 ];
 
-export const CreateQuestionForm = () => {
+interface CreateQuestionFormProps {
+  categories: QuestionCategory[];
+}
+
+export const CreateQuestionForm: React.FC<CreateQuestionFormProps> = ({
+  categories,
+}) => {
   const { addNotification } = useNotifications();
   const createQuestionMutation = useCreateQuestion({
     mutationConfig: {
@@ -66,7 +73,7 @@ export const CreateQuestionForm = () => {
     >
       <Form
         id="create-question"
-        className="w-[400px]"
+        className="w-[500px]"
         onSubmit={(values) => {
           const isCorrectSelected = values.answerOptions.some(
             (option) => option.isCorrect
@@ -113,15 +120,35 @@ export const CreateQuestionForm = () => {
 
           return (
             <>
-              <Input
-                className={`py-6 ${
-                  formState.errors["text"] ? "border-red-500" : "border-border"
-                }`}
-                placeholder="Question Text..."
-                label="Question Text"
-                error={formState.errors["text"]}
-                registration={register("text")}
-              />
+              <div className="grid grid-cols-[1fr_auto] gap-5 items-center">
+                <Input
+                  className={`py-6 w-full ${
+                    formState.errors["text"]
+                      ? "border-red-500"
+                      : "border-border"
+                  }`}
+                  placeholder="Question Text..."
+                  label="Question Text"
+                  error={formState.errors["text"]}
+                  registration={register("text")}
+                />
+                <Select>
+                  <SelectTrigger id="category">
+                    <SelectValue placeholder="Category" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background-secondary cursor-pointer">
+                    {categories.map((category) => (
+                      <SelectItem
+                        className="hover:bg-background cursor-pointer focus:bg-background"
+                        value="math"
+                      >
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="flex flex-col space-y-1.5">
                 <Label htmlFor="difficulty">Difficulty</Label>
                 <Select

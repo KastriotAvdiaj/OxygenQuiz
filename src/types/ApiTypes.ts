@@ -47,6 +47,11 @@ export type BaseEntity<TId = number> = {
     answerOptions: AnswerOption[];
   };
 
+  export type QuestionCategory = {
+    id: number;
+    name: string;
+  };
+
   export type AuthResponse = {
     token: string;
     user: User;
