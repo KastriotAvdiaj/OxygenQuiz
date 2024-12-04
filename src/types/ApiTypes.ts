@@ -43,6 +43,7 @@ export type BaseEntity<TId = number> = {
     id: number;
     text: string;
     difficulty: number; 
+    category: string;
     difficultyDisplay: string; 
     answerOptions: AnswerOption[];
   };

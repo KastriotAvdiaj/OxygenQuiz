@@ -27,6 +27,7 @@ namespace QuizAPI.Controllers
                     ID = q.Id,
                     Text = q.Text,
                     Difficulty = q.Difficulty,
+                    Category = q.Category.Name,
                     AnswerOptions = q.AnswerOptions.Select(ao => new AnswerOptionDTO
                     {
                         ID = ao.Id,

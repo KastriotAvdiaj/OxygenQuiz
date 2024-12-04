@@ -120,7 +120,7 @@ export const CreateQuestionForm: React.FC<CreateQuestionFormProps> = ({
 
           return (
             <>
-              <div className="grid grid-cols-[1fr_auto] gap-5 items-center">
+              <div className="grid grid-cols-[1fr_0.7fr] items-center gap-2">
                 <Input
                   className={`py-6 w-full ${
                     formState.errors["text"]
@@ -132,21 +132,27 @@ export const CreateQuestionForm: React.FC<CreateQuestionFormProps> = ({
                   error={formState.errors["text"]}
                   registration={register("text")}
                 />
-                <Select>
-                  <SelectTrigger id="category">
-                    <SelectValue placeholder="Category" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-background-secondary cursor-pointer">
-                    {categories.map((category) => (
-                      <SelectItem
-                        className="hover:bg-background cursor-pointer focus:bg-background"
-                        value="math"
-                      >
-                        {category.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="flex flex-col">
+                  <Label htmlFor="category">Select Category</Label>
+                  <Select
+                    onValueChange={(value) => setValue("category", value)}
+                  >
+                    <SelectTrigger className="mt-2" id="category">
+                      <SelectValue placeholder="Category" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-background-secondary cursor-pointer">
+                      {categories.map((category) => (
+                        <SelectItem
+                          className="hover:bg-background cursor-pointer focus:bg-background"
+                          key={category.id}
+                          value={category.name}
+                        >
+                          {category.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               <div className="flex flex-col space-y-1.5">
