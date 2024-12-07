@@ -17,6 +17,7 @@ import {
   SelectValue,
   Switch,
 } from "@/components/ui";
+import { Separator } from "@/components/ui/separator";
 
 const difficultyOptions = [
   { label: "Easy", value: 0 },
@@ -120,32 +121,39 @@ export const CreateQuestionForm: React.FC<CreateQuestionFormProps> = ({
 
           return (
             <>
-              <div className="grid grid-cols-[1fr_0.7fr] items-center gap-2">
-                <Input
-                  className={`py-6 w-full ${
-                    formState.errors["text"]
-                      ? "border-red-500"
-                      : "border-border"
-                  }`}
-                  placeholder="Question Text..."
-                  label="Question Text"
-                  error={formState.errors["text"]}
-                  registration={register("text")}
-                />
-                <div className="flex flex-col">
-                  <Label htmlFor="category">Select Category</Label>
+              <div className="grid grid-[2fr_1fr] w-full gap-5">
+                <div className="space-y-2">
+                  <Label htmlFor="questionText" className="text-sm font-medium">
+                    Question Text
+                  </Label>
+                  <Input
+                    id="questionText"
+                    className={`py-2 w-full ${
+                      formState.errors["text"]
+                        ? "border-red-500"
+                        : "border-border"
+                    }`}
+                    placeholder="Enter your question here..."
+                    error={formState.errors["text"]}
+                    registration={register("text")}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="category" className="text-sm font-medium">
+                    Category
+                  </Label>
                   <Select
                     onValueChange={(value) => setValue("category", value)}
                   >
-                    <SelectTrigger className="mt-2" id="category">
-                      <SelectValue placeholder="Category" />
+                    <SelectTrigger id="category" className="w-full">
+                      <SelectValue placeholder="Select a category" />
                     </SelectTrigger>
-                    <SelectContent className="bg-background-secondary cursor-pointer">
+                    <SelectContent className="bg-background-secondary">
                       {categories.map((category) => (
                         <SelectItem
-                          className="hover:bg-background cursor-pointer focus:bg-background"
                           key={category.id}
                           value={category.name}
+                          className="hover:bg-background cursor-pointer focus:bg-background"
                         >
                           {category.name}
                         </SelectItem>
@@ -154,7 +162,7 @@ export const CreateQuestionForm: React.FC<CreateQuestionFormProps> = ({
                   </Select>
                 </div>
               </div>
-
+              <Separator className="bg-gray-500" />
               <div className="flex flex-col space-y-1.5">
                 <Label htmlFor="difficulty">Difficulty</Label>
                 <Select
@@ -184,12 +192,13 @@ export const CreateQuestionForm: React.FC<CreateQuestionFormProps> = ({
                     ))}
                   </SelectContent>
                 </Select>
-                {formState.errors["difficulty"] && (
+                {/* {formState.errors["difficulty"] && (
                   <p className="text-sm text-red-500 font-semibold">
                     {formState.errors["difficulty"].message}
                   </p>
-                )}
+                )} */}
               </div>
+              <Separator className="bg-gray-500" />
 
               <div className="space-y-4 mt-4">
                 <Label className="block text-sm font-medium">
@@ -198,11 +207,11 @@ export const CreateQuestionForm: React.FC<CreateQuestionFormProps> = ({
                 {fields.map((field, index) => (
                   <div
                     key={field.id}
-                    className="flex items-center justify-between"
+                    className="flex items-center justify-left gap-6"
                   >
                     <Input
                       className={`${
-                        formState.errors["difficulty"] && "border-red-500"
+                        formState.errors["answerOptions"] && "border-red-500"
                       }`}
                       placeholder={`Answer Option ${index + 1}...`}
                       error={formState.errors?.answerOptions?.[index]?.text}
@@ -221,7 +230,7 @@ export const CreateQuestionForm: React.FC<CreateQuestionFormProps> = ({
                       onClick={() => remove(index)}
                       disabled={fields.length <= 2}
                     >
-                      <Trash2 className="h-4 w-4" /> Remove
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
                 ))}

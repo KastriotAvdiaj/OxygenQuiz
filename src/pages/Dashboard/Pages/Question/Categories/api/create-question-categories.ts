@@ -13,7 +13,7 @@ export const createQuestionCategoryInputSchema = z.object({
 export type CreateQuestionCategoryInput = z.infer<typeof createQuestionCategoryInputSchema>
 
 export const createQuestionCategory = ({data} : {data:CreateQuestionCategoryInput}): Promise<QuestionCategory> => {
-    return api.post('/questionCategories', data);
+    return api.post('/questioncategories', data);
 }
 
 type UseCreateQuestionCategoryOptions = {
