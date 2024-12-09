@@ -85,7 +85,7 @@ namespace QuizAPI.Controllers
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
         public async Task<ActionResult<QuestionCategory>> PostQuestionCategory(QuestionCategory questionCategory)
-        {
+            {
           if (_context.QuestionCategories == null)
           {
               return Problem("Entity set 'ApplicationDbContext.QuestionCategories'  is null.");

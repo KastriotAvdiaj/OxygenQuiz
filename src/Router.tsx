@@ -88,6 +88,15 @@ const createAppRouter = (queryClient: QueryClient) =>
           },
         },
         {
+          path: "permissions",
+          lazy: async () => {
+            const { Permissions } = await import(
+              "./pages/Dashboard/Pages/Permissions/Permissions"
+            );
+            return { Component: Permissions };
+          },
+        },
+        {
           path: "users",
           lazy: async () => {
             const { Users } = await import(
@@ -99,7 +108,7 @@ const createAppRouter = (queryClient: QueryClient) =>
             const { usersLoader } = await import(
               "./pages/Dashboard/Pages/User/Users"
             );
-            return usersLoader(queryClient)(args);
+            return usersLoader(queryClient);
           },
         },
       ],

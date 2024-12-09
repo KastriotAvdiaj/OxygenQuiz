@@ -57,7 +57,7 @@ export const CreateQuestionForm: React.FC<CreateQuestionFormProps> = ({
           Create Question
         </Button>
       }
-      title="Create Question"
+      title="Create a New Question"
       submitButton={
         <Button
           form="create-question"
@@ -192,48 +192,59 @@ export const CreateQuestionForm: React.FC<CreateQuestionFormProps> = ({
                     ))}
                   </SelectContent>
                 </Select>
-                {/* {formState.errors["difficulty"] && (
-                  <p className="text-sm text-red-500 font-semibold">
-                    {formState.errors["difficulty"].message}
-                  </p>
-                )} */}
               </div>
               <Separator className="bg-gray-500" />
 
               <div className="space-y-4 mt-4">
-                <Label className="block text-sm font-medium">
-                  Answer Options
-                </Label>
-                {fields.map((field, index) => (
-                  <div
-                    key={field.id}
-                    className="flex items-center justify-left gap-6"
-                  >
-                    <Input
-                      className={`${
-                        formState.errors["answerOptions"] && "border-red-500"
-                      }`}
-                      placeholder={`Answer Option ${index + 1}...`}
-                      error={formState.errors?.answerOptions?.[index]?.text}
-                      registration={register(`answerOptions.${index}.text`)}
-                    />
-                    <Switch
-                      className="shadow-md"
-                      id={`correct-${index}`}
-                      checked={watch(`answerOptions.${index}.isCorrect`)}
-                      onCheckedChange={() => handleSwitchChange(index)}
-                    />
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      className="rounded-sm"
-                      onClick={() => remove(index)}
-                      disabled={fields.length <= 2}
+                <div className="flex items-center justify-between">
+                  <Label className="block text-sm font-medium">
+                    Answer Options
+                  </Label>
+                </div>
+                {fields.map((field, index) => {
+                  const isCorrect = watch(`answerOptions.${index}.isCorrect`);
+
+                  return (
+                    <div
+                      key={field.id}
+                      className="flex items-center justify-between gap-6"
                     >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
+                      <Input
+                        className={`${
+                          formState.errors["answerOptions"]
+                            ? "border-red-500"
+                            : ""
+                        } ${isCorrect ? "border-2 border-green-500" : ""}`}
+                        placeholder={`Answer Option ${index + 1}...`}
+                        error={formState.errors?.answerOptions?.[index]?.text}
+                        registration={register(`answerOptions.${index}.text`)}
+                      />
+                      <div className="flex flex-col items-center">
+                        <Switch
+                          className="shadow-md"
+                          id={`correct-${index}`}
+                          checked={isCorrect}
+                          onCheckedChange={() => handleSwitchChange(index)}
+                        />
+                        <Label
+                          htmlFor={`correct-${index}`}
+                          className="text-xs text-gray-600 mt-1"
+                        >
+                          Correct for Option {index + 1}
+                        </Label>
+                      </div>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        className="rounded-sm"
+                        onClick={() => remove(index)}
+                        disabled={fields.length <= 2}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  );
+                })}
                 {formState.errors?.answerOptions && (
                   <p className="text-sm text-red-500 font-semibold border border-red-500 p-2 text-center">
                     {formState.errors.answerOptions.message ||

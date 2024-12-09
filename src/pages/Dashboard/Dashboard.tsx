@@ -24,6 +24,12 @@ const Users = lazy(() =>
   import("./Pages/User/Users").then((module) => ({ default: module.Users }))
 );
 
+const Permissions = lazy(() =>
+  import("./Pages/Permissions/Permissions").then((module) => ({
+    default: module.Permissions,
+  }))
+);
+
 export const Dashboard = () => {
   const navigate = useNavigate();
 
@@ -48,6 +54,7 @@ export const Dashboard = () => {
           <Routes>
             <Route index element={<Navigate to="application" replace />} />
             <Route path="application" element={<Application />} />
+            <Route path="permissions" element={<Permissions />} />
             <Route path="questions" element={<Questions />} />
             <Route path="quizzes" element={<Quizzes />} />
             <Route path="users" element={<Users />} />
