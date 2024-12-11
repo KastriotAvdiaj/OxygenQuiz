@@ -23,6 +23,8 @@ namespace QuizAPI.DTOs
 
         public DateTime LastLogin { get; set; }
 
+        public int TotalUsers { get; set; }
+
         public string ProfileImageUrl { get; set; }
     }
 }

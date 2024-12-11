@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using QuizAPI.Data;
 using QuizAPI.DTOs;
 using QuizAPI.Models;
+using QuizAPI.Services;
 
 namespace QuizAPI.Controllers
 {
@@ -16,10 +17,12 @@ namespace QuizAPI.Controllers
     public class UsersController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
+        private readonly DashboardService _dashboardService;
 
-        public UsersController(ApplicationDbContext context)
+        public UsersController(ApplicationDbContext context, DashboardService dashboardService)
         {
             _context = context;
+            _dashboardService = dashboardService;
         }
 
         // GET: api/Users
@@ -30,7 +33,7 @@ namespace QuizAPI.Controllers
             {
                 return NotFound();
             }
-
+            var totalUsers = _dashboardService.GetTotalCount<User>();
             var users = await _context.Users.Include(u => u.Role).ToListAsync(); 
 
             var userDTOs = users.Select(user => new FullUserDTO
@@ -43,6 +46,7 @@ namespace QuizAPI.Controllers
                 DateRegistered = user.DateRegistered,
                 Role = MapRoleIdToRole(user.RoleId), 
                 IsDeleted = user.IsDeleted,
+                TotalUsers = totalUsers,
                 LastLogin = user.LastLogin,
                 ProfileImageUrl = user.ProfileImageUrl
             }).ToList();
