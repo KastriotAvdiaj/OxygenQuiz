@@ -1,5 +1,5 @@
 import { AppProvider } from "./Provider";
-import { AppRouter } from "./Router";
+import { AppRouter } from "./routes/Router";
 
 export const App = () => {
   return (

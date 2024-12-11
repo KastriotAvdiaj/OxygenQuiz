@@ -2,7 +2,10 @@
 
 export const Home = () => {
   return (
-    <div className="relative grid grid-cols-1 lg:grid-cols-2 justify-items-center items-center h-screen w-screen bg-background px-[10rem] gap-2">
+    <div
+      className="relative 
+ grid grid-cols-1 lg:grid-cols-2 justify-items-center items-center h-screen w-screen  gap-2"
+    >
       <div className="relative z-10 space-y-6 ">
         <h1 className="text-5xl md:text-6xl lg:text-7xl  font-bold text-[var(--text)]">
           Welcome to <br />{" "}
@@ -25,4 +28,4 @@ export const Home = () => {
       {/* <BesimCard /> */}
     </div>
   );
-};  
+};

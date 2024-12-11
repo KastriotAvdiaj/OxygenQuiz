@@ -1,25 +1,25 @@
 import { lazy, useMemo } from "react";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
-import Header from "./common/Header";
-import { ProtectedRoute } from "./lib/Auth";
-import { AppRoot } from "./pages/AppRoot";
+import Header from "../common/Header";
+import { ProtectedRoute } from "../lib/Auth";
+import { AppRoot } from "../pages/AppRoot";
 import { QueryClient, useQueryClient } from "@tanstack/react-query";
 
-import { RedirectIfLoggedIn } from "./lib/Redirect";
-import "./global.css";
-import { Navigate, LoaderFunctionArgs } from "react-router-dom";
+import { RedirectIfLoggedIn } from "../lib/Redirect";
+import "../global.css";
+import { Navigate } from "react-router-dom";
 
 // Lazy load components
 const Home = lazy(() =>
-  import("./pages/Home/Home").then((module) => ({ default: module.Home }))
+  import("../pages/Home/Home").then((module) => ({ default: module.Home }))
 );
 const AboutUs = lazy(() =>
-  import("./pages/AboutUs/AboutUs").then((module) => ({
+  import("../pages/AboutUs/AboutUs").then((module) => ({
     default: module.AboutUs,
   }))
 );
-const Login = lazy(() => import("./pages/Login/Login"));
-const Signup = lazy(() => import("./pages/Signup/Signup"));
+const Login = lazy(() => import("../pages/Login/Login"));
+const Signup = lazy(() => import("../pages/Signup/Signup"));
 const createAppRouter = (queryClient: QueryClient) =>
   createBrowserRouter([
     {
@@ -64,7 +64,7 @@ const createAppRouter = (queryClient: QueryClient) =>
           path: "application",
           lazy: async () => {
             const { Application } = await import(
-              "./pages/Dashboard/Pages/Application/Application"
+              "../pages/Dashboard/Pages/Application/Application"
             );
             return { Component: Application };
           },
@@ -73,7 +73,7 @@ const createAppRouter = (queryClient: QueryClient) =>
           path: "questions",
           lazy: async () => {
             const { Questions } = await import(
-              "./pages/Dashboard/Pages/Question/Questions"
+              "../pages/Dashboard/Pages/Question/Questions"
             );
             return { Component: Questions };
           },
@@ -82,7 +82,7 @@ const createAppRouter = (queryClient: QueryClient) =>
           path: "quizzes",
           lazy: async () => {
             const { Quizzes } = await import(
-              "./pages/Dashboard/Pages/Quiz/Quizzes"
+              "../pages/Dashboard/Pages/Quiz/Quizzes"
             );
             return { Component: Quizzes };
           },
@@ -91,7 +91,7 @@ const createAppRouter = (queryClient: QueryClient) =>
           path: "permissions",
           lazy: async () => {
             const { Permissions } = await import(
-              "./pages/Dashboard/Pages/Permissions/Permissions"
+              "../pages/Dashboard/Pages/Permissions/Permissions"
             );
             return { Component: Permissions };
           },
@@ -100,13 +100,13 @@ const createAppRouter = (queryClient: QueryClient) =>
           path: "users",
           lazy: async () => {
             const { Users } = await import(
-              "./pages/Dashboard/Pages/User/Users"
+              "../pages/Dashboard/Pages/User/Users"
             );
             return { Component: Users };
           },
-          loader: async (args: LoaderFunctionArgs) => {
+          loader: async () => {
             const { usersLoader } = await import(
-              "./pages/Dashboard/Pages/User/Users"
+              "../pages/Dashboard/Pages/User/Users"
             );
             return usersLoader(queryClient);
           },
@@ -116,7 +116,7 @@ const createAppRouter = (queryClient: QueryClient) =>
     {
       path: "*",
       lazy: async () => {
-        const { NotFoundRoute } = await import("./pages/NotFound/Not-Found");
+        const { NotFoundRoute } = await import("../pages/NotFound/Not-Found");
         return { Component: NotFoundRoute };
       },
     },
