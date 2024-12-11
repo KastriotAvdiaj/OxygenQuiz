@@ -14,10 +14,10 @@ export const DashboardLayout = ({
   };
   return (
     <div className="grid grid-cols-[16%_84%] grid-rows-[auto_1fr] h-[100vh]">
-      <div className="col-span-2 bg-[var(--background-secondary)]">
+      <div className="col-span-2">
         <DashboardHeader />
       </div>
-      <div className="h-full bg-[var(--background-secondary)]">
+      <div className="h-full bg-background-secondary">
         <DashboardNav
           setActivePage={setActivePage}
           activePage={location.pathname.split("/").pop() || "application"}

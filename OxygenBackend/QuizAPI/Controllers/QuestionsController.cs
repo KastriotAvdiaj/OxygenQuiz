@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using QuizAPI.Data;
 using QuizAPI.DTOs;
 using QuizAPI.Models;
+using QuizAPI.Services;
 
 namespace QuizAPI.Controllers
 {
@@ -11,16 +12,20 @@ namespace QuizAPI.Controllers
     public class QuestionsController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
+        private readonly DashboardService _dashboardService;
 
-        public QuestionsController(ApplicationDbContext context)
+        public QuestionsController(ApplicationDbContext context, DashboardService dashboardService)
         {
             _context = context;
+            _dashboardService = dashboardService;
         }
+
 
         // GET: api/Questions
         [HttpGet]
         public async Task<ActionResult<IEnumerable<QuestionDTO>>> GetQuestions()
         {
+            var totalQuestions = _dashboardService.GetTotalCount<Question>();
             var questionDTOs = await _context.Questions
                 .Select(q => new QuestionDTO
                 {
@@ -28,6 +33,7 @@ namespace QuizAPI.Controllers
                     Text = q.Text,
                     Difficulty = q.Difficulty,
                     Category = q.Category.Name,
+                    TotalQuestions = totalQuestions,
                     AnswerOptions = q.AnswerOptions.Select(ao => new AnswerOptionDTO
                     {
                         ID = ao.Id,

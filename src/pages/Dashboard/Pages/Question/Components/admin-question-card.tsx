@@ -44,15 +44,13 @@ export const AdminQuestionCard: React.FC<AdminQuestionCardProps> = ({
   return (
     <Card
       ref={cardRef}
-      className="w-full cursor-pointer border border-[0.1px] bg-card rounded-lg max-w-3xl mx-auto overflow-hidden transition-shadow duration-200 shadow hover:shadow-lg hover:scale-105 transition-all ease-in-out"
+      className="max-w-[400px] cursor-pointer border border-[0.1px] bg-card rounded-lg mx-auto overflow-hidden transition-shadow duration-200 shadow hover:shadow-lg hover:scale-105 transition-all ease-in-out"
     >
-      <div className="flex items-start justify-between p-4">
+      <div className=" flex items-start justify-between p-4">
         <div className="flex-grow flex items-center justify-between">
           <div>
             <h3 className="text-lg font-semibold">{question.text}</h3>
-            <Label className="text-sm text-gray-500">
-              {question.category}
-            </Label>
+            <Label className="text-sm text-gray-500">{question.category}</Label>
           </div>
           <div
             onClick={handleToggle}

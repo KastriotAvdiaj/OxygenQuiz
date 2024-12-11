@@ -21,7 +21,9 @@ namespace QuizAPI.DTOs
         public DifficultyLevel Difficulty { get; set; }
         public string DifficultyDisplay => Difficulty.ToDisplayString();
     
-        public string Category {  get; set; }
+        public string Category { get; set; }
+
+        public int TotalQuestions { get; set; }
 
         public List<AnswerOptionDTO> AnswerOptions { get; set; }
 

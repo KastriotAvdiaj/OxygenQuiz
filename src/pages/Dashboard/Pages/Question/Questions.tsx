@@ -42,9 +42,9 @@ export const Questions = () => {
   );
 
   return (
-    <div className="space-y-6 my-8 p-8 max-w-7xl mx-auto">
+    <div className="space-y-6 my-8 p-8 mx-auto">
       <Card className="bg-background-secondary shadow-lg rounded-lg overflow-hidden">
-        <CardHeader className="bg-primary text-primary-foreground p-6">
+        <CardHeader className="p-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
             <CardTitle className="text-3xl font-bold">
               Questions Manager
@@ -95,12 +95,10 @@ export const Questions = () => {
           <Separator className="my-6" />
           <div className="space-y-4 overflow-y-auto max-h-[100vh] py-7">
             {filteredQuestions.length === 0 ? (
-              <div className="flex flex-col items-center justify-center text-center p-12 bg-muted rounded-lg">
-                <FolderMinus size={48} className="text-muted-foreground mb-4" />
-                <p className="text-xl font-semibold text-muted-foreground">
-                  No questions found.
-                </p>
-                <p className="text-sm text-muted-foreground mt-2">
+              <div className="flex flex-col items-center justify-center text-center p-12 rounded-lg">
+                <FolderMinus size={48} className="mb-4" />
+                <p className="text-xl font-semibold">No questions found.</p>
+                <p className="text-sm mt-2">
                   Try adjusting your search or filter to find what you're
                   looking for.
                 </p>
@@ -113,7 +111,7 @@ export const Questions = () => {
           </div>
         </CardContent>
       </Card>
-      <div className="flex justify-between items-center text-sm text-muted-foreground">
+      <div className="flex justify-between items-center text-sm">
         <p>
           Showing {filteredQuestions.length} of {questions.length} questions
         </p>
