@@ -18,7 +18,7 @@ export type BaseEntity<TId = number> = {
     dateRegistered: string;
     userUpdatedAt: string | null;
     isDeleted: boolean;
-    lastLogin: string | null;
+    lastLogin: string;
     profileImageUrl: string;
     role : string;
   },string>;

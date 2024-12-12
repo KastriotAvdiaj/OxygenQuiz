@@ -3,7 +3,7 @@ import { queryOptions, useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/Api-client";
 import { QueryConfig } from "@/lib/React-query";
 
-export const getTotalUsers = (): Promise<Number[]> => {
+export const getTotalUsers = (): Promise<number> => {
   return api.get(`/totals/users`);
 };
 

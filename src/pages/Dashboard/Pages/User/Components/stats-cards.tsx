@@ -9,9 +9,9 @@ interface StatsCardsProps {
 }
 
 export function StatsCards({ className }: StatsCardsProps) {
-  const totalUsersQuery = useTotalUsersData({});
+  const { data, isLoading, isError } = useTotalUsersData({});
 
-  if (totalUsersQuery.isLoading) {
+  if (isLoading) {
     return (
       <div className="flex h-48 w-full items-center justify-center">
         <Spinner size="lg" />
@@ -19,7 +19,7 @@ export function StatsCards({ className }: StatsCardsProps) {
     );
   }
 
-  if (totalUsersQuery.isError) {
+  if (isError) {
     return (
       <div className="flex h-48 w-full items-center justify-center">
         <p className="text-red-500">
@@ -29,8 +29,6 @@ export function StatsCards({ className }: StatsCardsProps) {
     );
   }
 
-  const totalUsers = totalUsersQuery.data;
-
   return (
     <div className={cn("grid gap-4 md:grid-cols-2 lg:grid-cols-4", className)}>
       <Card className="bg-background-secondary border-none">
@@ -39,7 +37,7 @@ export function StatsCards({ className }: StatsCardsProps) {
           <Users className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{totalUsers}</div>
+          <div className="text-2xl font-bold">{data}</div>
           <p className="text-xs text-muted-foreground">
             <span className="text-green-custom font-semibold">+2.5%</span> from
             last month

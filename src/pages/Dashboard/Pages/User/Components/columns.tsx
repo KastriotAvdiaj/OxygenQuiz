@@ -18,6 +18,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { DeleteUser } from "./delete-user";
+import formatDate from "@/lib/date-format";
 
 export const columns: ColumnDef<User>[] = [
   {
@@ -35,6 +36,10 @@ export const columns: ColumnDef<User>[] = [
   {
     accessorKey: "dateRegistered",
     header: "Date Registered",
+    cell: ({ row }) => {
+      const date = row.original.dateRegistered;
+      return formatDate(date);
+    },
   },
   {
     accessorKey: "isDeleted",
@@ -64,6 +69,10 @@ export const columns: ColumnDef<User>[] = [
   {
     accessorKey: "lastLogin",
     header: "Last Login",
+    cell: ({ row }) => {
+      const date = row.original.lastLogin;
+      return formatDate(date);
+    }
   },
   {
     accessorKey: "profileImageUrl",
