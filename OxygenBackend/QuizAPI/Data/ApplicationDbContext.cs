@@ -71,20 +71,19 @@ namespace QuizAPI.Data
                 .HasOne(ru => ru.User)
                 .WithMany(r => r.UserUpdatedAt)
                 .HasForeignKey(ru => ru.UserId)
-                .OnDelete(DeleteBehavior.Restrict); // Or DeleteBehavior.NoAction
+                .OnDelete(DeleteBehavior.NoAction); // Or DeleteBehavior.NoAction
 
             modelBuilder.Entity<UserUpdatedAt>()
                 .HasOne(ru => ru.UpdatedAt)
                 .WithMany(u => u.UserUpdatedAt)
                 .HasForeignKey(ru => ru.UpdatedAtId)
-                .OnDelete(DeleteBehavior.Restrict); // Or DeleteBehavior.NoAction
+                .OnDelete(DeleteBehavior.NoAction); // Or DeleteBehavior.NoAction
 
             modelBuilder.Entity<UpdatedAt>()
                 .HasOne(u => u.User)
-                .WithMany() // or WithMany(u => u.UpdatedAt) if a collection exists in User
+                .WithMany()
                 .HasForeignKey(u => u.UserId)
-                .OnDelete(DeleteBehavior.Restrict);
-
+                .OnDelete(DeleteBehavior.NoAction);
 
 
             // Configuration for Question-AnswerOptions relationship
@@ -93,8 +92,6 @@ namespace QuizAPI.Data
             .WithOne(a => a.Question)
             .HasForeignKey(a => a.QuestionId)
             .OnDelete(DeleteBehavior.Cascade);
-
-   
 
         }
     }

@@ -15,6 +15,12 @@ namespace QuizAPI.Models
             public ICollection<AnswerOption> AnswerOptions { get; set; }
             public DifficultyLevel Difficulty { get; set; } 
 
+            public DateTime CreatedAt { get; set; }
+
+            public Guid UserId { get; set; }
+
+            [JsonIgnore]
+            public User User { get; set; }
             public int CategoryId {  get; set; }
 
             [JsonIgnore]

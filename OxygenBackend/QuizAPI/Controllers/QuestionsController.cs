@@ -1,9 +1,11 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using QuizAPI.Data;
 using QuizAPI.DTOs;
 using QuizAPI.Models;
 using QuizAPI.Services;
+using System.Security.Claims;
 
 namespace QuizAPI.Controllers
 {
@@ -62,6 +64,7 @@ namespace QuizAPI.Controllers
         }
 
         // POST: api/Questions
+        [Authorize]
         [HttpPost]
         public async Task<ActionResult<Question>> CreateQuestionWithDto(QuestionCM questionDto)
         {
@@ -78,14 +81,28 @@ namespace QuizAPI.Controllers
             if (!ValidateAnswerOptions(questionDto.AnswerOptions))
                 return BadRequest("Each question must have at least one correct and one incorrect answer.");
 
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new { message = "User ID not found in token." });
+            }
             var category = await _context.QuestionCategories.FirstOrDefaultAsync(c => c.Name == questionDto.Category);
+
+
+            if (category == null)
+            {
+                return BadRequest("Category doesn't exist");
+            }
 
             var question = new Question
             {
                 Text = questionDto.Text,
                 Difficulty = questionDto.Difficulty,
                 AnswerOptions = new List<AnswerOption>(), 
-                CategoryId = category.Id
+                CreatedAt = DateTime.UtcNow,
+                CategoryId = category.Id,
+                UserId = Guid.Parse(userId)
             };
 
             // Create and add each answer option
