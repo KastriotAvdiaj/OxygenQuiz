@@ -6,6 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { Label } from "@/components/ui/form";
 import { Question } from "@/types/ApiTypes";
+import { Button } from "@/components/ui";
+import { DeleteQuestion } from "./delete-question";
 
 interface AdminQuestionCardProps {
   question: Question;
@@ -44,7 +46,7 @@ export const AdminQuestionCard: React.FC<AdminQuestionCardProps> = ({
   return (
     <Card
       ref={cardRef}
-      className="max-w-[400px] cursor-pointer border border-[0.1px] bg-card rounded-lg mx-auto overflow-hidden transition-shadow duration-200 shadow hover:shadow-lg hover:scale-105 transition-all ease-in-out"
+      className="max-w-[400px] cursor-pointer border border-[0.1px] bg-card rounded-lg mx-auto overflow-hidden transition-shadow duration-200 shadow hover:shadow-lg transition-all ease-in-out"
     >
       <div className=" flex items-start justify-between p-4">
         <div className="flex-grow flex items-center justify-between">
@@ -100,6 +102,10 @@ export const AdminQuestionCard: React.FC<AdminQuestionCardProps> = ({
               </li>
             ))}
           </ul>
+          <section className="pt-2 flex items-center gap-2 justify-end">
+            <Button>Edit</Button>
+            <DeleteQuestion id={question.id} />
+          </section>
         </CardContent>
       </div>
     </Card>

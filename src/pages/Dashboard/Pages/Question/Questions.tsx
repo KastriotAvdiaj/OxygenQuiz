@@ -93,7 +93,7 @@ export const Questions = () => {
             </div>
           </div>
           <Separator className="my-6" />
-          <div className="space-y-4 overflow-y-auto max-h-[100vh] py-7">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 overflow-y-auto py-7">
             {filteredQuestions.length === 0 ? (
               <div className="flex flex-col items-center justify-center text-center p-12 rounded-lg">
                 <FolderMinus size={48} className="mb-4" />

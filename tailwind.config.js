@@ -10,6 +10,11 @@ module.exports = {
   prefix: "",
   theme: {
     extend: {
+        scale: {
+          101: '1.01',
+          102: '1.02',
+          103: '1.03',
+        },
       colors: {
         'text-hover': 'var(--text-hover)',
         'text-hover-opposite': 'var(--text-hover-opposite)',
