@@ -41,9 +41,6 @@ export const ConfirmationDialog = ({
     }
   }, [isDone, close]);
 
-  useEffect(() => {
-    console.log("Dialog open state:", isOpen);
-  }, [isOpen]);
 
   return (
     <Dialog

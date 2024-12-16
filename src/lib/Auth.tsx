@@ -5,6 +5,7 @@ import { api } from "./Api-client";
 import { AuthResponse, User } from "@/types/ApiTypes";
 import Cookies from "js-cookie";
 import { AUTH_COOKIE } from "./authHelpers";
+import { AlertCircle } from "lucide-react";
 
 const getUser = async (): Promise<User | null> => {
   try {
@@ -12,7 +13,6 @@ const getUser = async (): Promise<User | null> => {
     if (!user) {
       return null;
     }
-    console.log(user);
     return user; // Since `user` is already the data returned from the backend
   } catch (error: any) {
     if (error.response?.status === 401) {
@@ -93,6 +93,9 @@ const authConfig = {
       sameSite: "strict", // CSRF protection
       expires: 1, // Token expiration in days
     });
+
+    await getUser();
+    // Refetch user data after login
     return response.user;
   },
   registerFn: async (data: RegisterInput) => {
@@ -109,6 +112,24 @@ export const { useUser, useLogin, useLogout, useRegister, AuthLoader } =
 export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const user = useUser();
   const location = useLocation();
+  console.log(user.data.roleId);
+
+  console.log(user.data);
+  if (!user.data) {
+    return (
+      <Navigate
+        to={`/login?redirectTo=${encodeURIComponent(location.pathname)}`}
+        replace
+      />
+    );
+  }
+
+  return <>{children}</>;
+};
+
+export const AdminRoute = ({ children }: { children: React.ReactNode }) => {
+  const user = useUser();
+  const location = useLocation();
 
   if (!user.data) {
     return (
@@ -116,6 +137,31 @@ export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
         to={`/login?redirectTo=${encodeURIComponent(location.pathname)}`}
         replace
       />
+    );
+  }
+  if (!(user.data.role === "Admin")) {
+    return (
+      <div className="h-screen w-full flex items-center justify-center bg-background">
+        <div className="max-w-sm w-full text-center bg-background-secondary shadow-lg rounded-lg p-6">
+          <div className="flex flex-col items-center">
+            <AlertCircle className="text-red-500 w-12 h-12" />
+            <h2 className="mt-4 text-2xl font-semibold text-text">
+              Access Denied
+            </h2>
+            <p className="mt-2 text-text-lighter">
+              You do not have the necessary permissions to view this page.
+            </p>
+          </div>
+          <div className="mt-4">
+            <a
+              href="/"
+              className="inline-block px-4 py-2 text-white bg-text-hover rounded-lg shadow hover:bg-text-hover-darker focus:outline-none focus:scale-95 transition-all duration-200 ease-in-out"
+            >
+              Go to Homepage
+            </a>
+          </div>
+        </div>
+      </div>
     );
   }
 

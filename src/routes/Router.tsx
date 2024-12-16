@@ -1,7 +1,7 @@
 import { lazy, useMemo } from "react";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import Header from "../common/Header";
-import { ProtectedRoute } from "../lib/Auth";
+import { AdminRoute, ProtectedRoute } from "../lib/Auth";
 import { AppRoot } from "../pages/AppRoot";
 import { QueryClient, useQueryClient } from "@tanstack/react-query";
 
@@ -51,9 +51,9 @@ const createAppRouter = (queryClient: QueryClient) =>
     {
       path: "/dashboard/*",
       element: (
-        <ProtectedRoute>
+        <AdminRoute>
           <AppRoot />
-        </ProtectedRoute>
+        </AdminRoute>
       ),
       children: [
         {
