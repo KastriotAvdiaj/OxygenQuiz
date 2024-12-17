@@ -78,11 +78,6 @@ const registerWithEmailAndPassword = (
 // Configure auth with react-query-auth
 const authConfig = {
   userFn: getUser,
-  /**
-   * Logs in a user using their email and password.
-   * @param data - The login data containing the email and password.
-   * @returns The user object if the login is successful.
-   */
   loginFn: async (data: LoginInput): Promise<User> => {
     const response = await loginWithEmailAndPassword(data);
     if (!response || !response.token) {
@@ -93,9 +88,6 @@ const authConfig = {
       sameSite: "strict", // CSRF protection
       expires: 1, // Token expiration in days
     });
-
-    await getUser();
-    // Refetch user data after login
     return response.user;
   },
   registerFn: async (data: RegisterInput) => {
@@ -108,13 +100,10 @@ const authConfig = {
 export const { useUser, useLogin, useLogout, useRegister, AuthLoader } =
   configureAuth(authConfig);
 
-// ProtectedRoute component using useUser hook
 export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const user = useUser();
   const location = useLocation();
-  console.log(user.data.roleId);
 
-  console.log(user.data);
   if (!user.data) {
     return (
       <Navigate

@@ -25,17 +25,26 @@ namespace QuizAPI.Controllers
 
         // GET: api/Questions
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<QuestionDTO>>> GetQuestions()
+        public async Task<ActionResult<IEnumerable<QuestionDTO>>> GetQuestions(int page = 1, int pageSize = 10)
         {
-            var totalQuestions = _dashboardService.GetTotalCount<Question>();
+            if (page <= 0 || pageSize <= 0)
+                return BadRequest("Page and page size must be positive numbers.");
+
+            // Calculate the total count of questions
+            var totalQuestions = await _context.Questions.CountAsync();
+
+            // Fetch paginated questions
             var questionDTOs = await _context.Questions
+                .OrderBy(q => q.CreatedAt) // Ensure consistent ordering (optional)
+                .Skip((page - 1) * pageSize) // Skip records for previous pages
+                .Take(pageSize)             // Take only the current page's data
                 .Select(q => new QuestionDTO
                 {
                     ID = q.Id,
                     Text = q.Text,
                     Difficulty = q.Difficulty,
                     Category = q.Category.Name,
-                    TotalQuestions = totalQuestions,
+                    TotalQuestions = totalQuestions, // Total count of questions
                     AnswerOptions = q.AnswerOptions.Select(ao => new AnswerOptionDTO
                     {
                         ID = ao.Id,
@@ -45,7 +54,15 @@ namespace QuizAPI.Controllers
                 })
                 .ToListAsync();
 
-            return Ok(questionDTOs);
+            // Return paginated response
+            return Ok(new
+            {
+                Page = page,
+                PageSize = pageSize,
+                TotalItems = totalQuestions,
+                TotalPages = (int)Math.Ceiling(totalQuestions / (double)pageSize),
+                Questions = questionDTOs
+            });
         }
 
 

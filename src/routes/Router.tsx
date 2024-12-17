@@ -1,7 +1,7 @@
 import { lazy, useMemo } from "react";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import Header from "../common/Header";
-import { AdminRoute, ProtectedRoute } from "../lib/Auth";
+import { AdminRoute } from "../lib/Auth";
 import { AppRoot } from "../pages/AppRoot";
 import { QueryClient, useQueryClient } from "@tanstack/react-query";
 

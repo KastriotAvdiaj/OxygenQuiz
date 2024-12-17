@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
 import React, { useState, useRef, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import { Label } from "@/components/ui/form";
 import { Question } from "@/types/ApiTypes";
 import { Button } from "@/components/ui";
@@ -18,7 +18,6 @@ export const AdminQuestionCard: React.FC<AdminQuestionCardProps> = ({
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
-  const cardRef = useRef<HTMLDivElement>(null);
 
   const handleToggle = () => setIsExpanded(!isExpanded);
 
@@ -44,38 +43,32 @@ export const AdminQuestionCard: React.FC<AdminQuestionCardProps> = ({
   }, [isExpanded]);
 
   return (
-    <Card
-      ref={cardRef}
-      className="max-w-[400px] cursor-pointer border border-[0.1px] bg-card rounded-lg mx-auto overflow-hidden transition-shadow duration-200 shadow hover:shadow-lg transition-all ease-in-out"
-    >
-      <div className=" flex items-start justify-between p-4">
-        <div className="flex-grow flex items-center justify-between">
-          <div>
-            <h3 className="text-lg font-semibold">{question.text}</h3>
-            <Label className="text-sm text-gray-500">{question.category}</Label>
-          </div>
-          <div
+    <Card className="w-full border border-[0.1px] bg-card rounded-lg overflow-hidden transition-shadow duration-200 shadow hover:shadow-lg">
+      <div className="flex flex-col sm:flex-row items-start justify-between p-4">
+        <div className="flex-grow mb-2 sm:mb-0">
+          <h3 className="text-lg font-semibold line-clamp-2">{question.text}</h3>
+          <Label className="text-sm text-gray-500">{question.category}</Label>
+        </div>
+        <div className="flex flex-row sm:flex-col items-center sm:items-end gap-2">
+          <Badge
+            className={`${getDifficultyColor(
+              question.difficultyDisplay
+            )} text-white`}
+          >
+            {question.difficultyDisplay}
+          </Badge>
+          <Button
+            variant="outline"
+            size="sm"
             onClick={handleToggle}
-            className="w-fit border py-1 px-2 cursor-pointer "
           >
             {isExpanded ? (
-              <>
-                <ChevronUp className="h-5 w-5 text-muted-foreground" />
-              </>
+              <ChevronUp className="h-4 w-4" />
             ) : (
-              <>
-                <ChevronDown className="h-5 w-5 text-muted-foreground" />
-              </>
+              <ChevronDown className="h-4 w-4" />
             )}
-          </div>
+          </Button>
         </div>
-        <Badge
-          className={`${getDifficultyColor(
-            question.difficultyDisplay
-          )} text-white ml-2`}
-        >
-          {question.difficultyDisplay}
-        </Badge>
       </div>
       <div
         ref={contentRef}
@@ -103,7 +96,7 @@ export const AdminQuestionCard: React.FC<AdminQuestionCardProps> = ({
             ))}
           </ul>
           <section className="pt-2 flex items-center gap-2 justify-end">
-            <Button>Edit</Button>
+            <Button size="sm">Edit</Button>
             <DeleteQuestion id={question.id} />
           </section>
         </CardContent>
@@ -111,3 +104,4 @@ export const AdminQuestionCard: React.FC<AdminQuestionCardProps> = ({
     </Card>
   );
 };
+

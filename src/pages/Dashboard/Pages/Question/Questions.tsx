@@ -50,7 +50,6 @@ export const Questions = () => {
               Questions Manager
             </CardTitle>
             <div className="flex items-center gap-3">
-              <CreateQuestionCategoryForm />
               <CreateQuestionForm categories={questionCategories} />
             </div>
           </div>
@@ -93,9 +92,9 @@ export const Questions = () => {
             </div>
           </div>
           <Separator className="my-6" />
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 overflow-y-auto py-7">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4 sm:gap-6 overflow-y-auto py-7">
             {filteredQuestions.length === 0 ? (
-              <div className="flex flex-col items-center justify-center text-center p-12 rounded-lg">
+              <div className="col-span-full flex flex-col items-center justify-center text-center p-12 rounded-lg">
                 <FolderMinus size={48} className="mb-4" />
                 <p className="text-xl font-semibold">No questions found.</p>
                 <p className="text-sm mt-2">
@@ -125,7 +124,7 @@ export const Questions = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="p-6">
-          <CreateQuestionForm categories={questionCategories} />
+          <CreateQuestionCategoryForm />
         </CardContent>
       </Card>
     </div>

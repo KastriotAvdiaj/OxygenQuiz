@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using QuizAPI.Data;
+using QuizAPI.DTOs;
 
 namespace QuizAPI.Controllers
 {
@@ -37,7 +38,22 @@ namespace QuizAPI.Controllers
                 //Changed for a while because a deleted user was still logged in.
             }
 
-            return Ok(user); 
+            var role = await _context.Roles.FindAsync(user.RoleId);
+
+            if (role == null)
+            {
+                return BadRequest();
+            }
+
+            var sentUser = new UserDTO
+            {
+                Id = user.Id,
+                Email = user.Email,
+                Username = user.Username,
+                Role = role.Name,
+            };
+
+            return Ok(sentUser); 
         }
 
         [HttpPost("signup")]
