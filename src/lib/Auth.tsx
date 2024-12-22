@@ -36,12 +36,6 @@ export const loginInputSchema = z.object({
 });
 
 export type LoginInput = z.infer<typeof loginInputSchema>;
-
-/**
- * Logs in a user using their email and password.
- * @param data - The login data containing the email and password.
- * @returns The user object if the login is successful.
- */
 const loginWithEmailAndPassword = (data: LoginInput): Promise<AuthResponse> => {
   return api.post("Authentication/login", data);
 };

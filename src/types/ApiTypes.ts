@@ -8,6 +8,10 @@ export type BaseEntity<TId = number> = {
     [K in keyof T]: T[K];
   } & BaseEntity<TId>;
   
+  export type AuthResponse = {
+    token: string;
+    user: User;
+  };
 
   export type User = Entity<{
     // concurrencyStamp: string;
@@ -53,9 +57,16 @@ export type BaseEntity<TId = number> = {
     name: string;
   };
 
-  export type AuthResponse = {
-    token: string;
-    user: User;
+  type PaginatedResponse<T> = {
+    page: number;
+    pageSize: number;
+    totalItems: number;
+    totalPages: number;
+    items: T[];
   };
+
+  export type PaginatedQuestionResponse = PaginatedResponse<Question>;
+
+
 
   

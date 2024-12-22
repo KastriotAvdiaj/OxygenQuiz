@@ -25,16 +25,35 @@ namespace QuizAPI.Controllers
 
         // GET: api/Questions
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<QuestionDTO>>> GetQuestions(int page = 1, int pageSize = 10)
+        public async Task<ActionResult<PaginatedResponse<QuestionDTO>>> GetQuestions(
+    int page = 1,
+    int pageSize = 3,
+    string? searchTerm = null,
+    string? category = null)
         {
             if (page <= 0 || pageSize <= 0)
                 return BadRequest("Page and page size must be positive numbers.");
 
-            // Calculate the total count of questions
-            var totalQuestions = await _context.Questions.CountAsync();
+            // Base query
+            var query = _context.Questions.AsQueryable();
+
+            // Apply search filter if searchTerm is provided
+            if (!string.IsNullOrEmpty(searchTerm))
+            {
+                query = query.Where(q => q.Text.Contains(searchTerm));
+            }
+
+            // Apply category filter if category is provided
+            if (!string.IsNullOrEmpty(category) && category != "null")
+            {
+                query = query.Where(q => q.Category.Name == category);
+            }
+
+            // Calculate total count of filtered questions
+            var totalQuestions = await query.CountAsync();
 
             // Fetch paginated questions
-            var questionDTOs = await _context.Questions
+            var questionDTOs = await query
                 .OrderBy(q => q.CreatedAt) // Ensure consistent ordering (optional)
                 .Skip((page - 1) * pageSize) // Skip records for previous pages
                 .Take(pageSize)             // Take only the current page's data
@@ -55,13 +74,13 @@ namespace QuizAPI.Controllers
                 .ToListAsync();
 
             // Return paginated response
-            return Ok(new
+            return Ok(new PaginatedResponse<QuestionDTO>
             {
                 Page = page,
                 PageSize = pageSize,
                 TotalItems = totalQuestions,
                 TotalPages = (int)Math.Ceiling(totalQuestions / (double)pageSize),
-                Questions = questionDTOs
+                Items = questionDTOs
             });
         }
 

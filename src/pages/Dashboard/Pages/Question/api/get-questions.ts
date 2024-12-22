@@ -1,27 +1,36 @@
 import { queryOptions, useQuery } from "@tanstack/react-query";
-
 import { api } from "@/lib/Api-client";
 import { QueryConfig } from "@/lib/React-query";
-import { Question } from "@/types/ApiTypes";
+import { PaginatedQuestionResponse } from "@/types/ApiTypes";
 
-export const getQuestions = (): Promise<Question[]> => {
-  return api.get(`/questions`);
+type GetQuestionsParams = {
+  page?: number;
+  pageSize?: number;
+  searchTerm?: string;
+  category?: string | null;
 };
 
-export const getQuestionsQueryOptions = () => {
+export const getQuestions = (params: GetQuestionsParams): Promise<PaginatedQuestionResponse> => {
+  const queryString = new URLSearchParams(params as Record<string, string>).toString();
+  return api.get(`/questions?${queryString}`);
+};
+
+export const getQuestionsQueryOptions = (params: GetQuestionsParams = {}) => {
   return queryOptions({
-    queryKey: ["questions"],
-    queryFn: () => getQuestions(),
+    queryKey: params? ["questions", params] : ["questions"],
+    queryFn: () => getQuestions(params),
   });
 };
 
 type UseQuestionOptions = {
   queryConfig?: QueryConfig<typeof getQuestionsQueryOptions>;
+  params?: GetQuestionsParams;
 };
 
-export const useQuestionData = ({ queryConfig }: UseQuestionOptions) => {
+export const useQuestionData = ({ queryConfig, params }: UseQuestionOptions) => {
   return useQuery({
-    ...getQuestionsQueryOptions(),
+    ...getQuestionsQueryOptions(params),
     ...queryConfig,
   });
 };
+

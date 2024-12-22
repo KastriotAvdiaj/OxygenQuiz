@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
 import React, { useState, useRef, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp } from "lucide-react";
 import { Label } from "@/components/ui/form";
 import { Question } from "@/types/ApiTypes";
 import { Button } from "@/components/ui";
@@ -46,7 +46,13 @@ export const AdminQuestionCard: React.FC<AdminQuestionCardProps> = ({
     <Card className="w-full border border-[0.1px] bg-card rounded-lg overflow-hidden transition-shadow duration-200 shadow hover:shadow-lg">
       <div className="flex flex-col sm:flex-row items-start justify-between p-4">
         <div className="flex-grow mb-2 sm:mb-0">
-          <h3 className="text-lg font-semibold line-clamp-2">{question.text}</h3>
+          <h5
+            className={`text-lg font-semibold ${
+              !isExpanded ? "line-clamp-1" : ""
+            }`}
+          >
+            {question.text}
+          </h5>
           <Label className="text-sm text-gray-500">{question.category}</Label>
         </div>
         <div className="flex flex-row sm:flex-col items-center sm:items-end gap-2">
@@ -57,11 +63,7 @@ export const AdminQuestionCard: React.FC<AdminQuestionCardProps> = ({
           >
             {question.difficultyDisplay}
           </Badge>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleToggle}
-          >
+          <Button variant="outline" size="sm" onClick={handleToggle}>
             {isExpanded ? (
               <ChevronUp className="h-4 w-4" />
             ) : (
@@ -104,4 +106,3 @@ export const AdminQuestionCard: React.FC<AdminQuestionCardProps> = ({
     </Card>
   );
 };
-
