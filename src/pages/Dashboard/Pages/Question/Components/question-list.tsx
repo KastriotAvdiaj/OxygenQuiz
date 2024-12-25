@@ -1,23 +1,18 @@
 import React, { useEffect, useRef } from "react";
-import { AdminQuestionCard } from "./admin-question-card";
 import { Question } from "@/types/ApiTypes";
 import { FolderMinus } from "lucide-react";
-import { useVirtualizer } from "@tanstack/react-virtual";
+import { NormalQuestionCard } from "./normal-question-card";
 
 interface QuestionListProps {
   questions: Question[];
   onScrollEnd?: () => void; // New prop for infinite scroll
 }
 
-export const QuestionList: React.FC<QuestionListProps> = ({ questions, onScrollEnd }) => {
+export const QuestionList: React.FC<QuestionListProps> = ({
+  questions,
+  onScrollEnd,
+}) => {
   const parentRef = useRef<HTMLDivElement>(null);
-
-  const rowVirtualizer = useVirtualizer({
-    count: questions.length,
-    getScrollElement: () => parentRef.current,
-    estimateSize: () => 200,
-    overscan: 5,
-  });
 
   // Monitor scrolling to detect when user reaches the bottom
   useEffect(() => {
@@ -51,30 +46,11 @@ export const QuestionList: React.FC<QuestionListProps> = ({ questions, onScrollE
   }
 
   return (
-    <div ref={parentRef} className="h-[600px] overflow-auto">
-      <div
-        style={{
-          height: `${rowVirtualizer.getTotalSize()}px`,
-          width: "100%",
-          position: "relative",
-        }}
-      >
-        {rowVirtualizer.getVirtualItems().map((virtualItem) => (
-          <div
-            key={virtualItem.key}
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              width: "100%",
-              height: `${virtualItem.size}px`,
-              transform: `translateY(${virtualItem.start}px)`,
-            }}
-          >
-            <AdminQuestionCard
-              key={questions[virtualItem.index].id}
-              question={questions[virtualItem.index]}
-            />
+    <div ref={parentRef} className="h-[100vh] overflow-auto p-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {questions.map((question) => (
+          <div key={question.id} className="w-full">
+            <NormalQuestionCard question={question} />
           </div>
         ))}
       </div>

@@ -1,24 +1,18 @@
-import React, { useState, useRef, useEffect } from "react";
+import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ChevronDown, ChevronUp } from "lucide-react";
 import { Label } from "@/components/ui/form";
 import { Question } from "@/types/ApiTypes";
 import { Button } from "@/components/ui";
 import { DeleteQuestion } from "./delete-question";
 
-interface AdminQuestionCardProps {
+interface NormalQuestionCard {
   question: Question;
 }
 
-export const AdminQuestionCard: React.FC<AdminQuestionCardProps> = ({
+export const NormalQuestionCard: React.FC<NormalQuestionCard> = ({
   question,
 }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const contentRef = useRef<HTMLDivElement>(null);
-
-  const handleToggle = () => setIsExpanded(!isExpanded);
-
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty.toLowerCase()) {
       case "easy":
@@ -32,25 +26,11 @@ export const AdminQuestionCard: React.FC<AdminQuestionCardProps> = ({
     }
   };
 
-  useEffect(() => {
-    if (contentRef.current) {
-      contentRef.current.style.maxHeight = isExpanded
-        ? `${contentRef.current.scrollHeight}px`
-        : "0";
-    }
-  }, [isExpanded]);
-
   return (
     <Card className="max-w-[300px] border border-[0.1px] bg-card rounded-lg overflow-hidden transition-shadow duration-200 shadow hover:shadow-lg">
       <div className="flex flex-col sm:flex-row items-start justify-between p-4">
         <div className="flex-grow mb-2 sm:mb-0">
-          <h5
-            className={`text-lg font-semibold ${
-              !isExpanded ? "line-clamp-1" : ""
-            }`}
-          >
-            {question.text}
-          </h5>
+          <h5 className={`text-lg font-semibold `}>{question.text}</h5>
           <Label className="text-sm text-gray-500">{question.category}</Label>
         </div>
         <div className="flex flex-row sm:flex-col items-center sm:items-end gap-2">
@@ -61,20 +41,9 @@ export const AdminQuestionCard: React.FC<AdminQuestionCardProps> = ({
           >
             {question.difficultyDisplay}
           </Badge>
-          <Button variant="outline" size="sm" onClick={handleToggle}>
-            {isExpanded ? (
-              <ChevronUp className="h-4 w-4" />
-            ) : (
-              <ChevronDown className="h-4 w-4" />
-            )}
-          </Button>
         </div>
       </div>
-      <div
-        ref={contentRef}
-        className="overflow-hidden transition-all duration-200 ease-in-out"
-        style={{ maxHeight: 0 }}
-      >
+      <div className="transition-all duration-200 ease-in-out">
         <CardContent className="pt-0 pb-4">
           <ul className="space-y-2">
             {question.answerOptions.map((option) => (
