@@ -14,6 +14,7 @@ export const QuestionList: React.FC<QuestionListProps> = ({
 }) => {
   const parentRef = useRef<HTMLDivElement>(null);
 
+  console.log("questions", questions);
   // Monitor scrolling to detect when user reaches the bottom
   useEffect(() => {
     const handleScroll = () => {

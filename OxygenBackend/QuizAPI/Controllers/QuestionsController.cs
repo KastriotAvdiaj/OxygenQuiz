@@ -38,13 +38,13 @@ namespace QuizAPI.Controllers
             var query = _context.Questions.AsQueryable();
 
             // Apply search filter if searchTerm is provided
-            if (!string.IsNullOrEmpty(searchTerm))
+            if ((!string.IsNullOrEmpty(searchTerm)) && (searchTerm != "undefined"))
             {
                 query = query.Where(q => q.Text.Contains(searchTerm));
             }
 
             // Apply category filter if category is provided
-            if (!string.IsNullOrEmpty(category) && category != "null")
+            if (!string.IsNullOrEmpty(category) && category != "null" && category != "All categories")
             {
                 query = query.Where(q => q.Category.Name == category);
             }

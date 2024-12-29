@@ -23,13 +23,12 @@ export const CategorySelect: React.FC<CategorySelectProps> = ({
   includeAllOption = true,
 }) => {
   return (
-    <div>
-      <Label>Category</Label>
+    <div className="w-[200px]">
       <Select value={selectedCategory} onValueChange={onCategoryChange}>
-        <SelectTrigger className="w-[200px] sm:w-auto">
+        <SelectTrigger className="w-[200px] sm:w-[200px]">
           <SelectValue placeholder="Select a category" />
         </SelectTrigger>
-        <SelectContent className="w-[200px] sm:w-auto">
+        <SelectContent className="w-[200px] sm:w-[200px]">
           {includeAllOption && (
             <SelectItem value="all">All Categories</SelectItem>
           )}

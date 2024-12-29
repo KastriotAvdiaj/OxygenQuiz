@@ -8,6 +8,7 @@ import { QueryClient, useQueryClient } from "@tanstack/react-query";
 import { RedirectIfLoggedIn } from "../lib/Redirect";
 import "../global.css";
 import { Navigate } from "react-router-dom";
+import { HomeLayout } from "@/pages/layout";
 
 // Lazy load components
 const Home = lazy(() =>
@@ -26,8 +27,7 @@ const createAppRouter = (queryClient: QueryClient) =>
       path: "/",
       element: (
         <>
-          <Header />
-          <Home />
+          <HomeLayout children={<Home />} />
         </>
       ),
     },
@@ -35,8 +35,7 @@ const createAppRouter = (queryClient: QueryClient) =>
       path: "/about-us",
       element: (
         <>
-          <Header />
-          <AboutUs />
+          <HomeLayout children={<AboutUs />} />
         </>
       ),
     },

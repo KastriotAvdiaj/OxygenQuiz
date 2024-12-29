@@ -2,17 +2,19 @@ import { useState, useEffect } from "react";
 // import { AdminQuestionCard } from "./Components/admin-question-card";
 import { useQuestionData } from "./api/get-questions";
 import { useQuestionCategoryData } from "./Categories/api/get-question-categories";
-// import CreateQuestionCategoryForm from "./Categories/Components/create-question-category";
+import CreateQuestionCategoryForm from "./Categories/Components/create-question-category";
 import { Card, Spinner } from "@/components/ui";
-// import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-// import { Separator } from "@/components/ui/separator";
+import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/form";
 import { QuestionList } from "./Components/question-list";
+import { useDebounce } from "@/hooks/use-debounce";
 import { Question } from "@/types/ApiTypes";
 import { CategorySelect } from "./Categories/Components/select-question-category";
+import CreateQuestionForm from "./Components/create-question";
 
 export const Questions = () => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm] = useDebounce(searchTerm, 300);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -22,7 +24,7 @@ export const Questions = () => {
     params: {
       page,
       pageSize,
-      searchTerm,
+      searchTerm: debouncedSearchTerm,
       category: selectedCategory !== "all" ? selectedCategory : null,
     },
   });
@@ -31,13 +33,21 @@ export const Questions = () => {
 
   useEffect(() => {
     if (questionsQuery.data) {
-      setAllQuestions((prev) => [...prev, ...questionsQuery.data.items]);
+      setAllQuestions((prevQuestions) => [
+        ...prevQuestions,
+        ...questionsQuery.data.items,
+      ]);
     }
   }, [questionsQuery.data]);
 
+  useEffect(() => {
+    setPage(1);
+    setAllQuestions([]);
+  }, [searchTerm, selectedCategory]);
+
   const handleFetchNextPage = () => {
     if (page < (questionsQuery.data?.totalPages || 1)) {
-      setPage(page + 1);
+      setPage((prevPage) => prevPage + 1);
     }
   };
 
@@ -50,19 +60,24 @@ export const Questions = () => {
   }
 
   return (
-    <Card className="m-8 p-8">
+    <Card className="m-10 p-8 bg-background-secondary">
       <div className="flex justify-between mb-6">
         <Input
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           placeholder="Search questions..."
         />
-        <CategorySelect
-          categories={questionCategoriesQuery.data || []}
-          selectedCategory={selectedCategory}
-          onCategoryChange={setSelectedCategory}
-        />
+        <div className="flex space-x-4 items-center">
+          {/* <CreateQuestionCategoryForm /> */}
+          <CategorySelect
+            categories={questionCategoriesQuery.data || []}
+            selectedCategory={selectedCategory}
+            onCategoryChange={setSelectedCategory}
+          />
+          <CreateQuestionForm categories={questionCategoriesQuery.data || []} />
+        </div>
       </div>
+      <Separator />
 
       {/* Question List */}
       <QuestionList

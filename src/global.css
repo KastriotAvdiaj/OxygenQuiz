@@ -8,14 +8,14 @@ body{
   background-position: center; 
   background-repeat: no-repeat; 
   background-attachment: fixed;
-  font-family: var(--main);
+  font-family: var(--main), sans-serif;
+
   color: var(--foreground);
   background-color: var(--background);
 
 }
 
 :root {
-  --background: 0 0% 100%;
   --add-button:rgb(73, 103, 236);
   --gradient: var(--text-hover);
   --main:  -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
