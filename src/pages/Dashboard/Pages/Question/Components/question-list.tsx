@@ -1,39 +1,24 @@
-import React, { useEffect, useRef } from "react";
+import React from "react";
 import { Question } from "@/types/ApiTypes";
 import { FolderMinus } from "lucide-react";
 import { NormalQuestionCard } from "./normal-question-card";
+import { Button } from "@/components/ui";
 
 interface QuestionListProps {
   questions: Question[];
-  onScrollEnd?: () => void; // New prop for infinite scroll
+  onNextPage?: () => void;
+  onPreviousPage?: () => void;
+  currentPage: number;
+  totalPages: number;
 }
 
 export const QuestionList: React.FC<QuestionListProps> = ({
   questions,
-  onScrollEnd,
+  onNextPage,
+  onPreviousPage,
+  currentPage,
+  totalPages,
 }) => {
-  const parentRef = useRef<HTMLDivElement>(null);
-
-  console.log("questions", questions);
-  // Monitor scrolling to detect when user reaches the bottom
-  useEffect(() => {
-    const handleScroll = () => {
-      if (!parentRef.current || !onScrollEnd) return;
-
-      const { scrollTop, scrollHeight, clientHeight } = parentRef.current;
-      if (scrollTop + clientHeight >= scrollHeight - 10) {
-        onScrollEnd(); // Trigger the callback
-      }
-    };
-
-    const parent = parentRef.current;
-    if (parent) parent.addEventListener("scroll", handleScroll);
-
-    return () => {
-      if (parent) parent.removeEventListener("scroll", handleScroll);
-    };
-  }, [onScrollEnd]);
-
   if (questions.length === 0) {
     return (
       <div className="col-span-full flex flex-col items-center justify-center text-center p-12 rounded-lg">
@@ -47,13 +32,33 @@ export const QuestionList: React.FC<QuestionListProps> = ({
   }
 
   return (
-    <div ref={parentRef} className="h-[100vh] overflow-auto p-4">
+    <div className="h-[100vh] overflow-auto p-4">
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {questions.map((question) => (
           <div key={question.id} className="w-full">
             <NormalQuestionCard question={question} />
           </div>
         ))}
+      </div>
+
+      <div className="flex justify-end items-center mt-6 gap-5">
+        <Button
+          onClick={onPreviousPage}
+          disabled={currentPage <= 1}
+          className="bg-blue-500 text-white hover:bg-blue-600 disabled:bg-gray-300"
+        >
+          Back
+        </Button>
+        <div className="text-lg font-semibold">
+          Page {currentPage} of {totalPages}
+        </div>
+        <Button
+          onClick={onNextPage}
+          disabled={currentPage >= totalPages}
+          className="bg-blue-500 text-white hover:bg-blue-600 disabled:bg-gray-300"
+        >
+          Next Page
+        </Button>
       </div>
     </div>
   );

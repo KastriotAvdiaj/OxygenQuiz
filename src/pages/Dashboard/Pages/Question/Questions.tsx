@@ -18,12 +18,11 @@ export const Questions = () => {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const [allQuestions, setAllQuestions] = useState<Question[]>([]);
 
   const questionsQuery = useQuestionData({
     params: {
       page,
-      pageSize,
+      pageSize: pageSize,
       searchTerm: debouncedSearchTerm,
       category: selectedCategory !== "all" ? selectedCategory : null,
     },
@@ -32,21 +31,13 @@ export const Questions = () => {
   const questionCategoriesQuery = useQuestionCategoryData({});
 
   useEffect(() => {
-    if (questionsQuery.data) {
-      setAllQuestions((prevQuestions) => [
-        ...prevQuestions,
-        ...questionsQuery.data.items,
-      ]);
-    }
-  }, [questionsQuery.data]);
-
-  useEffect(() => {
     setPage(1);
-    setAllQuestions([]);
   }, [searchTerm, selectedCategory]);
 
-  const handleFetchNextPage = () => {
-    if (page < (questionsQuery.data?.totalPages || 1)) {
+  const handlePageChange = (Direction: "prev" | "next") => {
+    if (Direction === "prev" && page > 1) {
+      setPage((prevPage) => prevPage - 1);
+    } else if (page < (questionsQuery.data?.totalPages || 1)) {
       setPage((prevPage) => prevPage + 1);
     }
   };
@@ -81,8 +72,11 @@ export const Questions = () => {
 
       {/* Question List */}
       <QuestionList
-        questions={allQuestions}
-        onScrollEnd={handleFetchNextPage} // Add infinite scroll
+        questions={questionsQuery.data?.items || []}
+        onNextPage={() => handlePageChange("next")}
+        onPreviousPage={() => handlePageChange("prev")}
+        currentPage={page}
+        totalPages={questionsQuery.data?.totalPages || 1}
       />
     </Card>
   );

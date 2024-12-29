@@ -27,7 +27,7 @@ namespace QuizAPI.Controllers
         [HttpGet]
         public async Task<ActionResult<PaginatedResponse<QuestionDTO>>> GetQuestions(
     int page = 1,
-    int pageSize = 3,
+    int pageSize = 20,
     string? searchTerm = null,
     string? category = null)
         {
