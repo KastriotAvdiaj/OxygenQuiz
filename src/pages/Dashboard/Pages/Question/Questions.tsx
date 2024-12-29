@@ -3,12 +3,12 @@ import { useState, useEffect } from "react";
 import { useQuestionData } from "./api/get-questions";
 import { useQuestionCategoryData } from "./Categories/api/get-question-categories";
 import CreateQuestionCategoryForm from "./Categories/Components/create-question-category";
-import { Card, Spinner } from "@/components/ui";
+import { Card, DataTable, Spinner } from "@/components/ui";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/form";
 import { QuestionList } from "./Components/question-list";
 import { useDebounce } from "@/hooks/use-debounce";
-import { Question } from "@/types/ApiTypes";
+import { columns } from "./Categories/Components/columns";
 import { CategorySelect } from "./Categories/Components/select-question-category";
 import CreateQuestionForm from "./Components/create-question";
 
@@ -51,33 +51,44 @@ export const Questions = () => {
   }
 
   return (
-    <Card className="m-10 p-8 bg-background-secondary">
-      <div className="flex justify-between mb-6">
-        <Input
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          placeholder="Search questions..."
-        />
-        <div className="flex space-x-4 items-center">
-          {/* <CreateQuestionCategoryForm /> */}
-          <CategorySelect
-            categories={questionCategoriesQuery.data || []}
-            selectedCategory={selectedCategory}
-            onCategoryChange={setSelectedCategory}
+    <>
+      <Card className="m-10 p-8 bg-background-secondary">
+        <div className="flex justify-between mb-6">
+          <Input
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search questions..."
           />
-          <CreateQuestionForm categories={questionCategoriesQuery.data || []} />
+          <div className="flex space-x-4 items-center">
+            {/* <CreateQuestionCategoryForm /> */}
+            <CategorySelect
+              categories={questionCategoriesQuery.data || []}
+              selectedCategory={selectedCategory}
+              onCategoryChange={setSelectedCategory}
+            />
+            <CreateQuestionForm
+              categories={questionCategoriesQuery.data || []}
+            />
+          </div>
         </div>
-      </div>
-      <Separator />
+        <Separator />
 
-      {/* Question List */}
-      <QuestionList
-        questions={questionsQuery.data?.items || []}
-        onNextPage={() => handlePageChange("next")}
-        onPreviousPage={() => handlePageChange("prev")}
-        currentPage={page}
-        totalPages={questionsQuery.data?.totalPages || 1}
-      />
-    </Card>
+        {/* Question List */}
+        <QuestionList
+          questions={questionsQuery.data?.items || []}
+          onNextPage={() => handlePageChange("next")}
+          onPreviousPage={() => handlePageChange("prev")}
+          currentPage={page}
+          totalPages={questionsQuery.data?.totalPages || 1}
+        />
+      </Card>
+      <Card className="m-10 p-8 bg-background-secondary">
+        <CreateQuestionCategoryForm />
+        <DataTable
+          data={questionCategoriesQuery.data || []}
+          columns={columns}
+        />
+      </Card>
+    </>
   );
 };

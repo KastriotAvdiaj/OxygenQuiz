@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using QuizAPI.Data;
+using QuizAPI.DTOs;
 using QuizAPI.Models;
 
 namespace QuizAPI.Controllers
@@ -84,16 +85,19 @@ namespace QuizAPI.Controllers
         // POST: api/QuestionCategories
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<QuestionCategory>> PostQuestionCategory(QuestionCategory questionCategory)
+        public async Task<ActionResult<QuestionCategory>> PostQuestionCategory(QuestionCategoryDTO questionCategory)
             {
           if (_context.QuestionCategories == null)
           {
               return Problem("Entity set 'ApplicationDbContext.QuestionCategories'  is null.");
-          }
-            _context.QuestionCategories.Add(questionCategory);
+            }
+
+            var questionCategoryEntity = new QuestionCategory { Name = questionCategory.Name };
+
+            _context.QuestionCategories.Add(questionCategoryEntity);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetQuestionCategory", new { id = questionCategory.Id }, questionCategory);
+            return CreatedAtAction("GetQuestionCategory", new { id = questionCategoryEntity.Id }, questionCategoryEntity);
         }
 
         // DELETE: api/QuestionCategories/5
