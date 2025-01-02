@@ -54,6 +54,8 @@ export type BaseEntity<TId = number> = {
 
   export type QuestionCategory = {
     id: number;
+    createdAt: string;
+    userId: string;
     name: string;
   };
 

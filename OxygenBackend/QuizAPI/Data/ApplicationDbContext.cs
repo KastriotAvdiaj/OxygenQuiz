@@ -29,7 +29,7 @@ namespace QuizAPI.Data
 
 
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
-        { 
+        {
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -92,6 +92,13 @@ namespace QuizAPI.Data
             .WithOne(a => a.Question)
             .HasForeignKey(a => a.QuestionId)
             .OnDelete(DeleteBehavior.Cascade);
+
+            //Configuration for Question-QuestionCategory relationship
+            modelBuilder.Entity<QuestionCategory>()
+       .HasOne(qc => qc.User)
+       .WithMany()
+       .HasForeignKey(qc => qc.UserId)
+       .OnDelete(DeleteBehavior.Restrict);
 
         }
     }

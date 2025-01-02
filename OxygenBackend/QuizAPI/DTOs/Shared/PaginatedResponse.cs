@@ -1,4 +1,4 @@
-﻿namespace QuizAPI.DTOs
+﻿namespace QuizAPI.DTOs.Shared
 {
     public class PaginatedResponse<T>
     {

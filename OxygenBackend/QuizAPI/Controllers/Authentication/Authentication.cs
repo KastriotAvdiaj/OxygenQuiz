@@ -7,8 +7,9 @@ using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using QuizAPI.Data;
 using QuizAPI.DTOs;
+using QuizAPI.DTOs.User;
 
-namespace QuizAPI.Controllers
+namespace QuizAPI.Controllers.Authentication
 {
     [Route("api/[controller]")]
     [ApiController]
@@ -22,10 +23,10 @@ namespace QuizAPI.Controllers
             _context = context;
         }
 
-        [HttpGet("me")] 
+        [HttpGet("me")]
         public async Task<IActionResult> GetCurrentUser()
         {
-           var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value; 
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (userId == null)
             {
                 return Unauthorized();
@@ -53,7 +54,7 @@ namespace QuizAPI.Controllers
                 Role = role.Name,
             };
 
-            return Ok(sentUser); 
+            return Ok(sentUser);
         }
 
         [HttpPost("signup")]
@@ -67,7 +68,7 @@ namespace QuizAPI.Controllers
             var result = await _authService.SignupAsync(model.Email, model.Username, model.Password);
             if (result.Success)
             {
-                return Ok(new { Token = result.Token, User = result.User });
+                return Ok(new { result.Token, result.User });
             }
 
             return BadRequest(result.Message);
@@ -84,7 +85,7 @@ namespace QuizAPI.Controllers
             var result = await _authService.LoginAsync(model.Email, model.Password);
             if (result.Success)
             {
-                return Ok(new { Token = result.Token, User = result.User });
+                return Ok(new { result.Token, result.User });
             }
 
             return Unauthorized(result.Message);

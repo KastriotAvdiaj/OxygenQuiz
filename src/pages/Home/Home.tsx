@@ -1,5 +1,7 @@
 // import { BesimCard } from "@/common/BesimCard";
 
+import CreateQuestionCategoryForm from "../Dashboard/Pages/Question/Categories/Components/create-question-category";
+
 export const Home = () => {
   return (
     <div
@@ -24,6 +26,7 @@ export const Home = () => {
         <button className="bg-indigo-500 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg">
           Get Started
         </button>
+        <CreateQuestionCategoryForm />
       </div>
       {/* <BesimCard /> */}
     </div>

@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using QuizAPI.Data;
-using QuizAPI.DTOs;
+using QuizAPI.DTOs.Question;
 using QuizAPI.Models;
 
 namespace QuizAPI.Controllers.QuestionCategories
@@ -24,13 +25,24 @@ namespace QuizAPI.Controllers.QuestionCategories
 
         // GET: api/QuestionCategories
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<QuestionCategory>>> GetQuestionCategories()
+        public async Task<ActionResult<IEnumerable<QuestionCategoryDTO>>> GetQuestionCategories()
         {
             if (_context.QuestionCategories == null)
             {
                 return NotFound();
             }
-            return await _context.QuestionCategories.ToListAsync();
+
+            var questionCategories = await _context.QuestionCategories
+                .Select(qc => new QuestionCategoryDTO
+                {
+                    Id = qc.Id,
+                    Name = qc.Name,
+                    Username = qc.User.Username, 
+                    CreatedAt = qc.CreatedAt
+                })
+                .ToListAsync();
+
+            return Ok(questionCategories);
         }
 
         // GET: api/QuestionCategories/5
@@ -85,14 +97,21 @@ namespace QuizAPI.Controllers.QuestionCategories
         // POST: api/QuestionCategories
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<QuestionCategory>> PostQuestionCategory(QuestionCategoryDTO questionCategory)
+        public async Task<ActionResult<QuestionCategory>> PostQuestionCategory(QuestionCategoryCM questionCategory)
         {
             if (_context.QuestionCategories == null)
             {
                 return Problem("Entity set 'ApplicationDbContext.QuestionCategories'  is null.");
             }
 
-            var questionCategoryEntity = new QuestionCategory { Name = questionCategory.Name };
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new { message = "User ID not found in token." });
+            }
+
+            var questionCategoryEntity = new QuestionCategory { Name = questionCategory.Name, UserId = Guid.Parse(userId), CreatedAt = DateTime.UtcNow };
 
             _context.QuestionCategories.Add(questionCategoryEntity);
             await _context.SaveChangesAsync();

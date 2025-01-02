@@ -8,8 +8,12 @@ namespace QuizAPI.Models
 
         public string Name { get; set; }
 
+        [ForeignKey("UserId")]
+        public User User { get; set; }
 
-        [InverseProperty("Category")]
+        public DateTime CreatedAt { get; set; }
+
+        public Guid UserId { get; set; }
         public ICollection<Question> Questions { get; set; }
 
     }

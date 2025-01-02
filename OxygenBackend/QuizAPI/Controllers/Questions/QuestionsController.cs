@@ -2,12 +2,13 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using QuizAPI.Data;
-using QuizAPI.DTOs;
+using QuizAPI.DTOs.Question;
+using QuizAPI.DTOs.Shared;
 using QuizAPI.Models;
 using QuizAPI.Services;
 using System.Security.Claims;
 
-namespace QuizAPI.Controllers
+namespace QuizAPI.Controllers.Questions
 {
     [ApiController]
     [Route("api/[controller]")]
@@ -38,7 +39,7 @@ namespace QuizAPI.Controllers
             var query = _context.Questions.AsQueryable();
 
             // Apply search filter if searchTerm is provided
-            if ((!string.IsNullOrEmpty(searchTerm)) && (searchTerm != "undefined"))
+            if (!string.IsNullOrEmpty(searchTerm) && searchTerm != "undefined")
             {
                 query = query.Where(q => q.Text.Contains(searchTerm));
             }
@@ -126,7 +127,7 @@ namespace QuizAPI.Controllers
             {
                 Text = questionDto.Text,
                 Difficulty = questionDto.Difficulty,
-                /*AnswerOptions = new List<AnswerOption>(),   WE don't need this anymore since we are initializing it in it's creation*/ 
+                /*AnswerOptions = new List<AnswerOption>(),   WE don't need this anymore since we are initializing it in it's creation*/
                 CreatedAt = DateTime.UtcNow,
                 CategoryId = category.Id,
                 UserId = Guid.Parse(userId)
@@ -187,7 +188,7 @@ namespace QuizAPI.Controllers
             // Update the question properties
             question.Text = questionDto.Text;
             question.Difficulty = questionDto.Difficulty;
-            
+
             // Clear existing options and add new ones
             _context.AnswerOptions.RemoveRange(question.AnswerOptions);
             question.AnswerOptions = questionDto.AnswerOptions.Select(ao => new AnswerOption
