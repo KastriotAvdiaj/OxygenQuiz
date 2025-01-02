@@ -1,6 +1,6 @@
 ﻿using QuizAPI.Models;
 
-namespace QuizAPI.DTOs
+namespace QuizAPI.DTOs.Question
 {
     // CM = Create Model, for creating the question
     public class QuestionCM
@@ -20,7 +20,7 @@ namespace QuizAPI.DTOs
 
         public DifficultyLevel Difficulty { get; set; }
         public string DifficultyDisplay => Difficulty.ToDisplayString();
-    
+
         public string Category { get; set; }
 
         public int TotalQuestions { get; set; }

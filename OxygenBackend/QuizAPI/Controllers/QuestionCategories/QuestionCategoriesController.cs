@@ -9,7 +9,7 @@ using QuizAPI.Data;
 using QuizAPI.DTOs;
 using QuizAPI.Models;
 
-namespace QuizAPI.Controllers
+namespace QuizAPI.Controllers.QuestionCategories
 {
     [Route("api/[controller]")]
     [ApiController]
@@ -26,10 +26,10 @@ namespace QuizAPI.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<QuestionCategory>>> GetQuestionCategories()
         {
-          if (_context.QuestionCategories == null)
-          {
-              return NotFound();
-          }
+            if (_context.QuestionCategories == null)
+            {
+                return NotFound();
+            }
             return await _context.QuestionCategories.ToListAsync();
         }
 
@@ -37,10 +37,10 @@ namespace QuizAPI.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<QuestionCategory>> GetQuestionCategory(int id)
         {
-          if (_context.QuestionCategories == null)
-          {
-              return NotFound();
-          }
+            if (_context.QuestionCategories == null)
+            {
+                return NotFound();
+            }
             var questionCategory = await _context.QuestionCategories.FindAsync(id);
 
             if (questionCategory == null)
@@ -86,10 +86,10 @@ namespace QuizAPI.Controllers
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
         public async Task<ActionResult<QuestionCategory>> PostQuestionCategory(QuestionCategoryDTO questionCategory)
+        {
+            if (_context.QuestionCategories == null)
             {
-          if (_context.QuestionCategories == null)
-          {
-              return Problem("Entity set 'ApplicationDbContext.QuestionCategories'  is null.");
+                return Problem("Entity set 'ApplicationDbContext.QuestionCategories'  is null.");
             }
 
             var questionCategoryEntity = new QuestionCategory { Name = questionCategory.Name };

@@ -1,4 +1,4 @@
-﻿namespace QuizAPI.DTOs
+﻿namespace QuizAPI.DTOs.User
 {
 
     // Used for creating a new User

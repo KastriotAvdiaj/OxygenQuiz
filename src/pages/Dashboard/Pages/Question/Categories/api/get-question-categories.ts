@@ -5,6 +5,7 @@ import { QueryConfig } from "@/lib/React-query";
 import { QuestionCategory } from "@/types/ApiTypes";
 
 export const getQuestionCategories = (): Promise<QuestionCategory[]> => {
+  console.log("getQuestionCategories");
   return api.get(`/questionCategories`);
 };
 

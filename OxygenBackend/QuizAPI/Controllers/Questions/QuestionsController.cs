@@ -105,17 +105,8 @@ namespace QuizAPI.Controllers
         public async Task<ActionResult<Question>> CreateQuestionWithDto(QuestionCM questionDto)
         {
             // Validate the DTO
-            if (questionDto == null)
-                return BadRequest("Question data is required.");
-            
-            if (string.IsNullOrWhiteSpace(questionDto.Text))
-                return BadRequest("Question text is required.");
-
-            if (questionDto.AnswerOptions == null || !questionDto.AnswerOptions.Any())
-                return BadRequest("At least two answer options are required.");
-
-            if (!ValidateAnswerOptions(questionDto.AnswerOptions))
-                return BadRequest("Each question must have at least one correct and one incorrect answer.");
+            if (!ValidateQuestionDto(questionDto))
+                return BadRequest("Invalid question data.");
 
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
@@ -135,7 +126,7 @@ namespace QuizAPI.Controllers
             {
                 Text = questionDto.Text,
                 Difficulty = questionDto.Difficulty,
-                AnswerOptions = new List<AnswerOption>(), 
+                /*AnswerOptions = new List<AnswerOption>(),   WE don't need this anymore since we are initializing it in it's creation*/ 
                 CreatedAt = DateTime.UtcNow,
                 CategoryId = category.Id,
                 UserId = Guid.Parse(userId)
@@ -148,7 +139,7 @@ namespace QuizAPI.Controllers
                 {
                     Text = optionDto.Text,
                     IsCorrect = optionDto.IsCorrect,
-                    Question = question 
+                    Question = question
                 };
                 question.AnswerOptions.Add(answerOption);
             }
@@ -157,6 +148,20 @@ namespace QuizAPI.Controllers
             await _context.SaveChangesAsync();
 
             return CreatedAtAction(nameof(GetQuestion), new { id = question.Id }, question);
+        }
+
+        private bool ValidateQuestionDto(QuestionCM questionDto)
+        {
+            if (questionDto == null)
+                return false;
+
+            if (string.IsNullOrWhiteSpace(questionDto.Text))
+                return false;
+
+            if (questionDto.AnswerOptions == null || questionDto.AnswerOptions.Count < 2)
+                return false;
+
+            return ValidateAnswerOptions(questionDto.AnswerOptions);
         }
 
         // Uses AnswerOptionDTO

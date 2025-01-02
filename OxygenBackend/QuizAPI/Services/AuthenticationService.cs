@@ -2,7 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using QuizAPI.Data;
-using QuizAPI.DTOs;
+using QuizAPI.DTOs.User;
 using QuizAPI.Models;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;

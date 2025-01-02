@@ -6,11 +6,11 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using QuizAPI.Data;
-using QuizAPI.DTOs;
+using QuizAPI.DTOs.User;
 using QuizAPI.Models;
 using QuizAPI.Services;
 
-namespace QuizAPI.Controllers
+namespace QuizAPI.Controllers.Users
 {
     [Route("api/[controller]")]
     [ApiController]
@@ -34,7 +34,7 @@ namespace QuizAPI.Controllers
                 return NotFound();
             }
             var totalUsers = _dashboardService.GetTotalCount<User>();
-            var users = await _context.Users.Include(u => u.Role).ToListAsync(); 
+            var users = await _context.Users.Include(u => u.Role).ToListAsync();
 
             var userDTOs = users.Select(user => new FullUserDTO
             {
@@ -44,7 +44,7 @@ namespace QuizAPI.Controllers
                 Email = user.Email,
                 PasswordHash = user.PasswordHash,
                 DateRegistered = user.DateRegistered,
-                Role = MapRoleIdToRole(user.RoleId), 
+                Role = MapRoleIdToRole(user.RoleId),
                 IsDeleted = user.IsDeleted,
                 TotalUsers = totalUsers,
                 LastLogin = user.LastLogin,
@@ -61,7 +61,7 @@ namespace QuizAPI.Controllers
                 1 => "admin",
                 2 => "user",
                 3 => "superadmin",
-                _ => "user" 
+                _ => "user"
             };
         }
 
@@ -81,10 +81,10 @@ namespace QuizAPI.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<User>> GetUser(Guid id)
         {
-          if (_context.Users == null)
-          {
-              return NotFound();
-          }
+            if (_context.Users == null)
+            {
+                return NotFound();
+            }
             var user = await _context.Users.FindAsync(id);
 
             if (user == null)
@@ -130,11 +130,11 @@ namespace QuizAPI.Controllers
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
         public async Task<ActionResult<User>> PostUser(TemporaryUserCR user)
+        {
+            if (_context.Users == null)
             {
-          if (_context.Users == null)
-          {
-              return Problem("Entity set 'ApplicationDbContext.Users'  is null.");
-          }
+                return Problem("Entity set 'ApplicationDbContext.Users'  is null.");
+            }
 
             int roleId = !string.IsNullOrEmpty(user.Role)
                 ? MapRoleToRoleId(user.Role)

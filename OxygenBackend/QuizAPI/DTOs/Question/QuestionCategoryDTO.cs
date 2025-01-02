@@ -1,4 +1,4 @@
-﻿namespace QuizAPI.DTOs
+﻿namespace QuizAPI.DTOs.Question
 {
     public class QuestionCategoryDTO
     {

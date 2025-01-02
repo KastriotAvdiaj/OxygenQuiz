@@ -1,7 +1,7 @@
 ﻿using QuizAPI.ManyToManyTables;
 using QuizAPI.Models;
 
-namespace QuizAPI.DTOs
+namespace QuizAPI.DTOs.User
 {
     // Used for getting the users
     public class FullUserDTO

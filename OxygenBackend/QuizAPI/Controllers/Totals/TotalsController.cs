@@ -2,7 +2,7 @@
 using QuizAPI.Models;
 using QuizAPI.Services;
 
-namespace QuizAPI.Controllers
+namespace QuizAPI.Controllers.Totals
 {
     [ApiController]
     [Route("api/[controller]")]
