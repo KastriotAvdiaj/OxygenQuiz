@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using QuizAPI.Data;
 using QuizAPI.DTOs.Question;
 using QuizAPI.DTOs.Shared;
+using QuizAPI.Helpers;
 using QuizAPI.Models;
 using QuizAPI.Services;
 using System.Security.Claims;
@@ -62,7 +63,7 @@ namespace QuizAPI.Controllers.Questions
                 {
                     ID = q.Id,
                     Text = q.Text,
-                    Difficulty = q.Difficulty,
+                    Difficulty = q.DifficultyLevel,
                     Category = q.Category.Name,
                     TotalQuestions = totalQuestions, // Total count of questions
                     AnswerOptions = q.AnswerOptions.Select(ao => new AnswerOptionDTO
@@ -105,8 +106,10 @@ namespace QuizAPI.Controllers.Questions
         [HttpPost]
         public async Task<ActionResult<Question>> CreateQuestionWithDto(QuestionCM questionDto)
         {
+
+
             // Validate the DTO
-            if (!ValidateQuestionDto(questionDto))
+            if (!QuestionHelpers.ValidateQuestionDto(questionDto))
                 return BadRequest("Invalid question data.");
 
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -117,19 +120,20 @@ namespace QuizAPI.Controllers.Questions
             }
             var category = await _context.QuestionCategories.FirstOrDefaultAsync(c => c.Name == questionDto.Category);
 
-
             if (category == null)
             {
                 return BadRequest("Category doesn't exist");
             }
 
+            var questionDifficulty = await _context.QuestionDifficulties.FirstOrDefaultAsync(d => d.ID == questionDto.DifficultyId);
+
             var question = new Question
             {
                 Text = questionDto.Text,
-                Difficulty = questionDto.Difficulty,
+                DifficultyId = questionDto.DifficultyId,
                 /*AnswerOptions = new List<AnswerOption>(),   WE don't need this anymore since we are initializing it in it's creation*/
                 CreatedAt = DateTime.UtcNow,
-                CategoryId = category.Id,
+                CategoryId = category.Id, 
                 UserId = Guid.Parse(userId)
             };
 
@@ -151,27 +155,6 @@ namespace QuizAPI.Controllers.Questions
             return CreatedAtAction(nameof(GetQuestion), new { id = question.Id }, question);
         }
 
-        private bool ValidateQuestionDto(QuestionCM questionDto)
-        {
-            if (questionDto == null)
-                return false;
-
-            if (string.IsNullOrWhiteSpace(questionDto.Text))
-                return false;
-
-            if (questionDto.AnswerOptions == null || questionDto.AnswerOptions.Count < 2)
-                return false;
-
-            return ValidateAnswerOptions(questionDto.AnswerOptions);
-        }
-
-        // Uses AnswerOptionDTO
-        private static bool ValidateAnswerOptions(ICollection<AnswerOptionCM> options)
-        {
-            return options.Any(a => a.IsCorrect) && options.Any(a => !a.IsCorrect);
-        }
-
-
         // PUT: api/Questions/{id}
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateQuestion(int id, QuestionCM questionDto)
@@ -182,12 +165,12 @@ namespace QuizAPI.Controllers.Questions
             if (question == null)
                 return NotFound();
 
-            if (questionDto.AnswerOptions == null || !ValidateAnswerOptions(questionDto.AnswerOptions))
+            if (questionDto.AnswerOptions == null || !QuestionHelpers.ValidateAnswerOptions(questionDto.AnswerOptions))
                 return BadRequest("Each question must have at least one correct and one incorrect answer.");
 
             // Update the question properties
             question.Text = questionDto.Text;
-            question.Difficulty = questionDto.Difficulty;
+           /* question.DifficultyId = questionDto.DifficultyLevel;*/
 
             // Clear existing options and add new ones
             _context.AnswerOptions.RemoveRange(question.AnswerOptions);
@@ -229,10 +212,6 @@ namespace QuizAPI.Controllers.Questions
 
         private bool QuestionExists(int id) => _context.Questions.Any(e => e.Id == id);
 
-        // Uses AnswerOption
-        private static bool ValidateAnswerOptions(ICollection<AnswerOption> options)
-        {
-            return options.Any(a => a.IsCorrect) && options.Any(a => !a.IsCorrect);
-        }
+ 
     }
 }

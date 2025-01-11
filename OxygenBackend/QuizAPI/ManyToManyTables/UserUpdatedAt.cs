@@ -1,5 +1,4 @@
 ﻿using QuizAPI.Models;
-using QuizAPI.Models.User;
 
 namespace QuizAPI.ManyToManyTables
 {

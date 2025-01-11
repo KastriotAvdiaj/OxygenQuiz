@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using QuizAPI.Data;
-using QuizAPI.Models.User.User;
+using QuizAPI.Models;
 
 namespace QuizAPI.Controllers.Roles
 {

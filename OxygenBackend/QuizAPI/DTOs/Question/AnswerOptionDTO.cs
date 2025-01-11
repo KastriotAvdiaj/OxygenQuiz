@@ -1,4 +1,4 @@
-﻿using QuizAPI.Models.Question;
+﻿using QuizAPI.Models;
 
 namespace QuizAPI.DTOs.Question
 {
@@ -6,7 +6,7 @@ namespace QuizAPI.DTOs.Question
     public class QuestionCM
     {
         public string Text { get; set; } = string.Empty;
-        public DifficultyLevel Difficulty { get; set; }
+        public int DifficultyId { get; set; }
 
         public string Category { get; set; }
         public List<AnswerOptionCM> AnswerOptions { get; set; }
@@ -18,8 +18,7 @@ namespace QuizAPI.DTOs.Question
         public int ID { get; set; }
         public string Text { get; set; } = string.Empty;
 
-        public DifficultyLevel Difficulty { get; set; }
-        public string DifficultyDisplay => Difficulty.ToDisplayString();
+        public string Difficulty { get; set; }
 
         public string Category { get; set; }
 
@@ -40,20 +39,6 @@ namespace QuizAPI.DTOs.Question
         public int ID { get; set; }
         public string Text { get; set; } = string.Empty;
         public bool IsCorrect { get; set; }
-    }
-
-    public static class DifficultyLevelExtensions
-    {
-        public static string ToDisplayString(this DifficultyLevel level)
-        {
-            return level switch
-            {
-                DifficultyLevel.Easy => "Easy",
-                DifficultyLevel.Medium => "Medium",
-                DifficultyLevel.Hard => "Hard",
-                _ => "Unknown"
-            };
-        }
     }
 
 }

@@ -1,8 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using QuizAPI.ManyToManyTables;
 using QuizAPI.Models;
-using QuizAPI.Models.Question;
-using QuizAPI.Models.User;
 using System;
 
 namespace QuizAPI.Data
@@ -17,6 +15,8 @@ namespace QuizAPI.Data
         public DbSet<QuestionCategory> QuestionCategories { get; set; }
 
         public DbSet<AnswerOption> AnswerOptions { get; set; }
+
+        public DbSet<QuestionDifficulty> QuestionDifficulties { get; set; }
 
         public DbSet<Permission> Permissions { get; set; }
 
