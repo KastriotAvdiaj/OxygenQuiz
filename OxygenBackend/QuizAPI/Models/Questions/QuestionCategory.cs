@@ -1,4 +1,6 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+﻿using QuizAPI.DTOs.Question;
+using QuizAPI.Models;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace QuizAPI.Models
 {

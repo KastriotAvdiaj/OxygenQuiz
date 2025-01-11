@@ -1,4 +1,4 @@
-﻿using QuizAPI.Models;
+﻿using QuizAPI.Models.Question;
 
 namespace QuizAPI.DTOs.Question
 {

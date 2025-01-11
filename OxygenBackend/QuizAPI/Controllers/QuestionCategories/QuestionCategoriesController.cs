@@ -8,7 +8,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using QuizAPI.Data;
 using QuizAPI.DTOs.Question;
-using QuizAPI.Models;
 
 namespace QuizAPI.Controllers.QuestionCategories
 {

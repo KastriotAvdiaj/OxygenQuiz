@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using QuizAPI.Models;
+using QuizAPI.Models;
 using QuizAPI.Services;
 
 namespace QuizAPI.Controllers.Totals

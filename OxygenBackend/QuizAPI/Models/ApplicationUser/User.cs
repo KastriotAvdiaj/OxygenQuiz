@@ -33,9 +33,10 @@ namespace QuizAPI.Models
 
         public string? ProfileImageUrl { get; set; }
 
-        public User() {
+        public User()
+        {
             ConcurrencyStamp = Guid.NewGuid();
-            }
+        }
 
     }
 }

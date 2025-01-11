@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using QuizAPI.Data;
 using QuizAPI.DTOs.User;
-using QuizAPI.Models;
+using QuizAPI.Models.User;
 using QuizAPI.Services;
 
 namespace QuizAPI.Controllers.Users
