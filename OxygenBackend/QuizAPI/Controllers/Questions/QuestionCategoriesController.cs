@@ -8,7 +8,7 @@ using QuizAPI.Data;
 using QuizAPI.DTOs.Question;
 using QuizAPI.Models;
 
-namespace QuizAPI.Controllers.QuestionCategories
+namespace QuizAPI.Controllers.Questions
 {
     [Route("api/[controller]")]
     [ApiController]
@@ -35,7 +35,7 @@ namespace QuizAPI.Controllers.QuestionCategories
                 {
                     Id = qc.Id,
                     Name = qc.Name,
-                    Username = qc.User.Username, 
+                    Username = qc.User.Username,
                     CreatedAt = qc.CreatedAt
                 })
                 .ToListAsync();

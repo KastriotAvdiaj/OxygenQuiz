@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using QuizAPI.Data;
 using QuizAPI.Models;
 
-namespace QuizAPI.Controllers.AnswerOptions
+namespace QuizAPI.Controllers.Questions
 {
     [ApiController]
     [Route("api/[controller]")]

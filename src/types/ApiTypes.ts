@@ -59,6 +59,12 @@ export type BaseEntity<TId = number> = {
     name: string;
   };
 
+  export type QuestionDifficulty = {
+    id: number;
+    level: string;
+    weight: number;
+  };
+
   type PaginatedResponse<T> = {
     page: number;
     pageSize: number;

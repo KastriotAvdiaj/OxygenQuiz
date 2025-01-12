@@ -11,6 +11,9 @@ import { useDebounce } from "@/hooks/use-debounce";
 import { columns } from "./Categories/Components/columns";
 import { CategorySelect } from "./Categories/Components/select-question-category";
 import CreateQuestionForm from "./Components/create-question";
+import CreateQuestionDifficultyForm from "./Difficulty/Components/create-question-difficulty";
+import { useQuestionDifficultyData } from "./Difficulty/api/get-question-difficulties";
+import { difficultyColumns } from "./Difficulty/Components/difficulty-columns";
 
 export const Questions = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -29,6 +32,8 @@ export const Questions = () => {
   });
 
   const questionCategoriesQuery = useQuestionCategoryData({});
+
+  const questionDifficultiesQuery = useQuestionDifficultyData({});
 
   useEffect(() => {
     setPage(1);
@@ -87,6 +92,14 @@ export const Questions = () => {
         <DataTable
           data={questionCategoriesQuery.data || []}
           columns={columns}
+        />
+      </Card>
+
+      <Card className="m-10 p-8 bg-background-secondary">
+        <CreateQuestionDifficultyForm />
+        <DataTable
+          data={questionDifficultiesQuery.data || []}
+          columns={difficultyColumns}
         />
       </Card>
     </>
