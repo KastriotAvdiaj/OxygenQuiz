@@ -7,30 +7,21 @@ import {
   createQuestionInputSchema,
   useCreateQuestion,
 } from "../api/create-question";
-import { QuestionCategory } from "@/types/ApiTypes";
+import { QuestionCategory, QuestionDifficulty } from "@/types/ApiTypes";
 import { useFieldArray } from "react-hook-form";
-import {
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-  SelectValue,
-  Switch,
-} from "@/components/ui";
+import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-
-const difficultyOptions = [
-  { label: "Easy", value: 0 },
-  { label: "Medium", value: 1 },
-  { label: "Hard", value: 2 },
-];
+import { CategorySelect } from "../Entities/Categories/Components/select-question-category";
+import { DifficultySelect } from "../Entities/Difficulty/Components/select-difficulty";
 
 interface CreateQuestionFormProps {
   categories: QuestionCategory[];
+  difficulties: QuestionDifficulty[];
 }
 
 export const CreateQuestionForm: React.FC<CreateQuestionFormProps> = ({
   categories,
+  difficulties,
 }) => {
   const { addNotification } = useNotifications();
   const createQuestionMutation = useCreateQuestion({
@@ -142,57 +133,21 @@ export const CreateQuestionForm: React.FC<CreateQuestionFormProps> = ({
                   <Label htmlFor="category" className="text-sm font-medium">
                     Category
                   </Label>
-                  <Select
-                    onValueChange={(value) => setValue("category", value)}
-                  >
-                    <SelectTrigger id="category" className="w-full">
-                      <SelectValue placeholder="Select a category" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-background-secondary">
-                      {categories.map((category) => (
-                        <SelectItem
-                          key={category.id}
-                          value={category.name}
-                          className="hover:bg-background cursor-pointer focus:bg-background"
-                        >
-                          {category.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <CategorySelect
+                    categories={categories}
+                    selectedCategory=""
+                    includeAllOption={false}
+                    onCategoryChange={(value) => setValue("category", value)}
+                  />
                 </div>
               </div>
               <Separator className="bg-gray-500" />
-              <div className="flex flex-col space-y-1.5">
-                <Label htmlFor="difficulty">Difficulty</Label>
-                <Select
-                  onValueChange={(value) =>
-                    setValue("difficulty", parseInt(value))
-                  }
-                >
-                  <SelectTrigger
-                    id="difficulty"
-                    className={`${
-                      formState.errors["difficulty"]
-                        ? "border-red-500"
-                        : "border-border"
-                    }`}
-                  >
-                    <SelectValue placeholder="Select Difficulty" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-background-secondary cursor-pointer">
-                    {difficultyOptions.map((option) => (
-                      <SelectItem
-                        className="hover:bg-background cursor-pointer focus:bg-background"
-                        key={option.value}
-                        value={option.value.toString()}
-                      >
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              <DifficultySelect
+                difficulties={difficulties}
+                selectedDifficulty=""
+                includeAllOption={false}
+                onDifficultyChange={(value) => setValue("difficulty", value)}
+              />
               <Separator className="bg-gray-500" />
 
               <div className="space-y-4 mt-4">

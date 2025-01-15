@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 
 export const DashboardHeader = () => {
   return (
-    <HeaderComponent className="">
+    <HeaderComponent className="shadow-md z-8 relative">
       <div className="flex flex-col items-center p-2">
         <p className="text-5xl font-bold pt-3 px-6 italic">OXYGEN</p>
         {/* <p className="text-2xl">Dashboard</p>  */}

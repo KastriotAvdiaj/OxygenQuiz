@@ -7,7 +7,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { QuestionCategory } from "@/types/ApiTypes";
-import { Label } from "@/components/ui/form";
 
 interface CategorySelectProps {
   categories: QuestionCategory[];
@@ -23,12 +22,12 @@ export const CategorySelect: React.FC<CategorySelectProps> = ({
   includeAllOption = true,
 }) => {
   return (
-    <div className="w-[200px]">
+    <div className="">
       <Select value={selectedCategory} onValueChange={onCategoryChange}>
-        <SelectTrigger className="w-[200px] sm:w-[200px]">
+        <SelectTrigger className="min-w-[200px]">
           <SelectValue placeholder="Select a category" />
         </SelectTrigger>
-        <SelectContent className="w-[200px] sm:w-[200px]">
+        <SelectContent className="min-w-[200px]">
           {includeAllOption && (
             <SelectItem value="all">All Categories</SelectItem>
           )}

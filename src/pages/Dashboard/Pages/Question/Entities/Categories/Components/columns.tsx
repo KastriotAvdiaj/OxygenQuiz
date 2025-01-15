@@ -2,7 +2,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { QuestionCategory } from "@/types/ApiTypes";
 import formatDate from "@/lib/date-format";
 
-export const columns: ColumnDef<QuestionCategory>[] = [
+export const categoryColumns: ColumnDef<QuestionCategory>[] = [
   {
     accessorKey: "name",
     header: "Category",

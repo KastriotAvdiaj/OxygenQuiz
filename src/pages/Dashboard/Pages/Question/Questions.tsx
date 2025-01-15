@@ -1,26 +1,26 @@
 import { useState, useEffect } from "react";
 // import { AdminQuestionCard } from "./Components/admin-question-card";
 import { useQuestionData } from "./api/get-questions";
-import { useQuestionCategoryData } from "./Categories/api/get-question-categories";
-import CreateQuestionCategoryForm from "./Categories/Components/create-question-category";
+import { useQuestionCategoryData } from "./Entities/Categories/api/get-question-categories";
+import CreateQuestionCategoryForm from "./Entities/Categories/Components/create-question-category";
 import { Card, DataTable, Spinner } from "@/components/ui";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/form";
 import { QuestionList } from "./Components/question-list";
 import { useDebounce } from "@/hooks/use-debounce";
-import { columns } from "./Categories/Components/columns";
-import { CategorySelect } from "./Categories/Components/select-question-category";
+import { categoryColumns } from "./Entities/Categories/Components/columns";
+import { CategorySelect } from "./Entities/Categories/Components/select-question-category";
 import CreateQuestionForm from "./Components/create-question";
-import CreateQuestionDifficultyForm from "./Difficulty/Components/create-question-difficulty";
-import { useQuestionDifficultyData } from "./Difficulty/api/get-question-difficulties";
-import { difficultyColumns } from "./Difficulty/Components/difficulty-columns";
+import CreateQuestionDifficultyForm from "./Entities/Difficulty/Components/create-question-difficulty";
+import { useQuestionDifficultyData } from "./Entities/Difficulty/api/get-question-difficulties";
+import { difficultyColumns } from "./Entities/Difficulty/Components/difficulty-columns";
 
 export const Questions = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm] = useDebounce(searchTerm, 300);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize] = useState(10);
 
   const questionsQuery = useQuestionData({
     params: {
@@ -73,6 +73,7 @@ export const Questions = () => {
             />
             <CreateQuestionForm
               categories={questionCategoriesQuery.data || []}
+              difficulties={questionDifficultiesQuery.data || []}
             />
           </div>
         </div>
@@ -91,7 +92,7 @@ export const Questions = () => {
         <CreateQuestionCategoryForm />
         <DataTable
           data={questionCategoriesQuery.data || []}
-          columns={columns}
+          columns={categoryColumns}
         />
       </Card>
 

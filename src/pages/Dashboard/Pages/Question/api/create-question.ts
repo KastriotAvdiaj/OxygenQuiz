@@ -9,7 +9,7 @@ import { getQuestionsQueryOptions } from "./get-questions";
 
 export const createQuestionInputSchema = z.object({
   text: z.string().min(1, "Question is required"), 
-  difficulty: z.number().min(0, "Difficulty is required"),
+  difficulty: z.string().min(1, "Difficulty is required"),
   category: z.string().min(1, "Category is required"),
   answerOptions: z
     .array(
