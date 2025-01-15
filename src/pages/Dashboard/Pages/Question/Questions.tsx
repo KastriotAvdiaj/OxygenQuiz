@@ -13,7 +13,7 @@ import { CategorySelect } from "./Entities/Categories/Components/select-question
 import CreateQuestionForm from "./Components/create-question";
 import CreateQuestionDifficultyForm from "./Entities/Difficulty/Components/create-question-difficulty";
 import { useQuestionDifficultyData } from "./Entities/Difficulty/api/get-question-difficulties";
-import { difficultyColumns } from "./Entities/Difficulty/Components/difficulty-columns";
+import { difficultyColumns } from "./Entities/Difficulty/Components/columns";
 
 export const Questions = () => {
   const [searchTerm, setSearchTerm] = useState("");

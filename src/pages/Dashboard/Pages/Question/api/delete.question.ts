@@ -3,7 +3,7 @@ import { api } from "@/lib/Api-client";
 import { MutationConfig } from "@/lib/React-query";
 import { getQuestionsQueryOptions } from "./get-questions";
 
-export type DeleteQuestionDTO = {
+type DeleteQuestionDTO = {
     questionId: number;
   };
 

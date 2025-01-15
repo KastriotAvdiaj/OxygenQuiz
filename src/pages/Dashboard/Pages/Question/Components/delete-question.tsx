@@ -25,7 +25,7 @@ export const DeleteQuestion = ({ id }: DeleteUserProps) => {
     <ConfirmationDialog
       isDone={deleteQuestionMutation.isSuccess}
       icon="danger"
-      title="Delete User"
+      title="Delete Question"
       body="Are you sure you want to delete this question?"
       triggerButton={
         <Button variant="destructive" className="rounded-sm">
