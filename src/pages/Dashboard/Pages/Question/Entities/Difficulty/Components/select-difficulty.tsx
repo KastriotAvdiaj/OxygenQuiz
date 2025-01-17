@@ -24,7 +24,7 @@ export const DifficultySelect: React.FC<DifficultySelectProps> = ({
     <div className="">
       <Select value={selectedDifficulty} onValueChange={onDifficultyChange}>
         <SelectTrigger className="min-w-[200px]">
-          <SelectValue placeholder="Select a difficulty" />
+          { <SelectValue placeholder="--Select a difficulty--" />}
         </SelectTrigger>
         <SelectContent className="min-w-[200px]">
           {includeAllOption && (

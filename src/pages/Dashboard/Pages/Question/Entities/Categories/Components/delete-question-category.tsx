@@ -1,20 +1,20 @@
 import { useNotifications } from "@/common/Notifications";
-import { useDeleteQuestionDifficulty } from "../api/delete-question-difficulty";
+import { useDeleteQuestionCategory } from "../api/delete-question-categories";
 import { ConfirmationDialog } from "@/components/ui/dialog";
 import { Button } from "@/components/ui";
 import { Trash2 } from "lucide-react";
 
-type DeleteDifficultyProps = {
+type DeleteCategoryProps = {
   id: number;
 };
-export const DeleteQuestionDifficulty = ({ id }: DeleteDifficultyProps) => {
+export const DeleteQuestionCategory = ({ id }: DeleteCategoryProps) => {
   const { addNotification } = useNotifications();
-  const deleteQuestionDifficultyMutation = useDeleteQuestionDifficulty({
+  const deleteQuestionCategoryMutation = useDeleteQuestionCategory({
     mutationConfig: {
       onSuccess: () => {
         addNotification({
           type: "success",
-          title: "Question Difficulty Deleted",
+          title: "Question Category Deleted",
         });
       },
     },
@@ -22,10 +22,10 @@ export const DeleteQuestionDifficulty = ({ id }: DeleteDifficultyProps) => {
 
   return (
     <ConfirmationDialog
-      isDone={deleteQuestionDifficultyMutation.isSuccess}
+      isDone={deleteQuestionCategoryMutation.isSuccess}
       icon="danger"
-      title="Delete Question Difficulty"
-      body="This action cannot be undone."
+      title="WARNING"
+      body="Many Questions may be affected. This action cannot be undone."
       triggerButton={
         <Button className="rounded-sm">
           <Trash2 size={16} />
@@ -33,14 +33,14 @@ export const DeleteQuestionDifficulty = ({ id }: DeleteDifficultyProps) => {
       }
       confirmButton={
         <Button
-          isPending={deleteQuestionDifficultyMutation.isPending}
+          isPending={deleteQuestionCategoryMutation.isPending}
           type="button"
           variant="destructive"
           onClick={() => {
-            deleteQuestionDifficultyMutation.mutate({ difficultyId: id });
+            deleteQuestionCategoryMutation.mutate({ categoryId: id });
           }}
         >
-          Delete Difficulty
+          Delete Category
         </Button>
       }
     />

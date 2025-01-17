@@ -9,7 +9,7 @@ import { getQuestionsQueryOptions } from "./get-questions";
 
 export const createQuestionInputSchema = z.object({
   text: z.string().min(1, "Question is required"), 
-  difficulty: z.string().min(1, "Difficulty is required"),
+  difficultyId: z.number().int().positive("Difficulty is required"),
   category: z.string().min(1, "Category is required"),
   answerOptions: z
     .array(
@@ -32,7 +32,9 @@ export const createQuestionInputSchema = z.object({
 export type CreateQuestionInput = z.infer<typeof createQuestionInputSchema>;
 
 export const createQuestion = ({ data }: { data: CreateQuestionInput }): Promise<Question> => {
-  return api.post('/questions', data);
+  return (
+    console.log(data),
+    api.post('/questions', data));
 };
 
 type UseCreateQuestionOptions = {

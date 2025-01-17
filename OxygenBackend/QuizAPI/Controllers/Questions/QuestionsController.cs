@@ -131,6 +131,7 @@ namespace QuizAPI.Controllers.Questions
             {
                 Text = questionDto.Text,
                 DifficultyId = questionDto.DifficultyId,
+                DifficultyLevel = questionDifficulty.Level,
                 /*AnswerOptions = new List<AnswerOption>(),   WE don't need this anymore since we are initializing it in it's creation*/
                 CreatedAt = DateTime.UtcNow,
                 CategoryId = category.Id, 

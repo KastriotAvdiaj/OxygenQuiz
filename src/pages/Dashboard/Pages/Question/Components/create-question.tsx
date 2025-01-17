@@ -144,9 +144,19 @@ export const CreateQuestionForm: React.FC<CreateQuestionFormProps> = ({
               <Separator className="bg-gray-500" />
               <DifficultySelect
                 difficulties={difficulties}
-                selectedDifficulty=""
+                selectedDifficulty={
+                  difficulties.find((d) => d.id === watch("difficultyId"))
+                    ?.level || ""
+                }
                 includeAllOption={false}
-                onDifficultyChange={(value) => setValue("difficulty", value)}
+                onDifficultyChange={(level) => {
+                  const selectedDifficulty = difficulties.find(
+                    (d) => d.level === level
+                  );
+                  if (selectedDifficulty) {
+                    setValue("difficultyId", selectedDifficulty.id); // Store the ID in the form
+                  }
+                }}
               />
               <Separator className="bg-gray-500" />
 

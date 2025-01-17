@@ -13,19 +13,6 @@ interface NormalQuestionCard {
 export const NormalQuestionCard: React.FC<NormalQuestionCard> = ({
   question,
 }) => {
-  const getDifficultyColor = (difficulty: string) => {
-    switch (difficulty.toLowerCase()) {
-      case "easy":
-        return "bg-green-500";
-      case "medium":
-        return "bg-yellow-500";
-      case "hard":
-        return "bg-red-500";
-      default:
-        return "bg-gray-500";
-    }
-  };
-
   return (
     <Card className="max-w-[300px] border border-[0.1px] bg-card rounded-lg overflow-hidden transition-shadow duration-200 shadow hover:shadow-lg">
       <div className="flex flex-col sm:flex-row items-start justify-between p-4">
@@ -34,13 +21,7 @@ export const NormalQuestionCard: React.FC<NormalQuestionCard> = ({
           <Label className="text-sm text-gray-500">{question.category}</Label>
         </div>
         <div className="flex flex-row sm:flex-col items-center sm:items-end gap-2">
-          <Badge
-            className={`${getDifficultyColor(
-              question.difficultyDisplay
-            )} text-white`}
-          >
-            {question.difficultyDisplay}
-          </Badge>
+          <Badge className="border-1px">{question.difficulty}</Badge>
         </div>
       </div>
       <div className="transition-all duration-200 ease-in-out">

@@ -1,6 +1,9 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { QuestionCategory } from "@/types/ApiTypes";
 import formatDate from "@/lib/date-format";
+import { Button } from "@/components/ui";
+import { Edit } from "lucide-react";
+import { DeleteQuestionCategory } from "./delete-question-category";
 
 export const categoryColumns: ColumnDef<QuestionCategory>[] = [
   {
@@ -19,5 +22,19 @@ export const categoryColumns: ColumnDef<QuestionCategory>[] = [
   {
     accessorKey: "username",
     header: "Created By",
+  },
+  {
+    cell: ({ row }) => {
+      const category = row.original;
+      return (
+        <div className="flex items-center justify-center space-x-2">
+          <Button variant="outline">
+            <Edit size={16} />
+          </Button>
+          <DeleteQuestionCategory id={category.id} />
+        </div>
+      );
+    },
+    header: "Actions",
   },
 ];
