@@ -27,8 +27,8 @@ export const categoryColumns: ColumnDef<QuestionCategory>[] = [
     cell: ({ row }) => {
       const category = row.original;
       return (
-        <div className="flex items-center justify-center space-x-2">
-          <Button variant="outline">
+        <div className="flex items-center space-x-2">
+          <Button>
             <Edit size={16} />
           </Button>
           <DeleteQuestionCategory id={category.id} />

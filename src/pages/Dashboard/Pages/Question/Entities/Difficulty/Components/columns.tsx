@@ -21,8 +21,8 @@ export const difficultyColumns: ColumnDef<QuestionDifficulty>[] = [
     cell: ({ row }) => {
       const difficulty = row.original;
       return (
-        <div className="flex items-center justify-center space-x-2">
-          <Button variant="outline">
+        <div className="flex items-center space-x-2">
+          <Button>
             <Edit size={16} />
           </Button>
           <DeleteQuestionDifficulty id={difficulty.id} />

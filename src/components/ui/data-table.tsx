@@ -44,9 +44,9 @@ export function DataTable<TData>({ columns, data }: DataTableProps<TData>) {
                     className={`px-4 py-3 text-left text-sm font-medium text-text-lighter tracking-wider
                       ${index !== 0 ? "relative" : ""}`}
                   >
-                    {index !== 0 && (
+                    {/* {index !== 0 && (
                       <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-px h-3/5 bg-border" />
-                    )}
+                    )} */}
                     {header.isPlaceholder
                       ? null
                       : flexRender(
@@ -69,16 +69,16 @@ export function DataTable<TData>({ columns, data }: DataTableProps<TData>) {
                     hover:bg-list-hover transition-colors duration-200
                   `}
                 >
-                  {row.getVisibleCells().map((cell, index) => (
+                  {row.getVisibleCells().map((cell) => (
                     <TableCell
                       key={cell.id}
-                      className={`px-4 py-3 text-sm relative ${
+                      className={`px-4 py-1 text-sm relative ${
                         cell.column.id === "actions" ? "text-center" : ""
                       }`}
                     >
-                      {index !== 0 && (
+                      {/* {index !== 0 && (
                         <div className="absolute left-0 top-1/2 transform -translate-y-1/2 w-px h-3/5 bg-border" />
-                      )}
+                      )} */}
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext()
