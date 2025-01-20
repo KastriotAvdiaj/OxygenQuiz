@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using QuizAPI.ManyToManyTables;
 using QuizAPI.Models;
+using QuizAPI.Models.Statistics.Questions;
 using System;
 
 namespace QuizAPI.Data
@@ -29,6 +30,7 @@ namespace QuizAPI.Data
         public DbSet<PermissionUpdatedAt> PermissionUpdatedAt { get; set; }
         public DbSet<UserUpdatedAt> UserUpdatedAt { get; set; }
 
+        public DbSet<QuestionStatistics> QuestionStatistics { get; set; }
 
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
         {

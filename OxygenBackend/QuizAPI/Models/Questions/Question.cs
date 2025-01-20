@@ -1,5 +1,6 @@
 ﻿
 using QuizAPI.Models;
+using QuizAPI.Models.Statistics.Questions;
 using System.Text.Json.Serialization;
 
 
@@ -30,5 +31,7 @@ namespace QuizAPI.Models
 
         [JsonIgnore]
         public QuestionCategory Category { get; set; }
-    }
+    
+        public QuestionStatistics? Statistics { get; set; }
+}
 }
