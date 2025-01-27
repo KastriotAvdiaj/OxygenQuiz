@@ -57,7 +57,7 @@ export type BaseEntity<TId = number> = {
     text: string;
     createdAt: string;
     userId : string;
-    username : string;
+    user : string;
     difficulty: string;
     difficultyId: number;
     category: string;

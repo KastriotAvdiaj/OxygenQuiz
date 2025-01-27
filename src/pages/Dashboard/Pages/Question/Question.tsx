@@ -4,6 +4,10 @@ import {
 } from "./api/get-individual-question";
 import { QueryClient } from "@tanstack/react-query";
 import { LoaderFunctionArgs, useParams } from "react-router";
+import { ContentLayout } from "@/layouts/individual-content-layout";
+import { format } from "date-fns";
+import { Badge } from "@/components/ui/badge";
+import { AnswerOptionViewList } from "./Components/answer-option-view-list";
 
 export const questionLoader =
   (queryClient: QueryClient) =>
@@ -27,11 +31,9 @@ export const QuestionRoute = () => {
     questionId,
   });
 
-
   if (individualQuestionQuery.isLoading) {
     return <div>Loading...</div>;
   }
-
 
   if (individualQuestionQuery.isError) {
     return <div>Failed to load question. Try again later.</div>;
@@ -41,9 +43,34 @@ export const QuestionRoute = () => {
   if (!question) return null;
 
   return (
-    <div className="ml-2">
-      <h1>{question.text}</h1>
-      <p>{question.difficulty}</p>
-    </div>
+    <ContentLayout title={`Question #${question.id}`}>
+      <div className="space-y-4">
+        <div>
+          <h2 className="text-xl font-semibold mb-2">Question Text</h2>
+          <p>{question.text}</p>
+        </div>
+
+        <div className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-4">
+          <div className="flex items-center">
+            <span className="mr-2 text-sm font-medium">Difficulty:</span>
+            <Badge variant="secondary">{question.difficulty}</Badge>
+          </div>
+          <div className="flex items-center">
+            <span className="mr-2 text-sm font-medium">Category:</span>
+            <Badge variant="primary">{question.category}</Badge>
+          </div>
+        </div>
+
+        <div>
+          <h3 className="text-lg font-semibold mb-2">Answer Options</h3>
+          <AnswerOptionViewList answerOptions={question.answerOptions} />
+        </div>
+
+        <div className="text-sm text-gray-500">
+          <p>Created by: {question.user}</p>
+          <p>Created at: {format(new Date(question.createdAt), "PPpp")}</p>
+        </div>
+      </div>
+    </ContentLayout>
   );
 };

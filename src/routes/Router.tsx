@@ -11,7 +11,7 @@ import { QueryClient, useQueryClient } from "@tanstack/react-query";
 import { RedirectIfLoggedIn } from "../lib/Redirect";
 import "../global.css";
 import { Navigate } from "react-router-dom";
-import { HomeLayout } from "@/pages/layout";
+import { HomeLayout } from "@/layouts/layout";
 
 // Lazy load components
 const Home = lazy(() =>

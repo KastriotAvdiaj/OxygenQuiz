@@ -6,6 +6,7 @@ import { Question } from "@/types/ApiTypes";
 import { Button } from "@/components/ui";
 import { DeleteQuestion } from "./delete-question";
 import { Link } from "react-router-dom";
+import { AnswerOptionViewList } from "./answer-option-view-list";
 
 interface NormalQuestionCard {
   question: Question;
@@ -28,7 +29,7 @@ export const NormalQuestionCard: React.FC<NormalQuestionCard> = ({
         </div>
         <div className="transition-all duration-200 ease-in-out">
           <CardContent className="pt-0 pb-4">
-            <ul className="space-y-2">
+            {/* <ul className="space-y-2">
               {question.answerOptions.map((option) => (
                 <li
                   key={option.id}
@@ -46,7 +47,8 @@ export const NormalQuestionCard: React.FC<NormalQuestionCard> = ({
                   )}
                 </li>
               ))}
-            </ul>
+            </ul> */}
+            <AnswerOptionViewList answerOptions={question.answerOptions} />
             <section className="pt-2 flex items-center gap-2 justify-end">
               <Button size="sm">Edit</Button>
               <DeleteQuestion id={question.id} />

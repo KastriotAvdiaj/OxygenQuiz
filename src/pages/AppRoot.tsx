@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { Outlet, useLocation } from "react-router-dom";
 import { Spinner } from "@/components/ui/Spinner";
-import { DashboardLayout } from "@/pages/Dashboard/DashboardLayout";
+import { DashboardLayout } from "@/layouts/DashboardLayout";
 import { MainErrorFallback } from "./Error/Main";
 
 export const AppRoot = () => {
