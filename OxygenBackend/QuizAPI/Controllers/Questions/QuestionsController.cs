@@ -90,16 +90,38 @@ namespace QuizAPI.Controllers.Questions
 
         // GET: api/Questions/{id}
         [HttpGet("{id}")]
-        public async Task<ActionResult<Question>> GetQuestion(int id)
+        public async Task<ActionResult<IndividualQuestionDTO>> GetQuestion(int id)
         {
-            var question = await _context.Questions.Include(q => q.AnswerOptions)
-                                                   .FirstOrDefaultAsync(q => q.Id == id);
+            var questionDto = await _context.Questions
+                .Where(q => q.Id == id)
+                .Select(q => new IndividualQuestionDTO
+                {
+                    ID = q.Id,
+                    Text = q.Text,
+                    DifficultyId = q.DifficultyId,
+                    Difficulty = q.Difficulty.Level,
+                    CategoryId = q.CategoryId,
+                    Category = q.Category.Name,
+                    UserId = q.UserId,
+                    CreatedAt = q.CreatedAt,
+                    User = q.User.Username,
+                    AnswerOptions = q.AnswerOptions
+                        .Select(a => new AnswerOptionDTO
+                        {
+                            ID = a.Id,
+                            Text = a.Text,
+                            IsCorrect = a.IsCorrect
+                        })
+                        .ToList()
+                })
+                .FirstOrDefaultAsync();
 
-            if (question == null)
+            if (questionDto == null)
                 return NotFound();
 
-            return question;
+            return Ok(questionDto);
         }
+
 
         // POST: api/Questions
         [Authorize]

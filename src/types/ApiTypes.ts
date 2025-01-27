@@ -52,6 +52,20 @@ export type BaseEntity<TId = number> = {
     answerOptions: AnswerOption[];
   };
 
+  export type IndividualQuestion = {
+    id: number;
+    text: string;
+    createdAt: string;
+    userId : string;
+    username : string;
+    difficulty: string;
+    difficultyId: number;
+    category: string;
+    categoryId: number;
+    answerOptions: AnswerOption[];
+  }
+
+
   export type QuestionCategory = {
     id: number;
     createdAt: string;

@@ -28,6 +28,28 @@ namespace QuizAPI.DTOs.Question
 
     }
 
+    public class IndividualQuestionDTO {
+    
+        public int ID { get; set; }
+
+        public string Text { get; set; } = string.Empty;
+
+        public int DifficultyId { get; set; }
+        public string Difficulty { get; set; }
+
+        public int CategoryId { get; set; }
+
+        public Guid UserId { get; set; }
+
+        public DateTime CreatedAt { get; set; }
+
+        public string User { get; set; }
+        public string Category { get; set; }
+        public List<AnswerOptionDTO> AnswerOptions { get; set; }
+
+    }
+
+
     public class AnswerOptionCM
     {
         public string Text { get; set; } = string.Empty;

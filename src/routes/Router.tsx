@@ -1,5 +1,9 @@
 import { lazy, useMemo } from "react";
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import {
+  createBrowserRouter,
+  LoaderFunctionArgs,
+  RouterProvider,
+} from "react-router-dom";
 import { AdminRoute } from "../lib/Auth";
 import { AppRoot } from "../pages/AppRoot";
 import { QueryClient, useQueryClient } from "@tanstack/react-query";
@@ -74,6 +78,21 @@ const createAppRouter = (queryClient: QueryClient) =>
               "../pages/Dashboard/Pages/Question/Questions"
             );
             return { Component: Questions };
+          },
+        },
+        {
+          path: "questions/:questionId",
+          lazy: async () => {
+            const { QuestionRoute } = await import(
+              "../pages/Dashboard/Pages/Question/Question"
+            );
+            return { Component: QuestionRoute };
+          },
+          loader: async (args: LoaderFunctionArgs) => {
+            const { questionLoader } = await import(
+              "../pages/Dashboard/Pages/Question/Question"
+            );
+            return questionLoader(queryClient)(args);
           },
         },
         {
