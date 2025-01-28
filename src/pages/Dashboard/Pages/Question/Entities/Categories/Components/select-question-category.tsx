@@ -10,22 +10,30 @@ import { QuestionCategory } from "@/types/ApiTypes";
 
 interface CategorySelectProps {
   categories: QuestionCategory[];
-  selectedCategory: string;
-  onCategoryChange: (value: string) => void;
-  includeAllOption?: boolean; // Include "All Categories" option
+  categoryId: number;
+  onCategoryChange: (id: number) => void;
+  includeAllOption?: boolean;
 }
 
 export const CategorySelect: React.FC<CategorySelectProps> = ({
   categories,
-  selectedCategory,
+  categoryId,
   onCategoryChange,
   includeAllOption = true,
 }) => {
   return (
-    <div className="">
-      <Select value={selectedCategory} onValueChange={onCategoryChange}>
+    <div>
+      <Select
+        value={getCategoryNameById(categories, categoryId)}
+        onValueChange={(name) => {
+          const selectedId = getCategoryIdByName(categories, name);
+          if (selectedId) {
+            onCategoryChange(selectedId);
+          }
+        }}
+      >
         <SelectTrigger className="min-w-[200px]">
-          <SelectValue placeholder="Select a category" />
+          <SelectValue placeholder="--select a category--" />
         </SelectTrigger>
         <SelectContent className="min-w-[200px]">
           {includeAllOption && (
@@ -40,4 +48,18 @@ export const CategorySelect: React.FC<CategorySelectProps> = ({
       </Select>
     </div>
   );
+};
+
+export const getCategoryNameById = (
+  categories: QuestionCategory[],
+  id: number
+) => {
+  return categories.find((category) => category.id === id)?.name || "";
+};
+
+export const getCategoryIdByName = (
+  categories: QuestionCategory[],
+  name: string
+) => {
+  return categories.find((category) => category.name === name)?.id;
 };

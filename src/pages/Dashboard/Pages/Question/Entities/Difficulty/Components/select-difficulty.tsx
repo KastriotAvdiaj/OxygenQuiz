@@ -10,21 +10,33 @@ import { QuestionDifficulty } from "@/types/ApiTypes";
 
 interface DifficultySelectProps {
   difficulties: QuestionDifficulty[];
-  selectedDifficulty: string;
-  onDifficultyChange: (value: string) => void;
+  difficultyId: number;
+  onDifficultyChange: (id: number) => void;
   includeAllOption?: boolean;
 }
+
 export const DifficultySelect: React.FC<DifficultySelectProps> = ({
   difficulties,
-  selectedDifficulty,
+  difficultyId,
   onDifficultyChange,
   includeAllOption = true,
 }) => {
+  const selectedLevel =
+    difficulties.find((d) => d.id === difficultyId)?.level || "";
+
   return (
-    <div className="">
-      <Select value={selectedDifficulty} onValueChange={onDifficultyChange}>
+    <div>
+      <Select
+        value={selectedLevel}
+        onValueChange={(level) => {
+          const selectedId = difficulties.find((d) => d.level === level)?.id;
+          if (selectedId) {
+            onDifficultyChange(selectedId);
+          }
+        }}
+      >
         <SelectTrigger className="min-w-[200px]">
-          { <SelectValue placeholder="--Select a difficulty--" />}
+          <SelectValue placeholder="--select a difficulty--" />
         </SelectTrigger>
         <SelectContent className="min-w-[200px]">
           {includeAllOption && (
@@ -40,3 +52,13 @@ export const DifficultySelect: React.FC<DifficultySelectProps> = ({
     </div>
   );
 };
+
+export const getDifficultyLevelById = (
+  difficulties: QuestionDifficulty[],
+  id: number
+) => difficulties.find((d) => d.id === id)?.level || "";
+
+export const getDifficultyIdByLevel = (
+  difficulties: QuestionDifficulty[],
+  level: string
+) => difficulties.find((d) => d.level === level)?.id || null;
