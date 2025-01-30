@@ -46,8 +46,8 @@ export const QuestionRoute = () => {
     <ContentLayout title={`Question #${question.id}`}>
       <div className="space-y-4">
         <div>
-          <h2 className="text-xl font-semibold mb-2">Question Text</h2>
-          <p>{question.text}</p>
+          {/* <h2 className="text-xl font-semibold mb-2">Question Text</h2> */}
+          <h2 className="text-xl font-semibold mb-2">{question.text}</h2>
         </div>
 
         <div className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-4">
@@ -62,7 +62,7 @@ export const QuestionRoute = () => {
         </div>
 
         <div>
-          <h3 className="text-lg font-semibold mb-2">Answer Options</h3>
+          {/* <h3 className="text-lg font-semibold mb-2">Answer Options</h3> */}
           <AnswerOptionViewList answerOptions={question.answerOptions} />
         </div>
 

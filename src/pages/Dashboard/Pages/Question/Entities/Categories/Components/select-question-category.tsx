@@ -21,11 +21,12 @@ export const CategorySelect: React.FC<CategorySelectProps> = ({
   onCategoryChange,
   includeAllOption = true,
 }) => {
+
   return (
     <div className="">
       <Select value={selectedCategory} onValueChange={onCategoryChange}>
         <SelectTrigger className="min-w-[200px]">
-          <SelectValue placeholder="Select a category" />
+          <SelectValue placeholder="--select a category--" />
         </SelectTrigger>
         <SelectContent className="min-w-[200px]">
           {includeAllOption && (
