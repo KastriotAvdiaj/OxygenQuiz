@@ -8,7 +8,7 @@ namespace QuizAPI.DTOs.Question
         public string Text { get; set; } = string.Empty;
         public int DifficultyId { get; set; }
 
-        public string Category { get; set; }
+        public int CategoryId { get; set; }
         public List<AnswerOptionCM> AnswerOptions { get; set; }
     }
 

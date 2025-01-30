@@ -140,7 +140,7 @@ namespace QuizAPI.Controllers.Questions
             {
                 return Unauthorized(new { message = "User ID not found in token." });
             }
-            var category = await _context.QuestionCategories.FirstOrDefaultAsync(c => c.Name == questionDto.Category);
+            var category = await _context.QuestionCategories.FirstOrDefaultAsync(c => c.Id == questionDto.CategoryId);
 
             if (category == null)
             {

@@ -135,28 +135,18 @@ export const CreateQuestionForm: React.FC<CreateQuestionFormProps> = ({
                   </Label>
                   <CategorySelect
                     categories={categories}
-                    selectedCategory=""
+                    categoryId={watch("categoryId")}
+                    onCategoryChange={(id) => setValue("categoryId", id)}
                     includeAllOption={false}
-                    onCategoryChange={(value) => setValue("category", value)}
                   />
                 </div>
               </div>
               <Separator className="bg-gray-500" />
               <DifficultySelect
                 difficulties={difficulties}
-                selectedDifficulty={
-                  difficulties.find((d) => d.id === watch("difficultyId"))
-                    ?.level || ""
-                }
+                difficultyId={watch("difficultyId")}
+                onDifficultyChange={(id) => setValue("difficultyId", id)}
                 includeAllOption={false}
-                onDifficultyChange={(level) => {
-                  const selectedDifficulty = difficulties.find(
-                    (d) => d.level === level
-                  );
-                  if (selectedDifficulty) {
-                    setValue("difficultyId", selectedDifficulty.id); // Store the ID in the form
-                  }
-                }}
               />
               <Separator className="bg-gray-500" />
 
