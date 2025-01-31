@@ -10,57 +10,40 @@ import { QuestionCategory } from "@/types/ApiTypes";
 
 interface CategorySelectProps {
   categories: QuestionCategory[];
-  categoryId: number;
-  onCategoryChange: (id: number) => void;
+  value: string | "";
+  onChange: (value: string | "all") => void;
   includeAllOption?: boolean;
 }
 
 export const CategorySelect: React.FC<CategorySelectProps> = ({
   categories,
-  categoryId,
-  onCategoryChange,
+  value,
+  onChange,
   includeAllOption = true,
 }) => {
+  const isValueValid =
+    value !== "all" && categories.some((category) => category.name === value);
 
   return (
-    <div>
-      <Select
-        value={getCategoryNameById(categories, categoryId)}
-        onValueChange={(name) => {
-          const selectedId = getCategoryIdByName(categories, name);
-          if (selectedId) {
-            onCategoryChange(selectedId);
-          }
-        }}
-      >
-        <SelectTrigger className="min-w-[200px]">
-          <SelectValue placeholder="--select a category--" />
-        </SelectTrigger>
-        <SelectContent className="min-w-[200px]">
-          {includeAllOption && (
-            <SelectItem value="all">All Categories</SelectItem>
-          )}
-          {categories.map((category) => (
-            <SelectItem key={category.id} value={category.name}>
-              {category.name}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
+    <Select
+      value={isValueValid ? value : ""}
+      onValueChange={(selectedValue) => {
+        onChange(selectedValue === "all" ? "all" : selectedValue);
+      }}
+    >
+      <SelectTrigger className="min-w-[200px]">
+        <SelectValue placeholder="--Select category--" />
+      </SelectTrigger>
+      <SelectContent>
+        {includeAllOption && (
+          <SelectItem value="all">All Categories</SelectItem>
+        )}
+        {categories.map((category) => (
+          <SelectItem key={category.id} value={category.name}>
+            {category.name}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
-};
-
-export const getCategoryNameById = (
-  categories: QuestionCategory[],
-  id: number
-) => {
-  return categories.find((category) => category.id === id)?.name || "";
-};
-
-export const getCategoryIdByName = (
-  categories: QuestionCategory[],
-  name: string
-) => {
-  return categories.find((category) => category.name === name)?.id;
 };

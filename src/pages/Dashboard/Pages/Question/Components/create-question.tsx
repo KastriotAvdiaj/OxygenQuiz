@@ -1,5 +1,5 @@
 import { Plus, Trash2 } from "lucide-react";
-import React from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Form, FormDrawer, Input, Label } from "@/components/ui/form";
 import { useNotifications } from "@/common/Notifications";
@@ -24,6 +24,14 @@ export const CreateQuestionForm: React.FC<CreateQuestionFormProps> = ({
   difficulties,
 }) => {
   const { addNotification } = useNotifications();
+
+  const [selectedCategory, setSelectedCategory] = useState<string | "all">(
+    "all"
+  );
+  const [selectedDifficulty, setSelectedDifficulty] = useState<string | "all">(
+    "all"
+  );
+
   const createQuestionMutation = useCreateQuestion({
     mutationConfig: {
       onSuccess: () => {
@@ -135,8 +143,8 @@ export const CreateQuestionForm: React.FC<CreateQuestionFormProps> = ({
                   </Label>
                   <CategorySelect
                     categories={categories}
-                    categoryId={watch("categoryId")}
-                    onCategoryChange={(id) => setValue("categoryId", id)}
+                    value={selectedCategory}
+                    onChange={setSelectedCategory}
                     includeAllOption={false}
                   />
                 </div>
@@ -144,8 +152,8 @@ export const CreateQuestionForm: React.FC<CreateQuestionFormProps> = ({
               <Separator className="bg-gray-500" />
               <DifficultySelect
                 difficulties={difficulties}
-                difficultyId={watch("difficultyId")}
-                onDifficultyChange={(id) => setValue("difficultyId", id)}
+                value={selectedDifficulty}
+                onDifficultyChange={setSelectedDifficulty}
                 includeAllOption={false}
               />
               <Separator className="bg-gray-500" />

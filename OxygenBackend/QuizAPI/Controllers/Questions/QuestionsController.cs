@@ -28,10 +28,10 @@ namespace QuizAPI.Controllers.Questions
         // GET: api/Questions
         [HttpGet]
         public async Task<ActionResult<PaginatedResponse<QuestionDTO>>> GetQuestions(
-    int page = 1,
-    int pageSize = 20,
-    string? searchTerm = null,
-    string? category = null)
+int page = 1,
+int pageSize = 20,
+string? searchTerm = null,
+string? category = null)
         {
             if (page <= 0 || pageSize <= 0)
                 return BadRequest("Page and page size must be positive numbers.");
@@ -46,7 +46,7 @@ namespace QuizAPI.Controllers.Questions
             }
 
             // Apply category filter if category is provided
-            if (!string.IsNullOrEmpty(category) && category != "null" && category != "All categories")
+            if (!string.IsNullOrEmpty(category) && category != "null" && category != "all")
             {
                 query = query.Where(q => q.Category.Name == category);
             }
@@ -63,7 +63,7 @@ namespace QuizAPI.Controllers.Questions
                 {
                     ID = q.Id,
                     Text = q.Text,
-                    Difficulty = q.DifficultyLevel,
+                    Difficulty = q.Difficulty.Level,
                     Category = q.Category.Name,
                     TotalQuestions = totalQuestions, // Total count of questions
                     AnswerOptions = q.AnswerOptions.Select(ao => new AnswerOptionDTO
@@ -140,21 +140,20 @@ namespace QuizAPI.Controllers.Questions
             {
                 return Unauthorized(new { message = "User ID not found in token." });
             }
-            var category = await _context.QuestionCategories.FirstOrDefaultAsync(c => c.Id == questionDto.CategoryId);
+            var category = await _context.QuestionCategories.FirstOrDefaultAsync(c => c.Name == questionDto.Category);
 
             if (category == null)
             {
                 return BadRequest("Category doesn't exist");
             }
 
-            var questionDifficulty = await _context.QuestionDifficulties.FirstOrDefaultAsync(d => d.ID == questionDto.DifficultyId);
+            var questionDifficulty = await _context.QuestionDifficulties.FirstOrDefaultAsync(d => d.Level == questionDto.Difficulty);
 
             var question = new Question
             {
                 Text = questionDto.Text,
-                DifficultyId = questionDto.DifficultyId,
-                DifficultyLevel = questionDifficulty.Level,
-                /*AnswerOptions = new List<AnswerOption>(),   WE don't need this anymore since we are initializing it in it's creation*/
+                DifficultyId = questionDifficulty.ID,
+              /*  DifficultyLevel = questionDifficulty.Level,*/
                 CreatedAt = DateTime.UtcNow,
                 CategoryId = category.Id, 
                 UserId = Guid.Parse(userId)

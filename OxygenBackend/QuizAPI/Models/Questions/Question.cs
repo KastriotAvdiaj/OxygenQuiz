@@ -26,7 +26,7 @@ namespace QuizAPI.Models
 
         public int DifficultyId { get; set; }
 
-        public string DifficultyLevel { get; set; }
+        /*public string DifficultyLevel { get; set; }*/
         public int CategoryId { get; set; }
 
         [JsonIgnore]

@@ -18,7 +18,7 @@ import { difficultyColumns } from "./Entities/Difficulty/Components/columns";
 export const Questions = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm] = useDebounce(searchTerm, 300);
-  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedCategory, setSelectedCategory] = useState<string | "all">("");
   const [page, setPage] = useState(1);
   const [pageSize] = useState(10);
 
@@ -27,7 +27,7 @@ export const Questions = () => {
       page,
       pageSize: pageSize,
       searchTerm: debouncedSearchTerm,
-      category: selectedCategory !== "all" ? selectedCategory : null,
+      category: selectedCategory !== "all" ? selectedCategory : "all",
     },
   });
 
@@ -68,8 +68,8 @@ export const Questions = () => {
             {/* <CreateQuestionCategoryForm /> */}
             <CategorySelect
               categories={questionCategoriesQuery.data || []}
-              selectedCategory={selectedCategory}
-              onCategoryChange={setSelectedCategory}
+              value={selectedCategory}
+              onChange={setSelectedCategory}
             />
             <CreateQuestionForm
               categories={questionCategoriesQuery.data || []}
