@@ -1,5 +1,5 @@
 import { Plus, Trash2 } from "lucide-react";
-import React, { useState } from "react";
+import React from "react";
 import { Button } from "@/components/ui/button";
 import { Form, FormDrawer, Input, Label } from "@/components/ui/form";
 import { useNotifications } from "@/common/Notifications";
@@ -24,13 +24,6 @@ export const CreateQuestionForm: React.FC<CreateQuestionFormProps> = ({
   difficulties,
 }) => {
   const { addNotification } = useNotifications();
-
-  const [selectedCategory, setSelectedCategory] = useState<string | "all">(
-    "all"
-  );
-  const [selectedDifficulty, setSelectedDifficulty] = useState<string | "all">(
-    "all"
-  );
 
   const createQuestionMutation = useCreateQuestion({
     mutationConfig: {
@@ -137,24 +130,29 @@ export const CreateQuestionForm: React.FC<CreateQuestionFormProps> = ({
                     registration={register("text")}
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="category" className="text-sm font-medium">
-                    Category
-                  </Label>
-                  <CategorySelect
-                    categories={categories}
-                    value={selectedCategory}
-                    onChange={setSelectedCategory}
-                    includeAllOption={false}
-                  />
-                </div>
+                <CategorySelect
+                  label="Category"
+                  categories={categories}
+                  value={watch("category")}
+                  onChange={(selectedValue) =>
+                    setValue("category", selectedValue)
+                  }
+                  includeAllOption={false}
+                  error={formState.errors["category"]?.message}
+                  clearErrors={() => clearErrors("category")}
+                />
               </div>
               <Separator className="bg-gray-500" />
               <DifficultySelect
+                label="Difficulty"
                 difficulties={difficulties}
-                value={selectedDifficulty}
-                onDifficultyChange={setSelectedDifficulty}
+                value={watch("difficulty")}
+                onDifficultyChange={(selectedValue) =>
+                  setValue("difficulty", selectedValue)
+                }
                 includeAllOption={false}
+                error={formState.errors["difficulty"]?.message}
+                clearErrors={() => clearErrors("difficulty")}
               />
               <Separator className="bg-gray-500" />
 

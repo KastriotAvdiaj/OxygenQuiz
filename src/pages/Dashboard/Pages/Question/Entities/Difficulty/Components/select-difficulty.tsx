@@ -7,33 +7,44 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { QuestionDifficulty } from "@/types/ApiTypes";
+import { Label } from "@/components/ui/form";
 
 interface DifficultySelectProps {
+  label?: string;
   difficulties: QuestionDifficulty[];
   value: string | "";
   onDifficultyChange: (value: string | "all") => void;
   includeAllOption?: boolean;
+  error?: string;
+  clearErrors?: () => void;
 }
 
 export const DifficultySelect: React.FC<DifficultySelectProps> = ({
+  label,
   difficulties,
   value,
   onDifficultyChange,
   includeAllOption = true,
+  error,
+  clearErrors,
 }) => {
   const isValueValid =
     value !== "all" &&
     difficulties.some((difficulty) => difficulty.level === value);
 
   return (
-    <div>
+    <div className="space-y-2">
+      <Label className="text-sm font-medium">{label}</Label>
       <Select
         value={isValueValid ? value : ""}
-        onValueChange={(selectedValue) =>
-          onDifficultyChange(selectedValue === "all" ? "all" : selectedValue)
-        }
+        onValueChange={(selectedValue) => {
+          onDifficultyChange(selectedValue === "all" ? "all" : selectedValue);
+          clearErrors?.();
+        }}
       >
-        <SelectTrigger className="min-w-[200px]">
+        <SelectTrigger
+          className={`min-w-[200px] ${error ? "border-red-500" : ""}`}
+        >
           <SelectValue placeholder="--Select difficulty--" />
         </SelectTrigger>
         <SelectContent className="min-w-[200px]">
@@ -47,6 +58,7 @@ export const DifficultySelect: React.FC<DifficultySelectProps> = ({
           ))}
         </SelectContent>
       </Select>
+      {error && <p className="text-sm text-red-500">{error}</p>}
     </div>
   );
 };
