@@ -1,7 +1,6 @@
 import * as React from "react";
-
 import { useDisclosure } from "@/hooks/use-disclosure";
-
+import { cn } from "@/utils/cn"; 
 import { Button } from "../button";
 import {
   Drawer,
@@ -19,8 +18,8 @@ type FormDrawerProps = {
   submitButton: React.ReactElement;
   title: string;
   children: React.ReactNode;
+  className?: string; 
 };
-
 
 export const FormDrawer = ({
   title,
@@ -28,6 +27,7 @@ export const FormDrawer = ({
   isDone,
   triggerButton,
   submitButton,
+  className, 
 }: FormDrawerProps) => {
   const { close, open, isOpen } = useDisclosure();
 
@@ -49,17 +49,22 @@ export const FormDrawer = ({
       }}
     >
       <DrawerTrigger asChild>{triggerButton}</DrawerTrigger>
-      <DrawerContent className="flex max-w-[800px] flex-col justify-between sm:max-w-[540px]">
+      <DrawerContent
+        className={cn(
+          "flex max-w-[800px] flex-col justify-between sm:max-w-[540px]",
+          className
+        )}
+      >
         <div className="flex flex-col">
           <DrawerHeader className="px-3 py-2 border-b border-gray-500">
             <DrawerTitle>{title}</DrawerTitle>
           </DrawerHeader>
           <div>{children}</div>
         </div>
-        <DrawerFooter className="gap-4"> 
+        <DrawerFooter className="gap-4">
           {submitButton}
           <DrawerClose asChild>
-            <Button variant="outline" type="submit">
+            <Button variant="outline" type="button">
               Close
             </Button>
           </DrawerClose>
