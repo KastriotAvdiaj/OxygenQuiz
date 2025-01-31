@@ -38,7 +38,7 @@ export const CreateQuestionForm: React.FC<CreateQuestionFormProps> = ({
 
   return (
     <FormDrawer
-      className="overflow-y-auto"
+      
       isDone={createQuestionMutation.isSuccess}
       triggerButton={
         <Button
