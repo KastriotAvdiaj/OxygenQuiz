@@ -22,7 +22,7 @@ export const Divider: React.FC<DividerProps> = ({
       style={{
         width: isHorizontal ? length : thickness,
         height: isHorizontal ? thickness : length,
-        mutedColor: color,
+        background: color,
         margin: isHorizontal ? `${thickness} 0` : `0 ${thickness}`,
       }}
       className={cn("bg-[var(--divider)] z-10", className)}

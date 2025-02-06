@@ -9,7 +9,8 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary gap-2 shadow hover:bg-muted active:scale-95",
+        default:
+          "bg-background text-foreground gap-2 border border-border shadow hover:bg-muted active:scale-95",
         icon: "bg-muted gap-2 shadow p-0 m-0",
         addSave:
           "flex justify-center items-center gap-2 shadow text-white bg-text-hover hover:bg-text-hover-darker active:scale-95",
@@ -21,7 +22,7 @@ const buttonVariants = cva(
         userMenu:
           "bg-primary gap-2 shadow hover:bg-muted active:scale-95 h-5 font-normal px-0",
         drawer:
-          "flex justify-start gap-1.5 px-1 items-center bg-ring rounded hover:bg-[var(--muted)] text-sm active:scale-95",
+          "flex justify-start gap-1.5 px-1 items-center bg-background rounded hover:bg-muted text-sm active:scale-95",
         destructive:
           "flex justify-center items-center gap-2 bg-red-600 text-white hover:bg-red-700 active:scale-95 shadow focus-visible:ring-red-600",
         dashboard:

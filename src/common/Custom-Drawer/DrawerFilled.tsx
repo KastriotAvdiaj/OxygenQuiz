@@ -28,7 +28,7 @@ export const DrawerFilled = () => {
           <DrawerTrigger asChild>
             <ProfileButton />
           </DrawerTrigger>
-          <DrawerContent className="w-[200px] flex flex-col justify-between">
+          <DrawerContent className="bg-background text-foreground w-[200px] flex flex-col justify-between">
             <DrawerHeader>
               <DrawerHeaderContent />
               <DrawerLinks close={close} isAdmin={isAdmin} />
