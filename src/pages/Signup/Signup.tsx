@@ -16,7 +16,7 @@ const Signup: React.FC = () => {
         <O2Button />
       </div>
       <div className="flex-grow flex items-center justify-center">
-        <div className="bg-[var(--background-secondary)] p-8 rounded shadow-md w-[50%] max-w-lg flex-grow flex flex-col items-center justify-center">
+        <div className="bg-[var(--muted)] p-8 rounded shadow-md w-[50%] max-w-lg flex-grow flex flex-col items-center justify-center">
           <div className="w-[70%]">
             <h2 className="text-3xl font-semibold mb-6 text-center">
               Create an Account
@@ -25,7 +25,7 @@ const Signup: React.FC = () => {
             <div className="text-center mt-4">
               <p className="text-sm">
                 Already have an account?{" "}
-                <a href="/login" className="text-[var(--text-hover)] underline">
+                <a href="/login" className="text-foreground underline">
                   Login
                 </a>
               </p>
@@ -35,9 +35,7 @@ const Signup: React.FC = () => {
                 <div className="w-full border-t border-gray-300"></div>
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="bg-[var(--background-secondary)] px-2">
-                  OR
-                </span>
+                <span className="bg-[var(--muted)] px-2">OR</span>
               </div>
             </div>
             <SocialButtons />

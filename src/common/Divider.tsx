@@ -1,5 +1,5 @@
 import React from "react";
-import { cn } from "@/utils/cn"; 
+import { cn } from "@/utils/cn";
 
 interface DividerProps {
   orientation?: "horizontal" | "vertical";
@@ -22,7 +22,7 @@ export const Divider: React.FC<DividerProps> = ({
       style={{
         width: isHorizontal ? length : thickness,
         height: isHorizontal ? thickness : length,
-        backgroundColor: color,
+        mutedColor: color,
         margin: isHorizontal ? `${thickness} 0` : `0 ${thickness}`,
       }}
       className={cn("bg-[var(--divider)] z-10", className)}

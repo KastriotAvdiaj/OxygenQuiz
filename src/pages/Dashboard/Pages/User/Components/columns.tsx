@@ -72,7 +72,7 @@ export const columns: ColumnDef<User>[] = [
     cell: ({ row }) => {
       const date = row.original.lastLogin;
       return formatDate(date);
-    }
+    },
   },
   {
     accessorKey: "profileImageUrl",
@@ -99,26 +99,26 @@ export const columns: ColumnDef<User>[] = [
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="bg-background-secondary">
+          <DropdownMenuContent align="end" className="bg-muted">
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
             <DropdownMenuItem
               onClick={() => navigator.clipboard.writeText(user.id)}
-              className="hover:bg-background"
+              className="hover:bg-muted"
             >
               <Copy size={16} /> Copy ID
             </DropdownMenuItem>
-            <DropdownMenuSeparator className="bg-background" />
+            <DropdownMenuSeparator className="bg-muted" />
             <DropdownMenuItem
               onClick={(e) => {
                 e.stopPropagation();
                 e.preventDefault();
               }}
-              className="hover:bg-background"
+              className="hover:bg-muted"
             >
               <DeleteUser id={user.id} closeDropDown={close} />
             </DropdownMenuItem>
-            <DropdownMenuSeparator className="bg-background" />
-            <DropdownMenuItem className="hover:bg-background">
+            <DropdownMenuSeparator className="bg-muted" />
+            <DropdownMenuItem className="hover:bg-muted">
               <UserRoundPen size={16} /> Edit User
             </DropdownMenuItem>
           </DropdownMenuContent>

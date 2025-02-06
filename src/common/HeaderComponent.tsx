@@ -11,7 +11,7 @@ export const HeaderComponent: React.FC<HeaderComponentProps> = ({
 }) => {
   return (
     <header
-      className={`flex justify-between items-center bg-background-secondary ${className}`}
+      className={`flex justify-between items-center bg-background ${className}`}
     >
       {children}
     </header>

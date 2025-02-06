@@ -33,7 +33,7 @@ export const CategorySelect: React.FC<CategorySelectProps> = ({
 
   return (
     <div className="space-y-2">
-      <Label className="text-sm font-medium">{label}</Label>
+      <Label className="text-sm font-medium text-foreground">{label}</Label>
       <Select
         value={isValueValid ? value : ""}
         onValueChange={(selectedValue) => {
@@ -45,6 +45,7 @@ export const CategorySelect: React.FC<CategorySelectProps> = ({
           className={`min-w-[200px] ${error ? "border-red-500" : ""}`}
         >
           <SelectValue
+            className="text-foreground"
             placeholder={`${
               includeAllOption ? "All Categories" : "--Select Category--"
             }`}

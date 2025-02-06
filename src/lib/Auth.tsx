@@ -124,8 +124,8 @@ export const AdminRoute = ({ children }: { children: React.ReactNode }) => {
   }
   if (!(user.data.role === "Admin")) {
     return (
-      <div className="h-screen w-full flex items-center justify-center bg-background">
-        <div className="max-w-sm w-full text-center bg-background-secondary shadow-lg rounded-lg p-6">
+      <div className="h-screen w-full flex items-center justify-center bg-muted">
+        <div className="max-w-sm w-full text-center bg-muted shadow-lg rounded-lg p-6">
           <div className="flex flex-col items-center">
             <AlertCircle className="text-red-500 w-12 h-12" />
             <h2 className="mt-4 text-2xl font-semibold text-text">

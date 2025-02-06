@@ -38,12 +38,11 @@ export const CreateQuestionForm: React.FC<CreateQuestionFormProps> = ({
 
   return (
     <FormDrawer
-      
       isDone={createQuestionMutation.isSuccess}
       triggerButton={
         <Button
           variant="default"
-          className="bg-background"
+          className="bg-muted"
           size="sm"
           icon={<Plus className="size-4" />}
         >
@@ -116,7 +115,7 @@ export const CreateQuestionForm: React.FC<CreateQuestionFormProps> = ({
             <>
               <div className="grid grid-[2fr_1fr] w-full gap-5">
                 <div className="space-y-2">
-                  <Label htmlFor="questionText" className="text-sm font-medium">
+                  <Label htmlFor="questionText" className="text-foreground text-sm font-medium">
                     Question Text
                   </Label>
                   <Input

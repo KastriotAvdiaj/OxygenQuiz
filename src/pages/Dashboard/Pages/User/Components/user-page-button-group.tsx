@@ -35,13 +35,13 @@ export const UserControls = ({
           variant="default"
           size="sm"
           onClick={onRefresh}
-          className="bg-background"
+          className="bg-muted"
         >
           <RefreshCw className="mr-2 h-4 w-4" />
           Refresh
         </Button>
 
-        <Button variant="default" size="sm" className="bg-background">
+        <Button variant="default" size="sm" className="bg-muted">
           <Download className="mr-2 h-4 w-4" />
           Export
         </Button>

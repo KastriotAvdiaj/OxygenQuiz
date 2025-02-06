@@ -33,15 +33,15 @@ export function DataTable<TData>({ columns, data }: DataTableProps<TData>) {
 
   return (
     <div>
-      <div className="rounded-lg border border-border bg-background-secondary shadow-md overflow-hidden">
+      <div className="rounded-lg border border-border bg-muted shadow-md overflow-hidden">
         <Table className="table-fixed w-full">
-          <TableHeader className="bg-background-secondary">
+          <TableHeader className="bg-muted">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id} className="border-b border-border">
                 {headerGroup.headers.map((header, index) => (
                   <TableHead
                     key={header.id}
-                    className={`px-4 py-3 text-left text-sm font-medium text-text-lighter tracking-wider
+                    className={`px-4 py-3 text-left text-sm font-medium text-foreground-lighter tracking-wider
                       ${index !== 0 ? "relative" : ""}`}
                   >
                     {/* {index !== 0 && (
@@ -65,7 +65,7 @@ export function DataTable<TData>({ columns, data }: DataTableProps<TData>) {
                   key={row.id}
                   className={`
                     border-b border-border last:border-b-0
-                    ${i % 2 === 0 ? "bg-background" : "bg-background-secondary"}
+                    ${i % 2 === 0 ? "bg-muted" : "bg-muted"}
                     hover:bg-list-hover transition-colors duration-200
                   `}
                 >

@@ -36,7 +36,7 @@ export const CreateUserForm = () => {
       triggerButton={
         <Button
           variant="default"
-          className="bg-background"
+          className="bg-muted"
           size="sm"
           icon={<Plus className="size-4" />}
         >
@@ -99,12 +99,12 @@ export const CreateUserForm = () => {
                 <SelectTrigger id="role" className="border-gray-400">
                   <SelectValue placeholder="Select Role" />
                 </SelectTrigger>
-                <SelectContent className="cursor-pointer bg-[var(--background-secondary)]">
+                <SelectContent className="cursor-pointer bg-[var(--muted)]">
                   {roleOptions.map((role, index) => (
                     <SelectItem
                       key={index}
                       value={role.label}
-                      className="cursor-pointer hover:!bg-[var(--background)]"
+                      className="cursor-pointer hover:!bg-[var(--muted)]"
                     >
                       {role.label}
                     </SelectItem>

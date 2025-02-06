@@ -9,25 +9,25 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary gap-2 shadow hover:bg-background active:scale-95",
-        icon: "bg-background gap-2 shadow p-0 m-0",
+        default: "bg-primary gap-2 shadow hover:bg-muted active:scale-95",
+        icon: "bg-muted gap-2 shadow p-0 m-0",
         addSave:
           "flex justify-center items-center gap-2 shadow text-white bg-text-hover hover:bg-text-hover-darker active:scale-95",
         outline:
-          "flex justify-center items-center gap-3 border border-border shadow-sm hover:bg-[var(--outline-button)] active:scale-95",
+          "flex text-foreground bg-background justify-center items-center gap-3 border border-border shadow-sm hover:bg-muted active:scale-95",
         secondary: "bg-secondary shadow-sm active:scale-95",
         link: "underline-offset-4 hover:underline active:scale-95",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         userMenu:
-          "bg-primary gap-2 shadow hover:bg-background active:scale-95 h-5 font-normal px-0",
+          "bg-primary gap-2 shadow hover:bg-muted active:scale-95 h-5 font-normal px-0",
         drawer:
-          "flex justify-start gap-1.5 px-1 items-center bg-ring rounded hover:bg-[var(--background)] text-sm active:scale-95",
+          "flex justify-start gap-1.5 px-1 items-center bg-ring rounded hover:bg-[var(--muted)] text-sm active:scale-95",
         destructive:
           "flex justify-center items-center gap-2 bg-red-600 text-white hover:bg-red-700 active:scale-95 shadow focus-visible:ring-red-600",
         dashboard:
-          "flex w-full justify-start text-[17px] gap-2.5 items-center bg-ring rounded hover:bg-[var(--background)] active:scale-95",
+          "flex w-full text-foreground bg-background justify-start text-[17px] gap-2.5 items-center rounded hover:bg-muted active:scale-95",
         start:
-          "font-sans flex justify-center gap-2 items-center mx-auto shadow-xl text-lg bg-[var(--background-secondary)] backdrop-blur-md lg:font-semibold isolation-auto border-gray-50 before:absolute before:w-full before:transition-all before:duration-700 before:hover:w-full before:-left-full before:hover:left-0 before:rounded-full before:bg-[var(--text-hover)] hover:text-gray-50 before:-z-10 before:aspect-square before:hover:scale-150 before:hover:duration-700 relative z-10 px-4 text-[var(--text)] overflow-hidden border-2 rounded-full group",
+          "font-sans flex justify-center gap-2 items-center mx-auto shadow-xl text-lg bg-[var(--muted)] backdrop-blur-md lg:font-semibold isolation-auto border-gray-50 before:absolute before:w-full before:transition-all before:duration-700 before:hover:w-full before:-left-full before:hover:left-0 before:rounded-full before:bg-foreground hover:text-gray-50 before:-z-10 before:aspect-square before:hover:scale-150 before:hover:duration-700 relative z-10 px-4 text-foreground overflow-hidden border-2 rounded-full group",
       },
       size: {
         dashboard: "px-2.5 py-2",
@@ -39,7 +39,7 @@ const buttonVariants = cva(
         none: "",
       },
       active: {
-        true: "bg-[var(--background)] hover:bg-[var(--background)]",
+        true: "bg-[var(--muted)] hover:bg-[var(--muted)]",
         false: "",
       },
     },

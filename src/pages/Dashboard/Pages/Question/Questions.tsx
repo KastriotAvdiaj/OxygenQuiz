@@ -57,7 +57,7 @@ export const Questions = () => {
 
   return (
     <>
-      <Card className="m-10 p-8 bg-background-secondary">
+      <Card className="m-10 p-8 bg-muted">
         <div className="flex justify-between mb-6">
           <Input
             value={searchTerm}
@@ -88,7 +88,7 @@ export const Questions = () => {
           totalPages={questionsQuery.data?.totalPages || 1}
         />
       </Card>
-      <Card className="m-10 p-8 bg-background-secondary">
+      <Card className="m-10 p-8 bg-muted">
         <CreateQuestionCategoryForm />
         <DataTable
           data={questionCategoriesQuery.data || []}
@@ -96,7 +96,7 @@ export const Questions = () => {
         />
       </Card>
 
-      <Card className="m-10 p-8 bg-background-secondary">
+      <Card className="m-10 p-8 bg-muted">
         <CreateQuestionDifficultyForm />
         <DataTable
           data={questionDifficultiesQuery.data || []}

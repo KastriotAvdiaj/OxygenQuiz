@@ -58,10 +58,19 @@ export const QuestionEditForm: React.FC<QuestionEditFormProps> = ({
           <SelectTrigger className="mt-1">
             <SelectValue placeholder="Select difficulty" />
           </SelectTrigger>
-          <SelectContent className="bg-background-secondary">
-            <SelectItem value="Easy" className="hover:bg-background cursor-pointer">Easy</SelectItem>
-            <SelectItem value="Medium" className="hover:bg-background cursor-pointer">Medium</SelectItem>
-            <SelectItem value="Hard" className="hover:bg-background  cursor-pointer">Hard</SelectItem>
+          <SelectContent className="bg-muted">
+            <SelectItem value="Easy" className="hover:bg-muted cursor-pointer">
+              Easy
+            </SelectItem>
+            <SelectItem
+              value="Medium"
+              className="hover:bg-muted cursor-pointer"
+            >
+              Medium
+            </SelectItem>
+            <SelectItem value="Hard" className="hover:bg-muted  cursor-pointer">
+              Hard
+            </SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -79,7 +88,9 @@ export const QuestionEditForm: React.FC<QuestionEditFormProps> = ({
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancel
         </Button>
-        <Button type="submit" className="bg-text-hover">Save Changes</Button>
+        <Button type="submit" className="bg-text-hover">
+          Save Changes
+        </Button>
       </div>
     </form>
   );

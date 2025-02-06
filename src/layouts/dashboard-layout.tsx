@@ -17,7 +17,7 @@ export const DashboardLayout = ({
       <div className="col-span-2">
         <DashboardHeader />
       </div>
-      <div className="h-full bg-background-secondary z-8 relative shadow-md">
+      <div className="h-full bg-background z-8 relative shadow-md">
         <DashboardNav
           setActivePage={setActivePage}
           activePage={location.pathname.split("/").pop() || "application"}

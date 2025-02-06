@@ -9,60 +9,65 @@ body{
   background-repeat: no-repeat; 
   background-attachment: fixed;
   font-family: var(--main), sans-serif;
-
   color: var(--foreground);
   background-color: var(--background);
-
 }
 
-:root {
-  --add-button:rgb(73, 103, 236);
-  --gradient: var(--text-hover);
-  --main:  -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
-}
-
-
-.dark {
-  --text-hover: #FF6F61;
-  --text-hover-opposite: #007ACC;
-  --text-hover-opposite-d: #07609b ;
-  --text-hover-darker: #ec493b;
-  --background: rgb(22, 27, 34);
-  --background-secondary: rgb(31, 37, 44);
-  --background-triary : #323132;
-  color: white;
-  --text: rgb(255, 255, 255);
-  --outline-button:rgb(35, 39, 44);
-  --text-lighter: rgb(179, 186, 191);
-  --border: rgb(223, 223, 223);
-  --border2: rgb(187, 0, 0);
-  --button-cancel : rgba(250, 250, 250, 0);
-  --divider:rgb(218, 218, 218);
-  --list-hover: rgb(0, 0, 0);
-  --green: rgb(74, 222 ,128);
-
-}
-
-.light {
-  --text-hover: #007ACC ;
-  --text-hover-opposite: #FF6F61;
-  --text-hover-opposite-d: #ec493b;
-  --text-hover-darker: #07609b ;
-  --background-secondary: rgb(250, 250, 250);
-  --background-triary : #d6d3d6;
-  --background: #D3D3D3;
-  --divider:rgb(24, 23, 23);
-  color: black;
-  --text: rgb(22, 27, 34);
-  --outline-button:#e9e4e4;
-  --border: rgb(0, 0, 0);
-  --text-lighter: rgb(47, 48, 49);
-  --list-hover: rgb(133, 181, 252);
-  --green : rgb(0, 156, 8);
-}
-
-.system {
-  --background: rgb(11, 89, 199);
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+    --radius: 0.3rem;
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+  }
+ 
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 48%;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+  }
 }
 
 .custom-button {
@@ -78,7 +83,7 @@ body{
   bottom: 0;
   left: 0;
   right: 0;
-  background-color: var(--text-hover-darker);
+  background-color: var(--foreground);
   transform-origin: center bottom;
   transform: scaleY(0);
   transition: transform 0.25s ease-in-out;

@@ -34,7 +34,7 @@ export const DifficultySelect: React.FC<DifficultySelectProps> = ({
 
   return (
     <div className="space-y-2">
-      <Label className="text-sm font-medium">{label}</Label>
+      <Label className="text-sm font-medium text-foreground">{label}</Label>
       <Select
         value={isValueValid ? value : ""}
         onValueChange={(selectedValue) => {

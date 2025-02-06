@@ -26,11 +26,10 @@ const SignupProgressDisplay: React.FC<SignupProgressDisplayProps> = ({
         <Tooltip>
           <TooltipTrigger asChild>
             <p
-              className="text-lg text-[var(--text-hover)] bg-[var(--background)] p-1 cursor-pointer hover:scale-105 transition-transform duration-300"
+              className="text-lg text-foreground bg-muted p-1 cursor-pointer hover:scale-105 transition-transform duration-300"
               onClick={() => setStep(1)}
             >
-              <strong className="text-[var(--text)]">Username:</strong>{" "}
-              {username}
+              <strong className="text-foreground">Username:</strong> {username}
             </p>
           </TooltipTrigger>
           <TooltipContent>
@@ -42,10 +41,10 @@ const SignupProgressDisplay: React.FC<SignupProgressDisplayProps> = ({
         <Tooltip>
           <TooltipTrigger asChild>
             <p
-              className="text-lg text-[var(--text-hover)] bg-[var(--background)] p-1 cursor-pointer hover:scale-105 transition-transform duration-300"
+              className="text-lg text-foreground bg-muted p-1 cursor-pointer hover:scale-105 transition-transform duration-300"
               onClick={() => setStep(2)}
             >
-              <strong className="text-[var(--text)]">Email:</strong> {email}
+              <strong className="text-foreground">Email:</strong> {email}
             </p>
           </TooltipTrigger>
           <TooltipContent>

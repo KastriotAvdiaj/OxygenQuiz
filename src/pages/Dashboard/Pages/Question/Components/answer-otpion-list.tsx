@@ -50,7 +50,10 @@ export const AnswerOptionList: React.FC<AnswerOptionListProps> = ({
   return (
     <div className="space-y-4">
       {options.map((option, index) => (
-        <div key={option.id} className="flex items-center bg-background-secondary p-4 justify-between space-x-4">
+        <div
+          key={option.id}
+          className="flex items-center bg-muted p-4 justify-between space-x-4"
+        >
           {isEditing ? (
             <>
               <div className="flex items-center space-x-4">

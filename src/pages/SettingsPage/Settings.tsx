@@ -1,7 +1,7 @@
 export const Settings = () => {
   return (
-    <div className="h-screen w-full flex items-center justify-center bg-[var(--background-primary)] ">
-      <div className="bg-[var(--background-secondary)] h-full w-[60%] p-8 overflow-y-auto pt-20">
+    <div className="h-screen w-full flex items-center justify-center bg-[var(--muted-primary)] ">
+      <div className="bg-[var(--muted)] h-full w-[60%] p-8 overflow-y-auto pt-20">
         <h1 className="text-3xl font-bold mb-6">Settings</h1>
 
         <section className="mb-8">

@@ -10,10 +10,10 @@ export const DashboardHeader = () => {
   return (
     <HeaderComponent className="shadow-md z-8 relative">
       <div className="flex flex-col items-center p-2">
-        <p className="text-5xl font-bold pt-3 px-6 italic">OXYGEN</p>
+        <p className="text-foreground text-5xl font-bold pt-3 px-6 italic">OXYGEN</p>
         {/* <p className="text-2xl">Dashboard</p>  */}
       </div>
-      <div className="px-4 flex justify-end items-center gap-3">
+      <div className="bg-background px-4 flex justify-end items-center gap-3">
         <NavLink to="/">
           <Button variant={"outline"} className="rounded-[0.2rem]  ">
             <Undo2 size={20} /> Back
