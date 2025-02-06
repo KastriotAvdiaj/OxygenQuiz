@@ -16,7 +16,7 @@ export const AnswerOptionViewList: React.FC<AnswerOptionViewListProps> = ({
           className={`p-2 rounded ${
             option.isCorrect
               ? "bg-green-100 dark:bg-green-900"
-              : "bg-gray-100 dark:bg-gray-800"
+              : "bg-muted"
           }`}
         >
           {option.text}

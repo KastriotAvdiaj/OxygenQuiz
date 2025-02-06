@@ -11,7 +11,7 @@ export const ContentLayout: React.FC<ContentLayoutProps> = ({
   children,
 }) => {
   return (
-    <Card className="w-full max-w-3xl ml-8 mt-8 bg-muted">
+    <Card className="w-full max-w-3xl ml-8 mt-8 bg-background border border-border shadow-lg">
       <CardHeader className="border-b border-input mb-8">
         <CardTitle>{title}</CardTitle>
       </CardHeader>
