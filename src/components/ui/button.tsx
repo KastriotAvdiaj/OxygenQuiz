@@ -19,8 +19,7 @@ const buttonVariants = cva(
         secondary: "bg-secondary shadow-sm active:scale-95",
         link: "underline-offset-4 hover:underline active:scale-95",
         ghost: "hover:bg-accent hover:text-accent-foreground",
-        userMenu:
-          "bg-primary gap-2 shadow hover:bg-muted active:scale-95 h-5 font-normal px-0",
+        userMenu: "bg-muted gap-2 shadow active:scale-95 h-5 font-normal px-0",
         drawer:
           "flex justify-start gap-1.5 px-1 items-center bg-background rounded hover:bg-muted text-sm active:scale-95",
         destructive:
@@ -40,7 +39,7 @@ const buttonVariants = cva(
         none: "",
       },
       active: {
-        true: "bg-[var(--muted)] hover:bg-[var(--muted)]",
+        true: "bg-muted hover:bg-muted",
         false: "",
       },
     },

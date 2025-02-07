@@ -50,7 +50,7 @@ export const columns: ColumnDef<User>[] = [
       return (
         <div
           className={`flex items-center justify-center p-1 rounded-[2rem] text-[12px] font-semibold  ${
-            isDeleted ? "bg-red-100 text-red-700" : "bg-text-hover text-white"
+            isDeleted ? "bg-red-100 text-red-700" : "bg-primary text-white"
           }`}
         >
           {isDeleted ? (
@@ -93,7 +93,7 @@ export const columns: ColumnDef<User>[] = [
           <DropdownMenuTrigger asChild>
             <Button
               variant="default"
-              className="h-8 w-8 p-0 rounded border border-border"
+              className="h-8 w-8 p-0 rounded hover:bg-background/60"
             >
               <span className="sr-only">Open menu</span>
               <MoreHorizontal className="h-4 w-4" />
@@ -103,22 +103,22 @@ export const columns: ColumnDef<User>[] = [
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
             <DropdownMenuItem
               onClick={() => navigator.clipboard.writeText(user.id)}
-              className="hover:bg-muted"
+              className="hover:bg-background"
             >
               <Copy size={16} /> Copy ID
             </DropdownMenuItem>
-            <DropdownMenuSeparator className="bg-muted" />
+            <DropdownMenuSeparator className="bg-background/60" />
             <DropdownMenuItem
               onClick={(e) => {
                 e.stopPropagation();
                 e.preventDefault();
               }}
-              className="hover:bg-muted"
+              className="hover:bg-background"
             >
               <DeleteUser id={user.id} closeDropDown={close} />
             </DropdownMenuItem>
-            <DropdownMenuSeparator className="bg-muted" />
-            <DropdownMenuItem className="hover:bg-muted">
+            <DropdownMenuSeparator className="bg-background/60" />
+            <DropdownMenuItem className="hover:bg-background">
               <UserRoundPen size={16} /> Edit User
             </DropdownMenuItem>
           </DropdownMenuContent>
