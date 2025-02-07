@@ -7,16 +7,16 @@ import { GoBackButton } from "@/common/Go-Back-Button";
 
 const Signup: React.FC = () => {
   return (
-    <div className="h-screen w-full flex flex-col">
+    <div className="h-screen w-full flex flex-col bg-background text-foreground">
       <div className="relative flex justify-center pt-10">
         <div className="absolute top-4 flex justify-between gap-5 w-full px-5">
-          <GoBackButton className="bg-white text-center w-48 rounded-xl h-9 font-sans relative textblack text-sm font-semibold group" />
+          <GoBackButton />
           <ModeToggle text={true} />
         </div>
         <O2Button />
       </div>
       <div className="flex-grow flex items-center justify-center">
-        <div className="bg-[var(--muted)] p-8 rounded shadow-md w-[50%] max-w-lg flex-grow flex flex-col items-center justify-center">
+        <div className="bg-muted p-8 rounded shadow-md w-[50%] max-w-lg flex-grow flex flex-col items-center justify-center">
           <div className="w-[70%]">
             <h2 className="text-3xl font-semibold mb-6 text-center">
               Create an Account
@@ -35,7 +35,7 @@ const Signup: React.FC = () => {
                 <div className="w-full border-t border-gray-300"></div>
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="bg-[var(--muted)] px-2">OR</span>
+                <span className="bg-muted px-2">OR</span>
               </div>
             </div>
             <SocialButtons />

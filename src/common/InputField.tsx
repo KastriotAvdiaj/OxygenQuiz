@@ -31,7 +31,7 @@ const InputField: React.FC<InputFieldProps> = ({
       type={type}
       value={value}
       onChange={onChange}
-      className="rounded text-foreground py-5 bg-muted border border-border"
+      className="rounded shadow-md text-foreground py-5 bg-background"
       {...props}
     />
   </div>

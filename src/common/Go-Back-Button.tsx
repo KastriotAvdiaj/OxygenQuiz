@@ -1,4 +1,5 @@
 import { useNavigate, useLocation } from "react-router-dom";
+import { cn } from "@/utils/cn";
 
 interface BackButtonProps {
   className?: string;
@@ -17,8 +18,14 @@ export const GoBackButton: React.FC<BackButtonProps> = ({ className }) => {
   };
   return (
     <>
-      <button type="button" className={className} onClick={() => goBack()}>
-        <div className="bg-foreground rounded-xl h-7 w-1/4 flex items-center justify-center absolute left-1 top-[4px] group-hover:w-[184px] z-10 duration-500">
+      <button
+        type="button"
+        className={cn(
+          "bg-muted shadow-md text-center w-48 rounded-xl h-9 font-sans relative text-foreground text-sm font-semibold group"
+        )}
+        onClick={() => goBack()}
+      >
+        <div className="bg-primary rounded-xl h-7 w-1/4 flex items-center justify-center absolute left-1 top-[4px] group-hover:w-[184px] z-10 duration-500">
           <svg
             width="25px"
             height="25px"
@@ -35,7 +42,7 @@ export const GoBackButton: React.FC<BackButtonProps> = ({ className }) => {
             ></path>
           </svg>
         </div>
-        <p className="translate-x-2 text-black">Go Back</p>
+        <p className="translate-x-2 text-foreground">Go Back</p>
       </button>
     </>
   );
