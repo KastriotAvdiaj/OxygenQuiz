@@ -21,7 +21,8 @@ export const GoBackButton: React.FC<BackButtonProps> = ({ className }) => {
       <button
         type="button"
         className={cn(
-          "bg-muted shadow-md text-center w-48 rounded-xl h-9 font-sans relative text-foreground text-sm font-semibold group"
+          "bg-muted shadow-md text-center w-48 rounded-xl h-9 font-sans relative text-foreground text-sm font-semibold group",
+          className
         )}
         onClick={() => goBack()}
       >

@@ -18,6 +18,7 @@ module.exports = {
       colors: {
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
+        'foreground-lighter': 'hsl(var(--foreground-lighter))',
         card: 'hsl(var(--card))',
         'card-foreground': 'hsl(var(--card-foreground))',
         popover: 'hsl(var(--popover))',

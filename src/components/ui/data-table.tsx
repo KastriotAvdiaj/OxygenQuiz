@@ -4,15 +4,22 @@ import {
   getCoreRowModel,
   getPaginationRowModel,
   useReactTable,
-} from "@tanstack/react-table"
-import { Button } from "./button"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+} from "@tanstack/react-table";
+import { Button } from "./button";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 interface DataTableProps<TData> {
-  columns: ColumnDef<TData, any>[]
-  data: TData[]
+  columns: ColumnDef<TData, any>[];
+  data: TData[];
 }
 
 export function DataTable<TData>({ columns, data }: DataTableProps<TData>) {
@@ -22,23 +29,31 @@ export function DataTable<TData>({ columns, data }: DataTableProps<TData>) {
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     initialState: { pagination: { pageSize: 10 } },
-  })
+  });
 
   return (
     <div className="w-full">
-      <div className="rounded-lg border border-border bg-muted shadow-md overflow-hidden">
+      <div className="rounded-lg bg-muted shadow-md overflow-hidden">
         <div className="overflow-x-auto">
           <Table className="w-full">
             <TableHeader className="bg-muted">
               {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id} className="border-b">
+                <TableRow
+                  key={headerGroup.id}
+                  className="border-b border-foreground-lighter/50"
+                >
                   {headerGroup.headers.map((header, index) => (
                     <TableHead
                       key={header.id}
                       className={`px-4 py-3 text-left text-sm font-medium text-foreground-lighter tracking-wider
                         ${index !== 0 ? "relative" : ""}`}
                     >
-                      {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
                     </TableHead>
                   ))}
                 </TableRow>
@@ -49,25 +64,32 @@ export function DataTable<TData>({ columns, data }: DataTableProps<TData>) {
                 table.getRowModel().rows.map((row, i) => (
                   <TableRow
                     key={row.id}
-                    className={`
-                      border-b border-border last:border-b-0
-                      ${i % 2 === 0 ? "bg-muted" : "bg-muted"}
+                    className={`border-none
+                      ${i % 2 === 0 ? "bg-muted" : "bg-background/50"}
                       hover:bg-list-hover transition-colors duration-200
                     `}
                   >
                     {row.getVisibleCells().map((cell) => (
                       <TableCell
                         key={cell.id}
-                        className={`px-4 py-1 text-sm relative ${cell.column.id === "actions" ? "text-center" : ""}`}
+                        className={`px-4 py-1 text-sm relative ${
+                          cell.column.id === "actions" ? "text-center" : ""
+                        }`}
                       >
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
                       </TableCell>
                     ))}
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={columns.length} className="h-24 text-center text-text-lighter">
+                  <TableCell
+                    colSpan={columns.length}
+                    className="h-24 text-center text-text-lighter"
+                  >
                     No data found.
                   </TableCell>
                 </TableRow>
@@ -78,7 +100,8 @@ export function DataTable<TData>({ columns, data }: DataTableProps<TData>) {
       </div>
       <div className="flex flex-col sm:flex-row items-center justify-between mt-4 space-y-4 sm:space-y-0">
         <div className="text-sm text-muted-foreground">
-          Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
+          Page {table.getState().pagination.pageIndex + 1} of{" "}
+          {table.getPageCount()}
         </div>
         <div className="flex items-center space-x-2">
           <Button
@@ -90,13 +113,17 @@ export function DataTable<TData>({ columns, data }: DataTableProps<TData>) {
             <ChevronLeft className="h-4 w-4 mr-2" />
             Previous
           </Button>
-          <Button variant="outline" size="sm" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => table.nextPage()}
+            disabled={!table.getCanNextPage()}
+          >
             Next
             <ChevronRight className="h-4 w-4 ml-2" />
           </Button>
         </div>
       </div>
     </div>
-  )
+  );
 }
-

@@ -27,7 +27,7 @@ export const DeleteQuestionDifficulty = ({ id }: DeleteDifficultyProps) => {
       title="Delete Question Difficulty"
       body="This action cannot be undone."
       triggerButton={
-        <Button className="rounded-sm">
+        <Button className="rounded-xl">
           <Trash2 size={16} />
         </Button>
       }
