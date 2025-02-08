@@ -25,13 +25,24 @@ namespace QuizAPI.Controllers.Questions
 
         // GET: api/QuestionDifficulties
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<QuestionDifficulty>>> GetQuestionDifficulties()
+        public async Task<ActionResult<IEnumerable<QuestionDifficultyDTO>>> GetQuestionDifficulties()
         {
           if (_context.QuestionDifficulties == null)
           {
               return NotFound();
           }
-            return await _context.QuestionDifficulties.ToListAsync();
+
+          var questionDifficulties = await _context.QuestionDifficulties
+              .Select(qd => new QuestionDifficultyDTO
+              {
+                  ID = qd.ID,
+                  Level = qd.Level,
+                  Weight = qd.Weight,
+                  CreatedAt = qd.CreatedAt,
+                  Username = qd.User.Username
+              })
+              .ToListAsync();
+            return Ok(questionDifficulties);
         }
 
         // GET: api/QuestionDifficulties/5

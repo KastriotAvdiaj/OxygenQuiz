@@ -76,7 +76,9 @@ export type BaseEntity<TId = number> = {
   export type QuestionDifficulty = {
     id: number;
     level: string;
+    userId: string;
     weight: number;
+    createdAt: string;
   };
 
   type PaginatedResponse<T> = {

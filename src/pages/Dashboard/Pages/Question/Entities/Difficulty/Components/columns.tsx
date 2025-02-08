@@ -3,6 +3,7 @@ import { QuestionDifficulty } from "@/types/ApiTypes";
 import { Button } from "@/components/ui";
 import { Edit } from "lucide-react";
 import { DeleteQuestionDifficulty } from "./delete-question-difficulty";
+import formatDate from "@/lib/date-format";
 
 export const difficultyColumns: ColumnDef<QuestionDifficulty>[] = [
   {
@@ -12,6 +13,15 @@ export const difficultyColumns: ColumnDef<QuestionDifficulty>[] = [
   {
     accessorKey: "level",
     header: "Difficulty",
+  },
+  {
+    accessorKey: "createdAt",
+    header: "Created At",
+    cell: ({ row }) => formatDate(row.original.createdAt),
+  },
+  {
+    accessorKey: "username",
+    header: "Created By",
   },
   {
     accessorKey: "weight",
