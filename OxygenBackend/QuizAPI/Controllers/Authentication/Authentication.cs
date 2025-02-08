@@ -2,12 +2,11 @@
 using QuizAPI.Services;
 using QuizAPI.Models;
 using System.ComponentModel.DataAnnotations;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using QuizAPI.Data;
 using QuizAPI.DTOs;
 using QuizAPI.DTOs.User;
+using Microsoft.AspNetCore.Authorization;
 
 namespace QuizAPI.Controllers.Authentication
 {
@@ -24,38 +23,30 @@ namespace QuizAPI.Controllers.Authentication
         }
 
         [HttpGet("me")]
-        public async Task<IActionResult> GetCurrentUser()
-        {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (userId == null)
-            {
-                return Unauthorized();
-            }
+        [Authorize]
+public async Task<IActionResult> GetCurrentUser()
+{
 
-            var user = await _context.Users.FindAsync(Guid.Parse(userId));
-            if (user == null)
-            {
-                return Ok();
-                //Changed for a while because a deleted user was still logged in.
-            }
+    var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+    if (!Guid.TryParse(userId, out var userGuid))
+    {
+        return Unauthorized("Invalid token.");
+    }
 
-            var role = await _context.Roles.FindAsync(user.RoleId);
+    var user = await _context.Users.FindAsync(userGuid);
+    if (user == null || user.IsDeleted)
+    {
+        return Unauthorized("User not found.");
+    }
 
-            if (role == null)
-            {
-                return BadRequest();
-            }
-
-            var sentUser = new UserDTO
-            {
-                Id = user.Id,
-                Email = user.Email,
-                Username = user.Username,
-                Role = role.Name,
-            };
-
-            return Ok(sentUser);
-        }
+    return Ok(new UserDTO
+    {
+        Id = user.Id,
+        Email = user.Email,
+        Username = user.Username,
+        Role = (await _context.Roles.FindAsync(user.RoleId))?.Name
+    });
+}
 
         [HttpPost("signup")]
         public async Task<IActionResult> Signup([FromBody] SignupModel model)

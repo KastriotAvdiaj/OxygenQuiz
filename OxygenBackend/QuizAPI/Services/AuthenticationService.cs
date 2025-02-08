@@ -107,7 +107,7 @@ namespace QuizAPI.Services
                 issuer: _configuration["Jwt:Issuer"],
                 audience: _configuration["Jwt:Audience"],
                 claims: claims,
-                expires: DateTime.UtcNow.AddHours(0.01),
+                expires: DateTime.UtcNow.AddHours(0.40),
                 signingCredentials: creds);
 
             return new JwtSecurityTokenHandler().WriteToken(token);

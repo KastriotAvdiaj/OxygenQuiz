@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -161,8 +163,27 @@ namespace QuizAPI.Controllers.Users
 
         // DELETE: api/Users/5
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteUser(Guid id)
+        [Authorize]
+        public async Task<IActionResult> DeleteUser(Guid id, [FromHeader] string authorization)
         {
+            if (string.IsNullOrEmpty(authorization) || !authorization.StartsWith("Bearer "))
+            {
+                return Unauthorized("Invalid or missing token.");
+            }
+
+            var token = authorization.Substring("Bearer ".Length).Trim();
+
+            var handler = new JwtSecurityTokenHandler();
+            var jwtToken = handler.ReadJwtToken(token);
+
+            Console.WriteLine($"Token Expiration Time (UTC): {jwtToken.ValidTo}");
+            Console.WriteLine($"Current Server Time (UTC): {DateTime.UtcNow}");
+
+            if (jwtToken.ValidTo < DateTime.UtcNow)
+            {
+                return Unauthorized("Token has expired.");
+            }
+
             if (_context.Users == null)
             {
                 return NotFound();
