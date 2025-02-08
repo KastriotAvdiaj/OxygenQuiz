@@ -11,7 +11,7 @@ namespace QuizAPI.Models
         public string Name { get; set; }
 
         [ForeignKey("UserId")]
-        public User User { get; set; }
+        public User User { get; set; }//CreatedBy
 
         public DateTime CreatedAt { get; set; }
 

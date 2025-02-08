@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using QuizAPI.Data;
 using QuizAPI.Models;
 using QuizAPI.DTOs.Question;
+using System.Security.Claims;
 
 namespace QuizAPI.Controllers.Questions
 {
@@ -87,14 +88,25 @@ namespace QuizAPI.Controllers.Questions
         [HttpPost]
         public async Task<ActionResult<QuestionDifficulty>> PostQuestionDifficulty(QuestionDifficultyCM questionDifficulty)
         {
-          if (_context.QuestionDifficulties == null)
-          {
-              return Problem("Entity set 'ApplicationDbContext.QuestionDifficulties'  is null.");
-          }
-          var qDifficulty = new QuestionDifficulty
+            if (_context.QuestionDifficulties == null)
+            {
+                return Problem("Entity set 'ApplicationDbContext.QuestionDifficulties'  is null.");
+            }
+
+
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new { message = "User ID not found in token." });
+            }
+
+            var qDifficulty = new QuestionDifficulty
             {
                 Level = questionDifficulty.Level,
-                Weight = questionDifficulty.Weight
+                Weight = questionDifficulty.Weight,
+                CreatedAt = DateTime.UtcNow,
+                UserId = Guid.Parse(userId)
             };
             _context.QuestionDifficulties.Add(qDifficulty);
             await _context.SaveChangesAsync();

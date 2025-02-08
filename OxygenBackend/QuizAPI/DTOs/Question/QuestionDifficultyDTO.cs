@@ -5,12 +5,14 @@
         public int ID { get; set; }
     }
 
-    public class QuestionDifficultyCM {
-    
+    public class QuestionDifficultyCM
+    {
+
         public string Level { get; set; }
-    
-        public int? Weight  { get; set; }
-    
+
+        public int? Weight { get; set; }
+
+
     }
 
 

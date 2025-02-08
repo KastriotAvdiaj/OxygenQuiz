@@ -104,6 +104,12 @@ namespace QuizAPI.Data
        .HasForeignKey(qc => qc.UserId)
        .OnDelete(DeleteBehavior.Restrict);
 
+            //Configuration for Question-QuestionLanguage relationship
+            modelBuilder.Entity<QuestionDifficulty>()
+       .HasOne(qd => qd.User)
+       .WithMany()
+       .HasForeignKey(qc => qc.UserId)
+       .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }
