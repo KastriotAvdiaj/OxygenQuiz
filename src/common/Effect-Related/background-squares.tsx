@@ -86,7 +86,7 @@ const Squares: React.FC<SquaresProps> = ({
         0,
         canvas.width / 2,
         canvas.height / 2,
-        Math.sqrt(Math.pow(canvas.width, 2) + Math.pow(canvas.height, 2)) / 2
+        Math.sqrt(Math.pow(canvas.width, 2) + Math.pow(canvas.height, 2)) / 2.2
       );
       gradient.addColorStop(0, startColor);
       gradient.addColorStop(1, endColor);
@@ -174,7 +174,7 @@ const Squares: React.FC<SquaresProps> = ({
   return (
     <canvas
       ref={canvasRef}
-      className="w-full h-screen border-none block"
+      className="absolute top-0 left-0 z-0 w-full h-screen border-none block"
     ></canvas>
   );
 };

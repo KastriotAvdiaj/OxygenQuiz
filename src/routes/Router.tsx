@@ -30,7 +30,7 @@ const createAppRouter = (queryClient: QueryClient) =>
       path: "/",
       element: (
         <>
-          <HomeLayout children={<Home />} />
+          <HomeLayout squares={true} children={<Home />} />
         </>
       ),
     },
