@@ -50,9 +50,12 @@ export const DrawerFilled = () => {
           </DrawerContent>
         </Drawer>
       ) : (
-        <div className="flex gap-4 items-center">
+        <div className="flex gap-4 items-center text-foreground">
           <NavLink to={"/login"}>
-            <Button className="bg-[#4B3EF3] text-white custom-button" variant={"default"}>
+            <Button
+              className="bg-[#4B3EF3] text-white custom-button"
+              variant={"default"}
+            >
               Login
             </Button>
           </NavLink>

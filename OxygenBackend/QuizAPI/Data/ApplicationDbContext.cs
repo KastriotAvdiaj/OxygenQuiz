@@ -14,6 +14,7 @@ namespace QuizAPI.Data
         public DbSet<Question> Questions { get; set; }
 
         public DbSet<QuestionCategory> QuestionCategories { get; set; }
+        public DbSet<QuestionLanguage> QuestionLanguages { get; set; }
 
         public DbSet<AnswerOption> AnswerOptions { get; set; }
 
@@ -97,19 +98,26 @@ namespace QuizAPI.Data
             .HasForeignKey(a => a.QuestionId)
             .OnDelete(DeleteBehavior.Cascade);
 
-            //Configuration for Question-QuestionCategory relationship
+            //Configuration for User-QuestionCategory relationship
             modelBuilder.Entity<QuestionCategory>()
        .HasOne(qc => qc.User)
        .WithMany()
        .HasForeignKey(qc => qc.UserId)
        .OnDelete(DeleteBehavior.Restrict);
 
-            //Configuration for Question-QuestionLanguage relationship
+            //Configuration for User-QuestionDifficulty relationship
             modelBuilder.Entity<QuestionDifficulty>()
        .HasOne(qd => qd.User)
        .WithMany()
        .HasForeignKey(qc => qc.UserId)
        .OnDelete(DeleteBehavior.Restrict);
-        }
+
+        //Configuration for Question-QuestionLanguage relationship
+        modelBuilder.Entity<Question>()
+       .HasOne(ql => ql.Language)
+       .WithMany()
+       .HasForeignKey(ql => ql.LanguageId)
+       .OnDelete(DeleteBehavior.Restrict);
     }
+}
 }

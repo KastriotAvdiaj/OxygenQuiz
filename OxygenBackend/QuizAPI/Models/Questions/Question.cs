@@ -28,6 +28,11 @@ namespace QuizAPI.Models
 
         [JsonIgnore]
         public QuestionCategory Category { get; set; }
+
+        public int LanguageId { get; set; }
+
+        [JsonIgnore]
+        public QuestionLanguage Language { get; set; }
     
         public QuestionStatistics? Statistics { get; set; }
 
