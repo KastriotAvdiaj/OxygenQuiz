@@ -84,7 +84,7 @@ export const CreateQuestionDifficultyForm = () => {
                   type="number"
                   placeholder="Enter weight here..."
                   error={formState.errors["weight"]}
-                  registration={register("weight")}
+                  registration={register("weight", { valueAsNumber: true })}
                 />
               </div>
             </>

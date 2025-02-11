@@ -7,7 +7,11 @@ import { getQuestionDifficultyQueryOptions } from './get-question-difficulties'
 
 export const createQuestionDifficultyInputSchema = z.object({
     level: z.string().min(1, 'Level is required'),
-    weight: z.string().min(1, 'Weight is required').transform((val) => Number(val)),
+    weight: z
+    .number()
+    .min(1, { message: "Weight must be at least 1." })
+    .max(100, { message: "Weight cannot be more than 100." })
+  
 })
 
 
