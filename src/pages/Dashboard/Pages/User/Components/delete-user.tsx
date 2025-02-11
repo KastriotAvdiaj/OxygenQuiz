@@ -28,7 +28,7 @@ export const DeleteUser = ({ id, closeDropDown }: DeleteUserProps) => {
   if (user.data?.id === id)
     return (
       <Button
-        className="gap-2 h-5 font-normal px-0 bg-muted hover:bg-muted hover:text-white"
+        className="gap-2 h-5 font-normal px-0 bg-muted hover:bg-muted"
         disabled
       >
         <UserX size={16} /> Delete User

@@ -93,18 +93,18 @@ export const CreateUserForm = () => {
               registration={register("password")}
             />
 
-            <div className="flex flex-col space-y-1.5">
+            <div className="flex flex-col space-y-1.5 text-foreground">
               <label htmlFor="role">Role</label>
               <Select onValueChange={(value) => setValue("role", value)}>
                 <SelectTrigger id="role" className="border-gray-400">
-                  <SelectValue placeholder="Select Role" />
+                  <SelectValue placeholder="--Select Role--" />
                 </SelectTrigger>
-                <SelectContent className="cursor-pointer bg-[var(--muted)]">
+                <SelectContent className="cursor-pointer">
                   {roleOptions.map((role, index) => (
                     <SelectItem
                       key={index}
                       value={role.label}
-                      className="cursor-pointer hover:!bg-[var(--muted)]"
+                      className="cursor-pointer"
                     >
                       {role.label}
                     </SelectItem>

@@ -103,7 +103,6 @@ export const columns: ColumnDef<User>[] = [
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
             <DropdownMenuItem
               onClick={() => navigator.clipboard.writeText(user.id)}
-              className="hover:bg-background"
             >
               <Copy size={16} /> Copy ID
             </DropdownMenuItem>
@@ -113,12 +112,11 @@ export const columns: ColumnDef<User>[] = [
                 e.stopPropagation();
                 e.preventDefault();
               }}
-              className="hover:bg-background"
             >
               <DeleteUser id={user.id} closeDropDown={close} />
             </DropdownMenuItem>
             <DropdownMenuSeparator className="bg-background/60" />
-            <DropdownMenuItem className="hover:bg-background">
+            <DropdownMenuItem>
               <UserRoundPen size={16} /> Edit User
             </DropdownMenuItem>
           </DropdownMenuContent>
