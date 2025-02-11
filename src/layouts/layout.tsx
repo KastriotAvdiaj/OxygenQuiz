@@ -21,7 +21,7 @@ export const HomeLayout = ({ children, squares = false }: LayoutProps) => {
         {squares && (
           <Squares
             speed={0.5}
-            squareSize={20}
+            squareSize={40}
             direction="diagonal" // up, down, left, right, diagonal
             borderColor={colors.borderColor}
             hoverFillColor={colors.hoverFillColor}

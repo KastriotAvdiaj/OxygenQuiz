@@ -8,7 +8,7 @@ body{
   background-position: center; 
   background-repeat: no-repeat; 
   background-attachment: fixed;
-  font-family: var(--main), sans-serif;
+  font-family: sans-serif;
   color: var(--foreground);
   background-color: var(--background);
 }

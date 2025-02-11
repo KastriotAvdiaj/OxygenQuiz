@@ -10,6 +10,9 @@ module.exports = {
   prefix: "",
   theme: {
     extend: {
+      fontFamily: {
+        header: ["Titillium Web", "serif"],
+      },
       scale: {
         101: '1.01',
         102: '1.02',

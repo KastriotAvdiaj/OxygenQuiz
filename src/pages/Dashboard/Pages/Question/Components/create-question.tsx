@@ -115,15 +115,16 @@ export const CreateQuestionForm: React.FC<CreateQuestionFormProps> = ({
             <>
               <div className="grid grid-[2fr_1fr] w-full gap-5">
                 <div className="space-y-2">
-                  <Label htmlFor="questionText" className="text-foreground text-sm font-medium">
+                  <Label
+                    htmlFor="questionText"
+                    className="text-foreground text-sm font-medium"
+                  >
                     Question Text
                   </Label>
                   <Input
                     id="questionText"
                     className={`py-2 w-full ${
-                      formState.errors["text"]
-                        ? "border-red-500"
-                        : "border-border"
+                      formState.errors["text"] ? "border-red-500" : ""
                     }`}
                     placeholder="Enter your question here..."
                     error={formState.errors["text"]}
@@ -158,7 +159,7 @@ export const CreateQuestionForm: React.FC<CreateQuestionFormProps> = ({
 
               <div className="space-y-4 mt-4">
                 <div className="flex items-center justify-between">
-                  <Label className="block text-sm font-medium">
+                  <Label className="block text-sm font-medium text-foreground">
                     Answer Options
                   </Label>
                 </div>
