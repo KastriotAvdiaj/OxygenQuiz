@@ -11,9 +11,9 @@ import { CategorySelect } from "./Entities/Categories/Components/select-question
 import CreateQuestionForm from "./Components/create-question";
 
 import { useQuestionDifficultyData } from "./Entities/Difficulty/api/get-question-difficulties";
-import { LangaugesView } from "./Entities/Language/components/langauges-view";
+import { LangaugesView } from "./Entities/Language/components/View";
 import { DifficultyView } from "./Entities/Difficulty/Components/difficulty-view";
-import { CategoryView } from "./Entities/Categories/Components/category-view";
+import { CategoryView } from "./Entities/Categories/Components/View";
 
 export const Questions = () => {
   const [searchTerm, setSearchTerm] = useState("");
