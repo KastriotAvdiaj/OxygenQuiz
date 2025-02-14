@@ -46,7 +46,6 @@ export const QuestionRoute = () => {
     <ContentLayout title={`Question #${question.id}`}>
       <div className="space-y-4">
         <div>
-          {/* <h2 className="text-xl font-semibold mb-2">Question Text</h2> */}
           <h2 className="text-xl font-semibold mb-2">{question.text}</h2>
         </div>
 
@@ -58,6 +57,10 @@ export const QuestionRoute = () => {
           <div className="flex items-center">
             <span className="mr-2 text-sm font-medium">Category:</span>
             <Badge variant="primary">{question.category}</Badge>
+          </div>
+          <div className="flex items-center">
+            <span className="mr-2 text-sm font-medium">Language:</span>
+            <Badge variant="primary">{question.language}</Badge>
           </div>
         </div>
 

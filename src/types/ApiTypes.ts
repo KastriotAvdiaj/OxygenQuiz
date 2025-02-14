@@ -59,6 +59,8 @@ export type BaseEntity<TId = number> = {
     userId : string;
     user : string;
     difficulty: string;
+    language :string;
+    languageId: number;
     difficultyId: number;
     category: string;
     categoryId: number;

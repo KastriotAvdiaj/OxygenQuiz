@@ -40,12 +40,17 @@ namespace QuizAPI.DTOs.Question
 
         public int CategoryId { get; set; }
 
+        public string Category { get; set; }
+
+        public int LanguageId { get; set; }
+
+        public string Language { get; set; }
+
         public Guid UserId { get; set; }
 
         public DateTime CreatedAt { get; set; }
 
         public string User { get; set; }
-        public string Category { get; set; }
         public List<AnswerOptionDTO> AnswerOptions { get; set; }
 
     }
