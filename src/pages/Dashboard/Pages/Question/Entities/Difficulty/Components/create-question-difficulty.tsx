@@ -59,7 +59,7 @@ export const CreateQuestionDifficultyForm = () => {
           return (
             <>
               <div>
-                <Label htmlFor="category" className="text-sm font-medium">
+                <Label htmlFor="difficulty" className="text-sm font-medium">
                   Difficulty
                 </Label>
                 <Input

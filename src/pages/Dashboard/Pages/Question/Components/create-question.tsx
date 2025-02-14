@@ -12,7 +12,7 @@ import { useFieldArray } from "react-hook-form";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { CategorySelect } from "../Entities/Categories/Components/select-question-category";
-import { DifficultySelect } from "../Entities/Difficulty/Components/View";
+import { DifficultySelect } from "../Entities/Difficulty/Components/select-question-difficulty";
 
 interface CreateQuestionFormProps {
   categories: QuestionCategory[];
