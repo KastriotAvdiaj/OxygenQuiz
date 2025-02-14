@@ -81,7 +81,7 @@ export type BaseEntity<TId = number> = {
     createdAt: string;
   };
 
-  export type QuestionLangauge = {
+  export type QuestionLanguage = {
     id: number;
     langauge: string;
     username: string;

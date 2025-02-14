@@ -2,18 +2,18 @@ import { useState, useEffect } from "react";
 // import { AdminQuestionCard } from "./Components/admin-question-card";
 import { useQuestionData } from "./api/get-questions";
 import { useQuestionCategoryData } from "./Entities/Categories/api/get-question-categories";
-import CreateQuestionCategoryForm from "./Entities/Categories/Components/create-question-category";
-import { Card, DataTable, Spinner } from "@/components/ui";
+import { Card, Spinner } from "@/components/ui";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/form";
 import { QuestionList } from "./Components/question-list";
 import { useDebounce } from "@/hooks/use-debounce";
-import { categoryColumns } from "./Entities/Categories/Components/columns";
 import { CategorySelect } from "./Entities/Categories/Components/select-question-category";
 import CreateQuestionForm from "./Components/create-question";
-import CreateQuestionDifficultyForm from "./Entities/Difficulty/Components/create-question-difficulty";
+
 import { useQuestionDifficultyData } from "./Entities/Difficulty/api/get-question-difficulties";
-import { difficultyColumns } from "./Entities/Difficulty/Components/columns";
+import { LangaugesView } from "./Entities/Language/components/langauges-view";
+import { DifficultyView } from "./Entities/Difficulty/Components/difficulty-view";
+import { CategoryView } from "./Entities/Categories/Components/category-view";
 
 export const Questions = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -65,7 +65,6 @@ export const Questions = () => {
             placeholder="Search questions..."
           />
           <div className="flex space-x-4 items-center">
-            {/* <CreateQuestionCategoryForm /> */}
             <CategorySelect
               categories={questionCategoriesQuery.data || []}
               value={selectedCategory}
@@ -78,8 +77,6 @@ export const Questions = () => {
           </div>
         </div>
         <Separator />
-
-        {/* Question List */}
         <QuestionList
           questions={questionsQuery.data?.items || []}
           onNextPage={() => handlePageChange("next")}
@@ -88,25 +85,9 @@ export const Questions = () => {
           totalPages={questionsQuery.data?.totalPages || 1}
         />
       </Card>
-      <Card className="flex flex-col justify-center align-items-end gap-2 m-10 p-8 bg-background border border-border">
-        <div>
-          <CreateQuestionCategoryForm />
-        </div>
-        <DataTable
-          data={questionCategoriesQuery.data || []}
-          columns={categoryColumns}
-        />
-      </Card>
-
-      <Card className="flex flex-col justify-center align-items-end gap-2 m-10 p-8 bg-background border border-border">
-        <div>
-          <CreateQuestionDifficultyForm />
-        </div>
-        <DataTable 
-          data={questionDifficultiesQuery.data || []}
-          columns={difficultyColumns}
-        />
-      </Card>
+      <CategoryView />
+      <DifficultyView />
+      <LangaugesView />
     </>
   );
 };

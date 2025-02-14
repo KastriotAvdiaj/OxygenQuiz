@@ -1,27 +1,26 @@
 import { queryOptions, useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/Api-client";
 import { QueryConfig } from "@/lib/React-query";
-import { QuestionDifficulty } from "@/types/ApiTypes";
+import { QuestionLanguage } from "@/types/ApiTypes";
 
-export const getQuestionDifficulties = (): Promise<QuestionDifficulty[]> => {
-  console.log("getQuestionCategories");
-  return api.get(`/questionDifficulties`);
+export const getQuestionLanguages = (): Promise<QuestionLanguage[]> => {
+  return api.get(`/questionLanguages`);
 };
 
-export const getQuestionDifficultyQueryOptions = () => {
+export const getQuestionLanguageQueryOptions = () => {
   return queryOptions({
-    queryKey: ["getQuestionDifficulties"],
-    queryFn: () => getQuestionDifficulties(),
+    queryKey: ["getQuestionLangauges"],
+    queryFn: () => getQuestionLanguages(),
   });
 };
 
-type UseQuestionDifficultyOptions = {
-  queryConfig?: QueryConfig<typeof getQuestionDifficultyQueryOptions>;
+type UseQuestionLangaugeOptions = {
+  queryConfig?: QueryConfig<typeof getQuestionLanguageQueryOptions>;
 };
 
-export const useQuestionDifficultyData = ({ queryConfig }: UseQuestionDifficultyOptions) => {
+export const useQuestionLangaugeData = ({ queryConfig }: UseQuestionLangaugeOptions) => {
   return useQuery({
-    ...getQuestionDifficultyQueryOptions(),
+    ...getQuestionLanguageQueryOptions(),
     ...queryConfig,
   });
 };
