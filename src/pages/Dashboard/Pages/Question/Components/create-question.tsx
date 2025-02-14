@@ -7,21 +7,28 @@ import {
   createQuestionInputSchema,
   useCreateQuestion,
 } from "../api/create-question";
-import { QuestionCategory, QuestionDifficulty } from "@/types/ApiTypes";
+import {
+  QuestionCategory,
+  QuestionDifficulty,
+  QuestionLanguage,
+} from "@/types/ApiTypes";
 import { useFieldArray } from "react-hook-form";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { CategorySelect } from "../Entities/Categories/Components/select-question-category";
 import { DifficultySelect } from "../Entities/Difficulty/Components/select-question-difficulty";
+import { LanguageSelect } from "../Entities/Language/components/select-question-language";
 
 interface CreateQuestionFormProps {
   categories: QuestionCategory[];
   difficulties: QuestionDifficulty[];
+  languages: QuestionLanguage[];
 }
 
 export const CreateQuestionForm: React.FC<CreateQuestionFormProps> = ({
   categories,
   difficulties,
+  languages,
 }) => {
   const { addNotification } = useNotifications();
 
@@ -154,6 +161,18 @@ export const CreateQuestionForm: React.FC<CreateQuestionFormProps> = ({
                 includeAllOption={false}
                 error={formState.errors["difficulty"]?.message}
                 clearErrors={() => clearErrors("difficulty")}
+              />
+              <Separator className="bg-gray-500" />
+              <LanguageSelect
+                label="Language"
+                languages={languages}
+                value={watch("language")}
+                includeAllOption={false}
+                onLangaugeChange={(selectedValue) =>
+                  setValue("language", selectedValue)
+                }
+                error={formState.errors["language"]?.message}
+                clearErrors={() => clearErrors("language")}
               />
               <Separator className="bg-gray-500" />
 

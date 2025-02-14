@@ -129,7 +129,6 @@ string? category = null)
         public async Task<ActionResult<Question>> CreateQuestionWithDto(QuestionCM questionDto)
         {
 
-
             // Validate the DTO
             if (!QuestionHelpers.ValidateQuestionDto(questionDto))
                 return BadRequest("Invalid question data.");
@@ -141,19 +140,24 @@ string? category = null)
                 return Unauthorized(new { message = "User ID not found in token." });
             }
             var category = await _context.QuestionCategories.FirstOrDefaultAsync(c => c.Name == questionDto.Category);
+            var difficulty = await _context.QuestionDifficulties.FirstOrDefaultAsync(d => d.Level == questionDto.Difficulty);
+            var language = await _context.QuestionLanguages.FirstOrDefaultAsync(l => l.Language == questionDto.Language);
 
             if (category == null)
             {
                 return BadRequest("Category doesn't exist");
+            } else if (language == null)
+            {
+                return BadRequest("Language doesn't exist");
+            }else if (difficulty == null) {
+                return BadRequest("Difficulty doesn't exist");
             }
-
-            var questionDifficulty = await _context.QuestionDifficulties.FirstOrDefaultAsync(d => d.Level == questionDto.Difficulty);
 
             var question = new Question
             {
                 Text = questionDto.Text,
-                DifficultyId = questionDifficulty.ID,
-              /*  DifficultyLevel = questionDifficulty.Level,*/
+                DifficultyId = difficulty.ID,
+                LanguageId = language.Id,
                 CreatedAt = DateTime.UtcNow,
                 CategoryId = category.Id, 
                 UserId = Guid.Parse(userId)

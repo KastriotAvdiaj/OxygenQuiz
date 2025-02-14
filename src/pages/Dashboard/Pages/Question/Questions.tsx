@@ -14,6 +14,7 @@ import { useQuestionDifficultyData } from "./Entities/Difficulty/api/get-questio
 import { LangaugesView } from "./Entities/Language/components/language-view";
 import { DifficultyView } from "./Entities/Difficulty/Components/difficulty-view";
 import { CategoryView } from "./Entities/Categories/Components/category-view";
+import { useQuestionLangaugeData } from "./Entities/Language/api/get-question-language";
 
 export const Questions = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -34,6 +35,8 @@ export const Questions = () => {
   const questionCategoriesQuery = useQuestionCategoryData({});
 
   const questionDifficultiesQuery = useQuestionDifficultyData({});
+
+  const questionLanguagesQuery = useQuestionLangaugeData({});
 
   useEffect(() => {
     setPage(1);
@@ -71,6 +74,7 @@ export const Questions = () => {
               onChange={setSelectedCategory}
             />
             <CreateQuestionForm
+              languages={questionLanguagesQuery.data || []}
               categories={questionCategoriesQuery.data || []}
               difficulties={questionDifficultiesQuery.data || []}
             />

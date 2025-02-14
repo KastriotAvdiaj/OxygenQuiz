@@ -92,8 +92,6 @@ namespace QuizAPI.Controllers.Questions
             return NoContent();
         }
 
-        // POST: api/QuestionLanguages
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
         public async Task<ActionResult<QuestionLanguage>> PostQuestionLanguage(QuestionLanguageCM questionLanguage)
         {

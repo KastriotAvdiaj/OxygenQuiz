@@ -1,16 +1,15 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
-
 import { api } from "@/lib/Api-client";
 import { MutationConfig } from "@/lib/React-query";
 import { Question } from "@/types/ApiTypes";
-
 import { getQuestionsQueryOptions } from "./get-questions";
 
 export const createQuestionInputSchema = z.object({
   text: z.string().min(1, "Question is required"), 
   difficulty: z.string().min(1,"Difficulty is required"),
   category: z.string().min(1,"Category is required"),
+  language : z.string().min(1,"Language is required"),
   answerOptions: z
     .array(
       z.object({
