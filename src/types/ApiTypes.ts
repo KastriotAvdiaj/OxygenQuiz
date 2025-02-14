@@ -69,15 +69,22 @@ export type BaseEntity<TId = number> = {
   export type QuestionCategory = {
     id: number;
     createdAt: string;
-    userId: string;
+    username: string;
     name: string;
   };
 
   export type QuestionDifficulty = {
     id: number;
     level: string;
-    userId: string;
+    username: string;
     weight: number;
+    createdAt: string;
+  };
+
+  export type QuestionLangauge = {
+    id: number;
+    langauge: string;
+    username: string;
     createdAt: string;
   };
 
