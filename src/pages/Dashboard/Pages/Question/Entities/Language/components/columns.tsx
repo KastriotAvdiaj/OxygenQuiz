@@ -2,8 +2,8 @@ import { ColumnDef } from "@tanstack/react-table";
 import { QuestionLanguage } from "@/types/ApiTypes";
 import { Button } from "@/components/ui";
 import { Edit } from "lucide-react";
-// import { DeleteQuestionDifficulty } from "./delete-question-difficulty";
 import formatDate from "@/lib/date-format";
+import { DeleteQuestionLanguage } from "./delete-question-language";
 
 export const langaugeColumns: ColumnDef<QuestionLanguage>[] = [
   {
@@ -24,14 +24,14 @@ export const langaugeColumns: ColumnDef<QuestionLanguage>[] = [
     header: "Created By",
   },
   {
-    cell: () => {
-      //   const difficulty = row.original;
+    cell: ({ row }) => {
+      const language = row.original;
       return (
         <div className="flex items-center space-x-2">
           <Button className="rounded-xl">
             <Edit size={16} />
           </Button>
-          {/* <DeleteQuestionDifficulty id={difficulty.id} /> */}
+          <DeleteQuestionLanguage id={language.id} />
         </div>
       );
     },
