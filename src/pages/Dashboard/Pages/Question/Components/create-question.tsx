@@ -49,7 +49,6 @@ export const CreateQuestionForm: React.FC<CreateQuestionFormProps> = ({
       triggerButton={
         <Button
           variant="default"
-          className="bg-muted"
           size="sm"
           icon={<Plus className="size-4" />}
         >

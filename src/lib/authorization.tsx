@@ -1,24 +1,24 @@
-import * as React from 'react';
+import * as React from "react";
 
-import { User, Question } from '@/types/ApiTypes';
+import { User, Question } from "@/types/ApiTypes";
 
-import { useUser } from '@/lib/Auth';
+import { useUser } from "@/lib/Auth";
 
 export enum ROLES {
-  ADMIN = 'ADMIN',
-  SUPERADMIN = 'SUPERADMIN',
-  USER = 'USER',
+  Admin = "Admin",
+  SuperAdmin = "SuperAdmin",
+  User = "User",
 }
 
 type RoleTypes = keyof typeof ROLES;
 
 export const POLICIES = {
-  'comment:delete': (user: User, question: Question) => {
-    if (user.role === 'ADMIN') {
+  "comment:delete": (user: User, question: Question) => {
+    if (user.role === "Admin") {
       return true;
     }
 
-    if (user.role === 'USER' && question.user?.id === user.id) {
+    if (user.role === "User" && question.user?.id === user.id) {
       return true;
     }
 
@@ -30,18 +30,20 @@ export const useAuthorization = () => {
   const user = useUser();
 
   if (!user.data) {
-    throw Error('User does not exist!');
+    throw Error("User does not exist!");
   }
 
   const checkAccess = React.useCallback(
     ({ allowedRoles }: { allowedRoles: RoleTypes[] }) => {
       if (allowedRoles && allowedRoles.length > 0 && user.data) {
+        console.log(allowedRoles?.includes(user.data.role));
+
         return allowedRoles?.includes(user.data.role);
       }
 
       return true;
     },
-    [user.data],
+    [user.data]
   );
 
   return { checkAccess, role: user.data.role };
@@ -75,7 +77,7 @@ export const Authorization = ({
     canAccess = checkAccess({ allowedRoles });
   }
 
-  if (typeof policyCheck !== 'undefined') {
+  if (typeof policyCheck !== "undefined") {
     canAccess = policyCheck;
   }
 

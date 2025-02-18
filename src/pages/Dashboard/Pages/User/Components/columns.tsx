@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { DeleteUser } from "./delete-user";
 import formatDate from "@/lib/date-format";
+import { useUser } from "@/lib/Auth";
 
 export const columns: ColumnDef<User>[] = [
   {
@@ -83,6 +84,8 @@ export const columns: ColumnDef<User>[] = [
     header: "Actions",
     cell: ({ row }) => {
       const user = row.original;
+      const mainUser = useUser();
+
       const { open, isOpen, close } = useDisclosure();
 
       return (
@@ -91,10 +94,7 @@ export const columns: ColumnDef<User>[] = [
           onOpenChange={(state) => (state ? open() : close())}
         >
           <DropdownMenuTrigger asChild>
-            <Button
-              variant="default"
-              className="h-8 w-8 p-0 rounded"
-            >
+            <Button variant="default" className="h-8 w-8 p-0 rounded">
               <span className="sr-only">Open menu</span>
               <MoreHorizontal className="h-4 w-4" />
             </Button>
@@ -108,6 +108,7 @@ export const columns: ColumnDef<User>[] = [
             </DropdownMenuItem>
             <DropdownMenuSeparator className="bg-background/60" />
             <DropdownMenuItem
+              disabled={user.id === mainUser.data.id}
               onClick={(e) => {
                 e.stopPropagation();
                 e.preventDefault();

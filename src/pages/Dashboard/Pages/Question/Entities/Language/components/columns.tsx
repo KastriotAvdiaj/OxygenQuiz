@@ -29,7 +29,7 @@ export const langaugeColumns: ColumnDef<QuestionLanguage>[] = [
       const language = row.original;
       return (
         <div className="flex items-center space-x-2">
-          <Authorization allowedRoles={["SUPERADMIN"]}>
+          <Authorization allowedRoles={["SuperAdmin"]}>
             <Button className="rounded-xl">
               <Edit size={16} />
             </Button>
