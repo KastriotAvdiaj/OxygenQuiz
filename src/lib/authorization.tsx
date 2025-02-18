@@ -6,6 +6,7 @@ import { useUser } from '@/lib/Auth';
 
 export enum ROLES {
   ADMIN = 'ADMIN',
+  SUPERADMIN = 'SUPERADMIN',
   USER = 'USER',
 }
 

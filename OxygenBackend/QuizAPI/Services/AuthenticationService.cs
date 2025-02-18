@@ -97,7 +97,8 @@ namespace QuizAPI.Services
             {
                 new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
                 new Claim(JwtRegisteredClaimNames.Email, user.Email),
-                new Claim("Username", user.Username)
+                new Claim("Username", user.Username),
+                new Claim(ClaimTypes.Role, user.Role.Name),
             };
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));

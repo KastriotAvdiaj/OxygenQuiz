@@ -123,7 +123,7 @@ export const AdminRoute = ({ children }: { children: React.ReactNode }) => {
       />
     );
   }
-  if (!(user.data.role === "Admin")) {
+  if (!(user.data.role === "Admin" || user.data.role === "SuperAdmin")) {
     return (
       <div className="h-screen w-full flex items-center justify-center bg-background">
         <div className="max-w-sm w-full text-center bg-muted shadow-lg rounded-lg p-6">

@@ -65,12 +65,11 @@ export const QuestionRoute = () => {
         </div>
 
         <div>
-          {/* <h3 className="text-lg font-semibold mb-2">Answer Options</h3> */}
           <AnswerOptionViewList answerOptions={question.answerOptions} />
         </div>
 
         <div className="text-sm text-gray-500">
-          <p>Created by: {question.user}</p>
+          <p>Created by: {question.user.username}</p>
           <p>Created at: {format(new Date(question.createdAt), "PPpp")}</p>
         </div>
       </div>

@@ -220,7 +220,7 @@ string? category = null)
 
             // Update the question properties
             question.Text = questionDto.Text;
-           /* question.DifficultyId = questionDto.DifficultyLevel;*/
+            /* question.DifficultyId = questionDto.DifficultyLevel;*/
 
             // Clear existing options and add new ones
             _context.AnswerOptions.RemoveRange(question.AnswerOptions);
@@ -246,7 +246,7 @@ string? category = null)
             return NoContent();
         }
 
-        // DELETE: api/Questions/{id}
+        [Authorize(Roles = "Admin , SuperAdmin")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteQuestion(int id)
         {
