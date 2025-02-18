@@ -129,7 +129,6 @@ namespace QuizAPI.Controllers.Questions
 
         // DELETE: api/QuestionDifficulties/5
         [Authorize(Roles = "SuperAdmin")]
-
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteQuestionDifficulty(int id)
         {

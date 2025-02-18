@@ -64,6 +64,7 @@ namespace QuizAPI.Controllers.Questions
 
         // PUT: api/QuestionCategories/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+        [Authorize(Roles = "SuperAdmin")]
         [HttpPut("{id}")]
         public async Task<IActionResult> PutQuestionCategory(int id, QuestionCategory questionCategory)
         {
@@ -95,6 +96,7 @@ namespace QuizAPI.Controllers.Questions
 
         // POST: api/QuestionCategories
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+
         [HttpPost]
         public async Task<ActionResult<QuestionCategory>> PostQuestionCategory(QuestionCategoryCM questionCategory)
         {

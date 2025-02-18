@@ -39,8 +39,8 @@ export function StatsCards({ className }: StatsCardsProps) {
         <CardContent>
           <div className="text-2xl font-bold">{data}</div>
           <p className="text-xs text-muted-foreground">
-            <span className="text-green-custom font-semibold">+2.5%</span> from
-            last month
+            <span className="text-primary font-semibold">+2.5%</span> from last
+            month
           </p>
         </CardContent>
       </Card>
@@ -52,7 +52,7 @@ export function StatsCards({ className }: StatsCardsProps) {
         <CardContent>
           <div className="text-2xl font-bold">2,345</div>
           <p className="text-xs text-muted-foreground">
-            <span className="text-green-custom font-semibold">+180</span> from
+            <span className="text-primary font-semibold">+180</span> from
             yesterday
           </p>
         </CardContent>
@@ -65,8 +65,8 @@ export function StatsCards({ className }: StatsCardsProps) {
         <CardContent>
           <div className="text-2xl font-bold">573</div>
           <p className="text-xs text-muted-foreground">
-            <span className="text-green-custom font-semibold">+201</span> from
-            last month
+            <span className="text-primary font-semibold">+201</span> from last
+            month
           </p>
         </CardContent>
       </Card>
@@ -80,8 +80,8 @@ export function StatsCards({ className }: StatsCardsProps) {
         <CardContent>
           <div className="text-2xl font-bold">24m 13s</div>
           <p className="text-xs text-muted-foreground">
-            <span className="text-green-custom font-semibold">+1m 12s</span>{" "}
-            from last week
+            <span className="text-primary font-semibold">+1m 12s</span> from
+            last week
           </p>
         </CardContent>
       </Card>
