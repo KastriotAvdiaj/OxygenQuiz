@@ -27,6 +27,12 @@ export type BaseEntity<TId = number> = {
     role : string;
   },string>;
   
+  export type UserBasic = {
+    id: string;
+    username: string;
+    profileImageUrl: string;
+  };
+  
   
   export type Role = Entity<{
     name: string;
@@ -46,6 +52,7 @@ export type BaseEntity<TId = number> = {
   export type Question ={
     id: number;
     difficulty: string;
+    user: UserBasic; // not being used for now
     text: string;
     category: string;
     language :string;
@@ -57,7 +64,7 @@ export type BaseEntity<TId = number> = {
     text: string;
     createdAt: string;
     userId : string;
-    user : string;
+    user: UserBasic;
     difficulty: string;
     language :string;
     languageId: number;

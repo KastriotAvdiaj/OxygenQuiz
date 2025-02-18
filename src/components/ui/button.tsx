@@ -10,7 +10,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-background text-foreground gap-2 border border-border shadow hover:bg-muted active:scale-95",
+          "bg-background text-foreground gap-2 border border-border shadow hover:bg-background/50 active:scale-95",
         icon: "bg-muted gap-2 shadow p-0 m-0",
         addSave:
           "flex justify-center items-center gap-2 shadow text-white bg-primary hover:bg-primary/70 active:scale-95",

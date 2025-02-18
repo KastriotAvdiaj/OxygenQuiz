@@ -45,7 +45,7 @@ export function DataTable<TData>({ columns, data }: DataTableProps<TData>) {
                   {headerGroup.headers.map((header, index) => (
                     <TableHead
                       key={header.id}
-                      className={`px-4 py-3 text-left text-sm font-medium text-foreground-lighter tracking-wider
+                      className={`px-4 py-4 text-left text-sm font-medium text-foreground-lighter tracking-wider
                         ${index !== 0 ? "relative" : ""}`}
                     >
                       {header.isPlaceholder
@@ -66,13 +66,13 @@ export function DataTable<TData>({ columns, data }: DataTableProps<TData>) {
                     key={row.id}
                     className={`border-none
                       ${i % 2 === 0 ? "bg-muted" : "bg-background/50"}
-                      hover:bg-list-hover transition-colors duration-200
+                      hover:bg-foreground/10 transition-colors duration-200 
                     `}
                   >
                     {row.getVisibleCells().map((cell) => (
                       <TableCell
                         key={cell.id}
-                        className={`px-4 py-1 text-sm relative ${
+                        className={`px-4 py-3 text-sm relative ${
                           cell.column.id === "actions" ? "text-center" : ""
                         }`}
                       >

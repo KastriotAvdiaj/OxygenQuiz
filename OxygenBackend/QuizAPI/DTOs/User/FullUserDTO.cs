@@ -13,8 +13,6 @@ namespace QuizAPI.DTOs.User
 
         public string Email { get; set; }
 
-        public string PasswordHash { get; set; } = string.Empty;
-
         public DateTime DateRegistered { get; set; }
 
         public string Role { get; set; }
@@ -27,4 +25,12 @@ namespace QuizAPI.DTOs.User
 
         public string ProfileImageUrl { get; set; }
     }
+
+    public class UserBasicDTO
+    {
+        public Guid Id { get; set; }  
+        public string Username { get; set; } 
+        public string ProfileImageUrl { get; set; } 
+    }
+
 }

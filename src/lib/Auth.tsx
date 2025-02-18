@@ -1,11 +1,12 @@
 import { configureAuth } from "react-query-auth";
-import { Navigate, useLocation } from "react-router-dom";
+import { Link, Navigate, useLocation } from "react-router-dom";
 import { z } from "zod";
 import { api } from "./Api-client";
 import { AuthResponse, User } from "@/types/ApiTypes";
 import Cookies from "js-cookie";
 import { AUTH_COOKIE } from "./authHelpers";
 import { AlertCircle } from "lucide-react";
+import { Button } from "@/components/ui";
 
 const getUser = async (): Promise<User | null> => {
   try {
@@ -124,24 +125,21 @@ export const AdminRoute = ({ children }: { children: React.ReactNode }) => {
   }
   if (!(user.data.role === "Admin")) {
     return (
-      <div className="h-screen w-full flex items-center justify-center bg-muted">
+      <div className="h-screen w-full flex items-center justify-center bg-background">
         <div className="max-w-sm w-full text-center bg-muted shadow-lg rounded-lg p-6">
           <div className="flex flex-col items-center">
             <AlertCircle className="text-red-500 w-12 h-12" />
-            <h2 className="mt-4 text-2xl font-semibold text-text">
+            <h2 className="mt-4 text-2xl font-semibold text-foreground ">
               Access Denied
             </h2>
-            <p className="mt-2 text-text-lighter">
+            <p className="mt-2 text-foreground">
               You do not have the necessary permissions to view this page.
             </p>
           </div>
           <div className="mt-4">
-            <a
-              href="/"
-              className="inline-block px-4 py-2 text-white bg-text-hover rounded-lg shadow hover:bg-text-hover-darker focus:outline-none focus:scale-95 transition-all duration-200 ease-in-out"
-            >
-              Go to Homepage
-            </a>
+            <Button className="rounded">
+              <Link to="/">Go back to Home Page</Link>
+            </Button>
           </div>
         </div>
       </div>

@@ -44,7 +44,6 @@ namespace QuizAPI.Controllers.Users
                 ImmutableName = user.ImmutableName,
                 Username = user.Username,
                 Email = user.Email,
-                PasswordHash = user.PasswordHash,
                 DateRegistered = user.DateRegistered,
                 Role = MapRoleIdToRole(user.RoleId),
                 IsDeleted = user.IsDeleted,

@@ -1,4 +1,5 @@
-﻿using QuizAPI.Models;
+﻿using QuizAPI.DTOs.User;
+using QuizAPI.Models;
 
 namespace QuizAPI.DTOs.Question
 {
@@ -20,6 +21,8 @@ namespace QuizAPI.DTOs.Question
         public string Text { get; set; } = string.Empty;
 
         public string Difficulty { get; set; }
+
+        public UserBasicDTO User { get; set; }
 
         public string Category { get; set; }
 
@@ -50,7 +53,7 @@ namespace QuizAPI.DTOs.Question
 
         public DateTime CreatedAt { get; set; }
 
-        public string User { get; set; }
+        public UserBasicDTO User { get; set; }
         public List<AnswerOptionDTO> AnswerOptions { get; set; }
 
     }

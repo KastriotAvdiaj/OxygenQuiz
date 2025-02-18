@@ -4,8 +4,10 @@ using Microsoft.EntityFrameworkCore;
 using QuizAPI.Data;
 using QuizAPI.DTOs.Question;
 using QuizAPI.DTOs.Shared;
+using QuizAPI.DTOs.User;
 using QuizAPI.Helpers;
 using QuizAPI.Models;
+using QuizAPI.DTOs.User;
 using QuizAPI.Services;
 using System.Security.Claims;
 
@@ -65,7 +67,13 @@ string? category = null)
                     Text = q.Text,
                     Difficulty = q.Difficulty.Level,
                     Category = q.Category.Name,
-                    TotalQuestions = totalQuestions, // Total count of questions
+                    TotalQuestions = totalQuestions,
+                    User = new UserBasicDTO
+                    {
+                        Id = q.User.Id,
+                        Username = q.User.Username,
+                        ProfileImageUrl = q.User.ProfileImageUrl
+                    },
                     AnswerOptions = q.AnswerOptions.Select(ao => new AnswerOptionDTO
                     {
                         ID = ao.Id,
@@ -92,34 +100,48 @@ string? category = null)
         [HttpGet("{id}")]
         public async Task<ActionResult<IndividualQuestionDTO>> GetQuestion(int id)
         {
-            var questionDto = await _context.Questions
-                .Where(q => q.Id == id)
-                .Select(q => new IndividualQuestionDTO
-                {
-                    ID = q.Id,
-                    Text = q.Text,
-                    DifficultyId = q.DifficultyId,
-                    Difficulty = q.Difficulty.Level,
-                    CategoryId = q.CategoryId,
-                    Category = q.Category.Name,
-                    Language = q.Language.Language,
-                    LanguageId = q.LanguageId,
-                    UserId = q.UserId,
-                    CreatedAt = q.CreatedAt,
-                    User = q.User.Username,
-                    AnswerOptions = q.AnswerOptions
-                        .Select(a => new AnswerOptionDTO
-                        {
-                            ID = a.Id,
-                            Text = a.Text,
-                            IsCorrect = a.IsCorrect
-                        })
-                        .ToList()
-                })
-                .FirstOrDefaultAsync();
 
-            if (questionDto == null)
+            var question = await _context.Questions
+       .Include(q => q.User)  
+       .Include(q => q.Difficulty)
+       .Include(q => q.Category)
+       .Include(q => q.Language)
+       .Include(q => q.AnswerOptions)
+       .FirstOrDefaultAsync(q => q.Id == id);
+
+            if(question == null)
+            {
                 return NotFound();
+
+            }
+
+            var questionDto = new IndividualQuestionDTO
+            {
+                ID = question.Id,
+                Text = question.Text,
+                DifficultyId = question.DifficultyId,
+                Difficulty = question.Difficulty.Level,
+                CategoryId = question.CategoryId,
+                Category = question.Category.Name,
+                Language = question.Language.Language,
+                LanguageId = question.LanguageId,
+                UserId = question.UserId,
+                CreatedAt = question.CreatedAt,
+                User = new UserBasicDTO
+                {
+                    Id = question.User.Id,
+                    Username = question.User.Username,
+                    ProfileImageUrl = question.User.ProfileImageUrl
+                },
+                AnswerOptions = question.AnswerOptions
+                    .Select(a => new AnswerOptionDTO
+                    {
+                        ID = a.Id,
+                        Text = a.Text,
+                        IsCorrect = a.IsCorrect
+                    })
+                    .ToList()
+            };
 
             return Ok(questionDto);
         }
