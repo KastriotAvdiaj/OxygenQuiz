@@ -4,6 +4,7 @@ import formatDate from "@/lib/date-format";
 import { Button } from "@/components/ui";
 import { Edit } from "lucide-react";
 import { DeleteQuestionCategory } from "./delete-question-category";
+import { Authorization } from "@/lib/authorization";
 
 export const categoryColumns: ColumnDef<QuestionCategory>[] = [
   {
@@ -28,10 +29,12 @@ export const categoryColumns: ColumnDef<QuestionCategory>[] = [
       const category = row.original;
       return (
         <div className="flex items-center space-x-2">
-          <Button className="rounded-xl">
-            <Edit size={16} />
-          </Button>
-          <DeleteQuestionCategory id={category.id} />
+          <Authorization allowedRoles={["SUPERADMIN"]}>
+            <Button className="rounded-xl">
+              <Edit size={16} />
+            </Button>
+            <DeleteQuestionCategory id={category.id} />
+          </Authorization>
         </div>
       );
     },

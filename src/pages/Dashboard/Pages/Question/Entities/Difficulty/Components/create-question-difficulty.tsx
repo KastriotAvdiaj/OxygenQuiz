@@ -26,7 +26,6 @@ export const CreateQuestionDifficultyForm = () => {
       triggerButton={
         <Button
           variant="default"
-          className="bg-muted"
           size="sm"
           icon={<Plus className="size-4" />}
         >

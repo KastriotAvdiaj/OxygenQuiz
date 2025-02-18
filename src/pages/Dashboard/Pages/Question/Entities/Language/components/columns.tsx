@@ -4,6 +4,7 @@ import { Button } from "@/components/ui";
 import { Edit } from "lucide-react";
 import formatDate from "@/lib/date-format";
 import { DeleteQuestionLanguage } from "./delete-question-language";
+import { Authorization } from "@/lib/authorization";
 
 export const langaugeColumns: ColumnDef<QuestionLanguage>[] = [
   {
@@ -28,10 +29,12 @@ export const langaugeColumns: ColumnDef<QuestionLanguage>[] = [
       const language = row.original;
       return (
         <div className="flex items-center space-x-2">
-          <Button className="rounded-xl">
-            <Edit size={16} />
-          </Button>
-          <DeleteQuestionLanguage id={language.id} />
+          <Authorization allowedRoles={["SUPERADMIN"]}>
+            <Button className="rounded-xl">
+              <Edit size={16} />
+            </Button>
+            <DeleteQuestionLanguage id={language.id} />
+          </Authorization>
         </div>
       );
     },

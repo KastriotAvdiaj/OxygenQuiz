@@ -9,6 +9,7 @@ using QuizAPI.Data;
 using QuizAPI.Models;
 using QuizAPI.DTOs.Question;
 using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 
 namespace QuizAPI.Controllers.Questions
 {
@@ -65,6 +66,7 @@ namespace QuizAPI.Controllers.Questions
 
         // PUT: api/QuestionDifficulties/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+        [Authorize(Roles = "SuperAdmin")]
         [HttpPut("{id}")]
         public async Task<IActionResult> PutQuestionDifficulty(int id, QuestionDifficulty questionDifficulty)
         {
@@ -126,6 +128,8 @@ namespace QuizAPI.Controllers.Questions
         }
 
         // DELETE: api/QuestionDifficulties/5
+        [Authorize(Roles = "SuperAdmin")]
+
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteQuestionDifficulty(int id)
         {

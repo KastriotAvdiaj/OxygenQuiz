@@ -93,7 +93,7 @@ export const columns: ColumnDef<User>[] = [
           <DropdownMenuTrigger asChild>
             <Button
               variant="default"
-              className="h-8 w-8 p-0 rounded hover:bg-background/60"
+              className="h-8 w-8 p-0 rounded"
             >
               <span className="sr-only">Open menu</span>
               <MoreHorizontal className="h-4 w-4" />

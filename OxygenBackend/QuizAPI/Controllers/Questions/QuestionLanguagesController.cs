@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -63,6 +64,7 @@ namespace QuizAPI.Controllers.Questions
 
         // PUT: api/QuestionLanguages/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+        [Authorize(Roles = "SuperAdmin")]
         [HttpPut("{id}")]
         public async Task<IActionResult> PutQuestionLanguage(int id, QuestionLanguage questionLanguage)
         {
@@ -121,6 +123,7 @@ namespace QuizAPI.Controllers.Questions
         }
 
         // DELETE: api/QuestionLanguages/5
+        [Authorize(Roles = "SuperAdmin")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteQuestionLanguage(int id)
         {
