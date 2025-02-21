@@ -15,48 +15,48 @@ namespace QuizAPI.DTOs.Question
     }
 
     // Used for sending the data - Transferring the model 
-    public class QuestionDTO
-    {
-        public int ID { get; set; }
-        public string Text { get; set; } = string.Empty;
+        public class QuestionDTO
+        {
+            public int ID { get; set; }
+            public string Text { get; set; } = string.Empty;
 
-        public string Difficulty { get; set; }
+            public string Difficulty { get; set; }
 
-        public UserBasicDTO User { get; set; }
+            public UserBasicDTO User { get; set; }
 
-        public string Category { get; set; }
+            public string Category { get; set; }
 
-        public int TotalQuestions { get; set; }
+            public int TotalQuestions { get; set; }
 
-        public List<AnswerOptionDTO> AnswerOptions { get; set; }
+            public List<AnswerOptionDTO> AnswerOptions { get; set; }
 
-    }
+        }
 
-    public class IndividualQuestionDTO {
+        public class IndividualQuestionDTO {
     
-        public int ID { get; set; }
+            public int ID { get; set; }
 
-        public string Text { get; set; } = string.Empty;
+            public string Text { get; set; } = string.Empty;
 
-        public int DifficultyId { get; set; }
-        public string Difficulty { get; set; }
+            public int DifficultyId { get; set; }
+            public string Difficulty { get; set; }
 
-        public int CategoryId { get; set; }
+            public int CategoryId { get; set; }
 
-        public string Category { get; set; }
+            public string Category { get; set; }
 
-        public int LanguageId { get; set; }
+            public int LanguageId { get; set; }
 
-        public string Language { get; set; }
+            public string Language { get; set; }
 
-        public Guid UserId { get; set; }
+            public Guid UserId { get; set; }
 
-        public DateTime CreatedAt { get; set; }
+            public DateTime CreatedAt { get; set; }
 
-        public UserBasicDTO User { get; set; }
-        public List<AnswerOptionDTO> AnswerOptions { get; set; }
+            public UserBasicDTO User { get; set; }
+            public List<AnswerOptionDTO> AnswerOptions { get; set; }
 
-    }
+        }
 
 
     public class AnswerOptionCM

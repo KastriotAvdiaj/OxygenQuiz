@@ -1,11 +1,19 @@
 ﻿
+using QuizAPI.ManyToManyTables;
 using QuizAPI.Models;
 using QuizAPI.Models.Statistics.Questions;
+using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
 
 namespace QuizAPI.Models
 {
+
+    public enum QuestionVisibility
+    {
+        Global,   
+        Private  
+    }
     public class Question
     {
         public int Id { get; set; }
@@ -33,9 +41,15 @@ namespace QuizAPI.Models
 
         [JsonIgnore]
         public QuestionLanguage Language { get; set; }
-    
+
+        [Required]
+        public QuestionVisibility Visibility { get; set; } = QuestionVisibility.Private;
+
         public QuestionStatistics? Statistics { get; set; }
 
+        public ICollection<QuizQuestion> QuizQuestions { get; set; } = new List<QuizQuestion>();
 
-}
+
+
+    }
 }

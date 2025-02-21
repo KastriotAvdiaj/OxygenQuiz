@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using QuizAPI.ManyToManyTables;
 using QuizAPI.Models;
+using QuizAPI.Models.Quiz;
 using QuizAPI.Models.Statistics.Questions;
 using System;
 
@@ -12,6 +13,10 @@ namespace QuizAPI.Data
         public DbSet<User> Users { get; set; }
 
         public DbSet<Question> Questions { get; set; }
+
+        public DbSet<Quiz> Quizzes { get; set; }
+
+        public DbSet<QuizQuestion> QuizQuestions { get; set; }
 
         public DbSet<QuestionCategory> QuestionCategories { get; set; }
         public DbSet<QuestionLanguage> QuestionLanguages { get; set; }
@@ -118,6 +123,27 @@ namespace QuizAPI.Data
        .WithMany()
        .HasForeignKey(ql => ql.LanguageId)
        .OnDelete(DeleteBehavior.Restrict);
-    }
+
+
+        //Configuration for Quiz and User relationship
+        modelBuilder.Entity<Quiz>().
+        HasOne(q => q.User).
+        WithMany().
+        HasForeignKey(q => q.UserId).
+        OnDelete(DeleteBehavior.Restrict);
+
+            //Configuration for Quiz and User relationship
+            modelBuilder.Entity<QuizQuestion>()
+       .HasOne(qq => qq.Quiz)
+       .WithMany(q => q.QuizQuestions)
+       .HasForeignKey(qq => qq.QuizId)
+       .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<QuizQuestion>()
+                .HasOne(qq => qq.Question)
+                .WithMany(q => q.QuizQuestions)
+                .HasForeignKey(qq => qq.QuestionId)
+                .OnDelete(DeleteBehavior.Restrict);
+        }
 }
 }
