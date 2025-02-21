@@ -5,6 +5,6 @@ namespace QuizAPI.Controllers.Questions.Services
 {
     public interface IQuestionService
     {
-        Task<Question> CreateQuestionAsync(QuestionCM newQuestionCM);
+        Task<Question> CreateQuestionAsync(QuestionCM newQuestionCM, string userId,int languageId, int categoryId, int difficultyId );
     }
 }

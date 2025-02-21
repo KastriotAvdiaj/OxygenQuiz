@@ -10,6 +10,8 @@ using QuizAPI.Models;
 using QuizAPI.DTOs.User;
 using QuizAPI.Services;
 using System.Security.Claims;
+using QuizAPI.Controllers.Questions.Services;
+using QuizAPI.DTOs.Quiz;
 
 namespace QuizAPI.Controllers.Questions
 {
@@ -19,10 +21,12 @@ namespace QuizAPI.Controllers.Questions
     {
         private readonly ApplicationDbContext _context;
         private readonly DashboardService _dashboardService;
+        private readonly IQuestionService _questionService;
 
-        public QuestionsController(ApplicationDbContext context, DashboardService dashboardService)
+        public QuestionsController(ApplicationDbContext context, DashboardService dashboardService, IQuestionService questionService)
         {
             _context = context;
+            _questionService = questionService;
             _dashboardService = dashboardService;
         }
 
@@ -150,11 +154,11 @@ string? category = null)
         // POST: api/Questions
         [Authorize]
         [HttpPost]
-        public async Task<ActionResult<Question>> CreateQuestionWithDto(QuestionCM questionDto)
+        public async Task<ActionResult<Question>> CreateQuestion(QuestionCM newQuestionCM)
         {
 
             // Validate the DTO
-            if (!QuestionHelpers.ValidateQuestionDto(questionDto))
+            if (!QuestionHelpers.ValidateQuestionDto(newQuestionCM))
                 return BadRequest("Invalid question data.");
 
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -163,46 +167,58 @@ string? category = null)
             {
                 return Unauthorized(new { message = "User ID not found in token." });
             }
-            var category = await _context.QuestionCategories.FirstOrDefaultAsync(c => c.Name == questionDto.Category);
-            var difficulty = await _context.QuestionDifficulties.FirstOrDefaultAsync(d => d.Level == questionDto.Difficulty);
-            var language = await _context.QuestionLanguages.FirstOrDefaultAsync(l => l.Language == questionDto.Language);
+            var category = await _context.QuestionCategories.FirstOrDefaultAsync(c => c.Name == newQuestionCM.Category);
+            var difficulty = await _context.QuestionDifficulties.FirstOrDefaultAsync(d => d.Level == newQuestionCM.Difficulty);
+            var language = await _context.QuestionLanguages.FirstOrDefaultAsync(l => l.Language == newQuestionCM.Language);
 
             if (category == null)
             {
                 return BadRequest("Category doesn't exist");
-            } else if (language == null)
+            }
+            else if (language == null)
             {
                 return BadRequest("Language doesn't exist");
-            }else if (difficulty == null) {
+            }
+            else if (difficulty == null)
+            {
                 return BadRequest("Difficulty doesn't exist");
             }
 
-            var question = new Question
-            {
-                Text = questionDto.Text,
-                DifficultyId = difficulty.ID,
-                LanguageId = language.Id,
-                CreatedAt = DateTime.UtcNow,
-                CategoryId = category.Id, 
-                UserId = Guid.Parse(userId)
-            };
+            var question = await _questionService.CreateQuestionAsync(
+                newQuestionCM,
+                userId,
+                category.Id,
+                difficulty.ID,
+                language.Id);
 
-            // Create and add each answer option
-            foreach (var optionDto in questionDto.AnswerOptions)
-            {
-                var answerOption = new AnswerOption
-                {
-                    Text = optionDto.Text,
-                    IsCorrect = optionDto.IsCorrect,
-                    Question = question
-                };
-                question.AnswerOptions.Add(answerOption);
-            }
+            /* var question = new Question
+             {
+                 Text = newQuestionCM.Text,
+                 DifficultyId = difficulty.ID,
+                 LanguageId = language.Id,
+                 CreatedAt = DateTime.UtcNow,
+                 CategoryId = category.Id, 
+                 UserId = Guid.Parse(userId)
+             };
 
-            _context.Questions.Add(question);
-            await _context.SaveChangesAsync();
+             // Create and add each answer option
+             foreach (var optionDto in newQuestionCM.AnswerOptions)
+             {
+                 var answerOption = new AnswerOption
+                 {
+                     Text = optionDto.Text,
+                     IsCorrect = optionDto.IsCorrect,
+                     Question = question
+                 };
+                 question.AnswerOptions.Add(answerOption);
+             }
 
-            return CreatedAtAction(nameof(GetQuestion), new { id = question.Id }, question);
+             _context.Questions.Add(question);
+             await _context.SaveChangesAsync();
+
+             return CreatedAtAction(nameof(GetQuestion), new { id = question.Id }, question);*/
+
+            return Ok(question);
         }
 
         // PUT: api/Questions/{id}

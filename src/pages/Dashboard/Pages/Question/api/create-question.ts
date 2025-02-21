@@ -22,7 +22,7 @@ export const createQuestionInputSchema = z.object({
 }) .refine(
   (data) => data.answerOptions.some((option) => option.isCorrect),
   {
-    path: ["answerOptions"], // Points to the specific field causing the error
+    path: ["answerOptions"], 
     message: "At least one answer option must be marked as correct",
   }
 );

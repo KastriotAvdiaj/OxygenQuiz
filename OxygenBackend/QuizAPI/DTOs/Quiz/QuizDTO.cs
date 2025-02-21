@@ -27,8 +27,8 @@ namespace QuizAPI.DTOs.Quiz
         public bool IsPublished { get; set; } = false;
         public int PassingScore { get; set; } = 50;
 
-        // List of questions to add to the quiz.
-        public List<QuizQuestionCM> Questions { get; set; } = new();
+        public List<int> PublicQuestionIds { get; set; } = new();
+        public List<NewQuestionCM> PrivateQuestions { get; set; } = new();
     }
 
     // Model for each quiz question during quiz creation.

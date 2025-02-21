@@ -43,13 +43,11 @@ namespace QuizAPI.Models
         public QuestionLanguage Language { get; set; }
 
         [Required]
-        public QuestionVisibility Visibility { get; set; } = QuestionVisibility.Private;
+        public QuestionVisibility Visibility { get; set; } = QuestionVisibility.Global;
 
         public QuestionStatistics? Statistics { get; set; }
 
         public ICollection<QuizQuestion> QuizQuestions { get; set; } = new List<QuizQuestion>();
-
-
 
     }
 }
