@@ -1,13 +1,15 @@
-﻿/*
+﻿
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using QuizAPI.Controllers.Questions.Services;
+using QuizAPI.Controllers.Quizzes.Services;
 using QuizAPI.Data;
 using QuizAPI.DTOs.Question;
 using QuizAPI.DTOs.Quiz;
 using QuizAPI.ManyToManyTables;
 using QuizAPI.Models;
 using QuizAPI.Models.Quiz;
+using System.Security.Claims;
 
 namespace QuizAPI.Controllers.Quizzes
 {
@@ -17,11 +19,14 @@ namespace QuizAPI.Controllers.Quizzes
     {
         private readonly ApplicationDbContext _context;
         private readonly IQuestionService _questionService;
+        private readonly IQuizService _quizService;
 
-        public QuizzesController(ApplicationDbContext context, IQuestionService questionService)
+        public QuizzesController(ApplicationDbContext context, IQuestionService questionService, IQuizService quizService)
         {
             _context = context;
             _questionService = questionService;
+            _quizService= quizService;
+
         }
 
         // GET: api/Quizs
@@ -55,7 +60,7 @@ namespace QuizAPI.Controllers.Quizzes
 
         // PUT: api/Quizs/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{id}")]
+       /* [HttpPut("{id}")]
         public async Task<IActionResult> UpdateQuiz(int id, [FromBody] QuizCM quizCM)
         {
             var quiz = await _context.Quizzes
@@ -128,73 +133,34 @@ namespace QuizAPI.Controllers.Quizzes
 
             await _context.SaveChangesAsync();
             return NoContent();
-        }
+        }*/
 
         // POST: api/Quizs
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
         public async Task<ActionResult<QuizDTO>> CreateQuiz([FromBody] QuizCM quizCM)
         {
-            // Replace with your actual user retrieval logic.
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == "admin");
 
-            var quiz = new Quiz
+            /*var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;*/
+
+            var userId = "f746e3ac-8425-446f-986e-2e0cd93f9259";  // Retrieve from token in production
+
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized("User ID not found in token");
+
+            try
             {
-                Title = quizCM.Title,
-                Description = quizCM.Description,
-                CategoryId = quizCM.CategoryId,
-                LanguageId = quizCM.LanguageId,
-                TimeLimit = quizCM.TimeLimit,
-                ShuffleQuestions = quizCM.ShuffleQuestions,
-                ShuffleAnswers = quizCM.ShuffleAnswers,
-                IsPublished = quizCM.IsPublished,
-                PassingScore = quizCM.PassingScore,
-                CreatedAt = DateTime.UtcNow,
-                UserId = user.Id,
-                QuizQuestions = new List<QuizQuestion>()
-            };
+           
+                var quiz = await _quizService.CreateQuizAsync(quizCM, userId);
+                var quizDto = MapToQuizDTO(quiz);
 
-            foreach (var eQ in quizCM.PublicQuestionIds)
+                return Ok(quizDto);
+            }
+            catch (ArgumentException ex)
             {
-
+                return BadRequest(ex.Message);
             }
 
-            foreach (var q in quizCM.Questions)
-            {
-                Question question = null;
-
-                if (q.ExistingQuestionId.HasValue)
-                {
-                    // Use an existing public question.
-                    question = await _context.Questions.FindAsync(q.ExistingQuestionId.Value);
-                    if (question == null)
-                        return BadRequest($"Question with id {q.ExistingQuestionId.Value} does not exist.");
-                }
-                else if (q.NewQuestion != null)
-                {
-                    // Create a new private question using the shared service.
-                    question = await _questionService.CreateQuestionAsync(q.NewQuestion, user);
-                }
-                else
-                {
-                    return BadRequest("Each question must have either an ExistingQuestionId or a NewQuestion payload.");
-                }
-
-                // Link the question to the quiz.
-                var quizQuestion = new QuizQuestion
-                {
-                    Quiz = quiz,
-                    Question = question,
-                };
-
-                quiz.QuizQuestions.Add(quizQuestion);
-            }
-
-            _context.Quizzes.Add(quiz);
-            await _context.SaveChangesAsync();
-
-            var quizDTO = MapToQuizDTO(quiz);
-            return CreatedAtAction(nameof(GetQuiz), new { id = quizDTO.Id }, quizDTO);
         }
 
         // DELETE: api/Quizs/5
@@ -229,7 +195,7 @@ namespace QuizAPI.Controllers.Quizzes
                 Id = quiz.Id,
                 Title = quiz.Title,
                 Description = quiz.Description,
-                *//*Slug = quiz.Slug,*//*
+                /*Slug = quiz.Slug,*/
                 CategoryId = quiz.CategoryId,
                 LanguageId = quiz.LanguageId,
                 TimeLimit = quiz.TimeLimit,
@@ -238,10 +204,9 @@ namespace QuizAPI.Controllers.Quizzes
                 IsPublished = quiz.IsPublished,
                 PassingScore = quiz.PassingScore,
                 CreatedAt = quiz.CreatedAt,
-               *//* UpdatedAt = quiz.UpdatedAt,*//*
+                /*UpdatedAt = quiz.UpdatedAt,*/
                 Questions = quiz.QuizQuestions.Select(qq => new QuizQuestionDTO
                 {
-                    QuizQuestionId = qq.Id,
                     QuestionId = qq.Question.Id,
                     Question = new QuestionDTO
                     {
@@ -259,4 +224,3 @@ namespace QuizAPI.Controllers.Quizzes
         }
     }
 }
-*/

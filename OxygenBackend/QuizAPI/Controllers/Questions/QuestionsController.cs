@@ -191,33 +191,6 @@ string? category = null)
                 difficulty.ID,
                 language.Id);
 
-            /* var question = new Question
-             {
-                 Text = newQuestionCM.Text,
-                 DifficultyId = difficulty.ID,
-                 LanguageId = language.Id,
-                 CreatedAt = DateTime.UtcNow,
-                 CategoryId = category.Id, 
-                 UserId = Guid.Parse(userId)
-             };
-
-             // Create and add each answer option
-             foreach (var optionDto in newQuestionCM.AnswerOptions)
-             {
-                 var answerOption = new AnswerOption
-                 {
-                     Text = optionDto.Text,
-                     IsCorrect = optionDto.IsCorrect,
-                     Question = question
-                 };
-                 question.AnswerOptions.Add(answerOption);
-             }
-
-             _context.Questions.Add(question);
-             await _context.SaveChangesAsync();
-
-             return CreatedAtAction(nameof(GetQuestion), new { id = question.Id }, question);*/
-
             return Ok(question);
         }
 

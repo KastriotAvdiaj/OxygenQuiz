@@ -8,6 +8,7 @@ namespace QuizAPI.Models.Quiz
     public class Quiz
     {
         [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
 
         [Required]
@@ -64,7 +65,6 @@ namespace QuizAPI.Models.Quiz
 
         public int Version { get; set; } = 1;
 
-        // Navigation property for the many-to-many relationship with Question.
         public ICollection<QuizQuestion> QuizQuestions { get; set; } = new List<QuizQuestion>();
     }
 }

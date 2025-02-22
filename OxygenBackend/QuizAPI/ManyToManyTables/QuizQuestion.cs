@@ -7,8 +7,6 @@ namespace QuizAPI.ManyToManyTables
 {
     public class QuizQuestion
     {
-        [Key]
-        public int Id { get; set; } 
         public int QuizId { get; set; }
         [ForeignKey(nameof(QuizId))]
         public Quiz Quiz { get; set; }

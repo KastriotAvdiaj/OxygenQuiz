@@ -11,8 +11,8 @@ namespace QuizAPI.DTOs.Quiz
         [MaxLength(1000)]
         public string? Description { get; set; }
 
-        [Required, MaxLength(255)]
-        public string Slug { get; set; } = string.Empty;
+        /*[Required, MaxLength(255)]
+        public string Slug { get; set; } = string.Empty;*/
 
         [Required]
         public int CategoryId { get; set; }
@@ -28,45 +28,14 @@ namespace QuizAPI.DTOs.Quiz
         public int PassingScore { get; set; } = 50;
 
         public List<int> PublicQuestionIds { get; set; } = new();
-        public List<NewQuestionCM> PrivateQuestions { get; set; } = new();
+        public List<QuestionCM> PrivateQuestions { get; set; } = new();
     }
 
-    // Model for each quiz question during quiz creation.
-    // Either an ExistingQuestionId must be provided (to add a global question)
-    // OR a NewQuestion payload must be provided (to create a custom, private question).
     public class QuizQuestionCM
     {
         public int? ExistingQuestionId { get; set; }
-        public NewQuestionCM? NewQuestion { get; set; }
-        public int Order { get; set; } = 0;
+        public QuestionCM? NewQuestion { get; set; }
     }
-
-    // Model to create a new question (only for custom, private questions).
-    public class NewQuestionCM
-    {
-        [Required, MaxLength(500)]
-        public string Text { get; set; } = string.Empty;
-
-        public List<NewAnswerOptionCM> AnswerOptions { get; set; } = new();
-
-        [Required]
-        public int DifficultyId { get; set; }
-
-        [Required]
-        public int CategoryId { get; set; }
-
-        [Required]
-        public int LanguageId { get; set; }
-    }
-
-    // Model for creating answer options for a new question.
-    public class NewAnswerOptionCM
-    {
-        [Required]
-        public string Text { get; set; } = string.Empty;
-        public bool IsCorrect { get; set; }
-    }
-
 
     public class QuizDTO
     {
@@ -88,9 +57,8 @@ namespace QuizAPI.DTOs.Quiz
 
     public class QuizQuestionDTO
     {
-        public int QuizQuestionId { get; set; }
         public int QuestionId { get; set; }
-        public int Order { get; set; }
+        public int QuizId { get; set; }
         public QuestionDTO Question { get; set; } = new();
     }
 
