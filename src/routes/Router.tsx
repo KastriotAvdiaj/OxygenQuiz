@@ -22,8 +22,8 @@ const AboutUs = lazy(() =>
     default: module.AboutUs,
   }))
 );
-const Login = lazy(() => import("../pages/Login/Login"));
-const Signup = lazy(() => import("../pages/Signup/Signup"));
+const Login = lazy(() => import("../pages/UserRelated/Login/Login"));
+const Signup = lazy(() => import("../pages/UserRelated/Signup/Signup"));
 const createAppRouter = (queryClient: QueryClient) =>
   createBrowserRouter([
     {
