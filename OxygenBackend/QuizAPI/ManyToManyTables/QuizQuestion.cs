@@ -11,6 +11,8 @@ namespace QuizAPI.ManyToManyTables
         [ForeignKey(nameof(QuizId))]
         public Quiz Quiz { get; set; }
 
+        //The score of THIS QUESTION within THIS quiz.
+        public int Score { get; set; }
         public int QuestionId { get; set; }
         [ForeignKey(nameof(QuestionId))]
         public Question Question { get; set; }

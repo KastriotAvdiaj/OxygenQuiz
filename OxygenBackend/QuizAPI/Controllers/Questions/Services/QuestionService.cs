@@ -26,10 +26,10 @@ namespace QuizAPI.Controllers.Questions.Services
 
 
             /*//PROBLEM :
-            The newQuestionCM has a langauge, difficulty and category (BUT ONLY AS STRINGS 
+            The newQuestionCM has a langauge, difficulty and category (BUT ONLY AS STRINGS
             FROM THE FRONTEND),
             So maybe creating a new DTO here so that we are not sending 
-            them from the POST endopint to this servive at all.
+            them from the POST endopint to this sercive at all.
             //*/
 
             // Create the new question entity.

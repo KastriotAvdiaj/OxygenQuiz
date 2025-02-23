@@ -27,14 +27,19 @@ namespace QuizAPI.DTOs.Quiz
         public bool IsPublished { get; set; } = false;
         public int PassingScore { get; set; } = 50;
 
-        public List<int> PublicQuestionIds { get; set; } = new();
-        public List<QuestionCM> PrivateQuestions { get; set; } = new();
+        public List<PublicQuestionWithScore> PublicQuestionIds { get; set; } = new();
+        public List<QuestionCMWithScore> PrivateQuestions { get; set; } = new();
     }
 
-    public class QuizQuestionCM
+    public class PublicQuestionWithScore
     {
-        public int? ExistingQuestionId { get; set; }
-        public QuestionCM? NewQuestion { get; set; }
+        public int QuestionId { get; set; }
+        public int Score { get; set; } 
+    }
+
+    public class QuestionCMWithScore : QuestionCM
+    {
+        public int Score { get; set; } 
     }
 
     public class QuizDTO
@@ -42,7 +47,7 @@ namespace QuizAPI.DTOs.Quiz
         public int Id { get; set; }
         public string Title { get; set; } = string.Empty;
         public string? Description { get; set; }
-        public string Slug { get; set; } = string.Empty;
+ /*       public string Slug { get; set; } = string.Empty;*/
         public int CategoryId { get; set; }
         public int LanguageId { get; set; }
         public int? TimeLimit { get; set; }
@@ -59,6 +64,8 @@ namespace QuizAPI.DTOs.Quiz
     {
         public int QuestionId { get; set; }
         public int QuizId { get; set; }
+
+        public int Score { get; set; }
         public QuestionDTO Question { get; set; } = new();
     }
 

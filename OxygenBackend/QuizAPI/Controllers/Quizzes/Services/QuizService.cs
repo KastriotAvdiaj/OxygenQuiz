@@ -21,6 +21,48 @@ namespace QuizAPI.Controllers.Quizzes.Services
             _questionService = questionService;
         }
 
+       /* public async Task<QuizDTO> GetQuizzesAsync()         {
+            var quizzes = await _context.Quizzes
+                .Include(q => q.QuizQuestions)
+                .ThenInclude(qq => qq.Question)
+                .ToListAsync();
+
+            var quizDTOs = quizzes.Select(q => new QuizDTO
+            {
+                Id = q.Id,
+                Title = q.Title,
+                Description = q.Description,
+                *//*Slug = q.Slug,*//*
+                CategoryId = q.CategoryId,
+                LanguageId = q.LanguageId,
+                TimeLimit = q.TimeLimit,
+                ShuffleQuestions = q.ShuffleQuestions,
+                ShuffleAnswers = q.ShuffleAnswers,
+                IsPublished = q.IsPublished,
+                PassingScore = q.PassingScore,
+                CreatedAt = q.CreatedAt,
+                Questions = q.QuizQuestions.Select(qq => new QuizQuestionDTO
+                {
+                    QuestionId = qq.QuestionId,
+                    QuizId = qq.QuizId,
+                    Question = new QuestionDTO
+                    {
+                        Id = qq.Question.Id,
+                        Title = qq.Question.Title,
+                        Description = qq.Question.Description,
+                        CategoryId = qq.Question.CategoryId,
+                        LanguageId = qq.Question.LanguageId,
+                        DifficultyId = qq.Question.DifficultyId,
+                        Visibility = qq.Question.Visibility,
+                        CreatedAt = qq.Question.CreatedAt,
+                        UpdatedAt = qq.Question.UpdatedAt
+                    }
+                }).ToList()
+            }).ToList();
+
+            return new QuizDTO { Quizzes = quizDTOs };
+        }*/
+
         public async Task<Quiz> CreateQuizAsync(QuizCM quizCM, string userId)
         {
             var quiz = new Quiz
@@ -42,11 +84,11 @@ namespace QuizAPI.Controllers.Quizzes.Services
 
             // Process public questions
             var publicQuestions = await ProcessPublicQuestions(quizCM.PublicQuestionIds);
-            quiz.QuizQuestions.AddRange(publicQuestions.Select(q => new QuizQuestion { Question = q }));
+            quiz.QuizQuestions.AddRange(publicQuestions);
 
             // Process private questions
             var privateQuestions = await ProcessPrivateQuestions(quizCM.PrivateQuestions, userId);
-            quiz.QuizQuestions.AddRange(privateQuestions.Select(q => new QuizQuestion { Question = q }));
+            quiz.QuizQuestions.AddRange(privateQuestions);
 
             _context.Quizzes.Add(quiz);
             await _context.SaveChangesAsync();
@@ -62,51 +104,62 @@ namespace QuizAPI.Controllers.Quizzes.Services
             return validCount == questionIds.Count();
         }
 
+
+        private async Task<List<QuizQuestion>> ProcessPublicQuestions(
+    List<PublicQuestionWithScore> publicQuestions)
+        {
+            if (publicQuestions == null || !publicQuestions.Any())
+                return new List<QuizQuestion>();
+
+            var questionIds = publicQuestions.Select(q => q.QuestionId).ToList();
+            var validQuestions = await _context.Questions
+                .Where(q => questionIds.Contains(q.Id)
+                && q.Visibility == QuestionVisibility.Global)
+                .ToListAsync();
+
+            if (validQuestions.Count != publicQuestions.Count)
+                throw new ArgumentException("Invalid public question(s)");
+
+            return publicQuestions.Select(pq => new QuizQuestion
+            {
+                QuestionId = pq.QuestionId,
+                Score = pq.Score 
+            }).ToList();
+        }
+
+
+        private async Task<List<QuizQuestion>> ProcessPrivateQuestions
+            (List<QuestionCMWithScore> privateQuestions,string userId)
+        {
+            var quizQuestions = new List<QuizQuestion>();
+
+            if (privateQuestions == null || !privateQuestions.Any())
+                return quizQuestions;
+
+            foreach (var questionCM in privateQuestions)
+            {
+                // Create the private Question entity (using existing logic)
+                var question = await _questionService.CreateQuestionAsync(
+                    questionCM, // Pass the base QuestionCM properties
+                    userId,
+                    visibility: QuestionVisibility.Private);
+
+                // Create the QuizQuestion link WITH SCORE
+                quizQuestions.Add(new QuizQuestion
+                {
+                    QuestionId = question.Id,
+                    Score = questionCM.Score // ⭐ Score from the DTO
+                });
+            }
+
+            return quizQuestions;
+        }
+
+
         /*   public async Task<bool> ValidateQuizSlugAsync(string slug)
            {
                return !await _context.Quizzes.AnyAsync(q => q.Slug == slug);
            }*/
-
-        private async Task<List<Question>> ProcessPublicQuestions(List<int> publicQuestionIds)
-        {
-            // If there are no public question IDs, return an empty list.
-            if (publicQuestionIds == null || !publicQuestionIds.Any())
-                return new List<Question>();
-
-            // Retrieve questions that match the IDs and are marked as Global.
-            var questions = await _context.Questions
-                .Where(q => publicQuestionIds.Contains(q.Id) && q.Visibility == QuestionVisibility.Global)
-                .ToListAsync();
-
-            // Ensure that every provided ID corresponds to a valid global question.
-            if (questions.Count != publicQuestionIds.Count)
-            {
-                throw new ArgumentException("One or more public questions are invalid or not found");
-            }
-
-            return questions;
-        }
-
-        private async Task<List<Question>> ProcessPrivateQuestions(List<QuestionCM> privateQuestions, string userId)
-        {
-            var questions = new List<Question>();
-
-            // If there are no private questions, simply return an empty list.
-            if (privateQuestions == null || !privateQuestions.Any())
-                return questions;
-
-            // For each private question provided, create the question with Private visibility.
-            foreach (var questionCM in privateQuestions)
-            {
-                var question = await _questionService.CreateQuestionAsync(
-                    questionCM,
-                    userId,
-                    visibility: QuestionVisibility.Private);
-                questions.Add(question);
-            }
-
-            return questions;
-        }
 
     }
 }
