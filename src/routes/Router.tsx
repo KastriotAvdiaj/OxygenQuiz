@@ -128,12 +128,23 @@ const createAppRouter = (queryClient: QueryClient) =>
             return usersLoader(queryClient);
           },
         },
+        {
+          path: "*",
+          lazy: async () => {
+            const { NotFoundRoute } = await import(
+              "../pages/UtilityPages/NotFound/Not-Found"
+            );
+            return { Component: NotFoundRoute };
+          },
+        },
       ],
     },
     {
       path: "*",
       lazy: async () => {
-        const { NotFoundRoute } = await import("../pages/NotFound/Not-Found");
+        const { NotFoundRoute } = await import(
+          "../pages/UtilityPages/NotFound/Not-Found"
+        );
         return { Component: NotFoundRoute };
       },
     },

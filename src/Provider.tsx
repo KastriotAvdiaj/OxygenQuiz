@@ -5,7 +5,7 @@ import { ErrorBoundary } from "react-error-boundary";
 import { HelmetProvider } from "react-helmet-async";
 import { ThemeProvider } from "./components/ui/theme-provider";
 import { Spinner } from "./components/ui/Spinner";
-import { MainErrorFallback } from "./pages/Error/Main";
+import { MainErrorFallback } from "./pages/UtilityPages/Error/Main";
 import { AuthLoader } from "./lib/Auth";
 import { queryConfig } from "./lib/React-query";
 import { Notifications } from "./common/Notifications";
