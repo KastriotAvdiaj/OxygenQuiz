@@ -49,6 +49,17 @@ export type BaseEntity<TId = number> = {
     isCorrect: boolean;
   };
 
+  export type Quiz = {
+    id: number;
+    title: string;
+    description: string;
+    timeLimit: number;
+    passingScore: number;
+    createdAt: string;
+    isPublished: boolean;
+    numberOfQuestions: number;
+  }
+
   export type Question ={
     id: number;
     difficulty: string;
