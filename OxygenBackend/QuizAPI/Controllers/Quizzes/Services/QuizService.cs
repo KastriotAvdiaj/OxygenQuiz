@@ -21,47 +21,30 @@ namespace QuizAPI.Controllers.Quizzes.Services
             _questionService = questionService;
         }
 
-       /* public async Task<QuizDTO> GetQuizzesAsync()         {
+        public async Task<List<QuizDTO>> GetQuizzesAsync()
+        {
             var quizzes = await _context.Quizzes
                 .Include(q => q.QuizQuestions)
-                .ThenInclude(qq => qq.Question)
+                    .ThenInclude(qq => qq.Question)
+                        .ThenInclude(q => q.AnswerOptions) 
+                .Include(q => q.Category)
+                .Include(q => q.Language)
                 .ToListAsync();
 
-            var quizDTOs = quizzes.Select(q => new QuizDTO
+            return quizzes.Select(q => new QuizDTO
             {
                 Id = q.Id,
                 Title = q.Title,
                 Description = q.Description,
-                *//*Slug = q.Slug,*//*
-                CategoryId = q.CategoryId,
-                LanguageId = q.LanguageId,
+                Category = q.Category.Name,
+                Language = q.Language.Language,
                 TimeLimit = q.TimeLimit,
-                ShuffleQuestions = q.ShuffleQuestions,
-                ShuffleAnswers = q.ShuffleAnswers,
                 IsPublished = q.IsPublished,
                 PassingScore = q.PassingScore,
                 CreatedAt = q.CreatedAt,
-                Questions = q.QuizQuestions.Select(qq => new QuizQuestionDTO
-                {
-                    QuestionId = qq.QuestionId,
-                    QuizId = qq.QuizId,
-                    Question = new QuestionDTO
-                    {
-                        Id = qq.Question.Id,
-                        Title = qq.Question.Title,
-                        Description = qq.Question.Description,
-                        CategoryId = qq.Question.CategoryId,
-                        LanguageId = qq.Question.LanguageId,
-                        DifficultyId = qq.Question.DifficultyId,
-                        Visibility = qq.Question.Visibility,
-                        CreatedAt = qq.Question.CreatedAt,
-                        UpdatedAt = qq.Question.UpdatedAt
-                    }
-                }).ToList()
+                NumberOfQuestions = q.QuizQuestions.Count
             }).ToList();
-
-            return new QuizDTO { Quizzes = quizDTOs };
-        }*/
+        }
 
         public async Task<Quiz> CreateQuizAsync(QuizCM quizCM, string userId)
         {
@@ -105,8 +88,8 @@ namespace QuizAPI.Controllers.Quizzes.Services
         }
 
 
-        private async Task<List<QuizQuestion>> ProcessPublicQuestions(
-    List<PublicQuestionWithScore> publicQuestions)
+        private async Task<List<QuizQuestion>> ProcessPublicQuestions
+            (List<PublicQuestionWithScore> publicQuestions)
         {
             if (publicQuestions == null || !publicQuestions.Any())
                 return new List<QuizQuestion>();

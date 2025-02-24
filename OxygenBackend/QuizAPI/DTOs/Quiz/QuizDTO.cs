@@ -48,16 +48,13 @@ namespace QuizAPI.DTOs.Quiz
         public string Title { get; set; } = string.Empty;
         public string? Description { get; set; }
  /*       public string Slug { get; set; } = string.Empty;*/
-        public int CategoryId { get; set; }
-        public int LanguageId { get; set; }
+        public string Category { get; set; }
+        public string Language { get; set; }
         public int? TimeLimit { get; set; }
-        public bool ShuffleQuestions { get; set; }
-        public bool ShuffleAnswers { get; set; }
         public bool IsPublished { get; set; }
         public int PassingScore { get; set; }
         public DateTime CreatedAt { get; set; }
-        public DateTime? UpdatedAt { get; set; }
-        public List<QuizQuestionDTO> Questions { get; set; } = new();
+        public int NumberOfQuestions { get; set; }
     }
 
     public class QuizQuestionDTO

@@ -31,13 +31,13 @@ namespace QuizAPI.Controllers.Quizzes
 
         // GET: api/Quizs
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Quiz>>> GetQuizzes()
+        public async Task<ActionResult<IEnumerable<QuizDTO>>> GetQuizzes()
         {
             if (_context.Quizzes == null)
             {
                 return NotFound();
             }
-            return await _context.Quizzes.ToListAsync();
+            return await _quizService.GetQuizzesAsync();
         }
 
         // GET: api/Quizs/5
@@ -188,38 +188,33 @@ namespace QuizAPI.Controllers.Quizzes
             return (_context.Quizzes?.Any(e => e.Id == id)).GetValueOrDefault();
         }
 
-        private static QuizDTO MapToQuizDTO(Quiz quiz)
+        private async Task<QuizDTO> MapToQuizDTO(Quiz quiz)
         {
+            var language = await _context.QuestionLanguages
+                .Where(l => l.Id == quiz.LanguageId)
+                .Select(l => l.Language)
+                .AsNoTracking()
+                .FirstOrDefaultAsync();
+
+                var category = await _context.QuestionCategories
+                .Where(c => c.Id == quiz.CategoryId)
+                .Select(l => l.Name)
+                .AsNoTracking()
+                .FirstOrDefaultAsync();
+
             return new QuizDTO
             {
                 Id = quiz.Id,
                 Title = quiz.Title,
                 Description = quiz.Description,
                 /*Slug = quiz.Slug,*/
-                CategoryId = quiz.CategoryId,
-                LanguageId = quiz.LanguageId,
+                Category = category,
+                Language = language,
                 TimeLimit = quiz.TimeLimit,
-                ShuffleQuestions = quiz.ShuffleQuestions,
-                ShuffleAnswers = quiz.ShuffleAnswers,
                 IsPublished = quiz.IsPublished,
                 PassingScore = quiz.PassingScore,
                 CreatedAt = quiz.CreatedAt,
-                /*UpdatedAt = quiz.UpdatedAt,*/
-                Questions = quiz.QuizQuestions.Select(qq => new QuizQuestionDTO
-                {
-                    QuestionId = qq.Question.Id,
-                    Question = new QuestionDTO
-                    {
-                        ID = qq.Question.Id,
-                        Text = qq.Question.Text,
-                        AnswerOptions = qq.Question.AnswerOptions.Select(ao => new AnswerOptionDTO
-                        {
-                            ID = ao.Id,
-                            Text = ao.Text,
-                            IsCorrect = ao.IsCorrect
-                        }).ToList()
-                    }
-                }).ToList()
+                NumberOfQuestions = quiz.QuizQuestions.Count
             };
         }
     }

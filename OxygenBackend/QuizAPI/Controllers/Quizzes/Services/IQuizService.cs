@@ -7,7 +7,7 @@ namespace QuizAPI.Controllers.Quizzes.Services
     {
         Task<Quiz> CreateQuizAsync(QuizCM quizCM, string userId);
 
-        /*Task<QuizDTO> GetQuizzesAsync();*/
+        Task<List<QuizDTO>> GetQuizzesAsync();
         Task<bool> ValidatePublicQuestionsAsync(IEnumerable<int> questionIds);
        /* Task<bool> ValidateQuizSlugAsync(string slug);*/
     }

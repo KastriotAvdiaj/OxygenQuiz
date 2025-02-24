@@ -10,7 +10,7 @@ interface QuizCardProps {
     timeLimit?: number
     isPublished: boolean
     passingScore: number
-    questions: Array<any> // Using 'any' for simplicity, ideally this would be a proper type
+    questions: Array<any> 
   }
 }
 
