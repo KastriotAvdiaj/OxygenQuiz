@@ -86,7 +86,6 @@ export type BaseEntity<TId = number> = {
     answerOptions: AnswerOption[];
   }
 
-
   export type QuestionCategory = {
     id: number;
     createdAt: string;

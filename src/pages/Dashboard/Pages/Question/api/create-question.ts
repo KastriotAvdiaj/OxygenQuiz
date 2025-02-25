@@ -4,27 +4,15 @@ import { api } from "@/lib/Api-client";
 import { MutationConfig } from "@/lib/React-query";
 import { Question } from "@/types/ApiTypes";
 import { getQuestionsQueryOptions } from "./get-questions";
+import { answerOptionsSchema } from "../../Quiz/api/create-quiz";
 
 export const createQuestionInputSchema = z.object({
   text: z.string().min(1, "Question is required"), 
   difficulty: z.string().min(1,"Difficulty is required"),
   category: z.string().min(1,"Category is required"),
   language : z.string().min(1,"Language is required"),
-  answerOptions: z
-    .array(
-      z.object({
-        text: z.string().min(1, "Answer text is required"),
-        isCorrect: z.boolean(),
-      })
-    )
-    .min(2, "At least one answer option is required")
-    .max(4, "No more than 4 answer options are allowed"), 
-}) .refine(
-  (data) => data.answerOptions.some((option) => option.isCorrect),
-  {
-    path: ["answerOptions"], 
-    message: "At least one answer option must be marked as correct",
-  }
+  answerOptions: answerOptionsSchema,
+}
 );
 
 
@@ -32,7 +20,6 @@ export type CreateQuestionInput = z.infer<typeof createQuestionInputSchema>;
 
 export const createQuestion = ({ data }: { data: CreateQuestionInput }): Promise<Question> => {
   return (
-    console.log(data),
     api.post('/questions', data));
 };
 
