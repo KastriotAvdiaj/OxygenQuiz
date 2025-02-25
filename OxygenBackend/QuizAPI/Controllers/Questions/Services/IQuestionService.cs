@@ -16,5 +16,8 @@ namespace QuizAPI.Controllers.Questions.Services
             QuestionCM newQuestionCM,
             string userId,
             QuestionVisibility visibility);
+
+        Task<(bool Success, string Message)> DeleteQuestionAsync(int id);
+
     }
 }

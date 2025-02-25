@@ -79,8 +79,8 @@ namespace QuizAPI.Controllers.Questions.Services
             .SingleOrDefaultAsync();
 
             var difficultyId = await _context.QuestionDifficulties.
-                Where(d=> d.Level == newQuestionCM.Difficulty)
-                .Select(d=>d.ID)
+                Where(d => d.Level == newQuestionCM.Difficulty)
+                .Select(d => d.ID)
                 .SingleOrDefaultAsync();
 
             // Create the new question entity.
@@ -110,6 +110,29 @@ namespace QuizAPI.Controllers.Questions.Services
             await _context.SaveChangesAsync();
 
             return question;
+        }
+
+        public async Task<(bool Success, string Message)> DeleteQuestionAsync(int id)
+        {
+            var question = await _context.Questions
+                .Include(q => q.QuizQuestions) // Ensure related quiz data is loaded
+                .FirstOrDefaultAsync(q => q.Id == id);
+
+            if (question == null)
+            {
+                return (false, "Question not found.");
+            }
+
+            // Check if the question is linked to any quiz
+            if (question.QuizQuestions.Any())
+            {
+                return (false, "Question is currently part of an active quiz and cannot be deleted.");
+            }
+
+            _context.Questions.Remove(question);
+            await _context.SaveChangesAsync();
+
+            return (true, "Question deleted successfully.");
         }
     }
 }

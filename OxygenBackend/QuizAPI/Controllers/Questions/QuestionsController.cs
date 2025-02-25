@@ -237,18 +237,12 @@ string? category = null)
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteQuestion(int id)
         {
-            var question = await _context.Questions.Include(q => q.QuizQuestions).FirstOrDefaultAsync(q => q.Id == id);
-            if (question == null)
-                return NotFound();
+            var (success, message) = await _questionService.DeleteQuestionAsync(id);
 
-            if (question.QuizQuestions.Any())
+            if (!success)
             {
-                return BadRequest(new { message = "Question is currently part of an active quiz and cannot be deleted." });
+                return BadRequest(new { message });
             }
-
-
-            _context.Questions.Remove(question);
-            await _context.SaveChangesAsync();
 
             return NoContent();
         }
