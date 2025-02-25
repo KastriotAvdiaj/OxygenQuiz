@@ -1,16 +1,11 @@
 ﻿using QuizAPI.DTOs.Question;
+using QuizAPI.DTOs.Shared;
 using QuizAPI.Models;
 
 namespace QuizAPI.Controllers.Questions.Services
 {
     public interface IQuestionService
     {
-        Task<Question> CreateQuestionAsync(
-            QuestionCM newQuestionCM,
-            string userId,
-            int languageId,
-            int categoryId,
-            int difficultyId);
 
         Task<Question> CreateQuestionAsync(
             QuestionCM newQuestionCM,
@@ -18,6 +13,13 @@ namespace QuizAPI.Controllers.Questions.Services
             QuestionVisibility visibility);
 
         Task<(bool Success, string Message)> DeleteQuestionAsync(int id);
+
+        Task<IndividualQuestionDTO> GetQuestionAsync(int id);
+
+        Task<PaginatedResponse<QuestionDTO>> GetPaginatedQuestionsAsync(int page,
+       int pageSize,
+       string? searchTerm,
+       string? category);
 
     }
 }

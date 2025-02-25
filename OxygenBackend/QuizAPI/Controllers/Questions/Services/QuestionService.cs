@@ -2,6 +2,8 @@
 using QuizAPI.Data;
 using QuizAPI.DTOs.Question;
 using QuizAPI.DTOs.Quiz;
+using QuizAPI.DTOs.Shared;
+using QuizAPI.DTOs.User;
 using QuizAPI.Models;
 
 namespace QuizAPI.Controllers.Questions.Services
@@ -13,52 +15,6 @@ namespace QuizAPI.Controllers.Questions.Services
         public QuestionService(ApplicationDbContext context)
         {
             _context = context;
-        }
-
-        public async Task<Question> CreateQuestionAsync(
-            QuestionCM newQuestionCM,
-            string userId,
-            int categoryId,
-            int difficultyId,
-            int languageId
-            )
-        {
-
-
-            /*//PROBLEM :
-            The newQuestionCM has a langauge, difficulty and category (BUT ONLY AS STRINGS
-            FROM THE FRONTEND),
-            So maybe creating a new DTO here so that we are not sending 
-            them from the POST endopint to this sercive at all.
-            //*/
-
-            // Create the new question entity.
-            var question = new Question
-            {
-                Text = newQuestionCM.Text,
-                DifficultyId = difficultyId,
-                LanguageId = languageId,
-                CreatedAt = DateTime.UtcNow,
-                CategoryId = categoryId,
-                UserId = Guid.Parse(userId),
-                Visibility = QuestionVisibility.Global,  // Assume new questions are public since this is authorized to only admins.
-            };
-
-            foreach (var optionDto in newQuestionCM.AnswerOptions)
-            {
-                var answerOption = new AnswerOption
-                {
-                    Text = optionDto.Text,
-                    IsCorrect = optionDto.IsCorrect,
-                    Question = question
-                };
-                question.AnswerOptions.Add(answerOption);
-            }
-
-            _context.Questions.Add(question);
-            await _context.SaveChangesAsync();
-
-            return question;
         }
 
         public async Task<Question> CreateQuestionAsync(
@@ -133,6 +89,105 @@ namespace QuizAPI.Controllers.Questions.Services
             await _context.SaveChangesAsync();
 
             return (true, "Question deleted successfully.");
+        }
+
+        public async Task<IndividualQuestionDTO> GetQuestionAsync(int id)
+        {
+            var question = await _context.Questions
+       .Include(q => q.User)
+       .Include(q => q.Difficulty)
+       .Include(q => q.Category)
+       .Include(q => q.Language)
+       .Include(q => q.AnswerOptions)
+       .FirstOrDefaultAsync(q => q.Id == id);
+
+            if (question == null) return null;
+
+            var questionDto = new IndividualQuestionDTO
+            {
+                ID = question.Id,
+                Text = question.Text,
+                DifficultyId = question.DifficultyId,
+                Difficulty = question.Difficulty.Level,
+                CategoryId = question.CategoryId,
+                Category = question.Category.Name,
+                Language = question.Language.Language,
+                LanguageId = question.LanguageId,
+                UserId = question.UserId,
+                CreatedAt = question.CreatedAt,
+                Visibility = question.Visibility.ToString(),
+                User = new UserBasicDTO
+                {
+                    Id = question.User.Id,
+                    Username = question.User.Username,
+                    ProfileImageUrl = question.User.ProfileImageUrl
+                },
+                AnswerOptions = question.AnswerOptions
+                    .Select(a => new AnswerOptionDTO
+                    {
+                        ID = a.Id,
+                        Text = a.Text,
+                        IsCorrect = a.IsCorrect
+                    })
+                    .ToList()
+            };
+
+            return questionDto;
+        }
+
+        public async Task<PaginatedResponse<QuestionDTO>> GetPaginatedQuestionsAsync(
+       int page,
+       int pageSize,
+       string? searchTerm,
+       string? category)
+        {
+            var query = _context.Questions.AsQueryable();
+
+            if (!string.IsNullOrEmpty(searchTerm) && searchTerm != "undefined")
+            {
+                query = query.Where(q => q.Text.Contains(searchTerm));
+            }
+
+            if (!string.IsNullOrEmpty(category) && category != "null" && category != "all")
+            {
+                query = query.Where(q => q.Category.Name == category);
+            }
+
+            var totalQuestions = await query.CountAsync();
+
+            var questionDTOs = await query
+                .OrderBy(q => q.CreatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(q => new QuestionDTO
+                {
+                    ID = q.Id,
+                    Text = q.Text,
+                    Difficulty = q.Difficulty.Level,
+                    Category = q.Category.Name,
+                    User = new UserBasicDTO
+                    {
+                        Id = q.User.Id,
+                        Username = q.User.Username,
+                        ProfileImageUrl = q.User.ProfileImageUrl
+                    },
+                    AnswerOptions = q.AnswerOptions.Select(ao => new AnswerOptionDTO
+                    {
+                        ID = ao.Id,
+                        Text = ao.Text,
+                        IsCorrect = ao.IsCorrect
+                    }).ToList()
+                })
+                .ToListAsync();
+
+            return new PaginatedResponse<QuestionDTO>
+            {
+                Page = page,
+                PageSize = pageSize,
+                TotalItems = totalQuestions,
+                TotalPages = (int)Math.Ceiling(totalQuestions / (double)pageSize),
+                Items = questionDTOs
+            };
         }
     }
 }

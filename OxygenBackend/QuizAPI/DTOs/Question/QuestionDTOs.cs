@@ -49,6 +49,8 @@ namespace QuizAPI.DTOs.Question
 
             public string Language { get; set; }
 
+            public string Visibility  { get; set; }
+
             public Guid UserId { get; set; }
 
             public DateTime CreatedAt { get; set; }

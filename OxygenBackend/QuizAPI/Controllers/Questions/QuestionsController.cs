@@ -29,71 +29,24 @@ namespace QuizAPI.Controllers.Questions
         }
 
 
-        // GET: api/Questions
         [HttpGet]
         public async Task<ActionResult<PaginatedResponse<QuestionDTO>>> GetQuestions(
-int page = 1,
-int pageSize = 20,
-string? searchTerm = null,
-string? category = null)
+        int page = 1,
+        int pageSize = 20,
+        string? searchTerm = null,
+        string? category = null)
         {
             if (page <= 0 || pageSize <= 0)
                 return BadRequest("Page and page size must be positive numbers.");
 
-            // Base query
-            var query = _context.Questions.AsQueryable();
+            var result = await _questionService.GetPaginatedQuestionsAsync(
+                page,
+                pageSize,
+                searchTerm,
+                category
+            );
 
-            // Apply search filter if searchTerm is provided
-            if (!string.IsNullOrEmpty(searchTerm) && searchTerm != "undefined")
-            {
-                query = query.Where(q => q.Text.Contains(searchTerm));
-            }
-
-            // Apply category filter if category is provided
-            if (!string.IsNullOrEmpty(category) && category != "null" && category != "all")
-            {
-                query = query.Where(q => q.Category.Name == category);
-            }
-
-            // Calculate total count of filtered questions
-            var totalQuestions = await query.CountAsync();
-
-            // Fetch paginated questions
-            var questionDTOs = await query
-                .OrderBy(q => q.CreatedAt) // Ensure consistent ordering (optional)
-                .Skip((page - 1) * pageSize) // Skip records for previous pages
-                .Take(pageSize)             // Take only the current page's data
-                .Select(q => new QuestionDTO
-                {
-                    ID = q.Id,
-                    Text = q.Text,
-                    Difficulty = q.Difficulty.Level,
-                    Category = q.Category.Name,
-                    TotalQuestions = totalQuestions,
-                    User = new UserBasicDTO
-                    {
-                        Id = q.User.Id,
-                        Username = q.User.Username,
-                        ProfileImageUrl = q.User.ProfileImageUrl
-                    },
-                    AnswerOptions = q.AnswerOptions.Select(ao => new AnswerOptionDTO
-                    {
-                        ID = ao.Id,
-                        Text = ao.Text,
-                        IsCorrect = ao.IsCorrect
-                    }).ToList()
-                })
-                .ToListAsync();
-
-            // Return paginated response
-            return Ok(new PaginatedResponse<QuestionDTO>
-            {
-                Page = page,
-                PageSize = pageSize,
-                TotalItems = totalQuestions,
-                TotalPages = (int)Math.Ceiling(totalQuestions / (double)pageSize),
-                Items = questionDTOs
-            });
+            return Ok(result);
         }
 
 
@@ -103,49 +56,8 @@ string? category = null)
         public async Task<ActionResult<IndividualQuestionDTO>> GetQuestion(int id)
         {
 
-            var question = await _context.Questions
-       .Include(q => q.User)  
-       .Include(q => q.Difficulty)
-       .Include(q => q.Category)
-       .Include(q => q.Language)
-       .Include(q => q.AnswerOptions)
-       .FirstOrDefaultAsync(q => q.Id == id);
-
-            if(question == null)
-            {
-                return NotFound();
-
-            }
-
-            var questionDto = new IndividualQuestionDTO
-            {
-                ID = question.Id,
-                Text = question.Text,
-                DifficultyId = question.DifficultyId,
-                Difficulty = question.Difficulty.Level,
-                CategoryId = question.CategoryId,
-                Category = question.Category.Name,
-                Language = question.Language.Language,
-                LanguageId = question.LanguageId,
-                UserId = question.UserId,
-                CreatedAt = question.CreatedAt,
-                User = new UserBasicDTO
-                {
-                    Id = question.User.Id,
-                    Username = question.User.Username,
-                    ProfileImageUrl = question.User.ProfileImageUrl
-                },
-                AnswerOptions = question.AnswerOptions
-                    .Select(a => new AnswerOptionDTO
-                    {
-                        ID = a.Id,
-                        Text = a.Text,
-                        IsCorrect = a.IsCorrect
-                    })
-                    .ToList()
-            };
-
-            return Ok(questionDto);
+            var questionDto = await _questionService.GetQuestionAsync(id);
+            return questionDto != null ? Ok(questionDto) : NotFound();
         }
 
 
@@ -155,7 +67,6 @@ string? category = null)
         public async Task<ActionResult<Question>> CreateQuestion(QuestionCM newQuestionCM)
         {
 
-            // Validate the DTO
             if (!QuestionHelpers.ValidateQuestionDto(newQuestionCM))
                 return BadRequest("Invalid question data.");
 
@@ -165,29 +76,11 @@ string? category = null)
             {
                 return Unauthorized(new { message = "User ID not found in token." });
             }
-            var category = await _context.QuestionCategories.FirstOrDefaultAsync(c => c.Name == newQuestionCM.Category);
-            var difficulty = await _context.QuestionDifficulties.FirstOrDefaultAsync(d => d.Level == newQuestionCM.Difficulty);
-            var language = await _context.QuestionLanguages.FirstOrDefaultAsync(l => l.Language == newQuestionCM.Language);
-
-            if (category == null)
-            {
-                return BadRequest("Category doesn't exist");
-            }
-            else if (language == null)
-            {
-                return BadRequest("Language doesn't exist");
-            }
-            else if (difficulty == null)
-            {
-                return BadRequest("Difficulty doesn't exist");
-            }
 
             var question = await _questionService.CreateQuestionAsync(
                 newQuestionCM,
                 userId,
-                category.Id,
-                difficulty.ID,
-                language.Id);
+                visibility : QuestionVisibility.Global);
 
             return Ok(question);
         }

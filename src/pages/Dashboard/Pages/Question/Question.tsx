@@ -62,6 +62,10 @@ export const QuestionRoute = () => {
             <span className="mr-2 text-sm font-medium">Language:</span>
             <Badge variant="primary">{question.language}</Badge>
           </div>
+          <div className="flex items-center">
+            <span className="mr-2 text-sm font-medium">Visibility:</span>
+            <Badge variant="primary">{question.visibility}</Badge>
+          </div>
         </div>
 
         <div>

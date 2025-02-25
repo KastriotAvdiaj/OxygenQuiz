@@ -121,17 +121,15 @@ namespace QuizAPI.Controllers.Quizzes.Services
 
             foreach (var questionCM in privateQuestions)
             {
-                // Create the private Question entity (using existing logic)
                 var question = await _questionService.CreateQuestionAsync(
-                    questionCM, // Pass the base QuestionCM properties
+                    questionCM, 
                     userId,
                     visibility: QuestionVisibility.Private);
 
-                // Create the QuizQuestion link WITH SCORE
                 quizQuestions.Add(new QuizQuestion
                 {
                     QuestionId = question.Id,
-                    Score = questionCM.Score // ⭐ Score from the DTO
+                    Score = questionCM.Score 
                 });
             }
 

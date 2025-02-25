@@ -81,6 +81,7 @@ export type BaseEntity<TId = number> = {
     languageId: number;
     difficultyId: number;
     category: string;
+    visibility:string;
     categoryId: number;
     answerOptions: AnswerOption[];
   }
