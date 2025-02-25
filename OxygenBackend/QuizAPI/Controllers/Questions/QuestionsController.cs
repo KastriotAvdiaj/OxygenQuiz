@@ -7,11 +7,9 @@ using QuizAPI.DTOs.Shared;
 using QuizAPI.DTOs.User;
 using QuizAPI.Helpers;
 using QuizAPI.Models;
-using QuizAPI.DTOs.User;
 using QuizAPI.Services;
 using System.Security.Claims;
 using QuizAPI.Controllers.Questions.Services;
-using QuizAPI.DTOs.Quiz;
 
 namespace QuizAPI.Controllers.Questions
 {
@@ -239,9 +237,15 @@ string? category = null)
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteQuestion(int id)
         {
-            var question = await _context.Questions.FindAsync(id);
+            var question = await _context.Questions.Include(q => q.QuizQuestions).FirstOrDefaultAsync(q => q.Id == id);
             if (question == null)
                 return NotFound();
+
+            if (question.QuizQuestions.Any())
+            {
+                return BadRequest(new { message = "Question is currently part of an active quiz and cannot be deleted." });
+            }
+
 
             _context.Questions.Remove(question);
             await _context.SaveChangesAsync();

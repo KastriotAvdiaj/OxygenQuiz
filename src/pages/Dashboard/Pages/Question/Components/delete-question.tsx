@@ -23,7 +23,9 @@ export const DeleteQuestion = ({ id }: DeleteUserProps) => {
 
   return (
     <ConfirmationDialog
-      isDone={deleteQuestionMutation.isSuccess}
+      isDone={
+        deleteQuestionMutation.isSuccess || deleteQuestionMutation.isError
+      }
       icon="danger"
       title="Delete Question"
       body="Are you sure you want to delete this question?"
@@ -38,7 +40,6 @@ export const DeleteQuestion = ({ id }: DeleteUserProps) => {
           type="button"
           variant="destructive"
           onClick={() => {
-            console.log("Deleting question with ID:", id);
             deleteQuestionMutation.mutate({ questionId: id });
           }}
         >
