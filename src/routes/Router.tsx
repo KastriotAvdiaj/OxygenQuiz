@@ -12,6 +12,7 @@ import { RedirectIfLoggedIn } from "../lib/Redirect";
 import "../global.css";
 import { Navigate } from "react-router-dom";
 import { HomeLayout } from "@/layouts/layout";
+import QuizCreator from "@/pages/Dashboard/Pages/Quiz/components/create-quiz";
 
 // Lazy load components
 const Home = lazy(() =>
@@ -103,6 +104,10 @@ const createAppRouter = (queryClient: QueryClient) =>
             );
             return { Component: Quizzes };
           },
+        },
+        {
+          path: "quizzes/create-quiz",
+          element: <QuizCreator />,
         },
         {
           path: "permissions",

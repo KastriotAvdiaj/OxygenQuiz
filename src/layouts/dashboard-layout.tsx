@@ -23,7 +23,7 @@ export const DashboardLayout = ({
           activePage={location.pathname.split("/").pop() || "application"}
         />
       </div>
-      <div className="overflow-y-auto h-full bg-muted">{children}</div>
+      <div className="overflow-y-auto h-full bg-muted p-10">{children}</div>
     </div>
   );
 };

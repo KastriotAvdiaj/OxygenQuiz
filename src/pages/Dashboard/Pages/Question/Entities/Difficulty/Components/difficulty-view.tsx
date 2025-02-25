@@ -13,7 +13,7 @@ export const DifficultyView = () => {
     return <p>Failed to load difficulties.</p>;
 
   return (
-    <Card className="flex flex-col justify-center align-items-end gap-2 m-10 p-8 bg-background border border-border">
+    <Card className="flex flex-col justify-center align-items-end gap-2  p-8 bg-background border border-border">
       <div>
         <CreateQuestionDifficultyForm />
       </div>

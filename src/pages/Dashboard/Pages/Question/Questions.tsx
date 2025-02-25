@@ -60,7 +60,7 @@ export const Questions = () => {
 
   return (
     <>
-      <Card className="m-10 p-8 bg-background border border-border">
+      <Card className="p-8 bg-background border border-border">
         <div className="flex justify-between mb-6">
           <Input
             value={searchTerm}

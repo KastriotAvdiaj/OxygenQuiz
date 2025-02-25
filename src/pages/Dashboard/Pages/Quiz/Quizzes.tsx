@@ -1,5 +1,7 @@
+import { Button } from "@/components/ui";
 import { useQuizData } from "./api/get-quizzes";
 import { QuizList } from "./components/quiz-list";
+import { Link } from "react-router-dom";
 
 export const Quizzes = () => {
   const quizData = useQuizData({});
@@ -12,8 +14,11 @@ export const Quizzes = () => {
   }
 
   return (
-    <div className="grid gap-4 m-10">
-      <QuizList quizzes={quizData.data?? []} />
+    <div className="grid gap-4 ">
+      <QuizList quizzes={quizData.data ?? []} />
+      <Link to="/dashboard/quizzes/create-quiz">
+        <Button variant="addSave">Create Quiz</Button>
+      </Link>
     </div>
   );
 };
