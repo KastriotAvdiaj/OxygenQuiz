@@ -13,7 +13,7 @@ interface DifficultySelectProps {
   label?: string;
   difficulties: QuestionDifficulty[];
   value: string | "";
-  onDifficultyChange: (value: string | "all") => void;
+  onChange: (value: string | "all") => void;
   includeAllOption?: boolean;
   error?: string;
   clearErrors?: () => void;
@@ -23,7 +23,7 @@ export const DifficultySelect: React.FC<DifficultySelectProps> = ({
   label,
   difficulties,
   value,
-  onDifficultyChange,
+  onChange,
   includeAllOption = true,
   error,
   clearErrors,
@@ -38,7 +38,7 @@ export const DifficultySelect: React.FC<DifficultySelectProps> = ({
       <Select
         value={isValueValid ? value : ""}
         onValueChange={(selectedValue) => {
-          onDifficultyChange(selectedValue === "all" ? "all" : selectedValue);
+          onChange(selectedValue === "all" ? "all" : selectedValue);
           clearErrors?.();
         }}
       >

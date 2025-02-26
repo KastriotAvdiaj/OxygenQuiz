@@ -154,7 +154,7 @@ export const CreateQuestionForm: React.FC<CreateQuestionFormProps> = ({
                 label="Difficulty"
                 difficulties={difficulties}
                 value={watch("difficulty")}
-                onDifficultyChange={(selectedValue) =>
+                onChange={(selectedValue) =>
                   setValue("difficulty", selectedValue)
                 }
                 includeAllOption={false}
@@ -167,7 +167,7 @@ export const CreateQuestionForm: React.FC<CreateQuestionFormProps> = ({
                 languages={languages}
                 value={watch("language")}
                 includeAllOption={false}
-                onLangaugeChange={(selectedValue) =>
+                onChange={(selectedValue) =>
                   setValue("language", selectedValue)
                 }
                 error={formState.errors["language"]?.message}

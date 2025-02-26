@@ -13,7 +13,7 @@ interface LangaugeSelectProps {
   label?: string;
   languages: QuestionLanguage[];
   value: string | "";
-  onLangaugeChange: (value: string | "all") => void;
+  onChange: (value: string | "all") => void;
   includeAllOption?: boolean;
   error?: string;
   clearErrors?: () => void;
@@ -23,7 +23,7 @@ export const LanguageSelect: React.FC<LangaugeSelectProps> = ({
   label,
   languages,
   value,
-  onLangaugeChange,
+  onChange,
   includeAllOption = true,
   error,
   clearErrors,
@@ -38,7 +38,7 @@ export const LanguageSelect: React.FC<LangaugeSelectProps> = ({
       <Select
         value={isValueValid ? value : ""}
         onValueChange={(selectedValue) => {
-            onLangaugeChange(selectedValue === "all" ? "all" : selectedValue);
+          onChange(selectedValue === "all" ? "all" : selectedValue);
           clearErrors?.();
         }}
       >
