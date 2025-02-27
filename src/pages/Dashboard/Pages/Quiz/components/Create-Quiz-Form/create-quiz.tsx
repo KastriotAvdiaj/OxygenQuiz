@@ -4,21 +4,21 @@ import { useFieldArray } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Form, Input, Label } from "@/components/ui/form";
 import { Separator } from "@/components/ui/separator";
-import { CategorySelect } from "../../Question/Entities/Categories/Components/select-question-category";
-import { DifficultySelect } from "../../Question/Entities/Difficulty/Components/select-question-difficulty";
-import { LanguageSelect } from "../../Question/Entities/Language/components/select-question-language";
-import { SelectQuestions } from "../../Question/Components/select-questions";
-import { createQuizInputSchema, useCreateQuiz } from "../api/create-quiz";
+import { CategorySelect } from "../../../Question/Entities/Categories/Components/select-question-category";
+import { DifficultySelect } from "../../../Question/Entities/Difficulty/Components/select-question-difficulty";
+import { LanguageSelect } from "../../../Question/Entities/Language/components/select-question-language";
+import { SelectQuestions } from "../../../Question/Components/select-questions";
+import { createQuizInputSchema, useCreateQuiz } from "../../api/create-quiz";
 import {
   Question,
   QuestionCategory,
   QuestionDifficulty,
   QuestionLanguage,
 } from "@/types/ApiTypes";
-import { useQuestionData } from "../../Question/api/get-questions";
-import { useQuestionLangaugeData } from "../../Question/Entities/Language/api/get-question-language";
-import { useQuestionDifficultyData } from "../../Question/Entities/Difficulty/api/get-question-difficulties";
-import { useQuestionCategoryData } from "../../Question/Entities/Categories/api/get-question-categories";
+import { useQuestionData } from "../../../Question/api/get-questions";
+import { useQuestionLangaugeData } from "../../../Question/Entities/Language/api/get-question-language";
+import { useQuestionDifficultyData } from "../../../Question/Entities/Difficulty/api/get-question-difficulties";
+import { useQuestionCategoryData } from "../../../Question/Entities/Categories/api/get-question-categories";
 
 export const CreateQuizForm = () => {
   const navigate = useNavigate();

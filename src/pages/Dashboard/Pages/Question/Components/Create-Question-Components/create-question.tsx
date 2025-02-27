@@ -3,10 +3,7 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { Form, FormDrawer, Input, Label } from "@/components/ui/form";
 import { useNotifications } from "@/common/Notifications";
-import {
-  createQuestionInputSchema,
-  useCreateQuestion,
-} from "../api/create-question";
+
 import {
   QuestionCategory,
   QuestionDifficulty,
@@ -15,9 +12,10 @@ import {
 import { useFieldArray } from "react-hook-form";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { CategorySelect } from "../Entities/Categories/Components/select-question-category";
-import { DifficultySelect } from "../Entities/Difficulty/Components/select-question-difficulty";
-import { LanguageSelect } from "../Entities/Language/components/select-question-language";
+import { CategorySelect } from "../../Entities/Categories/Components/select-question-category";
+import { DifficultySelect } from "../../Entities/Difficulty/Components/select-question-difficulty";
+import { LanguageSelect } from "../../Entities/Language/components/select-question-language";
+import { createQuestionInputSchema, useCreateQuestion } from "../../api/create-question";
 
 interface CreateQuestionFormProps {
   categories: QuestionCategory[];
@@ -75,7 +73,7 @@ export const CreateQuestionForm: React.FC<CreateQuestionFormProps> = ({
         className="w-[500px]"
         onSubmit={(values) => {
           const isCorrectSelected = values.answerOptions.some(
-            (option) => option.isCorrect
+            (option : any) => option.isCorrect
           );
 
           if (!isCorrectSelected) {
@@ -141,7 +139,7 @@ export const CreateQuestionForm: React.FC<CreateQuestionFormProps> = ({
                   label="Category"
                   categories={categories}
                   value={watch("category")}
-                  onChange={(selectedValue) =>
+                  onChange={(selectedValue: string) =>
                     setValue("category", selectedValue)
                   }
                   includeAllOption={false}
@@ -154,7 +152,7 @@ export const CreateQuestionForm: React.FC<CreateQuestionFormProps> = ({
                 label="Difficulty"
                 difficulties={difficulties}
                 value={watch("difficulty")}
-                onChange={(selectedValue) =>
+                onChange={(selectedValue : string) =>
                   setValue("difficulty", selectedValue)
                 }
                 includeAllOption={false}
@@ -167,7 +165,7 @@ export const CreateQuestionForm: React.FC<CreateQuestionFormProps> = ({
                 languages={languages}
                 value={watch("language")}
                 includeAllOption={false}
-                onChange={(selectedValue) =>
+                onChange={(selectedValue : string) =>
                   setValue("language", selectedValue)
                 }
                 error={formState.errors["language"]?.message}

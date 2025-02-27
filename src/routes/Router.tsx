@@ -12,7 +12,7 @@ import { RedirectIfLoggedIn } from "../lib/Redirect";
 import "../global.css";
 import { Navigate } from "react-router-dom";
 import { HomeLayout } from "@/layouts/layout";
-import QuizCreator from "@/pages/Dashboard/Pages/Quiz/components/create-quiz";
+import QuizCreator from "@/pages/Dashboard/Pages/Quiz/components/Create-Quiz-Form/create-quiz";
 
 // Lazy load components
 const Home = lazy(() =>
