@@ -28,7 +28,7 @@ export const answerOptionInputSchema = z.object({
     difficulty: z.string().min(1, 'Difficulty is required'),
     language: z.string().min(1, 'Language is required'),
     category: z.string().min(1, 'Category is required'),
-    answerOptions: z.array(answerOptionsSchema),
+    answerOptions: answerOptionsSchema,
     score: z.number().min(1, { message: 'Score must be at least 1.' }),
   });
   

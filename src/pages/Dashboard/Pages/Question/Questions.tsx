@@ -9,12 +9,11 @@ import { QuestionList } from "./Components/question-list";
 import { useDebounce } from "@/hooks/use-debounce";
 import { CategorySelect } from "./Entities/Categories/Components/select-question-category";
 
-
 import { useQuestionDifficultyData } from "./Entities/Difficulty/api/get-question-difficulties";
 import { LangaugesView } from "./Entities/Language/components/language-view";
 import { DifficultyView } from "./Entities/Difficulty/Components/difficulty-view";
 import { CategoryView } from "./Entities/Categories/Components/category-view";
-import { useQuestionLangaugeData } from "./Entities/Language/api/get-question-language";
+import { useQuestionLanguageData } from "./Entities/Language/api/get-question-language";
 import CreateQuestionForm from "./Components/Create-Question-Components/create-question";
 
 export const Questions = () => {
@@ -37,7 +36,7 @@ export const Questions = () => {
 
   const questionDifficultiesQuery = useQuestionDifficultyData({});
 
-  const questionLanguagesQuery = useQuestionLangaugeData({});
+  const questionLanguagesQuery = useQuestionLanguageData({});
 
   useEffect(() => {
     setPage(1);

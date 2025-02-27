@@ -18,7 +18,7 @@ type UseQuestionLangaugeOptions = {
   queryConfig?: QueryConfig<typeof getQuestionLanguageQueryOptions>;
 };
 
-export const useQuestionLangaugeData = ({ queryConfig }: UseQuestionLangaugeOptions) => {
+export const useQuestionLanguageData = ({ queryConfig }: UseQuestionLangaugeOptions) => {
   return useQuery({
     ...getQuestionLanguageQueryOptions(),
     ...queryConfig,

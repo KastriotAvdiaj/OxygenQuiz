@@ -1,10 +1,10 @@
 import { Card, DataTable, Spinner } from "@/components/ui";
 import { langaugeColumns } from "./columns";
-import { useQuestionLangaugeData } from "../api/get-question-language";
+import { useQuestionLanguageData } from "../api/get-question-language";
 import CreateQuestionLanguageForm from "./create-question-language";
 
 export const LangaugesView = () => {
-  const questionLanguagesQuery = useQuestionLangaugeData({});
+  const questionLanguagesQuery = useQuestionLanguageData({});
 
   if (questionLanguagesQuery.isLoading) return <Spinner size="lg" />;
   if (questionLanguagesQuery.isError) return <p>Failed to load categories.</p>;
