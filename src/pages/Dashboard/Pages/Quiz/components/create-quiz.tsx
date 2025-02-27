@@ -7,31 +7,47 @@ import { Separator } from "@/components/ui/separator";
 import { CategorySelect } from "../../Question/Entities/Categories/Components/select-question-category";
 import { DifficultySelect } from "../../Question/Entities/Difficulty/Components/select-question-difficulty";
 import { LanguageSelect } from "../../Question/Entities/Language/components/select-question-language";
-// import PublicQuestionSelect from "@/components/ui/public-question-select";
+import { SelectQuestions } from "../../Question/Components/select-questions";
 import { createQuizInputSchema, useCreateQuiz } from "../api/create-quiz";
-import { QuestionCategory, QuestionDifficulty, QuestionLanguage } from "@/types/ApiTypes";
+import {
+  Question,
+  QuestionCategory,
+  QuestionDifficulty,
+  QuestionLanguage,
+} from "@/types/ApiTypes";
+import { useQuestionData } from "../../Question/api/get-questions";
+import { useQuestionLangaugeData } from "../../Question/Entities/Language/api/get-question-language";
+import { useQuestionDifficultyData } from "../../Question/Entities/Difficulty/api/get-question-difficulties";
+import { useQuestionCategoryData } from "../../Question/Entities/Categories/api/get-question-categories";
 
-interface CreateQuizFormProps {
-  categories: QuestionCategory[];
-  difficulties: QuestionDifficulty[];
-  languages: QuestionLanguage[];
-}
-
-export const CreateQuizForm: React.FC<CreateQuizFormProps> = ({
-  categories,
-  difficulties,
-  languages,
-}) => {
+export const CreateQuizForm = () => {
   const navigate = useNavigate();
+
+  const questionCategoriesQuery = useQuestionCategoryData({});
+  const questionDifficultiesQuery = useQuestionDifficultyData({});
+  const questionLanguagesQuery = useQuestionLangaugeData({});
+
+  const { data, isLoading, error } = useQuestionData({});
 
   const createQuizMutation = useCreateQuiz({
     mutationConfig: {
       onSuccess: () => {
-        // On successful creation, redirect (i.e. “close” the form)
         navigate("/quizzes");
       },
     },
   });
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (error) {
+    return <div>Error loading questions</div>;
+  }
+
+  const existingQuestions = data?.items;
+
+  console.log(existingQuestions);
 
   return (
     <div className="container mx-auto p-6">
@@ -42,6 +58,7 @@ export const CreateQuizForm: React.FC<CreateQuizFormProps> = ({
           createQuizMutation.mutate({ data: values });
         }}
         schema={createQuizInputSchema}
+        options={{ mode: "onSubmit" }}
       >
         {({ register, control, formState, setValue, watch, clearErrors }) => {
           const {
@@ -62,7 +79,7 @@ export const CreateQuizForm: React.FC<CreateQuizFormProps> = ({
           });
 
           return (
-            <form id="create-quiz-form" className="space-y-8">
+            <div id="create-quiz-form" className="space-y-8">
               {/* Quiz Details */}
               <div>
                 <h2 className="text-2xl font-semibold mb-4">Quiz Details</h2>
@@ -111,7 +128,7 @@ export const CreateQuizForm: React.FC<CreateQuizFormProps> = ({
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <CategorySelect
                     label="Category"
-                    categories={categories}
+                    categories={questionCategoriesQuery.data || []}
                     value={watch("category")}
                     onChange={(val) => setValue("category", val)}
                     error={formState.errors.category?.message}
@@ -119,7 +136,7 @@ export const CreateQuizForm: React.FC<CreateQuizFormProps> = ({
                   />
                   <LanguageSelect
                     label="Language"
-                    languages={languages}
+                    languages={questionLanguagesQuery.data || []}
                     value={watch("language")}
                     onChange={(val) => setValue("language", val)}
                     error={formState.errors.language?.message}
@@ -141,11 +158,9 @@ export const CreateQuizForm: React.FC<CreateQuizFormProps> = ({
                     className="flex items-center gap-4 mb-4 border p-4 rounded"
                   >
                     <div className="flex-1">
-                      {/* <PublicQuestionSelect
-                        selected={watch(
-                          `publicQuestions.${index}.questionId`
-                        )}
-                        onSelect={(question) =>
+                      <SelectQuestions
+                        selected={watch(`publicQuestions.${index}.questionId`)}
+                        onSelect={(question: Question) =>
                           setValue(
                             `publicQuestions.${index}.questionId`,
                             question.id
@@ -153,8 +168,10 @@ export const CreateQuizForm: React.FC<CreateQuizFormProps> = ({
                         }
                         error={
                           formState.errors.publicQuestions?.[index]?.questionId
+                            ?.message
                         }
-                      /> */}
+                        existingQuestions={data?.items ?? []}
+                      />
                     </div>
                     <div className="w-24">
                       <Label htmlFor={`publicScore-${index}`}>Score</Label>
@@ -165,9 +182,7 @@ export const CreateQuizForm: React.FC<CreateQuizFormProps> = ({
                           `publicQuestions.${index}.score`,
                           { valueAsNumber: true }
                         )}
-                        error={
-                          formState.errors.publicQuestions?.[index]?.score
-                        }
+                        error={formState.errors.publicQuestions?.[index]?.score}
                       />
                     </div>
                     <Button
@@ -203,9 +218,9 @@ export const CreateQuizForm: React.FC<CreateQuizFormProps> = ({
                     setValue={setValue}
                     watch={watch}
                     clearErrors={clearErrors}
-                    difficulties={difficulties}
-                    categories={categories}
-                    languages={languages}
+                    difficulties={questionDifficultiesQuery.data || []}
+                    categories={questionCategoriesQuery.data || []}
+                    languages={questionLanguagesQuery.data || []}
                     removeQuestion={() => removePrivate(index)}
                   />
                 ))}
@@ -233,11 +248,9 @@ export const CreateQuizForm: React.FC<CreateQuizFormProps> = ({
                 variant="addSave"
                 disabled={createQuizMutation.isPending}
               >
-                {createQuizMutation.isPending
-                  ? "Submitting..."
-                  : "Submit Quiz"}
+                {createQuizMutation.isPending ? "Submitting..." : "Submit Quiz"}
               </Button>
-            </form>
+            </div>
           );
         }}
       </Form>
@@ -347,9 +360,7 @@ const PrivateQuestionForm: React.FC<PrivateQuestionFormProps> = ({
             setValue(`privateQuestions.${index}.category`, val)
           }
           error={formState.errors.privateQuestions?.[index]?.category?.message}
-          clearErrors={() =>
-            clearErrors(`privateQuestions.${index}.category`)
-          }
+          clearErrors={() => clearErrors(`privateQuestions.${index}.category`)}
         />
       </div>
       <div className="grid grid-cols-2 gap-4 mb-4">
@@ -361,9 +372,7 @@ const PrivateQuestionForm: React.FC<PrivateQuestionFormProps> = ({
             setValue(`privateQuestions.${index}.language`, val)
           }
           error={formState.errors.privateQuestions?.[index]?.language?.message}
-          clearErrors={() =>
-            clearErrors(`privateQuestions.${index}.language`)
-          }
+          clearErrors={() => clearErrors(`privateQuestions.${index}.language`)}
         />
         <div>
           <Label htmlFor={`privateQuestions.${index}.score`}>Score</Label>
@@ -421,10 +430,8 @@ const PrivateQuestionForm: React.FC<PrivateQuestionFormProps> = ({
         })}
         {formState.errors.privateQuestions?.[index]?.answerOptions && (
           <p className="text-red-500 text-sm">
-            {
-              formState.errors.privateQuestions?.[index]?.answerOptions
-                ?.message || "One option must be marked as correct."
-            }
+            {formState.errors.privateQuestions?.[index]?.answerOptions
+              ?.message || "One option must be marked as correct."}
           </p>
         )}
         <Button
