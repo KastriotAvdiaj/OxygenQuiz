@@ -12,8 +12,8 @@ import { QuestionCategory } from "@/types/ApiTypes";
 interface CategorySelectProps {
   label?: string;
   categories: QuestionCategory[];
-  value: string | "";
-  onChange: (value: string | "all") => void;
+  value: string; // Stringified ID (e.g., "1")
+  onChange: (value: string) => void; // Receives stringified ID
   includeAllOption?: boolean;
   error?: string;
   clearErrors?: () => void;
@@ -28,16 +28,19 @@ export const CategorySelect: React.FC<CategorySelectProps> = ({
   error,
   clearErrors,
 }) => {
-  const isValueValid =
-    value !== "all" && categories.some((category) => category.name === value);
+  const isValueValid = categories.some(
+    (category) => category.id.toString() === value
+  );
 
   return (
     <div className="space-y-2">
-      <Label className="text-sm font-medium text-foreground">{label}</Label>
+      {label && (
+        <Label className="text-sm font-medium text-foreground">{label}</Label>
+      )}
       <Select
         value={isValueValid ? value : ""}
         onValueChange={(selectedValue) => {
-          onChange(selectedValue === "all" ? "all" : selectedValue);
+          onChange(selectedValue);
           clearErrors?.();
         }}
       >
@@ -46,9 +49,9 @@ export const CategorySelect: React.FC<CategorySelectProps> = ({
         >
           <SelectValue
             className="text-foreground"
-            placeholder={`${
+            placeholder={
               includeAllOption ? "All Categories" : "--Select Category--"
-            }`}
+            }
           />
         </SelectTrigger>
         <SelectContent>
@@ -56,7 +59,7 @@ export const CategorySelect: React.FC<CategorySelectProps> = ({
             <SelectItem value="all">All Categories</SelectItem>
           )}
           {categories.map((category) => (
-            <SelectItem key={category.id} value={category.name}>
+            <SelectItem key={category.id} value={category.id.toString()}>
               {category.name}
             </SelectItem>
           ))}

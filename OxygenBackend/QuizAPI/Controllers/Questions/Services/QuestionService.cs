@@ -29,11 +29,6 @@ namespace QuizAPI.Controllers.Questions.Services
             .Select(l => l.Id)
             .SingleOrDefaultAsync();
 
-            var categoryId = await _context.QuestionCategories
-            .Where(c => c.Name == newQuestionCM.Category)
-            .Select(c => c.Id)
-            .SingleOrDefaultAsync();
-
             var difficultyId = await _context.QuestionDifficulties.
                 Where(d => d.Level == newQuestionCM.Difficulty)
                 .Select(d => d.ID)
@@ -46,7 +41,7 @@ namespace QuizAPI.Controllers.Questions.Services
                 DifficultyId = difficultyId,
                 LanguageId = languageId,
                 CreatedAt = DateTime.UtcNow,
-                CategoryId = categoryId,
+                CategoryId = newQuestionCM.CategoryId,
                 UserId = Guid.Parse(userId),
                 Visibility = visibility,
             };

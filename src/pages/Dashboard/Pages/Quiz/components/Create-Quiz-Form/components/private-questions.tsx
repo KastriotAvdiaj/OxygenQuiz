@@ -8,7 +8,10 @@ interface PrivateQuestionsProps {
   queryData: QueryData;
 }
 
-export const PrivateQuestions = ({ formProps, queryData }: PrivateQuestionsProps) => {
+export const PrivateQuestions = ({
+  formProps,
+  queryData,
+}: PrivateQuestionsProps) => {
   const { control } = formProps;
   const { fields, append, remove } = useFieldArray({
     control,
@@ -30,6 +33,7 @@ export const PrivateQuestions = ({ formProps, queryData }: PrivateQuestionsProps
         />
       ))}
       <Button
+        type="button"
         variant="addSave"
         onClick={() =>
           append({

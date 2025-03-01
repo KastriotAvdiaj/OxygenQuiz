@@ -10,26 +10,28 @@ interface QuizDetailsProps {
 
 export const QuizDetails = ({ formProps, queryData }: QuizDetailsProps) => {
   const { register, watch, setValue, formState, clearErrors } = formProps;
-  
+
   return (
     <div>
       <h2 className="text-2xl font-semibold mb-4">Quiz Details</h2>
-      
+
       {/* Title and Description */}
       <div className="grid grid-cols-1 gap-4 mb-6">
         <div>
           <Label htmlFor="title">Quiz Title</Label>
           <Input
+            className="bg-muted rounded-sm"
             id="title"
             {...register("title")}
             error={formState.errors.title}
             placeholder="Enter quiz title"
           />
         </div>
-        
+
         <div>
           <Label htmlFor="description">Description</Label>
           <Input
+            className="bg-muted rounded-sm"
             id="description"
             {...register("description")}
             error={formState.errors.description}
@@ -43,6 +45,7 @@ export const QuizDetails = ({ formProps, queryData }: QuizDetailsProps) => {
         <div>
           <Label htmlFor="timeLimit">Time Limit (minutes)</Label>
           <Input
+            className="bg-muted rounded-sm"
             id="timeLimit"
             type="number"
             {...register("timeLimit", {
@@ -56,6 +59,7 @@ export const QuizDetails = ({ formProps, queryData }: QuizDetailsProps) => {
         <div>
           <Label htmlFor="passingScore">Passing Score (%)</Label>
           <Input
+            className="bg-muted rounded-sm"
             id="passingScore"
             type="number"
             {...register("passingScore", {
@@ -77,7 +81,7 @@ export const QuizDetails = ({ formProps, queryData }: QuizDetailsProps) => {
           error={formState.errors.category?.message}
           clearErrors={() => clearErrors("category")}
         />
-        
+
         <LanguageSelect
           label="Quiz Language"
           languages={queryData.languages}

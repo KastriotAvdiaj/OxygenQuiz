@@ -10,7 +10,7 @@ namespace QuizAPI.DTOs.Question
         public string Difficulty { get; set; }
 
         public string Language { get; set; }
-        public string Category { get; set; }
+        public int CategoryId { get; set; }
         public List<AnswerOptionCM> AnswerOptions { get; set; }
     }
 

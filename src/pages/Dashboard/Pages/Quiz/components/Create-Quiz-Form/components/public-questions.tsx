@@ -52,6 +52,7 @@ export const PublicQuestions = ({ formProps, questions }: PublicQuestionsProps) 
         </div>
       ))}
       <Button
+      type="button"
         variant="addSave"
         onClick={() => append({ questionId: 0, score: 1 })}
       >

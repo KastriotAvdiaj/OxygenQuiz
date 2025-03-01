@@ -66,7 +66,7 @@ namespace QuizAPI.Controllers.Quizzes.Services
             };
 
             // Process public questions
-            var publicQuestions = await ProcessPublicQuestions(quizCM.PublicQuestionIds);
+            var publicQuestions = await ProcessPublicQuestions(quizCM.PublicQuestions);
             quiz.QuizQuestions.AddRange(publicQuestions);
 
             // Process private questions

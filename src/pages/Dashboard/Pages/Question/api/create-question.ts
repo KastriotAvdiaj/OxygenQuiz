@@ -9,17 +9,26 @@ import { answerOptionsSchema } from "../../Quiz/api/create-quiz";
 export const createQuestionInputSchema = z.object({
   text: z.string().min(1, "Question is required"), 
   difficulty: z.string().min(1,"Difficulty is required"),
-  category: z.string().min(1,"Category is required"),
+  categoryId: z.number().int().positive({ message: "Category is required" }),
   language : z.string().min(1,"Language is required"),
   answerOptions: answerOptionsSchema,
 }
 );
+
+// export const createQuestionInputSchema = z.object({
+//   text: z.string().min(1, "Question is required"), 
+//   difficulty: z.string().min(1, "Difficulty is required"),
+//   category: z.number().int().positive("Category is required"), // Changed to number for ID
+//   language: z.string().min(1, "Language is required"),
+//   answerOptions: answerOptionsSchema,
+// });
 
 
 export type CreateQuestionInput = z.infer<typeof createQuestionInputSchema>;
 
 export const createQuestion = ({ data }: { data: CreateQuestionInput }): Promise<Question> => {
   return (
+    console.log("data", data),
     api.post('/questions', data));
 };
 

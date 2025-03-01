@@ -27,7 +27,7 @@ namespace QuizAPI.DTOs.Quiz
         public bool IsPublished { get; set; } = false;
         public int PassingScore { get; set; } = 50;
 
-        public List<PublicQuestionWithScore> PublicQuestionIds { get; set; } = new();
+        public List<PublicQuestionWithScore> PublicQuestions { get; set; } = new();
         public List<QuestionCMWithScore> PrivateQuestions { get; set; } = new();
     }
 

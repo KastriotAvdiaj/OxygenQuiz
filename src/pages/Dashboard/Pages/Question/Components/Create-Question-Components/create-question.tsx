@@ -15,7 +15,10 @@ import { Separator } from "@/components/ui/separator";
 import { CategorySelect } from "../../Entities/Categories/Components/select-question-category";
 import { DifficultySelect } from "../../Entities/Difficulty/Components/select-question-difficulty";
 import { LanguageSelect } from "../../Entities/Language/components/select-question-language";
-import { createQuestionInputSchema, useCreateQuestion } from "../../api/create-question";
+import {
+  createQuestionInputSchema,
+  useCreateQuestion,
+} from "../../api/create-question";
 
 interface CreateQuestionFormProps {
   categories: QuestionCategory[];
@@ -45,11 +48,7 @@ export const CreateQuestionForm: React.FC<CreateQuestionFormProps> = ({
     <FormDrawer
       isDone={createQuestionMutation.isSuccess}
       triggerButton={
-        <Button
-          variant="default"
-          size="sm"
-          icon={<Plus className="size-4" />}
-        >
+        <Button variant="default" size="sm" icon={<Plus className="size-4" />}>
           Create Question
         </Button>
       }
@@ -73,7 +72,7 @@ export const CreateQuestionForm: React.FC<CreateQuestionFormProps> = ({
         className="w-[500px]"
         onSubmit={(values) => {
           const isCorrectSelected = values.answerOptions.some(
-            (option : any) => option.isCorrect
+            (option: any) => option.isCorrect
           );
 
           if (!isCorrectSelected) {
@@ -135,7 +134,20 @@ export const CreateQuestionForm: React.FC<CreateQuestionFormProps> = ({
                     registration={register("text")}
                   />
                 </div>
+
                 <CategorySelect
+                  label="Category"
+                  categories={categories}
+                  value={watch("categoryId")?.toString() || ""}
+                  onChange={(selectedValue: string) =>
+                    setValue("categoryId", parseInt(selectedValue, 10))
+                  }
+                  includeAllOption={false}
+                  error={formState.errors["categoryId"]?.message}
+                  clearErrors={() => clearErrors("categoryId")}
+                />
+                
+                {/* <CategorySelect
                   label="Category"
                   categories={categories}
                   value={watch("category")}
@@ -145,14 +157,14 @@ export const CreateQuestionForm: React.FC<CreateQuestionFormProps> = ({
                   includeAllOption={false}
                   error={formState.errors["category"]?.message}
                   clearErrors={() => clearErrors("category")}
-                />
+                /> */}
               </div>
               <Separator className="bg-gray-500" />
               <DifficultySelect
                 label="Difficulty"
                 difficulties={difficulties}
                 value={watch("difficulty")}
-                onChange={(selectedValue : string) =>
+                onChange={(selectedValue: string) =>
                   setValue("difficulty", selectedValue)
                 }
                 includeAllOption={false}
@@ -165,7 +177,7 @@ export const CreateQuestionForm: React.FC<CreateQuestionFormProps> = ({
                 languages={languages}
                 value={watch("language")}
                 includeAllOption={false}
-                onChange={(selectedValue : string) =>
+                onChange={(selectedValue: string) =>
                   setValue("language", selectedValue)
                 }
                 error={formState.errors["language"]?.message}
