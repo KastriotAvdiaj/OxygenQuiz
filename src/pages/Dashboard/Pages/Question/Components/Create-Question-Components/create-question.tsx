@@ -134,7 +134,6 @@ export const CreateQuestionForm: React.FC<CreateQuestionFormProps> = ({
                     registration={register("text")}
                   />
                 </div>
-
                 <CategorySelect
                   label="Category"
                   categories={categories}
@@ -146,42 +145,30 @@ export const CreateQuestionForm: React.FC<CreateQuestionFormProps> = ({
                   error={formState.errors["categoryId"]?.message}
                   clearErrors={() => clearErrors("categoryId")}
                 />
-                
-                {/* <CategorySelect
-                  label="Category"
-                  categories={categories}
-                  value={watch("category")}
-                  onChange={(selectedValue: string) =>
-                    setValue("category", selectedValue)
-                  }
-                  includeAllOption={false}
-                  error={formState.errors["category"]?.message}
-                  clearErrors={() => clearErrors("category")}
-                /> */}
               </div>
               <Separator className="bg-gray-500" />
               <DifficultySelect
                 label="Difficulty"
                 difficulties={difficulties}
-                value={watch("difficulty")}
+                value={watch("difficultyId")?.toString() || ""}
                 onChange={(selectedValue: string) =>
-                  setValue("difficulty", selectedValue)
+                  setValue("difficultyId", parseInt(selectedValue, 10))
                 }
                 includeAllOption={false}
-                error={formState.errors["difficulty"]?.message}
-                clearErrors={() => clearErrors("difficulty")}
+                error={formState.errors["difficultyId"]?.message}
+                clearErrors={() => clearErrors("difficultyId")}
               />
               <Separator className="bg-gray-500" />
               <LanguageSelect
                 label="Language"
                 languages={languages}
-                value={watch("language")}
+                value={watch("languageId")?.toString() || ""}
                 includeAllOption={false}
                 onChange={(selectedValue: string) =>
-                  setValue("language", selectedValue)
+                  setValue("languageId", parseInt(selectedValue, 10))
                 }
-                error={formState.errors["language"]?.message}
-                clearErrors={() => clearErrors("language")}
+                error={formState.errors["languageId"]?.message}
+                clearErrors={() => clearErrors("languageId")}
               />
               <Separator className="bg-gray-500" />
 

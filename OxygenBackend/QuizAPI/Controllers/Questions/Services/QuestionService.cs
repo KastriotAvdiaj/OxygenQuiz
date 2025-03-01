@@ -23,23 +23,12 @@ namespace QuizAPI.Controllers.Questions.Services
             QuestionVisibility visibility
             )
         {
-
-            var languageId = await _context.QuestionLanguages
-            .Where(l => l.Language == newQuestionCM.Language)
-            .Select(l => l.Id)
-            .SingleOrDefaultAsync();
-
-            var difficultyId = await _context.QuestionDifficulties.
-                Where(d => d.Level == newQuestionCM.Difficulty)
-                .Select(d => d.ID)
-                .SingleOrDefaultAsync();
-
             // Create the new question entity.
             var question = new Question
             {
                 Text = newQuestionCM.Text,
-                DifficultyId = difficultyId,
-                LanguageId = languageId,
+                DifficultyId = newQuestionCM.DifficultyId,
+                LanguageId = newQuestionCM.LanguageId,
                 CreatedAt = DateTime.UtcNow,
                 CategoryId = newQuestionCM.CategoryId,
                 UserId = Guid.Parse(userId),

@@ -12,8 +12,8 @@ import { Label } from "@/components/ui/form";
 interface LangaugeSelectProps {
   label?: string;
   languages: QuestionLanguage[];
-  value: string | "";
-  onChange: (value: string | "all") => void;
+  value: string;
+  onChange: (value: string) => void;
   includeAllOption?: boolean;
   error?: string;
   clearErrors?: () => void;
@@ -28,9 +28,9 @@ export const LanguageSelect: React.FC<LangaugeSelectProps> = ({
   error,
   clearErrors,
 }) => {
-  const isValueValid =
-    value !== "all" &&
-    languages.some((langauge) => langauge.language === value);
+  const isValueValid = languages.some(
+    (langauge) => langauge.id.toString() === value
+  );
 
   return (
     <div className="space-y-2">
@@ -52,7 +52,7 @@ export const LanguageSelect: React.FC<LangaugeSelectProps> = ({
             <SelectItem value="all">All Languages</SelectItem>
           )}
           {languages.map((language) => (
-            <SelectItem key={language.id} value={language.language}>
+            <SelectItem key={language.id} value={language.id.toString()}>
               {language.language}
             </SelectItem>
           ))}

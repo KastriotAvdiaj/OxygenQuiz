@@ -12,8 +12,8 @@ import { Label } from "@/components/ui/form";
 interface DifficultySelectProps {
   label?: string;
   difficulties: QuestionDifficulty[];
-  value: string | "";
-  onChange: (value: string | "all") => void;
+  value: string;
+  onChange: (value: string) => void;
   includeAllOption?: boolean;
   error?: string;
   clearErrors?: () => void;
@@ -28,9 +28,9 @@ export const DifficultySelect: React.FC<DifficultySelectProps> = ({
   error,
   clearErrors,
 }) => {
-  const isValueValid =
-    value !== "all" &&
-    difficulties.some((difficulty) => difficulty.level === value);
+  const isValueValid = difficulties.some(
+    (difficulty) => difficulty.id.toString() === value
+  );
 
   return (
     <div className="space-y-2">
@@ -52,7 +52,7 @@ export const DifficultySelect: React.FC<DifficultySelectProps> = ({
             <SelectItem value="all">All Difficulties</SelectItem>
           )}
           {difficulties.map((difficulty) => (
-            <SelectItem key={difficulty.id} value={difficulty.level}>
+            <SelectItem key={difficulty.id} value={difficulty.id.toString()}>
               {difficulty.level}
             </SelectItem>
           ))}

@@ -8,9 +8,9 @@ import { answerOptionsSchema } from "../../Quiz/api/create-quiz";
 
 export const createQuestionInputSchema = z.object({
   text: z.string().min(1, "Question is required"), 
-  difficulty: z.string().min(1,"Difficulty is required"),
+  difficultyId: z.number().int().positive({ message: "Difficulty is required" }),
   categoryId: z.number().int().positive({ message: "Category is required" }),
-  language : z.string().min(1,"Language is required"),
+  languageId: z.number().int().positive({ message: "Language is required" }),
   answerOptions: answerOptionsSchema,
 }
 );

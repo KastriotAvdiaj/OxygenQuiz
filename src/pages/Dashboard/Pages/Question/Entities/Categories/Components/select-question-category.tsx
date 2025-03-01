@@ -54,7 +54,7 @@ export const CategorySelect: React.FC<CategorySelectProps> = ({
             }
           />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent> 
           {includeAllOption && (
             <SelectItem value="all">All Categories</SelectItem>
           )}
