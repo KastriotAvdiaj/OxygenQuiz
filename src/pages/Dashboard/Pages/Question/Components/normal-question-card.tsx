@@ -7,6 +7,7 @@ import { Button } from "@/components/ui";
 import { DeleteQuestion } from "./delete-question";
 import { Link } from "react-router-dom";
 import { AnswerOptionViewList } from "./answer-option-view-list";
+import { EditIcon } from "lucide-react";
 
 interface NormalQuestionCard {
   question: Question;
@@ -33,8 +34,10 @@ export const NormalQuestionCard: React.FC<NormalQuestionCard> = ({
           </CardContent>
         </div>
       </Link>
-      <section className="border-t border-border p-2 flex items-center gap-2 justify-end">
-        <Button size="sm">Edit</Button>
+      <section className="border-t border-border p-2 flex items-center gap-2 justify-end opacity-0 hover:opacity-100 transition-opacity duration-200">
+        <Button size="sm" className="rounded-sm ">
+          <EditIcon size={16} />
+        </Button>
         <DeleteQuestion id={question.id} />
       </section>
     </Card>

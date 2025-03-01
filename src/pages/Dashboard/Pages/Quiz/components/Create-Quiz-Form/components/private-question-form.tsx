@@ -6,7 +6,11 @@ import { CategorySelect } from "../../../../Question/Entities/Categories/Compone
 import { DifficultySelect } from "../../../../Question/Entities/Difficulty/Components/select-question-difficulty";
 import { LanguageSelect } from "../../../../Question/Entities/Language/components/select-question-language";
 import { FormProps } from "../types";
-import { QuestionCategory, QuestionDifficulty, QuestionLanguage } from "@/types/ApiTypes";
+import {
+  QuestionCategory,
+  QuestionDifficulty,
+  QuestionLanguage,
+} from "@/types/ApiTypes";
 
 interface PrivateQuestionFormProps {
   index: number;
@@ -25,7 +29,8 @@ export const PrivateQuestionForm = ({
   languages,
   removeQuestion,
 }: PrivateQuestionFormProps) => {
-  const { register, control, formState, setValue, watch, clearErrors } = formProps;
+  const { register, control, formState, setValue, watch, clearErrors } =
+    formProps;
 
   const {
     fields: answerFields,
@@ -57,30 +62,41 @@ export const PrivateQuestionForm = ({
 
       {/* Metadata Row */}
       <div className="grid grid-cols-4 gap-4 mb-4">
-        <CategorySelect
-          label="Category"
-          categories={categories}
-          value={watch(`privateQuestions.${index}.category`)}
-          onChange={(val) => setValue(`privateQuestions.${index}.category`, val)}
-          error={formState.errors.privateQuestions?.[index]?.category?.message}
-          clearErrors={() => clearErrors(`privateQuestions.${index}.category`)}
-        />
-        <DifficultySelect
-          label="Difficulty"
-          difficulties={difficulties}
-          value={watch(`privateQuestions.${index}.difficulty`)}
-          onChange={(val) => setValue(`privateQuestions.${index}.difficulty`, val)}
-          error={formState.errors.privateQuestions?.[index]?.difficulty?.message}
-          clearErrors={() => clearErrors(`privateQuestions.${index}.difficulty`)}
-        />
-        <LanguageSelect
-          label="Language"
-          languages={languages}
-          value={watch(`privateQuestions.${index}.language`)}
-          onChange={(val) => setValue(`privateQuestions.${index}.language`, val)}
-          error={formState.errors.privateQuestions?.[index]?.language?.message}
-          clearErrors={() => clearErrors(`privateQuestions.${index}.language`)}
-        />
+      <CategorySelect
+  label="Category"
+  categories={categories}
+  value={watch(`privateQuestions.${index}.categoryId`)?.toString() || ""}
+  onChange={(selectedValue: string) =>
+    setValue(`privateQuestions.${index}.categoryId`, parseInt(selectedValue, 10))
+  }
+  includeAllOption={false}
+  error={formState.errors.privateQuestions?.[index]?.categoryId?.message}
+  clearErrors={() => clearErrors(`privateQuestions.${index}.categoryId`)}
+/>
+
+<DifficultySelect
+  label="Difficulty"
+  difficulties={difficulties}
+  value={watch(`privateQuestions.${index}.difficultyId`)?.toString() || ""}
+  onChange={(selectedValue: string) =>
+    setValue(`privateQuestions.${index}.difficultyId`, parseInt(selectedValue, 10))
+  }
+  includeAllOption={false}
+  error={formState.errors.privateQuestions?.[index]?.difficultyId?.message}
+  clearErrors={() => clearErrors(`privateQuestions.${index}.difficultyId`)}
+/>
+
+<LanguageSelect
+  label="Language"
+  languages={languages}
+  value={watch(`privateQuestions.${index}.languageId`)?.toString() || ""}
+  onChange={(selectedValue: string) =>
+    setValue(`privateQuestions.${index}.languageId`, parseInt(selectedValue, 10))
+  }
+  includeAllOption={false}
+  error={formState.errors.privateQuestions?.[index]?.languageId?.message}
+  clearErrors={() => clearErrors(`privateQuestions.${index}.languageId`)}
+/>
         <div>
           <Label htmlFor={`score-${index}`}>Score</Label>
           <Input

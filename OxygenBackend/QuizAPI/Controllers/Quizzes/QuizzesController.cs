@@ -152,7 +152,7 @@ namespace QuizAPI.Controllers.Quizzes
             {
            
                 var quiz = await _quizService.CreateQuizAsync(quizCM, userId);
-                var quizDto = MapToQuizDTO(quiz);
+                var quizDto = await MapToQuizDTO(quiz);
 
                 return Ok(quizDto);
             }

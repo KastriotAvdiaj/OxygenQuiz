@@ -13,7 +13,7 @@ export const QuizDetails = ({ formProps, queryData }: QuizDetailsProps) => {
 
   return (
     <div>
-      <h2 className="text-2xl font-semibold mb-4">Quiz Details</h2>
+      <h2 className="text-2xl font-semibold mb-4 text-foreground">Quiz Details</h2>
 
       {/* Title and Description */}
       <div className="grid grid-cols-1 gap-4 mb-6">
@@ -74,21 +74,27 @@ export const QuizDetails = ({ formProps, queryData }: QuizDetailsProps) => {
       {/* Category and Language */}
       <div className="grid grid-cols-2 gap-4">
         <CategorySelect
-          label="Quiz Category"
+          label="Category"
           categories={queryData.categories}
-          value={watch("category")}
-          onChange={(val) => setValue("category", val)}
-          error={formState.errors.category?.message}
-          clearErrors={() => clearErrors("category")}
+          value={watch("categoryId")?.toString() || ""}
+          onChange={(selectedValue: string) =>
+            setValue("categoryId", parseInt(selectedValue, 10))
+          }
+          includeAllOption={false}
+          error={formState.errors["categoryId"]?.message}
+          clearErrors={() => clearErrors("categoryId")}
         />
 
         <LanguageSelect
-          label="Quiz Language"
+          label="Language"
           languages={queryData.languages}
-          value={watch("language")}
-          onChange={(val) => setValue("language", val)}
-          error={formState.errors.language?.message}
-          clearErrors={() => clearErrors("language")}
+          value={watch("languageId")?.toString() || ""}
+          includeAllOption={false}
+          onChange={(selectedValue: string) =>
+            setValue("languageId", parseInt(selectedValue, 10))
+          }
+          error={formState.errors["languageId"]?.message}
+          clearErrors={() => clearErrors("languageId")}
         />
       </div>
     </div>

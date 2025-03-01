@@ -58,7 +58,7 @@ namespace QuizAPI.Controllers.Quizzes.Services
                 TimeLimit = quizCM.TimeLimit,
                 ShuffleQuestions = quizCM.ShuffleQuestions,
                 ShuffleAnswers = quizCM.ShuffleAnswers,
-                IsPublished = quizCM.IsPublished,
+                IsPublished = true,
                 PassingScore = quizCM.PassingScore,
                 CreatedAt = DateTime.UtcNow,
                 UserId = Guid.Parse(userId),

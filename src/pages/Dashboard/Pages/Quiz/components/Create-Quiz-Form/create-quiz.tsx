@@ -19,7 +19,7 @@ export const CreateQuizForm = () => {
   }
 
   return (
-    <div className="container mx-auto p-6 bg-background">
+    <div className="container mx-auto p-6 bg-background text-foreground">
       <h1 className="text-3xl font-bold mb-6">Create a New Quiz</h1>
       <Form
         id="create-quiz"

@@ -25,9 +25,9 @@ export const answerOptionInputSchema = z.object({
 
   export const privateQuestionInputSchema = z.object({
     text: z.string().min(1, 'Text is required'),
-    difficulty: z.string().min(1, 'Difficulty is required'),
-    language: z.string().min(1, 'Language is required'),
-    category: z.string().min(1, 'Category is required'),
+    difficultyId: z.number().int().positive({ message: "Language is required" }),
+    languageId: z.number().int().positive({ message: "Language is required" }),
+    categoryId: z.number().int().positive({ message: "Language is required" }),
     answerOptions: answerOptionsSchema,
     score: z.number().min(1, { message: 'Score must be at least 1.' }),
   });
@@ -42,8 +42,8 @@ export const answerOptionInputSchema = z.object({
     description: z.string().min(1, 'Description is required'),
     timeLimit: z.number().min(1, { message: 'Time limit must be at least 1.' }),
     passingScore: z.number().min(1, { message: 'Passing score must be at least 1.' }),
-    category: z.string().min(1, 'Category is required'),
-    language: z.string().min(1, 'Language is required'),
+    categoryId: z.number().int().positive({ message: "Category is required" }),
+  languageId: z.number().int().positive({ message: "Language is required" }),
     publicQuestions: z.array(publicQuestionInputSchema),
     privateQuestions: z.array(privateQuestionInputSchema),
   });

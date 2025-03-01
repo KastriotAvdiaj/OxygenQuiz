@@ -38,9 +38,9 @@ export const PrivateQuestions = ({
         onClick={() =>
           append({
             text: "",
-            difficulty: "",
-            language: "",
-            category: "",
+            difficultyId:0,
+            languageId: 0,
+            categoryId: 0,
             answerOptions: [],
             score: 1,
           })
