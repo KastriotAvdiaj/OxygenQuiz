@@ -19,7 +19,7 @@ export const CreateQuizForm = () => {
   }
 
   return (
-    <div className="container mx-auto p-6 bg-background text-foreground">
+    <div className="p-6 bg-background border-2">
       <h1 className="text-3xl font-bold mb-6">Create a New Quiz</h1>
       <Form
         id="create-quiz"
@@ -28,7 +28,7 @@ export const CreateQuizForm = () => {
         options={{ mode: "onSubmit" }}
       >
         {(formProps) => (
-          <div className="space-y-8">
+          <div className="flex flex-col gap-8">
             <QuizDetails formProps={formProps} queryData={queryData} />
 
             <Separator className="my-6" />

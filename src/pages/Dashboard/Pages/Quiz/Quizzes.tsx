@@ -14,7 +14,7 @@ export const Quizzes = () => {
   }
 
   return (
-    <div className="grid gap-4 ">
+    <div className="grid gap-4">
       <QuizList quizzes={quizData.data ?? []} />
       <Link to="/dashboard/quizzes/create-quiz">
         <Button variant="addSave">Create Quiz</Button>

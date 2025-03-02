@@ -42,8 +42,8 @@ export const PrivateQuestionForm = ({
   });
 
   return (
-    <div className="border p-4 rounded mb-4">
-      <div className="flex justify-between items-center mb-4">
+    <div className="border p-4 rounded">
+      <div className="flex justify-between items-center ">
         <h3 className="text-xl font-semibold">Question {index + 1}</h3>
         <Button variant="destructive" onClick={removeQuestion}>
           Remove Question
@@ -61,42 +61,69 @@ export const PrivateQuestionForm = ({
       </div>
 
       {/* Metadata Row */}
-      <div className="grid grid-cols-4 gap-4 mb-4">
-      <CategorySelect
-  label="Category"
-  categories={categories}
-  value={watch(`privateQuestions.${index}.categoryId`)?.toString() || ""}
-  onChange={(selectedValue: string) =>
-    setValue(`privateQuestions.${index}.categoryId`, parseInt(selectedValue, 10))
-  }
-  includeAllOption={false}
-  error={formState.errors.privateQuestions?.[index]?.categoryId?.message}
-  clearErrors={() => clearErrors(`privateQuestions.${index}.categoryId`)}
-/>
+      <div className="grid grid-cols-4 gap-4">
+        <CategorySelect
+          label="Category"
+          categories={categories}
+          value={
+            watch(`privateQuestions.${index}.categoryId`)?.toString() || ""
+          }
+          onChange={(selectedValue: string) =>
+            setValue(
+              `privateQuestions.${index}.categoryId`,
+              parseInt(selectedValue, 10)
+            )
+          }
+          includeAllOption={false}
+          error={
+            formState.errors.privateQuestions?.[index]?.categoryId?.message
+          }
+          clearErrors={() =>
+            clearErrors(`privateQuestions.${index}.categoryId`)
+          }
+        />
 
-<DifficultySelect
-  label="Difficulty"
-  difficulties={difficulties}
-  value={watch(`privateQuestions.${index}.difficultyId`)?.toString() || ""}
-  onChange={(selectedValue: string) =>
-    setValue(`privateQuestions.${index}.difficultyId`, parseInt(selectedValue, 10))
-  }
-  includeAllOption={false}
-  error={formState.errors.privateQuestions?.[index]?.difficultyId?.message}
-  clearErrors={() => clearErrors(`privateQuestions.${index}.difficultyId`)}
-/>
+        <DifficultySelect
+          label="Difficulty"
+          difficulties={difficulties}
+          value={
+            watch(`privateQuestions.${index}.difficultyId`)?.toString() || ""
+          }
+          onChange={(selectedValue: string) =>
+            setValue(
+              `privateQuestions.${index}.difficultyId`,
+              parseInt(selectedValue, 10)
+            )
+          }
+          includeAllOption={false}
+          error={
+            formState.errors.privateQuestions?.[index]?.difficultyId?.message
+          }
+          clearErrors={() =>
+            clearErrors(`privateQuestions.${index}.difficultyId`)
+          }
+        />
 
-<LanguageSelect
-  label="Language"
-  languages={languages}
-  value={watch(`privateQuestions.${index}.languageId`)?.toString() || ""}
-  onChange={(selectedValue: string) =>
-    setValue(`privateQuestions.${index}.languageId`, parseInt(selectedValue, 10))
-  }
-  includeAllOption={false}
-  error={formState.errors.privateQuestions?.[index]?.languageId?.message}
-  clearErrors={() => clearErrors(`privateQuestions.${index}.languageId`)}
-/>
+        <LanguageSelect
+          label="Language"
+          languages={languages}
+          value={
+            watch(`privateQuestions.${index}.languageId`)?.toString() || ""
+          }
+          onChange={(selectedValue: string) =>
+            setValue(
+              `privateQuestions.${index}.languageId`,
+              parseInt(selectedValue, 10)
+            )
+          }
+          includeAllOption={false}
+          error={
+            formState.errors.privateQuestions?.[index]?.languageId?.message
+          }
+          clearErrors={() =>
+            clearErrors(`privateQuestions.${index}.languageId`)
+          }
+        />
         <div>
           <Label htmlFor={`score-${index}`}>Score</Label>
           <Input

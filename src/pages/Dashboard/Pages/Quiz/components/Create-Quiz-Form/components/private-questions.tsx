@@ -19,7 +19,7 @@ export const PrivateQuestions = ({
   });
 
   return (
-    <div>
+    <div className="flex flex-col gap-4 mb-4 border-2 border-red-500">
       <h2 className="text-2xl font-semibold mb-4">Private Questions</h2>
       {fields.map((field, index) => (
         <PrivateQuestionForm

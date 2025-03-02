@@ -13,17 +13,22 @@ export const DashboardLayout = ({
     navigate(`/dashboard/${page}`);
   };
   return (
-    <div className="grid grid-cols-[16%_84%] grid-rows-[auto_1fr] h-[100vh]">
+    <div className="grid grid-cols-[16%_84%] grid-rows-[auto_1fr] h-screen overflow-hidden text-foreground">
       <div className="col-span-2">
         <DashboardHeader />
       </div>
-      <div className="h-full bg-background z-8 relative shadow-md">
+      <div className="bg-background relative shadow-md">
         <DashboardNav
           setActivePage={setActivePage}
           activePage={location.pathname.split("/").pop() || "application"}
         />
       </div>
-      <div className="overflow-y-auto h-full bg-muted p-10">{children}</div>
+      <div
+        className="overflow-y-auto bg-muted p-10"
+        style={{ maxHeight: "calc(100vh - 64px)" }} // Adjust 64px to header height
+      >
+        {children}
+      </div>
     </div>
   );
 };
