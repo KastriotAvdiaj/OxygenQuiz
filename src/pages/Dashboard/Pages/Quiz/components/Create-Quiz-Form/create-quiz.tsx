@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Steps from "@/common/Steps";
 import { Card, CardDescription, CardHeader } from "@/components/ui";
 import { useState } from "react";
+import { Forward } from "lucide-react";
 
 export const CreateQuizForm = () => {
   const { queryData, handleSubmit, isSubmitting } = useQuizForm();
@@ -36,7 +37,7 @@ export const CreateQuizForm = () => {
   return (
     <Card className="p-6 bg-background border-none flex flex-col gap-2 items-center">
       <div className="flex flex-col space-y-2 pl-2 justify-center items-center">
-        <CardHeader className="text-2xl font-bold p-0 ">
+        <CardHeader className="text-2xl font-bold p-0">
           Create New Quiz
         </CardHeader>
         <CardDescription className="p-0">
@@ -50,41 +51,83 @@ export const CreateQuizForm = () => {
         schema={createQuizInputSchema}
         options={{ mode: "onSubmit" }}
       >
-        {(formProps) => (
-          <div className="flex flex-col gap-2 justify-center ">
-            <Steps currentStep={currentStep} totalSteps={totalSteps} />
-            <QuizDetails formProps={formProps} queryData={queryData} />
+        {(formProps) => {
+          const stepComponents = [
+            //----------------------------------------
+            // Step 1: Quiz details
+            //----------------------------------------
+            <QuizDetails
+              key="step1"
+              formProps={formProps}
+              queryData={queryData}
+            />,
+            //----------------------------------------
+            // Step 2: Public / Private questions
+            //----------------------------------------
+            <div key="step2" className="w-full flex flex-col gap-2 items-center mt-6">
+              <Tabs defaultValue="publicQuestions" className="w-full">
+                <TabsList className="w-full">
+                  <TabsTrigger value="publicQuestions" className="w-full">
+                    Public Questions
+                  </TabsTrigger>
+                  <TabsTrigger value="newQuestions" className="w-full">New Questions</TabsTrigger>
+                </TabsList>
+                <TabsContent value="publicQuestions">
+                  <PublicQuestions
+                    formProps={formProps}
+                    questions={queryData.questions}
+                  />
+                </TabsContent>
+                <TabsContent value="newQuestions">
+                  <PrivateQuestions
+                    formProps={formProps}
+                    queryData={queryData}
+                  />
+                </TabsContent>
+              </Tabs>
+            </div>,
+            //----------------------------------------
+            // Step 3: Review and finalize settings
+            //----------------------------------------
+            <div key="step3" className="flex flex-col gap-2">
+              <p>
+                Step 3 content goes here (e.g., review and finalize settings).
+              </p>
+            </div>,
+          ];
 
-            <Separator className="my-6" />
+          return (
+            <div className="flex flex-col gap-2 justify-center">
+              <Steps currentStep={currentStep} totalSteps={totalSteps} />
+              {stepComponents[currentStep - 1]}
+              <Separator className="my-6" />
 
-            <Tabs defaultValue="publicQuestions" className="w-[400px]">
-              <TabsList>
-                <TabsTrigger value="publicQuestions">
-                  Public Questions
-                </TabsTrigger>
-                <TabsTrigger value="newQuestions">New Questions</TabsTrigger>
-              </TabsList>
-              <TabsContent value="publicQuestions">
-                <PublicQuestions
-                  formProps={formProps}
-                  questions={queryData.questions}
-                />
-              </TabsContent>
-              <TabsContent value="newQuestions">
-                <PrivateQuestions formProps={formProps} queryData={queryData} />
-              </TabsContent>
-            </Tabs>
+              <div className="flex justify-between">
+                <Button
+                  type="button"
+                  onClick={() => handleStep(-1)}
+                  disabled={currentStep === 1}
+                >
+                  <Forward size={16} className="rotate-180" /> Previous
+                </Button>
 
-            <Button
-              type="submit"
-              variant="addSave"
-              disabled={isSubmitting}
-              className="w-full"
-            >
-              {isSubmitting ? "Submitting..." : "Create Quiz"}
-            </Button>
-          </div>
-        )}
+                {currentStep < totalSteps ? (
+                  <Button type="button" onClick={() => handleStep(1)}>
+                    Next <Forward size={16} />
+                  </Button>
+                ) : (
+                  <Button
+                    type="submit"
+                    variant="default"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? "Submitting..." : "Create Quiz"}
+                  </Button>
+                )}
+              </div>
+            </div>
+          );
+        }}
       </Form>
     </Card>
   );
