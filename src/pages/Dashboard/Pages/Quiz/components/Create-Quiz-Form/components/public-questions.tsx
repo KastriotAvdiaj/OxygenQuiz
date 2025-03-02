@@ -4,13 +4,17 @@ import { Input, Label } from "@/components/ui/form";
 import { FormProps } from "../types";
 import { Question } from "@/types/ApiTypes";
 import { useFieldArray } from "react-hook-form";
+import { Card } from "@/components/ui";
 
 interface PublicQuestionsProps {
   formProps: FormProps;
   questions: Question[];
 }
 
-export const PublicQuestions = ({ formProps, questions }: PublicQuestionsProps) => {
+export const PublicQuestions = ({
+  formProps,
+  questions,
+}: PublicQuestionsProps) => {
   const { register, control, formState, setValue, watch } = formProps;
   const { fields, append, remove } = useFieldArray({
     control,
@@ -19,11 +23,11 @@ export const PublicQuestions = ({ formProps, questions }: PublicQuestionsProps) 
 
   return (
     <div>
-      <h2 className="text-2xl font-semibold mb-4">Public Questions</h2>
+      <h2 className="text-2xl font-semibold mb-4 ">Public Questions</h2>
       {fields.map((field, index) => (
-        <div
+        <Card
           key={field.id}
-          className="flex items-center gap-4 mb-4 border p-4 rounded"
+          className="flex items-center gap-4 mb-4 p-4 rounded bg-muted"
         >
           <div className="flex-1">
             <SelectQuestions
@@ -31,7 +35,9 @@ export const PublicQuestions = ({ formProps, questions }: PublicQuestionsProps) 
               onSelect={(question: Question) =>
                 setValue(`publicQuestions.${index}.questionId`, question.id)
               }
-              error={formState.errors.publicQuestions?.[index]?.questionId?.message}
+              error={
+                formState.errors.publicQuestions?.[index]?.questionId?.message
+              }
               existingQuestions={questions}
             />
           </div>
@@ -49,10 +55,10 @@ export const PublicQuestions = ({ formProps, questions }: PublicQuestionsProps) 
           <Button variant="destructive" onClick={() => remove(index)}>
             Remove
           </Button>
-        </div>
+        </Card>
       ))}
       <Button
-      type="button"
+        type="button"
         variant="addSave"
         onClick={() => append({ questionId: 0, score: 1 })}
       >

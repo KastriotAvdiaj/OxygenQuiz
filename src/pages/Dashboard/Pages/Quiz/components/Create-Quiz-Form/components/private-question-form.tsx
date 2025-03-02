@@ -42,7 +42,7 @@ export const PrivateQuestionForm = ({
   });
 
   return (
-    <div className="border p-4 rounded">
+    <div className="p-4 rounded bg-muted">
       <div className="flex justify-between items-center ">
         <h3 className="text-xl font-semibold">Question {index + 1}</h3>
         <Button variant="destructive" onClick={removeQuestion}>
