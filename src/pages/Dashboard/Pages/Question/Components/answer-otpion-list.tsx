@@ -6,6 +6,10 @@ import { Input } from "@/components/ui/form";
 import { Label } from "@/components/ui/form";
 import { Switch } from "@/components/ui/switch";
 
+//----------------------
+//THIS COMPONENT IS USED IN THE EDIT QUESTION FORM WHICH HAS NOT BEEN COMPLETED
+//----------------------
+
 interface AnswerOptionListProps {
   options: AnswerOption[];
   onUpdate?: (updatedOptions: AnswerOption[]) => void;
