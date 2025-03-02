@@ -1,4 +1,4 @@
-import { Input, Label } from "@/components/ui/form";
+import { Input, Label, Textarea } from "@/components/ui/form";
 import { CategorySelect } from "../../../../Question/Entities/Categories/Components/select-question-category";
 import { LanguageSelect } from "../../../../Question/Entities/Language/components/select-question-language";
 import { FormProps, QueryData } from "../types";
@@ -13,8 +13,6 @@ export const QuizDetails = ({ formProps, queryData }: QuizDetailsProps) => {
 
   return (
     <div>
-      <h2 className="text-2xl font-semibold mb-4 text-foreground">Quiz Details</h2>
-
       {/* Title and Description */}
       <div className="grid grid-cols-1 gap-4 mb-6">
         <div>
@@ -30,10 +28,11 @@ export const QuizDetails = ({ formProps, queryData }: QuizDetailsProps) => {
 
         <div>
           <Label htmlFor="description">Description</Label>
-          <Input
-            className="bg-muted rounded-sm"
+          <Textarea
+            maxLength={200}
+            className="bg-muted rounded-sm max-h-28"
             id="description"
-            {...register("description")}
+            registration={register("description")}
             error={formState.errors.description}
             placeholder="Enter quiz description"
           />
