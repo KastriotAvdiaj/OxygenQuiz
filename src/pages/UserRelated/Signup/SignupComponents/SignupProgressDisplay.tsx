@@ -32,7 +32,7 @@ const SignupProgressDisplay: React.FC<SignupProgressDisplayProps> = ({
               <strong className="text-foreground">Username:</strong> {username}
             </p>
           </TooltipTrigger>
-          <TooltipContent>
+          <TooltipContent className="bg-background">
             <p>Go back to username</p>
           </TooltipContent>
         </Tooltip>
@@ -47,7 +47,7 @@ const SignupProgressDisplay: React.FC<SignupProgressDisplayProps> = ({
               <strong className="text-foreground">Email:</strong> {email}
             </p>
           </TooltipTrigger>
-          <TooltipContent>
+          <TooltipContent className="bg-background">
             <p>Go back to email</p>
           </TooltipContent>
         </Tooltip>

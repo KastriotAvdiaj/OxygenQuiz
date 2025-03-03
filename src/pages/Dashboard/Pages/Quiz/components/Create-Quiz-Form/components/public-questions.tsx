@@ -62,7 +62,7 @@ export const PublicQuestions = ({
                     <TooltipTrigger asChild>
                       <Info size={16} />
                     </TooltipTrigger>
-                    <TooltipContent className="bg-muted">
+                    <TooltipContent className="bg-background">
                       <p className="text-center">
                         This score indicates the value or weight of the question
                         in the quiz.

@@ -39,6 +39,7 @@ export const useQuizForm = () => {
   };
 
   const handleSubmit = (values: CreateQuizInput) => {
+    console.log(values);
     createQuizMutation.mutate({ data: values });
   };
 
