@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import SignupProgressDisplay from "./SignupProgressDisplay";
 import SignupSteps from "./SignupSteps";
+import Steps from "@/common/Steps";
+import { Label } from "@/components/ui/form";
 
 export const SignupForm: React.FC = () => {
   const [step, setStep] = useState(1);
@@ -27,6 +29,11 @@ export const SignupForm: React.FC = () => {
 
   return (
     <>
+      <section className="flex flex-col justify-center gap-5">
+        <Label className="self-center">Steps</Label>
+        <Steps currentStep={step} totalSteps={4} separatorColor="background" />
+      </section>
+
       <SignupProgressDisplay
         step={step}
         username={formData.username}
