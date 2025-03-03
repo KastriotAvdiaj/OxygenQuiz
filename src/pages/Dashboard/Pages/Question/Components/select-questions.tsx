@@ -36,24 +36,24 @@ export const SelectQuestions: React.FC<SelectQuestionsProps> = ({
   const currentQuestion = existingQuestions.find((q) => q.id === selected);
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col justify-center">
       <div className="mb-2">
         {currentQuestion ? (
-          <div className="p-2 border rounded">
-            <span className="font-medium">{currentQuestion.text}</span>
-            <span className="ml-2 text-sm text-muted-foreground">
-              {currentQuestion.category} - {currentQuestion.difficulty}
-            </span>
+          <div className="p-2 rounded">
+            <NormalQuestionCard
+              question={currentQuestion}
+              showActionButtons={false}
+            />
           </div>
         ) : (
-          <span className="text-sm text-muted-foreground">
+          <span className="text-sm text-muted-foreground flex items-center justify-center p-2">
             No question selected
           </span>
         )}
       </div>
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogTrigger asChild>
-          <Button variant="outline">Select Question</Button>
+          <Button className="w-fit self-center bg-primary/80">Select Question</Button>
         </DialogTrigger>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
@@ -70,7 +70,7 @@ export const SelectQuestions: React.FC<SelectQuestionsProps> = ({
             </div>
             <ScrollArea className="h-[400px] p-4 rounded border border-background/60">
               {filteredQuestions.map((question) => (
-                <Card key={question.id} className="mb-2">
+                <Card key={question.id} className="mb-2 border-none">
                   <div className="flex flex-col justify-between items-end">
                     <NormalQuestionCard
                       showActionButtons={false}
