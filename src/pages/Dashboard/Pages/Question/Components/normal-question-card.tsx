@@ -5,20 +5,41 @@ import { Label } from "@/components/ui/form";
 import { Question } from "@/types/ApiTypes";
 import { Button } from "@/components/ui";
 import { DeleteQuestion } from "./delete-question";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { AnswerOptionViewList } from "./answer-option-view-list";
 import { EditIcon } from "lucide-react";
 
 interface NormalQuestionCard {
   question: Question;
+  showActionButtons?: boolean;
 }
 
 export const NormalQuestionCard: React.FC<NormalQuestionCard> = ({
   question,
+  showActionButtons = true,
 }) => {
+  const navigate = useNavigate();
+
   return (
-    <Card className="w-full border border-border rounded-lg bg-background overflow-hidden transition-shadow duration-200 shadow hover:shadow-lg">
-      <Link to={`/dashboard/questions/${question.id}`}>
+    //-----------------
+    // Add another prop to determine whether to navigate to the question page or not
+    //-----------------
+    <Card
+      className={`w-full border border-border rounded-lg bg-background overflow-hidden transition-shadow duration-200 ${
+        showActionButtons
+          ? "hover:shadow-lg shadow"
+          : "rounded-none shadow-none"
+      }`}
+    >
+      {/* <Link to={`/dashboard/questions/${question.id}`}> */}
+      <div
+        onClick={() =>
+          showActionButtons
+            ? navigate(`/dashboard/questions/${question.id}`)
+            : null
+        }
+        className={` ${showActionButtons ? "cursor-pointer" : ""} `}
+      >
         <div className="flex flex-col sm:flex-row items-start justify-between p-4">
           <div className="flex-grow mb-2 sm:mb-0">
             <h5 className="text-base font-semibold">{question.text}</h5>
@@ -33,13 +54,16 @@ export const NormalQuestionCard: React.FC<NormalQuestionCard> = ({
             <AnswerOptionViewList answerOptions={question.answerOptions} />
           </CardContent>
         </div>
-      </Link>
-      <section className="border-t border-border p-2 flex items-center gap-2 justify-end opacity-100 sm:opacity-0 sm:hover:opacity-100 transition-opacity duration-200">
-        <Button size="sm" className="rounded-sm">
-          <EditIcon size={16} />
-        </Button>
-        <DeleteQuestion id={question.id} />
-      </section>
+      </div>
+      {/* </Link> */}
+      {showActionButtons && (
+        <section className="border-t border-border p-2 flex items-center gap-2 justify-end opacity-100 sm:opacity-0 sm:hover:opacity-100 transition-opacity duration-200">
+          <Button size="sm" className="rounded-sm">
+            <EditIcon size={16} />
+          </Button>
+          <DeleteQuestion id={question.id} />
+        </section>
+      )}
     </Card>
   );
 };
