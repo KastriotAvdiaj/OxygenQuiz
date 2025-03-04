@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using QuizAPI.Controllers.Questions.Services.AnswerOptions;
 using QuizAPI.Data;
 using QuizAPI.DTOs.Question;
 using QuizAPI.DTOs.Quiz;
@@ -11,10 +12,13 @@ namespace QuizAPI.Controllers.Questions.Services
     public class QuestionService : IQuestionService
     {
         private readonly ApplicationDbContext _context;
+        private readonly IAnswerOptionService _answerOptionService;
 
-        public QuestionService(ApplicationDbContext context)
+
+        public QuestionService(ApplicationDbContext context, IAnswerOptionService answerOptionService)
         {
             _context = context;
+            _answerOptionService = answerOptionService;
         }
 
         public async Task<Question> CreateQuestionAsync(
@@ -35,7 +39,8 @@ namespace QuizAPI.Controllers.Questions.Services
                 Visibility = visibility,
             };
 
-            foreach (var optionDto in newQuestionCM.AnswerOptions)
+
+/*            foreach (var optionDto in newQuestionCM.AnswerOptions)
             {
                 var answerOption = new AnswerOption
                 {
@@ -44,10 +49,16 @@ namespace QuizAPI.Controllers.Questions.Services
                     Question = question
                 };
                 question.AnswerOptions.Add(answerOption);
-            }
+            }*/
 
             _context.Questions.Add(question);
             await _context.SaveChangesAsync();
+
+            if (newQuestionCM.AnswerOptions != null && newQuestionCM.AnswerOptions.Any())
+            {
+                
+                 await _answerOptionService.CreateAnswerOptionsAsync(newQuestionCM.AnswerOptions, question.Id);
+            }
 
             return question;
         }

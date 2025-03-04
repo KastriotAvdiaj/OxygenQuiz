@@ -10,6 +10,7 @@ using QuizAPI.Models;
 using QuizAPI.Services;
 using System.Security.Claims;
 using QuizAPI.Controllers.Questions.Services;
+using QuizAPI.Controllers.Questions.Services.AnswerOptions;
 
 namespace QuizAPI.Controllers.Questions
 {
@@ -20,6 +21,7 @@ namespace QuizAPI.Controllers.Questions
         private readonly ApplicationDbContext _context;
         private readonly DashboardService _dashboardService;
         private readonly IQuestionService _questionService;
+
 
         public QuestionsController(ApplicationDbContext context, DashboardService dashboardService, IQuestionService questionService)
         {
@@ -87,7 +89,8 @@ namespace QuizAPI.Controllers.Questions
 
         // PUT: api/Questions/{id}
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateQuestion(int id, QuestionCM questionDto)
+        [Authorize]
+        public async Task<IActionResult> UpdateQuestion(int id, QuestionUM questionDto)
         {
             var question = await _context.Questions.Include(q => q.AnswerOptions)
                 .FirstOrDefaultAsync(q => q.Id == id);

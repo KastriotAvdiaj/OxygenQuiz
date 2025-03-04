@@ -14,6 +14,11 @@ namespace QuizAPI.DTOs.Question
         public List<AnswerOptionCM> AnswerOptions { get; set; }
     }
 
+    public class QuestionUM : QuestionCM
+    {
+        public QuestionVisibility Visibility { get; set; }
+    }
+
     // Used for sending the data - Transferring the model 
         public class QuestionDTO
         {

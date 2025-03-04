@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using QuizAPI.Data;
+using QuizAPI.DTOs.Question;
 using QuizAPI.Models;
 
 namespace QuizAPI.Controllers.Questions.Services.AnswerOptions
@@ -14,7 +15,7 @@ namespace QuizAPI.Controllers.Questions.Services.AnswerOptions
         }
 
         public async Task<AnswerOption> CreateAnswerOptionAsync(
-    AnswerOption newAnswerOptionCM,
+    AnswerOptionCM newAnswerOptionCM,
     int questionId
 )
         {
@@ -36,7 +37,7 @@ namespace QuizAPI.Controllers.Questions.Services.AnswerOptions
         }
 
         public async Task<List<AnswerOption>> CreateAnswerOptionsAsync(
-            List<AnswerOption> newAnswerOptions,
+            List<AnswerOptionCM> newAnswerOptions,
             int questionId
         )
         {
