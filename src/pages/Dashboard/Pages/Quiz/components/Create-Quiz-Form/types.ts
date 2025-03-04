@@ -19,28 +19,3 @@ export interface QueryData {
   isLoading: boolean;
   error: Error | null;
 }
-
-// Add this to your existing types.ts file
-// export type CreateQuizInput = {
-//     title: string;
-//     description: string;
-//     timeLimit: number;
-//     passingScore: number;
-//     categoryId: number;
-//     languageId: number;
-//     publicQuestions: {
-//       questionId: number;
-//       score: number;
-//     }[];
-//     privateQuestions: {
-//       text: string;
-//       difficultyId: number;
-//       categoryId: number;
-//       languageId: number;
-//       score: number;
-//       answerOptions: {
-//         text: string;
-//         isCorrect: boolean;
-//       }[];
-//     }[];
-//   };

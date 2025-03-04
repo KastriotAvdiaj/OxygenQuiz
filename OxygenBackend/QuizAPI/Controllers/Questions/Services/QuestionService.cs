@@ -134,7 +134,10 @@ namespace QuizAPI.Controllers.Questions.Services
 
             if (!string.IsNullOrEmpty(category) && category != "null" && category != "all")
             {
-                query = query.Where(q => q.Category.Name == category);
+                if (int.TryParse(category, out int categoryId))
+                {
+                    query = query.Where(q => q.CategoryId == categoryId);
+                }
             }
 
             var totalQuestions = await query.CountAsync();
