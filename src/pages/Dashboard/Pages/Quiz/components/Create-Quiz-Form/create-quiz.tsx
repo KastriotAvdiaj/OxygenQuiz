@@ -52,6 +52,7 @@ export const CreateQuizForm = () => {
         options={{ mode: "onSubmit" }}
       >
         {(formProps) => {
+          const { errors } = formProps.formState;
           const stepComponents = [
             //----------------------------------------
             // Step 1: Quiz details
@@ -64,13 +65,18 @@ export const CreateQuizForm = () => {
             //----------------------------------------
             // Step 2: Public / Private questions
             //----------------------------------------
-            <div key="step2" className="w-full flex flex-col gap-2 items-center mt-6">
+            <div
+              key="step2"
+              className="w-full flex flex-col gap-2 items-center mt-6"
+            >
               <Tabs defaultValue="publicQuestions" className="w-full">
                 <TabsList className="w-full">
                   <TabsTrigger value="publicQuestions" className="w-full">
                     Public Questions
                   </TabsTrigger>
-                  <TabsTrigger value="newQuestions" className="w-full">New Questions</TabsTrigger>
+                  <TabsTrigger value="newQuestions" className="w-full">
+                    New Questions
+                  </TabsTrigger>
                 </TabsList>
                 <TabsContent value="publicQuestions">
                   <PublicQuestions
@@ -91,7 +97,11 @@ export const CreateQuizForm = () => {
             //----------------------------------------
             <div key="step3" className="flex flex-col gap-2">
               <p>
-                Step 3 content goes here (e.g., review and finalize settings).
+                {errors.totalScore && (
+                  <div className="mb-4 text-center text-red-600 p-2 border border-red-500">
+                    {errors.totalScore.message}
+                  </div>
+                )}
               </p>
             </div>,
           ];
@@ -100,6 +110,7 @@ export const CreateQuizForm = () => {
             <div className="flex flex-col gap-2 justify-center">
               <Steps currentStep={currentStep} totalSteps={totalSteps} />
               {stepComponents[currentStep - 1]}
+
               <Separator className="my-6" />
 
               <div className="flex justify-between">

@@ -46,8 +46,28 @@ export const answerOptionInputSchema = z.object({
   languageId: z.number().int().positive({ message: "Language is required" }),
     publicQuestions: z.array(publicQuestionInputSchema),
     privateQuestions: z.array(privateQuestionInputSchema),
-  });
 
+    //dummy field 
+    totalScore: z.number().optional(),
+  })
+  .superRefine((data, ctx) => {
+    const publicScore = data.publicQuestions.reduce(
+      (sum, question) => sum + question.score,
+      0
+    );
+    const privateScore = data.privateQuestions.reduce(
+      (sum, question) => sum + question.score,
+      0
+    );
+    const totalScore = publicScore + privateScore;
+    if (totalScore !== 100) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `Total score of questions must add up to 100, but got ${totalScore}.`,
+        path: ["totalScore"],
+      });
+    }
+  });
 
 export type CreateQuizInput = z.infer<typeof createQuizInputSchema>
 
