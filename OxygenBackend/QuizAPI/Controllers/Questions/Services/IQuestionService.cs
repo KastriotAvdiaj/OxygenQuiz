@@ -16,6 +16,8 @@ namespace QuizAPI.Controllers.Questions.Services
 
         Task<IndividualQuestionDTO> GetQuestionAsync(int id);
 
+        Task<Question> UpdateQuestionAsync(int id, QuestionUM questionUM);
+
         Task<PaginatedResponse<QuestionDTO>> GetPaginatedQuestionsAsync(int page,
        int pageSize,
        string? searchTerm,

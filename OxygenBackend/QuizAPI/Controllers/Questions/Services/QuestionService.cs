@@ -52,6 +52,46 @@ namespace QuizAPI.Controllers.Questions.Services
             return question;
         }
 
+        public async Task<Question> UpdateQuestionAsync(
+    int questionId,
+    QuestionUM updatedQuestionCM)
+        {
+            
+            var question = await _context.Questions
+                .Include(q => q.AnswerOptions)
+                .FirstOrDefaultAsync(q => q.Id == questionId);
+
+            if (question == null)
+            {
+                throw new Exception("Question not found.");
+            }
+
+            question.Text = updatedQuestionCM.Text;
+            question.DifficultyId = updatedQuestionCM.DifficultyId;
+            question.LanguageId = updatedQuestionCM.LanguageId;
+            question.CategoryId = updatedQuestionCM.CategoryId;
+            question.Visibility = updatedQuestionCM.Visibility;
+
+                
+            _context.AnswerOptions.RemoveRange(question.AnswerOptions);
+            question.AnswerOptions.Clear();
+
+            foreach (var optionDto in updatedQuestionCM.AnswerOptions)
+            {
+                var answerOption = new AnswerOption
+                {
+                    Text = optionDto.Text,
+                    IsCorrect = optionDto.IsCorrect,
+                    Question = question
+                };
+                question.AnswerOptions.Add(answerOption);
+            }
+
+            await _context.SaveChangesAsync();
+
+            return question;
+        }
+
         public async Task<(bool Success, string Message)> DeleteQuestionAsync(int id)
         {
             var question = await _context.Questions
