@@ -59,7 +59,7 @@ export const Questions = () => {
   }
 
   return (
-    <>
+    <div className="flex flex-col gap-8">
       <Card className="p-8 bg-background border border-border">
         <div className="flex justify-between mb-6">
           <Input
@@ -92,6 +92,6 @@ export const Questions = () => {
       <CategoryView />
       <DifficultyView />
       <LangaugesView />
-    </>
+    </div>
   );
 };

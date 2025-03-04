@@ -61,7 +61,7 @@ export const PrivateQuestionForm = ({
       </div>
 
       {/* Metadata Row */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="flex flex-col">
         <CategorySelect
           label="Category"
           categories={categories}
