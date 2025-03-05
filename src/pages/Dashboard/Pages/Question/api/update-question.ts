@@ -4,7 +4,6 @@ import { api } from "@/lib/Api-client";
 import { MutationConfig } from "@/lib/React-query";
 import { Question } from "@/types/ApiTypes";
 import { answerOptionsSchema } from "../../Quiz/api/create-quiz";
-import { getIndividualQuestionQueryOptions } from "./get-individual-question";
 import { getQuestionsQueryOptions } from "./get-questions";
 
 export const updateQuestionInputSchema = z.object({
@@ -13,7 +12,7 @@ export const updateQuestionInputSchema = z.object({
   categoryId: z.number().int().positive({ message: "Category is required" }),
   languageId: z.number().int().positive({ message: "Language is required" }),
 //   visibility: z.enum(["Global", "Private"]),
-visibility : z.string(),
+visibility : z.string().min(1, "Visibility is required"),
   answerOptions: answerOptionsSchema,
 }
 );

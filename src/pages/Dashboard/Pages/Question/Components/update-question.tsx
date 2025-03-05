@@ -3,12 +3,7 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { Form, FormDrawer, Input, Label } from "@/components/ui/form";
 import { useNotifications } from "@/common/Notifications";
-import {
-  QuestionCategory,
-  QuestionDifficulty,
-  QuestionLanguage,
-  Question,
-} from "@/types/ApiTypes";
+import { Question } from "@/types/ApiTypes";
 import { useFieldArray } from "react-hook-form";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
@@ -21,6 +16,7 @@ import { CategorySelect } from "../Entities/Categories/Components/select-questio
 import { DifficultySelect } from "../Entities/Difficulty/Components/select-question-difficulty";
 import { LanguageSelect } from "../Entities/Language/components/select-question-language";
 import { useQuizForm } from "../../Quiz/components/Create-Quiz-Form/use-quiz-form";
+import { VisibilitySelect } from "../Entities/select-visibility";
 
 interface UpdateQuestionFormProps {
   question: Question;
@@ -96,12 +92,12 @@ export const UpdateQuestionForm: React.FC<UpdateQuestionFormProps> = ({
         schema={updateQuestionInputSchema}
       >
         {({ register, formState, control, setValue, watch, clearErrors }) => {
-          const { fields, append, remove } = useFieldArray({
+          const { fields, remove } = useFieldArray({
             control,
             name: "answerOptions",
           });
 
-          const addOptionDisabled = fields.length >= 4;
+          //   const addOptionDisabled = fields.length >= 4;
 
           const handleSwitchChange = (index: number) => {
             const updatedOptions = fields.map((field, i) => ({
@@ -164,6 +160,13 @@ export const UpdateQuestionForm: React.FC<UpdateQuestionFormProps> = ({
                 includeAllOption={false}
                 error={formState.errors["languageId"]?.message}
                 clearErrors={() => clearErrors("languageId")}
+              />
+              <VisibilitySelect
+                label="Visibility"
+                value={watch("visibility")}
+                onChange={(value: string) => setValue("visibility", value)}
+                error={formState.errors["visibility"]?.message}
+                clearErrors={() => clearErrors("visibility")}
               />
               <Separator className="bg-gray-500" />
 
