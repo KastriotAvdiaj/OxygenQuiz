@@ -14,5 +14,7 @@ namespace QuizAPI.Controllers.Questions.Services.AnswerOptions
             List<AnswerOptionCM> newAnswerOption,
             int questionId
             );
+
+        Task<AnswerOption> UpdateAnswerOptionAsync(AnswerOption answerOption);
     }
 }

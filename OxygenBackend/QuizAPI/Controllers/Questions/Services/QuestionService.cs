@@ -39,18 +39,6 @@ namespace QuizAPI.Controllers.Questions.Services
                 Visibility = visibility,
             };
 
-
-/*            foreach (var optionDto in newQuestionCM.AnswerOptions)
-            {
-                var answerOption = new AnswerOption
-                {
-                    Text = optionDto.Text,
-                    IsCorrect = optionDto.IsCorrect,
-                    Question = question
-                };
-                question.AnswerOptions.Add(answerOption);
-            }*/
-
             _context.Questions.Add(question);
             await _context.SaveChangesAsync();
 
@@ -83,19 +71,24 @@ namespace QuizAPI.Controllers.Questions.Services
             question.CategoryId = updatedQuestionCM.CategoryId;
             question.Visibility = updatedQuestionCM.Visibility;
 
-                
-            _context.AnswerOptions.RemoveRange(question.AnswerOptions);
-            question.AnswerOptions.Clear();
 
-            foreach (var optionDto in updatedQuestionCM.AnswerOptions)
+            if (question.AnswerOptions.Any())
             {
-                var answerOption = new AnswerOption
+                _context.AnswerOptions.RemoveRange(question.AnswerOptions);
+                question.AnswerOptions.Clear();
+            }
+
+            if (updatedQuestionCM.AnswerOptions != null)
+            {
+                foreach (var optionDto in updatedQuestionCM.AnswerOptions)
                 {
-                    Text = optionDto.Text,
-                    IsCorrect = optionDto.IsCorrect,
-                    Question = question
-                };
-                question.AnswerOptions.Add(answerOption);
+                    question.AnswerOptions.Add(new AnswerOption
+                    {
+                        Text = optionDto.Text,
+                        IsCorrect = optionDto.IsCorrect,
+                        Question = question
+                    });
+                }
             }
 
             await _context.SaveChangesAsync();
@@ -201,8 +194,20 @@ namespace QuizAPI.Controllers.Questions.Services
                 {
                     ID = q.Id,
                     Text = q.Text,
-                    Difficulty = q.Difficulty.Level,
-                    Category = q.Category.Name,
+                    Difficulty = new DifficultyDTO { 
+                    Id = q.Difficulty.ID,
+                    Level = q.Difficulty.Level,
+                    },
+                    Category =new CategoryDTO {
+                        Id = q.CategoryId,
+                        Category = q.Category.Name
+                    },
+                    Language = new LangaugeDTO
+                    {
+                        Id = q.LanguageId,
+                        Langauge = q.Language.Language
+                    },
+                    Visibility = q.Visibility.ToString(),
                     User = new UserBasicDTO
                     {
                         Id = q.User.Id,

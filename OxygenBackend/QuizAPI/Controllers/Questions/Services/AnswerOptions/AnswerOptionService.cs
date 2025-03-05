@@ -52,5 +52,35 @@ namespace QuizAPI.Controllers.Questions.Services.AnswerOptions
 
             return createdOptions;
         }
+
+        /*
+        ------------
+        Not being used at the moment since the logic is a little complex.
+        ------------
+        */
+        public async Task<AnswerOption> UpdateAnswerOptionAsync(AnswerOption updatedAnswerOption)
+        {
+            
+            var existingAnswerOption = await _context.AnswerOptions
+                .FirstOrDefaultAsync(a => a.Id == updatedAnswerOption.Id);
+
+            if (existingAnswerOption == null)
+            {
+                throw new Exception("Answer option not found.");
+            }
+
+            if (existingAnswerOption.Text == updatedAnswerOption.Text &&
+        existingAnswerOption.IsCorrect == updatedAnswerOption.IsCorrect)
+            {
+                return existingAnswerOption;
+            }
+
+            existingAnswerOption.Text = updatedAnswerOption.Text;
+            existingAnswerOption.IsCorrect = updatedAnswerOption.IsCorrect;
+
+            await _context.SaveChangesAsync();
+
+            return existingAnswerOption;
+        }
     }
 }

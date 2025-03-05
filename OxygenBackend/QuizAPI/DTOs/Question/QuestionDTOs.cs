@@ -25,19 +25,47 @@ namespace QuizAPI.DTOs.Question
             public int ID { get; set; }
             public string Text { get; set; } = string.Empty;
 
-            public string Difficulty { get; set; }
+            public DifficultyDTO Difficulty { get; set; }
+
+            public LangaugeDTO Language { get; set; }
 
             public UserBasicDTO User { get; set; }
 
-            public string Category { get; set; }
+            public CategoryDTO Category { get; set; }
 
             public int TotalQuestions { get; set; }
+
+            public string Visibility { get; set; }
 
             public List<AnswerOptionDTO> AnswerOptions { get; set; }
 
         }
 
-        public class IndividualQuestionDTO {
+    public class CategoryDTO
+    {
+        public int Id { get; set; }
+
+        public string Category { get; set; } = string.Empty;
+    }
+
+    public class DifficultyDTO
+    {
+
+       public int Id { get; set; }
+
+        public string Level { get; set; } = string.Empty;
+
+        public int Weight { get; set; }
+    }
+
+    public class LangaugeDTO {
+    
+    public int Id { get; set; }
+    public string Langauge { get; set; } = string.Empty;
+    }
+
+
+    public class IndividualQuestionDTO {
     
             public int ID { get; set; }
 

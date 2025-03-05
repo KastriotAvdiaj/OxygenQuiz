@@ -92,41 +92,19 @@ namespace QuizAPI.Controllers.Questions
         [Authorize]
         public async Task<IActionResult> UpdateQuestion(int id, QuestionUM questionDto)
         {
-            var question = await _context.Questions.Include(q => q.AnswerOptions)
-                .FirstOrDefaultAsync(q => q.Id == id);
-
-            if (question == null)
-                return NotFound();
-
-            if (questionDto.AnswerOptions == null || !QuestionHelpers.ValidateAnswerOptions(questionDto.AnswerOptions))
-                return BadRequest("Each question must have at least one correct and one incorrect answer.");
-
-            // Update the question properties
-            question.Text = questionDto.Text;
-            /* question.DifficultyId = questionDto.DifficultyLevel;*/
-
-            // Clear existing options and add new ones
-            _context.AnswerOptions.RemoveRange(question.AnswerOptions);
-            question.AnswerOptions = questionDto.AnswerOptions.Select(ao => new AnswerOption
-            {
-                Text = ao.Text,
-                IsCorrect = ao.IsCorrect,
-                QuestionId = id
-            }).ToList();
-
             try
             {
-                await _context.SaveChangesAsync();
+                var question = await _questionService.UpdateQuestionAsync(id, questionDto);
+                return Ok(question);
             }
-            catch (DbUpdateConcurrencyException)
+            catch (KeyNotFoundException)
             {
-                if (!QuestionExists(id))
-                    return NotFound();
-                else
-                    throw;
+                return NotFound("Question not found.");
             }
-
-            return NoContent();
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         [Authorize(Roles = "Admin , SuperAdmin")]

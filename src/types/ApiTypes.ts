@@ -62,11 +62,12 @@ export type BaseEntity<TId = number> = {
 
   export type Question ={
     id: number;
-    difficulty: string;
+    difficulty: DifficultyDTO;
     user: UserBasic; // not being used for now
     text: string;
-    category: string;
-    language :string;
+    category: CategoryDTO;
+    language :LangaugeDTO;
+    visibility:string;
     answerOptions: AnswerOption[];
   };
 
@@ -84,6 +85,21 @@ export type BaseEntity<TId = number> = {
     visibility:string;
     categoryId: number;
     answerOptions: AnswerOption[];
+  }
+
+  type CategoryDTO = {
+    id: number;
+    category: string;
+  }
+
+  type DifficultyDTO = {
+    id: number;
+    level: string;
+    weight :number;
+  }
+  type LangaugeDTO = {
+    id: number;
+    language: string;
   }
 
   export type QuestionCategory = {
