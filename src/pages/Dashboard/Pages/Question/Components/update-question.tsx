@@ -43,9 +43,7 @@ export const UpdateQuestionForm: React.FC<UpdateQuestionFormProps> = ({
     <FormDrawer
       isDone={updateQuestionMutation.isSuccess}
       triggerButton={
-        <Button size="sm" icon={<Pen className="size-4" />}>
-          Edit Question
-        </Button>
+        <Button size="sm" icon={<Pen className="size-4 mr-0" />}></Button>
       }
       title="Update Question"
       submitButton={
