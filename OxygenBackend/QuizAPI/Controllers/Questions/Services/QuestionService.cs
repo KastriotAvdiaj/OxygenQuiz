@@ -69,7 +69,16 @@ namespace QuizAPI.Controllers.Questions.Services
             question.DifficultyId = updatedQuestionCM.DifficultyId;
             question.LanguageId = updatedQuestionCM.LanguageId;
             question.CategoryId = updatedQuestionCM.CategoryId;
-            question.Visibility = updatedQuestionCM.Visibility;
+
+            if (Enum.TryParse<QuestionVisibility>(updatedQuestionCM.Visibility, out var visibilityEnum))
+            {
+                Console.WriteLine($"Parsed enum: {visibilityEnum}");
+            }
+            else
+            {
+                Console.WriteLine("Invalid enum value received.");
+            }
+            question.Visibility = visibilityEnum;
 
 
             if (question.AnswerOptions.Any())

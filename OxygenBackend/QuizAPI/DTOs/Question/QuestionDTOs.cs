@@ -16,7 +16,7 @@ namespace QuizAPI.DTOs.Question
 
     public class QuestionUM : QuestionCM
     {
-        public QuestionVisibility Visibility { get; set; }
+        public string Visibility { get; set; }
     }
 
     // Used for sending the data - Transferring the model 

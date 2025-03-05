@@ -13,25 +13,24 @@ import { useFieldArray } from "react-hook-form";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 
-import { updateQuestionInputSchema, useUpdateQuestion } from "../api/update-question";
+import {
+  updateQuestionInputSchema,
+  useUpdateQuestion,
+} from "../api/update-question";
 import { CategorySelect } from "../Entities/Categories/Components/select-question-category";
 import { DifficultySelect } from "../Entities/Difficulty/Components/select-question-difficulty";
 import { LanguageSelect } from "../Entities/Language/components/select-question-language";
+import { useQuizForm } from "../../Quiz/components/Create-Quiz-Form/use-quiz-form";
 
 interface UpdateQuestionFormProps {
   question: Question;
-  categories: QuestionCategory[];
-  difficulties: QuestionDifficulty[];
-  languages: QuestionLanguage[];
 }
 
 export const UpdateQuestionForm: React.FC<UpdateQuestionFormProps> = ({
   question,
-  categories,
-  difficulties,
-  languages,
 }) => {
   const { addNotification } = useNotifications();
+  const { queryData } = useQuizForm();
 
   const updateQuestionMutation = useUpdateQuestion({
     mutationConfig: {
@@ -48,7 +47,7 @@ export const UpdateQuestionForm: React.FC<UpdateQuestionFormProps> = ({
     <FormDrawer
       isDone={updateQuestionMutation.isSuccess}
       triggerButton={
-        <Button variant="ghost" size="sm" icon={<Pen className="size-4" />}>
+        <Button size="sm" icon={<Pen className="size-4" />}>
           Edit Question
         </Button>
       }
@@ -71,14 +70,14 @@ export const UpdateQuestionForm: React.FC<UpdateQuestionFormProps> = ({
         id="update-question"
         className="w-[500px]"
         options={{
-            defaultValues:{
-                text: question.text,
-                categoryId: question.category.id,
-                difficultyId: question.difficulty.id,
-                languageId: question.language.id,
-                visibility: question.visibility,
-                answerOptions: question.answerOptions,
-              }
+          defaultValues: {
+            text: question.text,
+            categoryId: question.category.id,
+            difficultyId: question.difficulty.id,
+            languageId: question.language.id,
+            visibility: question.visibility,
+            answerOptions: question.answerOptions,
+          },
         }}
         onSubmit={(values) => {
           const isCorrectSelected = values.answerOptions.some(
@@ -132,7 +131,7 @@ export const UpdateQuestionForm: React.FC<UpdateQuestionFormProps> = ({
                 </div>
                 <CategorySelect
                   label="Category"
-                  categories={categories}
+                  categories={queryData.categories}
                   value={watch("categoryId")?.toString() || ""}
                   onChange={(value: string) =>
                     setValue("categoryId", parseInt(value, 10))
@@ -145,7 +144,7 @@ export const UpdateQuestionForm: React.FC<UpdateQuestionFormProps> = ({
               <Separator className="bg-gray-500" />
               <DifficultySelect
                 label="Difficulty"
-                difficulties={difficulties}
+                difficulties={queryData.difficulties}
                 value={watch("difficultyId")?.toString()}
                 onChange={(value: string) =>
                   setValue("difficultyId", parseInt(value, 10))
@@ -157,7 +156,7 @@ export const UpdateQuestionForm: React.FC<UpdateQuestionFormProps> = ({
               <Separator className="bg-gray-500" />
               <LanguageSelect
                 label="Language"
-                languages={languages}
+                languages={queryData.languages}
                 value={watch("languageId")?.toString()}
                 onChange={(value: string) =>
                   setValue("languageId", parseInt(value, 10))

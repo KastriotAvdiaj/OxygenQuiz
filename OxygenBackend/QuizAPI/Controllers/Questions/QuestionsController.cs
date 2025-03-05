@@ -88,8 +88,8 @@ namespace QuizAPI.Controllers.Questions
         }
 
         // PUT: api/Questions/{id}
-        [HttpPut("{id}")]
         [Authorize]
+        [HttpPut("{id}")]
         public async Task<IActionResult> UpdateQuestion(int id, QuestionUM questionDto)
         {
             try

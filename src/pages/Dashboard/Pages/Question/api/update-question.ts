@@ -5,6 +5,7 @@ import { MutationConfig } from "@/lib/React-query";
 import { Question } from "@/types/ApiTypes";
 import { answerOptionsSchema } from "../../Quiz/api/create-quiz";
 import { getIndividualQuestionQueryOptions } from "./get-individual-question";
+import { getQuestionsQueryOptions } from "./get-questions";
 
 export const updateQuestionInputSchema = z.object({
   text: z.string().min(1, "Question is required"), 
@@ -22,7 +23,7 @@ export type UpdateQuestionInput = z.infer<typeof updateQuestionInputSchema>;
 export const updateQuestion = ({ data, questionId }: { data: UpdateQuestionInput, questionId: number}): Promise<Question> => {
   return (
     console.log("data", data, questionId),
-    api.post(`/questions/${questionId}`, data));
+    api.put(`/questions/${questionId}`, data));
 };
 
 type UseUpdateQuestionOptions = {
@@ -37,7 +38,7 @@ export const useUpdateQuestion = ({ mutationConfig }: UseUpdateQuestionOptions =
   return useMutation({
     mutationFn: updateQuestion,
     onSuccess: (data, ...args) => {
-      queryClient.refetchQueries({ queryKey: getIndividualQuestionQueryOptions(data.id).queryKey });
+      queryClient.refetchQueries({ queryKey: getQuestionsQueryOptions().queryKey });
       onSuccess?.(data, ...args);
     },
     onError: (error, variables, context) => {

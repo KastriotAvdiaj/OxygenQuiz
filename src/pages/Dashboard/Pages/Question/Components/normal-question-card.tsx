@@ -3,11 +3,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/form";
 import { Question } from "@/types/ApiTypes";
-import { Button } from "@/components/ui";
 import { DeleteQuestion } from "./delete-question";
 import { useNavigate } from "react-router-dom";
 import { AnswerOptionViewList } from "./answer-option-view-list";
-import { EditIcon } from "lucide-react";
+import UpdateQuestionForm from "./update-question";
 
 interface NormalQuestionCard {
   question: Question;
@@ -43,7 +42,9 @@ export const NormalQuestionCard: React.FC<NormalQuestionCard> = ({
         <div className="flex flex-col sm:flex-row items-start justify-between p-4">
           <div className="flex-grow mb-2 sm:mb-0">
             <h5 className="text-base font-semibold">{question.text}</h5>
-            <Label className="text-xs text-gray-500">{question.category.category}</Label>
+            <Label className="text-xs text-gray-500">
+              {question.category.category}
+            </Label>
           </div>
           <div className="flex flex-row sm:flex-col items-center sm:items-end gap-2">
             <Badge className="border-1px">{question.difficulty.level}</Badge>
@@ -58,9 +59,7 @@ export const NormalQuestionCard: React.FC<NormalQuestionCard> = ({
       {/* </Link> */}
       {showActionButtons && (
         <section className="border-t border-border p-2 flex items-center gap-2 justify-end opacity-100 sm:opacity-0 sm:hover:opacity-100 transition-opacity duration-200">
-          <Button size="sm" className="rounded-sm">
-            <EditIcon size={16} />
-          </Button>
+          <UpdateQuestionForm question={question} />
           <DeleteQuestion id={question.id} />
         </section>
       )}
