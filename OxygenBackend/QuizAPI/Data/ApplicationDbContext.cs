@@ -43,9 +43,9 @@ namespace QuizAPI.Data
         public DbSet<QuestionStatistics> QuestionStatistics { get; set; }
 
 
-      /*  public DbSet<Employee> Employees { get; set; }
+        public DbSet<Employee> Employees { get; set; }
 
-        public DbSet<Contract> Contracts { get; set; }*/
+        public DbSet<Contract> Contracts { get; set; }
 
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
         {
