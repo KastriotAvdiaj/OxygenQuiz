@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using QuizAPI.Controllers.Questions.Services;
-using QuizAPI.Controllers.Quizzes.Services;
+using QuizAPI.Controllers.Quizzes.Services.QuizServices;
 using QuizAPI.Data;
 using QuizAPI.DTOs.Question;
 using QuizAPI.DTOs.Quiz;

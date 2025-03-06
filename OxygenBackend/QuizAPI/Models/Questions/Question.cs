@@ -1,6 +1,7 @@
 ﻿
 using QuizAPI.ManyToManyTables;
 using QuizAPI.Models;
+using QuizAPI.Models.Quiz;
 using QuizAPI.Models.Statistics.Questions;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
@@ -41,6 +42,8 @@ namespace QuizAPI.Models
 
         [JsonIgnore]
         public QuestionLanguage Language { get; set; }
+
+        public ICollection<UserAnswer> UserAnswers { get; set; }
 
         [Required]
         public QuestionVisibility Visibility { get; set; } = QuestionVisibility.Global;

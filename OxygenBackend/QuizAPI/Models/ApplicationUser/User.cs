@@ -1,4 +1,5 @@
 ﻿using QuizAPI.ManyToManyTables;
+using QuizAPI.Models.Quiz;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace QuizAPI.Models
@@ -23,6 +24,9 @@ namespace QuizAPI.Models
 
         // Navigation property to the collection of UpdatedAtTable
         public ICollection<UserUpdatedAt> UserUpdatedAt { get; set; }
+
+        // Navigation property to the collection of QuizSession
+        public ICollection<QuizSession> QuizSessions { get; set; }
 
         public Guid ConcurrencyStamp { get; set; }
 

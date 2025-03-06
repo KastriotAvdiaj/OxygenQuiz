@@ -17,8 +17,8 @@ interface QuizCardProps {
 
 export function QuizCard({ quiz }: QuizCardProps) {
   return (
-    <Card className="w-full max-w-md hover:shadow-lg transition-shadow duration-300 border-none">
-      <CardHeader>
+    <Card className="w-full max-w-md hover:shadow-lg bg-background transition-shadow duration-300 border-none">
+      <CardHeader className="">
         <CardTitle className="text-2xl font-bold">{quiz.title}</CardTitle>
         {quiz.description && (
           <CardDescription className="text-sm text-muted-foreground">

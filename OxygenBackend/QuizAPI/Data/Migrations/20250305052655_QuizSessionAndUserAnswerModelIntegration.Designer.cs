@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using QuizAPI.Data;
 
@@ -11,9 +12,11 @@ using QuizAPI.Data;
 namespace QuizAPI.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250305052655_QuizSessionAndUserAnswerModelIntegration")]
+    partial class QuizSessionAndUserAnswerModelIntegration
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -368,9 +371,6 @@ namespace QuizAPI.Migrations
                     b.Property<int>("Score")
                         .HasColumnType("int");
 
-                    b.Property<int>("SelectedOptionId")
-                        .HasColumnType("int");
-
                     b.Property<Guid>("SessionId")
                         .HasColumnType("uniqueidentifier");
 
@@ -381,8 +381,6 @@ namespace QuizAPI.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("QuestionId");
-
-                    b.HasIndex("SelectedOptionId");
 
                     b.HasIndex("SessionId");
 
@@ -727,14 +725,8 @@ namespace QuizAPI.Migrations
             modelBuilder.Entity("QuizAPI.Models.Quiz.UserAnswer", b =>
                 {
                     b.HasOne("QuizAPI.Models.Question", "Question")
-                        .WithMany("UserAnswers")
-                        .HasForeignKey("QuestionId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("QuizAPI.Models.AnswerOption", "AnswerOption")
                         .WithMany()
-                        .HasForeignKey("SelectedOptionId")
+                        .HasForeignKey("QuestionId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -743,8 +735,6 @@ namespace QuizAPI.Migrations
                         .HasForeignKey("SessionId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-
-                    b.Navigation("AnswerOption");
 
                     b.Navigation("Question");
 
@@ -796,8 +786,6 @@ namespace QuizAPI.Migrations
                     b.Navigation("QuizQuestions");
 
                     b.Navigation("Statistics");
-
-                    b.Navigation("UserAnswers");
                 });
 
             modelBuilder.Entity("QuizAPI.Models.QuestionCategory", b =>

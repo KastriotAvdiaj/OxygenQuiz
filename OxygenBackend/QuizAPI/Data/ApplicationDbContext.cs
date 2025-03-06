@@ -16,6 +16,10 @@ namespace QuizAPI.Data
 
         public DbSet<Quiz> Quizzes { get; set; }
 
+        public DbSet<QuizSession> QuizSessions { get; set; }
+
+        public DbSet<UserAnswer> UserAnswers { get; set; }
+
         public DbSet<QuizQuestion> QuizQuestions { get; set; }
 
         public DbSet<QuestionCategory> QuestionCategories { get; set; }
@@ -37,6 +41,11 @@ namespace QuizAPI.Data
         public DbSet<UserUpdatedAt> UserUpdatedAt { get; set; }
 
         public DbSet<QuestionStatistics> QuestionStatistics { get; set; }
+
+
+      /*  public DbSet<Employee> Employees { get; set; }
+
+        public DbSet<Contract> Contracts { get; set; }*/
 
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
         {
@@ -162,6 +171,28 @@ namespace QuizAPI.Data
                 .WithMany(q => q.QuizQuestions)
                 .HasForeignKey(qq => qq.QuestionId);
 
+
+            //Configuration for QuizSession and User relationship
+            modelBuilder.Entity<QuizSession>()
+                .HasOne(qs => qs.User)
+                .WithMany(u => u.QuizSessions)
+                .HasForeignKey(qs => qs.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+
+            //Configuration for QuizSession and UserAnswers relationship
+            modelBuilder.Entity<UserAnswer>()
+                .HasOne(ua => ua.QuizSession)
+                .WithMany(qs => qs.UserAnswers)
+                .HasForeignKey(ua => ua.SessionId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            //Configuration for Question and UserAnswers relationship
+            modelBuilder.Entity<UserAnswer>()
+                .HasOne(ua => ua.Question)
+                .WithMany(q => q.UserAnswers)
+                .HasForeignKey(ua => ua.QuestionId)
+                .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

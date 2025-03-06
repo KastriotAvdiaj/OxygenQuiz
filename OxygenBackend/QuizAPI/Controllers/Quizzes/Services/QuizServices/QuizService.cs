@@ -8,7 +8,7 @@ using QuizAPI.Models;
 using NuGet.Packaging;
 using QuizAPI.DTOs.Question;
 
-namespace QuizAPI.Controllers.Quizzes.Services
+namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
 {
     public class QuizService : IQuizService
     {
@@ -26,7 +26,7 @@ namespace QuizAPI.Controllers.Quizzes.Services
             var quizzes = await _context.Quizzes
                 .Include(q => q.QuizQuestions)
                     .ThenInclude(qq => qq.Question)
-                        .ThenInclude(q => q.AnswerOptions) 
+                        .ThenInclude(q => q.AnswerOptions)
                 .Include(q => q.Category)
                 .Include(q => q.Language)
                 .ToListAsync();
@@ -106,13 +106,13 @@ namespace QuizAPI.Controllers.Quizzes.Services
             return publicQuestions.Select(pq => new QuizQuestion
             {
                 QuestionId = pq.QuestionId,
-                Score = pq.Score 
+                Score = pq.Score
             }).ToList();
         }
 
 
         private async Task<List<QuizQuestion>> ProcessPrivateQuestions
-            (List<QuestionCMWithScore> privateQuestions,string userId)
+            (List<QuestionCMWithScore> privateQuestions, string userId)
         {
             var quizQuestions = new List<QuizQuestion>();
 
@@ -122,14 +122,14 @@ namespace QuizAPI.Controllers.Quizzes.Services
             foreach (var questionCM in privateQuestions)
             {
                 var question = await _questionService.CreateQuestionAsync(
-                    questionCM, 
+                    questionCM,
                     userId,
                     visibility: QuestionVisibility.Private);
 
                 quizQuestions.Add(new QuizQuestion
                 {
                     QuestionId = question.Id,
-                    Score = questionCM.Score 
+                    Score = questionCM.Score
                 });
             }
 
