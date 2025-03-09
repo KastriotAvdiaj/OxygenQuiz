@@ -5,35 +5,35 @@ import { Plus } from "lucide-react";
 import { Input, Label } from "@/components/ui/form";
 import { Form } from "@/components/ui/form";
 import {
-  createContractsInputSchema,
-  useCreateContracts,
-} from "../api/create-contracts";
-import { useEmployeeData } from "../api/get-employees";
+  createDrejtimiInputSchema,
+  useCreateDrejtimi,
+} from "../api/create-drejtimi";
+import { useUniversityData } from "../api/get-universities";
 
-export const CreateContractsForm = () => {
+export const CreateDrejtimiForm = () => {
   const { addNotification } = useNotifications();
-  const createContractsMutation = useCreateContracts({
+  const createContractsMutation = useCreateDrejtimi({
     mutationConfig: {
       onSuccess: () => {
         addNotification({
           type: "success",
-          title: "Contract Created",
+          title: "Drejtimi Created",
         });
       },
     },
   });
 
-  const employees = useEmployeeData({});
+  const employees = useUniversityData({});
 
   return (
     <FormDrawer
       isDone={createContractsMutation.isSuccess}
       triggerButton={
         <Button variant="default" size="sm" icon={<Plus className="size-4" />}>
-          Create New Contact
+          Create New Drejtim
         </Button>
       }
-      title="Create New Contact"
+      title="Create New Drejtim"
       submitButton={
         <Button
           form="create-contact"
@@ -53,43 +53,43 @@ export const CreateContractsForm = () => {
         onSubmit={(values) => {
           createContractsMutation.mutate({ data: values });
         }}
-        schema={createContractsInputSchema}
+        schema={createDrejtimiInputSchema}
       >
         {({ register, formState }) => {
           return (
             <>
               <div>
                 <Label htmlFor="title" className="text-sm font-medium">
-                  Title
+                  Name
                 </Label>
                 <Input
                   id="title"
                   className={`py-2 ${
-                    formState.errors["title"]
+                    formState.errors["name"]
                       ? "border-red-500"
                       : "border-border"
                   }`}
                   placeholder="Enter new name here..."
-                  error={formState.errors["title"]}
-                  registration={register("title")}
+                  error={formState.errors["name"]}
+                  registration={register("name")}
                 />
                 <Input
                   id="description"
                   className={`py-2 ${
-                    formState.errors["description"]
+                    formState.errors["duration"]
                       ? "border-red-500"
                       : "border-border"
                   }`}
-                  placeholder="Enter description here..."
-                  error={formState.errors["description"]}
-                  registration={register("description")}
+                  placeholder="Enter duration here..."
+                  error={formState.errors["duration"]}
+                  registration={register("duration")}
                 />
-                <Label htmlFor="employeeId" className="text-sm font-medium">
+                <Label htmlFor="universityId" className="text-sm font-medium">
                   Employee
                 </Label>
                 <select
-                  id="employeeId"
-                  {...register("employeeId", { valueAsNumber: true })}
+                  id="universityId"
+                  {...register("universityId", { valueAsNumber: true })}
                 >
                   {employees.data &&
                     employees.data.map((employee) => (
@@ -107,4 +107,4 @@ export const CreateContractsForm = () => {
   );
 };
 
-export default CreateContractsForm;
+export default CreateDrejtimiForm;

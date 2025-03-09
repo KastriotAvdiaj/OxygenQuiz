@@ -1,42 +1,44 @@
-import { useContractsData } from "../Ushtrime/api/get-contracts";
-import { useEmployeeData } from "../Ushtrime/api/get-employees";
-import CreateContractsForm from "../Ushtrime/comp/create-contracts";
-import CreateEmployeeForm from "../Ushtrime/comp/create-employee";
-import { DeleteContract } from "../Ushtrime/comp/delete-contracts";
-import UpdateEmployeeForm from "../Ushtrime/comp/update-employee";
+import { useDrejtimiData } from "../Ushtrime/api/get-drejtimi";
+import { useUniversityData } from "../Ushtrime/api/get-universities";
+import { CreateDrejtimiForm } from "../Ushtrime/comp/create-drejtimi";
+import { CreateUniversityForm } from "../Ushtrime/comp/create-university";
+import { DeleteDrejtimi } from "../Ushtrime/comp/delete-drejtimi";
+import { DeleteUniversity } from "../Ushtrime/comp/delete-university";
+import { UpdateUniversityForm } from "../Ushtrime/comp/update-university";
 
 export const Application = () => {
-  const employees = useEmployeeData({});
-  const contracts = useContractsData({});
-  console.log(employees, contracts);
+  const Universities = useUniversityData({});
+  const contracts = useDrejtimiData({});
+  console.log(Universities, contracts);
 
   return (
     <div className="p-4 space-y-8">
-      {/* Employees Table */}
+      {/* Universities Table */}
       <div>
-        <h2 className="text-xl font-bold mb-2">Employees</h2>
-        {employees.isLoading ? (
-          <p>Loading employees...</p>
+        <h2 className="text-xl font-bold mb-2">Universities</h2>
+        {Universities.isLoading ? (
+          <p>Loading Universities...</p>
         ) : (
           <table className="min-w-full border-collapse border border-gray-300">
             <thead>
               <tr>
                 <th className="border border-gray-300 px-4 py-2">Name</th>
-                <th className="border border-gray-300 px-4 py-2">Surname</th>
+                <th className="border border-gray-300 px-4 py-2">City</th>
                 <th className="border border-gray-300 px-4 py-2">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {employees.data?.map((employee) => (
-                <tr key={employee.id || employee.name}>
+              {Universities.data?.map((university) => (
+                <tr key={university.id || university.name}>
                   <td className="border border-gray-300 px-4 py-2">
-                    {employee.name}
+                    {university.name}
                   </td>
                   <td className="border border-gray-300 px-4 py-2">
-                    {employee.surname}
+                    {university.city}
                   </td>
                   <td>
-                    <UpdateEmployeeForm employeeId={employee.id} />
+                    <UpdateUniversityForm universityId={university.id} university={university}/>
+                    <DeleteUniversity id={university.id} />
                   </td>
                 </tr>
               ))}
@@ -47,17 +49,15 @@ export const Application = () => {
 
       {/* Contracts Table */}
       <div>
-        <h2 className="text-xl font-bold mb-2">Contracts</h2>
+        <h2 className="text-xl font-bold mb-2">Drejtimi</h2>
         {contracts.isLoading ? (
-          <p>Loading contracts...</p>
+          <p>Loading drejtimet...</p>
         ) : (
           <table className="min-w-full border-collapse border border-gray-300">
             <thead>
               <tr>
-                <th className="border border-gray-300 px-4 py-2">Title</th>
-                <th className="border border-gray-300 px-4 py-2">
-                  Description
-                </th>
+                <th className="border border-gray-300 px-4 py-2">Name</th>
+                <th className="border border-gray-300 px-4 py-2">Duration</th>
                 <th className="border border-gray-300 px-4 py-2">Actions</th>
               </tr>
             </thead>
@@ -65,21 +65,13 @@ export const Application = () => {
               {contracts.data?.map((contract) => (
                 <tr key={contract.id}>
                   <td className="border border-gray-300 px-4 py-2">
-                    {contract.title}
+                    {contract.name}
                   </td>
                   <td className="border border-gray-300 px-4 py-2">
-                    {contract.description}
+                    {contract.duration}
                   </td>
                   <td className="border border-gray-300 px-4 py-2">
-                    {/* <button
-                      onClick={() => {
-                        deleteContract({ contractId: contract.id });
-                      }}
-                      className="text-red-500"
-                    >
-                      delete
-                    </button> */}
-                    <DeleteContract id={contract.id} />
+                    <DeleteDrejtimi id={contract.id} />
                   </td>
                 </tr>
               ))}
@@ -90,8 +82,8 @@ export const Application = () => {
 
       {/* Forms Section */}
       <div className="space-y-4">
-        <CreateEmployeeForm />
-        <CreateContractsForm />
+        <CreateUniversityForm />
+        <CreateDrejtimiForm />
       </div>
     </div>
   );

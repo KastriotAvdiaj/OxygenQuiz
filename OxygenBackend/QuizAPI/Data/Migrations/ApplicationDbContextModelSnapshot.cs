@@ -110,7 +110,7 @@ namespace QuizAPI.Migrations
                     b.ToTable("AnswerOptions");
                 });
 
-            modelBuilder.Entity("QuizAPI.Models.Contract", b =>
+            modelBuilder.Entity("QuizAPI.Models.Drejtimi", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -118,43 +118,22 @@ namespace QuizAPI.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("Description")
+                    b.Property<string>("Duration")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("EmployeeId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("EmployeeId");
-
-                    b.ToTable("Contracts");
-                });
-
-            modelBuilder.Entity("QuizAPI.Models.Employee", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Surname")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<int>("UniversitetiId")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
-                    b.ToTable("Employees");
+                    b.HasIndex("UniversitetiId");
+
+                    b.ToTable("Drejtimet");
                 });
 
             modelBuilder.Entity("QuizAPI.Models.Permission", b =>
@@ -491,6 +470,27 @@ namespace QuizAPI.Migrations
                     b.ToTable("QuestionStatistics");
                 });
 
+            modelBuilder.Entity("QuizAPI.Models.Universiteti", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("City")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Universitetet");
+                });
+
             modelBuilder.Entity("QuizAPI.Models.UpdatedAt", b =>
                 {
                     b.Property<int>("Id")
@@ -653,15 +653,15 @@ namespace QuizAPI.Migrations
                     b.Navigation("Question");
                 });
 
-            modelBuilder.Entity("QuizAPI.Models.Contract", b =>
+            modelBuilder.Entity("QuizAPI.Models.Drejtimi", b =>
                 {
-                    b.HasOne("QuizAPI.Models.Employee", "Employee")
+                    b.HasOne("QuizAPI.Models.Universiteti", "Universiteti")
                         .WithMany()
-                        .HasForeignKey("EmployeeId")
+                        .HasForeignKey("UniversitetiId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Employee");
+                    b.Navigation("Universiteti");
                 });
 
             modelBuilder.Entity("QuizAPI.Models.Question", b =>

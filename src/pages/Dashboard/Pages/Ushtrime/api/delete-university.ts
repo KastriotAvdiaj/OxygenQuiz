@@ -1,21 +1,21 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/Api-client";
 import { MutationConfig } from "@/lib/React-query";
-import { getContractsQueryOptions } from "./get-contracts";
+import { getUniversityQueryOptions } from "./get-universities";
 
 type DeleteContractProp = {
-    contractId: number;
+    universityId: number;
   };
 
-  export const deleteContract = ({ contractId }: DeleteContractProp) => {
-    return api.delete(`/contracts/${contractId}`);
+  export const deleteUniversity = ({ universityId }: DeleteContractProp) => {
+    return api.delete(`/university/${universityId}`);
   };
   
   type UseDeleteContractOptions = {
-    mutationConfig?: MutationConfig<typeof deleteContract>;
+    mutationConfig?: MutationConfig<typeof deleteUniversity>;
   };
   
-  export const useDeleteContract = ({
+  export const useDeleteUniversity = ({
     mutationConfig,
   }: UseDeleteContractOptions = {}) => {
     const queryClient = useQueryClient();
@@ -25,12 +25,12 @@ type DeleteContractProp = {
     return useMutation({
       onSuccess: (...args) => {
         queryClient.invalidateQueries({
-          queryKey: getContractsQueryOptions().queryKey,
+          queryKey: getUniversityQueryOptions().queryKey,
         });
         onSuccess?.(...args);
       },
       ...restConfig,
-      mutationFn: deleteContract,
+      mutationFn: deleteUniversity,
     });
   };
   

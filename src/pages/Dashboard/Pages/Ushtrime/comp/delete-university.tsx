@@ -2,19 +2,19 @@ import { useNotifications } from "@/common/Notifications";
 import { ConfirmationDialog } from "@/components/ui/dialog";
 import { Button } from "@/components/ui";
 import { Trash2 } from "lucide-react";
-import { useDeleteContract } from "../api/delete-contracts";
+import { useDeleteUniversity } from "../api/delete-university";
 
 type DeleteContractProp = {
   id: number;
 };
-export const DeleteContract = ({ id }: DeleteContractProp) => {
+export const DeleteUniversity = ({ id }: DeleteContractProp) => {
   const { addNotification } = useNotifications();
-  const deleteContractMutation = useDeleteContract({
+  const deleteContractMutation = useDeleteUniversity({
     mutationConfig: {
       onSuccess: () => {
         addNotification({
           type: "success",
-          title: "Contract Deleted",
+          title: "University Deleted",
         });
       },
     },
@@ -24,7 +24,7 @@ export const DeleteContract = ({ id }: DeleteContractProp) => {
     <ConfirmationDialog
       isDone={deleteContractMutation.isSuccess}
       icon="danger"
-      title="Delete Contract"
+      title="Delete Univeristy"
       body="This action cannot be undone."
       triggerButton={
         <Button className="rounded-xl">
@@ -37,10 +37,10 @@ export const DeleteContract = ({ id }: DeleteContractProp) => {
           type="button"
           variant="destructive"
           onClick={() => {
-            deleteContractMutation.mutate({ contractId: id });
+            deleteContractMutation.mutate({ universityId: id });
           }}
         >
-          Delete Contract
+          Delete University
         </Button>
       }
     />

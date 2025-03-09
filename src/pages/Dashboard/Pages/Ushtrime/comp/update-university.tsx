@@ -4,19 +4,24 @@ import { Button } from "@/components/ui";
 import { Plus } from "lucide-react";
 import { Input, Label } from "@/components/ui/form";
 import { Form } from "@/components/ui/form";
-import {
-  createEmployeeInputSchema,
-  useCreateEmployee,
-} from "../api/create-employee";
+import { useUpdateUniversity } from "../api/update-university";
+import { createUniversityInputSchema } from "../api/create-university";
+import { University } from "../api/get-universities";
 
-export const CreateEmployeeForm = () => {
+export const UpdateUniversityForm = ({
+  universityId,
+  university,
+}: {
+  universityId: number;
+  university: University;
+}) => {
   const { addNotification } = useNotifications();
-  const createEmployeeMutation = useCreateEmployee({
+  const updateEmployeeMutation = useUpdateUniversity({
     mutationConfig: {
       onSuccess: () => {
         addNotification({
           type: "success",
-          title: "Employee Created",
+          title: "University updated",
         });
       },
     },
@@ -24,33 +29,36 @@ export const CreateEmployeeForm = () => {
 
   return (
     <FormDrawer
-      isDone={createEmployeeMutation.isSuccess}
+      isDone={updateEmployeeMutation.isSuccess}
       triggerButton={
         <Button variant="default" size="sm" icon={<Plus className="size-4" />}>
-          Create New Employee
+          Update
         </Button>
       }
-      title="Create New Employee"
+      title="Update Employee"
       submitButton={
         <Button
-          form="create-employee"
+          form="update-employee"
           variant="addSave"
           className="rounded-sm text-white"
           type="submit"
           size="default"
-          isPending={createEmployeeMutation.isPending}
-          disabled={createEmployeeMutation.isPending}
+          isPending={updateEmployeeMutation.isPending}
+          disabled={updateEmployeeMutation.isPending}
         >
           Submit
         </Button>
       }
     >
       <Form
-        id="create-employee"
+        id="update-employee"
         onSubmit={(values) => {
-          createEmployeeMutation.mutate({ data: values });
+          updateEmployeeMutation.mutate({
+            data: values,
+            universityId: universityId,
+          });
         }}
-        schema={createEmployeeInputSchema}
+        schema={createUniversityInputSchema}
       >
         {({ register, formState }) => {
           return (
@@ -66,6 +74,7 @@ export const CreateEmployeeForm = () => {
                       ? "border-red-500"
                       : "border-border"
                   }`}
+                  defaultValue={university.name}
                   placeholder="Enter new name here..."
                   error={formState.errors["name"]}
                   registration={register("name")}
@@ -74,13 +83,14 @@ export const CreateEmployeeForm = () => {
                 <Input
                   id="surname"
                   className={`py-2 ${
-                    formState.errors["surname"]
+                    formState.errors["city"]
                       ? "border-red-500"
                       : "border-border"
                   }`}
+                  defaultValue={university.city}
                   placeholder="Enter surname here..."
-                  error={formState.errors["surname"]}
-                  registration={register("surname")}
+                  error={formState.errors["city"]}
+                  registration={register("city")}
                 />
               </div>
             </>
@@ -91,4 +101,4 @@ export const CreateEmployeeForm = () => {
   );
 };
 
-export default CreateEmployeeForm;
+export default UpdateUniversityForm;
