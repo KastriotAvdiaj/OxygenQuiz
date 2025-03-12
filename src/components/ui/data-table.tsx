@@ -45,7 +45,7 @@ export function DataTable<TData>({ columns, data }: DataTableProps<TData>) {
                   {headerGroup.headers.map((header, index) => (
                     <TableHead
                       key={header.id}
-                      className={`px-4 py-4 text-left text-sm font-medium text-foreground-lighter tracking-wider
+                      className={`px-4 py-4 text-left text-sm font-medium text-foreground-lighter/70 font-semibold tracking-wider
                         ${index !== 0 ? "relative" : ""}`}
                     >
                       {header.isPlaceholder

@@ -19,6 +19,18 @@ import { Quiz } from "@/types/ApiTypes";
 // } from "@/components/ui/dropdown-menu";
 import formatDate from "@/lib/date-format";
 import TitleWithDescription from "./title-description";
+import { useDisclosure } from "@/hooks/use-disclosure";
+import {
+  Button,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui";
+import { Copy, MoreHorizontal } from "lucide-react";
+import { DeleteQuiz } from "./delete-quiz";
 
 export const quizColumns: ColumnDef<Quiz>[] = [
   {
@@ -45,7 +57,7 @@ export const quizColumns: ColumnDef<Quiz>[] = [
           {timeLimit} {timeLimit === 1 ? "minute" : "minutes"}
         </span>
       );
-    }
+    },
   },
   {
     accessorKey: "passingScore",
@@ -72,7 +84,9 @@ export const quizColumns: ColumnDef<Quiz>[] = [
       return (
         <div>
           {isPublished ? (
-            <span className="bg-foreground py-1 px-3 rounded-[5rem] text-background text-[12px]">Published</span>
+            <span className="bg-primary py-1 px-3 rounded-[5rem] text-background text-[12px]">
+              Published
+            </span>
           ) : (
             <span className="text-red-500">Draft</span>
           )}
@@ -82,50 +96,50 @@ export const quizColumns: ColumnDef<Quiz>[] = [
   },
   {
     accessorKey: "numberOfQuestions",
-    header: "Number of Questions",
+    header: "Questions",
   },
-  //   {
-  //     id: "actions",
-  //     header: "Actions",
-  //     cell: ({ row }) => {
-  //       const user = row.original;
-  //       const mainUser = useUser();
+  {
+    id: "actions",
+    header: "Actions",
+    cell: ({ row }) => {
+      const quiz = row.original;
 
-  //       const { open, isOpen, close } = useDisclosure();
+      const { open, isOpen, close } = useDisclosure();
 
-  //       return (
-  //         <DropdownMenu
-  //           open={isOpen}
-  //           onOpenChange={(state) => (state ? open() : close())}
-  //         >
-  //           <DropdownMenuTrigger asChild>
-  //             <Button variant="default" className="h-8 w-8 p-0 rounded">
-  //               <span className="sr-only">Open menu</span>
-  //               <MoreHorizontal className="h-4 w-4" />
-  //             </Button>
-  //           </DropdownMenuTrigger>
-  //           <DropdownMenuContent align="end" className="bg-muted">
-  //             <DropdownMenuLabel>Actions</DropdownMenuLabel>
-  //             <DropdownMenuItem
-  //               onClick={() => navigator.clipboard.writeText(user.id)}
-  //             >
-  //               <Copy size={16} /> Copy ID
-  //             </DropdownMenuItem>
-  //             <DropdownMenuSeparator className="bg-background/60" />
-  //             <DropdownMenuItem
-  //               disabled={user.id === mainUser.data.id}
-  //               onClick={(e) => {
-  //                 e.stopPropagation();
-  //                 e.preventDefault();
-  //               }}
-  //             ></DropdownMenuItem>
-  //             <DropdownMenuSeparator className="bg-background/60" />
-  //             <DropdownMenuItem>
-  //               <UserRoundPen size={16} /> Edit User
-  //             </DropdownMenuItem>
-  //           </DropdownMenuContent>
-  //         </DropdownMenu>
-  //       );
-  //     },
-  //   },
+      return (
+        <DropdownMenu
+          open={isOpen}
+          onOpenChange={(state) => (state ? open() : close())}
+        >
+          <DropdownMenuTrigger asChild>
+            <Button variant="default" className="h-8 w-8 p-0 rounded">
+              <span className="sr-only">Open menu</span>
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="bg-muted">
+            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+            <DropdownMenuItem
+              onClick={() =>
+                navigator.clipboard.writeText(quiz.id as unknown as string)
+              }
+            >
+              <Copy size={16} /> Copy ID
+            </DropdownMenuItem>
+            <DropdownMenuSeparator className="bg-background/60" />
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+              }}
+            >
+              <DeleteQuiz id={quiz.id} />
+            </DropdownMenuItem>
+            <DropdownMenuSeparator className="bg-background/60" />
+            <DropdownMenuItem></DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      );
+    },
+  },
 ];
