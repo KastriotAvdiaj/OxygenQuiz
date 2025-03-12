@@ -18,23 +18,42 @@ import { Quiz } from "@/types/ApiTypes";
 //   DropdownMenuTrigger,
 // } from "@/components/ui/dropdown-menu";
 import formatDate from "@/lib/date-format";
+import TitleWithDescription from "./title-description";
 
 export const quizColumns: ColumnDef<Quiz>[] = [
   {
-    accessorKey: "title",
-    header: "Title",
-  },
-  {
-    accessorKey: "description",
-    header: "Description",
+    id: "quizInfo",
+    header: "Quiz Info",
+    cell: ({ row }) => {
+      const { title, description } = row.original;
+      return (
+        <TitleWithDescription
+          title={title}
+          description={description}
+          wordLimit={20} // Adjust the limit as needed
+        />
+      );
+    },
   },
   {
     accessorKey: "timeLimit",
     header: "Time Limit",
+    cell: ({ row }) => {
+      const timeLimit = row.original.timeLimit;
+      return (
+        <span>
+          {timeLimit} {timeLimit === 1 ? "minute" : "minutes"}
+        </span>
+      );
+    }
   },
   {
     accessorKey: "passingScore",
     header: "Passing Score",
+    cell: ({ row }) => {
+      const passingScore = row.original.passingScore;
+      return <span>{passingScore}%</span>;
+    },
   },
 
   {
@@ -48,6 +67,18 @@ export const quizColumns: ColumnDef<Quiz>[] = [
   {
     accessorKey: "isPublished",
     header: "Status",
+    cell: ({ row }) => {
+      const isPublished = row.original.isPublished;
+      return (
+        <div>
+          {isPublished ? (
+            <span className="bg-foreground py-1 px-3 rounded-[5rem] text-background text-[12px]">Published</span>
+          ) : (
+            <span className="text-red-500">Draft</span>
+          )}
+        </div>
+      );
+    },
   },
   {
     accessorKey: "numberOfQuestions",
