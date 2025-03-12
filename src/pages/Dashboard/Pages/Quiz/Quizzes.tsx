@@ -1,6 +1,6 @@
 import { Button, DataTable } from "@/components/ui";
 import { useQuizData } from "./api/get-quizzes";
-import { QuizList } from "./components/quiz-list";
+// import { QuizList } from "./components/quiz-list";
 import { Link } from "react-router-dom";
 import { quizColumns } from "./components/columns";
 
@@ -15,8 +15,8 @@ export const Quizzes = () => {
   }
 
   return (
-    <div className="grid gap-4">
-      <QuizList quizzes={quizData.data ?? []} />
+    <div className="grid gap-4 bg-background p-4">
+      {/* <QuizList quizzes={quizData.data ?? []} /> */}
       <DataTable data={quizData.data ?? []} columns={quizColumns} />
       <Link to="/dashboard/quizzes/create-quiz">
         <Button variant="addSave">Create Quiz</Button>

@@ -72,7 +72,7 @@ export function DataTable<TData>({ columns, data }: DataTableProps<TData>) {
                     {row.getVisibleCells().map((cell) => (
                       <TableCell
                         key={cell.id}
-                        className={`px-4 py-3 text-sm relative ${
+                        className={`px-4 py-4 text-sm relative ${
                           cell.column.id === "actions" ? "text-center" : ""
                         }`}
                       >
