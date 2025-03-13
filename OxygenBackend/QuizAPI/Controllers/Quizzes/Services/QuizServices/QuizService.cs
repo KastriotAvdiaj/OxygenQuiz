@@ -136,6 +136,35 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
             return quizQuestions;
         }
 
+        public async Task<QuizDTO> MapToQuizDTO(Quiz quiz)
+        {
+            var language = await _context.QuestionLanguages
+               .Where(l => l.Id == quiz.LanguageId)
+               .Select(l => l.Language)
+               .AsNoTracking()
+               .FirstOrDefaultAsync();
+
+            var category = await _context.QuestionCategories
+            .Where(c => c.Id == quiz.CategoryId)
+            .Select(l => l.Name)
+            .AsNoTracking()
+            .FirstOrDefaultAsync();
+
+            return new QuizDTO
+            {
+                Id = quiz.Id,
+                Title = quiz.Title,
+                Description = quiz.Description,
+                /*Slug = quiz.Slug,*/
+                Category = category,
+                Language = language,
+                TimeLimit = quiz.TimeLimit,
+                IsPublished = quiz.IsPublished,
+                PassingScore = quiz.PassingScore,
+                CreatedAt = quiz.CreatedAt,
+                NumberOfQuestions = quiz.QuizQuestions.Count
+            };
+        }
 
         /*   public async Task<bool> ValidateQuizSlugAsync(string slug)
            {

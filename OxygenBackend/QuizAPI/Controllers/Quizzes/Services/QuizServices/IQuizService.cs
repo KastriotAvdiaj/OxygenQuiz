@@ -9,6 +9,8 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
 
         Task<List<QuizDTO>> GetQuizzesAsync();
         Task<bool> ValidatePublicQuestionsAsync(IEnumerable<int> questionIds);
+
+        Task<QuizDTO> MapToQuizDTO(Quiz quiz);
         /* Task<bool> ValidateQuizSlugAsync(string slug);*/
     }
 }

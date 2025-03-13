@@ -18,7 +18,7 @@ export const Quizzes = () => {
     <div className="grid gap-4 bg-background p-4">
       {/* <QuizList quizzes={quizData.data ?? []} /> */}
       <DataTable data={quizData.data ?? []} columns={quizColumns} />
-      <Link to="/dashboard/quizzes/create-quiz">
+      <Link to="/dashboard/quizzes/create-quiz" className="w-fit">
         <Button variant="addSave">Create Quiz</Button>
       </Link>
     </div>

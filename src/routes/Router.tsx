@@ -110,6 +110,21 @@ const createAppRouter = (queryClient: QueryClient) =>
           element: <QuizCreator />,
         },
         {
+          path: "quiz/:quizId",
+          lazy: async () => {
+            const { QuizRoute } = await import(
+              "../pages/Dashboard/Pages/Quiz/Quiz"
+            );
+            return { Component: QuizRoute };
+          },
+          loader: async (args: LoaderFunctionArgs) => {
+            const { questionLoader } = await import(
+              "../pages/Dashboard/Pages/Question/Question"
+            );
+            return questionLoader(queryClient)(args);
+          },
+        },
+        {
           path: "permissions",
           lazy: async () => {
             const { Permissions } = await import(
