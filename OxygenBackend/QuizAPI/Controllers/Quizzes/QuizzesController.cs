@@ -171,12 +171,16 @@ namespace QuizAPI.Controllers.Quizzes
             {
                 return NotFound();
             }
-            var quiz = await _context.Quizzes.FindAsync(id);
+            var quiz = await _context.Quizzes
+                 .Include(q => q.QuizQuestions)
+                    .FirstOrDefaultAsync(q => q.Id == id);
+
             if (quiz == null)
             {
                 return NotFound();
             }
 
+            _context.QuizQuestions.RemoveRange(quiz.QuizQuestions);
             _context.Quizzes.Remove(quiz);
             await _context.SaveChangesAsync();
 
