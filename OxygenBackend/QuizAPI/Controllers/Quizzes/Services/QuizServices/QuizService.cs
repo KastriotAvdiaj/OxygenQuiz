@@ -7,6 +7,7 @@ using QuizAPI.Models.Quiz;
 using QuizAPI.Models;
 using NuGet.Packaging;
 using QuizAPI.DTOs.Question;
+using QuizAPI.DTOs.User;
 
 namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
 {
@@ -165,6 +166,39 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
             };
 
             return quizDto;
+        }
+
+        public async Task<List<QuizQuestionDTO>> GetQuizQuestionsAsync(int quizId)
+        {
+            var quizQuestions = await _context.QuizQuestions
+                .Where(qq => qq.QuizId == quizId)
+                .Include(qq => qq.Question)
+                    .ThenInclude(q => q.Difficulty)
+                .Include(qq => qq.Question)
+                    .ThenInclude(q => q.Language)
+                .Include(qq => qq.Question)
+                    .ThenInclude(q => q.User)
+                .Include(qq => qq.Question)
+                    .ThenInclude(q => q.Category)
+                .Include(qq => qq.Question)
+                    .ThenInclude(q => q.AnswerOptions)
+                .ToListAsync();
+
+            var quizQuestionDtos = new List<QuizQuestionDTO>();
+
+            foreach (var qq in quizQuestions)
+            {
+                var questionDto = _questionService.MapToQuestionDTO(qq.Question);
+                quizQuestionDtos.Add(new QuizQuestionDTO
+                {
+                    QuizId = qq.QuizId,
+                    QuestionId = qq.QuestionId,
+                    Score = qq.Score,
+                    Question = questionDto
+                });
+            }
+
+            return quizQuestionDtos;
         }
 
         public async Task<QuizDTO> MapToQuizDTO(Quiz quiz)

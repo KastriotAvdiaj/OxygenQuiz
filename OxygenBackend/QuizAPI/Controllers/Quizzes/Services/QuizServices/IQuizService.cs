@@ -1,4 +1,5 @@
 ﻿using QuizAPI.DTOs.Quiz;
+using QuizAPI.ManyToManyTables;
 using QuizAPI.Models.Quiz;
 
 namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
@@ -11,6 +12,8 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
         Task<bool> ValidatePublicQuestionsAsync(IEnumerable<int> questionIds);
 
         Task<QuizDTO> MapToQuizDTO(Quiz quiz);
+
+        Task<List<QuizQuestionDTO>> GetQuizQuestionsAsync(int quizId);
 
         Task<QuizDTO> GetQuizAsync (int id);
         /* Task<bool> ValidateQuizSlugAsync(string slug);*/

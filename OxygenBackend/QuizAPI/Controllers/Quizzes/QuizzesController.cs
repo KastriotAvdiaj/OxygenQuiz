@@ -52,6 +52,13 @@ namespace QuizAPI.Controllers.Quizzes
             return Ok(quizDto);
         }
 
+        [HttpGet("{id}/questions")]
+        public async Task<IActionResult> GetQuizQuestions(int id)
+        {
+            var quizQuestions = await _quizService.GetQuizQuestionsAsync(id);
+            return Ok(quizQuestions);
+        }
+
         // PUT: api/Quizs/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         /* [HttpPut("{id}")]

@@ -195,42 +195,18 @@ namespace QuizAPI.Controllers.Questions.Services
 
             var totalQuestions = await query.CountAsync();
 
-            var questionDTOs = await query
-                .OrderBy(q => q.CreatedAt)
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .Select(q => new QuestionDTO
-                {
-                    ID = q.Id,
-                    Text = q.Text,
-                    Difficulty = new DifficultyDTO { 
-                    Id = q.Difficulty.ID,
-                    Level = q.Difficulty.Level,
-                    },
-                    Category =new CategoryDTO {
-                        Id = q.CategoryId,
-                        Category = q.Category.Name
-                    },
-                    Language = new LangaugeDTO
-                    {
-                        Id = q.LanguageId,
-                        Langauge = q.Language.Language
-                    },
-                    Visibility = q.Visibility.ToString(),
-                    User = new UserBasicDTO
-                    {
-                        Id = q.User.Id,
-                        Username = q.User.Username,
-                        ProfileImageUrl = q.User.ProfileImageUrl
-                    },
-                    AnswerOptions = q.AnswerOptions.Select(ao => new AnswerOptionDTO
-                    {
-                        ID = ao.Id,
-                        Text = ao.Text,
-                        IsCorrect = ao.IsCorrect
-                    }).ToList()
-                })
-                .ToListAsync();
+            var questions = await query
+            .OrderBy(q => q.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Include(q => q.Difficulty)
+            .Include(q => q.Category)
+            .Include(q => q.Language)
+            .Include(q => q.User)
+            .Include(q => q.AnswerOptions)
+            .ToListAsync();
+
+            var questionDTOs = questions.Select(q => MapToQuestionDTO(q)).ToList();
 
             return new PaginatedResponse<QuestionDTO>
             {
@@ -239,6 +215,43 @@ namespace QuizAPI.Controllers.Questions.Services
                 TotalItems = totalQuestions,
                 TotalPages = (int)Math.Ceiling(totalQuestions / (double)pageSize),
                 Items = questionDTOs
+            };
+        }
+
+        public QuestionDTO MapToQuestionDTO(Question question)
+        {
+            return new QuestionDTO
+            {
+                ID = question.Id,
+                Text = question.Text,
+                Difficulty = new DifficultyDTO
+                {
+                    Id = question.Difficulty.ID,
+                    Level = question.Difficulty.Level
+                },
+                Category = new CategoryDTO
+                {
+                    Id = question.CategoryId,
+                    Category = question.Category.Name
+                },
+                Language = new LangaugeDTO
+                {
+                    Id = question.LanguageId,
+                    Langauge = question.Language.Language
+                },
+                Visibility = question.Visibility.ToString(),
+                User = new UserBasicDTO
+                {
+                    Id = question.User.Id,
+                    Username = question.User.Username,
+                    ProfileImageUrl = question.User.ProfileImageUrl
+                },
+                AnswerOptions = question.AnswerOptions.Select(ao => new AnswerOptionDTO
+                {
+                    ID = ao.Id,
+                    Text = ao.Text,
+                    IsCorrect = ao.IsCorrect
+                }).ToList()
             };
         }
     }
