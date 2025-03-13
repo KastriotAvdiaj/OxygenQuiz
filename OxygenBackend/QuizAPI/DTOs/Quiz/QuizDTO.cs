@@ -57,13 +57,6 @@ namespace QuizAPI.DTOs.Quiz
         public int NumberOfQuestions { get; set; }
     }
 
-    public class QuizQuestionDTO
-    {
-        public int QuestionId { get; set; }
-        public int QuizId { get; set; }
-
-        public int Score { get; set; }
-        public QuestionDTO Question { get; set; } = new();
-    }
+   
 
 }

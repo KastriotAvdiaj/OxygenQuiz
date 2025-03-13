@@ -42,98 +42,92 @@ namespace QuizAPI.Controllers.Quizzes
 
         // GET: api/Quizs/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<Quiz>> GetQuiz(int id)
+        public async Task<IActionResult> GetQuiz(int id)
         {
-            if (_context.Quizzes == null)
+            var quizDto = await _quizService.GetQuizAsync(id);
+            if (quizDto == null)
             {
                 return NotFound();
             }
-            var quiz = await _context.Quizzes.FindAsync(id);
-
-            if (quiz == null)
-            {
-                return NotFound();
-            }
-
-            return quiz;
+            return Ok(quizDto);
         }
 
         // PUT: api/Quizs/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-       /* [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateQuiz(int id, [FromBody] QuizCM quizCM)
-        {
-            var quiz = await _context.Quizzes
-                .Include(q => q.QuizQuestions)
-                    .ThenInclude(qq => qq.Question)
-                        .ThenInclude(q => q.AnswerOptions)
-                .FirstOrDefaultAsync(q => q.Id == id);
+        /* [HttpPut("{id}")]
+         public async Task<IActionResult> UpdateQuiz(int id, [FromBody] QuizCM quizCM)
+         {
+             var quiz = await _context.Quizzes
+                 .Include(q => q.QuizQuestions)
+                     .ThenInclude(qq => qq.Question)
+                         .ThenInclude(q => q.AnswerOptions)
+                 .FirstOrDefaultAsync(q => q.Id == id);
 
-            if (quiz == null)
-                return NotFound();
+             if (quiz == null)
+                 return NotFound();
 
-            // Update core quiz properties.
-            quiz.Title = quizCM.Title;
-            quiz.Description = quizCM.Description;
-            *//*quiz.Slug = quizCM.Slug;*//*
-            quiz.CategoryId = quizCM.CategoryId;
-            quiz.LanguageId = quizCM.LanguageId;
-            quiz.TimeLimit = quizCM.TimeLimit;
-            quiz.ShuffleQuestions = quizCM.ShuffleQuestions;
-            quiz.ShuffleAnswers = quizCM.ShuffleAnswers;
-            quiz.IsPublished = quizCM.IsPublished;
-            quiz.PassingScore = quizCM.PassingScore;
+             // Update core quiz properties.
+             quiz.Title = quizCM.Title;
+             quiz.Description = quizCM.Description;
+             *//*quiz.Slug = quizCM.Slug;*//*
+             quiz.CategoryId = quizCM.CategoryId;
+             quiz.LanguageId = quizCM.LanguageId;
+             quiz.TimeLimit = quizCM.TimeLimit;
+             quiz.ShuffleQuestions = quizCM.ShuffleQuestions;
+             quiz.ShuffleAnswers = quizCM.ShuffleAnswers;
+             quiz.IsPublished = quizCM.IsPublished;
+             quiz.PassingScore = quizCM.PassingScore;
 
-            // Remove existing quiz-question links.
-            _context.QuizQuestions.RemoveRange(quiz.QuizQuestions);
+             // Remove existing quiz-question links.
+             _context.QuizQuestions.RemoveRange(quiz.QuizQuestions);
 
-            // Process updated quiz questions.
-            foreach (var q in quizCM.Questions)
-            {
-                Question question = null;
-                if (q.ExistingQuestionId.HasValue)
-                {
-                    question = await _context.Questions.FindAsync(q.ExistingQuestionId.Value);
-                    if (question == null)
-                        return BadRequest($"Question with id {q.ExistingQuestionId.Value} does not exist.");
-                }
-                else if (q.NewQuestion != null)
-                {
-                    question = new Question
-                    {
-                        Text = q.NewQuestion.Text,
-                        DifficultyId = q.NewQuestion.DifficultyId,
-                        CategoryId = q.NewQuestion.CategoryId,
-                        LanguageId = q.NewQuestion.LanguageId,
-                        CreatedAt = DateTime.UtcNow,
-                        UserId = quiz.UserId,
-                        Visibility = QuestionVisibility.Private,
-                        AnswerOptions = q.NewQuestion.AnswerOptions.Select(ao => new AnswerOption
-                        {
-                            Text = ao.Text,
-                            IsCorrect = ao.IsCorrect
-                        }).ToList()
-                    };
-                    _context.Questions.Add(question);
-                    await _context.SaveChangesAsync();
-                }
-                else
-                {
-                    return BadRequest("Each question must have either an ExistingQuestionId or a NewQuestion payload.");
-                }
+             // Process updated quiz questions.
+             foreach (var q in quizCM.Questions)
+             {
+                 Question question = null;
+                 if (q.ExistingQuestionId.HasValue)
+                 {
+                     question = await _context.Questions.FindAsync(q.ExistingQuestionId.Value);
+                     if (question == null)
+                         return BadRequest($"Question with id {q.ExistingQuestionId.Value} does not exist.");
+                 }
+                 else if (q.NewQuestion != null)
+                 {
+                     question = new Question
+                     {
+                         Text = q.NewQuestion.Text,
+                         DifficultyId = q.NewQuestion.DifficultyId,
+                         CategoryId = q.NewQuestion.CategoryId,
+                         LanguageId = q.NewQuestion.LanguageId,
+                         CreatedAt = DateTime.UtcNow,
+                         UserId = quiz.UserId,
+                         Visibility = QuestionVisibility.Private,
+                         AnswerOptions = q.NewQuestion.AnswerOptions.Select(ao => new AnswerOption
+                         {
+                             Text = ao.Text,
+                             IsCorrect = ao.IsCorrect
+                         }).ToList()
+                     };
+                     _context.Questions.Add(question);
+                     await _context.SaveChangesAsync();
+                 }
+                 else
+                 {
+                     return BadRequest("Each question must have either an ExistingQuestionId or a NewQuestion payload.");
+                 }
 
-                var quizQuestion = new QuizQuestion
-                {
-                    Quiz = quiz,
-                    Question = question,
-                };
+                 var quizQuestion = new QuizQuestion
+                 {
+                     Quiz = quiz,
+                     Question = question,
+                 };
 
-                quiz.QuizQuestions.Add(quizQuestion);
-            }
+                 quiz.QuizQuestions.Add(quizQuestion);
+             }
 
-            await _context.SaveChangesAsync();
-            return NoContent();
-        }*/
+             await _context.SaveChangesAsync();
+             return NoContent();
+         }*/
 
         // POST: api/Quizs
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
@@ -141,9 +135,7 @@ namespace QuizAPI.Controllers.Quizzes
         public async Task<ActionResult<QuizDTO>> CreateQuiz([FromBody] QuizCM quizCM)
         {
 
-            /*var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;*/
-
-            var userId = "f746e3ac-8425-446f-986e-2e0cd93f9259";  // Retrieve from token in production
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized("User ID not found in token");
@@ -152,7 +144,7 @@ namespace QuizAPI.Controllers.Quizzes
             {
            
                 var quiz = await _quizService.CreateQuizAsync(quizCM, userId);
-                var quizDto = await MapToQuizDTO(quiz);
+                var quizDto = await _quizService.MapToQuizDTO(quiz);
 
                 return Ok(quizDto);
             }
@@ -192,34 +184,5 @@ namespace QuizAPI.Controllers.Quizzes
             return (_context.Quizzes?.Any(e => e.Id == id)).GetValueOrDefault();
         }
 
-        private async Task<QuizDTO> MapToQuizDTO(Quiz quiz)
-        {
-            var language = await _context.QuestionLanguages
-                .Where(l => l.Id == quiz.LanguageId)
-                .Select(l => l.Language)
-                .AsNoTracking()
-                .FirstOrDefaultAsync();
-
-                var category = await _context.QuestionCategories
-                .Where(c => c.Id == quiz.CategoryId)
-                .Select(l => l.Name)
-                .AsNoTracking()
-                .FirstOrDefaultAsync();
-
-            return new QuizDTO
-            {
-                Id = quiz.Id,
-                Title = quiz.Title,
-                Description = quiz.Description,
-                /*Slug = quiz.Slug,*/
-                Category = category,
-                Language = language,
-                TimeLimit = quiz.TimeLimit,
-                IsPublished = quiz.IsPublished,
-                PassingScore = quiz.PassingScore,
-                CreatedAt = quiz.CreatedAt,
-                NumberOfQuestions = quiz.QuizQuestions.Count
-            };
-        }
     }
 }

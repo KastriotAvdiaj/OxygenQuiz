@@ -136,6 +136,37 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
             return quizQuestions;
         }
 
+        public async Task<QuizDTO?> GetQuizAsync(int id)
+        {
+
+            var quizEntity = await _context.Quizzes
+                .Include(q => q.QuizQuestions)
+                    .Include(q => q.Category)
+                        .Include(q => q.Language) 
+                            .FirstOrDefaultAsync(q => q.Id == id);
+
+            if (quizEntity == null)
+            {
+                return null;
+            }
+
+            var quizDto = new QuizDTO
+            {
+                Id = quizEntity.Id,
+                Title = quizEntity.Title,
+                Description = quizEntity.Description,
+                Category = quizEntity.Category.Name,
+                Language = quizEntity.Language.Language,
+                TimeLimit = quizEntity.TimeLimit,
+                IsPublished = quizEntity.IsPublished,
+                PassingScore = quizEntity.PassingScore,
+                CreatedAt = quizEntity.CreatedAt,
+                NumberOfQuestions = quizEntity.QuizQuestions?.Count() ?? 0
+            };
+
+            return quizDto;
+        }
+
         public async Task<QuizDTO> MapToQuizDTO(Quiz quiz)
         {
             var language = await _context.QuestionLanguages

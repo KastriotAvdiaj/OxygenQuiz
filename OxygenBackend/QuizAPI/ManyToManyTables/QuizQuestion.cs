@@ -2,6 +2,7 @@
 using QuizAPI.Models;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
+using QuizAPI.DTOs.Question;
 
 namespace QuizAPI.ManyToManyTables
 {
@@ -17,5 +18,14 @@ namespace QuizAPI.ManyToManyTables
         [ForeignKey(nameof(QuestionId))]
         public Question Question { get; set; }
 
+    }
+
+    public class QuizQuestionDTO
+    {
+        public int QuestionId { get; set; }
+        public int QuizId { get; set; }
+
+        public int Score { get; set; }
+        public QuestionDTO Question { get; set; } = new();
     }
 }
