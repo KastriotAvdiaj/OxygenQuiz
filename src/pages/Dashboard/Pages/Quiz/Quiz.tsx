@@ -8,6 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { DeleteQuiz } from "./components/delete-quiz";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { QuizProperties } from "./components/quiz-properties";
+import { QuizQuestions } from "./components/quiz-questions";
 
 export const quizLoader =
   (queryClient: QueryClient) =>
@@ -15,7 +16,6 @@ export const quizLoader =
     const quizId = Number(params.quizId as string);
 
     const quizQuery = getQuizQueryOptions(quizId);
-
     const promise =
       queryClient.getQueryData(quizQuery.queryKey) ??
       (await queryClient.fetchQuery(quizQuery));
@@ -27,7 +27,6 @@ export const quizLoader =
 export const QuizRoute = () => {
   const params = useParams();
   const quizId = Number(params.quizId as string);
-
   const quizQuery = useQuizData({ quizId });
 
   if (quizQuery.isLoading)
@@ -61,19 +60,18 @@ export const QuizRoute = () => {
               Questions({quiz.numberOfQuestions})
             </TabsTrigger>
           </TabsList>
-          <TabsContent value="public"></TabsContent>
-          <TabsContent value="private"></TabsContent>
+          <Separator className="my-6" />
+          <TabsContent value="questions">
+            <QuizQuestions />
+          </TabsContent>
+          <TabsContent value="overview">
+            <div className="mb-6">
+              <h2 className="text-lg font-semibold">Description</h2>
+              <p className="text-muted-foreground">{quiz.description}</p>
+            </div>
+            {quiz && <QuizProperties quiz={quiz} />}
+          </TabsContent>
         </Tabs>
-        <Separator className="my-6" />
-
-        {/* 
-        Create a file that has these details in an array and then map over them for cleaner code
-        */}
-        <div className="mb-6">
-          <h2 className="text-lg font-semibold">Description</h2>
-          <p className="text-muted-foreground">{quiz.description}</p>
-        </div>
-        {quiz && <QuizProperties quiz={quiz} />}
         <Separator className="mt-6" />
         <section className="mt-6 flex justify-end gap-2">
           {/* 
