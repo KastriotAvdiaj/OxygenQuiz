@@ -118,10 +118,10 @@ const createAppRouter = (queryClient: QueryClient) =>
             return { Component: QuizRoute };
           },
           loader: async (args: LoaderFunctionArgs) => {
-            const { questionLoader } = await import(
-              "../pages/Dashboard/Pages/Question/Question"
+            const { quizLoader } = await import(
+              "../pages/Dashboard/Pages/Quiz/Quiz"
             );
-            return questionLoader(queryClient)(args);
+            return quizLoader(queryClient)(args);
           },
         },
         {
