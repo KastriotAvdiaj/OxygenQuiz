@@ -24,7 +24,7 @@ const TitleWithDescription: React.FC<TitleWithDescriptionProps> = ({
   return (
     <div className="flex flex-col">
       <span className="font-bold text-lg">{title}</span>
-      <span className="text-sm text-gray-600">
+      <span className="text-sm text-foreground-lighter/70">
         {expanded ? description : truncatedText}
         {isTruncated && (
           <button

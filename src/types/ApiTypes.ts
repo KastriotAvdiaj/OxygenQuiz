@@ -53,6 +53,8 @@ export type BaseEntity<TId = number> = {
     id: number;
     title: string;
     description: string;
+    language: string;
+    category:string;
     timeLimit: number;
     passingScore: number;
     createdAt: string;
