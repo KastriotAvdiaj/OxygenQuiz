@@ -19,7 +19,7 @@ type UseQuizOptions = {
   queryConfig?: QueryConfig<typeof getQuizzesQueryOptions>;
 };
 
-export const useQuizData = ({ queryConfig}: UseQuizOptions) => {
+export const useQuizzesData = ({ queryConfig}: UseQuizOptions) => {
   return useQuery({
     ...getQuizzesQueryOptions(),
     ...queryConfig,

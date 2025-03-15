@@ -1,11 +1,11 @@
 import { Button, DataTable } from "@/components/ui";
-import { useQuizData } from "./api/get-quizzes";
+import { useQuizzesData } from "./api/get-quizzes";
 // import { QuizList } from "./components/quiz-list";
 import { Link } from "react-router-dom";
 import { quizColumns } from "./components/columns";
 
 export const Quizzes = () => {
-  const quizData = useQuizData({});
+  const quizData = useQuizzesData({});
 
   if (quizData.isLoading) {
     return <p>Loading...</p>;

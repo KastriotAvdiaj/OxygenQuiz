@@ -1,6 +1,7 @@
 import { QueryClient } from "@tanstack/react-query";
-import { LoaderFunctionArgs } from "react-router";
+import { LoaderFunctionArgs, useParams } from "react-router";
 import { getQuizQueryOptions } from "./api/get-quiz";
+import { useQuizData } from "./api/get-quizzes";
 
 export const quizLoader =
   (queryClient: QueryClient) =>
@@ -18,5 +19,11 @@ export const quizLoader =
     return { quiz };
   };
 export const QuizRoute = () => {
+
+  const params = useParams();
+  const quizId = Number(params.id as string);
+
+  const quizQuery = useQuizData({quizId});
+
   return <div>Route</div>;
 };
