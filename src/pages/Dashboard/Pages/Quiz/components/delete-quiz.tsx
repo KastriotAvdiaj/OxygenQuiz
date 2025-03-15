@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { ConfirmationDialog } from "@/components/ui/dialog";
 import { useNotifications } from "@/common/Notifications";
 import { useDeleteQuiz } from "../api/delete-quiz";
+import { Trash2 } from "lucide-react";
 
 type DeleteQuizProps = {
   id: number;
@@ -27,7 +28,8 @@ export const DeleteQuiz = ({ id }: DeleteQuizProps) => {
       title="Delete Quiz"
       body="Are you sure you want to delete this quiz?"
       triggerButton={
-        <Button variant="destructive" className="rounded-sm">
+        <Button variant="destructive" className="rounded-xl">
+          <Trash2 size={16} />
           Delete
         </Button>
       }

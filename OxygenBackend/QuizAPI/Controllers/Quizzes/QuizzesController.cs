@@ -40,7 +40,6 @@ namespace QuizAPI.Controllers.Quizzes
             return await _quizService.GetQuizzesAsync();
         }
 
-        // GET: api/Quizs/5
         [HttpGet("{id}")]
         public async Task<IActionResult> GetQuiz(int id)
         {
