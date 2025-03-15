@@ -23,15 +23,15 @@ export const getQuizQueryOptions = (
 
 type UseQuizOptions = {
   queryConfig?: QueryConfig<typeof getQuizQueryOptions>;
-  questionId: number;
+  quizId: number;
 };
 
 export const useQuizData = ({
   queryConfig,
-  questionId,
+  quizId,
 }: UseQuizOptions) => {
   return useQuery({
-    ...getQuizQueryOptions(questionId),
+    ...getQuizQueryOptions(quizId),
     ...queryConfig,
   });
 };
