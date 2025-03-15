@@ -30,7 +30,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui";
 import { Copy, MoreHorizontal } from "lucide-react";
-import { DeleteQuiz } from "./delete-quiz";
+import { DeleteQuiz } from "../delete-quiz";
 
 export const quizColumns: ColumnDef<Quiz>[] = [
   {
