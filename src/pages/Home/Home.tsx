@@ -1,9 +1,10 @@
 // import BackgroundPaths from "@/common/background-path";
 import RotatingText from "@/common/Effect-Related/word-switching";
+import { Button } from "@/components/ui";
 export const Home = () => {
   return (
-    <div className="relative z-10 min-h-screen w-screen flex items-center justify-center">
-      <div className="flex items-center justify-center gap-2 text-7xl text-foreground">
+    <div className="relative z-10 min-h-screen w-full flex flex-col items-center justify-center text-foreground">
+      <div className="flex items-center justify-center gap-2 text-6xl text-foreground">
         <h1>Sharpen Your</h1>
         <RotatingText
           texts={["Thinking ", "Mind ", "Memory ", "Logic "]}
@@ -17,6 +18,17 @@ export const Home = () => {
           transition={{ type: "spring", damping: 30, stiffness: 350 }}
           rotationInterval={2000}
         />
+      </div>
+      <div className="flex items-center flex-col justify-center items-center">
+        {/* <h1 className="text-7xl font-secondary text-center">
+          Take part in the game and train your brain to think faster.
+        </h1> */}
+        <Button
+          variant={"fancy"}
+          className={`text-5xl px-9 py-7 font-secondary`}
+        >
+          Play
+        </Button>
       </div>
     </div>
   );

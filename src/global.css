@@ -104,3 +104,53 @@ body{
   transform-origin: center top;
   transform: scaleY(1);
 }
+
+.fancy-button {
+  display: flex;
+  /* padding: 28px 28px; */
+  margin: 10px;
+  font-weight: bold;
+  text-transform: uppercase;
+  color: #fff;
+  background-image: linear-gradient(to bottom right, #00c6ff, #0072ff);
+  border: none;
+  border-radius: 40px;
+  box-shadow: 0px 4px 0px #0072ff;
+  transition: all 0.2s ease-in-out;
+  cursor: pointer;
+}
+
+.fancy-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0px 6px 0px #0072ff;
+}
+
+.fancy-button:active {
+  transform: translateY(0px);
+  box-shadow: none;
+  background-image: linear-gradient(to bottom right, #0072ff, #00c6ff);
+}
+
+.fancy-button:before,
+.fancy-button:after {
+  content: "";
+  position: absolute;
+  width: 0;
+  height: 0;
+}
+
+.fancy-button:before {
+  top: -3px;
+  left: -3px;
+  border-radius: 40px;
+  border-top: 3px solid #fff;
+  border-left: 3px solid #fff;
+}
+
+.fancy-button:after {
+  bottom: -3px;
+  right: -3px;
+  border-radius: 40px;
+  border-bottom: 3px solid #fff;
+  border-right: 3px solid #fff;
+}

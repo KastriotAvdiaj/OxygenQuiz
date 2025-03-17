@@ -14,7 +14,8 @@ module.exports = {
   			header: [
   				'Titillium Web',
   				'serif'
-  			]
+  			],
+			secondary: ['Barriecito', 'system-ui']
   		},
   		scale: {
   			'101': '1.01',
