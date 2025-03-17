@@ -26,8 +26,7 @@ const buttonVariants = cva(
           "flex justify-center items-center gap-2 rounded-md bg-red-600 text-white hover:bg-red-700 active:scale-95 shadow focus-visible:ring-red-600",
         dashboard:
           "flex w-full text-foreground bg-background justify-start text-[17px] gap-2.5 items-center rounded hover:bg-muted active:scale-95",
-        start:
-          "font-sans flex justify-center gap-2 items-center mx-auto shadow-xl text-lg bg-[var(--muted)] backdrop-blur-md lg:font-semibold isolation-auto border-gray-50 before:absolute before:w-full before:transition-all before:duration-700 before:hover:w-full before:-left-full before:hover:left-0 before:rounded-full before:bg-foreground hover:text-gray-50 before:-z-10 before:aspect-square before:hover:scale-150 before:hover:duration-700 relative z-10 px-4 text-foreground overflow-hidden border-2 rounded-full group",
+        quiz: "flex justify-center items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-yellow-400 to-red-500 text-white shadow-lg hover:ring-2 hover:ring-offset-2 hover:ring-yellow-500 active:scale-95 transition-all duration-300",
       },
       size: {
         dashboard: "px-2.5 py-2",
