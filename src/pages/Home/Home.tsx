@@ -1,4 +1,3 @@
-// import BackgroundPaths from "@/common/background-path";
 import RotatingText from "@/common/Effect-Related/word-switching";
 import { ChooseQuiz } from "./components/choose-quiz";
 export const Home = () => {

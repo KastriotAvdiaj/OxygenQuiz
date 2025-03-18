@@ -4,7 +4,7 @@ import { ChooseQuizDialog } from "./choose-quiz-dialog";
 export const ChooseQuiz = () => {
   return (
     <ChooseQuizDialog
-      title="Choose a Quiz"
+      title="What do you want?"
       triggerButton={
         <Button
           variant={"fancy"}
@@ -14,14 +14,16 @@ export const ChooseQuiz = () => {
         </Button>
       }
       randomQuizButton={
-        <Button variant="lift" className="px-0">
-          <span className="button_top">Random Quiz</span>
-        </Button>
+        // <Button variant="lift" className="px-0">
+        //   <span className="button_top font-header">Random Quiz</span>
+        // </Button>
+        <Button variant={"fancy"}>Random Quiz</Button>
       }
       chooseQuizButton={
-        <Button variant="lift" className="px-0">
-          <span className="button_top">Choose a Quiz</span>
-        </Button>
+        // <Button variant="lift" className="px-0">
+        //   <span className="button_top font-header">Choose a Quiz</span>
+        // </Button>
+        <Button variant={"fancy"}> Choose a Quiz</Button>
       }
     />
   );
