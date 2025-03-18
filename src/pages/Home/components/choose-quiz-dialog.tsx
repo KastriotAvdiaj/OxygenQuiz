@@ -1,63 +1,24 @@
-import * as React from "react";
-import { useEffect } from "react";
-import { useDisclosure } from "@/hooks/use-disclosure";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { Button } from "@/components/ui";
+import { ChooseQuizDialog } from "./quiz-confirmation-dialog";
 
-export type ChooseQuizDialogProps = {
-  triggerButton: React.ReactElement;
-  randomQuizButton: React.ReactElement;
-  chooseQuizButton: React.ReactElement;
-  title: string;
-  body?: string;
-  cancelButtonText?: string;
-  icon?: "danger" | "info";
-  isDone?: boolean;
-};
-
-export const ChooseQuizDialog = ({
-  triggerButton,
-  randomQuizButton,
-  chooseQuizButton,
-  title,
-  // body = "",
-  isDone = false,
-}: ChooseQuizDialogProps) => {
-  const { close, open, isOpen } = useDisclosure();
-
-  useEffect(() => {
-    if (isDone) {
-      close();
-    }
-  }, [isDone, close]);
-
+export const ChooseQuiz = () => {
   return (
-    <Dialog
-      open={isOpen}
-      onOpenChange={(isOpen) => {
-        if (!isOpen) {
-          close();
-        } else {
-          open();
-        }
-      }}
-    >
-      <DialogTrigger asChild>{triggerButton}</DialogTrigger>
-
-      <DialogContent className="sm:max-w-[500px] sm:min-h-[200px] p-0 gap-0 overflow-hidden bg-background/30 backdrop-blur-lg border flex flex-col justify-center items-center gap-4">
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-        </DialogHeader>
-        <div className="flex justify-center items-center gap-3 z-10">
-          {randomQuizButton}
-          {chooseQuizButton}
-        </div>
-      </DialogContent>
-    </Dialog>
+    <ChooseQuizDialog
+      title="Choose Quiz Mode"
+      triggerButton={
+        <Button
+          variant={"fancy"}
+          className={`text-5xl px-9 py-7 font-secondary`}
+        >
+          Play
+        </Button>
+      }
+      randomQuizButton={
+        <Button variant={"fancy"}>Random Quiz</Button>
+      }
+      chooseQuizButton={
+        <Button variant={"fancy"}> Choose a Quiz</Button>
+      }
+    />
   );
 };

@@ -10,7 +10,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "inline-flex bg-primary text-white gap-2 border border-border rounded-md shadow-md hover:bg-primary/80 active:scale-95",
+          "inline-flex items-center justify-center bg-primary text-white gap-2 border border-border rounded-md shadow-md hover:bg-primary/80 active:scale-95",
         icon: "bg-muted gap-2 shadow p-0 m-0",
         addSave:
           "flex justify-center items-center gap-2 shadow text-white bg-primary hover:bg-primary/70 active:scale-95",

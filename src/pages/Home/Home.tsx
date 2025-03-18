@@ -1,5 +1,5 @@
 import RotatingText from "@/common/Effect-Related/word-switching";
-import { ChooseQuiz } from "./components/choose-quiz";
+import { ChooseQuiz } from "./components/choose-quiz-dialog";
 export const Home = () => {
   return (
     <div className="relative z-10 min-h-screen w-full flex flex-col items-center justify-center text-foreground gap-5">
