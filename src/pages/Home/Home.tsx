@@ -1,9 +1,9 @@
 // import BackgroundPaths from "@/common/background-path";
 import RotatingText from "@/common/Effect-Related/word-switching";
-import { Button } from "@/components/ui";
+import { ChooseQuiz } from "./components/choose-quiz";
 export const Home = () => {
   return (
-    <div className="relative z-10 min-h-screen w-full flex flex-col items-center justify-center text-foreground">
+    <div className="relative z-10 min-h-screen w-full flex flex-col items-center justify-center text-foreground gap-5">
       <div className="flex items-center justify-center gap-2 text-6xl text-foreground">
         <h1>Sharpen Your</h1>
         <RotatingText
@@ -23,12 +23,7 @@ export const Home = () => {
         {/* <h1 className="text-7xl font-secondary text-center">
           Take part in the game and train your brain to think faster.
         </h1> */}
-        <Button
-          variant={"fancy"}
-          className={`text-5xl px-9 py-7 font-secondary`}
-        >
-          Play
-        </Button>
+        <ChooseQuiz />
       </div>
     </div>
   );
