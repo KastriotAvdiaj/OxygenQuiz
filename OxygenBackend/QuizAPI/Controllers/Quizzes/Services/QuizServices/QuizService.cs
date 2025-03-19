@@ -231,6 +231,39 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
             };
         }
 
+        public async Task<List<QuizDTO>> GetQuizForEachCategoryAsync()
+        {
+            // Get quizzes including their related Category and Language info.
+            var quizzes = await _context.Quizzes
+                .Include(q => q.Category)
+                .Include(q => q.Language)
+                .Include(q => q.QuizQuestions)
+                .ToListAsync();
+
+            // Group quizzes by category and select the first quiz from each group.
+            var groupedQuizzes = quizzes
+                .GroupBy(q => q.CategoryId)
+                .Select(g => g.First())
+                .ToList();
+
+            // Map to DTOs.
+            var quizDtos = groupedQuizzes.Select(q => new QuizDTO
+            {
+                Id = q.Id,
+                Title = q.Title,
+                Description = q.Description,
+                Category = q.Category.Name,
+                Language = q.Language.Language,
+                TimeLimit = q.TimeLimit,
+                IsPublished = q.IsPublished,
+                PassingScore = q.PassingScore,
+                CreatedAt = q.CreatedAt,
+                NumberOfQuestions = q.QuizQuestions?.Count ?? 0
+            }).ToList();
+
+            return quizDtos;
+        }
+
         /*   public async Task<bool> ValidateQuizSlugAsync(string slug)
            {
                return !await _context.Quizzes.AnyAsync(q => q.Slug == slug);

@@ -44,7 +44,7 @@ export const answerOptionInputSchema = z.object({
     passingScore: z.number().min(1, { message: 'Passing score must be at least 1.' }).default(50),
     categoryId: z.number().int().positive({ message: "Category is required" }),
   languageId: z.number().int().positive({ message: "Language is required" }),
-    publicQuestions: z.array(publicQuestionInputSchema),
+    publicQuestions: z.array(publicQuestionInputSchema).default([]),
     privateQuestions: z.array(privateQuestionInputSchema).default([]),
 
     //dummy field 

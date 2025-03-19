@@ -160,6 +160,12 @@ namespace QuizAPI.Controllers.Quizzes
             }
 
         }
+        [HttpGet("by-category")]
+        public async Task<IActionResult> GetQuizForEachCategory()
+        {
+            var quizzes = await _quizService.GetQuizForEachCategoryAsync();
+            return Ok(quizzes);
+        }
 
         // DELETE: api/Quizs/5
         [HttpDelete("{id}")]

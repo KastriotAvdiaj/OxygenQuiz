@@ -15,6 +15,8 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
 
         Task<List<QuizQuestionDTO>> GetQuizQuestionsAsync(int quizId);
 
+        Task<List<QuizDTO>> GetQuizForEachCategoryAsync();
+
         Task<QuizDTO> GetQuizAsync (int id);
         /* Task<bool> ValidateQuizSlugAsync(string slug);*/
     }
