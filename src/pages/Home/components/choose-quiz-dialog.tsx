@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui";
 import { ChooseQuizDialog } from "./quiz-confirmation-dialog";
+import { Link } from "react-router-dom";
 
 export const ChooseQuiz = () => {
   return (
@@ -13,11 +14,12 @@ export const ChooseQuiz = () => {
           Play
         </Button>
       }
-      randomQuizButton={
-        <Button variant={"fancy"}>Random Quiz</Button>
-      }
+      randomQuizButton={<Button variant={"fancy"}>Random Quiz</Button>}
       chooseQuizButton={
-        <Button variant={"fancy"}> Choose a Quiz</Button>
+        <Link to="/choose-quiz">
+          {" "}
+          <Button variant={"fancy"}> Choose a Quiz</Button>
+        </Link>
       }
     />
   );

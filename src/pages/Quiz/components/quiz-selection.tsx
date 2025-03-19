@@ -121,7 +121,7 @@ export function QuizSelection() {
   const categories = ["all", ...new Set(quizzes.map((quiz) => quiz.category))]
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-background/80 pb-20">
+    <div className="min-h-screen bg-gradient-to-b from-background to-background/80 pb-20 text-foreground">
       <QuizHeader />
 
       <div className="container mx-auto px-4">

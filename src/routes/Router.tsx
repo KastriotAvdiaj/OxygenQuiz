@@ -13,6 +13,7 @@ import "../global.css";
 import { Navigate } from "react-router-dom";
 import { HomeLayout } from "@/layouts/layout";
 import QuizCreator from "@/pages/Dashboard/Pages/Quiz/components/Create-Quiz-Form/create-quiz";
+import { QuizSelection } from "@/pages/Quiz/components/quiz-selection";
 
 // Lazy load components
 const Home = lazy(() =>
@@ -40,6 +41,14 @@ const createAppRouter = (queryClient: QueryClient) =>
       element: (
         <>
           <HomeLayout children={<AboutUs />} />
+        </>
+      ),
+    },
+    {
+      path: "/choose-quiz",
+      element: (
+        <>
+          <HomeLayout children={<QuizSelection />} />
         </>
       ),
     },
