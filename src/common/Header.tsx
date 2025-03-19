@@ -36,7 +36,7 @@ const Header = ({ BackgroundColor }: HeaderProps) => {
     <HeaderComponent
       className={`fixed top-0 left-0  right-0 z-30 text-lg shadow-md h-16 grid grid-cols-5 items-center px-4 transition-transform duration-400 ${
         hidden ? "-translate-y-full" : "translate-y-0"
-      } ${BackgroundColor ? "bg-background/75" : "bg-transparent"}`}
+      } ${BackgroundColor ? "bg-background" : "bg-transparent"}`}
     >
       <div className="col-span-1">
         <ul className="flex gap-4 font-bold">

@@ -7,6 +7,7 @@ import { getQuestionCategoriesQueryOptions } from './get-question-categories'
 
 export const createQuestionCategoryInputSchema = z.object({
     name: z.string().min(1, 'Category is required'),
+    emoji: z.string(),
 })
 
 

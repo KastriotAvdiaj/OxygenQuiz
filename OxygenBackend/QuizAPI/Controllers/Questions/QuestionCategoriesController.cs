@@ -112,7 +112,13 @@ namespace QuizAPI.Controllers.Questions
                 return Unauthorized(new { message = "User ID not found in token." });
             }
 
-            var questionCategoryEntity = new QuestionCategory { Name = questionCategory.Name, UserId = Guid.Parse(userId), CreatedAt = DateTime.UtcNow };
+            var questionCategoryEntity = new QuestionCategory 
+            { 
+                Name = questionCategory.Name,
+                Emoji = questionCategory.Emoji,
+                UserId = Guid.Parse(userId),
+                CreatedAt = DateTime.UtcNow 
+            };
 
             _context.QuestionCategories.Add(questionCategoryEntity);
             await _context.SaveChangesAsync();

@@ -5,6 +5,8 @@
     public class QuestionCategoryCM
     {
         public string Name { get; set; }
+
+        public string Emoji { get; set; }
     }
 
     public class QuestionCategoryDTO {

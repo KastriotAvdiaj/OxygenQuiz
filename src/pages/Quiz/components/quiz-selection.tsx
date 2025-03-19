@@ -1,4 +1,3 @@
-"use client";
 
 import { useState } from "react";
 import { QuizCard } from "./quiz-card";
@@ -131,7 +130,7 @@ export function QuizSelection() {
   const categories = ["all", ...new Set(quizzes.map((quiz) => quiz.category))];
 
   return (
-    <div className="bg-gradient-to-b from-background overflow-y-auto to-background/80 pb-20 text-foreground">
+    <div className="min-h-screen bg-gradient-to-b from-background overflow-y-auto to-background/80 pb-20 text-foreground">
       <QuizHeader />
 
       <div className="container mx-auto px-4">
