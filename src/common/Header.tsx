@@ -6,7 +6,11 @@ import { ModeToggle } from "@/components/ui/mode-toggle";
 import { Divider } from "./Divider";
 import HoverEffect from "./HoverEffect";
 
-const Header = () => {
+interface HeaderProps {
+  BackgroundColor?: boolean;
+}
+
+const Header = ({ BackgroundColor }: HeaderProps) => {
   const [hidden, setHidden] = useState(false);
 
   useEffect(() => {
@@ -30,9 +34,9 @@ const Header = () => {
 
   return (
     <HeaderComponent
-      className={`fixed top-0 left-0 bg-transparent right-0 z-30 text-lg shadow-md h-16 grid grid-cols-5 items-center px-4 transition-transform duration-400 ${
+      className={`fixed top-0 left-0  right-0 z-30 text-lg shadow-md h-16 grid grid-cols-5 items-center px-4 transition-transform duration-400 ${
         hidden ? "-translate-y-full" : "translate-y-0"
-      }`}
+      } ${BackgroundColor ? "bg-background/75" : "bg-transparent"}`}
     >
       <div className="col-span-1">
         <ul className="flex gap-4 font-bold">
