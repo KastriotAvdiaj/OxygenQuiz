@@ -25,7 +25,7 @@ export const HomeLayout = ({
     <>
       <Header BackgroundColor={headerColor} />
       <div
-        className={` bg-background ${
+        className={` bg-background h-screen ${
           squares ? "overflow-hidden" : "overflow-y-auto"
         }`}
       >

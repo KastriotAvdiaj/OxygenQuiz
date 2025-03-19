@@ -13,7 +13,7 @@ import "../global.css";
 import { Navigate } from "react-router-dom";
 import { HomeLayout } from "@/layouts/layout";
 import QuizCreator from "@/pages/Dashboard/Pages/Quiz/components/Create-Quiz-Form/create-quiz";
-import { QuizSelection } from "@/pages/Quiz/components/quiz-selection";
+import { QuizSelection } from "@/pages/Quiz/Quiz-Selection";
 
 // Lazy load components
 const Home = lazy(() =>

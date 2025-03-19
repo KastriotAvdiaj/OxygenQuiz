@@ -13,7 +13,7 @@ export const DashboardLayout = ({
     navigate(`/dashboard/${page}`);
   };
   return (
-    <div className="grid grid-cols-[16%_84%] grid-rows-[auto_1fr] h-screen overflow-hidden text-foreground">
+    <div className="grid grid-cols-[16%_84%] grid-rows-[auto_1fr] h-screen text-foreground">
       <div className="col-span-2">
         <DashboardHeader />
       </div>

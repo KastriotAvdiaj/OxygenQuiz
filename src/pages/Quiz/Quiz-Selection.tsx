@@ -1,8 +1,7 @@
-
 import { useState } from "react";
-import { QuizCard } from "./quiz-card";
-import { QuizHeader } from "./quiz-header";
-import { QuizFilters } from "./quiz-filters";
+import { QuizCard } from "./components/quiz-card";
+import { QuizHeader } from "./components/quiz-header";
+import { QuizFilters } from "./components/quiz-filters";
 import { motion } from "framer-motion";
 
 interface Quiz {
