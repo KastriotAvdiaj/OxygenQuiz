@@ -19,6 +19,7 @@ type FormDrawerProps = {
   title: string;
   children: React.ReactNode;
   className?: string;
+  variant?: "top" | "bottom" | "left" | "right";
 };
 
 export const FormDrawer = ({
@@ -28,6 +29,7 @@ export const FormDrawer = ({
   triggerButton,
   submitButton,
   className,
+  variant,
 }: FormDrawerProps) => {
   const { close, open, isOpen } = useDisclosure();
 
@@ -50,6 +52,7 @@ export const FormDrawer = ({
     >
       <DrawerTrigger asChild>{triggerButton}</DrawerTrigger>
       <DrawerContent
+        side={variant || "right"}
         className={cn(
           "overflow-y-auto flex max-w-[800px] flex-col justify-between sm:max-w-[540px]",
           className

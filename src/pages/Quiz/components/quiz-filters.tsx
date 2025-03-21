@@ -6,13 +6,13 @@ import { Input } from "@/components/ui/form"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 interface QuizFiltersProps {
-  searchQuery: string
+  searchQuery?: string
   setSearchQuery: (query: string) => void
-  difficultyFilter: string
-  setDifficultyFilter: (difficulty: string) => void
-  categoryFilter: string
-  setCategoryFilter: (category: string) => void
-  categories: string[]
+  difficultyFilter?: string
+  setDifficultyFilter?: (difficulty: string) => void
+  categoryFilter?: string
+  setCategoryFilter?: (category: string) => void
+  categories?: string[]
 }
 
 export function QuizFilters({
@@ -71,7 +71,7 @@ export function QuizFilters({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Categories</SelectItem>
-                {categories
+                {categories && categories
                   .filter((cat) => cat !== "all")
                   .map((category) => (
                     <SelectItem key={category} value={category}>

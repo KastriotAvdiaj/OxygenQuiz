@@ -92,6 +92,7 @@ export type BaseEntity<TId = number> = {
   type CategoryDTO = {
     id: number;
     category: string;
+    emoji: string;
   }
 
   type DifficultyDTO = {

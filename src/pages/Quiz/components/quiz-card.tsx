@@ -1,4 +1,3 @@
-"use client";
 
 import type React from "react";
 
@@ -6,17 +5,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Brain, Trophy, HelpCircle } from "lucide-react";
-
-interface Quiz {
-  id: string;
-  title: string;
-  description: string;
-  difficulty: "Beginner" | "Intermediate" | "Advanced";
-  questionCount: number;
-  category: string;
-  emoji: string;
-  color: string;
-}
+import { Quiz } from "@/types/ApiTypes";
 
 interface QuizCardProps {
   quiz: Quiz;
@@ -25,19 +14,19 @@ interface QuizCardProps {
 export function QuizCard({ quiz }: QuizCardProps) {
   const [isHovered, setIsHovered] = useState(false);
 
-  const difficultyStyles = {
-    Beginner:
-      "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
-    Intermediate:
-      "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
-    Advanced: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
-  }[quiz.difficulty];
+  // const difficultyStyles = {
+  //   Beginner:
+  //     "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
+  //   Intermediate:
+  //     "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
+  //   Advanced: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
+  // }[quiz.difficulty];
 
-  const difficultyIcon = {
-    Beginner: <Brain className="h-4 w-4 mr-1" />,
-    Intermediate: <Brain className="h-4 w-4 mr-1" />,
-    Advanced: <Trophy className="h-4 w-4 mr-1" />,
-  }[quiz.difficulty];
+  // const difficultyIcon = {
+  //   Beginner: <Brain className="h-4 w-4 mr-1" />,
+  //   Intermediate: <Brain className="h-4 w-4 mr-1" />,
+  //   Advanced: <Trophy className="h-4 w-4 mr-1" />,
+  // }[quiz.difficulty];
 
   const handleStartQuiz = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -61,14 +50,14 @@ export function QuizCard({ quiz }: QuizCardProps) {
       >
         {/* Gradient background */}
         <div
-          className={`absolute inset-0 bg-gradient-to-br ${quiz.color} opacity-10 dark:opacity-20`}
+          className={`absolute inset-0 bg-gradient-to-br opacity-10 dark:opacity-20`}
         />
 
         {/* Card content */}
         <div className="relative p-6 h-full flex flex-col">
           {/* Category and emoji */}
           <div className="flex justify-between items-center mb-4">
-            <span className="text-4xl">{quiz.emoji}</span>
+            {/* <span className="text-4xl">{quiz.category.emoji}</span> */}
             <span className="text-sm font-medium text-muted-foreground bg-background/80 px-3 py-1 rounded-full">
               {quiz.category}
             </span>
@@ -85,16 +74,9 @@ export function QuizCard({ quiz }: QuizCardProps) {
           {/* Quiz details */}
           <div className="mt-auto">
             <div className="flex justify-between items-center mb-4">
-              <div
-                className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${difficultyStyles}`}
-              >
-                {difficultyIcon}
-                {quiz.difficulty}
-              </div>
-
               <div className="inline-flex items-center text-sm text-muted-foreground">
                 <HelpCircle className="h-4 w-4 mr-1" />
-                {quiz.questionCount} questions
+                {quiz.numberOfQuestions} questions
               </div>
             </div>
 
