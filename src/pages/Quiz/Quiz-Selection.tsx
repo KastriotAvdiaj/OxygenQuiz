@@ -3,10 +3,8 @@ import { QuizCard } from "./components/quiz-card";
 import { QuizHeader } from "./components/quiz-header";
 import { QuizFilters } from "./components/quiz-filters";
 import { motion } from "framer-motion";
-import {
-  getCategoriedQuizzes,
-  useCategoriedQuizzesData,
-} from "./api/get-categorized-quizzes";
+import { useCategoriedQuizzesData } from "./api/get-categorized-quizzes";
+import { ArchiveX } from "lucide-react";
 
 // interface Quiz {
 //   id: string;
@@ -127,6 +125,12 @@ export function QuizSelection() {
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
         />
+        {quizzes.length === 0 && (
+          <div className="flex items-center flex-col justify-center text-lg text-primary w-full">
+            No quizzes found
+            <ArchiveX />
+          </div>
+        )}
         <motion.div
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
           initial={{ opacity: 0 }}

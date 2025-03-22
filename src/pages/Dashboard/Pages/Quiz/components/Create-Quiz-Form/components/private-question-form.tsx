@@ -2,9 +2,9 @@ import { useFieldArray } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/form";
 import { Separator } from "@/components/ui/separator";
-import { CategorySelect } from "../../../../Question/Entities/Categories/Components/select-question-category";
+// import { CategorySelect } from "../../../../Question/Entities/Categories/Components/select-question-category";
 import { DifficultySelect } from "../../../../Question/Entities/Difficulty/Components/select-question-difficulty";
-import { LanguageSelect } from "../../../../Question/Entities/Language/components/select-question-language";
+// import { LanguageSelect } from "../../../../Question/Entities/Language/components/select-question-language";
 import { FormProps } from "../types";
 import {
   QuestionCategory,
@@ -25,8 +25,8 @@ export const PrivateQuestionForm = ({
   index,
   formProps,
   difficulties,
-  categories,
-  languages,
+  // categories,
+  // languages,
   removeQuestion,
 }: PrivateQuestionFormProps) => {
   const { register, control, formState, setValue, watch, clearErrors } =
@@ -42,7 +42,7 @@ export const PrivateQuestionForm = ({
   });
 
   return (
-    <div className="p-4 rounded bg-muted">
+    <div className="p-4 rounded bg-muted max-w-2xl">
       <div className="flex justify-between items-center ">
         <h3 className="text-xl font-semibold">Question {index + 1}</h3>
         <Button variant="destructive" onClick={removeQuestion}>
@@ -51,9 +51,10 @@ export const PrivateQuestionForm = ({
       </div>
 
       {/* Question Text */}
-      <div className="mb-4">
+      <div className="mb-4 font-header">
         <Label htmlFor={`question-${index}`}>Question Text</Label>
         <Input
+        variant="quiz"
           id={`question-${index}`}
           {...register(`privateQuestions.${index}.text`)}
           error={formState.errors.privateQuestions?.[index]?.text}
@@ -62,7 +63,7 @@ export const PrivateQuestionForm = ({
 
       {/* Metadata Row */}
       <div className="flex flex-col">
-        <CategorySelect
+        {/* <CategorySelect
           label="Category"
           categories={categories}
           value={
@@ -81,7 +82,7 @@ export const PrivateQuestionForm = ({
           clearErrors={() =>
             clearErrors(`privateQuestions.${index}.categoryId`)
           }
-        />
+        /> */}
 
         <DifficultySelect
           label="Difficulty"
@@ -104,7 +105,7 @@ export const PrivateQuestionForm = ({
           }
         />
 
-        <LanguageSelect
+        {/* <LanguageSelect
           label="Language"
           languages={languages}
           value={
@@ -123,7 +124,7 @@ export const PrivateQuestionForm = ({
           clearErrors={() =>
             clearErrors(`privateQuestions.${index}.languageId`)
           }
-        />
+        /> */}
         <div>
           <Label htmlFor={`score-${index}`}>Score</Label>
           <Input

@@ -7,24 +7,15 @@ import { PrivateQuestions } from "./components/private-questions";
 import { useQuizForm } from "./use-quiz-form";
 import { createQuizInputSchema } from "../../api/create-quiz";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import Steps from "@/common/Steps";
 import { Card, CardDescription, CardHeader } from "@/components/ui";
-import { useState } from "react";
-import { Forward } from "lucide-react";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { useDisclosure } from "@/hooks/use-disclosure";
+import { PlusCircle, Search, SearchCheck } from "lucide-react";
+import { CreatedQuestionsPanel } from "./components/questions-panel";
 
 export const CreateQuizForm = () => {
   const { queryData, handleSubmit, isSubmitting } = useQuizForm();
-  const [currentStep, setCurrentStep] = useState(1);
-  const totalSteps = 3;
-
-  const handleStep = (direction: number) => {
-    setCurrentStep((prevStep) => {
-      const newStep = prevStep + direction;
-      if (newStep < 1) return 1;
-      if (newStep > totalSteps) return totalSteps;
-      return newStep;
-    });
-  };
+  // const { close, open, isOpen } = useDisclosure();
 
   if (queryData.isLoading) {
     return <div>Loading...</div>;
@@ -35,112 +26,77 @@ export const CreateQuizForm = () => {
   }
 
   return (
-    <Card className="p-6 bg-background border-none flex flex-col gap-2 items-center">
-      <div className="flex flex-col space-y-2 pl-2 justify-center items-center">
-        <CardHeader className="text-2xl font-bold p-0">
-          Create New Quiz
+    <>
+      <div className="flex flex-col space-y-2 p-4 justify-center items-center text-primary">
+        {/* <CardHeader className="text-5xl font-bold p-0">
+          Create Your Quiz
         </CardHeader>
-        <CardDescription className="p-0">
-          Fill in the details below to create a new quiz.
-        </CardDescription>
+        <CardDescription className="p-0 text-primary text-xl">
+          Design engaging quizzes with our easy-to-use builder
+        </CardDescription> */}
       </div>
-      <Form
-        id="create-quiz"
-        className="mt-3 w-[50%]"
-        onSubmit={handleSubmit}
-        schema={createQuizInputSchema}
-        options={{ mode: "onSubmit" }}
-      >
-        {(formProps) => {
-          const { errors } = formProps.formState;
-          const stepComponents = [
-            //----------------------------------------
-            // Step 1: Quiz details
-            //----------------------------------------
-            <QuizDetails
-              key="step1"
-              formProps={formProps}
-              queryData={queryData}
-            />,
-            //----------------------------------------
-            // Step 2: Public / Private questions
-            //----------------------------------------
-            <div
-              key="step2"
-              className="w-full flex flex-col gap-2 items-center mt-6"
-            >
-              <Tabs defaultValue="publicQuestions" className="w-full">
-                <TabsList className="w-full">
-                  <TabsTrigger value="publicQuestions" className="w-full">
-                    Public Questions
-                  </TabsTrigger>
-                  <TabsTrigger value="newQuestions" className="w-full">
-                    New Questions
-                  </TabsTrigger>
-                </TabsList>
-                <TabsContent value="publicQuestions">
-                  <PublicQuestions
-                    formProps={formProps}
-                    questions={queryData.questions}
-                  />
-                </TabsContent>
-                <TabsContent value="newQuestions">
-                  <PrivateQuestions
-                    formProps={formProps}
-                    queryData={queryData}
-                  />
-                </TabsContent>
-              </Tabs>
-            </div>,
-            //----------------------------------------
-            // Step 3: Review and finalize settings
-            //----------------------------------------
-            <div key="step3" className="flex flex-col gap-2">
-              <p>
-                {errors.totalScore && (
-                  <div className="mb-4 text-center text-red-600 p-2 border border-red-500">
-                    {errors.totalScore.message}
-                  </div>
-                )}
-              </p>
-            </div>,
-          ];
-
-          return (
-            <div className="flex flex-col gap-2 justify-center">
-              <Steps currentStep={currentStep} totalSteps={totalSteps} />
-              {stepComponents[currentStep - 1]}
-
-              <Separator className="my-6" />
-
-              <div className="flex justify-between">
-                <Button
-                  type="button"
-                  onClick={() => handleStep(-1)}
-                  disabled={currentStep === 1}
-                >
-                  <Forward size={16} className="rotate-180" /> Previous
-                </Button>
-
-                {currentStep < totalSteps ? (
-                  <Button type="button" onClick={() => handleStep(1)}>
-                    Next <Forward size={16} />
-                  </Button>
-                ) : (
-                  <Button
-                    type="submit"
-                    variant="default"
-                    disabled={isSubmitting}
+      <Card className="bg-background justify-center border-none flex flex-col gap-2 items-center">
+        <Form
+          id="create-quiz"
+          className="mt-0 w-full"
+          onSubmit={handleSubmit}
+          schema={createQuizInputSchema}
+          options={{ mode: "onSubmit" }}
+        >
+          {(formProps) => (
+            <div className="flex flex-col md:flex-row gap-6">
+              {/* Main Section: Public/Private Questions */}
+              <div className="flex-1 p-6">
+                <Tabs defaultValue="publicQuestions" className="w-full">
+                  <TabsList className="w-full">
+                    <TabsTrigger
+                      value="publicQuestions"
+                      className="w-full flex gap-2"
+                    >
+                      <Search size={16} />
+                      Browse Public
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="newQuestions"
+                      className="w-full flex gap-2"
+                    >
+                      <PlusCircle size={16} /> Create New
+                    </TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="publicQuestions">
+                    <PublicQuestions
+                      formProps={formProps}
+                      questions={queryData.questions}
+                    />
+                  </TabsContent>
+                  <TabsContent
+                    className="flex justify-center"
+                    value="newQuestions"
                   >
-                    {isSubmitting ? "Submitting..." : "Create Quiz"}
-                  </Button>
-                )}
+                    <PrivateQuestions
+                      formProps={formProps}
+                      queryData={queryData}
+                    />
+                  </TabsContent>
+                </Tabs>
+                <Separator className="my-6" />
+                <Button
+                  type="submit"
+                  variant="default"
+                  disabled={isSubmitting}
+                  className="w-full"
+                >
+                  {isSubmitting ? "Submitting..." : "Create Quiz"}
+                </Button>
+              </div>
+              <div className="border-l-2 border-muted">
+                <CreatedQuestionsPanel />
               </div>
             </div>
-          );
-        }}
-      </Form>
-    </Card>
+          )}
+        </Form>
+      </Card>
+    </>
   );
 };
 

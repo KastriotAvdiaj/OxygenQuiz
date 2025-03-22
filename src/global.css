@@ -108,6 +108,8 @@ body{
 .fancy-button {
   display: flex;
   /* padding: 28px 28px; */
+  align-items: center;
+  justify-content: center;
   margin: 10px;
   font-weight: bold;
   text-transform: uppercase;
