@@ -45,6 +45,7 @@ export const CreateQuizForm = () => {
         >
           {(formProps) => (
             <div className="flex flex-col md:flex-row gap-6">
+              <QuizDetails formProps={formProps} queryData={queryData} />
               {/* Main Section: Public/Private Questions */}
               <div className="flex-1 p-6">
                 <Tabs defaultValue="publicQuestions" className="w-full">

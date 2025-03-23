@@ -1,52 +1,75 @@
+import React, { useEffect } from "react";
+import { useFieldArray, UseFormClearErrors } from "react-hook-form";
+import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/form";
 import { AnswerOption } from "./answer-option";
-import { Button } from "@/components/ui";
+import { CreateQuizInput } from "../../../Quiz/api/create-quiz";
 
-export const AnswerOptionsList = ({
-    fields,
-    append,
-    remove,
-    watch,
-    register,
-    handleSwitchChange,
-    errors,
-  }: {
-    fields: any[];
-    append: (value: any) => void;
-    remove: (index: number) => void;
-    watch: any;
-    register: any;
-    handleSwitchChange: (index: number) => void;
-    errors: any;
-  }) => (
-    <div className="space-y-4 mt-4">
-      <Label className="block text-sm font-medium">Answer Options</Label>
+interface AnswerOptionListProps {
+  control: any;
+  register: any;
+  formState: any;
+  watch: any;
+  setValue: any;
+  clearErrors: UseFormClearErrors<CreateQuizInput>;
+  name?: string;
+}
+
+export const AnswerOptionList: React.FC<AnswerOptionListProps> = ({
+  control,
+  register,
+  formState,
+  watch,
+  setValue,
+  clearErrors,
+  name = "answerOptions",
+}) => {
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name,
+  });
+
+  useEffect(() => {
+    console.log("hello");
+    if (fields.length === 0) {
+      append({ text: "", isCorrect: false });
+      append({ text: "", isCorrect: false });
+    }
+  }, []);
+
+  const handleCorrectToggle = (index: number) => {
+    fields.forEach((_, i) => {
+      setValue(`${name}.${i}.isCorrect`, i === index);
+    });
+    clearErrors();
+  };
+
+  return (
+    <div className="space-y-4">
+      <Label className="block text-sm font-medium text-foreground mb-2">
+        Answer Options
+      </Label>
       {fields.map((field, index) => (
         <AnswerOption
           key={field.id}
           index={index}
-          field={field}
-          watch={watch}
-          register={register}
-          remove={remove}
-          handleSwitchChange={handleSwitchChange}
-          isLast={fields.length > 2}
+          textRegistration={register(`${name}.${index}.text`)}
+          isCorrect={!!watch(`${name}.${index}.isCorrect`)}
+          onCorrectToggle={() => handleCorrectToggle(index)}
+          error={formState.errors?.[name]?.[index]?.text?.message}
+          onRemove={() => remove(index)}
+          disableRemove={fields.length <= 2}
         />
       ))}
-      {errors?.message && (
-        <p className="text-sm text-red-500 font-semibold border border-red-500 p-2 text-center">
-          {errors.message}
-        </p>
-      )}
       <Button
         variant="addSave"
         size="sm"
-        className="mt-2 rounded-sm"
         onClick={() => append({ text: "", isCorrect: false })}
         disabled={fields.length >= 4}
+        className="mt-2 rounded-sm"
       >
         + Add Answer Option
       </Button>
     </div>
   );
-  
+};

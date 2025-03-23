@@ -35,7 +35,7 @@ export const DifficultySelect: React.FC<DifficultySelectProps> = ({
   return (
     <div className="space-y-2">
       <Label className="text-sm font-medium text-foreground">{label}</Label>
-      <Select
+      <Select 
         value={isValueValid ? value : ""}
         onValueChange={(selectedValue) => {
           onChange(selectedValue === "all" ? "all" : selectedValue);
@@ -43,6 +43,7 @@ export const DifficultySelect: React.FC<DifficultySelectProps> = ({
         }}
       >
         <SelectTrigger
+        variant="quiz"
           className={`min-w-[200px] ${error ? "border-red-500" : ""}`}
         >
           <SelectValue placeholder="--Select Difficulty--" />
