@@ -65,6 +65,7 @@ namespace QuizAPI.Models.Quiz
 
         public int Version { get; set; } = 1;
 
+
         public ICollection<QuizQuestion> QuizQuestions { get; set; } = new List<QuizQuestion>();
     }
 }

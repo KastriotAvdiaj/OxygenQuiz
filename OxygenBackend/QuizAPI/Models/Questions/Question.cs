@@ -15,7 +15,7 @@ namespace QuizAPI.Models
         Global,   
         Private  
     }
-    public class Question
+    public class Question 
     {
         public int Id { get; set; }
         public string Text { get; set; } = string.Empty;

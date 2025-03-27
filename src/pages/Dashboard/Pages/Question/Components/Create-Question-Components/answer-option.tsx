@@ -27,15 +27,22 @@ export const AnswerOption: React.FC<AnswerOptionProps> = ({
   return (
     <div className="flex items-center justify-between gap-4">
       <div className="flex-1">
-        <Label htmlFor={`answer-${index}`} className="block text-sm font-medium text-foreground">
+        <Label
+          htmlFor={`answer-${index}`}
+          className="block text-sm font-medium text-foreground"
+        >
           Answer Option {index + 1}
         </Label>
         <Input
+          variant="quiz"
+          color="red"
           id={`answer-${index}`}
           placeholder={`Answer Option ${index + 1}`}
           registration={textRegistration}
           error={error}
-          className={`py-2 w-full ${error ? "border-red-500" : ""} ${isCorrect ? "border-2 border-green-500" : ""}`}
+          className={`py-2 w-full ${error ? "border-red-500" : ""} ${
+            isCorrect ? "border-2 border-green-500" : ""
+          }`}
         />
       </div>
       <div className="flex flex-col items-center">
@@ -45,7 +52,10 @@ export const AnswerOption: React.FC<AnswerOptionProps> = ({
           onCheckedChange={onCorrectToggle}
           className="shadow-md"
         />
-        <Label htmlFor={`correct-${index}`} className="text-xs text-gray-600 mt-1">
+        <Label
+          htmlFor={`correct-${index}`}
+          className="text-xs text-gray-600 mt-1"
+        >
           Correct
         </Label>
       </div>
@@ -61,3 +71,5 @@ export const AnswerOption: React.FC<AnswerOptionProps> = ({
     </div>
   );
 };
+
+

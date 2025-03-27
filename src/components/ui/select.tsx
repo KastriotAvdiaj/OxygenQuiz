@@ -30,7 +30,7 @@ const SelectTrigger = React.forwardRef<
     className={cn(
       "flex h-9 w-full border text-foreground border-foreground/70 items-center justify-between whitespace-nowrap rounded-md px-3 py-2 text-sm shadow-sm ring-offset-muted placeholder:text-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
       variant === "quiz" &&
-        "bg-gradient-to-r from-primary/10 to-primary/5 border-2 border-primary/30 text-foreground font-medium rounded-xl h-11 shadow-[0_4px_0_0_hsl(var(--primary)/0.5)] hover:shadow-[0_2px_0_0_hsl(var(--primary)/0.5)] hover:translate-y-1 active:translate-y-2 active:shadow-none transform transition-all duration-200   dark:bg-gradient-to-r dark:from-primary/20 dark:to-primary/10",
+        "font-header placeholder:text-center bg-gradient-to-r from-primary/10 to-primary/5 border-2 border-primary/30 text-foreground font-medium rounded-xl h-11 shadow-[0_4px_0_0_hsl(var(--primary)/0.5)] hover:shadow-[0_2px_0_0_hsl(var(--primary)/0.5)] hover:translate-y-1 active:translate-y-2 active:shadow-none transform transition-all duration-200  dark:bg-gradient-to-r dark:from-primary/20 dark:to-primary/10 text-lg sm:text-xl md:text-xl px-4 py-2",
       className
     )}
     {...props}
@@ -155,7 +155,7 @@ const SelectItem = React.forwardRef<
     className={cn(
       "relative flex w-full cursor-default hover:bg-background data-[highlighted]:bg-background/70 cursor-pointer select-none items-center rounded-sm py-1.5 pl-2 pr-8 text-sm outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
       variant === "quiz" &&
-        "rounded-lg py-2 hover:bg-primary/10 data-[highlighted]:bg-primary/20 data-[highlighted]:text-foreground focus:bg-primary/20 focus:text-foreground transition-colors duration-150",
+        "text-center rounded-lg py-2 hover:bg-primary/10 data-[highlighted]:bg-primary/20 data-[highlighted]:text-foreground focus:bg-primary/20 focus:text-foreground transition-colors duration-150",
       className
     )}
     {...props}

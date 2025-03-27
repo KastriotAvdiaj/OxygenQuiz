@@ -2,9 +2,6 @@
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/form";
 import { Separator } from "@/components/ui/separator";
-import { CategorySelect } from "../../../../Question/Entities/Categories/Components/select-question-category";
-import { DifficultySelect } from "../../../../Question/Entities/Difficulty/Components/select-question-difficulty";
-import { LanguageSelect } from "../../../../Question/Entities/Language/components/select-question-language";
 import { FormProps } from "../types";
 import {
   QuestionCategory,
@@ -12,6 +9,8 @@ import {
   QuestionLanguage,
 } from "@/types/ApiTypes";
 import { AnswerOptionList } from "@/pages/Dashboard/Pages/Question/Components/Create-Question-Components/answer-option-list";
+import { Trash2 } from "lucide-react";
+import { ScoreSelect } from "./score-select";
 
 interface PrivateQuestionFormProps {
   index: number;
@@ -25,9 +24,6 @@ interface PrivateQuestionFormProps {
 export const PrivateQuestionForm = ({
   index,
   formProps,
-  difficulties,
-  categories,
-  languages,
   removeQuestion,
 }: PrivateQuestionFormProps) => {
   const { register, control, formState, setValue, watch, clearErrors } =
@@ -47,15 +43,15 @@ export const PrivateQuestionForm = ({
       <div className="flex justify-between items-center ">
         <h3 className="text-xl font-semibold">Question {index + 1}</h3>
         <Button variant="destructive" onClick={removeQuestion}>
-          Remove Question
+          <Trash2 className="h-4 w-4" />
         </Button>
       </div>
 
       {/* Question Text */}
-      <div className="mb-4 font-header">
-        <Label htmlFor={`question-${index}`}>Question Text</Label>
+      <div className="my-4 font-header">
         <Input
           variant="quiz"
+          placeholder={`Type Your Question`}
           id={`question-${index}`}
           {...register(`privateQuestions.${index}.text`)}
           error={formState.errors.privateQuestions?.[index]?.text}
@@ -64,77 +60,13 @@ export const PrivateQuestionForm = ({
 
       {/* Metadata Row */}
       <div className="flex flex-col">
-        <CategorySelect
-          label="Category"
-          categories={categories}
-          value={
-            watch(`privateQuestions.${index}.categoryId`)?.toString() || ""
-          }
-          onChange={(selectedValue: string) =>
-            setValue(
-              `privateQuestions.${index}.categoryId`,
-              parseInt(selectedValue, 10)
-            )
-          }
-          includeAllOption={false}
-          error={
-            formState.errors.privateQuestions?.[index]?.categoryId?.message
-          }
-          clearErrors={() =>
-            clearErrors(`privateQuestions.${index}.categoryId`)
-          }
-        />
-
-        <DifficultySelect
-          label="Difficulty"
-          difficulties={difficulties}
-          value={
-            watch(`privateQuestions.${index}.difficultyId`)?.toString() || ""
-          }
-          onChange={(selectedValue: string) =>
-            setValue(
-              `privateQuestions.${index}.difficultyId`,
-              parseInt(selectedValue, 10)
-            )
-          }
-          includeAllOption={false}
-          error={
-            formState.errors.privateQuestions?.[index]?.difficultyId?.message
-          }
-          clearErrors={() =>
-            clearErrors(`privateQuestions.${index}.difficultyId`)
-          }
-        />
-
-        <LanguageSelect
-          label="Language"
-          languages={languages}
-          value={
-            watch(`privateQuestions.${index}.languageId`)?.toString() || ""
-          }
-          onChange={(selectedValue: string) =>
-            setValue(
-              `privateQuestions.${index}.languageId`,
-              parseInt(selectedValue, 10)
-            )
-          }
-          includeAllOption={false}
-          error={
-            formState.errors.privateQuestions?.[index]?.languageId?.message
-          }
-          clearErrors={() =>
-            clearErrors(`privateQuestions.${index}.languageId`)
-          }
-        />
-        <div>
+      <div>
           <Label htmlFor={`score-${index}`}>Score</Label>
-          <Input
-            id={`score-${index}`}
-            type="number"
-            {...register(`privateQuestions.${index}.score`, {
-              valueAsNumber: true,
-            })}
+          <ScoreSelect
+            control={control}
+            name={`privateQuestions.${index}.score`}
             error={formState.errors.privateQuestions?.[index]?.score}
+            id={`score-${index}`}
           />
         </div>
       </div>

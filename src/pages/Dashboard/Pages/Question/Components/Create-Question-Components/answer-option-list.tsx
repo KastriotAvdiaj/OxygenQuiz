@@ -63,6 +63,7 @@ export const AnswerOptionList: React.FC<AnswerOptionListProps> = ({
       ))}
       <Button
         variant="addSave"
+        type="button"
         size="sm"
         onClick={() => append({ text: "", isCorrect: false })}
         disabled={fields.length >= 4}
