@@ -39,9 +39,7 @@ export const answerOptionInputSchema = z.object({
   
   export const createQuizInputSchema = z.object({
     title: z.string().min(1, 'Title is required'),
-    description: z.string().min(1, 'Description is required'),
-    timeLimit: z.number().min(1, { message: 'Time limit must be at least 1.' }),
-    passingScore: z.number().min(1, { message: 'Passing score must be at least 1.' }).default(50),
+    description: z.string(),
     categoryId: z.number().int().positive({ message: "Category is required" }),
   languageId: z.number().int().positive({ message: "Language is required" }),
     publicQuestions: z.array(publicQuestionInputSchema).default([]),

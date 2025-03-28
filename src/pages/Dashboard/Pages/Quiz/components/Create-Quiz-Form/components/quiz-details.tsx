@@ -20,6 +20,7 @@ export const QuizDetails = ({ formProps, queryData }: QuizDetailsProps) => {
           <Input
             className="bg-muted rounded-sm"
             id="title"
+            variant="quiz"
             {...register("title")}
             error={formState.errors.title}
             placeholder="Enter quiz title"
@@ -35,37 +36,6 @@ export const QuizDetails = ({ formProps, queryData }: QuizDetailsProps) => {
             registration={register("description")}
             error={formState.errors.description}
             placeholder="Enter quiz description"
-          />
-        </div>
-      </div>
-
-      {/* Time Limit and Passing Score */}
-      <div className="grid grid-cols-2 gap-4 mb-6">
-        <div>
-          <Label htmlFor="timeLimit">Time Limit (minutes)</Label>
-          <Input
-            className="bg-muted rounded-sm"
-            id="timeLimit"
-            type="number"
-            {...register("timeLimit", {
-              valueAsNumber: true,
-            })}
-            error={formState.errors.timeLimit}
-            placeholder="Enter time limit"
-          />
-        </div>
-
-        <div>
-          <Label htmlFor="passingScore">Passing Score (%)</Label>
-          <Input
-            className="bg-muted rounded-sm"
-            id="passingScore"
-            type="number"
-            {...register("passingScore", {
-              valueAsNumber: true,
-            })}
-            error={formState.errors.passingScore}
-            placeholder="Enter passing score"
           />
         </div>
       </div>
