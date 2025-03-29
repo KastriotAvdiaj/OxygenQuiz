@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { useFieldArray, UseFormClearErrors } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/form";
@@ -29,13 +29,6 @@ export const AnswerOptionList: React.FC<AnswerOptionListProps> = ({
     name,
   });
 
-  useEffect(() => {
-    console.log("hello");
-    if (fields.length === 0) {
-      append({ text: "", isCorrect: false });
-      append({ text: "", isCorrect: false });
-    }
-  }, []);
 
   const handleCorrectToggle = (index: number) => {
     fields.forEach((_, i) => {

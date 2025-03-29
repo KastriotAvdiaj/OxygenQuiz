@@ -15,12 +15,12 @@ interface ScoreSelectProps {
 }
 
 const scoreOptions = [
-  { value: "5", label: "5s" },
-  { value: "10", label: "10s" },
-  { value: "20", label: "20s" },
-  { value: "30", label: "30s" },
-  { value: "45", label: "45s" },
-  { value: "60", label: "1 minute (60s)" },
+  { value: "5", label: "5 points" },
+  { value: "10", label: "10 points" },
+  { value: "20", label: "20 points" },
+  { value: "30", label: "30 points" },
+  { value: "45", label: "45 points" },
+  { value: "60", label: "60 points" },
 ];
 
 export const ScoreSelect = ({ control, name, error, id }: ScoreSelectProps) => {
