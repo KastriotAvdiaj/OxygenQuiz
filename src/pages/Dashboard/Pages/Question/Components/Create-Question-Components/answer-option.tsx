@@ -13,6 +13,7 @@ interface AnswerOptionProps {
   error?: FieldError;
   onRemove: () => void;
   disableRemove?: boolean;
+  extraSettings?: boolean;
 }
 
 export const AnswerOption: React.FC<AnswerOptionProps> = ({
@@ -23,6 +24,7 @@ export const AnswerOption: React.FC<AnswerOptionProps> = ({
   error,
   onRemove,
   disableRemove = false,
+  extraSettings = false,
 }) => {
   return (
     <div className="flex items-center justify-between gap-4">
@@ -30,11 +32,9 @@ export const AnswerOption: React.FC<AnswerOptionProps> = ({
         <Label
           htmlFor={`answer-${index}`}
           className="block text-sm font-medium text-foreground"
-        >
-          Answer Option {index + 1}
-        </Label>
+        ></Label>
         <Input
-          variant="quiz"
+          variant={`${isCorrect ? "isCorrect" : "quiz"}`}
           color="red"
           id={`answer-${index}`}
           placeholder={`Answer Option ${index + 1}`}
@@ -45,7 +45,7 @@ export const AnswerOption: React.FC<AnswerOptionProps> = ({
           }`}
         />
       </div>
-      <div className="flex flex-col items-center">
+      <div className="flex flex-col items-center mt-3">
         <Switch
           id={`correct-${index}`}
           checked={isCorrect}
@@ -59,17 +59,17 @@ export const AnswerOption: React.FC<AnswerOptionProps> = ({
           Correct
         </Label>
       </div>
-      <Button
-        variant="destructive"
-        size="sm"
-        onClick={onRemove}
-        disabled={disableRemove}
-        className="rounded-sm"
-      >
-        <Trash2 className="h-4 w-4" />
-      </Button>
+      {extraSettings && (
+        <Button
+          variant="destructive"
+          size="sm"
+          onClick={onRemove}
+          disabled={disableRemove}
+          className="rounded-sm"
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      )}
     </div>
   );
 };
-
-

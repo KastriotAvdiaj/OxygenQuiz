@@ -2,7 +2,7 @@ import { Form } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { QuizDetails } from "./components/quiz-details";
-import { PublicQuestions } from "./components/public-questions";
+// import { PublicQuestions } from "./components/public-questions";
 import { useQuizForm } from "./use-quiz-form";
 import { createQuizInputSchema } from "../../api/create-quiz";
 import { Card } from "@/components/ui/card";
@@ -63,16 +63,12 @@ const CreateQuizForm = () => {
 
             return (
               <div className="flex flex-col md:flex-row gap-6 w-full">
-                <div className="flex-1 p-6">
+                <div className="flex-1 flex flex-col items-center p-4">
                   {/* <PublicQuestions
                     formProps={formProps}
                     questions={queryData.questions}
                   /> */}
-
                   <div className="flex flex-col gap-4 my-6">
-                    <h2 className="text-2xl font-semibold mb-4">
-                      Private Questions
-                    </h2>
                     {privateQuestionFields.map((field, index) => (
                       <PrivateQuestionForm
                         key={field.id}

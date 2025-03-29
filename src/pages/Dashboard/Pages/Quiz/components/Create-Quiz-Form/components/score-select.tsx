@@ -34,7 +34,7 @@ export const ScoreSelect = ({ control, name, error, id }: ScoreSelectProps) => {
             onValueChange={(value) => field.onChange(Number(value))}
             value={field.value?.toString() || scoreOptions[1].value}
           >
-            <SelectTrigger id={id} variant="quiz">
+            <SelectTrigger id={id} variant="quiz" >
               <SelectValue
                 className="text-foreground"
                 placeholder="Select score"
