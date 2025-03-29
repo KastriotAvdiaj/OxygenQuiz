@@ -1,4 +1,4 @@
-import { useFieldArray } from 'react-hook-form'; // Removed Controller as it wasn't used directly here
+import { useFieldArray } from "react-hook-form"; // Removed Controller as it wasn't used directly here
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/form";
 import { Separator } from "@/components/ui/separator";
@@ -11,6 +11,8 @@ import {
 import { AnswerOption } from "@/pages/Dashboard/Pages/Question/Components/Create-Question-Components/answer-option";
 import { Medal, Trash2 } from "lucide-react";
 import { ScoreSelect } from "./score-select";
+import React from "react";
+import { CustomCheckbox } from "@/common/custom-checkbox";
 
 interface PrivateQuestionFormProps {
   index: number;
@@ -29,7 +31,9 @@ export const PrivateQuestionForm = ({
   // languages,
   removeQuestion,
 }: PrivateQuestionFormProps) => {
-  const { register, control, formState, setValue, watch, clearErrors } = formProps;
+  const { register, control, formState, setValue, watch, clearErrors } =
+    formProps;
+  const [extraSettings, setExtraSettings] = React.useState(false);
 
   const answerOptionsName = `privateQuestions.${index}.answerOptions` as const;
   const {
@@ -64,21 +68,25 @@ export const PrivateQuestionForm = ({
   const answerOptionsContainerClasses = `
     grid
     gap-4
-    ${numOptions >= 2 ? 'sm:grid-cols-2' : 'grid-cols-1'} // Base 2 columns on sm+ if needed
+    ${
+      numOptions >= 2 ? "sm:grid-cols-2" : "grid-cols-1"
+    } // Base 2 columns on sm+ if needed
     mt-4
   `;
 
   return (
     <div className="p-4 rounded bg-muted max-w-2xl border border-border">
       {/* ... (Rest of the form: Header, Question Text, Score Select, Separator remains the same) ... */}
-       <div className="flex justify-between items-center mb-4">
+      <div className="flex justify-between items-center mb-4">
         <h3 className="text-xl font-semibold">Question {index + 1}</h3>
         <Button variant="destructive" size="icon" onClick={removeQuestion}>
           <Trash2 className="h-4 w-4" />
         </Button>
       </div>
       <div className="mb-4 font-header">
-        <Label htmlFor={`privateQuestions.${index}.text`} className="sr-only">Question Text</Label>
+        <Label htmlFor={`privateQuestions.${index}.text`} className="sr-only">
+          Question Text
+        </Label>
         <Input
           variant="quiz"
           placeholder={`Type Your Question`}
@@ -89,7 +97,10 @@ export const PrivateQuestionForm = ({
       </div>
       <div className="mb-4">
         <div className="flex flex-col gap-2">
-          <Label htmlFor={`privateQuestions.${index}.score`} className="flex items-center gap-2 text-lg">
+          <Label
+            htmlFor={`privateQuestions.${index}.score`}
+            className="flex items-center gap-2 text-lg"
+          >
             <Medal size={20} /> Points (Time)
           </Label>
           <ScoreSelect
@@ -103,31 +114,52 @@ export const PrivateQuestionForm = ({
       {/* TODO: Add Difficulty/Category/Language Selects here */}
       <Separator className="my-4" />
 
-
       {/* --- Answer Options Section --- */}
       <div>
-        <Label className="block text-lg font-semibold text-foreground mb-2">
-           Answer Options
-           <span className="text-sm font-normal text-muted-foreground ml-2">(Select correct answer)</span>
-        </Label>
+        <section className="flex items-center justify-between mb-4">
+          <Label className="block text-lg font-semibold text-foreground mb-2">
+            Answer Options
+            <span className="text-sm font-normal text-muted-foreground ml-2">
+              (Select correct answer)
+            </span>
+          </Label>
+          <section className="flex items-center gap-2">
+            <Label>Extra Settings</Label>
+            <CustomCheckbox
+              checked={extraSettings}
+              onChange={(e) => setExtraSettings(e.target.checked)}
+            />
+          </section>
+        </section>
 
         {/* Apply base grid classes to this container */}
         <div className={answerOptionsContainerClasses}>
           {answerOptionFields.map((field, optionIndex) => {
             // --- Add conditional class for the third item ---
-            const isThirdItemWhenThreeExist = numOptions === 3 && optionIndex === 2;
-            const itemWrapperClass = isThirdItemWhenThreeExist ? 'sm:col-span-2' : ''; // Span 2 cols only for 3rd item when count is 3 on sm+
-            // --- End conditional class logic ---
+            const isThirdItemWhenThreeExist =
+              numOptions === 3 && optionIndex === 2;
+            const itemWrapperClass = isThirdItemWhenThreeExist
+              ? "sm:col-span-2"
+              : "";
 
             return (
               // Wrap AnswerOption in a div to apply the conditional class and key
               <div key={field.id} className={itemWrapperClass}>
                 <AnswerOption
+                  extraSettings={extraSettings}
                   index={optionIndex}
-                  textRegistration={register(`${answerOptionsName}.${optionIndex}.text`)}
-                  isCorrect={!!watch(`${answerOptionsName}.${optionIndex}.isCorrect`)}
+                  textRegistration={register(
+                    `${answerOptionsName}.${optionIndex}.text`
+                  )}
+                  isCorrect={
+                    !!watch(`${answerOptionsName}.${optionIndex}.isCorrect`)
+                  }
                   onCorrectToggle={() => handleCorrectToggle(optionIndex)}
-                  error={formState.errors.privateQuestions?.[index]?.answerOptions?.[optionIndex]?.text}
+                  error={
+                    formState.errors.privateQuestions?.[index]?.answerOptions?.[
+                      optionIndex
+                    ]?.text
+                  }
                   onRemove={() => removeAnswerOption(optionIndex)}
                   disableRemove={answerOptionFields.length <= 2}
                 />
@@ -138,22 +170,24 @@ export const PrivateQuestionForm = ({
       </div>
       {/* --- End Answer Options Section --- */}
 
-
-      {/* Add Option Button */}
-      <Button
-        variant="addSave"
-        type="button"
-        size="sm"
-        onClick={handleAddAnswerOption}
-        disabled={!canAddMoreAnswers}
-        className="mt-4 rounded-sm"
-      >
-        + Add Answer Option
-      </Button>
-      {!canAddMoreAnswers && (
-        <p className="text-sm text-muted-foreground mt-1">
-          Maximum {maxAnswers} options reached.
-        </p>
+      {extraSettings && (
+        <>
+          <Button
+            variant="addSave"
+            type="button"
+            size="sm"
+            onClick={handleAddAnswerOption}
+            disabled={!canAddMoreAnswers}
+            className="mt-5 rounded-sm"
+          >
+            + Add Option
+          </Button>
+          {!canAddMoreAnswers && (
+            <p className="text-sm text-muted-foreground mt-1">
+              Maximum {maxAnswers} options reached.
+            </p>
+          )}
+        </>
       )}
     </div>
   );
