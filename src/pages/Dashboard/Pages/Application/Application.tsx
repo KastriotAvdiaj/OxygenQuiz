@@ -9,7 +9,6 @@ import { UpdateUniversityForm } from "../Ushtrime/comp/update-university";
 export const Application = () => {
   const Universities = useUniversityData({});
   const contracts = useDrejtimiData({});
-  console.log(Universities, contracts);
 
   return (
     <div className="p-4 space-y-8">
@@ -37,7 +36,10 @@ export const Application = () => {
                     {university.city}
                   </td>
                   <td>
-                    <UpdateUniversityForm universityId={university.id} university={university}/>
+                    <UpdateUniversityForm
+                      universityId={university.id}
+                      university={university}
+                    />
                     <DeleteUniversity id={university.id} />
                   </td>
                 </tr>

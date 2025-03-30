@@ -13,6 +13,7 @@ import { Medal, Trash2 } from "lucide-react";
 import { ScoreSelect } from "./score-select";
 import React from "react";
 import { CustomCheckbox } from "@/common/custom-checkbox";
+import { Card, useTheme } from "@/components/ui";
 
 interface PrivateQuestionFormProps {
   index: number;
@@ -26,9 +27,6 @@ interface PrivateQuestionFormProps {
 export const PrivateQuestionForm = ({
   index,
   formProps,
-  // difficulties,
-  // categories,
-  // languages,
   removeQuestion,
 }: PrivateQuestionFormProps) => {
   const { register, control, formState, setValue, watch, clearErrors } =
@@ -44,6 +42,8 @@ export const PrivateQuestionForm = ({
     control: control,
     name: answerOptionsName,
   });
+
+  const theme = useTheme();
 
   const handleCorrectToggle = (optionIndex: number) => {
     answerOptionFields.forEach((_, i) => {
@@ -75,7 +75,11 @@ export const PrivateQuestionForm = ({
   `;
 
   return (
-    <div className="p-4 rounded bg-muted max-w-2xl border border-border">
+    <Card
+      className={`p-4 rounded ${
+        theme.theme === "dark" ? "bg-muted border-none" : ""
+      } max-w-2xl`}
+    >
       {/* ... (Rest of the form: Header, Question Text, Score Select, Separator remains the same) ... */}
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-xl font-semibold">Question {index + 1}</h3>
@@ -189,6 +193,6 @@ export const PrivateQuestionForm = ({
           )}
         </>
       )}
-    </div>
+    </Card>
   );
 };

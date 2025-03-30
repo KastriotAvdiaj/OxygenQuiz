@@ -39,10 +39,14 @@ namespace QuizAPI.Controllers.Authentication
                 return Unauthorized("User not found.");
             }
 
-            return Ok(new UserDTO
+            return Ok(new FullUserDTO
             {
                 Id = user.Id,
                 Email = user.Email,
+                ProfileImageUrl = user.ProfileImageUrl,
+                DateRegistered = user.DateRegistered,
+                ImmutableName = user.ImmutableName,
+                LastLogin = user.LastLogin,
                 Username = user.Username,
                 Role = (await _context.Roles.FindAsync(user.RoleId))?.Name
             });

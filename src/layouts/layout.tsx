@@ -19,13 +19,12 @@ export const HomeLayout = ({
     hoverFillColor: theme === "dark" ? "#ffffff" : "#000000",
   };
 
-  console.log(squares);
 
   return (
     <>
       <Header BackgroundColor={headerColor} />
       <div
-        className={` bg-background h-screen ${
+        className={` bg-background h-screen text-foreground ${
           squares ? "overflow-hidden" : "overflow-y-auto"
         }`}
       >

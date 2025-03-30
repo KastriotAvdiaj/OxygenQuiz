@@ -169,6 +169,15 @@ const createAppRouter = (queryClient: QueryClient) =>
       ],
     },
     {
+      path: "my-profile",
+      lazy: async () => {
+        const { ProfileWrapper } = await import(
+          "../pages/UserRelated/Profile/ProfileWrapper"
+        );
+        return { Component: ProfileWrapper };
+      },
+    },
+    {
       path: "*",
       lazy: async () => {
         const { NotFoundRoute } = await import(

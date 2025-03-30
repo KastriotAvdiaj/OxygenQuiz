@@ -74,10 +74,14 @@ namespace QuizAPI.Services
                 return new AuthResult { Success = false, Message = "Invalid credentials." };
             }
 
-            var userDTO = new UserDTO
+            var userDTO = new FullUserDTO
             {
                 Id = user.Id,
                 Email = email,
+                ProfileImageUrl = user.ProfileImageUrl,
+                DateRegistered = user.DateRegistered,
+                ImmutableName = user.ImmutableName,
+                LastLogin = user.LastLogin,
                 Username = user.Username,
                 Role = role.Name,
             };
@@ -119,7 +123,7 @@ namespace QuizAPI.Services
     {
         public bool Success { get; set; }
         public string Message { get; set; }
-        public UserDTO User { get; set; }
+        public FullUserDTO User { get; set; }
         public string Token { get; set; }
     }
 }
