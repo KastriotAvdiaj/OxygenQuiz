@@ -7,6 +7,7 @@ import { DeleteQuestion } from "./delete-question";
 import { useNavigate } from "react-router-dom";
 import { AnswerOptionViewList } from "./answer-option-view-list";
 import UpdateQuestionForm from "./update-question";
+import { useTheme } from "@/components/ui";
 
 interface NormalQuestionCard {
   question: Question;
@@ -18,13 +19,16 @@ export const NormalQuestionCard: React.FC<NormalQuestionCard> = ({
   showActionButtons = true,
 }) => {
   const navigate = useNavigate();
+  const { theme } = useTheme();
 
   return (
     //-----------------
     // Add another prop to determine whether to navigate to the question page or not
     //-----------------
     <Card
-      className={`w-full border border-border rounded-lg bg-background overflow-hidden transition-shadow duration-200 ${
+      className={`rounded-lg bg-background ${
+        theme === "dark" ? "border border-foreground/20" : ""
+      } overflow-hidden transition-shadow duration-200 ${
         showActionButtons
           ? "hover:shadow-lg shadow"
           : "rounded-none shadow-none"

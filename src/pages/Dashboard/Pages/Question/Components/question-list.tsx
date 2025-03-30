@@ -35,9 +35,7 @@ export const QuestionList: React.FC<QuestionListProps> = ({
     <div className="h-fit overflow-auto p-4">
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {questions.map((question) => (
-          <div key={question.id} className="w-full">
-            <NormalQuestionCard question={question} />
-          </div>
+          <NormalQuestionCard key={question.id} question={question} />
         ))}
       </div>
 

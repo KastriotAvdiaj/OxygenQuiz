@@ -28,7 +28,7 @@ export const CreatedQuestionsPanel: React.FC<CreatedQuestionsPanelProps> = ({
 
   return (
     <>
-      <Card className="w-64 shadow-none border-none">
+      <Card className="w-64 shadow-none border-none bg-background">
         <CardHeader className="border-b-2 border-muted">
           <CardTitle>Quiz Questions</CardTitle>
         </CardHeader>

@@ -3,20 +3,20 @@ import * as React from "react";
 import { cn } from "@/utils/cn";
 import { useTheme } from "./theme-provider";
 
-
 const Card = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => {
   const { theme } = useTheme();
+  const hasCustomBorder = className?.includes("border") || false;
   return (
     <div
       ref={ref}
       className={cn(
         `${
           theme === "dark"
-            ? "bg-muted border-none text-green"
-            : "bg-card border"
+            ? `bg-muted ${hasCustomBorder ? "" : "border-none"}`
+            : `bg-card border`
         } rounded-xl text-card-foreground shadow`,
         className
       )}
