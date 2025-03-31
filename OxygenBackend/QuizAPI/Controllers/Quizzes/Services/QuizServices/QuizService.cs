@@ -39,9 +39,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                 Description = q.Description,
                 Category = q.Category.Name,
                 Language = q.Language.Language,
-                TimeLimit = q.TimeLimit,
                 IsPublished = q.IsPublished,
-                PassingScore = q.PassingScore,
                 CreatedAt = q.CreatedAt,
                 NumberOfQuestions = q.QuizQuestions.Count
             }).ToList();
@@ -56,11 +54,9 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                 /*Slug = quizCM.Slug,*/
                 CategoryId = quizCM.CategoryId,
                 LanguageId = quizCM.LanguageId,
-                TimeLimit = quizCM.TimeLimit,
                 ShuffleQuestions = quizCM.ShuffleQuestions,
                 ShuffleAnswers = quizCM.ShuffleAnswers,
                 IsPublished = true,
-                PassingScore = quizCM.PassingScore,
                 CreatedAt = DateTime.UtcNow,
                 UserId = Guid.Parse(userId),
                 QuizQuestions = new List<QuizQuestion>()
@@ -158,9 +154,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                 Description = quizEntity.Description,
                 Category = quizEntity.Category.Name,
                 Language = quizEntity.Language.Language,
-                TimeLimit = quizEntity.TimeLimit,
                 IsPublished = quizEntity.IsPublished,
-                PassingScore = quizEntity.PassingScore,
                 CreatedAt = quizEntity.CreatedAt,
                 NumberOfQuestions = quizEntity.QuizQuestions?.Count() ?? 0
             };
@@ -223,9 +217,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                 /*Slug = quiz.Slug,*/
                 Category = category,
                 Language = language,
-                TimeLimit = quiz.TimeLimit,
                 IsPublished = quiz.IsPublished,
-                PassingScore = quiz.PassingScore,
                 CreatedAt = quiz.CreatedAt,
                 NumberOfQuestions = quiz.QuizQuestions.Count
             };
@@ -254,9 +246,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                 Description = q.Description,
                 Category = q.Category.Name,
                 Language = q.Language.Language,
-                TimeLimit = q.TimeLimit,
                 IsPublished = q.IsPublished,
-                PassingScore = q.PassingScore,
                 CreatedAt = q.CreatedAt,
                 NumberOfQuestions = q.QuizQuestions?.Count ?? 0
             }).ToList();

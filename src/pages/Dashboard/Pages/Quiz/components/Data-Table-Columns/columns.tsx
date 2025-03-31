@@ -49,27 +49,6 @@ export const quizColumns: ColumnDef<Quiz>[] = [
     },
   },
   {
-    accessorKey: "timeLimit",
-    header: "Time Limit",
-    cell: ({ row }) => {
-      const timeLimit = row.original.timeLimit;
-      return (
-        <span>
-          {timeLimit} {timeLimit === 1 ? "minute" : "minutes"}
-        </span>
-      );
-    },
-  },
-  {
-    accessorKey: "passingScore",
-    header: "Passing Score",
-    cell: ({ row }) => {
-      const passingScore = row.original.passingScore;
-      return <span>{passingScore}%</span>;
-    },
-  },
-
-  {
     accessorKey: "createdAt",
     header: "Date Created",
     cell: ({ row }) => {

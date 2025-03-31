@@ -20,12 +20,9 @@ namespace QuizAPI.DTOs.Quiz
         [Required]
         public int LanguageId { get; set; }
 
-        public int? TimeLimit { get; set; } // in seconds
-
         public bool ShuffleQuestions { get; set; } = false;
         public bool ShuffleAnswers { get; set; } = false;
         public bool IsPublished { get; set; } = false;
-        public int PassingScore { get; set; } = 50;
 
         public List<PublicQuestionWithScore> PublicQuestions { get; set; } = new();
         public List<QuestionCMWithScore> PrivateQuestions { get; set; } = new();
@@ -50,9 +47,7 @@ namespace QuizAPI.DTOs.Quiz
  /*       public string Slug { get; set; } = string.Empty;*/
         public string Category { get; set; }
         public string Language { get; set; }
-        public int? TimeLimit { get; set; }
         public bool IsPublished { get; set; }
-        public int PassingScore { get; set; }
         public DateTime CreatedAt { get; set; }
         public int NumberOfQuestions { get; set; }
     }

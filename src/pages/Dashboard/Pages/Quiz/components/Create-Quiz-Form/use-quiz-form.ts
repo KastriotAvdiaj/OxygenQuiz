@@ -19,11 +19,20 @@ export const useQuizForm = () => {
 
   const createQuizMutation = useCreateQuiz({
     mutationConfig: {
-      onSuccess: () => {addNotification({
-        type: "success",
-        title: "Quiz Created",
-      });
-      navigate("/dashboard/quizzes")},
+      onSuccess: () => {
+        addNotification({
+          type: "success",
+          title: "Quiz Created",
+        });
+        navigate("/dashboard/quizzes");
+      },
+      onError: (error: any) => {
+        addNotification({
+          type: "error",
+          title: "Failed to Create Quiz",
+          message: error?.message || "An error occurred while creating the quiz."
+        });
+      },
     },
   });
 

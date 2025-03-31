@@ -42,7 +42,6 @@ namespace QuizAPI.Models.Quiz
         [ForeignKey(nameof(LanguageId))]
         public QuestionLanguage Language { get; set; }
 
-        public int? TimeLimit { get; set; }
 
         [Required]
         public bool ShuffleQuestions { get; set; } = false;
@@ -55,10 +54,6 @@ namespace QuizAPI.Models.Quiz
 
         [Required]
         public bool IsActive { get; set; } = true;
-
-        [Required]
-        [Range(0, 100)]
-        public int PassingScore { get; set; } 
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

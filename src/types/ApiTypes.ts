@@ -55,8 +55,6 @@ export type BaseEntity<TId = number> = {
     description: string;
     language: string;
     category:string;
-    timeLimit: number;
-    passingScore: number;
     createdAt: string;
     isPublished: boolean;
     numberOfQuestions: number;

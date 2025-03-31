@@ -14,9 +14,9 @@ import { PrivateQuestionForm } from "./components/private-question-form";
 
 const defaultPrivateQuestion = {
   text: "",
-  difficultyId: 0,
-  languageId: 0,
-  categoryId: 0,
+  difficultyId: 21,
+  languageId: 4,
+  categoryId: 2042,
   answerOptions: [
     { text: "", isCorrect: true },
     { text: "", isCorrect: false },
@@ -56,6 +56,9 @@ const CreateQuizForm = () => {
               control: formProps.control,
               name: "privateQuestions",
             });
+            const { formState } = formProps;
+            const { errors } = formState;
+            console.log("Form errors:", errors);
 
             const handleAddPrivateQuestion = () => {
               appendPrivateQuestion(defaultPrivateQuestion);

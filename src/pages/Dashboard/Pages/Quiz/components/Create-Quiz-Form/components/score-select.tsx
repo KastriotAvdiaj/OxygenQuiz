@@ -21,6 +21,7 @@ const scoreOptions = [
   { value: "30", label: "30 points" },
   { value: "45", label: "45 points" },
   { value: "60", label: "60 points" },
+  { value: "100", label: "100 points" },
 ];
 
 export const ScoreSelect = ({ control, name, error, id }: ScoreSelectProps) => {
@@ -34,7 +35,7 @@ export const ScoreSelect = ({ control, name, error, id }: ScoreSelectProps) => {
             onValueChange={(value) => field.onChange(Number(value))}
             value={field.value?.toString() || scoreOptions[1].value}
           >
-            <SelectTrigger id={id} variant="quiz" >
+            <SelectTrigger id={id} variant="quiz">
               <SelectValue
                 className="text-foreground"
                 placeholder="Select score"
