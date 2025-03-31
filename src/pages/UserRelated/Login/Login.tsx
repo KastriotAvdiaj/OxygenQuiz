@@ -8,8 +8,8 @@ import { GoBackButton } from "@/common/Go-Back-Button";
 import { useSearchParams } from "react-router-dom";
 import { O2Button } from "@/common/O2Button";
 import { useNotifications } from "@/common/Notifications";
-import Squares from "@/common/Effect-Related/background-squares";
-import { useTheme } from "@/components/ui";
+// import Squares from "@/common/Effect-Related/background-squares";
+// import { useTheme } from "@/components/ui";
 // import OxygenBackground from "../../../assets/oxygenquiz.jpeg";
 import OxygenBackground from "../../../assets/oxygenquiz2.jpg";
 
@@ -20,11 +20,11 @@ import OxygenBackground from "../../../assets/oxygenquiz2.jpg";
  */
 
 const Login: React.FC = () => {
-  const { theme } = useTheme();
-  const colors = {
-    borderColor: theme === "dark" ? "#626262" : "#b4b4b4",
-    hoverFillColor: theme === "dark" ? "#ffffff" : "#000000",
-  };
+  // const { theme } = useTheme();
+  // const colors = {
+  //   borderColor: theme === "dark" ? "#626262" : "#b4b4b4",
+  //   hoverFillColor: theme === "dark" ? "#ffffff" : "#000000",
+  // };
 
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -72,17 +72,10 @@ const Login: React.FC = () => {
       />
 
       {/* Gray Overlay */}
-      <div className="absolute inset-0 bg-gray-900 opacity-30" />
+      <div className="absolute inset-0 backdrop-blur-sm" /> 
 
       {/* Content Container */}
       <div className="relative h-full w-full flex flex-col bg-transparent">
-        {/* <Squares
-          speed={0.5}
-          squareSize={40}
-          direction="diagonal"
-          borderColor={colors.borderColor}
-          hoverFillColor={colors.hoverFillColor}
-        /> */}
         <div className="relative flex justify-center pt-10">
           <div className="absolute top-4 flex justify-between gap-5 w-full px-5">
             <GoBackButton />
@@ -92,9 +85,9 @@ const Login: React.FC = () => {
         </div>
 
         <div className="flex-grow flex items-center justify-center z-20">
-          <div className="bg-muted text-foreground p-8 rounded shadow-md w-[50%] max-w-lg flex-grow flex flex-col items-center justify-center">
+          <div className=" backdrop-blur-md text-foreground p-8 rounded shadow-xl max-w-lg flex-grow flex flex-col items-center justify-center">
             <div className="w-[70%]">
-              <h2 className="text-3xl font-semibold mb-6 text-center">
+              <h2 className="text-3xl text-white font-semibold mb-6 text-center">
                 Welcome Back
               </h2>
               {isError && (
