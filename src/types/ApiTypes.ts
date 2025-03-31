@@ -68,6 +68,7 @@ export type BaseEntity<TId = number> = {
     category: CategoryDTO;
     language :LangaugeDTO;
     visibility:string;
+    timeLimit: number; //not in the backend yet
     answerOptions: AnswerOption[];
   };
 
