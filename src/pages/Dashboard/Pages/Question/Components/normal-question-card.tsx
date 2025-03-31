@@ -22,11 +22,8 @@ export const NormalQuestionCard: React.FC<NormalQuestionCard> = ({
   const { theme } = useTheme();
 
   return (
-    //-----------------
-    // Add another prop to determine whether to navigate to the question page or not
-    //-----------------
     <Card
-      className={`rounded-lg bg-background ${
+      className={`rounded-lg bg-background h-fit ${
         theme === "dark" ? "border border-foreground/20" : ""
       } overflow-hidden transition-shadow duration-200 ${
         showActionButtons
@@ -34,14 +31,13 @@ export const NormalQuestionCard: React.FC<NormalQuestionCard> = ({
           : "rounded-none shadow-none"
       }`}
     >
-      {/* <Link to={`/dashboard/questions/${question.id}`}> */}
       <div
         onClick={() =>
           showActionButtons
             ? navigate(`/dashboard/questions/${question.id}`)
             : null
         }
-        className={` ${showActionButtons ? "cursor-pointer" : ""} `}
+        className={` ${showActionButtons ? "cursor-pointer" : ""} h-`}
       >
         <div className="flex flex-col sm:flex-row items-start justify-between p-4">
           <div className="flex-grow mb-2 sm:mb-0">
@@ -60,7 +56,6 @@ export const NormalQuestionCard: React.FC<NormalQuestionCard> = ({
           </CardContent>
         </div>
       </div>
-      {/* </Link> */}
       {showActionButtons && (
         <section className="border-t border-border p-2 flex items-center gap-2 justify-end opacity-100 sm:opacity-0 sm:hover:opacity-100 transition-opacity duration-200">
           <UpdateQuestionForm question={question} />
