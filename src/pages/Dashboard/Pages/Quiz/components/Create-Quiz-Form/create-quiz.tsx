@@ -62,21 +62,25 @@ const CreateQuizForm = () => {
 
             const handleAddPrivateQuestion = () => {
               appendPrivateQuestion(defaultPrivateQuestion);
-              // Set active index to the newly added question
               setActiveQuestionIndex(privateQuestionFields.length);
             };
 
-            // Handler for clicking on a question in the panel
             const handleQuestionSelect = (index: number) => {
               setActiveQuestionIndex(index);
             };
 
+            const handleRemoveQuestion = (index: number) => {
+              removePrivateQuestion(index);
+              setActiveQuestionIndex((prevIndex) =>
+                prevIndex > 0 ? prevIndex - 1 : 0
+              );
+            };
+
             return (
-              <div className="flex flex-col md:flex-row gap-6 w-full">
+              <div className="flex flex-col md:flex-row gap-6 w-full ">
                 <div className="flex-1 flex flex-col items-center p-4">
-                  <div className="flex flex-col gap-4 my-6 w-full">
+                  <div className="flex flex-col items-center gap-4 my-6 w-full">
                     {privateQuestionFields.length > 0 ? (
-                      // Show only the active question
                       <PrivateQuestionForm
                         key={
                           privateQuestionFields[activeQuestionIndex]?.id ||
@@ -88,7 +92,7 @@ const CreateQuizForm = () => {
                         categories={queryData.categories}
                         languages={queryData.languages}
                         removeQuestion={() =>
-                          removePrivateQuestion(activeQuestionIndex)
+                          handleRemoveQuestion(activeQuestionIndex)
                         }
                       />
                     ) : (
@@ -114,17 +118,19 @@ const CreateQuizForm = () => {
                   </Button>
                 </div>
 
-                <div className="border-l-2 border-muted md:w-72 flex-shrink-0">
+                <div className="border-l-2 border-b-2 border-muted md:w-72 flex-shrink-0">
                   <CreatedQuestionsPanel
                     onAddPrivateQuestion={handleAddPrivateQuestion}
                     questions={privateQuestionFields}
                     difficulties={queryData.difficulties}
                     categories={queryData.categories}
-                    onRemoveQuestion={removePrivateQuestion}
+                    onRemoveQuestion={() =>
+                      handleRemoveQuestion(activeQuestionIndex)
+                    }
                     onSelectQuestion={handleQuestionSelect}
                     activeQuestionIndex={activeQuestionIndex}
                   />
-                  <div className="p-6 flex justify-center">
+                  <div className="p-6 flex justify-center border-t-2 border-foreground/30 shadow-[0px_-1px_1px_rgba(0,0,0,0.1)]">
                     <Dialog>
                       <DialogTrigger asChild>
                         <Button variant={"fancy"} className="w-full">

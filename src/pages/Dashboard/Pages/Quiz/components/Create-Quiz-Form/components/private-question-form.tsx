@@ -51,12 +51,12 @@ export const PrivateQuestionForm = ({
         shouldValidate: true,
       });
     });
-    clearErrors(`${answerOptionsName}`); // Optional: Clear errors if needed
+    clearErrors(`${answerOptionsName}`); 
   };
 
   const maxAnswers = 4;
   const canAddMoreAnswers = answerOptionFields.length < maxAnswers;
-  const numOptions = answerOptionFields.length; // Get current number of options
+  const numOptions = answerOptionFields.length; 
 
   const handleAddAnswerOption = () => {
     if (canAddMoreAnswers) {
@@ -83,7 +83,12 @@ export const PrivateQuestionForm = ({
       {/* ... (Rest of the form: Header, Question Text, Score Select, Separator remains the same) ... */}
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-xl font-semibold">Question {index + 1}</h3>
-        <Button variant="destructive" size="icon" onClick={removeQuestion}>
+        <Button
+          variant="destructive"
+          type="button"
+          size="icon"
+          onClick={removeQuestion}
+        >
           <Trash2 className="h-4 w-4" />
         </Button>
       </div>

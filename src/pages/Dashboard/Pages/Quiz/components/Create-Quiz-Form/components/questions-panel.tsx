@@ -57,7 +57,7 @@ export const CreatedQuestionsPanel: React.FC<CreatedQuestionsPanelProps> = ({
 
   return (
     <>
-      <Card className="w-full shadow-none border-none bg-background">
+      <Card className="w-full shadow-none border-none bg-background py-0">
         <CardHeader className="border-b-2 border-muted">
           <CardTitle className="flex justify-between items-center">
             <span>Quiz Questions ({totalQuestions})</span>
@@ -93,7 +93,7 @@ export const CreatedQuestionsPanel: React.FC<CreatedQuestionsPanelProps> = ({
             </Popover>
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-3">
+        <CardContent className="px-3 pt-3 pb-0">
           {totalQuestions === 0 ? (
             <div className="flex flex-col items-center justify-center py-6 text-center text-muted-foreground">
               <p className="mb-4">No questions added yet</p>
@@ -102,7 +102,7 @@ export const CreatedQuestionsPanel: React.FC<CreatedQuestionsPanelProps> = ({
               </Button>
             </div>
           ) : (
-            <ScrollArea className="h-[calc(100vh-300px)] pr-3">
+            <ScrollArea className="h-[calc(100vh-300px)] pr-6 ">
               {/* Private questions */}
               {questions.map((question, index) => (
                 <QuestionCard
