@@ -3,11 +3,13 @@ import React from "react";
 type CustomCheckboxProps = {
   checked: boolean;
   onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  disabled : boolean;
 };
 
 export const CustomCheckbox: React.FC<CustomCheckboxProps> = ({
   checked,
   onChange,
+  disabled,
 }) => {
   return (
     <>
@@ -16,6 +18,7 @@ export const CustomCheckbox: React.FC<CustomCheckboxProps> = ({
         id="custom-checkbox"
         checked={checked}
         onChange={onChange}
+        disabled={disabled}
         className="hidden peer"
       />
       <label

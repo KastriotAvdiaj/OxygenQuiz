@@ -130,7 +130,7 @@ const CreateQuizForm = () => {
             };
 
             return (
-              <div className="flex flex-col md:flex-row gap-6 w-full">
+              <div className="flex flex-col md:flex-row gap-6 w-full ">
                 <div className="flex-1 flex flex-col items-center p-4">
                   <div className="flex flex-col items-center gap-4 my-6 w-full">
                     {privateQuestionFields.length > 0 ? (
@@ -138,7 +138,7 @@ const CreateQuizForm = () => {
                         <div className="absolute -top-6 left-0 bg-primary text-primary-foreground text-sm px-3 py-1 rounded-t-md">
                           Question #{activeQuestionIndex + 1}
                         </div>
-                        <div className="border-2 border-primary/30 rounded-lg p-6 bg-card shadow-inner hover:shadow-md transition-all duration-300">
+                        <div className="border-2 border-primary bg-primary/10 rounded-lg p-6 shadow-inner hover:shadow-md transition-all duration-300">
                           <PrivateQuestionForm
                             key={
                               privateQuestionFields[activeQuestionIndex]?.id ||

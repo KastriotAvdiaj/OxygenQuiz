@@ -9,11 +9,17 @@ import {
   QuestionLanguage,
 } from "@/types/ApiTypes";
 import { AnswerOption } from "@/pages/Dashboard/Pages/Question/Components/Create-Question-Components/answer-option";
-import { Medal, Trash2 } from "lucide-react";
+import { Info, Medal, Trash2 } from "lucide-react";
 import { ScoreSelect } from "./score-select";
 import React from "react";
 import { CustomCheckbox } from "@/common/custom-checkbox";
-import { Card, useTheme } from "@/components/ui";
+import {
+  Card,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui";
 
 interface PrivateQuestionFormProps {
   index: number;
@@ -43,20 +49,18 @@ export const PrivateQuestionForm = ({
     name: answerOptionsName,
   });
 
-  const theme = useTheme();
-
   const handleCorrectToggle = (optionIndex: number) => {
     answerOptionFields.forEach((_, i) => {
       setValue(`${answerOptionsName}.${i}.isCorrect`, i === optionIndex, {
         shouldValidate: true,
       });
     });
-    clearErrors(`${answerOptionsName}`); 
+    clearErrors(`${answerOptionsName}`);
   };
 
   const maxAnswers = 4;
   const canAddMoreAnswers = answerOptionFields.length < maxAnswers;
-  const numOptions = answerOptionFields.length; 
+  const numOptions = answerOptionFields.length;
 
   const handleAddAnswerOption = () => {
     if (canAddMoreAnswers) {
@@ -76,9 +80,7 @@ export const PrivateQuestionForm = ({
 
   return (
     <Card
-      className={`p-4 rounded ${
-        theme.theme === "dark" ? "bg-muted border-none" : ""
-      } max-w-2xl`}
+      className={`p-4 rounded max-w-2xl border-dashed border-2 border-primary/30 dark:bg-transparent`}
     >
       {/* ... (Rest of the form: Header, Question Text, Score Select, Separator remains the same) ... */}
       <div className="flex justify-between items-center mb-4">
@@ -132,13 +134,23 @@ export const PrivateQuestionForm = ({
               (Select correct answer)
             </span>
           </Label>
-          <section className="flex items-center gap-2">
-            <Label>Extra Settings</Label>
-            <CustomCheckbox
-              checked={extraSettings}
-              onChange={(e) => setExtraSettings(e.target.checked)}
-            />
-          </section>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <section className="flex items-center gap-2">
+                  <Label className="text-gray-500">Extra Settings</Label>
+                  <CustomCheckbox
+                    disabled={true}
+                    checked={extraSettings}
+                    onChange={(e) => setExtraSettings(e.target.checked)}
+                  />
+                </section>
+              </TooltipTrigger>
+              <TooltipContent className="bg-background">
+                <p>Option is disabled for now.</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </section>
 
         {/* Apply base grid classes to this container */}
