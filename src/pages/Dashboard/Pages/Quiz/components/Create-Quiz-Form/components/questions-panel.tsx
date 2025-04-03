@@ -1,7 +1,11 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { useDisclosure } from "@/hooks/use-disclosure";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { PlusCircle } from "lucide-react";
@@ -58,7 +62,7 @@ export const CreatedQuestionsPanel: React.FC<CreatedQuestionsPanelProps> = ({
   return (
     <>
       <Card className="w-full shadow-none border-none bg-background py-0">
-        <CardHeader className="border-b-2 border-muted">
+        <CardHeader className="border-b-2 border-primary/30">
           <CardTitle className="flex justify-between items-center">
             <span>Quiz Questions ({totalQuestions})</span>
             <Popover modal={true} open={isOpen} onOpenChange={handleOpenChange}>
@@ -76,17 +80,19 @@ export const CreatedQuestionsPanel: React.FC<CreatedQuestionsPanelProps> = ({
                         onAddPublicQuestion();
                       }}
                     >
-                      <PlusCircle size={16} className="mr-2" /> Add Public Question
+                      <PlusCircle size={16} className="mr-2" /> Add Public
+                      Question
                     </Button>
                   )}
 
                   <Button
+                  variant={"outline"}
                     onClick={() => {
                       close();
                       onAddPrivateQuestion();
                     }}
                   >
-                    <PlusCircle size={16} className="mr-2" /> Add Private Question
+                    <PlusCircle size={16} className="mr-2" /> New Question
                   </Button>
                 </div>
               </PopoverContent>
@@ -97,7 +103,11 @@ export const CreatedQuestionsPanel: React.FC<CreatedQuestionsPanelProps> = ({
           {totalQuestions === 0 ? (
             <div className="flex flex-col items-center justify-center py-6 text-center text-muted-foreground">
               <p className="mb-4">No questions added yet</p>
-              <Button onClick={onAddPrivateQuestion} variant="outline" size="sm">
+              <Button
+                onClick={onAddPrivateQuestion}
+                variant="outline"
+                size="sm"
+              >
                 <PlusCircle size={16} className="mr-2" /> Add Question
               </Button>
             </div>
@@ -128,7 +138,9 @@ export const CreatedQuestionsPanel: React.FC<CreatedQuestionsPanelProps> = ({
                   category={getCategoryName(question.categoryId)}
                   isPrivate={false}
                   isActive={questions.length + index === activeQuestionIndex}
-                  onRemove={() => onRemovePublicQuestion && onRemovePublicQuestion(index)}
+                  onRemove={() =>
+                    onRemovePublicQuestion && onRemovePublicQuestion(index)
+                  }
                   onClick={() => onSelectQuestion(questions.length + index)}
                 />
               ))}
@@ -137,7 +149,10 @@ export const CreatedQuestionsPanel: React.FC<CreatedQuestionsPanelProps> = ({
         </CardContent>
       </Card>
       {isOpen && (
-        <div className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm" onClick={close} />
+        <div
+          className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm"
+          onClick={close}
+        />
       )}
     </>
   );

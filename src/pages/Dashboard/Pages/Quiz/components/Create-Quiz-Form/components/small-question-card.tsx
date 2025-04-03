@@ -155,8 +155,8 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
 
       <CardContent className="p-3">
         {/* Question text with speech bubble design */}
-        <div className="mt-1 mb-3 border rounded-lg px-3 py-2 text-sm bg-background relative shadow-inner">
-          <div className="absolute -top-2 left-3 w-4 h-4 bg-background border-t border-l rotate-45 transform"></div>
+        <div className="mt-1 mb-3 border border-foreground/30 rounded-lg px-3 py-2 text-sm bg-background relative shadow-inner">
+          <div className="absolute -top-2 left-3 w-4 h-4 bg-background border-t border-foreground/30 border-l rotate-45 transform"></div>
           {truncatedText || "Empty question"}
         </div>
 
