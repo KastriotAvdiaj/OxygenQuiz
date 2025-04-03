@@ -1,16 +1,11 @@
-import { useFieldArray } from "react-hook-form"; // Removed Controller as it wasn't used directly here
+import { useFieldArray } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/form";
 import { Separator } from "@/components/ui/separator";
 import { FormProps } from "../types";
-import {
-  QuestionCategory,
-  QuestionDifficulty,
-  QuestionLanguage,
-} from "@/types/ApiTypes";
 import { AnswerOption } from "@/pages/Dashboard/Pages/Question/Components/Create-Question-Components/answer-option";
-import { Info, Medal, Trash2 } from "lucide-react";
-import { ScoreSelect } from "./score-select";
+import { Medal, Trash2, Clock } from "lucide-react"; // Added Clock and HelpCircle icons
+import { ScoreSelect } from "./score-select"; // Assuming ScoreSelect accepts options prop
 import React from "react";
 import { CustomCheckbox } from "@/common/custom-checkbox";
 import {
@@ -24,11 +19,9 @@ import {
 interface PrivateQuestionFormProps {
   index: number;
   formProps: FormProps;
-  difficulties: QuestionDifficulty[];
-  categories: QuestionCategory[];
-  languages: QuestionLanguage[];
   removeQuestion: () => void;
 }
+
 
 export const PrivateQuestionForm = ({
   index,
@@ -49,6 +42,7 @@ export const PrivateQuestionForm = ({
     name: answerOptionsName,
   });
 
+  // --- Handlers (remain the same) ---
   const handleCorrectToggle = (optionIndex: number) => {
     answerOptionFields.forEach((_, i) => {
       setValue(`${answerOptionsName}.${i}.isCorrect`, i === optionIndex, {
@@ -68,148 +62,191 @@ export const PrivateQuestionForm = ({
     }
   };
 
-  // Define base grid classes (applies when 2 or more options)
+  // --- Answer Option Layout Classes (remain the same) ---
   const answerOptionsContainerClasses = `
     grid
     gap-4
-    ${
-      numOptions >= 2 ? "sm:grid-cols-2" : "grid-cols-1"
-    } // Base 2 columns on sm+ if needed
+    ${numOptions >= 2 ? "sm:grid-cols-2" : "grid-cols-1"}
     mt-4
   `;
 
   return (
     <Card
-      className={`p-4 rounded max-w-2xl border-dashed border-2 border-primary/30 dark:bg-transparent`}
+      className={`p-6 rounded w-full border-dashed border-2 border-primary/30 dark:bg-background/80`} 
     >
-      {/* ... (Rest of the form: Header, Question Text, Score Select, Separator remains the same) ... */}
-      <div className="flex justify-between items-center mb-4">
+      {/* --- Header Section --- */}
+      <div className="flex justify-between items-center mb-6">
         <h3 className="text-xl font-semibold">Question {index + 1}</h3>
         <Button
-          variant="destructive"
           type="button"
           size="icon"
+          variant="ghost"
+          className="flex items-center justify-center rounded-full text-red-500 hover:bg-red-500/10 hover:text-red-600"
           onClick={removeQuestion}
         >
-          <Trash2 className="h-4 w-4" />
+          <Trash2 className="h-5 w-5" />
         </Button>
       </div>
-      <div className="mb-4 font-header">
-        <Label htmlFor={`privateQuestions.${index}.text`} className="sr-only">
-          Question Text
-        </Label>
-        <Input
-          variant="quiz"
-          placeholder={`Type Your Question`}
-          id={`privateQuestions.${index}.text`}
-          {...register(`privateQuestions.${index}.text`)}
-          error={formState.errors.privateQuestions?.[index]?.text}
-        />
-      </div>
-      <div className="mb-4">
-        <div className="flex flex-col gap-2">
-          <Label
-            htmlFor={`privateQuestions.${index}.score`}
-            className="flex items-center gap-2 text-lg"
-          >
-            <Medal size={20} /> Points (Time)
-          </Label>
-          <ScoreSelect
-            control={control}
-            name={`privateQuestions.${index}.score`}
-            error={formState.errors.privateQuestions?.[index]?.score}
-            id={`privateQuestions.${index}.score`}
-          />
-        </div>
-      </div>
-      {/* TODO: Add Difficulty/Category/Language Selects here */}
-      <Separator className="my-4" />
+      {/* --- Main Layout Grid (Content Left, Settings Right) --- */}
+      <div className="grid grid-cols-1 md:grid-cols-[1fr_220px] gap-x-8 gap-y-6">
+        {/* --- Main Content Column --- */}
+        <div className="flex flex-col gap-4">
+          {/* Question Text */}
+          <div className="font-header">
+            <Label
+              htmlFor={`privateQuestions.${index}.text`}
+              className="sr-only"
+            >
+              Question Text
+            </Label>
+            <Input
+              variant="quiz"
+              placeholder={`Type Your Question`}
+              id={`privateQuestions.${index}.text`}
+              {...register(`privateQuestions.${index}.text`)}
+              error={formState.errors.privateQuestions?.[index]?.text}
+              className="text-lg py-3" // Slightly larger input
+            />
+          </div>
 
-      {/* --- Answer Options Section --- */}
-      <div>
-        <section className="flex items-center justify-between mb-4">
-          <Label className="block text-lg font-semibold text-foreground mb-2">
-            Answer Options
-            <span className="text-sm font-normal text-muted-foreground ml-2">
-              (Select correct answer)
-            </span>
-          </Label>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <section className="flex items-center gap-2">
-                  <Label className="text-gray-500">Extra Settings</Label>
-                  <CustomCheckbox
-                    disabled={true}
-                    checked={extraSettings}
-                    onChange={(e) => setExtraSettings(e.target.checked)}
-                  />
-                </section>
-              </TooltipTrigger>
-              <TooltipContent className="bg-background">
-                <p>Option is disabled for now.</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </section>
+          <Separator className="my-2" />
 
-        {/* Apply base grid classes to this container */}
-        <div className={answerOptionsContainerClasses}>
-          {answerOptionFields.map((field, optionIndex) => {
-            // --- Add conditional class for the third item ---
-            const isThirdItemWhenThreeExist =
-              numOptions === 3 && optionIndex === 2;
-            const itemWrapperClass = isThirdItemWhenThreeExist
-              ? "sm:col-span-2"
-              : "";
+          {/* --- Answer Options Section --- */}
+          <div className="mt-2">
+            {/* Optionally keep the extra settings toggle if it controls advanced answer features */}
+            <section className="flex items-center justify-between mb-4">
+              <Label className="font-medium text-base">Answer Options</Label>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    {/* Maybe connect this to advanced answer settings if needed */}
+                    <section className="flex items-center gap-2">
+                      <Label
+                        className="text-sm text-gray-500 cursor-pointer"
+                        htmlFor={`extra-settings-${index}`}
+                      >
+                        Advanced Options
+                      </Label>
+                      <CustomCheckbox
+                        //  id={`extra-settings-${index}`}
+                        checked={extraSettings}
+                        onChange={(checked) =>
+                          setExtraSettings(Boolean(checked))
+                        }
+                        // You might want to re-enable this if it does something useful
+                        disabled={true}
+                      />
+                    </section>
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-background">
+                    <p>
+                      Toggle advanced answer settings (e.g. image uploads - if
+                      implemented).
+                    </p>
+                    {/* <p>Option is disabled for now.</p> */}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </section>
 
-            return (
-              // Wrap AnswerOption in a div to apply the conditional class and key
-              <div key={field.id} className={itemWrapperClass}>
-                <AnswerOption
-                  extraSettings={extraSettings}
-                  index={optionIndex}
-                  textRegistration={register(
-                    `${answerOptionsName}.${optionIndex}.text`
-                  )}
-                  isCorrect={
-                    !!watch(`${answerOptionsName}.${optionIndex}.isCorrect`)
-                  }
-                  onCorrectToggle={() => handleCorrectToggle(optionIndex)}
-                  error={
-                    formState.errors.privateQuestions?.[index]?.answerOptions?.[
-                      optionIndex
-                    ]?.text
-                  }
-                  onRemove={() => removeAnswerOption(optionIndex)}
-                  disableRemove={answerOptionFields.length <= 2}
-                />
-              </div>
-            );
-          })}
-        </div>
-      </div>
-      {/* --- End Answer Options Section --- */}
+            {/* Answers Grid */}
+            <div className={answerOptionsContainerClasses}>
+              {answerOptionFields.map((field, optionIndex) => {
+                const isThirdItemWhenThreeExist =
+                  numOptions === 3 && optionIndex === 2;
+                const itemWrapperClass = isThirdItemWhenThreeExist
+                  ? "sm:col-span-2"
+                  : "";
 
-      {extraSettings && (
-        <>
-          <Button
-            variant="addSave"
-            type="button"
-            size="sm"
-            onClick={handleAddAnswerOption}
-            disabled={!canAddMoreAnswers}
-            className="mt-5 rounded-sm"
-          >
-            + Add Option
-          </Button>
-          {!canAddMoreAnswers && (
-            <p className="text-sm text-muted-foreground mt-1">
-              Maximum {maxAnswers} options reached.
-            </p>
-          )}
-        </>
-      )}
+                return (
+                  <div key={field.id} className={itemWrapperClass}>
+                    <AnswerOption
+                      extraSettings={extraSettings} // Pass state if needed by AnswerOption
+                      index={optionIndex}
+                      textRegistration={register(
+                        `${answerOptionsName}.${optionIndex}.text`
+                      )}
+                      isCorrect={
+                        !!watch(`${answerOptionsName}.${optionIndex}.isCorrect`)
+                      }
+                      onCorrectToggle={() => handleCorrectToggle(optionIndex)}
+                      error={
+                        formState.errors.privateQuestions?.[index]
+                          ?.answerOptions?.[optionIndex]?.text
+                      }
+                      onRemove={() => removeAnswerOption(optionIndex)}
+                      disableRemove={answerOptionFields.length <= 2}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Add Option Button - only show when less than max */}
+            {canAddMoreAnswers && (
+              <Button
+                variant="outline" // Changed variant for less emphasis
+                type="button"
+                size="sm"
+                onClick={handleAddAnswerOption}
+                className="mt-5 rounded-sm w-full sm:w-auto"
+              >
+                + Add Answer Option
+              </Button>
+            )}
+            {!canAddMoreAnswers && (
+              <p className="text-sm text-muted-foreground mt-2">
+                Maximum {maxAnswers} options reached.
+              </p>
+            )}
+          </div>
+        </div>{" "}
+        {/* End Main Content Column */}
+        {/* --- Settings Sidebar Column --- */}
+        <div className="flex flex-col gap-5 border-l border-border pl-6 md:pl-8 pt-1 md:border-l md:pt-0">
+          {/* Points Type Select */}
+          <div className="flex flex-col gap-2">
+            <Label
+              htmlFor={`privateQuestions.${index}.pointType`}
+              className="flex items-center gap-2 text-sm font-medium text-muted-foreground"
+            >
+              <Medal size={16} /> Point System
+            </Label>
+            <ScoreSelect
+              control={control}
+              name={`privateQuestions.${index}.pointType`} // ** NEW FIELD NAME **
+              // error={formState.errors.privateQuestions?.[index]?.pointType}
+              id={`privateQuestions.${index}.pointType`}
+            />
+          </div>
+
+          {/* Time Limit Select */}
+          <div className="flex flex-col gap-2">
+            <Label
+              htmlFor={`privateQuestions.${index}.timeLimit`}
+              className="flex items-center gap-2 text-sm font-medium text-muted-foreground"
+            >
+              <Clock size={16} /> Time Limit
+            </Label>
+            <ScoreSelect // Reusing ScoreSelect again
+              control={control}
+              name={`privateQuestions.${index}.timeLimit`} // ** NEW FIELD NAME **
+              error={formState.errors.privateQuestions?.[index]?.timeLimit}
+              id={`privateQuestions.${index}.timeLimit`}
+            />
+            {/* Optional: Display error message */}
+            {formState.errors.privateQuestions?.[index]?.timeLimit && (
+              <p className="text-xs text-red-500 mt-1">
+                {formState.errors.privateQuestions[index]?.timeLimit?.message}
+              </p>
+            )}
+          </div>
+
+          {/* You can add other settings here if needed later, e.g., difficulty */}
+        </div>{" "}
+        {/* End Settings Sidebar Column */}
+      </div>{" "}
+      {/* End Main Layout Grid */}
     </Card>
   );
 };

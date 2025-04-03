@@ -29,6 +29,7 @@ export const answerOptionInputSchema = z.object({
     languageId: z.number().int().positive({ message: "Language is required" }),
     categoryId: z.number().int().positive({ message: "Language is required" }),
     answerOptions: answerOptionsSchema,
+    timeLimit: z.number().int().positive({ message: "Time limit is required" }),
     score: z.number().min(1, { message: 'Score must be at least 1.' }),
   });
   

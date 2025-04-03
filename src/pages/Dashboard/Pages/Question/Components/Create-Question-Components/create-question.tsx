@@ -231,6 +231,7 @@ export const CreateQuestionForm: React.FC<CreateQuestionFormProps> = ({
                 <Button
                   variant="addSave"
                   size="sm"
+                  type="button"
                   className="mt-2 rounded-sm"
                   onClick={() => append({ text: "", isCorrect: false })}
                   disabled={addOptionDisabled}

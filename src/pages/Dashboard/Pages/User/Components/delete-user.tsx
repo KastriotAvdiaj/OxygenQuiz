@@ -30,7 +30,7 @@ export const DeleteUser = ({ id, closeDropDown }: DeleteUserProps) => {
       title="Delete User"
       body="Are you sure you want to delete this user?"
       triggerButton={
-        <Button variant="userMenu" className="h-5 font-normal px-0">
+        <Button variant="userMenu" className="h-5 font-normal px-0 flex">
           <UserX size={16} /> Delete User
         </Button>
       }

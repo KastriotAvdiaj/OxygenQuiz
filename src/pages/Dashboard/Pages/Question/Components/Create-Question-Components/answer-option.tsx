@@ -50,7 +50,7 @@ export const AnswerOption: React.FC<AnswerOptionProps> = ({
                 : "bg-primary/20 hover:bg-primary/30 dark:bg-primary/30 dark:hover:bg-primary/40"
             }`}
           >
-            {isCorrect && <Check className="h-4 w-4" />}
+            {isCorrect && <Check className="h-4 w-4 " />}
           </button>
         </div>
       </div>

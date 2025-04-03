@@ -15,13 +15,9 @@ interface ScoreSelectProps {
 }
 
 const scoreOptions = [
-  { value: "5", label: "5 points" },
-  { value: "10", label: "10 points" },
-  { value: "20", label: "20 points" },
-  { value: "30", label: "30 points" },
-  { value: "45", label: "45 points" },
-  { value: "60", label: "60 points" },
-  { value: "100", label: "100 points" },
+  { value: "5", label: "Standard" },
+  { value: "10", label: "Double" },
+  { value: "20", label: "Quadruple" },
 ];
 
 export const ScoreSelect = ({ control, name, error, id }: ScoreSelectProps) => {

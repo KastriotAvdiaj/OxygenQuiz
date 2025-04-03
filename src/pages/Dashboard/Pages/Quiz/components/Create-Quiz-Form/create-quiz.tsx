@@ -20,6 +20,7 @@ const defaultPrivateQuestion = {
   difficultyId: 21,
   languageId: 4,
   categoryId: 2042,
+  timeLimit: 2,
   answerOptions: [
     { text: "", isCorrect: true },
     { text: "", isCorrect: false },
@@ -138,7 +139,7 @@ const CreateQuizForm = () => {
                         <div className="absolute -top-6 left-0 bg-primary text-primary-foreground text-sm px-3 py-1 rounded-t-md">
                           Question #{activeQuestionIndex + 1}
                         </div>
-                        <div className="border-2 border-primary bg-primary/10 rounded-lg p-6 shadow-inner hover:shadow-md transition-all duration-300">
+                        <div className="border-2 flex justify-center border-primary bg-primary/10 rounded-lg p-6 shadow-inner hover:shadow-md transition-all duration-300">
                           <PrivateQuestionForm
                             key={
                               privateQuestionFields[activeQuestionIndex]?.id ||
@@ -146,9 +147,6 @@ const CreateQuizForm = () => {
                             }
                             index={activeQuestionIndex}
                             formProps={formProps}
-                            difficulties={queryData.difficulties}
-                            categories={queryData.categories}
-                            languages={queryData.languages}
                             removeQuestion={() =>
                               handleRemoveQuestion(activeQuestionIndex)
                             }
