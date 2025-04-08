@@ -37,25 +37,26 @@ namespace QuizAPI.Controllers.Quizzes
             {
                 return NotFound();
             }
-            return await _quizService.GetQuizzesAsync();
+            /*return await _quizService.GetQuizzesAsync();*/
+            return Ok();
         }
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetQuiz(int id)
         {
-            var quizDto = await _quizService.GetQuizAsync(id);
-            if (quizDto == null)
+            /*var quizDto = await _quizService.GetQuizAsync(id);*/
+            /*if (quizDto == null)
             {
                 return NotFound();
-            }
-            return Ok(quizDto);
+            }*/
+            return Ok();
         }
 
         [HttpGet("{id}/questions")]
         public async Task<IActionResult> GetQuizQuestions(int id)
             {
-            var quizQuestions = await _quizService.GetQuizQuestionsAsync(id);
-            return Ok(quizQuestions);
+            /*var quizQuestions = await _quizService.GetQuizQuestionsAsync(id);*/
+            return Ok();
         }
 
         // PUT: api/Quizs/5
@@ -148,11 +149,11 @@ namespace QuizAPI.Controllers.Quizzes
 
             try
             {
-           
+           /*
                 var quiz = await _quizService.CreateQuizAsync(quizCM, userId);
-                var quizDto = await _quizService.MapToQuizDTO(quiz);
+                var quizDto = await _quizService.MapToQuizDTO(quiz);*/
 
-                return Ok(quizDto);
+                return Ok();
             }
             catch (ArgumentException ex)
             {
@@ -163,8 +164,8 @@ namespace QuizAPI.Controllers.Quizzes
         [HttpGet("by-category")]
         public async Task<IActionResult> GetQuizForEachCategory()
         {
-            var quizzes = await _quizService.GetQuizForEachCategoryAsync();
-            return Ok(quizzes);
+           /* var quizzes = await _quizService.GetQuizForEachCategoryAsync();*/
+            return Ok();
         }
 
         // DELETE: api/Quizs/5

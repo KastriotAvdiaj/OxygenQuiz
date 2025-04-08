@@ -6,7 +6,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
 {
     public interface IQuizService
     {
-        Task<Quiz> CreateQuizAsync(QuizCM quizCM, string userId);
+      /*  Task<Quiz> CreateQuizAsync(QuizCM quizCM, string userId);
 
         Task<List<QuizDTO>> GetQuizzesAsync();
         Task<bool> ValidatePublicQuestionsAsync(IEnumerable<int> questionIds);
@@ -15,9 +15,9 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
 
         Task<List<QuizQuestionDTO>> GetQuizQuestionsAsync(int quizId);
 
-        Task<List<QuizDTO>> GetQuizForEachCategoryAsync();
+        Task<List<QuizDTO>> GetQuizForEachCategoryAsync();*/
 
-        Task<QuizDTO> GetQuizAsync (int id);
+    /*    Task<QuizDTO> GetQuizAsync (int id);*/
         /* Task<bool> ValidateQuizSlugAsync(string slug);*/
     }
 }

@@ -4,43 +4,99 @@ using QuizAPI.Models;
 namespace QuizAPI.DTOs.Question
 {
     // CM = Create Model, for creating the question
-    public class QuestionCM
+    public class QuestionBaseDTO
+    {
+        public int Id { get; set; }
+        public string Text { get; set; } = string.Empty;
+        public DifficultyDTO Difficulty { get; set; }
+        public CategoryDTO Category { get; set; }
+        public LanguageDTO Language { get; set; }
+        public UserBasicDTO User { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public string Visibility { get; set; }
+        public int TimeLimitInSeconds { get; set; }
+        public string QuestionType { get; set; }
+    }
+
+    public class MultipleChoiceQuestionDTO : QuestionBaseDTO
+    {
+        public List<AnswerOptionDTO> AnswerOptions { get; set; } = new List<AnswerOptionDTO>();
+        public bool AllowMultipleSelections { get; set; }
+    }
+
+    public class TrueFalseQuestionDTO : QuestionBaseDTO
+    {
+        public bool CorrectAnswer { get; set; }
+    }
+
+    public class TypeAnswerQuestionDTO : QuestionBaseDTO
+    {
+        public string CorrectAnswer { get; set; } = string.Empty;
+        public bool IsCaseSensitive { get; set; }
+        public bool AllowPartialMatch { get; set; }
+        public List<string> AcceptableAnswers { get; set; } = new List<string>();
+    }
+
+    // Creation Models (CMs)
+    public class QuestionBaseCM
     {
         public string Text { get; set; } = string.Empty;
         public int DifficultyId { get; set; }
-
-        public int LanguageId { get; set; }
         public int CategoryId { get; set; }
-        public List<AnswerOptionCM> AnswerOptions { get; set; }
+        public int LanguageId { get; set; }
+        public int TimeLimitInSeconds { get; set; } = 10;
+        public string Visibility { get; set; } = "Global";
     }
 
-    public class QuestionUM : QuestionCM
+    public class MultipleChoiceQuestionCM : QuestionBaseCM
     {
+        public List<AnswerOptionCM> AnswerOptions { get; set; } = new List<AnswerOptionCM>();
+        public bool AllowMultipleSelections { get; set; }
+    }
+
+    public class TrueFalseQuestionCM : QuestionBaseCM
+    {
+        public bool CorrectAnswer { get; set; }
+    }
+
+    public class TypeAnswerQuestionCM : QuestionBaseCM
+    {
+        public string CorrectAnswer { get; set; } = string.Empty;
+        public bool IsCaseSensitive { get; set; }
+        public bool AllowPartialMatch { get; set; }
+        public List<string> AcceptableAnswers { get; set; } = new List<string>();
+    }
+
+    // Update Models (UMs)
+    public class QuestionBaseUM
+    {
+        public int Id { get; set; }
+        public string Text { get; set; } = string.Empty;
+        public int DifficultyId { get; set; }
+        public int CategoryId { get; set; }
+        public int LanguageId { get; set; }
+        public int TimeLimitInSeconds { get; set; }
         public string Visibility { get; set; }
     }
 
-    // Used for sending the data - Transferring the model 
-        public class QuestionDTO
-        {
-            public int ID { get; set; }
-            public string Text { get; set; } = string.Empty;
+    public class MultipleChoiceQuestionUM : QuestionBaseUM
+    {
+        public List<AnswerOptionUM> AnswerOptions { get; set; } = new List<AnswerOptionUM>();
+        public bool AllowMultipleSelections { get; set; }
+    }
 
-            public DifficultyDTO Difficulty { get; set; }
+    public class TrueFalseQuestionUM : QuestionBaseUM
+    {
+        public bool CorrectAnswer { get; set; }
+    }
 
-            public LangaugeDTO Language { get; set; }
-
-            public UserBasicDTO User { get; set; }
-
-            public CategoryDTO Category { get; set; }
-
-            public int TotalQuestions { get; set; }
-
-            public string Visibility { get; set; }
-
-            public List<AnswerOptionDTO> AnswerOptions { get; set; }
-
-        }
-
+    public class TypeAnswerQuestionUM : QuestionBaseUM
+    {
+        public string CorrectAnswer { get; set; } = string.Empty;
+        public bool IsCaseSensitive { get; set; }
+        public bool AllowPartialMatch { get; set; }
+        public List<string> AcceptableAnswers { get; set; } = new List<string>();
+    }
     public class CategoryDTO
     {
         public int Id { get; set; }
@@ -58,7 +114,7 @@ namespace QuizAPI.DTOs.Question
         public int Weight { get; set; }
     }
 
-    public class LangaugeDTO {
+    public class LanguageDTO {
     
     public int Id { get; set; }
     public string Langauge { get; set; } = string.Empty;
@@ -96,6 +152,13 @@ namespace QuizAPI.DTOs.Question
 
     public class AnswerOptionCM
     {
+        public string Text { get; set; } = string.Empty;
+        public bool IsCorrect { get; set; }
+    }
+
+    public class AnswerOptionUM
+    {
+        public int Id { get; set; }
         public string Text { get; set; } = string.Empty;
         public bool IsCorrect { get; set; }
     }

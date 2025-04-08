@@ -1,4 +1,4 @@
-﻿namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
+﻿/*namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
 {
     using Microsoft.EntityFrameworkCore;
     using QuizAPI.Data;
@@ -141,4 +141,4 @@
             return totalScore;
         }
     }
-}
+}*/

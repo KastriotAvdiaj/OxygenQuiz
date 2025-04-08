@@ -15,22 +15,36 @@ namespace QuizAPI.Controllers.Questions.Services.AnswerOptions
         }
 
         public async Task<AnswerOption> CreateAnswerOptionAsync(
-    AnswerOptionCM newAnswerOptionCM,
-    int questionId
-)
+      AnswerOptionCM newAnswerOptionCM,
+      int questionId
+  )
         {
+            // First, fetch the base question
+            var baseQuestion = await _context.Questions.FirstOrDefaultAsync(q => q.Id == questionId)
+                ?? throw new Exception("Question not found.");
 
-            var question = await _context.Questions.FirstOrDefaultAsync(q => q.Id == questionId) ?? throw new Exception("Question not found.");
+            // Check if it's a MultipleChoiceQuestion
+            if (baseQuestion.Type != QuestionType.MultipleChoice)
+            {
+                throw new InvalidOperationException("Answer options can only be added to multiple choice questions.");
+            }
 
+            // Now fetch the full MultipleChoiceQuestion with its options
+            var multipleChoiceQuestion = await _context.MultipleChoiceQuestions
+                .Include(q => q.AnswerOptions)
+                .FirstOrDefaultAsync(q => q.Id == questionId)
+                ?? throw new Exception("Multiple choice question not found.");
+
+            // Create and add the answer option
             var answerOption = new AnswerOption
             {
                 Text = newAnswerOptionCM.Text,
                 IsCorrect = newAnswerOptionCM.IsCorrect,
-                Question = question
+                QuestionId = questionId // Assuming you have a QuestionId property in AnswerOption
             };
 
-   
-            question.AnswerOptions.Add(answerOption);
+            _context.AnswerOptions.Add(answerOption);
+            multipleChoiceQuestion.AnswerOptions.Add(answerOption);
             await _context.SaveChangesAsync();
 
             return answerOption;

@@ -13,7 +13,7 @@ namespace QuizAPI.Models.Statistics.Questions
             public int TimesAnsweredIncorrectly { get; set; } // Number of times the question was answered incorrectly
 
             [JsonIgnore]
-            public Question Question { get; set; }
+            public QuestionBase Question { get; set; }
         
     }
 }

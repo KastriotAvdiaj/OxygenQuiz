@@ -16,7 +16,7 @@ namespace QuizAPI.Models
         public DateTime CreatedAt { get; set; }
 
         public Guid UserId { get; set; }
-        public ICollection<Question> Questions { get; set; }
+        public ICollection<QuestionBase> Questions { get; set; }
 
         public string? Emoji { get; set; }
 

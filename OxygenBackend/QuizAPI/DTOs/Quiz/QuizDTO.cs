@@ -34,7 +34,7 @@ namespace QuizAPI.DTOs.Quiz
         public int Score { get; set; } 
     }
 
-    public class QuestionCMWithScore : QuestionCM
+    public class QuestionCMWithScore : QuestionBaseCM
     {
         public int Score { get; set; } 
     }

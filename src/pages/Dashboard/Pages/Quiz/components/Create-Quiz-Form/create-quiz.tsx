@@ -4,14 +4,15 @@ import { Separator } from "@/components/ui/separator";
 import { QuizDetails } from "./components/quiz-details";
 import { useQuizForm } from "./use-quiz-form";
 import { createQuizInputSchema } from "../../api/create-quiz";
-import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { CreatedQuestionsPanel } from "./components/questions-panel";
 import { useState } from "react";
 import { useFieldArray } from "react-hook-form";
 import { PrivateQuestionForm } from "./components/private-question-form";
 import { Brain, PlusCircle, StarIcon, Trophy, Sparkles } from "lucide-react";
+// import oxygen from "@/assets/besimiQuiz.png";
 import z from "zod";
+import { Card } from "@/components/ui";
 
 type FormValues = z.infer<typeof createQuizInputSchema>;
 
@@ -82,7 +83,7 @@ const CreateQuizForm = () => {
         </div>
       )}
 
-      <Card className="bg-gradient-to-br from-background to-background/95 justify-center border-2 border-primary/30 rounded-xl shadow-lg flex flex-col gap-2 items-center w-full overflow-hidden">
+      <Card className="bg-background justify-center border-2 border-primary/30 rounded-xl shadow-lg flex flex-col gap-2 items-center w-full overflow-hidden">
         <div className="w-full bg-primary/10 p-4 text-center border-b border-primary/30">
           <h2 className="text-2xl font-bold flex items-center justify-center gap-2">
             <Trophy className="h-6 w-6 text-primary" />
@@ -204,7 +205,7 @@ const CreateQuizForm = () => {
                     onSelectQuestion={handleQuestionSelect}
                     activeQuestionIndex={activeQuestionIndex}
                   />
-                  <div className="p-6 flex justify-center border-t-2 border-primary/30 shadow-[0px_-1px_1px_rgba(0,0,0,0.1)]">
+                  <div className="p-6 flex justify-center h-full border-t-2 border-primary/30 shadow-[0px_-1px_1px_rgba(0,0,0,0.1)]">
                     <Dialog>
                       <DialogTrigger asChild>
                         <Button variant={"fancy"} className="w-full group">

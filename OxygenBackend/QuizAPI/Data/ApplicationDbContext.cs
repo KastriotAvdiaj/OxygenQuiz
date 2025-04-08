@@ -1,10 +1,10 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using QuizAPI.ManyToManyTables;
 using QuizAPI.Models;
 using QuizAPI.Models.Quiz;
 using QuizAPI.Models.Statistics.Questions;
-using System;
-
+using System.Text.Json;
 namespace QuizAPI.Data
 {
     public class ApplicationDbContext : DbContext
@@ -12,7 +12,11 @@ namespace QuizAPI.Data
 
         public DbSet<User> Users { get; set; }
 
-        public DbSet<Question> Questions { get; set; }
+        public DbSet<QuestionBase> Questions { get; set; }
+
+        public DbSet<MultipleChoiceQuestion> MultipleChoiceQuestions { get; set; }
+        public DbSet<TrueFalseQuestion> TrueFalseQuestions { get; set; }
+        public DbSet<TypeAnswerQuestion> TypeAnswerQuestions { get; set; }
 
         public DbSet<PrivateQuestion> PrivateQuestions { get; set; }
 
@@ -108,11 +112,11 @@ namespace QuizAPI.Data
 
 
             // Configuration for Question-AnswerOptions relationship
-            modelBuilder.Entity<Question>()
+            /*modelBuilder.Entity<MultipleChoiceQuestion>()
             .HasMany(q => q.AnswerOptions)
             .WithOne(a => a.Question)
             .HasForeignKey(a => a.QuestionId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.Cascade);*/
 
             //Configuration for User-QuestionCategory relationship
             modelBuilder.Entity<QuestionCategory>()
@@ -129,7 +133,7 @@ namespace QuizAPI.Data
        .OnDelete(DeleteBehavior.Restrict);
 
             //Configuration for Question-QuestionLanguage relationship
-            modelBuilder.Entity<Question>()
+            modelBuilder.Entity<QuestionBase>()
            .HasOne(ql => ql.Language)
            .WithMany()
            .HasForeignKey(ql => ql.LanguageId)
@@ -195,6 +199,24 @@ namespace QuizAPI.Data
                 .WithMany(q => q.UserAnswers)
                 .HasForeignKey(ua => ua.QuestionId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+
+            //Configuration for the Table-per-hierarchy (TPH) pattern
+            modelBuilder.Entity<QuestionBase>()
+            .HasDiscriminator(q => q.Type)
+            .HasValue<MultipleChoiceQuestion>(QuestionType.MultipleChoice)
+            .HasValue<TrueFalseQuestion>(QuestionType.TrueFalse)
+            .HasValue<TypeAnswerQuestion>(QuestionType.TypeAnswer);
+
+
+            modelBuilder.Entity<TypeAnswerQuestion>()
+    .Property(q => q.AcceptableAnswers)
+    .HasConversion(
+         new ValueConverter<List<string>, string>(
+             v => JsonSerializer.Serialize(v, (JsonSerializerOptions)null),
+             v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions)null) ?? new List<string>()
+         )
+    );
         }
     }
 }

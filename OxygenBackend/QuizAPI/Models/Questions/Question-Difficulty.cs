@@ -17,5 +17,5 @@ public class QuestionDifficulty
 
     public Guid UserId { get; set; }
 
-    public ICollection<Question> Questions { get; set; }
+    public ICollection<QuestionBase> Questions { get; set; }
 }

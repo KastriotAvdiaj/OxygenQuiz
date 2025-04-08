@@ -17,7 +17,12 @@ export const AppRoot = () => {
           </div>
         }
       >
-        <ErrorBoundary key={location.pathname} fallback={<MainErrorFallback />}>
+        <ErrorBoundary
+          key={location.pathname}
+          fallbackRender={({ error, resetErrorBoundary }) => (
+            <MainErrorFallback error={error} resetErrorBoundary={resetErrorBoundary} />
+          )}
+        >
           <Outlet />
         </ErrorBoundary>
       </Suspense>

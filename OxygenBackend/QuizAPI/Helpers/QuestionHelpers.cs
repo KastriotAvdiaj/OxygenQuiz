@@ -3,9 +3,9 @@
 namespace QuizAPI.Helpers
 {
    
-    public static class QuestionHelpers
+   /* public static class QuestionHelpers
     {
-        public static bool ValidateQuestionDto(QuestionCM questionDto)
+        public static bool ValidateQuestionDto(QuestionBaseCM questionDto)
         {
             if (questionDto == null)
                 return false;
@@ -26,5 +26,5 @@ namespace QuizAPI.Helpers
 
             return correctAnswers == 1 && incorrectAnswers >= 1;
         }
-    }
+    }*/
 }

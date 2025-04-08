@@ -27,7 +27,7 @@ namespace QuizAPI.Controllers.Totals
         [HttpGet("Questions")]
         public ActionResult<int> GetTotalQuestions()
         {
-            var totalQuestions = _dashboardService.GetTotalCount<Question>();
+            var totalQuestions = _dashboardService.GetTotalCount<QuestionBase>();
             return Ok(totalQuestions);
         }
     }

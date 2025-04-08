@@ -18,111 +18,200 @@ namespace QuizAPI.Controllers.Questions
     [Route("api/[controller]")]
     public class QuestionsController : ControllerBase
     {
-        private readonly ApplicationDbContext _context;
-        private readonly DashboardService _dashboardService;
         private readonly IQuestionService _questionService;
 
-
-        public QuestionsController(ApplicationDbContext context, DashboardService dashboardService, IQuestionService questionService)
+        public QuestionsController(IQuestionService questionService)
         {
-            _context = context;
             _questionService = questionService;
-            _dashboardService = dashboardService;
         }
 
-
+        // GET: api/questions
         [HttpGet]
-        public async Task<ActionResult<PaginatedResponse<QuestionDTO>>> GetQuestions(
-        int page = 1,
-        int pageSize = 20,
-        string? searchTerm = null,
-        string? category = null)
+        public async Task<ActionResult<IEnumerable<QuestionBaseDTO>>> GetQuestions([FromQuery] string visibility = null)
         {
-            if (page <= 0 || pageSize <= 0)
-                return BadRequest("Page and page size must be positive numbers.");
-
-            var result = await _questionService.GetPaginatedQuestionsAsync(
-                page,
-                pageSize,
-                searchTerm,
-                category
-            );
-
-            return Ok(result);
+            var questions = await _questionService.GetAllQuestionsAsync(visibility);
+            return Ok(questions);
         }
 
-
-
-        // GET: api/Questions/{id}
+        // GET: api/questions/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<IndividualQuestionDTO>> GetQuestion(int id)
+        public async Task<ActionResult<QuestionBaseDTO>> GetQuestion(int id)
         {
+            var question = await _questionService.GetQuestionByIdAsync(id);
 
-            var questionDto = await _questionService.GetQuestionAsync(id);
-            return questionDto != null ? Ok(questionDto) : NotFound();
-        }
-
-
-        // POST: api/Questions
-        [Authorize]
-        [HttpPost]
-        public async Task<ActionResult<Question>> CreateQuestion(QuestionCM newQuestionCM)
-        {
-
-            if (!QuestionHelpers.ValidateQuestionDto(newQuestionCM))
-                return BadRequest("Invalid question data.");
-
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-            if (string.IsNullOrEmpty(userId))
+            if (question == null)
             {
-                return Unauthorized(new { message = "User ID not found in token." });
+                return NotFound();
             }
-
-            var question = await _questionService.CreateQuestionAsync(
-                newQuestionCM,
-                userId,
-                visibility : QuestionVisibility.Global);
 
             return Ok(question);
         }
 
-        // PUT: api/Questions/{id}
-        [Authorize]
-        [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateQuestion(int id, QuestionUM questionDto)
+        // GET: api/questions/multiplechoice
+        [HttpGet("multiplechoice")]
+        public async Task<ActionResult<IEnumerable<MultipleChoiceQuestionDTO>>> GetMultipleChoiceQuestions()
         {
-            try
-            {
-                var question = await _questionService.UpdateQuestionAsync(id, questionDto);
-                return Ok(question);
-            }
-            catch (KeyNotFoundException)
-            {
-                return NotFound("Question not found.");
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
+            var questions = await _questionService.GetMultipleChoiceQuestionsAsync();
+            return Ok(questions);
         }
 
-        [Authorize(Roles = "Admin , SuperAdmin")]
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteQuestion(int id)
+        // GET: api/questions/truefalse
+        [HttpGet("truefalse")]
+        public async Task<ActionResult<IEnumerable<TrueFalseQuestionDTO>>> GetTrueFalseQuestions()
         {
-            var (success, message) = await _questionService.DeleteQuestionAsync(id);
+            var questions = await _questionService.GetTrueFalseQuestionsAsync();
+            return Ok(questions);
+        }
 
-            if (!success)
+        // GET: api/questions/typeanswer
+        [HttpGet("typeanswer")]
+        public async Task<ActionResult<IEnumerable<TypeAnswerQuestionDTO>>> GetTypeAnswerQuestions()
+        {
+            var questions = await _questionService.GetTypeAnswerQuestionsAsync();
+            return Ok(questions);
+        }
+
+        // POST: api/questions/multiplechoice
+        [HttpPost("multiplechoice")]
+        [Authorize]
+        public async Task<ActionResult<MultipleChoiceQuestionDTO>> CreateMultipleChoiceQuestion(MultipleChoiceQuestionCM questionCM)
+        {
+            // Get the user ID from the authenticated user
+            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+
+            var createdQuestion = await _questionService.CreateMultipleChoiceQuestionAsync(questionCM, userId);
+
+            return CreatedAtAction(
+                nameof(GetQuestion),
+                new { id = createdQuestion.Id },
+                createdQuestion
+            );
+        }
+
+        // POST: api/questions/truefalse
+        [HttpPost("truefalse")]
+        [Authorize]
+        public async Task<ActionResult<TrueFalseQuestionDTO>> CreateTrueFalseQuestion(TrueFalseQuestionCM questionCM)
+        {
+            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+
+            var createdQuestion = await _questionService.CreateTrueFalseQuestionAsync(questionCM, userId);
+
+            return CreatedAtAction(
+                nameof(GetQuestion),
+                new { id = createdQuestion.Id },
+                createdQuestion
+            );
+        }
+
+        // POST: api/questions/typeanswer
+        [HttpPost("typeanswer")]
+        [Authorize]
+        public async Task<ActionResult<TypeAnswerQuestionDTO>> CreateTypeAnswerQuestion(TypeAnswerQuestionCM questionCM)
+        {
+            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+
+            var createdQuestion = await _questionService.CreateTypeAnswerQuestionAsync(questionCM, userId);
+
+            return CreatedAtAction(
+                nameof(GetQuestion),
+                new { id = createdQuestion.Id },
+                createdQuestion
+            );
+        }
+
+        // PUT: api/questions/multiplechoice
+        [HttpPut("multiplechoice")]
+        [Authorize]
+        public async Task<IActionResult> UpdateMultipleChoiceQuestion(MultipleChoiceQuestionUM questionUM)
+        {
+            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+
+            var updatedQuestion = await _questionService.UpdateMultipleChoiceQuestionAsync(questionUM, userId);
+
+            if (updatedQuestion == null)
             {
-                return BadRequest(new { message });
+                return NotFound();
             }
 
             return NoContent();
         }
 
-        private bool QuestionExists(int id) => _context.Questions.Any(e => e.Id == id);
+        // PUT: api/questions/truefalse
+        [HttpPut("truefalse")]
+        [Authorize]
+        public async Task<IActionResult> UpdateTrueFalseQuestion(TrueFalseQuestionUM questionUM)
+        {
+            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
 
- 
+            var updatedQuestion = await _questionService.UpdateTrueFalseQuestionAsync(questionUM, userId);
+
+            if (updatedQuestion == null)
+            {
+                return NotFound();
+            }
+
+            return NoContent();
+        }
+
+        // PUT: api/questions/typeanswer
+        [HttpPut("typeanswer")]
+        [Authorize]
+        public async Task<IActionResult> UpdateTypeAnswerQuestion(TypeAnswerQuestionUM questionUM)
+        {
+            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+
+            var updatedQuestion = await _questionService.UpdateTypeAnswerQuestionAsync(questionUM, userId);
+
+            if (updatedQuestion == null)
+            {
+                return NotFound();
+            }
+
+            return NoContent();
+        }
+
+        // DELETE: api/questions/5
+        [HttpDelete("{id}")]
+        [Authorize]
+        public async Task<IActionResult> DeleteQuestion(int id)
+        {
+            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+
+            var result = await _questionService.DeleteQuestionAsync(id, userId);
+
+            if (!result)
+            {
+                return NotFound();
+            }
+
+            return NoContent();
+        }
+
+        // GET: api/questions/category/5
+        [HttpGet("category/{categoryId}")]
+        public async Task<ActionResult<IEnumerable<QuestionBaseDTO>>> GetQuestionsByCategory(int categoryId)
+        {
+            var questions = await _questionService.GetQuestionsByCategoryAsync(categoryId);
+            return Ok(questions);
+        }
+
+        // GET: api/questions/difficulty/5
+        [HttpGet("difficulty/{difficultyId}")]
+        public async Task<ActionResult<IEnumerable<QuestionBaseDTO>>> GetQuestionsByDifficulty(int difficultyId)
+        {
+            var questions = await _questionService.GetQuestionsByDifficultyAsync(difficultyId);
+            return Ok(questions);
+        }
+
+        // GET: api/questions/user
+        [HttpGet("user")]
+        [Authorize]
+        public async Task<ActionResult<IEnumerable<QuestionBaseDTO>>> GetMyQuestions()
+        {
+            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+            var questions = await _questionService.GetQuestionsByUserAsync(userId);
+            return Ok(questions);
+        }
     }
 }

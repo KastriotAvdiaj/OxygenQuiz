@@ -14,6 +14,6 @@ namespace QuizAPI.Models
         [ForeignKey("UserId")]
         public User User { get; set; } //CreatedBy
 
-        public ICollection<Question> Questions { get; set; }
+        public ICollection<QuestionBase> Questions { get; set; }
     }
 }

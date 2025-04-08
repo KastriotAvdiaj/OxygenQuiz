@@ -20,7 +20,7 @@ namespace QuizAPI.Models.Quiz
         public bool IsCorrect { get; set; }
             public int Score { get; set; } 
             public QuizSession QuizSession { get; set; }
-            public Question Question { get; set; }
+            public QuestionBase Question { get; set; }
         }
     
 }

@@ -6,253 +6,352 @@ using QuizAPI.DTOs.Quiz;
 using QuizAPI.DTOs.Shared;
 using QuizAPI.DTOs.User;
 using QuizAPI.Models;
+using AutoMapper;
 
 namespace QuizAPI.Controllers.Questions.Services
 {
     public class QuestionService : IQuestionService
     {
         private readonly ApplicationDbContext _context;
-        private readonly IAnswerOptionService _answerOptionService;
+        private readonly IMapper _mapper;
 
-
-        public QuestionService(ApplicationDbContext context, IAnswerOptionService answerOptionService)
+        public QuestionService(ApplicationDbContext context, IMapper mapper)
         {
             _context = context;
-            _answerOptionService = answerOptionService;
+            _mapper = mapper;
         }
 
-        public async Task<Question> CreateQuestionAsync(
-            QuestionCM newQuestionCM,
-            string userId,
-            QuestionVisibility visibility
-            )
+        public async Task<List<QuestionBaseDTO>> GetAllQuestionsAsync(string visibility = null)
         {
-            // Create the new question entity.
-            var question = new Question
+            IQueryable<QuestionBase> query = _context.Questions
+                .Include(q => q.Difficulty)
+                .Include(q => q.Category)
+                .Include(q => q.Language)
+                .Include(q => q.User);
+
+            if (!string.IsNullOrEmpty(visibility))
             {
-                Text = newQuestionCM.Text,
-                DifficultyId = newQuestionCM.DifficultyId,
-                LanguageId = newQuestionCM.LanguageId,
-                CreatedAt = DateTime.UtcNow,
-                CategoryId = newQuestionCM.CategoryId,
-                UserId = Guid.Parse(userId),
-                Visibility = visibility,
-            };
-
-            _context.Questions.Add(question);
-            await _context.SaveChangesAsync();
-
-            if (newQuestionCM.AnswerOptions != null && newQuestionCM.AnswerOptions.Any())
-            {
-                
-                 await _answerOptionService.CreateAnswerOptionsAsync(newQuestionCM.AnswerOptions, question.Id);
-            }
-
-            return question;
-        }
-
-        public async Task<Question> UpdateQuestionAsync(
-    int questionId,
-    QuestionUM updatedQuestionCM)
-        {
-            
-            var question = await _context.Questions
-                .Include(q => q.AnswerOptions)
-                .FirstOrDefaultAsync(q => q.Id == questionId);
-
-            if (question == null)
-            {
-                throw new Exception("Question not found.");
-            }
-
-            question.Text = updatedQuestionCM.Text;
-            question.DifficultyId = updatedQuestionCM.DifficultyId;
-            question.LanguageId = updatedQuestionCM.LanguageId;
-            question.CategoryId = updatedQuestionCM.CategoryId;
-
-            if (Enum.TryParse<QuestionVisibility>(updatedQuestionCM.Visibility, out var visibilityEnum))
-            {
-                Console.WriteLine($"Parsed enum: {visibilityEnum}");
-            }
-            else
-            {
-                Console.WriteLine("Invalid enum value received.");
-            }
-            question.Visibility = visibilityEnum;
-
-
-            if (question.AnswerOptions.Any())
-            {
-                _context.AnswerOptions.RemoveRange(question.AnswerOptions);
-                question.AnswerOptions.Clear();
-            }
-
-            if (updatedQuestionCM.AnswerOptions != null)
-            {
-                foreach (var optionDto in updatedQuestionCM.AnswerOptions)
+                QuestionVisibility visibilityEnum;
+                if (Enum.TryParse(visibility, true, out visibilityEnum))
                 {
-                    question.AnswerOptions.Add(new AnswerOption
-                    {
-                        Text = optionDto.Text,
-                        IsCorrect = optionDto.IsCorrect,
-                        Question = question
-                    });
+                    query = query.Where(q => q.Visibility == visibilityEnum);
                 }
             }
 
-            await _context.SaveChangesAsync();
-
-            return question;
+            var questions = await query.ToListAsync();
+            return _mapper.Map<List<QuestionBaseDTO>>(questions);
         }
 
-        public async Task<(bool Success, string Message)> DeleteQuestionAsync(int id)
+        public async Task<QuestionBaseDTO> GetQuestionByIdAsync(int id)
         {
             var question = await _context.Questions
-                .Include(q => q.QuizQuestions) // Ensure related quiz data is loaded
+                .Include(q => q.Difficulty)
+                .Include(q => q.Category)
+                .Include(q => q.Language)
+                .Include(q => q.User)
                 .FirstOrDefaultAsync(q => q.Id == id);
 
             if (question == null)
+                return null;
+
+            // Map to the correct DTO type based on question type
+            switch (question.Type)
             {
-                return (false, "Question not found.");
+                case QuestionType.MultipleChoice:
+                    var mcQuestion = await _context.MultipleChoiceQuestions
+                        .Include(q => q.AnswerOptions)
+                        .FirstOrDefaultAsync(q => q.Id == id);
+                    return _mapper.Map<MultipleChoiceQuestionDTO>(mcQuestion);
+
+                case QuestionType.TrueFalse:
+                    var tfQuestion = await _context.TrueFalseQuestions
+                        .FirstOrDefaultAsync(q => q.Id == id);
+                    return _mapper.Map<TrueFalseQuestionDTO>(tfQuestion);
+
+                case QuestionType.TypeAnswer:
+                    var taQuestion = await _context.TypeAnswerQuestions
+                        .FirstOrDefaultAsync(q => q.Id == id);
+                    return _mapper.Map<TypeAnswerQuestionDTO>(taQuestion);
+
+                default:
+                    return _mapper.Map<QuestionBaseDTO>(question);
+            }
+        }
+
+        public async Task<List<MultipleChoiceQuestionDTO>> GetMultipleChoiceQuestionsAsync()
+        {
+            var questions = await _context.MultipleChoiceQuestions
+                .Include(q => q.AnswerOptions)
+                .Include(q => q.Difficulty)
+                .Include(q => q.Category)
+                .Include(q => q.Language)
+                .Include(q => q.User)
+                .ToListAsync();
+
+            return _mapper.Map<List<MultipleChoiceQuestionDTO>>(questions);
+        }
+
+        public async Task<List<TrueFalseQuestionDTO>> GetTrueFalseQuestionsAsync()
+        {
+            var questions = await _context.TrueFalseQuestions
+                .Include(q => q.Difficulty)
+                .Include(q => q.Category)
+                .Include(q => q.Language)
+                .Include(q => q.User)
+                .ToListAsync();
+
+            return _mapper.Map<List<TrueFalseQuestionDTO>>(questions);
+        }
+
+        public async Task<List<TypeAnswerQuestionDTO>> GetTypeAnswerQuestionsAsync()
+        {
+            var questions = await _context.TypeAnswerQuestions
+                .Include(q => q.Difficulty)
+                .Include(q => q.Category)
+                .Include(q => q.Language)
+                .Include(q => q.User)
+                .ToListAsync();
+
+            return _mapper.Map<List<TypeAnswerQuestionDTO>>(questions);
+        }
+
+        public async Task<MultipleChoiceQuestionDTO> CreateMultipleChoiceQuestionAsync(MultipleChoiceQuestionCM questionCM, Guid userId)
+        {
+            // Create the question entity from CM
+            var question = _mapper.Map<MultipleChoiceQuestion>(questionCM);
+
+            // Set additional properties
+            question.UserId = userId;
+            question.CreatedAt = DateTime.UtcNow;
+            question.Type = QuestionType.MultipleChoice;
+
+            // Parse visibility
+            if (Enum.TryParse(questionCM.Visibility, true, out QuestionVisibility visibility))
+            {
+                question.Visibility = visibility;
+            }
+            else
+            {
+                question.Visibility = QuestionVisibility.Global;
             }
 
-            // Check if the question is linked to any quiz
-            if (question.QuizQuestions.Any())
+            _context.MultipleChoiceQuestions.Add(question);
+            await _context.SaveChangesAsync();
+
+            // Fetch the complete entity with relations for DTO mapping
+            var createdQuestion = await _context.MultipleChoiceQuestions
+                .Include(q => q.AnswerOptions)
+                .Include(q => q.Difficulty)
+                .Include(q => q.Category)
+                .Include(q => q.Language)
+                .Include(q => q.User)
+                .FirstOrDefaultAsync(q => q.Id == question.Id);
+
+            return _mapper.Map<MultipleChoiceQuestionDTO>(createdQuestion);
+        }
+
+        public async Task<TrueFalseQuestionDTO> CreateTrueFalseQuestionAsync(TrueFalseQuestionCM questionCM, Guid userId)
+        {
+            var question = _mapper.Map<TrueFalseQuestion>(questionCM);
+
+            question.UserId = userId;
+            question.CreatedAt = DateTime.UtcNow;
+            question.Type = QuestionType.TrueFalse;
+
+            if (Enum.TryParse(questionCM.Visibility, true, out QuestionVisibility visibility))
             {
-                return (false, "Question is currently part of an active quiz and cannot be deleted.");
+                question.Visibility = visibility;
             }
+            else
+            {
+                question.Visibility = QuestionVisibility.Global;
+            }
+
+            _context.TrueFalseQuestions.Add(question);
+            await _context.SaveChangesAsync();
+
+            var createdQuestion = await _context.TrueFalseQuestions
+                .Include(q => q.Difficulty)
+                .Include(q => q.Category)
+                .Include(q => q.Language)
+                .Include(q => q.User)
+                .FirstOrDefaultAsync(q => q.Id == question.Id);
+
+            return _mapper.Map<TrueFalseQuestionDTO>(createdQuestion);
+        }
+
+        public async Task<TypeAnswerQuestionDTO> CreateTypeAnswerQuestionAsync(TypeAnswerQuestionCM questionCM, Guid userId)
+        {
+            var question = _mapper.Map<TypeAnswerQuestion>(questionCM);
+
+            question.UserId = userId;
+            question.CreatedAt = DateTime.UtcNow;
+            question.Type = QuestionType.TypeAnswer;
+
+            if (Enum.TryParse(questionCM.Visibility, true, out QuestionVisibility visibility))
+            {
+                question.Visibility = visibility;
+            }
+            else
+            {
+                question.Visibility = QuestionVisibility.Global;
+            }
+
+            _context.TypeAnswerQuestions.Add(question);
+            await _context.SaveChangesAsync();
+
+            var createdQuestion = await _context.TypeAnswerQuestions
+                .Include(q => q.Difficulty)
+                .Include(q => q.Category)
+                .Include(q => q.Language)
+                .Include(q => q.User)
+                .FirstOrDefaultAsync(q => q.Id == question.Id);
+
+            return _mapper.Map<TypeAnswerQuestionDTO>(createdQuestion);
+        }
+
+        public async Task<MultipleChoiceQuestionDTO> UpdateMultipleChoiceQuestionAsync(MultipleChoiceQuestionUM questionUM, Guid userId)
+        {
+            var existingQuestion = await _context.MultipleChoiceQuestions
+                .Include(q => q.AnswerOptions)
+                .FirstOrDefaultAsync(q => q.Id == questionUM.Id && q.UserId == userId);
+
+            if (existingQuestion == null)
+                return null;
+
+            // Update basic properties
+            _mapper.Map(questionUM, existingQuestion);
+
+            // Parse visibility
+            if (Enum.TryParse(questionUM.Visibility, true, out QuestionVisibility visibility))
+            {
+                existingQuestion.Visibility = visibility;
+            }
+
+            // Handle answer options - remove existing ones
+            _context.AnswerOptions.RemoveRange(existingQuestion.AnswerOptions);
+
+            // Add updated answer options
+            existingQuestion.AnswerOptions = _mapper.Map<List<AnswerOption>>(questionUM.AnswerOptions);
+
+            await _context.SaveChangesAsync();
+
+            // Refresh the entity with related data
+            var updatedQuestion = await _context.MultipleChoiceQuestions
+                .Include(q => q.AnswerOptions)
+                .Include(q => q.Difficulty)
+                .Include(q => q.Category)
+                .Include(q => q.Language)
+                .Include(q => q.User)
+                .FirstOrDefaultAsync(q => q.Id == existingQuestion.Id);
+
+            return _mapper.Map<MultipleChoiceQuestionDTO>(updatedQuestion);
+        }
+
+        public async Task<TrueFalseQuestionDTO> UpdateTrueFalseQuestionAsync(TrueFalseQuestionUM questionUM, Guid userId)
+        {
+            var existingQuestion = await _context.TrueFalseQuestions
+                .FirstOrDefaultAsync(q => q.Id == questionUM.Id && q.UserId == userId);
+
+            if (existingQuestion == null)
+                return null;
+
+            _mapper.Map(questionUM, existingQuestion);
+
+            if (Enum.TryParse(questionUM.Visibility, true, out QuestionVisibility visibility))
+            {
+                existingQuestion.Visibility = visibility;
+            }
+
+            await _context.SaveChangesAsync();
+
+            var updatedQuestion = await _context.TrueFalseQuestions
+                .Include(q => q.Difficulty)
+                .Include(q => q.Category)
+                .Include(q => q.Language)
+                .Include(q => q.User)
+                .FirstOrDefaultAsync(q => q.Id == existingQuestion.Id);
+
+            return _mapper.Map<TrueFalseQuestionDTO>(updatedQuestion);
+        }
+
+        public async Task<TypeAnswerQuestionDTO> UpdateTypeAnswerQuestionAsync(TypeAnswerQuestionUM questionUM, Guid userId)
+        {
+            var existingQuestion = await _context.TypeAnswerQuestions
+                .FirstOrDefaultAsync(q => q.Id == questionUM.Id && q.UserId == userId);
+
+            if (existingQuestion == null)
+                return null;
+
+            _mapper.Map(questionUM, existingQuestion);
+
+            if (Enum.TryParse(questionUM.Visibility, true, out QuestionVisibility visibility))
+            {
+                existingQuestion.Visibility = visibility;
+            }
+
+            await _context.SaveChangesAsync();
+
+            var updatedQuestion = await _context.TypeAnswerQuestions
+                .Include(q => q.Difficulty)
+                .Include(q => q.Category)
+                .Include(q => q.Language)
+                .Include(q => q.User)
+                .FirstOrDefaultAsync(q => q.Id == existingQuestion.Id);
+
+            return _mapper.Map<TypeAnswerQuestionDTO>(updatedQuestion);
+        }
+
+        public async Task<bool> DeleteQuestionAsync(int id, Guid userId)
+        {
+            var question = await _context.Questions
+                .FirstOrDefaultAsync(q => q.Id == id && q.UserId == userId);
+
+            if (question == null)
+                return false;
 
             _context.Questions.Remove(question);
             await _context.SaveChangesAsync();
-
-            return (true, "Question deleted successfully.");
+            return true;
         }
 
-        public async Task<IndividualQuestionDTO> GetQuestionAsync(int id)
+        public async Task<List<QuestionBaseDTO>> GetQuestionsByCategoryAsync(int categoryId)
         {
-            var question = await _context.Questions
-       .Include(q => q.User)
-       .Include(q => q.Difficulty)
-       .Include(q => q.Category)
-       .Include(q => q.Language)
-       .Include(q => q.AnswerOptions)
-       .FirstOrDefaultAsync(q => q.Id == id);
+            var questions = await _context.Questions
+                .Where(q => q.CategoryId == categoryId)
+                .Include(q => q.Difficulty)
+                .Include(q => q.Category)
+                .Include(q => q.Language)
+                .Include(q => q.User)
+                .ToListAsync();
 
-            if (question == null) return null;
-
-            var questionDto = new IndividualQuestionDTO
-            {
-                ID = question.Id,
-                Text = question.Text,
-                DifficultyId = question.DifficultyId,
-                Difficulty = question.Difficulty.Level,
-                CategoryId = question.CategoryId,
-                Category = question.Category.Name,
-                Language = question.Language.Language,
-                LanguageId = question.LanguageId,
-                UserId = question.UserId,
-                CreatedAt = question.CreatedAt,
-                Visibility = question.Visibility.ToString(),
-                User = new UserBasicDTO
-                {
-                    Id = question.User.Id,
-                    Username = question.User.Username,
-                    ProfileImageUrl = question.User.ProfileImageUrl
-                },
-                AnswerOptions = question.AnswerOptions
-                    .Select(a => new AnswerOptionDTO
-                    {
-                        ID = a.Id,
-                        Text = a.Text,
-                        IsCorrect = a.IsCorrect
-                    })
-                    .ToList()
-            };
-
-            return questionDto;
+            return _mapper.Map<List<QuestionBaseDTO>>(questions);
         }
 
-        public async Task<PaginatedResponse<QuestionDTO>> GetPaginatedQuestionsAsync(
-       int page,
-       int pageSize,
-       string? searchTerm,
-       string? category)
+        public async Task<List<QuestionBaseDTO>> GetQuestionsByDifficultyAsync(int difficultyId)
         {
-            var query = _context.Questions.AsQueryable();
+            var questions = await _context.Questions
+                .Where(q => q.DifficultyId == difficultyId)
+                .Include(q => q.Difficulty)
+                .Include(q => q.Category)
+                .Include(q => q.Language)
+                .Include(q => q.User)
+                .ToListAsync();
 
-            if (!string.IsNullOrEmpty(searchTerm) && searchTerm != "undefined")
-            {
-                query = query.Where(q => q.Text.Contains(searchTerm));
-            }
-
-            if (!string.IsNullOrEmpty(category) && category != "null" && category != "all")
-            {
-                if (int.TryParse(category, out int categoryId))
-                {
-                    query = query.Where(q => q.CategoryId == categoryId);
-                }
-            }
-
-            var totalQuestions = await query.CountAsync();
-
-            var questions = await query
-            .OrderBy(q => q.CreatedAt)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
-            .Include(q => q.Difficulty)
-            .Include(q => q.Category)
-            .Include(q => q.Language)
-            .Include(q => q.User)
-            .Include(q => q.AnswerOptions)
-            .ToListAsync();
-
-            var questionDTOs = questions.Select(q => MapToQuestionDTO(q)).ToList();
-
-            return new PaginatedResponse<QuestionDTO>
-            {
-                Page = page,
-                PageSize = pageSize,
-                TotalItems = totalQuestions,
-                TotalPages = (int)Math.Ceiling(totalQuestions / (double)pageSize),
-                Items = questionDTOs
-            };
+            return _mapper.Map<List<QuestionBaseDTO>>(questions);
         }
 
-        public QuestionDTO MapToQuestionDTO(Question question)
+        public async Task<List<QuestionBaseDTO>> GetQuestionsByUserAsync(Guid userId)
         {
-            return new QuestionDTO
-            {
-                ID = question.Id,
-                Text = question.Text,
-                Difficulty = new DifficultyDTO
-                {
-                    Id = question.Difficulty.ID,
-                    Level = question.Difficulty.Level
-                },
-                Category = new CategoryDTO
-                {
-                    Id = question.CategoryId,
-                    Category = question.Category.Name
-                },
-                Language = new LangaugeDTO
-                {
-                    Id = question.LanguageId,
-                    Langauge = question.Language.Language
-                },
-                Visibility = question.Visibility.ToString(),
-                User = new UserBasicDTO
-                {
-                    Id = question.User.Id,
-                    Username = question.User.Username,
-                    ProfileImageUrl = question.User.ProfileImageUrl
-                },
-                AnswerOptions = question.AnswerOptions.Select(ao => new AnswerOptionDTO
-                {
-                    ID = ao.Id,
-                    Text = ao.Text,
-                    IsCorrect = ao.IsCorrect
-                }).ToList()
-            };
+            var questions = await _context.Questions
+                .Where(q => q.UserId == userId)
+                .Include(q => q.Difficulty)
+                .Include(q => q.Category)
+                .Include(q => q.Language)
+                .Include(q => q.User)
+                .ToListAsync();
+
+            return _mapper.Map<List<QuestionBaseDTO>>(questions);
         }
     }
 }

@@ -16,7 +16,7 @@ namespace QuizAPI.ManyToManyTables
         public int Score { get; set; }
         public int QuestionId { get; set; }
         [ForeignKey(nameof(QuestionId))]
-        public Question Question { get; set; }
+        public QuestionBase Question { get; set; }
 
     }
 
@@ -26,6 +26,6 @@ namespace QuizAPI.ManyToManyTables
         public int QuizId { get; set; }
 
         public int Score { get; set; }
-        public QuestionDTO Question { get; set; } = new();
+        public QuestionBaseDTO Question { get; set; } = new();
     }
 }

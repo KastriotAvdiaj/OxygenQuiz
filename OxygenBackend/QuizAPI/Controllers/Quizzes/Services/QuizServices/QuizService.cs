@@ -21,7 +21,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
             _context = context;
             _questionService = questionService;
         }
-
+/*
         public async Task<List<QuizDTO>> GetQuizzesAsync()
         {
             var quizzes = await _context.Quizzes
@@ -43,15 +43,15 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                 CreatedAt = q.CreatedAt,
                 NumberOfQuestions = q.QuizQuestions.Count
             }).ToList();
-        }
+        }*/
 
-        public async Task<Quiz> CreateQuizAsync(QuizCM quizCM, string userId)
+/*        public async Task<Quiz> CreateQuizAsync(QuizCM quizCM, string userId)
         {
             var quiz = new Quiz
             {
                 Title = quizCM.Title,
                 Description = quizCM.Description,
-                /*Slug = quizCM.Slug,*/
+                Slug = quizCM.Slug,
                 CategoryId = quizCM.CategoryId,
                 LanguageId = quizCM.LanguageId,
                 ShuffleQuestions = quizCM.ShuffleQuestions,
@@ -74,7 +74,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
             await _context.SaveChangesAsync();
 
             return quiz;
-        }
+        }*/
 
         public async Task<bool> ValidatePublicQuestionsAsync(IEnumerable<int> questionIds)
         {
@@ -108,7 +108,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
         }
 
 
-        private async Task<List<QuizQuestion>> ProcessPrivateQuestions
+      /*  private async Task<List<QuizQuestion>> ProcessPrivateQuestions
             (List<QuestionCMWithScore> privateQuestions, string userId)
         {
             var quizQuestions = new List<QuizQuestion>();
@@ -139,7 +139,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
             var quizEntity = await _context.Quizzes
                 .Include(q => q.QuizQuestions)
                     .Include(q => q.Category)
-                        .Include(q => q.Language) 
+                        .Include(q => q.Language)
                             .FirstOrDefaultAsync(q => q.Id == id);
 
             if (quizEntity == null)
@@ -214,7 +214,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                 Id = quiz.Id,
                 Title = quiz.Title,
                 Description = quiz.Description,
-                /*Slug = quiz.Slug,*/
+                Slug = quiz.Slug,
                 Category = category,
                 Language = language,
                 IsPublished = quiz.IsPublished,
@@ -254,10 +254,10 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
             return quizDtos;
         }
 
-        /*   public async Task<bool> ValidateQuizSlugAsync(string slug)
-           {
-               return !await _context.Quizzes.AnyAsync(q => q.Slug == slug);
-           }*/
+        public async Task<bool> ValidateQuizSlugAsync(string slug)
+        {
+            return !await _context.Quizzes.AnyAsync(q => q.Slug == slug);
+        }*/
 
     }
 }
