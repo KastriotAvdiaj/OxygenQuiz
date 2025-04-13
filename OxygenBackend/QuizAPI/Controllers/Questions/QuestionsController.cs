@@ -73,11 +73,13 @@ namespace QuizAPI.Controllers.Questions
 
         // POST: api/questions/multiplechoice
         [HttpPost("multiplechoice")]
-        [Authorize]
+      /*  [Authorize]*/
         public async Task<ActionResult<MultipleChoiceQuestionDTO>> CreateMultipleChoiceQuestion(MultipleChoiceQuestionCM questionCM)
         {
             // Get the user ID from the authenticated user
-            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+            /*var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));*/
+
+            var userId = Guid.Parse("F746E3AC-8425-446F-986E-2E0CD93F9259");
 
             var createdQuestion = await _questionService.CreateMultipleChoiceQuestionAsync(questionCM, userId);
 

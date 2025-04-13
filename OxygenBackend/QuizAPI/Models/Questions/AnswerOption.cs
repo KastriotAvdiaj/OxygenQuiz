@@ -11,6 +11,6 @@ namespace QuizAPI.Models
         public int QuestionId { get; set; }
 
         [JsonIgnore]
-        public QuestionBase Question { get; set; }
+        public MultipleChoiceQuestion Question { get; set; }
     }
 }

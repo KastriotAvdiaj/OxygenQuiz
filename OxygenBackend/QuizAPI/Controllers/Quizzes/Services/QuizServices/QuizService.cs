@@ -85,7 +85,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
         }
 
 
-        private async Task<List<QuizQuestion>> ProcessPublicQuestions
+       /* private async Task<List<QuizQuestion>> ProcessPublicQuestions
             (List<PublicQuestionWithScore> publicQuestions)
         {
             if (publicQuestions == null || !publicQuestions.Any())
@@ -105,7 +105,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                 QuestionId = pq.QuestionId,
                 Score = pq.Score
             }).ToList();
-        }
+        }*/
 
 
       /*  private async Task<List<QuizQuestion>> ProcessPrivateQuestions

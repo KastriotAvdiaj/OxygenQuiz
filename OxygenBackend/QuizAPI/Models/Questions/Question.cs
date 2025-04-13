@@ -9,12 +9,7 @@ using System.Text.Json.Serialization;
 
 namespace QuizAPI.Models
 {
-    public enum PointSystem
-    {
-        Standard,
-        Double,
-        Quadruple,
-    }
+   
 
     public enum QuestionVisibility
     {
@@ -92,10 +87,6 @@ namespace QuizAPI.Models
         public Guid UserId { get; set; }
         [JsonIgnore]
         public User User { get; set; }
-
-        public PointSystem PointSystem { get; set; } = PointSystem.Standard;
-
-        public int TimeLimitInSeconds { get; set; } = 10;
 
         public QuestionStatistics? Statistics { get; set; }
 

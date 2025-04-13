@@ -1,10 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using QuizAPI.Controllers.Questions.Services.AnswerOptions;
 using QuizAPI.Data;
 using QuizAPI.DTOs.Question;
-using QuizAPI.DTOs.Quiz;
-using QuizAPI.DTOs.Shared;
-using QuizAPI.DTOs.User;
 using QuizAPI.Models;
 using AutoMapper;
 
@@ -119,6 +115,11 @@ namespace QuizAPI.Controllers.Questions.Services
         {
             // Create the question entity from CM
             var question = _mapper.Map<MultipleChoiceQuestion>(questionCM);
+
+            foreach (var answerOption in question.AnswerOptions)
+            {
+                answerOption.Question = question;
+            }
 
             // Set additional properties
             question.UserId = userId;

@@ -23,14 +23,14 @@ export const Questions = () => {
   const [page, setPage] = useState(1);
   const [pageSize] = useState(10);
 
-  const questionsQuery = useQuestionData({
-    params: {
-      page,
-      pageSize: pageSize,
-      searchTerm: debouncedSearchTerm,
-      category: selectedCategory !== "all" ? selectedCategory : "all",
-    },
-  });
+  // const questionsQuery = useQuestionData({
+  //   params: {
+  //     page,
+  //     pageSize: pageSize,
+  //     searchTerm: debouncedSearchTerm,
+  //     category: selectedCategory !== "all" ? selectedCategory : "all",
+  //   },
+  // });
 
   const questionCategoriesQuery = useQuestionCategoryData({});
 
@@ -42,26 +42,31 @@ export const Questions = () => {
     setPage(1);
   }, [searchTerm, selectedCategory]);
 
-  const handlePageChange = (Direction: "prev" | "next") => {
-    if (Direction === "prev" && page > 1) {
-      setPage((prevPage) => prevPage - 1);
-    } else if (page < (questionsQuery.data?.totalPages || 1)) {
-      setPage((prevPage) => prevPage + 1);
-    }
-  };
+  // const handlePageChange = (Direction: "prev" | "next") => {
+  //   if (Direction === "prev" && page > 1) {
+  //     setPage((prevPage) => prevPage - 1);
+  //   } else if (page < (questionsQuery.data?.totalPages || 1)) {
+  //     setPage((prevPage) => prevPage + 1);
+  //   }
+  // };
 
-  if (questionsQuery.isLoading || questionCategoriesQuery.isLoading) {
-    return <Spinner size="lg" />;
-  }
+  // if (questionsQuery.isLoading || questionCategoriesQuery.isLoading) {
+  //   return <Spinner size="lg" />;
+  // }
 
-  if (questionsQuery.isError || questionCategoriesQuery.isError) {
-    return <p>Failed to load questions. Try again later.</p>;
-  }
+  // if (questionsQuery.isError || questionCategoriesQuery.isError) {
+  //   return <p>Failed to load questions. Try again later.</p>;
+  // }
 
   return (
     <div className="flex flex-col gap-8">
       <Card className="p-8 bg-background border border-border">
-        <div className="flex justify-between mb-6">
+      <CreateQuestionForm
+              languages={questionLanguagesQuery.data || []}
+              categories={questionCategoriesQuery.data || []}
+              difficulties={questionDifficultiesQuery.data || []}
+            />
+        {/* <div className="flex justify-between mb-6">
           <Input
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -73,25 +78,21 @@ export const Questions = () => {
               value={selectedCategory}
               onChange={setSelectedCategory}
             />
-            <CreateQuestionForm
-              languages={questionLanguagesQuery.data || []}
-              categories={questionCategoriesQuery.data || []}
-              difficulties={questionDifficultiesQuery.data || []}
-            />
+           
           </div>
-        </div>
+        </div> */}
         <Separator />
-        <QuestionList
+        {/* <QuestionList
           questions={questionsQuery.data?.items || []}
           onNextPage={() => handlePageChange("next")}
           onPreviousPage={() => handlePageChange("prev")}
           currentPage={page}
           totalPages={questionsQuery.data?.totalPages || 1}
-        />
+        /> */}
       </Card>
-      <CategoryView />
+      {/* <CategoryView />
       <DifficultyView />
-      <LangaugesView />
+      <LangaugesView /> */}
     </div>
   );
 };

@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using QuizAPI.ManyToManyTables;
 using QuizAPI.Models;
@@ -112,11 +113,11 @@ namespace QuizAPI.Data
 
 
             // Configuration for Question-AnswerOptions relationship
-            /*modelBuilder.Entity<MultipleChoiceQuestion>()
-            .HasMany(q => q.AnswerOptions)
-            .WithOne(a => a.Question)
-            .HasForeignKey(a => a.QuestionId)
-            .OnDelete(DeleteBehavior.Cascade);*/
+            modelBuilder.Entity<MultipleChoiceQuestion>()
+      .HasMany(q => q.AnswerOptions)
+      .WithOne(a => a.Question)
+      .HasForeignKey(a => a.QuestionId)
+      .OnDelete(DeleteBehavior.Cascade);
 
             //Configuration for User-QuestionCategory relationship
             modelBuilder.Entity<QuestionCategory>()
@@ -210,13 +211,14 @@ namespace QuizAPI.Data
 
 
             modelBuilder.Entity<TypeAnswerQuestion>()
-    .Property(q => q.AcceptableAnswers)
-    .HasConversion(
-         new ValueConverter<List<string>, string>(
-             v => JsonSerializer.Serialize(v, (JsonSerializerOptions)null),
-             v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions)null) ?? new List<string>()
-         )
-    );
+        .Property(e => e.AcceptableAnswers)
+        .HasConversion(
+            v => JsonSerializer.Serialize(v, (JsonSerializerOptions)null),
+            v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions)null))
+        .Metadata.SetValueComparer(new ValueComparer<List<string>>(
+            (c1, c2) => c1.SequenceEqual(c2),
+            c => c.Aggregate(0, (a, v) => HashCode.Combine(a, v != null ? v.GetHashCode() : 0)),
+            c => c.ToList()));
         }
     }
 }

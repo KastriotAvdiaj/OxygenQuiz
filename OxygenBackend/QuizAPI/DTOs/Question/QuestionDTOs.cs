@@ -14,7 +14,6 @@ namespace QuizAPI.DTOs.Question
         public UserBasicDTO User { get; set; }
         public DateTime CreatedAt { get; set; }
         public string Visibility { get; set; }
-        public int TimeLimitInSeconds { get; set; }
         public string QuestionType { get; set; }
     }
 
@@ -44,7 +43,6 @@ namespace QuizAPI.DTOs.Question
         public int DifficultyId { get; set; }
         public int CategoryId { get; set; }
         public int LanguageId { get; set; }
-        public int TimeLimitInSeconds { get; set; } = 10;
         public string Visibility { get; set; } = "Global";
     }
 
