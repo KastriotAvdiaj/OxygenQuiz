@@ -28,7 +28,7 @@ namespace QuizAPI.DTOs.Question
         public bool CorrectAnswer { get; set; }
     }
 
-    public class TypeAnswerQuestionDTO : QuestionBaseDTO
+    public class TypeTheAnswerQuestionDTO : QuestionBaseDTO
     {
         public string CorrectAnswer { get; set; } = string.Empty;
         public bool IsCaseSensitive { get; set; }
@@ -57,7 +57,7 @@ namespace QuizAPI.DTOs.Question
         public bool CorrectAnswer { get; set; }
     }
 
-    public class TypeAnswerQuestionCM : QuestionBaseCM
+    public class TypeTheAnswerQuestionCM : QuestionBaseCM
     {
         public string CorrectAnswer { get; set; } = string.Empty;
         public bool IsCaseSensitive { get; set; }
@@ -88,7 +88,7 @@ namespace QuizAPI.DTOs.Question
         public bool CorrectAnswer { get; set; }
     }
 
-    public class TypeAnswerQuestionUM : QuestionBaseUM
+    public class TypeTheAnswerQuestionUM : QuestionBaseUM
     {
         public string CorrectAnswer { get; set; } = string.Empty;
         public bool IsCaseSensitive { get; set; }

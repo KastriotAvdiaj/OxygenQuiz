@@ -65,9 +65,9 @@ namespace QuizAPI.Controllers.Questions
 
         // GET: api/questions/typeanswer
         [HttpGet("typeanswer")]
-        public async Task<ActionResult<IEnumerable<TypeAnswerQuestionDTO>>> GetTypeAnswerQuestions()
+        public async Task<ActionResult<IEnumerable<TypeTheAnswerQuestionDTO>>> GetTypeTheAnswerQuestions()
         {
-            var questions = await _questionService.GetTypeAnswerQuestionsAsync();
+            var questions = await _questionService.GetTypeTheAnswerQuestionsAsync();
             return Ok(questions);
         }
 
@@ -107,13 +107,13 @@ namespace QuizAPI.Controllers.Questions
         }
 
         // POST: api/questions/typeanswer
-        [HttpPost("typeanswer")]
+        [HttpPost("typetheanswer")]
         [Authorize]
-        public async Task<ActionResult<TypeAnswerQuestionDTO>> CreateTypeAnswerQuestion(TypeAnswerQuestionCM questionCM)
+        public async Task<ActionResult<TypeTheAnswerQuestionDTO>> CreateTypeTheAnswerQuestion(TypeTheAnswerQuestionCM questionCM)
         {
             var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
 
-            var createdQuestion = await _questionService.CreateTypeAnswerQuestionAsync(questionCM, userId);
+            var createdQuestion = await _questionService.CreateTypeTheAnswerQuestionAsync(questionCM, userId);
 
             return CreatedAtAction(
                 nameof(GetQuestion),
@@ -159,11 +159,11 @@ namespace QuizAPI.Controllers.Questions
         // PUT: api/questions/typeanswer
         [HttpPut("typeanswer")]
         [Authorize]
-        public async Task<IActionResult> UpdateTypeAnswerQuestion(TypeAnswerQuestionUM questionUM)
+        public async Task<IActionResult> UpdateTypeTheAnswerQuestion(TypeTheAnswerQuestionUM questionUM)
         {
             var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
 
-            var updatedQuestion = await _questionService.UpdateTypeAnswerQuestionAsync(questionUM, userId);
+            var updatedQuestion = await _questionService.UpdateTypeTheAnswerQuestionAsync(questionUM, userId);
 
             if (updatedQuestion == null)
             {

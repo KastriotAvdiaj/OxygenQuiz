@@ -17,7 +17,7 @@ namespace QuizAPI.Data
 
         public DbSet<MultipleChoiceQuestion> MultipleChoiceQuestions { get; set; }
         public DbSet<TrueFalseQuestion> TrueFalseQuestions { get; set; }
-        public DbSet<TypeAnswerQuestion> TypeAnswerQuestions { get; set; }
+        public DbSet<TypeTheAnswerQuestion> TypeTheAnswerQuestions { get; set; }
 
         public DbSet<PrivateQuestion> PrivateQuestions { get; set; }
 
@@ -207,10 +207,10 @@ namespace QuizAPI.Data
             .HasDiscriminator(q => q.Type)
             .HasValue<MultipleChoiceQuestion>(QuestionType.MultipleChoice)
             .HasValue<TrueFalseQuestion>(QuestionType.TrueFalse)
-            .HasValue<TypeAnswerQuestion>(QuestionType.TypeAnswer);
+            .HasValue<TypeTheAnswerQuestion>(QuestionType.TypeTheAnswer);
 
 
-            modelBuilder.Entity<TypeAnswerQuestion>()
+            modelBuilder.Entity<TypeTheAnswerQuestion>()
         .Property(e => e.AcceptableAnswers)
         .HasConversion(
             v => JsonSerializer.Serialize(v, (JsonSerializerOptions)null),

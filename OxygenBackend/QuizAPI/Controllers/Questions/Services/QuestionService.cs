@@ -64,10 +64,10 @@ namespace QuizAPI.Controllers.Questions.Services
                         .FirstOrDefaultAsync(q => q.Id == id);
                     return _mapper.Map<TrueFalseQuestionDTO>(tfQuestion);
 
-                case QuestionType.TypeAnswer:
-                    var taQuestion = await _context.TypeAnswerQuestions
+                case QuestionType.TypeTheAnswer:
+                    var taQuestion = await _context.TypeTheAnswerQuestions
                         .FirstOrDefaultAsync(q => q.Id == id);
-                    return _mapper.Map<TypeAnswerQuestionDTO>(taQuestion);
+                    return _mapper.Map<TypeTheAnswerQuestionDTO>(taQuestion);
 
                 default:
                     return _mapper.Map<QuestionBaseDTO>(question);
@@ -99,16 +99,16 @@ namespace QuizAPI.Controllers.Questions.Services
             return _mapper.Map<List<TrueFalseQuestionDTO>>(questions);
         }
 
-        public async Task<List<TypeAnswerQuestionDTO>> GetTypeAnswerQuestionsAsync()
+        public async Task<List<TypeTheAnswerQuestionDTO>> GetTypeTheAnswerQuestionsAsync()
         {
-            var questions = await _context.TypeAnswerQuestions
+            var questions = await _context.TypeTheAnswerQuestions
                 .Include(q => q.Difficulty)
                 .Include(q => q.Category)
                 .Include(q => q.Language)
                 .Include(q => q.User)
                 .ToListAsync();
 
-            return _mapper.Map<List<TypeAnswerQuestionDTO>>(questions);
+            return _mapper.Map<List<TypeTheAnswerQuestionDTO>>(questions);
         }
 
         public async Task<MultipleChoiceQuestionDTO> CreateMultipleChoiceQuestionAsync(MultipleChoiceQuestionCM questionCM, Guid userId)
@@ -181,13 +181,13 @@ namespace QuizAPI.Controllers.Questions.Services
             return _mapper.Map<TrueFalseQuestionDTO>(createdQuestion);
         }
 
-        public async Task<TypeAnswerQuestionDTO> CreateTypeAnswerQuestionAsync(TypeAnswerQuestionCM questionCM, Guid userId)
+        public async Task<TypeTheAnswerQuestionDTO> CreateTypeTheAnswerQuestionAsync(TypeTheAnswerQuestionCM questionCM, Guid userId)
         {
-            var question = _mapper.Map<TypeAnswerQuestion>(questionCM);
+            var question = _mapper.Map<TypeTheAnswerQuestion>(questionCM);
 
             question.UserId = userId;
             question.CreatedAt = DateTime.UtcNow;
-            question.Type = QuestionType.TypeAnswer;
+            question.Type = QuestionType.TypeTheAnswer;
 
             if (Enum.TryParse(questionCM.Visibility, true, out QuestionVisibility visibility))
             {
@@ -198,17 +198,17 @@ namespace QuizAPI.Controllers.Questions.Services
                 question.Visibility = QuestionVisibility.Global;
             }
 
-            _context.TypeAnswerQuestions.Add(question);
+            _context.TypeTheAnswerQuestions.Add(question);
             await _context.SaveChangesAsync();
 
-            var createdQuestion = await _context.TypeAnswerQuestions
+            var createdQuestion = await _context.TypeTheAnswerQuestions
                 .Include(q => q.Difficulty)
                 .Include(q => q.Category)
                 .Include(q => q.Language)
                 .Include(q => q.User)
                 .FirstOrDefaultAsync(q => q.Id == question.Id);
 
-            return _mapper.Map<TypeAnswerQuestionDTO>(createdQuestion);
+            return _mapper.Map<TypeTheAnswerQuestionDTO>(createdQuestion);
         }
 
         public async Task<MultipleChoiceQuestionDTO> UpdateMultipleChoiceQuestionAsync(MultipleChoiceQuestionUM questionUM, Guid userId)
@@ -276,9 +276,9 @@ namespace QuizAPI.Controllers.Questions.Services
             return _mapper.Map<TrueFalseQuestionDTO>(updatedQuestion);
         }
 
-        public async Task<TypeAnswerQuestionDTO> UpdateTypeAnswerQuestionAsync(TypeAnswerQuestionUM questionUM, Guid userId)
+        public async Task<TypeTheAnswerQuestionDTO> UpdateTypeTheAnswerQuestionAsync(TypeTheAnswerQuestionUM questionUM, Guid userId)
         {
-            var existingQuestion = await _context.TypeAnswerQuestions
+            var existingQuestion = await _context.TypeTheAnswerQuestions
                 .FirstOrDefaultAsync(q => q.Id == questionUM.Id && q.UserId == userId);
 
             if (existingQuestion == null)
@@ -293,14 +293,14 @@ namespace QuizAPI.Controllers.Questions.Services
 
             await _context.SaveChangesAsync();
 
-            var updatedQuestion = await _context.TypeAnswerQuestions
+            var updatedQuestion = await _context.TypeTheAnswerQuestions
                 .Include(q => q.Difficulty)
                 .Include(q => q.Category)
                 .Include(q => q.Language)
                 .Include(q => q.User)
                 .FirstOrDefaultAsync(q => q.Id == existingQuestion.Id);
 
-            return _mapper.Map<TypeAnswerQuestionDTO>(updatedQuestion);
+            return _mapper.Map<TypeTheAnswerQuestionDTO>(updatedQuestion);
         }
 
         public async Task<bool> DeleteQuestionAsync(int id, Guid userId)

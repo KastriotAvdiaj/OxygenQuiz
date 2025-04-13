@@ -16,17 +16,17 @@ namespace QuizAPI.Controllers.Questions.Services
         // Type-specific get methods
         Task<List<MultipleChoiceQuestionDTO>> GetMultipleChoiceQuestionsAsync();
         Task<List<TrueFalseQuestionDTO>> GetTrueFalseQuestionsAsync();
-        Task<List<TypeAnswerQuestionDTO>> GetTypeAnswerQuestionsAsync();
+        Task<List<TypeTheAnswerQuestionDTO>> GetTypeTheAnswerQuestionsAsync();
 
         // Create methods
         Task<MultipleChoiceQuestionDTO> CreateMultipleChoiceQuestionAsync(MultipleChoiceQuestionCM questionCM, Guid userId);
         Task<TrueFalseQuestionDTO> CreateTrueFalseQuestionAsync(TrueFalseQuestionCM questionCM, Guid userId);
-        Task<TypeAnswerQuestionDTO> CreateTypeAnswerQuestionAsync(TypeAnswerQuestionCM questionCM, Guid userId);
+        Task<TypeTheAnswerQuestionDTO> CreateTypeTheAnswerQuestionAsync(TypeTheAnswerQuestionCM questionCM, Guid userId);
 
         // Update methods
         Task<MultipleChoiceQuestionDTO> UpdateMultipleChoiceQuestionAsync(MultipleChoiceQuestionUM questionUM, Guid userId);
         Task<TrueFalseQuestionDTO> UpdateTrueFalseQuestionAsync(TrueFalseQuestionUM questionUM, Guid userId);
-        Task<TypeAnswerQuestionDTO> UpdateTypeAnswerQuestionAsync(TypeAnswerQuestionUM questionUM, Guid userId);
+        Task<TypeTheAnswerQuestionDTO> UpdateTypeTheAnswerQuestionAsync(TypeTheAnswerQuestionUM questionUM, Guid userId);
 
         // Delete method
         Task<bool> DeleteQuestionAsync(int id, Guid userId);

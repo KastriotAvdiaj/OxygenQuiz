@@ -21,7 +21,7 @@ namespace QuizAPI.Models
     {
         MultipleChoice,
         TrueFalse,
-        TypeAnswer,
+        TypeTheAnswer,
     }
 
   /*  public class Question 
@@ -119,11 +119,11 @@ namespace QuizAPI.Models
         public bool CorrectAnswer { get; set; }
     }
 
-    public class TypeAnswerQuestion : QuestionBase
+    public class TypeTheAnswerQuestion : QuestionBase
     {
-        public TypeAnswerQuestion()
+        public TypeTheAnswerQuestion()
         {
-            Type = QuestionType.TypeAnswer;
+            Type = QuestionType.TypeTheAnswer;
         }
 
         public string CorrectAnswer { get; set; } = string.Empty;

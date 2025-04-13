@@ -16,7 +16,7 @@ namespace QuizAPI.Mapping
 
             CreateMap<MultipleChoiceQuestionDTO, MultipleChoiceQuestion>();
             CreateMap<TrueFalseQuestionDTO, TrueFalseQuestion>();
-            CreateMap<TypeAnswerQuestionDTO, TypeAnswerQuestion>();
+            CreateMap<TypeTheAnswerQuestionDTO, TypeTheAnswerQuestion>();
             CreateMap<AnswerOptionDTO, AnswerOption>();
 
             // Map models to DTOs
@@ -28,7 +28,7 @@ namespace QuizAPI.Mapping
                 .IncludeBase<QuestionBase, QuestionBaseDTO>();
             CreateMap<TrueFalseQuestion, TrueFalseQuestionDTO>()
                 .IncludeBase<QuestionBase, QuestionBaseDTO>();
-            CreateMap<TypeAnswerQuestion, TypeAnswerQuestionDTO>()
+            CreateMap<TypeTheAnswerQuestion, TypeTheAnswerQuestionDTO>()
                 .IncludeBase<QuestionBase, QuestionBaseDTO>();
 
             CreateMap<AnswerOption, AnswerOptionDTO>();
@@ -45,7 +45,7 @@ namespace QuizAPI.Mapping
                 .IncludeBase<QuestionBaseCM, QuestionBase>();
             CreateMap<TrueFalseQuestionCM, TrueFalseQuestion>()
                 .IncludeBase<QuestionBaseCM, QuestionBase>();
-            CreateMap<TypeAnswerQuestionCM, TypeAnswerQuestion>()
+            CreateMap<TypeTheAnswerQuestionCM, TypeTheAnswerQuestion>()
                 .IncludeBase<QuestionBaseCM, QuestionBase>();
             CreateMap<AnswerOptionCM, AnswerOption>();
 
@@ -57,7 +57,7 @@ namespace QuizAPI.Mapping
                 .IncludeBase<QuestionBaseUM, QuestionBase>();
             CreateMap<TrueFalseQuestionUM, TrueFalseQuestion>()
                 .IncludeBase<QuestionBaseUM, QuestionBase>();
-            CreateMap<TypeAnswerQuestionUM, TypeAnswerQuestion>()
+            CreateMap<TypeTheAnswerQuestionUM, TypeTheAnswerQuestion>()
                 .IncludeBase<QuestionBaseUM, QuestionBase>();
             CreateMap<AnswerOptionUM, AnswerOption>();
 
