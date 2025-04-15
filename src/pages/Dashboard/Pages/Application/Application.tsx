@@ -1,19 +1,19 @@
-import { useDrejtimiData } from "../Ushtrime/api/get-drejtimi";
-import { useUniversityData } from "../Ushtrime/api/get-universities";
-import { CreateDrejtimiForm } from "../Ushtrime/comp/create-drejtimi";
-import { CreateUniversityForm } from "../Ushtrime/comp/create-university";
-import { DeleteDrejtimi } from "../Ushtrime/comp/delete-drejtimi";
-import { DeleteUniversity } from "../Ushtrime/comp/delete-university";
-import { UpdateUniversityForm } from "../Ushtrime/comp/update-university";
+// import { useDrejtimiData } from "../Ushtrime/api/get-drejtimi";
+// import { useUniversityData } from "../Ushtrime/api/get-universities";
+// import { CreateDrejtimiForm } from "../Ushtrime/comp/create-drejtimi";
+// import { CreateUniversityForm } from "../Ushtrime/comp/create-university";
+// import { DeleteDrejtimi } from "../Ushtrime/comp/delete-drejtimi";
+// import { DeleteUniversity } from "../Ushtrime/comp/delete-university";
+// import { UpdateUniversityForm } from "../Ushtrime/comp/update-university";
 
 export const Application = () => {
-  const Universities = useUniversityData({});
-  const contracts = useDrejtimiData({});
+  // const Universities = useUniversityData({});
+  // const contracts = useDrejtimiData({});
 
   return (
     <div className="p-4 space-y-8">
       {/* Universities Table */}
-      <div>
+      {/* <div>
         <h2 className="text-xl font-bold mb-2">Universities</h2>
         {Universities.isLoading ? (
           <p>Loading Universities...</p>
@@ -49,7 +49,6 @@ export const Application = () => {
         )}
       </div>
 
-      {/* Contracts Table */}
       <div>
         <h2 className="text-xl font-bold mb-2">Drejtimi</h2>
         {contracts.isLoading ? (
@@ -80,13 +79,13 @@ export const Application = () => {
             </tbody>
           </table>
         )}
-      </div>
+      </div> */}
 
       {/* Forms Section */}
-      <div className="space-y-4">
+      {/* <div className="space-y-4">
         <CreateUniversityForm />
         <CreateDrejtimiForm />
-      </div>
+      </div> */}
     </div>
   );
 };

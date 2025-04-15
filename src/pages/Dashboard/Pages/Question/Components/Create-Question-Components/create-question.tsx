@@ -47,11 +47,7 @@ export const CreateQuestionForm: React.FC<CreateQuestionFormProps> = ({
   return (
     <FormDrawer
       isDone={createQuestionMutation.isSuccess}
-      triggerButton={
-        <Button variant="default" size="sm" icon={<Plus className="size-4" />}>
-          Create Question
-        </Button>
-      }
+      triggerButton={<Button>Normal</Button>}
       title="Create a New Question"
       submitButton={
         <Button

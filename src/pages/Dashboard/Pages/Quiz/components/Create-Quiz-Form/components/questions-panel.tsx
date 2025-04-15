@@ -38,8 +38,8 @@ export const CreatedQuestionsPanel: React.FC<CreatedQuestionsPanelProps> = ({
 }) => {
   const { isOpen, open, close } = useDisclosure();
 
-  const handleOpenChange = (shouldBeOpen: boolean) => {
-    if (shouldBeOpen) {
+  const handleOpenChange = () => {
+    if (!isOpen) {
       open();
     } else {
       close();
@@ -86,7 +86,7 @@ export const CreatedQuestionsPanel: React.FC<CreatedQuestionsPanelProps> = ({
                   )}
 
                   <Button
-                  variant={"outline"}
+                    variant={"outline"}
                     onClick={() => {
                       close();
                       onAddPrivateQuestion();
