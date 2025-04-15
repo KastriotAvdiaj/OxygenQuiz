@@ -11,12 +11,12 @@ import { Separator } from "@/components/ui/separator";
 import {
   updateQuestionInputSchema,
   useUpdateQuestion,
-} from "../../api/Normal-Question/update-question";
-import { CategorySelect } from "../../Entities/Categories/Components/select-question-category";
-import { DifficultySelect } from "../../Entities/Difficulty/Components/select-question-difficulty";
-import { LanguageSelect } from "../../Entities/Language/components/select-question-language";
-import { useQuizForm } from "../../../Quiz/components/Create-Quiz-Form/use-quiz-form";
-import { VisibilitySelect } from "../../Entities/select-visibility";
+} from "../api/Normal-Question/update-question";
+import { CategorySelect } from "../Entities/Categories/Components/select-question-category";
+import { DifficultySelect } from "../Entities/Difficulty/Components/select-question-difficulty";
+import { LanguageSelect } from "../Entities/Language/components/select-question-language";
+import { useQuizForm } from "../../Quiz/components/Create-Quiz-Form/use-quiz-form";
+import { VisibilitySelect } from "../Entities/select-visibility";
 
 interface UpdateQuestionFormProps {
   question: Question;

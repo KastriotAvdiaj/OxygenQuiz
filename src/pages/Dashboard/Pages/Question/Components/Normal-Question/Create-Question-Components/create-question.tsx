@@ -1,4 +1,4 @@
-import { Plus, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Form, FormDrawer, Input, Label } from "@/components/ui/form";
@@ -19,6 +19,7 @@ import {
   createQuestionInputSchema,
   useCreateQuestion,
 } from "../../../api/Normal-Question/create-question";
+import { LiftedButton } from "@/common/LiftedButton";
 
 interface CreateQuestionFormProps {
   categories: QuestionCategory[];
@@ -47,7 +48,7 @@ export const CreateQuestionForm: React.FC<CreateQuestionFormProps> = ({
   return (
     <FormDrawer
       isDone={createQuestionMutation.isSuccess}
-      triggerButton={<Button>Normal</Button>}
+      triggerButton={<LiftedButton>Normal</LiftedButton>}
       title="Create a New Question"
       submitButton={
         <Button

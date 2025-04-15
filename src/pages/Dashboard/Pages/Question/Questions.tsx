@@ -5,7 +5,7 @@ import { useQuestionCategoryData } from "./Entities/Categories/api/get-question-
 import { Button, Card, Spinner } from "@/components/ui";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/form";
-import { QuestionList } from "./Components/Normal-Question/question-list";
+// import { QuestionList } from "./Components/question-list";
 import { useDebounce } from "@/hooks/use-debounce";
 import { CategorySelect } from "./Entities/Categories/Components/select-question-category";
 
@@ -19,6 +19,7 @@ import { Popover } from "@/components/ui/popover";
 import { PopoverContent, PopoverTrigger } from "@radix-ui/react-popover";
 import { PlusCircle } from "lucide-react";
 import { useDisclosure } from "@/hooks/use-disclosure";
+import { LiftedButton } from "@/common/LiftedButton";
 
 export const Questions = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -90,8 +91,8 @@ export const Questions = () => {
                 categories={questionCategoriesQuery.data || []}
                 difficulties={questionDifficultiesQuery.data || []}
               />
-              <Button onClick={close}>True/False</Button>
-              <Button onClick={close}>Type the Answer</Button>
+              <LiftedButton onClick={close}>True/False</LiftedButton>
+              <LiftedButton onClick={close}>Type the Answer</LiftedButton>
             </PopoverContent>
           </Popover>
 

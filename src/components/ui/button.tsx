@@ -10,7 +10,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "inline-flex items-center justify-center bg-primary text-white gap-2 border border-border rounded-md shadow-md hover:bg-primary/80 active:scale-95",
+          "bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95 shadow-sm rounded-sm",
         icon: "bg-muted gap-2 shadow p-0 m-0",
         addSave:
           "flex justify-center items-center gap-2 shadow text-white bg-primary hover:bg-primary/70 active:scale-95",
@@ -28,7 +28,6 @@ const buttonVariants = cva(
           "flex w-full text-foreground bg-background justify-start text-[17px] gap-2.5 items-center rounded hover:bg-muted active:scale-95",
         quiz: "flex justify-center items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-yellow-400 to-red-500 text-white shadow-lg hover:ring-2 hover:ring-offset-2 hover:ring-yellow-500 active:scale-95 transition-all duration-300",
         fancy: "fancy-button",
-        lift: "lift-button",
       },
       size: {
         dashboard: "px-2.5 py-2",

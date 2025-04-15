@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { SelectQuestions } from "../../../../Question/Components/Normal-Question/select-questions";
+import { SelectQuestions } from "../../../../Question/Components/select-questions";
 import { Input, Label } from "@/components/ui/form";
 import { FormProps } from "../types";
 import { Question } from "@/types/ApiTypes";
