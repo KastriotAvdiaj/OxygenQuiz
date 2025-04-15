@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { ConfirmationDialog } from "@/components/ui/dialog";
 import { useNotifications } from "@/common/Notifications";
 
-import { useDeleteQuestion } from "../api/delete-question";
+import { useDeleteQuestion } from "../api/Normal-Question/delete-question";
 
 type DeleteUserProps = {
   id: number;

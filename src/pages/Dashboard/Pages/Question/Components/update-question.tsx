@@ -11,7 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import {
   updateQuestionInputSchema,
   useUpdateQuestion,
-} from "../api/update-question";
+} from "../api/Normal-Question/update-question";
 import { CategorySelect } from "../Entities/Categories/Components/select-question-category";
 import { DifficultySelect } from "../Entities/Difficulty/Components/select-question-difficulty";
 import { LanguageSelect } from "../Entities/Language/components/select-question-language";

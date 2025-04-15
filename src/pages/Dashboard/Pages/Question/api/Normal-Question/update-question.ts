@@ -3,7 +3,7 @@ import { z } from "zod";
 import { api } from "@/lib/Api-client";
 import { MutationConfig } from "@/lib/React-query";
 import { Question } from "@/types/ApiTypes";
-import { answerOptionsSchema } from "../../Quiz/api/create-quiz";
+import { answerOptionsSchema } from "../../../Quiz/api/create-quiz";
 import { getQuestionsQueryOptions } from "./get-questions";
 
 export const updateQuestionInputSchema = z.object({

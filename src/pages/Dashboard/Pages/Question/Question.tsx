@@ -1,7 +1,7 @@
 import {
   getIndividualQuestionQueryOptions,
   useIndividualQuestionData,
-} from "./api/get-individual-question";
+} from "./api/Normal-Question/get-individual-question";
 import { QueryClient } from "@tanstack/react-query";
 import { LoaderFunctionArgs, useParams } from "react-router";
 import { ContentLayout } from "@/layouts/individual-content-layout";

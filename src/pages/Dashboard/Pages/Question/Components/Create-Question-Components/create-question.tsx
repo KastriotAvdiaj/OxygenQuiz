@@ -18,7 +18,7 @@ import { LanguageSelect } from "../../Entities/Language/components/select-questi
 import {
   createQuestionInputSchema,
   useCreateQuestion,
-} from "../../api/create-question";
+} from "../../api/Normal-Question/create-question";
 
 interface CreateQuestionFormProps {
   categories: QuestionCategory[];

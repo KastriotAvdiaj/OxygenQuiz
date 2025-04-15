@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 // import { AdminQuestionCard } from "./Components/admin-question-card";
-import { useQuestionData } from "./api/get-questions";
+import { useQuestionData } from "./api/Normal-Question/get-questions";
 import { useQuestionCategoryData } from "./Entities/Categories/api/get-question-categories";
 import { Button, Card, Spinner } from "@/components/ui";
 import { Separator } from "@/components/ui/separator";
