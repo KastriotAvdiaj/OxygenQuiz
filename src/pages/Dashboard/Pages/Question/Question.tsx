@@ -7,7 +7,7 @@ import { LoaderFunctionArgs, useParams } from "react-router";
 import { ContentLayout } from "@/layouts/individual-content-layout";
 import { format } from "date-fns";
 import { Badge } from "@/components/ui/badge";
-import { AnswerOptionViewList } from "./Components/answer-option-view-list";
+import { AnswerOptionViewList } from "./Components/Normal-Question/answer-option-view-list";
 
 export const questionLoader =
   (queryClient: QueryClient) =>

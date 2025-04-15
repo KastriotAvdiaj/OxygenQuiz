@@ -5,7 +5,7 @@ import { useQuestionCategoryData } from "./Entities/Categories/api/get-question-
 import { Button, Card, Spinner } from "@/components/ui";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/form";
-import { QuestionList } from "./Components/question-list";
+import { QuestionList } from "./Components/Normal-Question/question-list";
 import { useDebounce } from "@/hooks/use-debounce";
 import { CategorySelect } from "./Entities/Categories/Components/select-question-category";
 
@@ -14,7 +14,7 @@ import { LangaugesView } from "./Entities/Language/components/language-view";
 import { DifficultyView } from "./Entities/Difficulty/Components/difficulty-view";
 import { CategoryView } from "./Entities/Categories/Components/category-view";
 import { useQuestionLanguageData } from "./Entities/Language/api/get-question-language";
-import CreateQuestionForm from "./Components/Create-Question-Components/create-question";
+import CreateQuestionForm from "./Components/Normal-Question/Create-Question-Components/create-question";
 import { Popover } from "@/components/ui/popover";
 import { PopoverContent, PopoverTrigger } from "@radix-ui/react-popover";
 import { PlusCircle } from "lucide-react";

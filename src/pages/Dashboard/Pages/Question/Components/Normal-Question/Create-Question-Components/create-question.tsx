@@ -12,13 +12,13 @@ import {
 import { useFieldArray } from "react-hook-form";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { CategorySelect } from "../../Entities/Categories/Components/select-question-category";
-import { DifficultySelect } from "../../Entities/Difficulty/Components/select-question-difficulty";
-import { LanguageSelect } from "../../Entities/Language/components/select-question-language";
+import { CategorySelect } from "../../../Entities/Categories/Components/select-question-category";
+import { DifficultySelect } from "../../../Entities/Difficulty/Components/select-question-difficulty";
+import { LanguageSelect } from "../../../Entities/Language/components/select-question-language";
 import {
   createQuestionInputSchema,
   useCreateQuestion,
-} from "../../api/Normal-Question/create-question";
+} from "../../../api/Normal-Question/create-question";
 
 interface CreateQuestionFormProps {
   categories: QuestionCategory[];
