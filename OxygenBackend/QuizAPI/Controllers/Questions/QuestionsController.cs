@@ -11,9 +11,35 @@ using QuizAPI.Services;
 using System.Security.Claims;
 using QuizAPI.Controllers.Questions.Services;
 using QuizAPI.Controllers.Questions.Services.AnswerOptions;
+using System.Text.Json;
 
 namespace QuizAPI.Controllers.Questions
 {
+
+    public static class HttpExtensions
+    {
+        public static void AddPaginationHeader(this HttpResponse response, int currentPage,
+            int itemsPerPage, int totalItems, int totalPages)
+        {
+            var paginationHeader = new
+            {
+                currentPage,
+                itemsPerPage,
+                totalItems,
+                totalPages
+            };
+
+            var options = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            };
+
+            response.Headers.Add("Pagination", JsonSerializer.Serialize(paginationHeader, options));
+            // To allow the client to access the header
+            response.Headers.Add("Access-Control-Expose-Headers", "Pagination");
+        }
+    }
+
     [ApiController]
     [Route("api/[controller]")]
     public class QuestionsController : ControllerBase
@@ -27,10 +53,17 @@ namespace QuizAPI.Controllers.Questions
 
         // GET: api/questions
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<QuestionBaseDTO>>> GetQuestions([FromQuery] string visibility = null)
+        public async Task<ActionResult<List<QuestionBaseDTO>>> GetQuestions([FromQuery] QuestionFilterParams filterParams)
         {
-            var questions = await _questionService.GetAllQuestionsAsync(visibility);
-            return Ok(questions);
+            var pagedQuestions = await _questionService.GetPaginatedQuestionsAsync(filterParams);
+
+            Response.AddPaginationHeader(
+                pagedQuestions.PageNumber,
+                pagedQuestions.PageSize,
+                pagedQuestions.TotalCount,
+                pagedQuestions.TotalPages);
+
+            return Ok(pagedQuestions.Items);
         }
 
         // GET: api/questions/5
@@ -49,26 +82,47 @@ namespace QuizAPI.Controllers.Questions
 
         // GET: api/questions/multiplechoice
         [HttpGet("multiplechoice")]
-        public async Task<ActionResult<IEnumerable<MultipleChoiceQuestionDTO>>> GetMultipleChoiceQuestions()
+        public async Task<ActionResult<List<MultipleChoiceQuestionDTO>>> GetMultipleChoiceQuestions([FromQuery] QuestionFilterParams filterParams)
         {
-            var questions = await _questionService.GetMultipleChoiceQuestionsAsync();
-            return Ok(questions);
+            var pagedQuestions = await _questionService.GetPaginatedMultipleChoiceQuestionsAsync(filterParams);
+
+            Response.AddPaginationHeader(
+                pagedQuestions.PageNumber,
+                pagedQuestions.PageSize,
+                pagedQuestions.TotalCount,
+                pagedQuestions.TotalPages);
+
+            return Ok(pagedQuestions.Items);
         }
 
         // GET: api/questions/truefalse
-        [HttpGet("truefalse")]
-        public async Task<ActionResult<IEnumerable<TrueFalseQuestionDTO>>> GetTrueFalseQuestions()
+        [HttpGet("trueFalse")]
+        public async Task<ActionResult<List<TrueFalseQuestionDTO>>> GetTrueFalseQuestions([FromQuery] QuestionFilterParams filterParams)
         {
-            var questions = await _questionService.GetTrueFalseQuestionsAsync();
-            return Ok(questions);
+            var pagedQuestions = await _questionService.GetPaginatedTrueFalseQuestionsAsync(filterParams);
+
+            Response.AddPaginationHeader(
+                pagedQuestions.PageNumber,
+                pagedQuestions.PageSize,
+                pagedQuestions.TotalCount,
+                pagedQuestions.TotalPages);
+
+            return Ok(pagedQuestions.Items);
         }
 
         // GET: api/questions/typeanswer
-        [HttpGet("typeanswer")]
-        public async Task<ActionResult<IEnumerable<TypeTheAnswerQuestionDTO>>> GetTypeTheAnswerQuestions()
+        [HttpGet("typeTheAnswer")]
+        public async Task<ActionResult<List<TypeTheAnswerQuestionDTO>>> GetTypeTheAnswerQuestions([FromQuery] QuestionFilterParams filterParams)
         {
-            var questions = await _questionService.GetTypeTheAnswerQuestionsAsync();
-            return Ok(questions);
+            var pagedQuestions = await _questionService.GetPaginatedTypeTheAnswerQuestionsAsync(filterParams);
+
+            Response.AddPaginationHeader(
+                pagedQuestions.PageNumber,
+                pagedQuestions.PageSize,
+                pagedQuestions.TotalCount,
+                pagedQuestions.TotalPages);
+
+            return Ok(pagedQuestions.Items);
         }
 
         // POST: api/questions/multiplechoice
@@ -214,6 +268,27 @@ namespace QuizAPI.Controllers.Questions
             var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
             var questions = await _questionService.GetQuestionsByUserAsync(userId);
             return Ok(questions);
+        }
+
+        [Authorize]
+        [HttpGet("myQuestions")]
+        public async Task<ActionResult<List<QuestionBaseDTO>>> GetMyQuestions([FromQuery] QuestionFilterParams filterParams)
+        {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized();
+
+            filterParams.UserId = Guid.Parse(userId);
+
+            var pagedQuestions = await _questionService.GetPaginatedQuestionsAsync(filterParams);
+
+            Response.AddPaginationHeader(
+                pagedQuestions.PageNumber,
+                pagedQuestions.PageSize,
+                pagedQuestions.TotalCount,
+                pagedQuestions.TotalPages);
+
+            return Ok(pagedQuestions.Items);
         }
     }
 }

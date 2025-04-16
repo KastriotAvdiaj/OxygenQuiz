@@ -1,0 +1,189 @@
+import { Plus, Trash2 } from "lucide-react";
+import React from "react";
+import { Button } from "@/components/ui/button";
+import { Form, FormDrawer, Input, Label } from "@/components/ui/form";
+import { useNotifications } from "@/common/Notifications";
+
+import {
+  QuestionCategory,
+  QuestionDifficulty,
+  QuestionLanguage,
+} from "@/types/ApiTypes";
+import { Switch } from "@/components/ui/switch";
+import { Separator } from "@/components/ui/separator";
+import { CategorySelect } from "../../Entities/Categories/Components/select-question-category";
+import { DifficultySelect } from "../../Entities/Difficulty/Components/select-question-difficulty";
+import { LanguageSelect } from "../../Entities/Language/components/select-question-language";
+import {
+  createTrueFalseQuestionInputSchema,
+  useCreateTrueFalseQuestion,
+} from "../../api/create-true-false-question";
+
+interface CreateTrueFalseQuestionFormProps {
+  categories: QuestionCategory[];
+  difficulties: QuestionDifficulty[];
+  languages: QuestionLanguage[];
+}
+
+export const CreateTrueFalseQuestionForm: React.FC<CreateTrueFalseQuestionFormProps> = ({
+  categories,
+  difficulties,
+  languages,
+}) => {
+  const { addNotification } = useNotifications();
+
+  const createQuestionMutation = useCreateTrueFalseQuestion({
+    mutationConfig: {
+      onSuccess: () => {
+        addNotification({
+          type: "success",
+          title: "True/False Question Created",
+        });
+      },
+    },
+  });
+
+  return (
+    <FormDrawer
+      isDone={createQuestionMutation.isSuccess}
+      triggerButton={<Button>True/False</Button>}
+      title="Create a True/False Question"
+      submitButton={
+        <Button
+          form="create-true-false-question"
+          variant="addSave"
+          className="rounded-sm text-white"
+          type="submit"
+          size="default"
+          isPending={createQuestionMutation.isPending}
+          disabled={createQuestionMutation.isPending}
+        >
+          Submit
+        </Button>
+      }
+    >
+      <Form
+        id="create-true-false-question"
+        className="w-[500px]"
+        onSubmit={(values) => {
+          createQuestionMutation.mutate({
+            data: values,
+          });
+        }}
+        schema={createTrueFalseQuestionInputSchema}
+      >
+        {({ register, formState, control, setValue, watch, clearErrors }) => {
+          return (
+            <>
+              <div className="grid grid-[2fr_1fr] w-full gap-5">
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="questionText"
+                    className="text-foreground text-sm font-medium"
+                  >
+                    Statement
+                  </Label>
+                  <Input
+                    id="questionText"
+                    className={`py-2 w-full ${
+                      formState.errors["text"] ? "border-red-500" : ""
+                    }`}
+                    placeholder="Enter your statement here..."
+                    error={formState.errors["text"]}
+                    registration={register("text")}
+                  />
+                </div>
+                <CategorySelect
+                  label="Category"
+                  categories={categories}
+                  value={watch("categoryId")?.toString() || ""}
+                  onChange={(selectedValue: string) =>
+                    setValue("categoryId", parseInt(selectedValue, 10))
+                  }
+                  includeAllOption={false}
+                  error={formState.errors["categoryId"]?.message}
+                  clearErrors={() => clearErrors("categoryId")}
+                />
+              </div>
+              <Separator className="bg-gray-500" />
+              <DifficultySelect
+                label="Difficulty"
+                difficulties={difficulties}
+                value={watch("difficultyId")?.toString() || ""}
+                onChange={(selectedValue: string) =>
+                  setValue("difficultyId", parseInt(selectedValue, 10))
+                }
+                includeAllOption={false}
+                error={formState.errors["difficultyId"]?.message}
+                clearErrors={() => clearErrors("difficultyId")}
+              />
+              <Separator className="bg-gray-500" />
+              <LanguageSelect
+                label="Language"
+                languages={languages}
+                value={watch("languageId")?.toString() || ""}
+                includeAllOption={false}
+                onChange={(selectedValue: string) =>
+                  setValue("languageId", parseInt(selectedValue, 10))
+                }
+                error={formState.errors["languageId"]?.message}
+                clearErrors={() => clearErrors("languageId")}
+              />
+              <Separator className="bg-gray-500" />
+
+              <div className="space-y-4 mt-4">
+                <Label className="block text-sm font-medium text-foreground">
+                  Correct Answer
+                </Label>
+                <div className="flex items-center justify-around p-4 border rounded-md bg-gray-50">
+                  <div className="flex flex-col items-center">
+                    <Switch
+                      id="true-option"
+                      checked={watch("isTrue") === true}
+                      onCheckedChange={() => {
+                        setValue("isTrue", true);
+                        clearErrors("isTrue");
+                      }}
+                      className="shadow-md"
+                    />
+                    <Label
+                      htmlFor="true-option"
+                      className="text-md font-medium text-gray-700 mt-2"
+                    >
+                      True
+                    </Label>
+                  </div>
+                  <Separator orientation="vertical" className="h-12 bg-gray-300" />
+                  <div className="flex flex-col items-center">
+                    <Switch
+                      id="false-option"
+                      checked={watch("isTrue") === false}
+                      onCheckedChange={() => {
+                        setValue("isTrue", false);
+                        clearErrors("isTrue");
+                      }}
+                      className="shadow-md"
+                    />
+                    <Label
+                      htmlFor="false-option"
+                      className="text-md font-medium text-gray-700 mt-2"
+                    >
+                      False
+                    </Label>
+                  </div>
+                </div>
+                {formState.errors?.isTrue && (
+                  <p className="text-sm text-red-500 font-semibold border border-red-500 p-2 text-center">
+                    Please select either True or False
+                  </p>
+                )}
+              </div>
+            </>
+          );
+        }}
+      </Form>
+    </FormDrawer>
+  );
+};
+
+export default CreateTrueFalseQuestionForm;

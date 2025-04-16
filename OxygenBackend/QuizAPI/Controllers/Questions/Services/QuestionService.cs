@@ -3,6 +3,7 @@ using QuizAPI.Data;
 using QuizAPI.DTOs.Question;
 using QuizAPI.Models;
 using AutoMapper;
+using AutoMapper.QueryableExtensions;
 
 namespace QuizAPI.Controllers.Questions.Services
 {
@@ -36,6 +37,27 @@ namespace QuizAPI.Controllers.Questions.Services
 
             var questions = await query.ToListAsync();
             return _mapper.Map<List<QuestionBaseDTO>>(questions);
+        }
+
+        public async Task<PagedList<QuestionBaseDTO>> GetPaginatedQuestionsAsync(QuestionFilterParams filterParams)
+        {
+            IQueryable<QuestionBase> query = _context.Questions
+                .Include(q => q.Difficulty)
+                .Include(q => q.Category)
+                .Include(q => q.Language)
+                .Include(q => q.User);
+
+            // Apply filters
+            query = ApplyFilters(query, filterParams);
+
+            // Map to DTOs before pagination for better performance
+            var projectedQuery = query.ProjectTo<QuestionBaseDTO>(_mapper.ConfigurationProvider);
+
+            // Create and return the paged list
+            return await PagedList<QuestionBaseDTO>.CreateAsync(
+                projectedQuery,
+                filterParams.PageNumber,
+                filterParams.PageSize);
         }
 
         public async Task<QuestionBaseDTO> GetQuestionByIdAsync(int id)
@@ -87,6 +109,28 @@ namespace QuizAPI.Controllers.Questions.Services
             return _mapper.Map<List<MultipleChoiceQuestionDTO>>(questions);
         }
 
+/*NEW PAGINATED METHOD*/
+        public async Task<PagedList<MultipleChoiceQuestionDTO>> GetPaginatedMultipleChoiceQuestionsAsync(QuestionFilterParams filterParams)
+        {
+            IQueryable<MultipleChoiceQuestion> query = _context.MultipleChoiceQuestions
+                .Include(q => q.AnswerOptions)
+                .Include(q => q.Difficulty)
+                .Include(q => q.Category)
+                .Include(q => q.Language)
+                .Include(q => q.User);
+
+            // Apply common filters
+            query = ApplyFilters(query, filterParams);
+
+            // Map to DTOs
+            var projectedQuery = query.ProjectTo<MultipleChoiceQuestionDTO>(_mapper.ConfigurationProvider);
+
+            return await PagedList<MultipleChoiceQuestionDTO>.CreateAsync(
+                projectedQuery,
+                filterParams.PageNumber,
+                filterParams.PageSize);
+        }
+
         public async Task<List<TrueFalseQuestionDTO>> GetTrueFalseQuestionsAsync()
         {
             var questions = await _context.TrueFalseQuestions
@@ -99,6 +143,28 @@ namespace QuizAPI.Controllers.Questions.Services
             return _mapper.Map<List<TrueFalseQuestionDTO>>(questions);
         }
 
+        /*NEW PAGINATED METHOD*/
+
+        public async Task<PagedList<TrueFalseQuestionDTO>> GetPaginatedTrueFalseQuestionsAsync(QuestionFilterParams filterParams)
+        {
+            IQueryable<TrueFalseQuestion> query = _context.TrueFalseQuestions
+                .Include(q => q.Difficulty)
+                .Include(q => q.Category)
+                .Include(q => q.Language)
+                .Include(q => q.User);
+
+            // Apply common filters
+            query = ApplyFilters(query, filterParams);
+
+            // Map to DTOs
+            var projectedQuery = query.ProjectTo<TrueFalseQuestionDTO>(_mapper.ConfigurationProvider);
+
+            return await PagedList<TrueFalseQuestionDTO>.CreateAsync(
+                projectedQuery,
+                filterParams.PageNumber,
+                filterParams.PageSize);
+        }
+
         public async Task<List<TypeTheAnswerQuestionDTO>> GetTypeTheAnswerQuestionsAsync()
         {
             var questions = await _context.TypeTheAnswerQuestions
@@ -109,6 +175,27 @@ namespace QuizAPI.Controllers.Questions.Services
                 .ToListAsync();
 
             return _mapper.Map<List<TypeTheAnswerQuestionDTO>>(questions);
+        }
+        /*NEW PAGINATED METHOD*/
+
+        public async Task<PagedList<TypeTheAnswerQuestionDTO>> GetPaginatedTypeTheAnswerQuestionsAsync(QuestionFilterParams filterParams)
+        {
+            IQueryable<TypeTheAnswerQuestion> query = _context.TypeTheAnswerQuestions
+                .Include(q => q.Difficulty)
+                .Include(q => q.Category)
+                .Include(q => q.Language)
+                .Include(q => q.User);
+
+            // Apply common filters
+            query = ApplyFilters(query, filterParams);
+
+            // Map to DTOs
+            var projectedQuery = query.ProjectTo<TypeTheAnswerQuestionDTO>(_mapper.ConfigurationProvider);
+
+            return await PagedList<TypeTheAnswerQuestionDTO>.CreateAsync(
+                projectedQuery,
+                filterParams.PageNumber,
+                filterParams.PageSize);
         }
 
         public async Task<MultipleChoiceQuestionDTO> CreateMultipleChoiceQuestionAsync(MultipleChoiceQuestionCM questionCM, Guid userId)
@@ -353,6 +440,50 @@ namespace QuizAPI.Controllers.Questions.Services
                 .ToListAsync();
 
             return _mapper.Map<List<QuestionBaseDTO>>(questions);
+        }
+
+        private IQueryable<T> ApplyFilters<T>(IQueryable<T> query, QuestionFilterParams filterParams) where T : QuestionBase
+        {
+            if (!string.IsNullOrEmpty(filterParams.SearchTerm))
+            {
+                var searchTerm = filterParams.SearchTerm.ToLower();
+                query = query.Where(q => q.Text.ToLower().Contains(searchTerm));
+            }
+
+            if (filterParams.CategoryId.HasValue)
+            {
+                query = query.Where(q => q.CategoryId == filterParams.CategoryId.Value);
+            }
+
+            if (filterParams.DifficultyId.HasValue)
+            {
+                query = query.Where(q => q.DifficultyId == filterParams.DifficultyId.Value);
+            }
+
+            if (filterParams.LanguageId.HasValue)
+            {
+                query = query.Where(q => q.LanguageId == filterParams.LanguageId.Value);
+            }
+
+            if (!string.IsNullOrEmpty(filterParams.Visibility))
+            {
+                if (Enum.TryParse(filterParams.Visibility, true, out QuestionVisibility visibilityEnum))
+                {
+                    query = query.Where(q => q.Visibility == visibilityEnum);
+                }
+            }
+
+            if (filterParams.Type.HasValue)
+            {
+                query = query.Where(q => q.Type == filterParams.Type.Value);
+            }
+
+            if (filterParams.UserId.HasValue)
+            {
+                query = query.Where(q => q.UserId == filterParams.UserId.Value);
+            }
+
+            return query;
         }
     }
 }

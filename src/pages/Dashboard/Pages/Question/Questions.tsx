@@ -78,9 +78,7 @@ export const Questions = () => {
         <Card className="p-8 bg-background border border-border">
           <Popover modal={true} open={isOpen} onOpenChange={handleOpenChange}>
             <PopoverTrigger asChild onClick={open}>
-              <Button variant={"fancy"}>
-                <PlusCircle size={16} className="mr-2" /> Add Question
-              </Button>
+              <LiftedButton>Add Question +</LiftedButton>
             </PopoverTrigger>
             <PopoverContent
               side="right"

@@ -8,6 +8,8 @@ namespace QuizAPI.Controllers.Questions.Services
     {
         // Get methods
         Task<List<QuestionBaseDTO>> GetAllQuestionsAsync(string visibility = null);
+
+        Task<PagedList<QuestionBaseDTO>> GetPaginatedQuestionsAsync(QuestionFilterParams filterParams);
         Task<QuestionBaseDTO> GetQuestionByIdAsync(int id);
         Task<List<QuestionBaseDTO>> GetQuestionsByCategoryAsync(int categoryId);
         Task<List<QuestionBaseDTO>> GetQuestionsByDifficultyAsync(int difficultyId);
@@ -15,8 +17,12 @@ namespace QuizAPI.Controllers.Questions.Services
 
         // Type-specific get methods
         Task<List<MultipleChoiceQuestionDTO>> GetMultipleChoiceQuestionsAsync();
+        Task<PagedList<MultipleChoiceQuestionDTO>> GetPaginatedMultipleChoiceQuestionsAsync(QuestionFilterParams filterParams);
         Task<List<TrueFalseQuestionDTO>> GetTrueFalseQuestionsAsync();
+        Task<PagedList<TrueFalseQuestionDTO>> GetPaginatedTrueFalseQuestionsAsync(QuestionFilterParams filterParams);
         Task<List<TypeTheAnswerQuestionDTO>> GetTypeTheAnswerQuestionsAsync();
+        Task<PagedList<TypeTheAnswerQuestionDTO>> GetPaginatedTypeTheAnswerQuestionsAsync(QuestionFilterParams filterParams);
+
 
         // Create methods
         Task<MultipleChoiceQuestionDTO> CreateMultipleChoiceQuestionAsync(MultipleChoiceQuestionCM questionCM, Guid userId);
