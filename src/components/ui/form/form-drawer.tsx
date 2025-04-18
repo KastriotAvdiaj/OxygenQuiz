@@ -54,7 +54,7 @@ export const FormDrawer = ({
       <DrawerContent
         side={variant || "right"}
         className={cn(
-          "overflow-y-auto flex max-w-[800px] flex-col justify-between sm:max-w-[540px]",
+          "overflow-y-auto flex max-w-[800px] bg-background border-l dark:border-foreground/40 flex-col justify-between sm:max-w-[540px]",
           className
         )}
       >

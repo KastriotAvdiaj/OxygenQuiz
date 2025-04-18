@@ -1,4 +1,4 @@
-import { Plus, Trash2 } from "lucide-react";
+import { Check, Plus, Trash2 } from "lucide-react";
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Form, FormDrawer, Input, Label } from "@/components/ui/form";
@@ -9,7 +9,6 @@ import {
   QuestionDifficulty,
   QuestionLanguage,
 } from "@/types/ApiTypes";
-import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { CategorySelect } from "../../Entities/Categories/Components/select-question-category";
 import { DifficultySelect } from "../../Entities/Difficulty/Components/select-question-difficulty";
@@ -17,7 +16,8 @@ import { LanguageSelect } from "../../Entities/Language/components/select-questi
 import {
   createTrueFalseQuestionInputSchema,
   useCreateTrueFalseQuestion,
-} from "../../api/create-true-false-question";
+} from "../../api/True_False-Question/create-true_false-question";
+import { LiftedButton } from "@/common/LiftedButton";
 
 interface CreateTrueFalseQuestionFormProps {
   categories: QuestionCategory[];
@@ -25,11 +25,9 @@ interface CreateTrueFalseQuestionFormProps {
   languages: QuestionLanguage[];
 }
 
-export const CreateTrueFalseQuestionForm: React.FC<CreateTrueFalseQuestionFormProps> = ({
-  categories,
-  difficulties,
-  languages,
-}) => {
+export const CreateTrueFalseQuestionForm: React.FC<
+  CreateTrueFalseQuestionFormProps
+> = ({ categories, difficulties, languages }) => {
   const { addNotification } = useNotifications();
 
   const createQuestionMutation = useCreateTrueFalseQuestion({
@@ -46,8 +44,8 @@ export const CreateTrueFalseQuestionForm: React.FC<CreateTrueFalseQuestionFormPr
   return (
     <FormDrawer
       isDone={createQuestionMutation.isSuccess}
-      triggerButton={<Button>True/False</Button>}
-      title="Create a True/False Question"
+      triggerButton={<LiftedButton>True/False</LiftedButton>}
+      title="Create a True False Question"
       submitButton={
         <Button
           form="create-true-false-question"
@@ -72,19 +70,19 @@ export const CreateTrueFalseQuestionForm: React.FC<CreateTrueFalseQuestionFormPr
         }}
         schema={createTrueFalseQuestionInputSchema}
       >
-        {({ register, formState, control, setValue, watch, clearErrors }) => {
+        {({ register, formState, setValue, watch, clearErrors }) => {
+          const checkCorrectAnswer = (value: boolean) => {
+            setValue("correctAnswer", value);
+            clearErrors("correctAnswer");
+          };
+
           return (
             <>
               <div className="grid grid-[2fr_1fr] w-full gap-5">
                 <div className="space-y-2">
-                  <Label
-                    htmlFor="questionText"
-                    className="text-foreground text-sm font-medium"
-                  >
-                    Statement
-                  </Label>
                   <Input
-                    id="questionText"
+                    id="text"
+                    variant="quiz"
                     className={`py-2 w-full ${
                       formState.errors["text"] ? "border-red-500" : ""
                     }`}
@@ -93,8 +91,67 @@ export const CreateTrueFalseQuestionForm: React.FC<CreateTrueFalseQuestionFormPr
                     registration={register("text")}
                   />
                 </div>
+                <div className="space-y-4 mt-4">
+                  <Label className="block text-sm font-medium text-foreground flex items-center justify-center gap-2">
+                    Correct Answer
+                  </Label>
+                  <div className="flex items-center justify-around rounded-sm">
+                    <div className="flex flex-col w-full items-center bg-primary/80 dark:bg-primary/80 rounded-md p-2">
+                      <button
+                        id="true-option"
+                        type="button"
+                        onClick={() => checkCorrectAnswer(true)}
+                        className={`w-6 h-6 rounded-full flex items-center border justify-center transition-all ${
+                          watch("correctAnswer") === true
+                            ? "bg-green-500 text-white"
+                            : "bg-primary/20 hover:bg-primary/30 dark:bg-primary/30 dark:hover:bg-primary/40"
+                        }`}
+                      >
+                        {watch("correctAnswer") === true && (
+                          <Check className="h-4 w-4" />
+                        )}
+                      </button>
+                      <Label
+                        htmlFor="true-option"
+                        className="text-md font-medium mt-2"
+                      >
+                        True
+                      </Label>
+                    </div>
+
+                    <div className="flex flex-col items-center w-full bg-red-500/80 dark:bg-red-500/80 rounded-sm p-2">
+                      <button
+                        id="false-option"
+                        type="button"
+                        onClick={() => checkCorrectAnswer(false)}
+                        className={`w-6 h-6 rounded-full border flex items-center justify-center transition-all ${
+                          watch("correctAnswer") === false
+                            ? "bg-green-500 text-white"
+                            : "bg-primary/20 hover:bg-primary/30 dark:bg-primary/30 dark:hover:bg-primary/40"
+                        }`}
+                      >
+                        {watch("correctAnswer") === false && (
+                          <Check className="h-4 w-4" />
+                        )}
+                      </button>
+                      <Label
+                        htmlFor="false-option"
+                        className="text-md font-medium mt-2"
+                      >
+                        False
+                      </Label>
+                    </div>
+                  </div>
+                  {formState.errors?.correctAnswer && (
+                    <p className="text-sm text-red-500 font-semibold border border-red-500 p-2 text-center">
+                      Please select either True or False
+                    </p>
+                  )}
+                </div>
+                <Separator className="bg-gray-500" />
+
                 <CategorySelect
-                  label="Category"
+                  // label="Category"
                   categories={categories}
                   value={watch("categoryId")?.toString() || ""}
                   onChange={(selectedValue: string) =>
@@ -105,9 +162,8 @@ export const CreateTrueFalseQuestionForm: React.FC<CreateTrueFalseQuestionFormPr
                   clearErrors={() => clearErrors("categoryId")}
                 />
               </div>
-              <Separator className="bg-gray-500" />
               <DifficultySelect
-                label="Difficulty"
+                // label="Difficulty"
                 difficulties={difficulties}
                 value={watch("difficultyId")?.toString() || ""}
                 onChange={(selectedValue: string) =>
@@ -117,9 +173,8 @@ export const CreateTrueFalseQuestionForm: React.FC<CreateTrueFalseQuestionFormPr
                 error={formState.errors["difficultyId"]?.message}
                 clearErrors={() => clearErrors("difficultyId")}
               />
-              <Separator className="bg-gray-500" />
               <LanguageSelect
-                label="Language"
+                // label="Language"
                 languages={languages}
                 value={watch("languageId")?.toString() || ""}
                 includeAllOption={false}
@@ -129,55 +184,6 @@ export const CreateTrueFalseQuestionForm: React.FC<CreateTrueFalseQuestionFormPr
                 error={formState.errors["languageId"]?.message}
                 clearErrors={() => clearErrors("languageId")}
               />
-              <Separator className="bg-gray-500" />
-
-              <div className="space-y-4 mt-4">
-                <Label className="block text-sm font-medium text-foreground">
-                  Correct Answer
-                </Label>
-                <div className="flex items-center justify-around p-4 border rounded-md bg-gray-50">
-                  <div className="flex flex-col items-center">
-                    <Switch
-                      id="true-option"
-                      checked={watch("isTrue") === true}
-                      onCheckedChange={() => {
-                        setValue("isTrue", true);
-                        clearErrors("isTrue");
-                      }}
-                      className="shadow-md"
-                    />
-                    <Label
-                      htmlFor="true-option"
-                      className="text-md font-medium text-gray-700 mt-2"
-                    >
-                      True
-                    </Label>
-                  </div>
-                  <Separator orientation="vertical" className="h-12 bg-gray-300" />
-                  <div className="flex flex-col items-center">
-                    <Switch
-                      id="false-option"
-                      checked={watch("isTrue") === false}
-                      onCheckedChange={() => {
-                        setValue("isTrue", false);
-                        clearErrors("isTrue");
-                      }}
-                      className="shadow-md"
-                    />
-                    <Label
-                      htmlFor="false-option"
-                      className="text-md font-medium text-gray-700 mt-2"
-                    >
-                      False
-                    </Label>
-                  </div>
-                </div>
-                {formState.errors?.isTrue && (
-                  <p className="text-sm text-red-500 font-semibold border border-red-500 p-2 text-center">
-                    Please select either True or False
-                  </p>
-                )}
-              </div>
             </>
           );
         }}

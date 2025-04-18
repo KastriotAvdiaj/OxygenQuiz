@@ -43,6 +43,7 @@ export const LanguageSelect: React.FC<LangaugeSelectProps> = ({
         }}
       >
         <SelectTrigger
+          variant="quiz"
           className={`min-w-[200px] ${error ? "border-red-500" : ""}`}
         >
           <SelectValue placeholder="--Select Language--" />

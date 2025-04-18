@@ -20,6 +20,9 @@ import { PopoverContent, PopoverTrigger } from "@radix-ui/react-popover";
 import { PlusCircle } from "lucide-react";
 import { useDisclosure } from "@/hooks/use-disclosure";
 import { LiftedButton } from "@/common/LiftedButton";
+import CreateTrueFalseQuestionForm from "./Components/True_Flase-Question/create-true_false-questions";
+import { Dialog, DialogHeader, DialogTrigger } from "@/components/ui/dialog";
+import { DialogContent, DialogTitle } from "@radix-ui/react-dialog";
 
 export const Questions = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -76,23 +79,34 @@ export const Questions = () => {
     <>
       <div className="flex flex-col gap-8">
         <Card className="p-8 bg-background border border-border">
-          <Popover modal={true} open={isOpen} onOpenChange={handleOpenChange}>
-            <PopoverTrigger asChild onClick={open}>
-              <LiftedButton>Add Question +</LiftedButton>
-            </PopoverTrigger>
-            <PopoverContent
-              side="right"
-              className="w-auto p-4 z-20 dark:border border-foreground/60 bg-background rounded-sm flex flex-col align-center justify-center gap-2 shadow-md"
-            >
-              <CreateQuestionForm
-                languages={questionLanguagesQuery.data || []}
-                categories={questionCategoriesQuery.data || []}
-                difficulties={questionDifficultiesQuery.data || []}
-              />
-              <LiftedButton onClick={close}>True/False</LiftedButton>
-              <LiftedButton onClick={close}>Type the Answer</LiftedButton>
-            </PopoverContent>
-          </Popover>
+          <Dialog>
+            <DialogTrigger>
+              <LiftedButton
+                className="flex items-center gap-2"
+                onClick={handleOpenChange}
+              >
+                Add Question +
+              </LiftedButton>
+            </DialogTrigger>
+            <DialogContent className="bg-background p-4 rounded-md">
+              <DialogHeader>
+                <DialogTitle>Choose a question to create</DialogTitle>
+              </DialogHeader>
+
+              <div className="flex flex-col gap-4">
+                <CreateQuestionForm
+                  languages={questionLanguagesQuery.data || []}
+                  categories={questionCategoriesQuery.data || []}
+                  difficulties={questionDifficultiesQuery.data || []}
+                />
+                <CreateTrueFalseQuestionForm
+                  languages={questionLanguagesQuery.data || []}
+                  categories={questionCategoriesQuery.data || []}
+                  difficulties={questionDifficultiesQuery.data || []}
+                />
+              </div>
+            </DialogContent>
+          </Dialog>
 
           {/* <div className="flex justify-between mb-6">
           <Input
@@ -122,9 +136,6 @@ export const Questions = () => {
       <DifficultyView />
       <LangaugesView /> */}
       </div>
-      {isOpen && (
-        <div className="fixed inset-0 z-10 bg-black/50" onClick={close} />
-      )}
     </>
   );
 };

@@ -73,7 +73,6 @@ export const PrivateQuestionForm = ({
     <Card
       className={`p-6 rounded w-full border-dashed border-2 border-primary/30 dark:bg-background/80`}
     >
-      {/* --- Header Section --- */}
       <div className="flex justify-between items-center mb-6">
         <h3 className="text-xl font-semibold">Question {index + 1}</h3>
         <Button
@@ -86,11 +85,8 @@ export const PrivateQuestionForm = ({
           <Trash2 className="h-5 w-5" />
         </Button>
       </div>
-      {/* --- Main Layout Grid (Content Left, Settings Right) --- */}
       <div className="grid grid-cols-1 md:grid-cols-[1fr_220px] gap-x-8 gap-y-6">
-        {/* --- Main Content Column --- */}
         <div className="flex flex-col gap-4">
-          {/* Question Text */}
           <div className="font-header">
             <Label
               htmlFor={`privateQuestions.${index}.text`}
