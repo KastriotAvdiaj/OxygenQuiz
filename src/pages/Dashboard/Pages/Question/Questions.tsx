@@ -21,8 +21,14 @@ import { PlusCircle } from "lucide-react";
 import { useDisclosure } from "@/hooks/use-disclosure";
 import { LiftedButton } from "@/common/LiftedButton";
 import CreateTrueFalseQuestionForm from "./Components/True_Flase-Question/create-true_false-questions";
-import { Dialog, DialogHeader, DialogTrigger } from "@/components/ui/dialog";
-import { DialogContent, DialogTitle } from "@radix-ui/react-dialog";
+import {
+  Dialog,
+  DialogHeader,
+  DialogTrigger,
+  DialogContent,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import CreateTypeAnswerQuestionForm from "./Components/Type_The_Answer-Question/create-type-the-answer-question";
 
 export const Questions = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -79,18 +85,26 @@ export const Questions = () => {
     <>
       <div className="flex flex-col gap-8">
         <Card className="p-8 bg-background border border-border">
-          <Dialog>
+          <Dialog
+            open={isOpen}
+            onOpenChange={(isOpen) => {
+              if (!isOpen) {
+                close();
+              } else {
+                open();
+              }
+            }}
+          >
             <DialogTrigger>
-              <LiftedButton
-                className="flex items-center gap-2"
-                onClick={handleOpenChange}
-              >
+              <LiftedButton className="flex items-center gap-2">
                 Add Question +
               </LiftedButton>
             </DialogTrigger>
-            <DialogContent className="bg-background p-4 rounded-md">
+            <DialogContent className="bg-background p-4 rounded-md w-fit pt-8 dark:border border-foreground/30">
               <DialogHeader>
-                <DialogTitle>Choose a question to create</DialogTitle>
+                <DialogTitle className="flex items-center justify-center">
+                  Choose the type of question to create
+                </DialogTitle>
               </DialogHeader>
 
               <div className="flex flex-col gap-4">
@@ -100,6 +114,11 @@ export const Questions = () => {
                   difficulties={questionDifficultiesQuery.data || []}
                 />
                 <CreateTrueFalseQuestionForm
+                  languages={questionLanguagesQuery.data || []}
+                  categories={questionCategoriesQuery.data || []}
+                  difficulties={questionDifficultiesQuery.data || []}
+                />
+                <CreateTypeAnswerQuestionForm
                   languages={questionLanguagesQuery.data || []}
                   categories={questionCategoriesQuery.data || []}
                   difficulties={questionDifficultiesQuery.data || []}

@@ -3,6 +3,7 @@ import * as LabelPrimitive from "@radix-ui/react-label";
 import { Slot } from "@radix-ui/react-slot";
 import * as React from "react";
 import {
+  DefaultValues,
   Controller,
   ControllerProps,
   FieldPath,
@@ -170,39 +171,44 @@ const FormMessage = React.forwardRef<
 });
 FormMessage.displayName = "FormMessage";
 
-type FormProps<TFormValues extends FieldValues, Schema> = {
-  onSubmit: SubmitHandler<TFormValues>;
-  schema: Schema;
+type FormProps<S extends ZodType<any, any, any>> = {
+  schema: S;
+  defaultValues?: DefaultValues<z.infer<S>>;
+  options?: UseFormProps<z.infer<S>>;
+  onSubmit: SubmitHandler<z.infer<S>>;
+  children: (methods: UseFormReturn<z.infer<S>>) => React.ReactNode;
   className?: string;
-  children: (methods: UseFormReturn<TFormValues>) => React.ReactNode;
-  options?: UseFormProps<TFormValues>;
   id?: string;
 };
 
-const Form = <
-  Schema extends ZodType<any, any, any>,
-  TFormValues extends FieldValues = z.infer<Schema>
->({
+function Form<S extends ZodType<any, any, any>>({
+  schema,
+  defaultValues,
+  options,
   onSubmit,
   children,
   className,
-  options,
   id,
-  schema,
-}: FormProps<TFormValues, Schema>) => {
-  const form = useForm({ ...options, resolver: zodResolver(schema) });
+}: FormProps<S>) {
+  // we explicitly tell useForm what our values type is:
+  const form = useForm<z.infer<S>>({
+    resolver: zodResolver(schema),
+    defaultValues,
+    ...options,
+  });
+
   return (
     <FormProvider {...form}>
       <form
+        id={id}
         className={cn("space-y-6 mt-7 px-3", className)}
         onSubmit={form.handleSubmit(onSubmit)}
-        id={id}
       >
         {children(form)}
       </form>
     </FormProvider>
   );
-};
+}
 
 export {
   useFormField,

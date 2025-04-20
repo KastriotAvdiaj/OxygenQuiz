@@ -48,7 +48,7 @@ export const CreateQuestionForm: React.FC<CreateQuestionFormProps> = ({
   return (
     <FormDrawer
       isDone={createQuestionMutation.isSuccess}
-      triggerButton={<LiftedButton>Normal</LiftedButton>}
+      triggerButton={<LiftedButton className="w-fit">Normal</LiftedButton>}
       title="Create a New Question"
       submitButton={
         <Button
@@ -113,60 +113,19 @@ export const CreateQuestionForm: React.FC<CreateQuestionFormProps> = ({
 
           return (
             <>
-              <div className="grid grid-[2fr_1fr] w-full gap-5">
-                <div className="space-y-2">
-                  <Label
-                    htmlFor="questionText"
-                    className="text-foreground text-sm font-medium"
-                  >
-                    Question Text
-                  </Label>
-                  <Input
-                    id="questionText"
-                    className={`py-2 w-full ${
-                      formState.errors["text"] ? "border-red-500" : ""
-                    }`}
-                    placeholder="Enter your question here..."
-                    error={formState.errors["text"]}
-                    registration={register("text")}
-                  />
-                </div>
-                <CategorySelect
-                  label="Category"
-                  categories={categories}
-                  value={watch("categoryId")?.toString() || ""}
-                  onChange={(selectedValue: string) =>
-                    setValue("categoryId", parseInt(selectedValue, 10))
-                  }
-                  includeAllOption={false}
-                  error={formState.errors["categoryId"]?.message}
-                  clearErrors={() => clearErrors("categoryId")}
-                />
-              </div>
-              <Separator className="bg-gray-500" />
-              <DifficultySelect
-                label="Difficulty"
-                difficulties={difficulties}
-                value={watch("difficultyId")?.toString() || ""}
-                onChange={(selectedValue: string) =>
-                  setValue("difficultyId", parseInt(selectedValue, 10))
-                }
-                includeAllOption={false}
-                error={formState.errors["difficultyId"]?.message}
-                clearErrors={() => clearErrors("difficultyId")}
+              {/* <div className="grid grid-[2fr_1fr] w-full gap-5"> */}
+              <Input
+                id="questionText"
+                variant="quiz"
+                className={`py-2 w-full ${
+                  formState.errors["text"] ? "border-red-500" : ""
+                }`}
+                placeholder="Enter your question here..."
+                error={formState.errors["text"]}
+                registration={register("text")}
               />
-              <Separator className="bg-gray-500" />
-              <LanguageSelect
-                label="Language"
-                languages={languages}
-                value={watch("languageId")?.toString() || ""}
-                includeAllOption={false}
-                onChange={(selectedValue: string) =>
-                  setValue("languageId", parseInt(selectedValue, 10))
-                }
-                error={formState.errors["languageId"]?.message}
-                clearErrors={() => clearErrors("languageId")}
-              />
+              {/* </div> */}
+
               <Separator className="bg-gray-500" />
 
               <div className="space-y-4 mt-4">
@@ -236,6 +195,39 @@ export const CreateQuestionForm: React.FC<CreateQuestionFormProps> = ({
                   + Add Answer Option
                 </Button>
               </div>
+              <CategorySelect
+                // label="Category"
+                categories={categories}
+                value={watch("categoryId")?.toString() || ""}
+                onChange={(selectedValue: string) =>
+                  setValue("categoryId", parseInt(selectedValue, 10))
+                }
+                includeAllOption={false}
+                error={formState.errors["categoryId"]?.message}
+                clearErrors={() => clearErrors("categoryId")}
+              />
+              <DifficultySelect
+                // label="Difficulty"
+                difficulties={difficulties}
+                value={watch("difficultyId")?.toString() || ""}
+                onChange={(selectedValue: string) =>
+                  setValue("difficultyId", parseInt(selectedValue, 10))
+                }
+                includeAllOption={false}
+                error={formState.errors["difficultyId"]?.message}
+                clearErrors={() => clearErrors("difficultyId")}
+              />
+              <LanguageSelect
+                // label="Language"
+                languages={languages}
+                value={watch("languageId")?.toString() || ""}
+                includeAllOption={false}
+                onChange={(selectedValue: string) =>
+                  setValue("languageId", parseInt(selectedValue, 10))
+                }
+                error={formState.errors["languageId"]?.message}
+                clearErrors={() => clearErrors("languageId")}
+              />
             </>
           );
         }}
