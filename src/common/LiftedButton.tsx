@@ -13,9 +13,13 @@ export const LiftedButton = React.forwardRef<
 >(({ children, className, ...props }, ref) => {
   return (
     <>
-      <button className={cn("relative font-thin ")} {...props} ref={ref}>
+     <button className={cn("relative font-thin", className)} {...props} ref={ref}>
         <div className="absolute inset-x-[2px] h-full -bottom-[2px] -right-[2px] bg-foreground border border-foreground/20 rounded-lg"></div>
-        <div className="relative bg-primary border border-foreground/20 rounded-lg py-2 px-4 transition trasnform duration-200 hover:translate-y-[-2px] active:translate-y-[2px] active:translate-x-[2px] text-white">
+        <div
+          className={cn(
+            "relative bg-primary border border-foreground/20 rounded-lg py-2 px-4 transition trasnform duration-200 hover:translate-y-[-2px] active:translate-y-[2px] active:translate-x-[2px] text-white"
+          )}
+        >
           {children}
         </div>
       </button>

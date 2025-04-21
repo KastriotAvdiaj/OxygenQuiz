@@ -24,7 +24,12 @@ export const createTypeTheAnswerQuestionInputSchema = z.object({
   correctAnswer:    z.string().min(1, "Correct answer is required"),
   isCaseSensitive:  z.boolean().default(false),
   allowPartialMatch: z.boolean().default(false),
-  acceptableAnswers: z.array(z.string()).default([]),
+  acceptableAnswers: z.array(
+    z.object({
+      value: z.string().min(1, 'Additional acceptable answer cannot be empty'),
+    })
+  )
+  .default([]), 
 });
 
 export type CreateTypeTheAnswerQuestionInput = z.infer<typeof createTypeTheAnswerQuestionInputSchema>;

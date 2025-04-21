@@ -23,7 +23,7 @@ const buttonVariants = cva(
         drawer:
           "flex justify-start gap-1.5 px-1 items-center bg-background rounded hover:bg-muted text-sm active:scale-95",
         destructive:
-          "flex justify-center items-center gap-2 rounded-md bg-red-600 text-white hover:bg-red-700 active:scale-95 shadow focus-visible:ring-red-600",
+          "flex justify-center items-center gap-2 rounded-md bg-red-500 text-white hover:bg-red-600 active:scale-95 shadow focus-visible:ring-red-600",
         dashboard:
           "flex w-full text-foreground bg-background justify-start text-[17px] gap-2.5 items-center rounded hover:bg-muted active:scale-95",
         quiz: "flex justify-center items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-yellow-400 to-red-500 text-white shadow-lg hover:ring-2 hover:ring-offset-2 hover:ring-yellow-500 active:scale-95 transition-all duration-300",

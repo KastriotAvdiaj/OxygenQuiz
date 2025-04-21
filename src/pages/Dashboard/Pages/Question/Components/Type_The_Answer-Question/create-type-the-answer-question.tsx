@@ -1,4 +1,4 @@
-import { Plus, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Form, FormDrawer, Input, Label } from "@/components/ui/form";
@@ -71,6 +71,19 @@ export const CreateTypeAnswerQuestionForm: React.FC<
           });
         }}
         schema={createTypeTheAnswerQuestionInputSchema}
+        options={{
+          defaultValues: {
+            text: "",
+            difficultyId: undefined,
+            categoryId: undefined,
+            languageId: undefined,
+            correctAnswer: "",
+            isCaseSensitive: false,
+            allowPartialMatch: false,
+            acceptableAnswers: [], // Default object structure
+            visibility: undefined, // Or appropriate default
+          },
+        }}
       >
         {({ register, formState, control, setValue, watch, clearErrors }) => {
           const { fields, append, remove } = useFieldArray({
@@ -78,77 +91,32 @@ export const CreateTypeAnswerQuestionForm: React.FC<
             name: "acceptableAnswers",
           });
 
-          React.useEffect(() => {
-            if (fields.length === 0) {
-              append("");
-            }
-          }, [append, fields.length]);
+          // React.useEffect(() => {
+          //   if (fields.length === 0) {
+          //     append({ value: "" });
+          //   }
+          // }, [append, fields.length]);
 
           return (
             <>
-              <div className="grid grid-[2fr_1fr] w-full gap-5">
-                <div className="space-y-2">
-                  <Label
-                    htmlFor="questionText"
-                    className="text-foreground text-sm font-medium"
-                  >
-                    Question Text
-                  </Label>
-                  <Input
-                    id="questionText"
-                    className={`py-2 w-full ${
-                      formState.errors["text"] ? "border-red-500" : ""
-                    }`}
-                    placeholder="Enter your question here..."
-                    error={formState.errors["text"]}
-                    registration={register("text")}
-                  />
-                </div>
-                <CategorySelect
-                  label="Category"
-                  categories={categories}
-                  value={watch("categoryId")?.toString() || ""}
-                  onChange={(selectedValue: string) =>
-                    setValue("categoryId", parseInt(selectedValue, 10))
-                  }
-                  includeAllOption={false}
-                  error={formState.errors["categoryId"]?.message}
-                  clearErrors={() => clearErrors("categoryId")}
-                />
-              </div>
-              <Separator className="bg-gray-500" />
-              <DifficultySelect
-                label="Difficulty"
-                difficulties={difficulties}
-                value={watch("difficultyId")?.toString() || ""}
-                onChange={(selectedValue: string) =>
-                  setValue("difficultyId", parseInt(selectedValue, 10))
-                }
-                includeAllOption={false}
-                error={formState.errors["difficultyId"]?.message}
-                clearErrors={() => clearErrors("difficultyId")}
+              <Input
+                label="Question"
+                variant="quiz"
+                id="questionText"
+                className={`py-2 w-full ${
+                  formState.errors["text"] ? "border-red-500" : ""
+                }`}
+                placeholder="Enter your question here..."
+                error={formState.errors["text"]}
+                registration={register("text")}
               />
-              <Separator className="bg-gray-500" />
-              <LanguageSelect
-                label="Language"
-                languages={languages}
-                value={watch("languageId")?.toString() || ""}
-                includeAllOption={false}
-                onChange={(selectedValue: string) =>
-                  setValue("languageId", parseInt(selectedValue, 10))
-                }
-                error={formState.errors["languageId"]?.message}
-                clearErrors={() => clearErrors("languageId")}
-              />
-              <Separator className="bg-gray-500" />
 
               <div className="space-y-4 mt-4">
-                <div className="flex items-center justify-between">
-                  <Label className="block text-sm font-medium text-foreground">
-                    Correct Answer
-                  </Label>
+                <div className="flex flex-col ">
                   <Input
-                    className={`max-w-[300px] ${
+                    label="Correct Answer"
+                    variant="isCorrect"
+                    className={` ${
                       formState.errors["correctAnswer"] ? "border-red-500" : ""
                     }`}
                     placeholder="Enter the correct answer..."
@@ -157,6 +125,7 @@ export const CreateTypeAnswerQuestionForm: React.FC<
                   />
                 </div>
               </div>
+              <Separator className="bg-gray-300 dark:bg-gray-600" />
 
               <div className="space-y-4 mt-4">
                 <div className="flex items-center justify-between">
@@ -164,15 +133,13 @@ export const CreateTypeAnswerQuestionForm: React.FC<
                     Acceptable Answers
                   </Label>
                   <div className="flex space-x-2">
-                    <Button
-                      variant="addSave"
-                      size="sm"
+                    <LiftedButton
                       type="button"
-                      className="rounded-sm"
-                      onClick={() => append("")}
+                      className="text-[12px]"
+                      onClick={() => append({ value: "" })}
                     >
-                      <Plus className="h-4 w-4 mr-1" /> Add Answer
-                    </Button>
+                      + Add Answer
+                    </LiftedButton>
                   </div>
                 </div>
                 <div className="space-y-3">
@@ -188,13 +155,17 @@ export const CreateTypeAnswerQuestionForm: React.FC<
                             : ""
                         }`}
                         placeholder={`Alternative answer ${index + 1}...`}
-                        error={formState.errors?.acceptableAnswers?.[index]}
-                        registration={register(`acceptableAnswers.${index}`)}
+                        error={
+                          formState.errors?.acceptableAnswers?.[index]?.value
+                        }
+                        registration={register(
+                          `acceptableAnswers.${index}.value`
+                        )}
                       />
                       <Button
                         variant="destructive"
                         size="sm"
-                        className="rounded-sm"
+                        className="rounded-xl"
                         onClick={() => remove(index)}
                       >
                         <Trash2 className="h-4 w-4" />
@@ -216,7 +187,7 @@ export const CreateTypeAnswerQuestionForm: React.FC<
                 >
                   Answer Options
                 </Label>
-                <div className="flex items-center justify-between p-3 border rounded-md bg-gray-50">
+                <div className="flex items-center justify-between p-3 border rounded-md bg-muted dark:border-foreground/30 dark:bg-muted/20">
                   <div className="flex items-center space-x-2">
                     <Switch
                       id="caseSensitive"
@@ -227,7 +198,7 @@ export const CreateTypeAnswerQuestionForm: React.FC<
                     />
                     <Label
                       htmlFor="caseSensitive"
-                      className="text-sm text-gray-700"
+                      className="text-sm text-gray-700 dark:text-gray-400"
                     >
                       Case Sensitive
                     </Label>
@@ -242,12 +213,47 @@ export const CreateTypeAnswerQuestionForm: React.FC<
                     />
                     <Label
                       htmlFor="allowPartialMatch"
-                      className="text-sm text-gray-700"
+                      className="text-sm text-gray-700 dark:text-gray-400"
                     >
                       Exact Match Required
                     </Label>
                   </div>
                 </div>
+                <section className="flex flex-col gap-4 mt-4">
+                  <CategorySelect
+                    // label="Category"
+                    categories={categories}
+                    value={watch("categoryId")?.toString() || ""}
+                    onChange={(selectedValue: string) =>
+                      setValue("categoryId", parseInt(selectedValue, 10))
+                    }
+                    includeAllOption={false}
+                    error={formState.errors["categoryId"]?.message}
+                    clearErrors={() => clearErrors("categoryId")}
+                  />
+                  <DifficultySelect
+                    // label="Difficulty"
+                    difficulties={difficulties}
+                    value={watch("difficultyId")?.toString() || ""}
+                    onChange={(selectedValue: string) =>
+                      setValue("difficultyId", parseInt(selectedValue, 10))
+                    }
+                    includeAllOption={false}
+                    error={formState.errors["difficultyId"]?.message}
+                    clearErrors={() => clearErrors("difficultyId")}
+                  />
+                  <LanguageSelect
+                    // label="Language"
+                    languages={languages}
+                    value={watch("languageId")?.toString() || ""}
+                    includeAllOption={false}
+                    onChange={(selectedValue: string) =>
+                      setValue("languageId", parseInt(selectedValue, 10))
+                    }
+                    error={formState.errors["languageId"]?.message}
+                    clearErrors={() => clearErrors("languageId")}
+                  />
+                </section>
               </div>
             </>
           );

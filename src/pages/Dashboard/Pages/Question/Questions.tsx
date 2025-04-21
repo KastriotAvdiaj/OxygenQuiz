@@ -103,7 +103,7 @@ export const Questions = () => {
             <DialogContent className="bg-background p-4 rounded-md w-fit pt-8 dark:border border-foreground/30">
               <DialogHeader>
                 <DialogTitle className="flex items-center justify-center">
-                  Choose the type of question to create
+                  Choose the type of question
                 </DialogTitle>
               </DialogHeader>
 
