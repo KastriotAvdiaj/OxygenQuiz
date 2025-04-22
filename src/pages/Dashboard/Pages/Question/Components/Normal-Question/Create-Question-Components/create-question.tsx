@@ -15,31 +15,29 @@ import { Separator } from "@/components/ui/separator";
 import { CategorySelect } from "../../../Entities/Categories/Components/select-question-category";
 import { DifficultySelect } from "../../../Entities/Difficulty/Components/select-question-difficulty";
 import { LanguageSelect } from "../../../Entities/Language/components/select-question-language";
-import {
-  createQuestionInputSchema,
-  useCreateQuestion,
-} from "../../../api/Normal-Question/create-question";
 import { LiftedButton } from "@/common/LiftedButton";
+import {
+  createMultipleChoiceQuestionInputSchema,
+  useCreateMultipleChoiceQuestion,
+} from "../../../api/Normal-Question/create-multiple-choice-question";
 
-interface CreateQuestionFormProps {
+interface CreateMultipleChoiceFormProps {
   categories: QuestionCategory[];
   difficulties: QuestionDifficulty[];
   languages: QuestionLanguage[];
 }
 
-export const CreateQuestionForm: React.FC<CreateQuestionFormProps> = ({
-  categories,
-  difficulties,
-  languages,
-}) => {
+export const CreateMultipleChoiceForm: React.FC<
+  CreateMultipleChoiceFormProps
+> = ({ categories, difficulties, languages }) => {
   const { addNotification } = useNotifications();
 
-  const createQuestionMutation = useCreateQuestion({
+  const createQuestionMutation = useCreateMultipleChoiceQuestion({
     mutationConfig: {
       onSuccess: () => {
         addNotification({
           type: "success",
-          title: "Question Created",
+          title: "Multiple Choice Question Created",
         });
       },
     },
@@ -48,11 +46,11 @@ export const CreateQuestionForm: React.FC<CreateQuestionFormProps> = ({
   return (
     <FormDrawer
       isDone={createQuestionMutation.isSuccess}
-      triggerButton={<LiftedButton>Normal</LiftedButton>}
-      title="Create a New Question"
+      triggerButton={<LiftedButton>Multiple Choice</LiftedButton>}
+      title="Create a New Multiple Choice Question"
       submitButton={
         <Button
-          form="create-question"
+          form="create-multiple-choice-question"
           variant="addSave"
           className="rounded-sm text-white"
           type="submit"
@@ -65,7 +63,7 @@ export const CreateQuestionForm: React.FC<CreateQuestionFormProps> = ({
       }
     >
       <Form
-        id="create-question"
+        id="create-multiple-choice-question"
         className="w-[500px]"
         onSubmit={(values) => {
           const isCorrectSelected = values.answerOptions.some(
@@ -77,10 +75,13 @@ export const CreateQuestionForm: React.FC<CreateQuestionFormProps> = ({
           }
 
           createQuestionMutation.mutate({
-            data: values,
+            data: {
+              ...values,
+              type: "MultipleChoice",
+            },
           });
         }}
-        schema={createQuestionInputSchema}
+        schema={createMultipleChoiceQuestionInputSchema}
       >
         {({ register, formState, control, setValue, watch, clearErrors }) => {
           const { fields, append, remove } = useFieldArray({
@@ -89,6 +90,7 @@ export const CreateQuestionForm: React.FC<CreateQuestionFormProps> = ({
           });
 
           const addOptionDisabled = fields.length >= 4;
+          const allowMultipleSelections = watch("allowMultipleSelections");
 
           React.useEffect(() => {
             if (fields.length === 0) {
@@ -97,23 +99,56 @@ export const CreateQuestionForm: React.FC<CreateQuestionFormProps> = ({
             }
           }, [append, fields.length]);
 
-          const handleSwitchChange = (index: number) => {
-            const updatedOptions = fields.map((field, i) => ({
-              ...field,
-              isCorrect: i === index,
-            }));
-            updatedOptions.forEach((option, i) => {
-              setValue(`answerOptions.${i}.isCorrect`, option.isCorrect);
-            });
+          React.useEffect(() => {
+            if (!allowMultipleSelections) {
+              // Count how many correct answers we have
+              const correctAnswers = fields.filter((_, i) =>
+                watch(`answerOptions.${i}.isCorrect`)
+              );
 
-            if (updatedOptions.some((option) => option.isCorrect)) {
+              // If we have more than one correct answer in single selection mode,
+              // keep only the first one as correct
+              if (correctAnswers.length > 1) {
+                fields.forEach((_, i) => {
+                  const shouldBeCorrect =
+                    i ===
+                    fields.findIndex((_, idx) =>
+                      watch(`answerOptions.${idx}.isCorrect`)
+                    );
+                  setValue(`answerOptions.${i}.isCorrect`, shouldBeCorrect);
+                });
+
+                addNotification({
+                  type: "info",
+                  title: "Single Selection Mode",
+                  message:
+                    "Only one answer can be correct in single selection mode.",
+                });
+              }
+            }
+          }, [allowMultipleSelections, fields, setValue, watch]);
+
+          const handleSwitchChange = (index: number) => {
+            // If allowing multiple selections, we can toggle individual options
+            if (allowMultipleSelections) {
+              setValue(
+                `answerOptions.${index}.isCorrect`,
+                !watch(`answerOptions.${index}.isCorrect`)
+              );
+            } else {
+              // For single selection, ensure only one option is correct
+              fields.forEach((_, i) => {
+                setValue(`answerOptions.${i}.isCorrect`, i === index);
+              });
+            }
+
+            if (fields.some((_, i) => watch(`answerOptions.${i}.isCorrect`))) {
               clearErrors("answerOptions");
             }
           };
 
           return (
             <>
-              {/* <div className="grid grid-[2fr_1fr] w-full gap-5"> */}
               <Input
                 id="questionText"
                 variant="quiz"
@@ -124,19 +159,39 @@ export const CreateQuestionForm: React.FC<CreateQuestionFormProps> = ({
                 error={formState.errors["text"]}
                 registration={register("text")}
               />
-              {/* </div> */}
 
               <Separator className="bg-gray-500" />
+
+              <div className="grid grid-cols-2 gap-4 my-4">
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="allowMultipleSelections"
+                    {...register("allowMultipleSelections")}
+                  />
+                  <Label htmlFor="allowMultipleSelections">
+                    Allow multiple correct answers
+                  </Label>
+                </div>
+              </div>
 
               <div className="space-y-4 mt-4">
                 <div className="flex items-center justify-between">
                   <Label className="block text-sm font-medium text-foreground">
                     Answer Options
                   </Label>
+                  {!allowMultipleSelections && (
+                    <span className="text-xs text-gray-500 italic">
+                      Single selection mode: Only one answer can be correct
+                    </span>
+                  )}
                 </div>
                 {fields.map((field, index) => {
                   const isCorrect = watch(`answerOptions.${index}.isCorrect`);
-
+                  console.log(
+                    "isCorrect",
+                    isCorrect,
+                    `answerOptions.${index}.isCorrect`
+                  );
                   return (
                     <div
                       key={field.id}
@@ -147,7 +202,7 @@ export const CreateQuestionForm: React.FC<CreateQuestionFormProps> = ({
                           formState.errors["answerOptions"]
                             ? "border-red-500"
                             : ""
-                        } ${isCorrect ? "border-2 border-green-500" : ""}`}
+                        } ${isCorrect ? "border-2 border-green-500 dark:border-green-500" : ""}`}
                         placeholder={`Answer Option ${index + 1}...`}
                         error={formState.errors?.answerOptions?.[index]?.text}
                         registration={register(`answerOptions.${index}.text`)}
@@ -163,40 +218,37 @@ export const CreateQuestionForm: React.FC<CreateQuestionFormProps> = ({
                           htmlFor={`correct-${index}`}
                           className="text-xs text-gray-600 mt-1"
                         >
-                          Correct for Option {index + 1}
+                          Correct{" "}
+                          {allowMultipleSelections ? "Option" : "Answer"}
                         </Label>
                       </div>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        className="rounded-sm"
+                      <LiftedButton
+                        variant="icon"
+                        className="rounded-xl bg-red-500"
                         onClick={() => remove(index)}
                         disabled={fields.length <= 2}
                       >
                         <Trash2 className="h-4 w-4" />
-                      </Button>
+                      </LiftedButton>
                     </div>
                   );
                 })}
                 {formState.errors?.answerOptions && (
                   <p className="text-sm text-red-500 font-semibold border border-red-500 p-2 text-center">
                     {formState.errors.answerOptions.message ||
-                      "One option needs to be correct!"}
+                      "At least one option needs to be correct!"}
                   </p>
                 )}
-                <Button
-                  variant="addSave"
-                  size="sm"
+                <LiftedButton
                   type="button"
-                  className="mt-2 rounded-sm"
+                  className="text-sm"
                   onClick={() => append({ text: "", isCorrect: false })}
                   disabled={addOptionDisabled}
                 >
                   + Add Answer Option
-                </Button>
+                </LiftedButton>
               </div>
               <CategorySelect
-                // label="Category"
                 categories={categories}
                 value={watch("categoryId")?.toString() || ""}
                 onChange={(selectedValue: string) =>
@@ -207,7 +259,6 @@ export const CreateQuestionForm: React.FC<CreateQuestionFormProps> = ({
                 clearErrors={() => clearErrors("categoryId")}
               />
               <DifficultySelect
-                // label="Difficulty"
                 difficulties={difficulties}
                 value={watch("difficultyId")?.toString() || ""}
                 onChange={(selectedValue: string) =>
@@ -218,7 +269,6 @@ export const CreateQuestionForm: React.FC<CreateQuestionFormProps> = ({
                 clearErrors={() => clearErrors("difficultyId")}
               />
               <LanguageSelect
-                // label="Language"
                 languages={languages}
                 value={watch("languageId")?.toString() || ""}
                 includeAllOption={false}
@@ -236,4 +286,4 @@ export const CreateQuestionForm: React.FC<CreateQuestionFormProps> = ({
   );
 };
 
-export default CreateQuestionForm;
+export default CreateMultipleChoiceForm;

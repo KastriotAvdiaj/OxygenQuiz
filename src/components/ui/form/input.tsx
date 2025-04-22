@@ -28,7 +28,6 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
     },
     ref
   ) => {
-    console.log("Input registration prop:", registration);
     return (
       <FieldWrapper label={label} error={error}>
         <input

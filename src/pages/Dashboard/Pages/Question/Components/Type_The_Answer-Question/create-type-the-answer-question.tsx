@@ -18,8 +18,14 @@ import {
   createTypeTheAnswerQuestionInputSchema,
   useCreateTypeTheAnswerQuestion,
 } from "../../api/Type_The_Answer-Question/create-type-the-answer-question";
-import { Switch } from "@/components/ui";
+import {
+  Switch,
+  Tooltip,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui";
 import { LiftedButton } from "@/common/LiftedButton";
+import { TooltipContent } from "@radix-ui/react-tooltip";
 
 interface CreateTypeAnswerQuestionFormProps {
   categories: QuestionCategory[];
@@ -188,36 +194,58 @@ export const CreateTypeAnswerQuestionForm: React.FC<
                   Answer Options
                 </Label>
                 <div className="flex items-center justify-between p-3 border rounded-md bg-muted dark:border-foreground/30 dark:bg-muted/20">
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="caseSensitive"
-                      checked={watch("isCaseSensitive") === true}
-                      onCheckedChange={(checked) =>
-                        setValue("isCaseSensitive", checked)
-                      }
-                    />
-                    <Label
-                      htmlFor="caseSensitive"
-                      className="text-sm text-gray-700 dark:text-gray-400"
-                    >
-                      Case Sensitive
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="allowPartialMatch"
-                      checked={!watch("allowPartialMatch") === true}
-                      onCheckedChange={(checked) =>
-                        setValue("allowPartialMatch", !checked)
-                      }
-                    />
-                    <Label
-                      htmlFor="allowPartialMatch"
-                      className="text-sm text-gray-700 dark:text-gray-400"
-                    >
-                      Exact Match Required
-                    </Label>
-                  </div>
+                  <TooltipProvider>
+                    <div>
+                      <Tooltip>
+                        <TooltipTrigger className="flex items-center space-x-2">
+                          <Switch
+                            id="caseSensitive"
+                            checked={watch("isCaseSensitive") === true}
+                            onCheckedChange={(checked) =>
+                              setValue("isCaseSensitive", checked)
+                            }
+                          />
+                          <Label
+                            htmlFor="caseSensitive"
+                            className="text-sm text-gray-700 dark:text-gray-400"
+                          >
+                            Case Sensitive
+                          </Label>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="bg-background p-2 rounded-md text-sm text-foreground border dark:border-foreground/30 mb-2">
+                            If DISABLED, "new york" will be accepted for "New
+                            York"
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                    <div>
+                      <Tooltip>
+                        <TooltipTrigger className="flex items-center space-x-2">
+                          <Switch
+                            id="allowPartialMatch"
+                            checked={!watch("allowPartialMatch") === true}
+                            onCheckedChange={(checked) =>
+                              setValue("allowPartialMatch", !checked)
+                            }
+                          />
+                          <Label
+                            htmlFor="allowPartialMatch"
+                            className="text-sm text-gray-700 dark:text-gray-400"
+                          >
+                            Exact Match Required
+                          </Label>
+                          <TooltipContent>
+                            <p className="bg-background p-2 rounded-md text-sm text-foreground border dark:border-foreground/30 mb-2 mr-2">
+                              If DISABLED, "New York" will be accepted for "New
+                              York City"
+                            </p>
+                          </TooltipContent>
+                        </TooltipTrigger>
+                      </Tooltip>
+                    </div>
+                  </TooltipProvider>
                 </div>
                 <section className="flex flex-col gap-4 mt-4">
                   <CategorySelect

@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { useQuestionData } from "../../../Question/api/Normal-Question/get-questions";
+import { useMultipleChoiceQuestionData } from "../../../Question/api/Normal-Question/get-multiple-choice-questions";
 import { useQuestionCategoryData } from "../../../Question/Entities/Categories/api/get-question-categories";
 import { useQuestionDifficultyData } from "../../../Question/Entities/Difficulty/api/get-question-difficulties";
 import { useCreateQuiz } from "../../api/create-quiz";
@@ -12,7 +12,7 @@ export const useQuizForm = () => {
     const { addNotification } = useNotifications();
   
   
-  const questionsQuery = useQuestionData({});
+  const questionsQuery = useMultipleChoiceQuestionData({});
   const categoriesQuery = useQuestionCategoryData({});
   const difficultiesQuery = useQuestionDifficultyData({});
   const languagesQuery = useQuestionLanguageData({});

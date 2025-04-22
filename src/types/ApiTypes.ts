@@ -60,18 +60,42 @@ export type BaseEntity<TId = number> = {
     numberOfQuestions: number;
   }
 
-  export type Question ={
-    id: number;
-    difficulty: DifficultyDTO;
-    user: UserBasic; // not being used for now
-    text: string;
-    category: CategoryDTO;
-    language :LangaugeDTO;
-    visibility:string;
-    timeLimit: number; //not in the backend yet
-    answerOptions: AnswerOption[];
-  };
+  export enum QuestionType {
+    MultipleChoice   = "MultipleChoice",
+    TrueFalse        = "TrueFalse",
+    TypeTheAnswer    = "TypeTheAnswer",
+  }
 
+  interface QuestionBase {
+    id: number;
+    text: string;
+    visibility: string;
+    difficulty: DifficultyDTO;
+    category: CategoryDTO;
+    languageId: LangaugeDTO;
+    createdAt: string;     
+    userId: string;
+    // statistics?: QuestionStatisticsDTO;
+    type: QuestionType;
+  }
+
+  export interface MultipleChoiceQuestion extends QuestionBase {
+    type: QuestionType.MultipleChoice;
+    answerOptions: AnswerOption[];
+    allowMultipleSelections: boolean;
+  }
+  export interface TrueFalseQuestion extends QuestionBase {
+    type: QuestionType.TrueFalse;
+    correctAnswer: boolean;
+  }
+  export interface TypeTheAnswerQuestion extends QuestionBase {
+    type: QuestionType.TypeTheAnswer;
+    correctAnswer: string;
+    isCaseSensitive: boolean;
+    allowPartialMatch: boolean;
+    acceptableAnswers: string[];
+  }
+  
   export type IndividualQuestion = {
     id: number;
     text: string;
@@ -134,7 +158,7 @@ export type BaseEntity<TId = number> = {
     items: T[];
   };
 
-  export type PaginatedQuestionResponse = PaginatedResponse<Question>;
+  export type PaginatedQuestionResponse = PaginatedResponse<QuestionBase>;
 
 
 
