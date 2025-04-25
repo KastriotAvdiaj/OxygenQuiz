@@ -3,7 +3,7 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { Form, FormDrawer, Input, Label } from "@/components/ui/form";
 import { useNotifications } from "@/common/Notifications";
-
+import { Controller } from "react-hook-form";
 import {
   QuestionCategory,
   QuestionDifficulty,
@@ -77,7 +77,6 @@ export const CreateMultipleChoiceForm: React.FC<
           createQuestionMutation.mutate({
             data: {
               ...values,
-              type: "MultipleChoice",
             },
           });
         }}
@@ -129,14 +128,12 @@ export const CreateMultipleChoiceForm: React.FC<
           }, [allowMultipleSelections, fields, setValue, watch]);
 
           const handleSwitchChange = (index: number) => {
-            // If allowing multiple selections, we can toggle individual options
             if (allowMultipleSelections) {
               setValue(
                 `answerOptions.${index}.isCorrect`,
                 !watch(`answerOptions.${index}.isCorrect`)
               );
             } else {
-              // For single selection, ensure only one option is correct
               fields.forEach((_, i) => {
                 setValue(`answerOptions.${i}.isCorrect`, i === index);
               });
@@ -159,14 +156,26 @@ export const CreateMultipleChoiceForm: React.FC<
                 error={formState.errors["text"]}
                 registration={register("text")}
               />
+              {formState.errors.root && (
+                <p className="text-sm text-red-500 font-semibold border border-red-500 p-2 text-center">
+                  {formState.errors.root.message}
+                </p>
+              )}
 
               <Separator className="bg-gray-500" />
 
               <div className="grid grid-cols-2 gap-4 my-4">
                 <div className="flex items-center space-x-2">
-                  <Switch
-                    id="allowMultipleSelections"
-                    {...register("allowMultipleSelections")}
+                  <Controller
+                    name="allowMultipleSelections"
+                    control={control}
+                    render={({ field }) => (
+                      <Switch
+                        id="allowMultipleSelections"
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    )}
                   />
                   <Label htmlFor="allowMultipleSelections">
                     Allow multiple correct answers
@@ -187,11 +196,7 @@ export const CreateMultipleChoiceForm: React.FC<
                 </div>
                 {fields.map((field, index) => {
                   const isCorrect = watch(`answerOptions.${index}.isCorrect`);
-                  console.log(
-                    "isCorrect",
-                    isCorrect,
-                    `answerOptions.${index}.isCorrect`
-                  );
+
                   return (
                     <div
                       key={field.id}
@@ -202,7 +207,11 @@ export const CreateMultipleChoiceForm: React.FC<
                           formState.errors["answerOptions"]
                             ? "border-red-500"
                             : ""
-                        } ${isCorrect ? "border-2 border-green-500 dark:border-green-500" : ""}`}
+                        } ${
+                          isCorrect
+                            ? "border-2 border-green-500 dark:border-green-500"
+                            : ""
+                        }`}
                         placeholder={`Answer Option ${index + 1}...`}
                         error={formState.errors?.answerOptions?.[index]?.text}
                         registration={register(`answerOptions.${index}.text`)}

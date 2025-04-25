@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { api } from "@/lib/Api-client";
 import { MutationConfig } from "@/lib/React-query";
-import { Question } from "@/types/ApiTypes";
+import { TrueFalseQuestion } from "@/types/ApiTypes";
 import { getTrueFalseQuestionsQueryOptions } from "./get-true_false-questions";
 import { UnspecifiedIds } from "../../constants";
 
@@ -27,7 +27,7 @@ export const createTrueFalseQuestionInputSchema = z.object({
 
 export type CreateQuestionInput = z.infer<typeof createTrueFalseQuestionInputSchema>;
 
-export const createTrueFalseQuestion = ({ data }: { data: CreateQuestionInput }): Promise<Question> => {
+export const createTrueFalseQuestion = ({ data }: { data: CreateQuestionInput }): Promise<TrueFalseQuestion> => {
   return (
     console.log("data", data),
     api.post('/questions/truefalse', data));

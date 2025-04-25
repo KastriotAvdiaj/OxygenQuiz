@@ -1,7 +1,7 @@
 import { queryOptions, useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/Api-client";
 import { QueryConfig } from "@/lib/React-query";
-import { PaginatedQuestionResponse } from "@/types/ApiTypes";
+import { PaginatedTrueFalseQuestionResponse } from "@/types/ApiTypes";
 
 type GetQuestionsParams = {
   pageNumber?: number;
@@ -14,7 +14,7 @@ type GetQuestionsParams = {
   userId?:string | null;
 };
 
-export const getTrueFalseQuestions = (params: GetQuestionsParams): Promise<PaginatedQuestionResponse> => {
+export const getTrueFalseQuestions = (params: GetQuestionsParams): Promise<PaginatedTrueFalseQuestionResponse> => {
   const queryString = new URLSearchParams(params as Record<string, string>).toString();
   return api.get(`/questions/typeTheAnswer?${queryString}`);
 };

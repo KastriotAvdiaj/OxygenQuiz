@@ -159,6 +159,9 @@ export type BaseEntity<TId = number> = {
   };
 
   export type PaginatedQuestionResponse = PaginatedResponse<QuestionBase>;
+  export type PaginatedTrueFalseQuestionResponse = PaginatedResponse<TrueFalseQuestion>;
+  export type PaginatedTypeTheAnswerQuestionResponse = PaginatedResponse<TypeTheAnswerQuestion>;
+
 
 
 

@@ -14,8 +14,8 @@ export const createMultipleChoiceQuestionInputSchema = z.object({
   languageId: z.number().int().positive({ message: "Language is required" }),
   answerOptions: answerOptionsSchema,
   allowMultipleSelections: z.boolean().default(false),
-  visibility: z.enum(["Global", "Private", "Team"]).default("Global"),
-  type: z.literal("MultipleChoice").default("MultipleChoice")
+  visibility: z.string().optional().default("Global"),
+  // type: z.literal("MultipleChoice").default("MultipleChoice")
 });
 
 export type CreateMultipleChoiceQuestionInput = z.infer<typeof createMultipleChoiceQuestionInputSchema>;

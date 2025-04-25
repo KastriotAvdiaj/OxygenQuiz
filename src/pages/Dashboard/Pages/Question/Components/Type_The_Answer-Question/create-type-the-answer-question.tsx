@@ -213,7 +213,7 @@ export const CreateTypeAnswerQuestionForm: React.FC<
                           </Label>
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p className="bg-background p-2 rounded-md text-sm text-foreground border dark:border-foreground/30 mb-2">
+                          <p className="bg-background p-2 rounded-md text-sm text-foreground border border-foreground dark:border-foreground/30 mb-2">
                             If DISABLED, "new york" will be accepted for "New
                             York"
                           </p>
@@ -237,7 +237,7 @@ export const CreateTypeAnswerQuestionForm: React.FC<
                             Exact Match Required
                           </Label>
                           <TooltipContent>
-                            <p className="bg-background p-2 rounded-md text-sm text-foreground border dark:border-foreground/30 mb-2 mr-2">
+                            <p className="bg-background p-2 rounded-md text-sm text-foreground border border-foreground dark:border-foreground/30 mb-2 mr-3">
                               If DISABLED, "New York" will be accepted for "New
                               York City"
                             </p>
