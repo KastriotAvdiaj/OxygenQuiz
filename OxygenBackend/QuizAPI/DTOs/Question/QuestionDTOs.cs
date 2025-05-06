@@ -13,6 +13,7 @@ namespace QuizAPI.DTOs.Question
         public LanguageDTO Language { get; set; }
         public UserBasicDTO User { get; set; }
         public DateTime CreatedAt { get; set; }
+        public string? ImageUrl { get; set; }
         public string Visibility { get; set; }
         public string QuestionType { get; set; }
     }
@@ -40,6 +41,8 @@ namespace QuizAPI.DTOs.Question
     public class QuestionBaseCM
     {
         public string Text { get; set; } = string.Empty;
+
+        public string? ImageUrl { get; set; }
         public int DifficultyId { get; set; }
         public int CategoryId { get; set; }
         public int LanguageId { get; set; }
@@ -70,6 +73,7 @@ namespace QuizAPI.DTOs.Question
     {
         public int Id { get; set; }
         public string Text { get; set; } = string.Empty;
+        public string? ImageUrl { get; set; }
         public int DifficultyId { get; set; }
         public int CategoryId { get; set; }
         public int LanguageId { get; set; }

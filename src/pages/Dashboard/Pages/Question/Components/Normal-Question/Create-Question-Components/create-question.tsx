@@ -1,5 +1,5 @@
 import { Trash2 } from "lucide-react";
-import React from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Form, FormDrawer, Input, Label } from "@/components/ui/form";
 import { useNotifications } from "@/common/Notifications";
@@ -20,6 +20,7 @@ import {
   createMultipleChoiceQuestionInputSchema,
   useCreateMultipleChoiceQuestion,
 } from "../../../api/Normal-Question/create-multiple-choice-question";
+import ImageUpload from "@/utils/Image-Upload";
 
 interface CreateMultipleChoiceFormProps {
   categories: QuestionCategory[];
@@ -31,6 +32,7 @@ export const CreateMultipleChoiceForm: React.FC<
   CreateMultipleChoiceFormProps
 > = ({ categories, difficulties, languages }) => {
   const { addNotification } = useNotifications();
+  const [imageUrl, setImageUrl] = useState("");
 
   const createQuestionMutation = useCreateMultipleChoiceQuestion({
     mutationConfig: {
@@ -161,7 +163,13 @@ export const CreateMultipleChoiceForm: React.FC<
                   {formState.errors.root.message}
                 </p>
               )}
-
+              <ImageUpload onUpload={setImageUrl} />
+              <Input
+                type="hidden"
+                name="imageUrl"
+                registration={register("imageUrl")}
+                value={imageUrl}
+              />
               <Separator className="bg-gray-500" />
 
               <div className="grid grid-cols-2 gap-4 my-4">

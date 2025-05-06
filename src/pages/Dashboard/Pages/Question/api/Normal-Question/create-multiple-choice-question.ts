@@ -12,10 +12,10 @@ export const createMultipleChoiceQuestionInputSchema = z.object({
   difficultyId: z.number().int().positive({ message: "Difficulty is required" }),
   categoryId: z.number().int().positive({ message: "Category is required" }),
   languageId: z.number().int().positive({ message: "Language is required" }),
+  imageUrl: z.string().optional(),
   answerOptions: answerOptionsSchema,
   allowMultipleSelections: z.boolean().default(false),
   visibility: z.string().optional().default("Global"),
-  // type: z.literal("MultipleChoice").default("MultipleChoice")
 });
 
 export type CreateMultipleChoiceQuestionInput = z.infer<typeof createMultipleChoiceQuestionInputSchema>;
