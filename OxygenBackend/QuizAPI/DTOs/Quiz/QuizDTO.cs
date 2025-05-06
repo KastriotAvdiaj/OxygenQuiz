@@ -11,31 +11,40 @@ namespace QuizAPI.DTOs.Quiz
         [MaxLength(1000)]
         public string? Description { get; set; }
 
-        /*[Required, MaxLength(255)]
-        public string Slug { get; set; } = string.Empty;*/
+        [Required]
+        public int CategoryId { get; set; } = 2042; // Default to "Unspecified" category
 
         [Required]
-        public int CategoryId { get; set; }
+        public int LanguageId { get; set; } = 4;
 
         [Required]
-        public int LanguageId { get; set; }
+        public int DifficultyId { get; set; } = 21;
+
+        public int TimeLimitInSeconds { get; set; } = 5; 
+
+        public bool ShowFeedBackImmediately { get; set; } = true;
 
         public bool ShuffleQuestions { get; set; } = false;
-        public bool ShuffleAnswers { get; set; } = false;
-        public bool IsPublished { get; set; } = false;
+        /*public bool IsPublished { get; set; } = false;*/
 
-        public List<PublicQuestionWithScore> PublicQuestions { get; set; } = new();
-        public List<QuestionCMWithScore> PrivateQuestions { get; set; } = new();
+        /*public bool IsActive { get; set; } = true;*/
+
+        public List<ExistingQuestionWithScore> ExistingQuestions { get; set; } = new();
+        public List<NewQuestionCMWithScore> NewQuestions { get; set; } = new();
     }
 
-    public class PublicQuestionWithScore
+    public class ExistingQuestionWithScore
     {
         public int QuestionId { get; set; }
         public int Score { get; set; } 
+
+        public int TimeLimitInSeconds { get; set; } = 10; // in seconds, 0 means no time limit
     }
 
-    public class QuestionCMWithScore : QuestionBaseCM
+    public class NewQuestionCMWithScore : QuestionBaseCM
     {
+
+        public int TimeLimitInSeconds { get; set; } = 10; 
         public int Score { get; set; } 
     }
 
@@ -44,7 +53,6 @@ namespace QuizAPI.DTOs.Quiz
         public int Id { get; set; }
         public string Title { get; set; } = string.Empty;
         public string? Description { get; set; }
- /*       public string Slug { get; set; } = string.Empty;*/
         public string Category { get; set; }
         public string Language { get; set; }
         public bool IsPublished { get; set; }

@@ -13,6 +13,7 @@ import { Brain, PlusCircle, StarIcon, Trophy, Sparkles } from "lucide-react";
 // import oxygen from "@/assets/besimiQuiz.png";
 import z from "zod";
 import { Card } from "@/components/ui";
+import { LiftedButton } from "@/common/LiftedButton";
 
 type FormValues = z.infer<typeof createQuizInputSchema>;
 
@@ -172,11 +173,11 @@ const CreateQuizForm = () => {
                     )}
                   </div>
                   <Separator className="my-6 bg-primary/20" />
-                  <Button
+                  <LiftedButton
                     type="submit"
-                    variant="default"
+                    // variant="default"
                     disabled={isSubmitting}
-                    className="w-fit group relative overflow-hidden"
+                    className="w-fit group relative "
                   >
                     {isSubmitting ? (
                       <>
@@ -187,10 +188,9 @@ const CreateQuizForm = () => {
                       <>
                         <Sparkles className="mr-2 h-4 w-4 group-hover:rotate-12 transition-transform" />
                         Create Quiz
-                        <span className="absolute -z-10 inset-0 bg-gradient-to-r from-primary/0 via-primary/20 to-primary/0 opacity-0 group-hover:opacity-100 -skew-x-12 group-hover:animate-shimmer transition-opacity duration-300"></span>
                       </>
                     )}
-                  </Button>
+                  </LiftedButton>
                 </div>
 
                 <div className="border-l-2 border-primary/30 md:w-72 flex-shrink-0 bg-card/20">

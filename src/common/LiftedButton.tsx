@@ -54,7 +54,7 @@ export const LiftedButton = React.forwardRef<
           ></div>
           <div
             className={cn(
-              "relative bg-primary border border-foreground/20 rounded-lg py-2 px-4 transition transform duration-200 text-white",
+              "relative bg-primary flex items-center justify-center gap-2 border border-foreground/20 rounded-lg py-2 px-4 transition transform duration-200 text-white",
               !disabled &&
                 "hover:translate-y-[-2px] active:translate-y-[2px] active:translate-x-[2px]",
               disabled && "opacity-70 ",

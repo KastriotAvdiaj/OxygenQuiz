@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2 } from "lucide-react";
+import { AnswerOption } from "@/types/ApiTypes";
 
 export const QuizQuestions = () => {
   const { quizId } = useParams();
@@ -86,7 +87,7 @@ const QuestionCard = ({ quizQuestion, index }: QuestionCardProps) => {
           </AccordionTrigger>
           <AccordionContent>
             <div className="pl-6 space-y-2">
-              {quizQuestion.question.answerOptions.map((option) => (
+              {quizQuestion.question.answerOptions.map((option : AnswerOption) => (
                 <div
                   key={option.id}
                   className={`p-3 rounded-md border ${

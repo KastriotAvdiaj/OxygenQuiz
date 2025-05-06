@@ -2,6 +2,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 using QuizAPI.ManyToManyTables;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace QuizAPI.Models.Quiz
 {
@@ -18,9 +19,6 @@ namespace QuizAPI.Models.Quiz
         [MaxLength(1000)]
         public string? Description { get; set; }
 
-       /* [Required]
-        [MaxLength(255)]
-        public string Slug { get; set; } = string.Empty;*/
 
         [Required]
         public Guid UserId { get; set; } 
@@ -42,12 +40,19 @@ namespace QuizAPI.Models.Quiz
         [ForeignKey(nameof(LanguageId))]
         public QuestionLanguage Language { get; set; }
 
+        public int TimeLimitInSeconds { get; set; } = 0; //this is the total amount of seconds,accumulated out of all the questions.
+
+        public bool ShowFeedbackImmediately;
+
+        public int DifficultyId { get; set; }
+
+        [JsonIgnore]
+        [ForeignKey(nameof(DifficultyId))]
+        public QuestionDifficulty Difficulty { get; set; }
 
         [Required]
         public bool ShuffleQuestions { get; set; } = false;
 
-        [Required]
-        public bool ShuffleAnswers { get; set; } = false;
 
         [Required]
         public bool IsPublished { get; set; } = false; 
