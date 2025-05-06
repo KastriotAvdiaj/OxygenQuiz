@@ -40,7 +40,7 @@ export const Notification = ({
     <AnimatePresence>
       {visible && (
         <motion.div
-          className="flex w-full flex-col items-center space-y-4 sm:items-end"
+          className="z-50 flex w-full flex-col items-center space-y-4 sm:items-end"
           initial={{ opacity: 0, x: 150 }}
           animate={{ opacity: 1, x: 0 }}
           exit={{
@@ -54,7 +54,7 @@ export const Notification = ({
             }
           }}
         >
-          <div className="pointer-events-auto w-full max-w-sm overflow-hidden rounded-lg bg-white shadow-lg ring-1 ring-black/5">
+          <div className="pointer-events-auto w-full max-w-sm overflow-hidden rounded-lg bg-white shadow-lg ring-1 ring-black/5 z-50">
             <div className="p-4" role="alert" aria-label={title}>
               <div className="flex items-start">
                 <div className="shrink-0">{icons[type]}</div>
