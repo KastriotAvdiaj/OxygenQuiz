@@ -3,6 +3,7 @@ import { useDeleteQuestionDifficulty } from "../api/delete-question-difficulty";
 import { ConfirmationDialog } from "@/components/ui/dialog";
 import { Button } from "@/components/ui";
 import { Trash2 } from "lucide-react";
+import { LiftedButton } from "@/common/LiftedButton";
 
 type DeleteDifficultyProps = {
   id: number;
@@ -27,9 +28,9 @@ export const DeleteQuestionDifficulty = ({ id }: DeleteDifficultyProps) => {
       title="Delete Question Difficulty"
       body="This action cannot be undone."
       triggerButton={
-        <Button className="rounded-xl">
+        <LiftedButton variant="icon" className="rounded-xl bg-red-400">
           <Trash2 size={16} />
-        </Button>
+        </LiftedButton>
       }
       confirmButton={
         <Button

@@ -5,7 +5,6 @@ import {
   getPaginationRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { Button } from "./button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import {
@@ -16,6 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { LiftedButton } from "@/common/LiftedButton";
 
 interface DataTableProps<TData> {
   columns: ColumnDef<TData, any>[];
@@ -104,24 +104,26 @@ export function DataTable<TData>({ columns, data }: DataTableProps<TData>) {
           {table.getPageCount()}
         </div>
         <div className="flex items-center space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
+          <LiftedButton
+            className="text-xs"
+            // variant="outline"
+            // size="sm"
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
           >
             <ChevronLeft className="h-4 w-4 mr-2" />
             Previous
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
+          </LiftedButton>
+          <LiftedButton
+            className="text-xs"
+            // variant="outline"
+            // size="sm"
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
           >
             Next
             <ChevronRight className="h-4 w-4 ml-2" />
-          </Button>
+          </LiftedButton>
         </div>
       </div>
     </div>

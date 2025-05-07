@@ -1,10 +1,10 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { QuestionLanguage } from "@/types/ApiTypes";
-import { Button } from "@/components/ui";
 import { Edit } from "lucide-react";
 import formatDate from "@/lib/date-format";
 import { DeleteQuestionLanguage } from "./delete-question-language";
 import { Authorization } from "@/lib/authorization";
+import { LiftedButton } from "@/common/LiftedButton";
 
 export const langaugeColumns: ColumnDef<QuestionLanguage>[] = [
   {
@@ -30,9 +30,9 @@ export const langaugeColumns: ColumnDef<QuestionLanguage>[] = [
       return (
         <div className="flex items-center space-x-2">
           <Authorization allowedRoles={["SuperAdmin"]}>
-            <Button className="rounded-xl">
+            <LiftedButton variant="icon">
               <Edit size={16} />
-            </Button>
+            </LiftedButton>
             <DeleteQuestionLanguage id={language.id} />
           </Authorization>
         </div>

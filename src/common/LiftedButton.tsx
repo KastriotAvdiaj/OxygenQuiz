@@ -23,13 +23,13 @@ export const LiftedButton = React.forwardRef<
         >
           <div
             className={cn(
-              "absolute inset-x-[1px] h-full -bottom-[1px] -right-[1px] bg-foreground border border-foreground/20 rounded-xl",
+              "absolute inset-x-[1.4px] h-full -bottom-[1.4px] -right-[1.4px] bg-foreground border border-foreground/20 rounded-xl",
               disabled && "opacity-50"
             )}
           ></div>
           <div
             className={cn(
-              "relative bg-primary border border-foreground/20 rounded-xl py-2 px-4 transition transform duration-200 text-white",
+              "relative bg-primary border border-foreground/20 rounded-xl py-2 px-2 transition transform duration-200 text-white",
               !disabled &&
                 "hover:translate-y-[-1px] active:translate-y-[1px] active:translate-x-[1px]",
               disabled && "opacity-50 cursor-not-allowed",

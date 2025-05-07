@@ -1,10 +1,10 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { QuestionCategory } from "@/types/ApiTypes";
 import formatDate from "@/lib/date-format";
-import { Button } from "@/components/ui";
 import { Edit } from "lucide-react";
 import { DeleteQuestionCategory } from "./delete-question-category";
 import { Authorization } from "@/lib/authorization";
+import { LiftedButton } from "@/common/LiftedButton";
 
 export const categoryColumns: ColumnDef<QuestionCategory>[] = [
   {
@@ -30,9 +30,9 @@ export const categoryColumns: ColumnDef<QuestionCategory>[] = [
       return (
         <div className="flex items-center space-x-2">
           <Authorization allowedRoles={["SuperAdmin"]}>
-            <Button className="rounded-xl">
+            <LiftedButton variant="icon">
               <Edit size={16} />
-            </Button>
+            </LiftedButton>
             <DeleteQuestionCategory id={category.id} />
           </Authorization>
         </div>

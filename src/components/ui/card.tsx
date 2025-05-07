@@ -17,7 +17,7 @@ const Card = React.forwardRef<
           theme === "dark"
             ? `bg-muted ${hasCustomBorder ? "" : "border-none"}`
             : `bg-card border`
-        } rounded-xl text-card-foreground shadow`,
+        } rounded-xl text-card-foreground shadow dark:shadow-card`,
         className
       )}
       {...props}

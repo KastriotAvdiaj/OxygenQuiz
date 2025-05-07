@@ -5,6 +5,7 @@ import { Edit } from "lucide-react";
 import { DeleteQuestionDifficulty } from "./delete-question-difficulty";
 import formatDate from "@/lib/date-format";
 import { Authorization } from "@/lib/authorization";
+import { LiftedButton } from "@/common/LiftedButton";
 
 export const difficultyColumns: ColumnDef<QuestionDifficulty>[] = [
   {
@@ -34,9 +35,9 @@ export const difficultyColumns: ColumnDef<QuestionDifficulty>[] = [
       return (
         <div className="flex items-center space-x-2">
           <Authorization allowedRoles={["SuperAdmin"]}>
-            <Button className="rounded-xl">
+            <LiftedButton variant="icon">
               <Edit size={16} />
-            </Button>
+            </LiftedButton>
             <DeleteQuestionDifficulty id={difficulty.id} />
           </Authorization>
         </div>

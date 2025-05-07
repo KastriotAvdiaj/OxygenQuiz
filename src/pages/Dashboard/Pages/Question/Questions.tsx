@@ -151,9 +151,9 @@ export const Questions = () => {
           totalPages={questionsQuery.data?.totalPages || 1}
         /> */}
         </Card>
-        {/* <CategoryView />
+        <CategoryView />
       <DifficultyView />
-      <LangaugesView /> */}
+      <LangaugesView />
       </div>
     </>
   );
