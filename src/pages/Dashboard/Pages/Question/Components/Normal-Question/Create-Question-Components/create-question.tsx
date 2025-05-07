@@ -1,5 +1,5 @@
 import { Trash2 } from "lucide-react";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Form, FormDrawer, Input, Label } from "@/components/ui/form";
 import { useNotifications } from "@/common/Notifications";
@@ -93,6 +93,13 @@ export const CreateMultipleChoiceForm: React.FC<
           const addOptionDisabled = fields.length >= 4;
           const allowMultipleSelections = watch("allowMultipleSelections");
 
+          // Add this effect to update the form state when imageUrl changes
+          useEffect(() => {
+            if (imageUrl) {
+              setValue("imageUrl", imageUrl);
+            }
+          }, [imageUrl, setValue]);
+
           React.useEffect(() => {
             if (fields.length === 0) {
               append({ text: "", isCorrect: false });
@@ -118,13 +125,6 @@ export const CreateMultipleChoiceForm: React.FC<
                     );
                   setValue(`answerOptions.${i}.isCorrect`, shouldBeCorrect);
                 });
-
-                addNotification({
-                  type: "info",
-                  title: "Single Selection Mode",
-                  message:
-                    "Only one answer can be correct in single selection mode.",
-                });
               }
             }
           }, [allowMultipleSelections, fields, setValue, watch]);
@@ -146,6 +146,12 @@ export const CreateMultipleChoiceForm: React.FC<
             }
           };
 
+          // Create a handler for image upload that updates both state and form
+          const handleImageUpload = (url: string) => {
+            setImageUrl(url);
+            setValue("imageUrl", url);
+          };
+
           return (
             <>
               <Input
@@ -163,13 +169,11 @@ export const CreateMultipleChoiceForm: React.FC<
                   {formState.errors.root.message}
                 </p>
               )}
-              <ImageUpload onUpload={setImageUrl} />
-              <Input
-                type="hidden"
-                name="imageUrl"
-                registration={register("imageUrl")}
-                value={imageUrl}
-              />
+
+              {/* Modified image upload implementation */}
+              <ImageUpload onUpload={handleImageUpload} />
+              <input type="hidden" {...register("imageUrl")} />
+
               <Separator className="bg-gray-500" />
 
               <div className="grid grid-cols-2 gap-4 my-4">
