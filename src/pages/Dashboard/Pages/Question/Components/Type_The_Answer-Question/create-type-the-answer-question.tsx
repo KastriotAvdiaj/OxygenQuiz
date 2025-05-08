@@ -23,9 +23,9 @@ import {
   Tooltip,
   TooltipProvider,
   TooltipTrigger,
+  TooltipContent,
 } from "@/components/ui";
 import { LiftedButton } from "@/common/LiftedButton";
-import { TooltipContent } from "@radix-ui/react-tooltip";
 
 interface CreateTypeAnswerQuestionFormProps {
   categories: QuestionCategory[];

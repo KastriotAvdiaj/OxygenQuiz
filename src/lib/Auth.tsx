@@ -1,7 +1,7 @@
 import { configureAuth } from "react-query-auth";
 import { Link, Navigate, useLocation } from "react-router-dom";
 import { z } from "zod";
-import { api } from "./Api-client";
+import { api, apiService } from "./Api-client";
 import { AuthResponse, User } from "@/types/ApiTypes";
 import Cookies from "js-cookie";
 import { AUTH_COOKIE } from "./authHelpers";
@@ -38,7 +38,7 @@ export const loginInputSchema = z.object({
 
 export type LoginInput = z.infer<typeof loginInputSchema>;
 const loginWithEmailAndPassword = (data: LoginInput): Promise<AuthResponse> => {
-  return api.post("Authentication/login", data);
+  return apiService.post("Authentication/login", data);
 };
 
 export const registerInputSchema = z
