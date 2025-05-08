@@ -39,6 +39,7 @@ export const Users = () => {
   }
 
   const users = usersQuery.data;
+  console.log(users);
 
   if (!users) return null;
 

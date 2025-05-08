@@ -40,7 +40,7 @@ export const MultipleChoiceQuestionCard = ({ question }: MultipleChoiceQuestionC
       </CardContent>
       <CardFooter className="flex justify-between items-center text-xs text-muted-foreground">
         <div className="flex gap-2">
-          <Badge variant="outline">Category: {question.category.category}</Badge>
+          <Badge variant="outline">Category: {question.category.name}</Badge>
           <Badge variant="secondary">Difficulty: {question.difficulty.level}</Badge>
           <Badge variant="outline">Language: {question.language.language}</Badge> {/* Assuming language has a name property */}
         </div>

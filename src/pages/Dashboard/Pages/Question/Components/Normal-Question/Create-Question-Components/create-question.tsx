@@ -26,11 +26,12 @@ interface CreateMultipleChoiceFormProps {
   categories: QuestionCategory[];
   difficulties: QuestionDifficulty[];
   languages: QuestionLanguage[];
+  onSuccess: () => void;
 }
 
 export const CreateMultipleChoiceForm: React.FC<
   CreateMultipleChoiceFormProps
-> = ({ categories, difficulties, languages }) => {
+> = ({ categories, difficulties, languages, onSuccess }) => {
   const { addNotification } = useNotifications();
   const [imageUrl, setImageUrl] = useState("");
 
@@ -41,6 +42,7 @@ export const CreateMultipleChoiceForm: React.FC<
           type: "success",
           title: "Multiple Choice Question Created",
         });
+        onSuccess();
       },
     },
   });

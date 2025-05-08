@@ -6,11 +6,11 @@ import { AuthResponse, User } from "@/types/ApiTypes";
 import Cookies from "js-cookie";
 import { AUTH_COOKIE } from "./authHelpers";
 import { AlertCircle } from "lucide-react";
-import { Button } from "@/components/ui";
+import { LiftedButton } from "@/common/LiftedButton";
 
 const getUser = async (): Promise<User | null> => {
   try {
-    const user: User = await api.get("Authentication/me"); // No need for `response.data` here
+    const user: User = (await api.get("Authentication/me")).data; // No need for `response.data` here
     if (!user) {
       return null;
     }
@@ -137,9 +137,9 @@ export const AdminRoute = ({ children }: { children: React.ReactNode }) => {
             </p>
           </div>
           <div className="mt-4">
-            <Button className="rounded">
+            <LiftedButton className="rounded">
               <Link to="/">Go back to Home Page</Link>
-            </Button>
+            </LiftedButton>
           </div>
         </div>
       </div>

@@ -4,7 +4,7 @@ import { api } from "@/lib/Api-client";
 import { MutationConfig } from "@/lib/React-query";
 import { TypeTheAnswerQuestion } from "@/types/ApiTypes";
 import { getTypeTheAnswerQuestionsQueryOptions } from "./get-type-the-answer-questions";
-import { UnspecifiedIds } from "../../constants";
+import { UnspecifiedIds } from "../../Re-Usable-Components/constants";
 
 export const createTypeTheAnswerQuestionInputSchema = z.object({
   text:             z.string().min(1, "Question is required"),

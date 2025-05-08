@@ -6,21 +6,25 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { CategoryDTO, DifficultyDTO, LanguageDTO } from "@/types/ApiTypes";
+import {
+  QuestionCategory,
+  QuestionDifficulty,
+  QuestionLanguage,
+} from "@/types/ApiTypes";
 
 interface QuestionFiltersProps {
   searchTerm: string;
   onSearchTermChange: (term: string) => void;
 
-  categories: CategoryDTO[];
+  categories: QuestionCategory[];
   selectedCategoryId?: number | string; // Allow string for "all"
   onCategoryChange: (categoryId?: number | string) => void;
 
-  difficulties: DifficultyDTO[];
+  difficulties: QuestionDifficulty[];
   selectedDifficultyId?: number | string;
   onDifficultyChange: (difficultyId?: number | string) => void;
 
-  languages: LanguageDTO[];
+  languages: QuestionLanguage[];
   selectedLanguageId?: number | string;
   onLanguageChange: (languageId?: number | string) => void;
 
@@ -63,7 +67,7 @@ export const QuestionFilters = ({
           <SelectItem value="">All Categories</SelectItem>
           {categories.map((category) => (
             <SelectItem key={category.id} value={category.id.toString()}>
-              {category.category}
+              {category.name}
             </SelectItem>
           ))}
         </SelectContent>

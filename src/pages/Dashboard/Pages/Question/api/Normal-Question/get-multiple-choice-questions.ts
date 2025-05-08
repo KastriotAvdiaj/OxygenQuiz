@@ -26,6 +26,7 @@ export const getMultipleChoiceQuestions = async (
   const queryString = new URLSearchParams(cleanParams).toString();
   const result: AxiosResponse = await api.get(`/questions/multiplechoice?${queryString}`);
   const pagination = extractPaginationFromHeaders(result);
+
   return {
     data: result.data,
     pagination: pagination || undefined
@@ -34,6 +35,8 @@ export const getMultipleChoiceQuestions = async (
 
 function extractPaginationFromHeaders(response: AxiosResponse): Pagination | null {
   const paginationHeader = response.headers['pagination']; 
+  console.log("Pagination data:", paginationHeader); // Debugging line
+
   if (paginationHeader && typeof paginationHeader === 'string') {
     try {
       const parsedData = JSON.parse(paginationHeader);

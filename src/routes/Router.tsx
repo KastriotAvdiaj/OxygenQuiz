@@ -90,21 +90,21 @@ const createAppRouter = (queryClient: QueryClient) =>
             return { Component: Questions };
           },
         },
-        {
-          path: "questions/:questionId",
-          lazy: async () => {
-            const { QuestionRoute } = await import(
-              "../pages/Dashboard/Pages/Question/Question"
-            );
-            return { Component: QuestionRoute };
-          },
-          loader: async (args: LoaderFunctionArgs) => {
-            const { questionLoader } = await import(
-              "../pages/Dashboard/Pages/Question/Question"
-            );
-            return questionLoader(queryClient)(args);
-          },
-        },
+        // {
+        //   path: "questions/:questionId",
+        //   lazy: async () => {
+        //     const { QuestionRoute } = await import(
+        //       "../pages/Dashboard/Pages/Question/Question"
+        //     );
+        //     return { Component: QuestionRoute };
+        //   },
+        //   loader: async (args: LoaderFunctionArgs) => {
+        //     const { questionLoader } = await import(
+        //       "../pages/Dashboard/Pages/Question/Question"
+        //     );
+        //     return questionLoader(queryClient)(args);
+        //   },
+        // },
         {
           path: "quizzes",
           lazy: async () => {

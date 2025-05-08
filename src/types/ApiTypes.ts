@@ -70,9 +70,9 @@ export type BaseEntity<TId = number> = {
     id: number;
     text: string;
     visibility: string;
-    difficulty: DifficultyDTO;
-    category: CategoryDTO;
-    language: LanguageDTO;
+    difficulty: QuestionDifficulty;
+    category: QuestionCategory;
+    language: QuestionLanguage;
     createdAt: string;     
     userId: string;
     // statistics?: QuestionStatisticsDTO;

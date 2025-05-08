@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/Api-client";
 import { MutationConfig } from "@/lib/React-query";
-import { getQuestionsQueryOptions } from "./get-multiple-choice-questions";
+import { getMu } from "./get-multiple-choice-questions";
 
 type DeleteQuestionDTO = {
     questionId: number;

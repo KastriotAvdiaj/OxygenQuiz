@@ -5,7 +5,7 @@ import { QueryConfig } from "@/lib/React-query";
 import { User } from "@/types/ApiTypes";
 
 export const getUsers = (): Promise<User[]> => {
-  return api.get(`/users`);
+  return api.get(`/users`).then(response => response.data);
 };
 
 export const getUsersQueryOptions = () => {
