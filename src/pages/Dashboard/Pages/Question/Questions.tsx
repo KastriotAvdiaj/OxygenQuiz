@@ -10,7 +10,7 @@ import { useDebounce } from "@/hooks/use-debounce";
 import { CategorySelect } from "./Entities/Categories/Components/select-question-category";
 
 import { useQuestionDifficultyData } from "./Entities/Difficulty/api/get-question-difficulties";
-import { LangaugesView } from "./Entities/Language/components/language-view";
+import { LanguagesView } from "./Entities/Language/components/language-view";
 import { DifficultyView } from "./Entities/Difficulty/Components/difficulty-view";
 import { CategoryView } from "./Entities/Categories/Components/category-view";
 import { useQuestionLanguageData } from "./Entities/Language/api/get-question-language";
@@ -152,8 +152,8 @@ export const Questions = () => {
         /> */}
         </Card>
         <CategoryView />
-      <DifficultyView />
-      <LangaugesView />
+        <DifficultyView />
+        <LanguagesView />
       </div>
     </>
   );

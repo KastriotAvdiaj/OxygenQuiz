@@ -2,7 +2,7 @@ import { useNotifications } from "@/common/Notifications";
 import { useCreateQuestionCategory } from "../api/create-question-categories";
 import { FormDrawer } from "@/components/ui/form";
 import { Button } from "@/components/ui";
-import { Plus, Smile } from "lucide-react";
+import { Smile } from "lucide-react";
 import { Input, Label } from "@/components/ui/form";
 import {
   Dialog,
@@ -14,6 +14,7 @@ import { Form } from "@/components/ui/form";
 import { createQuestionCategoryInputSchema } from "../api/create-question-categories";
 import EmojiPicker, { type EmojiClickData } from "emoji-picker-react";
 import { useDisclosure } from "@/hooks/use-disclosure";
+import { LiftedButton } from "@/common/LiftedButton";
 
 export const CreateQuestionCategoryForm = () => {
   const { addNotification } = useNotifications();
@@ -41,13 +42,7 @@ export const CreateQuestionCategoryForm = () => {
       <FormDrawer
         isDone={createQuestionCategoryMutation.isSuccess}
         triggerButton={
-          <Button
-            variant="default"
-            size="sm"
-            icon={<Plus className="size-4" />}
-          >
-            Create New Category
-          </Button>
+          <LiftedButton className="text-xs">+ New Category</LiftedButton>
         }
         title="Create New Question Category"
         submitButton={

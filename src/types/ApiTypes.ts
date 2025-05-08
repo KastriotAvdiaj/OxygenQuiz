@@ -72,7 +72,7 @@ export type BaseEntity<TId = number> = {
     visibility: string;
     difficulty: DifficultyDTO;
     category: CategoryDTO;
-    languageId: LangaugeDTO;
+    language: LanguageDTO;
     createdAt: string;     
     userId: string;
     // statistics?: QuestionStatisticsDTO;
@@ -112,18 +112,18 @@ export type BaseEntity<TId = number> = {
     answerOptions: AnswerOption[];
   }
 
-  type CategoryDTO = {
+  export type CategoryDTO = {
     id: number;
     category: string;
     emoji: string;
   }
 
-  type DifficultyDTO = {
+  export type DifficultyDTO = {
     id: number;
     level: string;
     weight :number;
   }
-  type LangaugeDTO = {
+  export type LanguageDTO = {
     id: number;
     language: string;
   }
@@ -150,15 +150,22 @@ export type BaseEntity<TId = number> = {
     createdAt: string;
   };
 
-  type PaginatedResponse<T> = {
-    page: number;
-    pageSize: number;
+  export interface Pagination {
+    currentPage: number;
+    itemsPerPage: number;
     totalItems: number;
     totalPages: number;
-    items: T[];
-  };
+    hasNextPage?: boolean;
+    hasPreviousPage?: boolean;
+  }
+  
+  export interface PaginatedResponse<T> {
+    data: T[];
+    pagination?: Pagination;
+  }
 
   export type PaginatedQuestionResponse = PaginatedResponse<QuestionBase>;
+  export type PaginatedMultipleChoiceQuestionResponse = PaginatedResponse<MultipleChoiceQuestion>;
   export type PaginatedTrueFalseQuestionResponse = PaginatedResponse<TrueFalseQuestion>;
   export type PaginatedTypeTheAnswerQuestionResponse = PaginatedResponse<TypeTheAnswerQuestion>;
 

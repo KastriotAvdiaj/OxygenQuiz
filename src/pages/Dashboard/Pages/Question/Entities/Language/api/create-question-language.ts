@@ -12,22 +12,22 @@ export const createQuestionLanguageInputSchema = z.object({
 
 export type CreateQuestionLanguageInput = z.infer<typeof createQuestionLanguageInputSchema>
 
-export const createQuestionLangauge = ({data} : {data:CreateQuestionLanguageInput}): Promise<QuestionLanguage> => {
+export const createQuestionLanguage = ({data} : {data:CreateQuestionLanguageInput}): Promise<QuestionLanguage> => {
     return api.post('/questionlanguages', data);
 }
 
-type UseCreateQuestionLangaugeOptions = {
-    mutationConfig?: MutationConfig<typeof createQuestionLangauge>;
+type UseCreateQuestionLanguageOptions = {
+    mutationConfig?: MutationConfig<typeof createQuestionLanguage>;
 }
 
-export const useCreateQuestionLanguage = ({ mutationConfig }: UseCreateQuestionLangaugeOptions = {}) => {
+export const useCreateQuestionLanguage = ({ mutationConfig }: UseCreateQuestionLanguageOptions = {}) => {
     const queryClient = useQueryClient();
 
     const { onSuccess, onError, ...restConfig } = mutationConfig || {};
 
     return useMutation(
         {
-            mutationFn: createQuestionLangauge,
+            mutationFn: createQuestionLanguage,
             onSuccess: (...args) => {
                 queryClient.invalidateQueries({ queryKey: getQuestionLanguageQueryOptions().queryKey });
                 onSuccess?.(...args);

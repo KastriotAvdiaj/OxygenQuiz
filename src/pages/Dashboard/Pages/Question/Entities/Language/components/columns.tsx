@@ -13,7 +13,7 @@ export const langaugeColumns: ColumnDef<QuestionLanguage>[] = [
   },
   {
     accessorKey: "language",
-    header: "Langauge",
+    header: "Language",
   },
   {
     accessorKey: "createdAt",

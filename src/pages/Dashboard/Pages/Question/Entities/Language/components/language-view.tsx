@@ -3,7 +3,7 @@ import { langaugeColumns } from "./columns";
 import { useQuestionLanguageData } from "../api/get-question-language";
 import CreateQuestionLanguageForm from "./create-question-language";
 
-export const LangaugesView = () => {
+export const LanguagesView = () => {
   const questionLanguagesQuery = useQuestionLanguageData({});
 
   if (questionLanguagesQuery.isLoading) return <Spinner size="lg" />;

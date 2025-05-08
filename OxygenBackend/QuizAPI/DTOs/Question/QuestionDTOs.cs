@@ -119,7 +119,7 @@ namespace QuizAPI.DTOs.Question
     public class LanguageDTO {
     
     public int Id { get; set; }
-    public string Langauge { get; set; } = string.Empty;
+    public string Language { get; set; } = string.Empty;
     }
 
 

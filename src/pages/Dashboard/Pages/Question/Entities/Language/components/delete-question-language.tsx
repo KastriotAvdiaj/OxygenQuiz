@@ -5,10 +5,10 @@ import { Trash2 } from "lucide-react";
 import { useDeleteQuestionLanguage } from "../api/delete-question-language";
 import { LiftedButton } from "@/common/LiftedButton";
 
-type DeleteLangaugeProps = {
+type DeleteLanguageProps = {
   id: number;
 };
-export const DeleteQuestionLanguage = ({ id }: DeleteLangaugeProps) => {
+export const DeleteQuestionLanguage = ({ id }: DeleteLanguageProps) => {
   const { addNotification } = useNotifications();
   const deleteQuestionLanguageMutation = useDeleteQuestionLanguage({
     mutationConfig: {

@@ -1,6 +1,5 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { QuestionDifficulty } from "@/types/ApiTypes";
-import { Button } from "@/components/ui";
 import { Edit } from "lucide-react";
 import { DeleteQuestionDifficulty } from "./delete-question-difficulty";
 import formatDate from "@/lib/date-format";

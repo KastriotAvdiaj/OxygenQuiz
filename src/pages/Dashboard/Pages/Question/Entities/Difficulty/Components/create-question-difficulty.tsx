@@ -2,10 +2,10 @@ import { useNotifications } from "@/common/Notifications";
 import { useCreateQuestionDifficulty } from "../api/create-question-difficulty";
 import { FormDrawer } from "@/components/ui/form";
 import { Button } from "@/components/ui";
-import { Plus } from "lucide-react";
 import { Input, Label } from "@/components/ui/form";
 import { Form } from "@/components/ui/form";
 import { createQuestionDifficultyInputSchema } from "../api/create-question-difficulty";
+import { LiftedButton } from "@/common/LiftedButton";
 
 export const CreateQuestionDifficultyForm = () => {
   const { addNotification } = useNotifications();
@@ -24,13 +24,7 @@ export const CreateQuestionDifficultyForm = () => {
     <FormDrawer
       isDone={createQuestionDifficultyMutation.isSuccess}
       triggerButton={
-        <Button
-          variant="default"
-          size="sm"
-          icon={<Plus className="size-4" />}
-        >
-          Create New Difficulty
-        </Button>
+        <LiftedButton className="text-xs">+ New Difficulty</LiftedButton>
       }
       title="Create New Question Difficulty"
       submitButton={

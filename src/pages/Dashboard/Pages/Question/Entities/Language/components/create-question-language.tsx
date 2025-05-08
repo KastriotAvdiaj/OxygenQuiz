@@ -1,11 +1,11 @@
 import { useNotifications } from "@/common/Notifications";
 import { FormDrawer } from "@/components/ui/form";
 import { Button } from "@/components/ui";
-import { Plus } from "lucide-react";
 import { Input, Label } from "@/components/ui/form";
 import { Form } from "@/components/ui/form";
 import { createQuestionLanguageInputSchema } from "../api/create-question-language";
 import { useCreateQuestionLanguage } from "../api/create-question-language";
+import { LiftedButton } from "@/common/LiftedButton";
 
 export const CreateQuestionLanguageForm = () => {
   const { addNotification } = useNotifications();
@@ -24,13 +24,7 @@ export const CreateQuestionLanguageForm = () => {
     <FormDrawer
       isDone={createQuestionLanguageMutation.isSuccess}
       triggerButton={
-        <Button
-          variant="default"
-          size="sm"
-          icon={<Plus className="size-4" />}
-        >
-          Create New Language
-        </Button>
+        <LiftedButton className="text-xs">+ New Language</LiftedButton>
       }
       title="Create New Question Language"
       submitButton={

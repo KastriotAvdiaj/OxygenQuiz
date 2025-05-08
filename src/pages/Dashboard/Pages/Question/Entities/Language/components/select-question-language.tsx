@@ -9,7 +9,7 @@ import {
 import { QuestionLanguage } from "@/types/ApiTypes";
 import { Label } from "@/components/ui/form";
 
-interface LangaugeSelectProps {
+interface LanguageSelectProps {
   label?: string;
   languages: QuestionLanguage[];
   value: string;
@@ -19,7 +19,7 @@ interface LangaugeSelectProps {
   clearErrors?: () => void;
 }
 
-export const LanguageSelect: React.FC<LangaugeSelectProps> = ({
+export const LanguageSelect: React.FC<LanguageSelectProps> = ({
   label,
   languages,
   value,

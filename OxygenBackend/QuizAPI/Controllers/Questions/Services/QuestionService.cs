@@ -442,7 +442,7 @@ namespace QuizAPI.Controllers.Questions.Services
             return _mapper.Map<List<QuestionBaseDTO>>(questions);
         }
 
-        private IQueryable<T> ApplyFilters<T>(IQueryable<T> query, QuestionFilterParams filterParams) where T : QuestionBase
+        private static IQueryable<T> ApplyFilters<T>(IQueryable<T> query, QuestionFilterParams filterParams) where T : QuestionBase
         {
             if (!string.IsNullOrEmpty(filterParams.SearchTerm))
             {

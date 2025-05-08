@@ -9,16 +9,16 @@ export const getQuestionLanguages = (): Promise<QuestionLanguage[]> => {
 
 export const getQuestionLanguageQueryOptions = () => {
   return queryOptions({
-    queryKey: ["getQuestionLangauges"],
+    queryKey: ["getQuestionLanguages"],
     queryFn: () => getQuestionLanguages(),
   });
 };
 
-type UseQuestionLangaugeOptions = {
+type UseQuestionLanguageOptions = {
   queryConfig?: QueryConfig<typeof getQuestionLanguageQueryOptions>;
 };
 
-export const useQuestionLanguageData = ({ queryConfig }: UseQuestionLangaugeOptions) => {
+export const useQuestionLanguageData = ({ queryConfig }: UseQuestionLanguageOptions) => {
   return useQuery({
     ...getQuestionLanguageQueryOptions(),
     ...queryConfig,

@@ -19,14 +19,16 @@ namespace QuizAPI.Controllers.Questions
     public static class HttpExtensions
     {
         public static void AddPaginationHeader(this HttpResponse response, int currentPage,
-            int itemsPerPage, int totalItems, int totalPages)
+            int itemsPerPage, int totalItems, int totalPages, bool hasNextPage, bool hasPreviousPage)
         {
             var paginationHeader = new
             {
                 currentPage,
                 itemsPerPage,
                 totalItems,
-                totalPages
+                totalPages,
+                hasNextPage,
+                hasPreviousPage
             };
 
             var options = new JsonSerializerOptions
@@ -34,9 +36,9 @@ namespace QuizAPI.Controllers.Questions
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase
             };
 
-            response.Headers.Add("Pagination", JsonSerializer.Serialize(paginationHeader, options));
+            response.Headers.Append("Pagination", JsonSerializer.Serialize(paginationHeader, options));
             // To allow the client to access the header
-            response.Headers.Add("Access-Control-Expose-Headers", "Pagination");
+            /*response.Headers.Add("Access-Control-Expose-Headers", "Pagination");*/ // REMOVED THIS BECAUSE IT IS REDUNDANT AND WE'RE ALREADY USING CORS
         }
     }
 
@@ -58,10 +60,13 @@ namespace QuizAPI.Controllers.Questions
             var pagedQuestions = await _questionService.GetPaginatedQuestionsAsync(filterParams);
 
             Response.AddPaginationHeader(
-                pagedQuestions.PageNumber,
-                pagedQuestions.PageSize,
-                pagedQuestions.TotalCount,
-                pagedQuestions.TotalPages);
+                 pagedQuestions.PageNumber,
+                 pagedQuestions.PageSize,
+                 pagedQuestions.TotalCount,
+                 pagedQuestions.TotalPages,
+                 pagedQuestions.HasPreviousPage,
+                 pagedQuestions.HasNextPage
+                 );
 
             return Ok(pagedQuestions.Items);
         }
@@ -90,7 +95,10 @@ namespace QuizAPI.Controllers.Questions
                 pagedQuestions.PageNumber,
                 pagedQuestions.PageSize,
                 pagedQuestions.TotalCount,
-                pagedQuestions.TotalPages);
+                pagedQuestions.TotalPages,
+                pagedQuestions.HasPreviousPage,
+                pagedQuestions.HasNextPage
+                );
 
             return Ok(pagedQuestions.Items);
         }
@@ -105,7 +113,10 @@ namespace QuizAPI.Controllers.Questions
                 pagedQuestions.PageNumber,
                 pagedQuestions.PageSize,
                 pagedQuestions.TotalCount,
-                pagedQuestions.TotalPages);
+                pagedQuestions.TotalPages,
+                pagedQuestions.HasPreviousPage,
+                pagedQuestions.HasNextPage
+                );
 
             return Ok(pagedQuestions.Items);
         }
@@ -117,10 +128,13 @@ namespace QuizAPI.Controllers.Questions
             var pagedQuestions = await _questionService.GetPaginatedTypeTheAnswerQuestionsAsync(filterParams);
 
             Response.AddPaginationHeader(
-                pagedQuestions.PageNumber,
-                pagedQuestions.PageSize,
-                pagedQuestions.TotalCount,
-                pagedQuestions.TotalPages);
+                 pagedQuestions.PageNumber,
+                 pagedQuestions.PageSize,
+                 pagedQuestions.TotalCount,
+                 pagedQuestions.TotalPages,
+                 pagedQuestions.HasPreviousPage,
+                 pagedQuestions.HasNextPage
+                 );
 
             return Ok(pagedQuestions.Items);
         }
@@ -280,10 +294,13 @@ namespace QuizAPI.Controllers.Questions
             var pagedQuestions = await _questionService.GetPaginatedQuestionsAsync(filterParams);
 
             Response.AddPaginationHeader(
-                pagedQuestions.PageNumber,
-                pagedQuestions.PageSize,
-                pagedQuestions.TotalCount,
-                pagedQuestions.TotalPages);
+                 pagedQuestions.PageNumber,
+                 pagedQuestions.PageSize,
+                 pagedQuestions.TotalCount,
+                 pagedQuestions.TotalPages,
+                 pagedQuestions.HasPreviousPage,
+                 pagedQuestions.HasNextPage
+                 );
 
             return Ok(pagedQuestions.Items);
         }
