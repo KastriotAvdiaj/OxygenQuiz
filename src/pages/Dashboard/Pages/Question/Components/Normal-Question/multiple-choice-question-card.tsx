@@ -16,7 +16,7 @@ import {
 import { MultipleChoiceQuestion, AnswerOption } from "@/types/ApiTypes"
 import { CheckCircle, XCircle, ChevronDown, ImageIcon } from 'lucide-react'
 import { cn } from "@/utils/cn"
-import Image from "next/image"
+// Removed Next.js Image import
 
 interface MultipleChoiceQuestionCardProps {
   question: MultipleChoiceQuestion
@@ -80,14 +80,11 @@ export const MultipleChoiceQuestionCard = ({
             <AccordionContent>
               <div className="space-y-3">
                 {question.imageUrl && (
-                  <div className="relative w-full h-48 mb-3 rounded-md overflow-hidden border">
-                    <Image 
+                  <div className="w-full mb-3 rounded-md overflow-hidden border">
+                    <img 
                       src={question.imageUrl} 
                       alt="Question image"
-                      fill
-                      className="object-contain" 
-                      sizes="(max-width: 768px) 100vw, 50vw"
-                      unoptimized={!question.imageUrl.startsWith("/")} // Skip optimization for external URLs
+                      className="w-full h-auto max-h-48 object-contain mx-auto"
                     />
                   </div>
                 )}
