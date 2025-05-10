@@ -12,14 +12,17 @@ export const CategoryView = () => {
   if (questionCategoriesQuery.isError) return <p>Failed to load categories.</p>;
 
   return (
-    <Card className="flex flex-col justify-center align-items-end gap-2  p-8 bg-background border border-border">
-      <div>
-        <CreateQuestionCategoryForm />
-      </div>
-      <DataTable
-        data={questionCategoriesQuery.data || []}
-        columns={categoryColumns}
-      />
-    </Card>
+    <>
+       <h1 className="text-xl font-bold mt-4">Categories Management</h1>
+      <Card className="flex flex-col justify-center align-items-end gap-2  p-8 bg-background border border-border">
+        <div>
+          <CreateQuestionCategoryForm />
+        </div>
+        <DataTable
+          data={questionCategoriesQuery.data || []}
+          columns={categoryColumns}
+        />
+      </Card>
+    </>
   );
 };

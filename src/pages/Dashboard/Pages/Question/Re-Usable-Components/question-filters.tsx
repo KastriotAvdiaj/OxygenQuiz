@@ -17,7 +17,7 @@ interface QuestionFiltersProps {
   onSearchTermChange: (term: string) => void;
 
   categories: QuestionCategory[];
-  selectedCategoryId?: number | string; // Allow string for "all"
+  selectedCategoryId?: number | string;
   onCategoryChange: (categoryId?: number | string) => void;
 
   difficulties: QuestionDifficulty[];
@@ -28,8 +28,8 @@ interface QuestionFiltersProps {
   selectedLanguageId?: number | string;
   onLanguageChange: (languageId?: number | string) => void;
 
-  visibility?: string;
-  onVisibilityChange: (visibility?: string) => void;
+  // visibility?: string;
+  // onVisibilityChange: (visibility?: string) => void;
 }
 
 export const QuestionFilters = ({
@@ -46,7 +46,7 @@ export const QuestionFilters = ({
   onLanguageChange,
 }: QuestionFiltersProps) => {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 p-4 border rounded-md bg-card">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 p-4 border dark:border-foreground/30 rounded-md bg-card">
       <Input
         placeholder="Search questions..."
         value={searchTerm}
@@ -55,16 +55,16 @@ export const QuestionFilters = ({
       />
 
       <Select
-        value={selectedCategoryId?.toString() || ""}
+        value={selectedCategoryId?.toString() || "all"}
         onValueChange={(value) =>
           onCategoryChange(value ? parseInt(value) : undefined)
         }
       >
-        <SelectTrigger>
+        <SelectTrigger variant="quiz">
           <SelectValue placeholder="All Categories" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="">All Categories</SelectItem>
+          <SelectItem value="all">All Categories</SelectItem>
           {categories.map((category) => (
             <SelectItem key={category.id} value={category.id.toString()}>
               {category.name}
@@ -74,16 +74,16 @@ export const QuestionFilters = ({
       </Select>
 
       <Select
-        value={selectedDifficultyId?.toString() || ""}
+        value={selectedDifficultyId?.toString() || "all"}
         onValueChange={(value) =>
           onDifficultyChange(value ? parseInt(value) : undefined)
         }
       >
-        <SelectTrigger>
+        <SelectTrigger variant="quiz">
           <SelectValue placeholder="All Difficulties" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="">All Difficulties</SelectItem>
+          <SelectItem value="all">All Difficulties</SelectItem>
           {difficulties.map((difficulty) => (
             <SelectItem key={difficulty.id} value={difficulty.id.toString()}>
               {difficulty.level}
@@ -98,11 +98,11 @@ export const QuestionFilters = ({
           onLanguageChange(value ? parseInt(value) : undefined)
         }
       >
-        <SelectTrigger>
+        <SelectTrigger variant="quiz">
           <SelectValue placeholder="All Languages" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="">All Languages</SelectItem>
+          <SelectItem value="all">All Languages</SelectItem>
           {languages.map((language) => (
             <SelectItem key={language.id} value={language.id.toString()}>
               {language.language}

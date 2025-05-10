@@ -73,6 +73,7 @@ export type BaseEntity<TId = number> = {
     difficulty: QuestionDifficulty;
     category: QuestionCategory;
     language: QuestionLanguage;
+    imageUrl: string;
     createdAt: string;     
     userId: string;
     // statistics?: QuestionStatisticsDTO;
