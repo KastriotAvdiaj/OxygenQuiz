@@ -16,7 +16,6 @@ import {
 import { MultipleChoiceQuestion, AnswerOption } from "@/types/ApiTypes"
 import { CheckCircle, XCircle, ChevronDown, ImageIcon } from 'lucide-react'
 import { cn } from "@/utils/cn"
-// Removed Next.js Image import
 
 interface MultipleChoiceQuestionCardProps {
   question: MultipleChoiceQuestion
@@ -26,7 +25,7 @@ export const MultipleChoiceQuestionCard = ({
   question,
 }: MultipleChoiceQuestionCardProps) => {
   return (
-    <Card className="mb-4 border shadow-sm dark:border-foreground/20 overflow-hidden">
+    <Card className="mb-4 border shadow-sm dark:border-foreground/20 dark:bg-primary/10 overflow-hidden">
       <CardHeader className="pb-2 pt-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <CardTitle className="text-lg leading-tight flex-1">
@@ -110,7 +109,7 @@ export const MultipleChoiceQuestionCard = ({
                   ))}
                 </ul>
                 
-                <div className="text-xs text-muted-foreground mt-2 pt-2 border-t">
+                <div className="text-xs text-muted-foreground mt-2 pt-2 border-t dark:border-foreground/30">
                   Created: {new Date(question.createdAt).toLocaleDateString(undefined, {
                     year: 'numeric',
                     month: 'long',

@@ -17,19 +17,16 @@ interface QuestionFiltersProps {
   onSearchTermChange: (term: string) => void;
 
   categories: QuestionCategory[];
-  selectedCategoryId?: number | string;
-  onCategoryChange: (categoryId?: number | string) => void;
+  selectedCategoryId?: number;
+  onCategoryChange: (categoryId?: number) => void;
 
   difficulties: QuestionDifficulty[];
-  selectedDifficultyId?: number | string;
-  onDifficultyChange: (difficultyId?: number | string) => void;
+  selectedDifficultyId?: number;
+  onDifficultyChange: (difficultyId?: number) => void;
 
   languages: QuestionLanguage[];
-  selectedLanguageId?: number | string;
-  onLanguageChange: (languageId?: number | string) => void;
-
-  // visibility?: string;
-  // onVisibilityChange: (visibility?: string) => void;
+  selectedLanguageId?: number;
+  onLanguageChange: (languageId?: number) => void;
 }
 
 export const QuestionFilters = ({
@@ -55,9 +52,9 @@ export const QuestionFilters = ({
       />
 
       <Select
-        value={selectedCategoryId?.toString() || "all"}
+        value={selectedCategoryId ? selectedCategoryId.toString() : "all"}
         onValueChange={(value) =>
-          onCategoryChange(value ? parseInt(value) : undefined)
+          onCategoryChange(value === "all" ? undefined : Number(value))
         }
       >
         <SelectTrigger variant="quiz">
@@ -74,9 +71,9 @@ export const QuestionFilters = ({
       </Select>
 
       <Select
-        value={selectedDifficultyId?.toString() || "all"}
+        value={selectedDifficultyId ? selectedDifficultyId.toString() : "all"}
         onValueChange={(value) =>
-          onDifficultyChange(value ? parseInt(value) : undefined)
+          onDifficultyChange(value === "all" ? undefined : Number(value))
         }
       >
         <SelectTrigger variant="quiz">
@@ -93,9 +90,9 @@ export const QuestionFilters = ({
       </Select>
 
       <Select
-        value={selectedLanguageId?.toString() || ""}
+        value={selectedLanguageId ? selectedLanguageId.toString() : "all"}
         onValueChange={(value) =>
-          onLanguageChange(value ? parseInt(value) : undefined)
+          onLanguageChange(value === "all" ? undefined : Number(value))
         }
       >
         <SelectTrigger variant="quiz">

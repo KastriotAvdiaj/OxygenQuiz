@@ -163,38 +163,18 @@ export const Questions = () => {
         </Dialog>
       </div>
       <Card className="p-6 bg-card border dark:border-foreground/30">
-        {" "}
-        {/* Changed from bg-background */}
         <QuestionFilters
           searchTerm={searchTerm}
           onSearchTermChange={setSearchTerm}
           categories={categoriesQuery.data || []}
           selectedCategoryId={selectedCategoryId}
-          onCategoryChange={(value) =>
-            setSelectedCategoryId(
-              value === undefined || value === "all"
-                ? undefined
-                : Number(value)
-            )
-          }
+          onCategoryChange={(value) => setSelectedCategoryId(value)}
           difficulties={difficultiesQuery.data || []}
           selectedDifficultyId={selectedDifficultyId}
-          onDifficultyChange={(value) =>
-            setSelectedDifficultyId(
-              value === undefined || value === "all"
-                ? undefined
-                : Number(value)
-            )
-          }
+          onDifficultyChange={(value) => setSelectedDifficultyId(value)}
           languages={languagesQuery.data || []}
           selectedLanguageId={selectedLanguageId}
-          onLanguageChange={(value) =>
-            setSelectedLanguageId(
-              value === undefined || value === "all"
-                ? undefined
-                : Number(value)
-            )
-          }
+          onLanguageChange={(value) => setSelectedLanguageId(value)}
         />
         {/* Loading/Error for filter data can be handled within QuestionFilters or here with spinners beside each select */}
         {(categoriesQuery.isLoading ||
