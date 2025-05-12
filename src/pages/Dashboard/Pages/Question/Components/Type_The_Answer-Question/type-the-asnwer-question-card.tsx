@@ -6,9 +6,10 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { TypeTheAnswerQuestion } from "@/types/ApiTypes";
+import { QuestionType, TypeTheAnswerQuestion } from "@/types/ApiTypes";
 import { ImageIcon, TextCursorInput } from "lucide-react";
 import { cn } from "@/utils/cn";
+import { DeleteQuestion } from "../Normal-Question/delete-question";
 
 interface TypeTheAnswerQuestionCardProps {
   question: TypeTheAnswerQuestion;
@@ -85,7 +86,9 @@ export const TypeTheAnswerQuestionCard = ({
                 )}
 
                 <div className="space-y-2">
-                  <div className="text-xs text-muted-foreground">Correct Answer</div>
+                  <div className="text-xs text-muted-foreground">
+                    Correct Answer
+                  </div>
                   <div className="p-2 rounded-md bg-primary/5 dark:bg-primary/10 border border-primary/20 dark:border-primary/30 font-mono text-sm">
                     {question.correctAnswer}
                   </div>
@@ -93,16 +96,22 @@ export const TypeTheAnswerQuestionCard = ({
 
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   <Badge variant="outline" className="justify-center">
-                    {question.isCaseSensitive ? "Case Sensitive" : "Case Insensitive"}
+                    {question.isCaseSensitive
+                      ? "Case Sensitive"
+                      : "Case Insensitive"}
                   </Badge>
                   <Badge variant="outline" className="justify-center">
-                    {question.allowPartialMatch ? "Partial Match Allowed" : "Exact Match Required"}
+                    {question.allowPartialMatch
+                      ? "Partial Match Allowed"
+                      : "Exact Match Required"}
                   </Badge>
                 </div>
 
                 {question.acceptableAnswers.length > 0 && (
                   <>
-                    <div className="text-xs text-muted-foreground mt-2">Alternative Answers</div>
+                    <div className="text-xs text-muted-foreground mt-2">
+                      Alternative Answers
+                    </div>
                     <ul className="list-disc pl-4 space-y-1 text-sm">
                       {question.acceptableAnswers.map((answer, index) => (
                         <li key={index} className="p-1 rounded-md bg-muted/30">
@@ -121,6 +130,10 @@ export const TypeTheAnswerQuestionCard = ({
                     day: "numeric",
                   })}
                 </div>
+                <DeleteQuestion
+                  id={question.id}
+                  questionType={QuestionType.TypeTheAnswer}
+                />
               </div>
             </AccordionContent>
           </AccordionItem>

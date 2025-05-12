@@ -1,8 +1,8 @@
 // Components/UserControls.tsx
 import { Input } from "@/components/ui/form";
-import { Button } from "@/components/ui/button";
 import { Download, RefreshCw, Search as SearchIcon } from "lucide-react";
 import CreateUserForm from "./create-user";
+import { LiftedButton } from "@/common/LiftedButton";
 
 interface UserControlsProps {
   searchTerm: string;
@@ -24,26 +24,22 @@ export const UserControls = ({
           onChange={(e) => setSearchTerm(e.target.value)}
           className="max-w-sm"
         />
-        <Button variant="default" size="icon" className="rounded">
+        <LiftedButton className="rounded text-xs">
           <SearchIcon className="h-4 w-4" />
-        </Button>
+        </LiftedButton>
       </div>
 
       <div className="flex items-center space-x-2">
         <CreateUserForm />
-        <Button
-          variant="default"
-          size="sm"
-          onClick={onRefresh}
-        >
+        <LiftedButton className="text-xs" onClick={onRefresh}>
           <RefreshCw className="mr-2 h-4 w-4" />
           Refresh
-        </Button>
+        </LiftedButton>
 
-        <Button variant="default" size="sm">
+        <LiftedButton className="text-xs">
           <Download className="mr-2 h-4 w-4" />
           Export
-        </Button>
+        </LiftedButton>
       </div>
     </div>
   );

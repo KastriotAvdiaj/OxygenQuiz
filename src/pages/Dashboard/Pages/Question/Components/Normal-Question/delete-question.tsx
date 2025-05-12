@@ -1,14 +1,17 @@
 import { Button } from "@/components/ui/button";
 import { ConfirmationDialog } from "@/components/ui/dialog";
 import { useNotifications } from "@/common/Notifications";
-
-import { useDeleteQuestion } from "../../api/Normal-Question/delete-question";
+import { useDeleteQuestion } from "../../api/delete-question";
+import { QuestionType } from "@/types/ApiTypes";
+import { LiftedButton } from "@/common/LiftedButton";
+import { Trash } from "lucide-react";
 
 type DeleteUserProps = {
   id: number;
+  questionType: QuestionType;
 };
 
-export const DeleteQuestion = ({ id }: DeleteUserProps) => {
+export const DeleteQuestion = ({ id, questionType }: DeleteUserProps) => {
   const { addNotification } = useNotifications();
   const deleteQuestionMutation = useDeleteQuestion({
     mutationConfig: {
@@ -19,6 +22,7 @@ export const DeleteQuestion = ({ id }: DeleteUserProps) => {
         });
       },
     },
+    questionType,
   });
 
   return (
@@ -30,9 +34,9 @@ export const DeleteQuestion = ({ id }: DeleteUserProps) => {
       title="Delete Question"
       body="Are you sure you want to delete this question?"
       triggerButton={
-        <Button variant="destructive" className="rounded-sm">
-          Delete
-        </Button>
+        <LiftedButton variant="icon" className="rounded-xl bg-red-400">
+          <Trash className="w-4 h-4" />
+        </LiftedButton>
       }
       confirmButton={
         <Button

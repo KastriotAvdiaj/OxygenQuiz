@@ -10,6 +10,7 @@ import {
 import { Form, FormDrawer, Input } from "@/components/ui/form";
 import { useNotifications } from "@/common/Notifications";
 import { createUserInputSchema, useCreateUser } from "../api/create-user";
+import { LiftedButton } from "@/common/LiftedButton";
 
 const roleOptions = [
   { label: "User" },
@@ -34,13 +35,9 @@ export const CreateUserForm = () => {
     <FormDrawer
       isDone={createUserMutation.isSuccess}
       triggerButton={
-        <Button
-          variant="default"
-          size="sm"
-          icon={<Plus className="size-4" />}
-        >
-          Create User
-        </Button>
+        <LiftedButton variant="default" className="text-xs">
+          <Plus className="w-4 h-4"/> Create User
+        </LiftedButton>
       }
       title="Create User"
       submitButton={
