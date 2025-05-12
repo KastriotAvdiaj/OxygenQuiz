@@ -23,11 +23,12 @@ interface CreateTrueFalseQuestionFormProps {
   categories: QuestionCategory[];
   difficulties: QuestionDifficulty[];
   languages: QuestionLanguage[];
+  onSuccess: () => void;
 }
 
 export const CreateTrueFalseQuestionForm: React.FC<
   CreateTrueFalseQuestionFormProps
-> = ({ categories, difficulties, languages }) => {
+> = ({ categories, difficulties, languages, onSuccess }) => {
   const { addNotification } = useNotifications();
 
   const createQuestionMutation = useCreateTrueFalseQuestion({
@@ -37,6 +38,7 @@ export const CreateTrueFalseQuestionForm: React.FC<
           type: "success",
           title: "True/False Question Created",
         });
+        onSuccess();
       },
     },
   });

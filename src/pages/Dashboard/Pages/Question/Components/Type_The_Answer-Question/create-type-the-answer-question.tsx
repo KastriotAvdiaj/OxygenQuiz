@@ -31,11 +31,12 @@ interface CreateTypeAnswerQuestionFormProps {
   categories: QuestionCategory[];
   difficulties: QuestionDifficulty[];
   languages: QuestionLanguage[];
+  onSuccess: () => void;
 }
 
 export const CreateTypeAnswerQuestionForm: React.FC<
   CreateTypeAnswerQuestionFormProps
-> = ({ categories, difficulties, languages }) => {
+> = ({ categories, difficulties, languages, onSuccess }) => {
   const { addNotification } = useNotifications();
 
   const createQuestionMutation = useCreateTypeTheAnswerQuestion({
@@ -45,6 +46,7 @@ export const CreateTypeAnswerQuestionForm: React.FC<
           type: "success",
           title: "Type Answer Question Created",
         });
+        onSuccess();
       },
     },
   });

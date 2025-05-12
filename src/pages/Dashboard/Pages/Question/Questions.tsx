@@ -28,15 +28,10 @@ import { QuestionFilters } from "./Re-Usable-Components/question-filters";
 import { CategoryView } from "./Entities/Categories/Components/category-view";
 import { DifficultyView } from "./Entities/Difficulty/Components/difficulty-view";
 import { LanguagesView } from "./Entities/Language/components/language-view";
-// Keep other imports like CategoryView etc. if they are part of this page's layout
 
 export const Questions = () => {
-  // State for filters
   const [searchTerm, setSearchTerm] = useState("");
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useDebounce(
-    searchTerm,
-    500
-  ); // Increased debounce
+  const [debouncedSearchTerm] = useDebounce(searchTerm, 500); 
   const [selectedCategoryId, setSelectedCategoryId] = useState<
     number | undefined
   >();
@@ -47,39 +42,35 @@ export const Questions = () => {
     number | undefined
   >();
 
-  // State for pagination
   const [pageNumber, setPageNumber] = useState(1);
-  const [pageSize] = useState(10); // Or make this configurable
+  const [pageSize] = useState(10); 
 
-  // For "Add Question" Dialog
   const {
     isOpen: isAddQuestionDialogOpen,
     open: openAddQuestionDialog,
     close: closeAddQuestionDialog,
   } = useDisclosure();
 
-  // Fetching data for filters
   const categoriesQuery = useQuestionCategoryData({});
   const difficultiesQuery = useQuestionDifficultyData({});
   const languagesQuery = useQuestionLanguageData({});
 
-  // Fetching Multiple Choice Questions
+  
   const mcqQuery = useMultipleChoiceQuestionData({
     params: {
       pageNumber: pageNumber,
       pageSize: pageSize,
-      searchTerm: debouncedSearchTerm || undefined, // Send undefined if empty
+      searchTerm: debouncedSearchTerm || undefined, 
       categoryId: selectedCategoryId,
       difficultyId: selectedDifficultyId,
       languageId: selectedLanguageId,
-      // visibility: "published" // Example: if you want to filter by visibility
+      // visibility: "published" 
     },
     queryConfig: {
       // keepPreviousData: true, // Consider for smoother pagination
     },
   });
 
-  // Reset page to 1 when filters change
   useEffect(() => {
     setPageNumber(1);
   }, [
@@ -91,11 +82,9 @@ export const Questions = () => {
 
   const handlePageChange = (newPage: number) => {
     setPageNumber(newPage);
-    // Optionally scroll to top
-    // window.scrollTo(0, 0);
+    window.scrollTo(0, 0);
   };
 
-  // Loading state for main content (questions)
   if (mcqQuery.isLoading) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -104,7 +93,6 @@ export const Questions = () => {
     );
   }
 
-  // Error state for main content
   if (mcqQuery.isError) {
     return (
       <p className="text-center text-red-500 py-8">
@@ -115,11 +103,8 @@ export const Questions = () => {
 
   return (
     <div className="container mx-auto py-8 px-4 md:px-0">
-      {" "}
-      {/* Added container for better layout */}
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Questions Management</h1>
-        {/* "Add Question" Dialog Trigger */}
         <Dialog
           open={isAddQuestionDialogOpen}
           onOpenChange={(open) =>
@@ -138,8 +123,6 @@ export const Questions = () => {
               </DialogTitle>
             </DialogHeader>
             <div className="flex flex-col gap-4 mt-4">
-              {" "}
-              {/* Added mt-4 for spacing */}
               <CreateQuestionForm
                 languages={languagesQuery.data || []}
                 categories={categoriesQuery.data || []}
@@ -150,13 +133,13 @@ export const Questions = () => {
                 languages={languagesQuery.data || []}
                 categories={categoriesQuery.data || []}
                 difficulties={difficultiesQuery.data || []}
-                // onSuccess={closeAddQuestionDialog}
+                onSuccess={closeAddQuestionDialog}
               />
               <CreateTypeAnswerQuestionForm
                 languages={languagesQuery.data || []}
                 categories={categoriesQuery.data || []}
                 difficulties={difficultiesQuery.data || []}
-                // onSuccess={closeAddQuestionDialog}
+                onSuccess={closeAddQuestionDialog}
               />
             </div>
           </DialogContent>
@@ -176,7 +159,6 @@ export const Questions = () => {
           selectedLanguageId={selectedLanguageId}
           onLanguageChange={(value) => setSelectedLanguageId(value)}
         />
-        {/* Loading/Error for filter data can be handled within QuestionFilters or here with spinners beside each select */}
         {(categoriesQuery.isLoading ||
           difficultiesQuery.isLoading ||
           languagesQuery.isLoading) && (
@@ -191,7 +173,6 @@ export const Questions = () => {
           onPageChange={handlePageChange}
         />
       </Card>
-      {/* Keep other views if they are part of this page's layout */}
       <div className="flex flex-col gap-6 mt-6">
         <CategoryView />
         <DifficultyView />
