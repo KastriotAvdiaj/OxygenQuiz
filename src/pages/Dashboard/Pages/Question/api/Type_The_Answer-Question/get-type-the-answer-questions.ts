@@ -1,7 +1,7 @@
 import { queryOptions, useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/Api-client";
 import { QueryConfig } from "@/lib/React-query";
-import { PaginatedQuestionResponse } from "@/types/ApiTypes";
+import { PaginatedTypeTheAnswerQuestionResponse } from "@/types/ApiTypes";
 import { AxiosResponse } from "axios";
 import { cleanQueryParams, extractPaginationFromHeaders } from "@/lib/pagination-query";
 
@@ -18,7 +18,7 @@ export type GetTypeTheAnswerQuestionsParams = {
 
 export const getTypeTheAnswerQuestions = async (
   params: GetTypeTheAnswerQuestionsParams
-): Promise<PaginatedQuestionResponse> => {
+): Promise<PaginatedTypeTheAnswerQuestionResponse> => {
   const cleanParams = cleanQueryParams(params as Record<string, any>);
   const queryString = new URLSearchParams(cleanParams).toString();
   const result: AxiosResponse = await api.get(

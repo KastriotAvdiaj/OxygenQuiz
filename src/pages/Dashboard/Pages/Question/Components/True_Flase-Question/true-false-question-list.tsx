@@ -5,7 +5,9 @@ interface TrueFalseQuestionListProps {
   questions: TrueFalseQuestion[];
 }
 
-export const TrueFalseQuestionList = ({ questions }: TrueFalseQuestionListProps) => {
+export const TrueFalseQuestionList = ({
+  questions,
+}: TrueFalseQuestionListProps) => {
   if (questions.length === 0) {
     return (
       <p className="text-center text-muted-foreground py-8">

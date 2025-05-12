@@ -1,6 +1,4 @@
-// src/app/questions/Questions.tsx (or wherever it is)
 import { useState, useEffect } from "react";
-import { useMultipleChoiceQuestionData } from "./api/Normal-Question/get-multiple-choice-questions"; // Keep your API hook
 import { useQuestionCategoryData } from "./Entities/Categories/api/get-question-categories";
 import { useQuestionDifficultyData } from "./Entities/Difficulty/api/get-question-difficulties";
 import { useQuestionLanguageData } from "./Entities/Language/api/get-question-language";
@@ -9,7 +7,7 @@ import { Card, Spinner } from "@/components/ui";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useDisclosure } from "@/hooks/use-disclosure";
 
-// Imports for "Add Question" Dialog (keep these as they are if they work for you)
+// Imports for "Add Question" Dialog
 import { LiftedButton } from "@/common/LiftedButton";
 import CreateQuestionForm from "./Components/Normal-Question/Create-Question-Components/create-question";
 import CreateTrueFalseQuestionForm from "./Components/True_Flase-Question/create-true_false-questions";
@@ -21,18 +19,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import CreateTypeAnswerQuestionForm from "./Components/Type_The_Answer-Question/create-type-the-answer-question";
-import { MultipleChoiceQuestionList } from "./Components/Normal-Question/multiple-choice-question-list";
 import { Separator } from "@/components/ui/separator";
-import { PaginationControls } from "./Re-Usable-Components/pagination-control";
 import { QuestionFilters } from "./Re-Usable-Components/question-filters";
 import { CategoryView } from "./Entities/Categories/Components/category-view";
 import { DifficultyView } from "./Entities/Difficulty/Components/difficulty-view";
 import { LanguagesView } from "./Entities/Language/components/language-view";
 import { QuestionType } from "@/types/ApiTypes";
-import { useTrueFalseQuestionData } from "./api/True_False-Question/get-true_false-questions";
-import { useTypeTheAnswerQuestionData } from "./api/Type_The_Answer-Question/get-type-the-answer-questions";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { TrueFalseQuestionList } from "./Components/Type_The_Answer-Question/true-false-question-list";
+import { QuestionTabContent } from "./Components/QuestionsTabContent";
 
 export const Questions = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -73,28 +67,6 @@ export const Questions = () => {
     // visibility: "published"
   };
 
-  const mcqQuery = useMultipleChoiceQuestionData({
-    params: queryParams,
-    queryConfig: {
-      enabled: activeTab === QuestionType.MultipleChoice,
-      // keepPreviousData: true, // Consider for smoother pagination
-    },
-  });
-
-  const trueFalseQuery = useTrueFalseQuestionData({
-    params: queryParams,
-    queryConfig: {
-      enabled: activeTab === QuestionType.TrueFalse,
-    },
-  });
-
-  const typeAnswerQuery = useTypeTheAnswerQuestionData({
-    params: queryParams,
-    queryConfig: {
-      enabled: activeTab === QuestionType.TypeTheAnswer,
-    },
-  });
-
   useEffect(() => {
     setPageNumber(1);
   }, [
@@ -110,42 +82,17 @@ export const Questions = () => {
     window.scrollTo(0, 0);
   };
 
-  const getActiveQuery = () => {
-    switch (activeTab) {
-      case QuestionType.MultipleChoice:
-        return mcqQuery;
-      case QuestionType.TrueFalse:
-        return trueFalseQuery;
-      case QuestionType.TypeTheAnswer:
-        return typeAnswerQuery;
-      default:
-        return mcqQuery;
-    }
-  };
+  // Check if filter data is still loading
+  const isFilterDataLoading =
+    categoriesQuery.isLoading ||
+    difficultiesQuery.isLoading ||
+    languagesQuery.isLoading;
 
-  if (mcqQuery.isLoading) {
+  if (isFilterDataLoading) {
     return (
       <div className="flex justify-center items-center h-screen">
         <Spinner size="lg" />
       </div>
-    );
-  }
-
-  const activeQuery = getActiveQuery();
-
-  if (activeQuery.isLoading) {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <Spinner size="lg" />
-      </div>
-    );
-  }
-
-  if (activeQuery.isError) {
-    return (
-      <p className="text-center text-red-500 py-8">
-        Failed to load questions. Please try again later.
-      </p>
     );
   }
 
@@ -210,14 +157,6 @@ export const Questions = () => {
           onLanguageChange={(value) => setSelectedLanguageId(value)}
         />
 
-        {(categoriesQuery.isLoading ||
-          difficultiesQuery.isLoading ||
-          languagesQuery.isLoading) && (
-          <div className="text-center my-4">
-            <Spinner /> <span className="ml-2">Loading filter options...</span>
-          </div>
-        )}
-
         <Separator className="my-6" />
 
         {/* Tabs for switching between question types */}
@@ -231,37 +170,35 @@ export const Questions = () => {
               Multiple Choice
             </TabsTrigger>
             <TabsTrigger value={QuestionType.TrueFalse}>True/False</TabsTrigger>
-            {/* <TabsTrigger value="type-answer">Type Answer</TabsTrigger> */}
+            <TabsTrigger value={QuestionType.TypeTheAnswer}>
+              Type Answer
+            </TabsTrigger>
           </TabsList>
 
-          {/* Tab content for Multiple Choice questions */}
+          {/* Always render all tab content but conditionally show based on active tab */}
           <TabsContent value={QuestionType.MultipleChoice}>
-            <MultipleChoiceQuestionList questions={mcqQuery.data?.data || []} />
-            <PaginationControls
-              pagination={mcqQuery.data?.pagination}
+            <QuestionTabContent
+              questionType={QuestionType.MultipleChoice}
+              queryParams={queryParams}
               onPageChange={handlePageChange}
             />
           </TabsContent>
 
-          {/* Tab content for True/False questions */}
           <TabsContent value={QuestionType.TrueFalse}>
-            <TrueFalseQuestionList
-              questions={trueFalseQuery.data?.data || []}
-            />
-            <PaginationControls
-              pagination={trueFalseQuery.data?.pagination}
+            <QuestionTabContent
+              questionType={QuestionType.TrueFalse}
+              queryParams={queryParams}
               onPageChange={handlePageChange}
             />
           </TabsContent>
 
-          {/* Tab content for Type Answer questions */}
-          {/* <TabsTrigger value={QuestionType.TypeTheAnswer}>
-            <TypeAnswerQuestionList questions={typeAnswerQuery.data?.data || []} />
-            <PaginationControls
-              pagination={typeAnswerQuery.data?.pagination}
+          <TabsContent value={QuestionType.TypeTheAnswer}>
+            <QuestionTabContent
+              questionType={QuestionType.TypeTheAnswer}
+              queryParams={queryParams}
               onPageChange={handlePageChange}
             />
-          </TabsContent> */}
+          </TabsContent>
         </Tabs>
       </Card>
 
