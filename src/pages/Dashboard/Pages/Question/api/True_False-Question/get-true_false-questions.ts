@@ -1,9 +1,13 @@
 import { queryOptions, useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/Api-client";
 import { QueryConfig } from "@/lib/React-query";
-import { PaginatedTrueFalseQuestionResponse } from "@/types/ApiTypes";
+import {
+  PaginatedTrueFalseQuestionResponse,
+} from "@/types/ApiTypes";
+import { AxiosResponse } from "axios";
+import { cleanQueryParams, extractPaginationFromHeaders } from "@/lib/pagination-query";
 
-type GetQuestionsParams = {
+export type GetTrueFalseQuestionsParams = {
   pageNumber?: number;
   pageSize?: number;
   searchTerm?: string;
@@ -11,30 +15,45 @@ type GetQuestionsParams = {
   difficultyId?: number | null;
   languageId?: number | null;
   visibility?: string | null;
-  userId?:string | null;
+  userId?: string | null;
 };
 
-export const getTrueFalseQuestions = (params: GetQuestionsParams): Promise<PaginatedTrueFalseQuestionResponse> => {
-  const queryString = new URLSearchParams(params as Record<string, string>).toString();
-  return api.get(`/questions/typeTheAnswer?${queryString}`);
+export const getTrueFalseQuestions = async (
+  params: GetTrueFalseQuestionsParams
+): Promise<PaginatedTrueFalseQuestionResponse> => {
+  const cleanParams = cleanQueryParams(params as Record<string, any>);
+  const queryString = new URLSearchParams(cleanParams).toString();
+  const result: AxiosResponse = await api.get(
+    `/questions/truefalse?${queryString}`
+  );
+  const pagination = extractPaginationFromHeaders(result);
+
+  return {
+    data: result.data,
+    pagination: pagination || undefined,
+  };
 };
 
-export const getTrueFalseQuestionsQueryOptions = (params: GetQuestionsParams = {}) => {
+export const getTrueFalseQuestionsQueryOptions = (
+  params: GetTrueFalseQuestionsParams = {}
+) => {
   return queryOptions({
-    queryKey: params? ["questions", params] : ["questions"],
+    queryKey: ["trueFalseQuestions", params],
     queryFn: () => getTrueFalseQuestions(params),
   });
 };
 
 type UseTrueFalseQuestionOptions = {
   queryConfig?: QueryConfig<typeof getTrueFalseQuestionsQueryOptions>;
-  params?: GetQuestionsParams;
+  params?: GetTrueFalseQuestionsParams;
 };
 
-export const useTrueFlaseQuestionData = ({ queryConfig, params }: UseTrueFalseQuestionOptions) => {
+export const useTrueFalseQuestionData = ({
+  queryConfig,
+  params,
+}: UseTrueFalseQuestionOptions) => {
   return useQuery({
     ...getTrueFalseQuestionsQueryOptions(params),
     ...queryConfig,
   });
 };
-

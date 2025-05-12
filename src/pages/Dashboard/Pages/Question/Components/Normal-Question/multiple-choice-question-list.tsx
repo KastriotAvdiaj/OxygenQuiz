@@ -1,4 +1,4 @@
-import { MultipleChoiceQuestion } from "@/types/ApiTypes"; // Adjust path
+import { MultipleChoiceQuestion } from "@/types/ApiTypes"; 
 import { MultipleChoiceQuestionCard } from "./multiple-choice-question-card";
 
 interface MultipleChoiceQuestionListProps {

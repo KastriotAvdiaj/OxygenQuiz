@@ -2,8 +2,10 @@ import { queryOptions, useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/Api-client";
 import { QueryConfig } from "@/lib/React-query";
 import { PaginatedQuestionResponse } from "@/types/ApiTypes";
+import { AxiosResponse } from "axios";
+import { cleanQueryParams, extractPaginationFromHeaders } from "@/lib/pagination-query";
 
-type GetTypeTheAnswerQuestionsParams = {
+export type GetTypeTheAnswerQuestionsParams = {
   pageNumber?: number;
   pageSize?: number;
   searchTerm?: string;
@@ -14,14 +16,27 @@ type GetTypeTheAnswerQuestionsParams = {
   userId?: string | null;
 };
 
-export const getTypeTheAnswerQuestions = (params: GetTypeTheAnswerQuestionsParams): Promise<PaginatedQuestionResponse> => {
-  const queryString = new URLSearchParams(params as Record<string, string>).toString();
-  return api.get(`/questions/typeTheAnswer?${queryString}`);
+export const getTypeTheAnswerQuestions = async (
+  params: GetTypeTheAnswerQuestionsParams
+): Promise<PaginatedQuestionResponse> => {
+  const cleanParams = cleanQueryParams(params as Record<string, any>);
+  const queryString = new URLSearchParams(cleanParams).toString();
+  const result: AxiosResponse = await api.get(
+    `/questions/typeTheAnswer?${queryString}`
+  );
+  const pagination = extractPaginationFromHeaders(result);
+
+  return {
+    data: result.data,
+    pagination: pagination || undefined,
+  };
 };
 
-export const getTypeTheAnswerQuestionsQueryOptions = (params: GetTypeTheAnswerQuestionsParams = {}) => {
+export const getTypeTheAnswerQuestionsQueryOptions = (
+  params: GetTypeTheAnswerQuestionsParams = {}
+) => {
   return queryOptions({
-    queryKey: params ? ["typeTheAnswerQuestions", params] : ["typeTheAnswerQuestions"],
+    queryKey: ["typeTheAnswerQuestions", params],
     queryFn: () => getTypeTheAnswerQuestions(params),
   });
 };
@@ -31,7 +46,10 @@ type UseTypeTheAnswerQuestionOptions = {
   params?: GetTypeTheAnswerQuestionsParams;
 };
 
-export const useTypeTheAnswerQuestionData = ({ queryConfig, params }: UseTypeTheAnswerQuestionOptions = {}) => {
+export const useTypeTheAnswerQuestionData = ({
+  queryConfig,
+  params,
+}: UseTypeTheAnswerQuestionOptions) => {
   return useQuery({
     ...getTypeTheAnswerQuestionsQueryOptions(params),
     ...queryConfig,

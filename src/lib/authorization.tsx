@@ -1,6 +1,6 @@
 import * as React from "react";
 
-import { User, Question } from "@/types/ApiTypes";
+import { User, MultipleChoiceQuestion } from "@/types/ApiTypes";
 
 import { useUser } from "@/lib/Auth";
 
@@ -13,12 +13,12 @@ export enum ROLES {
 type RoleTypes = keyof typeof ROLES;
 
 export const POLICIES = {
-  "comment:delete": (user: User, question: Question) => {
+  "comment:delete": (user: User, question: MultipleChoiceQuestion) => {
     if (user.role === "Admin") {
       return true;
     }
 
-    if (user.role === "User" && question.user?.id === user.id) {
+    if (user.role === "User" && question.userId === user.id) {
       return true;
     }
 
