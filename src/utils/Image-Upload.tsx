@@ -7,6 +7,8 @@ import { api } from "@/lib/Api-client";
 interface ImageUploadProps {
   /** Callback function when image is successfully uploaded */
   onUpload: (url: string) => void;
+  /** Callback function when image is removed */
+  onRemove?: () => void;
   /** Optional disable state for the upload input */
   disabled?: boolean;
   /** Optional class name for additional styling */
@@ -20,6 +22,7 @@ interface ImageUploadProps {
  */
 export const ImageUpload: React.FC<ImageUploadProps> = ({
   onUpload,
+  onRemove,
   disabled = false,
   className = "",
   endpoint = "ImageUpload/question",
@@ -125,7 +128,12 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
   const handleClear = useCallback(() => {
     setPreview(null);
     setError(null);
-  }, []);
+    
+    // Call the onRemove callback to notify parent component
+    if (onRemove) {
+      onRemove();
+    }
+  }, [onRemove]);
 
   return (
     <div className={`space-y-4 ${className}`}>

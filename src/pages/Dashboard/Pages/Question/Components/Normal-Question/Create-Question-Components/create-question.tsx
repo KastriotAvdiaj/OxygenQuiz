@@ -153,6 +153,10 @@ export const CreateMultipleChoiceForm: React.FC<
             setImageUrl(url);
             setValue("imageUrl", url);
           };
+          const handleImageRemove = () => {
+            setImageUrl("");
+            setValue("imageUrl", "");
+          };
 
           return (
             <>
@@ -173,7 +177,10 @@ export const CreateMultipleChoiceForm: React.FC<
               )}
 
               {/* Modified image upload implementation */}
-              <ImageUpload onUpload={handleImageUpload} />
+              <ImageUpload
+                onUpload={handleImageUpload}
+                onRemove={handleImageRemove}
+              />
               <input type="hidden" {...register("imageUrl")} />
 
               <Separator className="bg-gray-500" />
