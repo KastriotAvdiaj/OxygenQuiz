@@ -1,5 +1,5 @@
 import { Check } from "lucide-react";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Form, FormDrawer, Input, Label } from "@/components/ui/form";
 import { useNotifications } from "@/common/Notifications";
@@ -18,6 +18,7 @@ import {
   useCreateTrueFalseQuestion,
 } from "../../api/True_False-Question/create-true_false-question";
 import { LiftedButton } from "@/common/LiftedButton";
+import ImageUpload from "@/utils/Image-Upload";
 
 interface CreateTrueFalseQuestionFormProps {
   categories: QuestionCategory[];
@@ -30,6 +31,7 @@ export const CreateTrueFalseQuestionForm: React.FC<
   CreateTrueFalseQuestionFormProps
 > = ({ categories, difficulties, languages, onSuccess }) => {
   const { addNotification } = useNotifications();
+  const [imageUrl, setImageUrl] = useState("");
 
   const createQuestionMutation = useCreateTrueFalseQuestion({
     mutationConfig: {
@@ -78,6 +80,21 @@ export const CreateTrueFalseQuestionForm: React.FC<
             clearErrors("correctAnswer");
           };
 
+          useEffect(() => {
+            if (imageUrl) {
+              setValue("imageUrl", imageUrl);
+            }
+          }, [imageUrl, setValue]);
+
+          const handleImageUpload = (url: string) => {
+            setImageUrl(url);
+            setValue("imageUrl", url);
+          };
+          const handleImageRemove = () => {
+            setImageUrl("");
+            setValue("imageUrl", "");
+          };
+
           return (
             <>
               <div className="grid grid-[2fr_1fr] w-full gap-5">
@@ -92,6 +109,11 @@ export const CreateTrueFalseQuestionForm: React.FC<
                     error={formState.errors["text"]}
                     registration={register("text")}
                   />
+                  <ImageUpload
+                    onUpload={handleImageUpload}
+                    onRemove={handleImageRemove}
+                  />
+                  <input type="hidden" {...register("imageUrl")} />
                 </div>
                 <div className="space-y-4 mt-4">
                   <Label className="block text-sm font-medium text-foreground flex items-center justify-center gap-2">

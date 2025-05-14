@@ -21,6 +21,7 @@ export const createTrueFalseQuestionInputSchema = z.object({
                     .optional()
                     .default(UnspecifiedIds.languageId),
   visibility:    z.string().optional(),
+  imageUrl:      z.string().optional(),
   correctAnswer: z.boolean(),
 }
 );

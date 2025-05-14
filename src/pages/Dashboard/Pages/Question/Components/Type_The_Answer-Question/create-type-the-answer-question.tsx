@@ -1,5 +1,5 @@
 import { Trash2 } from "lucide-react";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Form, FormDrawer, Input, Label } from "@/components/ui/form";
 import { useNotifications } from "@/common/Notifications";
@@ -26,6 +26,7 @@ import {
   TooltipContent,
 } from "@/components/ui";
 import { LiftedButton } from "@/common/LiftedButton";
+import ImageUpload from "@/utils/Image-Upload";
 
 interface CreateTypeAnswerQuestionFormProps {
   categories: QuestionCategory[];
@@ -38,6 +39,7 @@ export const CreateTypeAnswerQuestionForm: React.FC<
   CreateTypeAnswerQuestionFormProps
 > = ({ categories, difficulties, languages, onSuccess }) => {
   const { addNotification } = useNotifications();
+  const [imageUrl, setImageUrl] = useState("");
 
   const createQuestionMutation = useCreateTypeTheAnswerQuestion({
     mutationConfig: {
@@ -88,8 +90,9 @@ export const CreateTypeAnswerQuestionForm: React.FC<
             correctAnswer: "",
             isCaseSensitive: false,
             allowPartialMatch: false,
-            acceptableAnswers: [], // Default object structure
-            visibility: undefined, // Or appropriate default
+            acceptableAnswers: [],
+            visibility: undefined,
+            imageUrl: "",
           },
         }}
       >
@@ -99,12 +102,20 @@ export const CreateTypeAnswerQuestionForm: React.FC<
             name: "acceptableAnswers",
           });
 
-          // React.useEffect(() => {
-          //   if (fields.length === 0) {
-          //     append({ value: "" });
-          //   }
-          // }, [append, fields.length]);
+          useEffect(() => {
+            if (imageUrl) {
+              setValue("imageUrl", imageUrl);
+            }
+          }, [imageUrl, setValue]);
 
+          const handleImageUpload = (url: string) => {
+            setImageUrl(url);
+            setValue("imageUrl", url);
+          };
+          const handleImageRemove = () => {
+            setImageUrl("");
+            setValue("imageUrl", "");
+          };
           return (
             <>
               <Input
@@ -118,7 +129,11 @@ export const CreateTypeAnswerQuestionForm: React.FC<
                 error={formState.errors["text"]}
                 registration={register("text")}
               />
-
+              <ImageUpload
+                onUpload={handleImageUpload}
+                onRemove={handleImageRemove}
+              />
+              <input type="hidden" {...register("imageUrl")} />
               <div className="space-y-4 mt-4">
                 <div className="flex flex-col ">
                   <Input

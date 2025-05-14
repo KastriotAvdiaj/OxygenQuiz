@@ -148,7 +148,6 @@ export const CreateMultipleChoiceForm: React.FC<
             }
           };
 
-          // Create a handler for image upload that updates both state and form
           const handleImageUpload = (url: string) => {
             setImageUrl(url);
             setValue("imageUrl", url);

@@ -24,6 +24,7 @@ export const createTypeTheAnswerQuestionInputSchema = z.object({
   correctAnswer:    z.string().min(1, "Correct answer is required"),
   isCaseSensitive:  z.boolean().default(false),
   allowPartialMatch: z.boolean().default(false),
+  imageUrl : z.string().optional(),
   acceptableAnswers: z.array(
     z.object({
       value: z.string().min(1, 'Additional acceptable answer cannot be empty'),

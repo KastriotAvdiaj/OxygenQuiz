@@ -21,33 +21,31 @@ export const DashboardLayout = ({
   return (
     <div
       className={`text-foreground ${
-        !isQuizCreatorPage
-          ? "grid grid-rows-[auto_1fr] h-screen"
-          : ""
+        !isQuizCreatorPage ? "grid grid-rows-[auto_1fr] h-screen" : ""
       }`}
       style={{
         gridTemplateColumns: !isQuizCreatorPage
           ? isNavCollapsed
             ? "5rem 1fr"
             : "16rem 1fr"
-          : "1fr"
+          : "1fr",
       }}
     >
       <div className={`${!isQuizCreatorPage ? "col-span-2" : ""}`}>
         <DashboardHeader />
       </div>
-      
+
       {!isQuizCreatorPage && (
         <div className="bg-background relative shadow-md h-full transition-all duration-300 ease-in-out">
           <DashboardNav
             setActivePage={setActivePage}
-            activePage={location.pathname.split("/").pop() || "application"}
+            activePage={location.pathname.split("/").pop() || "questions"}
             isCollapsed={isNavCollapsed}
             setIsCollapsed={setIsNavCollapsed}
           />
         </div>
       )}
-      
+
       <div
         className="overflow-y-auto bg-muted h-full p-10"
         style={{ maxHeight: "calc(100vh - 64px)" }}
