@@ -14,8 +14,8 @@ export function extractPaginationFromHeaders(
       typeof p.itemsPerPage === "number" &&
       typeof p.totalItems === "number" &&
       typeof p.totalPages === "number" &&
-      typeof p.hasNextPage === "boolean" &&
-      typeof p.hasPreviousPage === "boolean"
+      typeof p.hasPreviousPage === "boolean" &&
+      typeof p.hasNextPage === "boolean"
     ) {
       return p;
     }

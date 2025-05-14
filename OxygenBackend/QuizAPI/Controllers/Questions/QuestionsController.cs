@@ -64,8 +64,8 @@ namespace QuizAPI.Controllers.Questions
                  pagedQuestions.PageSize,
                  pagedQuestions.TotalCount,
                  pagedQuestions.TotalPages,
-                 pagedQuestions.HasPreviousPage,
-                 pagedQuestions.HasNextPage
+                 pagedQuestions.HasNextPage,
+                 pagedQuestions.HasPreviousPage
                  );
 
             return Ok(pagedQuestions.Items);
@@ -92,13 +92,13 @@ namespace QuizAPI.Controllers.Questions
             var pagedQuestions = await _questionService.GetPaginatedMultipleChoiceQuestionsAsync(filterParams);
 
             Response.AddPaginationHeader(
-                pagedQuestions.PageNumber,
-                pagedQuestions.PageSize,
-                pagedQuestions.TotalCount,
-                pagedQuestions.TotalPages,
-                pagedQuestions.HasPreviousPage,
-                pagedQuestions.HasNextPage
-                );
+                 pagedQuestions.PageNumber,
+                 pagedQuestions.PageSize,
+                 pagedQuestions.TotalCount,
+                 pagedQuestions.TotalPages,
+                 pagedQuestions.HasNextPage,
+                 pagedQuestions.HasPreviousPage
+                 );
 
             return Ok(pagedQuestions.Items);
         }
@@ -110,13 +110,13 @@ namespace QuizAPI.Controllers.Questions
             var pagedQuestions = await _questionService.GetPaginatedTrueFalseQuestionsAsync(filterParams);
 
             Response.AddPaginationHeader(
-                pagedQuestions.PageNumber,
-                pagedQuestions.PageSize,
-                pagedQuestions.TotalCount,
-                pagedQuestions.TotalPages,
-                pagedQuestions.HasPreviousPage,
-                pagedQuestions.HasNextPage
-                );
+                            pagedQuestions.PageNumber,
+                            pagedQuestions.PageSize,
+                            pagedQuestions.TotalCount,
+                            pagedQuestions.TotalPages,
+                            pagedQuestions.HasNextPage,
+                            pagedQuestions.HasPreviousPage
+                            );
 
             return Ok(pagedQuestions.Items);
         }
@@ -128,13 +128,13 @@ namespace QuizAPI.Controllers.Questions
             var pagedQuestions = await _questionService.GetPaginatedTypeTheAnswerQuestionsAsync(filterParams);
 
             Response.AddPaginationHeader(
-                 pagedQuestions.PageNumber,
-                 pagedQuestions.PageSize,
-                 pagedQuestions.TotalCount,
-                 pagedQuestions.TotalPages,
-                 pagedQuestions.HasPreviousPage,
-                 pagedQuestions.HasNextPage
-                 );
+                pagedQuestions.PageNumber,
+                pagedQuestions.PageSize,
+                pagedQuestions.TotalCount,
+                pagedQuestions.TotalPages,
+                pagedQuestions.HasNextPage,
+                pagedQuestions.HasPreviousPage
+                );
 
             return Ok(pagedQuestions.Items);
         }
@@ -298,8 +298,8 @@ namespace QuizAPI.Controllers.Questions
                  pagedQuestions.PageSize,
                  pagedQuestions.TotalCount,
                  pagedQuestions.TotalPages,
-                 pagedQuestions.HasPreviousPage,
-                 pagedQuestions.HasNextPage
+                 pagedQuestions.HasNextPage,
+                 pagedQuestions.HasPreviousPage
                  );
 
             return Ok(pagedQuestions.Items);

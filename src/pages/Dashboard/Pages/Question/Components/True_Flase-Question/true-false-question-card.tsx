@@ -6,9 +6,10 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { TrueFalseQuestion } from "@/types/ApiTypes";
+import { QuestionType, TrueFalseQuestion } from "@/types/ApiTypes";
 import { CheckCircle, XCircle, ChevronDown, ImageIcon } from "lucide-react";
 import { cn } from "@/utils/cn";
+import { DeleteQuestion } from "../Normal-Question/delete-question";
 
 interface TrueFalseQuestionCardProps {
   question: TrueFalseQuestion;
@@ -111,6 +112,10 @@ export const TrueFalseQuestionCard = ({
                   })}
                 </div>
               </div>
+              <DeleteQuestion
+                id={question.id}
+                questionType={QuestionType.TrueFalse}
+              />
             </AccordionContent>
           </AccordionItem>
         </Accordion>

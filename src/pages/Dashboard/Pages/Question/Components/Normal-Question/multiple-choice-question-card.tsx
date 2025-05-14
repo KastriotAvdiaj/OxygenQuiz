@@ -6,9 +6,14 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { MultipleChoiceQuestion, AnswerOption } from "@/types/ApiTypes";
+import {
+  MultipleChoiceQuestion,
+  AnswerOption,
+  QuestionType,
+} from "@/types/ApiTypes";
 import { CheckCircle, XCircle, ChevronDown, ImageIcon } from "lucide-react";
 import { cn } from "@/utils/cn";
+import { DeleteQuestion } from "./delete-question";
 
 interface MultipleChoiceQuestionCardProps {
   question: MultipleChoiceQuestion;
@@ -119,6 +124,10 @@ export const MultipleChoiceQuestionCard = ({
                   })}
                 </div>
               </div>
+              <DeleteQuestion
+                id={question.id}
+                questionType={QuestionType.MultipleChoice}
+              />
             </AccordionContent>
           </AccordionItem>
         </Accordion>
