@@ -3,7 +3,7 @@ import { useTrueFalseQuestionData } from "../api/True_False-Question/get-true_fa
 import { useTypeTheAnswerQuestionData } from "../api/Type_The_Answer-Question/get-type-the-answer-questions";
 import { QuestionType } from "@/types/ApiTypes";
 
-import { MultipleChoiceQuestionList } from "../Components/Normal-Question/multiple-choice-question-list";
+import { MultipleChoiceQuestionList } from "./Multiple_Choice_Question/multiple-choice-question-list";
 import { TrueFalseQuestionList } from "../Components/True_Flase-Question/true-false-question-list";
 import { TypeTheAnswerQuestionList } from "../Components/Type_The_Answer-Question/type-the-asnwer-list";
 import { PaginationControls } from "../Re-Usable-Components/pagination-control";

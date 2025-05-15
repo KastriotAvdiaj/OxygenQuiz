@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/form";
 import { Separator } from "@/components/ui/separator";
 import { FormProps } from "../types";
-import { AnswerOption } from "@/pages/Dashboard/Pages/Question/Components/Normal-Question/Create-Question-Components/answer-option";
+import { AnswerOption } from "@/pages/Dashboard/Pages/Question/Components/Multiple_Choice_Question/Create-Question-Components/answer-option";
 import { Medal, Trash2, Clock } from "lucide-react"; // Added Clock and HelpCircle icons
 import { ScoreSelect } from "./score-select"; // Assuming ScoreSelect accepts options prop
 import React from "react";

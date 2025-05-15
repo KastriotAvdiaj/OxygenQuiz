@@ -9,7 +9,7 @@ import { useDisclosure } from "@/hooks/use-disclosure";
 
 // Imports for "Add Question" Dialog
 import { LiftedButton } from "@/common/LiftedButton";
-import CreateQuestionForm from "./Components/Normal-Question/Create-Question-Components/create-question";
+import CreateQuestionForm from "./Components/Multiple_Choice_Question/Create-Question-Components/create-multiple-choice-question";
 import CreateTrueFalseQuestionForm from "./Components/True_Flase-Question/create-true_false-questions";
 import {
   Dialog,

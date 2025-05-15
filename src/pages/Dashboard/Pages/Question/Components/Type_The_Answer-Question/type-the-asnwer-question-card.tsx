@@ -9,7 +9,7 @@ import {
 import { QuestionType, TypeTheAnswerQuestion } from "@/types/ApiTypes";
 import { ImageIcon, TextCursorInput } from "lucide-react";
 import { cn } from "@/utils/cn";
-import { DeleteQuestion } from "../Normal-Question/delete-question";
+import { DeleteQuestion } from "../Multiple_Choice_Question/delete-question";
 
 interface TypeTheAnswerQuestionCardProps {
   question: TypeTheAnswerQuestion;

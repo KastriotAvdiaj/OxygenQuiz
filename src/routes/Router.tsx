@@ -70,7 +70,7 @@ const createAppRouter = (queryClient: QueryClient) =>
       children: [
         {
           index: true,
-          element: <Navigate to="/dashboard/application" replace />,
+          element: <Navigate to="/dashboard/questions" replace />,
         },
         {
           path: "application",

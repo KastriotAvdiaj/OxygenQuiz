@@ -188,29 +188,31 @@ namespace QuizAPI.Controllers.Questions
         }
 
         // PUT: api/questions/multiplechoice
-        [HttpPut("multiplechoice")]
+        [HttpPut("multiplechoice/{id}")]
         [Authorize]
-        public async Task<IActionResult> UpdateMultipleChoiceQuestion(MultipleChoiceQuestionUM questionUM)
+        public async Task<IActionResult> UpdateMultipleChoiceQuestion(int id, [FromBody] MultipleChoiceQuestionUM questionUM)
         {
-            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+            if (id != questionUM.Id)
+                return BadRequest("ID mismatch between URL and request body.");
 
+            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
             var updatedQuestion = await _questionService.UpdateMultipleChoiceQuestionAsync(questionUM, userId);
 
             if (updatedQuestion == null)
-            {
                 return NotFound();
-            }
 
             return NoContent();
         }
 
         // PUT: api/questions/truefalse
-        [HttpPut("truefalse")]
+        [HttpPut("truefalse/{id}")]
         [Authorize]
-        public async Task<IActionResult> UpdateTrueFalseQuestion(TrueFalseQuestionUM questionUM)
+        public async Task<IActionResult> UpdateTrueFalseQuestion(int id, [FromBody] TrueFalseQuestionUM questionUM)
         {
-            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+            if (id != questionUM.Id)
+                return BadRequest("ID mismatch between URL and request body.");
 
+            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
             var updatedQuestion = await _questionService.UpdateTrueFalseQuestionAsync(questionUM, userId);
 
             if (updatedQuestion == null)
@@ -224,10 +226,13 @@ namespace QuizAPI.Controllers.Questions
         // PUT: api/questions/typeanswer
         [HttpPut("typeanswer")]
         [Authorize]
-        public async Task<IActionResult> UpdateTypeTheAnswerQuestion(TypeTheAnswerQuestionUM questionUM)
+        public async Task<IActionResult> UpdateTypeTheAnswerQuestion(int id, [FromBody] TypeTheAnswerQuestionUM questionUM)
         {
-            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+            if (id != questionUM.Id)
+                return BadRequest("ID mismatch between URL and request body.");
 
+
+            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
             var updatedQuestion = await _questionService.UpdateTypeTheAnswerQuestionAsync(questionUM, userId);
 
             if (updatedQuestion == null)

@@ -9,7 +9,7 @@ import {
 import { QuestionType, TrueFalseQuestion } from "@/types/ApiTypes";
 import { CheckCircle, XCircle, ChevronDown, ImageIcon } from "lucide-react";
 import { cn } from "@/utils/cn";
-import { DeleteQuestion } from "../Normal-Question/delete-question";
+import { DeleteQuestion } from "../Multiple_Choice_Question/delete-question";
 
 interface TrueFalseQuestionCardProps {
   question: TrueFalseQuestion;

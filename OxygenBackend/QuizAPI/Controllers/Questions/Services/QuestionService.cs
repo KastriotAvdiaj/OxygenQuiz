@@ -298,11 +298,20 @@ namespace QuizAPI.Controllers.Questions.Services
             return _mapper.Map<TypeTheAnswerQuestionDTO>(createdQuestion);
         }
 
-        public async Task<MultipleChoiceQuestionDTO> UpdateMultipleChoiceQuestionAsync(MultipleChoiceQuestionUM questionUM, Guid userId)
+        public async Task<MultipleChoiceQuestionDTO> UpdateMultipleChoiceQuestionAsync(
+    MultipleChoiceQuestionUM questionUM, Guid userId)
         {
-            var existingQuestion = await _context.MultipleChoiceQuestions
+            var userRole = await GetUserRoleAsync(userId);
+            bool isSuperAdmin = userRole == "SuperAdmin";
+
+            var query = _context.MultipleChoiceQuestions
                 .Include(q => q.AnswerOptions)
-                .FirstOrDefaultAsync(q => q.Id == questionUM.Id && q.UserId == userId);
+                .Where(q => q.Id == questionUM.Id);
+
+            if (!isSuperAdmin)
+                query = query.Where(q => q.UserId == userId);
+
+            var existingQuestion = await query.FirstOrDefaultAsync();
 
             if (existingQuestion == null)
                 return null;
@@ -316,15 +325,13 @@ namespace QuizAPI.Controllers.Questions.Services
                 existingQuestion.Visibility = visibility;
             }
 
-            // Handle answer options - remove existing ones
+            // Handle answer options
             _context.AnswerOptions.RemoveRange(existingQuestion.AnswerOptions);
-
-            // Add updated answer options
             existingQuestion.AnswerOptions = _mapper.Map<List<AnswerOption>>(questionUM.AnswerOptions);
 
             await _context.SaveChangesAsync();
 
-            // Refresh the entity with related data
+            // Refresh with full relationships
             var updatedQuestion = await _context.MultipleChoiceQuestions
                 .Include(q => q.AnswerOptions)
                 .Include(q => q.Difficulty)
@@ -336,10 +343,19 @@ namespace QuizAPI.Controllers.Questions.Services
             return _mapper.Map<MultipleChoiceQuestionDTO>(updatedQuestion);
         }
 
-        public async Task<TrueFalseQuestionDTO> UpdateTrueFalseQuestionAsync(TrueFalseQuestionUM questionUM, Guid userId)
+        public async Task<TrueFalseQuestionDTO> UpdateTrueFalseQuestionAsync(
+    TrueFalseQuestionUM questionUM, Guid userId)
         {
-            var existingQuestion = await _context.TrueFalseQuestions
-                .FirstOrDefaultAsync(q => q.Id == questionUM.Id && q.UserId == userId);
+            var userRole = await GetUserRoleAsync(userId);
+            bool isSuperAdmin = userRole == "SuperAdmin";
+
+            var query = _context.TrueFalseQuestions
+                .Where(q => q.Id == questionUM.Id);
+
+            if (!isSuperAdmin)
+                query = query.Where(q => q.UserId == userId);
+
+            var existingQuestion = await query.FirstOrDefaultAsync();
 
             if (existingQuestion == null)
                 return null;
@@ -363,10 +379,19 @@ namespace QuizAPI.Controllers.Questions.Services
             return _mapper.Map<TrueFalseQuestionDTO>(updatedQuestion);
         }
 
-        public async Task<TypeTheAnswerQuestionDTO> UpdateTypeTheAnswerQuestionAsync(TypeTheAnswerQuestionUM questionUM, Guid userId)
+        public async Task<TypeTheAnswerQuestionDTO> UpdateTypeTheAnswerQuestionAsync(
+     TypeTheAnswerQuestionUM questionUM, Guid userId)
         {
-            var existingQuestion = await _context.TypeTheAnswerQuestions
-                .FirstOrDefaultAsync(q => q.Id == questionUM.Id && q.UserId == userId);
+            var userRole = await GetUserRoleAsync(userId);
+            bool isSuperAdmin = userRole == "SuperAdmin";
+
+            var query = _context.TypeTheAnswerQuestions
+                .Where(q => q.Id == questionUM.Id);
+
+            if (!isSuperAdmin)
+                query = query.Where(q => q.UserId == userId);
+
+            var existingQuestion = await query.FirstOrDefaultAsync();
 
             if (existingQuestion == null)
                 return null;
@@ -484,6 +509,48 @@ namespace QuizAPI.Controllers.Questions.Services
             }
 
             return query;
+        }
+
+        public async Task<string?> GetUserRoleAsync(Guid userId)
+        {
+            if (_context.Users == null)
+            {
+                return null;
+            }
+
+            var user = await _context.Users
+                .FirstOrDefaultAsync(u => u.Id == userId);
+
+            if (user == null)
+            {
+                return null;
+            }
+
+            return MapRoleIdToRole(user.RoleId);
+        }
+
+
+        ///REMOVE THESE TOO AFTER THE USERS SERVICE IS CREATED
+        private static string MapRoleIdToRole(int roleId)
+        {
+            return roleId switch
+            {
+                1 => "admin",
+                2 => "user",
+                3 => "superadmin",
+                _ => "user"
+            };
+        }
+
+        private static int MapRoleToRoleId(string role)
+        {
+            return role.ToLower() switch
+            {
+                "admin" => 1,
+                "user" => 2,
+                "superadmin" => 3,
+                _ => 2 // default to user if role is unknown
+            };
         }
     }
 }
