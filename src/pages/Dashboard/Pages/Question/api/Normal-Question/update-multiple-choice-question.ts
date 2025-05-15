@@ -13,7 +13,6 @@ export const updateMultipleChoiceQuestionInputSchema = z.object({
   difficultyId: z.number().int().positive({ message: "Difficulty is required" }),
   categoryId: z.number().int().positive({ message: "Category is required" }),
   languageId: z.number().int().positive({ message: "Language is required" }),
-  timeLimitInSeconds: z.number().int().min(0, "Time limit must be 0 or greater"),
   visibility: z.string().min(1, "Visibility is required"),
   
   answerOptions: answerOptionsSchema,

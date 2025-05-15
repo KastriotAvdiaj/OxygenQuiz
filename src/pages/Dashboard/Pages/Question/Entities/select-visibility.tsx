@@ -27,11 +27,9 @@ export const VisibilitySelect: React.FC<VisibilitySelectProps> = ({
   const isValueValid = visibilityOptions.includes(value);
 
   return (
-    <div className="space-y-2">
+    <div>
       {label && (
-        <Label className="text-sm font-medium text-foreground">
-          {label}
-        </Label>
+        <Label className="text-sm font-medium text-foreground">{label}</Label>
       )}
       <Select
         value={isValueValid ? value : ""}
@@ -40,7 +38,10 @@ export const VisibilitySelect: React.FC<VisibilitySelectProps> = ({
           clearErrors?.();
         }}
       >
-        <SelectTrigger className={`min-w-[200px] ${error ? "border-red-500" : ""}`}>
+        <SelectTrigger
+          variant="quiz"
+          className={`min-w-[200px] ${error ? "border-red-500" : ""}`}
+        >
           <SelectValue placeholder="--Select Visibility--" />
         </SelectTrigger>
         <SelectContent className="min-w-[200px]">

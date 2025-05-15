@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/dialog";
 import CreateTypeAnswerQuestionForm from "./Components/Type_The_Answer-Question/create-type-the-answer-question";
 import { Separator } from "@/components/ui/separator";
-import { QuestionFilters } from "./Re-Usable-Components/question-filters";
+import { QuestionFilters } from "./Components/Re-Usable-Components/question-filters";
 import { CategoryView } from "./Entities/Categories/Components/category-view";
 import { DifficultyView } from "./Entities/Difficulty/Components/difficulty-view";
 import { LanguagesView } from "./Entities/Language/components/language-view";

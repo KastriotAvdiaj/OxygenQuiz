@@ -6,7 +6,7 @@ import { QuestionType } from "@/types/ApiTypes";
 import { MultipleChoiceQuestionList } from "./Multiple_Choice_Question/multiple-choice-question-list";
 import { TrueFalseQuestionList } from "../Components/True_Flase-Question/true-false-question-list";
 import { TypeTheAnswerQuestionList } from "../Components/Type_The_Answer-Question/type-the-asnwer-list";
-import { PaginationControls } from "../Re-Usable-Components/pagination-control";
+import { PaginationControls } from "./Re-Usable-Components/pagination-control";
 import { Spinner } from "@/components/ui";
 
 interface QueryParams {

@@ -33,7 +33,7 @@ export const CategorySelect: React.FC<CategorySelectProps> = ({
   );
 
   return (
-    <div className="space-y-2">
+    <div>
       {label && (
         <Label className="text-sm font-medium text-foreground">{label}</Label>
       )}

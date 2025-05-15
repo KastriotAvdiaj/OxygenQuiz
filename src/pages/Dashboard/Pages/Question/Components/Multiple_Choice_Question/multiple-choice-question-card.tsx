@@ -13,7 +13,8 @@ import {
 } from "@/types/ApiTypes";
 import { CheckCircle, XCircle, ChevronDown, ImageIcon } from "lucide-react";
 import { cn } from "@/utils/cn";
-import { DeleteQuestion } from "./delete-question";
+import { DeleteQuestion } from "../Re-Usable-Components/delete-question";
+import UpdateMultipleChoiceQuestionForm from "./update-multiple-choice-question";
 
 interface MultipleChoiceQuestionCardProps {
   question: MultipleChoiceQuestion;
@@ -128,6 +129,7 @@ export const MultipleChoiceQuestionCard = ({
                 id={question.id}
                 questionType={QuestionType.MultipleChoice}
               />
+              <UpdateMultipleChoiceQuestionForm question={question} />
             </AccordionContent>
           </AccordionItem>
         </Accordion>
