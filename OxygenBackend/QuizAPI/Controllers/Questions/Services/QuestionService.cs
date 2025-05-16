@@ -5,6 +5,7 @@ using QuizAPI.Models;
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using QuizAPI.Controllers.Questions.Services.AnswerOptions;
+using QuizAPI.Controllers.Image.Services;
 
 namespace QuizAPI.Controllers.Questions.Services
 {
@@ -13,12 +14,14 @@ namespace QuizAPI.Controllers.Questions.Services
         private readonly ApplicationDbContext _context;
         private readonly IMapper _mapper;
         private readonly IAnswerOptionService _answerOptionService;
+        private readonly IImageService _imageService;
 
-        public QuestionService(ApplicationDbContext context, IMapper mapper, IAnswerOptionService answerOptionService)
+        public QuestionService(ApplicationDbContext context, IMapper mapper, IAnswerOptionService answerOptionService, IImageService imageService)
         {
             _context = context;
             _mapper = mapper;
             _answerOptionService = answerOptionService;
+            _imageService = imageService;
         }
 
         public async Task<List<QuestionBaseDTO>> GetAllQuestionsAsync(string visibility = null)
@@ -288,6 +291,12 @@ namespace QuizAPI.Controllers.Questions.Services
                 question.Visibility = QuestionVisibility.Global;
             }
 
+            if (!string.IsNullOrEmpty(questionCM.ImageUrl))
+            {
+                await _imageService.AssociateImageWithEntityAsync(
+                    questionCM.ImageUrl, "Question", question.Id);
+            }
+
             _context.TypeTheAnswerQuestions.Add(question);
             await _context.SaveChangesAsync();
 
@@ -323,6 +332,12 @@ namespace QuizAPI.Controllers.Questions.Services
 
             // Delegate options sync
             await _answerOptionService.SyncAnswerOptionsAsync(existingQuestion, questionUM.AnswerOptions);
+
+            if (!string.IsNullOrEmpty(questionUM.ImageUrl))
+            {
+                await _imageService.AssociateImageWithEntityAsync(
+                    questionUM.ImageUrl, "Question", existingQuestion.Id);
+            }
 
             // Persist
             await _context.SaveChangesAsync();
