@@ -1,12 +1,15 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System;
+using System.ComponentModel.DataAnnotations;
+using System.IO;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using QuizAPI.Controllers.Image.Services;
+using QuizAPI.Services;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats;
-using SixLabors.ImageSharp.Processing;
-using System;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace QuizAPI.Controllers.Image
 {
@@ -16,14 +19,19 @@ namespace QuizAPI.Controllers.Image
     {
         private readonly IWebHostEnvironment _env;
         private readonly ILogger<ImageUploadController> _logger;
+        private readonly IImageService _imageService;
         private readonly long _fileSizeLimit = 5 * 1024 * 1024; // 5MB
         private readonly int _maxWidth = 2000;
         private readonly int _maxHeight = 2000;
 
-        public ImageUploadController(IWebHostEnvironment env, ILogger<ImageUploadController> logger)
+        public ImageUploadController(
+            IWebHostEnvironment env,
+            ILogger<ImageUploadController> logger,
+            IImageService imageService)
         {
             _env = env ?? throw new ArgumentNullException(nameof(env));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _imageService = imageService ?? throw new ArgumentNullException(nameof(imageService));
         }
 
         [HttpPost("question")]
@@ -43,13 +51,6 @@ namespace QuizAPI.Controllers.Image
                 {
                     _logger.LogWarning($"Rejected file upload: size {file.Length} exceeds limit");
                     return BadRequest($"File size exceeds the limit of {_fileSizeLimit / (1024 * 1024)}MB");
-                }
-
-                // Prepare upload directory
-                var uploadsFolder = Path.Combine(_env.WebRootPath, "uploads");
-                if (!Directory.Exists(uploadsFolder))
-                {
-                    Directory.CreateDirectory(uploadsFolder);
                 }
 
                 // Read file to memory stream for validation
@@ -81,21 +82,21 @@ namespace QuizAPI.Controllers.Image
                     // Reset position to beginning of stream
                     memoryStream.Position = 0;
 
-                    // Generate unique filename with proper extension based on actual format
-                    var extension = format?.FileExtensions?.FirstOrDefault() ?? Path.GetExtension(file.FileName).TrimStart('.');
-                    var fileName = $"{Guid.NewGuid()}.{extension}";
-                    var filePath = Path.Combine(uploadsFolder, fileName);
+                    // Get file extension from actual format
+                    var extension = format?.FileExtensions?.FirstOrDefault() ??
+                        Path.GetExtension(file.FileName).TrimStart('.');
 
-                    // Save the file
-                    await using (var fileStream = new FileStream(filePath, FileMode.Create))
+                    // Save using our service
+                    var baseUrl = $"{Request.Scheme}://{Request.Host.Value}";
+                    var imageUrl = await _imageService.SaveImageAsync(memoryStream, file.FileName, extension);
+
+                    // Add the base URL (should be refactored to be handled in the service)
+                    if (!imageUrl.StartsWith("http"))
                     {
-                        await memoryStream.CopyToAsync(fileStream);
+                        imageUrl = $"{baseUrl}{imageUrl}";
                     }
 
-                    var baseUrl = $"{Request.Scheme}://{Request.Host.Value}";
-                    var imageUrl = $"{baseUrl}/uploads/{fileName}";
-                    _logger.LogInformation($"Successfully saved image: {fileName}");
-
+                    _logger.LogInformation($"Successfully uploaded image: {imageUrl}");
                     return Ok(new { url = imageUrl });
                 }
                 catch (UnknownImageFormatException)
@@ -116,7 +117,27 @@ namespace QuizAPI.Controllers.Image
             }
         }
 
-        private bool IsValidImageFormat(IImageFormat format)
+        [HttpPost("associate")]
+        public async Task<IActionResult> AssociateImage([FromBody] AssociateImageRequest request)
+        {
+            if (request == null || string.IsNullOrEmpty(request.ImageUrl) ||
+                string.IsNullOrEmpty(request.EntityType) || request.EntityId <= 0)
+            {
+                return BadRequest("Invalid request parameters");
+            }
+
+            var success = await _imageService.AssociateImageWithEntityAsync(
+                request.ImageUrl, request.EntityType, request.EntityId);
+
+            if (!success)
+            {
+                return NotFound("Image not found");
+            }
+
+            return Ok(new { success = true });
+        }
+
+        private static bool IsValidImageFormat(IImageFormat format)
         {
             if (format == null)
             {
@@ -127,5 +148,17 @@ namespace QuizAPI.Controllers.Image
             var allowedFormats = new[] { "JPEG", "PNG", "GIF" };
             return allowedFormats.Contains(format.Name, StringComparer.OrdinalIgnoreCase);
         }
+    }
+
+    public class AssociateImageRequest
+    {
+        [Required]
+        public string ImageUrl { get; set; }
+
+        [Required]
+        public string EntityType { get; set; }
+
+        [Required]
+        public int EntityId { get; set; }
     }
 }

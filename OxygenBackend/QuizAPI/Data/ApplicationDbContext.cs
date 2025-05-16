@@ -49,6 +49,7 @@ namespace QuizAPI.Data
 
         public DbSet<QuestionStatistics> QuestionStatistics { get; set; }
 
+        public DbSet<ImageAsset> ImageAssets { get; set; }
 
         public DbSet<Universiteti> Universitetet { get; set; }
 
