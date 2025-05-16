@@ -67,6 +67,38 @@ namespace QuizAPI.Controllers.Questions.Services.AnswerOptions
             return createdOptions;
         }
 
+        public async Task SyncAnswerOptionsAsync(MultipleChoiceQuestion question, IEnumerable<AnswerOptionUM> incomingOptions)
+        {
+            // Split incoming
+            var toUpdate = incomingOptions.Where(x => x.Id.HasValue).ToList();
+            var toCreate = incomingOptions.Where(x => !x.Id.HasValue).ToList();
+            var incomingIds = toUpdate.Select(x => x.Id.Value).ToHashSet();
+
+            // Delete removed
+            var toDelete = question.AnswerOptions.Where(a => !incomingIds.Contains(a.Id)).ToList();
+            if (toDelete.Any()) _context.AnswerOptions.RemoveRange(toDelete);
+
+            // Update existing
+            foreach (var dto in toUpdate)
+            {
+                var entity = question.AnswerOptions.First(a => a.Id == dto.Id.Value);
+                entity.Text = dto.Text;
+                entity.IsCorrect = dto.IsCorrect;
+            }
+
+            // Add new
+            foreach (var dto in toCreate)
+            {
+                var entity = new AnswerOption
+                {
+                    Text = dto.Text,
+                    IsCorrect = dto.IsCorrect,
+                    Question = question
+                };
+                _context.AnswerOptions.Add(entity);
+            }
+        }
+
         /*
         ------------
         Not being used at the moment since the logic is a little complex.

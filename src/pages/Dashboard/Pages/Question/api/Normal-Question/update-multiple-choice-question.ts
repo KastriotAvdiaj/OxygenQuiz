@@ -24,7 +24,8 @@ export type UpdateMultipleChoiceQuestionInput = z.infer<typeof updateMultipleCho
 export const updateMultipleChoiceQuestion = ({ data, questionId }: { data: UpdateMultipleChoiceQuestionInput, questionId: number}): Promise<MultipleChoiceQuestion> => {
   return (
     console.log("data", data, questionId),
-    api.put(`/questions/multiplechoice/${questionId}`, data));
+    api.put(`/questions/multiplechoice/${questionId}`, data)
+  );
 };
 
 type UseUpdateMultipleChoiceQuestionOptions = {

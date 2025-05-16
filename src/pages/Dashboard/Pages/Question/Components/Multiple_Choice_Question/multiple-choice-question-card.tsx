@@ -16,6 +16,9 @@ import { cn } from "@/utils/cn";
 import { DeleteQuestion } from "../Re-Usable-Components/delete-question";
 import UpdateMultipleChoiceQuestionForm from "./update-multiple-choice-question";
 
+
+
+
 interface MultipleChoiceQuestionCardProps {
   question: MultipleChoiceQuestion;
 }
@@ -86,7 +89,7 @@ export const MultipleChoiceQuestionCard = ({
             <AccordionContent>
               <div className="space-y-3">
                 {question.imageUrl && (
-                  <div className="w-full mb-3 rounded-md overflow-hidden border">
+                  <div className="w-full mb-3 rounded-md overflow-hidden border dark:border-foreground/30">
                     <img
                       src={question.imageUrl}
                       alt="Question image"
@@ -125,11 +128,13 @@ export const MultipleChoiceQuestionCard = ({
                   })}
                 </div>
               </div>
-              <DeleteQuestion
-                id={question.id}
-                questionType={QuestionType.MultipleChoice}
-              />
-              <UpdateMultipleChoiceQuestionForm question={question} />
+              <section className="flex items-center justify-end gap-2 mr-2">
+                <DeleteQuestion
+                  id={question.id}
+                  questionType={QuestionType.MultipleChoice}
+                />
+                <UpdateMultipleChoiceQuestionForm question={question} />
+              </section>
             </AccordionContent>
           </AccordionItem>
         </Accordion>

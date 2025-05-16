@@ -15,6 +15,7 @@ namespace QuizAPI.Controllers.Questions.Services.AnswerOptions
             int questionId
             );
 
+        Task SyncAnswerOptionsAsync(MultipleChoiceQuestion question, IEnumerable<AnswerOptionUM> incomingOptions);
         Task<AnswerOption> UpdateAnswerOptionAsync(AnswerOption answerOption);
     }
 }

@@ -9,6 +9,7 @@ import { getQuizzesQueryOptions } from './get-quizzes'
 export const answerOptionInputSchema = z.object({
     text: z.string().min(1, 'Answer option text is required'),
     isCorrect: z.boolean(),
+    id : z.number().optional(),
   });
   
   export const answerOptionsSchema = z

@@ -4,6 +4,7 @@ using QuizAPI.DTOs.Question;
 using QuizAPI.Models;
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
+using QuizAPI.Controllers.Questions.Services.AnswerOptions;
 
 namespace QuizAPI.Controllers.Questions.Services
 {
@@ -11,11 +12,13 @@ namespace QuizAPI.Controllers.Questions.Services
     {
         private readonly ApplicationDbContext _context;
         private readonly IMapper _mapper;
+        private readonly IAnswerOptionService _answerOptionService;
 
-        public QuestionService(ApplicationDbContext context, IMapper mapper)
+        public QuestionService(ApplicationDbContext context, IMapper mapper, IAnswerOptionService answerOptionService)
         {
             _context = context;
             _mapper = mapper;
+            _answerOptionService = answerOptionService;
         }
 
         public async Task<List<QuestionBaseDTO>> GetAllQuestionsAsync(string visibility = null)
@@ -299,55 +302,48 @@ namespace QuizAPI.Controllers.Questions.Services
         }
 
         public async Task<MultipleChoiceQuestionDTO> UpdateMultipleChoiceQuestionAsync(
-    MultipleChoiceQuestionUM questionUM, Guid userId)
+    MultipleChoiceQuestionUM questionUM,
+    Guid userId)
         {
+            // Permission & load
             var userRole = await GetUserRoleAsync(userId);
-            bool isSuperAdmin = userRole == "SuperAdmin";
-
+            bool isSuperAdmin = userRole == "superadmin";
             var query = _context.MultipleChoiceQuestions
                 .Include(q => q.AnswerOptions)
                 .Where(q => q.Id == questionUM.Id);
-
-            if (!isSuperAdmin)
-                query = query.Where(q => q.UserId == userId);
+            if (!isSuperAdmin) query = query.Where(q => q.UserId == userId);
 
             var existingQuestion = await query.FirstOrDefaultAsync();
+            if (existingQuestion == null) return null;
 
-            if (existingQuestion == null)
-                return null;
-
-            // Update basic properties
+            // Map fields
             _mapper.Map(questionUM, existingQuestion);
+            if (Enum.TryParse(questionUM.Visibility, true, out QuestionVisibility vis))
+                existingQuestion.Visibility = vis;
 
-            // Parse visibility
-            if (Enum.TryParse(questionUM.Visibility, true, out QuestionVisibility visibility))
-            {
-                existingQuestion.Visibility = visibility;
-            }
+            // Delegate options sync
+            await _answerOptionService.SyncAnswerOptionsAsync(existingQuestion, questionUM.AnswerOptions);
 
-            // Handle answer options
-            _context.AnswerOptions.RemoveRange(existingQuestion.AnswerOptions);
-            existingQuestion.AnswerOptions = _mapper.Map<List<AnswerOption>>(questionUM.AnswerOptions);
-
+            // Persist
             await _context.SaveChangesAsync();
 
-            // Refresh with full relationships
-            var updatedQuestion = await _context.MultipleChoiceQuestions
+            // Reload & return DTO
+            var updated = await _context.MultipleChoiceQuestions
                 .Include(q => q.AnswerOptions)
-                .Include(q => q.Difficulty)
                 .Include(q => q.Category)
+                .Include(q => q.Difficulty)
                 .Include(q => q.Language)
                 .Include(q => q.User)
                 .FirstOrDefaultAsync(q => q.Id == existingQuestion.Id);
 
-            return _mapper.Map<MultipleChoiceQuestionDTO>(updatedQuestion);
+            return _mapper.Map<MultipleChoiceQuestionDTO>(updated);
         }
 
         public async Task<TrueFalseQuestionDTO> UpdateTrueFalseQuestionAsync(
     TrueFalseQuestionUM questionUM, Guid userId)
         {
             var userRole = await GetUserRoleAsync(userId);
-            bool isSuperAdmin = userRole == "SuperAdmin";
+            bool isSuperAdmin = userRole == "superadmin";
 
             var query = _context.TrueFalseQuestions
                 .Where(q => q.Id == questionUM.Id);
@@ -383,7 +379,7 @@ namespace QuizAPI.Controllers.Questions.Services
      TypeTheAnswerQuestionUM questionUM, Guid userId)
         {
             var userRole = await GetUserRoleAsync(userId);
-            bool isSuperAdmin = userRole == "SuperAdmin";
+            bool isSuperAdmin = userRole == "superadmin";
 
             var query = _context.TypeTheAnswerQuestions
                 .Where(q => q.Id == questionUM.Id);

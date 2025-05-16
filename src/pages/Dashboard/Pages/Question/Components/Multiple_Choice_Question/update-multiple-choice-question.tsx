@@ -1,5 +1,5 @@
-import { Pen, Trash2, XCircle } from "lucide-react";
-import React from "react";
+import { Pen, Trash2 } from "lucide-react";
+import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Form, FormDrawer, Input, Label } from "@/components/ui/form";
 import { useNotifications } from "@/common/Notifications";
@@ -18,6 +18,7 @@ import { DifficultySelect } from "../../Entities/Difficulty/Components/select-qu
 import { LanguageSelect } from "../../Entities/Language/components/select-question-language";
 import { VisibilitySelect } from "../../Entities/select-visibility";
 import { LiftedButton } from "@/common/LiftedButton";
+import ImageUpload from "@/utils/Image-Upload";
 
 interface UpdateMultipleChoiceQuestionFormProps {
   question: MultipleChoiceQuestion;
@@ -26,7 +27,9 @@ interface UpdateMultipleChoiceQuestionFormProps {
 export const UpdateMultipleChoiceQuestionForm: React.FC<
   UpdateMultipleChoiceQuestionFormProps
 > = ({ question }) => {
+  console.log("question", question);
   const { addNotification } = useNotifications();
+  const [imageUrl, setImageUrl] = useState(question.imageUrl || "");
   const { queryData } = useQuizForm();
 
   const updateQuestionMutation = useUpdateMultipleChoiceQuestion({
@@ -53,7 +56,7 @@ export const UpdateMultipleChoiceQuestionForm: React.FC<
         <Button
           form="update-question"
           variant="addSave"
-          className="rounded-sm text-white"
+          className="rounded-sm text-white "
           type="submit"
           size="default"
           isPending={updateQuestionMutation.isPending}
@@ -126,6 +129,21 @@ export const UpdateMultipleChoiceQuestionForm: React.FC<
             }
           };
 
+          const handleImageUpload = (url: string) => {
+            setImageUrl(url);
+            setValue("imageUrl", url);
+          };
+          const handleImageRemove = () => {
+            setImageUrl("");
+            setValue("imageUrl", "");
+          };
+
+          useEffect(() => {
+            if (imageUrl) {
+              setValue("imageUrl", imageUrl);
+            }
+          }, [imageUrl, setValue]);
+
           return (
             <>
               <Input
@@ -135,7 +153,29 @@ export const UpdateMultipleChoiceQuestionForm: React.FC<
                 error={formState.errors["text"]}
                 registration={register("text")}
               />
-
+              {imageUrl ? (
+                <div className="mb-3">
+                  <div className="w-full rounded-md overflow-hidden border dark:border-foreground/30">
+                    <img
+                      src={imageUrl}
+                      alt="Question image"
+                      className="w-full h-auto max-h-48 object-contain mx-auto"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleImageRemove}
+                    className="mt-2 text-sm text-red-600 hover:text-red-800"
+                  >
+                    Remove Image
+                  </button>
+                </div>
+              ) : (
+                <ImageUpload
+                  onUpload={handleImageUpload}
+                  onRemove={handleImageRemove}
+                />
+              )}
               <div className="flex items-center space-x-2 mt-4">
                 <Switch
                   id="allowMultipleSelections"
@@ -173,6 +213,7 @@ export const UpdateMultipleChoiceQuestionForm: React.FC<
                         error={formState.errors?.answerOptions?.[index]?.text}
                         registration={register(`answerOptions.${index}.text`)}
                       />
+
                       <div className="flex flex-col items-center">
                         <Switch
                           className="shadow-md"
@@ -214,7 +255,7 @@ export const UpdateMultipleChoiceQuestionForm: React.FC<
                 </Button>
               </div>
               <Separator className="bg-gray-500" />
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4 ">
                 <CategorySelect
                   label="Category"
                   categories={queryData.categories}
