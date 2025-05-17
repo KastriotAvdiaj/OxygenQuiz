@@ -84,6 +84,40 @@ namespace QuizAPI.Controllers.Image.Services
             return true;
         }
 
+        public async Task DeleteAssociatedImageAsync(string imageUrl, string entityType, int entityId)
+        {
+            try
+            {
+                // Extract the filename from the URL
+                var fileName = Path.GetFileName(new Uri(imageUrl).AbsolutePath);
+
+                // Find the image asset
+                var imageAsset = await _dbContext.ImageAssets
+                    .FirstOrDefaultAsync(img => img.FileName == fileName &&
+                                              img.EntityType == entityType &&
+                                              img.EntityId == entityId);
+
+                if (imageAsset != null)
+                {
+                    // Delete the physical file
+                    var filePath = Path.Combine(_env.WebRootPath, "uploads", fileName);
+                    if (File.Exists(filePath))
+                    {
+                        File.Delete(filePath);
+                    }
+
+                    // Remove the database record
+                    _dbContext.ImageAssets.Remove(imageAsset);
+                    // Note: We don't SaveChanges here as it will be handled in the calling method
+                }
+            }
+            catch (Exception ex)
+            {
+                // Log the error but don't fail the question deletion
+                _logger.LogError(ex, $"Error deleting image for question {entityId}");
+            }
+        }
+
         public async Task<int> CleanUpUnusedImagesAsync()
         {
             // Find images that are unused and older than 24 hours

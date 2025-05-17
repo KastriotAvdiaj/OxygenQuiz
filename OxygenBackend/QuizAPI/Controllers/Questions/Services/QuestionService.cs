@@ -229,6 +229,12 @@ namespace QuizAPI.Controllers.Questions.Services
                 question.Visibility = QuestionVisibility.Global;
             }
 
+            if (!string.IsNullOrEmpty(questionCM.ImageUrl))
+            {
+                await _imageService.AssociateImageWithEntityAsync(
+                    questionCM.ImageUrl, "Question", question.Id);
+            }
+
             _context.MultipleChoiceQuestions.Add(question);
             await _context.SaveChangesAsync();
 
@@ -260,6 +266,13 @@ namespace QuizAPI.Controllers.Questions.Services
             {
                 question.Visibility = QuestionVisibility.Global;
             }
+
+            if (!string.IsNullOrEmpty(questionCM.ImageUrl))
+            {
+                await _imageService.AssociateImageWithEntityAsync(
+                    questionCM.ImageUrl, "Question", question.Id);
+            }
+
 
             _context.TrueFalseQuestions.Add(question);
             await _context.SaveChangesAsync();
@@ -378,6 +391,12 @@ namespace QuizAPI.Controllers.Questions.Services
                 existingQuestion.Visibility = visibility;
             }
 
+            if (!string.IsNullOrEmpty(questionUM.ImageUrl))
+            {
+                await _imageService.AssociateImageWithEntityAsync(
+                    questionUM.ImageUrl, "Question", existingQuestion.Id);
+            }
+
             await _context.SaveChangesAsync();
 
             var updatedQuestion = await _context.TrueFalseQuestions
@@ -414,6 +433,12 @@ namespace QuizAPI.Controllers.Questions.Services
                 existingQuestion.Visibility = visibility;
             }
 
+            if (!string.IsNullOrEmpty(questionUM.ImageUrl))
+            {
+                await _imageService.AssociateImageWithEntityAsync(
+                    questionUM.ImageUrl, "Question", existingQuestion.Id);
+            }
+
             await _context.SaveChangesAsync();
 
             var updatedQuestion = await _context.TypeTheAnswerQuestions
@@ -433,6 +458,11 @@ namespace QuizAPI.Controllers.Questions.Services
 
             if (question == null)
                 return false;
+
+            if (!string.IsNullOrEmpty(question.ImageUrl))
+            {
+                await _imageService.DeleteAssociatedImageAsync(question.ImageUrl, "Question", question.Id);
+            }
 
             _context.Questions.Remove(question);
             await _context.SaveChangesAsync();
