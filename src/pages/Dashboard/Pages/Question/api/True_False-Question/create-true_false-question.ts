@@ -22,7 +22,7 @@ export const createTrueFalseQuestionInputSchema = z.object({
                     .default(UnspecifiedIds.languageId),
   visibility:    z.string().optional(),
   imageUrl:      z.string().optional(),
-  correctAnswer: z.boolean(),
+  correctAnswer: z.boolean().default(false),
 }
 );
 

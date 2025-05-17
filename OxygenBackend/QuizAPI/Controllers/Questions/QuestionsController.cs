@@ -224,7 +224,7 @@ namespace QuizAPI.Controllers.Questions
         }
 
         // PUT: api/questions/typeanswer
-        [HttpPut("typeanswer")]
+        [HttpPut("typeanswer/{id}")]
         [Authorize]
         public async Task<IActionResult> UpdateTypeTheAnswerQuestion(int id, [FromBody] TypeTheAnswerQuestionUM questionUM)
         {

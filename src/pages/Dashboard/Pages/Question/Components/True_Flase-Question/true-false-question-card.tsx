@@ -10,6 +10,7 @@ import { QuestionType, TrueFalseQuestion } from "@/types/ApiTypes";
 import { CheckCircle, XCircle, ChevronDown, ImageIcon } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { DeleteQuestion } from "../Re-Usable-Components/delete-question";
+import { UpdateTrueFalseQuestionForm } from "./update-true_false-questions";
 
 interface TrueFalseQuestionCardProps {
   question: TrueFalseQuestion;
@@ -112,10 +113,13 @@ export const TrueFalseQuestionCard = ({
                   })}
                 </div>
               </div>
-              <DeleteQuestion
-                id={question.id}
-                questionType={QuestionType.TrueFalse}
-              />
+              <section className="flex items-center justify-end gap-2 mr-2">
+                <UpdateTrueFalseQuestionForm question={question} />
+                <DeleteQuestion
+                  id={question.id}
+                  questionType={QuestionType.TrueFalse}
+                />
+              </section>
             </AccordionContent>
           </AccordionItem>
         </Accordion>

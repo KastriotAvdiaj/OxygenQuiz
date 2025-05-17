@@ -48,7 +48,7 @@ export const UpdateMultipleChoiceQuestionForm: React.FC<
       isDone={updateQuestionMutation.isSuccess}
       triggerButton={
         <LiftedButton variant="icon">
-          <Pen className="size-4 mr-0" />
+          <Pen className="size-4" />
         </LiftedButton>
       }
       title="Update Question"
@@ -153,34 +153,16 @@ export const UpdateMultipleChoiceQuestionForm: React.FC<
                 error={formState.errors["text"]}
                 registration={register("text")}
               />
-              {imageUrl ? (
-                <div className="mb-3">
-                  <div className="w-full rounded-md overflow-hidden border dark:border-foreground/30">
-                    <img
-                      src={imageUrl}
-                      alt="Question image"
-                      className="w-full h-auto max-h-48 object-contain mx-auto"
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleImageRemove}
-                    className="mt-2 text-sm text-red-600 hover:text-red-800"
-                  >
-                    Remove Image
-                  </button>
-                </div>
-              ) : (
-                <ImageUpload
-                  onUpload={handleImageUpload}
-                  onRemove={handleImageRemove}
-                />
-              )}
+              <ImageUpload
+                initialImageUrl={imageUrl}
+                onUpload={handleImageUpload}
+                onRemove={handleImageRemove}
+              />
               <div className="flex items-center space-x-2 mt-4">
                 <Switch
                   id="allowMultipleSelections"
                   checked={watch("allowMultipleSelections")}
-                  onCheckedChange={(checked) => {
+                  onCheckedChange={(checked: boolean) => {
                     setValue("allowMultipleSelections", checked);
                   }}
                 />

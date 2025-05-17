@@ -37,7 +37,7 @@ export const useQuizForm = () => {
   });
 
   const queryData = {
-    questions: questionsQuery.data?.items ?? [],
+    // questions: questionsQuery.data?.items ?? [],
     categories: categoriesQuery.data ?? [],
     difficulties: difficultiesQuery.data ?? [],
     languages: languagesQuery.data ?? [],
