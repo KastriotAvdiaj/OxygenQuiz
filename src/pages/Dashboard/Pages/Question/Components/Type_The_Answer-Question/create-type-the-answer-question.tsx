@@ -186,6 +186,7 @@ export const CreateTypeAnswerQuestionForm: React.FC<
                         )}
                       />
                       <Button
+                        type="button"
                         variant="destructive"
                         size="sm"
                         className="rounded-xl"
@@ -214,20 +215,23 @@ export const CreateTypeAnswerQuestionForm: React.FC<
                   <TooltipProvider>
                     <div>
                       <Tooltip>
-                        <TooltipTrigger className="flex items-center space-x-2">
-                          <Switch
-                            id="caseSensitive"
-                            checked={watch("isCaseSensitive") === true}
-                            onCheckedChange={(checked) =>
-                              setValue("isCaseSensitive", checked)
-                            }
-                          />
-                          <Label
-                            htmlFor="caseSensitive"
-                            className="text-sm text-gray-700 dark:text-gray-400"
-                          >
-                            Case Sensitive
-                          </Label>
+                        <TooltipTrigger asChild>
+                          <div className="flex items-center space-x-2 cursor-default">
+                            {" "}
+                            <Switch
+                              id="caseSensitive"
+                              checked={watch("isCaseSensitive") === true}
+                              onCheckedChange={(checked) =>
+                                setValue("isCaseSensitive", checked)
+                              }
+                            />
+                            <Label
+                              htmlFor="caseSensitive"
+                              className="text-sm text-gray-700 dark:text-gray-400"
+                            >
+                              Case Sensitive
+                            </Label>
+                          </div>
                         </TooltipTrigger>
                         <TooltipContent>
                           <p className="bg-background p-2 rounded-md text-sm text-foreground border border-foreground dark:border-foreground/30 mb-2">
@@ -239,32 +243,34 @@ export const CreateTypeAnswerQuestionForm: React.FC<
                     </div>
                     <div>
                       <Tooltip>
-                        <TooltipTrigger className="flex items-center space-x-2">
-                          <Switch
-                            id="allowPartialMatch"
-                            checked={!watch("allowPartialMatch") === true}
-                            onCheckedChange={(checked) =>
-                              setValue("allowPartialMatch", !checked)
-                            }
-                          />
-                          <Label
-                            htmlFor="allowPartialMatch"
-                            className="text-sm text-gray-700 dark:text-gray-400"
-                          >
-                            Exact Match Required
-                          </Label>
-                          <TooltipContent>
-                            <p className="bg-background p-2 rounded-md text-sm text-foreground border border-foreground dark:border-foreground/30 mb-2 mr-3">
-                              If DISABLED, "New York" will be accepted for "New
-                              York City"
-                            </p>
-                          </TooltipContent>
+                        <TooltipTrigger asChild>
+                          <div className="flex items-center space-x-2 cursor-default">
+                            <Switch
+                              id="allowPartialMatch"
+                              checked={!watch("allowPartialMatch") === true}
+                              onCheckedChange={(checked) =>
+                                setValue("allowPartialMatch", !checked)
+                              }
+                            />
+                            <Label
+                              htmlFor="allowPartialMatch"
+                              className="text-sm text-gray-700 dark:text-gray-400"
+                            >
+                              Exact Match Required
+                            </Label>
+                          </div>
                         </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="bg-background p-2 rounded-md text-sm text-foreground border border-foreground dark:border-foreground/30 mb-2 mr-3">
+                            If DISABLED, "New York" will be accepted for "New
+                            York City"
+                          </p>
+                        </TooltipContent>
                       </Tooltip>
                     </div>
                   </TooltipProvider>
                 </div>
-                <section className="flex flex-col gap-4 mt-4">
+                <section className="grid grid-cols-2 gap-4 border-t pt-4 dark:border-foreground/30">
                   <CategorySelect
                     // label="Category"
                     categories={categories}
