@@ -32,12 +32,13 @@ interface CreateTypeAnswerQuestionFormProps {
   categories: QuestionCategory[];
   difficulties: QuestionDifficulty[];
   languages: QuestionLanguage[];
-  onSuccess: () => void;
+  onSuccess?: () => void;
+  title?: string;
 }
 
 export const CreateTypeAnswerQuestionForm: React.FC<
   CreateTypeAnswerQuestionFormProps
-> = ({ categories, difficulties, languages, onSuccess }) => {
+> = ({ categories, difficulties, languages, onSuccess, title }) => {
   const { addNotification } = useNotifications();
   const [imageUrl, setImageUrl] = useState("");
 
@@ -48,7 +49,7 @@ export const CreateTypeAnswerQuestionForm: React.FC<
           type: "success",
           title: "Type Answer Question Created",
         });
-        onSuccess();
+        onSuccess?.();
       },
     },
   });
@@ -56,7 +57,9 @@ export const CreateTypeAnswerQuestionForm: React.FC<
   return (
     <FormDrawer
       isDone={createQuestionMutation.isSuccess}
-      triggerButton={<LiftedButton>Type Answer</LiftedButton>}
+      triggerButton={
+        <LiftedButton>{title ? title : "Type The Answer"}</LiftedButton>
+      }
       title="Create a Type the Answer Question"
       submitButton={
         <Button

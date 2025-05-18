@@ -24,12 +24,13 @@ interface CreateTrueFalseQuestionFormProps {
   categories: QuestionCategory[];
   difficulties: QuestionDifficulty[];
   languages: QuestionLanguage[];
-  onSuccess: () => void;
+  onSuccess?: () => void;
+  title?: string;
 }
 
 export const CreateTrueFalseQuestionForm: React.FC<
   CreateTrueFalseQuestionFormProps
-> = ({ categories, difficulties, languages, onSuccess }) => {
+> = ({ categories, difficulties, languages, onSuccess, title }) => {
   const { addNotification } = useNotifications();
   const [imageUrl, setImageUrl] = useState("");
 
@@ -40,7 +41,7 @@ export const CreateTrueFalseQuestionForm: React.FC<
           type: "success",
           title: "True/False Question Created",
         });
-        onSuccess();
+        onSuccess?.();
       },
     },
   });
@@ -48,7 +49,9 @@ export const CreateTrueFalseQuestionForm: React.FC<
   return (
     <FormDrawer
       isDone={createQuestionMutation.isSuccess}
-      triggerButton={<LiftedButton>True/False</LiftedButton>}
+      triggerButton={
+        <LiftedButton>{title ? title : "True/False Question"}</LiftedButton>
+      }
       title="Create a True False Question"
       submitButton={
         <Button
