@@ -229,14 +229,14 @@ namespace QuizAPI.Controllers.Questions.Services
                 question.Visibility = QuestionVisibility.Global;
             }
 
+            _context.MultipleChoiceQuestions.Add(question);
+            await _context.SaveChangesAsync();
+
             if (!string.IsNullOrEmpty(questionCM.ImageUrl))
             {
                 await _imageService.AssociateImageWithEntityAsync(
                     questionCM.ImageUrl, "Question", question.Id);
             }
-
-            _context.MultipleChoiceQuestions.Add(question);
-            await _context.SaveChangesAsync();
 
             // Fetch the complete entity with relations for DTO mapping
             var createdQuestion = await _context.MultipleChoiceQuestions
@@ -267,15 +267,15 @@ namespace QuizAPI.Controllers.Questions.Services
                 question.Visibility = QuestionVisibility.Global;
             }
 
+            _context.TrueFalseQuestions.Add(question);
+            await _context.SaveChangesAsync();
+
+
             if (!string.IsNullOrEmpty(questionCM.ImageUrl))
             {
                 await _imageService.AssociateImageWithEntityAsync(
                     questionCM.ImageUrl, "Question", question.Id);
             }
-
-
-            _context.TrueFalseQuestions.Add(question);
-            await _context.SaveChangesAsync();
 
             var createdQuestion = await _context.TrueFalseQuestions
                 .Include(q => q.Difficulty)
@@ -304,14 +304,16 @@ namespace QuizAPI.Controllers.Questions.Services
                 question.Visibility = QuestionVisibility.Global;
             }
 
+
+            _context.TypeTheAnswerQuestions.Add(question);
+            await _context.SaveChangesAsync();
+
+
             if (!string.IsNullOrEmpty(questionCM.ImageUrl))
             {
                 await _imageService.AssociateImageWithEntityAsync(
                     questionCM.ImageUrl, "Question", question.Id);
             }
-
-            _context.TypeTheAnswerQuestions.Add(question);
-            await _context.SaveChangesAsync();
 
             var createdQuestion = await _context.TypeTheAnswerQuestions
                 .Include(q => q.Difficulty)
