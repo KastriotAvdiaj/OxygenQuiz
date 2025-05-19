@@ -94,7 +94,7 @@ export type BaseEntity<TId = number> = {
     correctAnswer: string;
     isCaseSensitive: boolean;
     allowPartialMatch: boolean;
-    acceptableAnswers: string[];
+    acceptableAnswers: string[] ;
   }
   
   export type IndividualQuestion = {

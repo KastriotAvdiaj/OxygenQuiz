@@ -25,20 +25,31 @@ export const createTypeTheAnswerQuestionInputSchema = z.object({
   isCaseSensitive:  z.boolean().default(false),
   allowPartialMatch: z.boolean().default(false),
   imageUrl : z.string().optional(),
-  acceptableAnswers: z.array(
-    z.object({
-      value: z.string().min(1, 'Additional acceptable answer cannot be empty'),
-    })
-  )
-  .default([]), 
+ acceptableAnswers: z.array(
+  z.object({
+    value: z.string().min(1, 'Additional acceptable answer cannot be empty'),
+  })
+).default([]),
+
 });
+
+const transformFormData = (data: CreateTypeTheAnswerQuestionInput) => {
+  const transformedData = {
+    ...data,
+    acceptableAnswers: data.acceptableAnswers 
+      ? data.acceptableAnswers.map(item => item.value)
+      : []
+  };
+  
+  return transformedData;
+};
 
 export type CreateTypeTheAnswerQuestionInput = z.infer<typeof createTypeTheAnswerQuestionInputSchema>;
 
 export const createTypeTheAnswerQuestion = ({ data }: { data: CreateTypeTheAnswerQuestionInput }): Promise<TypeTheAnswerQuestion> => {
   return (
     console.log("data", data),
-    api.post('/questions/typeTheAnswer', data));
+    api.post('/questions/typeTheAnswer', transformFormData(data)));
 };
 
 type UseCreateTypeTheAnswerQuestionOptions = {

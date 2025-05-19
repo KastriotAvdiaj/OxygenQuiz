@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { DeleteQuestion } from "../Re-Usable-Components/delete-question";
+import UpdateTypeAnswerQuestionForm from "./update-type_the_asnwer-question";
 
 interface TypeTheAnswerQuestionCardProps {
   question: TypeTheAnswerQuestion;
@@ -174,11 +175,14 @@ export const TypeTheAnswerQuestionCard = ({
                     )}
                   </span>
                 </div>
+              </div>
+              <section className="flex items-center justify-end gap-2 mr-2">
+                <UpdateTypeAnswerQuestionForm question={question} />
                 <DeleteQuestion
                   id={question.id}
                   questionType={QuestionType.TypeTheAnswer}
                 />
-              </div>
+              </section>
             </AccordionContent>
           </AccordionItem>
         </Accordion>
