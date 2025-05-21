@@ -19,8 +19,6 @@ namespace QuizAPI.Data
         public DbSet<TrueFalseQuestion> TrueFalseQuestions { get; set; }
         public DbSet<TypeTheAnswerQuestion> TypeTheAnswerQuestions { get; set; }
 
-        public DbSet<PrivateQuestion> PrivateQuestions { get; set; }
-
         public DbSet<Quiz> Quizzes { get; set; }
 
         public DbSet<QuizSession> QuizSessions { get; set; }

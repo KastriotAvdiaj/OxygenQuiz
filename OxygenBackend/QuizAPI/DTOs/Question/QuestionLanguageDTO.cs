@@ -12,9 +12,6 @@
 
     public class QuestionLanguageCM
     {
-
         public string Language { get; set; }
-
-
     }
 }

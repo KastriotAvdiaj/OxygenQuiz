@@ -1,263 +1,341 @@
-﻿using QuizAPI.Controllers.Questions.Services;
+﻿
+using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using QuizAPI.Data;
 using QuizAPI.DTOs.Quiz;
 using QuizAPI.ManyToManyTables;
-using QuizAPI.Models.Quiz;
 using QuizAPI.Models;
-using NuGet.Packaging;
-using QuizAPI.DTOs.Question;
-using QuizAPI.DTOs.User;
+using QuizAPI.Models.Quiz;
 
 namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
 {
     public class QuizService : IQuizService
     {
         private readonly ApplicationDbContext _context;
-        private readonly IQuestionService _questionService;
+        private readonly IMapper _mapper;
+        private readonly ILogger<QuizService> _logger;
 
-        public QuizService(ApplicationDbContext context, IQuestionService questionService)
+        public QuizService(
+            ApplicationDbContext context,
+            IMapper mapper,
+            ILogger<QuizService> logger)
         {
-            _context = context;
-            _questionService = questionService;
-        }
-/*
-        public async Task<List<QuizDTO>> GetQuizzesAsync()
-        {
-            var quizzes = await _context.Quizzes
-                .Include(q => q.QuizQuestions)
-                    .ThenInclude(qq => qq.Question)
-                        .ThenInclude(q => q.AnswerOptions)
-                .Include(q => q.Category)
-                .Include(q => q.Language)
-                .ToListAsync();
-
-            return quizzes.Select(q => new QuizDTO
-            {
-                Id = q.Id,
-                Title = q.Title,
-                Description = q.Description,
-                Category = q.Category.Name,
-                Language = q.Language.Language,
-                IsPublished = q.IsPublished,
-                CreatedAt = q.CreatedAt,
-                NumberOfQuestions = q.QuizQuestions.Count
-            }).ToList();
-        }*/
-
-/*        public async Task<Quiz> CreateQuizAsync(QuizCM quizCM, string userId)
-        {
-            var quiz = new Quiz
-            {
-                Title = quizCM.Title,
-                Description = quizCM.Description,
-                Slug = quizCM.Slug,
-                CategoryId = quizCM.CategoryId,
-                LanguageId = quizCM.LanguageId,
-                ShuffleQuestions = quizCM.ShuffleQuestions,
-                ShuffleAnswers = quizCM.ShuffleAnswers,
-                IsPublished = true,
-                CreatedAt = DateTime.UtcNow,
-                UserId = Guid.Parse(userId),
-                QuizQuestions = new List<QuizQuestion>()
-            };
-
-            // Process public questions
-            var publicQuestions = await ProcessPublicQuestions(quizCM.PublicQuestions);
-            quiz.QuizQuestions.AddRange(publicQuestions);
-
-            // Process private questions
-            var privateQuestions = await ProcessPrivateQuestions(quizCM.PrivateQuestions, userId);
-            quiz.QuizQuestions.AddRange(privateQuestions);
-
-            _context.Quizzes.Add(quiz);
-            await _context.SaveChangesAsync();
-
-            return quiz;
-        }*/
-
-        public async Task<bool> ValidatePublicQuestionsAsync(IEnumerable<int> questionIds)
-        {
-            var validCount = await _context.Questions
-                .CountAsync(q => questionIds.Contains(q.Id) && q.Visibility == QuestionVisibility.Global);
-
-            return validCount == questionIds.Count();
+            _context = context ?? throw new ArgumentNullException(nameof(context));
+            _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-
-       /* private async Task<List<QuizQuestion>> ProcessPublicQuestions
-            (List<PublicQuestionWithScore> publicQuestions)
+        public async Task<IEnumerable<QuizSummaryDTO>> GetAllQuizzesAsync(bool includeInactive = false)
         {
-            if (publicQuestions == null || !publicQuestions.Any())
-                return new List<QuizQuestion>();
-
-            var questionIds = publicQuestions.Select(q => q.QuestionId).ToList();
-            var validQuestions = await _context.Questions
-                .Where(q => questionIds.Contains(q.Id)
-                && q.Visibility == QuestionVisibility.Global)
-                .ToListAsync();
-
-            if (validQuestions.Count != publicQuestions.Count)
-                throw new ArgumentException("Invalid public question(s)");
-
-            return publicQuestions.Select(pq => new QuizQuestion
+            try
             {
-                QuestionId = pq.QuestionId,
-                Score = pq.Score
-            }).ToList();
-        }*/
-
-
-      /*  private async Task<List<QuizQuestion>> ProcessPrivateQuestions
-            (List<QuestionCMWithScore> privateQuestions, string userId)
-        {
-            var quizQuestions = new List<QuizQuestion>();
-
-            if (privateQuestions == null || !privateQuestions.Any())
-                return quizQuestions;
-
-            foreach (var questionCM in privateQuestions)
-            {
-                var question = await _questionService.CreateQuestionAsync(
-                    questionCM,
-                    userId,
-                    visibility: QuestionVisibility.Private);
-
-                quizQuestions.Add(new QuizQuestion
-                {
-                    QuestionId = question.Id,
-                    Score = questionCM.Score
-                });
-            }
-
-            return quizQuestions;
-        }
-
-        public async Task<QuizDTO?> GetQuizAsync(int id)
-        {
-
-            var quizEntity = await _context.Quizzes
-                .Include(q => q.QuizQuestions)
+                var quizQuery = _context.Quizzes
+                    .Include(q => q.User)
                     .Include(q => q.Category)
-                        .Include(q => q.Language)
-                            .FirstOrDefaultAsync(q => q.Id == id);
+                    .Include(q => q.Language)
+                    .Include(q => q.Difficulty)
+                    .Include(q => q.QuizQuestions)
+                    .AsQueryable();
 
-            if (quizEntity == null)
-            {
-                return null;
-            }
-
-            var quizDto = new QuizDTO
-            {
-                Id = quizEntity.Id,
-                Title = quizEntity.Title,
-                Description = quizEntity.Description,
-                Category = quizEntity.Category.Name,
-                Language = quizEntity.Language.Language,
-                IsPublished = quizEntity.IsPublished,
-                CreatedAt = quizEntity.CreatedAt,
-                NumberOfQuestions = quizEntity.QuizQuestions?.Count() ?? 0
-            };
-
-            return quizDto;
-        }
-
-        public async Task<List<QuizQuestionDTO>> GetQuizQuestionsAsync(int quizId)
-        {
-            var quizQuestions = await _context.QuizQuestions
-                .Where(qq => qq.QuizId == quizId)
-                .Include(qq => qq.Question)
-                    .ThenInclude(q => q.Difficulty)
-                .Include(qq => qq.Question)
-                    .ThenInclude(q => q.Language)
-                .Include(qq => qq.Question)
-                    .ThenInclude(q => q.User)
-                .Include(qq => qq.Question)
-                    .ThenInclude(q => q.Category)
-                .Include(qq => qq.Question)
-                    .ThenInclude(q => q.AnswerOptions)
-                .ToListAsync();
-
-            var quizQuestionDtos = new List<QuizQuestionDTO>();
-
-            foreach (var qq in quizQuestions)
-            {
-                var questionDto = _questionService.MapToQuestionDTO(qq.Question);
-                quizQuestionDtos.Add(new QuizQuestionDTO
+                if (!includeInactive)
                 {
-                    QuizId = qq.QuizId,
-                    QuestionId = qq.QuestionId,
-                    Score = qq.Score,
-                    Question = questionDto
-                });
+                    quizQuery = quizQuery.Where(q => q.IsActive);
+                }
+
+                var quizzes = await quizQuery.ToListAsync();
+                return _mapper.Map<List<QuizSummaryDTO>>(quizzes);
             }
-
-            return quizQuestionDtos;
-        }
-
-        public async Task<QuizDTO> MapToQuizDTO(Quiz quiz)
-        {
-            var language = await _context.QuestionLanguages
-               .Where(l => l.Id == quiz.LanguageId)
-               .Select(l => l.Language)
-               .AsNoTracking()
-               .FirstOrDefaultAsync();
-
-            var category = await _context.QuestionCategories
-            .Where(c => c.Id == quiz.CategoryId)
-            .Select(l => l.Name)
-            .AsNoTracking()
-            .FirstOrDefaultAsync();
-
-            return new QuizDTO
+            catch (Exception ex)
             {
-                Id = quiz.Id,
-                Title = quiz.Title,
-                Description = quiz.Description,
-                Slug = quiz.Slug,
-                Category = category,
-                Language = language,
-                IsPublished = quiz.IsPublished,
-                CreatedAt = quiz.CreatedAt,
-                NumberOfQuestions = quiz.QuizQuestions.Count
-            };
+                _logger.LogError(ex, "Error retrieving all quizzes");
+                throw;
+            }
         }
 
-        public async Task<List<QuizDTO>> GetQuizForEachCategoryAsync()
+        public async Task<IEnumerable<QuizSummaryDTO>> GetQuizzesByUserAsync(Guid userId, bool includeInactive = false)
         {
-            // Get quizzes including their related Category and Language info.
-            var quizzes = await _context.Quizzes
-                .Include(q => q.Category)
-                .Include(q => q.Language)
-                .Include(q => q.QuizQuestions)
-                .ToListAsync();
-
-            // Group quizzes by category and select the first quiz from each group.
-            var groupedQuizzes = quizzes
-                .GroupBy(q => q.CategoryId)
-                .Select(g => g.First())
-                .ToList();
-
-            // Map to DTOs.
-            var quizDtos = groupedQuizzes.Select(q => new QuizDTO
+            try
             {
-                Id = q.Id,
-                Title = q.Title,
-                Description = q.Description,
-                Category = q.Category.Name,
-                Language = q.Language.Language,
-                IsPublished = q.IsPublished,
-                CreatedAt = q.CreatedAt,
-                NumberOfQuestions = q.QuizQuestions?.Count ?? 0
-            }).ToList();
+                var quizQuery = _context.Quizzes
+                    .Include(q => q.User)
+                    .Include(q => q.Category)
+                    .Include(q => q.Language)
+                    .Include(q => q.Difficulty)
+                    .Include(q => q.QuizQuestions)
+                    .Where(q => q.UserId == userId)
+                    .AsQueryable();
 
-            return quizDtos;
+                if (!includeInactive)
+                {
+                    quizQuery = quizQuery.Where(q => q.IsActive);
+                }
+
+                var quizzes = await quizQuery.ToListAsync();
+                return _mapper.Map<List<QuizSummaryDTO>>(quizzes);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving quizzes for user {UserId}", userId);
+                throw;
+            }
         }
 
-        public async Task<bool> ValidateQuizSlugAsync(string slug)
+        public async Task<QuizDTO?> GetQuizByIdAsync(int id)
         {
-            return !await _context.Quizzes.AnyAsync(q => q.Slug == slug);
-        }*/
+            try
+            {
+                var quiz = await _context.Quizzes
+                    .Include(q => q.User)
+                    .Include(q => q.Category)
+                    .Include(q => q.Language)
+                    .Include(q => q.Difficulty)
+                    .Include(q => q.QuizQuestions)
+                    .ThenInclude(qq => qq.Question)
+                    .FirstOrDefaultAsync(q => q.Id == id);
 
+                return quiz == null ? null : _mapper.Map<QuizDTO>(quiz);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving quiz {QuizId}", id);
+                throw;
+            }
+        }
+
+        public async Task<QuizDTO> CreateQuizAsync(Guid userId, QuizCM quizCM)
+        {
+            using var transaction = await _context.Database.BeginTransactionAsync();
+
+            try
+            {
+                // Check if required entities exist
+                var categoryExists = await _context.QuestionCategories.AnyAsync(c => c.Id == quizCM.CategoryId);
+                var languageExists = await _context.QuestionLanguages.AnyAsync(l => l.Id == quizCM.LanguageId);
+                var difficultyExists = await _context.QuestionDifficulties.AnyAsync(d => d.ID == quizCM.DifficultyId);
+                var userExists = await _context.Users.AnyAsync(u => u.Id == userId);
+
+                if (!categoryExists || !languageExists || !difficultyExists || !userExists)
+                {
+                    throw new InvalidOperationException("One or more required entities do not exist");
+                }
+
+                // Verify all questions exist
+                var questionIds = quizCM.Questions.Select(q => q.QuestionId).ToList();
+                var existingQuestionCount = await _context.Questions.CountAsync(q => questionIds.Contains(q.Id));
+
+                if (existingQuestionCount != questionIds.Count)
+                {
+                    throw new InvalidOperationException("One or more questions do not exist");
+                }
+
+                // Create quiz
+                var quiz = _mapper.Map<Quiz>(quizCM);
+                quiz.UserId = userId;
+                quiz.CreatedAt = DateTime.UtcNow;
+                quiz.Version = 1;
+                quiz.IsActive = true;
+
+                await _context.Quizzes.AddAsync(quiz);
+                await _context.SaveChangesAsync();
+
+                // Add quiz questions
+                var order = 1;
+                foreach (var questionCM in quizCM.Questions)
+                {
+                    var quizQuestion = _mapper.Map<QuizQuestion>(questionCM);
+                    quizQuestion.QuizId = quiz.Id;
+                    quizQuestion.OrderInQuiz = questionCM.OrderInQuiz > 0 ? questionCM.OrderInQuiz : order++;
+
+                    await _context.QuizQuestions.AddAsync(quizQuestion);
+                }
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                // Return full quiz details
+                return await GetQuizByIdAsync(quiz.Id);
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, "Error creating quiz for user {UserId}", userId);
+                throw;
+            }
+        }
+
+        public async Task<QuizDTO?> UpdateQuizAsync(Guid userId, QuizUM quizUM)
+        {
+            using var transaction = await _context.Database.BeginTransactionAsync();
+
+            try
+            {
+                // Retrieve quiz and verify ownership
+                var quiz = await _context.Quizzes
+                    .Include(q => q.QuizQuestions)
+                    .FirstOrDefaultAsync(q => q.Id == quizUM.Id);
+
+                if (quiz == null)
+                {
+                    return null;
+                }
+
+                if (quiz.UserId != userId)
+                {
+                    _logger.LogWarning("User {UserId} attempted to update quiz {QuizId} owned by {OwnerId}",
+                        userId, quizUM.Id, quiz.UserId);
+                    return null;
+                }
+
+                // Check for concurrency conflicts
+                if (quiz.Version != quizUM.Version)
+                {
+                    throw new DbUpdateConcurrencyException("Quiz has been modified by another user");
+                }
+
+                // Check if required entities exist
+                var categoryExists = await _context.QuestionCategories.AnyAsync(c => c.Id == quizUM.CategoryId);
+                var languageExists = await _context.QuestionLanguages.AnyAsync(l => l.Id == quizUM.LanguageId);
+                var difficultyExists = await _context.QuestionDifficulties.AnyAsync(d => d.ID == quizUM.DifficultyId);
+
+                if (!categoryExists || !languageExists || !difficultyExists)
+                {
+                    throw new InvalidOperationException("One or more required entities do not exist");
+                }
+
+                // Verify all questions exist
+                var questionIds = quizUM.Questions.Select(q => q.QuestionId).ToList();
+                var existingQuestionCount = await _context.Questions.CountAsync(q => questionIds.Contains(q.Id));
+
+                if (existingQuestionCount != questionIds.Count)
+                {
+                    throw new InvalidOperationException("One or more questions do not exist");
+                }
+
+                // Update quiz properties
+                quiz.Title = quizUM.Title;
+                quiz.Description = quizUM.Description;
+                quiz.CategoryId = quizUM.CategoryId;
+                quiz.LanguageId = quizUM.LanguageId;
+                quiz.DifficultyId = quizUM.DifficultyId;
+                quiz.TimeLimitInSeconds = quizUM.TimeLimitInSeconds;
+                quiz.ShowFeedbackImmediately = quizUM.ShowFeedbackImmediately;
+                quiz.ShuffleQuestions = quizUM.ShuffleQuestions;
+                quiz.IsPublished = quizUM.IsPublished;
+                quiz.IsActive = quizUM.IsActive;
+                quiz.Version += 1;
+
+                // Remove existing quiz questions
+                _context.QuizQuestions.RemoveRange(quiz.QuizQuestions);
+
+                // Add updated quiz questions
+                foreach (var questionUM in quizUM.Questions)
+                {
+                    var quizQuestion = _mapper.Map<QuizQuestion>(questionUM);
+                    quizQuestion.QuizId = quiz.Id;
+
+                    await _context.QuizQuestions.AddAsync(quizQuestion);
+                }
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                // Return full quiz details
+                return await GetQuizByIdAsync(quiz.Id);
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, "Error updating quiz {QuizId} for user {UserId}", quizUM.Id, userId);
+                throw;
+            }
+        }
+
+        public async Task<QuizDTO?> ToggleQuizPublishStatusAsync(Guid userId, int quizId)
+        {
+            try
+            {
+                var quiz = await _context.Quizzes
+                    .FirstOrDefaultAsync(q => q.Id == quizId);
+
+                if (quiz == null)
+                {
+                    return null;
+                }
+
+                if (quiz.UserId != userId)
+                {
+                    _logger.LogWarning("User {UserId} attempted to toggle publish status of quiz {QuizId} owned by {OwnerId}",
+                        userId, quizId, quiz.UserId);
+                    return null;
+                }
+
+                quiz.IsPublished = !quiz.IsPublished;
+                quiz.Version += 1;
+
+                await _context.SaveChangesAsync();
+
+                return await GetQuizByIdAsync(quizId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error toggling publish status for quiz {QuizId}", quizId);
+                throw;
+            }
+        }
+
+        public async Task<QuizDTO?> ToggleQuizActiveStatusAsync(Guid userId, int quizId)
+        {
+            try
+            {
+                var quiz = await _context.Quizzes
+                    .FirstOrDefaultAsync(q => q.Id == quizId);
+
+                if (quiz == null)
+                {
+                    return null;
+                }
+
+                if (quiz.UserId != userId)
+                {
+                    _logger.LogWarning("User {UserId} attempted to toggle active status of quiz {QuizId} owned by {OwnerId}",
+                        userId, quizId, quiz.UserId);
+                    return null;
+                }
+
+                quiz.IsActive = !quiz.IsActive;
+                quiz.Version += 1;
+
+                await _context.SaveChangesAsync();
+
+                return await GetQuizByIdAsync(quizId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error toggling active status for quiz {QuizId}", quizId);
+                throw;
+            }
+        }
+
+        public async Task<IEnumerable<QuizSummaryDTO>> GetPublicQuizzesAsync()
+        {
+            try
+            {
+                var quizzes = await _context.Quizzes
+                    .Include(q => q.User)
+                    .Include(q => q.Category)
+                    .Include(q => q.Language)
+                    .Include(q => q.Difficulty)
+                    .Include(q => q.QuizQuestions)
+                    .Where(q => q.IsActive && q.IsPublished)
+                    .ToListAsync();
+
+                return _mapper.Map<List<QuizSummaryDTO>>(quizzes);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving public quizzes");
+                throw;
+            }
+        }
     }
 }

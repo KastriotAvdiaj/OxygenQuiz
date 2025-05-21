@@ -28,17 +28,7 @@ namespace QuizAPI.ManyToManyTables
         [ForeignKey(nameof(QuestionId))]
         public QuestionBase Question { get; set; }
 
-    }
+        public int OrderInQuiz { get; set; }
 
-    public class QuizQuestionDTO
-    {
-        public int QuestionId { get; set; }
-        public int QuizId { get; set; }
-
-        public PointSystem PointSystem { get; set; } = PointSystem.Standard;
-
-        public int TimeLimitInSeconds { get; set; }
-        public int Score { get; set; }
-        public QuestionBaseDTO Question { get; set; } = new();
     }
 }

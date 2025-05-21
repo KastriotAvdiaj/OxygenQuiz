@@ -40,9 +40,9 @@ namespace QuizAPI.Models.Quiz
         [ForeignKey(nameof(LanguageId))]
         public QuestionLanguage Language { get; set; }
 
-        public int TimeLimitInSeconds { get; set; } = 0; //this is the total amount of seconds,accumulated out of all the questions.
+        public int TimeLimitInSeconds { get; set; } = 0; 
 
-        public bool ShowFeedbackImmediately;
+        public bool ShowFeedbackImmediately { get; set; } = false;
 
         public int DifficultyId { get; set; }
 

@@ -14,14 +14,9 @@
 
     public class QuestionDifficultyCM
     {
-
         public string Level { get; set; }
 
         public int? Weight { get; set; }
-
-
     }
-
-
 
 }
