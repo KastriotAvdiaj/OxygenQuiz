@@ -27,6 +27,21 @@ namespace QuizAPI.Models
         public Guid? UserId { get; set; }
     }
 
+    public class QuizFilterParams : PaginationParams
+    {
+        public string? SearchTerm { get; set; }
+        public int? CategoryId { get; set; }
+        public int? DifficultyId { get; set; }
+        public int? LanguageId { get; set; }
+        public string? Visibility { get; set; }
+
+        public bool? IsPublished { get; set; }
+
+        public bool? IsActive { get; set; }
+        public Guid? UserId { get; set; }
+
+    }
+
     public class PagedList<T>
     {
         public List<T> Items { get; set; }

@@ -1,5 +1,5 @@
 import { Button, DataTable } from "@/components/ui";
-import { useQuizzesData } from "./api/get-quizzes";
+import { useQuizzesData } from "./api/get-all-quizzes";
 // import { QuizList } from "./components/quiz-list";
 import { Link } from "react-router-dom";
 import { quizColumns } from "./components/Data-Table-Columns/columns";

@@ -49,17 +49,34 @@ export type BaseEntity<TId = number> = {
     isCorrect: boolean;
   };
 
-  export type Quiz = {
+  export type QuizSummaryDTO = {
     id: number;
     title: string;
-    description: string;
+    description?: string;
     language: string;
+    difficulty :string;
     category:string;
     createdAt: string;
     isPublished: boolean;
-    numberOfQuestions: number;
+    isActive : boolean;
+    user: string;
+    questionCount:number;
   }
 
+// public class QuizSummaryDTO
+// {
+//     public int Id { get; set; }
+//     public string Title { get; set; } = string.Empty;
+//     public string Category { get; set; } = string.Empty; 
+//     public string Difficulty { get; set; } = string.Empty; 
+//     public string Language { get; set; } = string.Empty;
+//     public bool IsPublished { get; set; }
+//     public bool IsActive { get; set; }
+//     public DateTime CreatedAt { get; set; }
+//     public int QuestionCount { get; set; } 
+//     public string User { get; set; } = string.Empty; 
+
+// }
   export enum QuestionType {
     MultipleChoice   = "MultipleChoice",
     TrueFalse        = "TrueFalse",

@@ -24,6 +24,8 @@ namespace QuizAPI.DTOs.Quiz
         public int TimeLimitInSeconds { get; set; } = 0;
 
         public bool ShowFeedbackImmediately { get; set; } = false;
+        public string Visibility { get; set; } = string.Empty;
+
 
         [Required]
         public int DifficultyId { get; set; }
@@ -40,9 +42,12 @@ namespace QuizAPI.DTOs.Quiz
     {
         public int Id { get; set; }
         public string Title { get; set; } = string.Empty;
+        public string? Description{ get; set; } = string.Empty;
         public string Category { get; set; } = string.Empty; 
         public string Difficulty { get; set; } = string.Empty; 
         public string Language { get; set; } = string.Empty;
+
+        public string Visibility { get; set; } = string.Empty;
         public bool IsPublished { get; set; }
         public bool IsActive { get; set; }
         public DateTime CreatedAt { get; set; }
@@ -65,6 +70,8 @@ namespace QuizAPI.DTOs.Quiz
 
         public int TimeLimitInSeconds { get; set; }
         public bool ShowFeedbackImmediately { get; set; }
+
+        public string Visibility { get; set; } = string.Empty;
 
         public bool ShuffleQuestions { get; set; }
         public bool IsPublished { get; set; }
@@ -96,6 +103,9 @@ namespace QuizAPI.DTOs.Quiz
 
         [Required]
         public int DifficultyId { get; set; }
+
+        public string Visibility { get; set; } = string.Empty;
+
 
         public int TimeLimitInSeconds { get; set; }
         public bool ShowFeedbackImmediately { get; set; }

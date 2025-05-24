@@ -1,8 +1,10 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using QuizAPI.Controllers.Questions;
 using QuizAPI.Controllers.Quizzes.Services.QuizServices;
 using QuizAPI.DTOs.Quiz;
+using QuizAPI.Models;
 using System.Security.Claims;
 
 namespace QuizAPI.Controllers.Quizzes
@@ -30,12 +32,20 @@ namespace QuizAPI.Controllers.Quizzes
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        public async Task<ActionResult<IEnumerable<QuizSummaryDTO>>> GetAllQuizzes([FromQuery] bool includeInactive = false)
+        public async Task<ActionResult<List<QuizSummaryDTO>>> GetAllQuizzes([FromQuery] QuizFilterParams filterParams)
         {
             try
             {
-                var quizzes = await _quizService.GetAllQuizzesAsync(includeInactive);
-                return Ok(quizzes);
+                var pagedQuizzes = await _quizService.GetAllQuizzesAsync(filterParams);
+                Response.AddPaginationHeader(
+                    pagedQuizzes.PageNumber,
+                    pagedQuizzes.PageSize,
+                    pagedQuizzes.TotalCount,
+                    pagedQuizzes.TotalPages,
+                    pagedQuizzes.HasNextPage,
+                    pagedQuizzes.HasPreviousPage
+                );
+                return Ok(pagedQuizzes.Items);
             }
             catch (Exception ex)
             {
@@ -43,7 +53,6 @@ namespace QuizAPI.Controllers.Quizzes
                 return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while processing your request");
             }
         }
-
         /// <summary>
         /// Get all public quizzes
         /// </summary>
@@ -71,13 +80,21 @@ namespace QuizAPI.Controllers.Quizzes
         [Authorize]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        public async Task<ActionResult<IEnumerable<QuizSummaryDTO>>> GetMyQuizzes([FromQuery] bool includeInactive = false)
+        public async Task<ActionResult<List<QuizSummaryDTO>>> GetMyQuizzes([FromQuery] QuizFilterParams filterParams)
         {
             try
             {
                 var userId = GetCurrentUserId();
-                var quizzes = await _quizService.GetQuizzesByUserAsync(userId, includeInactive);
-                return Ok(quizzes);
+                var pagedQuizzes = await _quizService.GetQuizzesByUserAsync(userId, filterParams);
+                Response.AddPaginationHeader(
+                    pagedQuizzes.PageNumber,
+                    pagedQuizzes.PageSize,
+                    pagedQuizzes.TotalCount,
+                    pagedQuizzes.TotalPages,
+                    pagedQuizzes.HasNextPage,
+                    pagedQuizzes.HasPreviousPage
+                );
+                return Ok(pagedQuizzes.Items);
             }
             catch (Exception ex)
             {

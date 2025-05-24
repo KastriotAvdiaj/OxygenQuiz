@@ -3,7 +3,7 @@ import {z} from 'zod'
 import { api } from '@/lib/Api-client'
 import { MutationConfig } from '@/lib/React-query'
 import { useQueryClient, useMutation } from '@tanstack/react-query'
-import { getQuizzesQueryOptions } from './get-quizzes'
+import { getQuizzesQueryOptions } from './get-all-quizzes'
 
 
 export const answerOptionInputSchema = z.object({

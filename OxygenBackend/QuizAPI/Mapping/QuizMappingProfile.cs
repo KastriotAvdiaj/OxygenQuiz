@@ -40,7 +40,8 @@ public class QuizMappingProfile : Profile
             .ForMember(dest => dest.Difficulty, opt => opt.MapFrom(src => src.Difficulty.Level))
             .ForMember(dest => dest.Language, opt => opt.MapFrom(src => src.Language.Language)) // Fixed property name
             .ForMember(dest => dest.QuestionCount, opt => opt.MapFrom(src => src.QuizQuestions.Count))
-            .ForMember(dest => dest.User, opt => opt.MapFrom(src => src.User.Username));
+            .ForMember(dest => dest.User, opt => opt.MapFrom(src => src.User.Username))
+        .ForMember(dest => dest.Visibility, opt => opt.MapFrom(src => src.Visibility.ToString()));
 
         // Quiz Entity to QuizDTO (for detail view)
         CreateMap<Quiz, QuizDTO>()
@@ -50,7 +51,8 @@ public class QuizMappingProfile : Profile
             .ForMember(dest => dest.Difficulty, opt => opt.MapFrom(src => src.Difficulty))
             .ForMember(dest => dest.Questions, opt => opt.MapFrom(src => src.QuizQuestions))
             .ForMember(dest => dest.ShowFeedbackImmediately, opt => opt.MapFrom(src => src.ShowFeedbackImmediately)) // Added this
-            .ForMember(dest => dest.QuestionCount, opt => opt.MapFrom(src => src.QuizQuestions.Count));
+            .ForMember(dest => dest.QuestionCount, opt => opt.MapFrom(src => src.QuizQuestions.Count))
+            .ForMember(dest => dest.Visibility, opt => opt.MapFrom(src => src.Visibility.ToString()));
 
         // QuizCM (Create Model) to Quiz Entity
         CreateMap<QuizCM, Quiz>()
@@ -64,7 +66,8 @@ public class QuizMappingProfile : Profile
             .ForMember(dest => dest.Version, opt => opt.MapFrom(src => 1))
             .ForMember(dest => dest.ShowFeedbackImmediately, opt => opt.MapFrom(src => src.ShowFeedbackImmediately))
             .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => true))
-            .ForMember(dest => dest.QuizQuestions, opt => opt.MapFrom(src => src.Questions));
+            .ForMember(dest => dest.QuizQuestions, opt => opt.MapFrom(src => src.Questions))
+             .ForMember(dest => dest.Visibility, opt => opt.MapFrom(src => Enum.Parse<QuizVisibility>(src.Visibility, true)));
 
         // QuizUM (Update Model) to Quiz Entity
         CreateMap<QuizUM, Quiz>()
@@ -75,7 +78,8 @@ public class QuizMappingProfile : Profile
             .ForMember(dest => dest.Difficulty, opt => opt.Ignore())
             .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
             .ForMember(dest => dest.ShowFeedbackImmediately, opt => opt.MapFrom(src => src.ShowFeedbackImmediately))
-            .ForMember(dest => dest.QuizQuestions, opt => opt.MapFrom(src => src.Questions));
+            .ForMember(dest => dest.QuizQuestions, opt => opt.MapFrom(src => src.Questions))
+            .ForMember(dest => dest.Visibility, opt => opt.MapFrom(src => Enum.Parse<QuizVisibility>(src.Visibility, true)));
 
         // Common entity-to-DTO mappings
         CreateMap<User, UserBasicDTO>();

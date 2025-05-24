@@ -6,6 +6,7 @@ using QuizAPI.DTOs.Quiz;
 using QuizAPI.ManyToManyTables;
 using QuizAPI.Models;
 using QuizAPI.Models.Quiz;
+using System.Linq;
 
 namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
 {
@@ -25,7 +26,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public async Task<IEnumerable<QuizSummaryDTO>> GetAllQuizzesAsync(bool includeInactive = false)
+        public async Task<PagedList<QuizSummaryDTO>> GetAllQuizzesAsync(QuizFilterParams filterParams)
         {
             try
             {
@@ -37,13 +38,20 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                     .Include(q => q.QuizQuestions)
                     .AsQueryable();
 
-                if (!includeInactive)
-                {
-                    quizQuery = quizQuery.Where(q => q.IsActive);
-                }
+                // Apply filters
+                quizQuery = ApplyQuizFilters(quizQuery, filterParams);
 
-                var quizzes = await quizQuery.ToListAsync();
-                return _mapper.Map<List<QuizSummaryDTO>>(quizzes);
+                // Apply pagination and convert to DTO
+                var pagedQuizzes = await PagedList<Quiz>.CreateAsync(quizQuery, filterParams.PageNumber, filterParams.PageSize);
+
+                var quizDtos = _mapper.Map<List<QuizSummaryDTO>>(pagedQuizzes.Items);
+
+                return new PagedList<QuizSummaryDTO>(
+                    quizDtos,
+                    pagedQuizzes.TotalCount,
+                    pagedQuizzes.PageNumber,
+                    pagedQuizzes.PageSize
+                );
             }
             catch (Exception ex)
             {
@@ -52,7 +60,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
             }
         }
 
-        public async Task<IEnumerable<QuizSummaryDTO>> GetQuizzesByUserAsync(Guid userId, bool includeInactive = false)
+        public async Task<PagedList<QuizSummaryDTO>> GetQuizzesByUserAsync(Guid userId, QuizFilterParams filterParams)
         {
             try
             {
@@ -65,13 +73,20 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                     .Where(q => q.UserId == userId)
                     .AsQueryable();
 
-                if (!includeInactive)
-                {
-                    quizQuery = quizQuery.Where(q => q.IsActive);
-                }
+                // Apply filters
+                quizQuery = ApplyQuizFilters(quizQuery, filterParams);
 
-                var quizzes = await quizQuery.ToListAsync();
-                return _mapper.Map<List<QuizSummaryDTO>>(quizzes);
+                // Apply pagination and convert to DTO
+                var pagedQuizzes = await PagedList<Quiz>.CreateAsync(quizQuery, filterParams.PageNumber, filterParams.PageSize);
+
+                var quizDtos = _mapper.Map<List<QuizSummaryDTO>>(pagedQuizzes.Items);
+
+                return new PagedList<QuizSummaryDTO>(
+                    quizDtos,
+                    pagedQuizzes.TotalCount,
+                    pagedQuizzes.PageNumber,
+                    pagedQuizzes.PageSize
+                );
             }
             catch (Exception ex)
             {
@@ -336,6 +351,55 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                 _logger.LogError(ex, "Error retrieving public quizzes");
                 throw;
             }
+        }
+
+        private static IQueryable<Quiz> ApplyQuizFilters(IQueryable<Quiz> query, QuizFilterParams filterParams)
+        {
+            // Active/Inactive filter - fixed to use IsActive property from filterParams
+            if (filterParams.IsActive.HasValue)
+            {
+                query = query.Where(q => q.IsActive == filterParams.IsActive.Value);
+            }
+
+            // Search term filter
+            if (!string.IsNullOrEmpty(filterParams.SearchTerm))
+            {
+                var searchTerm = filterParams.SearchTerm.ToLower();
+                query = query.Where(q => q.Title.ToLower().Contains(searchTerm) ||
+                                        q.Description.ToLower().Contains(searchTerm));
+            }
+
+            // Category filter
+            if (filterParams.CategoryId.HasValue)
+            {
+                query = query.Where(q => q.CategoryId == filterParams.CategoryId.Value);
+            }
+
+            // Difficulty filter
+            if (filterParams.DifficultyId.HasValue)
+            {
+                query = query.Where(q => q.DifficultyId == filterParams.DifficultyId.Value);
+            }
+
+            // Language filter
+            if (filterParams.LanguageId.HasValue)
+            {
+                query = query.Where(q => q.LanguageId == filterParams.LanguageId.Value);
+            }
+
+            // Published filter - added missing filter
+            if (filterParams.IsPublished.HasValue)
+            {
+                query = query.Where(q => q.IsPublished == filterParams.IsPublished.Value);
+            }
+
+            // User filter
+            if (filterParams.UserId.HasValue)
+            {
+                query = query.Where(q => q.UserId == filterParams.UserId.Value);
+            }
+
+            return query;
         }
     }
 }

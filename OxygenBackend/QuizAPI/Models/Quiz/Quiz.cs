@@ -2,10 +2,17 @@
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 using QuizAPI.ManyToManyTables;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace QuizAPI.Models.Quiz
 {
+
+    public enum QuizVisibility
+    {
+        Private,
+        Public,
+        Friends
+    }
+
     public class Quiz
     {
         [Key]
@@ -52,6 +59,9 @@ namespace QuizAPI.Models.Quiz
 
         [Required]
         public bool ShuffleQuestions { get; set; } = false;
+
+        [Required]
+        public QuizVisibility Visibility { get; set; } = QuizVisibility.Private;
 
 
         [Required]

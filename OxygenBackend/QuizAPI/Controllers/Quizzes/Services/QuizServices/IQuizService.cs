@@ -1,5 +1,6 @@
 ﻿using QuizAPI.DTOs.Quiz;
 using QuizAPI.ManyToManyTables;
+using QuizAPI.Models;
 using QuizAPI.Models.Quiz;
 
 namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
@@ -11,7 +12,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
         /// </summary>
         /// <param name="includeInactive">Whether to include inactive quizzes</param>
         /// <returns>List of quiz summaries</returns>
-        Task<IEnumerable<QuizSummaryDTO>> GetAllQuizzesAsync(bool includeInactive = false);
+        Task<PagedList<QuizSummaryDTO>> GetAllQuizzesAsync(QuizFilterParams filterParam);
 
         /// <summary>
         /// Get quizzes created by a specific user
@@ -19,7 +20,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
         /// <param name="userId">The user ID</param>
         /// <param name="includeInactive">Whether to include inactive quizzes</param>
         /// <returns>List of quiz summaries</returns>
-        Task<IEnumerable<QuizSummaryDTO>> GetQuizzesByUserAsync(Guid userId, bool includeInactive = false);
+        Task<PagedList<QuizSummaryDTO>> GetQuizzesByUserAsync(Guid userId, QuizFilterParams filterParam);
 
         /// <summary>
         /// Get a quiz by its ID with detailed information including questions
