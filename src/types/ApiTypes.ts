@@ -63,20 +63,6 @@ export type BaseEntity<TId = number> = {
     questionCount:number;
   }
 
-// public class QuizSummaryDTO
-// {
-//     public int Id { get; set; }
-//     public string Title { get; set; } = string.Empty;
-//     public string Category { get; set; } = string.Empty; 
-//     public string Difficulty { get; set; } = string.Empty; 
-//     public string Language { get; set; } = string.Empty;
-//     public bool IsPublished { get; set; }
-//     public bool IsActive { get; set; }
-//     public DateTime CreatedAt { get; set; }
-//     public int QuestionCount { get; set; } 
-//     public string User { get; set; } = string.Empty; 
-
-// }
   export enum QuestionType {
     MultipleChoice   = "MultipleChoice",
     TrueFalse        = "TrueFalse",
@@ -181,6 +167,9 @@ export type BaseEntity<TId = number> = {
     data: T[];
     pagination?: Pagination;
   }
+
+  export type PaginatedQuizSummaryResponse = PaginatedResponse<QuizSummaryDTO>;
+  // export type PaginatedUserResponse = PaginatedResponse<User>;
 
   export type PaginatedQuestionResponse = PaginatedResponse<QuestionBase>;
   export type PaginatedMultipleChoiceQuestionResponse = PaginatedResponse<MultipleChoiceQuestion>;

@@ -12,7 +12,7 @@ import { RedirectIfLoggedIn } from "../lib/Redirect";
 import "../global.css";
 import { Navigate } from "react-router-dom";
 import { HomeLayout } from "@/layouts/layout";
-import QuizCreator from "@/pages/Dashboard/Pages/Quiz/components/Create-Quiz-Form/create-quiz";
+// import QuizCreator from "@/pages/Dashboard/Pages/Quiz/components/Create-Quiz-Form/create-quiz";
 import { QuizSelection } from "@/pages/Quiz/Quiz-Selection";
 
 // Lazy load components
@@ -114,10 +114,10 @@ const createAppRouter = (queryClient: QueryClient) =>
             return { Component: Quizzes };
           },
         },
-        {
-          path: "quizzes/create-quiz",
-          element: <QuizCreator />,
-        },
+        // {
+        //   path: "quizzes/create-quiz",
+        //   element: <QuizCreator />,
+        // },
         {
           path: "quiz/:quizId",
           lazy: async () => {

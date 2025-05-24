@@ -1,9 +1,9 @@
-import { Quiz } from '@/types/ApiTypes'
+import { QuizSummaryDTO } from '@/types/ApiTypes'
 import {z} from 'zod'
 import { api } from '@/lib/Api-client'
 import { MutationConfig } from '@/lib/React-query'
 import { useQueryClient, useMutation } from '@tanstack/react-query'
-import { getQuizzesQueryOptions } from './get-all-quizzes'
+import { getAllQuizzesQueryOptions } from './get-all-quizzes'
 
 
 export const answerOptionInputSchema = z.object({
@@ -71,7 +71,7 @@ export const answerOptionInputSchema = z.object({
 
 export type CreateQuizInput = z.infer<typeof createQuizInputSchema>
 
-export const createQuiz = ({data} : {data:CreateQuizInput}): Promise<Quiz> => {
+export const createQuiz = ({data} : {data:CreateQuizInput}): Promise<QuizSummaryDTO> => {
     return api.post('/quizzes', data);
 }
 
@@ -88,7 +88,7 @@ export const useCreateQuiz = ({ mutationConfig }: UseCreateQuizOptions = {}) => 
         {
             mutationFn: createQuiz,
             onSuccess: (...args) => {
-                queryClient.invalidateQueries({ queryKey: getQuizzesQueryOptions().queryKey });
+                queryClient.invalidateQueries({ queryKey: getAllQuizzesQueryOptions().queryKey });
                 onSuccess?.(...args);
             },
             onError: (error, variables, context) => {

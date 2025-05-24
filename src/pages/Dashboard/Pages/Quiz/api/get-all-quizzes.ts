@@ -1,9 +1,11 @@
 import { queryOptions, useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/Api-client";
 import { QueryConfig } from "@/lib/React-query";
-import {  QuizSummaryDTO } from "@/types/ApiTypes";
+import { PaginatedQuizSummaryResponse } from "@/types/ApiTypes";
+import { AxiosResponse } from "axios";
+import { cleanQueryParams, extractPaginationFromHeaders } from "@/lib/pagination-query";
 
-type GetAllQuizzesParams = {
+export type GetAllQuizzesParams = {
   pageNumber?: number;
   pageSize?: number;
   searchTerm?: string;
@@ -11,27 +13,44 @@ type GetAllQuizzesParams = {
   difficultyId?: number;
   languageId?: number;
   visibility?: string;
-}
-
-export const getAllQuizzes = (): Promise<QuizSummaryDTO[]> => {
-  return api.get(`/quiz`);
 };
 
-export const getAllQuizzesQueryOptions = () => {
+export const getAllQuizzes = async (
+  params: GetAllQuizzesParams
+): Promise<PaginatedQuizSummaryResponse> => {
+  const cleanParams = cleanQueryParams(params);
+  const queryString = new URLSearchParams(cleanParams).toString();
+  const result: AxiosResponse = await api.get(
+    `/quiz?${queryString}`
+  );
+  const pagination = extractPaginationFromHeaders(result);
+
+  return {
+    data: result.data,
+    pagination: pagination || undefined,
+  };
+};
+
+export const getAllQuizzesQueryOptions = (
+  params: GetAllQuizzesParams = {}
+) => {
   return queryOptions({
-    queryKey:  ["quiz"],
-    queryFn: () => getAllQuizzes(),
+    queryKey: ["quiz", params],
+    queryFn: () => getAllQuizzes(params),
   });
 };
 
-type UseAllQuizOptions = {
+type UseAllQuizzesOptions = {
   queryConfig?: QueryConfig<typeof getAllQuizzesQueryOptions>;
+  params?: GetAllQuizzesParams;
 };
 
-export const useAllQuizzesData = ({ queryConfig}: UseAllQuizOptions) => {
+export const useAllQuizzesData = ({
+  queryConfig,
+  params,
+}: UseAllQuizzesOptions) => {
   return useQuery({
-    ...getAllQuizzesQueryOptions(),
+    ...getAllQuizzesQueryOptions(params),
     ...queryConfig,
   });
 };
-

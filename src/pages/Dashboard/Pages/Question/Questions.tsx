@@ -64,7 +64,7 @@ export const Questions = () => {
     categoryId: selectedCategoryId,
     difficultyId: selectedDifficultyId,
     languageId: selectedLanguageId,
-    // visibility: "published"
+    // visibility: "Public"
   };
 
   useEffect(() => {
