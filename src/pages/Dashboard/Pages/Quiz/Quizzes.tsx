@@ -11,6 +11,15 @@ import { Separator } from "@/components/ui/separator";
 import { useQuestionCategoryData } from "../Question/Entities/Categories/api/get-question-categories";
 import { useQuestionDifficultyData } from "../Question/Entities/Difficulty/api/get-question-difficulties";
 import { useQuestionLanguageData } from "../Question/Entities/Language/api/get-question-language";
+import { LiftedButton } from "@/common/LiftedButton";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input, Textarea } from "@/components/ui/form";
+import { GrFormNextLink } from "react-icons/gr";
 
 export const Quizzes = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -110,8 +119,32 @@ export const Quizzes = () => {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Quiz Management</h1>
         <Link to="/dashboard/quizzes/create-quiz" className="w-fit">
-          <Button variant="addSave">Create Quiz</Button>
+          {/* <LiftedButton>+ Create Quiz</LiftedButton> */}
         </Link>
+        <Dialog>
+          <DialogTrigger asChild>
+            <LiftedButton>+ Create Quiz</LiftedButton>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <h2 className="text-xl">Choose your quiz title</h2>
+              <p className="text-muted-foreground text-xs">(You can still change later)</p>
+            </DialogHeader>
+            <Input variant="quiz" placeholder="Quiz Title" />
+            {/* <Textarea
+              variant="quiz"
+              maxLength={200}
+              className="bg-muted rounded-sm max-h-28"
+              placeholder="Enter quiz description"
+            /> */}
+            <section className="flex flex-col items-end mt-6">
+              <LiftedButton className="w-fit">
+                Next
+                <GrFormNextLink />
+              </LiftedButton>
+            </section>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <Card className="p-6 bg-card border dark:border-foreground/30">
