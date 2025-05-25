@@ -16,6 +16,7 @@ import {
   Dialog,
   DialogContent,
   DialogHeader,
+  DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input, Textarea } from "@/components/ui/form";
@@ -118,17 +119,21 @@ export const Quizzes = () => {
     <div className="container mx-auto py-8 px-4 md:px-0">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Quiz Management</h1>
-        <Link to="/dashboard/quizzes/create-quiz" className="w-fit">
-          {/* <LiftedButton>+ Create Quiz</LiftedButton> */}
-        </Link>
+        {/* <Link to="/dashboard/quizzes/create-quiz" className="w-fit">
+          <LiftedButton>+ Create Quiz</LiftedButton>
+        </Link> */}
         <Dialog>
           <DialogTrigger asChild>
             <LiftedButton>+ Create Quiz</LiftedButton>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <h2 className="text-xl">Choose your quiz title</h2>
-              <p className="text-muted-foreground text-xs">(You can still change later)</p>
+              <DialogTitle>
+                <h2 className="text-xl">Choose your quiz title</h2>
+                <p className="text-muted-foreground text-xs">
+                  (You can still change later)
+                </p>
+              </DialogTitle>
             </DialogHeader>
             <Input variant="quiz" placeholder="Quiz Title" />
             {/* <Textarea
@@ -138,10 +143,12 @@ export const Quizzes = () => {
               placeholder="Enter quiz description"
             /> */}
             <section className="flex flex-col items-end mt-6">
-              <LiftedButton className="w-fit">
-                Next
-                <GrFormNextLink />
-              </LiftedButton>
+              <Link to="/dashboard/quizzes/create-quiz" className="w-fit">
+                <LiftedButton className="w-fit">
+                  Next
+                  <GrFormNextLink />
+                </LiftedButton>
+              </Link>
             </section>
           </DialogContent>
         </Dialog>

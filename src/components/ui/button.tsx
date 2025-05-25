@@ -15,7 +15,7 @@ const buttonVariants = cva(
         addSave:
           "flex justify-center items-center gap-2 shadow text-white bg-primary hover:bg-primary/70 active:scale-95",
         outline:
-          "flex text-foreground bg-background justify-center items-center gap-3 border border-border shadow-sm hover:bg-muted active:scale-95",
+          "flex text-foreground bg-transparent justify-center items-center gap-3 border border-border shadow-sm hover:bg-muted active:scale-95",
         secondary: "bg-secondary shadow-sm active:scale-95",
         link: "underline-offset-4 hover:underline active:scale-95",
         ghost: "hover:bg-accent hover:text-accent-foreground",

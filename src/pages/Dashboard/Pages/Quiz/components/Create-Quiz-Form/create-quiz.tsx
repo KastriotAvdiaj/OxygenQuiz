@@ -8,6 +8,7 @@ import { Brain, PlusCircle, StarIcon, Trophy, Sparkles } from "lucide-react";
 import z from "zod";
 import { Card } from "@/components/ui";
 import { createQuestionCategoryInputSchema } from "../../../Question/Entities/Categories/api/create-question-categories";
+import SelectQuestionComponent from "./question-select";
 
 // type FormValues = z.infer<typeof createQuizInputSchema>;
 
@@ -27,10 +28,11 @@ const defaultPrivateQuestion = {
 };
 
 const CreateQuizForm = () => {
-  const { queryData
+  const {
+    queryData,
     // handleSubmit,
     // isSubmitting,
-   } = useQuizForm();
+  } = useQuizForm();
   const [activeQuestionIndex, setActiveQuestionIndex] = useState(0);
   const [showConfetti, setShowConfetti] = useState(false);
 
@@ -189,7 +191,7 @@ const CreateQuizForm = () => {
                     )}
                   </LiftedButton> */}
                 </div>
-
+                <SelectQuestionComponent />
                 <div className="border-l-2 border-primary/30 md:w-72 flex-shrink-0 bg-card/20">
                   {/* <CreatedQuestionsPanel
                     onAddPrivateQuestion={handleAddPrivateQuestion}

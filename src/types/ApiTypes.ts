@@ -69,7 +69,7 @@ export type BaseEntity<TId = number> = {
     TypeTheAnswer    = "TypeTheAnswer",
   }
 
-  interface QuestionBase {
+  export interface QuestionBase {
     id: number;
     text: string;
     visibility: string;
