@@ -8,6 +8,7 @@ import { TrueFalseQuestionList } from "../Components/True_Flase-Question/true-fa
 import { TypeTheAnswerQuestionList } from "../Components/Type_The_Answer-Question/type-the-asnwer-list";
 import { PaginationControls } from "./Re-Usable-Components/pagination-control";
 import { Spinner } from "@/components/ui";
+import { SimpleMultipleChoiceQuestionList } from "@/pages/Question/User-question-components/user-question-type-lists";
 
 interface QueryParams {
   pageNumber: number;
@@ -22,12 +23,14 @@ interface QuestionTabContentProps {
   questionType: QuestionType;
   queryParams: QueryParams;
   onPageChange: (newPage: number) => void;
+  page?: string;
 }
 
 export const QuestionTabContent = ({
   questionType,
   queryParams,
   onPageChange,
+  page = "admin", // Default to "admin" if not provided
 }: QuestionTabContentProps) => {
   // Keep all queries active but only fetch when needed
   const mcqQuery = useMultipleChoiceQuestionData({
@@ -89,7 +92,15 @@ export const QuestionTabContent = ({
       case QuestionType.MultipleChoice:
         return (
           <>
-            <MultipleChoiceQuestionList questions={mcqQuery.data?.data || []} />
+            {page == "user" ? (
+              <SimpleMultipleChoiceQuestionList
+                questions={mcqQuery.data?.data || []}
+              />
+            ) : (
+              <MultipleChoiceQuestionList
+                questions={mcqQuery.data?.data || []}
+              />
+            )}
             <PaginationControls
               pagination={mcqQuery.data?.pagination}
               onPageChange={onPageChange}

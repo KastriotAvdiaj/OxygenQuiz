@@ -40,6 +40,8 @@ export const getTrueFalseQuestionsQueryOptions = (
   return queryOptions({
     queryKey: ["trueFalseQuestions", params],
     queryFn: () => getTrueFalseQuestions(params),
+  refetchOnMount: false,
+  refetchOnWindowFocus: false,
   });
 };
 

@@ -1,6 +1,5 @@
-
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { Input } from "@/components/ui/form";
+import { Input, Label } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -20,18 +19,18 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { 
-  Search, 
-  Filter, 
-  X, 
-  ChevronDown, 
-  Settings2, 
-  Save, 
+import {
+  Search,
+  Filter,
+  X,
+  ChevronDown,
+  Settings2,
+  Save,
   Bookmark,
   RotateCcw,
   SlidersHorizontal,
   Check,
-  Star
+  Star,
 } from "lucide-react";
 
 // Mock types (replace with your actual types)
@@ -54,7 +53,7 @@ interface ActiveFilter {
   key: string;
   value: string | number | boolean;
   label: string;
-  type: 'select' | 'boolean' | 'search';
+  type: "select" | "boolean" | "search";
 }
 
 interface FilterPreset {
@@ -127,7 +126,7 @@ export const QuizFilters = ({
       createdAt: new Date(),
     },
     {
-      id: "2", 
+      id: "2",
       name: "Public Published",
       filters: { visibility: "Public", isPublished: true },
       createdAt: new Date(),
@@ -190,7 +189,9 @@ export const QuizFilters = ({
     }
 
     if (selectedDifficultyId) {
-      const difficulty = difficulties.find((d) => d.id === selectedDifficultyId);
+      const difficulty = difficulties.find(
+        (d) => d.id === selectedDifficultyId
+      );
       if (difficulty) {
         filters.push({
           key: "difficulty",
@@ -348,15 +349,17 @@ export const QuizFilters = ({
 
   const saveCurrentFilters = (): void => {
     if (!savedFilterName.trim()) return;
-    
+
     const currentFilters: Record<string, string | number | boolean> = {};
-    
+
     if (selectedCategoryId) currentFilters.category = selectedCategoryId;
     if (selectedDifficultyId) currentFilters.difficulty = selectedDifficultyId;
     if (selectedLanguageId) currentFilters.language = selectedLanguageId;
     if (selectedVisibility) currentFilters.visibility = selectedVisibility;
-    if (selectedIsPublished !== undefined) currentFilters.isPublished = selectedIsPublished;
-    if (selectedIsActive !== undefined) currentFilters.isActive = selectedIsActive;
+    if (selectedIsPublished !== undefined)
+      currentFilters.isPublished = selectedIsPublished;
+    if (selectedIsActive !== undefined)
+      currentFilters.isActive = selectedIsActive;
 
     const newSavedFilter: SavedFilter = {
       id: Date.now().toString(),
@@ -365,13 +368,13 @@ export const QuizFilters = ({
       createdAt: new Date(),
     };
 
-    setSavedFilters(prev => [...prev, newSavedFilter]);
+    setSavedFilters((prev) => [...prev, newSavedFilter]);
     setSavedFilterName("");
     setShowSaveDialog(false);
   };
 
   const deleteSavedFilter = (filterId: string): void => {
-    setSavedFilters(prev => prev.filter(f => f.id !== filterId));
+    setSavedFilters((prev) => prev.filter((f) => f.id !== filterId));
   };
 
   // Get current filter state summary
@@ -379,7 +382,9 @@ export const QuizFilters = ({
     if (totalActiveFilters === 0) {
       return `Showing all ${totalResults.toLocaleString()} quizzes`;
     }
-    return `${totalResults.toLocaleString()} results with ${totalActiveFilters} filter${totalActiveFilters !== 1 ? 's' : ''}`;
+    return `${totalResults.toLocaleString()} results with ${totalActiveFilters} filter${
+      totalActiveFilters !== 1 ? "s" : ""
+    }`;
   }, [totalActiveFilters, totalResults]);
 
   return (
@@ -388,7 +393,11 @@ export const QuizFilters = ({
       <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
         <div className="flex-1 max-w-2xl">
           {/* Enhanced Search Bar */}
-          <div className={`relative transition-all duration-200 ${searchFocused ? 'scale-[1.02]' : ''}`}>
+          <div
+            className={`relative transition-all duration-200 ${
+              searchFocused ? "scale-[1.02]" : ""
+            }`}
+          >
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
             <Input
               placeholder="Search quizzes by title, description, or tags..."
@@ -431,7 +440,7 @@ export const QuizFilters = ({
                       value={savedFilterName}
                       onChange={(e) => setSavedFilterName(e.target.value)}
                       onKeyDown={(e) => {
-                        if (e.key === 'Enter') saveCurrentFilters();
+                        if (e.key === "Enter") saveCurrentFilters();
                       }}
                     />
                     <div className="flex justify-end gap-2">
@@ -463,14 +472,18 @@ export const QuizFilters = ({
           >
             <CollapsibleTrigger asChild>
               <Button
-                variant={showAdvancedFilters || totalActiveFilters > 0 ? "default" : "outline"}
+                variant={
+                  showAdvancedFilters || totalActiveFilters > 0
+                    ? "default"
+                    : "outline"
+                }
                 className="gap-2 relative"
               >
                 <SlidersHorizontal className="w-4 h-4" />
                 Filters
                 {totalActiveFilters > 0 && (
-                  <Badge 
-                    variant="secondary" 
+                  <Badge
+                    variant="secondary"
                     className="ml-1 px-1.5 py-0.5 text-xs bg-primary/10 text-primary border-primary/20"
                   >
                     {totalActiveFilters}
@@ -506,14 +519,20 @@ export const QuizFilters = ({
       {/* Quick Filter Presets - Enhanced Design */}
       <div className="flex flex-wrap gap-2">
         {presets.map((preset) => {
-          const isActive = JSON.stringify(preset.filters) === JSON.stringify({
-            ...(selectedCategoryId && { category: selectedCategoryId }),
-            ...(selectedDifficultyId && { difficulty: selectedDifficultyId }),
-            ...(selectedLanguageId && { language: selectedLanguageId }),
-            ...(selectedVisibility && { visibility: selectedVisibility }),
-            ...(selectedIsPublished !== undefined && { isPublished: selectedIsPublished }),
-            ...(selectedIsActive !== undefined && { isActive: selectedIsActive }),
-          });
+          const isActive =
+            JSON.stringify(preset.filters) ===
+            JSON.stringify({
+              ...(selectedCategoryId && { category: selectedCategoryId }),
+              ...(selectedDifficultyId && { difficulty: selectedDifficultyId }),
+              ...(selectedLanguageId && { language: selectedLanguageId }),
+              ...(selectedVisibility && { visibility: selectedVisibility }),
+              ...(selectedIsPublished !== undefined && {
+                isPublished: selectedIsPublished,
+              }),
+              ...(selectedIsActive !== undefined && {
+                isActive: selectedIsActive,
+              }),
+            });
 
           return (
             <Button
@@ -522,8 +541,8 @@ export const QuizFilters = ({
               size="sm"
               onClick={() => applyPreset(preset)}
               className={`h-9 px-4 gap-2 transition-all duration-200 ${
-                isActive 
-                  ? "bg-primary text-primary-foreground shadow-md" 
+                isActive
+                  ? "bg-primary text-primary-foreground shadow-md"
                   : "hover:bg-muted/80 hover:scale-105"
               }`}
             >
@@ -544,7 +563,10 @@ export const QuizFilters = ({
           </h4>
           <div className="flex flex-wrap gap-2">
             {savedFilters.map((filter) => (
-              <div key={filter.id} className="flex items-center gap-1 bg-muted/50 rounded-lg pl-3 pr-1 py-1">
+              <div
+                key={filter.id}
+                className="flex items-center gap-1 bg-muted/50 rounded-lg pl-3 pr-1 py-1"
+              >
                 <Button
                   variant="ghost"
                   size="sm"
@@ -570,7 +592,9 @@ export const QuizFilters = ({
       {/* Active Filter Pills - Enhanced */}
       {(activeFilters.length > 0 || hasSearchTerm) && (
         <div className="space-y-2">
-          <h4 className="text-sm font-medium text-muted-foreground">Active Filters</h4>
+          <h4 className="text-sm font-medium text-muted-foreground">
+            Active Filters
+          </h4>
           <div className="flex flex-wrap gap-2">
             {hasSearchTerm && (
               <Badge
@@ -611,18 +635,23 @@ export const QuizFilters = ({
       )}
 
       {/* Advanced Filters Panel - Redesigned */}
-      <Collapsible open={showAdvancedFilters} onOpenChange={setShowAdvancedFilters}>
+      <Collapsible
+        open={showAdvancedFilters}
+        onOpenChange={setShowAdvancedFilters}
+      >
         <CollapsibleContent className="space-y-6">
           <div className="bg-gradient-to-br from-card via-card/95 to-muted/30 border border-border/50 rounded-xl p-6 backdrop-blur-sm">
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {/* Category Filter */}
               <div className="space-y-3">
-                <label className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <Label className="text-sm font-semibold text-foreground flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-blue-500"></div>
                   Category
-                </label>
+                </Label>
                 <Select
-                  value={selectedCategoryId ? selectedCategoryId.toString() : ""}
+                  value={
+                    selectedCategoryId ? selectedCategoryId.toString() : ""
+                  }
                   onValueChange={(value) =>
                     onCategoryChange(value ? Number(value) : undefined)
                   }
@@ -632,7 +661,10 @@ export const QuizFilters = ({
                   </SelectTrigger>
                   <SelectContent>
                     {categories.map((category) => (
-                      <SelectItem key={category.id} value={category.id.toString()}>
+                      <SelectItem
+                        key={category.id}
+                        value={category.id.toString()}
+                      >
                         {category.name}
                       </SelectItem>
                     ))}
@@ -647,7 +679,9 @@ export const QuizFilters = ({
                   Difficulty
                 </label>
                 <Select
-                  value={selectedDifficultyId ? selectedDifficultyId.toString() : ""}
+                  value={
+                    selectedDifficultyId ? selectedDifficultyId.toString() : ""
+                  }
                   onValueChange={(value) =>
                     onDifficultyChange(value ? Number(value) : undefined)
                   }
@@ -657,7 +691,10 @@ export const QuizFilters = ({
                   </SelectTrigger>
                   <SelectContent>
                     {difficulties.map((difficulty) => (
-                      <SelectItem key={difficulty.id} value={difficulty.id.toString()}>
+                      <SelectItem
+                        key={difficulty.id}
+                        value={difficulty.id.toString()}
+                      >
                         {difficulty.level}
                       </SelectItem>
                     ))}
@@ -672,7 +709,9 @@ export const QuizFilters = ({
                   Language
                 </label>
                 <Select
-                  value={selectedLanguageId ? selectedLanguageId.toString() : ""}
+                  value={
+                    selectedLanguageId ? selectedLanguageId.toString() : ""
+                  }
                   onValueChange={(value) =>
                     onLanguageChange(value ? Number(value) : undefined)
                   }
@@ -682,7 +721,10 @@ export const QuizFilters = ({
                   </SelectTrigger>
                   <SelectContent>
                     {languages.map((language) => (
-                      <SelectItem key={language.id} value={language.id.toString()}>
+                      <SelectItem
+                        key={language.id}
+                        value={language.id.toString()}
+                      >
                         {language.language}
                       </SelectItem>
                     ))}
@@ -698,7 +740,9 @@ export const QuizFilters = ({
                 </label>
                 <Select
                   value={selectedVisibility || ""}
-                  onValueChange={(value) => onVisibilityChange(value || undefined)}
+                  onValueChange={(value) =>
+                    onVisibilityChange(value || undefined)
+                  }
                 >
                   <SelectTrigger className="h-11 bg-background/50">
                     <SelectValue placeholder="Any visibility" />
@@ -756,7 +800,9 @@ export const QuizFilters = ({
                       : "inactive"
                   }
                   onValueChange={(value) =>
-                    onIsActiveChange(value === "" ? undefined : value === "active")
+                    onIsActiveChange(
+                      value === "" ? undefined : value === "active"
+                    )
                   }
                 >
                   <SelectTrigger className="h-11 bg-background/50">
