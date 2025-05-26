@@ -8,7 +8,11 @@ import { TrueFalseQuestionList } from "../Components/True_Flase-Question/true-fa
 import { TypeTheAnswerQuestionList } from "../Components/Type_The_Answer-Question/type-the-asnwer-list";
 import { PaginationControls } from "./Re-Usable-Components/pagination-control";
 import { Spinner } from "@/components/ui";
-import { SimpleMultipleChoiceQuestionList } from "@/pages/Question/User-question-components/user-question-type-lists";
+import {
+  SimpleMultipleChoiceQuestionList,
+  SimpleTrueFalseQuestionList,
+  SimpleTypeTheAnswerQuestionList,
+} from "@/pages/Question/User-question-components/user-question-type-lists";
 
 interface QueryParams {
   pageNumber: number;
@@ -24,6 +28,9 @@ interface QuestionTabContentProps {
   queryParams: QueryParams;
   onPageChange: (newPage: number) => void;
   page?: string;
+  selectedQuestionIds?: Set<number>;
+  onQuestionSelection?: (questionId: number, selected: boolean) => void;
+  maxSelections?: number; // Optional prop for max selections
 }
 
 export const QuestionTabContent = ({
@@ -31,6 +38,9 @@ export const QuestionTabContent = ({
   queryParams,
   onPageChange,
   page = "admin", // Default to "admin" if not provided
+  selectedQuestionIds,
+  onQuestionSelection,
+  maxSelections = 5,
 }: QuestionTabContentProps) => {
   // Keep all queries active but only fetch when needed
   const mcqQuery = useMultipleChoiceQuestionData({
@@ -95,6 +105,9 @@ export const QuestionTabContent = ({
             {page == "user" ? (
               <SimpleMultipleChoiceQuestionList
                 questions={mcqQuery.data?.data || []}
+                selectedQuestionIds={selectedQuestionIds}
+                onSelectionChange={onQuestionSelection}
+                maxSelections={maxSelections}
               />
             ) : (
               <MultipleChoiceQuestionList
@@ -110,9 +123,19 @@ export const QuestionTabContent = ({
       case QuestionType.TrueFalse:
         return (
           <>
-            <TrueFalseQuestionList
-              questions={trueFalseQuery.data?.data || []}
-            />
+            {page == "user" ? (
+              <SimpleTrueFalseQuestionList
+                questions={trueFalseQuery.data?.data || []}
+                selectedQuestionIds={selectedQuestionIds}
+                onSelectionChange={onQuestionSelection}
+                maxSelections={maxSelections}
+              />
+            ) : (
+              <TrueFalseQuestionList
+                questions={trueFalseQuery.data?.data || []}
+              />
+            )}
+
             <PaginationControls
               pagination={trueFalseQuery.data?.pagination}
               onPageChange={onPageChange}
@@ -122,9 +145,18 @@ export const QuestionTabContent = ({
       case QuestionType.TypeTheAnswer:
         return (
           <>
-            <TypeTheAnswerQuestionList
-              questions={typeAnswerQuery.data?.data || []}
-            />
+            {page == "user" ? (
+              <SimpleTypeTheAnswerQuestionList
+                questions={typeAnswerQuery.data?.data || []}
+                selectedQuestionIds={selectedQuestionIds}
+                onSelectionChange={onQuestionSelection}
+                maxSelections={maxSelections}
+              />
+            ) : (
+              <TypeTheAnswerQuestionList
+                questions={typeAnswerQuery.data?.data || []}
+              />
+            )}
             <PaginationControls
               pagination={typeAnswerQuery.data?.pagination}
               onPageChange={onPageChange}

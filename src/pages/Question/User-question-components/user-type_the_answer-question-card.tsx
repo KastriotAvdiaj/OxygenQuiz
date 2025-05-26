@@ -8,6 +8,7 @@ import {
   SearchCheck,
   SearchX,
   Type,
+  Check,
 } from "lucide-react";
 import { cn } from "@/utils/cn";
 
@@ -24,37 +25,74 @@ export const SimpleTypeTheAnswerQuestionCard = ({
   onSelectionChange,
   selectionDisabled = false,
 }: SimpleTypeTheAnswerQuestionCardProps) => {
+  const handleCheckboxChange = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!selectionDisabled && onSelectionChange) {
+      onSelectionChange(question.id, !isSelected);
+    }
+  };
+
   return (
     <Card
       className={cn(
-        "mb-3 border shadow-sm dark:border-foreground/20 transition-all duration-200 cursor-pointer hover:shadow-md",
+        "mb-3 border shadow-sm transition-all duration-200 cursor-pointer hover:shadow-md relative overflow-hidden",
+        // Selection styles
         isSelected
-          ? "border-blue-500 dark:border-blue-400 bg-blue-50/50 dark:bg-blue-900/10"
-          : "dark:bg-primary/5"
+          ? "border-blue-500 dark:border-blue-400 bg-blue-50/50 dark:bg-blue-900/20 ring-2 ring-blue-200 dark:ring-blue-800/50"
+          : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600",
+        // Disabled styles
+        selectionDisabled && !isSelected
+          ? "opacity-50 cursor-not-allowed hover:shadow-sm"
+          : "",
+        // Base background
+        "bg-white dark:bg-gray-900"
       )}
-      onClick={() =>
-        !selectionDisabled && onSelectionChange?.(question.id, !isSelected)
-      }
+      //   onClick={handleCardClick} WILL CAUSE AN ERROR WHEN CLICKING THE CARD
     >
-      <CardHeader className="pb-3 pt-4">
+      {/* Selection indicator line */}
+      {isSelected && (
+        <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 dark:bg-blue-400" />
+      )}
+
+      <CardHeader className="pb-3 pt-4 pl-6">
         <div className="flex items-start gap-3">
           {onSelectionChange && (
-            <Checkbox
-              checked={isSelected}
-              disabled={selectionDisabled}
-              onChange={() => onSelectionChange(question.id, !isSelected)}
-              className="mt-1 flex-shrink-0"
-            />
+            <div className="relative">
+              <Checkbox
+                checked={isSelected}
+                disabled={selectionDisabled}
+                onClick={handleCheckboxChange}
+                className={cn(
+                  "mt-1 flex-shrink-0 transition-all duration-200",
+                  isSelected && "bg-blue-500 border-blue-500 text-white"
+                )}
+              />
+              {isSelected && (
+                <Check className="absolute top-1.5 left-0.5 h-3 w-3 text-white pointer-events-none" />
+              )}
+            </div>
           )}
 
           <div className="flex-1 min-w-0">
-            <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
-              <CardTitle className="text-base leading-tight flex-1 pr-2">
+            <div className="flex flex-wrap items-start justify-between gap-2 mb-3">
+              <CardTitle
+                className={cn(
+                  "text-base leading-tight flex-1 pr-2 transition-colors duration-200",
+                  isSelected
+                    ? "text-blue-900 dark:text-blue-100"
+                    : "text-gray-900 dark:text-gray-100"
+                )}
+              >
                 {question.text}
                 {question.imageUrl && (
                   <Badge
                     variant="outline"
-                    className="ml-2 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800/50"
+                    className={cn(
+                      "ml-2 transition-colors duration-200",
+                      isSelected
+                        ? "bg-blue-100 dark:bg-blue-800/30 border-blue-300 dark:border-blue-600/50"
+                        : "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800/50"
+                    )}
                   >
                     <ImageIcon className="h-3 w-3 mr-1" />
                     <span className="text-blue-600 dark:text-blue-400 text-xs">
@@ -65,19 +103,28 @@ export const SimpleTypeTheAnswerQuestionCard = ({
               </CardTitle>
 
               <div className="flex items-center gap-2 flex-shrink-0">
-                <Badge variant="outline" className="text-xs">
+                <Badge
+                  variant="outline"
+                  className={cn(
+                    "text-xs transition-colors duration-200",
+                    isSelected
+                      ? "border-blue-300 dark:border-blue-600/50 text-blue-700 dark:text-blue-300"
+                      : "border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400"
+                  )}
+                >
                   ID: {question.id}
                 </Badge>
                 <Badge
                   variant="outline"
                   className={cn(
-                    "text-xs",
+                    "text-xs transition-colors duration-200",
                     question.difficulty.level === "Easy" &&
                       "text-green-600 dark:text-green-400 border-green-200 dark:border-green-800/50",
                     question.difficulty.level === "Medium" &&
                       "text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800/50",
                     question.difficulty.level === "Hard" &&
-                      "text-red-600 dark:text-red-400 border-red-200 dark:border-red-800/50"
+                      "text-red-600 dark:text-red-400 border-red-200 dark:border-red-800/50",
+                    isSelected && "ring-1 ring-current/20"
                   )}
                 >
                   {question.difficulty.level}
@@ -86,10 +133,26 @@ export const SimpleTypeTheAnswerQuestionCard = ({
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="secondary" className="text-xs font-normal">
+              <Badge
+                variant="secondary"
+                className={cn(
+                  "text-xs font-normal transition-colors duration-200",
+                  isSelected
+                    ? "bg-blue-100 dark:bg-blue-800/30 text-blue-800 dark:text-blue-200"
+                    : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300"
+                )}
+              >
                 {question.category.name}
               </Badge>
-              <Badge variant="secondary" className="text-xs font-normal">
+              <Badge
+                variant="secondary"
+                className={cn(
+                  "text-xs font-normal transition-colors duration-200",
+                  isSelected
+                    ? "bg-blue-100 dark:bg-blue-800/30 text-blue-800 dark:text-blue-200"
+                    : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300"
+                )}
+              >
                 {question.language.language}
               </Badge>
 
@@ -98,10 +161,13 @@ export const SimpleTypeTheAnswerQuestionCard = ({
                 <Badge
                   variant="outline"
                   className={cn(
-                    "text-xs font-normal flex items-center gap-1",
+                    "text-xs font-normal flex items-center gap-1 transition-colors duration-200",
                     question.isCaseSensitive
                       ? "text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800/50"
-                      : "text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-800/50"
+                      : "text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-800/50",
+                    isSelected &&
+                      question.isCaseSensitive &&
+                      "ring-1 ring-blue-200/50"
                   )}
                 >
                   <CaseSensitive className="h-3 w-3" />
@@ -111,10 +177,11 @@ export const SimpleTypeTheAnswerQuestionCard = ({
                 <Badge
                   variant="outline"
                   className={cn(
-                    "text-xs font-normal flex items-center gap-1",
+                    "text-xs font-normal flex items-center gap-1 transition-colors duration-200",
                     question.allowPartialMatch
                       ? "text-green-600 dark:text-green-400 border-green-200 dark:border-green-800/50"
-                      : "text-orange-600 dark:text-orange-400 border-orange-200 dark:border-orange-800/50"
+                      : "text-orange-600 dark:text-orange-400 border-orange-200 dark:border-orange-800/50",
+                    isSelected && "ring-1 ring-current/20"
                   )}
                 >
                   {question.allowPartialMatch ? (
@@ -129,7 +196,12 @@ export const SimpleTypeTheAnswerQuestionCard = ({
               {question.acceptableAnswers.length > 0 && (
                 <Badge
                   variant="outline"
-                  className="text-xs font-normal text-muted-foreground"
+                  className={cn(
+                    "text-xs font-normal transition-colors duration-200",
+                    isSelected
+                      ? "border-blue-300 dark:border-blue-600/50 text-blue-700 dark:text-blue-300"
+                      : "border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400"
+                  )}
                 >
                   +{question.acceptableAnswers.length} alt answers
                 </Badge>
@@ -137,15 +209,56 @@ export const SimpleTypeTheAnswerQuestionCard = ({
             </div>
 
             {/* Show correct answer preview */}
-            <div className="mt-2 p-2 rounded-md bg-muted/30 dark:bg-muted/20 border">
+            <div
+              className={cn(
+                "mt-2 p-2 rounded-md border transition-colors duration-200",
+                isSelected
+                  ? "bg-blue-50/50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800/50"
+                  : "bg-gray-50/50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700"
+              )}
+            >
               <div className="flex items-center gap-2">
-                <Type className="h-3 w-3 text-muted-foreground" />
-                <span className="text-xs text-muted-foreground">Answer:</span>
-                <span className="text-xs font-mono font-medium text-foreground truncate">
+                <Type
+                  className={cn(
+                    "h-3 w-3 transition-colors duration-200",
+                    isSelected
+                      ? "text-blue-600 dark:text-blue-400"
+                      : "text-gray-500 dark:text-gray-400"
+                  )}
+                />
+                <span
+                  className={cn(
+                    "text-xs transition-colors duration-200",
+                    isSelected
+                      ? "text-blue-600 dark:text-blue-400"
+                      : "text-gray-500 dark:text-gray-400"
+                  )}
+                >
+                  Answer:
+                </span>
+                <span
+                  className={cn(
+                    "text-xs font-mono font-medium truncate transition-colors duration-200",
+                    isSelected
+                      ? "text-blue-900 dark:text-blue-100"
+                      : "text-gray-900 dark:text-gray-100"
+                  )}
+                >
                   {question.correctAnswer}
                 </span>
               </div>
             </div>
+
+            {/* Selection indicator text */}
+            {isSelected && (
+              <div className="mt-3 flex items-center gap-2">
+                <div className="h-px flex-1 bg-blue-200 dark:bg-blue-800/50" />
+                <span className="text-xs text-blue-600 dark:text-blue-400 font-medium px-2 py-1 bg-blue-100 dark:bg-blue-900/30 rounded-full">
+                  Selected
+                </span>
+                <div className="h-px flex-1 bg-blue-200 dark:bg-blue-800/50" />
+              </div>
+            )}
           </div>
         </div>
       </CardHeader>
