@@ -8,11 +8,7 @@ import { TrueFalseQuestionList } from "../Components/True_Flase-Question/true-fa
 import { TypeTheAnswerQuestionList } from "../Components/Type_The_Answer-Question/type-the-asnwer-list";
 import { PaginationControls } from "./Re-Usable-Components/pagination-control";
 import { Spinner } from "@/components/ui";
-import {
-  SimpleMultipleChoiceQuestionList,
-  SimpleTrueFalseQuestionList,
-  SimpleTypeTheAnswerQuestionList,
-} from "@/pages/Question/User-question-components/user-question-type-lists";
+import { QuestionListComponent } from "@/pages/Question/User-question-components/user-question-type-lists";
 
 interface QueryParams {
   pageNumber: number;
@@ -28,9 +24,6 @@ interface QuestionTabContentProps {
   queryParams: QueryParams;
   onPageChange: (newPage: number) => void;
   page?: string;
-  selectedQuestionIds?: Set<number>;
-  onQuestionSelection?: (questionId: number, selected: boolean) => void;
-  maxSelections?: number; // Optional prop for max selections
 }
 
 export const QuestionTabContent = ({
@@ -38,9 +31,6 @@ export const QuestionTabContent = ({
   queryParams,
   onPageChange,
   page = "admin", // Default to "admin" if not provided
-  selectedQuestionIds,
-  onQuestionSelection,
-  maxSelections = 5,
 }: QuestionTabContentProps) => {
   // Keep all queries active but only fetch when needed
   const mcqQuery = useMultipleChoiceQuestionData({
@@ -103,12 +93,7 @@ export const QuestionTabContent = ({
         return (
           <>
             {page == "user" ? (
-              <SimpleMultipleChoiceQuestionList
-                questions={mcqQuery.data?.data || []}
-                selectedQuestionIds={selectedQuestionIds}
-                onSelectionChange={onQuestionSelection}
-                maxSelections={maxSelections}
-              />
+              <QuestionListComponent questions={mcqQuery.data?.data || []} />
             ) : (
               <MultipleChoiceQuestionList
                 questions={mcqQuery.data?.data || []}
@@ -124,11 +109,8 @@ export const QuestionTabContent = ({
         return (
           <>
             {page == "user" ? (
-              <SimpleTrueFalseQuestionList
+              <QuestionListComponent
                 questions={trueFalseQuery.data?.data || []}
-                selectedQuestionIds={selectedQuestionIds}
-                onSelectionChange={onQuestionSelection}
-                maxSelections={maxSelections}
               />
             ) : (
               <TrueFalseQuestionList
@@ -146,11 +128,8 @@ export const QuestionTabContent = ({
         return (
           <>
             {page == "user" ? (
-              <SimpleTypeTheAnswerQuestionList
+              <QuestionListComponent
                 questions={typeAnswerQuery.data?.data || []}
-                selectedQuestionIds={selectedQuestionIds}
-                onSelectionChange={onQuestionSelection}
-                maxSelections={maxSelections}
               />
             ) : (
               <TypeTheAnswerQuestionList

@@ -5,20 +5,13 @@ import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-  AnyQuestion, // The union type
+  AnyQuestion,
   QuestionType,
-  // Specific types for type guards if needed for very complex destructuring
   MultipleChoiceQuestion,
   TrueFalseQuestion,
   TypeTheAnswerQuestion,
-} from "@/types/ApiTypes"; // Adjust path
-import {
-  ImageIcon,
-  Check,
-  CheckCircle,
-  XCircle,
-  Type, // Example icon for TypeTheAnswer
-} from "lucide-react";
+} from "@/types/ApiTypes";
+import { ImageIcon, Check, CheckCircle, XCircle, Type } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { useQuiz } from "@/pages/Dashboard/Pages/Quiz/components/Create-Quiz-Form/QuizQuestionsContext";
 
@@ -39,14 +32,11 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
 
   // You might have a quiz-level selection limit, which can also disable selection
   const { selectedQuestions } = useQuiz();
-  const MAX_SELECTED_QUESTIONS = 10; // Example
+  const MAX_SELECTED_QUESTIONS = 5;
   const quizSelectionDisabled =
     selectedQuestions.length >= MAX_SELECTED_QUESTIONS && !isSelected;
   const finalSelectionDisabled =
     externalSelectionDisabled || quizSelectionDisabled;
-
-  // For simplicity
-  // const finalSelectionDisabled = externalSelectionDisabled;
 
   const handleCheckboxChange = (e?: React.MouseEvent) => {
     e?.stopPropagation(); // Prevent card click when clicking checkbox
@@ -200,8 +190,8 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
   return (
     <Card
       className={cn(
-        "mb-3 border shadow-sm transition-all duration-200 hover:shadow-md relative overflow-hidden",
-        !finalSelectionDisabled && "cursor-pointer", // Only add cursor-pointer if not disabled
+        "mb-3 border shadow-md transition-all duration-200 hover:shadow-md relative overflow-hidden",
+        !finalSelectionDisabled && "cursor-pointer",
         isSelected
           ? "border-blue-500 dark:border-blue-400 bg-blue-50/50 dark:bg-blue-900/20 ring-2 ring-blue-200 dark:ring-blue-800/50"
           : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600",
@@ -210,7 +200,6 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
           : "",
         "bg-white dark:bg-gray-900"
       )}
-      onClick={() => !finalSelectionDisabled && handleCheckboxChange()} // Click card to select if not disabled
     >
       {isSelected && (
         <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 dark:bg-blue-400" />
@@ -267,7 +256,7 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
               </CardTitle>
 
               <div className="flex items-center gap-2 flex-shrink-0">
-                <Badge
+                {/* <Badge
                   variant="outline"
                   className={cn(
                     "text-xs transition-colors duration-200",
@@ -277,7 +266,8 @@ export const QuestionCard: React.FC<QuestionCardProps> = ({
                   )}
                 >
                   ID: {question.id}
-                </Badge>
+                </Badge> */}{" "}
+                {/* I don't think I need to show this */}
                 <Badge
                   variant="outline"
                   className={cn(

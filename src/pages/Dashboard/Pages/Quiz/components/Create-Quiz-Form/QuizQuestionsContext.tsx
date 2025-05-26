@@ -3,6 +3,7 @@ import React, { createContext, useState, useContext, ReactNode } from "react";
 
 interface QuizContextType {
   selectedQuestions: AnyQuestion[];
+  selectedQuestionsCount: number;
   addQuestionToQuiz: (questionObject: AnyQuestion) => void;
   removeQuestionFromQuiz: (questionId: number) => void;
   isQuestionSelected: (questionId: number) => boolean;
@@ -14,7 +15,9 @@ interface QuizProviderProps {
   children: ReactNode;
 }
 
-export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({ children }) => {
+export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
+  children,
+}) => {
   const [selectedQuestions, setSelectedQuestions] = useState<AnyQuestion[]>([]);
 
   const addQuestionToQuiz = (questionObject: AnyQuestion): void => {
@@ -38,6 +41,7 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({ children }) 
 
   const contextValue: QuizContextType = {
     selectedQuestions,
+    selectedQuestionsCount: selectedQuestions.length,
     addQuestionToQuiz,
     removeQuestionFromQuiz,
     isQuestionSelected,
