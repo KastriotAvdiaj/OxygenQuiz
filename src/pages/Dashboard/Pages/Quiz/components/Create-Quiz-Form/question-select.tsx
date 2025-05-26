@@ -25,7 +25,7 @@ const SelectQuestionComponent: React.FC<SelectQuestionComponentProps> = ({
   maxSelections,
   preSelectedQuestionIds = [],
   title = "Select Questions from Pool",
-  excludeQuestionIds = [],
+  // excludeQuestionIds = [],
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -76,7 +76,7 @@ const SelectQuestionComponent: React.FC<SelectQuestionComponentProps> = ({
     languageId: selectedLanguageId,
     questionType: activeTab,
     visibility: "Public",
-    excludeIds: excludeQuestionIds,
+    // excludeIds: excludeQuestionIds, //needs to be added 
   };
 
   useEffect(() => {

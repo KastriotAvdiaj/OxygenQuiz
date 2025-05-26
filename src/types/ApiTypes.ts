@@ -99,6 +99,11 @@ export type BaseEntity<TId = number> = {
     allowPartialMatch: boolean;
     acceptableAnswers: string[] ;
   }
+
+  export type AnyQuestion =
+  | MultipleChoiceQuestion
+  | TrueFalseQuestion
+  | TypeTheAnswerQuestion;
   
   export type IndividualQuestion = {
     id: number;
