@@ -13,11 +13,11 @@ import {
   LightbulbIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Question } from "@/types/ApiTypes";
+import { AnyQuestionQ } from "@/types/ApiTypes";
 import { cn } from "@/utils/cn";
 // Define the props interface for the question data
 interface QuestionCardProps {
-  question: Question;
+  question: AnyQuestion;
   isActive?: boolean;
   onClick: () => void;
   index: number;
@@ -35,7 +35,7 @@ type DifficultyConfig = {
   label: string;
 };
 
-export const QuestionCard: React.FC<QuestionCardProps> = ({
+export const SmallQuestionCard: React.FC<QuestionCardProps> = ({
   question,
   index,
   difficulty = "Unknown",

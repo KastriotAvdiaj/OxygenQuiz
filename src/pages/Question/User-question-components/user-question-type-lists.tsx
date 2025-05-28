@@ -1,13 +1,14 @@
-// QuestionListComponent.tsx
-import React from 'react';
-import { AnyQuestion } from '@/types/ApiTypes'; // Adjust path
-import { QuestionCard } from './common-question-card';
+import React from "react";
+import { AnyQuestion } from "@/types/ApiTypes";
+import { QuestionCard } from "./common-question-card";
 
 interface QuestionListProps {
   questions: AnyQuestion[];
 }
 
-export const QuestionListComponent: React.FC<QuestionListProps> = ({ questions }) => {
+export const QuestionListComponent: React.FC<QuestionListProps> = ({
+  questions,
+}) => {
   if (!questions || questions.length === 0) {
     return <p>No questions to display.</p>;
   }
@@ -15,11 +16,7 @@ export const QuestionListComponent: React.FC<QuestionListProps> = ({ questions }
   return (
     <div>
       {questions.map((question) => (
-        <QuestionCard
-          key={question.id}
-          question={question}
-          // selectionDisabled={someCondition} // Optionally pass this if needed
-        />
+        <QuestionCard key={question.id} question={question} />
       ))}
     </div>
   );

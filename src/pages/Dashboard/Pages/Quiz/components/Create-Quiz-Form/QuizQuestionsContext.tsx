@@ -2,11 +2,25 @@ import { AnyQuestion } from "@/types/ApiTypes";
 import React, { createContext, useState, useContext, ReactNode } from "react";
 
 interface QuizContextType {
+  // Permanent quiz selections
   selectedQuestions: AnyQuestion[];
   selectedQuestionsCount: number;
   addQuestionToQuiz: (questionObject: AnyQuestion) => void;
   removeQuestionFromQuiz: (questionId: number) => void;
   isQuestionSelected: (questionId: number) => boolean;
+  
+  // Temporary modal selections
+  tempSelectedQuestions: AnyQuestion[];
+  tempSelectedQuestionsCount: number;
+  addToTempSelection: (questionObject: AnyQuestion) => void;
+  removeFromTempSelection: (questionId: number) => void;
+  isTempSelected: (questionId: number) => boolean;
+  clearTempSelection: () => void;
+  commitTempSelection: () => void;
+  
+  // Modal state
+  isQuestionModalOpen: boolean;
+  setQuestionModalOpen: (open: boolean) => void;
 }
 
 const QuizContext = createContext<QuizContextType | undefined>(undefined);
@@ -18,8 +32,16 @@ interface QuizProviderProps {
 export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
   children,
 }) => {
+  // Permanent quiz selections
   const [selectedQuestions, setSelectedQuestions] = useState<AnyQuestion[]>([]);
+  
+  // Temporary modal selections
+  const [tempSelectedQuestions, setTempSelectedQuestions] = useState<AnyQuestion[]>([]);
+  
+  // Modal state
+  const [isQuestionModalOpen, setIsQuestionModalOpen] = useState(false);
 
+  // Permanent quiz selection functions
   const addQuestionToQuiz = (questionObject: AnyQuestion): void => {
     setSelectedQuestions((prevSelected) => {
       if (!prevSelected.find((q) => q.id === questionObject.id)) {
@@ -39,12 +61,70 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
     return selectedQuestions.some((q) => q.id === questionId);
   };
 
+  // Temporary selection functions
+  const addToTempSelection = (questionObject: AnyQuestion): void => {
+    setTempSelectedQuestions((prevSelected) => {
+      if (!prevSelected.find((q) => q.id === questionObject.id)) {
+        return [...prevSelected, questionObject];
+      }
+      return prevSelected;
+    });
+  };
+
+  const removeFromTempSelection = (questionId: number): void => {
+    setTempSelectedQuestions((prevSelected) =>
+      prevSelected.filter((q) => q.id !== questionId)
+    );
+  };
+
+  const isTempSelected = (questionId: number): boolean => {
+    return tempSelectedQuestions.some((q) => q.id === questionId);
+  };
+
+  const clearTempSelection = (): void => {
+    setTempSelectedQuestions([]);
+  };
+
+  const commitTempSelection = (): void => {
+    // Add all temp selected questions to the permanent quiz selection
+    setSelectedQuestions((prevSelected) => {
+      const newQuestions = tempSelectedQuestions.filter(
+        (tempQ) => !prevSelected.find((q) => q.id === tempQ.id)
+      );
+      return [...prevSelected, ...newQuestions];
+    });
+    // Clear temp selection after committing
+    setTempSelectedQuestions([]);
+  };
+
+  const setQuestionModalOpen = (open: boolean): void => {
+    setIsQuestionModalOpen(open);
+    // Clear temp selection when closing modal without committing
+    if (!open) {
+      setTempSelectedQuestions([]);
+    }
+  };
+
   const contextValue: QuizContextType = {
+    // Permanent selections
     selectedQuestions,
     selectedQuestionsCount: selectedQuestions.length,
     addQuestionToQuiz,
     removeQuestionFromQuiz,
     isQuestionSelected,
+    
+    // Temporary selections
+    tempSelectedQuestions,
+    tempSelectedQuestionsCount: tempSelectedQuestions.length,
+    addToTempSelection,
+    removeFromTempSelection,
+    isTempSelected,
+    clearTempSelection,
+    commitTempSelection,
+    
+    // Modal state
+    isQuestionModalOpen,
+    setQuestionModalOpen,
   };
 
   return (

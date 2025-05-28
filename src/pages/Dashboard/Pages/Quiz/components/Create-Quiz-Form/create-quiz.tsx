@@ -1,29 +1,46 @@
+import React from "react";
 import { Form } from "@/components/ui/form";
 import { Separator } from "@/components/ui/separator";
 import { useQuizForm } from "./use-quiz-form";
 // import { createQuizInputSchema } from "../../api/create-quiz";
-import { Brain,  Trophy} from "lucide-react";
-import { Card } from "@/components/ui";
+import { Brain, Trophy, ListChecks, Trash2 } from "lucide-react";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { createQuestionCategoryInputSchema } from "../../../Question/Entities/Categories/api/create-question-categories";
 import SelectQuestionComponent from "./question-select";
-import { QuizQuestionProvider } from "./QuizQuestionsContext";
+import { useQuiz } from "./QuizQuestionsContext";
+import { AnyQuestion } from "@/types/ApiTypes";
+import { QuestionCard } from "@/pages/Question/User-question-components/common-question-card";
 
-// type FormValues = z.infer<typeof createQuizInputSchema>;
-
-// const defaultPrivateQuestion = {
-//   text: "",
-//   difficultyId: 21,
-//   languageId: 4,
-//   categoryId: 2042,
-//   timeLimit: 2,
-//   answerOptions: [
-//     { text: "", isCorrect: true },
-//     { text: "", isCorrect: false },
-//     { text: "", isCorrect: false },
-//     { text: "", isCorrect: false },
-//   ],
-//   score: 5,
-// };
+// A simple component to display a summary of a selected question
+// You can make this more detailed or use a variation of your QuestionCard
+const SelectedQuestionItem: React.FC<{
+  question: AnyQuestion;
+  onRemove: (id: number) => void;
+}> = ({ question, onRemove }) => {
+  return (
+    <div className="flex items-center justify-between p-2 mb-2 border rounded-md bg-muted/50 hover:bg-muted/30 transition-colors">
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium truncate" title={question.text}>
+          {question.text}
+        </p>
+        <p className="text-xs text-muted-foreground">
+          ID: {question.id} | Type: {question.type} | Difficulty:{" "}
+          {question.difficulty.level}
+        </p>
+      </div>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="text-destructive hover:bg-destructive/10"
+        onClick={() => onRemove(question.id)}
+        aria-label={`Remove question ${question.id}`}
+      >
+        <Trash2 className="h-4 w-4" />
+      </Button>
+    </div>
+  );
+};
 
 const CreateQuizForm = () => {
   const {
@@ -31,6 +48,8 @@ const CreateQuizForm = () => {
     // handleSubmit,
     // isSubmitting,
   } = useQuizForm();
+
+  const { selectedQuestions, removeQuestionFromQuiz } = useQuiz();
 
   if (queryData.isLoading) {
     return (
@@ -51,65 +70,135 @@ const CreateQuizForm = () => {
   }
 
   const handleFormSubmit = async () => {
-    // return handleSubmit(data);
+    // Prepare your final quiz data here, including selectedQuestions
+    const finalQuizData = {
+      // ...other quiz details like title, description from your form...
+      questionsFromBank: selectedQuestions.map((q: AnyQuestion) => q.id), // Or send full objects if your API expects that
+      // privateQuestions: formProps.getValues("privateQuestions"), // If you have privately created questions
+    };
+    console.log("Submitting Quiz with Data:", finalQuizData);
+    // return handleSubmit(finalQuizData);
   };
 
   return (
-    <QuizQuestionProvider>
-      <>
-        <Card className="bg-background justify-center border-2 border-primary/30 rounded-xl shadow-lg flex flex-col gap-2 items-center w-full overflow-hidden">
-          <div className="w-full bg-primary/10 p-4 text-center border-b border-primary/30">
-            <h2 className="text-2xl font-bold flex items-center justify-center gap-2">
-              <Trophy className="h-6 w-6 text-primary" />
-              Quiz Creator
-              <Trophy className="h-6 w-6 text-primary" />
-            </h2>
-            <p className="text-muted-foreground">
-              Craft your perfect quiz challenge!
-            </p>
-          </div>
+    <>
+      <Card className="bg-background justify-center border-2 border-primary/30 rounded-xl shadow-lg flex flex-col gap-2 items-center w-full overflow-hidden">
+        <div className="w-full bg-primary/10 p-4 text-center border-b border-primary/30">
+          <h2 className="text-2xl font-bold flex items-center justify-center gap-2">
+            <Trophy className="h-6 w-6 text-primary" />
+            Quiz Creator
+            <Trophy className="h-6 w-6 text-primary" />
+          </h2>
+          <p className="text-muted-foreground">
+            Craft your perfect quiz challenge!
+          </p>
+        </div>
 
-          <Form
-            id="create-quiz"
-            className="mt-0 w-full"
-            onSubmit={handleFormSubmit}
-            schema={createQuestionCategoryInputSchema}
-            options={{ mode: "onSubmit" }}
-          >
-            {(formProps) => {
-              // const {
-              //   fields: privateQuestionFields,
-              //   append: appendPrivateQuestion,
-              //   remove: removePrivateQuestion,
-              // } = useFieldArray({
-              //   control: formProps.control,
-              //   name: "privateQuestions",
-              // });
-              const { formState } = formProps;
-              const { errors } = formState;
-              console.log("Form errors:", errors);
+        {/*
+            NOTE: The <Form> component here seems to be from a library (react-hook-form with a custom wrapper perhaps).
+            The `onSubmit` for this form will likely handle the quiz metadata (title, description, etc.).
+            The `selectedQuestions` are managed by the context and will be available in `handleFormSubmit`.
+          */}
+        <Form
+          id="create-quiz"
+          className="mt-0 w-full"
+          onSubmit={handleFormSubmit} // This onSubmit now has access to selectedQuestions via closure
+          schema={createQuestionCategoryInputSchema} // This schema is for category, likely need a quiz schema
+          options={{ mode: "onSubmit" }}
+        >
+          {(formProps) => {
+            // const {
+            //   fields: privateQuestionFields,
+            //   append: appendPrivateQuestion,
+            //   remove: removePrivateQuestion,
+            // } = useFieldArray({
+            //   control: formProps.control,
+            //   name: "privateQuestions",
+            // });
+            const { formState } = formProps;
+            const { errors } = formState;
+            console.log("Form errors:", errors);
 
-              // const handleAddPrivateQuestion = () => {
-              //   appendPrivateQuestion(defaultPrivateQuestion);
-              //   setActiveQuestionIndex(privateQuestionFields.length);
-              // };
+            // const handleAddPrivateQuestion = () => {
+            //   appendPrivateQuestion(defaultPrivateQuestion);
+            //   setActiveQuestionIndex(privateQuestionFields.length);
+            // };
 
-              // const handleQuestionSelect = (index: number) => {
-              //   setActiveQuestionIndex(index);
-              // };
+            // const handleQuestionSelect = (index: number) => {
+            //   setActiveQuestionIndex(index);
+            // };
 
-              // const handleRemoveQuestion = (index: number) => {
-              //   removePrivateQuestion(index);
-              //   setActiveQuestionIndex((prevIndex) =>
-              //     prevIndex > 0 ? prevIndex - 1 : 0
-              //   );
-              // };
+            // const handleRemoveQuestion = (index: number) => {
+            //   removePrivateQuestion(index);
+            //   setActiveQuestionIndex((prevIndex) =>
+            //     prevIndex > 0 ? prevIndex - 1 : 0
+            //   );
+            // };
 
-              return (
-                <div className="flex flex-col md:flex-row gap-6 w-full ">
-                  <div className="flex-1 flex flex-col items-center p-4">
-                    <div className="flex flex-col items-center gap-4 my-6 w-full">
-                      {/* {privateQuestionFields.length > 0 ? (
+            return (
+              <div className="flex flex-col md:flex-row gap-6 w-full ">
+                {/* Left Side: Quiz Form Fields / Private Questions (if any) */}
+                <div className="flex-1 flex flex-col p-4">
+                  {/* Placeholder for your Quiz Title, Description, etc. form fields */}
+                  <Card className="mb-6">
+                    <CardHeader>
+                      <CardTitle>Quiz Details</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {/*
+                          Example:
+                          <FormField
+                            control={formProps.control}
+                            name="title"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Quiz Title</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="Enter quiz title" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          // ... other fields for description, category, difficulty etc.
+                        */}
+                      <p className="text-muted-foreground">
+                        Form fields for quiz title, description, etc. will go
+                        here. These will be part of `formProps` and handled by
+                        your `Form` component.
+                      </p>
+                    </CardContent>
+                  </Card>
+
+                  {/* Area to display currently selected questions from the bank */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <ListChecks className="h-5 w-5 text-primary" />
+                        Selected Questions ({selectedQuestions.length})
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="max-h-96 overflow-y-auto pr-2">
+                      {" "}
+                      {/* Added scroll for many questions */}
+                      {selectedQuestions.length > 0 ? (
+                        selectedQuestions.map((q: AnyQuestion) => (
+                          // <SelectedQuestionItem
+                          //   key={q.id}
+                          //   question={q}
+                          //   onRemove={removeQuestionFromQuiz}
+                          // />
+                          <QuestionCard key={q.id} question={q} />
+                        ))
+                      ) : (
+                        <p className="text-sm text-muted-foreground text-center py-4">
+                          No questions selected from the bank yet.
+                        </p>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* {privateQuestionFields.length > 0 ? (
                       <div className="w-full relative">
                         <div className="absolute -top-6 left-0 bg-primary text-primary-foreground text-sm px-3 py-1 rounded-t-md">
                           Question #{activeQuestionIndex + 1}
@@ -144,30 +233,30 @@ const CreateQuizForm = () => {
                         </Button>
                       </div>
                     )} */}
-                    </div>
-                    <Separator className="my-6 bg-primary/20" />
-                    {/* <LiftedButton
-                    type="submit"
-                    // variant="default"
-                    disabled={isSubmitting}
-                    className="w-fit group relative "
+                  <Separator className="my-6 bg-primary/20" />
+                  <Button
+                    type="submit" // This button will trigger the main form's onSubmit
+                    disabled={false /* isSubmitting */}
+                    className="w-fit self-center"
+                    variant="default"
                   >
-                    {isSubmitting ? (
-                      <>
-                        <span className="animate-pulse">Creating Quiz...</span>
-                        <span className="animate-spin ml-2">⏳</span>
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="mr-2 h-4 w-4 group-hover:rotate-12 transition-transform" />
-                        Create Quiz
-                      </>
-                    )}
-                  </LiftedButton> */}
-                  </div>
+                    Create Quiz
+                  </Button>
+                </div>
+
+                {/* Middle: Question Selection Component */}
+                <div className="md:w-[600px] lg:w-[700px] flex-shrink-0 p-1">
+                  {" "}
+                  {/* Adjust width as needed */}
+                  <h3 className="text-lg font-semibold mb-3 text-center">
+                    Select Questions from Bank
+                  </h3>
                   <SelectQuestionComponent />
-                  <div className="border-l-2 border-primary/30 md:w-72 flex-shrink-0 bg-card/20">
-                    {/* <CreatedQuestionsPanel
+                </div>
+
+                {/* Right Side Panel (Your existing structure) */}
+                <div className="border-l-2 border-primary/30 md:w-72 flex-shrink-0 bg-card/20">
+                  {/* <CreatedQuestionsPanel
                     onAddPrivateQuestion={handleAddPrivateQuestion}
                     questions={privateQuestionFields}
                     difficulties={queryData.difficulties}
@@ -194,14 +283,23 @@ const CreateQuizForm = () => {
                       </DialogContent>
                     </Dialog>
                   </div> */}
+                  <div className="p-4">
+                    <h3 className="text-md font-semibold mb-2 text-muted-foreground">
+                      Quiz Summary & Actions
+                    </h3>
+                    {/* Placeholder for your existing right panel content */}
+                    <p className="text-xs text-muted-foreground">
+                      (Content from CreatedQuestionsPanel and QuizDetails dialog
+                      trigger will go here)
+                    </p>
                   </div>
                 </div>
-              );
-            }}
-          </Form>
-        </Card>
-      </>
-    </QuizQuestionProvider>
+              </div>
+            );
+          }}
+        </Form>
+      </Card>
+    </>
   );
 };
 

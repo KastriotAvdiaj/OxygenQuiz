@@ -12,6 +12,7 @@ import { useQuestionLanguageData } from "../../../Question/Entities/Language/api
 import { QuestionTabContent } from "../../../Question/Components/QuestionsTabContent";
 import { cn } from "@/utils/cn";
 import { useQuiz } from "./QuizQuestionsContext";
+import { useDisclosure } from "@/hooks/use-disclosure";
 
 interface SelectQuestionComponentProps {
   onQuestionsSelected?: (questions: QuestionBase[]) => void;
@@ -27,7 +28,7 @@ const SelectQuestionComponent: React.FC<SelectQuestionComponentProps> = ({
   title = "Select Questions from Pool",
   // excludeQuestionIds = [],
 }) => {
-  const [isOpen, setIsOpen] = useState(false);
+  const { open, close, isOpen } = useDisclosure();
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm] = useDebounce(searchTerm, 500);
   const [selectedCategoryId, setSelectedCategoryId] = useState<
@@ -40,10 +41,15 @@ const SelectQuestionComponent: React.FC<SelectQuestionComponentProps> = ({
     number | undefined
   >();
 
-  
   const [activeTab, setActiveTab] = useState(QuestionType.MultipleChoice);
 
-  const { selectedQuestionsCount } = useQuiz();
+  const { 
+    tempSelectedQuestionsCount, 
+    commitTempSelection, 
+    clearTempSelection,
+    setQuestionModalOpen,
+    isQuestionModalOpen
+  } = useQuiz();
 
   const [currentPage, setCurrentPage] = useState(1);
   const questionsPerPage = 5;
@@ -78,15 +84,39 @@ const SelectQuestionComponent: React.FC<SelectQuestionComponentProps> = ({
     setCurrentPage(newPage);
   };
 
+  const handleOpen = () => {
+    open();
+    setQuestionModalOpen(true);
+  };
+
+  const handleClose = () => {
+    close();
+    setQuestionModalOpen(false);
+    // This will automatically clear temp selection via the context
+  };
+
   const handleAddSelectedQuestions = () => {
+    // Commit temporary selections to permanent quiz
+    commitTempSelection();
+    
+    // Call the callback if provided
     if (onQuestionsSelected) {
+      // You might need to pass the committed questions here
+      // onQuestionsSelected(tempSelectedQuestions);
     }
-    setIsOpen(false);
+    
+    handleClose();
+  };
+
+  const handleCancel = () => {
+    // Clear temporary selections and close
+    clearTempSelection();
+    handleClose();
   };
 
   return (
     <>
-      <LiftedButton onClick={() => setIsOpen(true)} className="h-fit">
+      <LiftedButton onClick={handleOpen} className="h-fit">
         <Plus className="h-4 w-4" />
         Add Questions from Pool
       </LiftedButton>
@@ -95,7 +125,7 @@ const SelectQuestionComponent: React.FC<SelectQuestionComponentProps> = ({
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-            onClick={() => setIsOpen(false)}
+            onClick={handleCancel}
           />
 
           <div className="relative bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden border dark:border-gray-700">
@@ -116,16 +146,16 @@ const SelectQuestionComponent: React.FC<SelectQuestionComponentProps> = ({
                   <div
                     className={cn(
                       "h-2 w-2 rounded-full",
-                      selectedQuestionsCount > 0 ? "bg-blue-500" : "bg-gray-300"
+                      tempSelectedQuestionsCount > 0 ? "bg-orange-500" : "bg-gray-300"
                     )}
                   />
                   <span className="text-sm text-gray-600 dark:text-gray-400">
-                    {selectedQuestionsCount} selected
+                    {tempSelectedQuestionsCount} selected
                     {maxSelections && ` / ${maxSelections}`}
                   </span>
                 </div>
                 <button
-                  onClick={() => setIsOpen(false)}
+                  onClick={handleCancel}
                   className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-xl transition-colors"
                   aria-label="Close dialog"
                 >
@@ -211,18 +241,18 @@ const SelectQuestionComponent: React.FC<SelectQuestionComponentProps> = ({
                 <div
                   className={cn(
                     "h-3 w-3 rounded-full transition-colors",
-                    selectedQuestionsCount > 0 ? "bg-blue-500" : "bg-gray-300"
+                    tempSelectedQuestionsCount > 0 ? "bg-orange-500" : "bg-gray-300"
                   )}
                 />
                 <span className="text-sm text-gray-600 dark:text-gray-400">
-                  {selectedQuestionsCount} question
-                  {selectedQuestionsCount !== 1 ? "s" : ""} selected
+                  {tempSelectedQuestionsCount} question
+                  {tempSelectedQuestionsCount !== 1 ? "s" : ""} selected
                   {maxSelections && ` (max: ${maxSelections})`}
                 </span>
               </div>
               <div className="flex gap-3">
                 <Button
-                  onClick={() => setIsOpen(false)}
+                  onClick={handleCancel}
                   variant="outline"
                   className="border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800"
                 >
@@ -230,15 +260,15 @@ const SelectQuestionComponent: React.FC<SelectQuestionComponentProps> = ({
                 </Button>
                 <Button
                   onClick={handleAddSelectedQuestions}
-                  disabled={selectedQuestionsCount === 0}
+                  disabled={tempSelectedQuestionsCount === 0}
                   className={cn(
                     "transition-all duration-200",
-                    selectedQuestionsCount > 0
+                    tempSelectedQuestionsCount > 0
                       ? "bg-blue-600 hover:bg-blue-700 text-white"
                       : "bg-gray-300 text-gray-500 cursor-not-allowed"
                   )}
                 >
-                  Add Selected Questions ({selectedQuestionsCount})
+                  Add Selected Questions ({tempSelectedQuestionsCount})
                 </Button>
               </div>
             </div>
