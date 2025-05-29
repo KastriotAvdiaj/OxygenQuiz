@@ -99,6 +99,7 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
   const commitTempSelection = (): void => {
     // Add all temp selected questions to the permanent quiz selection
     setSelectedQuestions((prevSelected) => {
+      setDisplayQuestion(tempSelectedQuestions[0]);
       const newQuestions = tempSelectedQuestions.filter(
         (tempQ) => !prevSelected.find((q) => q.id === tempQ.id)
       );

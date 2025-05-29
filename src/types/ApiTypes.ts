@@ -78,7 +78,7 @@ export type BaseEntity<TId = number> = {
     language: QuestionLanguage;
     imageUrl: string;
     createdAt: string;     
-    userId: string;
+    user: UserBasic;
     // statistics?: QuestionStatisticsDTO;
     type: QuestionType;
   }

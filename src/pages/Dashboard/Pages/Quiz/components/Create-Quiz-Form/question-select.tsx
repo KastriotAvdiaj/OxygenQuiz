@@ -91,11 +91,9 @@ const SelectQuestionComponent: React.FC<SelectQuestionComponentProps> = ({
   const handleClose = () => {
     close();
     setQuestionModalOpen(false);
-    // This will automatically clear temp selection via the context
   };
 
   const handleAddSelectedQuestions = () => {
-    // Commit temporary selections to permanent quiz
     commitTempSelection();
 
     // Call the callback if provided
@@ -108,7 +106,6 @@ const SelectQuestionComponent: React.FC<SelectQuestionComponentProps> = ({
   };
 
   const handleCancel = () => {
-    // Clear temporary selections and close
     clearTempSelection();
     handleClose();
   };

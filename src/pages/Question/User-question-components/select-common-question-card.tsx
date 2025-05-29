@@ -496,7 +496,7 @@ export const CommonSelectQuestionCard: React.FC<CommonSelectQuestionCard> = ({
                     className="p-1 rounded-full hover:bg-red-100 dark:hover:bg-red-800/30 text-red-500 dark:text-red-400 transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
                     aria-label="Remove question from quiz"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="h-4 w-4" /> 
                   </button>
                 )}
               </div>

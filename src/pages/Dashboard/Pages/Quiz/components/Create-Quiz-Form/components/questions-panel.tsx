@@ -56,7 +56,7 @@ export const CreatedQuestionsPanel = ({}) => {
               No questions added yet
             </p>
           ) : (
-            <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2">
+            <div className="space-y-3 max-h-[90vh] overflow-y-auto pr-2">
               {selectedQuestions.map((question) => (
                 <SmallQuestionCard key={question.id} question={question} />
               ))}

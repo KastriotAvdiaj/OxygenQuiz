@@ -1,5 +1,5 @@
 import React from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -39,6 +39,8 @@ const MultipleChoiceCard: React.FC<QuestionCardProps> = ({
   onRemove,
   isActive = false,
 }) => {
+  const { setDisplayQuestion, displayQuestion } = useQuiz();
+
   const mcQuestion = question as MultipleChoiceQuestion;
   const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if ((e.target as HTMLElement).closest("button")) return;
@@ -46,27 +48,26 @@ const MultipleChoiceCard: React.FC<QuestionCardProps> = ({
     // onClick();
   };
 
-  const { setDisplayQuestion } = useQuiz();
-
   const truncatedText = truncateText(mcQuestion.text, 50);
   const isPrivate = mcQuestion.visibility === "private";
 
   return (
     <Card
       className={cn(
-        "font-header rounded-lg border border-primary/80 border-dashed p-0 mb-3 cursor-pointer transition-all duration-200 overflow-hidden shadow-sm hover:shadow-md",
-        isActive
-          ? "border-primary bg-primary/5 ring-2 ring-primary/20"
-          : "hover:bg-muted/50"
+        "font-header rounded-lg border border-primary/80 border-dashed p-0 mb-3 cursor-pointer transition-all duration-200 overflow-hidden shadow-sm hover:shadow-md hover:bg-muted/50",
+        displayQuestion?.id === mcQuestion.id &&
+          "bg-gradient-to-r from-background to-primary/20 "
       )}
       onClick={handleClick}
     >
-      <div
+      <CardHeader
         className={cn(
           "px-4 py-2 flex justify-between items-center",
           isActive
             ? "bg-primary/10"
-            : "bg-gradient-to-r from-background to-muted"
+            : "bg-gradient-to-r from-background to-muted",
+          displayQuestion?.id === mcQuestion.id &&
+            "bg-gradient-to-r from-background to-primary/20"
         )}
       >
         <div className="flex items-center gap-2">
@@ -97,7 +98,7 @@ const MultipleChoiceCard: React.FC<QuestionCardProps> = ({
             <Trash2 size={14} />
           </Button>
         )}
-      </div>
+      </CardHeader>
 
       <CardContent className="p-3">
         <div className="mt-1 mb-3 border border-foreground/30 rounded-lg px-3 py-2 text-sm bg-background relative shadow-inner">
@@ -131,7 +132,7 @@ const MultipleChoiceCard: React.FC<QuestionCardProps> = ({
           ))}
         </div>
 
-        <div className="flex flex-wrap gap-2 items-center justify-between text-xs text-muted-foreground mt-2 border-t pt-2">
+        <div className="flex flex-wrap gap-2 items-center justify-between text-xs text-muted-foreground border-foreground/30 mt-2 border-t pt-2">
           <div className="flex items-center gap-2">
             {mcQuestion.allowMultipleSelections && (
               <Badge variant="outline" className="h-5 px-2 text-xs">
@@ -150,7 +151,7 @@ const MultipleChoiceCard: React.FC<QuestionCardProps> = ({
           <Badge
             variant="outline"
             className={cn(
-              "flex items-center gap-1 px-2 py-0 h-5 text-xs border"
+              "flex items-center gap-1 px-2 py-0 h-5 text-xs border "
             )}
           >
             <span>{question.difficulty.level}</span>
@@ -162,16 +163,15 @@ const MultipleChoiceCard: React.FC<QuestionCardProps> = ({
 };
 
 // True/False Question Card
-const TrueFalseCard: React.FC<QuestionCardProps> = ({
-  question,
-  onRemove,
-  isActive = false,
-}) => {
+const TrueFalseCard: React.FC<QuestionCardProps> = ({ question, onRemove }) => {
   const tfQuestion = question as TrueFalseQuestion;
   const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if ((e.target as HTMLElement).closest("button")) return;
+    setDisplayQuestion(tfQuestion);
     // onClick();
   };
+
+  const { setDisplayQuestion, displayQuestion } = useQuiz();
 
   const truncatedText = truncateText(tfQuestion.text, 50);
   const isPrivate = tfQuestion.visibility === "private";
@@ -179,19 +179,17 @@ const TrueFalseCard: React.FC<QuestionCardProps> = ({
   return (
     <Card
       className={cn(
-        "font-header rounded-lg border border-purple-500 border-dashed p-0 mb-3 cursor-pointer transition-all duration-200 overflow-hidden shadow-sm hover:shadow-md",
-        isActive
-          ? "border-primary bg-primary/5 ring-2 ring-primary/20"
-          : "hover:bg-muted/50"
+        "font-header rounded-lg border border-purple-500 border-dashed p-0 mb-3 cursor-pointer transition-all duration-200 overflow-hidden shadow-sm hover:shadow-md hover:bg-muted/50",
+        displayQuestion?.id === tfQuestion.id &&
+          "bg-gradient-to-r from-background to-purple-500/30"
       )}
       onClick={handleClick}
     >
       <div
         className={cn(
-          "px-4 py-2 flex justify-between items-center",
-          isActive
-            ? "bg-primary/10"
-            : "bg-gradient-to-r from-background to-muted"
+          "px-4 py-2 flex justify-between items-center bg-gradient-to-r from-background to-muted",
+          displayQuestion?.id === tfQuestion.id &&
+            "bg-gradient-to-r from-background to-purple-500/30"
         )}
       >
         <div className="flex items-center gap-2">
@@ -271,7 +269,7 @@ const TrueFalseCard: React.FC<QuestionCardProps> = ({
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2 items-center justify-between text-xs text-muted-foreground mt-2 border-t pt-2">
+        <div className="flex flex-wrap gap-2 items-center justify-between text-xs text-muted-foreground border-foreground/30 mt-2 border-t pt-2">
           <div className="flex items-center gap-2">
             <Badge
               variant="outline"
@@ -300,13 +298,13 @@ const TrueFalseCard: React.FC<QuestionCardProps> = ({
 const TypeTheAnswerCard: React.FC<QuestionCardProps> = ({
   question,
   onRemove,
-  isActive = false,
 }) => {
+  const { setDisplayQuestion, displayQuestion } = useQuiz();
+
   const ttaQuestion = question as TypeTheAnswerQuestion;
   const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if ((e.target as HTMLElement).closest("button")) return;
-
-    // onClick();
+    setDisplayQuestion(ttaQuestion);
   };
 
   const truncatedText = truncateText(ttaQuestion.text, 50);
@@ -315,19 +313,17 @@ const TypeTheAnswerCard: React.FC<QuestionCardProps> = ({
   return (
     <Card
       className={cn(
-        "font-header rounded-lg border border-orange-500 border-dashed p-0 mb-3 cursor-pointer transition-all duration-200 overflow-hidden shadow-sm hover:shadow-md",
-        isActive
-          ? "border-primary bg-primary/5 ring-2 ring-primary/20"
-          : "hover:bg-muted/50"
+        "font-header rounded-lg border border-orange-500 border-dashed p-0 mb-3 cursor-pointer transition-all duration-200 overflow-hidden shadow-sm hover:shadow-md hover:bg-muted/50",
+        displayQuestion?.id === ttaQuestion.id &&
+          "bg-gradient-to-r from-background to-orange-500/30"
       )}
       onClick={handleClick}
     >
       <div
         className={cn(
-          "px-4 py-2 flex justify-between items-center",
-          isActive
-            ? "bg-primary/10"
-            : "bg-gradient-to-r from-background to-muted"
+          "px-4 py-2 flex justify-between items-center bg-gradient-to-r from-background to-muted",
+          displayQuestion?.id === ttaQuestion.id &&
+            "bg-gradient-to-r from-background to-orange-500/30"
         )}
       >
         <div className="flex items-center gap-2">

@@ -221,7 +221,7 @@ const MultipleChoiceCard: React.FC<QuestionCardProps> = ({
           <span>ID: {mcQuestion.id}</span>
           <div className="flex items-center gap-1">
             <User size={12} />
-            <span>User: {mcQuestion.userId}</span>
+            <span>User: {mcQuestion.user.username}</span>
           </div>
         </div>
       </CardContent>
@@ -416,7 +416,7 @@ const TrueFalseCard: React.FC<QuestionCardProps> = ({
           <span>ID: {tfQuestion.id}</span>
           <div className="flex items-center gap-1">
             <User size={12} />
-            <span>User: {tfQuestion.userId}</span>
+            <span>User: {tfQuestion.user.username}</span>
           </div>
         </div>
       </CardContent>
@@ -600,7 +600,7 @@ const TypeTheAnswerCard: React.FC<QuestionCardProps> = ({
           <span>ID: {ttaQuestion.id}</span>
           <div className="flex items-center gap-1">
             <User size={12} />
-            <span>User: {ttaQuestion.userId}</span>
+            <span>User: {ttaQuestion.user.username}</span>
           </div>
         </div>
       </CardContent>
