@@ -105,7 +105,7 @@ const CreateQuizForm = () => {
                   </Button>
                 </div>
 
-                <div className="md:w-[400px] lg:w-[200px] flex-shrink-0 p-1 ">
+                <div className="md:text-xs lg:text-sm flex-shrink-0">
                   <section className="flex flex-col justify-center gap-4 p-4 rounded-lg">
                     <SelectQuestionComponent />
                     <LiftedButton>+ Create New</LiftedButton>
