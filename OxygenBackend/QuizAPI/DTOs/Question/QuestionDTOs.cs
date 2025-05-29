@@ -15,7 +15,7 @@ namespace QuizAPI.DTOs.Question
         public DateTime CreatedAt { get; set; }
         public string? ImageUrl { get; set; }
         public string Visibility { get; set; }
-        public string QuestionType { get; set; }
+        public string Type { get; set; }
     }
 
     public class MultipleChoiceQuestionDTO : QuestionBaseDTO

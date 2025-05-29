@@ -8,7 +8,7 @@ interface QuizContextType {
   addQuestionToQuiz: (questionObject: AnyQuestion) => void;
   removeQuestionFromQuiz: (questionId: number) => void;
   isQuestionSelected: (questionId: number) => boolean;
-  
+
   // Temporary modal selections
   tempSelectedQuestions: AnyQuestion[];
   tempSelectedQuestionsCount: number;
@@ -17,7 +17,11 @@ interface QuizContextType {
   isTempSelected: (questionId: number) => boolean;
   clearTempSelection: () => void;
   commitTempSelection: () => void;
-  
+
+  // Display Question
+  displayQuestion: AnyQuestion | null;
+  setDisplayQuestion: (question: AnyQuestion | null) => void;
+
   // Modal state
   isQuestionModalOpen: boolean;
   setQuestionModalOpen: (open: boolean) => void;
@@ -34,10 +38,17 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
 }) => {
   // Permanent quiz selections
   const [selectedQuestions, setSelectedQuestions] = useState<AnyQuestion[]>([]);
-  
+
+  // Display Question
+  const [displayQuestion, setDisplayQuestion] = useState<AnyQuestion | null>(
+    null
+  );
+
   // Temporary modal selections
-  const [tempSelectedQuestions, setTempSelectedQuestions] = useState<AnyQuestion[]>([]);
-  
+  const [tempSelectedQuestions, setTempSelectedQuestions] = useState<
+    AnyQuestion[]
+  >([]);
+
   // Modal state
   const [isQuestionModalOpen, setIsQuestionModalOpen] = useState(false);
 
@@ -112,7 +123,7 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
     addQuestionToQuiz,
     removeQuestionFromQuiz,
     isQuestionSelected,
-    
+
     // Temporary selections
     tempSelectedQuestions,
     tempSelectedQuestionsCount: tempSelectedQuestions.length,
@@ -121,7 +132,11 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
     isTempSelected,
     clearTempSelection,
     commitTempSelection,
-    
+
+    // Display Question
+    displayQuestion,
+    setDisplayQuestion,
+
     // Modal state
     isQuestionModalOpen,
     setQuestionModalOpen,

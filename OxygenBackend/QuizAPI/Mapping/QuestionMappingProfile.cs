@@ -22,7 +22,7 @@ namespace QuizAPI.Mapping
             // Map models to DTOs
             CreateMap<QuestionBase, QuestionBaseDTO>()
                 .ForMember(dest => dest.Visibility, opt => opt.MapFrom(src => src.Visibility.ToString()))
-                .ForMember(dest => dest.QuestionType, opt => opt.MapFrom(src => src.Type.ToString()));
+                .ForMember(dest => dest.Type, opt => opt.MapFrom(src => src.Type.ToString()));
 
             CreateMap<MultipleChoiceQuestion, MultipleChoiceQuestionDTO>()
                 .IncludeBase<QuestionBase, QuestionBaseDTO>();

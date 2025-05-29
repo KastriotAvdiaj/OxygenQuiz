@@ -1,6 +1,6 @@
 import React from "react";
 import { AnyQuestion } from "@/types/ApiTypes";
-import { QuestionCard } from "./common-question-card";
+import { CommonSelectQuestionCard } from "./select-common-question-card";
 
 interface QuestionListProps {
   questions: AnyQuestion[];
@@ -16,7 +16,7 @@ export const QuestionListComponent: React.FC<QuestionListProps> = ({
   return (
     <div>
       {questions.map((question) => (
-        <QuestionCard key={question.id} question={question} />
+        <CommonSelectQuestionCard key={question.id} question={question} />
       ))}
     </div>
   );

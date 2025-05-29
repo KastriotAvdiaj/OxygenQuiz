@@ -21,7 +21,7 @@ namespace QuizAPI.DTOs.Quiz
         public int LanguageId { get; set; }
 
         [Range(0, 2000)]
-        public int TimeLimitInSeconds { get; set; } = 0;
+        public int TimeLimitInSeconds { get; set; } = 0; //THIS IS THE OVERALL TIME LIMIT FOR THE QUIZ, NOT FOR EACH QUESTION
 
         public bool ShowFeedbackImmediately { get; set; } = false;
         public string Visibility { get; set; } = string.Empty;

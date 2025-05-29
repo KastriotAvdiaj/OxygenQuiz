@@ -1,352 +1,623 @@
 import React from "react";
-import { Card, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
+import {
+  Tag,
+  Trash2,
+  Lock,
+  Globe,
+  CheckCircle,
+  XCircle,
+  Edit3,
+  List,
+  Calendar,
+  User,
+  Image,
+  Languages,
+} from "lucide-react";
+import { cn } from "@/utils/cn";
 import {
   AnyQuestion,
-  QuestionType,
   MultipleChoiceQuestion,
+  QuestionType,
   TrueFalseQuestion,
   TypeTheAnswerQuestion,
 } from "@/types/ApiTypes";
-import { ImageIcon, Check, CheckCircle, XCircle, Type } from "lucide-react";
-import { cn } from "@/utils/cn";
-import { useQuiz } from "@/pages/Dashboard/Pages/Quiz/components/Create-Quiz-Form/QuizQuestionsContext";
 
 interface QuestionCardProps {
   question: AnyQuestion;
-  selectionDisabled?: boolean;
+  isActive?: boolean;
+  onClick?: () => void;
+  onRemove?: () => void;
 }
 
-export const QuestionCard: React.FC<QuestionCardProps> = ({
+// Helper functions
+// const truncateText = (text: string, length: number) =>
+//   text?.length > length ? `${text.substring(0, length)}...` : text || "";
+
+const formatDate = (dateString: string) => {
+  try {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  } catch {
+    return dateString;
+  }
+};
+
+// Multiple Choice Question Card
+const MultipleChoiceCard: React.FC<QuestionCardProps> = ({
   question,
-  selectionDisabled: externalSelectionDisabled = false,
+  onRemove,
+  isActive = false,
+  onClick,
 }) => {
-  const {
-    addToTempSelection,
-    removeFromTempSelection,
-    isTempSelected: isQuestionTempSelectedInContext, // Renamed for clarity or use original and rename local var
-    isQuestionModalOpen,
-    tempSelectedQuestions,
-    isQuestionSelected, // Still need this to check if already in permanent quiz
-  } = useQuiz();
-
-  // Check if this question is already permanently selected in the quiz
-  const isPermanentlySelected = isQuestionSelected(question.id);
-
-  // Check if this question is temporarily selected in the modal
-  // Call the context function (now aliased or use original name) and store result in a new variable
-  const isCurrentCardTempSelected = isQuestionTempSelectedInContext(question.id);
-
-  // If modal is open, use temp selection state; otherwise, use permanent selection state
-  const isSelected = isQuestionModalOpen ? isCurrentCardTempSelected : isPermanentlySelected;
-
-  // Selection limits
-  const MAX_SELECTED_QUESTIONS = 5;
-
-  // When modal is open, check temp selection limit;
-  // currentSelectionCount is 0 when modal is not open, making quizSelectionDisabled false,
-  // which is fine as interactions are disabled then.
-  const currentSelectionCount = isQuestionModalOpen ? tempSelectedQuestions.length : 0;
-  const quizSelectionDisabled = currentSelectionCount >= MAX_SELECTED_QUESTIONS && !isSelected;
-
-  // Disable selection if question is already permanently in quiz (when modal is open)
-  const alreadyInQuizDisabled = isQuestionModalOpen && isPermanentlySelected;
-
-  const finalSelectionDisabled =
-    externalSelectionDisabled ||
-    quizSelectionDisabled ||
-    alreadyInQuizDisabled;
-
-  const handleCheckboxChange = (e?: React.MouseEvent) => {
-    e?.stopPropagation(); // Prevent card click when clicking checkbox
-    if (finalSelectionDisabled) return;
-
-    // Only handle temp selection when modal is open
-    if (isQuestionModalOpen) {
-      // Use the boolean result for the current card
-      if (isCurrentCardTempSelected) {
-        removeFromTempSelection(question.id);
-      } else {
-        addToTempSelection(question); // Pass the whole question object
-      }
-    }
-    // When modal is not open, this card should be read-only for permanent selections
+  const mcQuestion = question as MultipleChoiceQuestion;
+  const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if ((e.target as HTMLElement).closest("button")) return;
+    onClick?.();
   };
 
-  // Common details
-  const commonDetails = (
-    <>
-      <Badge
-        variant="secondary"
-        className={cn(
-          "text-xs font-normal transition-colors duration-200",
-          isSelected
-            ? "bg-blue-100 dark:bg-blue-800/30 text-blue-800 dark:text-blue-200"
-            : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300"
-        )}
-      >
-        {question.category.name}
-      </Badge>
-      <Badge
-        variant="secondary"
-        className={cn(
-          "text-xs font-normal transition-colors duration-200",
-          isSelected
-            ? "bg-blue-100 dark:bg-blue-800/30 text-blue-800 dark:text-blue-200"
-            : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300"
-        )}
-      >
-        {question.language.language}
-      </Badge>
-    </>
-  );
-
-  // Type-specific details rendering
-  const renderTypeSpecificDetails = () => {
-    switch (question.type) {
-      case QuestionType.MultipleChoice:
-        const mcq = question as MultipleChoiceQuestion;
-        const correctAnswersCount = mcq.answerOptions.filter(
-          (option) => option.isCorrect
-        ).length;
-        return (
-          <>
-            {commonDetails}
-            <Badge
-              variant="secondary"
-              className={cn(
-                "text-xs font-normal transition-colors duration-200",
-                isSelected
-                  ? "bg-blue-100 dark:bg-blue-800/30 text-blue-800 dark:text-blue-200"
-                  : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300"
-              )}
-            >
-              {mcq.allowMultipleSelections ? "Multi-Select" : "Single Select"}
-            </Badge>
-            <Badge
-              variant="outline"
-              className={cn(
-                "text-xs font-normal transition-colors duration-200",
-                isSelected
-                  ? "border-blue-300 dark:border-blue-600/50 text-blue-700 dark:text-blue-300"
-                  : "border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400"
-              )}
-            >
-              {correctAnswersCount} correct answer
-              {correctAnswersCount !== 1 ? "s" : ""}
-            </Badge>
-          </>
-        );
-      case QuestionType.TrueFalse:
-        const tfq = question as TrueFalseQuestion;
-        return (
-          <>
-            {commonDetails}
-            <Badge
-              variant="outline"
-              className={cn(
-                "text-xs font-normal flex items-center gap-1 transition-colors duration-200",
-                tfq.correctAnswer
-                  ? "text-green-600 dark:text-green-400 border-green-200 dark:border-green-800/50"
-                  : "text-red-600 dark:text-red-400 border-red-200 dark:border-red-800/50",
-                isSelected && "ring-1 ring-current/20"
-              )}
-            >
-              {tfq.correctAnswer ? (
-                <CheckCircle className="h-3 w-3" />
-              ) : (
-                <XCircle className="h-3 w-3" />
-              )}
-              Answer: {tfq.correctAnswer ? "TRUE" : "FALSE"}
-            </Badge>
-          </>
-        );
-      case QuestionType.TypeTheAnswer:
-        const ttaq = question as TypeTheAnswerQuestion;
-        return (
-          <>
-            {commonDetails}
-            <Badge
-              variant="secondary"
-              className={cn(
-                "text-xs font-normal transition-colors duration-200",
-                isSelected
-                  ? "bg-blue-100 dark:bg-blue-800/30 text-blue-800 dark:text-blue-200"
-                  : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300"
-              )}
-            >
-              <Type className="h-3 w-3 mr-1" />
-              Type Answer
-            </Badge>
-            <Badge
-              variant="outline"
-              className={cn(
-                "text-xs font-normal transition-colors duration-200",
-                isSelected
-                  ? "border-blue-300 dark:border-blue-600/50 text-blue-700 dark:text-blue-300"
-                  : "border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400"
-              )}
-            >
-              Pattern: "{ttaq.correctAnswer}"
-            </Badge>
-            {ttaq.acceptableAnswers && ttaq.acceptableAnswers.length > 0 && (
-              <Badge
-                variant="outline"
-                className={cn(
-                  "text-xs font-normal transition-colors duration-200",
-                  isSelected
-                    ? "border-blue-300 dark:border-blue-600/50 text-blue-700 dark:text-blue-300"
-                    : "border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400"
-                )}
-              >
-                {ttaq.acceptableAnswers.length} acceptable
-              </Badge>
-            )}
-          </>
-        );
-      default:
-        return null;
-    }
-  };
-
-  const getSelectionStatusText = () => {
-    if (isPermanentlySelected && isQuestionModalOpen) {
-      return "Already in Quiz";
-    }
-    if (isSelected) {
-      return isQuestionModalOpen ? "Temporarily Selected" : "Selected";
-    }
-    return null;
-  };
-
-  const selectionStatusText = getSelectionStatusText();
+  const isPrivate = mcQuestion.visibility === "private";
 
   return (
     <Card
       className={cn(
-        "mb-3 border shadow-md transition-all duration-200 hover:shadow-md relative overflow-hidden",
-        !finalSelectionDisabled && isQuestionModalOpen && "cursor-pointer",
-        isSelected
-          ? "border-blue-500 dark:border-blue-400 bg-blue-50/50 dark:bg-blue-900/20 ring-2 ring-blue-200 dark:ring-blue-800/50"
-          : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600",
-        finalSelectionDisabled && !isSelected
-          ? "opacity-50 cursor-not-allowed hover:shadow-sm"
-          : "",
-        alreadyInQuizDisabled && "opacity-60",
-        "bg-white dark:bg-gray-900"
+        "font-header rounded-lg border border-primary/80 border-dashed cursor-pointer transition-all duration-200 overflow-hidden shadow-md hover:shadow-lg",
+        isActive
+          ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+          : "hover:bg-muted/30"
       )}
-      onClick={isQuestionModalOpen ? handleCheckboxChange : undefined}
+      onClick={handleClick}
     >
-      {isSelected && (
-        <div className={cn(
-          "absolute left-0 top-0 bottom-0 w-1",
-          isPermanentlySelected && isQuestionModalOpen
-            ? "bg-green-500 dark:bg-green-400"
-            : "bg-blue-500 dark:bg-blue-400"
-        )} />
-      )}
-
-      <CardHeader className="pb-3 pt-4 pl-6">
-        <div className="flex items-start gap-3">
-          <div className="relative">
-            <Checkbox
-              checked={isSelected}
-              disabled={finalSelectionDisabled || !isQuestionModalOpen}
-              onClick={handleCheckboxChange}
-              className={cn(
-                "mt-1 flex-shrink-0 transition-all duration-200",
-                isSelected && "bg-blue-500 border-blue-500 text-white",
-                isPermanentlySelected && isQuestionModalOpen && "bg-green-500 border-green-500"
-              )}
-              aria-label={`Select question ${question.id}`}
-            />
-            {isSelected && ( // Show checkmark overlay only when truly selected by the logic
-               <Check className="absolute top-1.5 left-0.5 h-3 w-3 text-white pointer-events-none" />
-            )}
-          </div>
-
-          <div className="flex-1 min-w-0">
-            <div className="flex flex-wrap items-start justify-between gap-2 mb-3">
-              <CardTitle
-                className={cn(
-                  "text-base leading-tight flex-1 pr-2 transition-colors duration-200",
-                  isSelected
-                    ? "text-blue-900 dark:text-blue-100"
-                    : "text-gray-900 dark:text-gray-100"
-                )}
-              >
-                {question.text}
-                {question.imageUrl && (
-                  <Badge
-                    variant="outline"
-                    className={cn(
-                      "ml-2 transition-colors duration-200",
-                      isSelected
-                        ? "bg-blue-100 dark:bg-blue-800/30 border-blue-300 dark:border-blue-600/50"
-                        : "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800/50"
-                    )}
-                  >
-                    <ImageIcon className="h-3 w-3 mr-1" />
-                    <span className="text-blue-600 dark:text-blue-400 text-xs">
-                      Image
-                    </span>
+      <CardHeader
+        className={cn(
+          "pb-4",
+          isActive
+            ? "bg-primary/10"
+            : "bg-gradient-to-r from-background to-muted"
+        )}
+      >
+        <div className="flex justify-between items-start">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-100 text-blue-600 font-bold">
+              <List size={20} />
+            </div>
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="h-6 px-3 gap-1">
+                  {isPrivate ? <Lock size={12} /> : <Globe size={12} />}
+                  <span className="text-sm">
+                    {isPrivate ? "Private" : "Public"}
+                  </span>
+                </Badge>
+                <Badge
+                  variant="secondary"
+                  className="h-6 px-3 text-sm text-primary bg-primary/20"
+                >
+                  Multiple Choice
+                </Badge>
+                {mcQuestion.allowMultipleSelections && (
+                  <Badge variant="outline" className="h-6 px-3 text-sm">
+                    Multi-select
                   </Badge>
                 )}
-              </CardTitle>
-
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <Badge
-                  variant="outline"
-                  className={cn(
-                    "text-xs transition-colors duration-200",
-                    question.difficulty.level === "Easy" &&
-                      "text-green-600 dark:text-green-400 border-green-200 dark:border-green-800/50",
-                    question.difficulty.level === "Medium" &&
-                      "text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800/50",
-                    question.difficulty.level === "Hard" &&
-                      "text-red-600 dark:text-red-400 border-red-200 dark:border-red-800/50",
-                    isSelected && "ring-1 ring-current/20"
-                  )}
-                >
-                  {question.difficulty.level}
-                </Badge>
               </div>
             </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-              {renderTypeSpecificDetails()}
-            </div>
-
-            {selectionStatusText && (
-              <div className="mt-3 flex items-center gap-2">
-                <div className={cn(
-                  "h-px flex-1",
-                  isPermanentlySelected && isQuestionModalOpen
-                    ? "bg-green-200 dark:bg-green-800/50"
-                    : "bg-blue-200 dark:bg-blue-800/50"
-                )} />
-                <span className={cn(
-                  "text-xs font-medium px-2 py-1 rounded-full",
-                  isPermanentlySelected && isQuestionModalOpen
-                    ? "text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30"
-                    : "text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30"
-                )}>
-                  {selectionStatusText}
-                </span>
-                <div className={cn(
-                  "h-px flex-1",
-                  isPermanentlySelected && isQuestionModalOpen
-                    ? "bg-green-200 dark:bg-green-800/50"
-                    : "bg-blue-200 dark:bg-blue-800/50"
-                )} />
-              </div>
-            )}
           </div>
+
+          {onRemove && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 flex items-center justify-center rounded-full hover:bg-destructive/10 hover:text-red-500"
+              onClick={onRemove}
+              title="Remove question"
+            >
+              <Trash2 size={16} />
+            </Button>
+          )}
         </div>
       </CardHeader>
+
+      <CardContent className="px-6 pb-6">
+        {/* Question Text */}
+        <div className="mb-6 border border-foreground/30 rounded-lg px-4 py-4 text-base bg-background relative shadow-inner">
+          <div className="absolute -top-2 left-4 w-4 h-4 bg-background border-t border-foreground/30 border-l rotate-45 transform"></div>
+          <p className="leading-relaxed">
+            {mcQuestion.text || "Empty question"}
+          </p>
+        </div>
+
+        {/* Image if present */}
+        {mcQuestion.imageUrl && (
+          <div className="mb-6 flex items-center gap-2 text-sm text-muted-foreground">
+            <Image size={16} />
+            <span>Image attached</span>
+          </div>
+        )}
+
+        {/* Answer Options */}
+        <div className="mb-6">
+          <h4 className="text-sm font-medium text-muted-foreground mb-3">
+            Answer Options
+          </h4>
+          <div className="grid gap-3">
+            {mcQuestion.answerOptions?.map((option, i) => (
+              <div
+                key={i}
+                className={cn(
+                  "text-sm border rounded-lg px-4 py-3 flex items-center transition-all duration-200",
+                  option.isCorrect
+                    ? "border-green-500/40 bg-green-100 dark:bg-green-900/30 shadow-sm"
+                    : "border-foreground/20 hover:border-foreground/30"
+                )}
+              >
+                <div
+                  className={cn(
+                    "w-4 h-4 rounded-full mr-3 border-2 transition-all flex items-center justify-center",
+                    option.isCorrect
+                      ? "bg-green-500 border-green-600"
+                      : "border-muted-foreground/40"
+                  )}
+                >
+                  {option.isCorrect && (
+                    <CheckCircle size={10} className="text-white" />
+                  )}
+                </div>
+                <span className="flex-1">
+                  {option.text || `Option ${i + 1}`}
+                </span>
+                {option.isCorrect && (
+                  <Badge
+                    variant="outline"
+                    className="ml-2 text-xs text-green-700 border-green-500"
+                  >
+                    Correct
+                  </Badge>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Question Details */}
+        <div className="grid grid-cols-2 gap-4 mb-4 p-4 bg-muted/30 rounded-lg">
+          <div className="flex items-center gap-2 text-sm">
+            <Tag size={14} className="text-muted-foreground" />
+            <span className="text-muted-foreground">Category:</span>
+            <Badge variant="outline" className="text-xs">
+              {mcQuestion.category.name}
+            </Badge>
+          </div>
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-muted-foreground">Difficulty:</span>
+            <Badge variant="outline" className="text-xs">
+              {mcQuestion.difficulty.level}
+            </Badge>
+          </div>
+          <div className="flex items-center gap-2 text-sm">
+            <Languages size={14} className="text-muted-foreground" />
+            <span className="text-muted-foreground">Language:</span>
+            <Badge variant="outline" className="text-xs">
+              {mcQuestion.language.language}
+            </Badge>
+          </div>
+          <div className="flex items-center gap-2 text-sm">
+            <Calendar size={14} className="text-muted-foreground" />
+            <span className="text-muted-foreground">Created:</span>
+            <span className="text-xs text-muted-foreground">
+              {formatDate(mcQuestion.createdAt)}
+            </span>
+          </div>
+        </div>
+
+        {/* Footer with ID and User */}
+        <div className="flex justify-between items-center text-xs text-muted-foreground border-t pt-3">
+          <span>ID: {mcQuestion.id}</span>
+          <div className="flex items-center gap-1">
+            <User size={12} />
+            <span>User: {mcQuestion.userId}</span>
+          </div>
+        </div>
+      </CardContent>
     </Card>
   );
 };
 
-export default QuestionCard;
+// True/False Question Card
+const TrueFalseCard: React.FC<QuestionCardProps> = ({
+  question,
+  onRemove,
+  isActive = false,
+  onClick,
+}) => {
+  const tfQuestion = question as TrueFalseQuestion;
+  const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if ((e.target as HTMLElement).closest("button")) return;
+    onClick?.();
+  };
+
+  const isPrivate = tfQuestion.visibility === "private";
+
+  return (
+    <Card
+      className={cn(
+        "font-header rounded-lg border border-purple-500 border-dashed cursor-pointer transition-all duration-200 overflow-hidden shadow-md hover:shadow-lg",
+        isActive
+          ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+          : "hover:bg-muted/30"
+      )}
+      onClick={handleClick}
+    >
+      <CardHeader
+        className={cn(
+          "pb-4",
+          isActive
+            ? "bg-primary/10"
+            : "bg-gradient-to-r from-background to-muted"
+        )}
+      >
+        <div className="flex justify-between items-start">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-purple-100 text-purple-600 font-bold">
+              <CheckCircle size={20} />
+            </div>
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="h-6 px-3 gap-1">
+                  {isPrivate ? <Lock size={12} /> : <Globe size={12} />}
+                  <span className="text-sm">
+                    {isPrivate ? "Private" : "Public"}
+                  </span>
+                </Badge>
+                <Badge
+                  variant="secondary"
+                  className="h-6 px-3 text-sm bg-purple-100 text-purple-800"
+                >
+                  True/False
+                </Badge>
+              </div>
+            </div>
+          </div>
+
+          {onRemove && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 flex items-center justify-center rounded-full hover:bg-destructive/10 hover:text-red-500"
+              onClick={onRemove}
+              title="Remove question"
+            >
+              <Trash2 size={16} />
+            </Button>
+          )}
+        </div>
+      </CardHeader>
+
+      <CardContent className="px-6 pb-6">
+        {/* Question Text */}
+        <div className="mb-6 border border-foreground/30 rounded-lg px-4 py-4 text-base bg-background relative shadow-inner">
+          <div className="absolute -top-2 left-4 w-4 h-4 bg-background border-t border-foreground/30 border-l rotate-45 transform"></div>
+          <p className="leading-relaxed">
+            {tfQuestion.text || "Empty question"}
+          </p>
+        </div>
+
+        {/* Image if present */}
+        {tfQuestion.imageUrl && (
+          <div className="mb-6 flex items-center gap-2 text-sm text-muted-foreground">
+            <Image size={16} />
+            <span>Image attached</span>
+          </div>
+        )}
+
+        {/* True/False Options */}
+        <div className="mb-6">
+          <h4 className="text-sm font-medium text-muted-foreground mb-3">
+            Correct Answer
+          </h4>
+          <div className="flex gap-4">
+            <div
+              className={cn(
+                "text-base border rounded-lg px-6 py-4 flex items-center justify-center flex-1 transition-all duration-200",
+                tfQuestion.correctAnswer
+                  ? "border-green-500/40 bg-green-100 dark:bg-green-900/30 shadow-sm"
+                  : "border-foreground/20"
+              )}
+            >
+              <CheckCircle
+                size={20}
+                className={cn(
+                  "mr-3",
+                  tfQuestion.correctAnswer
+                    ? "text-green-600"
+                    : "text-muted-foreground"
+                )}
+              />
+              <span className="font-medium">True</span>
+              {tfQuestion.correctAnswer && (
+                <Badge
+                  variant="outline"
+                  className="ml-3 text-xs text-green-700 border-green-500"
+                >
+                  Correct
+                </Badge>
+              )}
+            </div>
+            <div
+              className={cn(
+                "text-base border rounded-lg px-6 py-4 flex items-center justify-center flex-1 transition-all duration-200",
+                !tfQuestion.correctAnswer
+                  ? "border-green-500/40 bg-green-100 dark:bg-green-900/30 shadow-sm"
+                  : "border-foreground/20"
+              )}
+            >
+              <XCircle
+                size={20}
+                className={cn(
+                  "mr-3",
+                  !tfQuestion.correctAnswer
+                    ? "text-green-600"
+                    : "text-muted-foreground"
+                )}
+              />
+              <span className="font-medium">False</span>
+              {!tfQuestion.correctAnswer && (
+                <Badge
+                  variant="outline"
+                  className="ml-3 text-xs text-green-700 border-green-500"
+                >
+                  Correct
+                </Badge>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Question Details */}
+        <div className="grid grid-cols-2 gap-4 mb-4 p-4 bg-muted/30 rounded-lg">
+          <div className="flex items-center gap-2 text-sm">
+            <Tag size={14} className="text-muted-foreground" />
+            <span className="text-muted-foreground">Category:</span>
+            <Badge variant="outline" className="text-xs">
+              {tfQuestion.category.name}
+            </Badge>
+          </div>
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-muted-foreground">Difficulty:</span>
+            <Badge variant="outline" className="text-xs">
+              {tfQuestion.difficulty.level}
+            </Badge>
+          </div>
+          <div className="flex items-center gap-2 text-sm">
+            <Languages size={14} className="text-muted-foreground" />
+            <span className="text-muted-foreground">Language:</span>
+            <Badge variant="outline" className="text-xs">
+              {tfQuestion.language.language}
+            </Badge>
+          </div>
+          <div className="flex items-center gap-2 text-sm">
+            <Calendar size={14} className="text-muted-foreground" />
+            <span className="text-muted-foreground">Created:</span>
+            <span className="text-xs text-muted-foreground">
+              {formatDate(tfQuestion.createdAt)}
+            </span>
+          </div>
+        </div>
+
+        {/* Footer with ID and User */}
+        <div className="flex justify-between items-center text-xs text-muted-foreground border-t pt-3">
+          <span>ID: {tfQuestion.id}</span>
+          <div className="flex items-center gap-1">
+            <User size={12} />
+            <span>User: {tfQuestion.userId}</span>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+// Type The Answer Question Card
+const TypeTheAnswerCard: React.FC<QuestionCardProps> = ({
+  question,
+  onRemove,
+  isActive = false,
+  onClick,
+}) => {
+  const ttaQuestion = question as TypeTheAnswerQuestion;
+  const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if ((e.target as HTMLElement).closest("button")) return;
+    onClick?.();
+  };
+
+  const isPrivate = ttaQuestion.visibility === "private";
+
+  return (
+    <Card
+      className={cn(
+        "font-header rounded-lg border border-orange-500 border-dashed cursor-pointer transition-all duration-200 overflow-hidden shadow-md hover:shadow-lg",
+        isActive
+          ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+          : "hover:bg-muted/30"
+      )}
+      onClick={handleClick}
+    >
+      <CardHeader
+        className={cn(
+          "pb-4",
+          isActive
+            ? "bg-primary/10"
+            : "bg-gradient-to-r from-background to-muted"
+        )}
+      >
+        <div className="flex justify-between items-start">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-orange-100 text-orange-600 font-bold">
+              <Edit3 size={20} />
+            </div>
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="h-6 px-3 gap-1">
+                  {isPrivate ? <Lock size={12} /> : <Globe size={12} />}
+                  <span className="text-sm">
+                    {isPrivate ? "Private" : "Public"}
+                  </span>
+                </Badge>
+                <Badge
+                  variant="secondary"
+                  className="h-6 px-3 text-sm bg-orange-100 text-orange-800"
+                >
+                  Type Answer
+                </Badge>
+              </div>
+            </div>
+          </div>
+
+          {onRemove && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 flex items-center justify-center rounded-full hover:bg-destructive/10 hover:text-red-500"
+              onClick={onRemove}
+              title="Remove question"
+            >
+              <Trash2 size={16} />
+            </Button>
+          )}
+        </div>
+      </CardHeader>
+
+      <CardContent className="px-6 pb-6">
+        {/* Question Text */}
+        <div className="mb-6 border border-foreground/30 rounded-lg px-4 py-4 text-base bg-background relative shadow-inner">
+          <div className="absolute -top-2 left-4 w-4 h-4 bg-background border-t border-foreground/30 border-l rotate-45 transform"></div>
+          <p className="leading-relaxed">
+            {ttaQuestion.text || "Empty question"}
+          </p>
+        </div>
+
+        {/* Image if present */}
+        {ttaQuestion.imageUrl && (
+          <div className="mb-6 flex items-center gap-2 text-sm text-muted-foreground">
+            <Image size={16} />
+            <span>Image attached</span>
+          </div>
+        )}
+
+        {/* Correct Answer */}
+        <div className="mb-6">
+          <h4 className="text-sm font-medium text-muted-foreground mb-3">
+            Correct Answer
+          </h4>
+          <div className="border-2 border-dashed border-green-300 bg-green-50 dark:bg-green-900/20 rounded-lg px-6 py-4">
+            <div className="flex items-center gap-3 mb-3">
+              <Edit3 size={16} className="text-green-600" />
+              <span className="text-sm font-medium text-green-700 dark:text-green-400">
+                Primary Answer
+              </span>
+            </div>
+            <div className="text-base font-mono bg-white dark:bg-gray-800 rounded-lg px-4 py-3 border border-green-200">
+              {ttaQuestion.correctAnswer || "Answer not set"}
+            </div>
+          </div>
+
+          {/* Answer Options */}
+          <div className="flex gap-2 mt-4">
+            {ttaQuestion.isCaseSensitive && (
+              <Badge variant="outline" className="h-6 px-3 text-sm">
+                Case Sensitive
+              </Badge>
+            )}
+            {ttaQuestion.allowPartialMatch && (
+              <Badge variant="outline" className="h-6 px-3 text-sm">
+                Partial Match
+              </Badge>
+            )}
+          </div>
+
+          {/* Alternative Answers */}
+          {ttaQuestion.acceptableAnswers &&
+            ttaQuestion.acceptableAnswers.length > 0 && (
+              <div className="mt-4">
+                <h5 className="text-sm font-medium text-muted-foreground mb-2">
+                  Alternative Answers ({ttaQuestion.acceptableAnswers.length})
+                </h5>
+                <div className="grid gap-2">
+                  {ttaQuestion.acceptableAnswers.map((answer, i) => (
+                    <div
+                      key={i}
+                      className="text-sm font-mono bg-muted/50 rounded px-3 py-2 border"
+                    >
+                      {answer}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+        </div>
+
+        {/* Question Details */}
+        <div className="grid grid-cols-2 gap-4 mb-4 p-4 bg-muted/30 rounded-lg">
+          <div className="flex items-center gap-2 text-sm">
+            <Tag size={14} className="text-muted-foreground" />
+            <span className="text-muted-foreground">Category:</span>
+            <Badge variant="outline" className="text-xs">
+              {ttaQuestion.category.name}
+            </Badge>
+          </div>
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-muted-foreground">Difficulty:</span>
+            <Badge variant="outline" className="text-xs">
+              {ttaQuestion.difficulty.level}
+            </Badge>
+          </div>
+          <div className="flex items-center gap-2 text-sm">
+            <Languages size={14} className="text-muted-foreground" />
+            <span className="text-muted-foreground">Language:</span>
+            <Badge variant="outline" className="text-xs">
+              {ttaQuestion.language.language}
+            </Badge>
+          </div>
+          <div className="flex items-center gap-2 text-sm">
+            <Calendar size={14} className="text-muted-foreground" />
+            <span className="text-muted-foreground">Created:</span>
+            <span className="text-xs text-muted-foreground">
+              {formatDate(ttaQuestion.createdAt)}
+            </span>
+          </div>
+        </div>
+
+        {/* Footer with ID and User */}
+        <div className="flex justify-between items-center text-xs text-muted-foreground border-t pt-3">
+          <span>ID: {ttaQuestion.id}</span>
+          <div className="flex items-center gap-1">
+            <User size={12} />
+            <span>User: {ttaQuestion.userId}</span>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+// Main Question Card Component
+export const QuestionCard: React.FC<QuestionCardProps> = (props) => {
+  switch (props.question.type) {
+    case QuestionType.MultipleChoice:
+      return <MultipleChoiceCard {...props} />;
+    case QuestionType.TrueFalse:
+      return <TrueFalseCard {...props} />;
+    case QuestionType.TypeTheAnswer:
+      return <TypeTheAnswerCard {...props} />;
+    default:
+      return null;
+  }
+};

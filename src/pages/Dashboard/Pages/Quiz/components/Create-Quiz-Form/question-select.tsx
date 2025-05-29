@@ -43,12 +43,11 @@ const SelectQuestionComponent: React.FC<SelectQuestionComponentProps> = ({
 
   const [activeTab, setActiveTab] = useState(QuestionType.MultipleChoice);
 
-  const { 
-    tempSelectedQuestionsCount, 
-    commitTempSelection, 
+  const {
+    tempSelectedQuestionsCount,
+    commitTempSelection,
     clearTempSelection,
     setQuestionModalOpen,
-    isQuestionModalOpen
   } = useQuiz();
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -98,13 +97,13 @@ const SelectQuestionComponent: React.FC<SelectQuestionComponentProps> = ({
   const handleAddSelectedQuestions = () => {
     // Commit temporary selections to permanent quiz
     commitTempSelection();
-    
+
     // Call the callback if provided
     if (onQuestionsSelected) {
       // You might need to pass the committed questions here
       // onQuestionsSelected(tempSelectedQuestions);
     }
-    
+
     handleClose();
   };
 
@@ -118,7 +117,7 @@ const SelectQuestionComponent: React.FC<SelectQuestionComponentProps> = ({
     <>
       <LiftedButton onClick={handleOpen} className="h-fit">
         <Plus className="h-4 w-4" />
-        Add Questions from Pool
+        Add Existing
       </LiftedButton>
 
       {isOpen && (
@@ -146,7 +145,9 @@ const SelectQuestionComponent: React.FC<SelectQuestionComponentProps> = ({
                   <div
                     className={cn(
                       "h-2 w-2 rounded-full",
-                      tempSelectedQuestionsCount > 0 ? "bg-orange-500" : "bg-gray-300"
+                      tempSelectedQuestionsCount > 0
+                        ? "bg-orange-500"
+                        : "bg-gray-300"
                     )}
                   />
                   <span className="text-sm text-gray-600 dark:text-gray-400">
@@ -241,7 +242,9 @@ const SelectQuestionComponent: React.FC<SelectQuestionComponentProps> = ({
                 <div
                   className={cn(
                     "h-3 w-3 rounded-full transition-colors",
-                    tempSelectedQuestionsCount > 0 ? "bg-orange-500" : "bg-gray-300"
+                    tempSelectedQuestionsCount > 0
+                      ? "bg-orange-500"
+                      : "bg-gray-300"
                   )}
                 />
                 <span className="text-sm text-gray-600 dark:text-gray-400">
