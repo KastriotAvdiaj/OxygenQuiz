@@ -48,7 +48,7 @@ const CreateQuizForm = () => {
   };
 
   return (
-    <div className="min-h-screen ">
+    <div className="min-h-screen flex items-start gap-4">
       <Card className="bg-background justify-center border-2 border-primary/30 rounded-xl shadow-lg flex flex-col gap-2 items-center w-full overflow-hidden">
         <div className="w-full bg-primary/10 p-4 text-center border-b border-primary/30">
           <h2 className="text-2xl font-bold flex items-center justify-center gap-2">
@@ -73,7 +73,7 @@ const CreateQuizForm = () => {
             console.log("Form errors:", errors);
 
             return (
-              <div className="flex flex-col md:flex-row gap-6 w-full ">
+              <div className="flex">
                 <div className="flex-1 flex flex-col p-4">
                   {displayQuestion !== null ? (
                     <QuestionCard question={displayQuestion} />
@@ -111,16 +111,14 @@ const CreateQuizForm = () => {
                     <LiftedButton>+ Create New</LiftedButton>
                   </section>
                 </div>
-
-                <div className="border-l-2 border-primary/30 md:w-72 flex-shrink-0 min-w-[300px] p-2 bg-card/20">
-                  <CreatedQuestionsPanel />
-                  <div className="p-4"></div>
-                </div>
               </div>
             );
           }}
         </Form>
       </Card>
+      <div className=" md:w-72 flex-shrink-0 min-w-[300px] bg-card/20">
+        <CreatedQuestionsPanel />
+      </div>
     </div>
   );
 };

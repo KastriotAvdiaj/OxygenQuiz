@@ -30,9 +30,9 @@ export const CreatedQuestionsPanel = ({}) => {
 
   return (
     <>
-      <Card className="w-full shadow-none border-none bg-background py-0">
-        <CardHeader className="border-b-2 border-primary/30 p-1">
-          <CardTitle className="flex justify-between items-center text-sm">
+      <Card className="w-full shadow-none border-2 border-primary/30 bg-background py-0">
+        <CardHeader className=" rounded-t border-primary/30 border-b p-4 bg-primary/10">
+          <CardTitle className="flex justify-between items-center text-sm ">
             <span>Quiz Questions ({selectedQuestions.length})</span>
             <Popover modal={true} open={isOpen} onOpenChange={handleOpenChange}>
               <PopoverTrigger asChild onClick={open}>
@@ -50,13 +50,13 @@ export const CreatedQuestionsPanel = ({}) => {
             </Popover>
           </CardTitle>
         </CardHeader>
-        <CardContent className="px-3 pt-2 pb-0">
+        <CardContent className="px-3 py-4">
           {selectedQuestions.length === 0 ? (
             <p className="text-center text-muted-foreground py-4">
               No questions added yet
             </p>
           ) : (
-            <div className="space-y-3 max-h-[90vh] overflow-y-auto pr-2">
+            <div className="space-y-3">
               {selectedQuestions.map((question) => (
                 <SmallQuestionCard key={question.id} question={question} />
               ))}
