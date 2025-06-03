@@ -242,7 +242,7 @@ const TrueFalseCard: React.FC<QuestionCardProps> = ({
 
   return (
     <Card
-      className="font-header rounded-lg border border-purple-500/80 bg-purple-200/10 border-dashed cursor-pointer transition-all duration-200 overflow-hidden shadow-md hover:shadow-lg dark:bg-muted/30"
+      className="font-header rounded-lg border border-purple-500/80 bg-purple-300/10 border-dashed cursor-pointer transition-all duration-200 overflow-hidden shadow-md hover:shadow-lg dark:bg-muted/30"
       onClick={handleClick}
     >
       <CardHeader className="pb-4">
@@ -367,7 +367,7 @@ const TrueFalseCard: React.FC<QuestionCardProps> = ({
               </p>
             </AccordionTrigger>
             <AccordionContent>
-              <div className="grid grid-cols-2 gap-4 mb-4 p-4 bg-muted/30 rounded-lg">
+              <div className="grid grid-cols-2 gap-4 mb-4 p-4 bg-purple-200/50 dark:bg-purple-900/30 shadow-md rounded-lg">
                 <div className="flex items-center gap-2 text-sm">
                   <Tag size={14} className="text-muted-foreground" />
                   <span className="text-muted-foreground">Category:</span>

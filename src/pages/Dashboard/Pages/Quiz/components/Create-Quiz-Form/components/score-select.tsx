@@ -6,10 +6,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Label } from "@/components/ui/form";
 
 interface ScoreSelectProps {
-  control: Control<any>;
-  name: string;
+  control?: Control<any>;
+  name?: string;
   error?: FieldError;
   id?: string;
 }
@@ -23,8 +24,11 @@ const scoreOptions = [
 export const ScoreSelect = ({ control, name, error, id }: ScoreSelectProps) => {
   return (
     <div>
+      <Label htmlFor={id} className="text-sm  mb-2 block">
+        Select Score
+      </Label>
       <Controller
-        name={name}
+        name={name ? name : "score"}
         control={control}
         render={({ field }) => (
           <Select

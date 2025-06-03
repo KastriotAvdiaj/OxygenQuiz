@@ -112,7 +112,7 @@ const SelectQuestionComponent: React.FC<SelectQuestionComponentProps> = ({
 
   return (
     <>
-      <LiftedButton onClick={handleOpen} className="h-fit">
+      <LiftedButton onClick={handleOpen} className="h-fit" type="button">
         <Plus className="h-4 w-4" />
         Add Existing
       </LiftedButton>

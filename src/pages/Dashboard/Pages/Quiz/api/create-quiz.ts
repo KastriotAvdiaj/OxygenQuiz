@@ -39,27 +39,66 @@ export const answerOptionInputSchema = z.object({
     score: z.number().min(1, { message: 'Score must be at least 1.' }),
   });
   
-  export const createQuizInputSchema = z.object({
-    title: z.string().min(1, 'Title is required'),
-    description: z.string(),
-    categoryId: z.number().int().positive({ message: "Category is required" }),
-  languageId: z.number().int().positive({ message: "Language is required" }),
+export const createQuizInputSchema = z.object({
+  title: z.string()
+    .min(1, 'Title is required')
+    .max(255, 'Title must be 255 characters or less'),
+  
+  description: z.string()
+    .max(1000, 'Description must be 1000 characters or less')
+    .optional()
+    .nullable(),
+
+  categoryId: z.number()
+    .int()
+    .positive({ message: "Category is required" }),
+  
+  languageId: z.number()
+    .int()
+    .positive({ message: "Language is required" }),
+  
+  difficultyId: z.number()
+    .int()
+    .positive({ message: "Difficulty is required" }),
+
+  // Quiz Settings
+  timeLimitInSeconds: z.number()
+    .int()
+    .min(0, 'Time limit cannot be negative')
+    .max(2000, 'Time limit cannot exceed 2000 seconds')
+    .default(0),
+
+  showFeedbackImmediately: z.boolean().default(false),
+
+  visibility: z.string()
+    .min(1, 'Visibility is required')
+    .refine((val) => ['public', 'private', 'unlisted'].includes(val), {
+      message: 'Visibility must be public, private, or unlisted'
+    }),
+
+  shuffleQuestions: z.boolean().default(false),
+
+  isPublished: z.boolean().default(false),
+
+  questions: z.object({
     publicQuestions: z.array(publicQuestionInputSchema).default([]),
     privateQuestions: z.array(privateQuestionInputSchema).default([]),
+  }).default({ publicQuestions: [], privateQuestions: [] }),
 
-    //dummy field 
-    totalScore: z.number().optional(),
-  })
-  .superRefine((data, ctx) => {
-    const publicScore = data.publicQuestions.reduce(
-      (sum, question) => sum + question.score,
-      0
-    );
-    const privateScore = data.privateQuestions.reduce(
-      (sum, question) => sum + question.score,
-      0
-    );
-    const totalScore = publicScore + privateScore;
+  totalScore: z.number().optional(),
+})
+.superRefine((data, ctx) => {
+  const publicScore = data.questions.publicQuestions.reduce(
+    (sum, question) => sum + question.score,
+    0
+  );
+  const privateScore = data.questions.privateQuestions.reduce(
+    (sum, question) => sum + question.score,
+    0
+  );
+  const totalScore = publicScore + privateScore;
+  
+  if (data.questions.publicQuestions.length > 0 || data.questions.privateQuestions.length > 0) {
     if (totalScore !== 100) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -67,7 +106,15 @@ export const answerOptionInputSchema = z.object({
         path: ["totalScore"],
       });
     }
-  });
+  }
+  if (data.isPublished && data.questions.publicQuestions.length === 0 && data.questions.privateQuestions.length === 0) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Published quiz must have at least one question.",
+      path: ["questions"],
+    });
+  }
+});
 
 export type CreateQuizInput = z.infer<typeof createQuizInputSchema>
 

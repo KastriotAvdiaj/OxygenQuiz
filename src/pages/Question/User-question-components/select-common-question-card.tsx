@@ -465,7 +465,7 @@ export const CommonSelectQuestionCard: React.FC<CommonSelectQuestionCard> = ({
             <div className="flex flex-wrap items-start justify-between gap-2 mb-3">
               <CardTitle
                 className={cn(
-                  "text-base leading-tight flex-1 pr-2 transition-colors duration-200",
+                  "text-base leading-tight pr-2 transition-colors duration-200",
                   isSelected || (isPermanentlySelected && isQuestionModalOpen)
                     ? "text-blue-900 dark:text-blue-100"
                     : "text-gray-900 dark:text-gray-100"
