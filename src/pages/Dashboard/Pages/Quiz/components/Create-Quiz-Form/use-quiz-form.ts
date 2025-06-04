@@ -1,15 +1,13 @@
-import { useNavigate } from "react-router-dom";
 import { useMultipleChoiceQuestionData } from "../../../Question/api/Normal-Question/get-multiple-choice-questions";
 import { useQuestionCategoryData } from "../../../Question/Entities/Categories/api/get-question-categories";
 import { useQuestionDifficultyData } from "../../../Question/Entities/Difficulty/api/get-question-difficulties";
 // import { useCreateQuiz } from "../../api/create-quiz";
 import { useQuestionLanguageData } from "../../../Question/Entities/Language/api/get-question-language";
 // import { CreateQuizInput } from "../../api/create-quiz";
-import { useNotifications } from "@/common/Notifications";
 
 export const useQuizForm = () => {
-  const navigate = useNavigate();
-    const { addNotification } = useNotifications();
+  // const navigate = useNavigate();
+  //   const { addNotification } = useNotifications();
   
   
   const questionsQuery = useMultipleChoiceQuestionData({});

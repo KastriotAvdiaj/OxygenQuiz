@@ -4,14 +4,14 @@ import { QuestionBase, QuestionType } from "@/types/ApiTypes";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui";
 import { LiftedButton } from "@/common/LiftedButton";
-import { QuestionFilters } from "../../../Question/Components/Re-Usable-Components/question-filters";
+import { QuestionFilters } from "../../../../Question/Components/Re-Usable-Components/question-filters";
 import { useDebounce } from "@/hooks/use-debounce";
-import { useQuestionCategoryData } from "../../../Question/Entities/Categories/api/get-question-categories";
-import { useQuestionDifficultyData } from "../../../Question/Entities/Difficulty/api/get-question-difficulties";
-import { useQuestionLanguageData } from "../../../Question/Entities/Language/api/get-question-language";
-import { QuestionTabContent } from "../../../Question/Components/QuestionsTabContent";
+import { useQuestionCategoryData } from "../../../../Question/Entities/Categories/api/get-question-categories";
+import { useQuestionDifficultyData } from "../../../../Question/Entities/Difficulty/api/get-question-difficulties";
+import { useQuestionLanguageData } from "../../../../Question/Entities/Language/api/get-question-language";
+import { QuestionTabContent } from "../../../../Question/Components/QuestionsTabContent";
 import { cn } from "@/utils/cn";
-import { useQuiz } from "./QuizQuestionsContext";
+import { useQuiz } from "../QuizQuestionsContext";
 import { useDisclosure } from "@/hooks/use-disclosure";
 
 interface SelectQuestionComponentProps {

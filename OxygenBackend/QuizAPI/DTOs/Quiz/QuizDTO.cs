@@ -5,38 +5,38 @@ using System.ComponentModel.DataAnnotations;
 
 namespace QuizAPI.DTOs.Quiz
 {
-    public class QuizCM
-    {
-        [Required]
-        [MaxLength(255)]
-        public string Title { get; set; } = string.Empty;
+        public class QuizCM
+        {
+            [Required]
+            [MaxLength(255)]
+            public string Title { get; set; } = string.Empty;
 
-        [MaxLength(1000)]
-        public string? Description { get; set; }
+            [MaxLength(1000)]
+            public string? Description { get; set; }
 
-        [Required]
-        public int CategoryId { get; set; }
+            [Required]
+            public int CategoryId { get; set; }
 
-        [Required]
-        public int LanguageId { get; set; }
+            [Required]
+            public int LanguageId { get; set; }
 
-        [Range(0, 2000)]
-        public int TimeLimitInSeconds { get; set; } = 0; //THIS IS THE OVERALL TIME LIMIT FOR THE QUIZ, NOT FOR EACH QUESTION
+            [Range(0, 2000)]
+            public int TimeLimitInSeconds { get; set; } = 0; //THIS IS THE OVERALL TIME LIMIT FOR THE QUIZ, NOT FOR EACH QUESTION
 
-        public bool ShowFeedbackImmediately { get; set; } = false;
-        public string Visibility { get; set; } = string.Empty;
+            public bool ShowFeedbackImmediately { get; set; } = false;
+            public string Visibility { get; set; } = string.Empty;
 
 
-        [Required]
-        public int DifficultyId { get; set; }
+            [Required]
+            public int DifficultyId { get; set; }
 
-        public bool ShuffleQuestions { get; set; } = false;
+            public bool ShuffleQuestions { get; set; } = false;
 
-        public bool IsPublished { get; set; } = false;
+            public bool IsPublished { get; set; } = false;
 
-        [Required]
-        public ICollection<QuizQuestionCM> Questions { get; set; } = new List<QuizQuestionCM>();
-    }
+            [Required]
+            public ICollection<QuizQuestionCM> Questions { get; set; } = new List<QuizQuestionCM>();
+        }
 
     public class QuizSummaryDTO
     {

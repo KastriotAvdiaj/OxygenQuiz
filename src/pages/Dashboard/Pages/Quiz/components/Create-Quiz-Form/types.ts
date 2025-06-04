@@ -1,4 +1,4 @@
-import { Question, QuestionCategory, QuestionDifficulty, QuestionLanguage } from "@/types/ApiTypes";
+import { QuestionBase, QuestionCategory, QuestionDifficulty, QuestionLanguage } from "@/types/ApiTypes";
 import { Control, UseFormRegister, FormState, UseFormSetValue, UseFormWatch, UseFormClearErrors } from "react-hook-form";
 import { CreateQuizInput } from "../../api/create-quiz";
 
@@ -12,7 +12,7 @@ export interface FormProps {
 }
 
 export interface QueryData {
-  questions: Question[];
+  questions: QuestionBase[];
   categories: QuestionCategory[];
   difficulties: QuestionDifficulty[];
   languages: QuestionLanguage[];

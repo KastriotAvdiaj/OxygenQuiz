@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import SelectQuestionComponent from "./question-select";
+import SelectQuestionComponent from "./components/question-select";
 import { useQuiz } from "./QuizQuestionsContext";
 import { AnyQuestion } from "@/types/ApiTypes";
 import { LiftedButton } from "@/common/LiftedButton";
@@ -60,12 +60,12 @@ const CreateQuizForm = () => {
     console.log("Submitting Quiz with Data:", finalQuizData);
   };
 
-  const formatTimeDisplay = (seconds: number) => {
-    if (seconds === 0) return "No limit";
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
-  };
+  // const formatTimeDisplay = (seconds: number) => {
+  //   if (seconds === 0) return "No limit";
+  //   const minutes = Math.floor(seconds / 60);
+  //   const remainingSeconds = seconds % 60;
+  //   return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
+  // };
 
   return (
     <Form
@@ -79,7 +79,7 @@ const CreateQuizForm = () => {
         const { errors } = formState;
         console.log("Form errors:", errors);
 
-        const timeLimitValue = watch("timeLimitInSeconds") || 0;
+        // const timeLimitValue = watch("timeLimitInSeconds") || 0;
 
         return (
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4 p-4 items-start">
@@ -179,7 +179,7 @@ const CreateQuizForm = () => {
                   </h4>
 
                   {/* Time Limit */}
-                  <div className="space-y-2">
+                  {/* <div className="space-y-2">
                     <Label className="text-sm font-medium flex items-center gap-2">
                       <Clock className="h-3 w-3" />
                       Time Limit: {formatTimeDisplay(timeLimitValue)}
@@ -199,7 +199,7 @@ const CreateQuizForm = () => {
                       <span>No limit</span>
                       <span>2 hours</span>
                     </div>
-                  </div>
+                  </div> */}
 
                   {/* Visibility */}
                   <div>
@@ -217,7 +217,7 @@ const CreateQuizForm = () => {
                       <SelectContent>
                         <SelectItem value="public">🌍 Public</SelectItem>
                         <SelectItem value="private">🔒 Private</SelectItem>
-                        <SelectItem value="unlisted">🔗 Unlisted</SelectItem>
+                        {/* <SelectItem value="unlisted">🔗 Unlisted</SelectItem> */}
                       </SelectContent>
                     </Select>
                   </div>
