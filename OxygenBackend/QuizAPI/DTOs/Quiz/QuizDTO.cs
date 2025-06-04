@@ -21,7 +21,7 @@ namespace QuizAPI.DTOs.Quiz
             public int LanguageId { get; set; }
 
             [Range(0, 2000)]
-            public int TimeLimitInSeconds { get; set; } = 0; //THIS IS THE OVERALL TIME LIMIT FOR THE QUIZ, NOT FOR EACH QUESTION
+            public int? TimeLimitInSeconds { get; set; } = 0; //THIS IS THE OVERALL TIME LIMIT FOR THE QUIZ, NOT FOR EACH QUESTION
 
             public bool ShowFeedbackImmediately { get; set; } = false;
             public string Visibility { get; set; } = string.Empty;
@@ -107,7 +107,7 @@ namespace QuizAPI.DTOs.Quiz
         public string Visibility { get; set; } = string.Empty;
 
 
-        public int TimeLimitInSeconds { get; set; }
+        public int? TimeLimitInSeconds { get; set; }
         public bool ShowFeedbackImmediately { get; set; }
         public bool ShuffleQuestions { get; set; }
         public bool IsPublished { get; set; }

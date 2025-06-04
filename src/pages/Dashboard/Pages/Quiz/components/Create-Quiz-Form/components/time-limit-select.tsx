@@ -8,41 +8,48 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/form";
 
-interface ScoreSelectProps {
+interface TimeLimitSelectProps {
   control?: Control<any>;
   name?: string;
   error?: FieldError;
   id?: string;
 }
 
-const scoreOptions = [
-  { value: "5", label: "Standard" },
-  { value: "10", label: "Double" },
-  { value: "20", label: "Quadruple" },
+const timeOptions = [
+  { value: "5", label: "5s" },
+  { value: "10", label: "10s" },
+  { value: "15", label: "15s" },
+  { value: "30", label: "30s" },
+  { value: "60", label: "1m" },
 ];
 
-export const ScoreSelect = ({ control, name, error, id }: ScoreSelectProps) => {
+export const TimeLimitSelect = ({
+  control,
+  name,
+  error,
+  id,
+}: TimeLimitSelectProps) => {
   return (
     <div>
       <Label htmlFor={id} className="text-sm block text-primary">
-        Select Score
+        Select Time Limit
       </Label>
       <Controller
-        name={name ? name : "pointSystem"}
+        name={name ? name : "timeLimit"}
         control={control}
         render={({ field }) => (
           <Select
             onValueChange={(value) => field.onChange(Number(value))}
-            value={field.value?.toString() || scoreOptions[1].value}
+            value={field.value?.toString() || timeOptions[1].value}
           >
             <SelectTrigger id={id} variant="quiz">
               <SelectValue
                 className="text-foreground"
-                placeholder="Select score"
+                placeholder="Select time limit"
               />
             </SelectTrigger>
             <SelectContent>
-              {scoreOptions.map((option) => (
+              {timeOptions.map((option) => (
                 <SelectItem key={option.value} value={option.value}>
                   {option.label}
                 </SelectItem>

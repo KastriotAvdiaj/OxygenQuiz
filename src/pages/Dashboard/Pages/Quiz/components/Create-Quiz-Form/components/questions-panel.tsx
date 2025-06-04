@@ -26,7 +26,6 @@ export const CreatedQuestionsPanel = ({}) => {
   };
 
   const { selectedQuestions } = useQuiz();
-  console.log("Selected Questions:", selectedQuestions);
 
   return (
     <>

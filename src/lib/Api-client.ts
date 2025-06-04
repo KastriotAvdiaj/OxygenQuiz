@@ -40,7 +40,7 @@ api.interceptors.response.use(
       useNotifications.getState().addNotification({
         type: 'error',
         title: 'Error',
-        message,
+        message,//change this when deployed
       });
     }
 

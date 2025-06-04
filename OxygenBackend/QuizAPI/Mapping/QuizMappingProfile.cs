@@ -38,10 +38,10 @@ public class QuizMappingProfile : Profile
         CreateMap<Quiz, QuizSummaryDTO>()
             .ForMember(dest => dest.Category, opt => opt.MapFrom(src => src.Category.Name))
             .ForMember(dest => dest.Difficulty, opt => opt.MapFrom(src => src.Difficulty.Level))
-            .ForMember(dest => dest.Language, opt => opt.MapFrom(src => src.Language.Language)) // Fixed property name
+            .ForMember(dest => dest.Language, opt => opt.MapFrom(src => src.Language.Language))
             .ForMember(dest => dest.QuestionCount, opt => opt.MapFrom(src => src.QuizQuestions.Count))
             .ForMember(dest => dest.User, opt => opt.MapFrom(src => src.User.Username))
-        .ForMember(dest => dest.Visibility, opt => opt.MapFrom(src => src.Visibility.ToString()));
+            .ForMember(dest => dest.Visibility, opt => opt.MapFrom(src => src.Visibility.ToString()));
 
         // Quiz Entity to QuizDTO (for detail view)
         CreateMap<Quiz, QuizDTO>()
@@ -50,11 +50,11 @@ public class QuizMappingProfile : Profile
             .ForMember(dest => dest.Language, opt => opt.MapFrom(src => src.Language))
             .ForMember(dest => dest.Difficulty, opt => opt.MapFrom(src => src.Difficulty))
             .ForMember(dest => dest.Questions, opt => opt.MapFrom(src => src.QuizQuestions))
-            .ForMember(dest => dest.ShowFeedbackImmediately, opt => opt.MapFrom(src => src.ShowFeedbackImmediately)) // Added this
+            .ForMember(dest => dest.ShowFeedbackImmediately, opt => opt.MapFrom(src => src.ShowFeedbackImmediately))
             .ForMember(dest => dest.QuestionCount, opt => opt.MapFrom(src => src.QuizQuestions.Count))
             .ForMember(dest => dest.Visibility, opt => opt.MapFrom(src => src.Visibility.ToString()));
 
-        // QuizCM (Create Model) to Quiz Entity
+        // QuizCM (Create Model) to Quiz Entity - FIXED
         CreateMap<QuizCM, Quiz>()
             .ForMember(dest => dest.Id, opt => opt.Ignore())
             .ForMember(dest => dest.UserId, opt => opt.Ignore())
@@ -62,14 +62,14 @@ public class QuizMappingProfile : Profile
             .ForMember(dest => dest.Category, opt => opt.Ignore())
             .ForMember(dest => dest.Language, opt => opt.Ignore())
             .ForMember(dest => dest.Difficulty, opt => opt.Ignore())
-            .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => DateTime.UtcNow))
-            .ForMember(dest => dest.Version, opt => opt.MapFrom(src => 1))
+            .ForMember(dest => dest.CreatedAt, opt => opt.Ignore()) // Let your service method set this
+            .ForMember(dest => dest.Version, opt => opt.Ignore()) // Let your service method set this
             .ForMember(dest => dest.ShowFeedbackImmediately, opt => opt.MapFrom(src => src.ShowFeedbackImmediately))
-            .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => true))
-            .ForMember(dest => dest.QuizQuestions, opt => opt.MapFrom(src => src.Questions))
-             .ForMember(dest => dest.Visibility, opt => opt.MapFrom(src => Enum.Parse<QuizVisibility>(src.Visibility, true)));
+            .ForMember(dest => dest.IsActive, opt => opt.Ignore()) // Let your service method set this
+            .ForMember(dest => dest.QuizQuestions, opt => opt.Ignore()) // ✅ IGNORE - Handle separately in service
+            .ForMember(dest => dest.Visibility, opt => opt.MapFrom(src => Enum.Parse<QuizVisibility>(src.Visibility, true)));
 
-        // QuizUM (Update Model) to Quiz Entity
+        // QuizUM (Update Model) to Quiz Entity - FIXED
         CreateMap<QuizUM, Quiz>()
             .ForMember(dest => dest.UserId, opt => opt.Ignore())
             .ForMember(dest => dest.User, opt => opt.Ignore())
@@ -78,7 +78,7 @@ public class QuizMappingProfile : Profile
             .ForMember(dest => dest.Difficulty, opt => opt.Ignore())
             .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())
             .ForMember(dest => dest.ShowFeedbackImmediately, opt => opt.MapFrom(src => src.ShowFeedbackImmediately))
-            .ForMember(dest => dest.QuizQuestions, opt => opt.MapFrom(src => src.Questions))
+            .ForMember(dest => dest.QuizQuestions, opt => opt.Ignore()) // ✅ IGNORE - Handle separately in service
             .ForMember(dest => dest.Visibility, opt => opt.MapFrom(src => Enum.Parse<QuizVisibility>(src.Visibility, true)));
 
         // Common entity-to-DTO mappings
