@@ -1,6 +1,6 @@
 import React from "react";
 import { AnyQuestion } from "@/types/ApiTypes";
-import { CommonSelectQuestionCard } from "../../Dashboard/Pages/Quiz/components/Create-Quiz-Form/components/question-select/select-common-question-card";
+import { CommonSelectQuestionCard } from "./select-common-question-card";
 
 interface QuestionListProps {
   questions: AnyQuestion[];

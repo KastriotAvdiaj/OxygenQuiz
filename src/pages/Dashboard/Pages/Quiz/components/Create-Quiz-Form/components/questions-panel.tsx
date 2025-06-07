@@ -9,7 +9,7 @@ import {
 import { useDisclosure } from "@/hooks/use-disclosure";
 // import { ScrollArea } from "@/components/ui/scroll-area";
 import { PlusCircle } from "lucide-react";
-import { useQuiz } from "../QuizQuestionsContext";
+import { useQuiz } from "../Quiz-questions-context";
 import { SmallQuestionCard } from "./small-question-card";
 import { LiftedButton } from "@/common/LiftedButton";
 import SelectQuestionComponent from "./question-select/question-select";

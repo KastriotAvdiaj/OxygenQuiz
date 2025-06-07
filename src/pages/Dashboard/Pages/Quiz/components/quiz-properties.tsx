@@ -12,7 +12,7 @@ import {
   EyeOff,
 } from "lucide-react";
 import formatDate from "@/lib/date-format";
-import { Quiz } from "@/types/ApiTypes";
+import { QuizSummaryDTO } from "@/types/ApiTypes";
 
 export interface QuizProperty {
   label: string;
@@ -21,7 +21,7 @@ export interface QuizProperty {
 }
 
 interface QuizPropertiesProps {
-    quiz: Quiz;
+    quiz: QuizSummaryDTO;
   }
   
   export const QuizProperties = ({ quiz }: QuizPropertiesProps) => {

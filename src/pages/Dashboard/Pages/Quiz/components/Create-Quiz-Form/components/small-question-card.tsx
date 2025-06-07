@@ -20,7 +20,7 @@ import {
   TrueFalseQuestion,
   TypeTheAnswerQuestion,
 } from "@/types/ApiTypes";
-import { useQuiz } from "../QuizQuestionsContext";
+import { useQuiz } from "../Quiz-questions-context";
 
 interface QuestionCardProps {
   question: AnyQuestion;

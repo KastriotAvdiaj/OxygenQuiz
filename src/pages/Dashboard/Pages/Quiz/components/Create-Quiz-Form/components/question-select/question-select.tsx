@@ -11,7 +11,7 @@ import { useQuestionDifficultyData } from "../../../../../Question/Entities/Diff
 import { useQuestionLanguageData } from "../../../../../Question/Entities/Language/api/get-question-language";
 import { QuestionTabContent } from "../../../../../Question/Components/QuestionsTabContent";
 import { cn } from "@/utils/cn";
-import { useQuiz } from "../../QuizQuestionsContext";
+import { useQuiz } from "../../Quiz-questions-context";
 import { useDisclosure } from "@/hooks/use-disclosure";
 
 interface SelectQuestionComponentProps {
