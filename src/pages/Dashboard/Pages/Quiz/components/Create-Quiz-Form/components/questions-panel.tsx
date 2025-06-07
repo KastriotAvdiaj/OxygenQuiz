@@ -12,7 +12,7 @@ import { PlusCircle } from "lucide-react";
 import { useQuiz } from "../QuizQuestionsContext";
 import { SmallQuestionCard } from "./small-question-card";
 import { LiftedButton } from "@/common/LiftedButton";
-import SelectQuestionComponent from "./question-select";
+import SelectQuestionComponent from "./question-select/question-select";
 
 export const CreatedQuestionsPanel = ({}) => {
   const { isOpen, open, close } = useDisclosure();

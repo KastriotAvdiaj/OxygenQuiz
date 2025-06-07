@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import SelectQuestionComponent from "./components/question-select";
+import SelectQuestionComponent from "./components/question-select/question-select";
 import { useQuiz } from "./QuizQuestionsContext";
 import { AnyQuestion } from "@/types/ApiTypes";
 import { LiftedButton } from "@/common/LiftedButton";
