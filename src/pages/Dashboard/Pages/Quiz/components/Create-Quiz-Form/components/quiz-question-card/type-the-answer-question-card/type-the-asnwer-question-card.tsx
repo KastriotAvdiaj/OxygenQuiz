@@ -1,0 +1,41 @@
+import React from "react";
+import { Input } from "@/components/ui/form";
+import { TypeTheAnswerQuestion } from "@/types/ApiTypes";
+import { BaseQuestionCard, QuestionCardProps } from "../quiz-base-question-card";
+import { getQuestionTypeStyles } from "../multiple-choice-question-card/quiz-muiltiple-choice-question-card";
+import { QuestionImagePreview } from "../quiz-question-image-preview";
+import { TypeTheAnswerDisplay } from "./type-the-asnwer-display";
+import { QuestionMetadata } from "../quiz-question-metadata";
+import { QuestionFooter } from "../quiz-question-card-footer";
+
+
+export const TypeTheAnswerCard: React.FC<QuestionCardProps> = (props) => {
+  const question = props.question as TypeTheAnswerQuestion;
+  const styles = getQuestionTypeStyles(question.type);
+
+  return (
+    <BaseQuestionCard
+      {...props}
+      borderColor={styles.borderColor}
+      backgroundColor={styles.backgroundColor}
+    >
+      <Input
+        variant="display"
+        questionType="type-answer"
+        value={question.text || ""}
+        className="my-8 !text-[1.5rem] py-8"
+      />
+
+      {question.imageUrl && (
+        <QuestionImagePreview
+          imageUrl={question.imageUrl}
+          previewBorderColor={styles.previewBorderColor}
+        />
+      )}
+
+      <TypeTheAnswerDisplay question={question} />
+      <QuestionMetadata question={question} />
+      <QuestionFooter question={question} />
+    </BaseQuestionCard>
+  );
+};

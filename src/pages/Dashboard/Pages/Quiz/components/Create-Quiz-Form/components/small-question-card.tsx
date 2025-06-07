@@ -34,7 +34,7 @@ const truncateText = (text: string, length: number) =>
   text?.length > length ? `${text.substring(0, length)}...` : text || "";
 
 // Multiple Choice Question Card
-const MultipleChoiceCard: React.FC<QuestionCardProps> = ({
+const SmallMultipleChoiceCard: React.FC<QuestionCardProps> = ({
   question,
   onRemove,
   isActive = false,
@@ -163,7 +163,10 @@ const MultipleChoiceCard: React.FC<QuestionCardProps> = ({
 };
 
 // True/False Question Card
-const TrueFalseCard: React.FC<QuestionCardProps> = ({ question, onRemove }) => {
+const SmallTrueFalseCard: React.FC<QuestionCardProps> = ({
+  question,
+  onRemove,
+}) => {
   const tfQuestion = question as TrueFalseQuestion;
   const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if ((e.target as HTMLElement).closest("button")) return;
@@ -295,7 +298,7 @@ const TrueFalseCard: React.FC<QuestionCardProps> = ({ question, onRemove }) => {
 };
 
 // Type The Answer Question Card
-const TypeTheAnswerCard: React.FC<QuestionCardProps> = ({
+const SmallTypeTheAnswerCard: React.FC<QuestionCardProps> = ({
   question,
   onRemove,
 }) => {
@@ -426,11 +429,11 @@ const TypeTheAnswerCard: React.FC<QuestionCardProps> = ({
 export const SmallQuestionCard: React.FC<QuestionCardProps> = (props) => {
   switch (props.question.type) {
     case QuestionType.MultipleChoice:
-      return <MultipleChoiceCard {...props} />;
+      return <SmallMultipleChoiceCard {...props} />;
     case QuestionType.TrueFalse:
-      return <TrueFalseCard {...props} />;
+      return <SmallTrueFalseCard {...props} />;
     case QuestionType.TypeTheAnswer:
-      return <TypeTheAnswerCard {...props} />;
+      return <SmallTypeTheAnswerCard {...props} />;
     default:
       return null;
   }

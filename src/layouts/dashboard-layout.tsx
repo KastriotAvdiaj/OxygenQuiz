@@ -47,8 +47,12 @@ export const DashboardLayout = ({
       )}
 
       <div
-        className="overflow-y-auto bg-muted h-full p-10"
-        style={{ maxHeight: "calc(100vh - 64px)" }}
+        className="overflow-y-auto bg-muted p-10 min-h-[90vh] h-full"
+        style={
+          {
+            maxHeight: "calc(100vh - 64px)",  
+          }
+        }
       >
         {children}
       </div>

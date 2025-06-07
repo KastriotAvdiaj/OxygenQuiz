@@ -30,7 +30,7 @@ const SelectTrigger = React.forwardRef<
     className={cn(
       "flex h-9 w-full border text-foreground dark:border-foreground/30 border-foreground/70 items-center justify-between whitespace-nowrap rounded-md px-3 py-2 text-sm shadow-sm ring-offset-muted placeholder:text-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
       variant === "quiz" &&
-        "font-header placeholder:text-center bg-gradient-to-r from-primary/10 to-primary/5 border-2 border-primary/30 text-foreground font-medium rounded-xl transform transition-all duration-200 dark:bg-gradient-to-r dark:from-primary/20 dark:to-primary/10 text-sm h-9 px-3 py-1.5 shadow-[0_3px_0_0_hsl(var(--primary)/0.5)] hover:shadow-[0_2px_0_0_hsl(var(--primary)/0.5)] hover:translate-y-px active:shadow-none active:translate-y-0.5 md:text-xs md:h-8 md:px-2.5 md:py-1 md:shadow-[0_2px_0_0_hsl(var(--primary)/0.5)] md:hover:shadow-[0_1px_0_0_hsl(var(--primary)/0.5)] md:hover:translate-y-px md:active:shadow-none md:active:translate-y-px lg:text-sm lg:h-9 lg:px-3 lg:py-1.5 lg:shadow-[0_3px_0_0_hsl(var(--primary)/0.5)] lg:hover:shadow-[0_2px_0_0_hsl(var(--primary)/0.5)] lg:hover:translate-y-px lg:active:shadow-none lg:active:translate-y-0.5",
+        "font-header placeholder:text-center bg-gradient-to-r from-primary/10 to-primary/5 border-2 border-primary/40 dark:border-primary/60 text-foreground font-medium rounded-xl transform transition-all duration-200 dark:bg-gradient-to-r dark:from-primary/20 dark:to-primary/10 text-sm h-9 px-3 py-1.5 shadow-[0_3px_0_0_hsl(var(--primary)/0.5)] hover:shadow-[0_2px_0_0_hsl(var(--primary)/0.5)] hover:translate-y-px active:shadow-none active:translate-y-0.5 md:text-xs md:h-8 md:px-2.5 md:py-1 md:shadow-[0_2px_0_0_hsl(var(--primary)/0.5)] md:hover:shadow-[0_1px_0_0_hsl(var(--primary)/0.5)] md:hover:translate-y-px md:active:shadow-none md:active:translate-y-px lg:text-sm lg:h-9 lg:px-3 lg:py-1.5 lg:shadow-[0_3px_0_0_hsl(var(--primary)/0.5)] lg:hover:shadow-[0_2px_0_0_hsl(var(--primary)/0.5)] lg:hover:translate-y-px lg:active:shadow-none lg:active:translate-y-0.5",
       className
     )}
     {...props}
@@ -105,7 +105,7 @@ const SelectContent = React.forwardRef<
           position === "popper" &&
             "data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1",
           variant === "quiz" &&
-            "border-2 border-primary/30 bg-background rounded-xl shadow-lg data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=open]:duration-300",
+            "border-2 border-primary/60 bg-background rounded-xl shadow-lg data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=open]:duration-300",
           className
         )}
         position={position}

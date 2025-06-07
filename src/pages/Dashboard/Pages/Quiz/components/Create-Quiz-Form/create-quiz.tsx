@@ -24,12 +24,12 @@ import { useQuiz } from "./QuizQuestionsContext";
 import { AnyQuestion } from "@/types/ApiTypes";
 import { LiftedButton } from "@/common/LiftedButton";
 import { CreatedQuestionsPanel } from "./components/questions-panel";
-import { QuestionCard } from "@/pages/Question/User-question-components/common-question-card";
+// import { QuestionCard } from "@/pages/Question/User-question-components/common-question-card";
 import { CategorySelect } from "../../../Question/Entities/Categories/Components/select-question-category";
 import { createQuizInputSchema, useCreateQuiz } from "../../api/create-quiz";
 import { DifficultySelect } from "../../../Question/Entities/Difficulty/Components/select-question-difficulty";
 import { LanguageSelect } from "../../../Question/Entities/Language/components/select-question-language";
-import { Switch } from "@/components/ui";
+import { Spinner, Switch } from "@/components/ui";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useEffect, useState } from "react";
 import { BsPatchQuestionFill } from "react-icons/bs";
@@ -37,6 +37,7 @@ import { ScoreSelect } from "./components/score-select";
 import { TimeLimitSelect } from "./components/time-limit-select";
 import { useNotifications } from "@/common/Notifications";
 import { useNavigate } from "react-router";
+import { QuestionCard } from "./components/quiz-question-card/main-quiz-question-card";
 
 const CreateQuizForm = () => {
   const { queryData } = useQuizForm();
@@ -166,6 +167,7 @@ const CreateQuizForm = () => {
                           Quiz Title <span className="text-destructive">*</span>
                         </Label>
                         <Input
+                          variant="quiz"
                           id="title"
                           placeholder="Enter quiz title..."
                           className="mt-1"
@@ -182,6 +184,7 @@ const CreateQuizForm = () => {
                           Description
                         </Label>
                         <Textarea
+                          variant="quiz"
                           id="description"
                           placeholder="Describe your quiz..."
                           className="mt-1 min-h-[80px] resize-none"
@@ -261,8 +264,8 @@ const CreateQuizForm = () => {
                             <SelectValue placeholder="Select visibility..." />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="Public">🌍 Public</SelectItem>
-                            <SelectItem value="Private">🔒 Private</SelectItem>
+                            <SelectItem value="Public">Public</SelectItem>
+                            <SelectItem value="Private">Private</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -364,15 +367,28 @@ const CreateQuizForm = () => {
                   </div>
                 )}
                 <Separator className="my-6 bg-primary/20" />
-                <Button
+                <LiftedButton
                   type="submit"
-                  disabled={formState?.isSubmitting}
-                  className="w-fit self-center"
+                  disabled={createQuizMutation?.isPending}
+                  className="w-fit self-center relative"
                   variant="default"
                 >
-                  {createQuizMutation.isPending ? <>hello</> : <></>}
-                  Create Quiz
-                </Button>
+                  <div className="flex items-center justify-center">
+                    <Spinner
+                      size="sm"
+                      className={`absolute ${
+                        createQuizMutation.isPending ? "visible" : "invisible"
+                      }`}
+                    />
+                    <span
+                      className={
+                        createQuizMutation.isPending ? "invisible" : "visible"
+                      }
+                    >
+                      Finish
+                    </span>
+                  </div>
+                </LiftedButton>
               </CardContent>
             </Card>
 
