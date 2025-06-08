@@ -1,5 +1,16 @@
 import { AnyQuestion } from "@/types/ApiTypes";
-import React, { createContext, useState, useContext, ReactNode } from "react";
+import React, {
+  createContext,
+  useState,
+  useContext,
+  ReactNode,
+  useCallback,
+} from "react";
+import {
+  DEFAULT_QUESTION_SETTINGS,
+  QuestionSettings,
+  QuestionSettingsMap,
+} from "./types";
 
 interface QuizContextType {
   // Permanent quiz selections
@@ -25,6 +36,25 @@ interface QuizContextType {
   // Modal state
   isQuestionModalOpen: boolean;
   setQuestionModalOpen: (open: boolean) => void;
+
+  // Quiz Question Settings Management
+  questionSettings: QuestionSettingsMap;
+  updateQuestionSetting: (
+    questionId: number,
+    key: keyof QuestionSettings,
+    value: any
+  ) => void;
+  getQuestionSettings: (questionId: number) => QuestionSettings;
+  bulkUpdateSettings: (updates: Partial<QuestionSettings>) => void;
+  copySettingsToQuestion: (
+    fromQuestionId: number,
+    toQuestionId: number
+  ) => void;
+  resetQuestionSettings: (questionId: number) => void;
+  getQuestionsWithSettings: () => Array<{
+    question: AnyQuestion;
+    settings: QuestionSettings;
+  }>;
 }
 
 const QuizContext = createContext<QuizContextType | undefined>(undefined);
@@ -52,20 +82,58 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
   // Modal state
   const [isQuestionModalOpen, setIsQuestionModalOpen] = useState(false);
 
+  // Quiz Question Settings State
+  const [questionSettings, setQuestionSettings] = useState<QuestionSettingsMap>(
+    {}
+  );
+
   // Permanent quiz selection functions
   const addQuestionToQuiz = (questionObject: AnyQuestion): void => {
     setSelectedQuestions((prevSelected) => {
       if (!prevSelected.find((q) => q.id === questionObject.id)) {
-        return [...prevSelected, questionObject];
+        const newQuestions = [...prevSelected, questionObject];
+
+        // Initialize settings for new question if not exists
+        if (!questionSettings[questionObject.id]) {
+          setQuestionSettings((prev) => ({
+            ...prev,
+            [questionObject.id]: {
+              ...DEFAULT_QUESTION_SETTINGS,
+              orderInQuiz: newQuestions.length - 1,
+            },
+          }));
+        }
+
+        return newQuestions;
       }
       return prevSelected;
     });
   };
 
   const removeQuestionFromQuiz = (questionId: number): void => {
-    setSelectedQuestions((prevSelected) =>
-      prevSelected.filter((q) => q.id !== questionId)
-    );
+    setSelectedQuestions((prevSelected) => {
+      const filtered = prevSelected.filter((q) => q.id !== questionId);
+
+      // Update order indices after removal
+      setQuestionSettings((prev) => {
+        const newSettings = { ...prev };
+        delete newSettings[questionId]; // Remove settings for deleted question
+
+        // Reorder remaining questions
+        filtered.forEach((question, index) => {
+          if (newSettings[question.id]) {
+            newSettings[question.id] = {
+              ...newSettings[question.id],
+              orderInQuiz: index,
+            };
+          }
+        });
+
+        return newSettings;
+      });
+
+      return filtered;
+    });
   };
 
   const isQuestionSelected = (questionId: number): boolean => {
@@ -97,25 +165,119 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
   };
 
   const commitTempSelection = (): void => {
-    // Add all temp selected questions to the permanent quiz selection
     setSelectedQuestions((prevSelected) => {
       setDisplayQuestion(tempSelectedQuestions[0]);
       const newQuestions = tempSelectedQuestions.filter(
         (tempQ) => !prevSelected.find((q) => q.id === tempQ.id)
       );
+
+      // Initialize settings for new questions
+      const currentLength = prevSelected.length;
+      newQuestions.forEach((question, index) => {
+        setQuestionSettings((prev) => ({
+          ...prev,
+          [question.id]: {
+            ...DEFAULT_QUESTION_SETTINGS,
+            orderInQuiz: currentLength + index,
+          },
+        }));
+      });
+
       return [...prevSelected, ...newQuestions];
     });
-    // Clear temp selection after committing
     setTempSelectedQuestions([]);
   };
 
   const setQuestionModalOpen = (open: boolean): void => {
     setIsQuestionModalOpen(open);
-    // Clear temp selection when closing modal without committing
     if (!open) {
       setTempSelectedQuestions([]);
     }
   };
+
+  // NEW: Question Settings Functions
+  const updateQuestionSetting = useCallback(
+    (questionId: number, key: keyof QuestionSettings, value: any) => {
+      setQuestionSettings((prev) => ({
+        ...prev,
+        [questionId]: {
+          ...prev[questionId],
+          [key]: value,
+        },
+      }));
+    },
+    []
+  );
+
+  const getQuestionSettings = useCallback(
+    (questionId: number): QuestionSettings => {
+      const settings = questionSettings[questionId];
+      const orderInQuiz = selectedQuestions.findIndex(
+        (q) => q.id === questionId
+      );
+
+      return {
+        ...DEFAULT_QUESTION_SETTINGS,
+        ...settings,
+        orderInQuiz:
+          orderInQuiz >= 0 ? orderInQuiz : settings?.orderInQuiz || 0,
+      };
+    },
+    [questionSettings, selectedQuestions]
+  );
+
+  const bulkUpdateSettings = useCallback(
+    (updates: Partial<QuestionSettings>) => {
+      setQuestionSettings((prev) => {
+        const newSettings = { ...prev };
+        selectedQuestions.forEach((question) => {
+          newSettings[question.id] = {
+            ...newSettings[question.id],
+            ...updates,
+          };
+        });
+        return newSettings;
+      });
+    },
+    [selectedQuestions]
+  );
+
+  const copySettingsToQuestion = useCallback(
+    (fromQuestionId: number, toQuestionId: number) => {
+      const sourceSettings = questionSettings[fromQuestionId];
+      if (sourceSettings) {
+        setQuestionSettings((prev) => ({
+          ...prev,
+          [toQuestionId]: {
+            ...sourceSettings,
+            orderInQuiz: prev[toQuestionId]?.orderInQuiz || 0, // Preserve order
+          },
+        }));
+      }
+    },
+    [questionSettings]
+  );
+
+  const resetQuestionSettings = useCallback((questionId: number) => {
+    setQuestionSettings((prev) => ({
+      ...prev,
+      [questionId]: {
+        ...DEFAULT_QUESTION_SETTINGS,
+        orderInQuiz: prev[questionId]?.orderInQuiz || 0, // Preserve order
+      },
+    }));
+  }, []);
+
+  const getQuestionsWithSettings = useCallback(() => {
+    return selectedQuestions.map((question, index) => ({
+      question,
+      settings: {
+        ...DEFAULT_QUESTION_SETTINGS,
+        ...questionSettings[question.id],
+        orderInQuiz: index, // Always use current array position
+      },
+    }));
+  }, [selectedQuestions, questionSettings]);
 
   const contextValue: QuizContextType = {
     // Permanent selections
@@ -141,6 +303,15 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
     // Modal state
     isQuestionModalOpen,
     setQuestionModalOpen,
+
+    // Quiz Question Settings
+    questionSettings,
+    updateQuestionSetting,
+    getQuestionSettings,
+    bulkUpdateSettings,
+    copySettingsToQuestion,
+    resetQuestionSettings,
+    getQuestionsWithSettings,
   };
 
   return (

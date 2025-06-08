@@ -8,7 +8,7 @@ import { TrueFalseQuestionList } from "../Components/True_Flase-Question/true-fa
 import { TypeTheAnswerQuestionList } from "../Components/Type_The_Answer-Question/type-the-asnwer-list";
 import { PaginationControls } from "./Re-Usable-Components/pagination-control";
 import { Spinner } from "@/components/ui";
-import { QuestionListComponent } from "@/pages/Question/User-question-components/select-common-question-list";
+import { QuestionListComponent } from "../../Quiz/components/Create-Quiz-Form/components/question-select/select-common-question-list";
 
 interface QueryParams {
   pageNumber: number;

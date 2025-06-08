@@ -33,11 +33,10 @@ import { Spinner, Switch } from "@/components/ui";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useEffect, useState } from "react";
 import { BsPatchQuestionFill } from "react-icons/bs";
-import { ScoreSelect } from "./components/score-select";
-import { TimeLimitSelect } from "./components/time-limit-select";
 import { useNotifications } from "@/common/Notifications";
 import { useNavigate } from "react-router";
 import { QuestionCard } from "./components/quiz-question-card/main-quiz-question-card";
+import { QuestionSettingsCard } from "./components/quiz-question-settings";
 
 const CreateQuizForm = () => {
   const { queryData } = useQuizForm();
@@ -82,16 +81,24 @@ const CreateQuizForm = () => {
       id="create-quiz"
       className="mt-0 w-full"
       onSubmit={(values) => {
-        const questions = selectedQuestions.map(
-          (q: AnyQuestion, index: number) => ({
-            questionId: q.id,
-            timeLimitInSeconds: 10,
-            pointSystem: "Standard",
-            orderInQuiz: index,
+        const { getQuestionsWithSettings } = useQuiz();
+        // Use the context method to get questions with their settings
+        const questionsWithSettings = getQuestionsWithSettings();
+
+        const questions = questionsWithSettings.map(
+          ({ question, settings }) => ({
+            questionId: question.id,
+            timeLimitInSeconds: settings.timeLimitInSeconds,
+            pointSystem: settings.pointSystem,
+            orderInQuiz: settings.orderInQuiz,
           })
         );
 
         if (questions.length === 0) {
+          addNotification({
+            type: "error",
+            title: "No questions selected",
+          });
           return;
         }
 
@@ -150,9 +157,13 @@ const CreateQuizForm = () => {
                   </TabsList>
                 </CardHeader>
                 <TabsContent value="questions" className="flex items-center">
-                  <section className="w-[50%] flex flex-col gap-4 p-4">
-                    <ScoreSelect />
-                    <TimeLimitSelect />
+                  <section className=" flex flex-col gap-4 p-4">
+                    {displayQuestion && (
+                      <QuestionSettingsCard
+                        question={displayQuestion}
+                        showCopyActions={selectedQuestions.length > 1}
+                      />
+                    )}
                   </section>
                 </TabsContent>
                 <TabsContent value="quiz">
