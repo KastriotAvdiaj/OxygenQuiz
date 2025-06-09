@@ -13,7 +13,8 @@ COPY QuizAPI/QuizAPI.csproj ./QuizAPI.csproj
 RUN dotnet restore ./QuizAPI.csproj
 
 # Copy all source files from QuizAPI folder
-COPY QuizAPI/ .
+COPY OxygenBackend/QuizAPI/ .
+
 
 RUN dotnet build ./QuizAPI.csproj -c Release -o /app/build
 RUN dotnet publish ./QuizAPI.csproj -c Release -o /app/publish
