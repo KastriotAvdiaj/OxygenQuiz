@@ -30,7 +30,6 @@ dist-ssr
 /OxygenBackend/QuizAPI/Program.cs
 /OxygenBackend/QuizAPI/appsettings.json
 /OxygenBackend/QuizAPI/appsettings.Developement.json
-/OxygenBackend/QuizAPI/.dockerignore
 /OxygenBackend/QuizAPI/obj
 /OxygenBackend/QuizAPI/bin
 /OxygenBackend/QuizAPI/.vs

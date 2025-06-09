@@ -37,10 +37,10 @@ export const DEFAULT_QUESTION_SETTINGS: QuestionSettings = {
 };
 
 export const POINT_SYSTEM_OPTIONS = [
-  { value: "Standard", label: "Standard (10 pts)" },
-  { value: "Double", label: "Double (20 pts)" },
-  { value: "Triple", label: "Triple (30 pts)" },
-  { value: "Custom", label: "Custom" },
+  { value: "Standard", label: "Standard " },
+  { value: "Double", label: "Double" },
+  { value: "Quadruple", label: "Quadruple" },
+  // { value: "Custom", label: "Custom" }, Should add in the future
 ] as const;
 
 export const TIME_LIMIT_OPTIONS = [

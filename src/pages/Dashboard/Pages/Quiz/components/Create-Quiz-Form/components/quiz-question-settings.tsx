@@ -1,6 +1,6 @@
 // components/question-settings/QuestionSettingsCard.tsx
 import React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -40,7 +40,7 @@ export const QuestionSettingsCard: React.FC<QuestionSettingsCardProps> = ({
   };
 
   return (
-    <Card className="border border-primary/20 hover:border-primary/40 transition-colors">
+    <div>
       <CardHeader className="pb-3">
         <CardTitle className="text-sm flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -114,7 +114,7 @@ export const QuestionSettingsCard: React.FC<QuestionSettingsCardProps> = ({
 
         {/* Action Buttons */}
         {showCopyActions && (
-          <div className="flex gap-2 pt-2">
+          <div className="flex gap-2 pt-2 items-center">
             <Button
               variant="outline"
               size="sm"
@@ -130,14 +130,8 @@ export const QuestionSettingsCard: React.FC<QuestionSettingsCardProps> = ({
                 onValueChange={(value) => handleCopyFrom(parseInt(value))}
               >
                 <SelectTrigger>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-7 text-xs flex-1"
-                  >
-                    <Copy className="h-3 w-3 mr-1" />
-                    Copy From
-                  </Button>
+                  <Copy className="h-3 w-3 mr-1" />
+                  Copy From
                 </SelectTrigger>
                 <SelectContent>
                   {selectedQuestions
@@ -160,6 +154,6 @@ export const QuestionSettingsCard: React.FC<QuestionSettingsCardProps> = ({
           </div>
         )}
       </CardContent>
-    </Card>
+    </div>
   );
 };

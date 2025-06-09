@@ -40,7 +40,8 @@ import { QuestionSettingsCard } from "./components/quiz-question-settings";
 
 const CreateQuizForm = () => {
   const { queryData } = useQuizForm();
-  const { selectedQuestions, displayQuestion } = useQuiz();
+  const { selectedQuestions, displayQuestion, getQuestionsWithSettings } =
+    useQuiz();
   const { addNotification } = useNotifications();
   const navigate = useNavigate();
 
@@ -49,7 +50,8 @@ const CreateQuizForm = () => {
       onSuccess: () => {
         addNotification({
           type: "success",
-          title: "Quiz Created Successfully!",
+          title: "Success",
+          message: "Your quiz was created successfully!",
         });
         navigate("/dashboard/quizzes");
       },
@@ -81,7 +83,6 @@ const CreateQuizForm = () => {
       id="create-quiz"
       className="mt-0 w-full"
       onSubmit={(values) => {
-        const { getQuestionsWithSettings } = useQuiz();
         // Use the context method to get questions with their settings
         const questionsWithSettings = getQuestionsWithSettings();
 
@@ -368,13 +369,18 @@ const CreateQuizForm = () => {
                   <div className="flex flex-col items-center justify-center py-16 text-center text-muted-foreground border-2 border-dashed border-primary/20 rounded-lg w-full">
                     <Brain className="h-16 w-16 mb-4 text-primary/50" />
                     <p className="mb-4 text-lg">Your quiz is feeling empty!</p>
-                    <Button
-                      variant="outline"
-                      className="group hover:bg-primary hover:text-primary-foreground transition-all duration-300"
-                    >
-                      <PlusCircle className="mr-2 h-4 w-4 group-hover:rotate-90 transition-transform" />
-                      Add Your First Question
-                    </Button>
+                    <SelectQuestionComponent
+                      triggerButton={
+                        <Button
+                          variant="outline"
+                          type="button"
+                          className="group hover:bg-primary hover:text-primary-foreground transition-all duration-300"
+                        >
+                          <PlusCircle className="mr-2 h-4 w-4 group-hover:rotate-90 transition-transform" />
+                          Add Your First Question
+                        </Button>
+                      }
+                    />
                   </div>
                 )}
                 <Separator className="my-6 bg-primary/20" />

@@ -16,6 +16,7 @@ import { useDisclosure } from "@/hooks/use-disclosure";
 
 interface SelectQuestionComponentProps {
   onQuestionsSelected?: (questions: QuestionBase[]) => void;
+  triggerButton?: React.ReactElement;
   maxSelections?: number;
   preSelectedQuestionIds?: number[];
   title?: string;
@@ -26,6 +27,7 @@ const SelectQuestionComponent: React.FC<SelectQuestionComponentProps> = ({
   onQuestionsSelected,
   maxSelections,
   title = "Select Questions from Pool",
+  triggerButton,
   // excludeQuestionIds = [],
 }) => {
   const { open, close, isOpen } = useDisclosure();
@@ -112,10 +114,16 @@ const SelectQuestionComponent: React.FC<SelectQuestionComponentProps> = ({
 
   return (
     <>
-      <LiftedButton onClick={handleOpen} className="h-fit" type="button">
-        <Plus className="h-4 w-4" />
-        Add Existing
-      </LiftedButton>
+      {triggerButton ? (
+        React.cloneElement(triggerButton, {
+          onClick: handleOpen,
+        })
+      ) : (
+        <LiftedButton onClick={handleOpen} className="h-fit" type="button">
+          <Plus className="h-4 w-4" />
+          Add Existing
+        </LiftedButton>
+      )}
 
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
