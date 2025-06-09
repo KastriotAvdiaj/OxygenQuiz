@@ -5,22 +5,19 @@
 
 # Use the .NET SDK image to build the app
 FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
-
 WORKDIR /src
 
-# Corrected path relative to the root of the repo
-COPY OxygenBackend/QuizAPI/QuizAPI.csproj ./QuizAPI.csproj
-RUN dotnet restore ./QuizAPI.csproj
+# Copy csproj first to leverage Docker layer caching
+COPY OxygenBackend/QuizAPI/QuizAPI.csproj ./
+RUN dotnet restore
 
-# Copy the rest of the source code
-COPY OxygenBackend/QuizAPI/ .
+# Copy all source files (ensure Program.cs is included)
+COPY OxygenBackend/QuizAPI/ ./
 
-RUN dotnet build ./QuizAPI.csproj -c Release -o /app/build
-RUN dotnet publish ./QuizAPI.csproj -c Release -o /app/publish
+RUN dotnet build -c Release -o /app/build
+RUN dotnet publish -c Release -o /app/publish
 
-# Use the runtime image
-FROM mcr.microsoft.com/dotnet/aspnet:6.0 AS final
+FROM mcr.microsoft.com/dotnet/aspnet:6.0
 WORKDIR /app
 COPY --from=build /app/publish .
-
 ENTRYPOINT ["dotnet", "QuizAPI.dll"]
