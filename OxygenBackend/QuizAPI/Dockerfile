@@ -3,20 +3,34 @@
 #Depending on the operating system of the host machines(s) that will build or run the containers, the image specified in the FROM statement may need to be changed.
 #For more information, please see https://aka.ms/containercompat
 
-# Build Stage
-# Set up build environment
+# Use SDK image for build stage
 FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
+
 WORKDIR /src
 
-COPY ["QuizAPI.csproj", "."]
+# Copy csproj and restore dependencies
+COPY ["QuizAPI.csproj", "./"]
 RUN dotnet restore "./QuizAPI.csproj"
 
+# Copy the rest of the source code
 COPY . .
+
+# Build the project in Release mode and output to /app/build
 RUN dotnet build "./QuizAPI.csproj" -c Release -o /app/build
+
+# Publish the project to /app/publish folder
 RUN dotnet publish "./QuizAPI.csproj" -c Release -o /app/publish
 
-# Set up runtime environment
-FROM mcr.microsoft.com/dotnet/aspnet:6.0
+# Use runtime image for the final stage
+FROM mcr.microsoft.com/dotnet/aspnet:6.0 AS runtime
+
 WORKDIR /app
+
+# Copy published app from build stage
 COPY --from=build /app/publish .
+
+# Expose the port your app listens on (e.g. 80)
+EXPOSE 80
+
+# Set the entrypoint
 ENTRYPOINT ["dotnet", "QuizAPI.dll"]
