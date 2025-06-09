@@ -4,25 +4,29 @@
 #For more information, please see https://aka.ms/containercompat
 
 # Use the .NET SDK image to build the app
+# Stage 1: Build the application
 FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
-
 WORKDIR /src
 
-# Now the csproj path is relative to OxygenBackend
-COPY QuizAPI/QuizAPI.csproj ./QuizAPI.csproj
-RUN dotnet restore ./QuizAPI.csproj
+# First, copy the .csproj file and restore dependencies.
+# This path is relative to the repository root (the build context).
+COPY OxygenBackend/QuizAPI/QuizAPI.csproj ./QuizAPI/
+WORKDIR /src/QuizAPI
+RUN dotnet restore
 
-# Copy all source files from QuizAPI folder
-COPY OxygenBackend/QuizAPI/ .
+# Now, copy the rest of the backend source code.
+WORKDIR /src
+COPY OxygenBackend/QuizAPI/ ./QuizAPI/
 
+# Publish the application. The build is included in the publish command.
+WORKDIR /src/QuizAPI
+RUN dotnet publish -c Release -o /app/publish --no-restore
 
-RUN dotnet build ./QuizAPI.csproj -c Release -o /app/build
-RUN dotnet publish ./QuizAPI.csproj -c Release -o /app/publish
-
+# Stage 2: Create the final, smaller runtime image
 FROM mcr.microsoft.com/dotnet/aspnet:6.0 AS final
-
 WORKDIR /app
 
+# Copy the published output from the build stage
 COPY --from=build /app/publish .
 
 ENTRYPOINT ["dotnet", "QuizAPI.dll"]
