@@ -3,23 +3,24 @@
 #Depending on the operating system of the host machines(s) that will build or run the containers, the image specified in the FROM statement may need to be changed.
 #For more information, please see https://aka.ms/containercompat
 
-FROM mcr.microsoft.com/dotnet/aspnet:6.0 AS base
-WORKDIR /app
-EXPOSE 80
-EXPOSE 443
-
+# Use the .NET SDK image to build the app
 FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
+
 WORKDIR /src
-COPY ["QuizAPI.csproj", "."]
-RUN dotnet restore "./QuizAPI.csproj"
-COPY . .
-WORKDIR "/src/."
-RUN dotnet build "QuizAPI.csproj" -c Release -o /app/build
 
-FROM build AS publish
-RUN dotnet publish "QuizAPI.csproj" -c Release -o /app/publish /p:UseAppHost=false
+# Corrected path relative to the root of the repo
+COPY OxygenBackend/QuizAPI/QuizAPI.csproj ./QuizAPI.csproj
+RUN dotnet restore ./QuizAPI.csproj
 
-FROM base AS final
+# Copy the rest of the source code
+COPY OxygenBackend/QuizAPI/ .
+
+RUN dotnet build ./QuizAPI.csproj -c Release -o /app/build
+RUN dotnet publish ./QuizAPI.csproj -c Release -o /app/publish
+
+# Use the runtime image
+FROM mcr.microsoft.com/dotnet/aspnet:6.0 AS final
 WORKDIR /app
-COPY --from=publish /app/publish .
+COPY --from=build /app/publish .
+
 ENTRYPOINT ["dotnet", "QuizAPI.dll"]
