@@ -3,21 +3,22 @@
 #Depending on the operating system of the host machines(s) that will build or run the containers, the image specified in the FROM statement may need to be changed.
 #For more information, please see https://aka.ms/containercompat
 
-# Use the .NET SDK image to build the app
 FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
 WORKDIR /src
 
-# Copy csproj first to leverage Docker layer caching
-COPY OxygenBackend/QuizAPI/QuizAPI.csproj ./
-RUN dotnet restore
+COPY OxygenBackend/QuizAPI/QuizAPI.csproj ./QuizAPI.csproj
+RUN dotnet restore ./QuizAPI.csproj
 
-# Copy all source files (ensure Program.cs is included)
 COPY OxygenBackend/QuizAPI/ ./
+# It's good practice to ensure Program.cs and other necessary files are here
+# You can list them or rely on the previous COPY if sure.
 
-RUN dotnet build -c Release -o /app/build
-RUN dotnet publish -c Release -o /app/publish
+# The build command correctly uses ./QuizAPI.csproj relative to /src
+RUN dotnet build ./QuizAPI.csproj -c Release -o /app/build
+# Publish is also fine
+RUN dotnet publish ./QuizAPI.csproj -c Release -o /app/publish
 
-FROM mcr.microsoft.com/dotnet/aspnet:6.0
+FROM mcr.microsoft.com/dotnet/aspnet:6.0 AS final # Renamed from just 'final' for clarity
 WORKDIR /app
 COPY --from=build /app/publish .
 ENTRYPOINT ["dotnet", "QuizAPI.dll"]
