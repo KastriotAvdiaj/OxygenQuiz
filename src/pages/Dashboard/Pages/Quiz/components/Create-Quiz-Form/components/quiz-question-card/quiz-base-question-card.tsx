@@ -4,21 +4,21 @@ import { Button } from "@/components/ui/button";
 import { Trash2 } from "lucide-react";
 import { AnyQuestion } from "@/types/ApiTypes";
 
-export interface QuestionCardProps {
+export interface ExistingQuestionCardProps {
   question: AnyQuestion;
   isActive?: boolean;
   onClick?: () => void;
   onRemove?: () => void;
 }
 
-interface BaseQuestionCardProps extends QuestionCardProps {
+interface BaseQuestionCardProps extends ExistingQuestionCardProps {
   borderColor: string;
   backgroundColor?: string;
   children: React.ReactNode;
 }
 
 export const BaseQuestionCard: React.FC<BaseQuestionCardProps> = ({
-//   question,
+  //   question,
   onRemove,
   onClick,
   borderColor,

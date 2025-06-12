@@ -1,15 +1,19 @@
 import React from "react";
 import { Input } from "@/components/ui/form";
 import { TypeTheAnswerQuestion } from "@/types/ApiTypes";
-import { BaseQuestionCard, QuestionCardProps } from "../quiz-base-question-card";
+import {
+  BaseQuestionCard,
+  ExistingQuestionCardProps,
+} from "../quiz-base-question-card";
 import { getQuestionTypeStyles } from "../multiple-choice-question-card/quiz-muiltiple-choice-question-card";
 import { QuestionImagePreview } from "../quiz-question-image-preview";
 import { TypeTheAnswerDisplay } from "./type-the-asnwer-display";
 import { QuestionMetadata } from "../quiz-question-metadata";
 import { QuestionFooter } from "../quiz-question-card-footer";
 
-
-export const TypeTheAnswerCard: React.FC<QuestionCardProps> = (props) => {
+export const TypeTheAnswerCard: React.FC<ExistingQuestionCardProps> = (
+  props
+) => {
   const question = props.question as TypeTheAnswerQuestion;
   const styles = getQuestionTypeStyles(question.type);
 

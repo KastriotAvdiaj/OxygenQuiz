@@ -11,13 +11,13 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Copy, RotateCcw, Settings } from "lucide-react";
-import { AnyQuestion } from "@/types/ApiTypes";
 import { useQuiz } from "../Quiz-questions-context";
 import { Label } from "@/components/ui/form";
-import { POINT_SYSTEM_OPTIONS, TIME_LIMIT_OPTIONS } from "../types";
+import { POINT_SYSTEM_OPTIONS, TIME_LIMIT_OPTIONS } from "@/pages/Dashboard/Pages/Question/Components/Re-Usable-Components/constants";
+import { QuizQuestion } from "../types";
 
 interface QuestionSettingsCardProps {
-  question: AnyQuestion;
+  question: QuizQuestion;
   showCopyActions?: boolean;
 }
 
@@ -30,7 +30,7 @@ export const QuestionSettingsCard: React.FC<QuestionSettingsCardProps> = ({
     getQuestionSettings,
     copySettingsToQuestion,
     resetQuestionSettings,
-    selectedQuestions,
+    addedQuestions,
   } = useQuiz();
 
   const settings = getQuestionSettings(question.id);
@@ -125,7 +125,7 @@ export const QuestionSettingsCard: React.FC<QuestionSettingsCardProps> = ({
               Reset
             </Button>
 
-            {selectedQuestions.length > 1 && (
+            {addedQuestions.length > 1 && (
               <Select
                 onValueChange={(value) => handleCopyFrom(parseInt(value))}
               >
@@ -134,7 +134,7 @@ export const QuestionSettingsCard: React.FC<QuestionSettingsCardProps> = ({
                   Copy From
                 </SelectTrigger>
                 <SelectContent>
-                  {selectedQuestions
+                  {addedQuestions
                     .filter((q) => q.id !== question.id)
                     .map((q) => (
                       <SelectItem

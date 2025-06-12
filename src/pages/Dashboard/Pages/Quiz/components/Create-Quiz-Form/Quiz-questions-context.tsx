@@ -10,13 +10,14 @@ import {
   DEFAULT_QUESTION_SETTINGS,
   QuestionSettings,
   QuestionSettingsMap,
+  QuizQuestion,
 } from "./types";
 
 interface QuizContextType {
   // Permanent quiz selections
-  addedQuestions: AnyQuestion[];
+  addedQuestions: QuizQuestion[];
   addedQuestionsCount: number;
-  addQuestionToQuiz: (questionObject: AnyQuestion) => void;
+  addQuestionToQuiz: (questionObject: QuizQuestion) => void;
   removeQuestionFromQuiz: (questionId: number) => void;
   isQuestionSelected: (questionId: number) => boolean;
 
@@ -30,8 +31,8 @@ interface QuizContextType {
   commitTempSelection: () => void;
 
   // Display Question
-  displayQuestion: AnyQuestion | null;
-  setDisplayQuestion: (question: AnyQuestion | null) => void;
+  displayQuestion: QuizQuestion | null;
+  setDisplayQuestion: (question: QuizQuestion | null) => void;
 
   // Modal state
   isQuestionModalOpen: boolean;
@@ -52,7 +53,7 @@ interface QuizContextType {
   ) => void;
   resetQuestionSettings: (questionId: number) => void;
   getQuestionsWithSettings: () => Array<{
-    question: AnyQuestion;
+    question: QuizQuestion;
     settings: QuestionSettings;
   }>;
 }
@@ -67,10 +68,10 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
   children,
 }) => {
   // Permanent quiz selections
-  const [addedQuestions, setAddedQuestions] = useState<AnyQuestion[]>([]);
+  const [addedQuestions, setAddedQuestions] = useState<QuizQuestion[]>([]);
 
   // Display Question
-  const [displayQuestion, setDisplayQuestion] = useState<AnyQuestion | null>(
+  const [displayQuestion, setDisplayQuestion] = useState<QuizQuestion | null>(
     null
   );
 
@@ -88,11 +89,11 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
   );
 
   // Permanent quiz selection functions
-  const addQuestionToQuiz = (questionObject: AnyQuestion): void => {
+  const addQuestionToQuiz = (questionObject: QuizQuestion): void => {
     setAddedQuestions((prevSelected) => {
       if (!prevSelected.find((q) => q.id === questionObject.id)) {
         const newQuestions = [...prevSelected, questionObject];
-
+        setDisplayQuestion(questionObject);
         // Initialize settings for new question if not exists
         if (!questionSettings[questionObject.id]) {
           setQuestionSettings((prev) => ({
@@ -212,9 +213,7 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
   const getQuestionSettings = useCallback(
     (questionId: number): QuestionSettings => {
       const settings = questionSettings[questionId];
-      const orderInQuiz = addedQuestions.findIndex(
-        (q) => q.id === questionId
-      );
+      const orderInQuiz = addedQuestions.findIndex((q) => q.id === questionId);
 
       return {
         ...DEFAULT_QUESTION_SETTINGS,

@@ -1,4 +1,4 @@
-import { QuestionBase, QuestionCategory, QuestionDifficulty, QuestionLanguage, QuestionType } from "@/types/ApiTypes";
+import { AnyQuestion, QuestionBase, QuestionCategory, QuestionDifficulty, QuestionLanguage, QuestionType } from "@/types/ApiTypes";
 import { Control, UseFormRegister, FormState, UseFormSetValue, UseFormWatch, UseFormClearErrors } from "react-hook-form";
 import { CreateQuizInput } from "../../api/create-quiz";
 
@@ -35,16 +35,21 @@ export const DEFAULT_QUESTION_SETTINGS: QuestionSettings = {
   timeLimitInSeconds: 10,
   orderInQuiz: 0,
 };
+export interface NewAnswerOption{
+  id?:number;
+  text:string;
+  isCorrect: boolean;
+}
 
 export interface NewQuestionBase {
-  id?: number;
+  id: number;
   text: string;
-  imageUrl?:string;
-  type: QuestionType;
-  languageId: number;
-  categoryId: number;
-  difficultyId :number;
   visibility: string;
+  difficultyId: number;
+  categoryId: number;
+  languageId: number;
+  imageUrl?: string;
+  type: QuestionType;
 }
 
 export interface NewMultipleChoiceQuestion extends NewQuestionBase {
@@ -53,41 +58,24 @@ export interface NewMultipleChoiceQuestion extends NewQuestionBase {
   allowMultipleSelections: boolean;
 }
 
-export interface NewAnswerOption{
-  id?:number;
-  text:string;
-  isCorrect: boolean;
+export interface NewTrueFalseQuestion extends NewQuestionBase {
+  type: QuestionType.TrueFalse;
+  correctAnswer: boolean;
 }
 
-export interface NewTrueFalseQuestion extends NewQuestionBase {
-    type: QuestionType.TrueFalse;
-    correctAnswer: boolean;
-  }
-  export interface NewTypeTheAnswerQuestion extends NewQuestionBase {
-    type: QuestionType.TypeTheAnswer;
-    correctAnswer: string;
-    isCaseSensitive: boolean;
-    allowPartialMatch: boolean;
-    acceptableAnswers: string[] ;
-  }
+export interface NewTypeTheAnswerQuestion extends NewQuestionBase {
+  type: QuestionType.TypeTheAnswer;
+  correctAnswer: string;
+  isCaseSensitive: boolean;
+  allowPartialMatch: boolean;
+  acceptableAnswers: string[];
+}
 
-  export type NewAnyQuestion =
-    | NewMultipleChoiceQuestion
-    | NewTrueFalseQuestion
-    | NewTypeTheAnswerQuestion;
+export type NewAnyQuestion =
+  | NewMultipleChoiceQuestion
+  | NewTrueFalseQuestion
+  | NewTypeTheAnswerQuestion;
 
-export const POINT_SYSTEM_OPTIONS = [
-  { value: "Standard", label: "Standard " },
-  { value: "Double", label: "Double" },
-  { value: "Quadruple", label: "Quadruple" },
-  // { value: "Custom", label: "Custom" }, Should add in the future
-] as const;
+export type QuizQuestion = AnyQuestion | NewAnyQuestion;
 
-export const TIME_LIMIT_OPTIONS = [
-  { value: 5, label: "5 seconds" },
-  { value: 10, label: "10 seconds" },
-  { value: 15, label: "15 seconds" },
-  { value: 30, label: "30 seconds" },
-  { value: 60, label: "1 minute" },
-  { value: 120, label: "2 minutes" },
-] as const;
+

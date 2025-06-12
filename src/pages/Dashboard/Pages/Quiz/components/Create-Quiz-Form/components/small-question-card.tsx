@@ -22,7 +22,7 @@ import {
 } from "@/types/ApiTypes";
 import { useQuiz } from "../Quiz-questions-context";
 
-interface QuestionCardProps {
+interface ExistingQuestionCardProps {
   question: AnyQuestion;
   isActive?: boolean;
   onClick?: () => void;
@@ -34,7 +34,7 @@ const truncateText = (text: string, length: number) =>
   text?.length > length ? `${text.substring(0, length)}...` : text || "";
 
 // Multiple Choice Question Card
-const SmallMultipleChoiceCard: React.FC<QuestionCardProps> = ({
+const SmallMultipleChoiceCard: React.FC<ExistingQuestionCardProps> = ({
   question,
   onRemove,
   isActive = false,
@@ -163,7 +163,7 @@ const SmallMultipleChoiceCard: React.FC<QuestionCardProps> = ({
 };
 
 // True/False Question Card
-const SmallTrueFalseCard: React.FC<QuestionCardProps> = ({
+const SmallTrueFalseCard: React.FC<ExistingQuestionCardProps> = ({
   question,
   onRemove,
 }) => {
@@ -298,7 +298,7 @@ const SmallTrueFalseCard: React.FC<QuestionCardProps> = ({
 };
 
 // Type The Answer Question Card
-const SmallTypeTheAnswerCard: React.FC<QuestionCardProps> = ({
+const SmallTypeTheAnswerCard: React.FC<ExistingQuestionCardProps> = ({
   question,
   onRemove,
 }) => {
@@ -426,7 +426,9 @@ const SmallTypeTheAnswerCard: React.FC<QuestionCardProps> = ({
 };
 
 // Main Question Card Component
-export const SmallQuestionCard: React.FC<QuestionCardProps> = (props) => {
+export const SmallQuestionCard: React.FC<ExistingQuestionCardProps> = (
+  props
+) => {
   switch (props.question.type) {
     case QuestionType.MultipleChoice:
       return <SmallMultipleChoiceCard {...props} />;

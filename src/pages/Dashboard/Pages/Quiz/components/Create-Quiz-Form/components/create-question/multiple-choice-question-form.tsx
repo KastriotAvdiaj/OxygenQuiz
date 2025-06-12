@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input, Label, Textarea } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
@@ -6,6 +6,7 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Trash2, Plus, HelpCircle } from "lucide-react";
 import { LiftedButton } from "@/common/LiftedButton";
+import { NewMultipleChoiceQuestion } from "../../types";
 
 interface AnswerOption {
   text: string;
@@ -14,26 +15,36 @@ interface AnswerOption {
 
 interface MultipleChoiceFormCardProps {
   className?: string;
+  question: NewMultipleChoiceQuestion;
+  // onChange: (updated: NewMultipleChoiceQuestion) => void;
 }
+
 
 export const MultipleChoiceFormCard: React.FC<MultipleChoiceFormCardProps> = ({
   className = "",
+  question,
+  // onChange,
 }) => {
-  // State for visual demo only - no functionality
-  const [questionText, setQuestionText] = useState("");
-  const [allowMultipleSelections, setAllowMultipleSelections] = useState(false);
-  const [answerOptions, setAnswerOptions] = useState<AnswerOption[]>([
-    { text: "", isCorrect: false },
-    { text: "", isCorrect: false },
-  ]);
+  const [questionText, setQuestionText] = useState(question.text);
+  const [allowMultipleSelections, setAllowMultipleSelections] = useState(
+    question.allowMultipleSelections
+  );
+  const [answerOptions, setAnswerOptions] = useState<AnswerOption[]>(
+    question.answerOptions
+  );
+
+  // useEffect(() => {
+  //   onChange({
+  //     ...question,
+  //     text: questionText,
+  //     allowMultipleSelections: allowMultipleSelections,
+  //     answerOptions: answerOptions,
+  //   });
+  // }, [questionText, allowMultipleSelections, answerOptions]);
 
   const handleAddOption = () => {
     if (answerOptions.length < 4) {
-      const newOption: AnswerOption = {
-        text: "",
-        isCorrect: false,
-      };
-      setAnswerOptions([...answerOptions, newOption]);
+      setAnswerOptions([...answerOptions, { text: "", isCorrect: false }]);
     }
   };
 
@@ -57,7 +68,6 @@ export const MultipleChoiceFormCard: React.FC<MultipleChoiceFormCardProps> = ({
         if (i === index) {
           return { ...option, isCorrect: !option.isCorrect };
         }
-        // If single selection mode, uncheck others when one is selected
         if (!allowMultipleSelections && option.isCorrect) {
           return { ...option, isCorrect: false };
         }
@@ -81,7 +91,6 @@ export const MultipleChoiceFormCard: React.FC<MultipleChoiceFormCardProps> = ({
       </CardHeader>
 
       <CardContent className="space-y-6 p-6">
-        {/* Question Text Input */}
         <div className="space-y-2">
           <Label htmlFor="question-text" className="text-sm font-medium">
             Question Text <span className="text-destructive">*</span>
@@ -97,7 +106,6 @@ export const MultipleChoiceFormCard: React.FC<MultipleChoiceFormCardProps> = ({
 
         <Separator className="bg-primary/20" />
 
-        {/* Multiple Selection Toggle */}
         <div className="flex items-center justify-between">
           <div className="space-y-1">
             <Label
@@ -119,7 +127,6 @@ export const MultipleChoiceFormCard: React.FC<MultipleChoiceFormCardProps> = ({
 
         <Separator className="bg-primary/20" />
 
-        {/* Answer Options Section */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <Label className="text-sm font-medium">
@@ -132,7 +139,6 @@ export const MultipleChoiceFormCard: React.FC<MultipleChoiceFormCardProps> = ({
             )}
           </div>
 
-          {/* Answer Options List */}
           <div className="space-y-3">
             {answerOptions.map((option, index) => (
               <div
@@ -150,15 +156,13 @@ export const MultipleChoiceFormCard: React.FC<MultipleChoiceFormCardProps> = ({
                     onChange={(e) =>
                       handleAnswerTextChange(index, e.target.value)
                     }
-                    className={`${
+                    className={
                       option.isCorrect
                         ? "border-green-300 focus:border-green-500"
                         : ""
-                    }`}
+                    }
                   />
                 </div>
-
-                {/* Correct Answer Toggle */}
                 <div className="flex flex-col items-center gap-1">
                   <Switch
                     checked={option.isCorrect}
@@ -169,8 +173,6 @@ export const MultipleChoiceFormCard: React.FC<MultipleChoiceFormCardProps> = ({
                     {allowMultipleSelections ? "Correct" : "Answer"}
                   </Label>
                 </div>
-
-                {/* Remove Option Button */}
                 <Button
                   variant="outline"
                   size="icon"
@@ -184,7 +186,6 @@ export const MultipleChoiceFormCard: React.FC<MultipleChoiceFormCardProps> = ({
             ))}
           </div>
 
-          {/* Add Option Button */}
           <Button
             type="button"
             variant="outline"
@@ -199,7 +200,6 @@ export const MultipleChoiceFormCard: React.FC<MultipleChoiceFormCardProps> = ({
 
         <Separator className="bg-primary/20" />
 
-        {/* Action Buttons */}
         <div className="flex justify-between items-center pt-4">
           <Button variant="outline" className="px-6">
             Cancel

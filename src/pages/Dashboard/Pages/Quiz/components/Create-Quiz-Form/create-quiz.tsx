@@ -21,10 +21,9 @@ import {
 } from "@/components/ui/select";
 import SelectQuestionComponent from "./components/question-select/question-select";
 import { useQuiz } from "./Quiz-questions-context";
-import { AnyQuestion, QuestionType } from "@/types/ApiTypes";
+import { AnyQuestion } from "@/types/ApiTypes";
 import { LiftedButton } from "@/common/LiftedButton";
-import { CreatedQuestionsPanel } from "./components/questions-panel";
-// import { QuestionCard } from "@/pages/Question/User-question-components/common-question-card";
+// import { CreatedQuestionsPanel } from "./components/questions-panel";
 import { CategorySelect } from "../../../Question/Entities/Categories/Components/select-question-category";
 import { createQuizInputSchema, useCreateQuiz } from "../../api/create-quiz";
 import { DifficultySelect } from "../../../Question/Entities/Difficulty/Components/select-question-difficulty";
@@ -35,7 +34,7 @@ import { useEffect, useState } from "react";
 import { BsPatchQuestionFill } from "react-icons/bs";
 import { useNotifications } from "@/common/Notifications";
 import { useNavigate } from "react-router";
-import { QuestionCard } from "./components/quiz-question-card/main-quiz-question-card";
+import { ExistingQuestionCard } from "./components/quiz-question-card/existing-quiz-question-card";
 import { QuestionSettingsCard } from "./components/quiz-question-settings";
 import {
   Dialog,
@@ -45,20 +44,44 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useDisclosure } from "@/hooks/use-disclosure";
-import { MultipleChoiceFormCard } from "./components/create-question/multiple-choice-question-form";
+import { NewAnyQuestion, QuizQuestion } from "./types";
+import { DEFAULT_NEW_MULTIPLE_CHOICE } from "../../../Question/Components/Re-Usable-Components/constants";
+import { NewQuestionCard } from "./components/create-question/new-quiz-question-card";
 
 const CreateQuizForm = () => {
   const { queryData } = useQuizForm();
-  const { addedQuestions, displayQuestion, getQuestionsWithSettings } =
-    useQuiz();
+  const {
+    addedQuestions,
+    displayQuestion,
+    getQuestionsWithSettings,
+    addQuestionToQuiz,
+  } = useQuiz();
   const { addNotification } = useNotifications();
   const navigate = useNavigate();
+
+  const [artificialIdCounter, setArtificialIdCounter] = useState(-1);
+
+  const getNextArtificialId = () => {
+    const nextId = artificialIdCounter - 1;
+    setArtificialIdCounter(nextId);
+    return nextId;
+  };
 
   const {
     isOpen: isAddQuestionDialogOpen,
     open: openAddQuestionDialog,
     close: closeAddQuestionDialog,
   } = useDisclosure();
+
+  function isAnyQuestion(q: any): q is AnyQuestion {
+    return (
+      q && typeof q.id === "string" && "difficulty" in q && "category" in q
+    );
+  }
+
+  function isNewAnyQuestion(q: any): q is NewAnyQuestion {
+    return q && !("difficulty" in q) && !("category" in q);
+  }
 
   const createQuizMutation = useCreateQuiz({
     mutationConfig: {
@@ -131,7 +154,7 @@ const CreateQuizForm = () => {
       {({ register, formState, setValue, watch, clearErrors }) => {
         useEffect(() => {
           const questions = addedQuestions.map(
-            (q: AnyQuestion, index: number) => ({
+            (q: QuizQuestion, index: number) => ({
               questionId: q.id,
               timeLimitInSeconds: 10,
               pointSystem: "Standard",
@@ -376,7 +399,7 @@ const CreateQuizForm = () => {
                   <Dialog
                     open={isAddQuestionDialogOpen}
                     onOpenChange={(open) =>
-                      open ? openAddQuestionDialog() : close()
+                      open ? openAddQuestionDialog() : closeAddQuestionDialog()
                     }
                   >
                     <DialogTrigger asChild>
@@ -392,7 +415,18 @@ const CreateQuizForm = () => {
                       </DialogHeader>
                       <div className="flex flex-col gap-4 mt-4">
                         <div className="flex gap-4">
-                          <LiftedButton className="flex items-center gap-2">
+                          <LiftedButton
+                            className="flex items-center gap-2"
+                            onClick={() => {
+                              const newId = getNextArtificialId();
+                              const newQuestion = {
+                                ...DEFAULT_NEW_MULTIPLE_CHOICE,
+                                id: newId,
+                              };
+                              addQuestionToQuiz(newQuestion);
+                              closeAddQuestionDialog();
+                            }}
+                          >
                             Multiple Choice
                           </LiftedButton>
                         </div>
@@ -404,7 +438,13 @@ const CreateQuizForm = () => {
 
               <CardContent className="flex flex-col w-full p-4">
                 {displayQuestion !== null ? (
-                  <QuestionCard question={displayQuestion} />
+                  isAnyQuestion(displayQuestion) ? (
+                    <ExistingQuestionCard question={displayQuestion} />
+                  ) : isNewAnyQuestion(displayQuestion) ? (
+                    <NewQuestionCard question={displayQuestion} />
+                  ) : (
+                    <div>Unknown question type</div>
+                  )
                 ) : (
                   <div className="flex flex-col items-center justify-center py-16 text-center text-muted-foreground border-2 border-dashed border-primary/20 rounded-lg w-full">
                     <Brain className="h-16 w-16 mb-4 text-primary/50" />
@@ -450,7 +490,7 @@ const CreateQuizForm = () => {
             </Card>
 
             <div className="md:col-span-1">
-              <CreatedQuestionsPanel />
+              {/* <CreatedQuestionsPanel /> */}
             </div>
           </div>
         );

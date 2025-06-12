@@ -16,10 +16,10 @@ import {
 import { Label } from "@/components/ui/form";
 import { Settings, Zap } from "lucide-react";
 import { useQuiz } from "../Quiz-questions-context";
-import { POINT_SYSTEM_OPTIONS, TIME_LIMIT_OPTIONS } from "../types";
+import { POINT_SYSTEM_OPTIONS, TIME_LIMIT_OPTIONS } from "@/pages/Dashboard/Pages/Question/Components/Re-Usable-Components/constants";
 
 export const BulkSettingsPanel: React.FC = () => {
-  const { selectedQuestions, bulkUpdateSettings } = useQuiz();
+  const { addedQuestions, bulkUpdateSettings } = useQuiz();
   const [bulkPointSystem, setBulkPointSystem] = React.useState<string>("");
   const [bulkTimeLimit, setBulkTimeLimit] = React.useState<string>("");
 
@@ -41,7 +41,7 @@ export const BulkSettingsPanel: React.FC = () => {
     }
   };
 
-  if (selectedQuestions.length === 0) {
+  if (addedQuestions.length === 0) {
     return (
       <Card className="border border-primary/20">
         <CardContent className="p-4 text-center text-muted-foreground">
@@ -57,7 +57,7 @@ export const BulkSettingsPanel: React.FC = () => {
       <CardHeader className="pb-3">
         <CardTitle className="text-sm flex items-center gap-2">
           <Zap className="h-4 w-4 text-primary" />
-          Bulk Settings ({selectedQuestions.length} questions)
+          Bulk Settings ({addedQuestions.length} questions)
         </CardTitle>
       </CardHeader>
       

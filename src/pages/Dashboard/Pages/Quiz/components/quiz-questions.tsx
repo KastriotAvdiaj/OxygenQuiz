@@ -42,7 +42,7 @@ export const QuizQuestions = () => {
       <h2 className="text-xl font-semibold mb-4">Quiz Questions</h2>
       {questions.length > 0 ? (
         questions.map((quizQuestion, index) => (
-          <QuestionCard
+          <ExistingQuestionCard
             key={quizQuestion.questionId || index}
             quizQuestion={quizQuestion}
             index={index}
@@ -55,12 +55,15 @@ export const QuizQuestions = () => {
   );
 };
 
-type QuestionCardProps = {
+type ExistingQuestionCardProps = {
   quizQuestion: QuizQuestion;
   index: number;
 };
 
-const QuestionCard = ({ quizQuestion, index }: QuestionCardProps) => {
+const ExistingQuestionCard = ({
+  quizQuestion,
+  index,
+}: ExistingQuestionCardProps) => {
   return (
     <>
       <Accordion type="single" collapsible>
@@ -87,23 +90,25 @@ const QuestionCard = ({ quizQuestion, index }: QuestionCardProps) => {
           </AccordionTrigger>
           <AccordionContent>
             <div className="pl-6 space-y-2">
-              {quizQuestion.question.answerOptions.map((option : AnswerOption) => (
-                <div
-                  key={option.id}
-                  className={`p-3 rounded-md border ${
-                    option.isCorrect
-                      ? "border-green-500 bg-green-50 dark:bg-green-950/20"
-                      : "border-gray-200"
-                  }`}
-                >
-                  <div className="flex items-center">
-                    {option.isCorrect && (
-                      <CheckCircle2 className="h-4 w-4 text-green-500 mr-2" />
-                    )}
-                    <span>{option.text}</span>
+              {quizQuestion.question.answerOptions.map(
+                (option: AnswerOption) => (
+                  <div
+                    key={option.id}
+                    className={`p-3 rounded-md border ${
+                      option.isCorrect
+                        ? "border-green-500 bg-green-50 dark:bg-green-950/20"
+                        : "border-gray-200"
+                    }`}
+                  >
+                    <div className="flex items-center">
+                      {option.isCorrect && (
+                        <CheckCircle2 className="h-4 w-4 text-green-500 mr-2" />
+                      )}
+                      <span>{option.text}</span>
+                    </div>
                   </div>
-                </div>
-              ))}
+                )
+              )}
             </div>
           </AccordionContent>
         </AccordionItem>

@@ -13,6 +13,14 @@ import { useQuiz } from "../Quiz-questions-context";
 import { SmallQuestionCard } from "./small-question-card";
 import { LiftedButton } from "@/common/LiftedButton";
 import SelectQuestionComponent from "./question-select/question-select";
+import { AnyQuestion } from "@/types/ApiTypes";
+import { NewAnyQuestion } from "../types";
+
+export function isAnyQuestion(
+  question: AnyQuestion | NewAnyQuestion
+): question is AnyQuestion {
+  return typeof question.id === "number";
+}
 
 export const CreatedQuestionsPanel = ({}) => {
   const { isOpen, open, close } = useDisclosure();
@@ -56,9 +64,16 @@ export const CreatedQuestionsPanel = ({}) => {
             </p>
           ) : (
             <div className="space-y-3">
-              {addedQuestions.map((question) => (
-                <SmallQuestionCard key={question.id} question={question} />
-              ))}
+              {addedQuestions.map((question, index) => {
+                if (!isAnyQuestion(question)) return null;
+
+                return (
+                  <SmallQuestionCard
+                    key={question.id ?? `new-${index}`}
+                    question={question}
+                  />
+                );
+              })}
             </div>
           )}
         </CardContent>
