@@ -1,4 +1,4 @@
-import { QuestionBase, QuestionCategory, QuestionDifficulty, QuestionLanguage } from "@/types/ApiTypes";
+import { QuestionBase, QuestionCategory, QuestionDifficulty, QuestionLanguage, QuestionType } from "@/types/ApiTypes";
 import { Control, UseFormRegister, FormState, UseFormSetValue, UseFormWatch, UseFormClearErrors } from "react-hook-form";
 import { CreateQuizInput } from "../../api/create-quiz";
 
@@ -35,6 +35,46 @@ export const DEFAULT_QUESTION_SETTINGS: QuestionSettings = {
   timeLimitInSeconds: 10,
   orderInQuiz: 0,
 };
+
+export interface NewQuestionBase {
+  id?: number;
+  text: string;
+  imageUrl?:string;
+  type: QuestionType;
+  languageId: number;
+  categoryId: number;
+  difficultyId :number;
+  visibility: string;
+}
+
+export interface NewMultipleChoiceQuestion extends NewQuestionBase {
+  type: QuestionType.MultipleChoice;
+  answerOptions: NewAnswerOption[];
+  allowMultipleSelections: boolean;
+}
+
+export interface NewAnswerOption{
+  id?:number;
+  text:string;
+  isCorrect: boolean;
+}
+
+export interface NewTrueFalseQuestion extends NewQuestionBase {
+    type: QuestionType.TrueFalse;
+    correctAnswer: boolean;
+  }
+  export interface NewTypeTheAnswerQuestion extends NewQuestionBase {
+    type: QuestionType.TypeTheAnswer;
+    correctAnswer: string;
+    isCaseSensitive: boolean;
+    allowPartialMatch: boolean;
+    acceptableAnswers: string[] ;
+  }
+
+  export type NewAnyQuestion =
+    | NewMultipleChoiceQuestion
+    | NewTrueFalseQuestion
+    | NewTypeTheAnswerQuestion;
 
 export const POINT_SYSTEM_OPTIONS = [
   { value: "Standard", label: "Standard " },

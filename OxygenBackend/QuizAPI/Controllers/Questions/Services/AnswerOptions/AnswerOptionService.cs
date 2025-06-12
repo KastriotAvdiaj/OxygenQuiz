@@ -97,6 +97,7 @@ namespace QuizAPI.Controllers.Questions.Services.AnswerOptions
                 };
                 _context.AnswerOptions.Add(entity);
             }
+            await _context.SaveChangesAsync();
         }
 
         /*

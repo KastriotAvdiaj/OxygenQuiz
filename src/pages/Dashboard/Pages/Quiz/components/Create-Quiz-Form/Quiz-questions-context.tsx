@@ -14,8 +14,8 @@ import {
 
 interface QuizContextType {
   // Permanent quiz selections
-  selectedQuestions: AnyQuestion[];
-  selectedQuestionsCount: number;
+  addedQuestions: AnyQuestion[];
+  addedQuestionsCount: number;
   addQuestionToQuiz: (questionObject: AnyQuestion) => void;
   removeQuestionFromQuiz: (questionId: number) => void;
   isQuestionSelected: (questionId: number) => boolean;
@@ -67,7 +67,7 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
   children,
 }) => {
   // Permanent quiz selections
-  const [selectedQuestions, setSelectedQuestions] = useState<AnyQuestion[]>([]);
+  const [addedQuestions, setAddedQuestions] = useState<AnyQuestion[]>([]);
 
   // Display Question
   const [displayQuestion, setDisplayQuestion] = useState<AnyQuestion | null>(
@@ -89,7 +89,7 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
 
   // Permanent quiz selection functions
   const addQuestionToQuiz = (questionObject: AnyQuestion): void => {
-    setSelectedQuestions((prevSelected) => {
+    setAddedQuestions((prevSelected) => {
       if (!prevSelected.find((q) => q.id === questionObject.id)) {
         const newQuestions = [...prevSelected, questionObject];
 
@@ -111,7 +111,7 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
   };
 
   const removeQuestionFromQuiz = (questionId: number): void => {
-    setSelectedQuestions((prevSelected) => {
+    setAddedQuestions((prevSelected) => {
       const filtered = prevSelected.filter((q) => q.id !== questionId);
 
       // Update order indices after removal
@@ -137,7 +137,7 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
   };
 
   const isQuestionSelected = (questionId: number): boolean => {
-    return selectedQuestions.some((q) => q.id === questionId);
+    return addedQuestions.some((q) => q.id === questionId);
   };
 
   // Temporary selection functions
@@ -165,7 +165,7 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
   };
 
   const commitTempSelection = (): void => {
-    setSelectedQuestions((prevSelected) => {
+    setAddedQuestions((prevSelected) => {
       setDisplayQuestion(tempSelectedQuestions[0]);
       const newQuestions = tempSelectedQuestions.filter(
         (tempQ) => !prevSelected.find((q) => q.id === tempQ.id)
@@ -212,7 +212,7 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
   const getQuestionSettings = useCallback(
     (questionId: number): QuestionSettings => {
       const settings = questionSettings[questionId];
-      const orderInQuiz = selectedQuestions.findIndex(
+      const orderInQuiz = addedQuestions.findIndex(
         (q) => q.id === questionId
       );
 
@@ -223,14 +223,14 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
           orderInQuiz >= 0 ? orderInQuiz : settings?.orderInQuiz || 0,
       };
     },
-    [questionSettings, selectedQuestions]
+    [questionSettings, addedQuestions]
   );
 
   const bulkUpdateSettings = useCallback(
     (updates: Partial<QuestionSettings>) => {
       setQuestionSettings((prev) => {
         const newSettings = { ...prev };
-        selectedQuestions.forEach((question) => {
+        addedQuestions.forEach((question) => {
           newSettings[question.id] = {
             ...newSettings[question.id],
             ...updates,
@@ -239,7 +239,7 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
         return newSettings;
       });
     },
-    [selectedQuestions]
+    [addedQuestions]
   );
 
   const copySettingsToQuestion = useCallback(
@@ -269,7 +269,7 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
   }, []);
 
   const getQuestionsWithSettings = useCallback(() => {
-    return selectedQuestions.map((question, index) => ({
+    return addedQuestions.map((question, index) => ({
       question,
       settings: {
         ...DEFAULT_QUESTION_SETTINGS,
@@ -277,12 +277,12 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
         orderInQuiz: index, // Always use current array position
       },
     }));
-  }, [selectedQuestions, questionSettings]);
+  }, [addedQuestions, questionSettings]);
 
   const contextValue: QuizContextType = {
     // Permanent selections
-    selectedQuestions,
-    selectedQuestionsCount: selectedQuestions.length,
+    addedQuestions,
+    addedQuestionsCount: addedQuestions.length,
     addQuestionToQuiz,
     removeQuestionFromQuiz,
     isQuestionSelected,

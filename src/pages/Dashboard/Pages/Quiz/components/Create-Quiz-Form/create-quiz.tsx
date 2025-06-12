@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/select";
 import SelectQuestionComponent from "./components/question-select/question-select";
 import { useQuiz } from "./Quiz-questions-context";
-import { AnyQuestion } from "@/types/ApiTypes";
+import { AnyQuestion, QuestionType } from "@/types/ApiTypes";
 import { LiftedButton } from "@/common/LiftedButton";
 import { CreatedQuestionsPanel } from "./components/questions-panel";
 // import { QuestionCard } from "@/pages/Question/User-question-components/common-question-card";
@@ -37,13 +37,28 @@ import { useNotifications } from "@/common/Notifications";
 import { useNavigate } from "react-router";
 import { QuestionCard } from "./components/quiz-question-card/main-quiz-question-card";
 import { QuestionSettingsCard } from "./components/quiz-question-settings";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { useDisclosure } from "@/hooks/use-disclosure";
+import { MultipleChoiceFormCard } from "./components/create-question/multiple-choice-question-form";
 
 const CreateQuizForm = () => {
   const { queryData } = useQuizForm();
-  const { selectedQuestions, displayQuestion, getQuestionsWithSettings } =
+  const { addedQuestions, displayQuestion, getQuestionsWithSettings } =
     useQuiz();
   const { addNotification } = useNotifications();
   const navigate = useNavigate();
+
+  const {
+    isOpen: isAddQuestionDialogOpen,
+    open: openAddQuestionDialog,
+    close: closeAddQuestionDialog,
+  } = useDisclosure();
 
   const createQuizMutation = useCreateQuiz({
     mutationConfig: {
@@ -115,7 +130,7 @@ const CreateQuizForm = () => {
     >
       {({ register, formState, setValue, watch, clearErrors }) => {
         useEffect(() => {
-          const questions = selectedQuestions.map(
+          const questions = addedQuestions.map(
             (q: AnyQuestion, index: number) => ({
               questionId: q.id,
               timeLimitInSeconds: 10,
@@ -124,7 +139,7 @@ const CreateQuizForm = () => {
             })
           );
           setValue("questions", questions);
-        }, [selectedQuestions, setValue]);
+        }, [addedQuestions, setValue]);
         const { errors } = formState;
         console.log("Form errors:", errors);
         return (
@@ -162,7 +177,7 @@ const CreateQuizForm = () => {
                     {displayQuestion && (
                       <QuestionSettingsCard
                         question={displayQuestion}
-                        showCopyActions={selectedQuestions.length > 1}
+                        showCopyActions={addedQuestions.length > 1}
                       />
                     )}
                   </section>
@@ -358,7 +373,32 @@ const CreateQuizForm = () => {
                 </p>
                 <section className="flex absolute top-0 right-0 justify-center gap-4 p-4 rounded-lg">
                   <SelectQuestionComponent />
-                  <LiftedButton type="button">+ Create New</LiftedButton>
+                  <Dialog
+                    open={isAddQuestionDialogOpen}
+                    onOpenChange={(open) =>
+                      open ? openAddQuestionDialog() : close()
+                    }
+                  >
+                    <DialogTrigger asChild>
+                      <LiftedButton className="flex items-center gap-2">
+                        + Create New
+                      </LiftedButton>
+                    </DialogTrigger>
+                    <DialogContent className="bg-background p-4 rounded-md w-fit pt-8 dark:border border-foreground/30 max-w-4xl">
+                      <DialogHeader>
+                        <DialogTitle className="flex items-center justify-center">
+                          Choose the type of question
+                        </DialogTitle>
+                      </DialogHeader>
+                      <div className="flex flex-col gap-4 mt-4">
+                        <div className="flex gap-4">
+                          <LiftedButton className="flex items-center gap-2">
+                            Multiple Choice
+                          </LiftedButton>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                 </section>
               </CardHeader>
 

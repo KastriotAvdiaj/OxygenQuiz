@@ -71,13 +71,13 @@ namespace QuizAPI.Controllers.Quizzes
 
         // Optionally, if you need to retrieve session details:
         // GET: api/QuizSessions/{id}
-        [HttpGet("{id}")]
+       /* [HttpGet("{id}")]
         public async Task<ActionResult<QuizSession>> GetQuizSession(Guid id)
         {
             // Implementation would likely involve querying the context or extending your service.
             // For now, you could either implement it here or simply return a NotFound if not needed.
             return NotFound("GET session details endpoint is not implemented.");
-        }
+        }*/
     }
 
 
