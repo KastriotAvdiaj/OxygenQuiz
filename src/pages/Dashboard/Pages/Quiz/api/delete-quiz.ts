@@ -8,7 +8,7 @@ type DeleteQuizDTO = {
   };
 
   export const deleteQuiz = ({ quizId }: DeleteQuizDTO) => {
-    return api.delete(`/Quizzes/${quizId}`);
+    return api.delete(`/Quiz/${quizId}`);
   };
   
   type UseDeleteQuizOptions = {

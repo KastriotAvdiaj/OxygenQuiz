@@ -279,6 +279,32 @@ namespace QuizAPI.Controllers.Quizzes
             }
         }
 
+        [HttpDelete("{id}")]
+        [Authorize]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> DeleteQuiz(int id)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                var deleted = await _quizService.DeleteQuizAsync(userId, id);
+
+                if (!deleted)
+                {
+                    return NotFound();
+                }
+
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting quiz {QuizId}", id);
+                return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while processing your request");
+            }
+        }
+
         /// <summary>
         /// Helper method to get the current user's ID
         /// </summary>

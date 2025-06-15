@@ -66,5 +66,13 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
         /// </summary>
         /// <returns>List of publicly available quiz summaries</returns>
         Task<IEnumerable<QuizSummaryDTO>> GetPublicQuizzesAsync();
+
+        /// <summary>
+        /// Delete a quiz and all its associated quiz-question relationships
+        /// </summary>
+        /// <param name="userId">ID of the user attempting to delete the quiz</param>
+        /// <param name="quizId">ID of the quiz to delete</param>
+        /// <returns>True if deleted successfully, false if not found or user doesn't have permission</returns>
+        Task<bool> DeleteQuizAsync(Guid userId, int quizId);
     }
 }

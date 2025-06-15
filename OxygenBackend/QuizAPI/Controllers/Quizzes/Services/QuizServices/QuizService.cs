@@ -353,6 +353,52 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
             }
         }
 
+        public async Task<bool> DeleteQuizAsync(Guid userId, int quizId)
+        {
+            using var transaction = await _context.Database.BeginTransactionAsync();
+
+            try
+            {
+                // Retrieve quiz and verify ownership
+                var quiz = await _context.Quizzes
+                    .Include(q => q.QuizQuestions)
+                    .FirstOrDefaultAsync(q => q.Id == quizId);
+
+                if (quiz == null)
+                {
+                    return false;
+                }
+
+                if (quiz.UserId != userId)
+                {
+                    _logger.LogWarning("User {UserId} attempted to delete quiz {QuizId} owned by {OwnerId}",
+                        userId, quizId, quiz.UserId);
+                    return false;
+                }
+
+                // Remove quiz questions first (due to foreign key constraints)
+                if (quiz.QuizQuestions.Any())
+                {
+                    _context.QuizQuestions.RemoveRange(quiz.QuizQuestions);
+                }
+
+                // Remove the quiz
+                _context.Quizzes.Remove(quiz);
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                _logger.LogInformation("Quiz {QuizId} deleted successfully by user {UserId}", quizId, userId);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, "Error deleting quiz {QuizId} for user {UserId}", quizId, userId);
+                throw;
+            }
+        }
+
         private static IQueryable<Quiz> ApplyQuizFilters(IQueryable<Quiz> query, QuizFilterParams filterParams)
         {
             // Active/Inactive filter - fixed to use IsActive property from filterParams

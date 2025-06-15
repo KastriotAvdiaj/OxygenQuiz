@@ -1,5 +1,4 @@
 import { ColumnDef } from "@tanstack/react-table";
-import { Quiz } from "@/types/ApiTypes";
 // import { Button } from "@/components/ui/button";
 // import { useDisclosure } from "@/hooks/use-disclosure";
 // import {
@@ -32,8 +31,9 @@ import {
 import { Copy, Eye, MoreHorizontal } from "lucide-react";
 import { DeleteQuiz } from "../delete-quiz";
 import { Link } from "react-router-dom";
+import { QuizSummaryDTO } from "@/types/ApiTypes";
 
-export const quizColumns: ColumnDef<Quiz>[] = [
+export const quizColumns: ColumnDef<QuizSummaryDTO>[] = [
   {
     id: "quizInfo",
     header: "Quiz Info",
@@ -42,7 +42,7 @@ export const quizColumns: ColumnDef<Quiz>[] = [
       return (
         <TitleWithDescription
           title={title}
-          description={description}
+          description={description ? description : ""}
           wordLimit={20} // Adjust the limit as needed
         />
       );
@@ -68,7 +68,7 @@ export const quizColumns: ColumnDef<Quiz>[] = [
               Published
             </span>
           ) : (
-            <span className="text-red-500">Draft</span>
+            <span className="text-red-500">Private</span>
           )}
         </div>
       );
@@ -113,7 +113,7 @@ export const quizColumns: ColumnDef<Quiz>[] = [
                 e.preventDefault();
               }}
             >
-              <DeleteQuiz id={quiz.id} />
+              <DeleteQuiz id={quiz.id} finished={close} />
             </DropdownMenuItem>
             <DropdownMenuSeparator className="bg-background/60" />
             <DropdownMenuItem className="hover:bg-background">

@@ -6,9 +6,10 @@ import { Trash2 } from "lucide-react";
 
 type DeleteQuizProps = {
   id: number;
+  finished: () => void;
 };
 
-export const DeleteQuiz = ({ id }: DeleteQuizProps) => {
+export const DeleteQuiz = ({ id, finished }: DeleteQuizProps) => {
   const { addNotification } = useNotifications();
   const deleteQuizMutation = useDeleteQuiz({
     mutationConfig: {
@@ -17,6 +18,7 @@ export const DeleteQuiz = ({ id }: DeleteQuizProps) => {
           type: "success",
           title: "Quiz Deleted",
         });
+        finished();
       },
     },
   });
@@ -28,9 +30,8 @@ export const DeleteQuiz = ({ id }: DeleteQuizProps) => {
       title="Delete Quiz"
       body="Are you sure you want to delete this quiz?"
       triggerButton={
-        <Button variant="destructive" className="rounded-xl">
-          <Trash2 size={16} />
-          Delete
+        <Button variant="userMenu" className="h-5 font-normal px-0 flex w-full">
+          <Trash2 size={16} /> Delete
         </Button>
       }
       confirmButton={
