@@ -56,6 +56,9 @@ interface QuizContextType {
     question: QuizQuestion;
     settings: QuestionSettings;
   }>;
+
+  // Function to update ("NEW") questions
+  updateQuestion: (questionId: number, updatedQuestion: QuizQuestion) => void;
 }
 
 const QuizContext = createContext<QuizContextType | undefined>(undefined);
@@ -196,6 +199,22 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
     }
   };
 
+  // Method for updating "NEW" question
+  const updateQuestion = useCallback(
+    (questionId: number, updatedQuestion: QuizQuestion): void => {
+      console.log("🔄 updateQuestion called for:", questionId);
+      setAddedQuestions((prevQuestions) =>
+        prevQuestions.map((q) => (q.id === questionId ? updatedQuestion : q))
+      );
+
+      // Also update displayQuestion if it's the same question being updated
+      if (displayQuestion?.id === questionId) {
+        setDisplayQuestion(updatedQuestion);
+      }
+    },
+    [displayQuestion]
+  );
+
   // NEW: Question Settings Functions
   const updateQuestionSetting = useCallback(
     (questionId: number, key: keyof QuestionSettings, value: any) => {
@@ -311,6 +330,9 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
     copySettingsToQuestion,
     resetQuestionSettings,
     getQuestionsWithSettings,
+
+    // Method for updating "NEW" question
+    updateQuestion,
   };
 
   return (

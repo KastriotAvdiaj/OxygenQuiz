@@ -19,7 +19,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Input, Textarea } from "@/components/ui/form";
+import { Input } from "@/components/ui/form";
 import { GrFormNextLink } from "react-icons/gr";
 
 export const Quizzes = () => {
@@ -129,7 +129,7 @@ export const Quizzes = () => {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>
-                <h2 className="text-xl">Choose your quiz title</h2>
+                <p className="text-xl">Choose your quiz title</p>
                 <p className="text-muted-foreground text-xs">
                   (You can still change later)
                 </p>

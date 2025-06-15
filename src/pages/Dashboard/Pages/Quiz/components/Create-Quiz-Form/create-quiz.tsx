@@ -59,14 +59,6 @@ const CreateQuizForm = () => {
   const { addNotification } = useNotifications();
   const navigate = useNavigate();
 
-  const [artificialIdCounter, setArtificialIdCounter] = useState(-1);
-
-  const getNextArtificialId = () => {
-    const nextId = artificialIdCounter - 1;
-    setArtificialIdCounter(nextId);
-    return nextId;
-  };
-
   const {
     isOpen: isAddQuestionDialogOpen,
     open: openAddQuestionDialog,
@@ -75,13 +67,21 @@ const CreateQuizForm = () => {
 
   function isAnyQuestion(q: any): q is AnyQuestion {
     return (
-      q && typeof q.id === "string" && "difficulty" in q && "category" in q
+      q && typeof q.id === "number" && "difficulty" in q && "category" in q
     );
   }
 
   function isNewAnyQuestion(q: any): q is NewAnyQuestion {
     return q && !("difficulty" in q) && !("category" in q);
   }
+
+  const createNewMultipleChoiceQuestion = (id: number) => ({
+    ...DEFAULT_NEW_MULTIPLE_CHOICE,
+    id,
+    answerOptions: DEFAULT_NEW_MULTIPLE_CHOICE.answerOptions.map((option) => ({
+      ...option,
+    })),
+  });
 
   const createQuizMutation = useCreateQuiz({
     mutationConfig: {
@@ -121,7 +121,6 @@ const CreateQuizForm = () => {
       id="create-quiz"
       className="mt-0 w-full"
       onSubmit={(values) => {
-        // Use the context method to get questions with their settings
         const questionsWithSettings = getQuestionsWithSettings();
 
         const questions = questionsWithSettings.map(
@@ -162,9 +161,10 @@ const CreateQuizForm = () => {
             })
           );
           setValue("questions", questions);
-        }, [addedQuestions, setValue]);
+        }, [addedQuestions]);
         const { errors } = formState;
-        console.log("Form errors:", errors);
+        console.log(errors);
+        console.log(addedQuestions);
         return (
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4 p-4 items-start">
             <Card className="md:text-xs lg:text-sm h-fit md:col-span-1 bg-background border-2 border-primary/30">
@@ -418,11 +418,10 @@ const CreateQuizForm = () => {
                           <LiftedButton
                             className="flex items-center gap-2"
                             onClick={() => {
-                              const newId = getNextArtificialId();
-                              const newQuestion = {
-                                ...DEFAULT_NEW_MULTIPLE_CHOICE,
-                                id: newId,
-                              };
+                              const tempId = -Date.now();
+                              // Use the helper function to create a properly cloned question
+                              const newQuestion =
+                                createNewMultipleChoiceQuestion(tempId);
                               addQuestionToQuiz(newQuestion);
                               closeAddQuestionDialog();
                             }}
@@ -439,9 +438,15 @@ const CreateQuizForm = () => {
               <CardContent className="flex flex-col w-full p-4">
                 {displayQuestion !== null ? (
                   isAnyQuestion(displayQuestion) ? (
-                    <ExistingQuestionCard question={displayQuestion} />
+                    <ExistingQuestionCard
+                      key={displayQuestion.id}
+                      question={displayQuestion}
+                    />
                   ) : isNewAnyQuestion(displayQuestion) ? (
-                    <NewQuestionCard question={displayQuestion} />
+                    <NewQuestionCard
+                      key={displayQuestion.id}
+                      question={displayQuestion}
+                    />
                   ) : (
                     <div>Unknown question type</div>
                   )
