@@ -69,7 +69,7 @@ export const createQuizInputSchema = z.object({
     z.object({
       questionId: z.number()
         .int()
-        .positive({ message: "Question ID is required" }),
+         .refine((val) => val !== 0, { message: "Question ID cannot be zero" }),
       
       timeLimitInSeconds: z.number()
         .int()

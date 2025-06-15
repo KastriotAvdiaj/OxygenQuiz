@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
-import { api } from "@/lib/Api-client";
+import { apiService } from "@/lib/Api-client";
 import { MutationConfig } from "@/lib/React-query";
 import { MultipleChoiceQuestion } from "@/types/ApiTypes";
 import { answerOptionsSchema } from "../../../Quiz/api/create-quiz";
@@ -21,7 +21,7 @@ export const createMultipleChoiceQuestionInputSchema = z.object({
 export type CreateMultipleChoiceQuestionInput = z.infer<typeof createMultipleChoiceQuestionInputSchema>;
 
 export const createMultipleChoiceQuestion = ({ data }: { data: CreateMultipleChoiceQuestionInput }): Promise<MultipleChoiceQuestion> => {
-  return api.post('/questions/multiplechoice', data);
+  return apiService.post('/questions/multiplechoice', data);
 };
 
 type UseCreateMultipleChoiceQuestionOptions = {

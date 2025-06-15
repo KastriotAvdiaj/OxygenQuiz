@@ -44,6 +44,12 @@ export const CreateMultipleChoiceForm: React.FC<
         });
         onSuccess();
       },
+      onError: () => {
+        addNotification({
+          type: "error",
+          title: "There was an error creating your question",
+        });
+      },
     },
   });
 

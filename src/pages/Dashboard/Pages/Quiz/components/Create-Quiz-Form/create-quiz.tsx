@@ -48,6 +48,14 @@ import { NewAnyQuestion, QuizQuestion } from "./types";
 import { DEFAULT_NEW_MULTIPLE_CHOICE } from "../../../Question/Components/Re-Usable-Components/constants";
 import { NewQuestionCard } from "./components/create-question/new-quiz-question-card";
 
+// Import the question creation hooks
+
+// Import the QuestionType enum
+import { QuestionType } from "@/types/ApiTypes";
+import { useCreateMultipleChoiceQuestion } from "../../../Question/api/Normal-Question/create-multiple-choice-question";
+import { useCreateTrueFalseQuestion } from "../../../Question/api/True_False-Question/create-true_false-question";
+import { useCreateTypeTheAnswerQuestion } from "../../../Question/api/Type_The_Answer-Question/create-type-the-answer-question";
+
 const CreateQuizForm = () => {
   const { queryData } = useQuizForm();
   const {
@@ -64,6 +72,13 @@ const CreateQuizForm = () => {
     open: openAddQuestionDialog,
     close: closeAddQuestionDialog,
   } = useDisclosure();
+
+  // Question creation mutations
+  const createMultipleChoiceMutation = useCreateMultipleChoiceQuestion();
+  const createTrueFalseMutation = useCreateTrueFalseQuestion();
+  const createTypeTheAnswerMutation = useCreateTypeTheAnswerQuestion();
+
+  const [isCreatingQuestions, setIsCreatingQuestions] = useState(false);
 
   function isAnyQuestion(q: any): q is AnyQuestion {
     return (
@@ -83,6 +98,33 @@ const CreateQuizForm = () => {
     })),
   });
 
+  // Function to create a new question based on its type
+  const createNewQuestion = async (
+    question: NewAnyQuestion
+  ): Promise<number> => {
+    switch (question.type) {
+      case QuestionType.MultipleChoice:
+        const mcResult = await createMultipleChoiceMutation.mutateAsync({
+          data: question,
+        });
+        // console.log(mcResult.data.id);
+        console.log(mcResult.id);
+        return mcResult.id;
+
+      case QuestionType.TrueFalse:
+        const tfResult = await createTrueFalseMutation.mutateAsync({
+          data: question,
+        });
+        return tfResult.id;
+
+      case QuestionType.TypeTheAnswer:
+        const ttaResult = await createTypeTheAnswerMutation.mutateAsync({
+          data: question,
+        });
+        return ttaResult.id;
+    }
+  };
+
   const createQuizMutation = useCreateQuiz({
     mutationConfig: {
       onSuccess: () => {
@@ -92,6 +134,14 @@ const CreateQuizForm = () => {
           message: "Your quiz was created successfully!",
         });
         navigate("/dashboard/quizzes");
+      },
+      onError: (error) => {
+        addNotification({
+          type: "error",
+          title: "Error",
+          message: "Failed to create quiz. Please try again.",
+        });
+        console.error("Quiz creation error:", error);
       },
     },
   });
@@ -120,32 +170,82 @@ const CreateQuizForm = () => {
     <Form
       id="create-quiz"
       className="mt-0 w-full"
-      onSubmit={(values) => {
-        const questionsWithSettings = getQuestionsWithSettings();
+      onSubmit={async (values) => {
+        try {
+          setIsCreatingQuestions(true);
 
-        const questions = questionsWithSettings.map(
-          ({ question, settings }) => ({
-            questionId: question.id,
-            timeLimitInSeconds: settings.timeLimitInSeconds,
-            pointSystem: settings.pointSystem,
-            orderInQuiz: settings.orderInQuiz,
-          })
-        );
+          const questionsWithSettings = getQuestionsWithSettings();
+          console.log(questionsWithSettings);
 
-        if (questions.length === 0) {
+          if (questionsWithSettings.length === 0) {
+            console.log(questionsWithSettings.length);
+
+            addNotification({
+              type: "error",
+              title: "No questions selected",
+            });
+            return;
+          }
+
+          const processedQuestions = await Promise.all(
+            questionsWithSettings.map(async ({ question, settings }, index) => {
+              let questionId: number;
+              console.log(question.id);
+              // If question has negative ID, it's a new question that needs to be created
+              if (question.id < 0) {
+                try {
+                  questionId = await createNewQuestion(
+                    question as NewAnyQuestion
+                  );
+                  console.log(questionId);
+                } catch (error) {
+                  console.error(`Error creating new question:`, error);
+                  addNotification({
+                    type: "error",
+                    title: "Success",
+                    message: "There was an error creating one of the questions",
+                  });
+                  throw new Error(
+                    `Failed to create new question: ${question.text?.substring(
+                      0,
+                      50
+                    )}...`
+                  );
+                }
+              } else {
+                // Existing question, use its ID
+                questionId = question.id;
+              }
+
+              return {
+                questionId,
+                timeLimitInSeconds: settings.timeLimitInSeconds,
+                pointSystem: settings.pointSystem,
+                orderInQuiz: settings.orderInQuiz || index,
+              };
+            })
+          );
+          console.log(processedQuestions);
+          // Now create the quiz with all question IDs
+          await createQuizMutation.mutateAsync({
+            data: {
+              ...values,
+              questions: processedQuestions,
+            },
+          });
+        } catch (error) {
+          console.error("Error in quiz creation process:", error);
           addNotification({
             type: "error",
-            title: "No questions selected",
+            title: "Error",
+            message:
+              error instanceof Error
+                ? error.message
+                : "Failed to create quiz. Please try again.",
           });
-          return;
+        } finally {
+          setIsCreatingQuestions(false);
         }
-
-        createQuizMutation.mutate({
-          data: {
-            ...values,
-            questions: questions,
-          },
-        });
       }}
       schema={createQuizInputSchema}
       options={{ mode: "onSubmit" }}
@@ -162,9 +262,14 @@ const CreateQuizForm = () => {
           );
           setValue("questions", questions);
         }, [addedQuestions]);
+
         const { errors } = formState;
+        const isSubmitting =
+          createQuizMutation.isPending || isCreatingQuestions;
+
         console.log(errors);
         console.log(addedQuestions);
+
         return (
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4 p-4 items-start">
             <Card className="md:text-xs lg:text-sm h-fit md:col-span-1 bg-background border-2 border-primary/30">
@@ -471,7 +576,7 @@ const CreateQuizForm = () => {
                 <Separator className="my-6 bg-primary/20" />
                 <LiftedButton
                   type="submit"
-                  disabled={createQuizMutation?.isPending}
+                  disabled={isSubmitting}
                   className="w-fit self-center relative"
                   variant="default"
                 >
@@ -479,15 +584,11 @@ const CreateQuizForm = () => {
                     <Spinner
                       size="sm"
                       className={`absolute ${
-                        createQuizMutation.isPending ? "visible" : "invisible"
+                        isSubmitting ? "visible" : "invisible"
                       }`}
                     />
-                    <span
-                      className={
-                        createQuizMutation.isPending ? "invisible" : "visible"
-                      }
-                    >
-                      Finish
+                    <span className={isSubmitting ? "invisible" : "visible"}>
+                      {isCreatingQuestions ? "Creating Questions..." : "Finish"}
                     </span>
                   </div>
                 </LiftedButton>

@@ -68,7 +68,7 @@ export interface NewTypeTheAnswerQuestion extends NewQuestionBase {
   correctAnswer: string;
   isCaseSensitive: boolean;
   allowPartialMatch: boolean;
-  acceptableAnswers: string[];
+  acceptableAnswers: { value: string }[];
 }
 
 export type NewAnyQuestion =
