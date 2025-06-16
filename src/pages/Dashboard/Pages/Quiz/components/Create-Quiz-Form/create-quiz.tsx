@@ -50,6 +50,7 @@ import { QuestionType } from "@/types/ApiTypes";
 import { useCreateMultipleChoiceQuestion } from "../../../Question/api/Normal-Question/create-multiple-choice-question";
 import { useCreateTrueFalseQuestion } from "../../../Question/api/True_False-Question/create-true_false-question";
 import { useCreateTypeTheAnswerQuestion } from "../../../Question/api/Type_The_Answer-Question/create-type-the-answer-question";
+import { CreatedQuestionsPanel } from "./components/question-panel/questions-panel";
 
 const CreateQuizForm = () => {
   const { queryData } = useQuizForm();
@@ -78,7 +79,9 @@ const CreateQuizForm = () => {
 
   // Type guards
   const isAnyQuestion = (q: any): q is AnyQuestion => {
-    return q && typeof q.id === "number" && "difficulty" in q && "category" in q;
+    return (
+      q && typeof q.id === "number" && "difficulty" in q && "category" in q
+    );
   };
 
   const isNewAnyQuestion = (q: any): q is NewAnyQuestion => {
@@ -94,7 +97,9 @@ const CreateQuizForm = () => {
   });
 
   // Function to create a new question based on its type
-  const createNewQuestion = async (question: NewAnyQuestion): Promise<number> => {
+  const createNewQuestion = async (
+    question: NewAnyQuestion
+  ): Promise<number> => {
     switch (question.type) {
       case QuestionType.MultipleChoice:
         const mcResult = await createMultipleChoiceMutation.mutateAsync({
@@ -224,17 +229,20 @@ const CreateQuizForm = () => {
     >
       {({ register, formState, setValue, watch, clearErrors }) => {
         useEffect(() => {
-          const questions = addedQuestions.map((q: QuizQuestion, index: number) => ({
-            questionId: q.id,
-            timeLimitInSeconds: 10,
-            pointSystem: "Standard",
-            orderInQuiz: index,
-          }));
+          const questions = addedQuestions.map(
+            (q: QuizQuestion, index: number) => ({
+              questionId: q.id,
+              timeLimitInSeconds: 10,
+              pointSystem: "Standard",
+              orderInQuiz: index,
+            })
+          );
           setValue("questions", questions);
         }, [addedQuestions, setValue]);
 
         const { errors } = formState;
-        const isSubmitting = createQuizMutation.isPending || isCreatingQuestions;
+        const isSubmitting =
+          createQuizMutation.isPending || isCreatingQuestions;
 
         return (
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4 p-4 items-start">
@@ -267,7 +275,7 @@ const CreateQuizForm = () => {
                     </TabsTrigger>
                   </TabsList>
                 </CardHeader>
-                
+
                 <TabsContent value="questions" className="flex items-center">
                   <section className="flex flex-col gap-4 p-4">
                     {displayQuestion && (
@@ -278,7 +286,7 @@ const CreateQuizForm = () => {
                     )}
                   </section>
                 </TabsContent>
-                
+
                 <TabsContent value="quiz">
                   <CardContent className="bg-background space-y-4">
                     {/* Basic Information */}
@@ -301,7 +309,10 @@ const CreateQuizForm = () => {
                       </div>
 
                       <div>
-                        <Label htmlFor="description" className="text-sm font-medium">
+                        <Label
+                          htmlFor="description"
+                          className="text-sm font-medium"
+                        >
                           Description
                         </Label>
                         <Textarea
@@ -369,7 +380,9 @@ const CreateQuizForm = () => {
                         </Label>
                         <Select
                           value={watch("visibility") || ""}
-                          onValueChange={(value) => setValue("visibility", value)}
+                          onValueChange={(value) =>
+                            setValue("visibility", value)
+                          }
                         >
                           <SelectTrigger className="w-full">
                             <SelectValue placeholder="Select visibility..." />
@@ -386,7 +399,9 @@ const CreateQuizForm = () => {
 
                     {/* Toggle Options */}
                     <div className="space-y-3">
-                      <h4 className="text-sm font-semibold text-primary">Options</h4>
+                      <h4 className="text-sm font-semibold text-primary">
+                        Options
+                      </h4>
 
                       <div className="flex items-center justify-between">
                         <Label
@@ -454,7 +469,7 @@ const CreateQuizForm = () => {
                 <p className="text-muted-foreground">
                   Craft your perfect quiz challenge!
                 </p>
-                
+
                 <section className="flex absolute top-0 right-0 justify-center gap-4 p-4 rounded-lg">
                   <SelectQuestionComponent />
                   <Dialog
@@ -480,7 +495,8 @@ const CreateQuizForm = () => {
                             className="flex items-center gap-2"
                             onClick={() => {
                               const tempId = -Date.now();
-                              const newQuestion = createNewMultipleChoiceQuestion(tempId);
+                              const newQuestion =
+                                createNewMultipleChoiceQuestion(tempId);
                               addQuestionToQuiz(newQuestion);
                               closeAddQuestionDialog();
                             }}
@@ -527,9 +543,9 @@ const CreateQuizForm = () => {
                     />
                   </div>
                 )}
-                
+
                 <Separator className="my-6 bg-primary/20" />
-                
+
                 <LiftedButton
                   type="submit"
                   disabled={isSubmitting}
@@ -539,7 +555,9 @@ const CreateQuizForm = () => {
                   <div className="flex items-center justify-center">
                     <Spinner
                       size="sm"
-                      className={`absolute ${isSubmitting ? "visible" : "invisible"}`}
+                      className={`absolute ${
+                        isSubmitting ? "visible" : "invisible"
+                      }`}
                     />
                     <span className={isSubmitting ? "invisible" : "visible"}>
                       {isCreatingQuestions ? "Creating Questions..." : "Finish"}
@@ -550,7 +568,7 @@ const CreateQuizForm = () => {
             </Card>
 
             <div className="md:col-span-1">
-              {/* Future: CreatedQuestionsPanel can go here */}
+              <CreatedQuestionsPanel />
             </div>
           </div>
         );
