@@ -6,6 +6,7 @@ import { BaseQuestionFormCard } from "./base-new-quiz-question-card";
 import { Input, Label } from "@/components/ui/form";
 import { Button, Switch } from "@/components/ui";
 import { Plus, Trash2 } from "lucide-react";
+import { getQuestionTypeStyles } from "../existing-quiz-question-card/multiple-choice-question-card/quiz-muiltiple-choice-question-card";
 
 interface TypeTheAnswerFormCardProps {
   question: NewTypeTheAnswerQuestion;
@@ -74,12 +75,16 @@ export const TypeTheAnswerFormCard: React.FC<TypeTheAnswerFormCardProps> = ({
     );
   };
 
+  const styles = getQuestionTypeStyles(question.type);
+
   return (
     <BaseQuestionFormCard
       questionText={questionText}
       onQuestionTextChange={setQuestionText}
+      borderColor={styles.borderColor}
+      backgroundColor={styles.backgroundColor}
     >
-      <div className="space-y-6 border-t pt-4">
+      <div className="space-y-6  pt-4">
         {/* Main Answer */}
         <div className="space-y-2">
           <Label htmlFor="main-answer" className="text-sm font-medium">

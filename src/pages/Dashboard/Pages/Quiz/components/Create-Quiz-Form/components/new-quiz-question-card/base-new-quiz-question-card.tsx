@@ -5,17 +5,19 @@ interface BaseQuestionFormCardProps {
   questionText: string;
   onQuestionTextChange: (text: string) => void;
   children: React.ReactNode;
-  className?: string;
+  borderColor: string;
+  backgroundColor?: string;
 }
 
 export const BaseQuestionFormCard: React.FC<BaseQuestionFormCardProps> = ({
   questionText,
   onQuestionTextChange,
   children,
-  className = "",
+  borderColor,
+  backgroundColor,
 }) => {
   return (
-    <Card className={`bg-background border-2 border-primary/30 ${className}`}>
+    <Card className={`bg-background border ${borderColor} ${backgroundColor}`}>
       <CardContent className="space-y-6 p-6">
         <div className="space-y-2">
           <Input

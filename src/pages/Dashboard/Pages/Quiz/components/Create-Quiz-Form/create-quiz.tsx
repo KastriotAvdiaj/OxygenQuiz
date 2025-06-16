@@ -44,13 +44,17 @@ import {
 } from "@/components/ui/dialog";
 import { useDisclosure } from "@/hooks/use-disclosure";
 import { NewAnyQuestion, QuizQuestion } from "./types";
-import { DEFAULT_NEW_MULTIPLE_CHOICE } from "../../../Question/Components/Re-Usable-Components/constants";
+import {
+  DEFAULT_NEW_MULTIPLE_CHOICE,
+  DEFAULT_NEW_TRUE_FALSE,
+  DEFAULT_NEW_TYPE_ANSWER,
+} from "../../../Question/Components/Re-Usable-Components/constants";
 import { NewQuestionCard } from "./components/new-quiz-question-card/new-quiz-question-card";
 import { QuestionType } from "@/types/ApiTypes";
 import { useCreateMultipleChoiceQuestion } from "../../../Question/api/Normal-Question/create-multiple-choice-question";
 import { useCreateTrueFalseQuestion } from "../../../Question/api/True_False-Question/create-true_false-question";
 import { useCreateTypeTheAnswerQuestion } from "../../../Question/api/Type_The_Answer-Question/create-type-the-answer-question";
-import { CreatedQuestionsPanel } from "./components/question-panel/questions-panel";
+// import { CreatedQuestionsPanel } from "./components/question-panel/questions-panel";
 
 const CreateQuizForm = () => {
   const { queryData } = useQuizForm();
@@ -94,6 +98,21 @@ const CreateQuizForm = () => {
     answerOptions: DEFAULT_NEW_MULTIPLE_CHOICE.answerOptions.map((option) => ({
       ...option,
     })),
+  });
+
+  const createNewTrueFalseQuestion = (id: number) => ({
+    ...DEFAULT_NEW_TRUE_FALSE,
+    id,
+  });
+
+  const createNewTypeTheAnswerQuestion = (id: number) => ({
+    ...DEFAULT_NEW_TYPE_ANSWER,
+    id,
+    acceptableAnswers: DEFAULT_NEW_TYPE_ANSWER.acceptableAnswers.map(
+      (answer) => ({
+        ...answer,
+      })
+    ),
   });
 
   // Function to create a new question based on its type
@@ -502,6 +521,30 @@ const CreateQuizForm = () => {
                             }}
                           >
                             Multiple Choice
+                          </LiftedButton>
+                          <LiftedButton
+                            className="flex items-center gap-2"
+                            onClick={() => {
+                              const tempId = -Date.now();
+                              const newQuestion =
+                                createNewTrueFalseQuestion(tempId);
+                              addQuestionToQuiz(newQuestion);
+                              closeAddQuestionDialog();
+                            }}
+                          >
+                            True/False
+                          </LiftedButton>
+                          <LiftedButton
+                            className="flex items-center gap-2"
+                            onClick={() => {
+                              const tempId = -Date.now();
+                              const newQuestion =
+                                createNewTypeTheAnswerQuestion(tempId);
+                              addQuestionToQuiz(newQuestion);
+                              closeAddQuestionDialog();
+                            }}
+                          >
+                            Type The Answer
                           </LiftedButton>
                         </div>
                       </div>

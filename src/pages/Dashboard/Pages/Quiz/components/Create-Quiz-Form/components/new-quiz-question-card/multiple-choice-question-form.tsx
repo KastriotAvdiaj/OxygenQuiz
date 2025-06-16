@@ -6,6 +6,7 @@ import { Input, Label } from "@/components/ui/form";
 import { Button, Switch } from "@/components/ui";
 import { Plus, Trash2 } from "lucide-react";
 import { BaseQuestionFormCard } from "./base-new-quiz-question-card";
+import { getQuestionTypeStyles } from "../existing-quiz-question-card/multiple-choice-question-card/quiz-muiltiple-choice-question-card";
 
 interface MultipleChoiceFormCardProps {
   question: NewMultipleChoiceQuestion;
@@ -16,6 +17,8 @@ export const MultipleChoiceFormCard: React.FC<MultipleChoiceFormCardProps> = ({
 }) => {
   const [questionText, setQuestionText] = useState(question.text);
   const { updateQuestion } = useQuiz();
+
+  const styles = getQuestionTypeStyles(question.type);
 
   const allowMultipleSelections = question.allowMultipleSelections;
   const [answerOptions, setAnswerOptions] = useState<NewAnswerOption[]>(
@@ -80,6 +83,8 @@ export const MultipleChoiceFormCard: React.FC<MultipleChoiceFormCardProps> = ({
   return (
     <BaseQuestionFormCard
       questionText={questionText}
+      borderColor={styles.borderColor}
+      backgroundColor={styles.backgroundColor}
       onQuestionTextChange={setQuestionText}
     >
       <div className="space-y-4">

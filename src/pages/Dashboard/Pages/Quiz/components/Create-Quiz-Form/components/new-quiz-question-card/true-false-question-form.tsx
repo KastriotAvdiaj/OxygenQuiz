@@ -4,6 +4,7 @@ import { useQuiz } from "../../Quiz-questions-context";
 import { useDebounce } from "@/hooks/use-debounce";
 import { BaseQuestionFormCard } from "./base-new-quiz-question-card";
 import { Label } from "@/components/ui/form";
+import { getQuestionTypeStyles } from "../existing-quiz-question-card/multiple-choice-question-card/quiz-muiltiple-choice-question-card";
 
 interface TrueFalseFormCardProps {
   question: NewTrueFalseQuestion;
@@ -35,12 +36,16 @@ export const TrueFalseFormCard: React.FC<TrueFalseFormCardProps> = ({
     updateQuestion(question.id, updatedQuestion);
   }, [debouncedQuestionState, question.id]);
 
+  const styles = getQuestionTypeStyles(question.type);
+
   return (
     <BaseQuestionFormCard
       questionText={questionText}
       onQuestionTextChange={setQuestionText}
+      borderColor={styles.borderColor}
+      backgroundColor={styles.backgroundColor}
     >
-      <div className="space-y-4 border-t pt-4">
+      <div className="space-y-4 pt-4">
         <div className="flex justify-center">
           <Label className="text-sm font-medium text-muted-foreground mb-3">
             Select the correct answer:
