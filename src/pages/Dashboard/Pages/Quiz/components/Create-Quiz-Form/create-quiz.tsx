@@ -49,7 +49,7 @@ import {
   DEFAULT_NEW_TRUE_FALSE,
   DEFAULT_NEW_TYPE_ANSWER,
 } from "../../../Question/Components/Re-Usable-Components/constants";
-import { NewQuestionCard } from "./components/new-quiz-question-card/new-quiz-question-card";
+import { NewQuestionCard } from "./components/new-display-quiz-question-card/main-display-quiz-question-card";
 import { QuestionType } from "@/types/ApiTypes";
 import { useCreateMultipleChoiceQuestion } from "../../../Question/api/Normal-Question/create-multiple-choice-question";
 import { useCreateTrueFalseQuestion } from "../../../Question/api/True_False-Question/create-true_false-question";

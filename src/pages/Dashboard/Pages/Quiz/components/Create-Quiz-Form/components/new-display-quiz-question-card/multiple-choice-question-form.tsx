@@ -5,7 +5,7 @@ import { useDebounce } from "@/hooks/use-debounce";
 import { Input, Label } from "@/components/ui/form";
 import { Button, Switch } from "@/components/ui";
 import { Plus, Trash2 } from "lucide-react";
-import { BaseQuestionFormCard } from "./base-new-quiz-question-card";
+import { BaseQuestionFormCard } from "./display-base-quiz-question-card";
 import { getQuestionTypeStyles } from "../existing-display-quiz-question-card/display-multiple-choice-question-card/display-muiltiple-choice-question-card";
 
 interface MultipleChoiceFormCardProps {

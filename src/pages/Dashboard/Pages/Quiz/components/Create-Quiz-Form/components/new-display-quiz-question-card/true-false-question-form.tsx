@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { NewTrueFalseQuestion } from "../../types";
 import { useQuiz } from "../../Quiz-questions-context";
 import { useDebounce } from "@/hooks/use-debounce";
-import { BaseQuestionFormCard } from "./base-new-quiz-question-card";
+import { BaseQuestionFormCard } from "./display-base-quiz-question-card";
 import { Label } from "@/components/ui/form";
 import { getQuestionTypeStyles } from "../existing-display-quiz-question-card/display-multiple-choice-question-card/display-muiltiple-choice-question-card";
 
