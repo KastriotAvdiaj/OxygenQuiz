@@ -33,7 +33,7 @@ import { useEffect, useState } from "react";
 import { BsPatchQuestionFill } from "react-icons/bs";
 import { useNotifications } from "@/common/Notifications";
 import { useNavigate } from "react-router";
-import { ExistingQuestionCard } from "./components/quiz-question-card/existing-quiz-question-card";
+import { ExistingQuestionCard } from "./components/existing-quiz-question-card/existing-quiz-question-card";
 import { QuestionSettingsCard } from "./components/quiz-question-settings";
 import {
   Dialog,
