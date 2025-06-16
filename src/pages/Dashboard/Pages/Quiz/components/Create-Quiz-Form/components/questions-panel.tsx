@@ -10,7 +10,7 @@ import { useDisclosure } from "@/hooks/use-disclosure";
 // import { ScrollArea } from "@/components/ui/scroll-area";
 import { PlusCircle } from "lucide-react";
 import { useQuiz } from "../Quiz-questions-context";
-import { SmallQuestionCard } from "./small-question-card";
+import { SmallQuestionCard } from "./existing-small-question-card";
 import { LiftedButton } from "@/common/LiftedButton";
 import SelectQuestionComponent from "./question-select/question-select";
 import { AnyQuestion } from "@/types/ApiTypes";
