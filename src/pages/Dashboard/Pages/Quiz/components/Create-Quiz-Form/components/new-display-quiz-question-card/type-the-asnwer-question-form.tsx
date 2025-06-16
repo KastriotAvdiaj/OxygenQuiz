@@ -7,6 +7,7 @@ import { Input, Label } from "@/components/ui/form";
 import { Button, Switch } from "@/components/ui";
 import { Plus, Trash2 } from "lucide-react";
 import { getQuestionTypeStyles } from "../existing-display-quiz-question-card/display-multiple-choice-question-card/display-muiltiple-choice-question-card";
+import { QuestionType } from "@/types/ApiTypes";
 
 interface TypeTheAnswerFormCardProps {
   question: NewTypeTheAnswerQuestion;
@@ -83,6 +84,7 @@ export const TypeTheAnswerFormCard: React.FC<TypeTheAnswerFormCardProps> = ({
       onQuestionTextChange={setQuestionText}
       borderColor={styles.borderColor}
       backgroundColor={styles.backgroundColor}
+      questionType={QuestionType.TypeTheAnswer}
     >
       <div className="space-y-6  pt-4">
         {/* Main Answer */}

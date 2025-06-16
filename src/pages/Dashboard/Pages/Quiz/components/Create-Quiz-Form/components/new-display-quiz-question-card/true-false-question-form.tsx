@@ -5,6 +5,7 @@ import { useDebounce } from "@/hooks/use-debounce";
 import { BaseQuestionFormCard } from "./display-base-quiz-question-card";
 import { Label } from "@/components/ui/form";
 import { getQuestionTypeStyles } from "../existing-display-quiz-question-card/display-multiple-choice-question-card/display-muiltiple-choice-question-card";
+import { QuestionType } from "@/types/ApiTypes";
 
 interface TrueFalseFormCardProps {
   question: NewTrueFalseQuestion;
@@ -44,6 +45,7 @@ export const TrueFalseFormCard: React.FC<TrueFalseFormCardProps> = ({
       onQuestionTextChange={setQuestionText}
       borderColor={styles.borderColor}
       backgroundColor={styles.backgroundColor}
+      questionType={QuestionType.TrueFalse}
     >
       <div className="space-y-4 pt-4">
         <div className="flex justify-center">

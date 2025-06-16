@@ -27,7 +27,7 @@ export const getQuestionTypeStyles = (type: QuestionType) => {
     case QuestionType.TypeTheAnswer:
       return {
         borderColor: "border-orange-500/80",
-        backgroundColor: "bg-orange-300/10",
+        backgroundColor: "bg-orange-200/10",
         previewBorderColor: "border-orange-500",
       };
     default:

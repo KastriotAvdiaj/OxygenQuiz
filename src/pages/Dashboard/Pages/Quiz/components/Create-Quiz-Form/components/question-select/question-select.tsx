@@ -102,7 +102,7 @@ const SelectQuestionComponent: React.FC<SelectQuestionComponentProps> = ({
     // onQuestionsSelected(tempSelectedQuestions);
     // }
 
-    // handleClose();
+    handleClose();
   };
 
   const handleCancel = () => {

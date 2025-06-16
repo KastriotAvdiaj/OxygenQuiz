@@ -1,5 +1,5 @@
 import React from "react";
-import { Input } from "@/components/ui/form";
+import { Input, QuestionType } from "@/components/ui/form";
 import { TrueFalseQuestion } from "@/types/ApiTypes";
 import {
   BaseQuestionCard,
@@ -23,7 +23,7 @@ export const TrueFalseCard: React.FC<ExistingQuestionCardProps> = (props) => {
     >
       <Input
         variant="display"
-        questionType="true-false"
+        questionType={QuestionType.TrueFalse}
         value={question.text || ""}
         className="my-8 !text-[1.5rem] py-8"
       />

@@ -1,5 +1,6 @@
 import { Card, CardContent } from "@/components/ui";
 import { Input } from "@/components/ui/form";
+import { QuestionType } from "@/types/ApiTypes";
 
 interface BaseQuestionFormCardProps {
   questionText: string;
@@ -7,6 +8,7 @@ interface BaseQuestionFormCardProps {
   children: React.ReactNode;
   borderColor: string;
   backgroundColor?: string;
+  questionType?: QuestionType;
 }
 
 export const BaseQuestionFormCard: React.FC<BaseQuestionFormCardProps> = ({
@@ -15,6 +17,7 @@ export const BaseQuestionFormCard: React.FC<BaseQuestionFormCardProps> = ({
   children,
   borderColor,
   backgroundColor,
+  questionType,
 }) => {
   return (
     <Card className={`bg-background border ${borderColor} ${backgroundColor}`}>
@@ -22,7 +25,9 @@ export const BaseQuestionFormCard: React.FC<BaseQuestionFormCardProps> = ({
         <div className="space-y-2">
           <Input
             id="question-text"
-            variant="fullColor"
+            variant="quiz"
+            className="my-8 !text-[1.5rem] py-8"
+            questionType={questionType}
             placeholder="Enter your question here..."
             value={questionText}
             onChange={(e) => onQuestionTextChange(e.target.value)}

@@ -1,5 +1,5 @@
 import React from "react";
-import { Input } from "@/components/ui/form";
+import { Input, QuestionType } from "@/components/ui/form";
 import { TypeTheAnswerQuestion } from "@/types/ApiTypes";
 import {
   BaseQuestionCard,
@@ -25,7 +25,7 @@ export const TypeTheAnswerCard: React.FC<ExistingQuestionCardProps> = (
     >
       <Input
         variant="display"
-        questionType="type-answer"
+        questionType={QuestionType.TypeTheAnswer}
         value={question.text || ""}
         className="my-8 !text-[1.5rem] py-8"
       />
