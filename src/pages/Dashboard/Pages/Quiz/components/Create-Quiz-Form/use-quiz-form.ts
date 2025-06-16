@@ -1,4 +1,3 @@
-import { useMultipleChoiceQuestionData } from "../../../Question/api/Normal-Question/get-multiple-choice-questions";
 import { useQuestionCategoryData } from "../../../Question/Entities/Categories/api/get-question-categories";
 import { useQuestionDifficultyData } from "../../../Question/Entities/Difficulty/api/get-question-difficulties";
 // import { useCreateQuiz } from "../../api/create-quiz";
@@ -10,7 +9,7 @@ export const useQuizForm = () => {
   //   const { addNotification } = useNotifications();
   
   
-  const questionsQuery = useMultipleChoiceQuestionData({});
+  // const questionsQuery = useMultipleChoiceQuestionData({});
   const categoriesQuery = useQuestionCategoryData({});
   const difficultiesQuery = useQuestionDifficultyData({});
   const languagesQuery = useQuestionLanguageData({});
@@ -39,9 +38,9 @@ export const useQuizForm = () => {
     categories: categoriesQuery.data ?? [],
     difficulties: difficultiesQuery.data ?? [],
     languages: languagesQuery.data ?? [],
-    isLoading: questionsQuery.isLoading || categoriesQuery.isLoading || 
+    isLoading:  categoriesQuery.isLoading || 
                difficultiesQuery.isLoading || languagesQuery.isLoading,
-    error: questionsQuery.error || categoriesQuery.error || 
+    error:  categoriesQuery.error || 
            difficultiesQuery.error || languagesQuery.error
   };
 

@@ -24,6 +24,7 @@ interface QuestionTabContentProps {
   queryParams: QueryParams;
   onPageChange: (newPage: number) => void;
   page?: string;
+  isModalOpen: boolean;
 }
 
 export const QuestionTabContent = ({
@@ -31,26 +32,27 @@ export const QuestionTabContent = ({
   queryParams,
   onPageChange,
   page = "admin", // Default to "admin" if not provided
+  isModalOpen,
 }: QuestionTabContentProps) => {
   // Keep all queries active but only fetch when needed
   const mcqQuery = useMultipleChoiceQuestionData({
     params: queryParams,
     queryConfig: {
-      enabled: questionType === QuestionType.MultipleChoice,
+      enabled: isModalOpen && questionType === QuestionType.MultipleChoice,
     },
   });
 
   const trueFalseQuery = useTrueFalseQuestionData({
     params: queryParams,
     queryConfig: {
-      enabled: questionType === QuestionType.TrueFalse,
+      enabled: isModalOpen && questionType === QuestionType.TrueFalse,
     },
   });
 
   const typeAnswerQuery = useTypeTheAnswerQuestionData({
     params: queryParams,
     queryConfig: {
-      enabled: questionType === QuestionType.TypeTheAnswer,
+      enabled: isModalOpen && questionType === QuestionType.TypeTheAnswer,
     },
   });
 

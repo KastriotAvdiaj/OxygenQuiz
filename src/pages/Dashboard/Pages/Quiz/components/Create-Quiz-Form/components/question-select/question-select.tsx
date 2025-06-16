@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Plus } from "lucide-react";
-import { QuestionBase, QuestionType } from "@/types/ApiTypes";
+import { QuestionType } from "@/types/ApiTypes";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui";
 import { LiftedButton } from "@/common/LiftedButton";
@@ -15,7 +15,6 @@ import { useQuiz } from "../../Quiz-questions-context";
 import { useDisclosure } from "@/hooks/use-disclosure";
 
 interface SelectQuestionComponentProps {
-  onQuestionsSelected?: (questions: QuestionBase[]) => void;
   triggerButton?: React.ReactElement;
   maxSelections?: number;
   preSelectedQuestionIds?: number[];
@@ -24,7 +23,6 @@ interface SelectQuestionComponentProps {
 }
 
 const SelectQuestionComponent: React.FC<SelectQuestionComponentProps> = ({
-  onQuestionsSelected,
   maxSelections,
   title = "Select Questions from Pool",
   triggerButton,
@@ -99,12 +97,12 @@ const SelectQuestionComponent: React.FC<SelectQuestionComponentProps> = ({
     commitTempSelection();
 
     // Call the callback if provided
-    if (onQuestionsSelected) {
-      // You might need to pass the committed questions here
-      // onQuestionsSelected(tempSelectedQuestions);
-    }
+    // if (onQuestionsSelected) {
+    // You might need to pass the committed questions here
+    // onQuestionsSelected(tempSelectedQuestions);
+    // }
 
-    handleClose();
+    // handleClose();
   };
 
   const handleCancel = () => {
@@ -218,6 +216,7 @@ const SelectQuestionComponent: React.FC<SelectQuestionComponentProps> = ({
                     queryParams={queryParams}
                     onPageChange={handlePageChange}
                     page="user"
+                    isModalOpen={isOpen}
                   />
                 </TabsContent>
 
@@ -227,6 +226,7 @@ const SelectQuestionComponent: React.FC<SelectQuestionComponentProps> = ({
                     queryParams={queryParams}
                     onPageChange={handlePageChange}
                     page="user"
+                    isModalOpen={isOpen}
                   />
                 </TabsContent>
 
@@ -236,6 +236,7 @@ const SelectQuestionComponent: React.FC<SelectQuestionComponentProps> = ({
                     queryParams={queryParams}
                     onPageChange={handlePageChange}
                     page="user"
+                    isModalOpen={isOpen}
                   />
                 </TabsContent>
               </Tabs>
