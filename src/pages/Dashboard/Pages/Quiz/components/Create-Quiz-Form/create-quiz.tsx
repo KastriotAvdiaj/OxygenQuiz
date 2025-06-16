@@ -45,7 +45,7 @@ import {
 import { useDisclosure } from "@/hooks/use-disclosure";
 import { NewAnyQuestion, QuizQuestion } from "./types";
 import { DEFAULT_NEW_MULTIPLE_CHOICE } from "../../../Question/Components/Re-Usable-Components/constants";
-import { NewQuestionCard } from "./components/create-question/new-quiz-question-card";
+import { NewQuestionCard } from "./components/new-quiz-question-card/new-quiz-question-card";
 import { QuestionType } from "@/types/ApiTypes";
 import { useCreateMultipleChoiceQuestion } from "../../../Question/api/Normal-Question/create-multiple-choice-question";
 import { useCreateTrueFalseQuestion } from "../../../Question/api/True_False-Question/create-true_false-question";
@@ -568,7 +568,7 @@ const CreateQuizForm = () => {
             </Card>
 
             <div className="md:col-span-1">
-              <CreatedQuestionsPanel />
+              {/* <CreatedQuestionsPanel /> */}
             </div>
           </div>
         );

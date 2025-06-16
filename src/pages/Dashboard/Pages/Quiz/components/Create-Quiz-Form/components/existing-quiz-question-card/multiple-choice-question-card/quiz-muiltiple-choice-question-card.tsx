@@ -4,7 +4,7 @@ import { MultipleChoiceQuestion, QuestionType } from "@/types/ApiTypes";
 import {
   BaseQuestionCard,
   ExistingQuestionCardProps,
-} from "../quiz-base-question-card";
+} from "../base-quiz-question-card";
 import { QuestionImagePreview } from "../quiz-question-image-preview";
 import { MultipleChoiceAnswers } from "./multiple-choice-answers";
 import { QuestionMetadata } from "../quiz-question-metadata";

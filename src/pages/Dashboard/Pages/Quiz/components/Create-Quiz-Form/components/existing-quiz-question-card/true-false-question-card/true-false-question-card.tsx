@@ -4,7 +4,7 @@ import { TrueFalseQuestion } from "@/types/ApiTypes";
 import {
   BaseQuestionCard,
   ExistingQuestionCardProps,
-} from "../quiz-base-question-card";
+} from "../base-quiz-question-card";
 import { getQuestionTypeStyles } from "../multiple-choice-question-card/quiz-muiltiple-choice-question-card";
 import { QuestionImagePreview } from "../quiz-question-image-preview";
 import { TrueFalseAnswers } from "./true-false-answer";

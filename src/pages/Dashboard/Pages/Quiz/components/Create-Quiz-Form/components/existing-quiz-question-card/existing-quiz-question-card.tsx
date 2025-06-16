@@ -3,7 +3,7 @@ import { QuestionType } from "@/types/ApiTypes";
 import { MultipleChoiceCard } from "./multiple-choice-question-card/quiz-muiltiple-choice-question-card";
 import { TrueFalseCard } from "./true-false-question-card/true-false-question-card";
 import { TypeTheAnswerCard } from "./type-the-answer-question-card/type-the-asnwer-question-card";
-import { ExistingQuestionCardProps } from "./quiz-base-question-card";
+import { ExistingQuestionCardProps } from "./base-quiz-question-card";
 
 export const ExistingQuestionCard: React.FC<ExistingQuestionCardProps> = (
   props
