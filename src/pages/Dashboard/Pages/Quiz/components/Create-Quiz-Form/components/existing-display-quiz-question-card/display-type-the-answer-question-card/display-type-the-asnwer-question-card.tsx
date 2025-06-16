@@ -4,12 +4,12 @@ import { TypeTheAnswerQuestion } from "@/types/ApiTypes";
 import {
   BaseQuestionCard,
   ExistingQuestionCardProps,
-} from "../base-quiz-question-card";
-import { getQuestionTypeStyles } from "../multiple-choice-question-card/quiz-muiltiple-choice-question-card";
-import { QuestionImagePreview } from "../quiz-question-image-preview";
+} from "../display-base-quiz-question-card";
+import { getQuestionTypeStyles } from "../display-multiple-choice-question-card/display-muiltiple-choice-question-card";
+import { QuestionImagePreview } from "../display-quiz-question-image-preview";
 import { TypeTheAnswerDisplay } from "./type-the-asnwer-display";
-import { QuestionMetadata } from "../quiz-question-metadata";
-import { QuestionFooter } from "../quiz-question-card-footer";
+import { QuestionMetadata } from "../display-quiz-question-metadata";
+import { QuestionFooter } from "../display-quiz-question-card-footer";
 
 export const TypeTheAnswerCard: React.FC<ExistingQuestionCardProps> = (
   props

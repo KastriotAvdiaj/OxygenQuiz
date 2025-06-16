@@ -4,7 +4,7 @@ import { useQuiz } from "../../Quiz-questions-context";
 import { useDebounce } from "@/hooks/use-debounce";
 import { BaseQuestionFormCard } from "./base-new-quiz-question-card";
 import { Label } from "@/components/ui/form";
-import { getQuestionTypeStyles } from "../existing-quiz-question-card/multiple-choice-question-card/quiz-muiltiple-choice-question-card";
+import { getQuestionTypeStyles } from "../existing-display-quiz-question-card/display-multiple-choice-question-card/display-muiltiple-choice-question-card";
 
 interface TrueFalseFormCardProps {
   question: NewTrueFalseQuestion;

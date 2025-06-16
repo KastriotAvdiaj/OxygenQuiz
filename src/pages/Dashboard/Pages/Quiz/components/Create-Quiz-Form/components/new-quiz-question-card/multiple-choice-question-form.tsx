@@ -6,7 +6,7 @@ import { Input, Label } from "@/components/ui/form";
 import { Button, Switch } from "@/components/ui";
 import { Plus, Trash2 } from "lucide-react";
 import { BaseQuestionFormCard } from "./base-new-quiz-question-card";
-import { getQuestionTypeStyles } from "../existing-quiz-question-card/multiple-choice-question-card/quiz-muiltiple-choice-question-card";
+import { getQuestionTypeStyles } from "../existing-display-quiz-question-card/display-multiple-choice-question-card/display-muiltiple-choice-question-card";
 
 interface MultipleChoiceFormCardProps {
   question: NewMultipleChoiceQuestion;

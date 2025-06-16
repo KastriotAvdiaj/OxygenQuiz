@@ -1,9 +1,9 @@
 import React from "react";
 import { QuestionType } from "@/types/ApiTypes";
-import { MultipleChoiceCard } from "./multiple-choice-question-card/quiz-muiltiple-choice-question-card";
-import { TrueFalseCard } from "./true-false-question-card/true-false-question-card";
-import { TypeTheAnswerCard } from "./type-the-answer-question-card/type-the-asnwer-question-card";
-import { ExistingQuestionCardProps } from "./base-quiz-question-card";
+import { MultipleChoiceCard } from "./display-multiple-choice-question-card/display-muiltiple-choice-question-card";
+import { TrueFalseCard } from "./display-true-false-question-card/display-true-false-question-card";
+import { TypeTheAnswerCard } from "./display-type-the-answer-question-card/display-type-the-asnwer-question-card";
+import { ExistingQuestionCardProps } from "./display-base-quiz-question-card";
 
 export const ExistingQuestionCard: React.FC<ExistingQuestionCardProps> = (
   props
