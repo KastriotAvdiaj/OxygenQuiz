@@ -23,7 +23,6 @@ import SelectQuestionComponent from "./components/question-select/question-selec
 import { useQuiz } from "./Quiz-questions-context";
 import { AnyQuestion } from "@/types/ApiTypes";
 import { LiftedButton } from "@/common/LiftedButton";
-// import { CreatedQuestionsPanel } from "./components/questions-panel";
 import { CategorySelect } from "../../../Question/Entities/Categories/Components/select-question-category";
 import { createQuizInputSchema, useCreateQuiz } from "../../api/create-quiz";
 import { DifficultySelect } from "../../../Question/Entities/Difficulty/Components/select-question-difficulty";
@@ -47,10 +46,6 @@ import { useDisclosure } from "@/hooks/use-disclosure";
 import { NewAnyQuestion, QuizQuestion } from "./types";
 import { DEFAULT_NEW_MULTIPLE_CHOICE } from "../../../Question/Components/Re-Usable-Components/constants";
 import { NewQuestionCard } from "./components/create-question/new-quiz-question-card";
-
-// Import the question creation hooks
-
-// Import the QuestionType enum
 import { QuestionType } from "@/types/ApiTypes";
 import { useCreateMultipleChoiceQuestion } from "../../../Question/api/Normal-Question/create-multiple-choice-question";
 import { useCreateTrueFalseQuestion } from "../../../Question/api/True_False-Question/create-true_false-question";
@@ -79,16 +74,16 @@ const CreateQuizForm = () => {
   const createTypeTheAnswerMutation = useCreateTypeTheAnswerQuestion();
 
   const [isCreatingQuestions, setIsCreatingQuestions] = useState(false);
+  const [activeTab, setActiveTab] = useState("quiz");
 
-  function isAnyQuestion(q: any): q is AnyQuestion {
-    return (
-      q && typeof q.id === "number" && "difficulty" in q && "category" in q
-    );
-  }
+  // Type guards
+  const isAnyQuestion = (q: any): q is AnyQuestion => {
+    return q && typeof q.id === "number" && "difficulty" in q && "category" in q;
+  };
 
-  function isNewAnyQuestion(q: any): q is NewAnyQuestion {
+  const isNewAnyQuestion = (q: any): q is NewAnyQuestion => {
     return q && !("difficulty" in q) && !("category" in q);
-  }
+  };
 
   const createNewMultipleChoiceQuestion = (id: number) => ({
     ...DEFAULT_NEW_MULTIPLE_CHOICE,
@@ -99,16 +94,12 @@ const CreateQuizForm = () => {
   });
 
   // Function to create a new question based on its type
-  const createNewQuestion = async (
-    question: NewAnyQuestion
-  ): Promise<number> => {
+  const createNewQuestion = async (question: NewAnyQuestion): Promise<number> => {
     switch (question.type) {
       case QuestionType.MultipleChoice:
         const mcResult = await createMultipleChoiceMutation.mutateAsync({
           data: question,
         });
-        // console.log(mcResult.data.id);
-        console.log(mcResult.id);
         return mcResult.id;
 
       case QuestionType.TrueFalse:
@@ -136,17 +127,74 @@ const CreateQuizForm = () => {
         navigate("/dashboard/quizzes");
       },
       onError: (error) => {
+        console.error("Quiz creation error:", error);
+        // Single error notification point
         addNotification({
           type: "error",
           title: "Error",
           message: "Failed to create quiz. Please try again.",
         });
-        console.error("Quiz creation error:", error);
       },
     },
   });
 
-  const [activeTab, setActiveTab] = useState("quiz");
+  const handleQuizSubmit = async (values: any) => {
+    try {
+      setIsCreatingQuestions(true);
+
+      const questionsWithSettings = getQuestionsWithSettings();
+
+      if (questionsWithSettings.length === 0) {
+        addNotification({
+          type: "error",
+          title: "No questions selected",
+          message: "Please add at least one question to your quiz.",
+        });
+        return;
+      }
+
+      const processedQuestions = await Promise.all(
+        questionsWithSettings.map(async ({ question, settings }, index) => {
+          let questionId: number;
+
+          // If question has negative ID, it's a new question that needs to be created
+          if (question.id < 0) {
+            questionId = await createNewQuestion(question as NewAnyQuestion);
+          } else {
+            // Existing question, use its ID
+            questionId = question.id;
+          }
+
+          return {
+            questionId,
+            timeLimitInSeconds: settings.timeLimitInSeconds,
+            pointSystem: settings.pointSystem,
+            orderInQuiz: settings.orderInQuiz || index,
+          };
+        })
+      );
+
+      // Create the quiz with all question IDs
+      await createQuizMutation.mutateAsync({
+        data: {
+          ...values,
+          questions: processedQuestions,
+        },
+      });
+    } catch (error) {
+      console.error("Error in quiz creation process:", error);
+      // Single error notification point - only show if it's not already handled by mutation
+      if (!createQuizMutation.isError) {
+        addNotification({
+          type: "error",
+          title: "Error",
+          message: "Failed to create quiz. Please try again.",
+        });
+      }
+    } finally {
+      setIsCreatingQuestions(false);
+    }
+  };
 
   if (queryData.isLoading) {
     return (
@@ -170,108 +218,27 @@ const CreateQuizForm = () => {
     <Form
       id="create-quiz"
       className="mt-0 w-full"
-      onSubmit={async (values) => {
-        try {
-          setIsCreatingQuestions(true);
-
-          const questionsWithSettings = getQuestionsWithSettings();
-          console.log(questionsWithSettings);
-
-          if (questionsWithSettings.length === 0) {
-            console.log(questionsWithSettings.length);
-
-            addNotification({
-              type: "error",
-              title: "No questions selected",
-            });
-            return;
-          }
-
-          const processedQuestions = await Promise.all(
-            questionsWithSettings.map(async ({ question, settings }, index) => {
-              let questionId: number;
-              console.log(question.id);
-              // If question has negative ID, it's a new question that needs to be created
-              if (question.id < 0) {
-                try {
-                  questionId = await createNewQuestion(
-                    question as NewAnyQuestion
-                  );
-                  console.log(questionId);
-                } catch (error) {
-                  console.error(`Error creating new question:`, error);
-                  addNotification({
-                    type: "error",
-                    title: "Success",
-                    message: "There was an error creating one of the questions",
-                  });
-                  throw new Error(
-                    `Failed to create new question: ${question.text?.substring(
-                      0,
-                      50
-                    )}...`
-                  );
-                }
-              } else {
-                // Existing question, use its ID
-                questionId = question.id;
-              }
-
-              return {
-                questionId,
-                timeLimitInSeconds: settings.timeLimitInSeconds,
-                pointSystem: settings.pointSystem,
-                orderInQuiz: settings.orderInQuiz || index,
-              };
-            })
-          );
-          console.log(processedQuestions);
-          // Now create the quiz with all question IDs
-          await createQuizMutation.mutateAsync({
-            data: {
-              ...values,
-              questions: processedQuestions,
-            },
-          });
-        } catch (error) {
-          console.error("Error in quiz creation process:", error);
-          addNotification({
-            type: "error",
-            title: "Error",
-            message:
-              error instanceof Error
-                ? error.message
-                : "Failed to create quiz. Please try again.",
-          });
-        } finally {
-          setIsCreatingQuestions(false);
-        }
-      }}
+      onSubmit={handleQuizSubmit}
       schema={createQuizInputSchema}
       options={{ mode: "onSubmit" }}
     >
       {({ register, formState, setValue, watch, clearErrors }) => {
         useEffect(() => {
-          const questions = addedQuestions.map(
-            (q: QuizQuestion, index: number) => ({
-              questionId: q.id,
-              timeLimitInSeconds: 10,
-              pointSystem: "Standard",
-              orderInQuiz: index,
-            })
-          );
+          const questions = addedQuestions.map((q: QuizQuestion, index: number) => ({
+            questionId: q.id,
+            timeLimitInSeconds: 10,
+            pointSystem: "Standard",
+            orderInQuiz: index,
+          }));
           setValue("questions", questions);
-        }, [addedQuestions]);
+        }, [addedQuestions, setValue]);
 
         const { errors } = formState;
-        const isSubmitting =
-          createQuizMutation.isPending || isCreatingQuestions;
-
-        console.log(errors);
-        console.log(addedQuestions);
+        const isSubmitting = createQuizMutation.isPending || isCreatingQuestions;
 
         return (
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4 p-4 items-start">
+            {/* Quiz Details Sidebar */}
             <Card className="md:text-xs lg:text-sm h-fit md:col-span-1 bg-background border-2 border-primary/30">
               <Tabs value={activeTab} onValueChange={setActiveTab}>
                 <CardHeader className="w-full relative bg-primary/10 text-center border-b border-primary/30 px-2 py-4">
@@ -279,7 +246,7 @@ const CreateQuizForm = () => {
                     <TabsTrigger value="quiz">
                       <p className="flex gap-2 px-4 items-center">
                         <Brain
-                          className={`h-5 w-5  ${
+                          className={`h-5 w-5 ${
                             activeTab === "quiz" ? "text-white" : "text-primary"
                           }`}
                         />
@@ -289,7 +256,7 @@ const CreateQuizForm = () => {
                     <TabsTrigger value="questions">
                       <p className="flex gap-2 px-4 items-center">
                         <BsPatchQuestionFill
-                          className={`h-5 w-5  ${
+                          className={`h-5 w-5 ${
                             activeTab === "questions"
                               ? "text-white"
                               : "text-primary"
@@ -300,8 +267,9 @@ const CreateQuizForm = () => {
                     </TabsTrigger>
                   </TabsList>
                 </CardHeader>
+                
                 <TabsContent value="questions" className="flex items-center">
-                  <section className=" flex flex-col gap-4 p-4">
+                  <section className="flex flex-col gap-4 p-4">
                     {displayQuestion && (
                       <QuestionSettingsCard
                         question={displayQuestion}
@@ -310,6 +278,7 @@ const CreateQuizForm = () => {
                     )}
                   </section>
                 </TabsContent>
+                
                 <TabsContent value="quiz">
                   <CardContent className="bg-background space-y-4">
                     {/* Basic Information */}
@@ -332,10 +301,7 @@ const CreateQuizForm = () => {
                       </div>
 
                       <div>
-                        <Label
-                          htmlFor="description"
-                          className="text-sm font-medium"
-                        >
+                        <Label htmlFor="description" className="text-sm font-medium">
                           Description
                         </Label>
                         <Textarea
@@ -351,48 +317,40 @@ const CreateQuizForm = () => {
 
                     <Separator className="bg-primary/20" />
 
+                    {/* Dropdowns */}
                     <div className="space-y-3">
-                      <div>
-                        <CategorySelect
-                          categories={queryData.categories}
-                          value={watch("categoryId")?.toString() || ""}
-                          onChange={(selectedValue: string) =>
-                            setValue("categoryId", parseInt(selectedValue, 10))
-                          }
-                          includeAllOption={false}
-                          error={formState.errors["categoryId"]?.message}
-                          clearErrors={() => clearErrors("categoryId")}
-                        />
-                      </div>
+                      <CategorySelect
+                        categories={queryData.categories}
+                        value={watch("categoryId")?.toString() || ""}
+                        onChange={(selectedValue: string) =>
+                          setValue("categoryId", parseInt(selectedValue, 10))
+                        }
+                        includeAllOption={false}
+                        error={formState.errors["categoryId"]?.message}
+                        clearErrors={() => clearErrors("categoryId")}
+                      />
 
-                      <div>
-                        <DifficultySelect
-                          difficulties={queryData.difficulties}
-                          value={watch("difficultyId")?.toString() || ""}
-                          onChange={(selectedValue: string) =>
-                            setValue(
-                              "difficultyId",
-                              parseInt(selectedValue, 10)
-                            )
-                          }
-                          includeAllOption={false}
-                          error={formState.errors["difficultyId"]?.message}
-                          clearErrors={() => clearErrors("difficultyId")}
-                        />
-                      </div>
+                      <DifficultySelect
+                        difficulties={queryData.difficulties}
+                        value={watch("difficultyId")?.toString() || ""}
+                        onChange={(selectedValue: string) =>
+                          setValue("difficultyId", parseInt(selectedValue, 10))
+                        }
+                        includeAllOption={false}
+                        error={formState.errors["difficultyId"]?.message}
+                        clearErrors={() => clearErrors("difficultyId")}
+                      />
 
-                      <div>
-                        <LanguageSelect
-                          languages={queryData.languages}
-                          value={watch("languageId")?.toString() || ""}
-                          includeAllOption={false}
-                          onChange={(selectedValue: string) =>
-                            setValue("languageId", parseInt(selectedValue, 10))
-                          }
-                          error={formState.errors["languageId"]?.message}
-                          clearErrors={() => clearErrors("languageId")}
-                        />
-                      </div>
+                      <LanguageSelect
+                        languages={queryData.languages}
+                        value={watch("languageId")?.toString() || ""}
+                        includeAllOption={false}
+                        onChange={(selectedValue: string) =>
+                          setValue("languageId", parseInt(selectedValue, 10))
+                        }
+                        error={formState.errors["languageId"]?.message}
+                        clearErrors={() => clearErrors("languageId")}
+                      />
                     </div>
 
                     <Separator className="bg-primary/20" />
@@ -411,9 +369,7 @@ const CreateQuizForm = () => {
                         </Label>
                         <Select
                           value={watch("visibility") || ""}
-                          onValueChange={(value) =>
-                            setValue("visibility", value)
-                          }
+                          onValueChange={(value) => setValue("visibility", value)}
                         >
                           <SelectTrigger className="w-full">
                             <SelectValue placeholder="Select visibility..." />
@@ -430,9 +386,7 @@ const CreateQuizForm = () => {
 
                     {/* Toggle Options */}
                     <div className="space-y-3">
-                      <h4 className="text-sm font-semibold text-primary">
-                        Options
-                      </h4>
+                      <h4 className="text-sm font-semibold text-primary">Options</h4>
 
                       <div className="flex items-center justify-between">
                         <Label
@@ -489,6 +443,7 @@ const CreateQuizForm = () => {
               </Tabs>
             </Card>
 
+            {/* Main Quiz Creator Area */}
             <Card className="bg-background justify-center border-2 border-primary/30 rounded-xl shadow-lg flex flex-col items-center w-full overflow-hidden md:col-span-3">
               <CardHeader className="w-full relative bg-primary/10 p-4 text-center border-b border-primary/30">
                 <h2 className="text-2xl font-bold flex items-center justify-center gap-2">
@@ -499,6 +454,7 @@ const CreateQuizForm = () => {
                 <p className="text-muted-foreground">
                   Craft your perfect quiz challenge!
                 </p>
+                
                 <section className="flex absolute top-0 right-0 justify-center gap-4 p-4 rounded-lg">
                   <SelectQuestionComponent />
                   <Dialog
@@ -524,9 +480,7 @@ const CreateQuizForm = () => {
                             className="flex items-center gap-2"
                             onClick={() => {
                               const tempId = -Date.now();
-                              // Use the helper function to create a properly cloned question
-                              const newQuestion =
-                                createNewMultipleChoiceQuestion(tempId);
+                              const newQuestion = createNewMultipleChoiceQuestion(tempId);
                               addQuestionToQuiz(newQuestion);
                               closeAddQuestionDialog();
                             }}
@@ -573,7 +527,9 @@ const CreateQuizForm = () => {
                     />
                   </div>
                 )}
+                
                 <Separator className="my-6 bg-primary/20" />
+                
                 <LiftedButton
                   type="submit"
                   disabled={isSubmitting}
@@ -583,9 +539,7 @@ const CreateQuizForm = () => {
                   <div className="flex items-center justify-center">
                     <Spinner
                       size="sm"
-                      className={`absolute ${
-                        isSubmitting ? "visible" : "invisible"
-                      }`}
+                      className={`absolute ${isSubmitting ? "visible" : "invisible"}`}
                     />
                     <span className={isSubmitting ? "invisible" : "visible"}>
                       {isCreatingQuestions ? "Creating Questions..." : "Finish"}
@@ -596,7 +550,7 @@ const CreateQuizForm = () => {
             </Card>
 
             <div className="md:col-span-1">
-              {/* <CreatedQuestionsPanel /> */}
+              {/* Future: CreatedQuestionsPanel can go here */}
             </div>
           </div>
         );

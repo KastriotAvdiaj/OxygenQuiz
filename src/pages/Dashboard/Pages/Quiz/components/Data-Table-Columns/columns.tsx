@@ -75,7 +75,7 @@ export const quizColumns: ColumnDef<QuizSummaryDTO>[] = [
     },
   },
   {
-    accessorKey: "numberOfQuestions",
+    accessorKey: "questionCount",
     header: "Questions",
   },
   {
