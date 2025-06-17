@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
-import { api } from "@/lib/Api-client";
+import { apiService } from "@/lib/Api-client";
 import { MutationConfig } from "@/lib/React-query";
 import { TypeTheAnswerQuestion } from "@/types/ApiTypes";
 import { getTypeTheAnswerQuestionsQueryOptions } from "./get-type-the-answer-questions";
@@ -49,7 +49,7 @@ export type CreateTypeTheAnswerQuestionInput = z.infer<typeof createTypeTheAnswe
 export const createTypeTheAnswerQuestion = ({ data }: { data: CreateTypeTheAnswerQuestionInput }): Promise<TypeTheAnswerQuestion> => {
   return (
     console.log("data", data),
-    api.post('/questions/typeTheAnswer', transformFormData(data)));
+    apiService.post('/questions/typeTheAnswer', transformFormData(data)));
 };
 
 type UseCreateTypeTheAnswerQuestionOptions = {

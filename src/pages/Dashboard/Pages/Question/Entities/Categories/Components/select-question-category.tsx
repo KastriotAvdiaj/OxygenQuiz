@@ -41,6 +41,8 @@ export const CategorySelect: React.FC<CategorySelectProps> = (props) => {
     mode = "form",
   } = props;
 
+  const variant = error ? "incorrect" : "quiz";
+
   if (mode === "filter") {
     const { value, onChange } = props as FilterModeProps;
 
@@ -58,27 +60,30 @@ export const CategorySelect: React.FC<CategorySelectProps> = (props) => {
             clearErrors?.();
           }}
         >
-          <SelectTrigger
-            variant="quiz"
-            className={`min-w-[200px] ${error ? "border-red-500" : ""}`}
-          >
+          <SelectTrigger variant={variant} className="min-w-[200px]">
             <SelectValue
               className="text-foreground"
               placeholder="All Categories"
             />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent variant={variant}>
             {includeAllOption && (
-              <SelectItem value="all">All Categories</SelectItem>
+              <SelectItem variant={variant} value="all">
+                All Categories
+              </SelectItem>
             )}
             {categories.map((category) => (
-              <SelectItem key={category.id} value={category.id.toString()}>
+              <SelectItem
+                variant={variant}
+                key={category.id}
+                value={category.id.toString()}
+              >
                 {category.name}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
-        {error && <p className="text-sm text-red-500">{error}</p>}
+        {error && <p className="text-sm text-red-500 mt-1">{error}</p>}
       </div>
     );
   }
@@ -101,10 +106,7 @@ export const CategorySelect: React.FC<CategorySelectProps> = (props) => {
           clearErrors?.();
         }}
       >
-        <SelectTrigger
-          variant="quiz"
-          className={`min-w-[200px] ${error ? "border-red-500" : ""}`}
-        >
+        <SelectTrigger variant={variant} className="min-w-[200px]">
           <SelectValue
             className="text-foreground"
             placeholder={
@@ -112,18 +114,24 @@ export const CategorySelect: React.FC<CategorySelectProps> = (props) => {
             }
           />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent variant={variant}>
           {includeAllOption && (
-            <SelectItem value="all">All Categories</SelectItem>
+            <SelectItem variant={variant} value="all">
+              All Categories
+            </SelectItem>
           )}
           {categories.map((category) => (
-            <SelectItem key={category.id} value={category.id.toString()}>
+            <SelectItem
+              variant={variant}
+              key={category.id}
+              value={category.id.toString()}
+            >
               {category.name}
             </SelectItem>
           ))}
         </SelectContent>
       </Select>
-      {error && <p className="text-sm text-red-500">{error}</p>}
+      {error && <p className="text-sm text-red-500 mt-1">{error}</p>}
     </div>
   );
 };

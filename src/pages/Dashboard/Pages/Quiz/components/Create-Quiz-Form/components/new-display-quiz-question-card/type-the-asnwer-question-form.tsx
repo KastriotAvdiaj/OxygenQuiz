@@ -5,9 +5,15 @@ import { useDebounce } from "@/hooks/use-debounce";
 import { BaseQuestionFormCard } from "./display-base-quiz-question-card";
 import { Input, Label } from "@/components/ui/form";
 import { Button, Switch } from "@/components/ui";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import { getQuestionTypeStyles } from "../existing-display-quiz-question-card/display-multiple-choice-question-card/display-muiltiple-choice-question-card";
 import { QuestionType } from "@/types/ApiTypes";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 interface TypeTheAnswerFormCardProps {
   question: NewTypeTheAnswerQuestion;
@@ -90,7 +96,7 @@ export const TypeTheAnswerFormCard: React.FC<TypeTheAnswerFormCardProps> = ({
         {/* Main Answer */}
         <div className="w-full flex flex-col items-center justify-center">
           <Label htmlFor="main-answer" className="text-sm font-medium">
-            Main Answer
+            Correct Answer
           </Label>
           <Input
             id="main-answer"
@@ -102,70 +108,84 @@ export const TypeTheAnswerFormCard: React.FC<TypeTheAnswerFormCardProps> = ({
           />
         </div>
 
-        {/* Settings */}
-        <div className="grid grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="case-sensitive" className="text-sm">
-              Case Sensitive
-            </Label>
-            <Switch
-              id="case-sensitive"
-              checked={isCaseSensitive}
-              onCheckedChange={setIsCaseSensitive}
-            />
-          </div>
-          <div className="flex items-center justify-between">
-            <Label htmlFor="partial-match" className="text-sm">
-              Allow Partial Match
-            </Label>
-            <Switch
-              id="partial-match"
-              checked={allowPartialMatch}
-              onCheckedChange={setAllowPartialMatch}
-            />
-          </div>
-        </div>
-
-        {/* Acceptable Answers */}
-        <div className="space-y-3">
-          <Label className="text-sm font-medium">
-            Additional Acceptable Answers (Optional)
-          </Label>
-          <div className="space-y-2">
-            {acceptableAnswers.map((answer, index) => (
-              <div key={index} className="flex items-center gap-2">
-                <Input
-                  placeholder={`Alternative answer ${index + 1}...`}
-                  value={answer.value}
-                  onChange={(e) =>
-                    handleAcceptableAnswerChange(index, e.target.value)
-                  }
-                  className="flex-1"
-                />
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => handleRemoveAcceptableAnswer(index)}
-                  className="h-10 w-10 text-destructive hover:bg-destructive hover:text-destructive-foreground"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+        <Accordion type="single" collapsible className="w-full">
+          <AccordionItem value="details" className="border-b-0">
+            <AccordionTrigger className="py-2 text-sm font-medium flex justify-between hover:no-underline underline">
+              <span className="text-sm font-medium">Extra Details</span>
+            </AccordionTrigger>
+            <AccordionContent className="space-y-4 p-4">
+              <div className="grid grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg">
+                <div className="flex flex-col items-center justify-between gap-2">
+                  <Label htmlFor="case-sensitive" className="text-sm">
+                    Case Sensitive
+                  </Label>
+                  <Switch
+                    type="button"
+                    id="case-sensitive"
+                    checked={isCaseSensitive}
+                    onCheckedChange={setIsCaseSensitive}
+                  />
+                </div>
+                <div className="flex flex-col items-center justify-between gap-2">
+                  <Label htmlFor="partial-match" className="text-sm">
+                    Allow Partial Match
+                  </Label>
+                  <Switch
+                    type="button"
+                    id="partial-match"
+                    checked={allowPartialMatch}
+                    onCheckedChange={setAllowPartialMatch}
+                  />
+                </div>
               </div>
-            ))}
-          </div>
-          <div className="flex justify-center">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleAddAcceptableAnswer}
-              disabled={acceptableAnswers.length >= 5}
-              className="border-dashed bg-primary/80 hover:bg-primary/95 text-white"
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Add Alternative Answer ({acceptableAnswers.length}/5)
-            </Button>
-          </div>
-        </div>
+
+              {/* Acceptable Answers */}
+              <div
+                className={`space-y-3 w-full flex flex-col items-center gap-4 border p-4 rounded-md border-dashed ${styles.borderColor}`}
+              >
+                <Label className="text-sm font-medium">
+                  Additional Acceptable Answers (Optional)
+                </Label>
+                <div className="space-y-2">
+                  {acceptableAnswers.map((answer, index) => (
+                    <div key={index} className="relative w-full">
+                      <Input
+                        variant="quiz"
+                        placeholder={`Alternative answer ${index + 1}...`}
+                        value={answer.value}
+                        onChange={(e) =>
+                          handleAcceptableAnswerChange(index, e.target.value)
+                        }
+                        className="flex-1"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => handleRemoveAcceptableAnswer(index)}
+                        className="absolute top-0 right-0 h-4 w-4 p-0 text-white bg-red-400 hover:bg-destructive hover:text-destructive-foreground rounded-md"
+                      >
+                        <X className="h-2 w-2" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex justify-center">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleAddAcceptableAnswer}
+                    disabled={acceptableAnswers.length >= 5}
+                    className={`border-dashed ${styles.backgroundColor} ${styles.borderColor} `}
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add Alternative Answer ({acceptableAnswers.length}/5)
+                  </Button>
+                </div>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
       </div>
     </BaseQuestionFormCard>
   );

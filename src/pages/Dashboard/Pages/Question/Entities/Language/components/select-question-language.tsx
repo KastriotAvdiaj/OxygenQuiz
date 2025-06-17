@@ -41,6 +41,8 @@ export const LanguageSelect: React.FC<LanguageSelectProps> = (props) => {
     mode = "form",
   } = props;
 
+  const variant = error ? "incorrect" : "quiz";
+
   if (mode === "filter") {
     const { value, onChange } = props as FilterModeProps;
 
@@ -59,26 +61,30 @@ export const LanguageSelect: React.FC<LanguageSelectProps> = (props) => {
           }}
         >
           <SelectTrigger
-            variant="quiz"
-            className={`min-w-[200px] ${error ? "border-red-500" : ""}`}
+            variant={variant}
+            className="min-w-[200px]"
           >
             <SelectValue
               className="text-foreground"
               placeholder="All Languages"
             />
           </SelectTrigger>
-          <SelectContent className="min-w-[200px]">
+          <SelectContent variant={variant} className="min-w-[200px]">
             {includeAllOption && (
-              <SelectItem value="all">All Languages</SelectItem>
+              <SelectItem variant={variant} value="all">All Languages</SelectItem>
             )}
             {languages.map((language) => (
-              <SelectItem key={language.id} value={language.id.toString()}>
+              <SelectItem 
+                key={language.id} 
+                variant={variant} 
+                value={language.id.toString()}
+              >
                 {language.language}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
-        {error && <p className="text-sm text-red-500">{error}</p>}
+        {error && <p className="text-sm text-red-500 mt-1">{error}</p>}
       </div>
     );
   }
@@ -102,23 +108,27 @@ export const LanguageSelect: React.FC<LanguageSelectProps> = (props) => {
         }}
       >
         <SelectTrigger
-          variant="quiz"
-          className={`min-w-[200px] ${error ? "border-red-500" : ""}`}
+          variant={variant}
+          className="min-w-[200px]"
         >
           <SelectValue placeholder="--Select Language--" />
         </SelectTrigger>
-        <SelectContent className="min-w-[200px]">
+        <SelectContent variant={variant} className="min-w-[200px]">
           {includeAllOption && (
-            <SelectItem value="all">All Languages</SelectItem>
+            <SelectItem variant={variant} value="all">All Languages</SelectItem>
           )}
           {languages.map((language) => (
-            <SelectItem key={language.id} value={language.id.toString()}>
+            <SelectItem 
+              key={language.id} 
+              variant={variant} 
+              value={language.id.toString()}
+            >
               {language.language}
             </SelectItem>
           ))}
         </SelectContent>
       </Select>
-      {error && <p className="text-sm text-red-500">{error}</p>}
+      {error && <p className="text-sm text-red-500 mt-1">{error}</p>}
     </div>
   );
 };

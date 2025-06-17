@@ -56,18 +56,18 @@ export const TrueFalseFormCard: React.FC<TrueFalseFormCardProps> = ({
         </div>
         <div className="flex items-center justify-center rounded-sm">
           {/* TRUE OPTION */}
-          <div className="flex flex-col items-center w-full bg-primary/80 dark:bg-primary/80 rounded-md p-2">
+          <div className="flex flex-col items-center w-full">
             <button
               id="true-option"
               type="button"
               onClick={() => setCorrectAnswer(true)}
-              className={`w-6 h-6 rounded-full flex items-center justify-center border-2 transition-all ${
+              className={`w-10 h-10 rounded-full flex items-center justify-center border-2 border-primary transition-all ${
                 correctAnswer === true
                   ? "bg-green-500 border-green-500 text-white"
                   : "bg-background border-border hover:border-primary/50"
               }`}
             >
-              {correctAnswer === true && <Check className="h-4 w-4" />}
+              {correctAnswer === true && <Check className="h-6 w-6" />}
             </button>
             <label htmlFor="true-option" className="text-md font-medium mt-2">
               True
@@ -75,18 +75,18 @@ export const TrueFalseFormCard: React.FC<TrueFalseFormCardProps> = ({
           </div>
 
           {/* FALSE OPTION */}
-          <div className="flex flex-col items-center w-full bg-red-500/80 dark:bg-red-500/80 rounded-sm p-2">
+          <div className="flex flex-col items-center w-full">
             <button
               id="false-option"
               type="button"
               onClick={() => setCorrectAnswer(false)}
-              className={`w-6 h-6 rounded-full flex items-center justify-center border-2 transition-all ${
+              className={`w-10 h-10 rounded-full flex items-center justify-center border-2 border-red-500 transition-all ${
                 correctAnswer === false
                   ? "bg-green-500 border-green-500 text-white"
                   : "bg-background border-border hover:border-primary/50"
               }`}
             >
-              {correctAnswer === false && <Check className="h-4 w-4" />}
+              {correctAnswer === false && <Check className="h-6 w-6" />}
             </button>
             <label htmlFor="false-option" className="text-md font-medium mt-2">
               False

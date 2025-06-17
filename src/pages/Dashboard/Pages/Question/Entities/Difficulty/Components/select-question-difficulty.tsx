@@ -1,3 +1,4 @@
+// DifficultySelect Component
 import React from "react";
 import {
   Select,
@@ -41,9 +42,11 @@ export const DifficultySelect: React.FC<DifficultySelectProps> = (props) => {
     mode = "form",
   } = props;
 
+  const variant = error ? "incorrect" : "quiz";
+
   if (mode === "filter") {
     const { value, onChange } = props as FilterModeProps;
-    
+
     return (
       <div>
         {label && (
@@ -52,31 +55,37 @@ export const DifficultySelect: React.FC<DifficultySelectProps> = (props) => {
         <Select
           value={value ? value.toString() : "all"}
           onValueChange={(selectedValue) => {
-            onChange(selectedValue === "all" ? undefined : Number(selectedValue));
+            onChange(
+              selectedValue === "all" ? undefined : Number(selectedValue)
+            );
             clearErrors?.();
           }}
         >
           <SelectTrigger
-            variant="quiz"
-            className={`min-w-[200px] ${error ? "border-red-500" : ""}`}
+            variant={variant}
+            className="min-w-[200px]"
           >
             <SelectValue
               className="text-foreground"
               placeholder="All Difficulties"
             />
           </SelectTrigger>
-          <SelectContent className="min-w-[200px]">
+          <SelectContent variant={variant} className="min-w-[200px]">
             {includeAllOption && (
-              <SelectItem value="all">All Difficulties</SelectItem>
+              <SelectItem variant={variant} value="all">All Difficulties</SelectItem>
             )}
             {difficulties.map((difficulty) => (
-              <SelectItem key={difficulty.id} value={difficulty.id.toString()}>
+              <SelectItem
+                variant={variant}
+                key={difficulty.id}
+                value={difficulty.id.toString()}
+              >
                 {difficulty.level}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
-        {error && <p className="text-sm text-red-500">{error}</p>}
+        {error && <p className="text-sm text-red-500 mt-1">{error}</p>}
       </div>
     );
   }
@@ -92,7 +101,7 @@ export const DifficultySelect: React.FC<DifficultySelectProps> = (props) => {
       {label && (
         <Label className="text-sm font-medium text-foreground">{label}</Label>
       )}
-      <Select 
+      <Select
         value={isValueValid ? value : ""}
         onValueChange={(selectedValue) => {
           onChange(selectedValue === "all" ? "all" : selectedValue);
@@ -100,23 +109,27 @@ export const DifficultySelect: React.FC<DifficultySelectProps> = (props) => {
         }}
       >
         <SelectTrigger
-          variant="quiz"
-          className={`min-w-[200px] ${error ? "border-red-500" : ""}`}
+          variant={variant}
+          className="min-w-[200px]"
         >
           <SelectValue placeholder="--Select Difficulty--" />
         </SelectTrigger>
-        <SelectContent className="min-w-[200px]">
+        <SelectContent variant={variant} className="min-w-[200px]">
           {includeAllOption && (
-            <SelectItem value="all">All Difficulties</SelectItem>
+            <SelectItem variant={variant} value="all">All Difficulties</SelectItem>
           )}
           {difficulties.map((difficulty) => (
-            <SelectItem key={difficulty.id} value={difficulty.id.toString()}>
+            <SelectItem 
+              variant={variant} 
+              key={difficulty.id} 
+              value={difficulty.id.toString()}
+            >
               {difficulty.level}
             </SelectItem>
           ))}
         </SelectContent>
       </Select>
-      {error && <p className="text-sm text-red-500">{error}</p>}
+      {error && <p className="text-sm text-red-500 mt-1">{error}</p>}
     </div>
   );
 };

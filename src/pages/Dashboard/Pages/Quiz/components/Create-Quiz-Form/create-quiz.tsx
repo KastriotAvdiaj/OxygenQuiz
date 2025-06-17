@@ -318,7 +318,7 @@ const CreateQuizForm = () => {
                           Quiz Title <span className="text-destructive">*</span>
                         </Label>
                         <Input
-                          variant="quiz"
+                          variant={errors.title ? "isIncorrect" : "quiz"}
                           id="title"
                           placeholder="Enter quiz title..."
                           className="mt-1"
@@ -403,12 +403,16 @@ const CreateQuizForm = () => {
                             setValue("visibility", value)
                           }
                         >
-                          <SelectTrigger className="w-full">
+                          <SelectTrigger variant="quiz" className="w-full">
                             <SelectValue placeholder="Select visibility..." />
                           </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Public">Public</SelectItem>
-                            <SelectItem value="Private">Private</SelectItem>
+                          <SelectContent variant="quiz">
+                            <SelectItem variant="quiz" value="Public">
+                              Public
+                            </SelectItem>
+                            <SelectItem variant="quiz" value="Private">
+                              Private
+                            </SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -511,6 +515,7 @@ const CreateQuizForm = () => {
                       <div className="flex flex-col gap-4 mt-4">
                         <div className="flex gap-4">
                           <LiftedButton
+                            type="button"
                             className="flex items-center gap-2"
                             onClick={() => {
                               const tempId = -Date.now();
@@ -523,6 +528,7 @@ const CreateQuizForm = () => {
                             Multiple Choice
                           </LiftedButton>
                           <LiftedButton
+                            type="button"
                             className="flex items-center gap-2"
                             onClick={() => {
                               const tempId = -Date.now();
@@ -535,6 +541,7 @@ const CreateQuizForm = () => {
                             True/False
                           </LiftedButton>
                           <LiftedButton
+                            type="button"
                             className="flex items-center gap-2"
                             onClick={() => {
                               const tempId = -Date.now();
