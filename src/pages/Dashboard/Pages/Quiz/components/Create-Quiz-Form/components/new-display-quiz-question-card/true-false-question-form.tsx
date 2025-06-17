@@ -6,6 +6,7 @@ import { BaseQuestionFormCard } from "./display-base-quiz-question-card";
 import { Label } from "@/components/ui/form";
 import { getQuestionTypeStyles } from "../existing-display-quiz-question-card/display-multiple-choice-question-card/display-muiltiple-choice-question-card";
 import { QuestionType } from "@/types/ApiTypes";
+import { Check } from "lucide-react";
 
 interface TrueFalseFormCardProps {
   question: NewTrueFalseQuestion;
@@ -53,52 +54,43 @@ export const TrueFalseFormCard: React.FC<TrueFalseFormCardProps> = ({
             Select the correct answer:
           </Label>
         </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div
-            className={`flex items-center justify-center p-4 rounded-lg border-2 transition-all cursor-pointer ${
-              correctAnswer === true
-                ? "border-green-500 bg-green-50 dark:bg-green-950/20"
-                : "border-border bg-background hover:border-primary/50"
-            }`}
-            onClick={() => setCorrectAnswer(true)}
-          >
-            <div className="flex items-center gap-3">
-              <div
-                className={`w-4 h-4 rounded-full border-2 transition-all ${
-                  correctAnswer === true
-                    ? "border-green-500 bg-green-500"
-                    : "border-muted-foreground"
-                }`}
-              >
-                {correctAnswer === true && (
-                  <div className="w-full h-full rounded-full bg-white scale-50" />
-                )}
-              </div>
-              <span className="text-lg font-medium">True</span>
-            </div>
+        <div className="flex items-center justify-center rounded-sm">
+          {/* TRUE OPTION */}
+          <div className="flex flex-col items-center w-full bg-primary/80 dark:bg-primary/80 rounded-md p-2">
+            <button
+              id="true-option"
+              type="button"
+              onClick={() => setCorrectAnswer(true)}
+              className={`w-6 h-6 rounded-full flex items-center justify-center border-2 transition-all ${
+                correctAnswer === true
+                  ? "bg-green-500 border-green-500 text-white"
+                  : "bg-background border-border hover:border-primary/50"
+              }`}
+            >
+              {correctAnswer === true && <Check className="h-4 w-4" />}
+            </button>
+            <label htmlFor="true-option" className="text-md font-medium mt-2">
+              True
+            </label>
           </div>
-          <div
-            className={`flex items-center justify-center p-4 rounded-lg border-2 transition-all cursor-pointer ${
-              correctAnswer === false
-                ? "border-green-500 bg-green-50 dark:bg-green-950/20"
-                : "border-border bg-background hover:border-primary/50"
-            }`}
-            onClick={() => setCorrectAnswer(false)}
-          >
-            <div className="flex items-center gap-3">
-              <div
-                className={`w-4 h-4 rounded-full border-2 transition-all ${
-                  correctAnswer === false
-                    ? "border-green-500 bg-green-500"
-                    : "border-muted-foreground"
-                }`}
-              >
-                {correctAnswer === false && (
-                  <div className="w-full h-full rounded-full bg-white scale-50" />
-                )}
-              </div>
-              <span className="text-lg font-medium">False</span>
-            </div>
+
+          {/* FALSE OPTION */}
+          <div className="flex flex-col items-center w-full bg-red-500/80 dark:bg-red-500/80 rounded-sm p-2">
+            <button
+              id="false-option"
+              type="button"
+              onClick={() => setCorrectAnswer(false)}
+              className={`w-6 h-6 rounded-full flex items-center justify-center border-2 transition-all ${
+                correctAnswer === false
+                  ? "bg-green-500 border-green-500 text-white"
+                  : "bg-background border-border hover:border-primary/50"
+              }`}
+            >
+              {correctAnswer === false && <Check className="h-4 w-4" />}
+            </button>
+            <label htmlFor="false-option" className="text-md font-medium mt-2">
+              False
+            </label>
           </div>
         </div>
       </div>

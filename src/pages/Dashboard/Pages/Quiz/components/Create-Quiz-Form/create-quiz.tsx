@@ -269,8 +269,8 @@ const CreateQuizForm = () => {
             <Card className="md:text-xs lg:text-sm h-fit md:col-span-1 bg-background border-2 border-primary/30">
               <Tabs value={activeTab} onValueChange={setActiveTab}>
                 <CardHeader className="w-full relative bg-primary/10 text-center border-b border-primary/30 px-2 py-4">
-                  <TabsList className="w-full border-none bg-none shadow-none">
-                    <TabsTrigger value="quiz">
+                  <TabsList className="w-full border-none bg-none shadow-none ">
+                    <TabsTrigger value="quiz" className="!rounded-sm">
                       <p className="flex gap-2 px-4 items-center">
                         <Brain
                           className={`h-5 w-5 ${
@@ -280,7 +280,7 @@ const CreateQuizForm = () => {
                         Quiz Details
                       </p>
                     </TabsTrigger>
-                    <TabsTrigger value="questions">
+                    <TabsTrigger value="questions" className="!rounded-sm">
                       <p className="flex gap-2 px-4 items-center">
                         <BsPatchQuestionFill
                           className={`h-5 w-5 ${

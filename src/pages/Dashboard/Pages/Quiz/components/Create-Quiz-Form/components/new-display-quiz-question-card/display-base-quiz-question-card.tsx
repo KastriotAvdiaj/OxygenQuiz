@@ -21,12 +21,12 @@ export const BaseQuestionFormCard: React.FC<BaseQuestionFormCardProps> = ({
 }) => {
   return (
     <Card className={`bg-background border ${borderColor} ${backgroundColor}`}>
-      <CardContent className="space-y-6 p-6">
-        <div className="space-y-2">
+      <CardContent className="p-6">
+        <div className="px-0">
           <Input
             id="question-text"
             variant="quiz"
-            className="my-8 !text-[1.5rem] py-8"
+            className="my-8 !text-[1.5rem] py-8 w-full"
             questionType={questionType}
             placeholder="Enter your question here..."
             value={questionText}

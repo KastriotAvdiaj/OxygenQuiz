@@ -86,18 +86,19 @@ export const TypeTheAnswerFormCard: React.FC<TypeTheAnswerFormCardProps> = ({
       backgroundColor={styles.backgroundColor}
       questionType={QuestionType.TypeTheAnswer}
     >
-      <div className="space-y-6  pt-4">
+      <div className="space-y-6 p-4">
         {/* Main Answer */}
-        <div className="space-y-2">
+        <div className="w-full flex flex-col items-center justify-center">
           <Label htmlFor="main-answer" className="text-sm font-medium">
             Main Answer
           </Label>
           <Input
             id="main-answer"
+            variant="isCorrect"
             placeholder="Enter the main correct answer..."
             value={correctAnswer}
             onChange={(e) => setCorrectAnswer(e.target.value)}
-            className="h-12"
+            className="h-12 px-8"
           />
         </div>
 
