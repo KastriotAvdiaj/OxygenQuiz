@@ -13,10 +13,9 @@ import { SmallQuestionFooter } from "../shared/small-question-footer";
 const truncateText = (text: string, length: number) =>
   text?.length > length ? `${text.substring(0, length)}...` : text || "";
 
-export const SmallTrueFalseCard: React.FC<ExistingSmallQuestionCardProps> = ({
-  question,
-  onRemove,
-}) => {
+export const ExistingSmallTrueFalseCard: React.FC<
+  ExistingSmallQuestionCardProps
+> = ({ question, onRemove }) => {
   const { displayQuestion } = useQuiz();
   const tfQuestion = question as TrueFalseQuestion;
   const truncatedText = truncateText(tfQuestion.text, 50);

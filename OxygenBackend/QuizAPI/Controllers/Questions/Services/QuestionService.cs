@@ -453,23 +453,39 @@ namespace QuizAPI.Controllers.Questions.Services
             return _mapper.Map<TypeTheAnswerQuestionDTO>(updatedQuestion);
         }
 
-        public async Task<bool> DeleteQuestionAsync(int id, Guid userId)
+
+        public async Task<(bool Success, string? ErrorMessage, bool IsCustomMessage)> DeleteQuestionAsync(int id, Guid userId)
         {
             var question = await _context.Questions
                 .FirstOrDefaultAsync(q => q.Id == id && q.UserId == userId);
 
             if (question == null)
-                return false;
+                return (false, "Question not found or you're not authorized.", true); // Custom message
 
-            if (!string.IsNullOrEmpty(question.ImageUrl))
+            var isPartOfQuiz = await _context.QuizQuestions
+                .AnyAsync(qq => qq.QuestionId == id);
+
+            if (isPartOfQuiz)
+                return (false, "This question is being used in a quiz and cannot be deleted.", true); 
+
+            try
             {
-                await _imageService.DeleteAssociatedImageAsync(question.ImageUrl, "Question", question.Id);
-            }
+                if (!string.IsNullOrEmpty(question.ImageUrl))
+                {
+                    await _imageService.DeleteAssociatedImageAsync(question.ImageUrl, "Question", question.Id);
+                }
 
-            _context.Questions.Remove(question);
-            await _context.SaveChangesAsync();
-            return true;
+                _context.Questions.Remove(question);
+                await _context.SaveChangesAsync();
+
+                return (true, null, false);
+            }
+            catch (Exception ex)
+            {
+                return (false, "An error occurred while deleting the question.", false); 
+            }
         }
+
 
         public async Task<List<QuestionBaseDTO>> GetQuestionsByCategoryAsync(int categoryId)
         {

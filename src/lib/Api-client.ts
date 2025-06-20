@@ -3,6 +3,21 @@ import Cookies from 'js-cookie';
 import { AUTH_COOKIE } from './authHelpers';
 import { useNotifications } from '@/common/Notifications';
 
+const CUSTOM_ERROR_PATTERNS = [
+  'not found or you\'re not authorized',
+  'used in a quiz and cannot be deleted',
+  'already exists',
+  'cannot be deleted',
+  'not authorized',
+  'insufficient permissions',
+];
+
+function isCustomErrorMessage(message: string): boolean {
+  return CUSTOM_ERROR_PATTERNS.some(pattern => 
+    message.toLowerCase().includes(pattern.toLowerCase())
+  );
+}
+
 function authRequestInterceptor(config: InternalAxiosRequestConfig) {
   if (config.headers) {
     config.headers.Accept = 'application/json';
@@ -36,11 +51,25 @@ api.interceptors.response.use(
       console.log('Unauthorized:', error);
       Cookies.remove(AUTH_COOKIE);
     } else {
-      // Only add a notification for non-401 errors
+      const isCustomMessage = error.response?.data?.isCustomMessage || isCustomErrorMessage(message);
+      
+      let displayMessage = message;
+      
+      if (!isCustomMessage) {
+        displayMessage = 'An unexpected error occurred. Please try again.';
+        
+        console.error('System error:', {
+          status,
+          message,
+          url: error.config?.url,
+          method: error.config?.method
+        });
+      }
+
       useNotifications.getState().addNotification({
         type: 'error',
         title: 'Error',
-        message,//change this when deployed
+        message: displayMessage,
       });
     }
 
@@ -48,7 +77,6 @@ api.interceptors.response.use(
   }
 );
 
-// Enhanced API with helper methods
 export const apiService = {
   // Basic data-only methods (for backward compatibility)
   async get<T = any>(url: string, config = {}): Promise<T> {

@@ -249,16 +249,25 @@ namespace QuizAPI.Controllers.Questions
         public async Task<IActionResult> DeleteQuestion(int id)
         {
             var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+            var (success, errorMessage, isCustomMessage) = await _questionService.DeleteQuestionAsync(id, userId);
 
-            var result = await _questionService.DeleteQuestionAsync(id, userId);
-
-            if (!result)
+            if (!success)
             {
-                return NotFound();
+                return BadRequest(new
+                {
+                    success = false,
+                    message = errorMessage,
+                    isCustomMessage = isCustomMessage // Flag to indicate user-friendly message
+                });
             }
 
-            return NoContent();
+            return Ok(new
+            {
+                success = true,
+                message = "Question deleted successfully."
+            });
         }
+
 
         // GET: api/questions/category/5
         [HttpGet("category/{categoryId}")]

@@ -13,7 +13,7 @@ import { SmallBaseQuestionCard } from "../shared/small-base-question-card";
 const truncateText = (text: string, length: number) =>
   text?.length > length ? `${text.substring(0, length)}...` : text || "";
 
-export const SmallMultipleChoiceCard: React.FC<
+export const ExistingSmallMultipleChoiceCard: React.FC<
   ExistingSmallQuestionCardProps
 > = ({ question, onRemove, isActive = false }) => {
   const { displayQuestion } = useQuiz();

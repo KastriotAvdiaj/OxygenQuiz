@@ -21,6 +21,13 @@ export const DeleteQuestion = ({ id, questionType }: DeleteUserProps) => {
           title: "Question Deleted",
         });
       },
+      // onError: (error) => {
+      //   addNotification({
+      //     type: "error",
+      //     title: "Error deleting question.",
+      //     message: error.message,
+      //   });
+      // },
     },
     questionType,
   });

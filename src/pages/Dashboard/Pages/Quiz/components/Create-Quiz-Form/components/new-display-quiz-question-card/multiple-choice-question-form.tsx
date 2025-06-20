@@ -124,6 +124,7 @@ export const MultipleChoiceFormCard: React.FC<MultipleChoiceFormCardProps> = ({
                 </Label>
               </div>
               <Button
+                type="button"
                 variant="outline"
                 size="icon"
                 onClick={() => handleRemoveOption(index)}
