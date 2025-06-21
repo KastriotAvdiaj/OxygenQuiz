@@ -3,9 +3,10 @@ import { Card } from "@/components/ui/card";
 import { cn } from "@/utils/cn";
 import { AnyQuestion } from "@/types/ApiTypes";
 import { useQuiz } from "../../../../Quiz-questions-context";
+import { NewAnyQuestion } from "../../../../types";
 
 interface SmallBaseQuestionCardProps {
-  question: AnyQuestion;
+  question: AnyQuestion | NewAnyQuestion;
   borderColor: string;
   gradientColor: string;
   children: React.ReactNode;

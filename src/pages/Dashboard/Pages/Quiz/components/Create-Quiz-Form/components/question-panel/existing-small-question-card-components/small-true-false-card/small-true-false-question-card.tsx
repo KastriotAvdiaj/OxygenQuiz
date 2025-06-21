@@ -10,7 +10,7 @@ import { QuestionBubble } from "../shared/question-text-bubble";
 import { TrueFalseOptions } from "./small-true-false-question-card-options";
 import { SmallQuestionFooter } from "../shared/small-question-footer";
 
-const truncateText = (text: string, length: number) =>
+export const truncateText = (text: string, length: number) =>
   text?.length > length ? `${text.substring(0, length)}...` : text || "";
 
 export const ExistingSmallTrueFalseCard: React.FC<

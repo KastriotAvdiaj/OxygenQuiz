@@ -37,9 +37,7 @@ export const ExistingSmallMultipleChoiceCard: React.FC<
         isActive={isActive}
         onRemove={onRemove}
         className={
-          isSelected
-            ? "bg-gradient-to-r from-background to-primary/20"
-            : undefined
+          isSelected ? "bg-gradient-to-r from-background to-primary/20" : ""
         }
       />
 

@@ -14,7 +14,7 @@ import { LiftedButton } from "@/common/LiftedButton";
 import SelectQuestionComponent from "../question-select/question-select";
 import { AnyQuestion } from "@/types/ApiTypes";
 import { NewAnyQuestion } from "../../types";
-import { SmallQuestionCard } from "./existing-small-question-card-components/small-question-card";
+import { SmallQuestionCard } from "./small-question-card";
 
 export function isAnyQuestion(
   question: AnyQuestion | NewAnyQuestion
@@ -64,14 +64,11 @@ export const CreatedQuestionsPanel = ({}) => {
             </p>
           ) : (
             <div className="space-y-3">
-              {addedQuestions.map((question, index) => {
+              {addedQuestions.map((question) => {
                 if (!isAnyQuestion(question)) return null;
 
                 return (
-                  <SmallQuestionCard
-                    key={question.id ?? `new-${index}`}
-                    question={question}
-                  />
+                  <SmallQuestionCard key={question.id} question={question} />
                 );
               })}
             </div>
