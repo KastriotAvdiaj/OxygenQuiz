@@ -16,6 +16,7 @@ export const MultipleChoiceFormCard: React.FC<MultipleChoiceFormCardProps> = ({
   question,
 }) => {
   const [questionText, setQuestionText] = useState(question.text);
+  const [imageUrl, setImageUrl] = useState(question.imageUrl || undefined);
   const { updateQuestion } = useQuiz();
 
   const styles = getQuestionTypeStyles(question.type);
@@ -28,10 +29,11 @@ export const MultipleChoiceFormCard: React.FC<MultipleChoiceFormCardProps> = ({
   const currentQuestionState = useMemo(
     () => ({
       text: questionText,
+      imageUrl,
       allowMultipleSelections,
       answerOptions,
     }),
-    [questionText, allowMultipleSelections, answerOptions]
+    [questionText, imageUrl, allowMultipleSelections, answerOptions]
   );
 
   const debouncedQuestionState = useDebounce(currentQuestionState, 300);
@@ -40,6 +42,7 @@ export const MultipleChoiceFormCard: React.FC<MultipleChoiceFormCardProps> = ({
     const updatedQuestion = {
       ...question,
       text: debouncedQuestionState.text,
+      imageUrl: debouncedQuestionState.imageUrl,
       allowMultipleSelections: debouncedQuestionState.allowMultipleSelections,
       answerOptions: debouncedQuestionState.answerOptions,
     };
@@ -80,15 +83,29 @@ export const MultipleChoiceFormCard: React.FC<MultipleChoiceFormCardProps> = ({
     );
   };
 
+  const handleImageUpload = (url: string) => {
+    setImageUrl(url);
+  };
+
+  const handleImageRemove = () => {
+    setImageUrl(undefined);
+  };
+
   return (
     <BaseQuestionFormCard
       questionText={questionText}
       borderColor={styles.borderColor}
       backgroundColor={styles.backgroundColor}
+      questionType={question.type}
       onQuestionTextChange={setQuestionText}
+      // Image upload props
+      imageUrl={imageUrl}
+      onImageUpload={handleImageUpload}
+      onImageRemove={handleImageRemove}
+      showImageUpload={true}
     >
       <div className="space-y-4">
-        <div className="grid grid-cols-2 gap-4  pt-4">
+        <div className="grid grid-cols-2 gap-4 pt-4">
           {answerOptions.map((option, index) => (
             <div
               key={index}

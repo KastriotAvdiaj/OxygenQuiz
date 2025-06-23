@@ -23,6 +23,7 @@ export const TypeTheAnswerFormCard: React.FC<TypeTheAnswerFormCardProps> = ({
   question,
 }) => {
   const [questionText, setQuestionText] = useState(question.text);
+  const [imageUrl, setImageUrl] = useState(question.imageUrl || undefined);
   const [correctAnswer, setCorrectAnswer] = useState(question.correctAnswer);
   const [isCaseSensitive, setIsCaseSensitive] = useState(
     question.isCaseSensitive
@@ -38,6 +39,7 @@ export const TypeTheAnswerFormCard: React.FC<TypeTheAnswerFormCardProps> = ({
   const currentQuestionState = useMemo(
     () => ({
       text: questionText,
+      imageUrl,
       correctAnswer,
       isCaseSensitive,
       allowPartialMatch,
@@ -45,6 +47,7 @@ export const TypeTheAnswerFormCard: React.FC<TypeTheAnswerFormCardProps> = ({
     }),
     [
       questionText,
+      imageUrl,
       correctAnswer,
       isCaseSensitive,
       allowPartialMatch,
@@ -58,6 +61,7 @@ export const TypeTheAnswerFormCard: React.FC<TypeTheAnswerFormCardProps> = ({
     const updatedQuestion = {
       ...question,
       text: debouncedQuestionState.text,
+      imageUrl: debouncedQuestionState.imageUrl,
       correctAnswer: debouncedQuestionState.correctAnswer,
       isCaseSensitive: debouncedQuestionState.isCaseSensitive,
       allowPartialMatch: debouncedQuestionState.allowPartialMatch,
@@ -82,6 +86,14 @@ export const TypeTheAnswerFormCard: React.FC<TypeTheAnswerFormCardProps> = ({
     );
   };
 
+  const handleImageUpload = (url: string) => {
+    setImageUrl(url);
+  };
+
+  const handleImageRemove = () => {
+    setImageUrl(undefined);
+  };
+
   const styles = getQuestionTypeStyles(question.type);
 
   return (
@@ -91,6 +103,11 @@ export const TypeTheAnswerFormCard: React.FC<TypeTheAnswerFormCardProps> = ({
       borderColor={styles.borderColor}
       backgroundColor={styles.backgroundColor}
       questionType={QuestionType.TypeTheAnswer}
+      // Image upload props
+      imageUrl={imageUrl}
+      onImageUpload={handleImageUpload}
+      onImageRemove={handleImageRemove}
+      showImageUpload={true}
     >
       <div className="space-y-6 p-4">
         {/* Main Answer */}
