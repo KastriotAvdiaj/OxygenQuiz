@@ -4,10 +4,10 @@ import { SmallBaseQuestionCard } from "../../existing-small-question-card-compon
 import { NewSmallQuestionCardProps } from "../../existing-small-question-card-components/shared/types";
 import { truncateText } from "../../existing-small-question-card-components/small-true-false-card/small-true-false-question-card";
 import { QuestionBubble } from "../../shared/question-text-bubble";
-import { NewSmallQuestionHeader } from "../shared/small-question-header";
+import { NewSmallQuestionHeader } from "../shared/new-small-question-header";
 import { List } from "lucide-react";
 import { useQuiz } from "../../../../Quiz-questions-context";
-import { NewMultipleChoiceOptions } from "./small-multiple-choice-question-options";
+import { NewMultipleChoiceOptions } from "./new-small-multiple-choice-question-options";
 
 export const NewSmallMultipleChoiceCard: React.FC<
   NewSmallQuestionCardProps
