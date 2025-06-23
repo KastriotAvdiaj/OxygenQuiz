@@ -4,8 +4,8 @@ import { useQuiz } from "../../Quiz-questions-context";
 import { useDebounce } from "@/hooks/use-debounce";
 import { BaseQuestionFormCard } from "./display-base-quiz-question-card";
 import { Input, Label } from "@/components/ui/form";
-import { Button, Switch } from "@/components/ui";
-import { Plus, X } from "lucide-react";
+import { Button, Card, CardContent, Switch } from "@/components/ui";
+import { AlertCircle, CheckCircle2, Plus, Type, X } from "lucide-react";
 import { getQuestionTypeStyles } from "../existing-display-quiz-question-card/display-multiple-choice-question-card/display-muiltiple-choice-question-card";
 import { QuestionType } from "@/types/ApiTypes";
 import {
@@ -96,6 +96,10 @@ export const TypeTheAnswerFormCard: React.FC<TypeTheAnswerFormCardProps> = ({
 
   const styles = getQuestionTypeStyles(question.type);
 
+  const filledAcceptableAnswers = acceptableAnswers.filter(
+    (answer) => answer.value.trim() !== ""
+  );
+
   return (
     <BaseQuestionFormCard
       questionText={questionText}
@@ -111,19 +115,31 @@ export const TypeTheAnswerFormCard: React.FC<TypeTheAnswerFormCardProps> = ({
     >
       <div className="space-y-6 p-4">
         {/* Main Answer */}
-        <div className="w-full flex flex-col items-center justify-center">
-          <Label htmlFor="main-answer" className="text-sm font-medium">
-            Correct Answer
-          </Label>
-          <Input
-            id="main-answer"
-            variant="isCorrect"
-            placeholder="Enter the main correct answer..."
-            value={correctAnswer}
-            onChange={(e) => setCorrectAnswer(e.target.value)}
-            className="h-12 px-8"
-          />
-        </div>
+        <Card className="border-2 border-emerald-400 bg-emerald-50/50 dark:border-emerald-800 dark:bg-emerald-950/30 backdrop-blur-md">
+          <CardContent className="p-6">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="p-2 bg-emerald-100 rounded-lg dark:bg-emerald-900">
+                <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+              </div>
+              <div>
+                <Label className="text-md font-semibold text-emerald-800 dark:text-emerald-200">
+                  Primary Correct Answer
+                </Label>
+              </div>
+            </div>
+            <div className="relative">
+              <Type className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-emerald-500" />
+              <Input
+                id="main-answer"
+                variant="isCorrect"
+                placeholder="Enter the primary correct answer..."
+                value={correctAnswer}
+                onChange={(e) => setCorrectAnswer(e.target.value)}
+                className="pl-12 h-12 text-md font-medium border-emerald-300 focus:border-emerald-500 dark:border-emerald-700"
+              />
+            </div>
+          </CardContent>
+        </Card>
 
         <Accordion type="single" collapsible className="w-full">
           <AccordionItem value="details" className="border-b-0">
@@ -131,31 +147,42 @@ export const TypeTheAnswerFormCard: React.FC<TypeTheAnswerFormCardProps> = ({
               <span className="text-sm font-medium">Extra Details</span>
             </AccordionTrigger>
             <AccordionContent className="space-y-4 p-4">
-              <div className="grid grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg">
-                <div className="flex flex-col items-center justify-between gap-2">
-                  <Label htmlFor="case-sensitive" className="text-sm">
-                    Case Sensitive
-                  </Label>
-                  <Switch
-                    type="button"
-                    id="case-sensitive"
-                    checked={isCaseSensitive}
-                    onCheckedChange={setIsCaseSensitive}
-                  />
-                </div>
-                <div className="flex flex-col items-center justify-between gap-2">
-                  <Label htmlFor="partial-match" className="text-sm">
-                    Allow Partial Match
-                  </Label>
-                  <Switch
-                    type="button"
-                    id="partial-match"
-                    checked={allowPartialMatch}
-                    onCheckedChange={setAllowPartialMatch}
-                  />
-                </div>
-              </div>
-
+              <Card className="border-orange-400 rounded-md bg-orange-200/30 backdrop-blur-sm dark:backdrop-blur-xl dark:border-orange-800 dark:bg-orange-950/20">
+                <CardContent className="p-4  rounded-md">
+                  <div className="flex items-center space-x-2 mb-4 rounded-md">
+                    <AlertCircle className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                    <Label className="font-semibold text-orange-800 dark:text-orange-200">
+                      Answer Matching Rules
+                    </Label>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="flex items-center justify-between p-4 bg-background rounded-lg border border-orange-200 dark:border-orange-800">
+                      <div className="space-y-1">
+                        <Label className="font-medium">Case Sensitive</Label>
+                        <p className="text-xs text-muted-foreground">
+                          {"Require exact capitalization match"}
+                        </p>
+                      </div>
+                      <Switch
+                        checked={isCaseSensitive}
+                        onCheckedChange={setIsCaseSensitive}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between p-4 bg-background rounded-lg border border-orange-200 dark:border-orange-800">
+                      <div className="space-y-1">
+                        <Label className="font-medium">Partial Match</Label>
+                        <p className="text-xs text-muted-foreground">
+                          Accept answers containing the correct text
+                        </p>
+                      </div>
+                      <Switch
+                        checked={allowPartialMatch}
+                        onCheckedChange={setAllowPartialMatch}
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
               {/* Acceptable Answers */}
               <div
                 className={`space-y-3 w-full flex flex-col items-center gap-4 border p-4 rounded-md border-dashed ${styles.borderColor}`}
@@ -163,11 +190,11 @@ export const TypeTheAnswerFormCard: React.FC<TypeTheAnswerFormCardProps> = ({
                 <Label className="text-sm font-medium">
                   Additional Acceptable Answers (Optional)
                 </Label>
-                <div className="space-y-2">
+                <div className="space-y-4">
                   {acceptableAnswers.map((answer, index) => (
                     <div key={index} className="relative w-full">
                       <Input
-                        variant="quiz"
+                        // variant="quiz"
                         placeholder={`Alternative answer ${index + 1}...`}
                         value={answer.value}
                         onChange={(e) =>
@@ -199,6 +226,34 @@ export const TypeTheAnswerFormCard: React.FC<TypeTheAnswerFormCardProps> = ({
                     Add Alternative Answer ({acceptableAnswers.length}/5)
                   </Button>
                 </div>
+              </div>
+              <div className="flex flex-wrap gap-2 justify-center">
+                <div
+                  className={`px-3 py-1 rounded-full text-xs font-medium ${
+                    isCaseSensitive
+                      ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                      : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
+                  }`}
+                >
+                  {isCaseSensitive ? "Case Sensitive" : "Case Insensitive"}
+                </div>
+                <div
+                  className={`px-3 py-1 rounded-full text-xs font-medium ${
+                    allowPartialMatch
+                      ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                      : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
+                  }`}
+                >
+                  {allowPartialMatch
+                    ? "Partial Match Allowed"
+                    : "Exact Match Required"}
+                </div>
+                {filledAcceptableAnswers.length > 0 && (
+                  <div className="px-3 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">
+                    {filledAcceptableAnswers.length} Alternative
+                    {filledAcceptableAnswers.length !== 1 ? "s" : ""}
+                  </div>
+                )}
               </div>
             </AccordionContent>
           </AccordionItem>

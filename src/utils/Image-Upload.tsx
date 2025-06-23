@@ -13,6 +13,8 @@ interface BaseImageUploadProps {
   className?: string;
   endpoint?: string;
   initialImageUrl?: string | null;
+  borderColor?: string;
+  backgroundColor?: string;
 }
 
 /**
@@ -129,6 +131,8 @@ const AdminImageUpload: React.FC<BaseImageUploadProps> = ({
   className = "",
   endpoint = "ImageUpload/question",
   initialImageUrl = null,
+  borderColor = "border-foreground/30",
+  backgroundColor,
 }) => {
   const {
     uploading,
@@ -158,11 +162,13 @@ const AdminImageUpload: React.FC<BaseImageUploadProps> = ({
     onRemove?.();
   }, [clearPreview, onRemove]);
 
+  const previewStyle = backgroundColor ? { backgroundColor } : {};
+
   return (
     <div className={className}>
       {preview ? (
         <div className="space-y-2">
-          <div className="w-full rounded-md overflow-hidden border dark:border-foreground/30">
+          <div className={`w-full rounded-md overflow-hidden border dark:${borderColor}`} style={previewStyle}>
             <img
               src={preview}
               alt="Uploaded preview"
@@ -214,8 +220,8 @@ const UserImageUpload: React.FC<UserImageUploadProps> = ({
   className = "",
   endpoint = "ImageUpload/question",
   initialImageUrl = null,
-  title = "Add an Image",
-  description = "Upload an image to enhance your quiz question",
+  borderColor = "border-green-200 dark:border-green-800",
+  backgroundColor = "bg-green-50 dark:bg-green-900/20",
 }) => {
   const {
     uploading,
@@ -272,21 +278,29 @@ const UserImageUpload: React.FC<UserImageUploadProps> = ({
     onRemove?.();
   }, [clearPreview, onRemove]);
 
+  // Handle custom styling
+  const defaultDragActiveBorder = "border-blue-400";
+  const defaultDragActiveBg = "bg-blue-50 dark:bg-blue-900/20";
+  const defaultBorder = "border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500";
+  const defaultBg = "bg-muted";
+
+  const dropZoneBorder = dragActive 
+    ? (borderColor.includes('blue') ? borderColor : defaultDragActiveBorder)
+    : (borderColor === "border-green-200 dark:border-green-800" ? defaultBorder : borderColor);
+  
+  const dropZoneBg = dragActive 
+    ? (backgroundColor.includes('blue') ? backgroundColor : defaultDragActiveBg)
+    : (backgroundColor === "bg-green-50 dark:bg-green-900/20" ? defaultBg : backgroundColor);
+
   return (
     <div className={`w-full max-w-md mx-auto ${className}`}>
       <div className="mb-4 text-center">
-        <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-1">
-          {title}
-        </h3>
-        <p className="text-sm text-gray-600 dark:text-gray-400">
-          {description}
-        </p>
       </div>
 
       {preview ? (
         <div className="space-y-4">
           <div className="relative group">
-            <div className="rounded-xl overflow-hidden border-2 border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20 p-2">
+            <div className={`rounded-xl overflow-hidden border-2 ${borderColor} ${backgroundColor} p-2`}>
               <img
                 src={preview}
                 alt="Quiz image preview"
@@ -312,12 +326,7 @@ const UserImageUpload: React.FC<UserImageUploadProps> = ({
         <div className="space-y-4">
           <div
             className={`
-              relative border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200
-              ${
-                dragActive
-                  ? "border-blue-400 bg-blue-50 dark:bg-blue-900/20"
-                  : "border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500"
-              }
+              relative border-2 border-dashed ${dropZoneBorder} ${dropZoneBg} backdrop-blur-xl rounded-xl p-8 text-center transition-all duration-200
               ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
             `}
             onDragEnter={handleDrag}

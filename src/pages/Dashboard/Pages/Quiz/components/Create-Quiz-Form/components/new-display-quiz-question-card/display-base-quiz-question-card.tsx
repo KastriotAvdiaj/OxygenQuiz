@@ -33,9 +33,18 @@ export const BaseQuestionFormCard: React.FC<BaseQuestionFormCardProps> = ({
 }) => {
   return (
     <Card
-      className={`bg-background border ${borderColor} dark:bg-muted/30 ${backgroundColor}`}
+      className={`bg-background border ${borderColor} dark:bg-muted/30 ${backgroundColor} relative overflow-hidden`}
+      style={{
+        backgroundImage: `url('/src/assets/classroom.png')`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+      }}
     >
-      <CardContent className="p-6 space-y-6">
+      {/* Optional: Add overlay for better text readability */}
+      <div className="absolute inset-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-[1px]" />
+
+      <CardContent className="p-6 space-y-6 relative z-10">
         {/* Question Text Section */}
         <div className="px-0">
           <section className="flex flex-col items-center w-full">
@@ -57,6 +66,8 @@ export const BaseQuestionFormCard: React.FC<BaseQuestionFormCardProps> = ({
           <div className="px-0">
             <ImageUpload
               initialImageUrl={imageUrl}
+              borderColor={borderColor}
+              backgroundColor={backgroundColor}
               onUpload={onImageUpload}
               onRemove={onImageRemove}
               endpoint={imageUploadEndpoint}
