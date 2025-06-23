@@ -3,7 +3,7 @@ import { NewMultipleChoiceQuestion } from "../../../types";
 import { SmallBaseQuestionCard } from "../existing-small-question-card-components/shared/small-base-question-card";
 import { NewSmallQuestionCardProps } from "../existing-small-question-card-components/shared/types";
 import { truncateText } from "../existing-small-question-card-components/small-true-false-card/small-true-false-question-card";
-import { QuestionBubble } from "../existing-small-question-card-components/shared/question-text-bubble";
+import { QuestionBubble } from "../shared/question-text-bubble";
 
 export const NewSmallMultipleChoiceCard: React.FC<
   NewSmallQuestionCardProps

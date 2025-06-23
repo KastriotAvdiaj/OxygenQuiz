@@ -7,7 +7,7 @@ import { useQuiz } from "../../../../Quiz-questions-context";
 import { SmallTypeAnswerDisplay } from "./small-type-the-asnwer-quesiton-display";
 import { SmallBaseQuestionCard } from "../shared/small-base-question-card";
 import { SmallQuestionHeader } from "../shared/small-question-header";
-import { QuestionBubble } from "../shared/question-text-bubble";
+import { QuestionBubble } from "../../shared/question-text-bubble";
 import { SmallQuestionFooter } from "../shared/small-question-footer";
 
 const truncateText = (text: string, length: number) =>

@@ -21,11 +21,15 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const isQuizCreatorPage = location.pathname === QUIZ_CREATOR_PATH;
   const activePage = location.pathname.split("/").pop() || "questions";
 
-  // If it's the quiz creator page, render a simpler layout
   if (isQuizCreatorPage) {
+    // Show header but no nav
     return (
-      <div className="text-foreground h-screen overflow-hidden">
-        <main className="h-full overflow-y-auto bg-muted">
+      <div className="text-foreground h-screen flex flex-col">
+        <header className="flex-none">
+          <DashboardHeader />
+        </header>
+
+        <main className="flex-1 overflow-y-auto bg-muted p-10">
           {children}
         </main>
       </div>

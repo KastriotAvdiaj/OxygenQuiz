@@ -5,7 +5,7 @@ import { MultipleChoiceQuestion } from "@/types/ApiTypes";
 import { ExistingSmallQuestionCardProps } from "../shared/types";
 import { useQuiz } from "../../../../Quiz-questions-context";
 import { SmallQuestionHeader } from "../shared/small-question-header";
-import { QuestionBubble } from "../shared/question-text-bubble";
+import { QuestionBubble } from "../../shared/question-text-bubble";
 import { SmallQuestionFooter } from "../shared/small-question-footer";
 import { MultipleChoiceOptions } from "./small-multiple-choice-question-options";
 import { SmallBaseQuestionCard } from "../shared/small-base-question-card";
