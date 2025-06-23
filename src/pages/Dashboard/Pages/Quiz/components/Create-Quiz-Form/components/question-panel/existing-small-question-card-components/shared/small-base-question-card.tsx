@@ -10,7 +10,6 @@ interface SmallBaseQuestionCardProps {
   borderColor: string;
   gradientColor: string;
   children: React.ReactNode;
-  onRemove?: () => void;
 }
 
 export const SmallBaseQuestionCard: React.FC<SmallBaseQuestionCardProps> = ({
@@ -18,7 +17,6 @@ export const SmallBaseQuestionCard: React.FC<SmallBaseQuestionCardProps> = ({
   borderColor,
   gradientColor,
   children,
-  //   onRemove
 }) => {
   const { setDisplayQuestion, displayQuestion } = useQuiz();
 

@@ -11,7 +11,7 @@ import { NewMultipleChoiceOptions } from "./new-small-multiple-choice-question-o
 
 export const NewSmallMultipleChoiceCard: React.FC<
   NewSmallQuestionCardProps
-> = ({ question, onRemove }) => {
+> = ({ question }) => {
   const { displayQuestion } = useQuiz();
 
   const newMcQuestion = question as NewMultipleChoiceQuestion;
@@ -23,7 +23,6 @@ export const NewSmallMultipleChoiceCard: React.FC<
       question={question}
       borderColor="border-primary/80"
       gradientColor="bg-gradient-to-r from-background to-primary/20"
-      onRemove={onRemove}
     >
       <NewSmallQuestionHeader
         icon={<List size={12} />}

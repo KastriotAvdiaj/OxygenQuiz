@@ -15,7 +15,7 @@ export const truncateText = (text: string, length: number) =>
 
 export const ExistingSmallTrueFalseCard: React.FC<
   ExistingSmallQuestionCardProps
-> = ({ question, onRemove }) => {
+> = ({ question }) => {
   const { displayQuestion } = useQuiz();
   const tfQuestion = question as TrueFalseQuestion;
   const truncatedText = truncateText(tfQuestion.text, 50);
@@ -27,14 +27,13 @@ export const ExistingSmallTrueFalseCard: React.FC<
       question={question}
       borderColor="border-purple-500"
       gradientColor="bg-gradient-to-r from-background to-purple-500/30"
-      onRemove={onRemove}
     >
       <SmallQuestionHeader
         icon={<CheckCircle size={12} />}
         isPrivate={isPrivate}
         questionType="True/False"
         badgeColor="bg-purple-100 text-purple-600"
-        onRemove={onRemove}
+        questionId={tfQuestion.id}
         className={
           isSelected
             ? "bg-gradient-to-r from-background to-purple-500/30"

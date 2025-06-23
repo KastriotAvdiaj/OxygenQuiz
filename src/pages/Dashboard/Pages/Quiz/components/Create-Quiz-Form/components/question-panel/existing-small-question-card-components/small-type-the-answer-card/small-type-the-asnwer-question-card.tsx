@@ -15,7 +15,7 @@ const truncateText = (text: string, length: number) =>
 
 export const ExistingSmallTypeTheAnswerCard: React.FC<
   ExistingSmallQuestionCardProps
-> = ({ question, onRemove }) => {
+> = ({ question }) => {
   const { displayQuestion } = useQuiz();
   const ttaQuestion = question as TypeTheAnswerQuestion;
   const truncatedText = truncateText(ttaQuestion.text, 50);
@@ -38,14 +38,13 @@ export const ExistingSmallTypeTheAnswerCard: React.FC<
       question={question}
       borderColor="border-orange-500"
       gradientColor="bg-gradient-to-r from-background to-orange-500/30"
-      onRemove={onRemove}
     >
       <SmallQuestionHeader
         icon={<Edit3 size={12} />}
         isPrivate={isPrivate}
         questionType="Type Answer"
         badgeColor="bg-orange-100 text-orange-600"
-        onRemove={onRemove}
+        questionId={ttaQuestion.id}
         className={
           isSelected
             ? "bg-gradient-to-r from-background to-orange-500/30"
