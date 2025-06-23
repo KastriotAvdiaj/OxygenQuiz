@@ -10,7 +10,7 @@ import { NewSmallMultipleChoiceCard } from "./new-small-question-card-components
 import { ExistingSmallTrueFalseCard } from "./existing-small-question-card-components/small-true-false-card/small-true-false-question-card";
 import { NewSmallTrueFalseCard } from "./new-small-question-card-components/new-small-true-false-card/new-small-true-false-question-card";
 import { ExistingSmallTypeTheAnswerCard } from "./existing-small-question-card-components/small-type-the-answer-card/small-type-the-asnwer-question-card";
-import { NewSmallTypeTheAnswerCard } from "./new-small-question-card-components/new-small-type-the-answer-question-card";
+import { NewSmallTypeTheAnswerCard } from "./new-small-question-card-components/new-small-type-the-answer-card/new-small-type-the-answer-question-card";
 // Import new question card components
 
 // type SmallQuestionCardProps =
