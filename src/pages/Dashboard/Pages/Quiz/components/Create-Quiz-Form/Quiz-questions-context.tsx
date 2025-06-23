@@ -117,7 +117,9 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
   const removeQuestionFromQuiz = (questionId: number): void => {
     setAddedQuestions((prevSelected) => {
       const filtered = prevSelected.filter((q) => q.id !== questionId);
-
+      if (displayQuestion?.id === questionId) {
+        setDisplayQuestion(filtered[0] || null); // Set to first question or null if none left
+      }
       // Update order indices after removal
       setQuestionSettings((prev) => {
         const newSettings = { ...prev };

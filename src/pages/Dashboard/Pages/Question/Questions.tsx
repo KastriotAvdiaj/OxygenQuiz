@@ -64,7 +64,6 @@ export const Questions = () => {
     categoryId: selectedCategoryId,
     difficultyId: selectedDifficultyId,
     languageId: selectedLanguageId,
-    // visibility: "Public"
   };
 
   useEffect(() => {
@@ -82,7 +81,6 @@ export const Questions = () => {
     window.scrollTo(0, 0);
   };
 
-  // Check if filter data is still loading
   const isFilterDataLoading =
     categoriesQuery.isLoading ||
     difficultiesQuery.isLoading ||
@@ -142,7 +140,6 @@ export const Questions = () => {
       </div>
 
       <Card className="p-6 bg-card border dark:border-foreground/30">
-        {/* Filters section - shared across all question types */}
         <QuestionFilters
           searchTerm={searchTerm}
           onSearchTermChange={setSearchTerm}
@@ -159,7 +156,6 @@ export const Questions = () => {
 
         <Separator className="my-6" />
 
-        {/* Tabs for switching between question types */}
         <Tabs
           value={activeTab}
           onValueChange={(value) => setActiveTab(value as QuestionType)}
@@ -175,12 +171,13 @@ export const Questions = () => {
             </TabsTrigger>
           </TabsList>
 
-          {/* Always render all tab content but conditionally show based on active tab */}
           <TabsContent value={QuestionType.MultipleChoice}>
             <QuestionTabContent
               questionType={QuestionType.MultipleChoice}
               queryParams={queryParams}
               onPageChange={handlePageChange}
+              // Pass isModalOpen based on whether this tab is active
+              isModalOpen={activeTab === QuestionType.MultipleChoice}
             />
           </TabsContent>
 
@@ -189,6 +186,8 @@ export const Questions = () => {
               questionType={QuestionType.TrueFalse}
               queryParams={queryParams}
               onPageChange={handlePageChange}
+              // Pass isModalOpen based on whether this tab is active
+              isModalOpen={activeTab === QuestionType.TrueFalse}
             />
           </TabsContent>
 
@@ -197,6 +196,8 @@ export const Questions = () => {
               questionType={QuestionType.TypeTheAnswer}
               queryParams={queryParams}
               onPageChange={handlePageChange}
+              // Pass isModalOpen based on whether this tab is active
+              isModalOpen={activeTab === QuestionType.TypeTheAnswer}
             />
           </TabsContent>
         </Tabs>
