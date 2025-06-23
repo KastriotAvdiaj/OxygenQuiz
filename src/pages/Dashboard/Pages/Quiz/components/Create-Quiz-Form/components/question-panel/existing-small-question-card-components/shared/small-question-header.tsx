@@ -9,7 +9,6 @@ interface SmallQuestionHeaderProps {
   isPrivate: boolean;
   questionType: string;
   badgeColor: string;
-  isActive?: boolean;
   onRemove?: () => void;
   className?: string;
 }
@@ -19,32 +18,24 @@ export const SmallQuestionHeader: React.FC<SmallQuestionHeaderProps> = ({
   isPrivate,
   questionType,
   badgeColor,
-  isActive = false,
   onRemove,
-  className
+  className,
 }) => (
-  <div className={cn(
-    "px-4 py-2 flex justify-between items-center",
-    isActive 
-      ? "bg-primary/10" 
-      : "bg-gradient-to-r from-background to-muted",
-    className
-  )}>
+  <div className={cn("px-4 py-2 flex justify-between items-center", className)}>
     <div className="flex items-center gap-2">
-      <div className={cn(
-        "flex items-center justify-center w-6 h-6 rounded-full font-bold text-xs",
-        badgeColor
-      )}>
+      <div
+        className={cn(
+          "flex items-center justify-center w-6 h-6 rounded-full font-bold text-xs",
+          badgeColor
+        )}
+      >
         {icon}
       </div>
       <Badge variant="outline" className="h-5 px-2 gap-1">
         {isPrivate ? <Lock size={10} /> : <Globe size={10} />}
         <span className="text-xs">{isPrivate ? "Private" : "Public"}</span>
       </Badge>
-      <Badge
-        variant="secondary"
-        className={cn("h-5 px-2 text-xs", badgeColor)}
-      >
+      <Badge variant="secondary" className={cn("h-5 px-2 text-xs", badgeColor)}>
         {questionType}
       </Badge>
     </div>

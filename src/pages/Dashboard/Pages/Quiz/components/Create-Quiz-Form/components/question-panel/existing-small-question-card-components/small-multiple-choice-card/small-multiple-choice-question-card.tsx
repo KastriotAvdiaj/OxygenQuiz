@@ -15,7 +15,7 @@ const truncateText = (text: string, length: number) =>
 
 export const ExistingSmallMultipleChoiceCard: React.FC<
   ExistingSmallQuestionCardProps
-> = ({ question, onRemove, isActive = false }) => {
+> = ({ question, onRemove }) => {
   const { displayQuestion } = useQuiz();
   const mcQuestion = question as MultipleChoiceQuestion;
   const truncatedText = truncateText(mcQuestion.text, 50);
@@ -34,7 +34,6 @@ export const ExistingSmallMultipleChoiceCard: React.FC<
         isPrivate={isPrivate}
         questionType="Multiple Choice"
         badgeColor="bg-blue-100 text-blue-600"
-        isActive={isActive}
         onRemove={onRemove}
         className={
           isSelected ? "bg-gradient-to-r from-background to-primary/20" : ""

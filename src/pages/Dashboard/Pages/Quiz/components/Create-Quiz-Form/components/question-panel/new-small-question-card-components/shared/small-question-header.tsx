@@ -10,6 +10,7 @@ interface NewSmallQuestionHeaderProps {
   questionType: string;
   badgeColor: string;
   questionId: number; // Changed to number to match your context
+  className?: string;
 }
 
 export const NewSmallQuestionHeader: React.FC<NewSmallQuestionHeaderProps> = ({
@@ -17,6 +18,7 @@ export const NewSmallQuestionHeader: React.FC<NewSmallQuestionHeaderProps> = ({
   questionType,
   badgeColor,
   questionId,
+  className,
 }) => {
   const { removeQuestionFromQuiz, addedQuestions } = useQuiz();
 
@@ -28,7 +30,9 @@ export const NewSmallQuestionHeader: React.FC<NewSmallQuestionHeaderProps> = ({
   };
 
   return (
-    <div className="px-4 py-2 flex justify-between items-center bg-gradient-to-r from-background to-muted">
+    <div
+      className={cn(`px-4 py-2 flex justify-between items-center `, className)}
+    >
       <div className="flex items-center gap-2">
         {questionNumber && (
           <Badge variant="outline" className="h-5 px-2 text-xs font-semibold">
