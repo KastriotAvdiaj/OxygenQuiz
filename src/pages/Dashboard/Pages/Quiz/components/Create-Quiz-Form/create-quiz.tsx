@@ -54,7 +54,7 @@ import { QuestionType } from "@/types/ApiTypes";
 import { useCreateMultipleChoiceQuestion } from "../../../Question/api/Normal-Question/create-multiple-choice-question";
 import { useCreateTrueFalseQuestion } from "../../../Question/api/True_False-Question/create-true_false-question";
 import { useCreateTypeTheAnswerQuestion } from "../../../Question/api/Type_The_Answer-Question/create-type-the-answer-question";
-// import { CreatedQuestionsPanel } from "./components/question-panel/questions-panel";
+import { CreatedQuestionsPanel } from "./components/question-panel/questions-panel";
 
 const CreateQuizForm = () => {
   const { queryData } = useQuizForm();
@@ -618,7 +618,7 @@ const CreateQuizForm = () => {
             </Card>
 
             <div className="md:col-span-1">
-              {/* <CreatedQuestionsPanel /> */}
+              <CreatedQuestionsPanel />
             </div>
           </div>
         );

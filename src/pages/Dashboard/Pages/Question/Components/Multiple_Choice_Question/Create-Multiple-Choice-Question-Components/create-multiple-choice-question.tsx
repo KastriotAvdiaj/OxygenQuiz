@@ -183,6 +183,7 @@ export const CreateMultipleChoiceForm: React.FC<
 
               {/* Modified image upload implementation */}
               <ImageUpload
+                variant="admin"
                 onUpload={handleImageUpload}
                 onRemove={handleImageRemove}
               />

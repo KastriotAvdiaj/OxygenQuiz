@@ -1,8 +1,8 @@
 import { AnyQuestion } from "@/types/ApiTypes";
-import { NewAnyQuestion } from "../../../../types";
+import { NewAnyQuestion, QuizQuestion } from "../../../../types";
 
 export interface SmallQuestionCardProps {
-  question: AnyQuestion | NewAnyQuestion;
+  question: QuizQuestion;
   isActive?: boolean;
   onClick?: () => void;
   onRemove?: () => void;

@@ -64,13 +64,12 @@ export const CreatedQuestionsPanel = ({}) => {
             </p>
           ) : (
             <div className="space-y-3">
-              {addedQuestions.map((question) => {
-                if (!isAnyQuestion(question)) return null;
-
-                return (
-                  <SmallQuestionCard key={question.id} question={question} />
-                );
-              })}
+              {addedQuestions.map((question) => (
+                <SmallQuestionCard
+                  key={question.id}
+                  question={question}
+                />
+              ))}
             </div>
           )}
         </CardContent>

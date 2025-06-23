@@ -3,6 +3,7 @@ import { QuestionType } from "@/types/ApiTypes";
 import {
   ExistingSmallQuestionCardProps,
   NewSmallQuestionCardProps,
+  SmallQuestionCardProps,
 } from "./existing-small-question-card-components/shared/types";
 import { ExistingSmallMultipleChoiceCard } from "./existing-small-question-card-components/small-multiple-choice-card/small-multiple-choice-question-card";
 import { NewSmallMultipleChoiceCard } from "./new-small-question-card-components/small-multiple-choice-question-card";
@@ -12,9 +13,9 @@ import { ExistingSmallTypeTheAnswerCard } from "./existing-small-question-card-c
 import { NewSmallTypeTheAnswerCard } from "./new-small-question-card-components/small-type-the-answer-question-card";
 // Import new question card components
 
-type SmallQuestionCardProps =
-  | ExistingSmallQuestionCardProps
-  | NewSmallQuestionCardProps;
+// type SmallQuestionCardProps =
+//   | ExistingSmallQuestionCardProps
+//   | NewSmallQuestionCardProps;
 
 export const SmallQuestionCard: React.FC<SmallQuestionCardProps> = (props) => {
   const isExisting = props.question.id > 0;

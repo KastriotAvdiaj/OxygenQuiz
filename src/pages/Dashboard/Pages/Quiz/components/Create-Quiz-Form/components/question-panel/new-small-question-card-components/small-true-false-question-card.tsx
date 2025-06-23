@@ -1,5 +1,4 @@
 import { CardContent } from "@/components/ui";
-import { useQuiz } from "../../../Quiz-questions-context";
 import { NewTrueFalseQuestion } from "../../../types";
 import { SmallBaseQuestionCard } from "../existing-small-question-card-components/shared/small-base-question-card";
 import { NewSmallQuestionCardProps } from "../existing-small-question-card-components/shared/types";
@@ -9,12 +8,9 @@ import { QuestionBubble } from "../existing-small-question-card-components/share
 export const NewSmallTrueFalseCard: React.FC<NewSmallQuestionCardProps> = ({ 
   question, 
   onRemove, 
-  isActive = false 
 }) => {
-  const { displayQuestion } = useQuiz();
   const newTfQuestion = question as NewTrueFalseQuestion;
   const truncatedText = truncateText(newTfQuestion.text, 50);
-  const isSelected = displayQuestion?.id === newTfQuestion.id;
 
   return (
     <SmallBaseQuestionCard

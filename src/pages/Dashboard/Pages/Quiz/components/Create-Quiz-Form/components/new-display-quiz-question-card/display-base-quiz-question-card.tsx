@@ -1,5 +1,5 @@
 import { Card, CardContent } from "@/components/ui";
-import { Input } from "@/components/ui/form";
+import { Input, Label } from "@/components/ui/form";
 import { QuestionType } from "@/types/ApiTypes";
 
 interface BaseQuestionFormCardProps {
@@ -20,13 +20,18 @@ export const BaseQuestionFormCard: React.FC<BaseQuestionFormCardProps> = ({
   questionType,
 }) => {
   return (
-    <Card className={`bg-background border ${borderColor} ${backgroundColor}`}>
-      <CardContent className="p-6">
+    <Card
+      className={`bg-background border ${borderColor} dark:bg-muted/30 ${backgroundColor}`}
+    >
+      <CardContent className="p-6 space-y-8">
         <div className="px-0">
+          <section className="flex flex-col items-center w-full">
+            <Label className=" text-md">Question</Label>
+          </section>
           <Input
             id="question-text"
             variant="quiz"
-            className="my-8 !text-[1.5rem] py-8 w-full"
+            className="!text-[1.5rem] py-8 w-full"
             questionType={questionType}
             placeholder="Enter your question here..."
             value={questionText}
