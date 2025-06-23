@@ -6,7 +6,7 @@ import {
   SmallQuestionCardProps,
 } from "./existing-small-question-card-components/shared/types";
 import { ExistingSmallMultipleChoiceCard } from "./existing-small-question-card-components/small-multiple-choice-card/small-multiple-choice-question-card";
-import { NewSmallMultipleChoiceCard } from "./new-small-question-card-components/small-multiple-choice-question-card";
+import { NewSmallMultipleChoiceCard } from "./new-small-question-card-components/small-multiple-choice-card/small-multiple-choice-question-card";
 import { ExistingSmallTrueFalseCard } from "./existing-small-question-card-components/small-true-false-card/small-true-false-question-card";
 import { NewSmallTrueFalseCard } from "./new-small-question-card-components/small-true-false-question-card";
 import { ExistingSmallTypeTheAnswerCard } from "./existing-small-question-card-components/small-type-the-answer-card/small-type-the-asnwer-question-card";

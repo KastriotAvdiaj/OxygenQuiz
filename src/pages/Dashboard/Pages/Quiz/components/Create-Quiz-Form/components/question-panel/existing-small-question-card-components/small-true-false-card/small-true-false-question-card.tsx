@@ -6,9 +6,9 @@ import { useQuiz } from "../../../../Quiz-questions-context";
 import { ExistingSmallQuestionCardProps } from "../shared/types";
 import { SmallBaseQuestionCard } from "../shared/small-base-question-card";
 import { SmallQuestionHeader } from "../shared/small-question-header";
-import { QuestionBubble } from "../../shared/question-text-bubble";
 import { TrueFalseOptions } from "./small-true-false-question-card-options";
 import { SmallQuestionFooter } from "../shared/small-question-footer";
+import { QuestionBubble } from "../../shared/question-text-bubble";
 
 export const truncateText = (text: string, length: number) =>
   text?.length > length ? `${text.substring(0, length)}...` : text || "";

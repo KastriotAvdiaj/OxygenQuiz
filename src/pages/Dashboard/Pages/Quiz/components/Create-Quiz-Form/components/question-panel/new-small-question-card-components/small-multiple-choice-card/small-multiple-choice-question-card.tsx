@@ -1,12 +1,13 @@
 import { CardContent } from "@/components/ui";
-import { NewMultipleChoiceQuestion } from "../../../types";
-import { SmallBaseQuestionCard } from "../existing-small-question-card-components/shared/small-base-question-card";
-import { NewSmallQuestionCardProps } from "../existing-small-question-card-components/shared/types";
-import { truncateText } from "../existing-small-question-card-components/small-true-false-card/small-true-false-question-card";
-import { QuestionBubble } from "../shared/question-text-bubble";
-import { NewSmallQuestionHeader } from "./shared/small-question-header";
+import { NewMultipleChoiceQuestion } from "../../../../types";
+import { SmallBaseQuestionCard } from "../../existing-small-question-card-components/shared/small-base-question-card";
+import { NewSmallQuestionCardProps } from "../../existing-small-question-card-components/shared/types";
+import { truncateText } from "../../existing-small-question-card-components/small-true-false-card/small-true-false-question-card";
+import { QuestionBubble } from "../../shared/question-text-bubble";
+import { NewSmallQuestionHeader } from "../shared/small-question-header";
 import { List } from "lucide-react";
-import { useQuiz } from "../../../Quiz-questions-context";
+import { useQuiz } from "../../../../Quiz-questions-context";
+import { NewMultipleChoiceOptions } from "./small-multiple-choice-question-options";
 
 export const NewSmallMultipleChoiceCard: React.FC<
   NewSmallQuestionCardProps
@@ -37,6 +38,10 @@ export const NewSmallMultipleChoiceCard: React.FC<
       />
       <CardContent>
         <QuestionBubble text={truncatedText} />
+        <NewMultipleChoiceOptions
+          question={newMcQuestion}
+          truncateText={truncateText}
+        />
       </CardContent>
     </SmallBaseQuestionCard>
   );
