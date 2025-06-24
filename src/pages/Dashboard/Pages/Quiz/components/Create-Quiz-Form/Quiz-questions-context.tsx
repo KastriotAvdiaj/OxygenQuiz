@@ -8,10 +8,27 @@ import React, {
 } from "react";
 import {
   DEFAULT_QUESTION_SETTINGS,
+  NewAnyQuestion,
   QuestionSettings,
   QuestionSettingsMap,
   QuizQuestion,
 } from "./types";
+import { z } from "zod";
+import { createMultipleChoiceQuestionInputSchema } from "../../../Question/api/Normal-Question/create-multiple-choice-question";
+import { createTrueFalseQuestionInputSchema } from "../../../Question/api/True_False-Question/create-true_false-question";
+import { createTypeTheAnswerQuestionInputSchema } from "../../../Question/api/Type_The_Answer-Question/create-type-the-answer-question";
+import { QuestionType } from "@/types/ApiTypes";
+
+// Validation error type
+export interface ValidationError {
+  field: string;
+  message: string;
+}
+
+export interface QuestionValidationResult {
+  isValid: boolean;
+  errors: ValidationError[];
+}
 
 interface QuizContextType {
   // Permanent quiz selections
@@ -59,6 +76,21 @@ interface QuizContextType {
 
   // Function to update ("NEW") questions
   updateQuestion: (questionId: number, updatedQuestion: QuizQuestion) => void;
+
+  // NEW: Validation functions
+  validateQuestion: (question: NewAnyQuestion) => QuestionValidationResult;
+  validateAllQuestions: () => Map<number, QuestionValidationResult>;
+  getQuestionErrors: (questionId: number) => ValidationError[];
+  
+  // NEW: Validation state management
+  hasValidationBeenTriggered: boolean;
+  triggerValidation: () => void;
+  resetValidationState: () => void;
+
+  // Question errors state
+  questionErrors: Map<number, ValidationError[]>;
+  setQuestionErrors: (questionId: number, errors: ValidationError[]) => void;
+  clearQuestionErrors: (questionId: number) => void;
 }
 
 const QuizContext = createContext<QuizContextType | undefined>(undefined);
@@ -91,6 +123,152 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
     {}
   );
 
+  // NEW: Validation state - only show errors after validation is triggered
+  const [hasValidationBeenTriggered, setHasValidationBeenTriggered] = useState(false);
+
+  // NEW: Question errors state
+  const [questionErrors, setQuestionErrorsState] = useState<
+    Map<number, ValidationError[]>
+  >(new Map());
+
+  // Helper function to get the appropriate schema based on question type
+  const getValidationSchema = (questionType: QuestionType) => {
+    switch (questionType) {
+      case QuestionType.MultipleChoice:
+        return createMultipleChoiceQuestionInputSchema;
+      case QuestionType.TrueFalse:
+        return createTrueFalseQuestionInputSchema;
+      case QuestionType.TypeTheAnswer:
+        return createTypeTheAnswerQuestionInputSchema;
+      default:
+        throw new Error(`Unknown question type: ${questionType}`);
+    }
+  };
+
+  // NEW: Validation functions
+  const validateQuestion = useCallback(
+    (question: NewAnyQuestion): QuestionValidationResult => {
+      try {
+        const schema = getValidationSchema(question.type);
+
+        // Transform question to match API schema format
+        const questionData = {
+          text: question.text,
+          difficultyId: question.difficultyId,
+          categoryId: question.categoryId,
+          languageId: question.languageId,
+          imageUrl: question.imageUrl,
+          visibility: question.visibility,
+          ...(question.type === QuestionType.MultipleChoice && {
+            answerOptions: (question as any).answerOptions,
+            allowMultipleSelections: (question as any).allowMultipleSelections,
+          }),
+          ...(question.type === QuestionType.TrueFalse && {
+            correctAnswer: (question as any).correctAnswer,
+          }),
+          ...(question.type === QuestionType.TypeTheAnswer && {
+            correctAnswer: (question as any).correctAnswer,
+            isCaseSensitive: (question as any).isCaseSensitive,
+            allowPartialMatch: (question as any).allowPartialMatch,
+            acceptableAnswers: (question as any).acceptableAnswers,
+          }),
+        };
+
+        schema.parse(questionData);
+        return { isValid: true, errors: [] };
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          const validationErrors: ValidationError[] = error.errors.map(
+            (err) => ({
+              field: err.path.join("."),
+              message: err.message,
+            })
+          );
+          return { isValid: false, errors: validationErrors };
+        }
+        return {
+          isValid: false,
+          errors: [{ field: "general", message: "Unknown validation error" }],
+        };
+      }
+    },
+    []
+  );
+
+  const validateAllQuestions = useCallback((): Map<
+    number,
+    QuestionValidationResult
+  > => {
+    const results = new Map<number, QuestionValidationResult>();
+
+    addedQuestions.forEach((question) => {
+      // Only validate new questions (negative IDs)
+      if (question.id < 0) {
+        const result = validateQuestion(question as NewAnyQuestion);
+        results.set(question.id, result);
+
+        // Only update errors state if validation has been triggered
+        if (hasValidationBeenTriggered) {
+          if (!result.isValid) {
+            setQuestionErrorsState(
+              (prev) => new Map(prev.set(question.id, result.errors))
+            );
+          } else {
+            setQuestionErrorsState((prev) => {
+              const newMap = new Map(prev);
+              newMap.delete(question.id);
+              return newMap;
+            });
+          }
+        }
+      }
+    });
+
+    return results;
+  }, [addedQuestions, validateQuestion, hasValidationBeenTriggered]);
+
+  // NEW: Function to trigger validation (called on submit)
+  const triggerValidation = useCallback(() => {
+    setHasValidationBeenTriggered(true);
+    // Run validation immediately after triggering
+    validateAllQuestions();
+  }, [validateAllQuestions]);
+
+  // NEW: Function to reset validation state (e.g., when starting a new quiz)
+  const resetValidationState = useCallback(() => {
+    setHasValidationBeenTriggered(false);
+    setQuestionErrorsState(new Map());
+  }, []);
+
+  const getQuestionErrors = useCallback(
+    (questionId: number): ValidationError[] => {
+      // Only return errors if validation has been triggered
+      if (!hasValidationBeenTriggered) {
+        return [];
+      }
+      return questionErrors.get(questionId) || [];
+    },
+    [questionErrors, hasValidationBeenTriggered]
+  );
+
+  const setQuestionErrors = useCallback(
+    (questionId: number, errors: ValidationError[]) => {
+      // Only set errors if validation has been triggered
+      if (hasValidationBeenTriggered) {
+        setQuestionErrorsState((prev) => new Map(prev.set(questionId, errors)));
+      }
+    },
+    [hasValidationBeenTriggered]
+  );
+
+  const clearQuestionErrors = useCallback((questionId: number) => {
+    setQuestionErrorsState((prev) => {
+      const newMap = new Map(prev);
+      newMap.delete(questionId);
+      return newMap;
+    });
+  }, []);
+
   // Permanent quiz selection functions
   const addQuestionToQuiz = (questionObject: QuizQuestion): void => {
     setAddedQuestions((prevSelected) => {
@@ -118,14 +296,17 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
     setAddedQuestions((prevSelected) => {
       const filtered = prevSelected.filter((q) => q.id !== questionId);
       if (displayQuestion?.id === questionId) {
-        setDisplayQuestion(filtered[0] || null); // Set to first question or null if none left
+        setDisplayQuestion(filtered[0] || null);
       }
+
+      // Clear errors for removed question
+      clearQuestionErrors(questionId);
+
       // Update order indices after removal
       setQuestionSettings((prev) => {
         const newSettings = { ...prev };
-        delete newSettings[questionId]; // Remove settings for deleted question
+        delete newSettings[questionId];
 
-        // Reorder remaining questions
         filtered.forEach((question, index) => {
           if (newSettings[question.id]) {
             newSettings[question.id] = {
@@ -177,7 +358,6 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
         (tempQ) => !prevSelected.find((q) => q.id === tempQ.id)
       );
 
-      // Initialize settings for new questions
       const currentLength = prevSelected.length;
       newQuestions.forEach((question, index) => {
         setQuestionSettings((prev) => ({
@@ -201,23 +381,35 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
     }
   };
 
-  // Method for updating "NEW" question
+  // Method for updating "NEW" question with validation
   const updateQuestion = useCallback(
     (questionId: number, updatedQuestion: QuizQuestion): void => {
       console.log("🔄 updateQuestion called for:", questionId);
+
+      // Validate the updated question if it's a new question (negative ID) AND validation has been triggered
+      if (questionId < 0 && hasValidationBeenTriggered) {
+        const validationResult = validateQuestion(
+          updatedQuestion as NewAnyQuestion
+        );
+        if (!validationResult.isValid) {
+          setQuestionErrors(questionId, validationResult.errors);
+        } else {
+          clearQuestionErrors(questionId);
+        }
+      }
+
       setAddedQuestions((prevQuestions) =>
         prevQuestions.map((q) => (q.id === questionId ? updatedQuestion : q))
       );
 
-      // Also update displayQuestion if it's the same question being updated
       if (displayQuestion?.id === questionId) {
         setDisplayQuestion(updatedQuestion);
       }
     },
-    [displayQuestion]
+    [displayQuestion, validateQuestion, setQuestionErrors, clearQuestionErrors, hasValidationBeenTriggered]
   );
 
-  // NEW: Question Settings Functions
+  // Question Settings Functions (unchanged)
   const updateQuestionSetting = useCallback(
     (questionId: number, key: keyof QuestionSettings, value: any) => {
       setQuestionSettings((prev) => ({
@@ -270,7 +462,7 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
           ...prev,
           [toQuestionId]: {
             ...sourceSettings,
-            orderInQuiz: prev[toQuestionId]?.orderInQuiz || 0, // Preserve order
+            orderInQuiz: prev[toQuestionId]?.orderInQuiz || 0,
           },
         }));
       }
@@ -283,7 +475,7 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
       ...prev,
       [questionId]: {
         ...DEFAULT_QUESTION_SETTINGS,
-        orderInQuiz: prev[questionId]?.orderInQuiz || 0, // Preserve order
+        orderInQuiz: prev[questionId]?.orderInQuiz || 0,
       },
     }));
   }, []);
@@ -294,7 +486,7 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
       settings: {
         ...DEFAULT_QUESTION_SETTINGS,
         ...questionSettings[question.id],
-        orderInQuiz: index, // Always use current array position
+        orderInQuiz: index,
       },
     }));
   }, [addedQuestions, questionSettings]);
@@ -335,6 +527,20 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
 
     // Method for updating "NEW" question
     updateQuestion,
+
+    // Validation
+    validateQuestion,
+    validateAllQuestions,
+    getQuestionErrors,
+    
+    // NEW: Validation state management
+    hasValidationBeenTriggered,
+    triggerValidation,
+    resetValidationState,
+
+    questionErrors,
+    setQuestionErrors,
+    clearQuestionErrors,
   };
 
   return (

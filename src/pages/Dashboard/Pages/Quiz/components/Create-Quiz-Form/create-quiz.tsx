@@ -63,6 +63,10 @@ const CreateQuizForm = () => {
     displayQuestion,
     getQuestionsWithSettings,
     addQuestionToQuiz,
+    setDisplayQuestion,
+    validateAllQuestions,
+    triggerValidation,
+    resetValidationState,
   } = useQuiz();
   const { addNotification } = useNotifications();
   const navigate = useNavigate();
@@ -177,6 +181,38 @@ const CreateQuizForm = () => {
         return;
       }
 
+      // NEW: Trigger validation before checking results
+      triggerValidation();
+
+      // NEW: Validate all questions after triggering validation
+      const validationResults = validateAllQuestions();
+      const hasValidationErrors = Array.from(validationResults.values()).some(
+        (result) => !result.isValid
+      );
+
+      if (hasValidationErrors) {
+        // Find the first question with errors and display it
+        const firstErrorQuestion = Array.from(validationResults.entries()).find(
+          ([_, result]) => !result.isValid
+        );
+
+        if (firstErrorQuestion) {
+          const [questionId] = firstErrorQuestion;
+          const question = addedQuestions.find((q) => q.id === questionId);
+          if (question) {
+            setDisplayQuestion(question);
+          }
+        }
+
+        addNotification({
+          type: "error",
+          title: "Validation Error",
+          message:
+            "Please fix the validation errors in your questions before creating the quiz.",
+        });
+        return;
+      }
+
       const processedQuestions = await Promise.all(
         questionsWithSettings.map(async ({ question, settings }, index) => {
           let questionId: number;
@@ -205,6 +241,9 @@ const CreateQuizForm = () => {
           questions: processedQuestions,
         },
       });
+
+      // NEW: Reset validation state after successful submission
+      resetValidationState();
     } catch (error) {
       console.error("Error in quiz creation process:", error);
       // Single error notification point - only show if it's not already handled by mutation
@@ -403,18 +442,44 @@ const CreateQuizForm = () => {
                             setValue("visibility", value)
                           }
                         >
-                          <SelectTrigger variant="quiz" className="w-full">
+                          <SelectTrigger
+                            variant={`${
+                              errors.visibility ? "incorrect" : "quiz"
+                            }`}
+                            className="w-full"
+                          >
                             <SelectValue placeholder="Select visibility..." />
                           </SelectTrigger>
-                          <SelectContent variant="quiz">
-                            <SelectItem variant="quiz" value="Public">
+                          <SelectContent
+                            variant={`${
+                              errors.visibility ? "incorrect" : "quiz"
+                            }`}
+                          >
+                            <SelectItem
+                              variant={`${
+                                errors.visibility ? "incorrect" : "quiz"
+                              }`}
+                              value="Public"
+                            >
                               Public
                             </SelectItem>
-                            <SelectItem variant="quiz" value="Private">
+                            <SelectItem
+                              variant={`${
+                                errors.visibility ? "incorrect" : "quiz"
+                              }`}
+                              value="Private"
+                            >
                               Private
                             </SelectItem>
                           </SelectContent>
                         </Select>
+                        {errors.visibility && (
+                          <p className="text-sm text-red-500 mt-1">
+                            {errors.visibility.message
+                              ? errors.visibility.message
+                              : "Please select a visibility option."}
+                          </p>
+                        )}
                       </div>
                     </div>
 
@@ -502,7 +567,10 @@ const CreateQuizForm = () => {
                     }
                   >
                     <DialogTrigger asChild>
-                      <LiftedButton className="flex items-center gap-2">
+                      <LiftedButton
+                        type="button"
+                        className="flex items-center gap-2"
+                      >
                         + Create New
                       </LiftedButton>
                     </DialogTrigger>

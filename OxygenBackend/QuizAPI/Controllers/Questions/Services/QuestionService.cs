@@ -214,6 +214,12 @@ namespace QuizAPI.Controllers.Questions.Services
                 answerOption.Question = question;
             }
 
+            // ✅ Validation: Ensure at least one correct answer
+            if (!question.AnswerOptions.Any(a => a.IsCorrect))
+            {
+                throw new InvalidOperationException("At least one answer option must be marked as correct.");
+            }
+
             // Set additional properties
             question.UserId = userId;
             question.CreatedAt = DateTime.UtcNow;
@@ -249,6 +255,7 @@ namespace QuizAPI.Controllers.Questions.Services
 
             return _mapper.Map<MultipleChoiceQuestionDTO>(createdQuestion);
         }
+
 
         public async Task<TrueFalseQuestionDTO> CreateTrueFalseQuestionAsync(TrueFalseQuestionCM questionCM, Guid userId)
         {
