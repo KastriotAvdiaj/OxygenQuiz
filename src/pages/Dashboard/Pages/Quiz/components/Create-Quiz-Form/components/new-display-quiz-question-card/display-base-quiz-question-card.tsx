@@ -2,6 +2,7 @@ import { Card, CardContent } from "@/components/ui";
 import { Input, Label } from "@/components/ui/form";
 import { QuestionType } from "@/types/ApiTypes";
 import ImageUpload from "@/utils/Image-Upload";
+import { FieldError } from "react-hook-form";
 
 interface BaseQuestionFormCardProps {
   questionText: string;
@@ -16,6 +17,8 @@ interface BaseQuestionFormCardProps {
   onImageRemove?: () => void;
   imageUploadEndpoint?: string;
   showImageUpload?: boolean;
+
+  questionTextError?: FieldError;
 }
 
 export const BaseQuestionFormCard: React.FC<BaseQuestionFormCardProps> = ({
@@ -30,6 +33,7 @@ export const BaseQuestionFormCard: React.FC<BaseQuestionFormCardProps> = ({
   onImageRemove,
   imageUploadEndpoint = "ImageUpload/question",
   showImageUpload = true,
+  questionTextError,
 }) => {
   return (
     <Card
@@ -52,12 +56,13 @@ export const BaseQuestionFormCard: React.FC<BaseQuestionFormCardProps> = ({
           </section>
           <Input
             id="question-text"
-            variant="quiz"
+            variant={`${questionTextError ? "isIncorrect" : "quiz"}`}
             className="!text-[1.5rem] py-6 w-full"
             questionType={questionType}
             placeholder="Enter your question here..."
             value={questionText}
             onChange={(e) => onQuestionTextChange(e.target.value)}
+            error={questionTextError}
           />
         </div>
 

@@ -64,9 +64,9 @@ const CreateQuizForm = () => {
     getQuestionsWithSettings,
     addQuestionToQuiz,
     setDisplayQuestion,
-    validateAllQuestions,
-    triggerValidation,
-    resetValidationState,
+    getQuestionErrors,
+    validateAllQuestionsForSubmit,
+    resetAllValidationStates,
   } = useQuiz();
   const { addNotification } = useNotifications();
   const navigate = useNavigate();
@@ -181,27 +181,21 @@ const CreateQuizForm = () => {
         return;
       }
 
-      // NEW: Trigger validation before checking results
-      triggerValidation();
+      // NEW: Validate all questions for submit (this marks all as validated and returns boolean)
+      const isValid = validateAllQuestionsForSubmit();
 
-      // NEW: Validate all questions after triggering validation
-      const validationResults = validateAllQuestions();
-      const hasValidationErrors = Array.from(validationResults.values()).some(
-        (result) => !result.isValid
-      );
-
-      if (hasValidationErrors) {
+      if (!isValid) {
         // Find the first question with errors and display it
-        const firstErrorQuestion = Array.from(validationResults.entries()).find(
-          ([_, result]) => !result.isValid
-        );
+        const firstErrorQuestion = addedQuestions.find((question) => {
+          if (question.id < 0) {
+            const errors = getQuestionErrors(question.id);
+            return errors.length > 0;
+          }
+          return false;
+        });
 
         if (firstErrorQuestion) {
-          const [questionId] = firstErrorQuestion;
-          const question = addedQuestions.find((q) => q.id === questionId);
-          if (question) {
-            setDisplayQuestion(question);
-          }
+          setDisplayQuestion(firstErrorQuestion);
         }
 
         addNotification({
@@ -242,8 +236,8 @@ const CreateQuizForm = () => {
         },
       });
 
-      // NEW: Reset validation state after successful submission
-      resetValidationState();
+      // NEW: Reset all validation states after successful submission
+      resetAllValidationStates();
     } catch (error) {
       console.error("Error in quiz creation process:", error);
       // Single error notification point - only show if it's not already handled by mutation

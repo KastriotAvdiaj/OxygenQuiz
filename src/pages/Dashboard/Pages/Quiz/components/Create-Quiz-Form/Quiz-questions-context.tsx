@@ -77,15 +77,15 @@ interface QuizContextType {
   // Function to update ("NEW") questions
   updateQuestion: (questionId: number, updatedQuestion: QuizQuestion) => void;
 
-  // NEW: Validation functions
+  // Validation functions
   validateQuestion: (question: NewAnyQuestion) => QuestionValidationResult;
   validateAllQuestions: () => Map<number, QuestionValidationResult>;
   getQuestionErrors: (questionId: number) => ValidationError[];
   
-  // NEW: Validation state management
-  hasValidationBeenTriggered: boolean;
-  triggerValidation: () => void;
-  resetValidationState: () => void;
+  // NEW: Improved validation state management
+  validateAllQuestionsForSubmit: () => boolean;
+  markQuestionAsValidated: (questionId: number) => void;
+  resetAllValidationStates: () => void;
 
   // Question errors state
   questionErrors: Map<number, ValidationError[]>;
@@ -123,10 +123,10 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
     {}
   );
 
-  // NEW: Validation state - only show errors after validation is triggered
-  const [hasValidationBeenTriggered, setHasValidationBeenTriggered] = useState(false);
+  // NEW: Track which questions have been validated (per-question validation state)
+  const [validatedQuestions, setValidatedQuestions] = useState<Set<number>>(new Set());
 
-  // NEW: Question errors state
+  // Question errors state
   const [questionErrors, setQuestionErrorsState] = useState<
     Map<number, ValidationError[]>
   >(new Map());
@@ -145,7 +145,7 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
     }
   };
 
-  // NEW: Validation functions
+  // Validation functions
   const validateQuestion = useCallback(
     (question: NewAnyQuestion): QuestionValidationResult => {
       try {
@@ -207,8 +207,8 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
         const result = validateQuestion(question as NewAnyQuestion);
         results.set(question.id, result);
 
-        // Only update errors state if validation has been triggered
-        if (hasValidationBeenTriggered) {
+        // Only update errors state if this specific question has been validated
+        if (validatedQuestions.has(question.id)) {
           if (!result.isValid) {
             setQuestionErrorsState(
               (prev) => new Map(prev.set(question.id, result.errors))
@@ -225,40 +225,84 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
     });
 
     return results;
-  }, [addedQuestions, validateQuestion, hasValidationBeenTriggered]);
+  }, [addedQuestions, validateQuestion, validatedQuestions]);
 
-  // NEW: Function to trigger validation (called on submit)
-  const triggerValidation = useCallback(() => {
-    setHasValidationBeenTriggered(true);
-    // Run validation immediately after triggering
-    validateAllQuestions();
-  }, [validateAllQuestions]);
+  // NEW: Function to validate all questions for submit (marks all as validated)
+  const validateAllQuestionsForSubmit = useCallback((): boolean => {
+    const newValidatedQuestions = new Set<number>();
+    let hasErrors = false;
 
-  // NEW: Function to reset validation state (e.g., when starting a new quiz)
-  const resetValidationState = useCallback(() => {
-    setHasValidationBeenTriggered(false);
+    addedQuestions.forEach((question) => {
+      if (question.id < 0) {
+        newValidatedQuestions.add(question.id);
+        const result = validateQuestion(question as NewAnyQuestion);
+        
+        if (!result.isValid) {
+          hasErrors = true;
+          setQuestionErrorsState(
+            (prev) => new Map(prev.set(question.id, result.errors))
+          );
+        } else {
+          setQuestionErrorsState((prev) => {
+            const newMap = new Map(prev);
+            newMap.delete(question.id);
+            return newMap;
+          });
+        }
+      }
+    });
+
+    setValidatedQuestions(newValidatedQuestions);
+    return !hasErrors;
+  }, [addedQuestions, validateQuestion]);
+
+  // NEW: Function to mark a specific question as validated
+  const markQuestionAsValidated = useCallback((questionId: number) => {
+    setValidatedQuestions(prev => new Set(prev).add(questionId));
+    
+    // Run validation for this specific question
+    const question = addedQuestions.find(q => q.id === questionId);
+    if (question && question.id < 0) {
+      const result = validateQuestion(question as NewAnyQuestion);
+      if (!result.isValid) {
+        setQuestionErrorsState(
+          (prev) => new Map(prev.set(questionId, result.errors))
+        );
+      } else {
+        setQuestionErrorsState((prev) => {
+          const newMap = new Map(prev);
+          newMap.delete(questionId);
+          return newMap;
+        });
+      }
+    }
+  }, [addedQuestions, validateQuestion]);
+
+  // NEW: Function to reset all validation states
+  const resetAllValidationStates = useCallback(() => {
+    setValidatedQuestions(new Set());
     setQuestionErrorsState(new Map());
   }, []);
 
   const getQuestionErrors = useCallback(
     (questionId: number): ValidationError[] => {
-      // Only return errors if validation has been triggered
-      if (!hasValidationBeenTriggered) {
+      // Only return errors if this specific question has been validated
+      if (!validatedQuestions.has(questionId)) {
         return [];
       }
       return questionErrors.get(questionId) || [];
     },
-    [questionErrors, hasValidationBeenTriggered]
+    [questionErrors, validatedQuestions]
   );
 
   const setQuestionErrors = useCallback(
     (questionId: number, errors: ValidationError[]) => {
-      // Only set errors if validation has been triggered
-      if (hasValidationBeenTriggered) {
+      // Only set errors if this specific question has been validated
+      if (validatedQuestions.has(questionId)) {
         setQuestionErrorsState((prev) => new Map(prev.set(questionId, errors)));
       }
     },
-    [hasValidationBeenTriggered]
+    [validatedQuestions]
   );
 
   const clearQuestionErrors = useCallback((questionId: number) => {
@@ -299,8 +343,13 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
         setDisplayQuestion(filtered[0] || null);
       }
 
-      // Clear errors for removed question
+      // Clear errors and validation state for removed question
       clearQuestionErrors(questionId);
+      setValidatedQuestions(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(questionId);
+        return newSet;
+      });
 
       // Update order indices after removal
       setQuestionSettings((prev) => {
@@ -386,8 +435,8 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
     (questionId: number, updatedQuestion: QuizQuestion): void => {
       console.log("🔄 updateQuestion called for:", questionId);
 
-      // Validate the updated question if it's a new question (negative ID) AND validation has been triggered
-      if (questionId < 0 && hasValidationBeenTriggered) {
+      // Validate the updated question if it's a new question (negative ID) AND has been marked as validated
+      if (questionId < 0 && validatedQuestions.has(questionId)) {
         const validationResult = validateQuestion(
           updatedQuestion as NewAnyQuestion
         );
@@ -406,7 +455,7 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
         setDisplayQuestion(updatedQuestion);
       }
     },
-    [displayQuestion, validateQuestion, setQuestionErrors, clearQuestionErrors, hasValidationBeenTriggered]
+    [displayQuestion, validateQuestion, setQuestionErrors, clearQuestionErrors, validatedQuestions]
   );
 
   // Question Settings Functions (unchanged)
@@ -533,10 +582,10 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
     validateAllQuestions,
     getQuestionErrors,
     
-    // NEW: Validation state management
-    hasValidationBeenTriggered,
-    triggerValidation,
-    resetValidationState,
+    // NEW: Improved validation state management
+    validateAllQuestionsForSubmit,
+    markQuestionAsValidated,
+    resetAllValidationStates,
 
     questionErrors,
     setQuestionErrors,
