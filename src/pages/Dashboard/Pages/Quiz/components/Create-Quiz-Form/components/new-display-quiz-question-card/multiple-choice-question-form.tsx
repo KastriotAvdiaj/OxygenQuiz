@@ -7,7 +7,11 @@ import { Button, Switch } from "@/components/ui";
 import { Plus, Trash2 } from "lucide-react";
 import { BaseQuestionFormCard } from "./display-base-quiz-question-card";
 import { getQuestionTypeStyles } from "../existing-display-quiz-question-card/display-multiple-choice-question-card/display-muiltiple-choice-question-card";
-import { FieldError } from "react-hook-form";
+import {
+  getErrorAwareStyles,
+  useFormValidation,
+  ValidationErrorsDisplay,
+} from "@/hooks/use-questionForm";
 
 interface MultipleChoiceFormCardProps {
   question: NewMultipleChoiceQuestion;
@@ -24,35 +28,12 @@ export const MultipleChoiceFormCard: React.FC<MultipleChoiceFormCardProps> = ({
     questionErrors,
   } = useQuiz();
 
-  const styles = getQuestionTypeStyles(question.type);
-
-  // Get all errors for this question - the context now handles validation state internally
-  const allErrors = useMemo(() => {
-    return getQuestionErrors(question.id);
-  }, [
+  // Use validation hook
+  const { hasErrors, getFieldError, getAnswerOptionError, getGeneralErrors } = useFormValidation(
     question.id,
     questionErrors,
-    getQuestionErrors,
-  ]);
-
-  // Helper function to get error for a specific field
-  const getFieldError = (fieldPath: string): FieldError | undefined => {
-    const error = allErrors.find((err) => err.field === fieldPath);
-    return error ? { type: "manual", message: error.message } : undefined;
-  };
-
-  // Helper function to get error for answer option by index
-  const getAnswerOptionError = (index: number): FieldError | undefined => {
-    const error = allErrors.find(
-      (err) =>
-        err.field === `answerOptions.${index}.text` ||
-        err.field === `answerOptions[${index}].text`
-    );
-    return error ? { type: "manual", message: error.message } : undefined;
-  };
-
-  // Check if there are any errors for this question
-  const hasErrors = allErrors.length > 0;
+    getQuestionErrors
+  );
 
   const allowMultipleSelections = question.allowMultipleSelections;
   const [answerOptions, setAnswerOptions] = useState<NewAnswerOption[]>(
@@ -124,22 +105,18 @@ export const MultipleChoiceFormCard: React.FC<MultipleChoiceFormCardProps> = ({
     setImageUrl(undefined);
   };
 
-  // Check for general validation errors (like "at least one correct answer required")
-  const generalErrors = allErrors.filter(
-    (err) =>
-      !err.field.startsWith("answerOptions") &&
-      err.field !== "text" &&
-      err.field !== "imageUrl"
-  );
+  const styles = getQuestionTypeStyles(question.type);
+  const errorAwareStyles = getErrorAwareStyles(hasErrors, styles);
+
+  // Get general validation errors that don't belong to specific fields
+  const generalErrors = getGeneralErrors(["text", "imageUrl", "answerOptions"]);
 
   return (
     <div className="relative">
       <BaseQuestionFormCard
         questionText={questionText}
-        borderColor={hasErrors ? "border-red-500" : styles.borderColor}
-        backgroundColor={
-          hasErrors ? "bg-red-50/50 dark:bg-red-950/10" : styles.backgroundColor
-        }
+        borderColor={errorAwareStyles.borderColor}
+        backgroundColor={errorAwareStyles.backgroundColor}
         questionType={question.type}
         onQuestionTextChange={setQuestionText}
         imageUrl={imageUrl}
@@ -226,18 +203,7 @@ export const MultipleChoiceFormCard: React.FC<MultipleChoiceFormCardProps> = ({
           </section>
 
           {/* Display general validation errors that don't belong to specific fields */}
-          {generalErrors.length > 0 && (
-            <div className="mt-4 space-y-2">
-              {generalErrors.map((error, index) => (
-                <div
-                  key={index}
-                  className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-md p-2"
-                >
-                  {error.message}
-                </div>
-              ))}
-            </div>
-          )}
+          <ValidationErrorsDisplay errors={generalErrors} />
         </div>
       </BaseQuestionFormCard>
     </div>

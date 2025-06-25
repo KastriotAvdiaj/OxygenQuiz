@@ -14,6 +14,11 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import {
+  getErrorAwareStyles,
+  useFormValidation,
+  ValidationErrorsDisplay,
+} from "@/hooks/use-questionForm";
 
 interface TypeTheAnswerFormCardProps {
   question: NewTypeTheAnswerQuestion;
@@ -34,7 +39,14 @@ export const TypeTheAnswerFormCard: React.FC<TypeTheAnswerFormCardProps> = ({
   const [acceptableAnswers, setAcceptableAnswers] = useState<
     { value: string }[]
   >(question.acceptableAnswers);
-  const { updateQuestion } = useQuiz();
+  const { updateQuestion, getQuestionErrors, questionErrors } = useQuiz();
+
+  // Use validation hook
+  const { hasErrors, getFieldError, getGeneralErrors } = useFormValidation(
+    question.id,
+    questionErrors,
+    getQuestionErrors
+  );
 
   const currentQuestionState = useMemo(
     () => ({
@@ -68,7 +80,7 @@ export const TypeTheAnswerFormCard: React.FC<TypeTheAnswerFormCardProps> = ({
       acceptableAnswers: debouncedQuestionState.acceptableAnswers,
     };
     updateQuestion(question.id, updatedQuestion);
-  }, [debouncedQuestionState, question.id]);
+  }, [debouncedQuestionState, question.id, updateQuestion]);
 
   const handleAddAcceptableAnswer = () => {
     if (acceptableAnswers.length < 5) {
@@ -95,23 +107,33 @@ export const TypeTheAnswerFormCard: React.FC<TypeTheAnswerFormCardProps> = ({
   };
 
   const styles = getQuestionTypeStyles(question.type);
+  const errorAwareStyles = getErrorAwareStyles(hasErrors, styles);
 
   const filledAcceptableAnswers = acceptableAnswers.filter(
     (answer) => answer.value.trim() !== ""
   );
 
+  // Get general validation errors that don't belong to specific fields
+  const generalErrors = getGeneralErrors([
+    "text",
+    "imageUrl",
+    "correctAnswer",
+    "acceptableAnswers",
+  ]);
+
   return (
     <BaseQuestionFormCard
       questionText={questionText}
       onQuestionTextChange={setQuestionText}
-      borderColor={styles.borderColor}
-      backgroundColor={styles.backgroundColor}
+      borderColor={errorAwareStyles.borderColor}
+      backgroundColor={errorAwareStyles.backgroundColor}
       questionType={QuestionType.TypeTheAnswer}
       // Image upload props
       imageUrl={imageUrl}
       onImageUpload={handleImageUpload}
       onImageRemove={handleImageRemove}
       showImageUpload={true}
+      questionTextError={getFieldError("text")}
     >
       <div className="space-y-6 p-4">
         {/* Main Answer */}
@@ -131,11 +153,12 @@ export const TypeTheAnswerFormCard: React.FC<TypeTheAnswerFormCardProps> = ({
               <Type className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-emerald-500" />
               <Input
                 id="main-answer"
-                variant="isCorrect"
+                variant={getFieldError("correctAnswer") ? "isIncorrect" : "isCorrect"}
                 placeholder="Enter the primary correct answer..."
                 value={correctAnswer}
                 onChange={(e) => setCorrectAnswer(e.target.value)}
                 className="pl-12 h-12 text-md font-medium border-emerald-300 focus:border-emerald-500 dark:border-emerald-700"
+                error={getFieldError("correctAnswer")}
               />
             </div>
           </CardContent>
@@ -185,34 +208,40 @@ export const TypeTheAnswerFormCard: React.FC<TypeTheAnswerFormCardProps> = ({
               </Card>
               {/* Acceptable Answers */}
               <div
-                className={`space-y-3 w-full flex flex-col items-center gap-4 border p-4 rounded-md border-dashed ${styles.borderColor}`}
+                className={`space-y-3 w-full flex flex-col items-center gap-4 border p-4 rounded-md border-dashed ${errorAwareStyles.borderColor}`}
               >
                 <Label className="text-sm font-medium">
                   Additional Acceptable Answers (Optional)
                 </Label>
                 <div className="space-y-4">
-                  {acceptableAnswers.map((answer, index) => (
-                    <div key={index} className="relative w-full">
-                      <Input
-                        // variant="quiz"
-                        placeholder={`Alternative answer ${index + 1}...`}
-                        value={answer.value}
-                        onChange={(e) =>
-                          handleAcceptableAnswerChange(index, e.target.value)
-                        }
-                        className="flex-1"
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        onClick={() => handleRemoveAcceptableAnswer(index)}
-                        className="absolute top-0 right-0 h-4 w-4 p-0 text-white bg-red-400 hover:bg-destructive hover:text-destructive-foreground rounded-md"
-                      >
-                        <X className="h-2 w-2" />
-                      </Button>
-                    </div>
-                  ))}
+                  {acceptableAnswers.map((answer, index) => {
+                    const acceptableAnswerError = getFieldError(`acceptableAnswers.${index}.value`) || 
+                                                getFieldError(`acceptableAnswers[${index}].value`);
+                    
+                    return (
+                      <div key={index} className="relative w-full">
+                        <Input
+                          variant={acceptableAnswerError ? "isIncorrect" : "quiz"}
+                          placeholder={`Alternative answer ${index + 1}...`}
+                          value={answer.value}
+                          onChange={(e) =>
+                            handleAcceptableAnswerChange(index, e.target.value)
+                          }
+                          className="flex-1"
+                          error={acceptableAnswerError}
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          onClick={() => handleRemoveAcceptableAnswer(index)}
+                          className="absolute top-0 right-0 h-4 w-4 p-0 text-white bg-red-400 hover:bg-destructive hover:text-destructive-foreground rounded-md"
+                        >
+                          <X className="h-2 w-2" />
+                        </Button>
+                      </div>
+                    );
+                  })}
                 </div>
                 <div className="flex justify-center">
                   <Button
@@ -220,7 +249,7 @@ export const TypeTheAnswerFormCard: React.FC<TypeTheAnswerFormCardProps> = ({
                     variant="outline"
                     onClick={handleAddAcceptableAnswer}
                     disabled={acceptableAnswers.length >= 5}
-                    className={`border-dashed ${styles.backgroundColor} ${styles.borderColor} `}
+                    className={`border-dashed ${errorAwareStyles.backgroundColor} ${errorAwareStyles.borderColor} `}
                   >
                     <Plus className="mr-2 h-4 w-4" />
                     Add Alternative Answer ({acceptableAnswers.length}/5)
@@ -258,6 +287,9 @@ export const TypeTheAnswerFormCard: React.FC<TypeTheAnswerFormCardProps> = ({
             </AccordionContent>
           </AccordionItem>
         </Accordion>
+
+        {/* Display general validation errors that don't belong to specific fields */}
+        <ValidationErrorsDisplay errors={generalErrors} />
       </div>
     </BaseQuestionFormCard>
   );
