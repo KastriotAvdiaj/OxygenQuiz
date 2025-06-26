@@ -1,16 +1,15 @@
 import { configureAuth } from "react-query-auth";
-import { Link, Navigate, useLocation } from "react-router-dom";
+import { redirect } from "react-router-dom";
 import { z } from "zod";
 import { api, apiService } from "./Api-client";
 import Cookies from "js-cookie";
 import { AUTH_COOKIE } from "./authHelpers";
-import { AlertCircle } from "lucide-react";
-import { LiftedButton } from "@/common/LiftedButton";
 import { AuthResponse, User } from "@/types/user-types";
+import { QueryClient } from "@tanstack/react-query";
 
 const getUser = async (): Promise<User | null> => {
   try {
-    const user: User = (await api.get("Authentication/me")).data; // No need for `response.data` here
+    const user: User = (await api.get("Authentication/me")).data;
     if (!user) {
       return null;
     }
@@ -95,56 +94,69 @@ const authConfig = {
 export const { useUser, useLogin, useLogout, useRegister, AuthLoader } =
   configureAuth(authConfig);
 
-export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const user = useUser();
-  const location = useLocation();
+export const authLoader =
+  (queryClient: QueryClient) =>
+  async (): Promise<{ user: User } | Response> => {
+    const queryKey = ["authenticated-user"];
 
-  if (!user.data) {
-    return (
-      <Navigate
-        to={`/login?redirectTo=${encodeURIComponent(location.pathname)}`}
-        replace
-      />
-    );
-  }
+    try {
+      let user = queryClient.getQueryData<User>(queryKey);
 
-  return <>{children}</>;
-};
+      if (!user) {
+        user = await queryClient.fetchQuery<User>({ queryKey });
+      }
 
-export const AdminRoute = ({ children }: { children: React.ReactNode }) => {
-  const user = useUser();
-  const location = useLocation();
+      if (!user) {
+        throw new Error("User not authenticated");
+      }
 
-  if (!user.data) {
-    return (
-      <Navigate
-        to={`/login?redirectTo=${encodeURIComponent(location.pathname)}`}
-        replace
-      />
-    );
-  }
-  if (!(user.data.role === "Admin" || user.data.role === "SuperAdmin")) {
-    return (
-      <div className="h-screen w-full flex items-center justify-center bg-background">
-        <div className="max-w-sm w-full text-center bg-muted shadow-lg rounded-lg p-6">
-          <div className="flex flex-col items-center">
-            <AlertCircle className="text-red-500 w-12 h-12" />
-            <h2 className="mt-4 text-2xl font-semibold text-foreground ">
-              Access Denied
-            </h2>
-            <p className="mt-2 text-foreground">
-              You do not have the necessary permissions to view this page.
-            </p>
-          </div>
-          <div className="mt-4">
-            <LiftedButton className="rounded">
-              <Link to="/">Go back to Home Page</Link>
-            </LiftedButton>
-          </div>
-        </div>
-      </div>
-    );
-  }
+      if (!(user.role === "Admin" || user.role === "SuperAdmin")) {
+        return redirect("/");
+      }
 
-  return <>{children}</>;
-};
+      // 4. If all checks pass, return the user data.
+      return { user };
+    } catch (error) {
+      // If getQueryData fails or fetchQuery throws a 401, redirect to login.
+      const currentPath = window.location.pathname;
+      return redirect(`/login?redirectTo=${encodeURIComponent(currentPath)}`);
+    }
+  };
+
+// export const AdminRoute = ({ children }: { children: React.ReactNode }) => {
+//   const user = useUser();
+//   const location = useLocation();
+
+//   if (!user.data) {
+//     return (
+//       <Navigate
+//         to={`/login?redirectTo=${encodeURIComponent(location.pathname)}`}
+//         replace
+//       />
+//     );
+//   }
+//   if (!(user.data.role === "Admin" || user.data.role === "SuperAdmin")) {
+//     return (
+//       <div className="h-screen w-full flex items-center justify-center bg-background">
+//         <div className="max-w-sm w-full text-center bg-muted shadow-lg rounded-lg p-6">
+//           <div className="flex flex-col items-center">
+//             <AlertCircle className="text-red-500 w-12 h-12" />
+//             <h2 className="mt-4 text-2xl font-semibold text-foreground ">
+//               Access Denied
+//             </h2>
+//             <p className="mt-2 text-foreground">
+//               You do not have the necessary permissions to view this page.
+//             </p>
+//           </div>
+//           <div className="mt-4">
+//             <LiftedButton className="rounded">
+//               <Link to="/">Go back to Home Page</Link>
+//             </LiftedButton>
+//           </div>
+//         </div>
+//       </div>
+//     );
+//   }
+
+//   return <>{children}</>;
+// };

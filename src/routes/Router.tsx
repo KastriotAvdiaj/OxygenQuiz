@@ -4,7 +4,7 @@ import {
   LoaderFunctionArgs,
   RouterProvider,
 } from "react-router-dom";
-import { AdminRoute } from "../lib/Auth";
+import { authLoader } from "../lib/Auth";
 import { AppRoot } from "../pages/AppRoot";
 import { QueryClient, useQueryClient } from "@tanstack/react-query";
 
@@ -27,6 +27,11 @@ const AboutUs = lazy(() =>
 );
 const Login = lazy(() => import("../pages/UserRelated/Login/Login"));
 const Signup = lazy(() => import("../pages/UserRelated/Signup/Signup"));
+const AccessDeniedPage = lazy(() =>
+  import("../pages/UtilityPages/AccessDenied").then((module) => ({
+    default: module.AccessDeniedPage,
+  }))
+);
 const createAppRouter = (queryClient: QueryClient) =>
   createBrowserRouter([
     {
@@ -62,12 +67,14 @@ const createAppRouter = (queryClient: QueryClient) =>
       element: <RedirectIfLoggedIn component={<Login />} />,
     },
     {
+      path: "/access-denied",
+      element: <AccessDeniedPage />,
+    },
+    {
       path: "/dashboard/*",
-      element: (
-        <AdminRoute>
-          <AppRoot />
-        </AdminRoute>
-      ),
+      element: <AppRoot />, // We can simplify this now
+      id: "dashboardRoot", // Add a unique ID
+      loader: authLoader(queryClient),
       children: [
         {
           index: true,

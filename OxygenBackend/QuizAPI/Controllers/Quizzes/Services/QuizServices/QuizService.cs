@@ -105,8 +105,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                     .Include(q => q.Category)
                     .Include(q => q.Language)
                     .Include(q => q.Difficulty)
-                    .Include(q => q.QuizQuestions)
-                    .ThenInclude(qq => qq.Question)
+                    .Include(q => q.QuizQuestions) // Still need this for QuestionCount
                     .FirstOrDefaultAsync(q => q.Id == id);
 
                 return quiz == null ? null : _mapper.Map<QuizDTO>(quiz);
@@ -114,6 +113,36 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error retrieving quiz {QuizId}", id);
+                throw;
+            }
+        }
+
+        public async Task<List<QuizQuestionDTO>?> GetQuizQuestionsAsync(int id)
+        {
+            try
+            {
+                // First check if quiz exists
+                var quizExists = await _context.Quizzes
+                    .AsNoTracking()
+                    .AnyAsync(q => q.Id == id);
+
+                if (!quizExists)
+                {
+                    return null;
+                }
+
+                var quizQuestions = await _context.QuizQuestions
+                    .AsNoTracking()
+                    .Include(qq => qq.Question)
+                    .Where(qq => qq.QuizId == id)
+                    .OrderBy(qq => qq.OrderInQuiz)
+                    .ToListAsync();
+
+                return _mapper.Map<List<QuizQuestionDTO>>(quizQuestions);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving questions for quiz {QuizId}", id);
                 throw;
             }
         }

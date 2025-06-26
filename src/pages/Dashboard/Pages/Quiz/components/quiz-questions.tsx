@@ -1,6 +1,6 @@
 import { useParams } from "react-router";
 import { Spinner } from "@/components/ui";
-import { QuizQuestion, useQuizQuestionsData } from "../api/get-quiz-questions";
+import {useQuizQuestionsData } from "../api/get-quiz-questions";
 import {
   Accordion,
   AccordionContent,
@@ -8,6 +8,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
+import { QuizQuestionDTO } from "@/types/quiz-types";
 // import { CheckCircle2 } from "lucide-react";
 
 export const QuizQuestions = () => {
@@ -55,7 +56,7 @@ export const QuizQuestions = () => {
 };
 
 type ExistingQuestionCardProps = {
-  quizQuestion: QuizQuestion;
+  quizQuestion: QuizQuestionDTO;
   index: number;
 };
 

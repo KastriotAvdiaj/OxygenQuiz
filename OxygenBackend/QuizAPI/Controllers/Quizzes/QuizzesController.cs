@@ -144,6 +144,48 @@ namespace QuizAPI.Controllers.Quizzes
         }
 
         /// <summary>
+        /// Get quiz questions
+        /// </summary>
+        [HttpGet("{id}/questions")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<List<QuizQuestionDTO>>> GetQuizQuestions(int id)
+        {
+            try
+            {
+                // First get quiz to check permissions (reusing existing logic)
+                var quiz = await _quizService.GetQuizByIdAsync(id);
+                if (quiz == null)
+                {
+                    return Unauthorized();
+                }
+
+                // Apply same authorization logic as GetQuizById
+                if (!quiz.IsPublished && !User.IsInRole("Admin"))
+                {
+                    if (!User.Identity.IsAuthenticated)
+                    {
+                        return Unauthorized();
+                    }
+                    var userId = GetCurrentUserId();
+                    if (quiz.User.Id.ToString() != userId.ToString())
+                    {
+                        return Forbid();
+                    }
+                }
+
+                // If authorized, get the questions
+                var questions = await _quizService.GetQuizQuestionsAsync(id);
+                return Ok(questions ?? new List<QuizQuestionDTO>());
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving questions for quiz {QuizId}", id);
+                return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while processing your request");
+            }
+        }
+
+        /// <summary>
         /// Create a new quiz
         /// </summary>
         [HttpPost]

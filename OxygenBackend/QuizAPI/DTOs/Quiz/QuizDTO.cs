@@ -80,7 +80,7 @@ namespace QuizAPI.DTOs.Quiz
         public int Version { get; set; }
 
         public int QuestionCount { get; set; }
-        public List<QuizQuestionDTO> Questions { get; set; } = new List<QuizQuestionDTO>();
+        /*public List<QuizQuestionDTO> Questions { get; set; } = new List<QuizQuestionDTO>();*/
     }
 
     public class QuizUM

@@ -7,24 +7,24 @@ import {
   Hash,
   List,
   Tag,
-  Target,
   Eye,
   EyeOff,
 } from "lucide-react";
 import formatDate from "@/lib/date-format";
-import { QuizSummaryDTO } from "@/types/quiz-types";
+import { Quiz } from "@/types/quiz-types";
 
 export interface QuizProperty {
   label: string;
-  getIcon: (quiz: any) => React.ReactNode;
-  getValue: (quiz: any) => React.ReactNode;
+  getIcon: (quiz: Quiz) => React.ReactNode;
+  getValue: (quiz: Quiz) => React.ReactNode;
 }
 
 interface QuizPropertiesProps {
-  quiz: QuizSummaryDTO;
+  quiz: Quiz;
 }
 
 export const QuizProperties = ({ quiz }: QuizPropertiesProps) => {
+  console.log(quiz);
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {quizProperties.map((property) => (
@@ -47,22 +47,17 @@ export const quizProperties: QuizProperty[] = [
   {
     label: "Language",
     getIcon: () => <Globe className="h-5 w-5 text-muted-foreground" />,
-    getValue: (quiz) => quiz.language,
+    getValue: (quiz) => quiz.language.language,
   },
   {
     label: "Category",
     getIcon: () => <Tag className="h-5 w-5 text-muted-foreground" />,
-    getValue: (quiz) => quiz.category,
+    getValue: (quiz) => quiz.category.category,
   },
   {
     label: "Time Limit",
     getIcon: () => <Clock className="h-5 w-5 text-muted-foreground" />,
     getValue: (quiz) => `${quiz.timeLimitInSeconds} minutes`,
-  },
-  {
-    label: "Passing Score",
-    getIcon: () => <Target className="h-5 w-5 text-muted-foreground" />,
-    getValue: (quiz) => `${quiz.passingScore}%`,
   },
   {
     label: "Created At",

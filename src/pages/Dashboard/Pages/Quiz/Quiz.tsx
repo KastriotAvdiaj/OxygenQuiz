@@ -57,7 +57,7 @@ export const QuizRoute = () => {
           <TabsList>
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="questions">
-              Questions({quiz.numberOfQuestions})
+              Questions({quiz.questionCount})
             </TabsTrigger>
           </TabsList>
           <Separator className="my-6" />

@@ -49,7 +49,7 @@ public class QuizMappingProfile : Profile
             .ForMember(dest => dest.Category, opt => opt.MapFrom(src => src.Category))
             .ForMember(dest => dest.Language, opt => opt.MapFrom(src => src.Language))
             .ForMember(dest => dest.Difficulty, opt => opt.MapFrom(src => src.Difficulty))
-            .ForMember(dest => dest.Questions, opt => opt.MapFrom(src => src.QuizQuestions))
+            /*.ForMember(dest => dest.Questions, opt => opt.MapFrom(src => src.QuizQuestions))*/
             .ForMember(dest => dest.ShowFeedbackImmediately, opt => opt.MapFrom(src => src.ShowFeedbackImmediately))
             .ForMember(dest => dest.QuestionCount, opt => opt.MapFrom(src => src.QuizQuestions.Count))
             .ForMember(dest => dest.Visibility, opt => opt.MapFrom(src => src.Visibility.ToString()));

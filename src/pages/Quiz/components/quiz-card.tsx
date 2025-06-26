@@ -1,10 +1,9 @@
-
 import type React from "react";
 
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Brain, Trophy, HelpCircle } from "lucide-react";
+import { ArrowRight, HelpCircle } from "lucide-react";
 import { QuizSummaryDTO } from "@/types/quiz-types";
 
 interface QuizCardProps {
@@ -76,7 +75,7 @@ export function QuizCard({ quiz }: QuizCardProps) {
             <div className="flex justify-between items-center mb-4">
               <div className="inline-flex items-center text-sm text-muted-foreground">
                 <HelpCircle className="h-4 w-4 mr-1" />
-                {quiz.numberOfQuestions} questions
+                {quiz.questionCount} questions
               </div>
             </div>
 

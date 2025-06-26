@@ -30,6 +30,13 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
         Task<QuizDTO?> GetQuizByIdAsync(int id);
 
         /// <summary>
+        /// Get quiz questions with full question details
+        /// </summary>
+        /// <param name="id">The quiz ID</param>
+        /// <returns>List of quiz questions with question details or null if quiz not found</returns>
+        Task<List<QuizQuestionDTO>?> GetQuizQuestionsAsync(int id);
+
+        /// <summary>
         /// Create a new quiz
         /// </summary>
         /// <param name="userId">ID of the user creating the quiz</param>
