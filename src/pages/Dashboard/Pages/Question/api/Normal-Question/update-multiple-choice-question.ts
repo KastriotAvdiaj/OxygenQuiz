@@ -3,8 +3,8 @@ import { z } from "zod";
 import { api } from "@/lib/Api-client";
 import { MutationConfig } from "@/lib/React-query";
 import { answerOptionsSchema } from "../../../Quiz/api/create-quiz";
-import { MultipleChoiceQuestion } from "@/types/ApiTypes";
 import { getMultipleChoiceQuestionsQueryOptions } from "./get-multiple-choice-questions";
+import { MultipleChoiceQuestion } from "@/types/question-types";
 
 export const updateMultipleChoiceQuestionInputSchema = z.object({
   id: z.number().int().optional(), 

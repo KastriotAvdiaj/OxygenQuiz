@@ -7,7 +7,7 @@ import { Input, Label } from "@/components/ui/form";
 import { Button, Card, CardContent, Switch } from "@/components/ui";
 import { AlertCircle, CheckCircle2, Plus, Type, X } from "lucide-react";
 import { getQuestionTypeStyles } from "../existing-display-quiz-question-card/display-multiple-choice-question-card/display-muiltiple-choice-question-card";
-import { QuestionType } from "@/types/ApiTypes";
+import { QuestionType } from "@/types/question-types";
 import {
   Accordion,
   AccordionContent,

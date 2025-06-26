@@ -1,7 +1,7 @@
 import React from "react";
 import { CardContent } from "@/components/ui/card";
 import { List } from "lucide-react";
-import { MultipleChoiceQuestion } from "@/types/ApiTypes";
+import { MultipleChoiceQuestion } from "@/types/question-types";
 import { ExistingSmallQuestionCardProps } from "../shared/types";
 import { useQuiz } from "../../../../Quiz-questions-context";
 import { SmallQuestionHeader } from "../shared/small-question-header";

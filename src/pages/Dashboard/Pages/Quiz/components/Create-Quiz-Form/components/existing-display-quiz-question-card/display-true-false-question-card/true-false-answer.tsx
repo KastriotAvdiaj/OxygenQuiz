@@ -2,7 +2,7 @@ import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle } from "lucide-react";
 import { cn } from "@/utils/cn";
-import { TrueFalseQuestion } from "@/types/ApiTypes";
+import { TrueFalseQuestion } from "@/types/question-types";
 
 interface TrueFalseAnswersProps {
   question: TrueFalseQuestion;

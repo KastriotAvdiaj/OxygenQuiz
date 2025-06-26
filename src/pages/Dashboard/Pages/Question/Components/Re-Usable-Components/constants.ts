@@ -1,4 +1,4 @@
-import { QuestionType } from "@/types/ApiTypes";
+import { QuestionType } from "@/types/question-types";
 import { NewMultipleChoiceQuestion, NewTrueFalseQuestion, NewTypeTheAnswerQuestion } from "../../../Quiz/components/Create-Quiz-Form/types";
 
 export const UnspecifiedIds = {

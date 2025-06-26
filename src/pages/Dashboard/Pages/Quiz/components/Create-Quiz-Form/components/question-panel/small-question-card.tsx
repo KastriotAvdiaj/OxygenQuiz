@@ -1,5 +1,5 @@
 import React from "react";
-import { QuestionType } from "@/types/ApiTypes";
+import { QuestionType } from "@/types/question-types";
 import {
   ExistingSmallQuestionCardProps,
   NewSmallQuestionCardProps,

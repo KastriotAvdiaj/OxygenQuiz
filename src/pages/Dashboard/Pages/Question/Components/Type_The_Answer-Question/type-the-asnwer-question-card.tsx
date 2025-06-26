@@ -6,7 +6,6 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { QuestionType, TypeTheAnswerQuestion } from "@/types/ApiTypes";
 import {
   ImageIcon,
   TextCursorInput,
@@ -17,6 +16,7 @@ import {
 import { cn } from "@/utils/cn";
 import { DeleteQuestion } from "../Re-Usable-Components/delete-question";
 import UpdateTypeAnswerQuestionForm from "./update-type_the_asnwer-question";
+import { QuestionType, TypeTheAnswerQuestion } from "@/types/question-types";
 
 interface TypeTheAnswerQuestionCardProps {
   question: TypeTheAnswerQuestion;

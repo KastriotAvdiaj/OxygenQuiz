@@ -1,9 +1,9 @@
-import { QuestionDifficulty } from '@/types/ApiTypes'
 import {z} from 'zod'
 import { api } from '@/lib/Api-client'
 import { MutationConfig } from '@/lib/React-query'
 import { useQueryClient, useMutation } from '@tanstack/react-query'
 import { getQuestionDifficultyQueryOptions } from './get-question-difficulties'
+import { QuestionDifficulty } from '@/types/question-types'
 
 export const createQuestionDifficultyInputSchema = z.object({
     level: z.string().min(1, 'Level is required'),

@@ -1,11 +1,11 @@
 import { useMutation, useQueryClient, QueryKey } from '@tanstack/react-query';
-import { QuestionType } from '@/types/ApiTypes';
 
 import { getMultipleChoiceQuestionsQueryOptions } from "./Normal-Question/get-multiple-choice-questions";
 import { getTrueFalseQuestionsQueryOptions } from './True_False-Question/get-true_false-questions';
 import { getTypeTheAnswerQuestionsQueryOptions } from './Type_The_Answer-Question/get-type-the-answer-questions';
 import { apiService } from '@/lib/Api-client';
 import { MutationConfig } from '@/lib/React-query';
+import { QuestionType } from '@/types/question-types';
 
 
 type DeleteQuestionApiDTO = {

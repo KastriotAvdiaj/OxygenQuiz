@@ -1,5 +1,5 @@
 import { ColumnDef } from "@tanstack/react-table";
-import { User } from "@/types/ApiTypes";
+import { User } from "@/types/user-types";
 import { Button } from "@/components/ui/button";
 import { useDisclosure } from "@/hooks/use-disclosure";
 import {

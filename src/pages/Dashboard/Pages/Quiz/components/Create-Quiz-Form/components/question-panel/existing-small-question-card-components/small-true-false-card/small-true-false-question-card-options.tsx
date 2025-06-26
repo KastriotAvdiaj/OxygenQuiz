@@ -1,7 +1,7 @@
 import React from "react";
 import { CheckCircle, XCircle } from "lucide-react";
 import { cn } from "@/utils/cn";
-import { TrueFalseQuestion } from "@/types/ApiTypes";
+import { TrueFalseQuestion } from "@/types/question-types";
 
 interface TrueFalseOptionsProps {
   question: TrueFalseQuestion;

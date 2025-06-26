@@ -1,10 +1,10 @@
 import { ColumnDef } from "@tanstack/react-table";
-import { QuestionLanguage } from "@/types/ApiTypes";
 import { Edit } from "lucide-react";
 import formatDate from "@/lib/date-format";
 import { DeleteQuestionLanguage } from "./delete-question-language";
 import { Authorization } from "@/lib/authorization";
 import { LiftedButton } from "@/common/LiftedButton";
+import { QuestionLanguage } from "@/types/question-types";
 
 export const langaugeColumns: ColumnDef<QuestionLanguage>[] = [
   {

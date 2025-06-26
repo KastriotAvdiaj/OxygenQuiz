@@ -1,4 +1,3 @@
-import { AnyQuestion } from "@/types/ApiTypes";
 import React, {
   createContext,
   useState,
@@ -17,7 +16,7 @@ import { z } from "zod";
 import { createMultipleChoiceQuestionInputSchema } from "../../../Question/api/Normal-Question/create-multiple-choice-question";
 import { createTrueFalseQuestionInputSchema } from "../../../Question/api/True_False-Question/create-true_false-question";
 import { createTypeTheAnswerQuestionInputSchema } from "../../../Question/api/Type_The_Answer-Question/create-type-the-answer-question";
-import { QuestionType } from "@/types/ApiTypes";
+import { QuestionType, AnyQuestion } from "@/types/question-types";
 
 // Validation error type
 export interface ValidationError {
@@ -81,7 +80,7 @@ interface QuizContextType {
   validateQuestion: (question: NewAnyQuestion) => QuestionValidationResult;
   validateAllQuestions: () => Map<number, QuestionValidationResult>;
   getQuestionErrors: (questionId: number) => ValidationError[];
-  
+
   // NEW: Improved validation state management
   validateAllQuestionsForSubmit: () => boolean;
   markQuestionAsValidated: (questionId: number) => void;
@@ -124,7 +123,9 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
   );
 
   // NEW: Track which questions have been validated (per-question validation state)
-  const [validatedQuestions, setValidatedQuestions] = useState<Set<number>>(new Set());
+  const [validatedQuestions, setValidatedQuestions] = useState<Set<number>>(
+    new Set()
+  );
 
   // Question errors state
   const [questionErrors, setQuestionErrorsState] = useState<
@@ -236,7 +237,7 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
       if (question.id < 0) {
         newValidatedQuestions.add(question.id);
         const result = validateQuestion(question as NewAnyQuestion);
-        
+
         if (!result.isValid) {
           hasErrors = true;
           setQuestionErrorsState(
@@ -257,26 +258,29 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
   }, [addedQuestions, validateQuestion]);
 
   // NEW: Function to mark a specific question as validated
-  const markQuestionAsValidated = useCallback((questionId: number) => {
-    setValidatedQuestions(prev => new Set(prev).add(questionId));
-    
-    // Run validation for this specific question
-    const question = addedQuestions.find(q => q.id === questionId);
-    if (question && question.id < 0) {
-      const result = validateQuestion(question as NewAnyQuestion);
-      if (!result.isValid) {
-        setQuestionErrorsState(
-          (prev) => new Map(prev.set(questionId, result.errors))
-        );
-      } else {
-        setQuestionErrorsState((prev) => {
-          const newMap = new Map(prev);
-          newMap.delete(questionId);
-          return newMap;
-        });
+  const markQuestionAsValidated = useCallback(
+    (questionId: number) => {
+      setValidatedQuestions((prev) => new Set(prev).add(questionId));
+
+      // Run validation for this specific question
+      const question = addedQuestions.find((q) => q.id === questionId);
+      if (question && question.id < 0) {
+        const result = validateQuestion(question as NewAnyQuestion);
+        if (!result.isValid) {
+          setQuestionErrorsState(
+            (prev) => new Map(prev.set(questionId, result.errors))
+          );
+        } else {
+          setQuestionErrorsState((prev) => {
+            const newMap = new Map(prev);
+            newMap.delete(questionId);
+            return newMap;
+          });
+        }
       }
-    }
-  }, [addedQuestions, validateQuestion]);
+    },
+    [addedQuestions, validateQuestion]
+  );
 
   // NEW: Function to reset all validation states
   const resetAllValidationStates = useCallback(() => {
@@ -345,7 +349,7 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
 
       // Clear errors and validation state for removed question
       clearQuestionErrors(questionId);
-      setValidatedQuestions(prev => {
+      setValidatedQuestions((prev) => {
         const newSet = new Set(prev);
         newSet.delete(questionId);
         return newSet;
@@ -455,7 +459,13 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
         setDisplayQuestion(updatedQuestion);
       }
     },
-    [displayQuestion, validateQuestion, setQuestionErrors, clearQuestionErrors, validatedQuestions]
+    [
+      displayQuestion,
+      validateQuestion,
+      setQuestionErrors,
+      clearQuestionErrors,
+      validatedQuestions,
+    ]
   );
 
   // Question Settings Functions (unchanged)
@@ -581,7 +591,7 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
     validateQuestion,
     validateAllQuestions,
     getQuestionErrors,
-    
+
     // NEW: Improved validation state management
     validateAllQuestionsForSubmit,
     markQuestionAsValidated,

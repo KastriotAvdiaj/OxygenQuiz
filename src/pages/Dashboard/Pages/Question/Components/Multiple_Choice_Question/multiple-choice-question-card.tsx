@@ -6,15 +6,11 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import {
-  MultipleChoiceQuestion,
-  AnswerOption,
-  QuestionType,
-} from "@/types/ApiTypes";
 import { CheckCircle, XCircle, ChevronDown, ImageIcon } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { DeleteQuestion } from "../Re-Usable-Components/delete-question";
 import UpdateMultipleChoiceQuestionForm from "./update-multiple-choice-question";
+import { AnswerOption, MultipleChoiceQuestion, QuestionType } from "@/types/question-types";
 
 
 

@@ -1,6 +1,6 @@
 import React from "react";
 import { User } from "lucide-react";
-import { AnyQuestion } from "@/types/ApiTypes";
+import { AnyQuestion } from "@/types/question-types";
 
 interface QuestionFooterProps {
   question: AnyQuestion;

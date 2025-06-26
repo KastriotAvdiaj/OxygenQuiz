@@ -1,11 +1,9 @@
 import { queryOptions, useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/Api-client";
 import { QueryConfig } from "@/lib/React-query";
-import {
-  PaginatedMultipleChoiceQuestionResponse,
-} from "@/types/ApiTypes";
 import { AxiosResponse } from "axios";
 import { cleanQueryParams, extractPaginationFromHeaders } from "@/lib/pagination-query";
+import { PaginatedMultipleChoiceQuestionResponse } from "@/types/question-types";
 
 export type GetMultipleChoiceQuestionsParams = {
   pageNumber?: number;

@@ -4,11 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Form, FormDrawer, Input, Label } from "@/components/ui/form";
 import { useNotifications } from "@/common/Notifications";
 
-import {
-  QuestionCategory,
-  QuestionDifficulty,
-  QuestionLanguage,
-} from "@/types/ApiTypes";
 import { useFieldArray } from "react-hook-form";
 import { Separator } from "@/components/ui/separator";
 import { CategorySelect } from "../../Entities/Categories/Components/select-question-category";
@@ -27,6 +22,7 @@ import {
 } from "@/components/ui";
 import { LiftedButton } from "@/common/LiftedButton";
 import ImageUpload from "@/utils/Image-Upload";
+import { QuestionCategory, QuestionDifficulty, QuestionLanguage } from "@/types/question-types";
 
 interface CreateTypeAnswerQuestionFormProps {
   categories: QuestionCategory[];

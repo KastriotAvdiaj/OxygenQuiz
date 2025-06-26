@@ -1,9 +1,9 @@
-import { TrueFalseQuestion } from "@/types/ApiTypes";
 import { TrueFalseQuestionCard } from "./true-false-question-card";
 import CreateTrueFalseQuestionForm from "./create-true_false-questions";
 import { useQuestionCategoryData } from "../../Entities/Categories/api/get-question-categories";
 import { useQuestionDifficultyData } from "../../Entities/Difficulty/api/get-question-difficulties";
 import { useQuestionLanguageData } from "../../Entities/Language/api/get-question-language";
+import { TrueFalseQuestion } from "@/types/question-types";
 
 interface TrueFalseQuestionListProps {
   questions: TrueFalseQuestion[];

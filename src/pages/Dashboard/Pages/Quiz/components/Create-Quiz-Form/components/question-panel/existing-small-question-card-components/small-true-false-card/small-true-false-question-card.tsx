@@ -1,7 +1,7 @@
 import React from "react";
 import { CardContent } from "@/components/ui/card";
 import { CheckCircle } from "lucide-react";
-import { TrueFalseQuestion } from "@/types/ApiTypes";
+import { TrueFalseQuestion } from "@/types/question-types";
 import { useQuiz } from "../../../../Quiz-questions-context";
 import { ExistingSmallQuestionCardProps } from "../shared/types";
 import { SmallBaseQuestionCard } from "../shared/small-base-question-card";

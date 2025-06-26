@@ -14,8 +14,8 @@ import {
   ChartNetwork,
   Shapes,
 } from "lucide-react";
-import { AnyQuestion } from "@/types/ApiTypes";
 import formatDate from "@/lib/date-format";
+import { AnyQuestion } from "@/types/question-types";
 
 
 interface QuestionMetadataProps {

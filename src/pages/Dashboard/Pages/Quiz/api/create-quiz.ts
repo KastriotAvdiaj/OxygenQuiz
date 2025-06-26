@@ -1,9 +1,9 @@
-import { QuizSummaryDTO } from '@/types/ApiTypes'
 import {z} from 'zod'
 import { api } from '@/lib/Api-client'
 import { MutationConfig } from '@/lib/React-query'
 import { useQueryClient, useMutation } from '@tanstack/react-query'
 import { getAllQuizzesQueryOptions } from './get-all-quizzes'
+import { QuizSummaryDTO } from '@/types/quiz-types'
 
 
 export const answerOptionInputSchema = z.object({

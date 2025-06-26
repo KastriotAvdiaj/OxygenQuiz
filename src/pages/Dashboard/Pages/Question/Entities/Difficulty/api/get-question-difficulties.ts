@@ -2,7 +2,7 @@ import { queryOptions, useQuery } from "@tanstack/react-query";
 
 import { apiService } from "@/lib/Api-client";
 import { QueryConfig } from "@/lib/React-query";
-import { QuestionDifficulty } from "@/types/ApiTypes";
+import { QuestionDifficulty } from "@/types/question-types";
 
 export const getQuestionDifficulties = (): Promise<QuestionDifficulty[]> => {
   return apiService.get(`/questionDifficulties`);

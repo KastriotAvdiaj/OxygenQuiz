@@ -31,7 +31,7 @@ import {
 import { Copy, Eye, MoreHorizontal } from "lucide-react";
 import { DeleteQuiz } from "../delete-quiz";
 import { Link } from "react-router-dom";
-import { QuizSummaryDTO } from "@/types/ApiTypes";
+import { QuizSummaryDTO } from "@/types/quiz-types";
 
 export const quizColumns: ColumnDef<QuizSummaryDTO>[] = [
   {

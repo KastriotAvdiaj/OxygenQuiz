@@ -5,10 +5,10 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Brain, Trophy, HelpCircle } from "lucide-react";
-import { Quiz } from "@/types/ApiTypes";
+import { QuizSummaryDTO } from "@/types/quiz-types";
 
 interface QuizCardProps {
-  quiz: Quiz;
+  quiz: QuizSummaryDTO;
 }
 
 export function QuizCard({ quiz }: QuizCardProps) {

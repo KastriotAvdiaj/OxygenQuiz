@@ -3,7 +3,6 @@ import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Form, FormDrawer, Input, Label } from "@/components/ui/form";
 import { useNotifications } from "@/common/Notifications";
-import { TypeTheAnswerQuestion } from "@/types/ApiTypes";
 import { Separator } from "@/components/ui/separator";
 import { LiftedButton } from "@/common/LiftedButton";
 import ImageUpload from "@/utils/Image-Upload";
@@ -26,6 +25,7 @@ import {
   updateTypeTheAnswerQuestionInputSchema,
   useUpdateTypeTheAnswerQuestion,
 } from "../../api/Type_The_Answer-Question/update-type_the_answer-question";
+import { TypeTheAnswerQuestion } from "@/types/question-types";
 
 interface UpdateTypeAnswerQuestionFormProps {
   question: TypeTheAnswerQuestion;

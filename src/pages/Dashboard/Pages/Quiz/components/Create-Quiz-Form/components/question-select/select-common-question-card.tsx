@@ -8,7 +8,7 @@ import {
   MultipleChoiceQuestion,
   TrueFalseQuestion,
   TypeTheAnswerQuestion,
-} from "@/types/ApiTypes";
+} from "@/types/question-types";
 import {
   ImageIcon,
   Check,

@@ -24,9 +24,9 @@ import { QuestionFilters } from "./Components/Re-Usable-Components/question-filt
 import { CategoryView } from "./Entities/Categories/Components/category-view";
 import { DifficultyView } from "./Entities/Difficulty/Components/difficulty-view";
 import { LanguagesView } from "./Entities/Language/components/language-view";
-import { QuestionType } from "@/types/ApiTypes";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { QuestionTabContent } from "./Components/QuestionsTabContent";
+import { QuestionType } from "@/types/question-types";
 
 export const Questions = () => {
   const [searchTerm, setSearchTerm] = useState("");

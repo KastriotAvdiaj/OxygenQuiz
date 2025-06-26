@@ -1,6 +1,6 @@
 import React from "react";
-import { Input, QuestionType } from "@/components/ui/form";
-import { TrueFalseQuestion } from "@/types/ApiTypes";
+import { Input } from "@/components/ui/form";
+import { TrueFalseQuestion, QuestionType } from "@/types/question-types";
 import {
   BaseQuestionCard,
   ExistingQuestionCardProps,

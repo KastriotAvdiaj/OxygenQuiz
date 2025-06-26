@@ -1,5 +1,5 @@
+import { Pagination } from "@/types/common-types";
 import { AxiosResponse } from "axios";
-import { Pagination } from "@/types/ApiTypes";
 
 export function extractPaginationFromHeaders(
   response: AxiosResponse

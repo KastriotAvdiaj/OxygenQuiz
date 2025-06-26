@@ -11,7 +11,6 @@ import {
   updateMultipleChoiceQuestionInputSchema,
   useUpdateMultipleChoiceQuestion,
 } from "../../api/Normal-Question/update-multiple-choice-question";
-import { MultipleChoiceQuestion } from "@/types/ApiTypes";
 import { useQuizForm } from "../../../Quiz/components/Create-Quiz-Form/use-quiz-form";
 import { CategorySelect } from "../../Entities/Categories/Components/select-question-category";
 import { DifficultySelect } from "../../Entities/Difficulty/Components/select-question-difficulty";
@@ -19,6 +18,7 @@ import { LanguageSelect } from "../../Entities/Language/components/select-questi
 import { VisibilitySelect } from "../../Entities/select-visibility";
 import { LiftedButton } from "@/common/LiftedButton";
 import ImageUpload from "@/utils/Image-Upload";
+import { MultipleChoiceQuestion } from "@/types/question-types";
 
 interface UpdateMultipleChoiceQuestionFormProps {
   question: MultipleChoiceQuestion;

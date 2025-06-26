@@ -1,9 +1,9 @@
 import { useQuery, queryOptions } from "@tanstack/react-query";
 import { api } from "@/lib/Api-client";
 import { QueryConfig } from "@/lib/React-query";
-import {  Quiz } from "@/types/ApiTypes";
+import { QuizSummaryDTO } from "@/types/quiz-types";
 
-export const getCategoriedQuizzes = (): Promise<Quiz[]> => {
+export const getCategoriedQuizzes = (): Promise<QuizSummaryDTO[]> => {
   return api.get(`/quizzes/by-category`);
 };
 

@@ -2,7 +2,7 @@ import React from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Trash2 } from "lucide-react";
-import { AnyQuestion } from "@/types/ApiTypes";
+import { AnyQuestion } from "@/types/question-types";
 
 export interface ExistingQuestionCardProps {
   question: AnyQuestion;

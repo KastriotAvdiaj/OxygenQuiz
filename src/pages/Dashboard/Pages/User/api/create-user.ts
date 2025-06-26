@@ -3,7 +3,7 @@ import {z} from "zod";
 
 import { api } from "@/lib/Api-client";
 import { MutationConfig } from "@/lib/React-query";
-import {User} from "@/types/ApiTypes";
+import { User } from "@/types/user-types";
 
 import { getUsersQueryOptions } from "./get-users";
 

@@ -1,4 +1,4 @@
-import { AnyQuestion } from "@/types/ApiTypes";
+import { AnyQuestion } from "@/types/question-types";
 import { NewAnyQuestion, QuizQuestion } from "../../../../types";
 
 export interface SmallQuestionCardProps {

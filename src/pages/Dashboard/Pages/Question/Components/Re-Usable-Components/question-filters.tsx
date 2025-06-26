@@ -1,9 +1,4 @@
 import { Input } from "@/components/ui/form"; // Assuming this is shadcn/ui Input
-import {
-  QuestionCategory,
-  QuestionDifficulty,
-  QuestionLanguage,
-} from "@/types/ApiTypes";
 import { CategorySelect } from "../../Entities/Categories/Components/select-question-category";
 import { DifficultySelect } from "../../Entities/Difficulty/Components/select-question-difficulty";
 import { LanguageSelect } from "../../Entities/Language/components/select-question-language";
@@ -11,6 +6,11 @@ import { Button } from "@/components/ui"; // Assuming this is shadcn/ui Button
 import { ChevronDown, ChevronUp, Filter, Search, X } from "lucide-react";
 import { RiFilterOffLine } from "react-icons/ri";
 import { useDisclosure } from "@/hooks/use-disclosure";
+import {
+  QuestionCategory,
+  QuestionDifficulty,
+  QuestionLanguage,
+} from "@/types/question-types";
 
 interface QuestionFiltersProps {
   searchTerm: string;

@@ -1,10 +1,10 @@
 import { ColumnDef } from "@tanstack/react-table";
-import { QuestionDifficulty } from "@/types/ApiTypes";
 import { Edit } from "lucide-react";
 import { DeleteQuestionDifficulty } from "./delete-question-difficulty";
 import formatDate from "@/lib/date-format";
 import { Authorization } from "@/lib/authorization";
 import { LiftedButton } from "@/common/LiftedButton";
+import { QuestionDifficulty } from "@/types/question-types";
 
 export const difficultyColumns: ColumnDef<QuestionDifficulty>[] = [
   {

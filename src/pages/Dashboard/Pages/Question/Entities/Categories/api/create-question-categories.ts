@@ -1,9 +1,9 @@
-import { QuestionCategory } from '@/types/ApiTypes'
 import {z} from 'zod'
 import { api } from '@/lib/Api-client'
 import { MutationConfig } from '@/lib/React-query'
 import { useQueryClient, useMutation } from '@tanstack/react-query'
 import { getQuestionCategoriesQueryOptions } from './get-question-categories'
+import { QuestionCategory } from '@/types/question-types'
 
 export const createQuestionCategoryInputSchema = z.object({
     name: z.string().min(1, 'Category is required'),

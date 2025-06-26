@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui";
 import { Input, Label } from "@/components/ui/form";
-import { QuestionType } from "@/types/ApiTypes";
+import { QuestionType } from "@/types/question-types";
 import ImageUpload from "@/utils/Image-Upload";
 import { FieldError } from "react-hook-form";
 

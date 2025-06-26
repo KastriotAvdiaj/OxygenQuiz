@@ -1,5 +1,5 @@
 import React from "react";
-import { AnyQuestion } from "@/types/ApiTypes";
+import { AnyQuestion } from "@/types/question-types";
 import { CommonSelectQuestionCard } from "./select-common-question-card";
 
 interface QuestionListProps {

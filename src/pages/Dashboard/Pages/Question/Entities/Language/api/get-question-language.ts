@@ -1,7 +1,7 @@
 import { queryOptions, useQuery } from "@tanstack/react-query";
 import { apiService } from "@/lib/Api-client";
 import { QueryConfig } from "@/lib/React-query";
-import { QuestionLanguage } from "@/types/ApiTypes";
+import { QuestionLanguage } from "@/types/question-types";
 
 export const getQuestionLanguages = (): Promise<QuestionLanguage[]> => {
   return apiService.get(`/questionLanguages`);

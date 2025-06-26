@@ -1,9 +1,9 @@
 import { queryOptions, useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/Api-client";
 import { QueryConfig } from "@/lib/React-query";
-import { PaginatedTypeTheAnswerQuestionResponse } from "@/types/ApiTypes";
 import { AxiosResponse } from "axios";
 import { cleanQueryParams, extractPaginationFromHeaders } from "@/lib/pagination-query";
+import { PaginatedTypeTheAnswerQuestionResponse } from "@/types/question-types";
 
 export type GetTypeTheAnswerQuestionsParams = {
   pageNumber?: number;

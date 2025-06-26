@@ -1,4 +1,4 @@
-import { AnyQuestion, QuestionBase, QuestionCategory, QuestionDifficulty, QuestionLanguage, QuestionType } from "@/types/ApiTypes";
+import { AnyQuestion, QuestionBase, QuestionCategory, QuestionDifficulty, QuestionLanguage, QuestionType } from "@/types/question-types";
 import { Control, UseFormRegister, FormState, UseFormSetValue, UseFormWatch, UseFormClearErrors } from "react-hook-form";
 import { CreateQuizInput } from "../../api/create-quiz";
 

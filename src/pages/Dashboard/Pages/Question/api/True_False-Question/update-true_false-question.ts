@@ -2,8 +2,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { api } from "@/lib/Api-client";
 import { MutationConfig } from "@/lib/React-query";
-import { TrueFalseQuestion } from "@/types/ApiTypes";
 import { getTrueFalseQuestionsQueryOptions } from "./get-true_false-questions";
+import { TrueFalseQuestion } from "@/types/question-types";
 
 export const updateTrueFalseQuestionInputSchema = z.object({
   id: z.number().int().optional(), 

@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Pagination as PaginationType } from "@/types/ApiTypes"; // Adjust path
+import { Pagination as PaginationType } from "@/types/common-types";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface PaginationControlsProps {
@@ -7,7 +7,10 @@ interface PaginationControlsProps {
   onPageChange: (pageNumber: number) => void;
 }
 
-export const PaginationControls = ({ pagination, onPageChange }: PaginationControlsProps) => {
+export const PaginationControls = ({
+  pagination,
+  onPageChange,
+}: PaginationControlsProps) => {
   if (!pagination || pagination.totalPages <= 1) {
     return null; // Don't render if no pagination needed
   }

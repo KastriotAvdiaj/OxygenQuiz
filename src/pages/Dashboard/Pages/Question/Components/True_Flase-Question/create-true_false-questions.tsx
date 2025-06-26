@@ -4,11 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Form, FormDrawer, Input, Label } from "@/components/ui/form";
 import { useNotifications } from "@/common/Notifications";
 
-import {
-  QuestionCategory,
-  QuestionDifficulty,
-  QuestionLanguage,
-} from "@/types/ApiTypes";
 import { Separator } from "@/components/ui/separator";
 import { CategorySelect } from "../../Entities/Categories/Components/select-question-category";
 import { DifficultySelect } from "../../Entities/Difficulty/Components/select-question-difficulty";
@@ -19,6 +14,7 @@ import {
 } from "../../api/True_False-Question/create-true_false-question";
 import { LiftedButton } from "@/common/LiftedButton";
 import ImageUpload from "@/utils/Image-Upload";
+import { QuestionCategory, QuestionDifficulty, QuestionLanguage } from "@/types/question-types";
 
 interface CreateTrueFalseQuestionFormProps {
   categories: QuestionCategory[];

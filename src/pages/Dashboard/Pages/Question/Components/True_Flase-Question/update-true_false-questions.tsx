@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Form, FormDrawer, Input, Label } from "@/components/ui/form";
 import { useNotifications } from "@/common/Notifications";
-import { TrueFalseQuestion } from "@/types/ApiTypes";
 import { Separator } from "@/components/ui/separator";
 import { LiftedButton } from "@/common/LiftedButton";
 
@@ -17,6 +16,7 @@ import { LanguageSelect } from "../../Entities/Language/components/select-questi
 import { useQuizForm } from "../../../Quiz/components/Create-Quiz-Form/use-quiz-form";
 import { VisibilitySelect } from "../../Entities/select-visibility";
 import { Check, Edit2Icon } from "lucide-react";
+import { TrueFalseQuestion } from "@/types/question-types";
 
 interface UpdateTrueFalseQuestionFormProps {
   question: TrueFalseQuestion;

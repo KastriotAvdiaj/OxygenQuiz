@@ -8,8 +8,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2 } from "lucide-react";
-import { AnswerOption } from "@/types/ApiTypes";
+// import { CheckCircle2 } from "lucide-react";
 
 export const QuizQuestions = () => {
   const { quizId } = useParams();
@@ -81,16 +80,16 @@ const ExistingQuestionCard = ({
                     {quizQuestion.question.difficulty.level}
                   </Badge>
                   <Badge variant="outline">
-                    {quizQuestion.question.category.category}
+                    {quizQuestion.question.category.name}
                   </Badge>
-                  <Badge variant="outline">{quizQuestion.score} Points</Badge>
+                  <Badge variant="outline">{quizQuestion.pointSystem}</Badge>
                 </div>
               </div>
             </div>
           </AccordionTrigger>
           <AccordionContent>
             <div className="pl-6 space-y-2">
-              {quizQuestion.question.answerOptions.map(
+              {/* {quizQuestion.question.answerOptions.map(
                 (option: AnswerOption) => (
                   <div
                     key={option.id}
@@ -108,7 +107,7 @@ const ExistingQuestionCard = ({
                     </div>
                   </div>
                 )
-              )}
+              )} */}
             </div>
           </AccordionContent>
         </AccordionItem>

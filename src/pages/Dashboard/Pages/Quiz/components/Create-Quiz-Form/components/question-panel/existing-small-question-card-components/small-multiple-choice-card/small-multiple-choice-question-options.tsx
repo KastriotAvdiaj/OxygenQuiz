@@ -1,7 +1,7 @@
 import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/utils/cn";
-import { MultipleChoiceQuestion } from "@/types/ApiTypes";
+import { MultipleChoiceQuestion } from "@/types/question-types";
 
 interface MultipleChoiceOptionsProps {
   question: MultipleChoiceQuestion;

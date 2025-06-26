@@ -1,8 +1,9 @@
 import * as React from "react";
 
-import { User, MultipleChoiceQuestion } from "@/types/ApiTypes";
 
 import { useUser } from "@/lib/Auth";
+import { MultipleChoiceQuestion } from "@/types/question-types";
+import { User } from "@/types/user-types";
 
 export enum ROLES {
   Admin = "Admin",

@@ -7,13 +7,10 @@ import {
   FieldWrapper,
   type FieldWrapperPassThroughProps,
 } from "./field-wrapper";
+import { QuestionType } from "@/types/question-types";
 
 // Define question types as enum
-export enum QuestionType {
-  MultipleChoice = "MultipleChoice",
-  TrueFalse = "TrueFalse",
-  TypeTheAnswer = "TypeTheAnswer",
-}
+
 
 export type InputProps = React.InputHTMLAttributes<HTMLInputElement> &
   FieldWrapperPassThroughProps & {

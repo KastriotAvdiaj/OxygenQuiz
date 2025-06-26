@@ -1,6 +1,6 @@
 import React from "react";
 import { Input } from "@/components/ui/form";
-import { MultipleChoiceQuestion, QuestionType } from "@/types/ApiTypes";
+import { MultipleChoiceQuestion, QuestionType } from "@/types/question-types";
 import {
   BaseQuestionCard,
   ExistingQuestionCardProps,

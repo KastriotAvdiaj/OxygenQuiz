@@ -1,4 +1,4 @@
-import { QuestionType } from "@/types/ApiTypes";
+import { QuestionType } from "@/types/question-types";
 import { NewAnyQuestion } from "../../types";
 import { MultipleChoiceFormCard } from "./multiple-choice-question-form";
 import { TrueFalseFormCard } from "./true-false-question-form";

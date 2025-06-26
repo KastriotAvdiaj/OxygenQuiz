@@ -2,9 +2,9 @@ import { Button } from "@/components/ui/button";
 import { ConfirmationDialog } from "@/components/ui/dialog";
 import { useNotifications } from "@/common/Notifications";
 import { useDeleteQuestion } from "../../api/delete-question";
-import { QuestionType } from "@/types/ApiTypes";
 import { LiftedButton } from "@/common/LiftedButton";
 import { Trash } from "lucide-react";
+import { QuestionType } from "@/types/question-types";
 
 type DeleteUserProps = {
   id: number;
@@ -21,13 +21,6 @@ export const DeleteQuestion = ({ id, questionType }: DeleteUserProps) => {
           title: "Question Deleted",
         });
       },
-      // onError: (error) => {
-      //   addNotification({
-      //     type: "error",
-      //     title: "Error deleting question.",
-      //     message: error.message,
-      //   });
-      // },
     },
     questionType,
   });

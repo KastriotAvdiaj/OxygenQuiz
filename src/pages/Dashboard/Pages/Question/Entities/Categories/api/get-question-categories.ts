@@ -2,7 +2,7 @@ import { queryOptions, useQuery } from "@tanstack/react-query";
 
 import {  apiService } from "@/lib/Api-client";
 import { QueryConfig } from "@/lib/React-query";
-import { QuestionCategory } from "@/types/ApiTypes";
+import { QuestionCategory } from "@/types/question-types";
 
 export const getQuestionCategories = (): Promise<QuestionCategory[]> => {
   return apiService.get(`/questionCategories`);

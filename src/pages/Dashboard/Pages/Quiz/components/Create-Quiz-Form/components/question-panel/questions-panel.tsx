@@ -12,7 +12,7 @@ import { PlusCircle } from "lucide-react";
 import { useQuiz } from "../../Quiz-questions-context";
 import { LiftedButton } from "@/common/LiftedButton";
 import SelectQuestionComponent from "../question-select/question-select";
-import { AnyQuestion } from "@/types/ApiTypes";
+import { AnyQuestion } from "@/types/question-types";
 import { NewAnyQuestion } from "../../types";
 import { SmallQuestionCard } from "./small-question-card";
 

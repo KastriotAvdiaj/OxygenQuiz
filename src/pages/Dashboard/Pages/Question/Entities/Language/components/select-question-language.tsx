@@ -6,8 +6,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { QuestionLanguage } from "@/types/ApiTypes";
 import { Label } from "@/components/ui/form";
+import { QuestionLanguage } from "@/types/question-types";
 
 interface BaseLanguageSelectProps {
   label?: string;

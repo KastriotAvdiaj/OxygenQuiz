@@ -4,11 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Form, FormDrawer, Input, Label } from "@/components/ui/form";
 import { useNotifications } from "@/common/Notifications";
 import { Controller } from "react-hook-form";
-import {
-  QuestionCategory,
-  QuestionDifficulty,
-  QuestionLanguage,
-} from "@/types/ApiTypes";
 import { useFieldArray } from "react-hook-form";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
@@ -21,6 +16,7 @@ import {
   useCreateMultipleChoiceQuestion,
 } from "../../../api/Normal-Question/create-multiple-choice-question";
 import ImageUpload from "@/utils/Image-Upload";
+import { QuestionCategory, QuestionDifficulty, QuestionLanguage } from "@/types/question-types";
 
 interface CreateMultipleChoiceFormProps {
   categories: QuestionCategory[];

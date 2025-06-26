@@ -1,13 +1,14 @@
 import { useQuery, queryOptions } from "@tanstack/react-query";
 import { api } from "@/lib/Api-client";
 import { QueryConfig } from "@/lib/React-query";
-import {  Question} from "@/types/ApiTypes";
+import { QuestionBase } from "@/types/question-types";
 
 export type QuizQuestion = {
     quizId: number; //these are being sent from the back so maybe we need to change it since we're not using them in the front
     questionId: number; // this too
-    score: number;
-    question: Question;
+    pointSystem: string;
+    timeLimitInSeconds:number;
+    question: QuestionBase;
 }
 
 export const getQuizQuestions = ({

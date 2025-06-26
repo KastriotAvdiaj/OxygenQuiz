@@ -1,5 +1,5 @@
 import React from "react";
-import { QuestionType } from "@/types/ApiTypes";
+import { QuestionType } from "@/types/question-types";
 import { MultipleChoiceCard } from "./display-multiple-choice-question-card/display-muiltiple-choice-question-card";
 import { TrueFalseCard } from "./display-true-false-question-card/display-true-false-question-card";
 import { TypeTheAnswerCard } from "./display-type-the-answer-question-card/display-type-the-asnwer-question-card";

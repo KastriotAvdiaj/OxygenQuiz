@@ -12,7 +12,7 @@ import {
   EyeOff,
 } from "lucide-react";
 import formatDate from "@/lib/date-format";
-import { QuizSummaryDTO } from "@/types/ApiTypes";
+import { QuizSummaryDTO } from "@/types/quiz-types";
 
 export interface QuizProperty {
   label: string;
@@ -21,22 +21,22 @@ export interface QuizProperty {
 }
 
 interface QuizPropertiesProps {
-    quiz: QuizSummaryDTO;
-  }
-  
-  export const QuizProperties = ({ quiz }: QuizPropertiesProps) => {
-    return (
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {quizProperties.map((property) => (
-          <div key={property.label} className="flex items-center gap-2">
-            {property.getIcon(quiz)}
-            <span className="font-medium">{property.label}:</span>
-            <span>{property.getValue(quiz)}</span>
-          </div>
-        ))}
-      </div>
-    );
-  };
+  quiz: QuizSummaryDTO;
+}
+
+export const QuizProperties = ({ quiz }: QuizPropertiesProps) => {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {quizProperties.map((property) => (
+        <div key={property.label} className="flex items-center gap-2">
+          {property.getIcon(quiz)}
+          <span className="font-medium">{property.label}:</span>
+          <span>{property.getValue(quiz)}</span>
+        </div>
+      ))}
+    </div>
+  );
+};
 
 export const quizProperties: QuizProperty[] = [
   {
@@ -57,7 +57,7 @@ export const quizProperties: QuizProperty[] = [
   {
     label: "Time Limit",
     getIcon: () => <Clock className="h-5 w-5 text-muted-foreground" />,
-    getValue: (quiz) => `${quiz.timeLimit} minutes`,
+    getValue: (quiz) => `${quiz.timeLimitInSeconds} minutes`,
   },
   {
     label: "Passing Score",
@@ -82,6 +82,6 @@ export const quizProperties: QuizProperty[] = [
   {
     label: "Number of Questions",
     getIcon: () => <List className="h-5 w-5 text-muted-foreground" />,
-    getValue: (quiz) => quiz.numberOfQuestions,
+    getValue: (quiz) => quiz.questionCount,
   },
 ];

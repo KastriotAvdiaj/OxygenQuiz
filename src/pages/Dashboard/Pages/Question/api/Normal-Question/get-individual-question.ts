@@ -1,7 +1,7 @@
 import { useQuery, queryOptions } from "@tanstack/react-query";
 import { api } from "@/lib/Api-client";
 import { QueryConfig } from "@/lib/React-query";
-import { IndividualQuestion } from "@/types/ApiTypes";
+import { IndividualQuestion } from "@/types/question-types";
 
 
 export const getIndividualQuestion = ({

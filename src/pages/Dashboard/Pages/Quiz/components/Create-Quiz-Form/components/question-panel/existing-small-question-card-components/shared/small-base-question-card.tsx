@@ -1,7 +1,7 @@
 import React from "react";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/utils/cn";
-import { AnyQuestion } from "@/types/ApiTypes";
+import { AnyQuestion } from "@/types/question-types";
 import { useQuiz } from "../../../../Quiz-questions-context";
 import { NewAnyQuestion } from "../../../../types";
 

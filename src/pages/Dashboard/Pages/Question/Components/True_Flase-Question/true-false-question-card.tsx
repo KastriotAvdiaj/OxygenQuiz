@@ -6,11 +6,11 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { QuestionType, TrueFalseQuestion } from "@/types/ApiTypes";
 import { CheckCircle, XCircle, ChevronDown, ImageIcon } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { DeleteQuestion } from "../Re-Usable-Components/delete-question";
 import { UpdateTrueFalseQuestionForm } from "./update-true_false-questions";
+import { QuestionType, TrueFalseQuestion } from "@/types/question-types";
 
 interface TrueFalseQuestionCardProps {
   question: TrueFalseQuestion;

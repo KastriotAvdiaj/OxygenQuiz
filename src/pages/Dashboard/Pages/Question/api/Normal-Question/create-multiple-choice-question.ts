@@ -2,9 +2,9 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { apiService } from "@/lib/Api-client";
 import { MutationConfig } from "@/lib/React-query";
-import { MultipleChoiceQuestion } from "@/types/ApiTypes";
 import { answerOptionsSchema } from "../../../Quiz/api/create-quiz";
 import { getMultipleChoiceQuestionsQueryOptions } from "./get-multiple-choice-questions";
+import { MultipleChoiceQuestion } from "@/types/question-types";
 
 
 export const createMultipleChoiceQuestionInputSchema = z.object({

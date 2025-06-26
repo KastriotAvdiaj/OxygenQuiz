@@ -1,7 +1,7 @@
 import React from "react";
 import { CardContent } from "@/components/ui/card";
 import { Edit3 } from "lucide-react";
-import { TypeTheAnswerQuestion } from "@/types/ApiTypes";
+import { TypeTheAnswerQuestion } from "@/types/question-types";
 import { ExistingSmallQuestionCardProps } from "../shared/types";
 import { useQuiz } from "../../../../Quiz-questions-context";
 import { SmallTypeAnswerDisplay } from "./small-type-the-asnwer-quesiton-display";

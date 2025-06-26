@@ -1,14 +1,14 @@
 import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Edit3 } from "lucide-react";
-import { TypeTheAnswerQuestion } from "@/types/ApiTypes";
+import { TypeTheAnswerQuestion } from "@/types/question-types";
 
 interface TypeTheAnswerDisplayProps {
   question: TypeTheAnswerQuestion;
 }
 
 export const TypeTheAnswerDisplay: React.FC<TypeTheAnswerDisplayProps> = ({
-  question
+  question,
 }) => (
   <div className="my-6">
     <div className="border border-green-500/40 bg-green-100 dark:bg-green-900/30 shadow-sm rounded-lg px-4 py-3">

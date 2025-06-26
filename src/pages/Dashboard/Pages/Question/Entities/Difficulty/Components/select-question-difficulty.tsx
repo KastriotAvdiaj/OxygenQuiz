@@ -7,8 +7,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { QuestionDifficulty } from "@/types/ApiTypes";
 import { Label } from "@/components/ui/form";
+import { QuestionDifficulty } from "@/types/question-types";
 
 interface BaseDifficultySelectProps {
   label?: string;

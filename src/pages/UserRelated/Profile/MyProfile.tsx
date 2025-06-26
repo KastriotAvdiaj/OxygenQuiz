@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useUser } from "@/lib/Auth";
 import formatDate from "@/lib/date-format";
-import { User } from "@/types/ApiTypes";
+import { User } from "@/types/user-types";
 
 const MyProfile = () => {
   const Data = useUser();

@@ -1,7 +1,7 @@
 import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Edit3 } from "lucide-react";
-import { TypeTheAnswerQuestion } from "@/types/ApiTypes";
+import { TypeTheAnswerQuestion } from "@/types/question-types";
 
 interface SmallTypeAnswerDisplayProps {
   question: TypeTheAnswerQuestion;

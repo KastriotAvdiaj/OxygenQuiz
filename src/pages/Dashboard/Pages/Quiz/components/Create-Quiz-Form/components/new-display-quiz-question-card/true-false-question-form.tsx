@@ -7,7 +7,7 @@ import { useDebounce } from "@/hooks/use-debounce";
 import { BaseQuestionFormCard } from "./display-base-quiz-question-card";
 import { Label } from "@/components/ui/form";
 import { getQuestionTypeStyles } from "../existing-display-quiz-question-card/display-multiple-choice-question-card/display-muiltiple-choice-question-card";
-import { QuestionType } from "@/types/ApiTypes";
+import { QuestionType } from "@/types/question-types";
 import { Check, X, CheckCircle, XCircle } from "lucide-react";
 import {
   getErrorAwareStyles,

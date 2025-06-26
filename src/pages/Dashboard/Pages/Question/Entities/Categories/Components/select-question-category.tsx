@@ -7,7 +7,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/form";
-import { QuestionCategory } from "@/types/ApiTypes";
+import { QuestionCategory } from "@/types/question-types";
 
 interface BaseCategorySelectProps {
   label?: string;

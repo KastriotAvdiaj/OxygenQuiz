@@ -2,11 +2,11 @@ import { configureAuth } from "react-query-auth";
 import { Link, Navigate, useLocation } from "react-router-dom";
 import { z } from "zod";
 import { api, apiService } from "./Api-client";
-import { AuthResponse, User } from "@/types/ApiTypes";
 import Cookies from "js-cookie";
 import { AUTH_COOKIE } from "./authHelpers";
 import { AlertCircle } from "lucide-react";
 import { LiftedButton } from "@/common/LiftedButton";
+import { AuthResponse, User } from "@/types/user-types";
 
 const getUser = async (): Promise<User | null> => {
   try {

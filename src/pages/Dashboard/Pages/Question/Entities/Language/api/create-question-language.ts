@@ -1,9 +1,9 @@
-import { QuestionLanguage } from '@/types/ApiTypes'
 import {z} from 'zod'
 import { api } from '@/lib/Api-client'
 import { MutationConfig } from '@/lib/React-query'
 import { useQueryClient, useMutation } from '@tanstack/react-query'
 import { getQuestionLanguageQueryOptions } from './get-question-language'
+import { QuestionLanguage } from '@/types/question-types'
 
 export const createQuestionLanguageInputSchema = z.object({
     language: z.string().min(1, 'Category is required'),

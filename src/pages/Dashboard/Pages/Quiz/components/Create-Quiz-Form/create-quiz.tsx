@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/select";
 import SelectQuestionComponent from "./components/question-select/question-select";
 import { useQuiz } from "./Quiz-questions-context";
-import { AnyQuestion } from "@/types/ApiTypes";
+import { AnyQuestion } from "@/types/question-types";
 import { LiftedButton } from "@/common/LiftedButton";
 import { CategorySelect } from "../../../Question/Entities/Categories/Components/select-question-category";
 import { createQuizInputSchema, useCreateQuiz } from "../../api/create-quiz";
@@ -50,7 +50,7 @@ import {
   DEFAULT_NEW_TYPE_ANSWER,
 } from "../../../Question/Components/Re-Usable-Components/constants";
 import { NewQuestionCard } from "./components/new-display-quiz-question-card/main-display-quiz-question-card";
-import { QuestionType } from "@/types/ApiTypes";
+import { QuestionType } from "@/types/question-types";
 import { useCreateMultipleChoiceQuestion } from "../../../Question/api/Normal-Question/create-multiple-choice-question";
 import { useCreateTrueFalseQuestion } from "../../../Question/api/True_False-Question/create-true_false-question";
 import { useCreateTypeTheAnswerQuestion } from "../../../Question/api/Type_The_Answer-Question/create-type-the-answer-question";
