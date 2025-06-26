@@ -100,6 +100,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
             try
             {
                 var quiz = await _context.Quizzes
+                    .AsNoTracking()
                     .Include(q => q.User)
                     .Include(q => q.Category)
                     .Include(q => q.Language)

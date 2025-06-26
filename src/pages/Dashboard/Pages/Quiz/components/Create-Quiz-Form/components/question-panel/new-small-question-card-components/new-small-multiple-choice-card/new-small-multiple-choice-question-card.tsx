@@ -10,7 +10,7 @@ import { useQuiz } from "../../../../Quiz-questions-context";
 import { NewMultipleChoiceOptions } from "./new-small-multiple-choice-question-options";
 
 // Error indicator component for small cards
-const ErrorIndicator: React.FC<{
+export const ErrorIndicator: React.FC<{
   questionId: number;
   className?: string;
 }> = ({ questionId, className = "" }) => {
@@ -21,7 +21,7 @@ const ErrorIndicator: React.FC<{
 
   return (
     <div
-      className={`absolute -top-2 -right-2 z-10 ${className}`}
+      className={`absolute -top-2 -left-2 z-10 ${className}`}
       title={`${errors.length} validation error${errors.length > 1 ? "s" : ""}`}
     >
       <div className="relative">
