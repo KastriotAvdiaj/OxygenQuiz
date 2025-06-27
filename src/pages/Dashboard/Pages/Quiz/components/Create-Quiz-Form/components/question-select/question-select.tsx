@@ -269,6 +269,7 @@ const SelectQuestionComponent: React.FC<SelectQuestionComponentProps> = ({
                 </Button>
                 <Button
                   onClick={handleAddSelectedQuestions}
+                  type="button"
                   disabled={tempSelectedQuestionsCount === 0}
                   className={cn(
                     "transition-all duration-200",

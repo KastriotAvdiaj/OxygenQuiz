@@ -9,6 +9,7 @@ import {
   Tag,
   Eye,
   EyeOff,
+  StampIcon,
 } from "lucide-react";
 import formatDate from "@/lib/date-format";
 import { Quiz } from "@/types/quiz-types";
@@ -30,7 +31,7 @@ export const QuizProperties = ({ quiz }: QuizPropertiesProps) => {
       {quizProperties.map((property) => (
         <div key={property.label} className="flex items-center gap-2">
           {property.getIcon(quiz)}
-          <span className="font-medium">{property.label}:</span>
+          <span className="font-bold">{property.label}:</span>
           <span>{property.getValue(quiz)}</span>
         </div>
       ))}
@@ -53,6 +54,11 @@ export const quizProperties: QuizProperty[] = [
     label: "Category",
     getIcon: () => <Tag className="h-5 w-5 text-muted-foreground" />,
     getValue: (quiz) => quiz.category.name,
+  },
+  {
+    label: "Difficulty",
+    getIcon: () => <StampIcon className="h-5 w-5 text-muted-foreground" />,
+    getValue: (quiz) => quiz.difficulty.level,
   },
   {
     label: "Time Limit",

@@ -1,15 +1,13 @@
 import { useParams } from "react-router";
-import { Spinner } from "@/components/ui";
-import {useQuizQuestionsData } from "../api/get-quiz-questions";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Spinner } from "@/components/ui";
+import { useQuizQuestionsData } from "../api/get-quiz-questions";
 import { QuizQuestionDTO } from "@/types/quiz-types";
-// import { CheckCircle2 } from "lucide-react";
+import { QuestionType } from "@/types/question-types";
+import { TypeTheAnswerQuestionCard } from "../../Question/Components/Type_The_Answer-Question/type-the-asnwer-question-card";
+import { TrueFalseQuestionCard } from "../../Question/Components/True_Flase-Question/true-false-question-card";
+import { MultipleChoiceQuestionCard } from "../../Question/Components/Multiple_Choice_Question/multiple-choice-question-card";
 
 export const QuizQuestions = () => {
   const { quizId } = useParams();
@@ -41,9 +39,9 @@ export const QuizQuestions = () => {
   return (
     <div>
       <h2 className="text-xl font-semibold mb-4">Quiz Questions</h2>
-      {/* {questions.length > 0 ? (
+      {questions.length > 0 ? (
         questions.map((quizQuestion, index) => (
-          <ExistingQuestionCard
+          <QuizQuestionCard
             key={quizQuestion.questionId || index}
             quizQuestion={quizQuestion}
             index={index}
@@ -51,69 +49,56 @@ export const QuizQuestions = () => {
         ))
       ) : (
         <p>No questions found for this quiz.</p>
-      )} */}
+      )}
     </div>
   );
 };
 
-type ExistingQuestionCardProps = {
+type QuizQuestionCardProps = {
   quizQuestion: QuizQuestionDTO;
   index: number;
 };
 
-const ExistingQuestionCard = ({
-  quizQuestion,
-  index,
-}: ExistingQuestionCardProps) => {
+const QuizQuestionCard = ({ quizQuestion, index }: QuizQuestionCardProps) => {
+  const question = quizQuestion.question;
+
+  const renderQuestionByType = () => {
+    switch (question.type) {
+      case QuestionType.MultipleChoice:
+        return <MultipleChoiceQuestionCard question={question} />;
+
+      case QuestionType.TrueFalse:
+        return <TrueFalseQuestionCard question={question} />;
+
+      case QuestionType.TypeTheAnswer:
+        return <TypeTheAnswerQuestionCard question={question} />;
+    }
+  };
+
   return (
-    <>
-      <Accordion type="single" collapsible>
-        <AccordionItem
-          key={quizQuestion.questionId}
-          value={`question-${quizQuestion.questionId}`}
-        >
-          <AccordionTrigger>
-            <div className="flex items-start text-left">
-              <span className="mr-2">{index + 1}.</span>
-              <div>
-                <div>{quizQuestion.question.text}</div>
-                <div className="flex gap-2 mt-1">
-                  <Badge variant="outline">
-                    {quizQuestion.question.difficulty.level}
-                  </Badge>
-                  <Badge variant="outline">
-                    {quizQuestion.question.category.name}
-                  </Badge>
-                  <Badge variant="outline">{quizQuestion.pointSystem}</Badge>
-                </div>
-              </div>
+    <div className="mb-4">
+      <Card className="mb-2 border-l-4 border-l-blue-500 dark:border-l-blue-400 rounded-none">
+        <CardHeader className="pb-2 pt-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Question {index + 1}
+            </CardTitle>
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary" className="text-xs">
+                {quizQuestion.timeLimitInSeconds}s
+              </Badge>
+              <Badge variant="secondary" className="text-xs">
+                {quizQuestion.pointSystem}
+              </Badge>
+              <Badge variant="outline" className="text-xs">
+                Order: {quizQuestion.orderInQuiz}
+              </Badge>
             </div>
-          </AccordionTrigger>
-          <AccordionContent>
-            <div className="pl-6 space-y-2">
-              {/* {quizQuestion.question.answerOptions.map(
-                (option: AnswerOption) => (
-                  <div
-                    key={option.id}
-                    className={`p-3 rounded-md border ${
-                      option.isCorrect
-                        ? "border-green-500 bg-green-50 dark:bg-green-950/20"
-                        : "border-gray-200"
-                    }`}
-                  >
-                    <div className="flex items-center">
-                      {option.isCorrect && (
-                        <CheckCircle2 className="h-4 w-4 text-green-500 mr-2" />
-                      )}
-                      <span>{option.text}</span>
-                    </div>
-                  </div>
-                )
-              )} */}
-            </div>
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
-    </>
+          </div>
+        </CardHeader>
+      </Card>
+
+      {renderQuestionByType()}
+    </div>
   );
 };

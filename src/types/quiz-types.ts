@@ -1,7 +1,7 @@
 // types/quiz.types.ts
 
 import { PaginatedResponse } from "./common-types";
-import { CategoryDTO, DifficultyDTO, LanguageDTO, QuestionBase } from "./question-types";
+import { AnyQuestion, CategoryDTO, DifficultyDTO, LanguageDTO } from "./question-types";
 import { UserBasic } from "./user-types";
 
 // types/quiz.types.ts
@@ -35,7 +35,7 @@ export type QuizQuestionDTO = {
   timeLimitInSeconds: number;
   pointSystem: string;
   orderInQuiz: number;
-  question: QuestionBase;
+  question: AnyQuestion;
 };
 
 /**
