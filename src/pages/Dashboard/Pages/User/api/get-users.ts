@@ -1,11 +1,11 @@
 import { queryOptions, useQuery } from "@tanstack/react-query";
 
-import { api } from "@/lib/Api-client";
+import {  apiService } from "@/lib/Api-client";
 import { QueryConfig } from "@/lib/React-query";
 import { User } from "@/types/user-types";
 
 export const getUsers = (): Promise<User[]> => {
-  return api.get(`/users`).then(response => response.data);
+  return apiService.get(`/users`);
 };
 
 export const getUsersQueryOptions = () => {
@@ -17,11 +17,13 @@ export const getUsersQueryOptions = () => {
 
 type UseUserOptions = {
   queryConfig?: QueryConfig<typeof getUsersQueryOptions>;
+  initialData?: User[];
 };
 
-export const useUserData = ({ queryConfig }: UseUserOptions) => {
+export const useUserData = ({ queryConfig, initialData }: UseUserOptions) => {
   return useQuery({
     ...getUsersQueryOptions(),
+     initialData: initialData, 
     ...queryConfig,
   });
 };

@@ -132,11 +132,20 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                 }
 
                 var quizQuestions = await _context.QuizQuestions
-                    .AsNoTracking()
-                    .Include(qq => qq.Question)
-                    .Where(qq => qq.QuizId == id)
-                    .OrderBy(qq => qq.OrderInQuiz)
-                    .ToListAsync();
+            .AsNoTracking()
+            .Include(qq => qq.Question)
+                .ThenInclude(q => ((MultipleChoiceQuestion)q).AnswerOptions)
+            .Include(qq => qq.Question)
+                .ThenInclude(q => q.Category)
+            .Include(qq => qq.Question)
+                .ThenInclude(q => q.Difficulty)
+            .Include(qq => qq.Question)
+                .ThenInclude(q => q.Language)
+            .Include(qq => qq.Question)
+                .ThenInclude(q => q.User)
+            .Where(qq => qq.QuizId == id)
+            .OrderBy(qq => qq.OrderInQuiz)
+            .ToListAsync();
 
                 return _mapper.Map<List<QuizQuestionDTO>>(quizQuestions);
             }

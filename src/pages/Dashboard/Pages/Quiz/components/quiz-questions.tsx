@@ -36,11 +36,12 @@ export const QuizQuestions = () => {
   }
 
   const questions = data || [];
+  console.log("Quiz Questions:", questions);
 
   return (
     <div>
       <h2 className="text-xl font-semibold mb-4">Quiz Questions</h2>
-      {questions.length > 0 ? (
+      {/* {questions.length > 0 ? (
         questions.map((quizQuestion, index) => (
           <ExistingQuestionCard
             key={quizQuestion.questionId || index}
@@ -50,7 +51,7 @@ export const QuizQuestions = () => {
         ))
       ) : (
         <p>No questions found for this quiz.</p>
-      )}
+      )} */}
     </div>
   );
 };

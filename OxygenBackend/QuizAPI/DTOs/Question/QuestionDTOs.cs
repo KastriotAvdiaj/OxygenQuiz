@@ -1,9 +1,16 @@
 ﻿using QuizAPI.DTOs.User;
 using QuizAPI.Models;
+using System.Text.Json.Serialization;
 
 namespace QuizAPI.DTOs.Question
 {
     // CM = Create Model, for creating the question
+
+    // This worked for getting specific types of questions in the quiz questions service method.
+    [JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
+    [JsonDerivedType(typeof(MultipleChoiceQuestionDTO), typeDiscriminator: "MultipleChoice")]
+    [JsonDerivedType(typeof(TrueFalseQuestionDTO), typeDiscriminator: "TrueFalse")]
+    [JsonDerivedType(typeof(TypeTheAnswerQuestionDTO), typeDiscriminator: "TypeTheAnswer")]
     public class QuestionBaseDTO
     {
         public int Id { get; set; }

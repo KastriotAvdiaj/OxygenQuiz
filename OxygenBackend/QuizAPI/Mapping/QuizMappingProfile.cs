@@ -14,8 +14,8 @@ public class QuizMappingProfile : Profile
 
         // QuizQuestion Entity to QuizQuestionDTO (for reading)
         CreateMap<QuizQuestion, QuizQuestionDTO>()
-            .ForMember(dest => dest.PointSystem, opt => opt.MapFrom(src => src.PointSystem.ToString()))
-            .ForMember(dest => dest.Question, opt => opt.MapFrom(src => src.Question));
+    .ForMember(dest => dest.PointSystem, opt => opt.MapFrom(src => src.PointSystem.ToString()))
+    .ForMember(dest => dest.Question, opt => opt.MapFrom(src => src.Question));
 
         // QuizQuestionCM (Create Model) to QuizQuestion Entity
         CreateMap<QuizQuestionCM, QuizQuestion>()

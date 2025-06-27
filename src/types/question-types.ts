@@ -56,9 +56,9 @@ export interface QuestionBase {
   id: number;
   text: string;
   visibility: string;
-  difficulty: QuestionDifficulty;
-  category: QuestionCategory;
-  language: QuestionLanguage;
+  difficulty: DifficultyDTO;
+  category: CategoryDTO;
+  language: LanguageDTO;
   imageUrl: string;
   createdAt: string;
   user: UserBasic;

@@ -57,7 +57,7 @@ export const quizProperties: QuizProperty[] = [
   {
     label: "Time Limit",
     getIcon: () => <Clock className="h-5 w-5 text-muted-foreground" />,
-    getValue: (quiz) => `${quiz.timeLimitInSeconds} minutes`,
+    getValue: (quiz) => `${quiz.timeLimitInSeconds} seconds`,
   },
   {
     label: "Created At",
