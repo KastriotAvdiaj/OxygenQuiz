@@ -1,14 +1,14 @@
 import { useQuery, queryOptions } from "@tanstack/react-query";
 import { apiService } from "@/lib/Api-client";
 import { QueryConfig } from "@/lib/React-query";
-import { QuizSummaryDTO } from "@/types/quiz-types";
+import { Quiz } from "@/types/quiz-types";
 
 
 export const getQuiz = ({
   quizId,
 }:{
   quizId: number;
-} ): Promise<QuizSummaryDTO> => {
+} ): Promise<Quiz> => {
   return apiService.get(`/quiz/${quizId}`);
 };
 

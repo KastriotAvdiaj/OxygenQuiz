@@ -123,40 +123,4 @@ export const authLoader =
     }
   };
 
-// export const AdminRoute = ({ children }: { children: React.ReactNode }) => {
-//   const user = useUser();
-//   const location = useLocation();
 
-//   if (!user.data) {
-//     return (
-//       <Navigate
-//         to={`/login?redirectTo=${encodeURIComponent(location.pathname)}`}
-//         replace
-//       />
-//     );
-//   }
-//   if (!(user.data.role === "Admin" || user.data.role === "SuperAdmin")) {
-//     return (
-//       <div className="h-screen w-full flex items-center justify-center bg-background">
-//         <div className="max-w-sm w-full text-center bg-muted shadow-lg rounded-lg p-6">
-//           <div className="flex flex-col items-center">
-//             <AlertCircle className="text-red-500 w-12 h-12" />
-//             <h2 className="mt-4 text-2xl font-semibold text-foreground ">
-//               Access Denied
-//             </h2>
-//             <p className="mt-2 text-foreground">
-//               You do not have the necessary permissions to view this page.
-//             </p>
-//           </div>
-//           <div className="mt-4">
-//             <LiftedButton className="rounded">
-//               <Link to="/">Go back to Home Page</Link>
-//             </LiftedButton>
-//           </div>
-//         </div>
-//       </div>
-//     );
-//   }
-
-//   return <>{children}</>;
-// };

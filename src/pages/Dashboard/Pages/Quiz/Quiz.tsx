@@ -1,7 +1,7 @@
 import { QueryClient } from "@tanstack/react-query";
 import { LoaderFunctionArgs, useParams } from "react-router";
 import { getQuizQueryOptions, useQuizData } from "./api/get-quiz";
-import { Button, CardContent, CardHeader, Spinner } from "@/components/ui";
+import { CardContent, CardHeader, Spinner } from "@/components/ui";
 import { ContentLayout } from "@/layouts/individual-content-layout";
 import { Edit2, EyeOff } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
@@ -9,18 +9,28 @@ import { DeleteQuiz } from "./components/delete-quiz";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { QuizProperties } from "./components/quiz-properties";
 import { QuizQuestions } from "./components/quiz-questions";
+import { useNavigate } from "react-router";
+import { LiftedButton } from "@/common/LiftedButton";
+import { handleLoaderError } from "@/lib/loaderError";
 
 export const quizLoader =
   (queryClient: QueryClient) =>
   async ({ params }: LoaderFunctionArgs) => {
     const quizId = Number(params.quizId as string);
+    // ... validation
 
     const quizQuery = getQuizQueryOptions(quizId);
-    const promise =
-      queryClient.getQueryData(quizQuery.queryKey) ??
-      (await queryClient.fetchQuery(quizQuery));
 
-    const quiz = await Promise.resolve(promise);
+    // This is the corrected implementation
+    const quiz = await handleLoaderError(() => {
+      const cachedData = queryClient.getQueryData(quizQuery.queryKey);
+
+      // If data is in the cache, resolve it as a promise immediately.
+      // Otherwise, fetch it (which already returns a promise).
+      return cachedData
+        ? Promise.resolve(cachedData)
+        : queryClient.fetchQuery(quizQuery);
+    });
 
     return { quiz };
   };
@@ -28,6 +38,7 @@ export const QuizRoute = () => {
   const params = useParams();
   const quizId = Number(params.quizId as string);
   const quizQuery = useQuizData({ quizId });
+  const navigate = useNavigate();
 
   if (quizQuery.isLoading)
     return (
@@ -36,16 +47,16 @@ export const QuizRoute = () => {
       </div>
     );
 
-  if (quizQuery.isError) {
-    return (
-      <div className="w-full h-full flex items-center justify-center">
-        Failed to load quiz. Try again later.
-      </div>
-    );
-  }
+  // if (quizQuery.isError) {
+  //   return (
+  //     <div className="w-full h-full flex items-center justify-center">
+  //       Failed to load quiz. Try again later.
+  //     </div>
+  //   ); NOT needed here, handled by loader error
+  // }
 
   const quiz = quizQuery.data;
-  if (!quiz) return null;
+  if (!quiz) return null; // Should not happen on initial load due to the loader
 
   return (
     <ContentLayout title={`Quiz #${quiz.id}`}>
@@ -73,22 +84,27 @@ export const QuizRoute = () => {
           </TabsContent>
         </Tabs>
         <Separator className="mt-6" />
-        <section className="mt-6 flex justify-end gap-2">
+        <section className="mt-6 flex justify-end gap-2 text-sm">
           {/* 
           ///
           /// TODO: Add unpublish functionality
           /// ALSO: Make it dynamic (if published, say unpublish, else say publish)
           ///
           */}
-          <Button className="bg-background hover:bg-muted text-foregound border-foreground">
+          <LiftedButton className="bg-background hover:bg-muted text-foregound border-foreground">
             <EyeOff size={16} />
             Unpublish
-          </Button>
-          <Button>
+          </LiftedButton>
+          <LiftedButton>
             <Edit2 size={16} />
             Edit
-          </Button>
-          <DeleteQuiz id={quiz.id} />
+          </LiftedButton>
+          <DeleteQuiz
+            useLiftedButton={true}
+            className="w-fit bg-destructive"
+            finished={() => navigate("/dashboard/quiz")}
+            id={quiz.id}
+          />
         </section>
       </CardContent>
     </ContentLayout>

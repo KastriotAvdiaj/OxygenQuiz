@@ -3,7 +3,7 @@ import { PaginatedResponse } from "./common-types";
 
 export type CategoryDTO = {
   id: number;
-  category: string;
+  name: string;
   emoji: string;
 };
 

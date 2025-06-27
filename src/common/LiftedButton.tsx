@@ -41,7 +41,7 @@ export const LiftedButton = React.forwardRef<
         </button>
       ) : (
         <button
-          className={cn("relative font-thin", className)}
+          className="relative font-thin" // no className here
           disabled={disabled}
           {...props}
           ref={ref}
@@ -57,7 +57,7 @@ export const LiftedButton = React.forwardRef<
               "relative bg-primary flex items-center justify-center gap-2 border border-foreground/20 rounded-lg py-2 px-4 transition transform duration-200 text-white",
               !disabled &&
                 "hover:translate-y-[-2px] active:translate-y-[2px] active:translate-x-[2px]",
-              disabled && "opacity-70 ",
+              disabled && "opacity-70",
               className
             )}
           >

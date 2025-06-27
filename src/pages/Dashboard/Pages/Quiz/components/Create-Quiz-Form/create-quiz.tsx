@@ -657,25 +657,27 @@ const CreateQuizForm = () => {
                 )}
 
                 <Separator className="my-6 bg-primary/20" />
-
-                <LiftedButton
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-fit self-center relative"
-                  variant="default"
-                >
-                  <div className="flex items-center justify-center">
-                    <Spinner
-                      size="sm"
-                      className={`absolute ${
-                        isSubmitting ? "visible" : "invisible"
-                      }`}
-                    />
-                    <span className={isSubmitting ? "invisible" : "visible"}>
-                      {isCreatingQuestions ? "Creating Questions..." : "Finish"}
-                    </span>
-                  </div>
-                </LiftedButton>
+                <section className="w-full items-center flex justify-center">
+                  <LiftedButton
+                    type="submit"
+                    disabled={isSubmitting}
+                    variant="default"
+                  >
+                    <div className="flex items-center justify-center">
+                      <Spinner
+                        size="sm"
+                        className={`absolute ${
+                          isSubmitting ? "visible" : "invisible"
+                        }`}
+                      />
+                      <span className={isSubmitting ? "invisible" : "visible"}>
+                        {isCreatingQuestions
+                          ? "Creating Questions..."
+                          : "Finish"}
+                      </span>
+                    </div>
+                  </LiftedButton>
+                </section>
               </CardContent>
             </Card>
 

@@ -1,10 +1,11 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { cn } from "@/utils/cn";
-import { Button } from "@/components/ui/button";
+import { LiftedButton } from "./LiftedButton";
+import { Button } from "@/components/ui";
 
 interface BackButtonProps {
   className?: string;
-  variant?: "default" | "normal";
+  variant?: "default" | "normal" | "fancy";
 }
 
 export const GoBackButton: React.FC<BackButtonProps> = ({
@@ -24,14 +25,18 @@ export const GoBackButton: React.FC<BackButtonProps> = ({
 
   if (variant === "normal") {
     return (
-      <Button
+      <LiftedButton
         onClick={goBack}
-        variant="outline"
-        className={cn(
-          "bg-primary text-white hover:bg-primary/70 rounded-md mt-4",
-          className
-        )}
+        className={cn("bg-primary text-white rounded-md", className)}
       >
+        Go Back
+      </LiftedButton>
+    );
+  }
+
+  if (variant === "fancy") {
+    return (
+      <Button variant={"fancy"} onClick={goBack}>
         Go Back
       </Button>
     );

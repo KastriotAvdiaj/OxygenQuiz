@@ -193,6 +193,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
 
                     await _context.QuizQuestions.AddAsync(quizQuestion);
                 }
+                quiz.TimeLimitInSeconds = quizCM.Questions.Sum(q => q.TimeLimitInSeconds);
 
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
@@ -280,6 +281,8 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
 
                     await _context.QuizQuestions.AddAsync(quizQuestion);
                 }
+
+                quiz.TimeLimitInSeconds = quizUM.Questions.Sum(q => q.TimeLimitInSeconds);
 
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();

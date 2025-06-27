@@ -47,6 +47,11 @@ api.interceptors.response.use(
     const status = error.response?.status;
     const message = error.response?.data?.message || error.message;
 
+    // If it's a 404, just reject the promise without a notification.
+    // The loader's error handler will take care of the UI.
+    if (status === 404) {
+      return Promise.reject(error);
+    }
     if (status === 401) {
       console.log('Unauthorized:', error);
       Cookies.remove(AUTH_COOKIE);

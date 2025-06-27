@@ -47,6 +47,7 @@ namespace QuizAPI.Models.Quiz
         [ForeignKey(nameof(LanguageId))]
         public QuestionLanguage Language { get; set; }
 
+        [MinLength(0), MaxLength(2000)]
         public int? TimeLimitInSeconds { get; set; } = 0; 
 
         public bool ShowFeedbackImmediately { get; set; } = false;

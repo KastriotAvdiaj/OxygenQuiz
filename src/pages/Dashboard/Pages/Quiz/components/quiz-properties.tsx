@@ -52,7 +52,7 @@ export const quizProperties: QuizProperty[] = [
   {
     label: "Category",
     getIcon: () => <Tag className="h-5 w-5 text-muted-foreground" />,
-    getValue: (quiz) => quiz.category.category,
+    getValue: (quiz) => quiz.category.name,
   },
   {
     label: "Time Limit",

@@ -15,6 +15,7 @@ import { HomeLayout } from "@/layouts/layout";
 import QuizCreator from "@/pages/Dashboard/Pages/Quiz/components/Create-Quiz-Form/create-quiz";
 import { QuizSelection } from "@/pages/Quiz/Quiz-Selection";
 import { QuizQuestionProvider } from "@/pages/Dashboard/Pages/Quiz/components/Create-Quiz-Form/Quiz-questions-context";
+import { DashboardErrorElement } from "@/pages/UtilityPages/Error/Dashboard-Error-Element";
 
 // Lazy load components
 const Home = lazy(() =>
@@ -72,9 +73,10 @@ const createAppRouter = (queryClient: QueryClient) =>
     },
     {
       path: "/dashboard/*",
-      element: <AppRoot />, // We can simplify this now
-      id: "dashboardRoot", // Add a unique ID
+      element: <AppRoot />,
+      id: "dashboardRoot",
       loader: authLoader(queryClient),
+      errorElement:<DashboardErrorElement/>,
       children: [
         {
           index: true,
