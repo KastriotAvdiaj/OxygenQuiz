@@ -21,10 +21,8 @@ import {
 } from "@/components/ui/popover";
 import {
   Search,
-  Filter,
   X,
   ChevronDown,
-  Settings2,
   Save,
   Bookmark,
   RotateCcw,
@@ -32,6 +30,7 @@ import {
   Check,
   Star,
 } from "lucide-react";
+import { SearchInput } from "@/lib/Search-Input";
 
 // Mock types (replace with your actual types)
 interface QuestionCategory {
@@ -115,7 +114,6 @@ export const QuizFilters = ({
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [savedFilterName, setSavedFilterName] = useState("");
-  const [searchFocused, setSearchFocused] = useState(false);
 
   // Mock saved filters (in real app, this would come from API/localStorage)
   const [savedFilters, setSavedFilters] = useState<SavedFilter[]>([
@@ -392,32 +390,12 @@ export const QuizFilters = ({
       {/* Header Section with Search and Quick Actions */}
       <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
         <div className="flex-1 max-w-2xl">
-          {/* Enhanced Search Bar */}
-          <div
-            className={`relative transition-all duration-200 ${
-              searchFocused ? "scale-[1.02]" : ""
-            }`}
-          >
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
-            <Input
-              placeholder="Search quizzes by title, description, or tags..."
-              value={searchTerm}
-              onChange={(e: any) => onSearchTermChange(e.target.value)}
-              onFocus={() => setSearchFocused(true)}
-              onBlur={() => setSearchFocused(false)}
-              className="pl-12 pr-12 h-12 text-base bg-background/50 backdrop-blur-sm border-2 focus:border-primary/50 transition-all duration-200"
-            />
-            {searchTerm && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => onSearchTermChange("")}
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 hover:bg-muted"
-              >
-                <X className="w-4 h-4" />
-              </Button>
-            )}
-          </div>
+          <SearchInput
+            placeholder="Search quizzes by title..."
+            onSearch={(searchTerm) => {
+              onSearchTermChange(searchTerm);
+            }}
+          />
         </div>
 
         {/* Action Buttons */}

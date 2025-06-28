@@ -57,6 +57,30 @@ export const quizColumns: ColumnDef<QuizSummaryDTO>[] = [
     },
   },
   {
+    accessorKey: "user",
+    header: "Author",
+    cell: ({ row }) => {
+      const user = row.original.user;
+      return (
+        <div className="flex items-center gap-2">
+          <span className="font-medium">{user}</span>
+        </div>
+      );
+    },
+  },
+  {
+    accessorKey: "category",
+    header: "Category",
+  },
+  {
+    accessorKey: "difficulty",
+    header: "Difficulty",
+  },
+  {
+    accessorKey: "language",
+    header: "Language",
+  },
+  {
     accessorKey: "isPublished",
     header: "Status",
     cell: ({ row }) => {
