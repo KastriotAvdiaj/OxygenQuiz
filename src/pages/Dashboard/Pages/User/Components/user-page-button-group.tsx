@@ -24,8 +24,8 @@ export const UserControls = ({
           onChange={(e) => setSearchTerm(e.target.value)}
           className="max-w-sm"
         />
-        <LiftedButton className="rounded text-xs">
-          <SearchIcon className="h-4 w-4" />
+        <LiftedButton variant="icon" className="rounded-xl">
+          <SearchIcon size={16} className="mx-1"/>
         </LiftedButton>
       </div>
 

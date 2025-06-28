@@ -1,12 +1,11 @@
 import { useState, useEffect } from "react";
-import { Button, DataTable, Card, Spinner } from "@/components/ui";
+import { DataTable, Card, Spinner } from "@/components/ui";
 import { Link } from "react-router-dom";
 import { quizColumns } from "./components/Data-Table-Columns/columns";
 import { useAllQuizzesData } from "./api/get-all-quizzes";
 import { useDebounce } from "@/hooks/use-debounce";
 
 // Import the filter dependencies
-import { QuizFilters } from "./components/quiz-filters"; // You'll need to create this
 import { Separator } from "@/components/ui/separator";
 import { useQuestionCategoryData } from "../Question/Entities/Categories/api/get-question-categories";
 import { useQuestionDifficultyData } from "../Question/Entities/Difficulty/api/get-question-difficulties";
@@ -21,6 +20,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/form";
 import { GrFormNextLink } from "react-icons/gr";
+import { QuizFilters } from "./components/Quiz-Filter";
 
 export const Quizzes = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -174,6 +174,7 @@ export const Quizzes = () => {
           onIsPublishedChange={setSelectedIsPublished}
           selectedIsActive={selectedIsActive}
           onIsActiveChange={setSelectedIsActive}
+          totalResults={quizzes.length}
         />
 
         <Separator className="my-6" />

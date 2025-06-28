@@ -80,7 +80,7 @@ const QuizQuestionCard = ({ quizQuestion, index }: QuizQuestionCardProps) => {
       <Card className="mb-2 border-l-4 border-l-blue-500 dark:border-l-blue-400 rounded-none">
         <CardHeader className="pb-2 pt-3">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+            <CardTitle className="text-sm font-medium text-primary">
               Question {index + 1}
             </CardTitle>
             <div className="flex items-center gap-2">

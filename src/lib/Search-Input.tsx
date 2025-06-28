@@ -1,5 +1,5 @@
 import React, { useState, KeyboardEvent } from "react";
-import { Search, X } from "lucide-react";
+import { SearchIcon, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/form";
 import { LiftedButton } from "@/common/LiftedButton";
@@ -46,11 +46,16 @@ export const SearchInput: React.FC<SearchInputProps> = ({
           onChange={(e) => setSearchTerm(e.target.value)}
           onKeyPress={handleKeyPress}
           disabled={disabled}
-          className="bg-muted pr-8"
+          className="bg-muted pr-8 rounded-md"
         />
 
-        <LiftedButton onClick={handleSearch} disabled={disabled}>
-          <Search className="w-4 h-4" />
+        <LiftedButton
+          onClick={handleSearch}
+          disabled={disabled}
+          variant="icon"
+          className="rounded-xl"
+        >
+          <SearchIcon size={16} className="mx-1" />
         </LiftedButton>
 
         {/* Clear Button */}
