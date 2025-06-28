@@ -40,14 +40,28 @@ export const SearchInput: React.FC<SearchInputProps> = ({
   return (
     <div className={`flex items-center justify-between my-4`}>
       <div className="flex items-center space-x-2">
-        <Input
-          placeholder={placeholder}
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          onKeyPress={handleKeyPress}
-          disabled={disabled}
-          className="bg-muted pr-8 rounded-md"
-        />
+        <div className="relative">
+          <Input
+            placeholder={placeholder}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            onKeyPress={handleKeyPress}
+            disabled={disabled}
+            className="bg-muted px-8 rounded-full hover:bg-primary/20"
+          />
+          <SearchIcon className="h-4 w-4 absolute left-2 top-1/2 -translate-y-1/2 p-0 mt-[1px] text-muted-foreground hover:bg-muted " />
+
+          {searchTerm && (
+            <Button
+              size="sm"
+              onClick={handleClear}
+              disabled={disabled}
+              className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0  bg-transparent hover:bg-transparent flex items-center justify-center hover:text-red-500 text-foreground"
+            >
+              <X className="w-4 h-4" />
+            </Button>
+          )}
+        </div>
 
         <LiftedButton
           onClick={handleSearch}
@@ -57,19 +71,6 @@ export const SearchInput: React.FC<SearchInputProps> = ({
         >
           <SearchIcon size={16} className="mx-1" />
         </LiftedButton>
-
-        {/* Clear Button */}
-        {searchTerm && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleClear}
-            disabled={disabled}
-            className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 hover:bg-muted flex items-center justify-center"
-          >
-            <X className="w-4 h-4" />
-          </Button>
-        )}
       </div>
     </div>
   );

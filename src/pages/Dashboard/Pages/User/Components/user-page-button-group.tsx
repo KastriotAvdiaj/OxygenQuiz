@@ -1,8 +1,8 @@
 // Components/UserControls.tsx
-import { Input } from "@/components/ui/form";
-import { Download, RefreshCw, Search as SearchIcon } from "lucide-react";
+import { Download, RefreshCw } from "lucide-react";
 import CreateUserForm from "./create-user";
 import { LiftedButton } from "@/common/LiftedButton";
+import { SearchInput } from "@/lib/Search-Input";
 
 interface UserControlsProps {
   searchTerm: string;
@@ -18,15 +18,12 @@ export const UserControls = ({
   return (
     <div className="flex items-center justify-between my-4">
       <div className="flex items-center space-x-2">
-        <Input
+        <SearchInput
           placeholder="Search users..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+          onSearch={(value) => setSearchTerm(value)}
+          initialValue={searchTerm}
           className="max-w-sm"
         />
-        <LiftedButton variant="icon" className="rounded-xl">
-          <SearchIcon size={16} className="mx-1"/>
-        </LiftedButton>
       </div>
 
       <div className="flex items-center space-x-2">

@@ -1,9 +1,8 @@
-import { Input } from "@/components/ui/form"; // Assuming this is shadcn/ui Input
 import { CategorySelect } from "../../Entities/Categories/Components/select-question-category";
 import { DifficultySelect } from "../../Entities/Difficulty/Components/select-question-difficulty";
 import { LanguageSelect } from "../../Entities/Language/components/select-question-language";
-import { Button } from "@/components/ui"; // Assuming this is shadcn/ui Button
-import { ChevronDown, ChevronUp, Filter, Search, X } from "lucide-react";
+import { Button } from "@/components/ui";
+import { ChevronDown, ChevronUp, Filter, X } from "lucide-react";
 import { RiFilterOffLine } from "react-icons/ri";
 import { useDisclosure } from "@/hooks/use-disclosure";
 import {
@@ -11,6 +10,7 @@ import {
   QuestionDifficulty,
   QuestionLanguage,
 } from "@/types/question-types";
+import { SearchInput } from "@/lib/Search-Input";
 
 interface QuestionFiltersProps {
   searchTerm: string;
@@ -54,7 +54,7 @@ export const QuestionFilters = ({
   return (
     <div className="flex flex-col gap-4 mb-6">
       <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 rounded-md w-fit">
-        <div className="flex flex-1 relative w-full items-center mb-1">
+        {/* <div className="flex flex-1 relative w-full items-center mb-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
           <Input
             placeholder="Search questions..."
@@ -62,7 +62,12 @@ export const QuestionFilters = ({
             onChange={(e) => onSearchTermChange(e.target.value)}
             className="w-full shadow-none pl-10 py-4 pr-3 h-9 dark:border-foreground/20 bg-muted/70 min-w-[200px] sm:min-w-[300px] rounded-md focus:ring-0 focus:border-primary"
           />
-        </div>
+        </div> */}
+        <SearchInput
+          placeholder="Search questions..."
+          onSearch={onSearchTermChange}
+          initialValue={searchTerm}
+        />
 
         <Button
           variant="outline"
