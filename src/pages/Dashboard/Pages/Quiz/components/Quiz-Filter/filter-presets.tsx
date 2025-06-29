@@ -1,8 +1,8 @@
 /** Renders a list of predefined filter presets as clickable buttons. */
 
-import { Button } from "@/components/ui/button";
 import { Star, Check } from "lucide-react";
 import { FilterPreset, CurrentFilters } from "./types";
+import { LiftedButton } from "@/common/LiftedButton";
 
 interface FilterPresetsProps {
   presets: FilterPreset[];
@@ -31,21 +31,20 @@ export const FilterPresets = ({
       {presets.map((preset) => {
         const isActive = isPresetActive(preset);
         return (
-          <Button
+          <LiftedButton
             key={preset.id}
-            variant={isActive ? "default" : "outline"}
-            size="sm"
             onClick={() => onApplyPreset(preset)}
-            className={`h-9 px-4 gap-2 transition-all duration-200 ${
+            backgroundColorForBorder="bg-muted"
+            className={`h-8 px-4 gap-2 text-sm ${
               isActive
-                ? "bg-primary text-primary-foreground shadow-md"
-                : "hover:bg-muted/80 hover:scale-105"
+                ? "bg-primary text-white shadow-md px-2 hover:translate-y-[-0px]"
+                : "hover:bg-foreground/70 hover:text-background bg-background text-foreground"
             }`}
           >
             {preset.isFavorite && <Star className="w-3 h-3" />}
             {preset.label}
             {isActive && <Check className="w-3 h-3" />}
-          </Button>
+          </LiftedButton>
         );
       })}
     </div>

@@ -98,10 +98,7 @@ export const QuestionFilters = ({
               </Button>
             </PopoverTrigger>
 
-            <PopoverContent
-              className="w-auto p-4 dark:border-primary"
-              align="end"
-            >
+            <PopoverContent className="w-auto p-6 dark:border-foreground/30 dark:bg-muted" align="end">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-medium">Advanced Filters</h3>
               </div>

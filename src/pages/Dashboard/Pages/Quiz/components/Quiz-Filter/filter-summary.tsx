@@ -32,7 +32,7 @@ export const FilterSummary = ({
           variant="ghost"
           size="sm"
           onClick={onClearAll}
-          className="h-8 px-3 text-muted-foreground hover:text-destructive"
+          className="h-8 px-3 flex border dark:border-foreground/30 text-muted-foreground hover:text-red-500 hover:bg-red-50 hover:border hover:border-red-200 transition-colors"
         >
           <RotateCcw className="w-3 h-3 mr-1" />
           Clear all

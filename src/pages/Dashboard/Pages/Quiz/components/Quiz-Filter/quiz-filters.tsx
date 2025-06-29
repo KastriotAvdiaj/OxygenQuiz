@@ -1,21 +1,20 @@
 /** The main container component that manages state and logic for quiz filtering. */
 
 import { useState, useCallback, useMemo } from "react";
-import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
 import { SearchInput } from "@/lib/Search-Input";
 import {
   ActiveFilter,
   QuizFiltersProps,
   FilterPreset,
-  SavedFilter,
   CurrentFilters,
 } from "./types";
 import { FilterActions } from "./filter-actions";
 import { FilterSummary } from "./filter-summary";
 import { FilterPresets } from "./filter-presets";
-import { SavedFiltersList } from "./saved-filter-list";
+// import { SavedFiltersList } from "./saved-filter-list";
 import { ActiveFilterPills } from "./active-filter-pills";
 import { FilterPanel } from "./filter-panel";
+import { Label } from "@/components/ui/form/label";
 
 export const QuizFilters = ({
   searchTerm,
@@ -25,8 +24,7 @@ export const QuizFilters = ({
   onCategoryChange,
   difficulties,
   selectedDifficultyId,
-  onDifficultyChange,
-  languages,
+  onDifficultyChange,   languages,
   selectedLanguageId,
   onLanguageChange,
   selectedVisibility,
@@ -37,28 +35,28 @@ export const QuizFilters = ({
   onIsActiveChange,
   totalResults = 0,
 }: QuizFiltersProps) => {
-  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
-  const [savedFilters, setSavedFilters] = useState<SavedFilter[]>([
-    {
-      id: "1",
-      name: "My Active Quizzes",
-      filters: { visibility: "Private", isActive: true },
-      createdAt: new Date(),
-    },
-    {
-      id: "2",
-      name: "Public Published",
-      filters: { visibility: "Public", isPublished: true },
-      createdAt: new Date(),
-    },
-  ]);
+  const [showFiltersPopover, setShowFiltersPopover] = useState(false);
+  //   const [savedFilters, setSavedFilters] = useState<SavedFilter[]>([
+  //     {
+  //       id: "1",
+  //       name: "My Active Quizzes",
+  //       filters: { visibility: "Private", isActive: true },
+  //       createdAt: new Date(),
+  //     },
+  //     {
+  //       id: "2",
+  //       name: "Public Published",
+  //       filters: { visibility: "Public", isPublished: true },
+  //       createdAt: new Date(),
+  //     },
+  //   ]);
 
   const presets: FilterPreset[] = [
     { id: "all", label: "All Quizzes", filters: {}, isDefault: true },
     {
       id: "my-quizzes",
       label: "My Quizzes",
-      filters: { visibility: "Private" },
+      filters: { visibility: "Private" }, //NEED TO FIX THIS BECAUSE PRIVATE DOES NOT MEAN MY QIZ IT MEANS ANY QUIZ THAT IS NOT PUBLIC
     },
     {
       id: "public",
@@ -228,30 +226,29 @@ export const QuizFilters = ({
     keyMap[filterKey]?.();
   };
 
-  const saveCurrentFilters = (name: string) => {
-    // Create a new object, filtering out any keys with an undefined value.
-    const filtersToSave = Object.entries(currentFilters).reduce(
-      (acc, [key, value]) => {
-        if (value !== undefined) {
-          acc[key] = value;
-        }
-        return acc;
-      },
-      {} as Record<string, string | number | boolean>
-    );
+  //   const saveCurrentFilters = (name: string) => {
+  //     const filtersToSave = Object.entries(currentFilters).reduce(
+  //       (acc, [key, value]) => {
+  //         if (value !== undefined) {
+  //           acc[key] = value;
+  //         }
+  //         return acc;
+  //       },
+  //       {} as Record<string, string | number | boolean>
+  //     );
 
-    const newSavedFilter: SavedFilter = {
-      id: Date.now().toString(),
-      name,
-      filters: filtersToSave, // Use the new, clean object
-      createdAt: new Date(),
-    };
-    setSavedFilters((prev) => [...prev, newSavedFilter]);
-  };
+  //     const newSavedFilter: SavedFilter = {
+  //       id: Date.now().toString(),
+  //       name,
+  //       filters: filtersToSave, // Use the new, clean object
+  //       createdAt: new Date(),
+  //     };
+  //     setSavedFilters((prev) => [...prev, newSavedFilter]);
+  //   };
 
-  const deleteSavedFilter = (filterId: string) => {
-    setSavedFilters((prev) => prev.filter((f) => f.id !== filterId));
-  };
+  //   const deleteSavedFilter = (filterId: string) => {
+  //     setSavedFilters((prev) => prev.filter((f) => f.id !== filterId));
+  //   };
 
   return (
     <div className="space-y-6">
@@ -264,10 +261,28 @@ export const QuizFilters = ({
         </div>
         <FilterActions
           totalActiveFilters={totalActiveFilters}
-          showAdvancedFilters={showAdvancedFilters}
-          onToggleAdvanced={() => setShowAdvancedFilters((s) => !s)}
-          onSave={saveCurrentFilters}
-        />
+          showFiltersPopover={showFiltersPopover}
+          onToggleFilters={() => setShowFiltersPopover((s) => !s)}
+          //   onSave={saveCurrentFilters}
+        >
+          <FilterPanel
+            categories={categories}
+            selectedCategoryId={selectedCategoryId}
+            onCategoryChange={onCategoryChange}
+            difficulties={difficulties}
+            selectedDifficultyId={selectedDifficultyId}
+            onDifficultyChange={onDifficultyChange}
+            languages={languages}
+            selectedLanguageId={selectedLanguageId}
+            onLanguageChange={onLanguageChange}
+            // selectedVisibility={selectedVisibility}
+            // onVisibilityChange={onVisibilityChange}
+            // selectedIsPublished={selectedIsPublished}
+            // onIsPublishedChange={onIsPublishedChange}
+            // selectedIsActive={selectedIsActive}
+            // onIsActiveChange={onIsActiveChange}
+          />
+        </FilterActions>
       </div>
 
       <FilterSummary
@@ -275,51 +290,28 @@ export const QuizFilters = ({
         totalActiveFilters={totalActiveFilters}
         onClearAll={clearAllFilters}
       />
-
-      <FilterPresets
-        presets={presets}
-        currentFilters={currentFilters}
-        onApplyPreset={(p) => applyFiltersFromObject(p.filters)}
-      />
-
-      <SavedFiltersList
+      
+      <section className="space-y-2">
+        <Label>Existing Filters</Label>
+        <FilterPresets
+          presets={presets}
+          currentFilters={currentFilters}
+          onApplyPreset={(p) => applyFiltersFromObject(p.filters)}
+        />
+      </section>
+      
+      {/* <SavedFiltersList
         savedFilters={savedFilters}
         onApply={(f) => applyFiltersFromObject(f.filters)}
         onDelete={deleteSavedFilter}
-      />
+      /> */}
+      {/* ADD THIS BACK WHEN WE FIX THE SAVING OF THE USERS FILTERS DYNAMICALLY */}
 
       <ActiveFilterPills
         searchTerm={searchTerm}
         activeFilters={activeFilters}
         onRemoveFilter={removeFilter}
       />
-
-      <Collapsible
-        open={showAdvancedFilters}
-        onOpenChange={setShowAdvancedFilters}
-      >
-        <CollapsibleContent>
-          <FilterPanel
-            {...{
-              categories,
-              selectedCategoryId,
-              onCategoryChange,
-              difficulties,
-              selectedDifficultyId,
-              onDifficultyChange,
-              languages,
-              selectedLanguageId,
-              onLanguageChange,
-              selectedVisibility,
-              onVisibilityChange,
-              selectedIsPublished,
-              onIsPublishedChange,
-              selectedIsActive,
-              onIsActiveChange,
-            }}
-          />
-        </CollapsibleContent>
-      </Collapsible>
     </div>
   );
 };

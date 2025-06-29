@@ -1,4 +1,4 @@
-/** Renders the collapsible panel containing all advanced filter select inputs. */
+/** Renders the panel containing all advanced filter select inputs. */
 
 import { DifficultySelect } from "../../../Question/Entities/Difficulty/Components/select-question-difficulty";
 import {
@@ -9,7 +9,7 @@ import {
 import { LanguageSelect } from "../../../Question/Entities/Language/components/select-question-language";
 import { CategorySelect } from "../../../Question/Entities/Categories/Components/select-question-category";
 
-type AdvancedFilterPanelProps = {
+type FilterPanelProps = {
   categories: QuestionCategory[];
   selectedCategoryId?: number;
   onCategoryChange: (id?: number) => void;
@@ -22,14 +22,14 @@ type AdvancedFilterPanelProps = {
   selectedLanguageId?: number;
   onLanguageChange: (id?: number) => void;
 
-//   selectedVisibility?: string;
-//   onVisibilityChange: (value?: string) => void;
+  //   selectedVisibility?: string;
+  //   onVisibilityChange: (value?: string) => void;
 
-//   selectedIsPublished?: boolean;
-//   onIsPublishedChange: (value?: boolean) => void;
+  //   selectedIsPublished?: boolean;
+  //   onIsPublishedChange: (value?: boolean) => void;
 
-//   selectedIsActive?: boolean;
-//   onIsActiveChange: (value?: boolean) => void;
+  //   selectedIsActive?: boolean;
+  //   onIsActiveChange: (value?: boolean) => void;
 };
 
 export const FilterPanel = ({
@@ -48,9 +48,9 @@ export const FilterPanel = ({
 //   onIsPublishedChange,
 //   selectedIsActive,
 //   onIsActiveChange,
-AdvancedFilterPanelProps) => {
+FilterPanelProps) => {
   return (
-    <div className="bg-gradient-to-br from-card via-card/95 to-muted/30 border border-border/50 rounded-xl p-6 backdrop-blur-sm">
+    <div className="rounded-xl p-2 backdrop-blur-sm">
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         <CategorySelect
           label="Category"
