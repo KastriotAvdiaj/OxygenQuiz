@@ -198,7 +198,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                 {
                     var quizQuestion = _mapper.Map<QuizQuestion>(questionCM);
                     quizQuestion.QuizId = quiz.Id;
-                    quizQuestion.OrderInQuiz = questionCM.OrderInQuiz > 0 ? questionCM.OrderInQuiz : order++;
+                    quizQuestion.OrderInQuiz = order++;
 
                     await _context.QuizQuestions.AddAsync(quizQuestion);
                 }

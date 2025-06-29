@@ -14,11 +14,11 @@ import { LiftedButton } from "@/common/LiftedButton";
 import { handleLoaderError } from "@/lib/loaderError";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useMemo } from "react";
 
@@ -26,7 +26,7 @@ export const quizLoader =
   (queryClient: QueryClient) =>
   async ({ params }: LoaderFunctionArgs) => {
     const quizId = Number(params.quizId as string);
-    
+
     if (isNaN(quizId) || quizId <= 0) {
       throw new Error("Invalid quiz ID");
     }
@@ -50,12 +50,17 @@ export const QuizRoute = () => {
   // Memoize derived data to prevent unnecessary recalculations
   const quizStats = useMemo(() => {
     if (!quizQuery.data) return null;
-    
+
     const quiz = quizQuery.data;
     return {
       estimatedDuration: Math.ceil(quiz.timeLimitInSeconds / 60),
-      difficultyLevel: quiz.questionCount > 20 ? 'Hard' : quiz.questionCount > 10 ? 'Medium' : 'Easy',
-      status: quiz.isPublished ? 'Published' : 'Draft'
+      difficultyLevel:
+        quiz.questionCount > 20
+          ? "Hard"
+          : quiz.questionCount > 10
+          ? "Medium"
+          : "Easy",
+      status: quiz.isPublished ? "Published" : "Draft",
     };
   }, [quizQuery.data]);
 
@@ -75,15 +80,12 @@ export const QuizRoute = () => {
       <div className="w-full h-full flex items-center justify-center">
         <div className="text-center space-y-4">
           <p className="text-destructive font-medium">Failed to load quiz</p>
-          <Button 
-            variant="outline" 
-            onClick={() => quizQuery.refetch()}
-          >
+          <Button variant="outline" onClick={() => quizQuery.refetch()}>
             Try Again
           </Button>
         </div>
       </div>
-    ); 
+    );
   }
 
   const quiz = quizQuery.data;
@@ -91,20 +93,19 @@ export const QuizRoute = () => {
 
   return (
     <ContentLayout title={`Quiz #${quiz.id}`}>
-      {/* Enhanced Header with Status Indicators */}
       <CardHeader className="pb-4">
         <div className="flex items-start justify-between">
           <div className="space-y-2">
             <div className="flex items-center gap-3">
               <h1 className="font-bold text-3xl">{quiz.title}</h1>
-              <Badge 
+              <Badge
                 variant={quiz.isPublished ? "default" : "secondary"}
                 className={quiz.isPublished ? "bg-green-500" : ""}
               >
                 {quizStats?.status}
               </Badge>
             </div>
-            
+
             {/* Quick Stats */}
             <div className="flex items-center gap-4 text-sm text-muted-foreground">
               <span className="flex items-center gap-1">
@@ -118,7 +119,6 @@ export const QuizRoute = () => {
             </div>
           </div>
 
-          {/* Action Menu for smaller screens */}
           <div className="md:hidden">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -127,7 +127,9 @@ export const QuizRoute = () => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => navigate(`/quiz/${quiz.id}/edit`)}>
+                <DropdownMenuItem
+                  onClick={() => navigate(`/quiz/${quiz.id}/edit`)}
+                >
                   <Edit2 className="h-4 w-4 mr-2" />
                   Edit Quiz
                 </DropdownMenuItem>
@@ -200,10 +202,12 @@ export const QuizRoute = () => {
         {/* Enhanced Action Section */}
         <section className="flex flex-col sm:flex-row justify-between gap-4">
           <div className="flex gap-2">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               size="sm"
-              onClick={() => {/* Share functionality */}}
+              onClick={() => {
+                /* Share functionality */
+              }}
             >
               <Share2 className="h-4 w-4 mr-2" />
               Share Quiz
@@ -211,9 +215,11 @@ export const QuizRoute = () => {
           </div>
 
           <div className="hidden md:flex gap-2 text-sm">
-            <LiftedButton 
+            <LiftedButton
               className="bg-background hover:bg-muted text-foreground border-foreground"
-              onClick={() => {/* Toggle publish state */}}
+              onClick={() => {
+                /* Toggle publish state */
+              }}
             >
               {quiz.isPublished ? (
                 <>
@@ -227,18 +233,16 @@ export const QuizRoute = () => {
                 </>
               )}
             </LiftedButton>
-            
-            <LiftedButton
-              onClick={() => navigate(`/quiz/${quiz.id}/edit`)}
-            >
+
+            <LiftedButton onClick={() => navigate(`/quiz/${quiz.id}/edit`)}>
               <Edit2 className="h-4 w-4 mr-2" />
               Edit Quiz
             </LiftedButton>
-            
+
             <DeleteQuiz
               useLiftedButton={true}
               className="w-fit bg-red-500 hover:bg-red-600"
-              finished={() => navigate("/dashboard/quiz")}
+              finished={() => navigate("/dashboard/quizzes")}
               id={quiz.id}
             />
           </div>

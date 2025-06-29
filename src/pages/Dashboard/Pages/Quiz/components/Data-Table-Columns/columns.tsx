@@ -88,11 +88,11 @@ export const quizColumns: ColumnDef<QuizSummaryDTO>[] = [
       return (
         <div>
           {isPublished ? (
-            <span className="bg-primary py-1 px-3 rounded-[5rem] text-background text-[12px]">
+            <span className="bg-primary py-1 px-3 rounded-full text-white">
               Published
             </span>
           ) : (
-            <span className="text-red-500">Private</span>
+            <span className="bg-gray-300 border border-foreground/30 dark:bg-gray-500 p-1 px-3 rounded-full">Draft</span>
           )}
         </div>
       );

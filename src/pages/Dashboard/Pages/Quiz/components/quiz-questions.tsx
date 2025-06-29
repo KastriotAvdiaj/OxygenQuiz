@@ -40,13 +40,15 @@ export const QuizQuestions = () => {
     <div>
       <h2 className="text-xl font-semibold mb-4">Quiz Questions</h2>
       {questions.length > 0 ? (
-        questions.map((quizQuestion, index) => (
-          <QuizQuestionCard
-            key={quizQuestion.questionId || index}
-            quizQuestion={quizQuestion}
-            index={index}
-          />
-        ))
+        <div className="grid gap-4 grid-cols-[repeat(auto-fit,minmax(350px,1fr))]">
+          {questions.map((quizQuestion, index) => (
+            <QuizQuestionCard
+              key={quizQuestion.questionId || index}
+              quizQuestion={quizQuestion}
+              index={index}
+            />
+          ))}
+        </div>
       ) : (
         <p>No questions found for this quiz.</p>
       )}
@@ -59,29 +61,29 @@ type QuizQuestionCardProps = {
   index: number;
 };
 
-const QuizQuestionCard = ({ quizQuestion, index }: QuizQuestionCardProps) => {
+const QuizQuestionCard = ({ quizQuestion }: QuizQuestionCardProps) => {
   const question = quizQuestion.question;
 
   const renderQuestionByType = () => {
     switch (question.type) {
       case QuestionType.MultipleChoice:
         return <MultipleChoiceQuestionCard question={question} />;
-
       case QuestionType.TrueFalse:
         return <TrueFalseQuestionCard question={question} />;
-
       case QuestionType.TypeTheAnswer:
         return <TypeTheAnswerQuestionCard question={question} />;
     }
   };
 
   return (
-    <div className="mb-4">
-      <Card className="mb-2 border-l-4 border-l-blue-500 dark:border-l-blue-400 rounded-none">
-        <CardHeader className="pb-2 pt-3">
+    <div className="flex flex-col h-full">
+      <Card className="relative mb-2 rounded-tl-[20px] rounded-tr-[20px] dark:border dark:border-foreground/30 dark:bg-primary/10">
+        <CardHeader className="py-3 px-6">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-sm font-medium text-primary">
-              Question {index + 1}
+            <CardTitle className="text-sm text-white font-bold">
+              <p className=" text-md px-2 bg-primary rounded-full">
+                {quizQuestion.orderInQuiz}
+              </p>
             </CardTitle>
             <div className="flex items-center gap-2">
               <Badge variant="secondary" className="text-xs">
@@ -98,7 +100,7 @@ const QuizQuestionCard = ({ quizQuestion, index }: QuizQuestionCardProps) => {
         </CardHeader>
       </Card>
 
-      {renderQuestionByType()}
+      <div className="flex-grow">{renderQuestionByType()}</div>
     </div>
   );
 };
