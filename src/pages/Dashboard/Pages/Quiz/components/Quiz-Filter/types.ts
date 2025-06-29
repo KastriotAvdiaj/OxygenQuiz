@@ -1,19 +1,8 @@
 /** Defines shared TypeScript interfaces and types for the quiz filtering system. */
 
-export interface QuestionCategory {
-  id: number;
-  name: string;
-}
+import { QuestionCategory, QuestionDifficulty, QuestionLanguage } from "@/types/question-types";
 
-export interface QuestionDifficulty {
-  id: number;
-  level: string;
-}
 
-export interface QuestionLanguage {
-  id: number;
-  language: string;
-}
 
 export interface ActiveFilter {
   key: string;

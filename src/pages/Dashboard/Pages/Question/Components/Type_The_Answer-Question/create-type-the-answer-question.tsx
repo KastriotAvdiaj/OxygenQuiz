@@ -171,6 +171,7 @@ export const CreateTypeAnswerQuestionForm: React.FC<
                       className="flex items-center justify-between gap-4"
                     >
                       <Input
+                      variant="minimal"
                         className={`${
                           formState.errors?.acceptableAnswers?.[index]
                             ? "border-red-500"

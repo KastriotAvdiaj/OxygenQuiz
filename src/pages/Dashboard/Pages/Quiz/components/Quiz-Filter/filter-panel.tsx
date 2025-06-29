@@ -1,18 +1,13 @@
 /** Renders the collapsible panel containing all advanced filter select inputs. */
 
-import { Label } from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { DifficultySelect } from "../../../Question/Entities/Difficulty/Components/select-question-difficulty";
 import {
   QuestionCategory,
   QuestionDifficulty,
   QuestionLanguage,
-} from "./types";
+} from "@/types/question-types";
+import { LanguageSelect } from "../../../Question/Entities/Language/components/select-question-language";
+import { CategorySelect } from "../../../Question/Entities/Categories/Components/select-question-category";
 
 type AdvancedFilterPanelProps = {
   categories: QuestionCategory[];
@@ -27,14 +22,14 @@ type AdvancedFilterPanelProps = {
   selectedLanguageId?: number;
   onLanguageChange: (id?: number) => void;
 
-  selectedVisibility?: string;
-  onVisibilityChange: (value?: string) => void;
+//   selectedVisibility?: string;
+//   onVisibilityChange: (value?: string) => void;
 
-  selectedIsPublished?: boolean;
-  onIsPublishedChange: (value?: boolean) => void;
+//   selectedIsPublished?: boolean;
+//   onIsPublishedChange: (value?: boolean) => void;
 
-  selectedIsActive?: boolean;
-  onIsActiveChange: (value?: boolean) => void;
+//   selectedIsActive?: boolean;
+//   onIsActiveChange: (value?: boolean) => void;
 };
 
 export const FilterPanel = ({
@@ -47,84 +42,45 @@ export const FilterPanel = ({
   languages,
   selectedLanguageId,
   onLanguageChange,
-  selectedVisibility,
-  onVisibilityChange,
-  selectedIsPublished,
-  onIsPublishedChange,
-  selectedIsActive,
-  onIsActiveChange,
-}: AdvancedFilterPanelProps) => {
+}: //   selectedVisibility,
+//   onVisibilityChange,
+//   selectedIsPublished,
+//   onIsPublishedChange,
+//   selectedIsActive,
+//   onIsActiveChange,
+AdvancedFilterPanelProps) => {
   return (
     <div className="bg-gradient-to-br from-card via-card/95 to-muted/30 border border-border/50 rounded-xl p-6 backdrop-blur-sm">
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        {/* Category Filter */}
-        <div className="space-y-3">
-          <Label className="text-sm font-semibold text-foreground flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-blue-500"></div>Category
-          </Label>
-          <Select
-            value={selectedCategoryId?.toString() || ""}
-            onValueChange={(v) => onCategoryChange(v ? Number(v) : undefined)}
-          >
-            <SelectTrigger className="h-11 bg-background/50">
-              <SelectValue placeholder="Any category" />
-            </SelectTrigger>
-            <SelectContent>
-              {categories.map((c) => (
-                <SelectItem key={c.id} value={c.id.toString()}>
-                  {c.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <CategorySelect
+          label="Category"
+          mode="filter"
+          categories={categories}
+          value={selectedCategoryId}
+          onChange={onCategoryChange}
+          includeAllOption
+        />
 
-        {/* Difficulty Filter */}
-        <div className="space-y-3">
-          <Label className="text-sm font-semibold text-foreground flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-orange-500"></div>Difficulty
-          </Label>
-          <Select
-            value={selectedDifficultyId?.toString() || ""}
-            onValueChange={(v) => onDifficultyChange(v ? Number(v) : undefined)}
-          >
-            <SelectTrigger className="h-11 bg-background/50">
-              <SelectValue placeholder="Any difficulty" />
-            </SelectTrigger>
-            <SelectContent>
-              {difficulties.map((d) => (
-                <SelectItem key={d.id} value={d.id.toString()}>
-                  {d.level}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <DifficultySelect
+          label="Difficulty"
+          mode="filter"
+          difficulties={difficulties}
+          value={selectedDifficultyId}
+          onChange={onDifficultyChange}
+          includeAllOption
+        />
 
-        {/* Language Filter */}
-        <div className="space-y-3">
-          <Label className="text-sm font-semibold text-foreground flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-green-500"></div>Language
-          </Label>
-          <Select
-            value={selectedLanguageId?.toString() || ""}
-            onValueChange={(v) => onLanguageChange(v ? Number(v) : undefined)}
-          >
-            <SelectTrigger className="h-11 bg-background/50">
-              <SelectValue placeholder="Any language" />
-            </SelectTrigger>
-            <SelectContent>
-              {languages.map((l) => (
-                <SelectItem key={l.id} value={l.id.toString()}>
-                  {l.language}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <LanguageSelect
+          label="Language"
+          mode="filter"
+          languages={languages}
+          value={selectedLanguageId}
+          onChange={onLanguageChange}
+          includeAllOption
+        />
 
         {/* Visibility Filter */}
-        <div className="space-y-3">
+        {/* <div className="space-y-3">
           <Label className="text-sm font-semibold text-foreground flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-purple-500"></div>Visibility
           </Label>
@@ -141,10 +97,10 @@ export const FilterPanel = ({
               <SelectItem value="Friends">👥 Friends Only</SelectItem>
             </SelectContent>
           </Select>
-        </div>
+        </div> */}
 
         {/* Publication Status Filter */}
-        <div className="space-y-3">
+        {/* <div className="space-y-3">
           <Label className="text-sm font-semibold text-foreground flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-red-500"></div>Publication
             Status
@@ -169,10 +125,10 @@ export const FilterPanel = ({
               <SelectItem value="unpublished">📝 Draft</SelectItem>
             </SelectContent>
           </Select>
-        </div>
+        </div> */}
 
         {/* Active Status Filter */}
-        <div className="space-y-3">
+        {/* <div className="space-y-3">
           <Label className="text-sm font-semibold text-foreground flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-teal-500"></div>Active
             Status
@@ -197,7 +153,7 @@ export const FilterPanel = ({
               <SelectItem value="inactive">⚪ Inactive</SelectItem>
             </SelectContent>
           </Select>
-        </div>
+        </div> */}
       </div>
     </div>
   );

@@ -191,3 +191,85 @@ body {
 .lift-button:active > .button_top {
   transform: translateY(-0.6em);
 }
+
+.minimal-input-wrapper {
+  position: relative;
+  width: 100%;
+  /* margin: 0.75rem 0.3125rem; */
+}
+
+.minimal-input-wrapper:before {
+  transition: border-bottom-color 200ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;
+  border-bottom: 1px solid hsl(var(--muted-foreground) / 0.4);
+}
+
+.minimal-input-wrapper:before,
+.minimal-input-wrapper:after {
+  content: "";
+  left: 0;
+  right: 0;
+  position: absolute;
+  pointer-events: none;
+  bottom: -1px;
+  z-index: 4;
+  width: 100%;
+}
+
+.minimal-input-wrapper:focus-within:before {
+  border-bottom: 1px solid hsl(var(--primary));
+  transform: scaleX(1);
+}
+
+.minimal-input-wrapper:focus-within:after {
+  border-bottom: 2px solid hsl(var(--primary));
+  transform: scaleX(1);
+}
+
+.minimal-input-wrapper:after {
+  content: "";
+  transform: scaleX(0);
+  transition: transform 250ms cubic-bezier(0, 0, 0.2, 1) 0ms;
+  will-change: transform;
+  border-bottom: 2px solid hsl(var(--primary));
+}
+
+.minimal-input {
+  border-radius: 0.3125rem 0.3125rem 0 0;
+  box-shadow: 0 2px 5px hsl(var(--muted) / 0.3);
+  max-height: 2.25rem;
+  background-color: hsl(var(--muted));
+  transition-timing-function: cubic-bezier(0.25, 0.8, 0.25, 1);
+  transition-duration: 200ms;
+  transition-property: background-color;
+  color: hsl(var(--foreground));
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 0.75rem;
+  width: 100%;
+  border-left: none;
+  border-bottom: none;
+  border-right: none;
+  border-top: 1px solid transparent;
+}
+
+.minimal-input::placeholder {
+  transition: opacity 250ms cubic-bezier(0, 0, 0.2, 1) 0ms;
+  opacity: 1;
+  user-select: none;
+  color: hsl(var(--muted-foreground) / 0.6);
+}
+
+.minimal-input:focus,
+.minimal-input:active {
+  outline: none;
+}
+
+.minimal-input-wrapper:focus-within .minimal-input,
+.minimal-input:focus,
+.minimal-input:active {
+  background-color: hsl(var(--primary) / 0.2);
+}
+
+.minimal-input-wrapper:focus-within .minimal-input::placeholder {
+  opacity: 0;
+}

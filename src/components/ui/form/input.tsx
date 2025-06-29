@@ -9,9 +9,6 @@ import {
 } from "./field-wrapper";
 import { QuestionType } from "@/types/question-types";
 
-// Define question types as enum
-
-
 export type InputProps = React.InputHTMLAttributes<HTMLInputElement> &
   FieldWrapperPassThroughProps & {
     className?: string;
@@ -22,7 +19,8 @@ export type InputProps = React.InputHTMLAttributes<HTMLInputElement> &
       | "isCorrect"
       | "isIncorrect"
       | "display"
-      | "fullColor";
+      | "fullColor"
+      | "minimal";
     questionType?: QuestionType;
   };
 
@@ -37,6 +35,7 @@ const variantStyles: Record<NonNullable<InputProps["variant"]>, string> = {
     "bg-gradient-to-r from-red-500/10 to-red-500/5 border-2 border-red-500/30 dark:border-red-500/60 text-foreground font-medium rounded-xl h-12 shadow-[0_4px_0_0_rgba(220,38,38,0.5)] hover:shadow-[0_2px_0_0_rgba(220,38,38,0.5)] hover:translate-y-1 active:translate-y-2 active:shadow-none transform transition-all duration-200 focus-visible:ring-red-500/50 focus-visible:ring-offset-background dark:bg-gradient-to-r dark:from-red-500/20 dark:to-red-500/10 placeholder:text-center placeholder:text-lg focus:placeholder:opacity-0 text-center text-lg sm:text-xl md:text-xl px-4 py-2",
   display:
     "bg-gradient-to-r from-primary/10 to-primary/5 border-2 border-primary/40 dark:border-primary/80 text-foreground font-medium rounded-xl h-12 shadow-[0_4px_0_0_hsl(var(--primary)/0.7)] dark:bg-gradient-to-r dark:from-primary/40 dark:to-primary/10 text-center text-lg sm:text-xl md:text-xl px-4 py-4 cursor-default",
+  minimal: "minimal-input",
 };
 
 // Question type color overrides for quiz and display variants
@@ -123,6 +122,23 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ) => {
     const baseClasses =
       "flex h-9 w-full rounded-md bg-background px-3 py-1 text-sm shadow-md border dark:border-foreground/40 transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
+
+    // Special handling for minimal variant
+    if (variant === "minimal") {
+      return (
+        <FieldWrapper label={label} error={error}>
+          <div className="minimal-input-wrapper">
+            <input
+              type={type}
+              className={cn("minimal-input", className)}
+              ref={ref}
+              {...props}
+              {...registration}
+            />
+          </div>
+        </FieldWrapper>
+      );
+    }
 
     return (
       <FieldWrapper label={label} error={error}>

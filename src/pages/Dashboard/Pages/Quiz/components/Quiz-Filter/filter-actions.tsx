@@ -14,7 +14,7 @@ interface FilterActionsProps {
 
 export const FilterActions = ({
   totalActiveFilters,
-  showAdvancedFilters,
+  showAdvancedFilters,  
   onToggleAdvanced,
 //   onSave,
 }: FilterActionsProps) => {
