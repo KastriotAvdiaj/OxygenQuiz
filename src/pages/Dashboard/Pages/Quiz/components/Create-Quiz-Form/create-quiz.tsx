@@ -55,6 +55,7 @@ import { useCreateMultipleChoiceQuestion } from "../../../Question/api/Normal-Qu
 import { useCreateTrueFalseQuestion } from "../../../Question/api/True_False-Question/create-true_false-question";
 import { useCreateTypeTheAnswerQuestion } from "../../../Question/api/Type_The_Answer-Question/create-type-the-answer-question";
 import { CreatedQuestionsPanel } from "./components/question-panel/questions-panel";
+import ImageUpload from "@/utils/Image-Upload";
 
 const CreateQuizForm = () => {
   const { queryData } = useQuizForm();
@@ -296,6 +297,23 @@ const CreateQuizForm = () => {
         const isSubmitting =
           createQuizMutation.isPending || isCreatingQuestions;
 
+        const [imageUrl, setImageUrl] = useState("");
+
+        useEffect(() => {
+          if (imageUrl) {
+            setValue("imageUrl", imageUrl);
+          }
+        }, [imageUrl, setValue]);
+
+        const handleImageUpload = (url: string) => {
+          setImageUrl(url);
+          setValue("imageUrl", url);
+        };
+        const handleImageRemove = () => {
+          setImageUrl("");
+          setValue("imageUrl", "");
+        };
+
         return (
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4 p-4 items-start">
             {/* Quiz Details Sidebar */}
@@ -340,7 +358,7 @@ const CreateQuizForm = () => {
                 </TabsContent>
 
                 <TabsContent value="quiz">
-                  <CardContent className="bg-background space-y-4">
+                  <CardContent className="bg-background space-y-4 max-h-[calc(100vh-300px)] overflow-y-auto">
                     {/* Basic Information */}
                     <div className="space-y-2">
                       <div>
@@ -377,8 +395,12 @@ const CreateQuizForm = () => {
                         />
                       </div>
                     </div>
-
                     <Separator className="bg-primary/20" />
+
+                    <ImageUpload
+                      onUpload={handleImageUpload}
+                      onRemove={handleImageRemove}
+                    />
 
                     {/* Dropdowns */}
                     <div className="space-y-3">

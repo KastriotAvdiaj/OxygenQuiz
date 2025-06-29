@@ -77,7 +77,9 @@ const QuizQuestionCard = ({ quizQuestion }: QuizQuestionCardProps) => {
 
   return (
     <div className="flex flex-col h-full">
-      <Card className="relative mb-2 rounded-tl-[20px] rounded-tr-[20px] dark:border dark:border-foreground/30 dark:bg-primary/10">
+      <Card
+        className={`relative mb-2 rounded-tl-[20px] rounded-tr-[20px] dark:border dark:border-foreground/30 dark:bg-primary/10`}
+      >
         <CardHeader className="py-3 px-6">
           <div className="flex items-center justify-between">
             <CardTitle className="text-sm text-white font-bold">

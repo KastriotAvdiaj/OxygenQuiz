@@ -43,6 +43,9 @@ namespace QuizAPI.Models.Quiz
 
         public int LanguageId { get; set; }
 
+        public string? ImageUrl { get; set; }
+
+
         [JsonIgnore]
         [ForeignKey(nameof(LanguageId))]
         public QuestionLanguage Language { get; set; }

@@ -17,6 +17,8 @@ export type QuizSummaryDTO = {
   category: string;
   difficulty: string;
   language: string;
+  imageUrl?: string; 
+  
   visibility: string;
   isPublished: boolean;
   isActive: boolean;
@@ -45,6 +47,7 @@ export type Quiz = {
   id: number;
   title: string;
   description?: string;
+  imageUrl?: string; 
   user: UserBasic;
   category: CategoryDTO;
   language: LanguageDTO;

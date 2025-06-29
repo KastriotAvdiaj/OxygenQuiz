@@ -79,6 +79,31 @@ body {
   }
 }
 
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--muted)); /* Use ShadCN's muted color */
+  border-radius: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--primary)); /* Use ShadCN's primary color */
+  border-radius: 8px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--primary-hover)); /* Optional: Add a hover color */
+}
+
+/* For Firefox */
+* {
+  scrollbar-width: auto;
+  scrollbar-color: hsl(var(--primary)) hsl(var(--muted)); /* Thumb and track colors */
+}
+
 .custom-button {
   z-index: 1;
   position: relative;

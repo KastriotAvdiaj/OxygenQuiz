@@ -53,6 +53,7 @@ const createAppRouter = (queryClient: QueryClient) =>
     },
     {
       path: "/choose-quiz",
+      errorElement: <DashboardErrorElement />,
       element: (
         <>
           <HomeLayout children={<QuizSelection />} />
@@ -76,7 +77,7 @@ const createAppRouter = (queryClient: QueryClient) =>
       element: <AppRoot />,
       id: "dashboardRoot",
       loader: authLoader(queryClient),
-      errorElement:<DashboardErrorElement/>,
+      errorElement: <DashboardErrorElement />,
       children: [
         {
           index: true,

@@ -1,6 +1,7 @@
 ﻿
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
+using QuizAPI.Controllers.Image.Services;
 using QuizAPI.Data;
 using QuizAPI.DTOs.Quiz;
 using QuizAPI.ManyToManyTables;
@@ -15,15 +16,18 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
         private readonly ApplicationDbContext _context;
         private readonly IMapper _mapper;
         private readonly ILogger<QuizService> _logger;
+        private readonly IImageService _imageService;
 
         public QuizService(
             ApplicationDbContext context,
             IMapper mapper,
-            ILogger<QuizService> logger)
+            ILogger<QuizService> logger,
+            IImageService imageService)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _imageService = imageService ?? throw new ArgumentNullException(nameof(imageService));
         }
 
         public async Task<PagedList<QuizSummaryDTO>> GetAllQuizzesAsync(QuizFilterParams filterParams)
@@ -162,7 +166,6 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
 
             try
             {
-                // Check if required entities exist
                 var categoryExists = await _context.QuestionCategories.AnyAsync(c => c.Id == quizCM.CategoryId);
                 var languageExists = await _context.QuestionLanguages.AnyAsync(l => l.Id == quizCM.LanguageId);
                 var difficultyExists = await _context.QuestionDifficulties.AnyAsync(d => d.ID == quizCM.DifficultyId);
@@ -170,50 +173,58 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
 
                 if (!categoryExists || !languageExists || !difficultyExists || !userExists)
                 {
-                    throw new InvalidOperationException("One or more required entities do not exist");
+                    throw new InvalidOperationException("Category, Language, Difficulty, or User does not exist.");
                 }
 
-                // Verify all questions exist
-                var questionIds = quizCM.Questions.Select(q => q.QuestionId).ToList();
+                var questionIds = quizCM.Questions.Select(q => q.QuestionId).Distinct().ToList();
                 var existingQuestionCount = await _context.Questions.CountAsync(q => questionIds.Contains(q.Id));
 
                 if (existingQuestionCount != questionIds.Count)
                 {
-                    throw new InvalidOperationException("One or more questions do not exist");
+                    throw new InvalidOperationException("One or more questions do not exist.");
                 }
 
-                // Create quiz
+               
                 var quiz = _mapper.Map<Quiz>(quizCM);
                 quiz.UserId = userId;
                 quiz.CreatedAt = DateTime.UtcNow;
                 quiz.Version = 1;
                 quiz.IsActive = true;
 
-                await _context.Quizzes.AddAsync(quiz);
-                await _context.SaveChangesAsync();
-
-                // Add quiz questions
-                var order = 1;
-                foreach (var questionCM in quizCM.Questions)
-                {
-                    var quizQuestion = _mapper.Map<QuizQuestion>(questionCM);
-                    quizQuestion.QuizId = quiz.Id;
-                    quizQuestion.OrderInQuiz = order++;
-
-                    await _context.QuizQuestions.AddAsync(quizQuestion);
-                }
                 quiz.TimeLimitInSeconds = quizCM.Questions.Sum(q => q.TimeLimitInSeconds);
 
+                _context.Quizzes.Add(quiz);
+
+               
+                var order = 1;
+                var quizQuestions = quizCM.Questions.Select(questionCM =>
+                {
+                    var quizQuestion = _mapper.Map<QuizQuestion>(questionCM);
+                    quizQuestion.Quiz = quiz;
+                    quizQuestion.OrderInQuiz = order++;
+                    return quizQuestion;
+                });
+
+                await _context.QuizQuestions.AddRangeAsync(quizQuestions);
+
                 await _context.SaveChangesAsync();
+
                 await transaction.CommitAsync();
 
-                // Return full quiz details
-                return await GetQuizByIdAsync(quiz.Id);
+                if (!string.IsNullOrEmpty(quizCM.ImageUrl))
+                {
+                    await _imageService.AssociateImageWithEntityAsync(quizCM.ImageUrl, "Quizzes", quiz.Id);
+                }
+
+                var quizDto = _mapper.Map<QuizDTO>(quiz);
+                return quizDto;
+              
             }
-            catch (Exception ex)
+            catch (Exception)
             {
+                // If anything fails, roll back the entire transaction.
                 await transaction.RollbackAsync();
-                _logger.LogError(ex, "Error creating quiz for user {UserId}", userId);
+                // Re-throw the exception to be handled by higher-level code.
                 throw;
             }
         }

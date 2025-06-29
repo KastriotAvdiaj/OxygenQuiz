@@ -15,7 +15,7 @@ export const ProfileButton = React.forwardRef<
     onClick={onClick}
     variant={"default"}
     size={"none"}
-    className="flex items-center rounded-[2rem] gap-3 py-2 h-12 px-4"
+    className="flex items-center rounded-[2rem] gap-3 py-2 h-12 px-4 text-white"
   >
     My Profile
     <Avatar className="cursor-pointer">

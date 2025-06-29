@@ -100,7 +100,7 @@ export const QuizRoute = () => {
               <h1 className="font-bold text-3xl">{quiz.title}</h1>
               <Badge
                 variant={quiz.isPublished ? "default" : "secondary"}
-                className={quiz.isPublished ? "bg-green-500" : ""}
+                className={quiz.isPublished ? "bg-green-500 text-white" : ""}
               >
                 {quizStats?.status}
               </Badge>

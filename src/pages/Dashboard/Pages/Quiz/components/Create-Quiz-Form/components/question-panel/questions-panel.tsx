@@ -57,7 +57,7 @@ export const CreatedQuestionsPanel = ({}) => {
             </Popover>
           </CardTitle>
         </CardHeader>
-        <CardContent className="px-3 py-4">
+        <CardContent className="px-3 py-4 h-fit overflow-y-auto max-h-[calc(100vh-300px)]">
           {addedQuestions.length === 0 ? (
             <p className="text-center text-muted-foreground py-4">
               No questions added yet

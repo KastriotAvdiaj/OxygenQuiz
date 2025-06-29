@@ -46,6 +46,7 @@ export const createQuizInputSchema = z.object({
     .int()
     .positive({ message: "Difficulty is required" }),
 
+  imageUrl: z.string().optional(),
   // Quiz Settings
   timeLimitInSeconds: z.number()
     .int()
