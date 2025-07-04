@@ -11,7 +11,7 @@ import { useNotifications } from "@/common/Notifications";
 // import Squares from "@/common/Effect-Related/background-squares";
 // import { useTheme } from "@/components/ui";
 // import OxygenBackground from "../../../assets/oxygenquiz.jpeg";
-import OxygenBackground from "../../../assets/oxygenquiz2.jpg";
+import OxygenBackground from "/assets/oxygenquiz2.jpg";
 
 /**
  *

@@ -49,6 +49,8 @@ namespace QuizAPI.DTOs.Quiz
         public string Difficulty { get; set; } = string.Empty; 
         public string Language { get; set; } = string.Empty;
         public string? ImageUrl { get; set; }
+        public int TimeLimitInSeconds { get; set; }
+
         public string Visibility { get; set; } = string.Empty;
         public bool IsPublished { get; set; }
         public bool IsActive { get; set; }

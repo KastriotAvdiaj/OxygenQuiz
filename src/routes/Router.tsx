@@ -1,9 +1,5 @@
 import { lazy, useMemo } from "react";
-import {
-  createBrowserRouter,
-  LoaderFunctionArgs,
-  RouterProvider,
-} from "react-router-dom";
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { authLoader } from "../lib/Auth";
 import { AppRoot } from "../pages/AppRoot";
 import { QueryClient, useQueryClient } from "@tanstack/react-query";
@@ -13,9 +9,13 @@ import "../global.css";
 import { Navigate } from "react-router-dom";
 import { HomeLayout } from "@/layouts/layout";
 import QuizCreator from "@/pages/Dashboard/Pages/Quiz/components/Create-Quiz-Form/create-quiz";
-import { QuizSelection } from "@/pages/Quiz/Quiz-Selection";
+import {
+  QuizSelection,
+  quizSelectionLoader,
+} from "@/pages/Quiz/Quiz-Selection";
 import { QuizQuestionProvider } from "@/pages/Dashboard/Pages/Quiz/components/Create-Quiz-Form/Quiz-questions-context";
 import { DashboardErrorElement } from "@/pages/UtilityPages/Error/Dashboard-Error-Element";
+import { quizLoader } from "../pages/Dashboard/Pages/Quiz/Quiz";
 
 // Lazy load components
 const Home = lazy(() =>
@@ -53,10 +53,11 @@ const createAppRouter = (queryClient: QueryClient) =>
     },
     {
       path: "/choose-quiz",
+      loader: quizSelectionLoader(queryClient),
       errorElement: <DashboardErrorElement />,
       element: (
         <>
-          <HomeLayout children={<QuizSelection />} />
+          <HomeLayout squares={true} children={<QuizSelection />} />
         </>
       ),
     },
@@ -141,12 +142,7 @@ const createAppRouter = (queryClient: QueryClient) =>
             );
             return { Component: QuizRoute };
           },
-          loader: async (args: LoaderFunctionArgs) => {
-            const { quizLoader } = await import(
-              "../pages/Dashboard/Pages/Quiz/Quiz"
-            );
-            return quizLoader(queryClient)(args);
-          },
+          loader: quizLoader(queryClient),
         },
         {
           path: "permissions",

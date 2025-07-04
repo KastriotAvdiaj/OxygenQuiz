@@ -19,10 +19,11 @@ export type QuizSummaryDTO = {
   language: string;
   imageUrl?: string; 
   
+  timeLimitInSeconds:number;
   visibility: string;
   isPublished: boolean;
   isActive: boolean;
-  createdAt: string; // DateTime from C# is serialized as a string (e.g., ISO 8601)
+  createdAt: string; 
   questionCount: number;
   user: string;
 };
