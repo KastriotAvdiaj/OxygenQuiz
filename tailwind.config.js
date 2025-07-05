@@ -15,7 +15,8 @@ module.exports = {
   				'Titillium Web',
   				'serif'
   			],
-			secondary: ['Barriecito', 'system-ui']
+			secondary: ['Barriecito', 'system-ui'],
+			quiz: ['Quiz-Card-Font', 'system-ui'],
   		},
   		scale: {
   			'101': '1.01',

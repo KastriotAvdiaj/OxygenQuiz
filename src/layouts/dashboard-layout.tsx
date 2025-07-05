@@ -29,7 +29,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           <DashboardHeader />
         </header>
 
-        <main className="flex-1 overflow-y-auto bg-muted p-10">{children}</main>
+        <main className="flex-1 overflow-y-auto h- bg-muted p-10">{children}</main>
       </div>
     );
   }

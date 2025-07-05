@@ -45,38 +45,16 @@ const itemVariants = {
 export function QuizSelection() {
   const [searchQuery, setSearchQuery] = useState("");
 
-  const {
-    data: quizzesResponse,
-    isLoading,
-    isError,
-  } = useAllQuizzesData({
+  const { data: quizzesResponse } = useAllQuizzesData({
     params: {
       searchTerm: searchQuery,
     },
   });
 
-  // Memoize quizzes to prevent unnecessary re-renders
-  const quizzes = useMemo(() => quizzesResponse?.data || [], [quizzesResponse?.data]);
-
-  // Show loading state to prevent layout shift
-  if (isLoading) {
-    return (
-      <div className="relative min-h-screen overflow-y-auto pb-20 text-foreground">
-        <QuizHeader />
-        <div className="container relative mx-auto px-4">
-          <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-            {/* Skeleton loading cards */}
-            {[...Array(6)].map((_, index) => (
-              <div
-                key={index}
-                className="h-[200px] rounded-xl bg-muted animate-pulse"
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const quizzes = useMemo(
+    () => quizzesResponse?.data || [],
+    [quizzesResponse?.data]
+  );
 
   return (
     <div className="relative min-h-screen overflow-y-auto pb-20 text-foreground">
@@ -94,7 +72,7 @@ export function QuizSelection() {
             No quizzes found
           </motion.div>
         )}
-        
+
         <motion.div
           className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3"
           variants={containerVariants}

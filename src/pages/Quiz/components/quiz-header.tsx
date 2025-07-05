@@ -1,5 +1,4 @@
-import { motion } from "framer-motion"
-import { Sparkles } from "lucide-react"
+import { motion } from "framer-motion";
 
 export function QuizHeader() {
   return (
@@ -24,21 +23,22 @@ export function QuizHeader() {
       </div>
 
       <div className="container mx-auto px-4 py-16 md:py-24 text-center relative">
-        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-          <div className="inline-flex items-center justify-center mb-4 bg-primary/10 px-4 py-2 rounded-full">
-            <Sparkles className="h-5 w-5 mr-2 text-primary" />
-            <span className="font-medium text-primary">Challenge Your Mind</span>
-          </div>
-
-          <h1 className="text-4xl md:text-6xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/70">
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          <h1 className="text-4xl md:text-6xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/70 font-header">
             Quiz Adventure
           </h1>
 
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Embark on a journey of knowledge and fun with our collection of interactive quizzes!
+            Choose from a variety of quizzes to test your knowledge and skills.
+            Whether you're a trivia master or just looking to learn something
+            new, there's a quiz for you!
           </p>
         </motion.div>
       </div>
     </div>
-  )
+  );
 }

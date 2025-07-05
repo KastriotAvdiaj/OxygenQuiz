@@ -57,7 +57,7 @@ const createAppRouter = (queryClient: QueryClient) =>
       errorElement: <DashboardErrorElement />,
       element: (
         <>
-          <HomeLayout squares={true} children={<QuizSelection />} />
+          <HomeLayout  children={<QuizSelection />} />
         </>
       ),
     },

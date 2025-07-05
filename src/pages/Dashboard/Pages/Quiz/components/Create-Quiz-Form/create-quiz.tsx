@@ -1,16 +1,13 @@
 import { Form, Input, Label, Textarea } from "@/components/ui/form";
 import { Separator } from "@/components/ui/separator";
 import { useQuizForm } from "./use-quiz-form";
+import { Brain, PlusCircle, Clock, Eye, Shuffle, Upload } from "lucide-react";
 import {
-  Brain,
-  Trophy,
-  PlusCircle,
-  Clock,
-  Eye,
-  Shuffle,
-  Upload,
-} from "lucide-react";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -563,18 +560,9 @@ const CreateQuizForm = () => {
             </Card>
 
             {/* Main Quiz Creator Area */}
-            <Card className="bg-background justify-center border-2 border-primary/30 rounded-xl shadow-lg flex flex-col items-center w-full overflow-hidden md:col-span-3">
+            <Card className="bg-background justify-center border-2 border-primary/30 rounded-xl shadow-lg flex flex-col items-center w-full md:col-span-3">
               <CardHeader className="w-full relative bg-primary/10 p-4 text-center border-b border-primary/30">
-                <h2 className="text-2xl font-bold flex items-center justify-center gap-2">
-                  <Trophy className="h-6 w-6 text-primary" />
-                  Quiz Creator
-                  <Trophy className="h-6 w-6 text-primary" />
-                </h2>
-                <p className="text-muted-foreground">
-                  Craft your perfect quiz challenge!
-                </p>
-
-                <section className="flex absolute top-0 right-0 justify-center gap-4 p-4 rounded-lg">
+                <section className="flex justify-center gap-4 rounded-lg">
                   <SelectQuestionComponent />
                   <Dialog
                     open={isAddQuestionDialogOpen}
@@ -644,7 +632,7 @@ const CreateQuizForm = () => {
                 </section>
               </CardHeader>
 
-              <CardContent className="flex flex-col w-full p-4">
+              <CardContent className="flex flex-col w-full p-4 h-full">
                 {displayQuestion !== null ? (
                   isAnyQuestion(displayQuestion) ? (
                     <ExistingQuestionCard
@@ -677,8 +665,8 @@ const CreateQuizForm = () => {
                     />
                   </div>
                 )}
-
-                <Separator className="my-6 bg-primary/20" />
+              </CardContent>
+              <CardFooter>
                 <section className="w-full items-center flex justify-center">
                   <LiftedButton
                     type="submit"
@@ -700,7 +688,7 @@ const CreateQuizForm = () => {
                     </div>
                   </LiftedButton>
                 </section>
-              </CardContent>
+              </CardFooter>
             </Card>
 
             <div className="md:col-span-1">
