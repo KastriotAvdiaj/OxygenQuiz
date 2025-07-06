@@ -1,4 +1,5 @@
 import Squares from "@/common/Effect-Related/background-squares";
+import Lightning from "@/common/Effect-Related/lightning-background";
 import Header from "@/common/Header";
 import { useTheme } from "@/components/ui";
 
@@ -6,11 +7,13 @@ interface LayoutProps {
   children: React.ReactNode;
   headerColor?: boolean;
   squares?: boolean;
+  lightning?: boolean;
 }
 
 export const HomeLayout = ({
   children,
   squares = false,
+  lightning = false,
   headerColor = true,
 }: LayoutProps) => {
   const { theme } = useTheme();
@@ -18,7 +21,6 @@ export const HomeLayout = ({
     borderColor: theme === "dark" ? "#626262" : "#b4b4b4",
     hoverFillColor: theme === "dark" ? "#ffffff" : "#000000",
   };
-
 
   return (
     <>
@@ -36,6 +38,9 @@ export const HomeLayout = ({
             borderColor={colors.borderColor}
             hoverFillColor={colors.hoverFillColor}
           />
+        )}
+        {lightning && (
+          <Lightning hue={220} xOffset={0} speed={1} intensity={1} size={1} />
         )}
         {children}
       </div>

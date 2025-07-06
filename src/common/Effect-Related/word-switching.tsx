@@ -6,7 +6,39 @@ import React, {
   useMemo,
   useState,
 } from "react";
-import { motion, AnimatePresence, Transition } from "framer-motion";
+import {
+  motion,
+  AnimatePresence,
+  Transition,
+  type VariantLabels,
+  type Target,
+  type AnimationControls,
+  type TargetAndTransition,
+} from "framer-motion";
+
+declare global {
+  namespace Intl {
+    class Segmenter {
+      constructor(
+        locales?: string | string[],
+        options?: {
+          granularity?: "grapheme" | "word" | "sentence";
+          numeric?: boolean;
+        }
+      );
+      segment(input: string): Segments;
+    }
+
+    interface Segments {
+      [Symbol.iterator](): Iterator<{
+        segment: string;
+        index: number;
+        input: string;
+        isWordLike?: boolean;
+      }>;
+    }
+  }
+}
 
 function cn(...classes: (string | undefined | null | boolean)[]): string {
   return classes.filter(Boolean).join(" ");
@@ -26,9 +58,9 @@ export interface RotatingTextProps
   > {
   texts: string[];
   transition?: Transition;
-  initial?: any;
-  animate?: any;
-  exit?: any;
+  initial?: boolean | Target | VariantLabels;
+  animate?: boolean | VariantLabels | AnimationControls | TargetAndTransition;
+  exit?: Target | VariantLabels;
   animatePresenceMode?: "sync" | "wait";
   animatePresenceInitial?: boolean;
   rotationInterval?: number;
@@ -70,13 +102,11 @@ const RotatingText = forwardRef<RotatingTextRef, RotatingTextProps>(
     const [currentTextIndex, setCurrentTextIndex] = useState<number>(0);
 
     const splitIntoCharacters = (text: string): string[] => {
-      if (typeof Intl !== "undefined" && (Intl as any).Segmenter) {
-        const segmenter = new (Intl as any).Segmenter("en", {
-          granularity: "grapheme",
-        });
+      if (typeof Intl !== "undefined" && Intl.Segmenter) {
+        const segmenter = new Intl.Segmenter("en", { granularity: "grapheme" });
         return Array.from(
           segmenter.segment(text),
-          (segment: any) => segment.segment
+          (segment) => segment.segment
         );
       }
       return Array.from(text);

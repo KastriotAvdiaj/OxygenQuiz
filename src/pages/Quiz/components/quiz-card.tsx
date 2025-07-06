@@ -33,7 +33,7 @@ export function QuizCard({ quiz }: QuizCardProps) {
   const handleMouseLeave = useCallback(() => setIsHovered(false), []);
 
   // Determine which image to use - quiz image or fallback
-  const imageToUse = quiz.imageUrl || categoryData.image;
+  // const imageToUse = quiz.imageUrl || categoryData.image;
 
   return (
     <motion.div
