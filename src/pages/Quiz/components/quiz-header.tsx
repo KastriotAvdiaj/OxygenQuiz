@@ -31,12 +31,6 @@ export function QuizHeader() {
           <h1 className="text-4xl md:text-6xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/70 font-header">
             Quiz Adventure
           </h1>
-
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Choose from a variety of quizzes to test your knowledge and skills.
-            Whether you're a trivia master or just looking to learn something
-            new, there's a quiz for you!
-          </p>
         </motion.div>
       </div>
     </div>

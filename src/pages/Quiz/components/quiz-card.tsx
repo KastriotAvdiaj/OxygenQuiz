@@ -32,6 +32,9 @@ export function QuizCard({ quiz }: QuizCardProps) {
   const handleMouseEnter = useCallback(() => setIsHovered(true), []);
   const handleMouseLeave = useCallback(() => setIsHovered(false), []);
 
+  // Determine which image to use - quiz image or fallback
+  const imageToUse = quiz.imageUrl || categoryData.image;
+
   return (
     <motion.div
       className="h-full cursor-pointer"
@@ -54,28 +57,30 @@ export function QuizCard({ quiz }: QuizCardProps) {
         border-foreground hover:border-primary transition-colors duration-200 group
         dark:border-border/60 dark:hover:border-primary/40 min-h-[250px]"
       >
-        <div className="absolute inset-0 overflow-hidden">
+        {/* <div className="absolute inset-0 overflow-hidden">
           <div
             className={`absolute inset-0 bg-gradient-to-br ${categoryData.gradient} 
             transition-opacity duration-300`}
           />
 
-          {quiz.imageUrl && (
-            <motion.img
-              src={quiz.imageUrl != null ? quiz.imageUrl : categoryData.image}
-              className="w-full h-full object-cover"
-              style={{
-                opacity: quiz.imageUrl ? 0.8 : 0,
-              }}
-              animate={{
-                scale: isHovered ? 1.05 : 1,
-              }}
-              transition={{ duration: 0.4, ease: "easeOut" }}
-              loading="eager"
-            />
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-background/20 via-background/10 to-background/5 dark:from-background/40 dark:via-background/20 dark:to-background/10" />
-        </div>
+          <motion.img
+            src={imageToUse}
+            className="w-full h-full object-cover"
+            style={{
+              opacity: quiz.imageUrl ? 0.8 : 0.6, // Slightly different opacity for fallback
+            }}
+            animate={{
+              scale: isHovered ? 1.05 : 1,
+            }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+            loading="eager"
+            onError={(e) => {
+              // If the image fails to load, hide it and rely on gradient
+              e.currentTarget.style.opacity = "0";
+            }}
+          />
+          <div className="absolute inset-0 dark:from-background/40 dark:via-background/20 dark:to-background/10" />
+        </div> */}
 
         {/* Reversed backdrop blur - starts hidden, appears on hover */}
         <motion.div
@@ -101,9 +106,9 @@ export function QuizCard({ quiz }: QuizCardProps) {
             </Badge>
 
             {/* This new div is the background with the blur */}
-            <div className="rounded-xl shadow-md backdrop-blur-xl">
+            <div className="rounded-xl shadow-md backdrop-blur-xl bg-background/30">
               <CardTitle
-                className={`text-3xl font-bold leading-tight text-center text-foreground drop-shadow-sm p-2`}
+                className={`text-3xl font-bold leading-tight text-center text-foreground drop-shadow-sm p-2 `}
               >
                 {quiz.title}
               </CardTitle>
@@ -176,9 +181,7 @@ export function QuizCard({ quiz }: QuizCardProps) {
               <CardFooter className="pt-0">
                 <Button
                   variant="fancy"
-                  className="w-full group/button font-semibold transition-all duration-200 
-                  hover:shadow-lg hover:shadow-primary/25 relative overflow-hidden
-                  backdrop-blur-sm bg-primary/95 hover:bg-primary"
+                  className="w-full group/button"
                   size="default"
                 >
                   <span className="relative z-10">Start Quiz</span>

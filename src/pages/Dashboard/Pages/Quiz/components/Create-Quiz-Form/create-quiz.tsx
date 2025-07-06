@@ -312,7 +312,7 @@ const CreateQuizForm = () => {
         };
 
         return (
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 p-4 items-start">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 p-4 items-start min-h-0">
             {/* Quiz Details Sidebar */}
             <Card className="md:text-xs lg:text-sm h-fit md:col-span-1 bg-background border-2 border-primary/30">
               <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -632,7 +632,7 @@ const CreateQuizForm = () => {
                 </section>
               </CardHeader>
 
-              <CardContent className="flex flex-col w-full p-4 h-full">
+              <CardContent className="flex flex-col w-full p-4">
                 {displayQuestion !== null ? (
                   isAnyQuestion(displayQuestion) ? (
                     <ExistingQuestionCard

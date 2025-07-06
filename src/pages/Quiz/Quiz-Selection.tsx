@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { QuizCard } from "./components/quiz-card";
 import { QuizHeader } from "./components/quiz-header";
 import { motion } from "framer-motion";

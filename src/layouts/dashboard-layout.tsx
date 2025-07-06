@@ -24,12 +24,12 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   if (isQuizCreatorPage) {
     // Show header but no nav
     return (
-      <div className="text-foreground h-full flex flex-col">
+      <div className="text-foreground h-screen flex flex-col">
         <header className="flex-none">
           <DashboardHeader />
         </header>
 
-        <main className="flex-1 overflow-y-auto h- bg-muted p-10">{children}</main>
+        <main className="flex-1 overflow-y-auto bg-muted p-10">{children}</main>
       </div>
     );
   }
