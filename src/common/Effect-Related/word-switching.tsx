@@ -232,11 +232,12 @@ const RotatingText = forwardRef<RotatingTextRef, RotatingTextProps>(
         )}
         {...rest}
         layout
+        layoutId="rotating-text-container"
         transition={transition}
       >
         <span className="sr-only">{texts[currentTextIndex]}</span>
         <AnimatePresence
-          mode={animatePresenceMode}
+          mode="popLayout"
           initial={animatePresenceInitial}
         >
           <motion.div

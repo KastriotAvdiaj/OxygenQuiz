@@ -7,7 +7,7 @@ import { QuestionCategory } from '@/types/question-types'
 
 export const createQuestionCategoryInputSchema = z.object({
     name: z.string().min(1, 'Category is required'),
-    emoji: z.string(),
+     colorPalette: z.array(z.string().regex(/^#[0-9a-fA-F]{6}$/, "Invalid hex color format")).optional(),
 })
 
 

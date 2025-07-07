@@ -17,8 +17,7 @@ namespace QuizAPI.Models
 
         public Guid UserId { get; set; }
         public ICollection<QuestionBase> Questions { get; set; }
-
-        public string? Emoji { get; set; }
+        public string? ColorPaletteJson { get; set; }
 
     }
 }

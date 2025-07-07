@@ -6,8 +6,8 @@ export const Home = () => {
       <div className="flex items-center justify-center gap-2 text-6xl text-foreground">
         <h1>Sharpen Your</h1>
         <RotatingText
-          texts={["Thinking ", "Mind ", "Memory ", "Logic "]}
           mainClassName="px-2 sm:px-2 md:px-3 bg-cyan-300 text-black font-header font-semibold italic overflow-hidden py-0.5 sm:py-1 md:py-2 justify-center rounded-lg"
+          texts={["Thinking ", "Mind ", "Memory ", "Logic "]}
           staggerFrom={"last"}
           animatePresenceMode="wait"
           initial={{ y: "100%" }}

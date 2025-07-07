@@ -33,6 +33,7 @@ export enum QuestionType {
 export type QuestionCategory = {
   id: number;
   createdAt: string;
+  colorPaletteJson :string;
   username: string;
   name: string;
 };

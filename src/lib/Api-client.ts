@@ -34,6 +34,22 @@ function authRequestInterceptor(config: InternalAxiosRequestConfig) {
   return config;
 }
 
+export const llmApi = Axios.create({
+  baseURL: "http://localhost:8000",
+})
+
+llmApi.interceptors.response.use(
+  (response) => {
+    // Axios responses have the actual data inside a `data` property.
+    // This unwraps it for you, so in your hooks you can just use `response`
+    // instead of `response.data`.
+    return response.data;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
 export const api = Axios.create({
   baseURL: "https://localhost:7153/api/",
 });

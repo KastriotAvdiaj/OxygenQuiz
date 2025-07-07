@@ -1,23 +1,43 @@
+import * as React from "react";
 import { useNotifications } from "@/common/Notifications";
 import { useCreateQuestionCategory } from "../api/create-question-categories";
-import { FormDrawer } from "@/components/ui/form";
+import { FormDrawer, Form, Input, Label } from "@/components/ui/form";
 import { Button } from "@/components/ui";
-import { Smile } from "lucide-react";
-import { Input, Label } from "@/components/ui/form";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Form } from "@/components/ui/form";
-import { createQuestionCategoryInputSchema } from "../api/create-question-categories";
-import EmojiPicker, { type EmojiClickData } from "emoji-picker-react";
-import { useDisclosure } from "@/hooks/use-disclosure";
 import { LiftedButton } from "@/common/LiftedButton";
+import {
+  createQuestionCategoryInputSchema,
+  CreateQuestionCategoryInput,
+} from "../api/create-question-categories";
+import { useLlmChat } from "@/lib/LLM-Chat/use-llm-chat";
+import { useQuestionCategoryData } from "../api/get-question-categories";
+
+// A new component for the visual preview
+const PalettePreview = ({ palette }: { palette: string[] }) => {
+  if (!palette || palette.length === 0) return null;
+  return (
+    <div className="mt-2">
+      <p className="text-sm font-medium mb-1">Generated Palette:</p>
+      <div className="flex space-x-2 p-2 border rounded-md">
+        {palette.map((color) => (
+          <div
+            key={color}
+            className="w-10 h-10 rounded-md border"
+            style={{ backgroundColor: color }}
+            title={color}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
 
 export const CreateQuestionCategoryForm = () => {
   const { addNotification } = useNotifications();
+  const [palette, setPalette] = React.useState<string[]>([]);
+  const [llmError, setLlmError] = React.useState<string>("");
+
+  const llmMutation = useLlmChat();
+
   const createQuestionCategoryMutation = useCreateQuestionCategory({
     mutationConfig: {
       onSuccess: () => {
@@ -25,136 +45,135 @@ export const CreateQuestionCategoryForm = () => {
           type: "success",
           title: "Question Category Created",
         });
-      },
-      onError: () => {
-        addNotification({
-          type: "error",
-          title: "Error Creating Question Category",
-        });
+        setPalette([]);
       },
     },
   });
 
-  const { isOpen, open, close } = useDisclosure(false);
+  // Fetch existing categories to avoid color duplication
+  const { data: existingCategories } = useQuestionCategoryData({});
+
+  const handleGeneratePalette = async (categoryName: string) => {
+    if (!categoryName) return;
+
+    // Clear any previous errors
+    setLlmError("");
+
+    const existingPalettes = existingCategories
+      ? existingCategories.map((cat) => cat.colorPaletteJson).filter(Boolean)
+      : [];
+    const existingPalettesString = JSON.stringify(existingPalettes);
+
+    const prompt = `You are a design assistant. For a quiz category named "${categoryName}", generate a harmonious color palette of 3 colors. You MUST respond with ONLY a valid JSON array of hex color code strings, like ["#RRGGBB", "#RRGGBB", "#RRGGBB"]. Do not add any other text. Make the palette visually distinct from these existing ones: ${existingPalettesString}`;
+
+    llmMutation.mutate(
+      { data: { prompt } },
+      {
+        onSuccess: (data) => {
+          try {
+            const parsedPalette = JSON.parse(data.response);
+            if (Array.isArray(parsedPalette)) {
+              setPalette(parsedPalette);
+              setLlmError(""); // Clear error on success
+            }
+          } catch (e) {
+            console.error("Failed to parse LLM response:", e);
+            const errorMessage =
+              "Could not generate palette - received invalid response format";
+            setLlmError(errorMessage);
+            addNotification({
+              type: "error",
+              title: "Could not generate palette",
+            });
+          }
+        },
+        onError: (error) => {
+          const errorMessage =
+            "Failed to generate palette - service unavailable" + error;
+          setLlmError(errorMessage);
+          // setTimeout(() => {
+          //   setLlmError("");
+          // }, 3000);
+          addNotification({ type: "error", title: "LLM service error" });
+        },
+      }
+    );
+  };
+
+  const onSubmit = (values: CreateQuestionCategoryInput) => {
+    const submissionData = {
+      ...values,
+      colorPalette: palette,
+    };
+    createQuestionCategoryMutation.mutate({ data: submissionData });
+  };
 
   return (
-    <>
-      <FormDrawer
-        isDone={createQuestionCategoryMutation.isSuccess}
-        triggerButton={
-          <LiftedButton className="text-xs">+ New Category</LiftedButton>
-        }
-        title="Create New Question Category"
-        submitButton={
-          <Button
-            form="create-question-cateogry"
-            variant="addSave"
-            className="rounded-sm text-white"
-            type="submit"
-            size="default"
-            isPending={createQuestionCategoryMutation.isPending}
-            disabled={createQuestionCategoryMutation.isPending}
-          >
-            Submit
-          </Button>
-        }
-      >
-        <Form
-          id="create-question-cateogry"
-          onSubmit={(values) => {
-            createQuestionCategoryMutation.mutate({ data: values });
-          }}
-          schema={createQuestionCategoryInputSchema}
+    <FormDrawer
+      className="max-w-200"
+      isDone={createQuestionCategoryMutation.isSuccess}
+      triggerButton={
+        <LiftedButton className="text-xs">+ New Category</LiftedButton>
+      }
+      title="Create New Question Category"
+      submitButton={
+        <Button
+          form="create-question-category"
+          type="submit"
+          className="text-white"
         >
-          {({ register, formState, watch, setValue }) => {
-            const selectedEmoji = watch("emoji") || "";
+          Submit
+        </Button>
+      }
+    >
+      <Form
+        id="create-question-category"
+        onSubmit={onSubmit}
+        schema={createQuestionCategoryInputSchema}
+        options={{ defaultValues: { name: "", colorPalette: [] } }}
+      >
+        {({ register, formState, watch }) => {
+          const categoryName = watch("name") || "";
 
-            const onEmojiClick = (emojiData: EmojiClickData) => {
-              setValue("emoji", emojiData.emoji, {
-                shouldValidate: true,
-                shouldDirty: true,
-              });
-              close();
-            };
+          return (
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="name" className="text-sm font-medium">
+                  Category
+                </Label>
+                <Input
+                  id="name"
+                  variant="minimal"
+                  className={`py-2 ${
+                    formState.errors["name"]
+                      ? "border-red-500"
+                      : "border-border"
+                  }`}
+                  placeholder="Enter new category here..."
+                  error={formState.errors["name"]}
+                  registration={register("name")}
+                />
+              </div>
 
-            return (
-              <>
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="name" className="text-sm font-medium">
-                      Category
-                    </Label>
-                    <Input
-                      id="name"
-                      className={`py-2 ${
-                        formState.errors["name"]
-                          ? "border-red-500"
-                          : "border-border"
-                      }`}
-                      placeholder="Enter new category here..."
-                      error={formState.errors["name"]}
-                      registration={register("name")}
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="emoji" className="text-sm font-medium">
-                      Category Icon
-                    </Label>
-                    <div className="flex items-center gap-2 mt-1">
-                      <div
-                        className="flex items-center justify-center h-10 w-10 border border-border rounded-md bg-background"
-                        aria-label="Selected emoji"
-                      >
-                        {selectedEmoji ? (
-                          <span className="text-xl">{selectedEmoji}</span>
-                        ) : (
-                          <Smile className="h-5 w-5 text-muted-foreground" />
-                        )}
-                      </div>
-                      <Button
-                        type="button"
-                        id="emoji-selector"
-                        variant="outline"
-                        onClick={open}
-                        className="flex-1"
-                      >
-                        {selectedEmoji ? "Change Emoji" : "Select Emoji"}
-                      </Button>
-
-                      {/* Hidden input for the emoji field */}
-                      <input type="hidden" id="emoji" {...register("emoji")} />
-                    </div>
-                    {formState.errors.emoji && (
-                      <p className="text-sm text-red-500 mt-1">
-                        {formState.errors.emoji.message}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Emoji Picker Dialog */}
-                <Dialog open={isOpen} onOpenChange={(open) => !open && close()}>
-                  <DialogContent className="sm:max-w-md p-0 overflow-hidden">
-                    <DialogHeader className="px-4 pt-4 pb-0">
-                      <DialogTitle>Select an Emoji</DialogTitle>
-                    </DialogHeader>
-                    <div className="p-4">
-                      <EmojiPicker
-                        onEmojiClick={onEmojiClick}
-                        lazyLoadEmojis={true}
-                        width="100%"
-                        height="350px"
-                      />
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              </>
-            );
-          }}
-        </Form>
-      </FormDrawer>
-    </>
+              {/* Palette generation UI */}
+              <div className="mt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => handleGeneratePalette(categoryName)}
+                  disabled={!categoryName.trim() || llmMutation.isPending}
+                  isPending={llmMutation.isPending}
+                >
+                  {palette.length > 0 ? "Try Again" : "Generate Palette"}
+                </Button>
+              </div>
+              <p className="text-red-500 block">{llmError}</p>
+              <PalettePreview palette={palette} />
+            </div>
+          );
+        }}
+      </Form>
+    </FormDrawer>
   );
 };
 
