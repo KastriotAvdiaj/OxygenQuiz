@@ -8,35 +8,147 @@ import {
   createQuestionCategoryInputSchema,
   CreateQuestionCategoryInput,
 } from "../api/create-question-categories";
-import { useLlmChat } from "@/lib/LLM-Chat/use-llm-chat";
-import { useQuestionCategoryData } from "../api/get-question-categories";
 
-// A new component for the visual preview
-const PalettePreview = ({ palette }: { palette: string[] }) => {
-  if (!palette || palette.length === 0) return null;
+// Color palette input component
+const ColorPaletteInput = ({
+  palette,
+  onChange,
+}: {
+  palette: string[];
+  onChange: (palette: string[]) => void;
+}) => {
+  const [colorCount, setColorCount] = React.useState(3);
+
+  const updateColor = (index: number, color: string) => {
+    const newPalette = [...palette];
+    newPalette[index] = color;
+    onChange(newPalette);
+  };
+
+  const updateColorCount = (count: number) => {
+    setColorCount(count);
+    const newPalette = [...palette];
+    
+    // If reducing colors, truncate the array
+    if (count < palette.length) {
+      newPalette.length = count;
+    }
+    // If increasing colors, add empty strings
+    else if (count > palette.length) {
+      while (newPalette.length < count) {
+        newPalette.push("");
+      }
+    }
+    
+    onChange(newPalette);
+  };
+
+  const isValidHex = (hex: string) => {
+    return /^#[0-9A-F]{6}$/i.test(hex);
+  };
+
   return (
-    <div className="mt-2">
-      <p className="text-sm font-medium mb-1">Generated Palette:</p>
-      <div className="flex space-x-2 p-2 border rounded-md">
-        {palette.map((color) => (
-          <div
-            key={color}
-            className="w-10 h-10 rounded-md border"
-            style={{ backgroundColor: color }}
-            title={color}
-          />
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <Label className="text-sm font-medium">Color Palette</Label>
+        
+        {/* Color count selector */}
+        <div className="flex items-center space-x-2">
+          <span className="text-sm text-gray-600">Colors:</span>
+          <select
+            value={colorCount}
+            onChange={(e) => updateColorCount(parseInt(e.target.value))}
+            className="px-2 py-1 border border-gray-300 rounded text-sm"
+          >
+            {[2, 3, 4, 5].map((num) => (
+              <option key={num} value={num}>
+                {num}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        {Array.from({ length: colorCount }, (_, index) => (
+          <div key={index} className="flex items-center space-x-3">
+            <div className="flex items-center space-x-2">
+              <span className="text-sm font-medium w-8">#{index + 1}</span>
+
+              {/* Color picker input */}
+              <div className="relative">
+                <input
+                  type="color"
+                  value={palette[index] || "#000000"}
+                  onChange={(e) => updateColor(index, e.target.value)}
+                  className="w-12 h-12 rounded-lg border-2 border-gray-300 cursor-pointer bg-transparent"
+                  title="Click to open color picker"
+                />
+              </div>
+
+              {/* Hex input */}
+              <Input
+                type="text"
+                value={palette[index] || ""}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  // Auto-add # if not present
+                  const hexValue = value.startsWith("#") ? value : `#${value}`;
+                  updateColor(index, hexValue);
+                }}
+                placeholder="#000000"
+                className="w-24 text-sm font-mono"
+                maxLength={7}
+              />
+            </div>
+
+            {/* Color preview */}
+            <div
+              className="w-8 h-8 rounded-md border-2 border-gray-300 flex-shrink-0"
+              style={{
+                backgroundColor: isValidHex(palette[index])
+                  ? palette[index]
+                  : "#ffffff",
+              }}
+              title={palette[index] || "No color selected"}
+            />
+
+            {/* Validation indicator */}
+            {palette[index] && !isValidHex(palette[index]) && (
+              <span className="text-red-500 text-xs">Invalid hex</span>
+            )}
+          </div>
         ))}
       </div>
+
+      {/* Palette preview */}
+      {palette.some((color) => isValidHex(color)) && (
+        <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+          <p className="text-sm font-medium mb-2">Palette Preview:</p>
+          <div className="flex space-x-2">
+            {palette.slice(0, colorCount).map((color, index) => (
+              <div
+                key={index}
+                className="w-16 h-16 rounded-lg border-2 border-gray-300 flex items-center justify-center"
+                style={{
+                  backgroundColor: isValidHex(color) ? color : "#f5f5f5",
+                }}
+              >
+                {!isValidHex(color) && (
+                  <span className="text-xs text-gray-400">#{index + 1}</span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 export const CreateQuestionCategoryForm = () => {
   const { addNotification } = useNotifications();
-  const [palette, setPalette] = React.useState<string[]>([]);
-  const [llmError, setLlmError] = React.useState<string>("");
-
-  const llmMutation = useLlmChat();
+  const [palette, setPalette] = React.useState<string[]>(["", "", ""]);
 
   const createQuestionCategoryMutation = useCreateQuestionCategory({
     mutationConfig: {
@@ -45,65 +157,28 @@ export const CreateQuestionCategoryForm = () => {
           type: "success",
           title: "Question Category Created",
         });
-        setPalette([]);
+        setPalette(["", "", ""]);
       },
     },
   });
 
-  // Fetch existing categories to avoid color duplication
-  const { data: existingCategories } = useQuestionCategoryData({});
-
-  const handleGeneratePalette = async (categoryName: string) => {
-    if (!categoryName) return;
-
-    // Clear any previous errors
-    setLlmError("");
-
-    const existingPalettes = existingCategories
-      ? existingCategories.map((cat) => cat.colorPaletteJson).filter(Boolean)
-      : [];
-    const existingPalettesString = JSON.stringify(existingPalettes);
-
-    const prompt = `You are a design assistant. For a quiz category named "${categoryName}", generate a harmonious color palette of 3 colors. You MUST respond with ONLY a valid JSON array of hex color code strings, like ["#RRGGBB", "#RRGGBB", "#RRGGBB"]. Do not add any other text. Make the palette visually distinct from these existing ones: ${existingPalettesString}`;
-
-    llmMutation.mutate(
-      { data: { prompt } },
-      {
-        onSuccess: (data) => {
-          try {
-            const parsedPalette = JSON.parse(data.response);
-            if (Array.isArray(parsedPalette)) {
-              setPalette(parsedPalette);
-              setLlmError(""); // Clear error on success
-            }
-          } catch (e) {
-            console.error("Failed to parse LLM response:", e);
-            const errorMessage =
-              "Could not generate palette - received invalid response format";
-            setLlmError(errorMessage);
-            addNotification({
-              type: "error",
-              title: "Could not generate palette",
-            });
-          }
-        },
-        onError: (error) => {
-          const errorMessage =
-            "Failed to generate palette - service unavailable" + error;
-          setLlmError(errorMessage);
-          // setTimeout(() => {
-          //   setLlmError("");
-          // }, 3000);
-          addNotification({ type: "error", title: "LLM service error" });
-        },
-      }
-    );
-  };
-
   const onSubmit = (values: CreateQuestionCategoryInput) => {
+    // Filter out empty colors and validate hex format
+    const validColors = palette.filter(
+      (color) => color && /^#[0-9A-F]{6}$/i.test(color)
+    );
+
+    if (validColors.length === 0) {
+      addNotification({
+        type: "error",
+        title: "Please select at least one valid color",
+      });
+      return;
+    }
+
     const submissionData = {
       ...values,
-      colorPalette: palette,
+      colorPalette: validColors,
     };
     createQuestionCategoryMutation.mutate({ data: submissionData });
   };
@@ -132,14 +207,12 @@ export const CreateQuestionCategoryForm = () => {
         schema={createQuestionCategoryInputSchema}
         options={{ defaultValues: { name: "", colorPalette: [] } }}
       >
-        {({ register, formState, watch }) => {
-          const categoryName = watch("name") || "";
-
+        {({ register, formState }) => {
           return (
-            <div className="space-y-4">
+            <div className="space-y-6">
               <div>
                 <Label htmlFor="name" className="text-sm font-medium">
-                  Category
+                  Category Name
                 </Label>
                 <Input
                   id="name"
@@ -149,26 +222,13 @@ export const CreateQuestionCategoryForm = () => {
                       ? "border-red-500"
                       : "border-border"
                   }`}
-                  placeholder="Enter new category here..."
+                  placeholder="Enter category name..."
                   error={formState.errors["name"]}
                   registration={register("name")}
                 />
               </div>
 
-              {/* Palette generation UI */}
-              <div className="mt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => handleGeneratePalette(categoryName)}
-                  disabled={!categoryName.trim() || llmMutation.isPending}
-                  isPending={llmMutation.isPending}
-                >
-                  {palette.length > 0 ? "Try Again" : "Generate Palette"}
-                </Button>
-              </div>
-              <p className="text-red-500 block">{llmError}</p>
-              <PalettePreview palette={palette} />
+              <ColorPaletteInput palette={palette} onChange={setPalette} />
             </div>
           );
         }}

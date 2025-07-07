@@ -36,6 +36,7 @@ namespace QuizAPI.Controllers.Questions
                     Id = qc.Id,
                     Name = qc.Name,
                     Username = qc.User.Username,
+                    ColorPaletteJson = qc.ColorPaletteJson,
                     CreatedAt = qc.CreatedAt
                 })
                 .ToListAsync();
