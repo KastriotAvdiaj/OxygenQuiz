@@ -34,6 +34,7 @@ export type QuestionCategory = {
   id: number;
   createdAt: string;
   colorPaletteJson :string;
+  gradient: boolean;
   username: string;
   name: string;
 };

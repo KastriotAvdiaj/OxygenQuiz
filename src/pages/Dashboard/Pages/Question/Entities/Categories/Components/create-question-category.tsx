@@ -8,147 +8,12 @@ import {
   createQuestionCategoryInputSchema,
   CreateQuestionCategoryInput,
 } from "../api/create-question-categories";
-
-// Color palette input component
-const ColorPaletteInput = ({
-  palette,
-  onChange,
-}: {
-  palette: string[];
-  onChange: (palette: string[]) => void;
-}) => {
-  const [colorCount, setColorCount] = React.useState(3);
-
-  const updateColor = (index: number, color: string) => {
-    const newPalette = [...palette];
-    newPalette[index] = color;
-    onChange(newPalette);
-  };
-
-  const updateColorCount = (count: number) => {
-    setColorCount(count);
-    const newPalette = [...palette];
-    
-    // If reducing colors, truncate the array
-    if (count < palette.length) {
-      newPalette.length = count;
-    }
-    // If increasing colors, add empty strings
-    else if (count > palette.length) {
-      while (newPalette.length < count) {
-        newPalette.push("");
-      }
-    }
-    
-    onChange(newPalette);
-  };
-
-  const isValidHex = (hex: string) => {
-    return /^#[0-9A-F]{6}$/i.test(hex);
-  };
-
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <Label className="text-sm font-medium">Color Palette</Label>
-        
-        {/* Color count selector */}
-        <div className="flex items-center space-x-2">
-          <span className="text-sm text-gray-600">Nr. of Colors:</span>
-          <select
-            value={colorCount}
-            onChange={(e) => updateColorCount(parseInt(e.target.value))}
-            className="px-2 py-1 border border-gray-300 rounded text-sm text-muted"
-          >
-            {[2, 3, 4, 5].map((num) => (
-              <option key={num} value={num}>
-                {num}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      <div className="space-y-3">
-        {Array.from({ length: colorCount }, (_, index) => (
-          <div key={index} className="flex items-center space-x-3">
-            <div className="flex items-center space-x-2">
-              <span className="text-sm font-medium w-8">#{index + 1}</span>
-
-              {/* Color picker input */}
-              <div className="relative">
-                <input
-                  type="color"
-                  value={palette[index] || "#000000"}
-                  onChange={(e) => updateColor(index, e.target.value)}
-                  className="w-12 h-12 rounded-lg border-2 border-gray-300 cursor-pointer bg-transparent"
-                  title="Click to open color picker"
-                />
-              </div>
-
-              {/* Hex input */}
-              <Input
-                type="text"
-                value={palette[index] || ""}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  // Auto-add # if not present
-                  const hexValue = value.startsWith("#") ? value : `#${value}`;
-                  updateColor(index, hexValue);
-                }}
-                placeholder="#000000"
-                className="w-24 text-sm font-mono"
-                maxLength={7}
-              />
-            </div>
-
-            {/* Color preview */}
-            <div
-              className="w-8 h-8 rounded-md border-2 border-gray-300 flex-shrink-0"
-              style={{
-                backgroundColor: isValidHex(palette[index])
-                  ? palette[index]
-                  : "#ffffff",
-              }}
-              title={palette[index] || "No color selected"}
-            />
-
-            {/* Validation indicator */}
-            {palette[index] && !isValidHex(palette[index]) && (
-              <span className="text-red-500 text-xs">Invalid hex</span>
-            )}
-          </div>
-        ))}
-      </div>
-
-      {/* Palette preview */}
-      {palette.some((color) => isValidHex(color)) && (
-        <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-          <p className="text-sm font-medium mb-2">Palette Preview:</p>
-          <div className="flex space-x-2">
-            {palette.slice(0, colorCount).map((color, index) => (
-              <div
-                key={index}
-                className="w-16 h-16 rounded-lg border-2 border-gray-300 flex items-center justify-center"
-                style={{
-                  backgroundColor: isValidHex(color) ? color : "#f5f5f5",
-                }}
-              >
-                {!isValidHex(color) && (
-                  <span className="text-xs text-gray-400">#{index + 1}</span>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
+import { ColorPaletteInput } from "./color-palette-input";
 
 export const CreateQuestionCategoryForm = () => {
   const { addNotification } = useNotifications();
   const [palette, setPalette] = React.useState<string[]>(["", "", ""]);
+  const [isGradient, setIsGradient] = React.useState(false);
 
   const createQuestionCategoryMutation = useCreateQuestionCategory({
     mutationConfig: {
@@ -157,13 +22,14 @@ export const CreateQuestionCategoryForm = () => {
           type: "success",
           title: "Question Category Created",
         });
+        // Reset palette state. The form state will reset when the drawer closes/re-opens.
         setPalette(["", "", ""]);
+        setIsGradient(false);
       },
     },
   });
 
   const onSubmit = (values: CreateQuestionCategoryInput) => {
-    // Filter out empty colors and validate hex format
     const validColors = palette.filter(
       (color) => color && /^#[0-9A-F]{6}$/i.test(color)
     );
@@ -179,6 +45,7 @@ export const CreateQuestionCategoryForm = () => {
     const submissionData = {
       ...values,
       colorPalette: validColors,
+      isGradient: isGradient,
     };
     createQuestionCategoryMutation.mutate({ data: submissionData });
   };
@@ -205,7 +72,9 @@ export const CreateQuestionCategoryForm = () => {
         id="create-question-category"
         onSubmit={onSubmit}
         schema={createQuestionCategoryInputSchema}
-        options={{ defaultValues: { name: "", colorPalette: [] } }}
+        options={{
+          defaultValues: { name: "", colorPalette: [] },
+        }}
       >
         {({ register, formState }) => {
           return (
@@ -228,7 +97,12 @@ export const CreateQuestionCategoryForm = () => {
                 />
               </div>
 
-              <ColorPaletteInput palette={palette} onChange={setPalette} />
+              <ColorPaletteInput
+                palette={palette}
+                onChange={setPalette}
+                isGradient={isGradient}
+                onGradientChange={setIsGradient}
+              />
             </div>
           );
         }}

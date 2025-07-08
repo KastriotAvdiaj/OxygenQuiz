@@ -19,5 +19,7 @@ namespace QuizAPI.Models
         public ICollection<QuestionBase> Questions { get; set; }
         public string? ColorPaletteJson { get; set; }
 
+        public bool Gradient { get; set; } = false;
+
     }
 }

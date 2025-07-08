@@ -52,7 +52,7 @@ export function QuizCard({ quiz }: QuizCardProps) {
 
   return (
     <motion.div
-      className="h-full cursor-pointer w-full max-w-sm mx-auto"
+      className="h-full cursor-pointer w-full max-w-sm mx-auto rounded-lg"
       whileHover={{
         scale: 1.02,
         y: -2,
@@ -84,7 +84,7 @@ export function QuizCard({ quiz }: QuizCardProps) {
         }
       >
         <Card
-          className="relative h-full flex flex-col overflow-hidden rounded-lg border-2 
+          className="relative h-full flex flex-col overflow-hidden rounded-lg border-4 
            transition-all duration-300 group min-h-[180px] sm:min-h-[200px] md:min-h-[220px] shadow-md backdrop-blur-sm"
           style={{
             background: `${mainColor}60`,
@@ -160,18 +160,7 @@ export function QuizCard({ quiz }: QuizCardProps) {
                 <CardContent className="pb-2 sm:pb-3 flex-1 px-3 sm:px-4">
                   <div className="flex items-center gap-3 sm:gap-4 text-xs sm:text-sm">
                     <div className="flex items-center gap-1.5 text-foreground/80">
-                      <div
-                        className="p-1 rounded-full shadow-sm border"
-                        style={{
-                          backgroundColor: `${mainColor}15`,
-                          borderColor: `${mainColor}30`,
-                        }}
-                      >
-                        <HelpCircle
-                          className="h-3 w-3"
-                          style={{ color: mainColor }}
-                        />
-                      </div>
+                      <HelpCircle className="h-3 w-3" />
                       <span className="font-medium drop-shadow-sm">
                         {quiz.questionCount} questions
                       </span>
@@ -179,18 +168,7 @@ export function QuizCard({ quiz }: QuizCardProps) {
 
                     {quiz.timeLimitInSeconds && (
                       <div className="flex items-center gap-1.5 text-foreground/80">
-                        <div
-                          className="p-1 rounded-full shadow-sm border"
-                          style={{
-                            backgroundColor: `${mainColor}15`,
-                            borderColor: `${mainColor}30`,
-                          }}
-                        >
-                          <Clock
-                            className="h-3 w-3"
-                            style={{ color: mainColor }}
-                          />
-                        </div>
+                        <Clock className="h-3 w-3" />
                         <span className="font-medium drop-shadow-sm">
                           {secondsToMinutes(quiz.timeLimitInSeconds)}
                         </span>

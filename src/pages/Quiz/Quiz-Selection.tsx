@@ -57,7 +57,7 @@ export function QuizSelection() {
   );
 
   return (
-    <div className="relative min-h-screen overflow-y-auto pb-20 text-foreground bg-cover bg-center bg- dark:bg-[url('/assets/darkBackgroundImage.jpg')]">
+    <div className="relative min-h-screen overflow-y-auto pb-20 text-foreground bg-cover bg-center bg-[url('/assets/backgroundImage3.jpgs')] dark:bg-[url('/assets/darkBackgroundImage.jpg')]">
       <QuizHeader />
 
       <div className="container relative mx-auto p-4">
