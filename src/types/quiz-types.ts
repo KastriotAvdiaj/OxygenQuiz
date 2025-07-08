@@ -18,7 +18,7 @@ export type QuizSummaryDTO = {
   difficulty: string;
   language: string;
   imageUrl?: string; 
-  
+  colorPaletteJson?:string;
   timeLimitInSeconds:number;
   visibility: string;
   isPublished: boolean;

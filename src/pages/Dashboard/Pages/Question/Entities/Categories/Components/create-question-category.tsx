@@ -54,11 +54,11 @@ const ColorPaletteInput = ({
         
         {/* Color count selector */}
         <div className="flex items-center space-x-2">
-          <span className="text-sm text-gray-600">Colors:</span>
+          <span className="text-sm text-gray-600">Nr. of Colors:</span>
           <select
             value={colorCount}
             onChange={(e) => updateColorCount(parseInt(e.target.value))}
-            className="px-2 py-1 border border-gray-300 rounded text-sm"
+            className="px-2 py-1 border border-gray-300 rounded text-sm text-muted"
           >
             {[2, 3, 4, 5].map((num) => (
               <option key={num} value={num}>

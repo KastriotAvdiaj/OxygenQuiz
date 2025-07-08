@@ -58,6 +58,8 @@ namespace QuizAPI.DTOs.Quiz
         public int QuestionCount { get; set; } 
         public string User { get; set; } = string.Empty; 
 
+        public string? ColorPaletteJson { get; set; }
+
     }
     public class QuizDTO
     {

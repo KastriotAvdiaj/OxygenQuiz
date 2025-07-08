@@ -57,10 +57,10 @@ export function QuizSelection() {
   );
 
   return (
-    <div className="relative min-h-screen overflow-y-auto pb-20 text-foreground">
+    <div className="relative min-h-screen overflow-y-auto pb-20 text-foreground bg-cover bg-center bg- dark:bg-[url('/assets/darkBackgroundImage.jpg')]">
       <QuizHeader />
 
-      <div className="container relative mx-auto px-4">
+      <div className="container relative mx-auto p-4">
         {quizzes.length === 0 && (
           <motion.div
             className="flex h-96 flex-col items-center justify-center gap-4 text-lg text-muted-foreground"
@@ -74,7 +74,7 @@ export function QuizSelection() {
         )}
 
         <motion.div
-          className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3"
+          className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4"
           variants={containerVariants}
           initial="hidden"
           animate="visible"

@@ -37,6 +37,7 @@ public class QuizMappingProfile : Profile
         // Quiz Entity to QuizSummaryDTO (for list views)
         CreateMap<Quiz, QuizSummaryDTO>()
             .ForMember(dest => dest.Category, opt => opt.MapFrom(src => src.Category.Name))
+            .ForMember(dest => dest.ColorPaletteJson, opt => opt.MapFrom(src => src.Category.ColorPaletteJson))
             .ForMember(dest => dest.Difficulty, opt => opt.MapFrom(src => src.Difficulty.Level))
             .ForMember(dest => dest.Language, opt => opt.MapFrom(src => src.Language.Language))
             .ForMember(dest => dest.QuestionCount, opt => opt.MapFrom(src => src.QuizQuestions.Count))
