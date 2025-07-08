@@ -15,9 +15,9 @@ namespace QuizAPI.DTOs.Question
     {
         public int Id { get; set; }
         public string Text { get; set; } = string.Empty;
-        public DifficultyDTO Difficulty { get; set; }
-        public CategoryDTO Category { get; set; }
-        public LanguageDTO Language { get; set; }
+        public QuestionDifficultyDTO Difficulty { get; set; }
+        public QuestionCategoryDTO Category { get; set; }
+        public QuestionLanguageDTO Language { get; set; }
         public UserBasicDTO User { get; set; }
         public DateTime CreatedAt { get; set; }
         public string? ImageUrl { get; set; }
@@ -105,29 +105,7 @@ namespace QuizAPI.DTOs.Question
         public bool AllowPartialMatch { get; set; }
         public List<string> AcceptableAnswers { get; set; } = new List<string>();
     }
-    public class CategoryDTO
-    {
-        public int Id { get; set; }
-
-        public string Name { get; set; } = string.Empty;
-    }
-
-    public class DifficultyDTO
-    {
-
-       public int Id { get; set; }
-
-        public string Level { get; set; } = string.Empty;
-
-        public int Weight { get; set; }
-    }
-
-    public class LanguageDTO {
-    
-    public int Id { get; set; }
-    public string Language { get; set; } = string.Empty;
-    }
-
+   
 
     public class IndividualQuestionDTO {
     

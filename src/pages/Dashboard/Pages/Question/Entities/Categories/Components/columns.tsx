@@ -5,6 +5,7 @@ import { DeleteQuestionCategory } from "./delete-question-category";
 import { Authorization } from "@/lib/authorization";
 import { LiftedButton } from "@/common/LiftedButton";
 import { QuestionCategory } from "@/types/question-types";
+import UpdateQuestionCategoryForm from "./update-question-category";
 
 export const categoryColumns: ColumnDef<QuestionCategory>[] = [
   {
@@ -30,9 +31,15 @@ export const categoryColumns: ColumnDef<QuestionCategory>[] = [
       return (
         <div className="flex items-center space-x-2">
           <Authorization allowedRoles={["SuperAdmin"]}>
-            <LiftedButton variant="icon">
-              <Edit size={16} />
-            </LiftedButton>
+            <UpdateQuestionCategoryForm
+              triggerButton={
+                <LiftedButton variant="icon">
+                  <Edit size={16} />
+                </LiftedButton>
+              }
+              category={row.original}
+            />
+
             <DeleteQuestionCategory id={category.id} />
           </Authorization>
         </div>

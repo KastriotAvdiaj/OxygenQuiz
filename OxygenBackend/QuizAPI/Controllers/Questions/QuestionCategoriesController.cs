@@ -64,13 +64,16 @@ namespace QuizAPI.Controllers.Questions
 
         // PUT: api/QuestionCategories/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [Authorize(Roles = "SuperAdmin")]
+       /* [Authorize(Roles = "SuperAdmin")]*/
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutQuestionCategory(int id, QuestionCategory questionCategory)
+        public async Task<IActionResult> PutQuestionCategory(int id, QuestionCategoryCM questionCategory)
         {
-            if (id != questionCategory.Id)
+
+            var category = await _context.QuestionCategories.FindAsync(id);
+
+            if(category == null)
             {
-                return BadRequest();
+                return NotFound();
             }
 
             _context.Entry(questionCategory).State = EntityState.Modified;

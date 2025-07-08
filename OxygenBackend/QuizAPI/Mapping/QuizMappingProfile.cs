@@ -84,9 +84,9 @@ public class QuizMappingProfile : Profile
 
         // Common entity-to-DTO mappings
         CreateMap<User, UserBasicDTO>();
-        CreateMap<QuestionCategory, CategoryDTO>();
-        CreateMap<QuestionLanguage, LanguageDTO>();
-        CreateMap<QuestionDifficulty, DifficultyDTO>();
+        CreateMap<QuestionCategory, QuestionCategoryDTO>();
+        CreateMap<QuestionLanguage, QuestionLanguageDTO>();
+        CreateMap<QuestionDifficulty, QuestionDifficultyDTO>();
         CreateMap<QuestionBase, QuestionBaseDTO>();
     }
 }

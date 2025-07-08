@@ -68,11 +68,11 @@ namespace QuizAPI.DTOs.Quiz
         public string? Description { get; set; }
        public UserBasicDTO User { get; set; }
 
-       public CategoryDTO Category { get; set; } = new();
+       public QuestionCategoryDTO Category { get; set; } = new();
 
-        public LanguageDTO Language { get; set; } = new();
+        public QuestionLanguageDTO Language { get; set; } = new();
 
-        public DifficultyDTO Difficulty { get; set; } = new();
+        public QuestionDifficultyDTO Difficulty { get; set; } = new();
 
         public int TimeLimitInSeconds { get; set; }
         public bool ShowFeedbackImmediately { get; set; }
