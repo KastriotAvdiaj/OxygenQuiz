@@ -96,7 +96,7 @@ export function QuizCard({ quiz }: QuizCardProps) {
           <motion.div
             className="absolute inset-0 backdrop-blur-sm z-10"
             style={{
-              background: `${mainColor}15`,
+              background: `${mainColor}05`,
             }}
             initial={false}
             animate={{

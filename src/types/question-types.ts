@@ -11,11 +11,15 @@ export type DifficultyDTO = {
   id: number;
   level: string;
   weight: number;
+  username: string;
+  createdAt:string;
 };
 
 export type LanguageDTO = {
   id: number;
   language: string;
+  username: string;
+  createdAt:string;
 };
 
 export type AnswerOption = {

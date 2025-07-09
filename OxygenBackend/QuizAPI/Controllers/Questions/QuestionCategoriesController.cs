@@ -7,6 +7,7 @@ using QuizAPI.Data;
 using QuizAPI.DTOs.Question;
 using System.Text.Json;
 using QuizAPI.Models;
+using AutoMapper;
 
 namespace QuizAPI.Controllers.Questions
 {
@@ -15,10 +16,13 @@ namespace QuizAPI.Controllers.Questions
     public class QuestionCategoriesController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
+        private readonly IMapper _mapper;
 
-        public QuestionCategoriesController(ApplicationDbContext context)
+
+        public QuestionCategoriesController(ApplicationDbContext context, IMapper mapper)
         {
             _context = context;
+            _mapper = mapper;
         }
 
         // GET: api/QuestionCategories
@@ -64,19 +68,19 @@ namespace QuizAPI.Controllers.Questions
 
         // PUT: api/QuestionCategories/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-       /* [Authorize(Roles = "SuperAdmin")]*/
+        /* [Authorize(Roles = "SuperAdmin")]*/
         [HttpPut("{id}")]
         public async Task<IActionResult> PutQuestionCategory(int id, QuestionCategoryCM questionCategory)
         {
-
             var category = await _context.QuestionCategories.FindAsync(id);
 
-            if(category == null)
+            if (category == null)
             {
-                return NotFound();
+                return NotFound(new { message = "Category not found." });
             }
 
-            _context.Entry(questionCategory).State = EntityState.Modified;
+            // Map CM to existing entity, excluding UserId and CreatedAt
+            _mapper.Map(questionCategory, category);
 
             try
             {
@@ -101,34 +105,32 @@ namespace QuizAPI.Controllers.Questions
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
 
         [HttpPost]
-        public async Task<ActionResult<QuestionCategory>> PostQuestionCategory(QuestionCategoryCM questionCategory)
+        public async Task<ActionResult<QuestionCategoryDTO>> PostQuestionCategory(QuestionCategoryCM questionCategory)
         {
-            if (_context.QuestionCategories == null)
+            if (!ModelState.IsValid)
             {
-                return Problem("Entity set 'ApplicationDbContext.QuestionCategories'  is null.");
+                return BadRequest(ModelState);
             }
 
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-            if (string.IsNullOrEmpty(userId))
+            if (string.IsNullOrEmpty(userIdClaim))
             {
                 return Unauthorized(new { message = "User ID not found in token." });
             }
 
-            var questionCategoryEntity = new QuestionCategory 
-            { 
-                Name = questionCategory.Name,
-                UserId = Guid.Parse(userId),
-                ColorPaletteJson = (questionCategory.ColorPalette != null && questionCategory.ColorPalette.Any())
-                ? JsonSerializer.Serialize(questionCategory.ColorPalette)
-                : null,
-                CreatedAt = DateTime.UtcNow 
-            };
+            var userId = Guid.Parse(userIdClaim);
 
-            _context.QuestionCategories.Add(questionCategoryEntity);
+            // AutoMapper handles mapping + ColorPaletteJson serialization
+            var category = _mapper.Map<QuestionCategory>(questionCategory);
+            category.UserId = userId;
+            category.CreatedAt = DateTime.UtcNow;
+
+            _context.QuestionCategories.Add(category);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetQuestionCategory", new { id = questionCategoryEntity.Id }, questionCategoryEntity);
+            var dto = _mapper.Map<QuestionCategoryDTO>(category);
+            return CreatedAtAction(nameof(GetQuestionCategory), new { id = category.Id }, dto);
         }
 
         // DELETE: api/QuestionCategories/5

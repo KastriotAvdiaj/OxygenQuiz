@@ -82,11 +82,6 @@ public class QuizMappingProfile : Profile
             .ForMember(dest => dest.QuizQuestions, opt => opt.Ignore()) // ✅ IGNORE - Handle separately in service
             .ForMember(dest => dest.Visibility, opt => opt.MapFrom(src => Enum.Parse<QuizVisibility>(src.Visibility, true)));
 
-        // Common entity-to-DTO mappings
-        CreateMap<User, UserBasicDTO>();
-        CreateMap<QuestionCategory, QuestionCategoryDTO>();
-        CreateMap<QuestionLanguage, QuestionLanguageDTO>();
-        CreateMap<QuestionDifficulty, QuestionDifficultyDTO>();
-        CreateMap<QuestionBase, QuestionBaseDTO>();
+       
     }
 }
