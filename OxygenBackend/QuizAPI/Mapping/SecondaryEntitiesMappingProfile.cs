@@ -28,6 +28,7 @@ namespace QuizAPI.Mapping
                opt => opt.MapFrom(src => src.ColorPalette != null && src.ColorPalette.Any() 
                    ? JsonConvert.SerializeObject(src.ColorPalette) 
                    : null))
+    .ForMember(dest => dest.Gradient, opt => opt.MapFrom(src => src.Gradient))
     .ForMember(dest => dest.Questions, opt => opt.Ignore());
         }
     }

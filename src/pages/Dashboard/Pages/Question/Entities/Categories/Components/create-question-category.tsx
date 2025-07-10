@@ -34,13 +34,13 @@ export const CreateQuestionCategoryForm = () => {
       (color) => color && /^#[0-9A-F]{6}$/i.test(color)
     );
 
-    if (validColors.length === 0) {
-      addNotification({
-        type: "error",
-        title: "Please select at least one valid color",
-      });
-      return;
-    }
+    // if (validColors.length === 0) {
+    //   addNotification({
+    //     type: "error",
+    //     title: "Please select at least one valid color",
+    //   });
+    //   return;
+    // } // Choose whether to add this or not, in the backend it's optional
 
     const submissionData = {
       ...values,

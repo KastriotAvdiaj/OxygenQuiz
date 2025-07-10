@@ -60,6 +60,8 @@ namespace QuizAPI.DTOs.Quiz
 
         public string? ColorPaletteJson { get; set; }
 
+        public bool Gradient {  get; set; } = false;
+
     }
     public class QuizDTO
     {

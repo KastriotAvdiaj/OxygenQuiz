@@ -44,6 +44,7 @@ export const UpdateQuestionCategoryForm: React.FC<
   });
 
   const onSubmit = (values: UpdateQuestionCategoryInput) => {
+    console.log(values);
     const validColors = palette.filter(
       (color) => color && /^#[0-9A-F]{6}$/i.test(color)
     );
@@ -112,7 +113,9 @@ export const UpdateQuestionCategoryForm: React.FC<
         options={{
           defaultValues: {
             name: category.name,
-            colorPaletteJson: category.colorPaletteJson || "[]",
+            colorPalette: category.colorPaletteJson
+              ? JSON.parse(category.colorPaletteJson)
+              : ["", "", ""],
           },
         }}
       >

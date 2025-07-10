@@ -111,7 +111,7 @@ export const authLoader =
       }
 
       if (!(user.role === "Admin" || user.role === "SuperAdmin")) {
-        return redirect("/");
+        return redirect("/access-denied"); // or we can just redirect to ("/") which looks clean
       }
 
       // 4. If all checks pass, return the user data.
@@ -122,5 +122,3 @@ export const authLoader =
       return redirect(`/login?redirectTo=${encodeURIComponent(currentPath)}`);
     }
   };
-
-

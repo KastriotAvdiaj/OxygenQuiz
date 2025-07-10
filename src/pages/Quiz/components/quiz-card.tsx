@@ -47,8 +47,21 @@ export function QuizCard({ quiz }: QuizCardProps) {
     }
   }, [quiz.colorPaletteJson]);
 
+  function hexToRgba(hex: string, alpha: number) {
+    const bigint = parseInt(hex.replace("#", ""), 16);
+    const r = (bigint >> 16) & 255;
+    const g = (bigint >> 8) & 255;
+    const b = bigint & 255;
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
+
   const mainColor = colorPalette[0];
   const borderGradient = colorPalette.join(", ");
+  const transparentGradient = quiz.gradient
+    ? `linear-gradient(135deg, ${colorPalette
+        .map((hex) => hexToRgba(hex, 0.4))
+        .join(", ")})`
+    : `${mainColor}60`;
 
   return (
     <motion.div
@@ -85,9 +98,9 @@ export function QuizCard({ quiz }: QuizCardProps) {
       >
         <Card
           className="relative h-full flex flex-col overflow-hidden rounded-lg border-4 
-           transition-all duration-300 group min-h-[180px] sm:min-h-[200px] md:min-h-[220px] shadow-md backdrop-blur-sm"
+     transition-all duration-300 group min-h-[180px] sm:min-h-[200px] md:min-h-[220px] shadow-md backdrop-blur-sm"
           style={{
-            background: `${mainColor}60`,
+            background: transparentGradient,
             borderImage: `conic-gradient(from var(--border-angle, 0deg), ${borderGradient}, ${colorPalette[0]}) 1`,
             borderImageSlice: 1,
           }}

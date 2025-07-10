@@ -16,7 +16,11 @@ import {
   useCreateMultipleChoiceQuestion,
 } from "../../../api/Normal-Question/create-multiple-choice-question";
 import ImageUpload from "@/utils/Image-Upload";
-import { QuestionCategory, QuestionDifficulty, QuestionLanguage } from "@/types/question-types";
+import {
+  QuestionCategory,
+  QuestionDifficulty,
+  QuestionLanguage,
+} from "@/types/question-types";
 
 interface CreateMultipleChoiceFormProps {
   categories: QuestionCategory[];
@@ -226,15 +230,12 @@ export const CreateMultipleChoiceForm: React.FC<
                       className="flex items-center justify-between gap-6"
                     >
                       <Input
+                        variant="minimal"
                         className={`${
                           formState.errors["answerOptions"]
                             ? "border-red-500"
                             : ""
-                        } ${
-                          isCorrect
-                            ? "border-2 border-green-500 dark:border-green-500"
-                            : ""
-                        }`}
+                        } ${isCorrect ? "!border-4 !border-primary" : ""}`}
                         placeholder={`Answer Option ${index + 1}...`}
                         error={formState.errors?.answerOptions?.[index]?.text}
                         registration={register(`answerOptions.${index}.text`)}

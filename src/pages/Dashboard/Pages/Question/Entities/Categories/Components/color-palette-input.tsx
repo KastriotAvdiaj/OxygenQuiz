@@ -159,12 +159,13 @@ export const ColorPaletteInput: React.FC<ColorPaletteInputProps> = ({
 
       <CardFooter className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
+          <Label htmlFor="gradient-switch">Use Gradient</Label>
+
           <Switch
             id="gradient-switch"
             checked={isGradient}
             onCheckedChange={onGradientChange}
           />
-          <Label htmlFor="gradient-switch">Use Gradient</Label>
         </div>
 
         <Popover>

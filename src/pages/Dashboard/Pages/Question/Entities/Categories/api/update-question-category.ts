@@ -7,7 +7,9 @@ import { QuestionCategory } from "@/types/question-types";
 
 export const updateQuestionCategoryInputSchema = z.object({
   name: z.string().min(1, "Category is required"),
-  colorPaletteJson: z.string().optional(),
+colorPalette: z
+    .array(z.string().regex(/^#[0-9a-fA-F]{6}$/, "Invalid hex color format"))
+    .optional(),
   gradient: z.boolean().optional().default(false),
 });
 
