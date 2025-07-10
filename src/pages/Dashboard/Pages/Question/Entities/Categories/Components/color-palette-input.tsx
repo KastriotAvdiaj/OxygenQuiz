@@ -1,6 +1,5 @@
 import * as React from "react";
 import { Eye } from "lucide-react";
-import { motion } from "framer-motion";
 
 // Shadcn UI Components
 import { Button } from "@/components/ui/button";
@@ -25,6 +24,8 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Input, Label } from "@/components/ui/form";
+import { Badge } from "@/components/ui/badge";
+import { ColorCard } from "@/common/ColouredCard";
 
 interface ColorPaletteInputProps {
   palette: string[];
@@ -72,12 +73,9 @@ export const ColorPaletteInput: React.FC<ColorPaletteInputProps> = ({
     onChange(newPalette);
   };
 
-  // Memoize derived values to prevent unnecessary recalculations
-  const { validColors, mainColor, borderGradient } = React.useMemo(() => {
-    const valid = palette.slice(0, colorCount).filter(isValidHex);
-    const main = valid[0] || "#000000";
-    const border = valid.length > 1 ? valid.join(", ") : main;
-    return { validColors: valid, mainColor: main, borderGradient: border };
+  // Memoize valid colors
+  const validColors = React.useMemo(() => {
+    return palette.slice(0, colorCount).filter(isValidHex);
   }, [palette, colorCount]);
 
   return (
@@ -160,7 +158,6 @@ export const ColorPaletteInput: React.FC<ColorPaletteInputProps> = ({
       <CardFooter className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <Label htmlFor="gradient-switch">Use Gradient</Label>
-
           <Switch
             id="gradient-switch"
             checked={isGradient}
@@ -206,49 +203,38 @@ export const ColorPaletteInput: React.FC<ColorPaletteInputProps> = ({
                 )}
               </div>
 
-              {/* Card Preview */}
+              {/* Card Preview using ColorCard */}
               <div>
                 <p className="text-sm font-medium mb-2">Card Preview</p>
-                <motion.div
-                  className="relative h-full rounded-lg"
-                  animate={{
-                    "--border-angle": ["0deg", "360deg"],
-                  }}
-                  transition={{
-                    duration: 4,
-                    ease: "linear",
-                    repeat: Number.POSITIVE_INFINITY,
-                  }}
-                  style={
-                    {
-                      "--border-colors": borderGradient,
-                    } as React.CSSProperties
-                  }
+                <ColorCard
+                  colorPalette={validColors}
+                  gradient={isGradient}
+                  size="md"
+                  animated={false}
+                  borderAnimation={true}
+                  className="max-w-none"
                 >
-                  <Card
-                    className="relative flex flex-col overflow-hidden rounded-lg border-2 
-                   transition-all duration-300 group min-h-[180px] shadow-md backdrop-blur-sm"
-                    style={{
-                      background:
-                        isGradient && validColors.length > 1
-                          ? `linear-gradient(135deg, ${validColors.join(", ")})`
-                          : `${mainColor}60`, // Add alpha transparency to the solid color
-                      borderImage: `conic-gradient(from var(--border-angle, 0deg), ${borderGradient}, ${validColors[0]}) 1`,
-                      borderImageSlice: 1,
-                    }}
-                  >
-                    <div className="p-4 flex-1 flex flex-col justify-center items-center">
-                      <div className="text-center text-white">
-                        <h3 className="text-lg font-semibold mb-2">
-                          Category Name
-                        </h3>
-                        <p className="text-sm opacity-90">
-                          This is a preview of the card.
-                        </p>
-                      </div>
+                  <div className="p-4 flex-1 flex flex-col justify-center items-center">
+                    <Badge
+                      variant="secondary"
+                      className="text-xs font-medium px-2 py-1 rounded-full mb-2 border"
+                      style={{
+                        backgroundColor: `${validColors[0] || "#6366f1"}20`,
+                        borderColor: `${validColors[0] || "#6366f1"}40`,
+                      }}
+                    >
+                      Category Name
+                    </Badge>
+                    <div className="text-center text-foreground">
+                      <h3 className="text-lg font-semibold mb-2 drop-shadow-sm">
+                        Preview Card
+                      </h3>
+                      <p className="text-sm opacity-90">
+                        This is how your card will look.
+                      </p>
                     </div>
-                  </Card>
-                </motion.div>
+                  </div>
+                </ColorCard>
               </div>
             </div>
           </PopoverContent>
