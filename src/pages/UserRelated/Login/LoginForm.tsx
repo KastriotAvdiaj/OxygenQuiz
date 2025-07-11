@@ -15,7 +15,7 @@ interface LoginFormProps {
 
 const LoginForm: React.FC<LoginFormProps> = ({ onLogin, isPending }) => {
   const [formData, setFormData] = useState({
-    email: "admin@example.com",
+    email: "kaloti.avdiaj@gmail.com",
     password: "admin",
   });
 

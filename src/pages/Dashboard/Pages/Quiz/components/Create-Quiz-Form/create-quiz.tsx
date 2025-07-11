@@ -45,7 +45,7 @@ import {
   DEFAULT_NEW_MULTIPLE_CHOICE,
   DEFAULT_NEW_TRUE_FALSE,
   DEFAULT_NEW_TYPE_ANSWER,
-} from "../../../Question/Components/Re-Usable-Components/constants";
+} from "./constants";
 import { NewQuestionCard } from "./components/new-display-quiz-question-card/main-display-quiz-question-card";
 import { QuestionType } from "@/types/question-types";
 import { useCreateMultipleChoiceQuestion } from "../../../Question/api/Normal-Question/create-multiple-choice-question";

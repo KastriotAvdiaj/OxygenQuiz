@@ -1,10 +1,10 @@
 import { QuestionType } from "@/types/question-types";
-import { NewMultipleChoiceQuestion, NewTrueFalseQuestion, NewTypeTheAnswerQuestion } from "../../../Quiz/components/Create-Quiz-Form/types";
+import { NewMultipleChoiceQuestion, NewTrueFalseQuestion, NewTypeTheAnswerQuestion } from "./types";
 
 export const UnspecifiedIds = {
-    categoryId:    2042,   
-    difficultyId:  21,  
-    languageId:    4,  
+    categoryId:    1,   
+    difficultyId:  1,  
+    languageId:    1,  
   } as const;   
 
   export const POINT_SYSTEM_OPTIONS = [

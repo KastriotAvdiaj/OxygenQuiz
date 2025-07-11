@@ -1,5 +1,3 @@
-
-
 // FEATURE FOR LATER USE
 // NOT BEING USED ATM
 
@@ -16,7 +14,10 @@ import {
 import { Label } from "@/components/ui/form";
 import { Settings, Zap } from "lucide-react";
 import { useQuiz } from "../Quiz-questions-context";
-import { POINT_SYSTEM_OPTIONS, TIME_LIMIT_OPTIONS } from "@/pages/Dashboard/Pages/Question/Components/Re-Usable-Components/constants";
+import {
+  POINT_SYSTEM_OPTIONS,
+  TIME_LIMIT_OPTIONS,
+} from "@/pages/Dashboard/Pages/Quiz/components/Create-Quiz-Form/constants";
 
 export const BulkSettingsPanel: React.FC = () => {
   const { addedQuestions, bulkUpdateSettings } = useQuiz();
@@ -25,11 +26,11 @@ export const BulkSettingsPanel: React.FC = () => {
 
   const handleBulkUpdate = () => {
     const updates: any = {};
-    
+
     if (bulkPointSystem) {
       updates.pointSystem = bulkPointSystem;
     }
-    
+
     if (bulkTimeLimit) {
       updates.timeLimitInSeconds = parseInt(bulkTimeLimit);
     }
@@ -60,18 +61,24 @@ export const BulkSettingsPanel: React.FC = () => {
           Bulk Settings ({addedQuestions.length} questions)
         </CardTitle>
       </CardHeader>
-      
+
       <CardContent className="space-y-4">
         {/* Bulk Point System */}
         <div className="space-y-2">
-          <Label className="text-xs font-medium">Apply Point System to All</Label>
+          <Label className="text-xs font-medium">
+            Apply Point System to All
+          </Label>
           <Select value={bulkPointSystem} onValueChange={setBulkPointSystem}>
             <SelectTrigger className="h-8 text-xs">
               <SelectValue placeholder="Select point system..." />
             </SelectTrigger>
             <SelectContent>
               {POINT_SYSTEM_OPTIONS.map((option) => (
-                <SelectItem key={option.value} value={option.value} className="text-xs">
+                <SelectItem
+                  key={option.value}
+                  value={option.value}
+                  className="text-xs"
+                >
                   {option.label}
                 </SelectItem>
               ))}
@@ -88,9 +95,9 @@ export const BulkSettingsPanel: React.FC = () => {
             </SelectTrigger>
             <SelectContent>
               {TIME_LIMIT_OPTIONS.map((option) => (
-                <SelectItem 
-                  key={option.value} 
-                  value={option.value.toString()} 
+                <SelectItem
+                  key={option.value}
+                  value={option.value.toString()}
                   className="text-xs"
                 >
                   {option.label}

@@ -164,8 +164,6 @@ namespace QuizAPI.Data
 
             //Configuration for Quiz and Question relationship
 
-            modelBuilder.Entity<QuizQuestion>()
-                .HasKey(qq => new { qq.QuizId, qq.QuestionId });
 
             modelBuilder.Entity<QuizQuestion>()
                 .HasOne(qq => qq.Quiz)
@@ -193,12 +191,11 @@ namespace QuizAPI.Data
                 .HasForeignKey(ua => ua.SessionId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            //Configuration for Question and UserAnswers relationship
             modelBuilder.Entity<UserAnswer>()
-                .HasOne(ua => ua.Question)
-                .WithMany(q => q.UserAnswers)
-                .HasForeignKey(ua => ua.QuestionId)
-                .OnDelete(DeleteBehavior.Restrict);
+            .HasOne(ua => ua.QuizQuestion)
+            .WithMany(qq => qq.UserAnswers)
+            .HasForeignKey(ua => ua.QuizQuestionId)
+            .OnDelete(DeleteBehavior.Restrict);
 
 
             //Configuration for the Table-per-hierarchy (TPH) pattern

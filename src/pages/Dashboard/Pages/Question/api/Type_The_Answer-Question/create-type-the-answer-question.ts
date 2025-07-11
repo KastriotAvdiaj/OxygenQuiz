@@ -3,7 +3,7 @@ import { z } from "zod";
 import { apiService } from "@/lib/Api-client";
 import { MutationConfig } from "@/lib/React-query";
 import { getTypeTheAnswerQuestionsQueryOptions } from "./get-type-the-answer-questions";
-import { UnspecifiedIds } from "../../Components/Re-Usable-Components/constants";
+import { UnspecifiedIds } from "../../../Quiz/components/Create-Quiz-Form/constants";
 import { TypeTheAnswerQuestion } from "@/types/question-types";
 
 export const createTypeTheAnswerQuestionInputSchema = z.object({

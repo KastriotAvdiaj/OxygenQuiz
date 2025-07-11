@@ -13,7 +13,10 @@ import { Badge } from "@/components/ui/badge";
 import { Copy, RotateCcw, Settings } from "lucide-react";
 import { useQuiz } from "../Quiz-questions-context";
 import { Label } from "@/components/ui/form";
-import { POINT_SYSTEM_OPTIONS, TIME_LIMIT_OPTIONS } from "@/pages/Dashboard/Pages/Question/Components/Re-Usable-Components/constants";
+import {
+  POINT_SYSTEM_OPTIONS,
+  TIME_LIMIT_OPTIONS,
+} from "@/pages/Dashboard/Pages/Quiz/components/Create-Quiz-Form/constants";
 import { QuizQuestion } from "../types";
 
 interface QuestionSettingsCardProps {

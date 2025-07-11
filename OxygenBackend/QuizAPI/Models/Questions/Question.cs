@@ -59,7 +59,6 @@ namespace QuizAPI.Models
 
         public ICollection<QuizQuestion> QuizQuestions { get; set; } = new List<QuizQuestion>();
 
-        public ICollection<UserAnswer> UserAnswers { get; set; } = new List<UserAnswer>();
     }
 
     public class MultipleChoiceQuestion : QuestionBase
