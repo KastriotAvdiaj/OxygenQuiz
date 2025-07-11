@@ -76,7 +76,8 @@ export const CreateQuestionCategoryForm = () => {
           defaultValues: { name: "", colorPalette: [] },
         }}
       >
-        {({ register, formState }) => {
+        {({ register, formState, watch }) => {
+          const categoryName = watch("name");
           return (
             <div className="space-y-6">
               <div>
@@ -102,6 +103,7 @@ export const CreateQuestionCategoryForm = () => {
                 onChange={setPalette}
                 isGradient={isGradient}
                 onGradientChange={setIsGradient}
+                category={categoryName}
               />
             </div>
           );
