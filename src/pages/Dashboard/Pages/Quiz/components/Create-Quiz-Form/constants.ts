@@ -2,9 +2,9 @@ import { QuestionType } from "@/types/question-types";
 import { NewMultipleChoiceQuestion, NewTrueFalseQuestion, NewTypeTheAnswerQuestion } from "./types";
 
 export const UnspecifiedIds = {
-    categoryId:    1,   
-    difficultyId:  1,  
-    languageId:    1,  
+    categoryId:    10,   
+    difficultyId:  7,  
+    languageId:    11,  
   } as const;   
 
   export const POINT_SYSTEM_OPTIONS = [

@@ -90,7 +90,7 @@ export const ColorPaletteInput: React.FC<ColorPaletteInputProps> = ({
   const copyLLMText = async () => {
     const prompt = `Generate a color palette of ${colorCount} colors for the category "${
       category || "general"
-    }". Return only the hex color codes in the format #RRGGBB, separated by commas. Do not include any other text or explanation.`;
+    }", where the first color is going to be the main color. Use the colors that best represent the category. Return only the hex color codes in the format #RRGGBB, separated by commas. Do not include any other text or explanation.`;
 
     try {
       await navigator.clipboard.writeText(prompt);
