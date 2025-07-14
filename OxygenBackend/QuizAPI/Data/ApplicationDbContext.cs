@@ -90,7 +90,7 @@ namespace QuizAPI.Data
 
             // Configure many-to-many relationship between User and UpdatedAt tables.
             modelBuilder.Entity<UserUpdatedAt>()
-    .HasKey(ru => new { ru.UserId, ru.UpdatedAtId });
+                .HasKey(ru => new { ru.UserId, ru.UpdatedAtId });
 
             modelBuilder.Entity<UserUpdatedAt>()
                 .HasOne(ru => ru.User)
@@ -113,39 +113,39 @@ namespace QuizAPI.Data
 
             // Configuration for Question-AnswerOptions relationship
             modelBuilder.Entity<MultipleChoiceQuestion>()
-      .HasMany(q => q.AnswerOptions)
-      .WithOne(a => a.Question)
-      .HasForeignKey(a => a.QuestionId)
-      .OnDelete(DeleteBehavior.Cascade);
+              .HasMany(q => q.AnswerOptions)
+              .WithOne(a => a.Question)
+              .HasForeignKey(a => a.QuestionId)
+              .OnDelete(DeleteBehavior.Cascade);
 
             //Configuration for User-QuestionCategory relationship
             modelBuilder.Entity<QuestionCategory>()
-       .HasOne(qc => qc.User)
-       .WithMany()
-       .HasForeignKey(qc => qc.UserId)
-       .OnDelete(DeleteBehavior.Restrict);
+               .HasOne(qc => qc.User)
+               .WithMany()
+               .HasForeignKey(qc => qc.UserId)
+               .OnDelete(DeleteBehavior.Restrict);
 
             //Configuration for User-QuestionDifficulty relationship
             modelBuilder.Entity<QuestionDifficulty>()
-       .HasOne(qd => qd.User)
-       .WithMany()
-       .HasForeignKey(qc => qc.UserId)
-       .OnDelete(DeleteBehavior.Restrict);
+               .HasOne(qd => qd.User)
+               .WithMany()
+               .HasForeignKey(qc => qc.UserId)
+               .OnDelete(DeleteBehavior.Restrict);
 
             //Configuration for Question-QuestionLanguage relationship
             modelBuilder.Entity<QuestionBase>()
-           .HasOne(ql => ql.Language)
-           .WithMany()
-           .HasForeignKey(ql => ql.LanguageId)
-           .OnDelete(DeleteBehavior.Restrict);
+               .HasOne(ql => ql.Language)
+               .WithMany()
+               .HasForeignKey(ql => ql.LanguageId)
+               .OnDelete(DeleteBehavior.Restrict);
 
 
             //Configuration for Quiz and User relationship
             modelBuilder.Entity<Quiz>().
-            HasOne(q => q.User).
-            WithMany().
-            HasForeignKey(q => q.UserId).
-            OnDelete(DeleteBehavior.Restrict);
+                HasOne(q => q.User).
+                WithMany().
+                HasForeignKey(q => q.UserId).
+                OnDelete(DeleteBehavior.Restrict);
 
             //Configuration for Quiz and User relationship
             modelBuilder.Entity<QuizQuestion>()
@@ -163,8 +163,6 @@ namespace QuizAPI.Data
 
 
             //Configuration for Quiz and Question relationship
-
-
             modelBuilder.Entity<QuizQuestion>()
                 .HasOne(qq => qq.Quiz)
                 .WithMany(q => q.QuizQuestions)
@@ -176,10 +174,16 @@ namespace QuizAPI.Data
                 .HasForeignKey(qq => qq.QuestionId);
 
 
-            //Configuration for QuizSession and User relationship
+            //Configuration for QuizSession and User/Quiz relationship
+            modelBuilder.Entity<QuizSession>()
+                .HasOne(qs => qs.Quiz)
+                .WithMany() 
+                .HasForeignKey(qs => qs.QuizId)
+                .OnDelete(DeleteBehavior.Restrict); // Or Cascade, if deleting a quiz should delete its sessions
+
             modelBuilder.Entity<QuizSession>()
                 .HasOne(qs => qs.User)
-                .WithMany(u => u.QuizSessions)
+                .WithMany() // Assuming a User can have many sessions
                 .HasForeignKey(qs => qs.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
 
@@ -191,30 +195,30 @@ namespace QuizAPI.Data
                 .HasForeignKey(ua => ua.SessionId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            modelBuilder.Entity<UserAnswer>()
-            .HasOne(ua => ua.QuizQuestion)
-            .WithMany(qq => qq.UserAnswers)
-            .HasForeignKey(ua => ua.QuizQuestionId)
-            .OnDelete(DeleteBehavior.Restrict);
+             modelBuilder.Entity<UserAnswer>()
+                .HasOne(ua => ua.QuizQuestion)
+                .WithMany(qq => qq.UserAnswers)
+                .HasForeignKey(ua => ua.QuizQuestionId)
+                .OnDelete(DeleteBehavior.Restrict);
 
 
             //Configuration for the Table-per-hierarchy (TPH) pattern
             modelBuilder.Entity<QuestionBase>()
-            .HasDiscriminator(q => q.Type)
-            .HasValue<MultipleChoiceQuestion>(QuestionType.MultipleChoice)
-            .HasValue<TrueFalseQuestion>(QuestionType.TrueFalse)
-            .HasValue<TypeTheAnswerQuestion>(QuestionType.TypeTheAnswer);
+                .HasDiscriminator(q => q.Type)
+                .HasValue<MultipleChoiceQuestion>(QuestionType.MultipleChoice)
+                .HasValue<TrueFalseQuestion>(QuestionType.TrueFalse)
+                .HasValue<TypeTheAnswerQuestion>(QuestionType.TypeTheAnswer);
 
 
             modelBuilder.Entity<TypeTheAnswerQuestion>()
-        .Property(e => e.AcceptableAnswers)
-        .HasConversion(
-            v => JsonSerializer.Serialize(v, (JsonSerializerOptions)null),
-            v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions)null))
-        .Metadata.SetValueComparer(new ValueComparer<List<string>>(
-            (c1, c2) => c1.SequenceEqual(c2),
-            c => c.Aggregate(0, (a, v) => HashCode.Combine(a, v != null ? v.GetHashCode() : 0)),
-            c => c.ToList()));
+                .Property(e => e.AcceptableAnswers)
+                .HasConversion(
+                    v => JsonSerializer.Serialize(v, (JsonSerializerOptions)null),
+                    v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions)null))
+                .Metadata.SetValueComparer(new ValueComparer<List<string>>(
+                    (c1, c2) => c1.SequenceEqual(c2),
+                    c => c.Aggregate(0, (a, v) => HashCode.Combine(a, v != null ? v.GetHashCode() : 0)),
+                    c => c.ToList()));
         }
     }
 }

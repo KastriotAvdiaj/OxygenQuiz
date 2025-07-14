@@ -1,144 +1,174 @@
-﻿/*namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
+﻿using AutoMapper; // Add this using
+using QuizAPI.Common;
+using QuizAPI.Data;
+using QuizAPI.DTOs.Quiz;
+using QuizAPI.Models.Quiz;
+using Microsoft.EntityFrameworkCore;
+
+namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices;
+
+public class QuizSessionService : IQuizSessionService
 {
-    using Microsoft.EntityFrameworkCore;
-    using QuizAPI.Data;
-    using QuizAPI.Models.Quiz;
-    using System;
-    using System.Linq;
-    using System.Threading.Tasks;
+    private readonly ApplicationDbContext _context;
+    private readonly ILogger<QuizSessionService> _logger;
+    private readonly IMapper _mapper; // Add this
 
-    public class QuizSessionService : IQuizSessionService
+    public QuizSessionService(ApplicationDbContext context, ILogger<QuizSessionService> logger, IMapper mapper) // Add IMapper
     {
-        private readonly ApplicationDbContext _context;
+        _context = context;
+        _logger = logger;
+        _mapper = mapper; // Add this
+    }
 
-        public QuizSessionService(ApplicationDbContext context)
+    public async Task<Result<QuizSessionDto>> CreateSessionAsync(QuizSessionCM model)
+    {
+        try
         {
-            _context = context;
-        }
-
-        public async Task<QuizSession> StartQuizSessionAsync(int quizId, Guid userId)
-        {
-            // Ensure that the quiz exists, is published, and active.
-            var quiz = await _context.Quizzes
-                .Include(q => q.QuizQuestions)
-                    .ThenInclude(qq => qq.Question)
-                .FirstOrDefaultAsync(q => q.Id == quizId && q.IsPublished && q.IsActive);
-
+            var quiz = await _context.Quizzes.FirstOrDefaultAsync(q => q.Id == model.QuizId && q.IsActive && q.IsPublished);
             if (quiz == null)
             {
-                throw new Exception("Quiz not found or not available.");
+                return Result<QuizSessionDto>.ValidationFailure("Quiz not found or not available");
             }
 
-            // Create a new quiz session.
-            var session = new QuizSession
+            var existingSession = await _context.QuizSessions.FirstOrDefaultAsync(s => s.QuizId == model.QuizId && s.UserId == model.UserId && s.EndTime == null);
+            if (existingSession != null)
             {
-                Id = Guid.NewGuid(),
-                QuizId = quizId,
-                UserId = userId,
-                StartTime = DateTime.UtcNow,
-                TotalScore = 0
-            };
+                return Result<QuizSessionDto>.ValidationFailure("You already have an active session for this quiz");
+            }
+
+            // Use AutoMapper to create the base entity
+            var session = _mapper.Map<QuizSession>(model);
+
+            // Manually set properties not in the creation model
+            session.Id = Guid.NewGuid();
+            session.StartTime = DateTime.UtcNow;
+            session.TotalScore = 0;
 
             _context.QuizSessions.Add(session);
             await _context.SaveChangesAsync();
 
-            return session;
+            // Use our helper to get the fully loaded DTO
+            var sessionDto = await GetSessionDtoAsync(session.Id);
+            return Result<QuizSessionDto>.Success(sessionDto!);
         }
-
-        public async Task<UserAnswer> SubmitAnswerAsync(Guid sessionId, int questionId, int selectedOptionId)
+        catch (Exception ex)
         {
-            // Find the session and include existing answers to prevent duplicates.
-            var session = await _context.QuizSessions
-                .Include(s => s.UserAnswers)
-                .FirstOrDefaultAsync(s => s.Id == sessionId);
-            if (session == null)
-            {
-                throw new Exception("Session not found.");
-            }
-
-            // Prevent submission if the session has already been finished.
-            if (session.EndTime != null)
-            {
-                throw new Exception("Quiz session has already been finished.");
-            }
-
-            // Prevent duplicate answers for the same question.
-            if (session.UserAnswers.Any(ua => ua.QuestionId == questionId))
-            {
-                throw new Exception("Answer for this question has already been submitted.");
-            }
-
-            // Load the question with its answer options.
-            var question = await _context.Questions
-                .Include(q => q.AnswerOptions)
-                .FirstOrDefaultAsync(q => q.Id == questionId);
-            if (question == null)
-            {
-                throw new Exception("Question not found.");
-            }
-
-            // Verify the selected option exists and belongs to the question.
-            var selectedOption = question.AnswerOptions.FirstOrDefault(ao => ao.Id == selectedOptionId);
-            if (selectedOption == null)
-            {
-                throw new Exception("Selected answer option does not belong to this question.");
-            }
-
-            // Determine if the answer is correct.
-            bool isCorrect = selectedOption.IsCorrect;
-
-            // Get the score for this question from the QuizQuestion relationship.
-            var quizQuestion = await _context.QuizQuestions
-                .FirstOrDefaultAsync(qq => qq.QuizId == session.QuizId && qq.QuestionId == questionId);
-            if (quizQuestion == null)
-            {
-                throw new Exception("Question not found in this quiz.");
-            }
-
-            // Record the user's answer.
-            var userAnswer = new UserAnswer
-            {
-                SessionId = sessionId,
-                QuestionId = questionId,
-                SelectedOptionId = selectedOptionId,
-                IsCorrect = isCorrect,
-                Score = isCorrect ? quizQuestion.Score : 0
-            };
-
-            _context.UserAnswers.Add(userAnswer);
-            await _context.SaveChangesAsync();
-
-            return userAnswer;
-        }
-
-        public async Task<int> FinishQuizSessionAsync(Guid sessionId)
-        {
-            // Load the session along with its answers.
-            var session = await _context.QuizSessions
-                .Include(s => s.UserAnswers)
-                .FirstOrDefaultAsync(s => s.Id == sessionId);
-
-            if (session == null)
-            {
-                throw new Exception("Session not found.");
-            }
-
-            // Prevent finishing an already finished session.
-            if (session.EndTime != null)
-            {
-                throw new Exception("Quiz session has already been finished.");
-            }
-
-            // Calculate the total score from all recorded answers.
-            int totalScore = session.UserAnswers.Sum(a => a.Score);
-
-            // Finalize the session.
-            session.EndTime = DateTime.UtcNow;
-            session.TotalScore = totalScore;
-
-            await _context.SaveChangesAsync();
-
-            return totalScore;
+            _logger.LogError(ex, "Error creating quiz session for user {UserId} and quiz {QuizId}", model.UserId, model.QuizId);
+            return Result<QuizSessionDto>.Failure("Failed to create quiz session");
         }
     }
-}*/
+
+    public async Task<Result<QuizSessionDto>> GetSessionAsync(Guid sessionId)
+    {
+        try
+        {
+            var session = await _context.QuizSessions
+                .Include(s => s.Quiz)
+                .Include(s => s.UserAnswers)
+                    .ThenInclude(ua => ua.QuizQuestion)
+                        .ThenInclude(qq => qq.Question)
+                .Include(s => s.UserAnswers)
+                    .ThenInclude(ua => ua.AnswerOption)
+                .FirstOrDefaultAsync(s => s.Id == sessionId);
+
+            if (session == null)
+            {
+                return Result<QuizSessionDto>.ValidationFailure("Quiz session not found");
+            }
+
+            var sessionDto = _mapper.Map<QuizSessionDto>(session); // Use AutoMapper
+            return Result<QuizSessionDto>.Success(sessionDto);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving quiz session {SessionId}", sessionId);
+            return Result<QuizSessionDto>.Failure("Failed to retrieve quiz session");
+        }
+    }
+
+    public async Task<Result<List<QuizSessionSummaryDto>>> GetUserSessionsAsync(Guid userId)
+    {
+        try
+        {
+            var sessions = await _context.QuizSessions
+                .Include(s => s.Quiz)
+                .Include(s => s.UserAnswers)
+                .Where(s => s.UserId == userId)
+                .OrderByDescending(s => s.StartTime)
+                .ToListAsync();
+
+            var sessionDtos = _mapper.Map<List<QuizSessionSummaryDto>>(sessions); // Use AutoMapper
+            return Result<List<QuizSessionSummaryDto>>.Success(sessionDtos);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving sessions for user {UserId}", userId);
+            return Result<List<QuizSessionSummaryDto>>.Failure("Failed to retrieve user sessions");
+        }
+    }
+
+    public async Task<Result<QuizSessionDto>> CompleteSessionAsync(Guid sessionId)
+    {
+        try
+        {
+            var session = await _context.QuizSessions
+                .Include(s => s.UserAnswers)
+                .FirstOrDefaultAsync(s => s.Id == sessionId);
+
+            if (session == null) return Result<QuizSessionDto>.ValidationFailure("Quiz session not found");
+            if (session.EndTime.HasValue) return Result<QuizSessionDto>.ValidationFailure("Quiz session is already completed");
+
+            session.EndTime = DateTime.UtcNow;
+            session.TotalScore = session.UserAnswers.Sum(ua => ua.Score);
+
+            await _context.SaveChangesAsync();
+
+            var sessionDto = await GetSessionDtoAsync(sessionId);
+            return Result<QuizSessionDto>.Success(sessionDto!);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error completing quiz session {SessionId}", sessionId);
+            return Result<QuizSessionDto>.Failure("Failed to complete quiz session");
+        }
+    }
+
+    public async Task<Result> DeleteSessionAsync(Guid sessionId)
+    {
+        try
+        {
+            var session = await _context.QuizSessions
+                .Include(s => s.UserAnswers)
+                .FirstOrDefaultAsync(s => s.Id == sessionId);
+
+            if (session == null) return Result.ValidationFailure("Quiz session not found");
+
+            _context.QuizSessions.Remove(session);
+            await _context.SaveChangesAsync();
+
+            return Result.Success();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deleting quiz session {SessionId}", sessionId);
+            return Result.Failure("Failed to delete quiz session");
+        }
+    }
+
+    // This helper is still very useful for centralizing the query logic.
+    private async Task<QuizSessionDto?> GetSessionDtoAsync(Guid sessionId)
+    {
+        var session = await _context.QuizSessions
+            .AsNoTracking() // Good practice for read-only queries
+            .Include(s => s.Quiz)
+            .Include(s => s.UserAnswers)
+                .ThenInclude(ua => ua.QuizQuestion)
+                    .ThenInclude(qq => qq.Question)
+            .Include(s => s.UserAnswers)
+                .ThenInclude(ua => ua.AnswerOption)
+            .FirstOrDefaultAsync(s => s.Id == sessionId);
+
+        return session == null ? null : _mapper.Map<QuizSessionDto>(session); // Use AutoMapper here
+    }
+}
+

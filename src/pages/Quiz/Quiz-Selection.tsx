@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { QuizCard } from "./components/quiz-card";
 import { QuizHeader } from "./components/quiz-header";
 import { motion } from "framer-motion";
@@ -9,6 +9,9 @@ import {
 } from "../Dashboard/Pages/Quiz/api/get-all-quizzes";
 import { LoaderFunction } from "react-router";
 import { QueryClient } from "@tanstack/react-query";
+import { QuizStartModal } from "./components/quiz-start-modal";
+import { QuizSummaryDTO } from "@/types/quiz-types";
+import { useDisclosure } from "@/hooks/use-disclosure";
 
 export const quizSelectionLoader =
   (queryClient: QueryClient): LoaderFunction =>
@@ -44,6 +47,8 @@ const itemVariants = {
 
 export function QuizSelection() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedQuiz, setSelectedQuiz] = useState<QuizSummaryDTO | null>(null);
+  const { close, open, isOpen } = useDisclosure();
 
   const { data: quizzesResponse } = useAllQuizzesData({
     params: {
@@ -55,6 +60,20 @@ export function QuizSelection() {
     () => quizzesResponse?.data || [],
     [quizzesResponse?.data]
   );
+
+  const handleQuizClick = useCallback((quiz: QuizSummaryDTO) => {
+    setSelectedQuiz(quiz);
+    open();
+  }, []);
+
+  const handleCloseModal = useCallback(() => {
+    close();
+    setSelectedQuiz(null);
+  }, []);
+
+  const handleStartQuiz = useCallback((quizId: number) => {
+    console.log("Starting quiz:", quizId);
+  }, []);
 
   return (
     <div className="relative min-h-screen overflow-y-auto pb-20 text-foreground bg-cover bg-center bg-[url('/assets/backgroundImage3.jpgs')] dark:bg-[url('/assets/darkBackgroundImage.jpg')]">
@@ -85,11 +104,19 @@ export function QuizSelection() {
               variants={itemVariants}
               layout={false} // Disable layout animations
             >
-              <QuizCard quiz={quiz} />
+              <QuizCard quiz={quiz} onClick={handleQuizClick} />
             </motion.div>
           ))}
         </motion.div>
       </div>
+      {isOpen && selectedQuiz != null && (
+        <QuizStartModal
+          quiz={selectedQuiz}
+          isOpen={isOpen}
+          onClose={handleCloseModal}
+          onStartQuiz={handleStartQuiz}
+        />
+      )}
     </div>
   );
 }

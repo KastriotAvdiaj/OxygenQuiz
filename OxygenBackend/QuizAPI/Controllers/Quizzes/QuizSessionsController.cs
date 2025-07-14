@@ -1,90 +1,94 @@
-﻿using System;
-using System.Security.Claims;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using QuizAPI.Controllers.Quizzes.Services.QuizSessionServices;
-using QuizAPI.Models.Quiz;
+using QuizAPI.DTOs.Quiz;
 
-namespace QuizAPI.Controllers.Quizzes
+namespace QuizAPI.Controllers;
+
+// Inherits from our BaseApiController to get the HandleResult helper method.
+public class QuizSessionsController : BaseApiController
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class QuizSessionsController : ControllerBase
+    private readonly IQuizSessionService _quizSessionService;
+
+    public QuizSessionsController(IQuizSessionService quizSessionService)
     {
-        private readonly IQuizSessionService _quizSessionService;
-
-        public QuizSessionsController(IQuizSessionService quizSessionService)
-        {
-            _quizSessionService = quizSessionService;
-        }
-
-        // POST: api/QuizSessions/start
-        [HttpPost("start")]
-        public async Task<ActionResult<QuizSession>> StartQuizSession([FromBody] int quizId)
-        {
-            try
-            {
-                var userIdString = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-                if (!Guid.TryParse(userIdString, out Guid userId))
-                {
-                    return Unauthorized(new { message = "Invalid or missing user ID in token." });
-                }
-                var session = await _quizSessionService.StartQuizSessionAsync(quizId,userId);
-                return Ok(session);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
-        }
-
-        // POST: api/QuizSessions/{sessionId}/answers
-        [HttpPost("{sessionId}/answers")]
-        public async Task<ActionResult<UserAnswer>> SubmitAnswer(Guid sessionId, [FromBody] SubmitAnswerRequest request)
-        {
-            try
-            {
-                var answer = await _quizSessionService.SubmitAnswerAsync(sessionId, request.QuestionId, request.SelectedOptionId);
-                return Ok(answer);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
-        }
-
-        // POST: api/QuizSessions/{sessionId}/finish
-        [HttpPost("{sessionId}/finish")]
-        public async Task<ActionResult<int>> FinishQuizSession(Guid sessionId)
-        {
-            try
-            {
-                var totalScore = await _quizSessionService.FinishQuizSessionAsync(sessionId);
-                return Ok(totalScore);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
-        }
-
-        // Optionally, if you need to retrieve session details:
-        // GET: api/QuizSessions/{id}
-       /* [HttpGet("{id}")]
-        public async Task<ActionResult<QuizSession>> GetQuizSession(Guid id)
-        {
-            // Implementation would likely involve querying the context or extending your service.
-            // For now, you could either implement it here or simply return a NotFound if not needed.
-            return NotFound("GET session details endpoint is not implemented.");
-        }*/
+        _quizSessionService = quizSessionService;
     }
 
-
-    // DTO for submitting an answer.
-    public class SubmitAnswerRequest
+    /// <summary>
+    /// Creates a new quiz session for a user.
+    /// </summary>
+    [HttpPost]
+    [ProducesResponseType(typeof(QuizSessionDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> CreateSession([FromBody] QuizSessionCM model)
     {
-        public int QuestionId { get; set; }
-        public int SelectedOptionId { get; set; }
+        var result = await _quizSessionService.CreateSessionAsync(model);
+
+        // For a successful creation (POST), the REST standard is to return a 201 Created
+        // response with a 'Location' header pointing to the new resource.
+        if (result.IsSuccess)
+        {
+            return CreatedAtAction(
+                nameof(GetSession),
+                new { sessionId = result.Data!.Id },
+                result.Data);
+        }
+
+        return HandleResult(result);
+    }
+
+    /// <summary>
+    /// Gets a specific quiz session by its ID.
+    /// </summary>
+    [HttpGet("{sessionId:guid}")]
+    [ProducesResponseType(typeof(QuizSessionDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> GetSession(Guid sessionId)
+    {
+        var result = await _quizSessionService.GetSessionAsync(sessionId);
+        return HandleResult(result);
+    }
+
+    /// <summary>
+    /// Gets a summary of all quiz sessions for a specific user.
+    /// </summary>
+    [HttpGet("user/{userId:guid}")]
+    [ProducesResponseType(typeof(List<QuizSessionSummaryDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> GetUserSessions(Guid userId)
+    {
+        var result = await _quizSessionService.GetUserSessionsAsync(userId);
+        return HandleResult(result);
+    }
+
+    /// <summary>
+    /// Marks a quiz session as complete and calculates the final score.
+    /// </summary>
+    // Using HttpPost for this action is appropriate because it changes the state
+    // of the resource in a non-idempotent way.
+    [HttpPost("{sessionId:guid}/complete")]
+    [ProducesResponseType(typeof(QuizSessionDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> CompleteSession(Guid sessionId)
+    {
+        var result = await _quizSessionService.CompleteSessionAsync(sessionId);
+        return HandleResult(result);
+    }
+
+    /// <summary>
+    /// Deletes a quiz session and all its associated answers.
+    /// </summary>
+    [HttpDelete("{sessionId:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> DeleteSession(Guid sessionId)
+    {
+        var result = await _quizSessionService.DeleteSessionAsync(sessionId);
+        return HandleResult(result);
     }
 }

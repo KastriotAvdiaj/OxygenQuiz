@@ -41,7 +41,7 @@ export const CategorySelect: React.FC<CategorySelectProps> = (props) => {
     mode = "form",
   } = props;
 
-  const variant = error ? "incorrect" : "quiz";
+  const variant = error ? "form-error" : "form";
 
   if (mode === "filter") {
     const { value, onChange } = props as FilterModeProps;

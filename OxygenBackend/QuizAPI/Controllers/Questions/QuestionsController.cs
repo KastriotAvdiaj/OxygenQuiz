@@ -5,7 +5,6 @@ using QuizAPI.Data;
 using QuizAPI.DTOs.Question;
 using QuizAPI.DTOs.Shared;
 using QuizAPI.DTOs.User;
-using QuizAPI.Helpers;
 using QuizAPI.Models;
 using QuizAPI.Services;
 using System.Security.Claims;

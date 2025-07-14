@@ -1,10 +1,9 @@
 ﻿using AutoMapper;
-using QuizAPI.DTOs.Question;
 using QuizAPI.DTOs.Quiz;
-using QuizAPI.DTOs.User;
 using QuizAPI.ManyToManyTables;
 using QuizAPI.Models.Quiz;
-using QuizAPI.Models;
+
+namespace QuizAPI.Mapping;
 
 public class QuizMappingProfile : Profile
 {

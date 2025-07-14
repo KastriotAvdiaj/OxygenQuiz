@@ -14,6 +14,7 @@ import { ColorCard } from "@/common/ColouredCard";
 
 interface QuizCardProps {
   quiz: QuizSummaryDTO;
+  onClick?: (quiz: QuizSummaryDTO) => void;
 }
 
 export function secondsToMinutes(seconds: number): string {
@@ -22,11 +23,23 @@ export function secondsToMinutes(seconds: number): string {
   return `${minutes > 0 ? minutes + "m " : ""}${remainingSeconds}s`;
 }
 
-export function QuizCard({ quiz }: QuizCardProps) {
+export function QuizCard({ quiz, onClick }: QuizCardProps) {
   const [isHovered, setIsHovered] = useState(false);
 
   const handleMouseEnter = useCallback(() => setIsHovered(true), []);
   const handleMouseLeave = useCallback(() => setIsHovered(false), []);
+
+  const handleClick = useCallback(() => {
+    onClick?.(quiz);
+  }, [onClick, quiz]);
+
+  const handleButtonClick = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      handleClick();
+    },
+    [handleClick]
+  );
 
   return (
     <div className="w-full max-w-sm mx-auto">
@@ -40,6 +53,8 @@ export function QuizCard({ quiz }: QuizCardProps) {
         borderAnimation={true}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
+        className="cursor-pointer"
+        onClick={handleClick}
       >
         {/* Hover overlay */}
         <motion.div
@@ -162,6 +177,7 @@ export function QuizCard({ quiz }: QuizCardProps) {
                     }90`,
                   }}
                   size="sm"
+                  onClick={handleButtonClick}
                 >
                   <span className="relative z-10">Start Quiz</span>
                   <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 ml-1 sm:ml-2 relative z-10 transition-transform duration-200 group-hover/button:translate-x-1" />
