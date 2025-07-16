@@ -8,7 +8,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { HelpCircle, Clock, User, Calendar, X, Play } from "lucide-react";
+import { HelpCircle, Clock, User, Calendar, X } from "lucide-react";
 import type { QuizSummaryDTO } from "@/types/quiz-types";
 import { secondsToMinutes } from "./quiz-card";
 
@@ -47,11 +47,11 @@ export function QuizStartModal({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
-        className="sm:max-w-md mx-auto border-2"
+        className="sm:max-w-md mx-auto border-2 text-white"
         style={{
-          background: `linear-gradient(135deg, ${primaryColor}15, ${primaryColor}08)`,
+          background: `linear-gradient(135deg, ${primaryColor}85, ${primaryColor}45)`,
           borderColor: `${primaryColor}60`,
-          backdropFilter: "blur(10px)",
+          backdropFilter: "blur(30px)",
         }}
       >
         <motion.div
@@ -84,7 +84,7 @@ export function QuizStartModal({
               </Badge>
             </div>
 
-            <DialogTitle className="text-xl font-bold leading-tight text-left pr-8">
+            <DialogTitle className="text-xl font-bold leading-tight text-left pr-8 text-white">
               {quiz.title}
             </DialogTitle>
 
@@ -104,16 +104,14 @@ export function QuizStartModal({
                   style={{ color: primaryColor }}
                 />
                 <span className="font-medium">Questions</span>
-                <span className="text-muted-foreground">
-                  {quiz.questionCount}
-                </span>
+                <span className="text-gray-400">{quiz.questionCount}</span>
               </div>
 
               {quiz.timeLimitInSeconds && (
                 <div className="flex items-center gap-2 text-sm">
                   <Clock className="h-4 w-4" style={{ color: primaryColor }} />
                   <span className="font-medium">Time limit</span>
-                  <span className="text-muted-foreground">
+                  <span className="text-gray-400">
                     {secondsToMinutes(quiz.timeLimitInSeconds)}
                   </span>
                 </div>
@@ -126,7 +124,7 @@ export function QuizStartModal({
                 <div className="flex items-center gap-2 text-sm">
                   <User className="h-4 w-4" style={{ color: primaryColor }} />
                   <span className="font-medium">Created by</span>
-                  <span className="text-muted-foreground">{quiz.user}</span>
+                  <span className="text-gray-400">{quiz.user}</span>
                 </div>
               )}
 
@@ -137,7 +135,7 @@ export function QuizStartModal({
                     style={{ color: primaryColor }}
                   />
                   <span className="font-medium">Created</span>
-                  <span className="text-muted-foreground">
+                  <span className="text-gray-400">
                     {formatDate(quiz.createdAt)}
                   </span>
                 </div>
@@ -146,27 +144,24 @@ export function QuizStartModal({
           </div>
 
           {/* Action buttons */}
-          <div className="flex gap-3 mt-6">
-            <Button 
-              variant="outline" 
-              onClick={onClose} 
-              className="flex-1 border-2"
-              style={{
-                borderColor: `${primaryColor}40`,
-                color: primaryColor,
-              }}
-            >
-              Cancel
-            </Button>
+          <div className="flex items-center justify-center mt-6">
             <Button
               onClick={handleStartQuiz}
-              className="flex-1 group/button border-2 text-white hover:opacity-90 transition-opacity"
+              variant="fancy"
+              fancyColors={{
+                primary: `${primaryColor}`,
+                secondary: `${primaryColor}`,
+                shadow: `${primaryColor}90`,
+                text: "#ffffff",
+                border: "#fecaca",
+              }}
+              className="px-6 py-6 group/button border-2 text-white hover:opacity-90 transition-opacity !font-secondary !text-2xl"
               style={{
                 backgroundColor: primaryColor,
                 borderColor: primaryColor,
               }}
             >
-              <Play className="h-4 w-4 mr-2" />
+              {/* <Play className="h-4 w-4 mr-2" /> */}
               Start Quiz
             </Button>
           </div>

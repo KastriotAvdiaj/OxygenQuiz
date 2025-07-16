@@ -8,30 +8,30 @@ namespace QuizAPI.Models.Quiz
     /// <summary>
     /// Represents a user's submitted answer to a specific question within a quiz session.
     /// </summary>
+    /// 
+    public enum AnswerStatus
+    {
+        NotAnswered,
+        Correct,
+        Incorrect,
+        TimedOut
+    }
     public class UserAnswer
     {
         [Key]
         public int Id { get; set; }
-
         public Guid SessionId { get; set; }
-
         public int QuizQuestionId { get; set; }
-
         public int? SelectedOptionId { get; set; }
-
-    
-        public string? SubmittedAnswer { get; set; } // For question types such as type the answer.
-        public bool IsCorrect { get; set; }
+        public string? SubmittedAnswer { get; set; }
+        public AnswerStatus Status { get; set; } = AnswerStatus.NotAnswered;
         public int Score { get; set; }
+        public DateTime SubmittedTime { get; set; }
 
-        
         [ForeignKey(nameof(SessionId))]
         public virtual QuizSession QuizSession { get; set; } = null!;
-
-
         [ForeignKey(nameof(QuizQuestionId))]
         public virtual QuizQuestion QuizQuestion { get; set; } = null!;
-
         [ForeignKey(nameof(SelectedOptionId))]
         [JsonIgnore]
         public virtual AnswerOption? AnswerOption { get; set; }

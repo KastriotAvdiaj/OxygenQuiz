@@ -40,7 +40,7 @@ export function QuizCard({ quiz, onClick }: QuizCardProps) {
     },
     [handleClick]
   );
-
+ 
   return (
     <div className="w-full max-w-sm mx-auto">
       <ColorCard
@@ -56,6 +56,7 @@ export function QuizCard({ quiz, onClick }: QuizCardProps) {
         className="cursor-pointer"
         onClick={handleClick}
       >
+        
         {/* Hover overlay */}
         <motion.div
           className="absolute inset-0 backdrop-blur-sm z-10"

@@ -141,30 +141,30 @@ body {
 
 .fancy-button {
   display: flex;
-  /* padding: 28px 28px; */
   align-items: center;
   justify-content: center;
   margin: 10px;
   font-weight: bold;
   text-transform: uppercase;
-  color: #fff;
-  background-image: linear-gradient(to bottom right, #00c6ff, #0072ff);
+  color: var(--fancy-text, #fff);
+  background-image: linear-gradient(to bottom right, var(--fancy-primary, #00c6ff), var(--fancy-secondary, #0072ff));
   border: none;
   border-radius: 40px;
-  box-shadow: 0px 4px 0px #0072ff;
+  box-shadow: 0px 4px 0px var(--fancy-shadow, #0072ff);
   transition: all 0.2s ease-in-out;
   cursor: pointer;
+  position: relative;
 }
 
 .fancy-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0px 6px 0px #0072ff;
+  box-shadow: 0px 6px 0px var(--fancy-shadow, #0072ff);
 }
 
 .fancy-button:active {
   transform: translateY(0px);
   box-shadow: none;
-  background-image: linear-gradient(to bottom right, #0072ff, #00c6ff);
+  background-image: linear-gradient(to bottom right, var(--fancy-secondary, #0072ff), var(--fancy-primary, #00c6ff));
 }
 
 .fancy-button:before,
@@ -179,16 +179,16 @@ body {
   top: -3px;
   left: -3px;
   border-radius: 40px;
-  border-top: 3px solid #fff;
-  border-left: 3px solid #fff;
+  border-top: 3px solid var(--fancy-border, #fff);
+  border-left: 3px solid var(--fancy-border, #fff);
 }
 
 .fancy-button:after {
   bottom: -3px;
   right: -3px;
   border-radius: 40px;
-  border-bottom: 3px solid #fff;
-  border-right: 3px solid #fff;
+  border-bottom: 3px solid var(--fancy-border, #fff);
+  border-right: 3px solid var(--fancy-border, #fff);
 }
 
 

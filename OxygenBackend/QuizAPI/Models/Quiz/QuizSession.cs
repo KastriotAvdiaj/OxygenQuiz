@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using QuizAPI.ManyToManyTables;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace QuizAPI.Models.Quiz
@@ -7,22 +8,21 @@ namespace QuizAPI.Models.Quiz
     {
         [Key]
         public Guid Id { get; set; }
-
-        public int QuizId { get; set; } // Foreign key for Quiz 
-        public Guid UserId { get; set; } // Foreign key for User
-
+        public int QuizId { get; set; }
+        public Guid UserId { get; set; }
         public DateTime StartTime { get; set; }
         public DateTime? EndTime { get; set; }
         public int TotalScore { get; set; }
-
-        // --- Navigation Properties ---
+        public bool IsCompleted { get; set; } = false;
+        public int? CurrentQuizQuestionId { get; set; }
+        public DateTime? CurrentQuestionStartTime { get; set; }
 
         [ForeignKey(nameof(QuizId))]
         public virtual Quiz Quiz { get; set; } = null!;
-
         [ForeignKey(nameof(UserId))]
         public virtual User User { get; set; } = null!;
-
+        [ForeignKey(nameof(CurrentQuizQuestionId))]
+        public virtual QuizQuestion? CurrentQuizQuestion { get; set; }
         public virtual ICollection<UserAnswer> UserAnswers { get; set; } = new List<UserAnswer>();
     }
 }

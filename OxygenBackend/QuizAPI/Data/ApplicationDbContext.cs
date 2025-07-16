@@ -183,7 +183,7 @@ namespace QuizAPI.Data
 
             modelBuilder.Entity<QuizSession>()
                 .HasOne(qs => qs.User)
-                .WithMany() // Assuming a User can have many sessions
+                .WithMany(u => u.QuizSessions) // Assuming a User can have many sessions
                 .HasForeignKey(qs => qs.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
 

@@ -51,6 +51,14 @@ const buttonVariants = cva(
   }
 );
 
+export interface FancyButtonColors {
+  primary: string;
+  secondary: string;
+  shadow: string;
+  text: string;
+  border: string;
+}
+
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
@@ -58,6 +66,7 @@ export interface ButtonProps
   active?: boolean;
   isPending?: boolean;
   icon?: React.ReactNode;
+  fancyColors?: FancyButtonColors;
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
@@ -71,15 +80,31 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       isPending = false,
       icon,
       children,
+      fancyColors,
+      style,
       ...props
     },
     ref
   ) => {
     const Comp = asChild ? Slot : "button";
+    
+    // Generate CSS variables for fancy variant
+    const fancyStyle = variant === "fancy" && fancyColors 
+      ? {
+          '--fancy-primary': fancyColors.primary,
+          '--fancy-secondary': fancyColors.secondary,
+          '--fancy-shadow': fancyColors.shadow,
+          '--fancy-text': fancyColors.text,
+          '--fancy-border': fancyColors.border,
+          ...style,
+        } as React.CSSProperties
+      : style;
+    
     return (
       <Comp
         className={cn(buttonVariants({ variant, size, active, className }))}
         ref={ref}
+        style={fancyStyle}
         {...props}
       >
         {isPending ? (

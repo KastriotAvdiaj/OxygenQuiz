@@ -5,6 +5,8 @@ using QuizAPI.DTOs.Quiz;
 namespace QuizAPI.Controllers;
 
 // Inherits from our BaseApiController to get the HandleResult helper method.
+[ApiController] // Recommended to add this attribute
+[Route("api/[controller]")] // Recommended to add a route prefix
 public class QuizSessionsController : BaseApiController
 {
     private readonly IQuizSessionService _quizSessionService;
@@ -14,6 +16,38 @@ public class QuizSessionsController : BaseApiController
         _quizSessionService = quizSessionService;
     }
 
+    #region --- Live Quiz Flow ---
+
+    /// <summary>
+    /// Gets the next available question for an active quiz session and starts its timer.
+    /// </summary>
+    [HttpGet("{sessionId:guid}/next-question")]
+    [ProducesResponseType(typeof(CurrentQuestionDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetNextQuestion(Guid sessionId)
+    {
+        var result = await _quizSessionService.GetNextQuestionAsync(sessionId);
+        return HandleResult(result);
+    }
+
+    /// <summary>
+    /// Submits an answer for the current question in a session. This is the primary endpoint for answering questions.
+    /// </summary>
+    [HttpPost("answer")] // Route doesn't need sessionId as it's in the body.
+    [ProducesResponseType(typeof(AnswerResultDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> SubmitAnswer([FromBody] UserAnswerCM model)
+    {
+        var result = await _quizSessionService.SubmitAnswerAsync(model);
+        return HandleResult(result);
+    }
+
+    #endregion
+
+    #region --- Session Management ---
+
     /// <summary>
     /// Creates a new quiz session for a user.
     /// </summary>
@@ -21,13 +55,10 @@ public class QuizSessionsController : BaseApiController
     [ProducesResponseType(typeof(QuizSessionDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> CreateSession([FromBody] QuizSessionCM model)
     {
         var result = await _quizSessionService.CreateSessionAsync(model);
 
-        // For a successful creation (POST), the REST standard is to return a 201 Created
-        // response with a 'Location' header pointing to the new resource.
         if (result.IsSuccess)
         {
             return CreatedAtAction(
@@ -40,12 +71,11 @@ public class QuizSessionsController : BaseApiController
     }
 
     /// <summary>
-    /// Gets a specific quiz session by its ID.
+    /// Gets a specific quiz session by its ID, including all answers submitted so far.
     /// </summary>
     [HttpGet("{sessionId:guid}")]
     [ProducesResponseType(typeof(QuizSessionDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetSession(Guid sessionId)
     {
         var result = await _quizSessionService.GetSessionAsync(sessionId);
@@ -57,7 +87,6 @@ public class QuizSessionsController : BaseApiController
     /// </summary>
     [HttpGet("user/{userId:guid}")]
     [ProducesResponseType(typeof(List<QuizSessionSummaryDto>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetUserSessions(Guid userId)
     {
         var result = await _quizSessionService.GetUserSessionsAsync(userId);
@@ -65,14 +94,11 @@ public class QuizSessionsController : BaseApiController
     }
 
     /// <summary>
-    /// Marks a quiz session as complete and calculates the final score.
+    /// Manually marks a quiz session as complete. Use this for a "Quit Quiz" button.
     /// </summary>
-    // Using HttpPost for this action is appropriate because it changes the state
-    // of the resource in a non-idempotent way.
     [HttpPost("{sessionId:guid}/complete")]
     [ProducesResponseType(typeof(QuizSessionDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> CompleteSession(Guid sessionId)
     {
         var result = await _quizSessionService.CompleteSessionAsync(sessionId);
@@ -85,10 +111,11 @@ public class QuizSessionsController : BaseApiController
     [HttpDelete("{sessionId:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> DeleteSession(Guid sessionId)
     {
         var result = await _quizSessionService.DeleteSessionAsync(sessionId);
         return HandleResult(result);
     }
+
+    #endregion
 }

@@ -1,4 +1,7 @@
-﻿namespace QuizAPI.DTOs.Quiz
+﻿using QuizAPI.DTOs.Question;
+using QuizAPI.Models.Quiz;
+
+namespace QuizAPI.DTOs.Quiz
 {
    
         public class QuizSessionCM
@@ -36,13 +39,22 @@
             public int QuizQuestionId { get; set; }
             public int? SelectedOptionId { get; set; }
             public string? SubmittedAnswer { get; set; }
-            public bool IsCorrect { get; set; }
+            public AnswerStatus Status { get; set; }
             public int Score { get; set; }
             public string QuestionText { get; set; } = string.Empty;
             public string? SelectedOptionText { get; set; }
         }
 
-        public class QuizSessionSummaryDto
+    public class CurrentQuestionDto
+    {
+        public int QuizQuestionId { get; set; }
+        public string QuestionText { get; set; } = string.Empty;
+        public List<AnswerOptionDTO> Options { get; set; } = new();
+        public int TimeLimitInSeconds { get; set; }
+        public int TimeRemainingInSeconds { get; set; }
+    }
+
+    public class QuizSessionSummaryDto
         {
             public Guid Id { get; set; }
             public string QuizTitle { get; set; } = string.Empty;
@@ -54,5 +66,25 @@
             public bool IsCompleted { get; set; }
             public TimeSpan? Duration { get; set; }
         }
-    
+
+    public class AnswerResultDto
+    {
+        /// <summary>
+        /// The outcome of the answer submission (e.g., Correct, Incorrect, TimedOut).
+        /// </summary>
+        public AnswerStatus Status { get; set; }
+
+        /// <summary>
+        /// The score awarded for this specific answer. Will be 0 if incorrect or timed out.
+        /// </summary>
+        public int ScoreAwarded { get; set; }
+
+        /// <summary>
+        /// A flag indicating whether this was the last question in the quiz.
+        /// The client uses this to know whether to enable a "Next Question" button
+        /// or navigate to the final results screen.
+        /// </summary>
+        public bool IsQuizComplete { get; set; }
+    }
+
 }
