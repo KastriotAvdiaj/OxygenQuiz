@@ -3,8 +3,28 @@ using QuizAPI.Models.Quiz;
 
 namespace QuizAPI.DTOs.Quiz
 {
-   
-        public class QuizSessionCM
+        public enum LiveQuizStatus
+        {
+            InProgress,   
+            BetweenQuestions,
+            Completed        
+        }
+
+        /// <summary>
+        /// Represents the live state of a quiz session, used for state recovery (e.g., on page refresh).
+        /// </summary>
+        public class QuizStateDto
+        {
+            public LiveQuizStatus Status { get; set; }
+
+            /// <summary>
+            /// If the status is InProgress, this will contain the details of the active question.
+            /// Will be null otherwise.
+            /// </summary>
+            public CurrentQuestionDto? ActiveQuestion { get; set; }
+        }
+
+    public class QuizSessionCM
         {
             public int QuizId { get; set; }
             public Guid UserId { get; set; }

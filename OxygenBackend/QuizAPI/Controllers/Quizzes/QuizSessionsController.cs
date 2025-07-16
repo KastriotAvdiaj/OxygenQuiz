@@ -18,6 +18,15 @@ public class QuizSessionsController : BaseApiController
 
     #region --- Live Quiz Flow ---
 
+    [HttpGet("{sessionId:guid}/current-state")]
+    [ProducesResponseType(typeof(QuizStateDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetCurrentState(Guid sessionId)
+    {
+        var result = await _quizSessionService.GetCurrentStateAsync(sessionId);
+        return HandleResult(result);
+    }
+
     /// <summary>
     /// Gets the next available question for an active quiz session and starts its timer.
     /// </summary>

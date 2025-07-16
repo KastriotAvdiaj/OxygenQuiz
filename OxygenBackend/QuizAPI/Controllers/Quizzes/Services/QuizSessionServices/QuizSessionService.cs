@@ -23,6 +23,62 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
 
         #region Live Quiz Flow
 
+        public async Task<Result<QuizStateDto>> GetCurrentStateAsync(Guid sessionId)
+        {
+            try
+            {
+                // Find the session, including the question details needed for mapping
+                var session = await _context.QuizSessions
+                    .AsNoTracking()
+                    .Include(s => s.CurrentQuizQuestion)
+                        .ThenInclude(qq => qq!.Question)
+                            .ThenInclude(q => (q as MultipleChoiceQuestion)!.AnswerOptions)
+                    .FirstOrDefaultAsync(s => s.Id == sessionId);
+
+                if (session == null)
+                {
+                    return Result<QuizStateDto>.ValidationFailure("Session not found.");
+                }
+
+                var stateDto = new QuizStateDto();
+
+                // Case 1: The quiz is fully completed.
+                if (session.IsCompleted)
+                {
+                    stateDto.Status = LiveQuizStatus.Completed;
+                    return Result<QuizStateDto>.Success(stateDto);
+                }
+
+                // Case 2: A question is currently active (the page refresh scenario).
+                if (session.CurrentQuizQuestionId != null && session.CurrentQuestionStartTime.HasValue)
+                {
+                    stateDto.Status = LiveQuizStatus.InProgress;
+
+                    // Map the active question to a DTO
+                    var activeQuestionDto = _mapper.Map<CurrentQuestionDto>(session.CurrentQuizQuestion);
+
+                    // *** THE CRITICAL CALCULATION ***
+                    var timeTaken = DateTime.UtcNow - session.CurrentQuestionStartTime.Value;
+                    var timeRemaining = activeQuestionDto.TimeLimitInSeconds - (int)timeTaken.TotalSeconds;
+
+                    // Ensure the remaining time is not negative.
+                    activeQuestionDto.TimeRemainingInSeconds = Math.Max(0, timeRemaining);
+
+                    stateDto.ActiveQuestion = activeQuestionDto;
+                    return Result<QuizStateDto>.Success(stateDto);
+                }
+
+                // Case 3: The quiz is active but no question is currently being timed (user is between questions).
+                stateDto.Status = LiveQuizStatus.BetweenQuestions;
+                return Result<QuizStateDto>.Success(stateDto);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting current state for session {SessionId}", sessionId);
+                return Result<QuizStateDto>.Failure("An error occurred while fetching the session state.");
+            }
+        }
+
         public async Task<Result<CurrentQuestionDto>> GetNextQuestionAsync(Guid sessionId)
         {
             try

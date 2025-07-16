@@ -6,7 +6,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
 {
     public interface IQuizSessionService
     {
-
+        Task<Result<QuizStateDto>> GetCurrentStateAsync(Guid sessionId);
         Task<Result<CurrentQuestionDto>> GetNextQuestionAsync(Guid sessionId);
         Task<Result<AnswerResultDto>> SubmitAnswerAsync(UserAnswerCM model);
         Task<Result<QuizSessionDto>> CreateSessionAsync(QuizSessionCM model);
