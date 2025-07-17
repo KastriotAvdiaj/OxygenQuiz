@@ -94,10 +94,14 @@ const authConfig = {
 export const { useUser, useLogin, useLogout, useRegister, AuthLoader } =
   configureAuth(authConfig);
 
-export const authLoader =
-  (queryClient: QueryClient) =>
+export const createAuthLoader =
+  (
+    queryClient: QueryClient,
+    options?: { requiredRoles?: string[]; redirectPath?: string }
+  ) =>
   async (): Promise<{ user: User } | Response> => {
     const queryKey = ["authenticated-user"];
+    const { requiredRoles, redirectPath = "/access-denied" } = options || {};
 
     try {
       let user = queryClient.getQueryData<User>(queryKey);
@@ -110,15 +114,23 @@ export const authLoader =
         throw new Error("User not authenticated");
       }
 
-      if (!(user.role === "Admin" || user.role === "SuperAdmin")) {
-        return redirect("/access-denied"); // or we can just redirect to ("/") which looks clean
+      // Check roles if specified
+      if (requiredRoles && requiredRoles.length > 0) {
+        if (!requiredRoles.includes(user.role)) {
+          return redirect(redirectPath);
+        }
       }
 
-      // 4. If all checks pass, return the user data.
       return { user };
     } catch (error) {
-      // If getQueryData fails or fetchQuery throws a 401, redirect to login.
       const currentPath = window.location.pathname;
       return redirect(`/login?redirectTo=${encodeURIComponent(currentPath)}`);
     }
   };
+
+// Usage examples:
+export const userAuthLoader = createAuthLoader;
+export const adminAuthLoader = (queryClient: QueryClient) =>
+  createAuthLoader(queryClient, { requiredRoles: ["Admin", "SuperAdmin"] });
+export const superAdminAuthLoader = (queryClient: QueryClient) =>
+  createAuthLoader(queryClient, { requiredRoles: ["SuperAdmin"] });

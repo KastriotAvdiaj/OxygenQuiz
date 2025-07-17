@@ -9,9 +9,9 @@ export const AccessDeniedPage = () => {
       <Card className="w-full max-w-md text-center shadow-lg">
         <CardHeader>
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full ">
-            <AlertTriangle className="h-10 w-10 text-yellow-500 dark:text-yellow-400" />
+            <AlertTriangle className="h-10 w-10 text-blue-500 dark:text-blue-400" />
           </div>
-          <CardTitle className="mt-4 text-2xl font-bold">
+          <CardTitle className="mt-4 text-2xl font-bold text-primary">
             Access Denied
           </CardTitle>
         </CardHeader>

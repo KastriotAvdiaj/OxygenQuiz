@@ -1,6 +1,6 @@
 import { lazy, useMemo } from "react";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
-import { authLoader } from "../lib/Auth";
+import { adminAuthLoader, userAuthLoader } from "../lib/Auth";
 import { AppRoot } from "../pages/AppRoot";
 import { QueryClient, useQueryClient } from "@tanstack/react-query";
 
@@ -65,7 +65,7 @@ const createAppRouter = (queryClient: QueryClient) =>
     {
       path: "/quiz/:quizId/play",
       errorElement: <DashboardErrorElement />,
-      loader: authLoader(queryClient),
+      loader: userAuthLoader(queryClient),
       element: (
         <>
           <HomeLayout children={<QuizPageRouteWrapper />} headerColor={false} />
@@ -88,7 +88,7 @@ const createAppRouter = (queryClient: QueryClient) =>
       path: "/dashboard/*",
       element: <AppRoot />,
       id: "dashboardRoot",
-      loader: authLoader(queryClient),
+      loader: adminAuthLoader(queryClient),
       errorElement: <DashboardErrorElement />,
       children: [
         {

@@ -59,8 +59,8 @@ namespace QuizAPI.Controllers.Users
         {
             return roleId switch
             {
-                1 => "admin",
-                2 => "user",
+                2 => "admin",
+                1 => "user",
                 3 => "superadmin",
                 _ => "user"
             };
