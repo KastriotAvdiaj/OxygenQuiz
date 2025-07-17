@@ -65,7 +65,7 @@ public class QuizSessionsController : BaseApiController
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> CreateSession([FromBody] QuizSessionCM model)
-    {
+   {
         var result = await _quizSessionService.CreateSessionAsync(model);
 
         if (result.IsSuccess)

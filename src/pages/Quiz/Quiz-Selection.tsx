@@ -7,7 +7,7 @@ import {
   getAllQuizzesQueryOptions,
   useAllQuizzesData,
 } from "../Dashboard/Pages/Quiz/api/get-all-quizzes";
-import { LoaderFunction } from "react-router";
+import { LoaderFunction, useNavigate } from "react-router";
 import { QueryClient } from "@tanstack/react-query";
 import { QuizStartModal } from "./components/quiz-start-modal";
 import { QuizSummaryDTO } from "@/types/quiz-types";
@@ -71,10 +71,15 @@ export function QuizSelection() {
     setSelectedQuiz(null);
   }, []);
 
-  const handleStartQuiz = useCallback((quizId: number) => {
-    console.log("Starting quiz:", quizId);
-  }, []);
+  const navigate = useNavigate();
 
+  const handleStartQuiz = useCallback(
+    (quizId: number) => {
+      close();
+      navigate(`/quiz/${quizId}/play`);
+    },
+    [navigate, close]
+  );
   return (
     <div className="relative min-h-screen overflow-y-auto pb-20 text-foreground bg-cover bg-center bg-[url('/assets/backgroundImage3.jpgs')] dark:bg-[url('/assets/darkBackgroundImage.jpg')]">
       <QuizHeader />

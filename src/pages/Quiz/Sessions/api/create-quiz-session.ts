@@ -14,7 +14,7 @@ export const createQuizSessionInputSchema = z.object({
 export type CreateQuizSessionInput = z.infer<typeof createQuizSessionInputSchema>;
 
 export const createQuizSession = ({ data }: { data: CreateQuizSessionInput }): Promise<QuizSession> => {
-  return apiService.post('/QuizSessions', data);
+  return apiService.post('/quizsessions', data);
 };
 
 type UseCreateQuizSessionOptions = {

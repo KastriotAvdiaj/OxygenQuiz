@@ -20,11 +20,7 @@ import OxygenBackground from "/assets/oxygenquiz2.jpg";
  */
 
 const Login: React.FC = () => {
-  // const { theme } = useTheme();
-  // const colors = {
-  //   borderColor: theme === "dark" ? "#626262" : "#b4b4b4",
-  //   hoverFillColor: theme === "dark" ? "#ffffff" : "#000000",
-  // };
+
 
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();

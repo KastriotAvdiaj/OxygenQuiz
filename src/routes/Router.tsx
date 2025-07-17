@@ -16,6 +16,7 @@ import {
 import { QuizQuestionProvider } from "@/pages/Dashboard/Pages/Quiz/components/Create-Quiz-Form/Quiz-questions-context";
 import { DashboardErrorElement } from "@/pages/UtilityPages/Error/Dashboard-Error-Element";
 import { quizLoader } from "../pages/Dashboard/Pages/Quiz/Quiz";
+import { QuizPageRouteWrapper } from "@/pages/Quiz/Sessions/components/quiz-page-route-wrapper";
 
 // Lazy load components
 const Home = lazy(() =>
@@ -58,6 +59,16 @@ const createAppRouter = (queryClient: QueryClient) =>
       element: (
         <>
           <HomeLayout children={<QuizSelection />} headerColor={false} />
+        </>
+      ),
+    },
+    {
+      path: "/quiz/:quizId/play",
+      errorElement: <DashboardErrorElement />,
+      loader: authLoader(queryClient),
+      element: (
+        <>
+          <HomeLayout children={<QuizPageRouteWrapper />} headerColor={false} />
         </>
       ),
     },
