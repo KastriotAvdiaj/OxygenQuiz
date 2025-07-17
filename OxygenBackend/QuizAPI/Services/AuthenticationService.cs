@@ -1,4 +1,5 @@
-﻿using Microsoft.CodeAnalysis.Scripting;
+﻿using AutoMapper;
+using Microsoft.CodeAnalysis.Scripting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using QuizAPI.Data;
@@ -14,17 +15,21 @@ namespace QuizAPI.Services
     {
         Task<AuthResult> SignupAsync(string email, string username, string password);
         Task<AuthResult> LoginAsync(string email, string password);
+
+        Task<FullUserDTO> GetUserByIdAsync(Guid userId);
     }
 
     public class AuthenticationService : IAuthenticationService
     {
         private readonly ApplicationDbContext _context;
         private readonly IConfiguration _configuration;
+        private readonly IMapper _mapper;
 
-        public AuthenticationService(ApplicationDbContext context, IConfiguration configuration)
+        public AuthenticationService(ApplicationDbContext context, IConfiguration configuration, IMapper mapper)
         {
             _context = context;
             _configuration = configuration;
+            _mapper = mapper;
         }
 
         public async Task<AuthResult> SignupAsync(string email, string username, string password)
@@ -59,40 +64,54 @@ namespace QuizAPI.Services
             return new AuthResult { Success = true, Token = token };
         }
 
+        public async Task<FullUserDTO> GetUserByIdAsync(Guid userId)
+        {
+            var user = await _context.Users
+                .Include(u => u.Role)
+                .SingleOrDefaultAsync(u => u.Id == userId && !u.IsDeleted);
+
+            if (user == null)
+            {
+                return null;
+            }
+
+            return _mapper.Map<FullUserDTO>(user);
+        }
+
         public async Task<AuthResult> LoginAsync(string email, string password)
         {
-            // Check if the user exists
-            var user = await _context.Users.SingleOrDefaultAsync(u => u.Email == email && !u.IsDeleted);
+            // Check if the user exists and include the role in the query
+            var user = await _context.Users
+                .Include(u => u.Role)
+                .SingleOrDefaultAsync(u => u.Email == email && !u.IsDeleted);
+
             if (user == null || !BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
             {
                 return new AuthResult { Success = false, Message = "Invalid credentials." };
             }
 
-            var role = await _context.Roles.SingleOrDefaultAsync(r => r.Id == user.RoleId);
-            if(role == null)
+            if (user.Role == null)
             {
                 return new AuthResult { Success = false, Message = "Invalid credentials." };
             }
 
-            var userDTO = new FullUserDTO
-            {
-                Id = user.Id,
-                Email = email,
-                ProfileImageUrl = user.ProfileImageUrl,
-                DateRegistered = user.DateRegistered,
-                ImmutableName = user.ImmutableName,
-                LastLogin = user.LastLogin,
-                Username = user.Username,
-                Role = role.Name,
-            };
-
-            // Update last login
+            // Update last login BEFORE creating DTO so it's reflected in the response
             user.LastLogin = DateTime.UtcNow;
             await _context.SaveChangesAsync();
 
+            // Create DTO using AutoMapper
+            var userDTO = _mapper.Map<FullUserDTO>(user);
+
             // Generate JWT token
             var token = GenerateJwtToken(user);
-            return new AuthResult { Success = true, Token = token, User = userDTO, Message="Successfully logged in!" };
+
+            return new AuthResult
+            {
+                Success = true,
+                Token = token,
+                User = userDTO,
+                Message = "Successfully logged in!"
+            };
         }
 
         private string GenerateJwtToken(User user)

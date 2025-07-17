@@ -13,7 +13,7 @@ const getUser = async (): Promise<User | null> => {
     if (!user) {
       return null;
     }
-    return user; // Since `user` is already the data returned from the backend
+    return user;
   } catch (error: any) {
     if (error.response?.status === 401) {
       return null;
@@ -36,6 +36,7 @@ export const loginInputSchema = z.object({
 });
 
 export type LoginInput = z.infer<typeof loginInputSchema>;
+
 const loginWithEmailAndPassword = (data: LoginInput): Promise<AuthResponse> => {
   return apiService.post("Authentication/login", data);
 };
@@ -77,15 +78,29 @@ const authConfig = {
     if (!response || !response.token) {
       throw new Error("Authentication failed: Token not received");
     }
+
+    // Set the token first
     Cookies.set(AUTH_COOKIE, response.token, {
-      secure: true, // Use HTTPS
-      sameSite: "strict", // CSRF protection
-      expires: 1, // Token expiration in days
+      secure: true,
+      sameSite: "strict",
+      expires: 1,
     });
+
+    // Use the user data from login response
+    if (!response.user) {
+      throw new Error("Authentication failed: User data not received");
+    }
+
     return response.user;
   },
   registerFn: async (data: RegisterInput) => {
     const response = await registerWithEmailAndPassword(data);
+
+    // Use the user data from registration response
+    if (!response.user) {
+      throw new Error("Registration failed: User data not received");
+    }
+
     return response.user;
   },
   logoutFn: logout,
@@ -107,7 +122,18 @@ export const createAuthLoader =
       let user = queryClient.getQueryData<User>(queryKey);
 
       if (!user) {
-        user = await queryClient.fetchQuery<User>({ queryKey });
+        const fetchedUser = await queryClient.fetchQuery({
+          queryKey,
+          queryFn: async (): Promise<User> => {
+            const userData = await getUser();
+            if (!userData) {
+              throw new Error("User not authenticated");
+            }
+            return userData;
+          },
+          staleTime: 5 * 60 * 1000, // 5 minutes
+        });
+        user = fetchedUser;
       }
 
       if (!user) {

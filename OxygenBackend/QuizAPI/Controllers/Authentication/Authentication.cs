@@ -26,31 +26,20 @@ namespace QuizAPI.Controllers.Authentication
         [Authorize]
         public async Task<IActionResult> GetCurrentUser()
         {
-
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (!Guid.TryParse(userId, out var userGuid))
             {
                 return Unauthorized("Invalid token.");
             }
 
-            var user = await _context.Users.FindAsync(userGuid);
-            if (user == null || user.IsDeleted)
+            var userDto = await _authService.GetUserByIdAsync(userGuid);
+            if (userDto == null)
             {
                 return Unauthorized("User not found.");
             }
 
-            return Ok(new FullUserDTO
-            {
-                Id = user.Id,
-                Email = user.Email,
-                ProfileImageUrl = user.ProfileImageUrl,
-                DateRegistered = user.DateRegistered,
-                ImmutableName = user.ImmutableName,
-                LastLogin = user.LastLogin,
-                Username = user.Username,
-                Role = (await _context.Roles.FindAsync(user.RoleId))?.Name
-            });
-}
+            return Ok(userDto);
+        }
 
         [HttpPost("signup")]
         public async Task<IActionResult> Signup([FromBody] SignupModel model)
