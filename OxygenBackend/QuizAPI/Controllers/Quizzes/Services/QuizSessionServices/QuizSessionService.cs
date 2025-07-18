@@ -32,8 +32,22 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                     .AsNoTracking()
                     .Include(s => s.CurrentQuizQuestion)
                         .ThenInclude(qq => qq!.Question)
-                            .ThenInclude(q => (q as MultipleChoiceQuestion)!.AnswerOptions)
                     .FirstOrDefaultAsync(s => s.Id == sessionId);
+
+                // If we have a current question, load the specific question type data
+                if (session?.CurrentQuizQuestion?.Question != null)
+                {
+                    var questionId = session.CurrentQuizQuestion.Question.Id;
+                    
+                    // Load answer options only for MultipleChoice questions
+                    if (session.CurrentQuizQuestion.Question is MultipleChoiceQuestion)
+                    {
+                        await _context.Entry(session.CurrentQuizQuestion.Question)
+                            .Collection(q => ((MultipleChoiceQuestion)q).AnswerOptions)
+                            .LoadAsync();
+                    }
+                    // True/False and TypeTheAnswer questions don't need additional loading
+                }
 
                 if (session == null)
                 {
@@ -117,8 +131,15 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                 var fullQuestionForMapping = await _context.QuizQuestions
                     .AsNoTracking()
                     .Include(qq => qq.Question)
-                        .ThenInclude(q => (q as MultipleChoiceQuestion)!.AnswerOptions)
                     .FirstAsync(qq => qq.Id == nextQuizQuestion.Id);
+
+                // Load answer options only for MultipleChoice questions
+                if (fullQuestionForMapping.Question is MultipleChoiceQuestion)
+                {
+                    await _context.Entry(fullQuestionForMapping.Question)
+                        .Collection(q => ((MultipleChoiceQuestion)q).AnswerOptions)
+                        .LoadAsync();
+                }
 
                 var questionDto = _mapper.Map<CurrentQuestionDto>(fullQuestionForMapping);
                 questionDto.TimeRemainingInSeconds = questionDto.TimeLimitInSeconds;
@@ -243,9 +264,11 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                 if (quiz == null)
                     return Result<QuizSessionDto>.ValidationFailure("Quiz not found or not available.");
 
-                var existingSession = await _context.QuizSessions.AsNoTracking()
+                // Only prevent creating a new session if there's an active (not completed) session
+                // This allows users to retake quizzes after they've been completed or abandoned
+                var existingActiveSession = await _context.QuizSessions.AsNoTracking()
                     .FirstOrDefaultAsync(s => s.QuizId == model.QuizId && s.UserId == model.UserId && !s.IsCompleted);
-                if (existingSession != null)
+                if (existingActiveSession != null)
                     return Result<QuizSessionDto>.ValidationFailure("You already have an active session for this quiz.");
 
                 var session = _mapper.Map<QuizSession>(model);

@@ -1,3 +1,4 @@
+import { QuestionType } from "@/types/question-types";
 
 // Enums from the backend
 export enum AnswerStatus {
@@ -25,6 +26,8 @@ export interface CurrentQuestion {
   options: AnswerOption[];
   timeLimitInSeconds: number;
   timeRemainingInSeconds: number;
+  questionType: QuestionType;
+  explanation?: string; // Optional explanation for the correct answer
 }
 
 export interface AnswerResult {

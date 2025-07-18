@@ -13,7 +13,6 @@ export const RedirectIfLoggedIn = ({
     const { role } = user.data;
 
     const redirectTo = searchParams.get("redirectTo");
-
     if (redirectTo) {
       return <Navigate to={redirectTo} replace />;
     }

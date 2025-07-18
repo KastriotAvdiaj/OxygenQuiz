@@ -1,7 +1,7 @@
 // src/components/quiz/QuizTimer.tsx
 
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useEffect, useRef, useCallback } from "react";
+import { motion } from "framer-motion";
 
 interface QuizTimerProps {
   initialTime: number;
@@ -9,22 +9,62 @@ interface QuizTimerProps {
   primaryColor: string;
 }
 
-export function QuizTimer({ initialTime, onTimeUp, primaryColor }: QuizTimerProps) {
+export function QuizTimer({
+  initialTime,
+  onTimeUp,
+  primaryColor,
+}: QuizTimerProps) {
   const [timeLeft, setTimeLeft] = useState(initialTime);
+  const timeUpCalledRef = useRef(false);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Memoize the onTimeUp callback to prevent unnecessary re-renders
+  const handleTimeUp = useCallback(() => {
+    if (!timeUpCalledRef.current) {
+      timeUpCalledRef.current = true;
+      onTimeUp();
+    }
+  }, [onTimeUp]);
 
   useEffect(() => {
-    if (timeLeft <= 0) {
-      onTimeUp();
+    // Reset the timeUpCalled flag when initialTime changes (new question)
+    timeUpCalledRef.current = false;
+    setTimeLeft(initialTime);
+  }, [initialTime]);
+
+  useEffect(() => {
+    // Clear any existing interval
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+    }
+
+    // Don't start timer if time is already up or timeUp has been called
+    if (timeLeft <= 0 || timeUpCalledRef.current) {
+      if (timeLeft <= 0 && !timeUpCalledRef.current) {
+        handleTimeUp();
+      }
       return;
     }
 
-    const timerId = setInterval(() => {
-      setTimeLeft((prevTime) => prevTime - 1);
+    intervalRef.current = setInterval(() => {
+      setTimeLeft((prevTime) => {
+        const newTime = prevTime - 1;
+        if (newTime <= 0 && !timeUpCalledRef.current) {
+          // Call handleTimeUp in the next tick to avoid state update during render
+          setTimeout(() => handleTimeUp(), 0);
+        }
+        return Math.max(0, newTime);
+      });
     }, 1000);
 
-    // This cleanup function is essential to prevent memory leaks
-    return () => clearInterval(timerId);
-  }, [timeLeft, onTimeUp]);
+    // Cleanup function
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+  }, [timeLeft, handleTimeUp]);
 
   const percentage = (timeLeft / initialTime) * 100;
 

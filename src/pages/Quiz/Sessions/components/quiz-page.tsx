@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom"; // Assuming you use React Router
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertCircle, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { AnswerResult, CurrentQuestion } from "../quiz-session-types";
 import { useCreateQuizSession } from "../api/create-quiz-session";
 import { useGetNextQuestion } from "../api/get-next-question";
@@ -21,6 +22,8 @@ export function QuizPage({ quizId, userId }: QuizPageProps) {
   const [lastAnswerResult, setLastAnswerResult] = useState<AnswerResult | null>(
     null
   );
+  const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   // --- API Mutations ---
   const createSessionMutation = useCreateQuizSession();
@@ -30,37 +33,62 @@ export function QuizPage({ quizId, userId }: QuizPageProps) {
   // --- Effect to Start the Quiz ---
   // This runs only once when the component mounts to create the session.
   useEffect(() => {
+    setError(null); // Clear any previous errors
     createSessionMutation.mutate(
       { data: { quizId, userId } },
       {
         onSuccess: (data) => {
           setSessionId(data.id);
+          setError(null);
+          setRetryCount(0);
           // Immediately fetch the first question
           handleNextQuestion(data.id);
         },
-        onError: () => {
-          // Handle error, e.g., show a toast notification and navigate away
-          console.error("Failed to create quiz session.");
-          navigate("/");
+        onError: (error: any) => {
+          console.error("Failed to create quiz session:", error);
+          const errorMessage =
+            error?.response?.data?.message ||
+            error?.message ||
+            "Failed to start quiz session";
+          setError(errorMessage);
         },
       }
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [quizId, userId]); // Dependencies ensure this runs once per quiz attempt
+  }, [quizId, userId, retryCount]); // Include retryCount to allow retries
 
   // --- Handler Functions ---
   const handleNextQuestion = (currentSessionId: string) => {
     setLastAnswerResult(null); // Clear previous answer feedback
     setCurrentQuestion(null); // Show loading state
+    setError(null); // Clear any previous errors
+
     getNextQuestionMutation.mutate(
       { sessionId: currentSessionId },
       {
         onSuccess: (data) => {
           setCurrentQuestion(data);
         },
-        // This error typically means the quiz is over.
-        onError: () => {
-          navigate(`/quiz/results/${currentSessionId}`);
+        onError: (error: any) => {
+          console.error("Failed to get next question:", error);
+
+          // Check if this is a network error or quiz completion
+          const errorMessage = error?.response?.data?.message || error?.message;
+
+          if (
+            errorMessage?.includes("completed") ||
+            errorMessage?.includes("No more questions")
+          ) {
+            // Quiz is completed, navigate to results
+            navigate(`/quiz/results/${currentSessionId}`);
+          } else {
+            // This is likely a network or session error
+            setError(
+              `Failed to load next question: ${
+                errorMessage || "Please check your connection and try again."
+              }`
+            );
+          }
         },
       }
     );
@@ -81,6 +109,19 @@ export function QuizPage({ quizId, userId }: QuizPageProps) {
       {
         onSuccess: (data) => {
           setLastAnswerResult(data);
+
+          // If the quiz is complete after this answer, navigate to results
+          if (data.isQuizComplete) {
+            // Small delay to show the feedback before navigating
+            setTimeout(() => {
+              navigate(`/quiz/results/${sessionId}`);
+            }, 2000);
+          }
+        },
+        onError: (error) => {
+          console.error("Failed to submit answer:", error);
+          // You could show a toast notification here
+          // For now, we'll just log the error and allow retry
         },
       }
     );
@@ -99,11 +140,56 @@ export function QuizPage({ quizId, userId }: QuizPageProps) {
     );
   }
 
+  // Handle retry functionality
+  const handleRetry = () => {
+    setRetryCount((prev) => prev + 1);
+  };
+
+  const handleGoBack = () => {
+    navigate("/quiz");
+  };
+
+  // Show error state with retry option
+  if (error) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-gray-900 text-white">
+        <div className="text-center space-y-6 max-w-md">
+          <AlertCircle className="h-16 w-16 text-red-400 mx-auto" />
+          <h2 className="text-2xl font-bold text-red-400">
+            Quiz Session Error
+          </h2>
+          <p className="text-gray-300">{error}</p>
+          <div className="flex gap-4 justify-center">
+            <Button
+              onClick={handleRetry}
+              disabled={createSessionMutation.isPending}
+              className="flex items-center gap-2"
+            >
+              {createSessionMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4" />
+              )}
+              Try Again
+            </Button>
+            <Button onClick={handleGoBack} variant="outline">
+              Back to Quiz Selection
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!sessionId) {
     // This state could be shown if session creation fails for some reason.
     return (
       <div className="flex h-screen w-full items-center justify-center bg-gray-900 text-white">
-        Error starting quiz. Please try again.
+        <div className="text-center space-y-4">
+          <AlertCircle className="h-12 w-12 text-yellow-400 mx-auto" />
+          <p className="text-xl">Unable to start quiz session</p>
+          <Button onClick={handleRetry}>Try Again</Button>
+        </div>
       </div>
     );
   }

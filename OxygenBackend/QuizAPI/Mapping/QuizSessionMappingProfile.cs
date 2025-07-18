@@ -46,6 +46,8 @@ namespace QuizAPI.Mapping
               .ForMember(dest => dest.QuestionText, opt => opt.MapFrom(src => src.Question.Text))
               .ForMember(dest => dest.TimeLimitInSeconds, opt => opt.MapFrom(src => src.TimeLimitInSeconds))
               .ForMember(dest => dest.TimeRemainingInSeconds, opt => opt.Ignore()) // Still ignore this, it's calculated in the service
+              .ForMember(dest => dest.QuestionType, opt => opt.MapFrom(src => src.Question.Type))
+             /* .ForMember(dest => dest.Explanation, opt => opt.MapFrom(src => src.Explanation))*/
               .ForMember(dest => dest.Options, opt => opt.MapFrom((src, dest, destMember, context) =>
                   {
                       // Check if the question is a MultipleChoiceQuestion
@@ -65,8 +67,8 @@ namespace QuizAPI.Mapping
                           // of an AnswerOption ID is tricky. We can use a convention like 1 for True, 0 for False.
                           return new List<AnswerOptionDTO>
                           {
-                            new AnswerOptionDTO { ID = 1, Text = "True" },
-                            new AnswerOptionDTO { ID = 0, Text = "False" }
+                            new AnswerOptionDTO { ID = 1, Text = "True", IsCorrect = tfq.CorrectAnswer },
+                            new AnswerOptionDTO { ID = 0, Text = "False", IsCorrect = !tfq.CorrectAnswer }
                           };
                       }
 

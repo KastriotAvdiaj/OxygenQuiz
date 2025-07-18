@@ -1,5 +1,6 @@
 ﻿using QuizAPI.DTOs.Question;
 using QuizAPI.Models.Quiz;
+using QuizAPI.Models;
 
 namespace QuizAPI.DTOs.Quiz
 {
@@ -72,6 +73,8 @@ namespace QuizAPI.DTOs.Quiz
         public List<AnswerOptionDTO> Options { get; set; } = new();
         public int TimeLimitInSeconds { get; set; }
         public int TimeRemainingInSeconds { get; set; }
+        public QuestionType QuestionType { get; set; }
+     
     }
 
     public class QuizSessionSummaryDto
