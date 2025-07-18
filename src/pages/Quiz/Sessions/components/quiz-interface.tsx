@@ -9,11 +9,14 @@ interface QuizInterfaceProps {
   lastAnswerResult: AnswerResult | null;
   isSubmitting: boolean;
   onNextQuestion: () => void;
-  onSubmitAnswer: (selectedOptionId: number | null) => void;
+  onSubmitAnswer: (
+    selectedOptionId: number | null,
+    submittedAnswer?: string
+  ) => void;
 }
 
 export function QuizInterface({
-//   sessionId,
+  //   sessionId,
   currentQuestion,
   lastAnswerResult,
   isSubmitting,

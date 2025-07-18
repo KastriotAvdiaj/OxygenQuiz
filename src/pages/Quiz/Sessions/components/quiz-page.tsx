@@ -94,8 +94,14 @@ export function QuizPage({ quizId, userId }: QuizPageProps) {
     );
   };
 
-  const handleSubmitAnswer = (selectedOptionId: number | null) => {
+  const handleSubmitAnswer = (
+    selectedOptionId: number | null,
+    submittedAnswer?: string
+  ) => {
     if (!sessionId || !currentQuestion) return;
+
+    // Prevent multiple submissions while one is in progress
+    if (submitAnswerMutation.isPending) return;
 
     submitAnswerMutation.mutate(
       {
@@ -103,7 +109,7 @@ export function QuizPage({ quizId, userId }: QuizPageProps) {
           sessionId,
           quizQuestionId: currentQuestion.quizQuestionId,
           selectedOptionId,
-          // Add submittedAnswer for "Type the Answer" questions if needed
+          submittedAnswer,
         },
       },
       {
@@ -120,8 +126,9 @@ export function QuizPage({ quizId, userId }: QuizPageProps) {
         },
         onError: (error) => {
           console.error("Failed to submit answer:", error);
-          // You could show a toast notification here
-          // For now, we'll just log the error and allow retry
+          // Show user-friendly error message
+          const errorMessage = error?.message || "Failed to submit answer";
+          setError(`Answer submission failed: ${errorMessage}`);
         },
       }
     );
@@ -146,7 +153,7 @@ export function QuizPage({ quizId, userId }: QuizPageProps) {
   };
 
   const handleGoBack = () => {
-    navigate("/quiz");
+    navigate("/choose-quiz");
   };
 
   // Show error state with retry option

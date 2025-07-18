@@ -64,36 +64,38 @@
     - Ensure frontend receives proper True/False options (ID 1 = True, ID 0 = False)
     - _Requirements: 1.7_
 
-- [ ] 4. Implement Type The Answer Question Support
+- [x] 4. Implement Type The Answer Question Support
 
-  - [ ] 4.1 Create TypeTheAnswerQuestion component
+  - [x] 4.1 Create TypeTheAnswerQuestion component
 
     - Implement text input UI for type-the-answer questions
     - Add validation for user input
     - Add unit tests for the component
     - _Requirements: 1.6_
 
-  - [ ] 4.2 Update QuestionDisplay component to render TypeTheAnswerQuestion
+  - [x] 4.2 Update QuestionDisplay component to render TypeTheAnswerQuestion
 
     - Add conditional rendering based on question type
     - Ensure proper props are passed to the component
     - _Requirements: 1.6_
 
-  - [ ] 4.3 Update submit answer functionality
+  - [x] 4.3 Update submit answer functionality
+
     - Modify the submit handler to include submittedAnswer for text input questions
     - Update the API call to send the correct data format
     - _Requirements: 1.6_
 
-- [ ] 5. Fix Infinite Loop Issue in Quiz Timer
+- [x] 5. Fix Infinite Loop Issue in Quiz Timer
 
-  - [ ] 5.1 Refactor QuizTimer component
+  - [x] 5.1 Refactor QuizTimer component
 
     - Fix the state update logic to prevent infinite loops
     - Implement proper cleanup on unmount
     - Add safeguards against multiple timeUp calls
     - _Requirements: 1.1, 1.3_
 
-  - [ ] 5.2 Update quiz page component to handle timer events correctly
+  - [x] 5.2 Update quiz page component to handle timer events correctly
+
     - Ensure timer events don't cause cascading updates
     - Add proper state management for timed-out questions
     - _Requirements: 1.1, 1.3_

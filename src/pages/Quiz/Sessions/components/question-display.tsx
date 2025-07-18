@@ -5,12 +5,13 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { QuizTimer } from "./quiz-timer";
 import { TrueOrFalseQuestion } from "./true-or-false-question";
+import { TypeTheAnswerQuestion } from "./type-the-answer-question";
 import type { CurrentQuestion } from "../quiz-session-types";
 import { QuestionType } from "@/types/question-types";
 
 interface QuestionDisplayProps {
   question: CurrentQuestion;
-  onSubmit: (selectedOptionId: number | null) => void;
+  onSubmit: (selectedOptionId: number | null, submittedAnswer?: string) => void;
   isSubmitting: boolean;
   primaryColor: string;
 }
@@ -45,6 +46,16 @@ export function QuestionDisplay({
         console.log("Rendering TrueOrFalseQuestion component");
         return (
           <TrueOrFalseQuestion
+            question={question}
+            onSubmit={onSubmit}
+            isSubmitting={isSubmitting}
+            primaryColor={primaryColor}
+          />
+        );
+      case QuestionType.TypeTheAnswer:
+        console.log("Rendering TypeTheAnswerQuestion component");
+        return (
+          <TypeTheAnswerQuestion
             question={question}
             onSubmit={onSubmit}
             isSubmitting={isSubmitting}

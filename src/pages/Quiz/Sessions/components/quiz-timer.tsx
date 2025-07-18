@@ -38,22 +38,21 @@ export function QuizTimer({
       clearInterval(intervalRef.current);
     }
 
-    // Don't start timer if time is already up or timeUp has been called
-    if (timeLeft <= 0 || timeUpCalledRef.current) {
-      if (timeLeft <= 0 && !timeUpCalledRef.current) {
-        handleTimeUp();
-      }
+    // Don't start timer if timeUp has been called
+    if (timeUpCalledRef.current) {
       return;
     }
 
+    // Start the timer
     intervalRef.current = setInterval(() => {
       setTimeLeft((prevTime) => {
         const newTime = prevTime - 1;
         if (newTime <= 0 && !timeUpCalledRef.current) {
           // Call handleTimeUp in the next tick to avoid state update during render
           setTimeout(() => handleTimeUp(), 0);
+          return 0;
         }
-        return Math.max(0, newTime);
+        return newTime;
       });
     }, 1000);
 
@@ -64,7 +63,7 @@ export function QuizTimer({
         intervalRef.current = null;
       }
     };
-  }, [timeLeft, handleTimeUp]);
+  }, [handleTimeUp]); // Remove timeLeft from dependencies to prevent unnecessary re-renders
 
   const percentage = (timeLeft / initialTime) * 100;
 

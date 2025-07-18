@@ -7,7 +7,7 @@ import type { CurrentQuestion } from "../quiz-session-types";
 
 interface TrueOrFalseQuestionProps {
   question: CurrentQuestion;
-  onSubmit: (selectedOptionId: number | null) => void;
+  onSubmit: (selectedOptionId: number | null, submittedAnswer?: string) => void;
   isSubmitting: boolean;
   primaryColor: string;
 }
