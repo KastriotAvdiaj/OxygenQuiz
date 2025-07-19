@@ -1,4 +1,4 @@
-﻿
+
 using QuizAPI.ManyToManyTables;
 using QuizAPI.Models;
 using QuizAPI.Models.Quiz;

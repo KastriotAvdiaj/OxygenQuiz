@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using QuizAPI.Common;
 using QuizAPI.Data;
@@ -210,7 +210,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                 }
                 else
                 {
-                    var (isCorrect, score) = await GradeAnswerAsync(session.CurrentQuizQuestion!.Question, userAnswer);
+                    var (isCorrect, score) = await GradeAnswerAsync(session.CurrentQuizQuestion!.Question, userAnswer, session.CurrentQuestionStartTime.Value);
                     userAnswer.Status = isCorrect ? AnswerStatus.Correct : AnswerStatus.Incorrect;
                     userAnswer.Score = score;
                 }
@@ -248,7 +248,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
             }
         }
 
-        private async Task<(bool IsCorrect, int Score)> GradeAnswerAsync(QuestionBase question, UserAnswer answer)
+        private async Task<(bool IsCorrect, int Score)> GradeAnswerAsync(QuestionBase question, UserAnswer answer, DateTime questionStartTime)
         {
             bool isCorrect = false;
 
@@ -303,22 +303,33 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
             }
 
             // Calculate score based on time remaining and point system
-            var score = CalculateScore(quizQuestion, answer);
+            var score = CalculateScore(quizQuestion, answer, questionStartTime);
             return (true, score);
         }
 
-        private int CalculateScore(QuizQuestion quizQuestion, UserAnswer answer)
+        private int CalculateScore(QuizQuestion quizQuestion, UserAnswer answer, DateTime questionStartTime)
         {
             const int BASE_POINTS = 10;
-            
-            // Calculate time bonus based on how quickly the question was answered
-            var timeTaken = answer.SubmittedTime - answer.QuizSession.CurrentQuestionStartTime ?? DateTime.UtcNow;
-            var timeRemainingSeconds = Math.Max(0, quizQuestion.TimeLimitInSeconds - (int)timeTaken.TotalSeconds);
-            
-            // Time bonus: 0-50% extra points based on time remaining
-            var timeBonus = (double)timeRemainingSeconds / quizQuestion.TimeLimitInSeconds * 0.5;
+            double timeBonus = 0; // Default to zero bonus
+
+            // Calculate time bonus using the provided question start time
+            var timeTaken = answer.SubmittedTime - questionStartTime;
+
+            // Ensure timeTaken is not negative (e.g., due to clock sync issues)
+            if (timeTaken.TotalSeconds > 0)
+            {
+                var timeRemainingSeconds = Math.Max(0, quizQuestion.TimeLimitInSeconds - (int)timeTaken.TotalSeconds);
+
+                // Time bonus: 0-50% extra points based on time remaining.
+                // Avoid division by zero if TimeLimitInSeconds is 0.
+                if (quizQuestion.TimeLimitInSeconds > 0)
+                {
+                    timeBonus = (double)timeRemainingSeconds / quizQuestion.TimeLimitInSeconds * 0.5;
+                }
+            }
+
             var pointsWithTimeBonus = (int)(BASE_POINTS * (1 + timeBonus));
-            
+
             // Apply point system multiplier
             var multiplier = quizQuestion.PointSystem switch
             {
@@ -327,12 +338,12 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                 PointSystem.Quadruple => 4,
                 _ => 1
             };
-            
+
             var finalScore = pointsWithTimeBonus * multiplier;
-            
-            _logger.LogDebug("Score calculation - Base: {Base}, Time bonus: {TimeBonus:P}, Multiplier: {Multiplier}x, Final: {Final}", 
+
+            _logger.LogDebug("Score calculation - Base: {Base}, Time bonus: {TimeBonus:P}, Multiplier: {Multiplier}x, Final: {Final}",
                 BASE_POINTS, timeBonus, multiplier, finalScore);
-            
+
             return Math.Max(1, finalScore); // Minimum 1 point for correct answers
         }
 

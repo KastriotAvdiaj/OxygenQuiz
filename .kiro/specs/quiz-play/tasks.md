@@ -115,9 +115,9 @@
   - Fix CreateSessionAsync logic to allow retaking after timeout
   - _Requirements: 1.8_
 
-- [ ] 6. Fix Feedback Display Issues
+- [-] 6. Fix Feedback Display Issues
 
-  - [ ] 6.1 Update AnswerFeedback component
+  - [x] 6.1 Update AnswerFeedback component
 
     - Ensure correct mapping of AnswerStatus enum values
     - Fix the fallback logic for feedback details
