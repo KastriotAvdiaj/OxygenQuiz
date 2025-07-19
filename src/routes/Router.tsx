@@ -74,6 +74,32 @@ const createAppRouter = (queryClient: QueryClient) =>
       ),
     },
     {
+      path: "/quiz/results/:sessionId",
+      errorElement: <DashboardErrorElement />,
+      loader: userAuthLoader(queryClient),
+      element: (
+        <>
+          <HomeLayout
+            children={<QuizResultsRouteWrapper />}
+            headerColor={false}
+          />
+        </>
+      ),
+    },
+    {
+      path: "/quiz/results/:sessionId/review",
+      errorElement: <DashboardErrorElement />,
+      loader: userAuthLoader(queryClient),
+      element: (
+        <>
+          <HomeLayout
+            children={<QuizResultsRouteWrapper />}
+            headerColor={false}
+          />
+        </>
+      ),
+    },
+    {
       path: "/signup",
       element: <RedirectIfLoggedIn component={<Signup />} />,
     },

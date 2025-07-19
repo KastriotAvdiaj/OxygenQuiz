@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-import type { QuizSession, AnswerStatus } from "../quiz-session-types";
+import { QuizSession, AnswerStatus } from "../quiz-session-types";
 
 interface QuizResultsProps {
   session: QuizSession;
