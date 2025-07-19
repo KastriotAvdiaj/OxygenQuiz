@@ -131,14 +131,15 @@
 
 - [ ] 7. Implement Quiz Progress Indicator
 
-  - [ ] 7.1 Create QuizProgress component
+  - [x] 7.1 Create QuizProgress component
 
     - Display current question number and total questions
     - Show visual progress bar
     - Add animations for progress updates
     - _Requirements: 2.1_
 
-  - [ ] 7.2 Integrate QuizProgress with QuizInterface
+  - [x] 7.2 Integrate QuizProgress with QuizInterface
+
     - Add the component to the quiz interface
     - Pass the required props from quiz page
     - _Requirements: 2.1_

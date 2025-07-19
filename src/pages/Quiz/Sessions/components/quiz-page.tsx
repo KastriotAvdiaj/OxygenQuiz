@@ -7,14 +7,28 @@ import { useCreateQuizSession } from "../api/create-quiz-session";
 import { useGetNextQuestion } from "../api/get-next-question";
 import { useSubmitAnswer } from "../api/submit-answer";
 import { QuizInterface } from "./quiz-interface";
+import {
+  useQuizTheme,
+  type CategoryColorPalette,
+} from "@/hooks/use-quiz-theme";
 
 interface QuizPageProps {
   quizId: number;
   // This would come from your auth context in a real app
   userId: string;
+  // Optional category theming props
+  categoryColorPalette?: CategoryColorPalette;
+  quizTitle?: string;
+  totalQuestions?: number;
 }
 
-export function QuizPage({ quizId, userId }: QuizPageProps) {
+export function QuizPage({
+  quizId,
+  userId,
+  categoryColorPalette,
+  quizTitle,
+  totalQuestions,
+}: QuizPageProps) {
   const navigate = useNavigate();
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [currentQuestion, setCurrentQuestion] =
@@ -24,6 +38,12 @@ export function QuizPage({ quizId, userId }: QuizPageProps) {
   );
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
+  const [currentQuestionNumber, setCurrentQuestionNumber] = useState<number>(1);
+
+  // Apply category-based theming
+  const theme = useQuizTheme({
+    colorPalette: categoryColorPalette,
+  });
 
   // --- API Mutations ---
   const createSessionMutation = useCreateQuizSession();
@@ -68,6 +88,8 @@ export function QuizPage({ quizId, userId }: QuizPageProps) {
       {
         onSuccess: (data) => {
           setCurrentQuestion(data);
+          // Update question number when we get a new question
+          setCurrentQuestionNumber((prev) => prev + 1);
         },
         onError: (error: any) => {
           console.error("Failed to get next question:", error);
@@ -140,9 +162,29 @@ export function QuizPage({ quizId, userId }: QuizPageProps) {
 
   if (isLoading && !currentQuestion) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-gray-900 text-white">
-        <Loader2 className="h-12 w-12 animate-spin" />
-        <p className="ml-4 text-xl">Preparing your quiz...</p>
+      <div
+        className="flex h-screen w-full items-center justify-center"
+        style={{
+          background: `
+            radial-gradient(circle at 20% 80%, ${theme.primary}15 0%, transparent 50%),
+            radial-gradient(circle at 80% 20%, ${theme.secondary}15 0%, transparent 50%),
+            hsl(var(--background))
+          `,
+          ...theme.cssVars,
+        }}
+      >
+        <div className="quiz-card-elevated p-8 text-center space-y-4">
+          <Loader2 className="h-12 w-12 animate-spin mx-auto text-quiz-primary" />
+          <p className="quiz-text-primary text-xl font-medium">
+            Preparing your quiz...
+          </p>
+          <div className="w-32 h-2 bg-quiz-border-subtle rounded-full mx-auto overflow-hidden">
+            <div
+              className="h-full bg-quiz-primary rounded-full quiz-animate-pulse"
+              style={{ width: "60%" }}
+            />
+          </div>
+        </div>
       </div>
     );
   }
@@ -159,7 +201,17 @@ export function QuizPage({ quizId, userId }: QuizPageProps) {
   // Show error state with retry option
   if (error) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-gray-900 text-white">
+      <div
+        className="flex h-screen w-full items-center justify-center"
+        style={{
+          background: `
+            radial-gradient(circle at 20% 80%, ${theme.primary}15 0%, transparent 50%),
+            radial-gradient(circle at 80% 20%, ${theme.secondary}15 0%, transparent 50%),
+            hsl(var(--background))
+          `,
+          ...theme.cssVars,
+        }}
+      >
         <div className="text-center space-y-6 max-w-md">
           <AlertCircle className="h-16 w-16 text-red-400 mx-auto" />
           <h2 className="text-2xl font-bold text-red-400">
@@ -191,7 +243,17 @@ export function QuizPage({ quizId, userId }: QuizPageProps) {
   if (!sessionId) {
     // This state could be shown if session creation fails for some reason.
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-gray-900 text-white">
+      <div
+        className="flex h-screen w-full items-center justify-center"
+        style={{
+          background: `
+            radial-gradient(circle at 20% 80%, ${theme.primary}15 0%, transparent 50%),
+            radial-gradient(circle at 80% 20%, ${theme.secondary}15 0%, transparent 50%),
+            hsl(var(--background))
+          `,
+          ...theme.cssVars,
+        }}
+      >
         <div className="text-center space-y-4">
           <AlertCircle className="h-12 w-12 text-yellow-400 mx-auto" />
           <p className="text-xl">Unable to start quiz session</p>
@@ -209,6 +271,9 @@ export function QuizPage({ quizId, userId }: QuizPageProps) {
       isSubmitting={submitAnswerMutation.isPending}
       onNextQuestion={() => handleNextQuestion(sessionId)}
       onSubmitAnswer={handleSubmitAnswer}
+      categoryColorPalette={categoryColorPalette}
+      currentQuestionNumber={currentQuestionNumber}
+      totalQuestions={totalQuestions}
     />
   );
 }

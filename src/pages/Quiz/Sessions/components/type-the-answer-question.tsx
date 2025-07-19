@@ -10,14 +10,14 @@ interface TypeTheAnswerQuestionProps {
   question: CurrentQuestion;
   onSubmit: (selectedOptionId: number | null, submittedAnswer?: string) => void;
   isSubmitting: boolean;
-  primaryColor: string;
+  theme: ReturnType<typeof import("@/hooks/use-quiz-theme").useQuizTheme>;
 }
 
 export function TypeTheAnswerQuestion({
-  question,
+  // question,
   onSubmit,
   isSubmitting,
-  primaryColor,
+  theme,
 }: TypeTheAnswerQuestionProps) {
   const [answer, setAnswer] = useState<string>("");
 
@@ -47,11 +47,11 @@ export function TypeTheAnswerQuestion({
             onChange={(e) => setAnswer(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="Type your answer here..."
-            className="h-14 text-lg text-center border-2 rounded-lg transition-all duration-200 focus:ring-2 bg-green-200"
+            className="h-14 text-lg text-center border-2 rounded-lg transition-all duration-200 focus:ring-2"
             style={
               {
-                borderColor: answer.trim() ? primaryColor : "#ffffff30",
-                "--tw-ring-color": primaryColor,
+                borderColor: answer.trim() ? theme.primary : "#ffffff30",
+                "--tw-ring-color": theme.primary,
               } as React.CSSProperties
             }
             disabled={isSubmitting}
@@ -75,7 +75,7 @@ export function TypeTheAnswerQuestion({
           disabled={!answer.trim() || isSubmitting}
           size="lg"
           className="w-full max-w-xs text-xl"
-          style={{ backgroundColor: primaryColor }}
+          style={{ backgroundColor: theme.primary }}
         >
           {isSubmitting ? "Submitting..." : "Submit Answer"}
         </Button>

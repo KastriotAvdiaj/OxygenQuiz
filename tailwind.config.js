@@ -48,7 +48,24 @@ module.exports = {
   			'chart-2': 'hsl(var(--chart-2))',
   			'chart-3': 'hsl(var(--chart-3))',
   			'chart-4': 'hsl(var(--chart-4))',
-  			'chart-5': 'hsl(var(--chart-5))'
+  			'chart-5': 'hsl(var(--chart-5))',
+  			// Quiz-specific colors
+  			'quiz-primary': 'hsl(var(--quiz-primary))',
+  			'quiz-primary-light': 'hsl(var(--quiz-primary-light))',
+  			'quiz-primary-dark': 'hsl(var(--quiz-primary-dark))',
+  			'quiz-success': 'hsl(var(--quiz-success))',
+  			'quiz-success-light': 'hsl(var(--quiz-success-light))',
+  			'quiz-error': 'hsl(var(--quiz-error))',
+  			'quiz-error-light': 'hsl(var(--quiz-error-light))',
+  			'quiz-warning': 'hsl(var(--quiz-warning))',
+  			'quiz-warning-light': 'hsl(var(--quiz-warning-light))',
+  			'quiz-neutral': 'hsl(var(--quiz-neutral))',
+  			'quiz-surface': 'hsl(var(--quiz-surface))',
+  			'quiz-surface-elevated': 'hsl(var(--quiz-surface-elevated))',
+  			'quiz-border-subtle': 'hsl(var(--quiz-border-subtle))',
+  			'quiz-text-primary': 'hsl(var(--quiz-text-primary))',
+  			'quiz-text-secondary': 'hsl(var(--quiz-text-secondary))',
+  			'quiz-shadow': 'hsl(var(--quiz-shadow))'
   		},
   		borderRadius: {
   			lg: 'var(--radius)',

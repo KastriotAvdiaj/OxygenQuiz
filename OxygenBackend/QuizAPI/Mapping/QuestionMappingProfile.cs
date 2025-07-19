@@ -12,7 +12,7 @@ namespace QuizAPI.Mapping
         {
             // Map DTOs to models
             CreateMap<QuestionBaseDTO, QuestionBase>()
-                .ForMember(dest => dest.Visibility, opt => opt.MapFrom(src => Enum.Parse<QuestionVisibility>(src.Visibility)));
+                .ForMember(dest => dest.Visibility, opt => opt.MapFrom(src => Enum.Parse<QuestionVisibility>(src.Visibility))); // probably not needed, since global approach has been added in program.cs
 
             CreateMap<MultipleChoiceQuestionDTO, MultipleChoiceQuestion>();
             CreateMap<TrueFalseQuestionDTO, TrueFalseQuestion>();
@@ -24,8 +24,8 @@ namespace QuizAPI.Mapping
                 .Include<MultipleChoiceQuestion, MultipleChoiceQuestionDTO>()
                 .Include<TrueFalseQuestion, TrueFalseQuestionDTO>()
                 .Include<TypeTheAnswerQuestion, TypeTheAnswerQuestionDTO>()
-                .ForMember(dest => dest.Visibility, opt => opt.MapFrom(src => src.Visibility.ToString()))
-                .ForMember(dest => dest.Type, opt => opt.MapFrom(src => src.Type.ToString()));
+                .ForMember(dest => dest.Visibility, opt => opt.MapFrom(src => src.Visibility.ToString())) // probably not needed, since global approach has been added in program.cs
+                .ForMember(dest => dest.Type, opt => opt.MapFrom(src => src.Type.ToString())); // probably not needed, since global approach has been added in program.cs
 
             CreateMap<MultipleChoiceQuestion, MultipleChoiceQuestionDTO>()
                 .IncludeBase<QuestionBase, QuestionBaseDTO>();
@@ -42,7 +42,7 @@ namespace QuizAPI.Mapping
 
             // Map creation models
             CreateMap<QuestionBaseCM, QuestionBase>()
-                .ForMember(dest => dest.Visibility, opt => opt.MapFrom(src => Enum.Parse<QuestionVisibility>(src.Visibility)));
+                .ForMember(dest => dest.Visibility, opt => opt.MapFrom(src => Enum.Parse<QuestionVisibility>(src.Visibility))); // probably not needed, since global approach has been added in program.cs
 
             CreateMap<MultipleChoiceQuestionCM, MultipleChoiceQuestion>()
                 .IncludeBase<QuestionBaseCM, QuestionBase>();

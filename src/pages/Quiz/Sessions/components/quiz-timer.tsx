@@ -6,14 +6,10 @@ import { motion } from "framer-motion";
 interface QuizTimerProps {
   initialTime: number;
   onTimeUp: () => void;
-  primaryColor: string;
+  theme: ReturnType<typeof import("@/hooks/use-quiz-theme").useQuizTheme>;
 }
 
-export function QuizTimer({
-  initialTime,
-  onTimeUp,
-  primaryColor,
-}: QuizTimerProps) {
+export function QuizTimer({ initialTime, onTimeUp, theme }: QuizTimerProps) {
   const [timeLeft, setTimeLeft] = useState(initialTime);
   const timeUpCalledRef = useRef(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -66,23 +62,29 @@ export function QuizTimer({
   }, [handleTimeUp]); // Remove timeLeft from dependencies to prevent unnecessary re-renders
 
   const percentage = (timeLeft / initialTime) * 100;
+  const isLowTime = percentage < 25;
+  const isCriticalTime = percentage < 10;
 
   return (
-    <div className="relative h-16 w-16">
+    <motion.div
+      className="quiz-timer relative h-16 w-16"
+      animate={isCriticalTime ? { scale: [1, 1.1, 1] } : {}}
+      transition={{ duration: 0.5, repeat: isCriticalTime ? Infinity : 0 }}
+    >
       <svg className="h-full w-full" viewBox="0 0 100 100">
         {/* Background circle */}
         <circle
-          className="stroke-current text-gray-700"
-          strokeWidth="10"
+          className="stroke-current text-quiz-border-subtle"
+          strokeWidth="8"
           cx="50"
           cy="50"
           r="45"
           fill="transparent"
-        ></circle>
+        />
         {/* Progress circle */}
         <motion.circle
           className="stroke-current"
-          strokeWidth="10"
+          strokeWidth="8"
           strokeLinecap="round"
           cx="50"
           cy="50"
@@ -90,14 +92,30 @@ export function QuizTimer({
           fill="transparent"
           strokeDasharray="283"
           strokeDashoffset={283 - (283 * percentage) / 100}
-          style={{ color: primaryColor }}
+          style={{
+            color: isCriticalTime
+              ? "#ef4444" // Red for critical time
+              : isLowTime
+              ? "#f59e0b" // Yellow for low time
+              : theme.primary,
+          }}
           transform="rotate(-90 50 50)"
           transition={{ duration: 1, ease: "linear" }}
         />
       </svg>
       <div className="absolute inset-0 flex items-center justify-center">
-        <span className="text-2xl font-bold text-white">{timeLeft}</span>
+        <span
+          className={`text-xl font-bold transition-colors duration-300 ${
+            isCriticalTime
+              ? "text-red-400"
+              : isLowTime
+              ? "text-yellow-400"
+              : "quiz-text-primary"
+          }`}
+        >
+          {timeLeft}
+        </span>
       </div>
-    </div>
+    </motion.div>
   );
 }

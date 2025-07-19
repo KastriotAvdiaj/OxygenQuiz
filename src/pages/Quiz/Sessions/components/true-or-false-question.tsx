@@ -9,14 +9,14 @@ interface TrueOrFalseQuestionProps {
   question: CurrentQuestion;
   onSubmit: (selectedOptionId: number | null, submittedAnswer?: string) => void;
   isSubmitting: boolean;
-  primaryColor: string;
+  theme: ReturnType<typeof import("@/hooks/use-quiz-theme").useQuizTheme>;
 }
 
 export function TrueOrFalseQuestion({
   question,
   onSubmit,
   isSubmitting,
-  primaryColor,
+  theme,
 }: TrueOrFalseQuestionProps) {
   const [selectedOptionId, setSelectedOptionId] = useState<number | null>(null);
 
@@ -29,50 +29,42 @@ export function TrueOrFalseQuestion({
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         {/* True Button */}
         <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }}>
-          <Button
+          <button
             onClick={() => setSelectedOptionId(trueOption.id)}
-            variant="outline"
-            className="h-auto w-full justify-center whitespace-normal rounded-lg border-2 p-6 text-center text-xl font-semibold transition-all duration-200"
-            style={
-              {
-                "--primary-color": primaryColor, // Custom property for styling
-                borderColor:
-                  selectedOptionId === trueOption.id
-                    ? primaryColor
-                    : "#ffffff30",
-                backgroundColor:
-                  selectedOptionId === trueOption.id
-                    ? primaryColor + "25"
-                    : "transparent",
-              } as React.CSSProperties
-            }
+            className={`quiz-answer-option w-full text-center text-xl font-semibold p-6 ${
+              selectedOptionId === trueOption.id ? "selected" : ""
+            }`}
+            style={{
+              borderColor:
+                selectedOptionId === trueOption.id ? theme.primary : undefined,
+              backgroundColor:
+                selectedOptionId === trueOption.id
+                  ? `${theme.primary}15`
+                  : undefined,
+            }}
           >
-            {trueOption.text}
-          </Button>
+            ✓ {trueOption.text}
+          </button>
         </motion.div>
 
         {/* False Button */}
         <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }}>
-          <Button
+          <button
             onClick={() => setSelectedOptionId(falseOption.id)}
-            variant="outline"
-            className="h-auto w-full justify-center whitespace-normal rounded-lg border-2 p-6 text-center text-xl font-semibold transition-all duration-200"
-            style={
-              {
-                "--primary-color": primaryColor, // Custom property for styling
-                borderColor:
-                  selectedOptionId === falseOption.id
-                    ? primaryColor
-                    : "#ffffff30",
-                backgroundColor:
-                  selectedOptionId === falseOption.id
-                    ? primaryColor + "25"
-                    : "transparent",
-              } as React.CSSProperties
-            }
+            className={`quiz-answer-option w-full text-center text-xl font-semibold p-6 ${
+              selectedOptionId === falseOption.id ? "selected" : ""
+            }`}
+            style={{
+              borderColor:
+                selectedOptionId === falseOption.id ? theme.primary : undefined,
+              backgroundColor:
+                selectedOptionId === falseOption.id
+                  ? `${theme.primary}15`
+                  : undefined,
+            }}
           >
-            {falseOption.text}
-          </Button>
+            ✗ {falseOption.text}
+          </button>
         </motion.div>
       </div>
 
@@ -82,7 +74,7 @@ export function TrueOrFalseQuestion({
           disabled={selectedOptionId === null || isSubmitting}
           size="lg"
           className="w-full max-w-xs text-xl"
-          style={{ backgroundColor: primaryColor }}
+          style={{ backgroundColor: theme.primary }}
         >
           {isSubmitting ? "Submitting..." : "Submit Answer"}
         </Button>
