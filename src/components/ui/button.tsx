@@ -5,7 +5,8 @@ import { cn } from "@/utils/cn";
 import { Spinner } from "./Spinner";
 
 const buttonVariants = cva(
-  "items-center whitespace-nowrap text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50",
+  // CHANGE 1: Added `relative` to allow for absolute positioning of the spinner inside.
+  "relative items-center whitespace-nowrap text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
       variant: {
@@ -87,36 +88,41 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     ref
   ) => {
     const Comp = asChild ? Slot : "button";
-    
-    // Generate CSS variables for fancy variant
-    const fancyStyle = variant === "fancy" && fancyColors 
-      ? {
-          '--fancy-primary': fancyColors.primary,
-          '--fancy-secondary': fancyColors.secondary,
-          '--fancy-shadow': fancyColors.shadow,
-          '--fancy-text': fancyColors.text,
-          '--fancy-border': fancyColors.border,
-          ...style,
-        } as React.CSSProperties
-      : style;
-    
+
+    const fancyStyle =
+      variant === "fancy" && fancyColors
+        ? ({
+            "--fancy-primary": fancyColors.primary,
+            "--fancy-secondary": fancyColors.secondary,
+            "--fancy-shadow": fancyColors.shadow,
+            "--fancy-text": fancyColors.text,
+            "--fancy-border": fancyColors.border,
+            ...style,
+          } as React.CSSProperties)
+        : style;
+
     return (
       <Comp
         className={cn(buttonVariants({ variant, size, active, className }))}
         ref={ref}
+        disabled={isPending || props.disabled}
         style={fancyStyle}
         {...props}
       >
-        {isPending ? (
-          <>
-            <Spinner size="sm" variant="light" /> {children}
-          </>
-        ) : (
-          <>
-            {icon && <span className="">{icon}</span>} {/* Render icon */}
-            {children}
-          </>
+        {isPending && (
+          <div className="absolute flex items-center justify-center inset-0">
+            <Spinner size="sm" variant="light" />
+          </div>
         )}
+
+        <span
+          className={cn("flex items-center justify-center", {
+            invisible: isPending,
+          })}
+        >
+          {icon && <span className="mr-2">{icon}</span>}
+          {children}
+        </span>
       </Comp>
     );
   }

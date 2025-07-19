@@ -116,12 +116,12 @@ export function AnswerFeedback({ result, onNext, theme }: AnswerFeedbackProps) {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.5 }}
-        className="relative z-10"
+        className="relative z-10 flex items-center justify-center"
       >
         <Button
           onClick={onNext}
           size="lg"
-          className="px-8 py-3 text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
+          className="px-8 py-3 text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 text-white"
           style={{ backgroundColor: theme.primary }}
         >
           {result.isQuizComplete ? "View Results" : "Next Question"}
