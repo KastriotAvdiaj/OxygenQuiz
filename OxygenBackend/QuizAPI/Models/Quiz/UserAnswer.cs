@@ -8,7 +8,7 @@ namespace QuizAPI.Models.Quiz
     /// <summary>
     /// Represents a user's submitted answer to a specific question within a quiz session.
     /// </summary>
-    /// 
+    [JsonConverter(typeof(JsonStringEnumConverter))]
     public enum AnswerStatus
     {
         NotAnswered,

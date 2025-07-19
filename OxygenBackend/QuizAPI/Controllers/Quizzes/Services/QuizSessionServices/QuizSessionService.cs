@@ -189,6 +189,19 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                 var userAnswer = _mapper.Map<UserAnswer>(model);
                 userAnswer.SubmittedTime = DateTime.UtcNow;
 
+                // For True/False questions, we need to handle the selectedOptionId differently
+                // because True/False questions don't have actual AnswerOption records in the database
+                if (session.CurrentQuizQuestion!.Question is TrueFalseQuestion)
+                {
+                    // For True/False questions, store the boolean choice in a way that doesn't reference AnswerOptions
+                    // We'll keep the selectedOptionId for grading logic but set it to null for database storage
+                    var originalSelectedOptionId = userAnswer.SelectedOptionId;
+                    userAnswer.SelectedOptionId = null; // Don't reference non-existent AnswerOption
+                    
+                    // Store the boolean choice in submittedAnswer for True/False questions
+                    userAnswer.SubmittedAnswer = originalSelectedOptionId == 1 ? "True" : "False";
+                }
+
                 if (timeTaken.TotalSeconds > timeLimit)
                 {
                     userAnswer.Status = AnswerStatus.TimedOut;
@@ -248,7 +261,8 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                     isCorrect = correctOption?.Id == answer.SelectedOptionId;
                     break;
                 case TrueFalseQuestion tfq:
-                    bool submittedBool = answer.SelectedOptionId == 1; 
+                    // For True/False questions, we now store the answer in submittedAnswer as "True" or "False"
+                    bool submittedBool = string.Equals(answer.SubmittedAnswer, "True", StringComparison.OrdinalIgnoreCase);
                     isCorrect = tfq.CorrectAnswer == submittedBool;
                     break;
                 case TypeTheAnswerQuestion taq:
