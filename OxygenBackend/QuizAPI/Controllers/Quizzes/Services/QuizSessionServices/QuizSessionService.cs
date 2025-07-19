@@ -5,6 +5,7 @@ using QuizAPI.Data;
 using QuizAPI.DTOs.Quiz;
 using QuizAPI.Models;
 using QuizAPI.Models.Quiz;
+using QuizAPI.ManyToManyTables;
 
 namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
 {
@@ -250,7 +251,6 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
         private async Task<(bool IsCorrect, int Score)> GradeAnswerAsync(QuestionBase question, UserAnswer answer)
         {
             bool isCorrect = false;
-            int score = 10; // Placeholder: You should calculate this based on PointSystem
 
             switch (question)
             {
@@ -286,7 +286,54 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                     break;
             }
 
-            return (isCorrect, isCorrect ? score : 0);
+            // Calculate score only if answer is correct
+            if (!isCorrect)
+            {
+                return (false, 0);
+            }
+
+            // Get the QuizQuestion to access PointSystem and TimeLimitInSeconds
+            var quizQuestion = await _context.QuizQuestions
+                .AsNoTracking()
+                .FirstOrDefaultAsync(qq => qq.Id == answer.QuizQuestionId);
+
+            if (quizQuestion == null)
+            {
+                return (true, 10); // Fallback score
+            }
+
+            // Calculate score based on time remaining and point system
+            var score = CalculateScore(quizQuestion, answer);
+            return (true, score);
+        }
+
+        private int CalculateScore(QuizQuestion quizQuestion, UserAnswer answer)
+        {
+            const int BASE_POINTS = 10;
+            
+            // Calculate time bonus based on how quickly the question was answered
+            var timeTaken = answer.SubmittedTime - answer.QuizSession.CurrentQuestionStartTime ?? DateTime.UtcNow;
+            var timeRemainingSeconds = Math.Max(0, quizQuestion.TimeLimitInSeconds - (int)timeTaken.TotalSeconds);
+            
+            // Time bonus: 0-50% extra points based on time remaining
+            var timeBonus = (double)timeRemainingSeconds / quizQuestion.TimeLimitInSeconds * 0.5;
+            var pointsWithTimeBonus = (int)(BASE_POINTS * (1 + timeBonus));
+            
+            // Apply point system multiplier
+            var multiplier = quizQuestion.PointSystem switch
+            {
+                PointSystem.Standard => 1,
+                PointSystem.Double => 2,
+                PointSystem.Quadruple => 4,
+                _ => 1
+            };
+            
+            var finalScore = pointsWithTimeBonus * multiplier;
+            
+            _logger.LogDebug("Score calculation - Base: {Base}, Time bonus: {TimeBonus:P}, Multiplier: {Multiplier}x, Final: {Final}", 
+                BASE_POINTS, timeBonus, multiplier, finalScore);
+            
+            return Math.Max(1, finalScore); // Minimum 1 point for correct answers
         }
 
         #endregion

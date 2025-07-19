@@ -62,11 +62,9 @@ export function QuestionDisplay({
             primaryColor={primaryColor}
           />
         );
-      case QuestionType.MultipleChoice:
-        console.log("Rendering MultipleChoice question");
-      // Fall through to default
       default:
         // Default to multiple choice rendering
+        console.log("Rendering MultipleChoice question");
         return (
           <>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">

@@ -47,7 +47,7 @@ export function TypeTheAnswerQuestion({
             onChange={(e) => setAnswer(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="Type your answer here..."
-            className="h-14 text-lg text-center border-2 rounded-lg transition-all duration-200 focus:ring-2"
+            className="h-14 text-lg text-center border-2 rounded-lg transition-all duration-200 focus:ring-2 bg-green-200"
             style={
               {
                 borderColor: answer.trim() ? primaryColor : "#ffffff30",
