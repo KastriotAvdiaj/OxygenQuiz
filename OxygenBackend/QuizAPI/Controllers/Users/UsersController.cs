@@ -16,7 +16,7 @@ namespace QuizAPI.Controllers.Users
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class UsersController : ControllerBase
+    public class UsersController : BaseApiController
     {
         private readonly ApplicationDbContext _context;
         private readonly DashboardService _dashboardService;

@@ -43,7 +43,7 @@ namespace QuizAPI.Controllers.Questions
 
     [ApiController]
     [Route("api/[controller]")]
-    public class QuestionsController : ControllerBase
+    public class QuestionsController : BaseApiController
     {
         private readonly IQuestionService _questionService;
 
@@ -54,7 +54,7 @@ namespace QuizAPI.Controllers.Questions
 
         // GET: api/questions
         [HttpGet]
-        public async Task<ActionResult<List<QuestionBaseDTO>>> GetQuestions([FromQuery] QuestionFilterParams filterParams)
+        public async Task<IActionResult> GetQuestions([FromQuery] QuestionFilterParams filterParams)
         {
             var pagedQuestions = await _questionService.GetPaginatedQuestionsAsync(filterParams);
 
@@ -72,7 +72,7 @@ namespace QuizAPI.Controllers.Questions
 
         // GET: api/questions/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<QuestionBaseDTO>> GetQuestion(int id)
+        public async Task<IActionResult> GetQuestion(int id)
         {
             var question = await _questionService.GetQuestionByIdAsync(id);
 
@@ -86,7 +86,7 @@ namespace QuizAPI.Controllers.Questions
 
         // GET: api/questions/multiplechoice
         [HttpGet("multiplechoice")]
-        public async Task<ActionResult<List<MultipleChoiceQuestionDTO>>> GetMultipleChoiceQuestions([FromQuery] QuestionFilterParams filterParams)
+        public async Task<IActionResult> GetMultipleChoiceQuestions([FromQuery] QuestionFilterParams filterParams)
         {
             var pagedQuestions = await _questionService.GetPaginatedMultipleChoiceQuestionsAsync(filterParams);
 
@@ -104,7 +104,7 @@ namespace QuizAPI.Controllers.Questions
 
         // GET: api/questions/truefalse
         [HttpGet("trueFalse")]
-        public async Task<ActionResult<List<TrueFalseQuestionDTO>>> GetTrueFalseQuestions([FromQuery] QuestionFilterParams filterParams)
+        public async Task<IActionResult> GetTrueFalseQuestions([FromQuery] QuestionFilterParams filterParams)
         {
             var pagedQuestions = await _questionService.GetPaginatedTrueFalseQuestionsAsync(filterParams);
 
@@ -122,7 +122,7 @@ namespace QuizAPI.Controllers.Questions
 
         // GET: api/questions/typeanswer
         [HttpGet("typeTheAnswer")]
-        public async Task<ActionResult<List<TypeTheAnswerQuestionDTO>>> GetTypeTheAnswerQuestions([FromQuery] QuestionFilterParams filterParams)
+        public async Task<IActionResult> GetTypeTheAnswerQuestions([FromQuery] QuestionFilterParams filterParams)
         {
             var pagedQuestions = await _questionService.GetPaginatedTypeTheAnswerQuestionsAsync(filterParams);
 
@@ -141,7 +141,7 @@ namespace QuizAPI.Controllers.Questions
         // POST: api/questions/multiplechoice
         [HttpPost("multiplechoice")]
       /*  [Authorize]*/
-        public async Task<ActionResult<MultipleChoiceQuestionDTO>> CreateMultipleChoiceQuestion(MultipleChoiceQuestionCM questionCM)
+        public async Task<IActionResult> CreateMultipleChoiceQuestion(MultipleChoiceQuestionCM questionCM)
         {
             var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
 
@@ -157,7 +157,7 @@ namespace QuizAPI.Controllers.Questions
         // POST: api/questions/truefalse
         [HttpPost("truefalse")]
         [Authorize]
-        public async Task<ActionResult<TrueFalseQuestionDTO>> CreateTrueFalseQuestion(TrueFalseQuestionCM questionCM)
+        public async Task<IActionResult> CreateTrueFalseQuestion(TrueFalseQuestionCM questionCM)
         {
             var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
 
@@ -173,7 +173,7 @@ namespace QuizAPI.Controllers.Questions
         // POST: api/questions/typeanswer
         [HttpPost("typetheanswer")]
         [Authorize]
-        public async Task<ActionResult<TypeTheAnswerQuestionDTO>> CreateTypeTheAnswerQuestion(TypeTheAnswerQuestionCM questionCM)
+        public async Task<IActionResult> CreateTypeTheAnswerQuestion(TypeTheAnswerQuestionCM questionCM)
         {
             var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
 
@@ -252,12 +252,7 @@ namespace QuizAPI.Controllers.Questions
 
             if (!success)
             {
-                return BadRequest(new
-                {
-                    success = false,
-                    message = errorMessage,
-                    isCustomMessage = isCustomMessage // Flag to indicate user-friendly message
-                });
+                return HandleCustomError(errorMessage, isCustomMessage);
             }
 
             return Ok(new
@@ -270,7 +265,7 @@ namespace QuizAPI.Controllers.Questions
 
         // GET: api/questions/category/5
         [HttpGet("category/{categoryId}")]
-        public async Task<ActionResult<IEnumerable<QuestionBaseDTO>>> GetQuestionsByCategory(int categoryId)
+        public async Task<IActionResult> GetQuestionsByCategory(int categoryId)
         {
             var questions = await _questionService.GetQuestionsByCategoryAsync(categoryId);
             return Ok(questions);
@@ -278,7 +273,7 @@ namespace QuizAPI.Controllers.Questions
 
         // GET: api/questions/difficulty/5
         [HttpGet("difficulty/{difficultyId}")]
-        public async Task<ActionResult<IEnumerable<QuestionBaseDTO>>> GetQuestionsByDifficulty(int difficultyId)
+        public async Task<IActionResult> GetQuestionsByDifficulty(int difficultyId)
         {
             var questions = await _questionService.GetQuestionsByDifficultyAsync(difficultyId);
             return Ok(questions);

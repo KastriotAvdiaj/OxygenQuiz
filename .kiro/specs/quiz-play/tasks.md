@@ -100,6 +100,21 @@
     - Add proper state management for timed-out questions
     - _Requirements: 1.1, 1.3_
 
+- [x] 5.3 Fix True/False Answer Submission 500 Error (CRITICAL)
+
+  - Investigate backend 500 error when submitting True/False answers
+  - Check QuizSessionService SubmitAnswerAsync method for True/False handling
+  - Verify mapping and grading logic for True/False questions
+  - _Requirements: 1.7_
+
+- [x] 5.4 Fix Quiz Retaking Issue After Timeout (CRITICAL)
+
+  - Investigate why users cannot retake quizzes after timeout
+  - Check if sessions are properly marked as completed/abandoned
+  - Verify QuizSessionCleanupService is working correctly
+  - Fix CreateSessionAsync logic to allow retaking after timeout
+  - _Requirements: 1.8_
+
 - [ ] 6. Fix Feedback Display Issues
 
   - [ ] 6.1 Update AnswerFeedback component

@@ -11,7 +11,7 @@ namespace QuizAPI.Controllers.Quizzes
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class QuizController : ControllerBase
+    public class QuizController : BaseApiController
     {
         private readonly IQuizService _quizService;
         private readonly ILogger<QuizController> _logger;
@@ -32,7 +32,7 @@ namespace QuizAPI.Controllers.Quizzes
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        public async Task<ActionResult<List<QuizSummaryDTO>>> GetAllQuizzes([FromQuery] QuizFilterParams filterParams)
+        public async Task<IActionResult> GetAllQuizzes([FromQuery] QuizFilterParams filterParams)
         {
             try
             {
@@ -50,7 +50,7 @@ namespace QuizAPI.Controllers.Quizzes
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error retrieving all quizzes");
-                return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while processing your request");
+                return HandleCustomError("An error occurred while processing your request", false);
             }
         }
         /// <summary>
@@ -59,7 +59,7 @@ namespace QuizAPI.Controllers.Quizzes
         [HttpGet("public")]
         [AllowAnonymous]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<ActionResult<IEnumerable<QuizSummaryDTO>>> GetPublicQuizzes()
+        public async Task<IActionResult> GetPublicQuizzes()
         {
             try
             {
@@ -69,7 +69,7 @@ namespace QuizAPI.Controllers.Quizzes
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error retrieving public quizzes");
-                return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while processing your request");
+                return HandleCustomError("An error occurred while processing your request", false);
             }
         }
 
@@ -80,7 +80,7 @@ namespace QuizAPI.Controllers.Quizzes
         [Authorize]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        public async Task<ActionResult<List<QuizSummaryDTO>>> GetMyQuizzes([FromQuery] QuizFilterParams filterParams)
+        public async Task<IActionResult> GetMyQuizzes([FromQuery] QuizFilterParams filterParams)
         {
             try
             {
@@ -99,7 +99,7 @@ namespace QuizAPI.Controllers.Quizzes
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error retrieving user's quizzes");
-                return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while processing your request");
+                return HandleCustomError("An error occurred while processing your request", false);
             }
         }
 
@@ -109,7 +109,7 @@ namespace QuizAPI.Controllers.Quizzes
         [HttpGet("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<QuizDTO>> GetQuizById(int id)
+        public async Task<IActionResult> GetQuizById(int id)
         {
             try
             {
@@ -139,7 +139,7 @@ namespace QuizAPI.Controllers.Quizzes
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error retrieving quiz {QuizId}", id);
-                return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while processing your request");
+                return HandleCustomError("An error occurred while processing your request", false);
             }
         }
 
@@ -149,7 +149,7 @@ namespace QuizAPI.Controllers.Quizzes
         [HttpGet("{id}/questions")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<List<QuizQuestionDTO>>> GetQuizQuestions(int id)
+        public async Task<IActionResult> GetQuizQuestions(int id)
         {
             try
             {
@@ -181,7 +181,7 @@ namespace QuizAPI.Controllers.Quizzes
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error retrieving questions for quiz {QuizId}", id);
-                return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while processing your request");
+                return HandleCustomError("An error occurred while processing your request", false);
             }
         }
 
@@ -193,7 +193,7 @@ namespace QuizAPI.Controllers.Quizzes
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        public async Task<ActionResult<QuizDTO>> CreateQuiz([FromBody] QuizCM quizCM)
+        public async Task<IActionResult> CreateQuiz([FromBody] QuizCM quizCM)
         {
             try
             {
@@ -215,7 +215,7 @@ namespace QuizAPI.Controllers.Quizzes
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error creating quiz");
-                return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while processing your request");
+                return HandleCustomError("An error occurred while processing your request", false);
             }
         }
 
@@ -228,7 +228,7 @@ namespace QuizAPI.Controllers.Quizzes
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<QuizDTO>> UpdateQuiz([FromBody] QuizUM quizUM)
+        public async Task<IActionResult> UpdateQuiz([FromBody] QuizUM quizUM)
         {
             try
             {
@@ -259,7 +259,7 @@ namespace QuizAPI.Controllers.Quizzes
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error updating quiz {QuizId}", quizUM.Id);
-                return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while processing your request");
+                return HandleCustomError("An error occurred while processing your request", false);
             }
         }
 
@@ -271,7 +271,7 @@ namespace QuizAPI.Controllers.Quizzes
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<QuizDTO>> TogglePublishStatus(int id)
+        public async Task<IActionResult> TogglePublishStatus(int id)
         {
             try
             {
@@ -288,7 +288,7 @@ namespace QuizAPI.Controllers.Quizzes
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error toggling publish status for quiz {QuizId}", id);
-                return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while processing your request");
+                return HandleCustomError("An error occurred while processing your request", false);
             }
         }
 
@@ -300,7 +300,7 @@ namespace QuizAPI.Controllers.Quizzes
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<QuizDTO>> ToggleActiveStatus(int id)
+        public async Task<IActionResult> ToggleActiveStatus(int id)
         {
             try
             {
@@ -317,7 +317,7 @@ namespace QuizAPI.Controllers.Quizzes
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error toggling active status for quiz {QuizId}", id);
-                return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while processing your request");
+                return HandleCustomError("An error occurred while processing your request", false);
             }
         }
 
@@ -343,7 +343,7 @@ namespace QuizAPI.Controllers.Quizzes
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error deleting quiz {QuizId}", id);
-                return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while processing your request");
+                return HandleCustomError("An error occurred while processing your request", false);
             }
         }
 

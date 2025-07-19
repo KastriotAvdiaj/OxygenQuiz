@@ -10,6 +10,7 @@ const CUSTOM_ERROR_PATTERNS = [
   'cannot be deleted',
   'not authorized',
   'insufficient permissions',
+  'already have an active session',
 ];
 
 function isCustomErrorMessage(message: string): boolean {

@@ -13,6 +13,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
         Task<Result<QuizSessionDto>> GetSessionAsync(Guid sessionId);
         Task<Result<List<QuizSessionSummaryDto>>> GetUserSessionsAsync(Guid userId);
         Task<Result<QuizSessionDto>> CompleteSessionAsync(Guid sessionId);
+        Task<Result<int>> CleanupAbandonedSessionsAsync();
         Task<Result> DeleteSessionAsync(Guid sessionId);
     }
 

@@ -115,6 +115,17 @@ public class QuizSessionsController : BaseApiController
     }
 
     /// <summary>
+    /// Manually triggers cleanup of abandoned quiz sessions. Useful for testing and immediate cleanup.
+    /// </summary>
+    [HttpPost("cleanup")]
+    [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
+    public async Task<IActionResult> CleanupAbandonedSessions()
+    {
+        var result = await _quizSessionService.CleanupAbandonedSessionsAsync();
+        return HandleResult(result);
+    }
+
+    /// <summary>
     /// Deletes a quiz session and all its associated answers.
     /// </summary>
     [HttpDelete("{sessionId:guid}")]

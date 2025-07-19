@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using QuizAPI.Data;
+using QuizAPI.Models.Quiz;
+
 
 namespace QuizAPI.Services
 {
@@ -50,35 +52,55 @@ namespace QuizAPI.Services
 
             try
             {
-                var cutoffTime = DateTime.UtcNow - _sessionTimeout;
-                
-                // Find sessions that are:
-                // 1. Not completed
-                // 2. Have a current question that started more than 30 minutes ago
-                // 3. OR have no current question but were started more than 30 minutes ago and have no recent activity
-                var abandonedSessions = await context.QuizSessions
-                    .Where(s => !s.IsCompleted && 
-                           ((s.CurrentQuestionStartTime.HasValue && s.CurrentQuestionStartTime.Value < cutoffTime) ||
-                            (!s.CurrentQuestionStartTime.HasValue && s.StartTime < cutoffTime)))
+                // Get all incomplete sessions
+                var incompleteSessions = await context.QuizSessions
+                    .Where(s => !s.IsCompleted)
+                    .Include(s => s.Quiz)
+                        .ThenInclude(q => q.QuizQuestions)
                     .ToListAsync();
 
-                if (abandonedSessions.Any())
-                {
-                    _logger.LogInformation("Found {Count} abandoned quiz sessions to clean up", abandonedSessions.Count);
+                var sessionsToCleanup = new List<QuizSession>();
 
-                    foreach (var session in abandonedSessions)
+                foreach (var session in incompleteSessions)
+                {
+                    // Calculate expected quiz duration based on question time limits
+                    var totalQuizTimeInSeconds = session.Quiz.QuizQuestions.Sum(qq => qq.TimeLimitInSeconds) + (session.Quiz.QuizQuestions.Count * 5);
+                    var expectedQuizDuration = TimeSpan.FromSeconds(totalQuizTimeInSeconds);
+                    
+                    var timeSinceStart = DateTime.UtcNow - session.StartTime;
+                    var timeSinceLastActivity = session.CurrentQuestionStartTime.HasValue 
+                        ? DateTime.UtcNow - session.CurrentQuestionStartTime.Value 
+                        : timeSinceStart;
+
+                    // Session is abandoned if:
+                    // 1. Total time since start exceeds expected quiz duration + 100% buffer, OR
+                    // 2. Time since last activity exceeds 2x the longest question time limit + 2 minutes buffer
+                    var maxQuestionTime = session.Quiz.QuizQuestions.Any() ? session.Quiz.QuizQuestions.Max(qq => qq.TimeLimitInSeconds) : 300;
+                    var activityTimeout = TimeSpan.FromSeconds(maxQuestionTime * 2 + 120); // 2x longest question + 2 minutes
+                    var totalTimeout = expectedQuizDuration.Add(expectedQuizDuration); // +100% buffer for background cleanup
+
+                    if (timeSinceStart > totalTimeout || timeSinceLastActivity > activityTimeout)
                     {
-                        // Mark session as completed (abandoned)
+                        sessionsToCleanup.Add(session);
+                        _logger.LogInformation("Session {SessionId} marked for cleanup - Total time: {TotalTime:F1}min, Activity time: {ActivityTime:F1}min, Expected duration: {ExpectedDuration:F1}min", 
+                            session.Id, timeSinceStart.TotalMinutes, timeSinceLastActivity.TotalMinutes, expectedQuizDuration.TotalMinutes);
+                    }
+                }
+
+                if (sessionsToCleanup.Any())
+                {
+                    _logger.LogInformation("Found {Count} abandoned quiz sessions to clean up", sessionsToCleanup.Count);
+
+                    foreach (var session in sessionsToCleanup)
+                    {
                         session.IsCompleted = true;
                         session.EndTime = DateTime.UtcNow;
                         session.CurrentQuizQuestionId = null;
                         session.CurrentQuestionStartTime = null;
-
-                        _logger.LogDebug("Marked session {SessionId} as abandoned", session.Id);
                     }
 
                     await context.SaveChangesAsync();
-                    _logger.LogInformation("Successfully cleaned up {Count} abandoned quiz sessions", abandonedSessions.Count);
+                    _logger.LogInformation("Successfully cleaned up {Count} abandoned quiz sessions", sessionsToCleanup.Count);
                 }
                 else
                 {
