@@ -28,12 +28,15 @@ export interface CurrentQuestion {
   timeRemainingInSeconds: number;
   questionType: QuestionType;
   explanation?: string; // Optional explanation for the correct answer
+  instantFeedback?: boolean; // Whether to show instant feedback for this question
 }
 
 export interface AnswerResult {
   status: AnswerStatus;
   scoreAwarded: number;
   isQuizComplete: boolean;
+  correctAnswerId?: number | null; // ID of the correct option for instant feedback
+  explanation?: string; // Explanation for the correct answer
 }
 
 export interface QuizState {

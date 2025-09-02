@@ -39,6 +39,9 @@ export function QuizPage({
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const [currentQuestionNumber, setCurrentQuestionNumber] = useState<number>(1);
+  // Instant feedback state
+  const [showInstantFeedback, setShowInstantFeedback] =
+    useState<boolean>(false);
 
   // Apply category-based theming
   const theme = useQuizTheme({
@@ -138,12 +141,29 @@ export function QuizPage({
         onSuccess: (data) => {
           setLastAnswerResult(data);
 
-          // If the quiz is complete after this answer, navigate to results
-          if (data.isQuizComplete) {
-            // Small delay to show the feedback before navigating
+          // Check if current question has instant feedback enabled
+          if (currentQuestion?.instantFeedback) {
+            // Show instant feedback
+            setShowInstantFeedback(true);
+
+            // Auto-advance to next question after showing feedback
             setTimeout(() => {
-              navigate(`/quiz/results/${sessionId}`);
-            }, 2000);
+              setShowInstantFeedback(false);
+              setLastAnswerResult(null);
+              if (data.isQuizComplete) {
+                navigate(`/quiz/results/${sessionId}`);
+              } else {
+                handleNextQuestion(sessionId);
+              }
+            }, 3000); // Show feedback for 3 seconds
+          } else {
+            // Traditional feedback flow
+            if (data.isQuizComplete) {
+              // Small delay to show the feedback before navigating
+              setTimeout(() => {
+                navigate(`/quiz/results/${sessionId}`);
+              }, 2000);
+            }
           }
         },
         onError: (error) => {
@@ -274,6 +294,7 @@ export function QuizPage({
       categoryColorPalette={categoryColorPalette}
       currentQuestionNumber={currentQuestionNumber}
       totalQuestions={totalQuestions}
+      showInstantFeedback={showInstantFeedback}
     />
   );
 }

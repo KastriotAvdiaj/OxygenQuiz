@@ -46,6 +46,9 @@ Quiz selection and display functionality is already implemented in the applicati
 1. WHEN a user completes a quiz THEN the system SHALL display a summary of results including score and time taken.
 2. WHEN showing quiz results THEN the system SHALL highlight correct and incorrect answers.
 3. WHEN showing incorrect answers THEN the system SHALL provide explanations for the correct answers.
+   3.2 WHEN instant feedback is enabled THEN the system SHALL show correct answer for incorrect responses with green highlighting.
+   3.3 WHEN instant feedback is enabled THEN the system SHALL add visual indicators (checkmarks and X marks) for correct/incorrect answers.
+   3.4 WHEN instant feedback is enabled THEN the system SHALL automatically advance to the next question after showing feedback.
 4. WHEN a user completes a quiz THEN the system SHALL offer options to review answers, retry the quiz, or select a new quiz.
 5. IF the quiz has a passing threshold THEN the system SHALL indicate whether the user passed or failed.
 

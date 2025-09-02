@@ -124,7 +124,8 @@
     - Add proper error handling for unexpected status values
     - _Requirements: 1.3_
 
-  - [ ] 6.2 Enhance feedback with additional information
+  - [x] 6.2 Enhance feedback with additional information
+
     - Show correct answer for incorrect responses
     - Add visual indicators for correct/incorrect answers
     - _Requirements: 3.2, 3.3_

@@ -9,7 +9,8 @@ import {
 } from "@/hooks/use-quiz-theme";
 import type { CurrentQuestion, AnswerResult } from "../quiz-session-types";
 import { motion } from "framer-motion";
-import { Loader2 } from "lucide-react";
+import { Loader2, ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface QuizInterfaceProps {
   sessionId: string;
@@ -25,6 +26,8 @@ interface QuizInterfaceProps {
   categoryColorPalette?: CategoryColorPalette;
   currentQuestionNumber?: number;
   totalQuestions?: number;
+  // Instant feedback state
+  showInstantFeedback?: boolean;
 }
 
 export function QuizInterface({
@@ -36,6 +39,7 @@ export function QuizInterface({
   categoryColorPalette,
   currentQuestionNumber,
   totalQuestions,
+  showInstantFeedback = false,
 }: QuizInterfaceProps) {
   // Apply category-based theming
   const theme = useQuizTheme({
@@ -69,17 +73,43 @@ export function QuizInterface({
       {/* Main content area */}
       <div className="flex-1 flex items-center justify-center p-4">
         <div className="w-full max-w-2xl">
-          {lastAnswerResult ? (
+          {currentQuestion ? (
+            <div className="space-y-6">
+              <QuestionDisplay
+                question={currentQuestion}
+                onSubmit={onSubmitAnswer}
+                isSubmitting={isSubmitting}
+                theme={theme}
+                instantFeedback={showInstantFeedback}
+                answerResult={lastAnswerResult}
+              />
+
+              {/* Show Next Question button after instant feedback */}
+              {showInstantFeedback && lastAnswerResult && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 1.5 }}
+                  className="flex justify-center"
+                >
+                  <Button
+                    onClick={onNextQuestion}
+                    size="lg"
+                    className="px-8 py-3 text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
+                    style={{ backgroundColor: theme.primary }}
+                  >
+                    {lastAnswerResult?.isQuizComplete
+                      ? "View Results"
+                      : "Next Question"}
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
+                </motion.div>
+              )}
+            </div>
+          ) : lastAnswerResult && !showInstantFeedback ? (
             <AnswerFeedback
               result={lastAnswerResult}
               onNext={onNextQuestion}
-              theme={theme}
-            />
-          ) : currentQuestion ? (
-            <QuestionDisplay
-              question={currentQuestion}
-              onSubmit={onSubmitAnswer}
-              isSubmitting={isSubmitting}
               theme={theme}
             />
           ) : (

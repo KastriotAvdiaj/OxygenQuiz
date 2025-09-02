@@ -26,7 +26,7 @@ const buttonVariants = cva(
         destructive:
           "flex justify-center items-center gap-2 rounded-md bg-red-500 text-white hover:bg-red-600 active:scale-95 shadow focus-visible:ring-red-600",
         dashboard:
-          "flex w-full text-foreground bg-background justify-start text-[17px] gap-2.5 items-center rounded hover:bg-muted active:scale-95",
+          "flex w-full text-foreground bg-background justify-start text-[17px] items-center rounded hover:bg-muted active:scale-95",
         quiz: "flex justify-center items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-yellow-400 to-red-500 text-white shadow-lg hover:ring-2 hover:ring-offset-2 hover:ring-yellow-500 active:scale-95 transition-all duration-300",
         fancy: "fancy-button",
       },
@@ -116,7 +116,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         )}
 
         <span
-          className={cn("flex items-center justify-center", {
+          className={cn("flex items-center justify-center gap-2", {
             invisible: isPending,
           })}
         >
