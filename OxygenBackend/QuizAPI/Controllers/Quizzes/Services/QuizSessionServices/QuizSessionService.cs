@@ -130,13 +130,21 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
 
                 if (nextQuizQuestion == null)
                 {
-                    /*session.IsCompleted = true;
-                    session.EndTime = DateTime.UtcNow;
-                    await _context.SaveChangesAsync();*/
-                    // We already finish the session in the SubmitAnswerAsync method when the last question is answered.
+                    // Defensive completion to avoid orphan sessions:
+                    // - quizzes with zero questions
+                    // - all questions already answered but session not yet marked completed
+                    var totalQuestions = session.Quiz?.QuizQuestions?.Count ?? 0;
+                    if (totalQuestions == 0 || answeredQuestionIds.Count >= totalQuestions)
+                    {
+                        session.IsCompleted = true;
+                        session.EndTime = DateTime.UtcNow;
+                        await _context.SaveChangesAsync();
+                        return Result<CurrentQuestionDto>.ValidationFailure("This quiz session is already completed.");
+                    }
+
+                    // No next question due to data inconsistency; surface a validation error.
                     return Result<CurrentQuestionDto>.ValidationFailure("No more questions available.");
                 }
-
                 session.CurrentQuizQuestionId = nextQuizQuestion.Id;
                 session.CurrentQuestionStartTime = DateTime.UtcNow;
                 await _context.SaveChangesAsync();
