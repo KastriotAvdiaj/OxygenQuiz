@@ -68,6 +68,7 @@ namespace QuizAPI.DTOs.Quiz
 
     public class CurrentQuestionDto
     {
+        
         public int QuizQuestionId { get; set; }
         public string QuestionText { get; set; } = string.Empty;
         public List<AnswerOptionDTO> Options { get; set; } = new();

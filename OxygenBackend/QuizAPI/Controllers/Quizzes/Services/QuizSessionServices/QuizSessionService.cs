@@ -130,10 +130,11 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
 
                 if (nextQuizQuestion == null)
                 {
-                    session.IsCompleted = true;
+                    /*session.IsCompleted = true;
                     session.EndTime = DateTime.UtcNow;
-                    await _context.SaveChangesAsync();
-                    return Result<CurrentQuestionDto>.ValidationFailure("Quiz has been completed. No more questions available.");
+                    await _context.SaveChangesAsync();*/
+                    // We already finish the session in the SubmitAnswerAsync method when the last question is answered.
+                    return Result<CurrentQuestionDto>.ValidationFailure("No more questions available.");
                 }
 
                 session.CurrentQuizQuestionId = nextQuizQuestion.Id;
