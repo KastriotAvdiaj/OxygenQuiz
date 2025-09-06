@@ -1,5 +1,6 @@
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using QuizAPI.Common;
 using QuizAPI.Data;
 using QuizAPI.DTOs.Quiz;
@@ -14,12 +15,21 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
         private readonly ApplicationDbContext _context;
         private readonly ILogger<QuizSessionService> _logger;
         private readonly IMapper _mapper;
+        private readonly ISessionAbandonmentService _abandonmentService;
+        private readonly QuizSessionOptions _options;
 
-        public QuizSessionService(ApplicationDbContext context, ILogger<QuizSessionService> logger, IMapper mapper)
+        public QuizSessionService(
+            ApplicationDbContext context,
+            ILogger<QuizSessionService> logger,
+            IMapper mapper,
+            ISessionAbandonmentService abandonmentService,
+            IOptions<QuizSessionOptions> options)
         {
             _context = context;
             _logger = logger;
             _mapper = mapper;
+            _abandonmentService = abandonmentService;
+            _options = options.Value;
         }
 
         #region Live Quiz Flow
@@ -28,62 +38,61 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
         {
             try
             {
-                // Find the session, including the question details needed for mapping
                 var session = await _context.QuizSessions
                     .AsNoTracking()
                     .Include(s => s.CurrentQuizQuestion)
                         .ThenInclude(qq => qq!.Question)
                     .FirstOrDefaultAsync(s => s.Id == sessionId);
 
-                // If we have a current question, load the specific question type data
-                if (session?.CurrentQuizQuestion?.Question != null)
-                {
-                    var questionId = session.CurrentQuizQuestion.Question.Id;
-                    
-                    // Load answer options only for MultipleChoice questions
-                    if (session.CurrentQuizQuestion.Question is MultipleChoiceQuestion)
-                    {
-                        await _context.Entry(session.CurrentQuizQuestion.Question)
-                            .Collection(q => ((MultipleChoiceQuestion)q).AnswerOptions)
-                            .LoadAsync();
-                    }
-                    // True/False and TypeTheAnswer questions don't need additional loading
-                }
-
                 if (session == null)
                 {
                     return Result<QuizStateDto>.ValidationFailure("Session not found.");
                 }
 
+                // Check for abandonment first
+                if (await _abandonmentService.IsSessionAbandonedAsync(session))
+                {
+                    // Mark as abandoned and return completed state
+                    await _context.QuizSessions
+                        .Where(s => s.Id == sessionId)
+                        .ExecuteUpdateAsync(s => s
+                            .SetProperty(x => x.IsCompleted, true)
+                            .SetProperty(x => x.EndTime, DateTime.UtcNow)
+                            .SetProperty(x => x.CurrentQuizQuestionId, (int?)null)
+                            .SetProperty(x => x.CurrentQuestionStartTime, (DateTime?)null));
+
+                    return Result<QuizStateDto>.Success(new QuizStateDto { Status = LiveQuizStatus.Completed });
+                }
+
+                // Load additional data for current question if needed
+                if (session.CurrentQuizQuestion?.Question is MultipleChoiceQuestion)
+                {
+                    await _context.Entry(session.CurrentQuizQuestion.Question)
+                        .Collection(q => ((MultipleChoiceQuestion)q).AnswerOptions)
+                        .LoadAsync();
+                }
+
                 var stateDto = new QuizStateDto();
 
-                // Case 1: The quiz is fully completed.
                 if (session.IsCompleted)
                 {
                     stateDto.Status = LiveQuizStatus.Completed;
                     return Result<QuizStateDto>.Success(stateDto);
                 }
 
-                // Case 2: A question is currently active (the page refresh scenario).
                 if (session.CurrentQuizQuestionId != null && session.CurrentQuestionStartTime.HasValue)
                 {
                     stateDto.Status = LiveQuizStatus.InProgress;
-
-                    // Map the active question to a DTO
                     var activeQuestionDto = _mapper.Map<CurrentQuestionDto>(session.CurrentQuizQuestion);
 
-                    // *** THE CRITICAL CALCULATION ***
                     var timeTaken = DateTime.UtcNow - session.CurrentQuestionStartTime.Value;
                     var timeRemaining = activeQuestionDto.TimeLimitInSeconds - (int)timeTaken.TotalSeconds;
-
-                    // Ensure the remaining time is not negative.
                     activeQuestionDto.TimeRemainingInSeconds = Math.Max(0, timeRemaining);
 
                     stateDto.ActiveQuestion = activeQuestionDto;
                     return Result<QuizStateDto>.Success(stateDto);
                 }
 
-                // Case 3: The quiz is active but no question is currently being timed (user is between questions).
                 stateDto.Status = LiveQuizStatus.BetweenQuestions;
                 return Result<QuizStateDto>.Success(stateDto);
             }
@@ -99,7 +108,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
             try
             {
                 _logger.LogInformation("Getting next question for session {SessionId}", sessionId);
-                
+
                 var session = await _context.QuizSessions
                     .Include(s => s.Quiz)
                         .ThenInclude(q => q.QuizQuestions)
@@ -108,17 +117,16 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
 
                 if (session == null)
                 {
-                    _logger.LogWarning("Session {SessionId} not found", sessionId);
                     return Result<CurrentQuestionDto>.ValidationFailure("Session not found.");
                 }
+
                 if (session.IsCompleted)
                 {
-                    _logger.LogWarning("Session {SessionId} is already completed", sessionId);
                     return Result<CurrentQuestionDto>.ValidationFailure("This quiz session is already completed.");
                 }
+
                 if (session.CurrentQuizQuestionId != null)
                 {
-                    _logger.LogWarning("Session {SessionId} has pending question {QuestionId}", sessionId, session.CurrentQuizQuestionId);
                     return Result<CurrentQuestionDto>.ValidationFailure("An answer for the current question is still pending.");
                 }
 
@@ -130,30 +138,28 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
 
                 if (nextQuizQuestion == null)
                 {
-                    // Defensive completion to avoid orphan sessions:
-                    // - quizzes with zero questions
-                    // - all questions already answered but session not yet marked completed
-                    var totalQuestions = session.Quiz?.QuizQuestions?.Count ?? 0;
-                    if (totalQuestions == 0 || answeredQuestionIds.Count >= totalQuestions)
-                    {
-                        session.IsCompleted = true;
-                        session.EndTime = DateTime.UtcNow;
-                        await _context.SaveChangesAsync();
-                        return Result<CurrentQuestionDto>.ValidationFailure("This quiz session is already completed.");
-                    }
-
-                    // No next question due to data inconsistency; surface a validation error.
                     return Result<CurrentQuestionDto>.ValidationFailure("No more questions available.");
                 }
-                session.CurrentQuizQuestionId = nextQuizQuestion.Id;
-                session.CurrentQuestionStartTime = DateTime.UtcNow;
-                await _context.SaveChangesAsync();
+
+                // Use transaction for atomic update
+                using var transaction = await _context.Database.BeginTransactionAsync();
+                try
+                {
+                    session.CurrentQuizQuestionId = nextQuizQuestion.Id;
+                    session.CurrentQuestionStartTime = DateTime.UtcNow;
+                    await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+                }
+                catch
+                {
+                    await transaction.RollbackAsync();
+                    throw;
+                }
 
                 var fullQuestionForMapping = await _context.QuizQuestions
                     .Include(qq => qq.Question)
                     .FirstAsync(qq => qq.Id == nextQuizQuestion.Id);
 
-                // Load answer options only for MultipleChoice questions
                 if (fullQuestionForMapping.Question is MultipleChoiceQuestion)
                 {
                     await _context.Entry(fullQuestionForMapping.Question)
@@ -175,10 +181,10 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
 
         public async Task<Result<AnswerResultDto>> SubmitAnswerAsync(UserAnswerCM model)
         {
-            const int GRACE_PERIOD_SECONDS = 2;
-
             try
             {
+                using var transaction = await _context.Database.BeginTransactionAsync();
+
                 var session = await _context.QuizSessions
                     .Include(s => s.CurrentQuizQuestion)
                         .ThenInclude(qq => qq!.Question)
@@ -193,22 +199,17 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                 if (session.CurrentQuizQuestionId != model.QuizQuestionId)
                     return Result<AnswerResultDto>.ValidationFailure("Submitted answer is for the wrong question.");
 
-                var timeLimit = session.CurrentQuizQuestion!.TimeLimitInSeconds + GRACE_PERIOD_SECONDS;
+                var timeLimit = session.CurrentQuizQuestion!.TimeLimitInSeconds + _options.GracePeriodSeconds;
                 var timeTaken = DateTime.UtcNow - session.CurrentQuestionStartTime.Value;
 
                 var userAnswer = _mapper.Map<UserAnswer>(model);
                 userAnswer.SubmittedTime = DateTime.UtcNow;
 
-                // For True/False questions, we need to handle the selectedOptionId differently
-                // because True/False questions don't have actual AnswerOption records in the database
-                if (session.CurrentQuizQuestion!.Question is TrueFalseQuestion)
+                // Handle True/False questions
+                if (session.CurrentQuizQuestion.Question is TrueFalseQuestion)
                 {
-                    // For True/False questions, store the boolean choice in a way that doesn't reference AnswerOptions
-                    // We'll keep the selectedOptionId for grading logic but set it to null for database storage
                     var originalSelectedOptionId = userAnswer.SelectedOptionId;
-                    userAnswer.SelectedOptionId = null; // Don't reference non-existent AnswerOption
-                    
-                    // Store the boolean choice in submittedAnswer for True/False questions
+                    userAnswer.SelectedOptionId = null;
                     userAnswer.SubmittedAnswer = originalSelectedOptionId == 1 ? "True" : "False";
                 }
 
@@ -219,7 +220,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                 }
                 else
                 {
-                    var (isCorrect, score) = await GradeAnswerAsync(session.CurrentQuizQuestion!.Question, userAnswer, session.CurrentQuestionStartTime.Value);
+                    var (isCorrect, score) = await GradeAnswerAsync(session.CurrentQuizQuestion.Question, userAnswer, session.CurrentQuestionStartTime.Value);
                     userAnswer.Status = isCorrect ? AnswerStatus.Correct : AnswerStatus.Incorrect;
                     userAnswer.Score = score;
                 }
@@ -229,17 +230,19 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                 session.CurrentQuestionStartTime = null;
 
                 _context.UserAnswers.Add(userAnswer);
-                await _context.SaveChangesAsync();
 
                 var totalQuestionsInQuiz = await _context.QuizQuestions.CountAsync(qq => qq.QuizId == session.QuizId);
-                var answeredQuestions = await _context.UserAnswers.CountAsync(ua => ua.SessionId == session.Id);
+                var answeredQuestions = await _context.UserAnswers.CountAsync(ua => ua.SessionId == session.Id) + 1; // +1 for current answer
                 bool isQuizComplete = totalQuestionsInQuiz == answeredQuestions;
+
                 if (isQuizComplete)
                 {
                     session.IsCompleted = true;
                     session.EndTime = DateTime.UtcNow;
-                    await _context.SaveChangesAsync();
                 }
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
 
                 var resultDto = new AnswerResultDto
                 {
@@ -257,105 +260,6 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
             }
         }
 
-        private async Task<(bool IsCorrect, int Score)> GradeAnswerAsync(QuestionBase question, UserAnswer answer, DateTime questionStartTime)
-        {
-            bool isCorrect = false;
-
-            switch (question)
-            {
-                case MultipleChoiceQuestion mcq:
-                    var correctOption = await _context.AnswerOptions
-                        .AsNoTracking()
-                        .FirstOrDefaultAsync(o => o.QuestionId == mcq.Id && o.IsCorrect);
-                    isCorrect = correctOption?.Id == answer.SelectedOptionId;
-                    break;
-                case TrueFalseQuestion tfq:
-                    // For True/False questions, we now store the answer in submittedAnswer as "True" or "False"
-                    bool submittedBool = string.Equals(answer.SubmittedAnswer, "True", StringComparison.OrdinalIgnoreCase);
-                    isCorrect = tfq.CorrectAnswer == submittedBool;
-                    break;
-                case TypeTheAnswerQuestion taq:
-                    // TypeTheAnswer questions store the correct answer directly in the question entity
-                    if (taq.IsCaseSensitive)
-                    {
-                        isCorrect = string.Equals(taq.CorrectAnswer, answer.SubmittedAnswer, StringComparison.Ordinal);
-                    }
-                    else
-                    {
-                        isCorrect = string.Equals(taq.CorrectAnswer, answer.SubmittedAnswer, StringComparison.OrdinalIgnoreCase);
-                    }
-                    
-                    // Also check acceptable answers if any are defined
-                    if (!isCorrect && taq.AcceptableAnswers.Any())
-                    {
-                        var comparison = taq.IsCaseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
-                        isCorrect = taq.AcceptableAnswers.Any(acceptable => 
-                            string.Equals(acceptable, answer.SubmittedAnswer, comparison));
-                    }
-                    break;
-            }
-
-            // Calculate score only if answer is correct
-            if (!isCorrect)
-            {
-                return (false, 0);
-            }
-
-            // Get the QuizQuestion to access PointSystem and TimeLimitInSeconds
-            var quizQuestion = await _context.QuizQuestions
-                .AsNoTracking()
-                .FirstOrDefaultAsync(qq => qq.Id == answer.QuizQuestionId);
-
-            if (quizQuestion == null)
-            {
-                return (true, 10); // Fallback score
-            }
-
-            // Calculate score based on time remaining and point system
-            var score = CalculateScore(quizQuestion, answer, questionStartTime);
-            return (true, score);
-        }
-
-        private int CalculateScore(QuizQuestion quizQuestion, UserAnswer answer, DateTime questionStartTime)
-        {
-            const int BASE_POINTS = 10;
-            double timeBonus = 0; // Default to zero bonus
-
-            // Calculate time bonus using the provided question start time
-            var timeTaken = answer.SubmittedTime - questionStartTime;
-
-            // Ensure timeTaken is not negative (e.g., due to clock sync issues)
-            if (timeTaken.TotalSeconds > 0)
-            {
-                var timeRemainingSeconds = Math.Max(0, quizQuestion.TimeLimitInSeconds - (int)timeTaken.TotalSeconds);
-
-                // Time bonus: 0-50% extra points based on time remaining.
-                // Avoid division by zero if TimeLimitInSeconds is 0.
-                if (quizQuestion.TimeLimitInSeconds > 0)
-                {
-                    timeBonus = (double)timeRemainingSeconds / quizQuestion.TimeLimitInSeconds * 0.5;
-                }
-            }
-
-            var pointsWithTimeBonus = (int)(BASE_POINTS * (1 + timeBonus));
-
-            // Apply point system multiplier
-            var multiplier = quizQuestion.PointSystem switch
-            {
-                PointSystem.Standard => 1,
-                PointSystem.Double => 2,
-                PointSystem.Quadruple => 4,
-                _ => 1
-            };
-
-            var finalScore = pointsWithTimeBonus * multiplier;
-
-            _logger.LogDebug("Score calculation - Base: {Base}, Time bonus: {TimeBonus:P}, Multiplier: {Multiplier}x, Final: {Final}",
-                BASE_POINTS, timeBonus, multiplier, finalScore);
-
-            return Math.Max(1, finalScore); // Minimum 1 point for correct answers
-        }
-
         #endregion
 
         #region Session Management
@@ -364,67 +268,27 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
         {
             try
             {
-                var quiz = await _context.Quizzes.AsNoTracking().FirstOrDefaultAsync(q => q.Id == model.QuizId && q.IsActive && q.IsPublished);
+                var quiz = await _context.Quizzes
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(q => q.Id == model.QuizId && q.IsActive && q.IsPublished);
+
                 if (quiz == null)
                     return Result<QuizSessionDto>.ValidationFailure("Quiz not found or not available.");
 
-                // Check for existing sessions and provide detailed information
-                var existingSessions = await _context.QuizSessions.AsNoTracking()
-                    .Where(s => s.QuizId == model.QuizId && s.UserId == model.UserId)
-                    .ToListAsync();
+                // Use abandonment service to check for existing sessions
+                var existingActiveSession = await _abandonmentService.GetActiveSessionForUserAsync(model.UserId, model.QuizId);
 
-                var activeSession = existingSessions.FirstOrDefault(s => !s.IsCompleted);
-                if (activeSession != null)
+                if (existingActiveSession != null)
                 {
-                    // Log details about the active session for debugging
-                    _logger.LogWarning("User {UserId} attempted to create new session for quiz {QuizId} but has active session {SessionId}. " +
-                                     "Session started: {StartTime}, Current question start: {CurrentQuestionStart}, IsCompleted: {IsCompleted}",
-                                     model.UserId, model.QuizId, activeSession.Id, activeSession.StartTime, 
-                                     activeSession.CurrentQuestionStartTime, activeSession.IsCompleted);
+                    var timeSinceLastActivity = existingActiveSession.CurrentQuestionStartTime.HasValue
+                        ? DateTime.UtcNow - existingActiveSession.CurrentQuestionStartTime.Value
+                        : DateTime.UtcNow - existingActiveSession.StartTime;
 
-                    // Calculate the expected quiz duration based on question time limits
-                    var quizQuestions = await _context.QuizQuestions
-                        .Where(qq => qq.QuizId == model.QuizId)
-                        .ToListAsync();
-                    
-                    var totalQuizTimeInSeconds = quizQuestions.Sum(qq => qq.TimeLimitInSeconds) + (quizQuestions.Count * 5); // 5 seconds grace per question
-                    var expectedQuizDuration = TimeSpan.FromSeconds(totalQuizTimeInSeconds);
-                    
-                    // Check if this session should be considered abandoned based on actual quiz duration
-                    var timeSinceStart = DateTime.UtcNow - activeSession.StartTime;
-                    var timeSinceLastActivity = activeSession.CurrentQuestionStartTime.HasValue 
-                        ? DateTime.UtcNow - activeSession.CurrentQuestionStartTime.Value 
-                        : timeSinceStart;
-
-                    // Session is abandoned if:
-                    // 1. Total time since start exceeds expected quiz duration + 50% buffer, OR
-                    // 2. Time since last activity exceeds 2x the longest question time limit + 1 minute buffer
-                    var maxQuestionTime = quizQuestions.Any() ? quizQuestions.Max(qq => qq.TimeLimitInSeconds) : 300; // Default 5 minutes
-                    var activityTimeout = TimeSpan.FromSeconds(maxQuestionTime * 2 + 60); // 2x longest question + 1 minute
-                    var totalTimeout = expectedQuizDuration.Add(TimeSpan.FromMinutes(expectedQuizDuration.TotalMinutes * 0.5)); // +50% buffer
-
-                    if (timeSinceStart > totalTimeout || timeSinceLastActivity > activityTimeout)
-                    {
-                        _logger.LogInformation("Marking abandoned session {SessionId} as completed due to inactivity", activeSession.Id);
-                        
-                        // Mark the abandoned session as completed
-                        var sessionToComplete = await _context.QuizSessions.FirstOrDefaultAsync(s => s.Id == activeSession.Id);
-                        if (sessionToComplete != null)
-                        {
-                            sessionToComplete.IsCompleted = true;
-                            sessionToComplete.EndTime = DateTime.UtcNow;
-                            sessionToComplete.CurrentQuizQuestionId = null;
-                            sessionToComplete.CurrentQuestionStartTime = null;
-                            await _context.SaveChangesAsync();
-                            _logger.LogInformation("Successfully marked session {SessionId} as completed", activeSession.Id);
-                        }
-                    }
-                    else
-                    {
-                        return Result<QuizSessionDto>.ValidationFailure($"You already have an active session for this quiz. Last activity: {timeSinceLastActivity.TotalMinutes:F1} minutes ago.");
-                    }
+                    return Result<QuizSessionDto>.ValidationFailure(
+                        $"You already have an active session for this quiz. Last activity: {timeSinceLastActivity.TotalMinutes:F1} minutes ago.");
                 }
 
+                // Create new session
                 var session = _mapper.Map<QuizSession>(model);
                 session.Id = Guid.NewGuid();
                 session.StartTime = DateTime.UtcNow;
@@ -448,10 +312,18 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
 
         public async Task<Result<QuizSessionDto>> GetSessionAsync(Guid sessionId)
         {
-            var sessionDto = await GetSessionDtoAsync(sessionId);
-            return sessionDto != null
-                ? Result<QuizSessionDto>.Success(sessionDto)
-                : Result<QuizSessionDto>.ValidationFailure("Quiz session not found.");
+            try
+            {
+                var sessionDto = await GetSessionDtoAsync(sessionId);
+                return sessionDto != null
+                    ? Result<QuizSessionDto>.Success(sessionDto)
+                    : Result<QuizSessionDto>.ValidationFailure("Quiz session not found.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving session {SessionId}", sessionId);
+                return Result<QuizSessionDto>.Failure("Failed to retrieve session.");
+            }
         }
 
         public async Task<Result<List<QuizSessionSummaryDto>>> GetUserSessionsAsync(Guid userId)
@@ -461,7 +333,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                 var sessions = await _context.QuizSessions
                     .AsNoTracking()
                     .Include(s => s.Quiz)
-                        .ThenInclude(q => q.QuizQuestions) // Required for TotalQuestions mapping
+                        .ThenInclude(q => q.QuizQuestions)
                     .Include(s => s.UserAnswers)
                     .Where(s => s.UserId == userId)
                     .OrderByDescending(s => s.StartTime)
@@ -509,58 +381,9 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
         {
             try
             {
-                // Get all incomplete sessions
-                var incompleteSessions = await _context.QuizSessions
-                    .Where(s => !s.IsCompleted)
-                    .Include(s => s.Quiz)
-                        .ThenInclude(q => q.QuizQuestions)
-                    .ToListAsync();
-
-                var sessionsToCleanup = new List<QuizSession>();
-
-                foreach (var session in incompleteSessions)
-                {
-                    // Calculate expected quiz duration based on question time limits
-                    var totalQuizTimeInSeconds = session.Quiz.QuizQuestions.Sum(qq => qq.TimeLimitInSeconds) + (session.Quiz.QuizQuestions.Count * 5);
-                    var expectedQuizDuration = TimeSpan.FromSeconds(totalQuizTimeInSeconds);
-                    
-                    var timeSinceStart = DateTime.UtcNow - session.StartTime;
-                    var timeSinceLastActivity = session.CurrentQuestionStartTime.HasValue 
-                        ? DateTime.UtcNow - session.CurrentQuestionStartTime.Value 
-                        : timeSinceStart;
-
-                    // More aggressive cleanup for manual trigger - 25% buffer instead of 50%
-                    var maxQuestionTime = session.Quiz.QuizQuestions.Any() ? session.Quiz.QuizQuestions.Max(qq => qq.TimeLimitInSeconds) : 300;
-                    var activityTimeout = TimeSpan.FromSeconds(maxQuestionTime * 1.5 + 60); // 1.5x longest question + 1 minute
-                    var totalTimeout = expectedQuizDuration.Add(TimeSpan.FromMinutes(expectedQuizDuration.TotalMinutes * 0.25)); // +25% buffer for manual cleanup
-
-                    if (timeSinceStart > totalTimeout || timeSinceLastActivity > activityTimeout)
-                    {
-                        sessionsToCleanup.Add(session);
-                        _logger.LogInformation("Manual cleanup - Session {SessionId} marked for cleanup - Total time: {TotalTime:F1}min, Activity time: {ActivityTime:F1}min, Expected duration: {ExpectedDuration:F1}min", 
-                            session.Id, timeSinceStart.TotalMinutes, timeSinceLastActivity.TotalMinutes, expectedQuizDuration.TotalMinutes);
-                    }
-                }
-
-                if (sessionsToCleanup.Any())
-                {
-                    _logger.LogInformation("Manual cleanup - Found {Count} abandoned quiz sessions to clean up", sessionsToCleanup.Count);
-
-                    foreach (var session in sessionsToCleanup)
-                    {
-                        session.IsCompleted = true;
-                        session.EndTime = DateTime.UtcNow;
-                        session.CurrentQuizQuestionId = null;
-                        session.CurrentQuestionStartTime = null;
-                    }
-
-                    await _context.SaveChangesAsync();
-                    _logger.LogInformation("Manual cleanup - Successfully cleaned up {Count} abandoned quiz sessions", sessionsToCleanup.Count);
-                    return Result<int>.Success(sessionsToCleanup.Count);
-                }
-
-                _logger.LogInformation("Manual cleanup - No abandoned quiz sessions found");
-                return Result<int>.Success(0);
+                // Delegate to abandonment service
+                var cleanedCount = await _abandonmentService.CleanupAbandonedSessionsAsync();
+                return Result<int>.Success(cleanedCount);
             }
             catch (Exception ex)
             {
@@ -579,7 +402,6 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                 if (session == null)
                     return Result.ValidationFailure("Quiz session not found.");
 
-                // Note: EF Core will handle cascading delete for UserAnswers if configured.
                 _context.QuizSessions.Remove(session);
                 await _context.SaveChangesAsync();
 
@@ -590,6 +412,81 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                 _logger.LogError(ex, "Error deleting quiz session {SessionId}", sessionId);
                 return Result.Failure("Failed to delete quiz session.");
             }
+        }
+
+        #endregion
+
+        #region Private Helper Methods
+
+        private async Task<(bool IsCorrect, int Score)> GradeAnswerAsync(QuestionBase question, UserAnswer answer, DateTime questionStartTime)
+        {
+            bool isCorrect = false;
+
+            switch (question)
+            {
+                case MultipleChoiceQuestion mcq:
+                    var correctOption = await _context.AnswerOptions
+                        .AsNoTracking()
+                        .FirstOrDefaultAsync(o => o.QuestionId == mcq.Id && o.IsCorrect);
+                    isCorrect = correctOption?.Id == answer.SelectedOptionId;
+                    break;
+                case TrueFalseQuestion tfq:
+                    bool submittedBool = string.Equals(answer.SubmittedAnswer, "True", StringComparison.OrdinalIgnoreCase);
+                    isCorrect = tfq.CorrectAnswer == submittedBool;
+                    break;
+                case TypeTheAnswerQuestion taq:
+                    var comparison = taq.IsCaseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+                    isCorrect = string.Equals(taq.CorrectAnswer, answer.SubmittedAnswer, comparison);
+
+                    if (!isCorrect && taq.AcceptableAnswers.Any())
+                    {
+                        isCorrect = taq.AcceptableAnswers.Any(acceptable =>
+                            string.Equals(acceptable, answer.SubmittedAnswer, comparison));
+                    }
+                    break;
+            }
+
+            if (!isCorrect) return (false, 0);
+
+            var quizQuestion = await _context.QuizQuestions
+                .AsNoTracking()
+                .FirstOrDefaultAsync(qq => qq.Id == answer.QuizQuestionId);
+
+            if (quizQuestion == null) return (true, 10);
+
+            var score = CalculateScore(quizQuestion, answer, questionStartTime);
+            return (true, score);
+        }
+
+        private int CalculateScore(QuizQuestion quizQuestion, UserAnswer answer, DateTime questionStartTime)
+        {
+            const int BASE_POINTS = 10;
+            double timeBonus = 0;
+
+            var timeTaken = answer.SubmittedTime - questionStartTime;
+
+            if (timeTaken.TotalSeconds > 0 && quizQuestion.TimeLimitInSeconds > 0)
+            {
+                var timeRemainingSeconds = Math.Max(0, quizQuestion.TimeLimitInSeconds - (int)timeTaken.TotalSeconds);
+                timeBonus = (double)timeRemainingSeconds / quizQuestion.TimeLimitInSeconds * 0.5;
+            }
+
+            var pointsWithTimeBonus = (int)(BASE_POINTS * (1 + timeBonus));
+
+            var multiplier = quizQuestion.PointSystem switch
+            {
+                PointSystem.Standard => 1,
+                PointSystem.Double => 2,
+                PointSystem.Quadruple => 4,
+                _ => 1
+            };
+
+            var finalScore = pointsWithTimeBonus * multiplier;
+
+            _logger.LogDebug("Score calculation - Base: {Base}, Time bonus: {TimeBonus:P}, Multiplier: {Multiplier}x, Final: {Final}",
+                BASE_POINTS, timeBonus, multiplier, finalScore);
+
+            return Math.Max(1, finalScore);
         }
 
         private async Task<QuizSessionDto?> GetSessionDtoAsync(Guid sessionId)
