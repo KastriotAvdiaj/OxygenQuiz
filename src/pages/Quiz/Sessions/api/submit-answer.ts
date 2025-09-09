@@ -29,6 +29,8 @@ export const useSubmitAnswer = ({ mutationConfig }: UseSubmitAnswerOptions = {})
   return useMutation({
     mutationFn: submitAnswer,
     onSuccess: (data, variables, context) => {
+      console.log("Backend response:", data);
+    console.log("Input variables:", variables);
       // After submitting, the live state has changed (we are now "BetweenQuestions").
       // Invalidate the current state query to reflect this.
       queryClient.invalidateQueries({ 

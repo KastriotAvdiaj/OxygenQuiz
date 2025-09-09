@@ -144,6 +144,7 @@ export function QuizPage({
           // Check if current question has instant feedback enabled
           if (currentQuestion?.instantFeedback) {
             // Show instant feedback
+            console.log(currentQuestion)
             setShowInstantFeedback(true);
 
             // Auto-advance to next question after showing feedback

@@ -1,8 +1,6 @@
 ﻿using QuizAPI.Models.Quiz;
 using QuizAPI.Models;
-using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
-using QuizAPI.DTOs.Question;
 using Microsoft.EntityFrameworkCore;
 
 namespace QuizAPI.ManyToManyTables

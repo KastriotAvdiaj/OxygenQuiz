@@ -23,7 +23,7 @@ export const useCurrentStateData = ({ sessionId, queryConfig }: UseCurrentStateO
   return useQuery({
     ...getCurrentStateQueryOptions({ sessionId: sessionId! }), // The ! is safe because of the 'enabled' flag
     // This query should only run if a sessionId is actually provided.
-    enabled: !!sessionId, 
+    enabled: !!sessionId, // Run only if sessionId is truthy, which is why we define it as string | null. 
     ...queryConfig,
   });
 };

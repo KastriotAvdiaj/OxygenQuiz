@@ -103,6 +103,8 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
             }
         }
 
+        // Re-name to StartNextQuestionAsync, or AdvanceToNextQuestionAsync, since the name GetNextQuestionAsync is misleading
+        // Using transaction = not wrong in this method, but a bit redundant.
         public async Task<Result<CurrentQuestionDto>> GetNextQuestionAsync(Guid sessionId)
         {
             try
@@ -125,11 +127,6 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                     return Result<CurrentQuestionDto>.ValidationFailure("This quiz session is already completed.");
                 }
 
-                if (session.CurrentQuizQuestionId != null)
-                {
-                    return Result<CurrentQuestionDto>.ValidationFailure("An answer for the current question is still pending.");
-                }
-
                 var answeredQuestionIds = session.UserAnswers.Select(ua => ua.QuizQuestionId).ToHashSet();
                 var nextQuizQuestion = session.Quiz.QuizQuestions
                     .Where(qq => !answeredQuestionIds.Contains(qq.Id))
@@ -141,19 +138,16 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                     return Result<CurrentQuestionDto>.ValidationFailure("No more questions available.");
                 }
 
-                // Use transaction for atomic update
-                using var transaction = await _context.Database.BeginTransactionAsync();
-                try
+                // Atomic update with race condition protection
+                var updatedRows = await _context.QuizSessions
+                    .Where(s => s.Id == sessionId && s.CurrentQuizQuestionId == null && !s.IsCompleted)
+                    .ExecuteUpdateAsync(s => s
+                        .SetProperty(x => x.CurrentQuizQuestionId, nextQuizQuestion.Id)
+                        .SetProperty(x => x.CurrentQuestionStartTime, DateTime.UtcNow));
+
+                if (updatedRows == 0)
                 {
-                    session.CurrentQuizQuestionId = nextQuizQuestion.Id;
-                    session.CurrentQuestionStartTime = DateTime.UtcNow;
-                    await _context.SaveChangesAsync();
-                    await transaction.CommitAsync();
-                }
-                catch
-                {
-                    await transaction.RollbackAsync();
-                    throw;
+                    return Result<CurrentQuestionDto>.ValidationFailure("An answer for the current question is still pending.");
                 }
 
                 var fullQuestionForMapping = await _context.QuizQuestions
