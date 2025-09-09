@@ -18,6 +18,9 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
         Task<Result<QuizSessionDto>> CompleteSessionAsync(Guid sessionId);
         Task<Result<int>> CleanupAbandonedSessionsAsync();
         Task<Result> DeleteSessionAsync(Guid sessionId);
+
+        Task<Result<QuizSessionDto>> AbandonAndCreateNewSessionAsync(Guid existingSessionId, QuizSessionCM model);
+        Task<Result<QuizSessionDto>> ResumeSessionAsync(Guid sessionId, Guid userId);
     }
 
 }   
