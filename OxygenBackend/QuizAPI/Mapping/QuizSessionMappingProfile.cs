@@ -18,7 +18,9 @@ namespace QuizAPI.Mapping
 
             CreateMap<QuizSession, QuizSessionDto>()
                 .ForMember(dest => dest.QuizTitle, opt => opt.MapFrom(src => src.Quiz.Title))
-                .ForMember(dest => dest.IsCompleted, opt => opt.MapFrom(src => src.IsCompleted));
+                .ForMember(dest => dest.IsCompleted, opt => opt.MapFrom(src => src.IsCompleted))
+                .ForMember(dest => dest.AbandonmentReason, opt => opt.MapFrom(src => src.AbandonmentReason))
+                .ForMember(dest => dest.AbandonedAt, opt => opt.MapFrom(src => src.AbandonedAt)); ;
 
             CreateMap<QuizSession, QuizSessionSummaryDto>()
                 .ForMember(dest => dest.QuizTitle, opt => opt.MapFrom(src => src.Quiz.Title))
@@ -26,7 +28,9 @@ namespace QuizAPI.Mapping
                 .ForMember(dest => dest.CorrectAnswers, opt => opt.MapFrom(src => src.UserAnswers.Count(ua => ua.Status == AnswerStatus.Correct)))
                 .ForMember(dest => dest.IsCompleted, opt => opt.MapFrom(src => src.IsCompleted))
                 .ForMember(dest => dest.Duration, opt => opt.MapFrom(src =>
-                    src.EndTime.HasValue ? (src.EndTime.Value - src.StartTime) : (TimeSpan?)null));
+                    src.EndTime.HasValue ? (src.EndTime.Value - src.StartTime) : (TimeSpan?)null))
+                .ForMember(dest => dest.AbandonmentReason, opt => opt.MapFrom(src => src.AbandonmentReason))
+                .ForMember(dest => dest.AbandonedAt, opt => opt.MapFrom(src => src.AbandonedAt)); ;
 
 
             // --- UserAnswer Mappings ---

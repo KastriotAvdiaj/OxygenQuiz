@@ -54,12 +54,14 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                 {
                     // Mark as abandoned and return completed state
                     await _context.QuizSessions
-                        .Where(s => s.Id == sessionId)
-                        .ExecuteUpdateAsync(s => s
-                            .SetProperty(x => x.IsCompleted, true)
-                            .SetProperty(x => x.EndTime, DateTime.UtcNow)
-                            .SetProperty(x => x.CurrentQuizQuestionId, (int?)null)
-                            .SetProperty(x => x.CurrentQuestionStartTime, (DateTime?)null));
+                    .Where(s => s.Id == sessionId)
+                    .ExecuteUpdateAsync(s => s
+                        .SetProperty(x => x.IsCompleted, true)
+                        .SetProperty(x => x.EndTime, DateTime.UtcNow)
+                        .SetProperty(x => x.CurrentQuizQuestionId, (int?)null)
+                        .SetProperty(x => x.CurrentQuestionStartTime, (DateTime?)null)
+                        .SetProperty(x => x.AbandonmentReason, AbandonmentReason.Timeout) // NEW
+                        .SetProperty(x => x.AbandonedAt, DateTime.UtcNow));
 
                     return Result<QuizStateDto>.Success(new QuizStateDto { Status = LiveQuizStatus.Completed });
                 }
@@ -269,20 +271,25 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                 if (quiz == null)
                     return Result<QuizSessionDto>.ValidationFailure("Quiz not found or not available.");
 
-                // Use abandonment service to check for existing sessions
+                // Check for existing active session for this user/quiz combination
                 var existingActiveSession = await _abandonmentService.GetActiveSessionForUserAsync(model.UserId, model.QuizId);
 
                 if (existingActiveSession != null)
                 {
+                    // Don't create a new session, instead return information about the existing one
                     var timeSinceLastActivity = existingActiveSession.CurrentQuestionStartTime.HasValue
                         ? DateTime.UtcNow - existingActiveSession.CurrentQuestionStartTime.Value
                         : DateTime.UtcNow - existingActiveSession.StartTime;
 
+                    var existingSessionDto = await GetSessionDtoAsync(existingActiveSession.Id);
+
                     return Result<QuizSessionDto>.ValidationFailure(
-                        $"You already have an active session for this quiz. Last activity: {timeSinceLastActivity.TotalMinutes:F1} minutes ago.");
+                        $"You have an active session for this quiz (started {timeSinceLastActivity.TotalMinutes:F1} minutes ago). " +
+                        "Please either continue your existing session or abandon it to start fresh.",
+                        existingSessionDto); // Pass existing session data in the result
                 }
 
-                // Create new session
+                // No existing session, create new one
                 var session = _mapper.Map<QuizSession>(model);
                 session.Id = Guid.NewGuid();
                 session.StartTime = DateTime.UtcNow;
@@ -301,6 +308,89 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
             {
                 _logger.LogError(ex, "Error creating quiz session for user {UserId} and quiz {QuizId}", model.UserId, model.QuizId);
                 return Result<QuizSessionDto>.Failure("Failed to create quiz session.");
+            }
+        }
+
+        public async Task<Result<QuizSessionDto>> AbandonAndCreateNewSessionAsync(Guid existingSessionId, QuizSessionCM model)
+        {
+            try
+            {
+                using var transaction = await _context.Database.BeginTransactionAsync();
+
+                // First, abandon the existing session
+                var existingSession = await _context.QuizSessions
+                    .FirstOrDefaultAsync(s => s.Id == existingSessionId && s.UserId == model.UserId);
+
+                if (existingSession == null)
+                    return Result<QuizSessionDto>.ValidationFailure("Existing session not found or doesn't belong to you.");
+
+                if (existingSession.IsCompleted)
+                    return Result<QuizSessionDto>.ValidationFailure("Existing session is already completed.");
+
+                // Mark existing session as abandoned with proper tracking
+                existingSession.IsCompleted = true;
+                existingSession.EndTime = DateTime.UtcNow;
+                existingSession.CurrentQuizQuestionId = null;
+                existingSession.CurrentQuestionStartTime = null;
+                existingSession.AbandonmentReason = AbandonmentReason.UserInitiated; // NEW
+                existingSession.AbandonedAt = DateTime.UtcNow; // NEW
+
+                // Create new session
+                var quiz = await _context.Quizzes
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(q => q.Id == model.QuizId && q.IsActive && q.IsPublished);
+
+                if (quiz == null)
+                    return Result<QuizSessionDto>.ValidationFailure("Quiz not found or not available.");
+
+                var newSession = _mapper.Map<QuizSession>(model);
+                newSession.Id = Guid.NewGuid();
+                newSession.StartTime = DateTime.UtcNow;
+                newSession.TotalScore = 0;
+                newSession.IsCompleted = false;
+                newSession.CurrentQuizQuestionId = null;
+                newSession.CurrentQuestionStartTime = null;
+                newSession.AbandonmentReason = null; // NEW - ensure new session is clean
+                newSession.AbandonedAt = null; // NEW
+
+                _context.QuizSessions.Add(newSession);
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                var sessionDto = await GetSessionDtoAsync(newSession.Id);
+                return Result<QuizSessionDto>.Success(sessionDto!);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error abandoning session {ExistingSessionId} and creating new session for user {UserId}",
+                    existingSessionId, model.UserId);
+                return Result<QuizSessionDto>.Failure("Failed to abandon existing session and create new one.");
+            }
+        }
+
+        public async Task<Result<QuizSessionDto>> ResumeSessionAsync(Guid sessionId, Guid userId)
+        {
+            try
+            {
+                var session = await _context.QuizSessions
+                    .FirstOrDefaultAsync(s => s.Id == sessionId && s.UserId == userId && !s.IsCompleted);
+
+                if (session == null)
+                    return Result<QuizSessionDto>.ValidationFailure("Session not found or already completed.");
+
+                // Check if session was abandoned due to inactivity
+                if (await _abandonmentService.IsSessionAbandonedAsync(session))
+                {
+                    return Result<QuizSessionDto>.ValidationFailure("This session has been abandoned due to inactivity.");
+                }
+
+                var sessionDto = await GetSessionDtoAsync(sessionId);
+                return Result<QuizSessionDto>.Success(sessionDto!);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error resuming session {SessionId} for user {UserId}", sessionId, userId);
+                return Result<QuizSessionDto>.Failure("Failed to resume session.");
             }
         }
 

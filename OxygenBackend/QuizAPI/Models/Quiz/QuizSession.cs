@@ -4,6 +4,13 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace QuizAPI.Models.Quiz
 {
+
+    public enum AbandonmentReason
+    {
+        UserInitiated,      // User chose to abandon
+        Timeout,           // Automatic abandonment due to inactivity
+        SystemCleanup      // Background cleanup job
+    }
     public class QuizSession
     {
         [Key]
@@ -24,5 +31,8 @@ namespace QuizAPI.Models.Quiz
         [ForeignKey(nameof(CurrentQuizQuestionId))]
         public virtual QuizQuestion? CurrentQuizQuestion { get; set; }
         public virtual ICollection<UserAnswer> UserAnswers { get; set; } = new List<UserAnswer>();
+
+        public AbandonmentReason? AbandonmentReason { get; set; }
+        public DateTime? AbandonedAt { get; set; }
     }
 }

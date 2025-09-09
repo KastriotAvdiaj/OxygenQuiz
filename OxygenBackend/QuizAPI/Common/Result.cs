@@ -35,6 +35,11 @@ public class Result<T> : IResult // <-- Implement the interface
     public static Result<T> Failure(string errorMessage) => new(false, errorMessage: errorMessage);
     public static Result<T> ValidationFailure(List<string> errors) => new(false, validationErrors: errors);
     public static Result<T> ValidationFailure(string error) => new(false, validationErrors: new List<string> { error });
+
+
+    //Method to return validation failure with data
+    public static Result<T> ValidationFailure(string error, T? data)
+    => new(false, data, validationErrors: new List<string> { error });
 }
 
 /// <summary>

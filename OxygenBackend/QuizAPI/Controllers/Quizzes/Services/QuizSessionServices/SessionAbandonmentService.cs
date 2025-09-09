@@ -143,7 +143,9 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                     .SetProperty(x => x.IsCompleted, true)
                     .SetProperty(x => x.EndTime, DateTime.UtcNow)
                     .SetProperty(x => x.CurrentQuizQuestionId, (int?)null)
-                    .SetProperty(x => x.CurrentQuestionStartTime, (DateTime?)null));
+                    .SetProperty(x => x.CurrentQuestionStartTime, (DateTime?)null)
+                    .SetProperty(x => x.AbandonmentReason, AbandonmentReason.Timeout)
+                    .SetProperty(x => x.AbandonedAt, DateTime.UtcNow)); ;
 
             _logger.LogInformation("Marked {Count} sessions as abandoned: {SessionIds}",
                 sessions.Count, string.Join(", ", sessionIds));

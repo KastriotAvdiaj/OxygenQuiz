@@ -51,7 +51,9 @@ namespace QuizAPI.DTOs.Quiz
             public int TotalScore { get; set; }
             public bool IsCompleted { get; set; }
             public List<UserAnswerDto> UserAnswers { get; set; } = new();
-        }
+            public AbandonmentReason? AbandonmentReason { get; set; }
+            public DateTime? AbandonedAt { get; set; }
+    }
 
         public class UserAnswerDto
         {
@@ -89,7 +91,9 @@ namespace QuizAPI.DTOs.Quiz
             public int CorrectAnswers { get; set; }
             public bool IsCompleted { get; set; }
             public TimeSpan? Duration { get; set; }
-        }
+            public AbandonmentReason? AbandonmentReason { get; set; }
+            public DateTime? AbandonedAt { get; set; }
+    }
 
     public class AnswerResultDto
     {
