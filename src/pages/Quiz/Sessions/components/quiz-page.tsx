@@ -1,8 +1,12 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom"; // Assuming you use React Router
+import { useNavigate } from "react-router-dom";
 import { Loader2, AlertCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { AnswerResult, CurrentQuestion } from "../quiz-session-types";
+import {
+  AnswerResult,
+  CurrentQuestion,
+  QuizSession,
+} from "../quiz-session-types";
 import { useCreateQuizSession } from "../api/create-quiz-session";
 import { useGetNextQuestion } from "../api/get-next-question";
 import { useSubmitAnswer } from "../api/submit-answer";
@@ -14,288 +18,324 @@ import {
 
 interface QuizPageProps {
   quizId: number;
-  // This would come from your auth context in a real app
   userId: string;
-  // Optional category theming props
   categoryColorPalette?: CategoryColorPalette;
-  quizTitle?: string;
-  totalQuestions?: number;
 }
-
 export function QuizPage({
   quizId,
   userId,
   categoryColorPalette,
-  quizTitle,
-  totalQuestions,
 }: QuizPageProps) {
   const navigate = useNavigate();
-  const [sessionId, setSessionId] = useState<string | null>(null);
+
+  // Core state
+  const [quizSession, setQuizSession] = useState<QuizSession | null>(null);
   const [currentQuestion, setCurrentQuestion] =
     useState<CurrentQuestion | null>(null);
   const [lastAnswerResult, setLastAnswerResult] = useState<AnswerResult | null>(
     null
   );
+  const [currentQuestionNumber, setCurrentQuestionNumber] = useState(1);
+
+  // UI state
   const [error, setError] = useState<string | null>(null);
+  const [showInstantFeedback, setShowInstantFeedback] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
-  const [currentQuestionNumber, setCurrentQuestionNumber] = useState<number>(1);
-  // Instant feedback state
-  const [showInstantFeedback, setShowInstantFeedback] =
-    useState<boolean>(false);
 
   // Apply category-based theming
-  const theme = useQuizTheme({
-    colorPalette: categoryColorPalette,
-  });
+  const theme = useQuizTheme({ colorPalette: categoryColorPalette });
 
-  // --- API Mutations ---
+  // API mutations
   const createSessionMutation = useCreateQuizSession();
   const getNextQuestionMutation = useGetNextQuestion();
   const submitAnswerMutation = useSubmitAnswer();
 
-  // --- Effect to Start the Quiz ---
-  // This runs only once when the component mounts to create the session.
+  // Derived state
+  const isInitialLoading =
+    createSessionMutation.isPending ||
+    (getNextQuestionMutation.isPending && !currentQuestion);
+  const isSubmitting = submitAnswerMutation.isPending;
+
+  // Initialize quiz session
   useEffect(() => {
-    setError(null); // Clear any previous errors
+    initializeQuizSession();
+  }, [quizId, userId, retryCount]);
+
+  const initializeQuizSession = () => {
+    setError(null);
+
     createSessionMutation.mutate(
       { data: { quizId, userId } },
       {
-        onSuccess: (data) => {
-          setSessionId(data.id);
+        onSuccess: (sessionData) => {
+          const session: QuizSession = {
+            quizId: sessionData.quizId,
+            userId: sessionData.userId,
+            startTime: sessionData.startTime,
+            endTime: sessionData.endTime,
+            totalScore: sessionData.totalScore,
+            isCompleted: sessionData.isCompleted,
+            userAnswers: sessionData.userAnswers,
+            id: sessionData.id,
+            quizTitle: sessionData.quizTitle,
+            totalQuestions: sessionData.totalQuestions,
+            hasInstantFeedback: sessionData.hasInstantFeedback,
+            category: sessionData.category,
+          };
+
+          setQuizSession(session);
           setError(null);
           setRetryCount(0);
-          // Immediately fetch the first question
-          handleNextQuestion(data.id);
+          setCurrentQuestionNumber(1);
+
+          // Fetch first question
+          fetchNextQuestion(session.id);
         },
         onError: (error: any) => {
           console.error("Failed to create quiz session:", error);
-          const errorMessage =
-            error?.response?.data?.message ||
-            error?.message ||
-            "Failed to start quiz session";
-          setError(errorMessage);
+          setError(extractErrorMessage(error, "Failed to start quiz session"));
         },
       }
     );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [quizId, userId, retryCount]); // Include retryCount to allow retries
+  };
 
-  // --- Handler Functions ---
-  const handleNextQuestion = (currentSessionId: string) => {
-    setLastAnswerResult(null); // Clear previous answer feedback
-    setCurrentQuestion(null); // Show loading state
-    setError(null); // Clear any previous errors
+  const fetchNextQuestion = (sessionId: string) => {
+    setLastAnswerResult(null);
+    setCurrentQuestion(null);
+    setError(null);
 
     getNextQuestionMutation.mutate(
-      { sessionId: currentSessionId },
+      { sessionId },
       {
-        onSuccess: (data) => {
-          setCurrentQuestion(data);
-          // Update question number when we get a new question
-          setCurrentQuestionNumber((prev) => prev + 1);
+        onSuccess: (questionData) => {
+          setCurrentQuestion(questionData);
         },
         onError: (error: any) => {
           console.error("Failed to get next question:", error);
-
-          // Check if this is a network error or quiz completion
-          const errorMessage = error?.response?.data?.message || error?.message;
-
-          if (
-            errorMessage?.includes("completed") ||
-            errorMessage?.includes("No more questions")
-          ) {
-            // Quiz is completed, navigate to results
-            navigate(`/quiz/results/${currentSessionId}`);
-          } else {
-            // This is likely a network or session error
-            setError(
-              `Failed to load next question: ${
-                errorMessage || "Please check your connection and try again."
-              }`
-            );
-          }
+          handleQuestionFetchError(error, sessionId);
         },
       }
     );
+  };
+
+  const handleQuestionFetchError = (error: any, sessionId: string) => {
+    const errorMessage = extractErrorMessage(error);
+
+    if (
+      errorMessage.includes("completed") ||
+      errorMessage.includes("No more questions")
+    ) {
+      navigate(`/quiz/results/${sessionId}`);
+    } else {
+      setError(`Failed to load next question: ${errorMessage}`);
+    }
   };
 
   const handleSubmitAnswer = (
-    selectedOptionId: number | null,
-    submittedAnswer?: string
-  ) => {
-    if (!sessionId || !currentQuestion) return;
+  selectedOptionId: number | null,
+  submittedAnswer?: string
+) => {
+  if (!quizSession?.id || !currentQuestion || isSubmitting) return;
 
-    // Prevent multiple submissions while one is in progress
-    if (submitAnswerMutation.isPending) return;
-
-    submitAnswerMutation.mutate(
-      {
-        data: {
-          sessionId,
-          quizQuestionId: currentQuestion.quizQuestionId,
-          selectedOptionId,
-          submittedAnswer,
-        },
+  submitAnswerMutation.mutate(
+    {
+      data: {
+        sessionId: quizSession.id,
+        quizQuestionId: currentQuestion.quizQuestionId,
+        selectedOptionId,
+        submittedAnswer,
       },
-      {
-        onSuccess: (data) => {
-          setLastAnswerResult(data);
+    },
+    {
+      onSuccess: (answerResult) => {
+        // The submitAnswerMutation is now COMPLETE on the server.
+        // It is now safe to decide what to do next.
+        handleAnswerSubmissionSuccess(answerResult);
+      },
+      onError: (error) => {
+        console.error("Failed to submit answer:", error);
+        setError(`Answer submission failed: ${extractErrorMessage(error)}`);
+      },
+    }
+  );
+};
 
-          // Check if current question has instant feedback enabled
-          if (currentQuestion?.instantFeedback) {
-            // Show instant feedback
-            console.log(currentQuestion)
-            setShowInstantFeedback(true);
+// Replace your old function with this one
+const handleAnswerSubmissionSuccess = (answerResult: AnswerResult) => {
+  setLastAnswerResult(answerResult);
 
-            // Auto-advance to next question after showing feedback
-            setTimeout(() => {
-              setShowInstantFeedback(false);
-              setLastAnswerResult(null);
-              if (data.isQuizComplete) {
-                navigate(`/quiz/results/${sessionId}`);
-              } else {
-                handleNextQuestion(sessionId);
-              }
-            }, 3000); // Show feedback for 3 seconds
-          } else {
-            // Traditional feedback flow
-            if (data.isQuizComplete) {
-              // Small delay to show the feedback before navigating
-              setTimeout(() => {
-                navigate(`/quiz/results/${sessionId}`);
-              }, 2000);
-            }
-          }
-        },
-        onError: (error) => {
-          console.error("Failed to submit answer:", error);
-          // Show user-friendly error message
-          const errorMessage = error?.message || "Failed to submit answer";
-          setError(`Answer submission failed: ${errorMessage}`);
-        },
-      }
-    );
+  // This small delay gives the user a moment to see feedback or just perceive a transition.
+  // For the final question, a slightly longer delay before navigating feels better.
+  const delay = answerResult.isQuizComplete ? 1000 : 500;
+
+  setTimeout(() => {
+    setLastAnswerResult(null); // Clear the result before fetching the next question
+
+    if (answerResult.isQuizComplete) {
+      // The quiz is over, navigate to the results page.
+      navigate(`/quiz/results/${quizSession!.id}`);
+    } else {
+      // The quiz is not over, fetch the next question.
+      setCurrentQuestionNumber((prev) => prev + 1);
+      fetchNextQuestion(quizSession!.id);
+    }
+  }, delay);
+};
+
+ 
+
+  const handleRetry = () => setRetryCount((prev) => prev + 1);
+  const handleGoBack = () => navigate("/choose-quiz");
+  const handleNextQuestion = () => {
+    if (quizSession?.id) {
+      setCurrentQuestionNumber((prev) => prev + 1);
+      fetchNextQuestion(quizSession.id);
+    }
   };
 
-  // --- Render Logic ---
-  const isLoading =
-    createSessionMutation.isPending || getNextQuestionMutation.isPending;
+  // Helper function to extract error messages
+  const extractErrorMessage = (
+    error: any,
+    defaultMessage = "An error occurred"
+  ) => {
+    return error?.response?.data?.message || error?.message || defaultMessage;
+  };
 
-  if (isLoading && !currentQuestion) {
-    return (
-      <div
-        className="flex h-screen w-full items-center justify-center"
-        style={{
-          background: `
-            radial-gradient(circle at 20% 80%, ${theme.primary}15 0%, transparent 50%),
-            radial-gradient(circle at 80% 20%, ${theme.secondary}15 0%, transparent 50%),
-            hsl(var(--background))
-          `,
-          ...theme.cssVars,
-        }}
-      >
-        <div className="quiz-card-elevated p-8 text-center space-y-4">
-          <Loader2 className="h-12 w-12 animate-spin mx-auto text-quiz-primary" />
-          <p className="quiz-text-primary text-xl font-medium">
-            Preparing your quiz...
-          </p>
-          <div className="w-32 h-2 bg-quiz-border-subtle rounded-full mx-auto overflow-hidden">
-            <div
-              className="h-full bg-quiz-primary rounded-full quiz-animate-pulse"
-              style={{ width: "60%" }}
-            />
-          </div>
-        </div>
-      </div>
-    );
+  // Render loading state
+  if (isInitialLoading) {
+    return <LoadingScreen theme={theme} message="Preparing your quiz..." />;
   }
 
-  // Handle retry functionality
-  const handleRetry = () => {
-    setRetryCount((prev) => prev + 1);
-  };
-
-  const handleGoBack = () => {
-    navigate("/choose-quiz");
-  };
-
-  // Show error state with retry option
+  // Render error state
   if (error) {
     return (
-      <div
-        className="flex h-screen w-full items-center justify-center"
-        style={{
-          background: `
-            radial-gradient(circle at 20% 80%, ${theme.primary}15 0%, transparent 50%),
-            radial-gradient(circle at 80% 20%, ${theme.secondary}15 0%, transparent 50%),
-            hsl(var(--background))
-          `,
-          ...theme.cssVars,
-        }}
-      >
-        <div className="text-center space-y-6 max-w-md">
-          <AlertCircle className="h-16 w-16 text-red-400 mx-auto" />
-          <h2 className="text-2xl font-bold text-red-400">
-            Quiz Session Error
-          </h2>
-          <p className="text-gray-300">{error}</p>
-          <div className="flex gap-4 justify-center">
-            <Button
-              onClick={handleRetry}
-              disabled={createSessionMutation.isPending}
-              className="flex items-center gap-2"
-            >
-              {createSessionMutation.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <RefreshCw className="h-4 w-4" />
-              )}
-              Try Again
-            </Button>
-            <Button onClick={handleGoBack} variant="outline">
-              Back to Quiz Selection
-            </Button>
-          </div>
-        </div>
-      </div>
+      <ErrorScreen
+        theme={theme}
+        error={error}
+        onRetry={handleRetry}
+        onGoBack={handleGoBack}
+        isRetrying={createSessionMutation.isPending}
+      />
     );
   }
 
-  if (!sessionId) {
-    // This state could be shown if session creation fails for some reason.
+  // Render session not available state
+  if (!quizSession) {
     return (
-      <div
-        className="flex h-screen w-full items-center justify-center"
-        style={{
-          background: `
-            radial-gradient(circle at 20% 80%, ${theme.primary}15 0%, transparent 50%),
-            radial-gradient(circle at 80% 20%, ${theme.secondary}15 0%, transparent 50%),
-            hsl(var(--background))
-          `,
-          ...theme.cssVars,
-        }}
-      >
-        <div className="text-center space-y-4">
-          <AlertCircle className="h-12 w-12 text-yellow-400 mx-auto" />
-          <p className="text-xl">Unable to start quiz session</p>
-          <Button onClick={handleRetry}>Try Again</Button>
-        </div>
-      </div>
+      <ErrorScreen
+        theme={theme}
+        error="Unable to start quiz session"
+        onRetry={handleRetry}
+        onGoBack={handleGoBack}
+        isRetrying={createSessionMutation.isPending}
+        icon="warning"
+      />
     );
   }
 
   return (
     <QuizInterface
-      sessionId={sessionId}
+      sessionId={quizSession.id}
       currentQuestion={currentQuestion}
       lastAnswerResult={lastAnswerResult}
-      isSubmitting={submitAnswerMutation.isPending}
-      onNextQuestion={() => handleNextQuestion(sessionId)}
+      isSubmitting={isSubmitting}
+      onNextQuestion={handleNextQuestion}
       onSubmitAnswer={handleSubmitAnswer}
       categoryColorPalette={categoryColorPalette}
       currentQuestionNumber={currentQuestionNumber}
-      totalQuestions={totalQuestions}
+      totalQuestions={quizSession.totalQuestions}
       showInstantFeedback={showInstantFeedback}
+      quizTitle={quizSession.quizTitle}
+      quizDescription={quizSession.quizDescription}
+      category={quizSession.category}
     />
   );
 }
+
+// Loading Screen Component
+const LoadingScreen = ({ theme, message }: { theme: any; message: string }) => (
+  <div
+    className="flex h-screen w-full items-center justify-center"
+    style={{
+      background: `
+        radial-gradient(circle at 20% 80%, ${theme.primary}15 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, ${theme.secondary}15 0%, transparent 50%),
+        hsl(var(--background))
+      `,
+      ...theme.cssVars,
+    }}
+  >
+    <div className="quiz-card-elevated p-8 text-center space-y-4">
+      <Loader2 className="h-12 w-12 animate-spin mx-auto text-quiz-primary" />
+      <p className="quiz-text-primary text-xl font-medium">{message}</p>
+      <div className="w-32 h-2 bg-quiz-border-subtle rounded-full mx-auto overflow-hidden">
+        <div
+          className="h-full bg-quiz-primary rounded-full quiz-animate-pulse"
+          style={{ width: "60%" }}
+        />
+      </div>
+    </div>
+  </div>
+);
+
+// Error Screen Component
+const ErrorScreen = ({
+  theme,
+  error,
+  onRetry,
+  onGoBack,
+  isRetrying,
+  icon = "error",
+}: {
+  theme: any;
+  error: string;
+  onRetry: () => void;
+  onGoBack: () => void;
+  isRetrying: boolean;
+  icon?: "error" | "warning";
+}) => (
+  <div
+    className="flex h-screen w-full items-center justify-center"
+    style={{
+      background: `
+        radial-gradient(circle at 20% 80%, ${theme.primary}15 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, ${theme.secondary}15 0%, transparent 50%),
+        hsl(var(--background))
+      `,
+      ...theme.cssVars,
+    }}
+  >
+    <div className="text-center space-y-6 max-w-md">
+      <AlertCircle
+        className={`h-16 w-16 mx-auto ${
+          icon === "error" ? "text-red-400" : "text-yellow-400"
+        }`}
+      />
+      <h2
+        className={`text-2xl font-bold ${
+          icon === "error" ? "text-red-400" : "text-yellow-400"
+        }`}
+      >
+        Quiz Session Error
+      </h2>
+      <p className="text-gray-300">{error}</p>
+      <div className="flex gap-4 justify-center">
+        <Button
+          onClick={onRetry}
+          disabled={isRetrying}
+          className="flex items-center gap-2"
+        >
+          {isRetrying ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <RefreshCw className="h-4 w-4" />
+          )}
+          Try Again
+        </Button>
+        <Button onClick={onGoBack} variant="outline">
+          Back to Quiz Selection
+        </Button>
+      </div>
+    </div>
+  </div>
+);

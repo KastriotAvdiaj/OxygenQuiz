@@ -109,6 +109,8 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
         // Using transaction = not wrong in this method, but a bit redundant.
         public async Task<Result<CurrentQuestionDto>> GetNextQuestionAsync(Guid sessionId)
         {
+            if (sessionId == Guid.Empty)
+                return Result<CurrentQuestionDto>.ValidationFailure("Invalid session ID.");
             try
             {
                 _logger.LogInformation("Getting next question for session {SessionId}", sessionId);
@@ -573,11 +575,15 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
             return Math.Max(1, finalScore);
         }
 
+
         private async Task<QuizSessionDto?> GetSessionDtoAsync(Guid sessionId)
         {
             var session = await _context.QuizSessions
                 .AsNoTracking()
                 .Include(s => s.Quiz)
+                    .ThenInclude(q => q.QuizQuestions) // Needed for TotalQuestions count
+                .Include(s => s.Quiz)
+                    .ThenInclude(q => q.Category) // Needed for Category mapping
                 .Include(s => s.UserAnswers)
                     .ThenInclude(ua => ua.QuizQuestion)
                         .ThenInclude(qq => qq.Question)

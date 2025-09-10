@@ -17,6 +17,9 @@ interface QuizInterfaceProps {
   currentQuestion: CurrentQuestion | null;
   lastAnswerResult: AnswerResult | null;
   isSubmitting: boolean;
+  quizTitle: string;
+  quizDescription?: string;
+  category: string;
   onNextQuestion: () => void;
   onSubmitAnswer: (
     selectedOptionId: number | null,

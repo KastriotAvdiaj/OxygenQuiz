@@ -63,6 +63,10 @@ export interface QuizSession {
   userId: string;
   startTime: string; // ISO date string
   endTime: string | null; // ISO date string
+  totalQuestions:number;
+  quizDescription?: string;
+  hasInstantFeedback: boolean;
+  category: string;
   totalScore: number;
   isCompleted: boolean;
   userAnswers: UserAnswer[];

@@ -20,7 +20,13 @@ namespace QuizAPI.Mapping
                 .ForMember(dest => dest.QuizTitle, opt => opt.MapFrom(src => src.Quiz.Title))
                 .ForMember(dest => dest.IsCompleted, opt => opt.MapFrom(src => src.IsCompleted))
                 .ForMember(dest => dest.AbandonmentReason, opt => opt.MapFrom(src => src.AbandonmentReason))
-                .ForMember(dest => dest.AbandonedAt, opt => opt.MapFrom(src => src.AbandonedAt)); ;
+                .ForMember(dest => dest.AbandonedAt, opt => opt.MapFrom(src => src.AbandonedAt))
+                .ForMember(dest => dest.HasInstantFeedback, opt=> opt.MapFrom(src => src.Quiz.ShowFeedbackImmediately))
+                .ForMember(dest => dest.QuizDescription, opt=> opt.MapFrom(src => src.Quiz.Description))
+                .ForMember(dest => dest.Category, opt=> opt.MapFrom(src => src.Quiz.Category.Name))
+                .ForMember(dest => dest.TotalQuestions, opt => opt.MapFrom(src => src.Quiz.QuizQuestions.Count));
+
+
 
             CreateMap<QuizSession, QuizSessionSummaryDto>()
                 .ForMember(dest => dest.QuizTitle, opt => opt.MapFrom(src => src.Quiz.Title))
@@ -71,8 +77,8 @@ namespace QuizAPI.Mapping
                           // of an AnswerOption ID is tricky. We can use a convention like 1 for True, 0 for False.
                           return new List<AnswerOptionDTO>
                           {
-                            new AnswerOptionDTO { ID = 1, Text = "True", IsCorrect = tfq.CorrectAnswer },
-                            new AnswerOptionDTO { ID = 0, Text = "False", IsCorrect = !tfq.CorrectAnswer }
+                            new() { ID = 1, Text = "True", IsCorrect = tfq.CorrectAnswer },
+                            new() { ID = 0, Text = "False", IsCorrect = !tfq.CorrectAnswer }
                           };
                       }
 

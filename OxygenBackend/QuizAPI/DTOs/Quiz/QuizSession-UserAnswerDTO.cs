@@ -53,6 +53,11 @@ namespace QuizAPI.DTOs.Quiz
             public List<UserAnswerDto> UserAnswers { get; set; } = new();
             public AbandonmentReason? AbandonmentReason { get; set; }
             public DateTime? AbandonedAt { get; set; }
+
+            public bool HasInstantFeedback { get; set; }
+            public int TotalQuestions { get; set; }
+            public string? QuizDescription { get; set; }
+            public string? Category{ get; set; }
     }
 
         public class UserAnswerDto
