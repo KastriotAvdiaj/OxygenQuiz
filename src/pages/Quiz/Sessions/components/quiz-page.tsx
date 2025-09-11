@@ -1,6 +1,4 @@
-// src/components/quiz/QuizPage.tsx
-
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Loader2, AlertCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -23,7 +21,6 @@ interface QuizPageProps {
   userId: string;
   categoryColorPalette?: CategoryColorPalette;
 }
-
 export function QuizPage({
   quizId,
   userId,
@@ -33,18 +30,17 @@ export function QuizPage({
 
   // Core state
   const [quizSession, setQuizSession] = useState<QuizSession | null>(null);
-  const [currentQuestion, setCurrentQuestion] = useState<CurrentQuestion | null>(null);
-  const [lastAnswerResult, setLastAnswerResult] = useState<AnswerResult | null>(null);
+  const [currentQuestion, setCurrentQuestion] =
+    useState<CurrentQuestion | null>(null);
+  const [lastAnswerResult, setLastAnswerResult] = useState<AnswerResult | null>(
+    null
+  );
   const [currentQuestionNumber, setCurrentQuestionNumber] = useState(1);
 
   // UI state
   const [error, setError] = useState<string | null>(null);
   const [showInstantFeedback, setShowInstantFeedback] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
-  
-  // New state for better UX
-  const [isTransitioning, setIsTransitioning] = useState(false);
-  const [showFeedbackOverlay, setShowFeedbackOverlay] = useState(false);
 
   // Apply category-based theming
   const theme = useQuizTheme({ colorPalette: categoryColorPalette });
@@ -65,10 +61,8 @@ export function QuizPage({
     initializeQuizSession();
   }, [quizId, userId, retryCount]);
 
-  const initializeQuizSession = useCallback(() => {
+  const initializeQuizSession = () => {
     setError(null);
-    setIsTransitioning(false);
-    setShowFeedbackOverlay(false);
 
     createSessionMutation.mutate(
       { data: { quizId, userId } },
@@ -90,7 +84,6 @@ export function QuizPage({
           };
 
           setQuizSession(session);
-          setShowInstantFeedback(session.hasInstantFeedback);
           setError(null);
           setRetryCount(0);
           setCurrentQuestionNumber(1);
@@ -104,22 +97,18 @@ export function QuizPage({
         },
       }
     );
-  }, [quizId, userId, retryCount]);
+  };
 
-  const fetchNextQuestion = useCallback((sessionId: string) => {
+  const fetchNextQuestion = (sessionId: string) => {
     setLastAnswerResult(null);
-    setShowFeedbackOverlay(false);
+    setCurrentQuestion(null);
     setError(null);
-    
-    // Don't set currentQuestion to null immediately to avoid flash
-    // Let the transition handle it
-    
+
     getNextQuestionMutation.mutate(
       { sessionId },
       {
         onSuccess: (questionData) => {
           setCurrentQuestion(questionData);
-          setIsTransitioning(false);
         },
         onError: (error: any) => {
           console.error("Failed to get next question:", error);
@@ -127,7 +116,7 @@ export function QuizPage({
         },
       }
     );
-  }, []);
+  };
 
   const handleQuestionFetchError = (error: any, sessionId: string) => {
     const errorMessage = extractErrorMessage(error);
@@ -142,75 +131,67 @@ export function QuizPage({
     }
   };
 
-  const handleSubmitAnswer = useCallback((
-    selectedOptionId: number | null,
-    submittedAnswer?: string
-  ) => {
-    if (!quizSession?.id || !currentQuestion || isSubmitting) return;
+  const handleSubmitAnswer = (
+  selectedOptionId: number | null,
+  submittedAnswer?: string
+) => {
+  if (!quizSession?.id || !currentQuestion || isSubmitting) return;
 
-    submitAnswerMutation.mutate(
-      {
-        data: {
-          sessionId: quizSession.id,
-          quizQuestionId: currentQuestion.quizQuestionId,
-          selectedOptionId,
-          submittedAnswer,
-        },
+  submitAnswerMutation.mutate(
+    {
+      data: {
+        sessionId: quizSession.id,
+        quizQuestionId: currentQuestion.quizQuestionId,
+        selectedOptionId,
+        submittedAnswer,
       },
-      {
-        onSuccess: (answerResult) => {
-          handleAnswerSubmissionSuccess(answerResult);
-        },
-        onError: (error) => {
-          console.error("Failed to submit answer:", error);
-          setError(`Answer submission failed: ${extractErrorMessage(error)}`);
-        },
-      }
-    );
-  }, [quizSession?.id, currentQuestion, isSubmitting]);
-
-  const handleAnswerSubmissionSuccess = useCallback((answerResult: AnswerResult) => {
-    setLastAnswerResult(answerResult);
-
-    if (showInstantFeedback) {
-      // For instant feedback, show overlay immediately
-      setShowFeedbackOverlay(true);
-      
-      // Auto-advance after showing feedback
-      setTimeout(() => {
-        proceedToNextQuestion(answerResult);
-      }, 2500); // Give time to read feedback
-    } else {
-      // For non-instant feedback, proceed immediately with no delay
-      proceedToNextQuestion(answerResult);
+    },
+    {
+      onSuccess: (answerResult) => {
+        // The submitAnswerMutation is now COMPLETE on the server.
+        // It is now safe to decide what to do next.
+        handleAnswerSubmissionSuccess(answerResult);
+      },
+      onError: (error) => {
+        console.error("Failed to submit answer:", error);
+        setError(`Answer submission failed: ${extractErrorMessage(error)}`);
+      },
     }
-  }, [showInstantFeedback]);
+  );
+};
 
-  const proceedToNextQuestion = useCallback((answerResult: AnswerResult) => {
+// Replace your old function with this one
+const handleAnswerSubmissionSuccess = (answerResult: AnswerResult) => {
+  setLastAnswerResult(answerResult);
+
+  // This small delay gives the user a moment to see feedback or just perceive a transition.
+  // For the final question, a slightly longer delay before navigating feels better.
+  const delay = answerResult.isQuizComplete ? 1000 : 500;
+
+  setTimeout(() => {
+    setLastAnswerResult(null); // Clear the result before fetching the next question
+
     if (answerResult.isQuizComplete) {
+      // The quiz is over, navigate to the results page.
       navigate(`/quiz/results/${quizSession!.id}`);
     } else {
-      setIsTransitioning(true);
-      setShowFeedbackOverlay(false);
+      // The quiz is not over, fetch the next question.
       setCurrentQuestionNumber((prev) => prev + 1);
-      
-      // Start fetching next question immediately
       fetchNextQuestion(quizSession!.id);
     }
-  }, [navigate, quizSession?.id, fetchNextQuestion]);
+  }, delay);
+};
 
-  const handleNextQuestion = useCallback(() => {
-    if (lastAnswerResult) {
-      proceedToNextQuestion(lastAnswerResult);
-    } else if (quizSession?.id) {
-      setIsTransitioning(true);
-      setCurrentQuestionNumber((prev) => prev + 1);
-      fetchNextQuestion(quizSession.id);
-    }
-  }, [lastAnswerResult, quizSession?.id, proceedToNextQuestion, fetchNextQuestion]);
+ 
 
   const handleRetry = () => setRetryCount((prev) => prev + 1);
   const handleGoBack = () => navigate("/choose-quiz");
+  const handleNextQuestion = () => {
+    if (quizSession?.id) {
+      setCurrentQuestionNumber((prev) => prev + 1);
+      fetchNextQuestion(quizSession.id);
+    }
+  };
 
   // Helper function to extract error messages
   const extractErrorMessage = (
@@ -264,8 +245,6 @@ export function QuizPage({
       currentQuestionNumber={currentQuestionNumber}
       totalQuestions={quizSession.totalQuestions}
       showInstantFeedback={showInstantFeedback}
-      showFeedbackOverlay={showFeedbackOverlay}
-      isTransitioning={isTransitioning}
       quizTitle={quizSession.quizTitle}
       quizDescription={quizSession.quizDescription}
       category={quizSession.category}

@@ -1,16 +1,12 @@
 // src/components/quiz/QuestionDisplay.tsx
 
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState } from "react";
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { QuizTimer } from "./quiz-timer";
 import { TrueOrFalseQuestion } from "./true-or-false-question";
 import { TypeTheAnswerQuestion } from "./type-the-answer-question";
-import {
-  type CurrentQuestion,
-  type AnswerResult,
-  AnswerStatus,
-} from "../quiz-session-types";
+import type { CurrentQuestion, AnswerResult } from "../quiz-session-types";
 import { QuestionType } from "@/types/question-types";
 
 interface QuestionDisplayProps {
@@ -31,35 +27,11 @@ export function QuestionDisplay({
   answerResult = null,
 }: QuestionDisplayProps) {
   const [selectedOptionId, setSelectedOptionId] = useState<number | null>(null);
-  const [showAnswerFeedback, setShowAnswerFeedback] = useState(false);
-
-  // Reset state when question changes
-  useEffect(() => {
-    setSelectedOptionId(null);
-    setShowAnswerFeedback(false);
-  }, [question.quizQuestionId]);
-
-  // Show answer feedback when result comes back
-  useEffect(() => {
-    if (answerResult && instantFeedback) {
-      setShowAnswerFeedback(true);
-    }
-  }, [answerResult, instantFeedback]);
 
   const handleTimeUp = () => {
     // When time is up, we submit a null answer.
     // The backend will know this is a timeout.
     onSubmit(null);
-  };
-
-  const handleOptionSelect = (optionId: number) => {
-    if (!showAnswerFeedback) {
-      setSelectedOptionId(optionId);
-    }
-  };
-
-  const handleSubmit = () => {
-    onSubmit(selectedOptionId);
   };
 
   // Render the question content based on question type
@@ -93,240 +65,171 @@ export function QuestionDisplay({
         return (
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <AnimatePresence>
-                {question.options.map((option, index) => {
-                  // Determine feedback state for instant feedback
-                  let feedbackState = "default";
-                  let isCorrect = false;
-                  let isUserSelection = false;
-
-                  if (showAnswerFeedback && answerResult) {
-                    isCorrect = option.id === answerResult.correctAnswerId;
-                    isUserSelection = selectedOptionId === option.id;
-
-                    if (isCorrect) {
-                      feedbackState = "correct";
-                    } else if (
-                      isUserSelection &&
-                      answerResult.status !== AnswerStatus.Correct
-                    ) {
-                      feedbackState = "incorrect";
-                    }
+              {question.options.map((option, index) => {
+                // Determine feedback state for instant feedback
+                let feedbackState = "default";
+                if (instantFeedback && answerResult) {
+                  if (option.id === answerResult.correctAnswerId) {
+                    feedbackState = "correct"; // This is the correct answer
+                  } else if (
+                    selectedOptionId === option.id &&
+                    answerResult.status !== "Correct"
+                  ) {
+                    feedbackState = "incorrect"; // This was the user's wrong selection
                   }
+                }
 
-                  return (
-                    <motion.div
-                      key={option.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.1 }}
-                      whileHover={{
-                        scale: showAnswerFeedback ? 1 : 1.02,
-                      }}
-                      whileTap={{
-                        scale: showAnswerFeedback ? 1 : 0.98,
+                return (
+                  <motion.div
+                    key={option.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                    whileHover={{
+                      scale: instantFeedback && answerResult ? 1 : 1.02,
+                    }}
+                    whileTap={{
+                      scale: instantFeedback && answerResult ? 1 : 0.98,
+                    }}
+                  >
+                    <button
+                      onClick={() =>
+                        !answerResult && setSelectedOptionId(option.id)
+                      }
+                      disabled={instantFeedback && !!answerResult}
+                      className={`quiz-answer-option w-full text-left transition-all duration-300 ${
+                        selectedOptionId === option.id ? "selected" : ""
+                      } ${
+                        feedbackState === "correct"
+                          ? "border-green-500 bg-green-100 dark:bg-green-900"
+                          : feedbackState === "incorrect"
+                          ? "border-red-500 bg-red-100 dark:bg-red-900"
+                          : ""
+                      }`}
+                      style={{
+                        borderColor:
+                          feedbackState === "correct"
+                            ? "#10b981"
+                            : feedbackState === "incorrect"
+                            ? "#ef4444"
+                            : selectedOptionId === option.id
+                            ? theme.primary
+                            : undefined,
+                        backgroundColor:
+                          feedbackState === "correct"
+                            ? "#10b98115"
+                            : feedbackState === "incorrect"
+                            ? "#ef444415"
+                            : selectedOptionId === option.id
+                            ? `${theme.primary}15`
+                            : undefined,
                       }}
                     >
-                      <motion.button
-                        onClick={() => handleOptionSelect(option.id)}
-                        disabled={showAnswerFeedback || isSubmitting}
-                        className={`quiz-answer-option w-full text-left transition-all duration-300 relative overflow-hidden ${
-                          selectedOptionId === option.id ? "selected" : ""
-                        }`}
-                        style={{
-                          borderColor:
+                      <div className="flex items-center space-x-3">
+                        <div
+                          className={`w-4 h-4 rounded-full border-2 transition-all flex items-center justify-center ${
+                            selectedOptionId === option.id
+                              ? "border-current bg-current"
+                              : "border-quiz-border-subtle"
+                          }`}
+                          style={{
+                            borderColor:
+                              feedbackState === "correct"
+                                ? "#10b981"
+                                : feedbackState === "incorrect"
+                                ? "#ef4444"
+                                : selectedOptionId === option.id
+                                ? theme.primary
+                                : undefined,
+                            backgroundColor:
+                              feedbackState === "correct"
+                                ? "#10b981"
+                                : feedbackState === "incorrect"
+                                ? "#ef4444"
+                                : selectedOptionId === option.id
+                                ? theme.primary
+                                : undefined,
+                          }}
+                        >
+                          {instantFeedback && answerResult ? (
+                            feedbackState === "correct" ? (
+                              <span className="text-white text-xs font-bold">
+                                ✓
+                              </span>
+                            ) : feedbackState === "incorrect" ? (
+                              <span className="text-white text-xs font-bold">
+                                ✗
+                              </span>
+                            ) : null
+                          ) : selectedOptionId === option.id ? (
+                            <div className="w-full h-full rounded-full bg-white scale-50" />
+                          ) : null}
+                        </div>
+                        <span
+                          className={`text-lg font-medium transition-colors ${
                             feedbackState === "correct"
-                              ? "#10b981"
+                              ? "text-green-700 dark:text-green-300"
                               : feedbackState === "incorrect"
-                              ? "#ef4444"
-                              : selectedOptionId === option.id
-                              ? theme.primary
-                              : undefined,
-                          backgroundColor:
-                            feedbackState === "correct"
-                              ? "#10b98115"
-                              : feedbackState === "incorrect"
-                              ? "#ef444415"
-                              : selectedOptionId === option.id
-                              ? `${theme.primary}15`
-                              : undefined,
-                        }}
-                        animate={
-                          feedbackState === "correct"
-                            ? {
-                                backgroundColor: [
-                                  "#10b98115",
-                                  "#10b98125",
-                                  "#10b98115",
-                                ],
-                              }
-                            : feedbackState === "incorrect"
-                            ? {
-                                backgroundColor: [
-                                  "#ef444415",
-                                  "#ef444425",
-                                  "#ef444415",
-                                ],
-                              }
-                            : {}
-                        }
-                        transition={{
-                          duration: 1,
-                          repeat: showAnswerFeedback ? Infinity : 0,
-                          repeatType: "reverse",
-                        }}
-                      >
-                        {/* Background pulse effect for correct answer */}
+                              ? "text-red-700 dark:text-red-300"
+                              : "quiz-text-primary"
+                          }`}
+                        >
+                          {option.text}
+                        </span>
                         {feedbackState === "correct" && (
                           <motion.div
-                            className="absolute inset-0 bg-green-500 opacity-10"
-                            animate={{
-                              opacity: [0.1, 0.2, 0.1],
-                            }}
-                            transition={{
-                              duration: 1,
-                              repeat: Infinity,
-                              repeatType: "reverse",
-                            }}
-                          />
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            className="ml-auto text-green-600 text-xl font-bold"
+                          >
+                            ✓
+                          </motion.div>
                         )}
-
-                        <div className="flex items-center space-x-3 relative z-10">
-                          <div
-                            className={`w-4 h-4 rounded-full border-2 transition-all flex items-center justify-center ${
-                              selectedOptionId === option.id
-                                ? "border-current bg-current"
-                                : "border-quiz-border-subtle"
-                            }`}
-                            style={{
-                              borderColor:
-                                feedbackState === "correct"
-                                  ? "#10b981"
-                                  : feedbackState === "incorrect"
-                                  ? "#ef4444"
-                                  : selectedOptionId === option.id
-                                  ? theme.primary
-                                  : undefined,
-                              backgroundColor:
-                                feedbackState === "correct"
-                                  ? "#10b981"
-                                  : feedbackState === "incorrect"
-                                  ? "#ef4444"
-                                  : selectedOptionId === option.id
-                                  ? theme.primary
-                                  : undefined,
-                            }}
+                        {feedbackState === "incorrect" && (
+                          <motion.div
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            className="ml-auto text-red-600 text-xl font-bold"
                           >
-                            {showAnswerFeedback ? (
-                              <motion.span
-                                initial={{ scale: 0 }}
-                                animate={{ scale: 1 }}
-                                transition={{ delay: 0.2 }}
-                                className="text-white text-xs font-bold"
-                              >
-                                {feedbackState === "correct"
-                                  ? "✓"
-                                  : feedbackState === "incorrect"
-                                  ? "✗"
-                                  : null}
-                              </motion.span>
-                            ) : selectedOptionId === option.id ? (
-                              <div className="w-full h-full rounded-full bg-white scale-50" />
-                            ) : null}
-                          </div>
-
-                          <span
-                            className={`text-lg font-medium transition-colors ${
-                              feedbackState === "correct"
-                                ? "text-green-700 dark:text-green-300"
-                                : feedbackState === "incorrect"
-                                ? "text-red-700 dark:text-red-300"
-                                : "quiz-text-primary"
-                            }`}
-                          >
-                            {option.text}
-                          </span>
-
-                          {/* Success/error icons with animation */}
-                          <AnimatePresence>
-                            {feedbackState === "correct" && (
-                              <motion.div
-                                initial={{ scale: 0, rotate: -180 }}
-                                animate={{ scale: 1, rotate: 0 }}
-                                exit={{ scale: 0 }}
-                                transition={{
-                                  type: "spring",
-                                  damping: 15,
-                                  stiffness: 300,
-                                  delay: 0.1,
-                                }}
-                                className="ml-auto text-green-600 text-xl font-bold"
-                              >
-                                ✓
-                              </motion.div>
-                            )}
-                            {feedbackState === "incorrect" && (
-                              <motion.div
-                                initial={{ scale: 0, rotate: 180 }}
-                                animate={{ scale: 1, rotate: 0 }}
-                                exit={{ scale: 0 }}
-                                transition={{
-                                  type: "spring",
-                                  damping: 15,
-                                  stiffness: 300,
-                                  delay: 0.1,
-                                }}
-                                className="ml-auto text-red-600 text-xl font-bold"
-                              >
-                                ✗
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
-                        </div>
-                      </motion.button>
-                    </motion.div>
-                  );
-                })}
-              </AnimatePresence>
+                            ✗
+                          </motion.div>
+                        )}
+                      </div>
+                    </button>
+                  </motion.div>
+                );
+              })}
             </div>
 
-            {/* Submit button - only show if not in feedback mode */}
-            <AnimatePresence>
-              {!showAnswerFeedback && (
-                <motion.div
-                  className="flex justify-center pt-4"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ delay: 0.4 }}
-                >
-                  <Button
-                    onClick={handleSubmit}
-                    disabled={selectedOptionId === null || isSubmitting}
-                    size="lg"
-                    className="quiz-button-primary px-8 py-3 text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
-                    style={{ backgroundColor: theme.primary }}
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <motion.div
-                          className="w-5 h-5 border-2 border-white border-t-transparent rounded-full mr-2"
-                          animate={{ rotate: 360 }}
-                          transition={{
-                            duration: 1,
-                            repeat: Infinity,
-                            ease: "linear",
-                          }}
-                        />
-                        Submitting...
-                      </>
-                    ) : (
-                      "Submit Answer"
-                    )}
-                  </Button>
-                </motion.div>
-              )}
-            </AnimatePresence>
+            <motion.div
+              className="flex justify-center pt-4"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+            >
+              <Button
+                onClick={() => onSubmit(selectedOptionId)}
+                disabled={
+                  selectedOptionId === null ||
+                  isSubmitting ||
+                  (instantFeedback && !!answerResult)
+                }
+                size="lg"
+                className="quiz-button-primary px-8 py-3 text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
+                style={{ backgroundColor: theme.primary }}
+              >
+                {isSubmitting ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                    Submitting...
+                  </>
+                ) : instantFeedback && answerResult ? (
+                  "Answer Submitted"
+                ) : (
+                  "Submit Answer"
+                )}
+              </Button>
+            </motion.div>
           </div>
         );
     }
