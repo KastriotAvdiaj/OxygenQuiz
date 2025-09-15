@@ -1,6 +1,5 @@
 // src/pages/Quiz/Sessions/components/true-or-false-question.tsx
 
-import { useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import type { CurrentQuestion, AnswerResult } from "../quiz-session-types";

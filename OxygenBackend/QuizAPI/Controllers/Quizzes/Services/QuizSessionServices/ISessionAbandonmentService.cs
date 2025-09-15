@@ -7,5 +7,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
         Task<bool> IsSessionAbandonedAsync(QuizSession session);
         Task<int> CleanupAbandonedSessionsAsync();
         Task<QuizSession?> GetActiveSessionForUserAsync(Guid userId, int quizId);
+
+        Task MarkSessionsAsAbandonedAsync(List<QuizSession> sessions);
     }
 }

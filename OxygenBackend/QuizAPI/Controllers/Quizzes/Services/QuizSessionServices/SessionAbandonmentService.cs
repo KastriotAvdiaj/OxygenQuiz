@@ -74,7 +74,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
 
             if (sessionsToCleanup.Any())
             {
-                await MarkSessionsAsAbandonedAsync(sessionsToCleanup);
+                await MarkSessionsAsAbandonedAsync(sessionsToCleanup); // Make this public
             }
 
             return validActiveSession;
@@ -133,7 +133,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
             return (totalTimeout, activityTimeout);
         }
 
-        private async Task MarkSessionsAsAbandonedAsync(List<QuizSession> sessions)
+        public async Task MarkSessionsAsAbandonedAsync(List<QuizSession> sessions)
         {
             var sessionIds = sessions.Select(s => s.Id).ToList();
 

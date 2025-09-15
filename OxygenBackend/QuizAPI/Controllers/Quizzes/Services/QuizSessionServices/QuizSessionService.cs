@@ -266,6 +266,8 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
         {
             try
             {
+                using var transaction = await _context.Database.BeginTransactionAsync();
+
                 var quiz = await _context.Quizzes
                     .AsNoTracking()
                     .FirstOrDefaultAsync(q => q.Id == model.QuizId && q.IsActive && q.IsPublished);
@@ -273,12 +275,13 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                 if (quiz == null)
                     return Result<QuizSessionDto>.ValidationFailure("Quiz not found or not available.");
 
-                // Check for existing active session for this user/quiz combination
+                // Use the existing method (now with fixed logic)
                 var existingActiveSession = await _abandonmentService.GetActiveSessionForUserAsync(model.UserId, model.QuizId);
 
                 if (existingActiveSession != null)
                 {
-                    // Don't create a new session, instead return information about the existing one
+                    await transaction.CommitAsync();
+
                     var timeSinceLastActivity = existingActiveSession.CurrentQuestionStartTime.HasValue
                         ? DateTime.UtcNow - existingActiveSession.CurrentQuestionStartTime.Value
                         : DateTime.UtcNow - existingActiveSession.StartTime;
@@ -288,7 +291,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                     return Result<QuizSessionDto>.ValidationFailure(
                         $"You have an active session for this quiz (started {timeSinceLastActivity.TotalMinutes:F1} minutes ago). " +
                         "Please either continue your existing session or abandon it to start fresh.",
-                        existingSessionDto); // Pass existing session data in the result
+                        existingSessionDto);
                 }
 
                 // No existing session, create new one
@@ -302,9 +305,14 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
 
                 _context.QuizSessions.Add(session);
                 await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
 
                 var sessionDto = await GetSessionDtoAsync(session.Id);
                 return Result<QuizSessionDto>.Success(sessionDto!);
+            }
+            catch (DbUpdateException ex) when (ex.InnerException?.Message.Contains("IX_QuizSessions_ActiveUserQuiz") == true)
+            {
+                return Result<QuizSessionDto>.ValidationFailure("A session for this quiz is already in progress.");
             }
             catch (Exception ex)
             {
@@ -312,6 +320,8 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                 return Result<QuizSessionDto>.Failure("Failed to create quiz session.");
             }
         }
+
+
 
         public async Task<Result<QuizSessionDto>> AbandonAndCreateNewSessionAsync(Guid existingSessionId, QuizSessionCM model)
         {
