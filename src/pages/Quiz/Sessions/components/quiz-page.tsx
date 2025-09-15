@@ -25,7 +25,8 @@ export function QuizPage({
   // Apply category-based theming
   const theme = useQuizTheme({ colorPalette: categoryColorPalette });
 
-  // Quiz session management
+  // Central hook for managing the entire quiz session flow.
+  // It handles initialization, question fetching, and error states.
   const {
     quizSession,
     currentQuestion,
@@ -38,19 +39,23 @@ export function QuizPage({
     handleAnswerSubmissionSuccess,
     setCurrentQuestionNumber,
     fetchNextQuestion,
-    isValidationError, // FIX: Get new state from hook
-  } = useQuizSession({ quizId, userId }); // FIX: Removed unused 'setLastAnswerResult'
+    isValidationError, // This flag is crucial for our specific error case
+  } = useQuizSession({ quizId, userId });
 
-  // API mutations
+  // API mutation for submitting an answer
   const submitAnswerMutation = useSubmitAnswer();
 
-  // Derived state
+  // --- Derived State ---
+  // Simple flags derived from hook/mutation state to keep render logic clean.
   const isSubmitting = submitAnswerMutation.isPending;
-  // FIX: Removed unused useState for `showInstantFeedback` and derived it from the session
   const showInstantFeedback = quizSession?.hasInstantFeedback ?? false;
-  // FIX: Create a flag to determine if the error is retryable
+
+  // This is the key logic: The "Try Again" button should only be shown for
+  // retryable errors (like network issues), not for validation errors
+  // (like having an existing active session).
   const canRetry = !isValidationError;
 
+  // --- Event Handlers ---
   const handleSubmitAnswer = (
     selectedOptionId: number | null,
     submittedAnswer?: string
@@ -71,6 +76,7 @@ export function QuizPage({
           handleAnswerSubmissionSuccess(answerResult);
         },
         onError: (error) => {
+          // You could implement more robust UI feedback here if needed
           console.error("Failed to submit answer:", error);
         },
       }
@@ -86,12 +92,14 @@ export function QuizPage({
     }
   };
 
-  // Render loading state
+  // --- Render Logic ---
+
+  // 1. Show a loading screen during the initial session creation and first question fetch.
   if (isInitialLoading) {
     return <LoadingScreen theme={theme} message="Preparing your quiz..." />;
   }
 
-  // Render error state
+  // 2. If an error occurs during initialization, show a detailed error screen.
   if (error) {
     return (
       <ErrorScreen
@@ -100,26 +108,27 @@ export function QuizPage({
         onRetry={handleRetry}
         onGoBack={handleGoBack}
         isRetrying={isInitializing}
-        canRetry={canRetry} // FIX: Pass retry eligibility to the error screen
+        canRetry={canRetry} // Pass the retry eligibility to the component
       />
     );
   }
 
-  // Render session not available state
+  // 3. Fallback: If there's no error but the session still couldn't be created.
   if (!quizSession) {
     return (
       <ErrorScreen
         theme={theme}
-        error="Unable to start quiz session"
+        error="Unable to start quiz session. The session could not be found."
         onRetry={handleRetry}
         onGoBack={handleGoBack}
         isRetrying={isInitialLoading}
         icon="warning"
-        canRetry={canRetry} // FIX: Also pass retry eligibility here
+        canRetry={canRetry} // Also respect the retry eligibility here
       />
     );
   }
 
+  // 4. Success: Render the main quiz interface.
   return (
     <QuizInterface
       sessionId={quizSession.id}
@@ -133,15 +142,14 @@ export function QuizPage({
       totalQuestions={quizSession.totalQuestions}
       showInstantFeedback={showInstantFeedback}
       quizTitle={quizSession.quizTitle}
-      // FIX: Removed 'quizDescription' as it does not exist on the session object
       category={quizSession.category}
     />
   );
 }
 
-// Loading Screen Component
+// --- UI Components ---
+
 const LoadingScreen = ({ theme, message }: { theme: any; message: string }) => (
-  // ... (no changes needed here)
   <div
     className="flex h-screen w-full items-center justify-center"
     style={{
@@ -166,14 +174,13 @@ const LoadingScreen = ({ theme, message }: { theme: any; message: string }) => (
   </div>
 );
 
-// Error Screen Component
 const ErrorScreen = ({
   theme,
   error,
   onRetry,
   onGoBack,
   isRetrying,
-  canRetry = true, // FIX: Added canRetry prop to conditionally show the button
+  canRetry, // Receive the prop to determine if the "Try Again" button should render
   icon = "error",
 }: {
   theme: any;
@@ -181,7 +188,7 @@ const ErrorScreen = ({
   onRetry: () => void;
   onGoBack: () => void;
   isRetrying: boolean;
-  canRetry?: boolean; // FIX: Added prop to type definition
+  canRetry: boolean; // Prop is now required
   icon?: "error" | "warning";
 }) => (
   <div
@@ -195,7 +202,7 @@ const ErrorScreen = ({
       ...theme.cssVars,
     }}
   >
-    <div className="text-center space-y-6 max-w-md">
+    <div className="text-center space-y-6 max-w-md p-4">
       <AlertCircle
         className={`h-16 w-16 mx-auto ${
           icon === "error" ? "text-red-400" : "text-yellow-400"
@@ -210,7 +217,11 @@ const ErrorScreen = ({
       </h2>
       <p className="text-gray-300">{error}</p>
       <div className="flex gap-4 justify-center">
-        {/* FIX: Only render the "Try Again" button if the error is retryable */}
+        {/*
+          This conditional rendering is the final piece of the puzzle.
+          It prevents the user from trying to re-create a session when the
+          backend has explicitly told them they have an active one.
+        */}
         {canRetry && (
           <Button
             onClick={onRetry}

@@ -52,10 +52,13 @@ interface UseQuizSessionReturn {
   setCurrentQuestionNumber: (value: number | ((prev: number) => number)) => void;
 }
 
+// --- Helper Functions ---
+
 export const extractErrorMessage = (
   error: any,
   defaultMessage = "An error occurred"
 ): string => {
+  // Extracts a user-friendly error from a typical Axios error object.
   return error?.response?.data?.message || error?.message || defaultMessage;
 };
 
@@ -66,17 +69,20 @@ const handleQuestionFetchError = (
 ): string => {
   const errorMessage = extractErrorMessage(error);
 
+  // If the error indicates the quiz is done, navigate to results instead of showing an error.
   if (
     errorMessage.includes("completed") ||
     errorMessage.includes("No more questions")
   ) {
     navigate(`/quiz/results/${sessionId}`);
-    return "";
+    return ""; // Return an empty string as the error is handled by navigation.
   }
 
   return `Failed to load next question: ${errorMessage}`;
 };
 
+
+// --- The Main Hook ---
 
 export const useQuizSession = ({
   quizId,
@@ -84,7 +90,7 @@ export const useQuizSession = ({
 }: UseQuizSessionParams): UseQuizSessionReturn => {
   const navigate = useNavigate();
 
-  // Core state
+  // --- Core State ---
   const [quizSession, setQuizSession] = useState<QuizSession | null>(null);
   const [currentQuestion, setCurrentQuestion] = useState<CurrentQuestion | null>(null);
   const [lastAnswerResult, setLastAnswerResult] = useState<AnswerResult | null>(null);
@@ -93,10 +99,12 @@ export const useQuizSession = ({
   const [retryCount, setRetryCount] = useState(0);
   const [isValidationError, setIsValidationError] = useState(false);
 
-  // API mutations
+  // --- API Mutations (from react-query/tanstack-query) ---
   const createSessionMutation = useCreateQuizSession();
   const getNextQuestionMutation = useGetNextQuestion();
 
+  // --- Initialization Logic ---
+  // A ref is used to track the initialization state across re-renders without causing them.
   const initializationRef = useRef<{
     hasInitialized: boolean;
     isInitializing: boolean;
@@ -105,6 +113,8 @@ export const useQuizSession = ({
     isInitializing: false,
   });
 
+  // This ensures that when a retry is triggered (by incrementing retryCount),
+  // the initialization state is fully reset.
   const dependencyKey = `${quizId}-${userId}-${retryCount}`;
   const lastDependencyKey = useRef(dependencyKey);
   
@@ -116,11 +126,13 @@ export const useQuizSession = ({
     lastDependencyKey.current = dependencyKey;
   }
 
-  // --- ‼️ FIX IS HERE ‼️ ---
-  // Derived state based on actual data, not mutation timing.
+  // --- Derived State ---
+  // These are calculated on each render, providing a clear picture of the current UI state.
   const isInitialLoading = (!quizSession || !currentQuestion) && !error;
-  
   const isInitializing = initializationRef.current.isInitializing;
+
+
+  // --- Action Handlers (wrapped in useCallback for performance) ---
 
   const fetchNextQuestion = useCallback((sessionId: string) => {
     setLastAnswerResult(null);
@@ -145,6 +157,7 @@ export const useQuizSession = ({
   }, [getNextQuestionMutation, navigate]);
 
   const initializeQuizSession = useCallback(async () => {
+    // Guard clause to prevent multiple initializations.
     if (initializationRef.current.hasInitialized || 
         initializationRef.current.isInitializing || 
         !quizId || 
@@ -180,20 +193,18 @@ export const useQuizSession = ({
         category: sessionData.category,
       };
       
-      // Setting session first, then fetching question
       setQuizSession(session);
-      
-      // These resets are still good practice
       setError(null);
-      setRetryCount(0);
       setCurrentQuestionNumber(1);
-      initializationRef.current.hasInitialized = true;
+      initializationRef.current.hasInitialized = true; // Mark initialization as successful
 
       fetchNextQuestion(session.id);
       
     } catch (err: any) {
       console.error("❌ Failed to create quiz session:", err);
       setError(extractErrorMessage(err, "Failed to start quiz session"));
+      
+      // Specifically flag 4xx client errors as validation errors.
       if (err?.response?.status >= 400 && err?.response?.status < 500) {
         setIsValidationError(true);
       }
@@ -202,12 +213,24 @@ export const useQuizSession = ({
     }
   }, [quizId, userId, retryCount, createSessionMutation, fetchNextQuestion]);
 
+
+  // --- Effect to Trigger Initialization ---
+  // This effect runs on mount and whenever its dependencies change.
+
+  // --- ‼️ FIX #1: BREAK THE INFINITE LOOP ‼️ ---
   useEffect(() => {
-    if (!initializationRef.current.hasInitialized && 
-        !initializationRef.current.isInitializing) {
+    // The `!error` condition is the key to stopping the loop.
+    // If an error has been set, this effect will NOT re-run `initializeQuizSession`,
+    // preventing an infinite cycle of failed requests.
+    if (
+      !initializationRef.current.hasInitialized &&
+      !initializationRef.current.isInitializing &&
+      !error // <-- THIS IS THE CRUCIAL FIX
+    ) {
       initializeQuizSession();
     }
-  }, [initializeQuizSession]);
+  }, [initializeQuizSession, error]); // <-- ADD `error` TO THE DEPENDENCY ARRAY
+
 
   const handleAnswerSubmissionSuccess = useCallback((answerResult: AnswerResult) => {
     setLastAnswerResult(answerResult);
@@ -224,12 +247,21 @@ export const useQuizSession = ({
     }, delay);
   }, [navigate, quizSession, fetchNextQuestion]);
 
+  // --- ‼️ FIX #2: ENABLE RETRYING ‼️ ---
   const handleRetry = useCallback(() => {
     console.log("🔄 Retrying quiz session initialization");
+    
+    // Resetting the error state is essential. Without this, the `!error` condition
+    // in the useEffect hook would remain false, preventing a new initialization attempt.
+    setError(null);
     setIsValidationError(false);
+    
+    // Bumping the retry count triggers the ref reset logic and re-creates the
+    // `initializeQuizSession` function with a fresh context.
     setRetryCount((prev) => prev + 1);
   }, []);
 
+  // --- Returned Values ---
   return {
     quizSession,
     currentQuestion,
