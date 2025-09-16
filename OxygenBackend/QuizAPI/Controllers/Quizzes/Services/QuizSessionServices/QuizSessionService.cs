@@ -7,6 +7,8 @@ using QuizAPI.DTOs.Quiz;
 using QuizAPI.Models;
 using QuizAPI.Models.Quiz;
 using QuizAPI.ManyToManyTables;
+using QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.AbandonmentService;
+using QuizAPI.Controllers.Quizzes.Services.AnswerGradingServices;
 
 namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
 {
@@ -16,6 +18,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
         private readonly ILogger<QuizSessionService> _logger;
         private readonly IMapper _mapper;
         private readonly ISessionAbandonmentService _abandonmentService;
+        private readonly IAnswerGradingService _gradingService;
         private readonly QuizSessionOptions _options;
 
         public QuizSessionService(
@@ -23,12 +26,14 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
             ILogger<QuizSessionService> logger,
             IMapper mapper,
             ISessionAbandonmentService abandonmentService,
+            IAnswerGradingService gradingService,
             IOptions<QuizSessionOptions> options)
         {
             _context = context;
             _logger = logger;
             _mapper = mapper;
             _abandonmentService = abandonmentService;
+            _gradingService = gradingService;
             _options = options.Value;
         }
 
@@ -184,6 +189,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                 using var transaction = await _context.Database.BeginTransactionAsync();
 
                 var session = await _context.QuizSessions
+                    .Include(s => s.Quiz)
                     .Include(s => s.CurrentQuizQuestion)
                         .ThenInclude(qq => qq!.Question)
                     .FirstOrDefaultAsync(s => s.Id == model.SessionId);
@@ -199,7 +205,9 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
 
                 var timeLimit = session.CurrentQuizQuestion!.TimeLimitInSeconds + _options.GracePeriodSeconds;
                 var timeTaken = DateTime.UtcNow - session.CurrentQuestionStartTime.Value;
+                bool isTimedOut = timeTaken.TotalSeconds > timeLimit;
 
+                // Create the user answer record
                 var userAnswer = _mapper.Map<UserAnswer>(model);
                 userAnswer.SubmittedTime = DateTime.UtcNow;
 
@@ -211,41 +219,66 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                     userAnswer.SubmittedAnswer = originalSelectedOptionId == 1 ? "True" : "False";
                 }
 
-                if (timeTaken.TotalSeconds > timeLimit)
+                // Initialize answer based on whether we have instant feedback
+                bool hasInstantFeedback = session.Quiz.ShowFeedbackImmediately;
+
+                if (isTimedOut)
                 {
                     userAnswer.Status = AnswerStatus.TimedOut;
                     userAnswer.Score = 0;
                 }
+                else if (hasInstantFeedback)
+                {
+                    // Grade immediately for instant feedback
+                    var gradingResult = await _gradingService.GradeAnswerAsync(
+                        session.CurrentQuizQuestionId.Value,
+                        userAnswer,
+                        session.CurrentQuestionStartTime.Value);
+
+                    userAnswer.Status = gradingResult.Status;
+                    userAnswer.Score = gradingResult.Score;
+                    session.TotalScore += userAnswer.Score;
+                }
                 else
                 {
-                    var (isCorrect, score) = await GradeAnswerAsync(session.CurrentQuizQuestion.Question, userAnswer, session.CurrentQuestionStartTime.Value);
-                    userAnswer.Status = isCorrect ? AnswerStatus.Correct : AnswerStatus.Incorrect;
-                    userAnswer.Score = score;
+                    // Set as pending and enqueue for background grading
+                    userAnswer.Status = AnswerStatus.Pending;
+                    userAnswer.Score = 0; // Will be updated by background job
                 }
 
-                session.TotalScore += userAnswer.Score;
+                // Clear current question tracking
                 session.CurrentQuizQuestionId = null;
                 session.CurrentQuestionStartTime = null;
 
+                // Add answer to database
                 _context.UserAnswers.Add(userAnswer);
+                await _context.SaveChangesAsync();
 
+                // Enqueue background grading if needed (after saving to get the ID)
+                if (!hasInstantFeedback && !isTimedOut)
+                {
+                    _gradingService.EnqueueAnswerGrading(userAnswer.Id, session.CurrentQuestionStartTime.Value);
+                }
+
+                // Check if quiz is complete
                 var totalQuestionsInQuiz = await _context.QuizQuestions.CountAsync(qq => qq.QuizId == session.QuizId);
-                var answeredQuestions = await _context.UserAnswers.CountAsync(ua => ua.SessionId == session.Id) + 1; // +1 for current answer
+                var answeredQuestions = await _context.UserAnswers.CountAsync(ua => ua.SessionId == session.Id);
                 bool isQuizComplete = totalQuestionsInQuiz == answeredQuestions;
 
                 if (isQuizComplete)
                 {
                     session.IsCompleted = true;
                     session.EndTime = DateTime.UtcNow;
+                    await _context.SaveChangesAsync();
                 }
 
-                await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
 
+                // Prepare response
                 var resultDto = new AnswerResultDto
                 {
-                    Status = userAnswer.Status,
-                    ScoreAwarded = userAnswer.Score,
+                    Status = hasInstantFeedback ? userAnswer.Status : AnswerStatus.Pending,
+                    ScoreAwarded = hasInstantFeedback ? userAnswer.Score : 0,
                     IsQuizComplete = isQuizComplete
                 };
 
@@ -512,9 +545,88 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
 
         #endregion
 
+        #region Grading Service Methods
+
+        public async Task<Result<SessionGradingStatus>> GetGradingStatusAsync(Guid sessionId)
+        {
+            try
+            {
+                var session = await _context.QuizSessions
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(s => s.Id == sessionId);
+
+                if (session == null)
+                    return Result<SessionGradingStatus>.ValidationFailure("Session not found.");
+
+                var status = await _gradingService.GetSessionGradingStatusAsync(sessionId);
+                return Result<SessionGradingStatus>.Success(status);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting grading status for session {SessionId}", sessionId);
+                return Result<SessionGradingStatus>.Failure("Failed to get grading status.");
+            }
+        }
+
+        public async Task<Result<QuizSessionDto>> GetSessionWithGradedAnswersAsync(Guid sessionId, int maxWaitSeconds = 30)
+        {
+            try
+            {
+                var session = await _context.QuizSessions
+                    .Include(s => s.Quiz)
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(s => s.Id == sessionId);
+
+                if (session == null)
+                    return Result<QuizSessionDto>.ValidationFailure("Session not found.");
+
+                // If instant feedback, return immediately
+                if (session.Quiz.ShowFeedbackImmediately)
+                {
+                    var sessionDto = await GetSessionDtoAsync(sessionId);
+                    return Result<QuizSessionDto>.Success(sessionDto!);
+                }
+
+                // For non-instant feedback, wait for grading to complete
+                var startTime = DateTime.UtcNow;
+                var timeout = TimeSpan.FromSeconds(maxWaitSeconds);
+
+                while (DateTime.UtcNow - startTime < timeout)
+                {
+                    var areAllGraded = await _gradingService.AreAllAnswersGradedAsync(sessionId);
+
+                    if (areAllGraded)
+                    {
+                        // Refresh session to get updated scores
+                        var completedSessionDto = await GetSessionDtoAsync(sessionId);
+                        return Result<QuizSessionDto>.Success(completedSessionDto!);
+                    }
+
+                    // Wait a bit before checking again
+                    await Task.Delay(500);
+                }
+
+                // Timeout reached - return session with current state
+                _logger.LogWarning("Timeout waiting for grading to complete for session {SessionId}", sessionId);
+                var currentSessionDto = await GetSessionDtoAsync(sessionId);
+
+                // You might want to add a flag to indicate grading is still in progress
+                return Result<QuizSessionDto>.Success(currentSessionDto!);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting session with graded answers for {SessionId}", sessionId);
+                return Result<QuizSessionDto>.Failure("Failed to retrieve session results.");
+            }
+        }
+
+        #endregion
+
         #region Private Helper Methods
 
-        private async Task<(bool IsCorrect, int Score)> GradeAnswerAsync(QuestionBase question, UserAnswer answer, DateTime questionStartTime)
+        //DEPRICATED SINCE NEW ANSWER GRADING SERVICE
+
+        /*private async Task<(bool IsCorrect, int Score)> GradeAnswerAsync(QuestionBase question, UserAnswer answer, DateTime questionStartTime)
         {
             bool isCorrect = false;
 
@@ -583,7 +695,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                 BASE_POINTS, timeBonus, multiplier, finalScore);
 
             return Math.Max(1, finalScore);
-        }
+        }*/
 
 
         private async Task<QuizSessionDto?> GetSessionDtoAsync(Guid sessionId)

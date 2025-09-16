@@ -1,5 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using QuizAPI.Controllers.Quizzes.Services.QuizSessionServices;
+using QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.UserAnswerService;
 using QuizAPI.DTOs.Quiz;
 
 namespace QuizAPI.Controllers;

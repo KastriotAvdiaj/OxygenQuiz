@@ -4,7 +4,7 @@ using QuizAPI.Data;
 using QuizAPI.Models.Quiz;
 using QuizAPI.ManyToManyTables;
 
-namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
+namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.AbandonmentService
 {
     public class SessionAbandonmentService : ISessionAbandonmentService
     {
@@ -117,7 +117,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                                    .ContinueWith(t => t.Result.Select(x => new QuizQuestion { TimeLimitInSeconds = x.TimeLimitInSeconds }).ToList());
 
             var totalQuizTimeSeconds = quizQuestions.Sum(qq => qq.TimeLimitInSeconds) +
-                                     (quizQuestions.Count * _options.QuestionBufferSeconds);
+                                     quizQuestions.Count * _options.QuestionBufferSeconds;
             var expectedDuration = TimeSpan.FromSeconds(totalQuizTimeSeconds);
 
             var maxQuestionTime = quizQuestions.Any()

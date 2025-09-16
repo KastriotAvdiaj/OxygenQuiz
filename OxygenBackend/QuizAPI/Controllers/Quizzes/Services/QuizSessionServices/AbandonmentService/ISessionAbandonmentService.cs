@@ -1,6 +1,6 @@
 ﻿using QuizAPI.Models.Quiz;
 
-namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
+namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.AbandonmentService
 {
     public interface ISessionAbandonmentService
     {

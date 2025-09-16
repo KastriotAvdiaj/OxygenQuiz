@@ -14,7 +14,8 @@ namespace QuizAPI.Models.Quiz
         NotAnswered,
         Correct,
         Incorrect,
-        TimedOut
+        TimedOut, 
+        Pending
     }
     public class UserAnswer
     {

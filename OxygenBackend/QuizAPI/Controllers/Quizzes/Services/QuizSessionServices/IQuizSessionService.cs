@@ -1,4 +1,5 @@
 ﻿using QuizAPI.Common;
+using QuizAPI.Controllers.Quizzes.Services.AnswerGradingServices;
 using QuizAPI.DTOs.Quiz;
 using QuizAPI.Models.Quiz;
 
@@ -21,6 +22,16 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
 
         Task<Result<QuizSessionDto>> AbandonAndCreateNewSessionAsync(Guid existingSessionId, QuizSessionCM model);
         Task<Result<QuizSessionDto>> ResumeSessionAsync(Guid sessionId, Guid userId);
+
+        /// <summary>
+        /// Gets the current grading status for a session (useful for non-instant feedback quizzes)
+        /// </summary>
+        Task<Result<SessionGradingStatus>> GetGradingStatusAsync(Guid sessionId);
+
+        /// <summary>
+        /// Waits for all answers to be graded or timeout after specified duration
+        /// </summary>
+        Task<Result<QuizSessionDto>> GetSessionWithGradedAnswersAsync(Guid sessionId, int maxWaitSeconds = 30);
     }
 
 }   

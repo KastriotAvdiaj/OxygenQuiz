@@ -4,7 +4,7 @@ using QuizAPI.Common;
 using QuizAPI.Data;
 using QuizAPI.DTOs.Quiz;
 
-namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
+namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.UserAnswerService
 {
     public class UserAnswerService : IUserAnswerService
     {
