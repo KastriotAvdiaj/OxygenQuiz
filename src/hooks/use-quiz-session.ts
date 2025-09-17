@@ -165,8 +165,6 @@ export const useQuizSession = ({
       return;
     }
 
-    console.log("🚀 Initializing quiz session:", { quizId, userId, retryCount });
-
     try {
       initializationRef.current.isInitializing = true;
       setError(null);
@@ -176,8 +174,7 @@ export const useQuizSession = ({
         data: { quizId, userId }
       });
 
-      console.log("✅ Session created successfully:", sessionData.id);
-
+      localStorage.setItem('hasInstantFeedback', String(sessionData.hasInstantFeedback));
       const session: QuizSession = {
         quizId: sessionData.quizId,
         userId: sessionData.userId,
@@ -201,7 +198,6 @@ export const useQuizSession = ({
       fetchNextQuestion(session.id);
       
     } catch (err: any) {
-      console.error("❌ Failed to create quiz session:", err);
       setError(extractErrorMessage(err, "Failed to start quiz session"));
       
       // Specifically flag 4xx client errors as validation errors.
@@ -217,7 +213,7 @@ export const useQuizSession = ({
   // --- Effect to Trigger Initialization ---
   // This effect runs on mount and whenever its dependencies change.
 
-  // --- ‼️ FIX #1: BREAK THE INFINITE LOOP ‼️ ---
+  // --- FIX #1: BREAK THE INFINITE LOOP  ---
   useEffect(() => {
     // The `!error` condition is the key to stopping the loop.
     // If an error has been set, this effect will NOT re-run `initializeQuizSession`,
@@ -232,22 +228,26 @@ export const useQuizSession = ({
   }, [initializeQuizSession, error]); // <-- ADD `error` TO THE DEPENDENCY ARRAY
 
 
-  const handleAnswerSubmissionSuccess = useCallback((answerResult: AnswerResult) => {
-    setLastAnswerResult(answerResult);
-    const delay = answerResult.isQuizComplete ? 1000 : 500;
+ const handleAnswerSubmissionSuccess = useCallback((answerResult: AnswerResult) => {
+    const hasInstantFeedback = quizSession?.hasInstantFeedback ?? false;
 
-    setTimeout(() => {
-      setLastAnswerResult(null);
-      if (answerResult.isQuizComplete) {
+
+    if (answerResult.isQuizComplete) {
+      if (hasInstantFeedback) {
         navigate(`/quiz/results/${quizSession!.id}`);
+      } else {
+        navigate(`/quiz/completing/${quizSession!.id}`);
+      }
+    } else {
+      if (hasInstantFeedback) {
+        setLastAnswerResult(answerResult);
       } else {
         setCurrentQuestionNumber((prev) => prev + 1);
         fetchNextQuestion(quizSession!.id);
       }
-    }, delay);
+    }
   }, [navigate, quizSession, fetchNextQuestion]);
 
-  // --- ‼️ FIX #2: ENABLE RETRYING ‼️ ---
   const handleRetry = useCallback(() => {
     console.log("🔄 Retrying quiz session initialization");
     

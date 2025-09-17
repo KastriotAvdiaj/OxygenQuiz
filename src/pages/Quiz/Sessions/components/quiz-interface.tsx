@@ -1,7 +1,6 @@
 // src/components/quiz/QuizInterface.tsx
 
 import { QuestionDisplay } from "./question-display";
-import { AnswerFeedback } from "./answer-feedback";
 import { QuizProgress } from "./quiz-progress";
 import {
   useQuizTheme,
@@ -109,14 +108,9 @@ export function QuizInterface({
                 </motion.div>
               )}
             </div>
-          ) : lastAnswerResult && !showInstantFeedback ? (
-            <AnswerFeedback
-              result={lastAnswerResult}
-              onNext={onNextQuestion}
-              theme={theme}
-            />
+          ) : lastAnswerResult && showInstantFeedback ? (
+            <p>Quiz complete! Redirecting to results...</p>
           ) : (
-            // Enhanced loading state
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}

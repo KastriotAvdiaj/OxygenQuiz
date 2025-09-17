@@ -6,6 +6,7 @@ export enum AnswerStatus {
   Correct = 'Correct',
   Incorrect = 'Incorrect',
   TimedOut = 'TimedOut',
+  Pending = 'Pending', // For questions that are yet to be graded/for non-instant feedback quizzes
 }
 
 export enum LiveQuizStatus {
@@ -36,7 +37,7 @@ export interface AnswerResult {
   scoreAwarded: number;
   isQuizComplete: boolean;
   correctAnswerId?: number | null; // ID of the correct option for instant feedback
-  explanation?: string; // Explanation for the correct answer
+  explanation?: string; // Explanation for the correct answer NOT ADDED IN BACKEND YET
 }
 
 export interface QuizState {

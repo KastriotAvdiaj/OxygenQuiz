@@ -35,9 +35,6 @@ export function QuizResultsRouteWrapper({
     refetch: fetchSessionResults,
   } = useGetQuizSession({
     sessionId: sessionId || "",
-    queryConfig: {
-      enabled: !!sessionId,
-    },
   });
 
   const handleRetryQuiz = () => {
@@ -104,7 +101,7 @@ export function QuizResultsRouteWrapper({
           </p>
           <div className="flex gap-4 justify-center">
             <Button
-              onClick={fetchSessionResults}
+              onClick={() => fetchSessionResults()}
               className="flex items-center gap-2"
             >
               <Loader2 className="h-4 w-4" />
