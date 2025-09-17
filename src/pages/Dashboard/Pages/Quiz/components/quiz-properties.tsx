@@ -66,6 +66,11 @@ export const quizProperties: QuizProperty[] = [
     getValue: (quiz) => `${quiz.timeLimitInSeconds} seconds`,
   },
   {
+    label: "Has Instant Feedback",
+    getIcon: () => <Clock className="h-5 w-5 text-muted-foreground" />,
+    getValue: (quiz) => (quiz.showFeedbackImmediately ? "Yes" : "No"),
+  },
+  {
     label: "Created At",
     getIcon: () => <Calendar className="h-5 w-5 text-muted-foreground" />,
     getValue: (quiz) => formatDate(quiz.createdAt),

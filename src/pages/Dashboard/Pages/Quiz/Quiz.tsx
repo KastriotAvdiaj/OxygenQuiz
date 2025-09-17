@@ -53,6 +53,7 @@ export const QuizRoute = () => {
 
     const quiz = quizQuery.data;
     return {
+      //difficulty level doens't make sense
       estimatedDuration: Math.ceil(quiz.timeLimitInSeconds / 60),
       difficultyLevel:
         quiz.questionCount > 20
