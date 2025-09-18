@@ -43,7 +43,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.AnswerGradingServices
     {
         public int TotalAnswers { get; set; }
         public int GradedAnswers { get; set; }
-        public bool IsComplete => TotalAnswers == GradedAnswers && TotalAnswers > 0;
+        public bool IsGradingComplete => TotalAnswers == GradedAnswers && TotalAnswers > 0;
         public decimal PercentageComplete => TotalAnswers > 0 ? (decimal)GradedAnswers / TotalAnswers * 100 : 0;
     }
 }

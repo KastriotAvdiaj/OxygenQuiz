@@ -16,7 +16,7 @@ interface TrueOrFalseQuestionProps {
 }
 
 export function TrueOrFalseQuestion({
-  question,
+  // question,
   onSubmit,
   isSubmitting,
   theme,

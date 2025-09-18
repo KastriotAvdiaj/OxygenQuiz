@@ -9,7 +9,7 @@ import {
   useQuizTheme,
   type CategoryColorPalette,
 } from "@/hooks/use-quiz-theme";
-import { useGetQuizSession } from "../api/get-quiz-session";
+import { useGetSessionResults } from "../api/get-quiz-session";
 
 interface QuizResultsRouteWrapperProps {
   // Optional category theming props
@@ -33,7 +33,7 @@ export function QuizResultsRouteWrapper({
     isLoading: loading,
     error,
     refetch: fetchSessionResults,
-  } = useGetQuizSession({
+  } = useGetSessionResults({
     sessionId: sessionId || "",
   });
 

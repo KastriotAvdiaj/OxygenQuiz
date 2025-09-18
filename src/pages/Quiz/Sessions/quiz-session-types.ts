@@ -15,6 +15,13 @@ export enum LiveQuizStatus {
   Completed = 'Completed',
 }
 
+export interface SessionGradingStatus {
+  totalAnswers: number;
+  gradedAnswers: number;
+  isGradingComplete: boolean;
+  percentageComplete:number;
+}
+
 // DTOs from the backend
 export interface AnswerOption {
   id: number;

@@ -7,7 +7,6 @@ import { QuizSession } from '../quiz-session-types';
 export const createQuizSessionInputSchema = z.object({
   quizId: z.number().int().positive(),
   // In a real app, this would come from auth state, not the component.
-  // We keep it for consistency with your backend model.
   userId: z.string().uuid(), 
 });
 

@@ -174,7 +174,6 @@ export const useQuizSession = ({
         data: { quizId, userId }
       });
 
-      localStorage.setItem('hasInstantFeedback', String(sessionData.hasInstantFeedback));
       const session: QuizSession = {
         quizId: sessionData.quizId,
         userId: sessionData.userId,
@@ -225,7 +224,7 @@ export const useQuizSession = ({
     ) {
       initializeQuizSession();
     }
-  }, [initializeQuizSession, error]); // <-- ADD `error` TO THE DEPENDENCY ARRAY
+  }, [initializeQuizSession, error]);
 
 
  const handleAnswerSubmissionSuccess = useCallback((answerResult: AnswerResult) => {
@@ -233,11 +232,12 @@ export const useQuizSession = ({
 
 
     if (answerResult.isQuizComplete) {
-      if (hasInstantFeedback) {
-        navigate(`/quiz/results/${quizSession!.id}`);
-      } else {
-        navigate(`/quiz/completing/${quizSession!.id}`);
-      }
+      // if (hasInstantFeedback) {
+      //   navigate(`/quiz/results/${quizSession!.id}`);
+      // } else {
+      //   navigate(`/quiz/completing/${quizSession!.id}`);
+      // }
+       navigate(`/quiz/results/${quizSession!.id}`);
     } else {
       if (hasInstantFeedback) {
         setLastAnswerResult(answerResult);
@@ -249,7 +249,6 @@ export const useQuizSession = ({
   }, [navigate, quizSession, fetchNextQuestion]);
 
   const handleRetry = useCallback(() => {
-    console.log("🔄 Retrying quiz session initialization");
     
     // Resetting the error state is essential. Without this, the `!error` condition
     // in the useEffect hook would remain false, preventing a new initialization attempt.

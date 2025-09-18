@@ -186,6 +186,8 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
         {
             try
             {
+                _logger.LogInformation("SubmitAnswerAsync called with model: {@Model}", model);
+
                 using var transaction = await _context.Database.BeginTransactionAsync();
 
                 var session = await _context.QuizSessions
@@ -195,21 +197,39 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                     .FirstOrDefaultAsync(s => s.Id == model.SessionId);
 
                 if (session == null)
+                {
+                    _logger.LogWarning("Session {SessionId} not found.", model.SessionId);
                     return Result<AnswerResultDto>.ValidationFailure("Session not found.");
+                }
                 if (session.IsCompleted)
+                {
+                    _logger.LogWarning("Session {SessionId} is already completed.", session.Id);
                     return Result<AnswerResultDto>.ValidationFailure("This quiz session is already completed.");
+                }
                 if (session.CurrentQuizQuestionId == null || session.CurrentQuestionStartTime == null)
+                {
+                    _logger.LogWarning("Session {SessionId} not expecting an answer right now.", session.Id);
                     return Result<AnswerResultDto>.ValidationFailure("Not currently expecting an answer. Please request the next question.");
+                }
                 if (session.CurrentQuizQuestionId != model.QuizQuestionId)
+                {
+                    _logger.LogWarning("Session {SessionId} got mismatched question Id. Expected {Expected}, got {Actual}",
+                        session.Id, session.CurrentQuizQuestionId, model.QuizQuestionId);
                     return Result<AnswerResultDto>.ValidationFailure("Submitted answer is for the wrong question.");
+                }
 
                 var timeLimit = session.CurrentQuizQuestion!.TimeLimitInSeconds + _options.GracePeriodSeconds;
                 var timeTaken = DateTime.UtcNow - session.CurrentQuestionStartTime.Value;
                 bool isTimedOut = timeTaken.TotalSeconds > timeLimit;
 
+                _logger.LogInformation("Session {SessionId}: TimeTaken={TimeTakenSeconds}s, Limit={TimeLimitSeconds}s, TimedOut={TimedOut}",
+                    session.Id, timeTaken.TotalSeconds, timeLimit, isTimedOut);
+
                 // Create the user answer record
                 var userAnswer = _mapper.Map<UserAnswer>(model);
                 userAnswer.SubmittedTime = DateTime.UtcNow;
+
+                _logger.LogInformation("Mapped UserAnswer before processing: {@UserAnswer}", userAnswer);
 
                 // Handle True/False questions
                 if (session.CurrentQuizQuestion.Question is TrueFalseQuestion)
@@ -217,10 +237,14 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                     var originalSelectedOptionId = userAnswer.SelectedOptionId;
                     userAnswer.SelectedOptionId = null;
                     userAnswer.SubmittedAnswer = originalSelectedOptionId == 1 ? "True" : "False";
+
+                    _logger.LogInformation("True/False handling: OriginalOptionId={Original}, ConvertedAnswer={Converted}",
+                        originalSelectedOptionId, userAnswer.SubmittedAnswer);
                 }
 
                 // Initialize answer based on whether we have instant feedback
                 bool hasInstantFeedback = session.Quiz.ShowFeedbackImmediately;
+                _logger.LogInformation("Session {SessionId}: HasInstantFeedback={HasInstantFeedback}", session.Id, hasInstantFeedback);
 
                 if (isTimedOut)
                 {
@@ -229,7 +253,6 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                 }
                 else if (hasInstantFeedback)
                 {
-                    // Grade immediately for instant feedback
                     var gradingResult = await _gradingService.GradeAnswerAsync(
                         session.CurrentQuizQuestionId.Value,
                         userAnswer,
@@ -238,12 +261,15 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                     userAnswer.Status = gradingResult.Status;
                     userAnswer.Score = gradingResult.Score;
                     session.TotalScore += userAnswer.Score;
+
+                    _logger.LogInformation("Grading result: Status={Status}, Score={Score}", gradingResult.Status, gradingResult.Score);
                 }
                 else
                 {
-                    // Set as pending and enqueue for background grading
                     userAnswer.Status = AnswerStatus.Pending;
-                    userAnswer.Score = 0; // Will be updated by background job
+                    userAnswer.Score = 0;
+
+                    _logger.LogInformation("Answer set to Pending for background grading.");
                 }
 
                 // Clear current question tracking
@@ -254,10 +280,14 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                 _context.UserAnswers.Add(userAnswer);
                 await _context.SaveChangesAsync();
 
-                // Enqueue background grading if needed (after saving to get the ID)
+                _logger.LogInformation("UserAnswer saved with Id={UserAnswerId}, Status={Status}, Score={Score}",
+                    userAnswer.Id, userAnswer.Status, userAnswer.Score);
+
+                // Enqueue background grading if needed
                 if (!hasInstantFeedback && !isTimedOut)
                 {
-                    _gradingService.EnqueueAnswerGrading(userAnswer.Id, session.CurrentQuestionStartTime.Value);
+                    _gradingService.EnqueueAnswerGrading(userAnswer.Id, DateTime.UtcNow);
+                    _logger.LogInformation("Enqueued answer grading for UserAnswerId={UserAnswerId}", userAnswer.Id);
                 }
 
                 // Check if quiz is complete
@@ -265,22 +295,28 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                 var answeredQuestions = await _context.UserAnswers.CountAsync(ua => ua.SessionId == session.Id);
                 bool isQuizComplete = totalQuestionsInQuiz == answeredQuestions;
 
+                _logger.LogInformation("Quiz progress: {Answered}/{Total} answered. Complete={Complete}",
+                    answeredQuestions, totalQuestionsInQuiz, isQuizComplete);
+
                 if (isQuizComplete)
                 {
                     session.IsCompleted = true;
                     session.EndTime = DateTime.UtcNow;
                     await _context.SaveChangesAsync();
+
+                    _logger.LogInformation("Session {SessionId} marked complete at {EndTime}", session.Id, session.EndTime);
                 }
 
                 await transaction.CommitAsync();
 
-                // Prepare response
                 var resultDto = new AnswerResultDto
                 {
                     Status = hasInstantFeedback ? userAnswer.Status : AnswerStatus.Pending,
                     ScoreAwarded = hasInstantFeedback ? userAnswer.Score : 0,
                     IsQuizComplete = isQuizComplete
                 };
+
+                _logger.LogInformation("Returning result: {@ResultDto}", resultDto);
 
                 return Result<AnswerResultDto>.Success(resultDto);
             }
@@ -290,6 +326,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                 return Result<AnswerResultDto>.Failure("An error occurred while submitting the answer.");
             }
         }
+
 
         #endregion
 
