@@ -47,7 +47,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.AnswerGradingServices
                         .LoadAsync();
                 }
 
-                var (isCorrect, score) = await CalculateScoreAsync(quizQuestion.Question, userAnswer, quizQuestion, questionStartTime);
+                var (isCorrect, score) = await CalculateScoreAsync(quizQuestion.Question, userAnswer, quizQuestion);
 
                 var status = isCorrect ? AnswerStatus.Correct : AnswerStatus.Incorrect;
 
@@ -131,8 +131,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.AnswerGradingServices
                 var (isCorrect, score) = await CalculateScoreAsync(
                     userAnswer.QuizQuestion.Question,
                     userAnswer,
-                    userAnswer.QuizQuestion,
-                    questionStartTime);
+                    userAnswer.QuizQuestion);
 
                 // Update the answer
                 userAnswer.Status = isCorrect ? AnswerStatus.Correct : AnswerStatus.Incorrect;
@@ -181,15 +180,14 @@ namespace QuizAPI.Controllers.Quizzes.Services.AnswerGradingServices
         private async Task<(bool IsCorrect, int Score)> CalculateScoreAsync(
             QuestionBase question,
             UserAnswer answer,
-            QuizQuestion quizQuestion,
-            DateTime questionStartTime)
+            QuizQuestion quizQuestion)
         {
             bool isCorrect = await DetermineCorrectnessAsync(question, answer);
 
             if (!isCorrect)
                 return (false, 0);
 
-            int score = CalculateScore(quizQuestion, answer, questionStartTime);
+            int score = CalculateScore(quizQuestion, answer);
             return (true, score);
         }
 
@@ -224,17 +222,27 @@ namespace QuizAPI.Controllers.Quizzes.Services.AnswerGradingServices
             }
         }
 
-        private int CalculateScore(QuizQuestion quizQuestion, UserAnswer answer, DateTime questionStartTime)
+        private int CalculateScore(QuizQuestion quizQuestion, UserAnswer answer)
         {
+            // 2. Handle Null SubmittedTime: If the answer was never submitted (e.g., timed out),
+            // the score is unequivocally 0. This is our safety check.
+            if (!answer.SubmittedTime.HasValue)
+            {
+                return 0;
+            }
+
             const int BASE_POINTS = 10;
+            const double MAX_TIME_BONUS_FACTOR = 0.5; 
             double timeBonus = 0;
 
-            var timeTaken = answer.SubmittedTime - questionStartTime;
+            TimeSpan timeTaken = answer.SubmittedTime.Value - answer.QuestionStartTime;
 
-            if (timeTaken.TotalSeconds > 0 && quizQuestion.TimeLimitInSeconds > 0)
+            if (timeTaken.TotalSeconds >= 0 && quizQuestion.TimeLimitInSeconds > 0)
             {
-                var timeRemainingSeconds = Math.Max(0, quizQuestion.TimeLimitInSeconds - (int)timeTaken.TotalSeconds);
-                timeBonus = (double)timeRemainingSeconds / quizQuestion.TimeLimitInSeconds * 0.5;
+                var timeRemainingSeconds = Math.Max(0, quizQuestion.TimeLimitInSeconds - timeTaken.TotalSeconds);
+
+                // Calculate the bonus as a percentage of the time remaining
+                timeBonus = (timeRemainingSeconds / quizQuestion.TimeLimitInSeconds) * MAX_TIME_BONUS_FACTOR;
             }
 
             var pointsWithTimeBonus = (int)(BASE_POINTS * (1 + timeBonus));
@@ -252,6 +260,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.AnswerGradingServices
             _logger.LogDebug("Score calculation - Base: {Base}, Time bonus: {TimeBonus:P}, Multiplier: {Multiplier}x, Final: {Final}",
                 BASE_POINTS, timeBonus, multiplier, finalScore);
 
+            // Keep your logic of awarding at least 1 point for a correct answer.
             return Math.Max(1, finalScore);
         }
 

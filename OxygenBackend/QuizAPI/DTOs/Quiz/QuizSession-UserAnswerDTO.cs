@@ -1,6 +1,7 @@
 ﻿using QuizAPI.DTOs.Question;
 using QuizAPI.Models.Quiz;
 using QuizAPI.Models;
+using System.Text.Json.Serialization;
 
 namespace QuizAPI.DTOs.Quiz
 {
@@ -62,16 +63,40 @@ namespace QuizAPI.DTOs.Quiz
 
         public class UserAnswerDto
         {
-            public int Id { get; set; }
-            public Guid SessionId { get; set; }
-            public int QuizQuestionId { get; set; }
-            public int? SelectedOptionId { get; set; }
-            public string? SubmittedAnswer { get; set; }
-            public AnswerStatus Status { get; set; }
-            public int Score { get; set; }
-            public string QuestionText { get; set; } = string.Empty;
-            public string? SelectedOptionText { get; set; }
-        }
+        public int Id { get; set; }
+        public AnswerStatus Status { get; set; }
+        public int Score { get; set; }
+
+        public int? SelectedOptionId { get; set; } // For MC/T-F questions
+        public string? SubmittedAnswer { get; set; }
+
+        // --- Question Context ---
+        public string QuestionText { get; set; } = string.Empty;
+        [JsonConverter(typeof(JsonStringEnumConverter))] // Ensures the enum is sent as a string
+        public QuestionType QuestionType { get; set; }
+        public int TimeLimitInSeconds { get; set; }
+        public double? TimeSpentInSeconds { get; set; } // Calculated field
+
+        /// <summary>
+        /// For MultipleChoice questions: A list of all available options, including correctness.
+        /// </summary>
+        public List<AnswerOptionDTO>? AnswerOptions { get; set; }
+
+        /// <summary>
+        /// For TrueFalse questions: The correct boolean answer.
+        /// </summary>
+        public bool? CorrectAnswerBoolean { get; set; }
+
+        /// <summary>
+        /// For TypeTheAnswer questions: The primary correct answer string.
+        /// </summary>
+        public string? CorrectAnswerText { get; set; }
+
+        /// <summary>
+        /// For TypeTheAnswer questions: A list of all other acceptable answers.
+        /// </summary>
+        public List<string>? AcceptableAnswers { get; set; }
+    }
 
     public class CurrentQuestionDto
     {

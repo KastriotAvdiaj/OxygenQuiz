@@ -9,6 +9,7 @@ using QuizAPI.Models.Quiz;
 using QuizAPI.ManyToManyTables;
 using QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.AbandonmentService;
 using QuizAPI.Controllers.Quizzes.Services.AnswerGradingServices;
+using AutoMapper.QueryableExtensions;
 
 namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
 {
@@ -218,8 +219,10 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                     return Result<AnswerResultDto>.ValidationFailure("Submitted answer is for the wrong question.");
                 }
 
+                var questionStartTime = session.CurrentQuestionStartTime.Value;
                 var timeLimit = session.CurrentQuizQuestion!.TimeLimitInSeconds + _options.GracePeriodSeconds;
-                var timeTaken = DateTime.UtcNow - session.CurrentQuestionStartTime.Value;
+                /*var timeTaken = DateTime.UtcNow - session.CurrentQuestionStartTime.Value;*/
+                var timeTaken = DateTime.UtcNow - questionStartTime;
                 bool isTimedOut = timeTaken.TotalSeconds > timeLimit;
 
                 _logger.LogInformation("Session {SessionId}: TimeTaken={TimeTakenSeconds}s, Limit={TimeLimitSeconds}s, TimedOut={TimedOut}",
@@ -737,20 +740,16 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
 
         private async Task<QuizSessionDto?> GetSessionDtoAsync(Guid sessionId)
         {
-            var session = await _context.QuizSessions
+            // No more manual .Include() statements.
+            // ProjectTo reads your mapping profile and generates the single, optimal SQL query
+            // with all the necessary JOINs to get the data, including AnswerOptions.
+            var sessionDto = await _context.QuizSessions
+                .Where(s => s.Id == sessionId)
                 .AsNoTracking()
-                .Include(s => s.Quiz)
-                    .ThenInclude(q => q.QuizQuestions) // Needed for TotalQuestions count
-                .Include(s => s.Quiz)
-                    .ThenInclude(q => q.Category) // Needed for Category mapping
-                .Include(s => s.UserAnswers)
-                    .ThenInclude(ua => ua.QuizQuestion)
-                        .ThenInclude(qq => qq.Question)
-                .Include(s => s.UserAnswers)
-                    .ThenInclude(ua => ua.AnswerOption)
-                .FirstOrDefaultAsync(s => s.Id == sessionId);
+                .ProjectTo<QuizSessionDto>(_mapper.ConfigurationProvider) // The magic is here
+                .FirstOrDefaultAsync();
 
-            return session == null ? null : _mapper.Map<QuizSessionDto>(session);
+            return sessionDto;
         }
 
         #endregion

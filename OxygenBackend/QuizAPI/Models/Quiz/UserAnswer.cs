@@ -27,7 +27,11 @@ namespace QuizAPI.Models.Quiz
         public string? SubmittedAnswer { get; set; }
         public AnswerStatus Status { get; set; } = AnswerStatus.NotAnswered;
         public int Score { get; set; }
-        public DateTime SubmittedTime { get; set; }
+
+        public DateTime QuestionStartTime { get; set; }
+
+        /// This can be null if the user timed out or hasn't answered yet.
+        public DateTime? SubmittedTime { get; set; }
 
         [ForeignKey(nameof(SessionId))]
         public virtual QuizSession QuizSession { get; set; } = null!;

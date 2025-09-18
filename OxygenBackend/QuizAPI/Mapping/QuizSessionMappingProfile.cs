@@ -16,18 +16,6 @@ namespace QuizAPI.Mapping
 
             CreateMap<QuizSessionCM, QuizSession>();
 
-            CreateMap<QuizSession, QuizSessionDto>()
-                .ForMember(dest => dest.QuizTitle, opt => opt.MapFrom(src => src.Quiz.Title))
-                .ForMember(dest => dest.IsCompleted, opt => opt.MapFrom(src => src.IsCompleted))
-                .ForMember(dest => dest.AbandonmentReason, opt => opt.MapFrom(src => src.AbandonmentReason))
-                .ForMember(dest => dest.AbandonedAt, opt => opt.MapFrom(src => src.AbandonedAt))
-                .ForMember(dest => dest.HasInstantFeedback, opt=> opt.MapFrom(src => src.Quiz.ShowFeedbackImmediately))
-                .ForMember(dest => dest.QuizDescription, opt=> opt.MapFrom(src => src.Quiz.Description))
-                .ForMember(dest => dest.Category, opt=> opt.MapFrom(src => src.Quiz.Category.Name))
-                .ForMember(dest => dest.TotalQuestions, opt => opt.MapFrom(src => src.Quiz.QuizQuestions.Count));
-
-
-
             CreateMap<QuizSession, QuizSessionSummaryDto>()
                 .ForMember(dest => dest.QuizTitle, opt => opt.MapFrom(src => src.Quiz.Title))
                 .ForMember(dest => dest.TotalQuestions, opt => opt.MapFrom(src => src.Quiz.QuizQuestions.Count))
@@ -38,6 +26,28 @@ namespace QuizAPI.Mapping
                 .ForMember(dest => dest.AbandonmentReason, opt => opt.MapFrom(src => src.AbandonmentReason))
                 .ForMember(dest => dest.AbandonedAt, opt => opt.MapFrom(src => src.AbandonedAt)); ;
 
+            CreateMap<QuizSession, QuizSessionDto>()
+                .ForMember(dest => dest.QuizTitle, opt => opt.MapFrom(src => src.Quiz.Title))
+                .ForMember(dest => dest.IsCompleted, opt => opt.MapFrom(src => src.IsCompleted))
+                .ForMember(dest => dest.AbandonmentReason, opt => opt.MapFrom(src => src.AbandonmentReason))
+                .ForMember(dest => dest.AbandonedAt, opt => opt.MapFrom(src => src.AbandonedAt))
+                .ForMember(dest => dest.HasInstantFeedback, opt => opt.MapFrom(src => src.Quiz.ShowFeedbackImmediately))
+                .ForMember(dest => dest.QuizDescription, opt => opt.MapFrom(src => src.Quiz.Description))
+                .ForMember(dest => dest.Category, opt => opt.MapFrom(src => src.Quiz.Category.Name))
+                .ForMember(dest => dest.TotalQuestions, opt => opt.MapFrom(src => src.Quiz.QuizQuestions.Count))
+                .ForMember(dest => dest.UserAnswers, opt => opt.MapFrom(src => src.UserAnswers.OrderBy(ua => ua.QuizQuestion.OrderInQuiz)));
+
+            /*OLD QUIZ SESSION MAPPING*/
+            /*CreateMap<QuizSession, QuizSessionDto>()
+                .ForMember(dest => dest.QuizTitle, opt => opt.MapFrom(src => src.Quiz.Title))
+                .ForMember(dest => dest.IsCompleted, opt => opt.MapFrom(src => src.IsCompleted))
+                .ForMember(dest => dest.AbandonmentReason, opt => opt.MapFrom(src => src.AbandonmentReason))
+                .ForMember(dest => dest.AbandonedAt, opt => opt.MapFrom(src => src.AbandonedAt))
+                .ForMember(dest => dest.HasInstantFeedback, opt=> opt.MapFrom(src => src.Quiz.ShowFeedbackImmediately))
+                .ForMember(dest => dest.QuizDescription, opt=> opt.MapFrom(src => src.Quiz.Description))
+                .ForMember(dest => dest.Category, opt=> opt.MapFrom(src => src.Quiz.Category.Name))
+                .ForMember(dest => dest.TotalQuestions, opt => opt.MapFrom(src => src.Quiz.QuizQuestions.Count));*/
+
 
             // --- UserAnswer Mappings ---
 
@@ -46,8 +56,28 @@ namespace QuizAPI.Mapping
             CreateMap<UserAnswer, UserAnswerDto>()
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status))
                 .ForMember(dest => dest.QuestionText, opt => opt.MapFrom(src => src.QuizQuestion.Question.Text))
-                .ForMember(dest => dest.SelectedOptionText, opt => opt.MapFrom(src => src.AnswerOption != null ? src.AnswerOption.Text : null));
 
+                    .ForMember(dest => dest.QuestionType, opt => opt.MapFrom(src => src.QuizQuestion.Question.Type))
+                    .ForMember(dest => dest.TimeLimitInSeconds, opt => opt.MapFrom(src => src.QuizQuestion.TimeLimitInSeconds))
+                    .ForMember(dest => dest.TimeSpentInSeconds, opt => opt.MapFrom(src =>
+                        src.SubmittedTime.HasValue
+                            ? (double?)(src.SubmittedTime.Value - src.QuestionStartTime).TotalSeconds
+                            : null))
+                    .ForMember(dest => dest.AnswerOptions, opt => opt.MapFrom(src =>
+                        (src.QuizQuestion.Question as MultipleChoiceQuestion).AnswerOptions))
+                    .ForMember(dest => dest.CorrectAnswerBoolean, opt => opt.MapFrom(src =>
+                        (src.QuizQuestion.Question as TrueFalseQuestion).CorrectAnswer))
+                    .ForMember(dest => dest.CorrectAnswerText, opt => opt.MapFrom(src =>
+                        (src.QuizQuestion.Question as TypeTheAnswerQuestion).CorrectAnswer))
+                    .ForMember(dest => dest.AcceptableAnswers, opt => opt.MapFrom(src =>
+                        (src.QuizQuestion.Question as TypeTheAnswerQuestion).AcceptableAnswers));
+
+            /*OLD USER ANSWER MAPPING*/
+           /* CreateMap<UserAnswer, UserAnswerDto>()
+    .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status))
+    .ForMember(dest => dest.QuestionText, opt => opt.MapFrom(src => src.QuizQuestion.Question.Text))
+    .ForMember(dest => dest.SelectedOptionText, opt => opt.MapFrom(src => src.AnswerOption != null ? src.AnswerOption.Text : null));
+*/
             // --- New Mappings for Live Quiz Flow ---
 
 

@@ -88,6 +88,8 @@ export function QuizResults({
     }
   };
 
+  console.log("Quiz Session Data:", session);
+
   return (
     <div
       className="min-h-screen flex flex-col"

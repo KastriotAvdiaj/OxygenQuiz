@@ -54,14 +54,30 @@ export interface QuizState {
 
 export interface UserAnswer {
   id: number;
-  sessionId: string;
-  quizQuestionId: number;
-  selectedOptionId: number | null;
-  submittedAnswer: string | null;
   status: AnswerStatus;
   score: number;
+
+  selectedOptionId: number | null; // For MC/T-F questions
+  submittedAnswer: string | null;
+
+  // --- Question Context ---
   questionText: string;
-  selectedOptionText: string | null;
+  questionType: QuestionType; // matches backend enum
+  timeLimitInSeconds: number;
+  timeSpentInSeconds: number | null; // Calculated field
+
+  // For MultipleChoice questions
+  answerOptions?: AnswerOption[];
+
+  // For TrueFalse questions
+  correctAnswerBoolean?: boolean;
+
+  // For TypeTheAnswer questions
+  correctAnswerText?: string;
+  acceptableAnswers?: string[];
+
+  // --- Removed ---
+  // selectedOptionText is no longer in backend
 }
 
 export interface QuizSession {
@@ -71,11 +87,15 @@ export interface QuizSession {
   userId: string;
   startTime: string; // ISO date string
   endTime: string | null; // ISO date string
-  totalQuestions:number;
-  quizDescription?: string;
-  hasInstantFeedback: boolean;
-  category: string;
   totalScore: number;
   isCompleted: boolean;
   userAnswers: UserAnswer[];
+
+  abandonmentReason?: AbandonmentReason;
+  abandonedAt?: string | null; // ISO date string
+
+  hasInstantFeedback: boolean;
+  totalQuestions: number;
+  quizDescription?: string;
+  category?: string;
 }
