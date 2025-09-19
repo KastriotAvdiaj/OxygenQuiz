@@ -4,12 +4,12 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { QuizResults } from "./quiz-results";
-import { AnswerReview } from "./answer-review";
+import { AnswerReview } from "../answer-review";
 import {
   useQuizTheme,
   type CategoryColorPalette,
 } from "@/hooks/use-quiz-theme";
-import { useGetSessionResults } from "../api/get-quiz-session";
+import { useGetSessionResults } from "../../api/get-quiz-session";
 
 interface QuizResultsRouteWrapperProps {
   // Optional category theming props

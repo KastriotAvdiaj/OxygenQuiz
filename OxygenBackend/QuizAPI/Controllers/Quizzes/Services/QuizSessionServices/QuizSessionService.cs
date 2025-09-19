@@ -231,6 +231,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                 // Create the user answer record
                 var userAnswer = _mapper.Map<UserAnswer>(model);
                 userAnswer.SubmittedTime = DateTime.UtcNow;
+                userAnswer.QuestionStartTime = questionStartTime;
 
                 _logger.LogInformation("Mapped UserAnswer before processing: {@UserAnswer}", userAnswer);
 

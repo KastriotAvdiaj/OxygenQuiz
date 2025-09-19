@@ -17,7 +17,7 @@ import { QuizQuestionProvider } from "@/pages/Dashboard/Pages/Quiz/components/Cr
 import { DashboardErrorElement } from "@/pages/UtilityPages/Error/Dashboard-Error-Element";
 import { quizLoader } from "../pages/Dashboard/Pages/Quiz/Quiz";
 import { QuizPageRouteWrapper } from "@/pages/Quiz/Sessions/components/quiz-page-route-wrapper";
-import { QuizResultsRouteWrapper } from "@/pages/Quiz/Sessions/components/quiz-results-route-wrapper";
+import { QuizResultsRouteWrapper } from "@/pages/Quiz/Sessions/components/quiz-results/quiz-results-route-wrapper";
 
 // Lazy load components
 const Home = lazy(() =>

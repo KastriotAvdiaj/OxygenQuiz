@@ -15,6 +15,12 @@ export enum LiveQuizStatus {
   Completed = 'Completed',
 }
 
+export enum AbandonmentReason{
+  UserInitialized = "UserInitialized",
+  TimedOut = "TimedOut",
+  SystemCleanup = "SystemCleanup",
+}
+
 export interface SessionGradingStatus {
   totalAnswers: number;
   gradedAnswers: number;
@@ -59,13 +65,10 @@ export interface UserAnswer {
 
   selectedOptionId: number | null; // For MC/T-F questions
   submittedAnswer: string | null;
-
-  // --- Question Context ---
   questionText: string;
   questionType: QuestionType; // matches backend enum
   timeLimitInSeconds: number;
   timeSpentInSeconds: number | null; // Calculated field
-
   // For MultipleChoice questions
   answerOptions?: AnswerOption[];
 
@@ -76,8 +79,6 @@ export interface UserAnswer {
   correctAnswerText?: string;
   acceptableAnswers?: string[];
 
-  // --- Removed ---
-  // selectedOptionText is no longer in backend
 }
 
 export interface QuizSession {
@@ -97,5 +98,5 @@ export interface QuizSession {
   hasInstantFeedback: boolean;
   totalQuestions: number;
   quizDescription?: string;
-  category?: string;
+  category: string;
 }
