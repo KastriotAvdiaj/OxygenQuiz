@@ -26,9 +26,13 @@ export const HomeLayout = ({
     <>
       <Header BackgroundColor={headerColor} />
       <div
-        className={`bg-background h-screen text-foreground ${
+        className={`bg-background text-foreground ${
           squares ? "overflow-hidden" : "overflow-y-auto"
         }`}
+        style={{
+          paddingTop: 'var(--header-height, 4rem)',
+          minHeight: 'calc(100vh - var(--header-height, 4rem))',
+        }}
       >
         {squares && (
           <Squares

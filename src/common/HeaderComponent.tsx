@@ -1,19 +1,21 @@
-import React from "react";
+import React, { forwardRef } from "react";
 
 interface HeaderComponentProps {
   children?: React.ReactNode;
   className?: string;
 }
 
-export const HeaderComponent: React.FC<HeaderComponentProps> = ({
-  children,
-  className,
-}) => {
-  return (
-    <header
-      className={`flex justify-between items-center bg-background ${className}`}
-    >
-      {children}
-    </header>
-  );
-};
+export const HeaderComponent = forwardRef<HTMLElement, HeaderComponentProps>(
+  ({ children, className }, ref) => {
+    return (
+      <header
+        ref={ref}
+        className={`flex justify-between items-center ${className}`}
+      >
+        {children}
+      </header>
+    );
+  }
+);
+
+HeaderComponent.displayName = "HeaderComponent";

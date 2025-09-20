@@ -1,30 +1,38 @@
 // src/components/quiz/QuizOverview.tsx
 
-import { Trophy, Target, Clock, CheckCircle, XCircle, Timer } from "lucide-react";
+import {
+  Trophy,
+  Target,
+  Clock,
+  CheckCircle,
+  XCircle,
+  Timer,
+} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { QuizSession } from "../../quiz-session-types";
-import { calculateQuizStats, formatDuration, getPerformanceLevel } from "./quiz-session-utils";
+import {
+  calculateQuizStats,
+  formatDuration,
+} from "./quiz-session-utils";
 import { Progress } from "@/components/ui/progress";
-
 
 interface QuizOverviewProps {
   session: QuizSession;
   theme: ReturnType<typeof import("@/hooks/use-quiz-theme").useQuizTheme>;
 }
 
-export function QuizOverview({ session, theme }: QuizOverviewProps) {
+export function QuizOverview({ session }: QuizOverviewProps) {
   const stats = calculateQuizStats(session);
-  const performance = getPerformanceLevel(stats.scorePercentage);
-  const timeTaken = session.endTime && session.startTime
-    ? new Date(session.endTime).getTime() - new Date(session.startTime).getTime()
-    : 0;
-
-  const PerformanceIcon = performance.icon;
+  const timeTaken =
+    session.endTime && session.startTime
+      ? new Date(session.endTime).getTime() -
+        new Date(session.startTime).getTime()
+      : 0;
 
   return (
     <div className="space-y-6">
       {/* Performance Header */}
-      <Card>
+      {/* <Card>
         <CardContent className="pt-6">
           <div className="text-center space-y-4">
             <PerformanceIcon 
@@ -44,7 +52,7 @@ export function QuizOverview({ session, theme }: QuizOverviewProps) {
             </div>
           </div>
         </CardContent>
-      </Card>
+      </Card> */}
 
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -56,7 +64,7 @@ export function QuizOverview({ session, theme }: QuizOverviewProps) {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold" style={{ color: theme.primary }}>
+            <div className="text-2xl font-bold text-primary">
               {session.totalScore}
             </div>
             <p className="text-sm text-muted-foreground">
@@ -73,7 +81,7 @@ export function QuizOverview({ session, theme }: QuizOverviewProps) {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold" style={{ color: performance.color }}>
+            <div className="text-2xl font-bold text-primary">
               {stats.scorePercentage}%
             </div>
             <p className="text-sm text-muted-foreground">
@@ -90,12 +98,10 @@ export function QuizOverview({ session, theme }: QuizOverviewProps) {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold" style={{ color: theme.accent }}>
+            <div className="text-2xl font-bold text-primary">
               {formatDuration(timeTaken)}
             </div>
-            <p className="text-sm text-muted-foreground">
-              Total duration
-            </p>
+            <p className="text-sm text-muted-foreground">Total duration</p>
           </CardContent>
         </Card>
       </div>
@@ -112,12 +118,9 @@ export function QuizOverview({ session, theme }: QuizOverviewProps) {
               <span>Overall Progress</span>
               <span className="font-medium">{stats.scorePercentage}%</span>
             </div>
-            <Progress 
-              value={stats.scorePercentage} 
-              className="h-2"
-              style={{
-                backgroundColor: "hsl(var(--muted))",
-              }}
+            <Progress
+              value={stats.scorePercentage}
+              className="h-2 bg-muted dark:bg-foreground/10"
             />
           </div>
 

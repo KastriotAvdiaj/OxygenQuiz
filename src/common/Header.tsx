@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { DrawerFilled } from "./Custom-Drawer/DrawerFilled";
 import { NavLink } from "react-router-dom";
 import { HeaderComponent } from "./HeaderComponent";
@@ -12,6 +12,37 @@ interface HeaderProps {
 
 const Header = ({ BackgroundColor }: HeaderProps) => {
   const [hidden, setHidden] = useState(false);
+  const headerRef = useRef<HTMLElement>(null);
+
+  // Update CSS custom property when header height changes
+  useEffect(() => {
+    const updateHeaderHeight = () => {
+      if (headerRef.current) {
+        const height = headerRef.current.offsetHeight;
+        document.documentElement.style.setProperty(
+          "--header-height",
+          `${height}px`
+        );
+      }
+    };
+
+    // Initial height setting
+    updateHeaderHeight();
+
+    // Create ResizeObserver to watch for header size changes
+    const resizeObserver = new ResizeObserver(updateHeaderHeight);
+    if (headerRef.current) {
+      resizeObserver.observe(headerRef.current);
+    }
+
+    // Update on window resize as well
+    window.addEventListener("resize", updateHeaderHeight);
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", updateHeaderHeight);
+    };
+  }, []);
 
   useEffect(() => {
     let lastScrollY = window.scrollY;
@@ -32,9 +63,12 @@ const Header = ({ BackgroundColor }: HeaderProps) => {
     };
   }, []);
 
+  console.log(BackgroundColor);
+
   return (
     <HeaderComponent
-      className={`fixed top-0 left-0  right-0 z-30 text-lg shadow-md h-16 grid grid-cols-5 items-center px-4 transition-transform duration-400 ${
+      ref={headerRef}
+      className={`fixed top-0 left-0 right-0 z-30 text-lg shadow-md h-16 grid grid-cols-5 items-center px-4 transition-transform duration-400 ${
         hidden ? "-translate-y-full" : "translate-y-0"
       } ${BackgroundColor ? "bg-background" : "bg-transparent"}`}
     >

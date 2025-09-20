@@ -54,13 +54,17 @@ export function QuizResults({
         {/* Main Content */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-8">
-            <TabsTrigger value="overview" className="flex items-center gap-2">
-              <BarChart3 className="h-4 w-4" />
-              Overview
+            <TabsTrigger value="overview">
+              <span className="flex items-center gap-2">
+                <BarChart3 className="h-4 w-4" />
+                Overview
+              </span>
             </TabsTrigger>
-            <TabsTrigger value="review" className="flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              Question Review
+            <TabsTrigger value="review">
+              <span className="flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                Question Review
+              </span>
             </TabsTrigger>
           </TabsList>
 
@@ -77,8 +81,8 @@ export function QuizResults({
         <div className="flex flex-col sm:flex-row gap-3 justify-center mt-8 pt-8 border-t">
           <Button
             onClick={handleRetryQuiz}
-            className="flex items-center gap-2"
-            style={{ backgroundColor: theme.primary }}
+            className="flex items-center gap-2 text-white bg-primary hover:bg-primary/90"
+            
           >
             <RotateCcw className="h-4 w-4" />
             Try Again
