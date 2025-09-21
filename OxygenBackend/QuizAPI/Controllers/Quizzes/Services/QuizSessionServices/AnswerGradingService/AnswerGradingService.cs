@@ -106,18 +106,37 @@ namespace QuizAPI.Controllers.Quizzes.Services.AnswerGradingServices
             {
                 _logger.LogInformation("Processing background grading for UserAnswer {UserAnswerId}", userAnswerId);
 
-                using var transaction = await context.Database.BeginTransactionAsync();
+                UserAnswer? userAnswer = null;
 
-                var userAnswer = await context.UserAnswers
-                    .Include(ua => ua.QuizQuestion)
-                        .ThenInclude(qq => qq.Question)
-                    .Include(ua => ua.QuizSession)
-                    .FirstOrDefaultAsync(ua => ua.Id == userAnswerId);
+                // Defense in depth: Handle edge cases where data might not be immediately visible
+                for (int attempt = 1; attempt <= 5; attempt++)
+                {
+                    userAnswer = await context.UserAnswers
+                        .Include(ua => ua.QuizQuestion)
+                            .ThenInclude(qq => qq.Question)
+                        .Include(ua => ua.QuizSession)
+                        .FirstOrDefaultAsync(ua => ua.Id == userAnswerId);
+
+                    if (userAnswer != null)
+                    {
+                        if (attempt > 1)
+                        {
+                            _logger.LogWarning("Required {Attempts} attempts to find UserAnswer {UserAnswerId} - investigate potential issues",
+                                attempt, userAnswerId);
+                        }
+                        break;
+                    }
+
+                    _logger.LogWarning("UserAnswer {UserAnswerId} not found on attempt {Attempt}/5, waiting {DelayMs}ms...",
+                        userAnswerId, attempt, 500 * attempt);
+
+                    await Task.Delay(500 * attempt); // Progressive delay: 500ms, 1s, 1.5s, 2s, 2.5s
+                }
 
                 if (userAnswer == null)
                 {
-                    _logger.LogError("UserAnswer {UserAnswerId} not found for background grading", userAnswerId);
-                    return;
+                    _logger.LogError("UserAnswer {UserAnswerId} not found after 5 attempts - this should not happen with the new flow", userAnswerId);
+                    return; // Let Hangfire retry the entire job
                 }
 
                 // Skip if already graded (in case of retry after partial success)
@@ -127,6 +146,8 @@ namespace QuizAPI.Controllers.Quizzes.Services.AnswerGradingServices
                         userAnswerId, userAnswer.Status);
                     return;
                 }
+
+                using var transaction = await context.Database.BeginTransactionAsync();
 
                 // Load additional data for multiple choice questions
                 if (userAnswer.QuizQuestion.Question is MultipleChoiceQuestion)
@@ -235,10 +256,10 @@ namespace QuizAPI.Controllers.Quizzes.Services.AnswerGradingServices
 
         private int CalculateScore(QuizQuestion quizQuestion, UserAnswer answer)
         {
-            // Handle Null SubmittedTime: If the answer was never submitted (e.g., timed out),
-            // the score is unequivocally 0. This is our safety check.
+            // Handle Null SubmittedTime
             if (!answer.SubmittedTime.HasValue)
             {
+                _logger.LogDebug("No submitted time - returning 0 points");
                 return 0;
             }
 
@@ -248,15 +269,32 @@ namespace QuizAPI.Controllers.Quizzes.Services.AnswerGradingServices
 
             TimeSpan timeTaken = answer.SubmittedTime.Value - answer.QuestionStartTime;
 
+            // DEBUG: Log all the timing values
+            _logger.LogInformation("=== SCORE CALCULATION DEBUG ===");
+            _logger.LogInformation("Question Start Time: {QuestionStartTime}", answer.QuestionStartTime);
+            _logger.LogInformation("Submitted Time: {SubmittedTime}", answer.SubmittedTime.Value);
+            _logger.LogInformation("Time Taken: {TimeTaken} seconds", timeTaken.TotalSeconds);
+            _logger.LogInformation("Time Limit: {TimeLimit} seconds", quizQuestion.TimeLimitInSeconds);
+
             if (timeTaken.TotalSeconds >= 0 && quizQuestion.TimeLimitInSeconds > 0)
             {
                 var timeRemainingSeconds = Math.Max(0, quizQuestion.TimeLimitInSeconds - timeTaken.TotalSeconds);
+                _logger.LogInformation("Time Remaining: {TimeRemaining} seconds", timeRemainingSeconds);
 
                 // Calculate the bonus as a percentage of the time remaining
                 timeBonus = (timeRemainingSeconds / quizQuestion.TimeLimitInSeconds) * MAX_TIME_BONUS_FACTOR;
+                _logger.LogInformation("Time Bonus Calculation: ({TimeRemaining} / {TimeLimit}) * {MaxFactor} = {TimeBonus}",
+                    timeRemainingSeconds, quizQuestion.TimeLimitInSeconds, MAX_TIME_BONUS_FACTOR, timeBonus);
+            }
+            else
+            {
+                _logger.LogInformation("No time bonus applied - TimeTaken: {TimeTaken}, TimeLimit: {TimeLimit}",
+                    timeTaken.TotalSeconds, quizQuestion.TimeLimitInSeconds);
             }
 
             var pointsWithTimeBonus = (int)(BASE_POINTS * (1 + timeBonus));
+            _logger.LogInformation("Points with time bonus: {BasePoints} * (1 + {TimeBonus}) = {PointsWithBonus}",
+                BASE_POINTS, timeBonus, pointsWithTimeBonus);
 
             var multiplier = quizQuestion.PointSystem switch
             {
@@ -265,14 +303,17 @@ namespace QuizAPI.Controllers.Quizzes.Services.AnswerGradingServices
                 PointSystem.Quadruple => 4,
                 _ => 1
             };
+            _logger.LogInformation("Point System Multiplier: {Multiplier}x", multiplier);
 
             var finalScore = pointsWithTimeBonus * multiplier;
+            _logger.LogInformation("Final Score: {PointsWithBonus} * {Multiplier} = {FinalScore}",
+                pointsWithTimeBonus, multiplier, finalScore);
 
-            _logger.LogDebug("Score calculation - Base: {Base}, Time bonus: {TimeBonus:P}, Multiplier: {Multiplier}x, Final: {Final}",
-                BASE_POINTS, timeBonus, multiplier, finalScore);
+            var result = Math.Max(1, finalScore);
+            _logger.LogInformation("Final Result (after Math.Max): {Result}", result);
+            _logger.LogInformation("=== END SCORE CALCULATION DEBUG ===");
 
-            // Keep your logic of awarding at least 1 point for a correct answer.
-            return Math.Max(1, finalScore);
+            return result;
         }
 
         #endregion

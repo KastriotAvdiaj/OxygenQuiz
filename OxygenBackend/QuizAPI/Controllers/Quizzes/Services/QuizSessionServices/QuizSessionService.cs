@@ -221,7 +221,6 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
 
                 var questionStartTime = session.CurrentQuestionStartTime.Value;
                 var timeLimit = session.CurrentQuizQuestion!.TimeLimitInSeconds + _options.GracePeriodSeconds;
-                /*var timeTaken = DateTime.UtcNow - session.CurrentQuestionStartTime.Value;*/
                 var timeTaken = DateTime.UtcNow - questionStartTime;
                 bool isTimedOut = timeTaken.TotalSeconds > timeLimit;
 
@@ -287,13 +286,6 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                 _logger.LogInformation("UserAnswer saved with Id={UserAnswerId}, Status={Status}, Score={Score}",
                     userAnswer.Id, userAnswer.Status, userAnswer.Score);
 
-                // Enqueue background grading if needed
-                if (!hasInstantFeedback && !isTimedOut)
-                {
-                    _gradingService.EnqueueAnswerGrading(userAnswer.Id, questionStartTime);
-                    _logger.LogInformation("Enqueued answer grading for UserAnswerId={UserAnswerId}", userAnswer.Id);
-                }
-
                 // Check if quiz is complete
                 var totalQuestionsInQuiz = await _context.QuizQuestions.CountAsync(qq => qq.QuizId == session.QuizId);
                 var answeredQuestions = await _context.UserAnswers.CountAsync(ua => ua.SessionId == session.Id);
@@ -311,7 +303,16 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                     _logger.LogInformation("Session {SessionId} marked complete at {EndTime}", session.Id, session.EndTime);
                 }
 
+                //  COMMIT TRANSACTION FIRST - Ensure all data is persisted
                 await transaction.CommitAsync();
+                _logger.LogInformation("Transaction committed for UserAnswer {UserAnswerId}", userAnswer.Id);
+
+                //  THEN ENQUEUE BACKGROUND GRADING - After data is guaranteed to be visible
+                if (!hasInstantFeedback && !isTimedOut)
+                {
+                    _gradingService.EnqueueAnswerGrading(userAnswer.Id, questionStartTime);
+                    _logger.LogInformation("Enqueued answer grading for UserAnswerId={UserAnswerId}", userAnswer.Id);
+                }
 
                 var resultDto = new AnswerResultDto
                 {

@@ -18,6 +18,7 @@ import { formatDuration } from "./quiz-session-utils";
 
 interface QuestionReviewProps {
   session: QuizSession;
+  // The 'theme' prop is not used in this component but kept for API consistency
   theme: ReturnType<typeof import("@/hooks/use-quiz-theme").useQuizTheme>;
 }
 
@@ -140,50 +141,112 @@ export function QuestionReview({ session }: QuestionReviewProps) {
           {/* True/False */}
           {answer.questionType === "TrueFalse" && (
             <div className="space-y-2">
-              <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                <span className="text-sm text-muted-foreground">
-                  Your Answer:
-                </span>
-                <span className="font-medium">{answer.submittedAnswer}</span>
-              </div>
-              <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                <span className="text-sm text-muted-foreground">
-                  Correct Answer:
-                </span>
-                <span className="font-medium">
-                  {answer.correctAnswerBoolean ? "True" : "False"}
-                </span>
-              </div>
+              {["True", "False"].map((optionText) => {
+                const isSelected = answer.submittedAnswer === optionText;
+                const isCorrect =
+                  (answer.correctAnswerBoolean ? "True" : "False") ===
+                  optionText;
+
+                let optionClass = " p-3 rounded-lg";
+                if (isSelected && isCorrect) {
+                  optionClass +=
+                    " bg-green-200 border border-green-200 text-green-600 dark:bg-green-800 dark:border-green-700 dark:text-green-100";
+                } else if (isSelected && !isCorrect) {
+                  optionClass +=
+                    " bg-red-50 border border-red-200 text-red-800 dark:bg-red-900 dark:border-red-800 dark:text-red-200";
+                } else if (!isSelected && isCorrect) {
+                  optionClass +=
+                    " bg-green-50 border border-green-200 text-green-800 dark:bg-green-900 dark:border-green-800 dark:text-green-200";
+                } else {
+                  optionClass += " bg-muted dark:bg-muted-foreground/20";
+                }
+
+                return (
+                  <div key={optionText} className={optionClass}>
+                    <div className="flex items-center justify-between">
+                      <span>{optionText}</span>
+                      <div className="flex items-center gap-2">
+                        {isSelected && (
+                          <Badge variant="secondary" className="text-xs">
+                            Your Answer
+                          </Badge>
+                        )}
+                        {isCorrect && (
+                          <Badge
+                            variant="secondary"
+                            className="text-xs bg-green-100 text-green-800"
+                          >
+                            Correct
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
 
           {/* Type the Answer */}
           {answer.questionType === "TypeTheAnswer" && (
             <div className="space-y-2">
-              <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                <span className="text-sm text-muted-foreground">
-                  Your Answer:
-                </span>
-                <span className="font-medium">
-                  {answer.submittedAnswer || "No answer"}
-                </span>
-              </div>
-              <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                <span className="text-sm text-muted-foreground">
-                  Correct Answer:
-                </span>
-                <span className="font-medium">{answer.correctAnswerText}</span>
-              </div>
-              {answer.acceptableAnswers && answer.acceptableAnswers.length > 0 && (
-                <div className="p-3 bg-muted rounded-lg">
-                  <span className="text-sm text-muted-foreground block mb-1">
-                    Acceptable Answers:
-                  </span>
-                  <span className="font-medium">
-                    {answer.acceptableAnswers.join(", ")}
-                  </span>
+              {answer.status === AnswerStatus.Correct ? (
+                // If correct, show one green block for the user's answer
+                <div className="p-3 rounded-lg bg-green-200 border border-green-200 text-green-600 dark:bg-green-800 dark:border-green-700 dark:text-green-100">
+                  <div className="flex items-center justify-between">
+                    <span>{answer.submittedAnswer}</span>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="text-xs">
+                        Your Answer
+                      </Badge>
+                      <Badge
+                        variant="secondary"
+                        className="text-xs bg-green-100 text-green-800"
+                      >
+                        Correct
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                // If incorrect, show user's answer in red
+                <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-800 dark:bg-red-900 dark:border-red-800 dark:text-red-200">
+                  <div className="flex items-center justify-between">
+                    <span>{answer.submittedAnswer || "No answer"}</span>
+                    <Badge variant="secondary" className="text-xs">
+                      Your Answer
+                    </Badge>
+                  </div>
                 </div>
               )}
+
+              {/* Always show the correct answer in a green block if the user was incorrect */}
+              {answer.status !== AnswerStatus.Correct && (
+                <div className="p-3 rounded-lg bg-green-50 border border-green-200 text-green-800 dark:bg-green-900 dark:border-green-800 dark:text-green-200">
+                  <div className="flex items-center justify-between">
+                    <span>{answer.correctAnswerText}</span>
+                    <Badge
+                      variant="secondary"
+                      className="text-xs bg-green-100 text-green-800"
+                    >
+                      Correct Answer
+                    </Badge>
+                  </div>
+                </div>
+              )}
+
+              {/* Display other acceptable answers if they exist */}
+              {answer.acceptableAnswers &&
+                answer.acceptableAnswers.length > 0 && (
+                  <div className="p-3 bg-muted rounded-lg">
+                    <span className="text-sm text-muted-foreground block mb-1">
+                      Other Acceptable Answers:
+                    </span>
+                    <span className="font-medium">
+                      {answer.acceptableAnswers.join(", ")}
+                    </span>
+                  </div>
+                )}
             </div>
           )}
         </div>
