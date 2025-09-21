@@ -50,8 +50,6 @@ export const HomeLayout = ({
   const shouldAddPadding = contentPadding === "auto" && !isOverlay;
   const shouldWrapContent = contentPadding === "auto" && isOverlay;
 
-  console.log(shouldAddPadding);
-
   return (
     <>
       <Header BackgroundColor={hasHeaderBackground} />

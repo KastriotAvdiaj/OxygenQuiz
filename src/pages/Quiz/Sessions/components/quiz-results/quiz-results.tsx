@@ -41,7 +41,7 @@ export function QuizResults({
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="bg-background">
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         {/* Header */}
         <div className="mb-8 text-center">
@@ -82,7 +82,6 @@ export function QuizResults({
           <Button
             onClick={handleRetryQuiz}
             className="flex items-center gap-2 text-white bg-primary hover:bg-primary/90"
-            
           >
             <RotateCcw className="h-4 w-4" />
             Try Again

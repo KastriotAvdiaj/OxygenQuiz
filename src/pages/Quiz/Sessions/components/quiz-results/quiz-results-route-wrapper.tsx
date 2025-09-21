@@ -51,7 +51,7 @@ export function QuizResultsRouteWrapper({
   if (loading) {
     return (
       <div
-        className="flex h-screen w-full items-center justify-center"
+        className="flex overflow-y-auto w-full items-center justify-center"
         style={{
           background: `
             radial-gradient(circle at 20% 80%, ${theme.primary}15 0%, transparent 50%),
@@ -81,7 +81,7 @@ export function QuizResultsRouteWrapper({
   if (error || !session) {
     return (
       <div
-        className="flex h-screen w-full items-center justify-center"
+        className="flex w-full items-center justify-center"
         style={{
           background: `
             radial-gradient(circle at 20% 80%, ${theme.primary}15 0%, transparent 50%),
@@ -122,11 +122,13 @@ export function QuizResultsRouteWrapper({
   }
 
   return (
-    <QuizResults
-      session={session}
-      theme={theme}
-      onRetryQuiz={handleRetryQuiz}
-      onSelectNewQuiz={handleSelectNewQuiz}
-    />
+    <div className="h-64 pt-[4rem]">
+      <QuizResults
+        session={session}
+        theme={theme}
+        onRetryQuiz={handleRetryQuiz}
+        onSelectNewQuiz={handleSelectNewQuiz}
+      />
+    </div>
   );
 }

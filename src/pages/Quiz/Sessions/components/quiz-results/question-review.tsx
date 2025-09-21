@@ -31,7 +31,7 @@ export function QuestionReview({ session }: QuestionReviewProps) {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case AnswerStatus.Correct:
-        return <CheckCircle className="h-5 w-5 text-green-600" />;
+        return <CheckCircle className="h-5 w-5 text-green-400" />;
       case AnswerStatus.Incorrect:
         return <XCircle className="h-5 w-5 text-red-600" />;
       case AnswerStatus.TimedOut:
@@ -264,7 +264,7 @@ export function QuestionReview({ session }: QuestionReviewProps) {
             variant={viewMode === "list" ? "default" : "outline"}
             size="sm"
             onClick={() => setViewMode("list")}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 dark:text-white"
           >
             <List className="h-4 w-4" />
             List
@@ -273,7 +273,7 @@ export function QuestionReview({ session }: QuestionReviewProps) {
             variant={viewMode === "cards" ? "default" : "outline"}
             size="sm"
             onClick={() => setViewMode("cards")}
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 dark:text-white"
           >
             <Grid3X3 className="h-4 w-4" />
             Cards

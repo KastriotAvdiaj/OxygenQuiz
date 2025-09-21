@@ -82,7 +82,10 @@ const createAppRouter = (queryClient: QueryClient) =>
       loader: userAuthLoader(queryClient),
       element: (
         <>
-          <HomeLayout children={<QuizPageRouteWrapper />} headerColor={false} />
+          <HomeLayout
+            children={<QuizPageRouteWrapper />}
+            headerBehavior={HeaderBehavior.OVERLAY_TRANSPARENT}
+          />
         </>
       ),
     },
@@ -94,7 +97,7 @@ const createAppRouter = (queryClient: QueryClient) =>
         <>
           <HomeLayout
             children={<QuizResultsRouteWrapper />}
-            headerColor={false}
+            headerBehavior={HeaderBehavior.OVERLAY_SOLID}
           />
         </>
       ),

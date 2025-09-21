@@ -50,7 +50,7 @@ export function QuizInterface({
 
   return (
     <main
-      className="min-h-screen flex flex-col"
+      className="min-h-screen flex flex-col pt-[4rem]"
       style={{
         background: `
           radial-gradient(circle at 20% 80%, ${theme.primary}15 0%, transparent 50%),
@@ -132,7 +132,7 @@ export function QuizInterface({
       </div>
 
       {/* Subtle background decoration */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
+      {/* <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
         <div
           className="absolute -top-40 -right-40 w-80 h-80 rounded-full opacity-5"
           style={{ background: theme.gradients.primary }}
@@ -141,7 +141,7 @@ export function QuizInterface({
           className="absolute -bottom-40 -left-40 w-80 h-80 rounded-full opacity-5"
           style={{ background: theme.gradients.primary }}
         />
-      </div>
+      </div> */}
     </main>
   );
 }
