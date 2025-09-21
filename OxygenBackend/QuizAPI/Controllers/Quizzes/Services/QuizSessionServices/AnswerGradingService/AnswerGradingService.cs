@@ -11,20 +11,24 @@ namespace QuizAPI.Controllers.Quizzes.Services.AnswerGradingServices
 {
     public class AnswerGradingService : IAnswerGradingService
     {
-        private readonly ApplicationDbContext _context;
+        private readonly ApplicationDbContext _context; // Keep for synchronous operations
+        private readonly IServiceScopeFactory _scopeFactory; // Add for background operations
         private readonly ILogger<AnswerGradingService> _logger;
         private readonly IBackgroundJobClient _backgroundJobClient;
 
         public AnswerGradingService(
-            ApplicationDbContext context,
+            ApplicationDbContext context, // Keep this for instant grading
+            IServiceScopeFactory scopeFactory, // Add this for background grading
             ILogger<AnswerGradingService> logger,
             IBackgroundJobClient backgroundJobClient)
         {
             _context = context;
+            _scopeFactory = scopeFactory;
             _logger = logger;
             _backgroundJobClient = backgroundJobClient;
         }
 
+        // This method is used for INSTANT feedback - uses injected context
         public async Task<GradingResult> GradeAnswerAsync(int quizQuestionId, UserAnswer userAnswer, DateTime questionStartTime)
         {
             try
@@ -47,7 +51,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.AnswerGradingServices
                         .LoadAsync();
                 }
 
-                var (isCorrect, score) = await CalculateScoreAsync(quizQuestion.Question, userAnswer, quizQuestion);
+                var (isCorrect, score) = await CalculateScoreAsync(_context, quizQuestion.Question, userAnswer, quizQuestion);
 
                 var status = isCorrect ? AnswerStatus.Correct : AnswerStatus.Incorrect;
 
@@ -91,16 +95,20 @@ namespace QuizAPI.Controllers.Quizzes.Services.AnswerGradingServices
             }
         }
 
+        // This method is used for BACKGROUND processing - creates its own scope
         [AutomaticRetry(Attempts = 3, DelaysInSeconds = new[] { 5, 30, 60 })]
         public async Task ProcessAnswerGradingAsync(int userAnswerId, DateTime questionStartTime)
         {
+            using var scope = _scopeFactory.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
             try
             {
                 _logger.LogInformation("Processing background grading for UserAnswer {UserAnswerId}", userAnswerId);
 
-                using var scope = _context.Database.BeginTransaction();
+                using var transaction = await context.Database.BeginTransactionAsync();
 
-                var userAnswer = await _context.UserAnswers
+                var userAnswer = await context.UserAnswers
                     .Include(ua => ua.QuizQuestion)
                         .ThenInclude(qq => qq.Question)
                     .Include(ua => ua.QuizSession)
@@ -123,12 +131,13 @@ namespace QuizAPI.Controllers.Quizzes.Services.AnswerGradingServices
                 // Load additional data for multiple choice questions
                 if (userAnswer.QuizQuestion.Question is MultipleChoiceQuestion)
                 {
-                    await _context.Entry(userAnswer.QuizQuestion.Question)
+                    await context.Entry(userAnswer.QuizQuestion.Question)
                         .Collection(q => ((MultipleChoiceQuestion)q).AnswerOptions)
                         .LoadAsync();
                 }
 
                 var (isCorrect, score) = await CalculateScoreAsync(
+                    context, // Use the scoped context
                     userAnswer.QuizQuestion.Question,
                     userAnswer,
                     userAnswer.QuizQuestion);
@@ -140,8 +149,8 @@ namespace QuizAPI.Controllers.Quizzes.Services.AnswerGradingServices
                 // Update session total score
                 userAnswer.QuizSession.TotalScore += score;
 
-                await _context.SaveChangesAsync();
-                await scope.CommitAsync();
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
 
                 _logger.LogInformation("Successfully graded UserAnswer {UserAnswerId}. Score: {Score}, Status: {Status}",
                     userAnswerId, score, userAnswer.Status);
@@ -177,12 +186,14 @@ namespace QuizAPI.Controllers.Quizzes.Services.AnswerGradingServices
 
         #region Private Helper Methods
 
+        // Modified to accept context parameter for both sync and async operations
         private async Task<(bool IsCorrect, int Score)> CalculateScoreAsync(
+            ApplicationDbContext context,
             QuestionBase question,
             UserAnswer answer,
             QuizQuestion quizQuestion)
         {
-            bool isCorrect = await DetermineCorrectnessAsync(question, answer);
+            bool isCorrect = await DetermineCorrectnessAsync(context, question, answer);
 
             if (!isCorrect)
                 return (false, 0);
@@ -191,12 +202,12 @@ namespace QuizAPI.Controllers.Quizzes.Services.AnswerGradingServices
             return (true, score);
         }
 
-        private async Task<bool> DetermineCorrectnessAsync(QuestionBase question, UserAnswer answer)
+        private async Task<bool> DetermineCorrectnessAsync(ApplicationDbContext context, QuestionBase question, UserAnswer answer)
         {
             switch (question)
             {
                 case MultipleChoiceQuestion mcq:
-                    var correctOption = await _context.AnswerOptions
+                    var correctOption = await context.AnswerOptions
                         .AsNoTracking()
                         .FirstOrDefaultAsync(o => o.QuestionId == mcq.Id && o.IsCorrect);
                     return correctOption?.Id == answer.SelectedOptionId;
@@ -224,7 +235,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.AnswerGradingServices
 
         private int CalculateScore(QuizQuestion quizQuestion, UserAnswer answer)
         {
-            // 2. Handle Null SubmittedTime: If the answer was never submitted (e.g., timed out),
+            // Handle Null SubmittedTime: If the answer was never submitted (e.g., timed out),
             // the score is unequivocally 0. This is our safety check.
             if (!answer.SubmittedTime.HasValue)
             {
@@ -232,7 +243,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.AnswerGradingServices
             }
 
             const int BASE_POINTS = 10;
-            const double MAX_TIME_BONUS_FACTOR = 0.5; 
+            const double MAX_TIME_BONUS_FACTOR = 0.5;
             double timeBonus = 0;
 
             TimeSpan timeTaken = answer.SubmittedTime.Value - answer.QuestionStartTime;

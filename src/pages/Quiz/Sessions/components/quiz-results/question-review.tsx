@@ -1,15 +1,13 @@
-// src/components/quiz/QuestionReview.tsx
-
 import { useState } from "react";
-import { 
-  CheckCircle, 
-  XCircle, 
-  Timer, 
+import {
+  CheckCircle,
+  XCircle,
+  Timer,
   Clock,
   List,
   Grid3X3,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,8 +23,8 @@ interface QuestionReviewProps {
 
 type ViewMode = "list" | "cards";
 
-export function QuestionReview({ session, theme }: QuestionReviewProps) {
-  const [viewMode, setViewMode] = useState<ViewMode>("list");
+export function QuestionReview({ session }: QuestionReviewProps) {
+  const [viewMode, setViewMode] = useState<ViewMode>("cards");
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
 
   const getStatusIcon = (status: string) => {
@@ -38,7 +36,7 @@ export function QuestionReview({ session, theme }: QuestionReviewProps) {
       case AnswerStatus.TimedOut:
         return <Timer className="h-5 w-5 text-yellow-600" />;
       default:
-        return <XCircle className="h-5 w-5 text-gray-400" />;
+        return <XCircle className="h-5 w-5 text-muted-foreground" />;
     }
   };
 
@@ -51,13 +49,13 @@ export function QuestionReview({ session, theme }: QuestionReviewProps) {
       case AnswerStatus.TimedOut:
         return "bg-yellow-100 text-yellow-800 border-yellow-200";
       default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
+        return "bg-muted text-foreground border-border";
     }
   };
 
   const renderQuestionContent = (answer: any, questionNumber: number) => {
     const timeSpent = formatDuration(answer.timeSpentInSeconds * 1000);
-    
+
     return (
       <div className="space-y-4">
         {/* Question Header */}
@@ -67,8 +65,8 @@ export function QuestionReview({ session, theme }: QuestionReviewProps) {
               <span className="text-sm font-medium text-muted-foreground">
                 Question {questionNumber}
               </span>
-              <Badge 
-                variant="outline" 
+              <Badge
+                variant="outline"
                 className={getStatusColor(answer.status)}
               >
                 {answer.status}
@@ -86,9 +84,7 @@ export function QuestionReview({ session, theme }: QuestionReviewProps) {
               <Clock className="h-3 w-3" />
               {timeSpent}
             </div>
-            <div className="font-medium mt-1">
-              {answer.score} pts
-            </div>
+            <div className="font-medium mt-1">{answer.score} pts</div>
           </div>
         </div>
 
@@ -97,21 +93,24 @@ export function QuestionReview({ session, theme }: QuestionReviewProps) {
           {/* Multiple Choice */}
           {answer.questionType === "MultipleChoice" && answer.answerOptions && (
             <div className="space-y-2">
-              {answer.answerOptions.map((option: any, idx: number) => {
+              {answer.answerOptions.map((option: any) => {
                 const isSelected = answer.selectedOptionId === option.id;
                 const isCorrect = option.isCorrect;
-                
-                let optionClass = "p-3 rounded-lg border ";
+
+                let optionClass = " p-3 rounded-lg";
                 if (isSelected && isCorrect) {
-                  optionClass += "bg-green-50 border-green-200 text-green-800";
+                  optionClass +=
+                    " bg-green-200 border border-green-200 text-green-600 dark:bg-green-800 dark:border-green-700 dark:text-green-100";
                 } else if (isSelected && !isCorrect) {
-                  optionClass += "bg-red-50 border-red-200 text-red-800";
+                  optionClass +=
+                    " bg-red-50 border border-red-200 text-red-800 dark:bg-red-900 dark:border-red-800 dark:text-red-200";
                 } else if (!isSelected && isCorrect) {
-                  optionClass += "bg-green-50 border-green-200 text-green-800";
+                  optionClass +=
+                    " bg-green-50 border border-green-200 text-green-800 dark:bg-green-900 dark:border-green-800 dark:text-green-200";
                 } else {
-                  optionClass += "bg-gray-50 border-gray-200";
+                  optionClass += " bg-muted dark:bg-muted-foreground/20";
                 }
-                
+
                 return (
                   <div key={option.id} className={optionClass}>
                     <div className="flex items-center justify-between">
@@ -123,7 +122,10 @@ export function QuestionReview({ session, theme }: QuestionReviewProps) {
                           </Badge>
                         )}
                         {isCorrect && (
-                          <Badge variant="secondary" className="text-xs bg-green-100 text-green-800">
+                          <Badge
+                            variant="secondary"
+                            className="text-xs bg-green-100 text-green-800"
+                          >
                             Correct
                           </Badge>
                         )}
@@ -138,13 +140,19 @@ export function QuestionReview({ session, theme }: QuestionReviewProps) {
           {/* True/False */}
           {answer.questionType === "TrueFalse" && (
             <div className="space-y-2">
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <span className="text-sm text-muted-foreground">Your Answer:</span>
+              <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                <span className="text-sm text-muted-foreground">
+                  Your Answer:
+                </span>
                 <span className="font-medium">{answer.submittedAnswer}</span>
               </div>
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <span className="text-sm text-muted-foreground">Correct Answer:</span>
-                <span className="font-medium">{answer.correctAnswerBoolean ? "True" : "False"}</span>
+              <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                <span className="text-sm text-muted-foreground">
+                  Correct Answer:
+                </span>
+                <span className="font-medium">
+                  {answer.correctAnswerBoolean ? "True" : "False"}
+                </span>
               </div>
             </div>
           )}
@@ -152,16 +160,22 @@ export function QuestionReview({ session, theme }: QuestionReviewProps) {
           {/* Type the Answer */}
           {answer.questionType === "TypeTheAnswer" && (
             <div className="space-y-2">
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <span className="text-sm text-muted-foreground">Your Answer:</span>
-                <span className="font-medium">{answer.submittedAnswer || "No answer"}</span>
+              <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                <span className="text-sm text-muted-foreground">
+                  Your Answer:
+                </span>
+                <span className="font-medium">
+                  {answer.submittedAnswer || "No answer"}
+                </span>
               </div>
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <span className="text-sm text-muted-foreground">Correct Answer:</span>
+              <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                <span className="text-sm text-muted-foreground">
+                  Correct Answer:
+                </span>
                 <span className="font-medium">{answer.correctAnswerText}</span>
               </div>
               {answer.acceptableAnswers && answer.acceptableAnswers.length > 0 && (
-                <div className="p-3 bg-gray-50 rounded-lg">
+                <div className="p-3 bg-muted rounded-lg">
                   <span className="text-sm text-muted-foreground block mb-1">
                     Acceptable Answers:
                   </span>
@@ -227,13 +241,18 @@ export function QuestionReview({ session, theme }: QuestionReviewProps) {
             <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg">
-                  Question {currentQuestionIndex + 1} of {session.userAnswers.length}
+                  Question {currentQuestionIndex + 1} of{" "}
+                  {session.userAnswers.length}
                 </CardTitle>
                 <div className="flex items-center gap-2">
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setCurrentQuestionIndex(Math.max(0, currentQuestionIndex - 1))}
+                    onClick={() =>
+                      setCurrentQuestionIndex(
+                        Math.max(0, currentQuestionIndex - 1)
+                      )
+                    }
                     disabled={currentQuestionIndex === 0}
                   >
                     <ChevronLeft className="h-4 w-4" />
@@ -241,8 +260,17 @@ export function QuestionReview({ session, theme }: QuestionReviewProps) {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setCurrentQuestionIndex(Math.min(session.userAnswers.length - 1, currentQuestionIndex + 1))}
-                    disabled={currentQuestionIndex === session.userAnswers.length - 1}
+                    onClick={() =>
+                      setCurrentQuestionIndex(
+                        Math.min(
+                          session.userAnswers.length - 1,
+                          currentQuestionIndex + 1
+                        )
+                      )
+                    }
+                    disabled={
+                      currentQuestionIndex === session.userAnswers.length - 1
+                    }
                   >
                     <ChevronRight className="h-4 w-4" />
                   </Button>
@@ -250,7 +278,10 @@ export function QuestionReview({ session, theme }: QuestionReviewProps) {
               </div>
             </CardHeader>
             <CardContent>
-              {renderQuestionContent(session.userAnswers[currentQuestionIndex], currentQuestionIndex + 1)}
+              {renderQuestionContent(
+                session.userAnswers[currentQuestionIndex],
+                currentQuestionIndex + 1
+              )}
             </CardContent>
           </Card>
 

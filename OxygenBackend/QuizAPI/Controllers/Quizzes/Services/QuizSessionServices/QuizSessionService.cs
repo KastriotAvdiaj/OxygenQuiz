@@ -290,7 +290,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                 // Enqueue background grading if needed
                 if (!hasInstantFeedback && !isTimedOut)
                 {
-                    _gradingService.EnqueueAnswerGrading(userAnswer.Id, DateTime.UtcNow);
+                    _gradingService.EnqueueAnswerGrading(userAnswer.Id, questionStartTime);
                     _logger.LogInformation("Enqueued answer grading for UserAnswerId={UserAnswerId}", userAnswer.Id);
                 }
 
