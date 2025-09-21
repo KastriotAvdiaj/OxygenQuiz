@@ -270,30 +270,30 @@ namespace QuizAPI.Controllers.Quizzes.Services.AnswerGradingServices
             TimeSpan timeTaken = answer.SubmittedTime.Value - answer.QuestionStartTime;
 
             // DEBUG: Log all the timing values
-            _logger.LogInformation("=== SCORE CALCULATION DEBUG ===");
-            _logger.LogInformation("Question Start Time: {QuestionStartTime}", answer.QuestionStartTime);
-            _logger.LogInformation("Submitted Time: {SubmittedTime}", answer.SubmittedTime.Value);
-            _logger.LogInformation("Time Taken: {TimeTaken} seconds", timeTaken.TotalSeconds);
-            _logger.LogInformation("Time Limit: {TimeLimit} seconds", quizQuestion.TimeLimitInSeconds);
+            _logger.LogDebug("=== SCORE CALCULATION DEBUG ===");
+            _logger.LogDebug("Question Start Time: {QuestionStartTime}", answer.QuestionStartTime);
+            _logger.LogDebug("Submitted Time: {SubmittedTime}", answer.SubmittedTime.Value);
+            _logger.LogDebug("Time Taken: {TimeTaken} seconds", timeTaken.TotalSeconds);
+            _logger.LogDebug("Time Limit: {TimeLimit} seconds", quizQuestion.TimeLimitInSeconds);
 
             if (timeTaken.TotalSeconds >= 0 && quizQuestion.TimeLimitInSeconds > 0)
             {
                 var timeRemainingSeconds = Math.Max(0, quizQuestion.TimeLimitInSeconds - timeTaken.TotalSeconds);
-                _logger.LogInformation("Time Remaining: {TimeRemaining} seconds", timeRemainingSeconds);
+                _logger.LogDebug("Time Remaining: {TimeRemaining} seconds", timeRemainingSeconds);
 
                 // Calculate the bonus as a percentage of the time remaining
                 timeBonus = (timeRemainingSeconds / quizQuestion.TimeLimitInSeconds) * MAX_TIME_BONUS_FACTOR;
-                _logger.LogInformation("Time Bonus Calculation: ({TimeRemaining} / {TimeLimit}) * {MaxFactor} = {TimeBonus}",
+                _logger.LogDebug("Time Bonus Calculation: ({TimeRemaining} / {TimeLimit}) * {MaxFactor} = {TimeBonus}",
                     timeRemainingSeconds, quizQuestion.TimeLimitInSeconds, MAX_TIME_BONUS_FACTOR, timeBonus);
             }
             else
             {
-                _logger.LogInformation("No time bonus applied - TimeTaken: {TimeTaken}, TimeLimit: {TimeLimit}",
+                _logger.LogDebug("No time bonus applied - TimeTaken: {TimeTaken}, TimeLimit: {TimeLimit}",
                     timeTaken.TotalSeconds, quizQuestion.TimeLimitInSeconds);
             }
 
             var pointsWithTimeBonus = (int)(BASE_POINTS * (1 + timeBonus));
-            _logger.LogInformation("Points with time bonus: {BasePoints} * (1 + {TimeBonus}) = {PointsWithBonus}",
+            _logger.LogDebug("Points with time bonus: {BasePoints} * (1 + {TimeBonus}) = {PointsWithBonus}",
                 BASE_POINTS, timeBonus, pointsWithTimeBonus);
 
             var multiplier = quizQuestion.PointSystem switch
@@ -303,15 +303,15 @@ namespace QuizAPI.Controllers.Quizzes.Services.AnswerGradingServices
                 PointSystem.Quadruple => 4,
                 _ => 1
             };
-            _logger.LogInformation("Point System Multiplier: {Multiplier}x", multiplier);
+            _logger.LogDebug("Point System Multiplier: {Multiplier}x", multiplier);
 
             var finalScore = pointsWithTimeBonus * multiplier;
-            _logger.LogInformation("Final Score: {PointsWithBonus} * {Multiplier} = {FinalScore}",
+            _logger.LogDebug("Final Score: {PointsWithBonus} * {Multiplier} = {FinalScore}",
                 pointsWithTimeBonus, multiplier, finalScore);
 
             var result = Math.Max(1, finalScore);
-            _logger.LogInformation("Final Result (after Math.Max): {Result}", result);
-            _logger.LogInformation("=== END SCORE CALCULATION DEBUG ===");
+            _logger.LogInformation("Final score calculated: {Result}", result);
+            _logger.LogDebug("=== END SCORE CALCULATION DEBUG ===");
 
             return result;
         }
