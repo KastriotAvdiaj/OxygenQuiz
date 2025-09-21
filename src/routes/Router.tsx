@@ -19,6 +19,11 @@ import { quizLoader } from "../pages/Dashboard/Pages/Quiz/Quiz";
 import { QuizPageRouteWrapper } from "@/pages/Quiz/Sessions/components/quiz-page-route-wrapper";
 import { QuizResultsRouteWrapper } from "@/pages/Quiz/Sessions/components/quiz-results/quiz-results-route-wrapper";
 
+enum HeaderBehavior {
+  DEFAULT = "default",
+  OVERLAY_TRANSPARENT = "overlay-transparent",
+  OVERLAY_SOLID = "overlay-solid",
+}
 // Lazy load components
 const Home = lazy(() =>
   import("../pages/Home/Home").then((module) => ({ default: module.Home }))
@@ -41,7 +46,11 @@ const createAppRouter = (queryClient: QueryClient) =>
       path: "/",
       element: (
         <>
-          <HomeLayout headerColor={false} squares={true} children={<Home />} />
+          <HomeLayout
+            headerBehavior={HeaderBehavior.OVERLAY_TRANSPARENT}
+            squares={true}
+            children={<Home />}
+          />
         </>
       ),
     },
@@ -53,13 +62,17 @@ const createAppRouter = (queryClient: QueryClient) =>
         </>
       ),
     },
+
     {
       path: "/choose-quiz",
       loader: quizSelectionLoader(queryClient),
       errorElement: <DashboardErrorElement />,
       element: (
         <>
-          <HomeLayout children={<QuizSelection />} headerColor={false} />
+          <HomeLayout
+            headerBehavior={HeaderBehavior.OVERLAY_TRANSPARENT}
+            children={<QuizSelection />}
+          />
         </>
       ),
     },

@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { QuizCard } from "./components/quiz-card";
 import { QuizHeader } from "./components/quiz-header";
 import { motion } from "framer-motion";
@@ -46,7 +46,7 @@ const itemVariants = {
 };
 
 export function QuizSelection() {
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery] = useState("");
   const [selectedQuiz, setSelectedQuiz] = useState<QuizSummaryDTO | null>(null);
   const { close, open, isOpen } = useDisclosure();
 
@@ -104,11 +104,7 @@ export function QuizSelection() {
           animate="visible"
         >
           {quizzes.map((quiz) => (
-            <motion.div
-              key={quiz.id}
-              variants={itemVariants}
-              layout={false} // Disable layout animations
-            >
+            <motion.div key={quiz.id} variants={itemVariants} layout={false}>
               <QuizCard quiz={quiz} onClick={handleQuizClick} />
             </motion.div>
           ))}

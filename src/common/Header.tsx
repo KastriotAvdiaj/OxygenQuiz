@@ -26,7 +26,6 @@ const Header = ({ BackgroundColor }: HeaderProps) => {
       }
     };
 
-    // Initial height setting
     updateHeaderHeight();
 
     // Create ResizeObserver to watch for header size changes
