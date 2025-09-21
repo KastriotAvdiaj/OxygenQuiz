@@ -45,13 +45,6 @@ export interface CurrentQuestion {
   instantFeedback?: boolean; // Whether to show instant feedback for this question
 }
 
-export interface AnswerResult {
-  status: AnswerStatus;
-  scoreAwarded: number;
-  isQuizComplete: boolean;
-  correctAnswerId?: number | null; // ID of the correct option for instant feedback only for multiple choice questions
-  explanation?: string; // Explanation for the correct answer NOT ADDED IN BACKEND YET
-}
 
 export interface InstantFeedbackAnswerResult {
   status: AnswerStatus;
@@ -72,6 +65,8 @@ export interface UserAnswer {
   id: number;
   status: AnswerStatus;
   score: number;
+
+  // questionExpalanation?: string; // Add in the future
 
   selectedOptionId: number | null; // For MC/T-F questions
   submittedAnswer: string | null;

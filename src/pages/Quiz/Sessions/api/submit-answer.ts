@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
 import { apiService } from '@/lib/Api-client';
 import { MutationConfig } from '@/lib/React-query';
-import { AnswerResult } from '../quiz-session-types';
+import { InstantFeedbackAnswerResult } from '../quiz-session-types';
 import { getCurrentStateQueryOptions } from './get-current-state';
 
 export const submitAnswerInputSchema = z.object({
@@ -14,7 +14,7 @@ export const submitAnswerInputSchema = z.object({
 
 export type SubmitAnswerInput = z.infer<typeof submitAnswerInputSchema>;
 
-export const submitAnswer = ({ data }: { data: SubmitAnswerInput }): Promise<AnswerResult> => {
+export const submitAnswer = ({ data }: { data: SubmitAnswerInput }): Promise<InstantFeedbackAnswerResult> => {
   return apiService.post('/QuizSessions/answer', data);
 };
 

@@ -23,7 +23,7 @@ import { useNavigate } from "react-router-dom";
 
 import { useCreateQuizSession } from "@/pages/Quiz/Sessions/api/create-quiz-session";
 import { useGetNextQuestion } from "@/pages/Quiz/Sessions/api/get-next-question";
-import { QuizSession, CurrentQuestion, AnswerResult } from "@/pages/Quiz/Sessions/quiz-session-types";
+import { QuizSession, CurrentQuestion, InstantFeedbackAnswerResult } from "@/pages/Quiz/Sessions/quiz-session-types";
 
 interface UseQuizSessionParams {
   quizId: number;
@@ -34,7 +34,7 @@ interface UseQuizSessionReturn {
   // State
   quizSession: QuizSession | null;
   currentQuestion: CurrentQuestion | null;
-  lastAnswerResult: AnswerResult | null;
+  lastAnswerResult: InstantFeedbackAnswerResult | null;
   currentQuestionNumber: number;
   error: string | null;
   retryCount: number;
@@ -47,8 +47,8 @@ interface UseQuizSessionReturn {
   // Actions
   handleRetry: () => void;
   fetchNextQuestion: (sessionId: string) => void;
-  handleAnswerSubmissionSuccess: (answerResult: AnswerResult) => void;
-  setLastAnswerResult: (result: AnswerResult | null) => void;
+  handleAnswerSubmissionSuccess: (answerResult: InstantFeedbackAnswerResult) => void;
+  setLastAnswerResult: (result: InstantFeedbackAnswerResult | null) => void;
   setCurrentQuestionNumber: (value: number | ((prev: number) => number)) => void;
 }
 
@@ -93,7 +93,7 @@ export const useQuizSession = ({
   // --- Core State ---
   const [quizSession, setQuizSession] = useState<QuizSession | null>(null);
   const [currentQuestion, setCurrentQuestion] = useState<CurrentQuestion | null>(null);
-  const [lastAnswerResult, setLastAnswerResult] = useState<AnswerResult | null>(null);
+  const [lastAnswerResult, setLastAnswerResult] = useState<InstantFeedbackAnswerResult | null>(null);
   const [currentQuestionNumber, setCurrentQuestionNumber] = useState(1);
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
@@ -227,7 +227,7 @@ export const useQuizSession = ({
   }, [initializeQuizSession, error]);
 
 
- const handleAnswerSubmissionSuccess = useCallback((answerResult: AnswerResult) => {
+ const handleAnswerSubmissionSuccess = useCallback((answerResult: InstantFeedbackAnswerResult) => {
     const hasInstantFeedback = quizSession?.hasInstantFeedback ?? false;
 
 
