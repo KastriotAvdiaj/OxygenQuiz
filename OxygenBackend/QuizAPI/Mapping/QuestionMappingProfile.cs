@@ -35,9 +35,8 @@ namespace QuizAPI.Mapping
                 .IncludeBase<QuestionBase, QuestionBaseDTO>();
 
             CreateMap<AnswerOption, AnswerOptionDTO>();
-/*            CreateMap<QuestionDifficulty, DifficultyDTO>();
-            CreateMap<QuestionCategory, CategoryDTO>();
-            CreateMap<QuestionLanguage, LanguageDTO>();*/
+            CreateMap<AnswerOption, AnswerOptionForQuizPlaying>();
+
             CreateMap<User, UserBasicDTO>();
 
             // Map creation models

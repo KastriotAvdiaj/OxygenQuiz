@@ -93,8 +93,7 @@ namespace QuizAPI.Mapping
                       // Check if the question is a MultipleChoiceQuestion
                       if (src.Question is MultipleChoiceQuestion mcq)
                       {
-                          // Use the injected IMapper from the context to map the collection
-                          return context.Mapper.Map<List<AnswerOptionDTO>>(mcq.AnswerOptions);
+                          return context.Mapper.Map<List<AnswerOptionForQuizPlaying>>(mcq.AnswerOptions);
                       }
 
                       // Check if the question is a TrueFalseQuestion
@@ -105,15 +104,15 @@ namespace QuizAPI.Mapping
                           // `IsCorrectAnswerTrue` on the TrueFalseQuestion entity.
                           // NOTE: You'll need to create AnswerOptionDto with appropriate IDs. For T/F, the concept
                           // of an AnswerOption ID is tricky. We can use a convention like 1 for True, 0 for False.
-                          return new List<AnswerOptionDTO>
+                          return new List<AnswerOptionForQuizPlaying>
                           {
-                            new() { ID = 1, Text = "True", IsCorrect = tfq.CorrectAnswer },
-                            new() { ID = 0, Text = "False", IsCorrect = !tfq.CorrectAnswer }
+                            new() { ID = 1, Text = "True" },
+                            new() { ID = 0, Text = "False"}
                           };
                       }
 
                       // For other question types like TypeTheAnswerQuestion, return an empty list.
-                      return new List<AnswerOptionDTO>();
+                      return new List<AnswerOptionForQuizPlaying>();
                   }));
         }
 

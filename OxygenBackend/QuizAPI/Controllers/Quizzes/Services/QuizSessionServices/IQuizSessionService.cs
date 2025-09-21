@@ -10,7 +10,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
         // Live Quiz Flow
         Task<Result<QuizStateDto>> GetCurrentStateAsync(Guid sessionId);
         Task<Result<CurrentQuestionDto>> GetNextQuestionAsync(Guid sessionId);
-        Task<Result<AnswerResultDto>> SubmitAnswerAsync(UserAnswerCM model);
+        Task<Result<InstantFeedbackAnswerResultDto>> SubmitAnswerAsync(UserAnswerCM model);
 
         // Session Management
         Task<Result<QuizSessionDto>> CreateSessionAsync(QuizSessionCM model);

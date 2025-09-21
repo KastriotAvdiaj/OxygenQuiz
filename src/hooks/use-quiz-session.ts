@@ -220,7 +220,7 @@ export const useQuizSession = ({
     if (
       !initializationRef.current.hasInitialized &&
       !initializationRef.current.isInitializing &&
-      !error // <-- THIS IS THE CRUCIAL FIX
+      !error 
     ) {
       initializeQuizSession();
     }

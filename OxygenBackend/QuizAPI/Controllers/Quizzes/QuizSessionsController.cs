@@ -44,8 +44,8 @@ public class QuizSessionsController : BaseApiController
     /// <summary>
     /// Submits an answer for the current question in a session. This is the primary endpoint for answering questions.
     /// </summary>
-    [HttpPost("answer")] // Route doesn't need sessionId as it's in the body.
-    [ProducesResponseType(typeof(AnswerResultDto), StatusCodes.Status200OK)]
+    [HttpPost("answer")]
+    [ProducesResponseType(typeof(InstantFeedbackAnswerResultDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> SubmitAnswer([FromBody] UserAnswerCM model)

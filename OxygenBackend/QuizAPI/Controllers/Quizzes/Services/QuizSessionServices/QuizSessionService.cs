@@ -183,7 +183,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
             }
         }
 
-        public async Task<Result<AnswerResultDto>> SubmitAnswerAsync(UserAnswerCM model)
+        public async Task<Result<InstantFeedbackAnswerResultDto>> SubmitAnswerAsync(UserAnswerCM model)
         {
             try
             {
@@ -200,23 +200,23 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                 if (session == null)
                 {
                     _logger.LogWarning("Session {SessionId} not found.", model.SessionId);
-                    return Result<AnswerResultDto>.ValidationFailure("Session not found.");
+                    return Result<InstantFeedbackAnswerResultDto>.ValidationFailure("Session not found.");
                 }
                 if (session.IsCompleted)
                 {
                     _logger.LogWarning("Session {SessionId} is already completed.", session.Id);
-                    return Result<AnswerResultDto>.ValidationFailure("This quiz session is already completed.");
+                    return Result<InstantFeedbackAnswerResultDto>.ValidationFailure("This quiz session is already completed.");
                 }
                 if (session.CurrentQuizQuestionId == null || session.CurrentQuestionStartTime == null)
                 {
                     _logger.LogWarning("Session {SessionId} not expecting an answer right now.", session.Id);
-                    return Result<AnswerResultDto>.ValidationFailure("Not currently expecting an answer. Please request the next question.");
+                    return Result<InstantFeedbackAnswerResultDto>.ValidationFailure("Not currently expecting an answer. Please request the next question.");
                 }
                 if (session.CurrentQuizQuestionId != model.QuizQuestionId)
                 {
                     _logger.LogWarning("Session {SessionId} got mismatched question Id. Expected {Expected}, got {Actual}",
                         session.Id, session.CurrentQuizQuestionId, model.QuizQuestionId);
-                    return Result<AnswerResultDto>.ValidationFailure("Submitted answer is for the wrong question.");
+                    return Result<InstantFeedbackAnswerResultDto>.ValidationFailure("Submitted answer is for the wrong question.");
                 }
 
                 var questionStartTime = session.CurrentQuestionStartTime.Value;
@@ -314,21 +314,57 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                     _logger.LogInformation("Enqueued answer grading for UserAnswerId={UserAnswerId}", userAnswer.Id);
                 }
 
-                var resultDto = new AnswerResultDto
+                // Build the result DTO with instant feedback enhancements
+                var resultDto = new InstantFeedbackAnswerResultDto
                 {
                     Status = hasInstantFeedback ? userAnswer.Status : AnswerStatus.Pending,
                     ScoreAwarded = hasInstantFeedback ? userAnswer.Score : 0,
-                    IsQuizComplete = isQuizComplete
+                    IsQuizComplete = isQuizComplete,
+                    TimeSpentInSeconds = timeTaken.TotalSeconds
                 };
+
+                // Add correct answer information only when instant feedback is enabled 
+                // and the answer was incorrect or timed out
+                if (hasInstantFeedback && (userAnswer.Status == AnswerStatus.Incorrect || userAnswer.Status == AnswerStatus.TimedOut))
+                {
+                    var question = session.CurrentQuizQuestion.Question;
+
+                    switch (question)
+                    {
+                        case MultipleChoiceQuestion mcQuestion:
+                            // Find the correct option ID
+                            resultDto.CorrectOptionId = mcQuestion.AnswerOptions
+                                .FirstOrDefault(o => o.IsCorrect)?.Id;
+                            _logger.LogInformation("MC Question: CorrectOptionId={CorrectOptionId}", resultDto.CorrectOptionId);
+                            break;
+
+                        case TrueFalseQuestion tfQuestion:
+                            // Provide the correct True/False answer as a string
+                            resultDto.CorrectAnswer = tfQuestion.CorrectAnswer ? "True" : "False";
+                            _logger.LogInformation("T/F Question: CorrectAnswer={CorrectAnswer}", resultDto.CorrectAnswer);
+                            break;
+
+                        case TypeTheAnswerQuestion ttaQuestion:
+                            // Provide the primary correct answer and acceptable alternatives
+                            resultDto.CorrectAnswer = ttaQuestion.CorrectAnswer;
+                            if (ttaQuestion.AcceptableAnswers?.Any() == true)
+                            {
+                                resultDto.AcceptableAnswers = ttaQuestion.AcceptableAnswers.ToList();
+                            }
+                            _logger.LogInformation("TTA Question: CorrectAnswer={CorrectAnswer}, AcceptableAnswers={AcceptableAnswersCount}",
+                                resultDto.CorrectAnswer, resultDto.AcceptableAnswers?.Count ?? 0);
+                            break;
+                    }
+                }
 
                 _logger.LogInformation("Returning result: {@ResultDto}", resultDto);
 
-                return Result<AnswerResultDto>.Success(resultDto);
+                return Result<InstantFeedbackAnswerResultDto>.Success(resultDto);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error submitting answer for session {SessionId}", model.SessionId);
-                return Result<AnswerResultDto>.Failure("An error occurred while submitting the answer.");
+                return Result<InstantFeedbackAnswerResultDto>.Failure("An error occurred while submitting the answer.");
             }
         }
 

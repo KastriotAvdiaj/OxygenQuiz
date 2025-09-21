@@ -156,4 +156,10 @@ namespace QuizAPI.DTOs.Question
         public bool IsCorrect { get; set; }
     }
 
+    public class AnswerOptionForQuizPlaying
+    {
+        public int ID { get; set; }
+
+        public string Text { get; set; } = string.Empty;
+    }
 }

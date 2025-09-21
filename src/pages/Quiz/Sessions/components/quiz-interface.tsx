@@ -130,18 +130,6 @@ export function QuizInterface({
           )}
         </div>
       </div>
-
-      {/* Subtle background decoration */}
-      {/* <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
-        <div
-          className="absolute -top-40 -right-40 w-80 h-80 rounded-full opacity-5"
-          style={{ background: theme.gradients.primary }}
-        />
-        <div
-          className="absolute -bottom-40 -left-40 w-80 h-80 rounded-full opacity-5"
-          style={{ background: theme.gradients.primary }}
-        />
-      </div> */}
     </main>
   );
 }

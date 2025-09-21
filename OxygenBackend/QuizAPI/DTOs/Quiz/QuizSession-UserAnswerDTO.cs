@@ -103,7 +103,7 @@ namespace QuizAPI.DTOs.Quiz
         
         public int QuizQuestionId { get; set; }
         public string QuestionText { get; set; } = string.Empty;
-        public List<AnswerOptionDTO> Options { get; set; } = new();
+        public List<AnswerOptionForQuizPlaying> Options { get; set; } = new();
         public int TimeLimitInSeconds { get; set; }
         public int TimeRemainingInSeconds { get; set; }
         public QuestionType QuestionType { get; set; }
@@ -143,6 +143,48 @@ namespace QuizAPI.DTOs.Quiz
         /// or navigate to the final results screen.
         /// </summary>
         public bool IsQuizComplete { get; set; }
+    }
+
+    public class InstantFeedbackAnswerResultDto
+    {
+        /// <summary>
+        /// The outcome of the answer submission (e.g., Correct, Incorrect, TimedOut).
+        /// </summary>
+        public AnswerStatus Status { get; set; }
+
+        /// <summary>
+        /// The score awarded for this specific answer. Will be 0 if incorrect or timed out.
+        /// </summary>
+        public int ScoreAwarded { get; set; }
+
+        /// <summary>
+        /// A flag indicating whether this was the last question in the quiz.
+        /// </summary>
+        public bool IsQuizComplete { get; set; }
+
+        /// <summary>
+        /// For Multiple Choice questions: The ID of the correct option.
+        /// Only provided when instant feedback is enabled and answer was incorrect/timed out.
+        /// </summary>
+        public int? CorrectOptionId { get; set; }
+
+        /// <summary>
+        /// For True/False questions: The correct answer ("True" or "False").
+        /// For TypeTheAnswer questions: The primary correct answer.
+        /// Only provided when instant feedback is enabled and answer was incorrect/timed out.
+        /// </summary>
+        public string? CorrectAnswer { get; set; }
+
+        /// <summary>
+        /// For TypeTheAnswer questions: Alternative acceptable answers.
+        /// Only provided when instant feedback is enabled and answer was incorrect/timed out.
+        /// </summary>
+        public List<string>? AcceptableAnswers { get; set; }
+
+        /// <summary>
+        /// Time spent on the question in seconds.
+        /// </summary>
+        public double TimeSpentInSeconds { get; set; }
     }
 
 }

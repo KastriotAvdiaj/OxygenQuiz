@@ -10,10 +10,7 @@ import {
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { QuizSession } from "../../quiz-session-types";
-import {
-  calculateQuizStats,
-  formatDuration,
-} from "./quiz-session-utils";
+import { calculateQuizStats, formatDuration } from "./quiz-session-utils";
 import { Progress } from "@/components/ui/progress";
 
 interface QuizOverviewProps {
@@ -126,38 +123,58 @@ export function QuizOverview({ session }: QuizOverviewProps) {
 
           {/* Answer Breakdown */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="flex items-center gap-3">
-              <CheckCircle className="h-5 w-5 text-green-600" />
-              <div>
-                <div className="font-medium">{stats.correctAnswers}</div>
-                <div className="text-sm text-muted-foreground">Correct</div>
-              </div>
-            </div>
+            {/* Correct Answers Card */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Correct</CardTitle>
+                <CheckCircle className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-primary">
+                  {stats.correctAnswers}
+                </div>
+                {/* <p className="text-xs text-muted-foreground">Well done!</p> */}
+              </CardContent>
+            </Card>
 
-            <div className="flex items-center gap-3">
-              <XCircle className="h-5 w-5 text-red-600" />
-              <div>
-                <div className="font-medium">{stats.incorrectAnswers}</div>
-                <div className="text-sm text-muted-foreground">Incorrect</div>
-              </div>
-            </div>
+            {/* Incorrect Answers Card */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Incorrect</CardTitle>
+                <XCircle className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-red-600">
+                  {stats.incorrectAnswers}
+                </div>
+                {/* <p className="text-xs text-muted-foreground">
+                  Room for improvement
+                </p> */}
+              </CardContent>
+            </Card>
 
-            <div className="flex items-center gap-3">
-              <Timer className="h-5 w-5 text-yellow-600" />
-              <div>
-                <div className="font-medium">{stats.timeoutAnswers}</div>
-                <div className="text-sm text-muted-foreground">Timed Out</div>
-              </div>
-            </div>
+            {/* Timed Out Answers Card */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Timed Out</CardTitle>
+                <Timer className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-gray-400">
+                  {stats.timeoutAnswers}
+                </div>
+                {/* <p className="text-xs text-muted-foreground">
+                  Let's work on speed
+                </p> */}
+              </CardContent>
+            </Card>
           </div>
 
-          {/* Category Performance if available */}
-          {session.category && (
-            <div className="pt-4 border-t">
-              <div className="text-sm text-muted-foreground mb-1">Category</div>
-              <div className="font-medium">{session.category}</div>
-            </div>
-          )}
+          {/* Category Performance - also in a Card for consistency */}
+          <div className="pt-4 border-t">
+            <div className="text-sm text-muted-foreground mb-1">Category</div>
+            <div className="font-medium text-primary">{session.category}</div>
+          </div>
         </CardContent>
       </Card>
     </div>

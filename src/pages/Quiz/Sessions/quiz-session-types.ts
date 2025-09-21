@@ -49,8 +49,18 @@ export interface AnswerResult {
   status: AnswerStatus;
   scoreAwarded: number;
   isQuizComplete: boolean;
-  correctAnswerId?: number | null; // ID of the correct option for instant feedback
+  correctAnswerId?: number | null; // ID of the correct option for instant feedback only for multiple choice questions
   explanation?: string; // Explanation for the correct answer NOT ADDED IN BACKEND YET
+}
+
+export interface InstantFeedbackAnswerResult {
+  status: AnswerStatus;
+  scoreAwarded: number;
+  isQuizComplete: boolean;
+  correctOptionId?: number;
+  correctAnswer?: string;
+  acceptableAnswers?: string[];
+  timeSpentInSeconds: number;
 }
 
 export interface QuizState {

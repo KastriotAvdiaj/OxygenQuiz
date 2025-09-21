@@ -4,7 +4,6 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { QuizResults } from "./quiz-results";
-import { AnswerReview } from "../answer-review";
 import {
   useQuizTheme,
   type CategoryColorPalette,
@@ -19,7 +18,7 @@ interface QuizResultsRouteWrapperProps {
 export function QuizResultsRouteWrapper({
   categoryColorPalette,
 }: QuizResultsRouteWrapperProps) {
-  const { sessionId, view } = useParams<{ sessionId: string; view?: string }>();
+  const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
 
   // Apply category-based theming
@@ -114,11 +113,6 @@ export function QuizResultsRouteWrapper({
         </div>
       </div>
     );
-  }
-
-  // Render appropriate view
-  if (view === "review") {
-    return <AnswerReview session={session} theme={theme} />;
   }
 
   return (
