@@ -73,7 +73,7 @@ export function QuizResults({
           </TabsContent>
 
           <TabsContent value="review">
-            <QuestionReview session={session} theme={theme} />
+            <QuestionReview session={session} />
           </TabsContent>
         </Tabs>
 

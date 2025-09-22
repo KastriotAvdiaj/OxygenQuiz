@@ -18,8 +18,6 @@ import { formatDuration } from "./quiz-session-utils";
 
 interface QuestionReviewProps {
   session: QuizSession;
-  // The 'theme' prop is not used in this component but kept for API consistency
-  theme: ReturnType<typeof import("@/hooks/use-quiz-theme").useQuizTheme>;
 }
 
 type ViewMode = "list" | "cards";

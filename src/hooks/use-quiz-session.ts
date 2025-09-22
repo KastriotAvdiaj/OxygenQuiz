@@ -8,6 +8,7 @@
  * 4. Managing loading, error, and validation states.
  * 5. Handling the result of an answer submission and navigating to the next question or the results page.
  * 6. Providing a retry mechanism for initialization failures.
+ * 7. Tracking completed answer results for progress display.
  *
  * It encapsulates all the complex asynchronous logic, making the UI component (e.g., `QuizPage`) much simpler and focused on rendering.
  *
@@ -39,6 +40,7 @@ interface UseQuizSessionReturn {
   error: string | null;
   retryCount: number;
   isValidationError: boolean;
+  completedAnswers: InstantFeedbackAnswerResult[]; // NEW: Track all completed answers
 
   // Loading states
   isInitialLoading: boolean;
@@ -98,6 +100,9 @@ export const useQuizSession = ({
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const [isValidationError, setIsValidationError] = useState(false);
+  
+  // NEW: Track completed answers for progress display
+  const [completedAnswers, setCompletedAnswers] = useState<InstantFeedbackAnswerResult[]>([]);
 
   // --- API Mutations (from react-query/tanstack-query) ---
   const createSessionMutation = useCreateQuizSession();
@@ -124,6 +129,8 @@ export const useQuizSession = ({
       isInitializing: false,
     };
     lastDependencyKey.current = dependencyKey;
+    // Reset completed answers on retry
+    setCompletedAnswers([]);
   }
 
   // --- Derived State ---
@@ -230,6 +237,9 @@ export const useQuizSession = ({
  const handleAnswerSubmissionSuccess = useCallback((answerResult: InstantFeedbackAnswerResult) => {
     const hasInstantFeedback = quizSession?.hasInstantFeedback ?? false;
 
+    // IMPORTANT: Always track completed answers regardless of instant feedback setting
+    // This ensures progress dots can show completion status
+    setCompletedAnswers(prev => [...prev, answerResult]);
 
     if (answerResult.isQuizComplete) {
       // if (hasInstantFeedback) {
@@ -271,6 +281,7 @@ export const useQuizSession = ({
     isValidationError,
     isInitialLoading,
     isInitializing,
+    completedAnswers, // NEW: Expose completed answers
     handleRetry,
     fetchNextQuestion,
     handleAnswerSubmissionSuccess,

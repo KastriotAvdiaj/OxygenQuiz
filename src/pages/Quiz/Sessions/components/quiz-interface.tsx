@@ -9,7 +9,7 @@ import type {
   InstantFeedbackAnswerResult,
 } from "../quiz-session-types";
 import { motion } from "framer-motion";
-import { Loader2, ArrowRight, Trophy, Target } from "lucide-react";
+import { Loader2, ArrowRight, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface QuizInterfaceProps {
@@ -33,6 +33,8 @@ interface QuizInterfaceProps {
   showInstantFeedback?: boolean;
   // Current session score for display
   currentSessionScore?: number;
+  // NEW: Array to track all completed answers for progress display
+  completedAnswers?: InstantFeedbackAnswerResult[];
 }
 
 export function QuizInterface({
@@ -45,7 +47,7 @@ export function QuizInterface({
   currentQuestionNumber,
   totalQuestions,
   showInstantFeedback = false,
-  currentSessionScore = 0,
+  completedAnswers = [],
 }: QuizInterfaceProps) {
   // Apply category-based theming
   const theme = useQuizTheme({
@@ -54,65 +56,40 @@ export function QuizInterface({
 
   return (
     <main
-      className="min-h-screen flex flex-col pt-[4rem]"
+      className="min-h-screen flex flex-col"
       style={{
         background: `
-          radial-gradient(circle at 20% 80%, ${theme.primary}15 0%, transparent 50%),
-          radial-gradient(circle at 80% 20%, ${theme.secondary}15 0%, transparent 50%),
-          radial-gradient(circle at 40% 40%, ${theme.accent}10 0%, transparent 50%),
+          radial-gradient(circle at 20% 80%, ${theme.primary}08 0%, transparent 50%),
+          radial-gradient(circle at 80% 20%, ${theme.secondary}08 0%, transparent 50%),
           hsl(var(--background))
         `,
         ...theme.cssVars,
       }}
     >
-      {/* Header with Progress and Score */}
-      <div className="w-full max-w-4xl mx-auto px-4 pt-6">
-        <div className="flex items-center justify-between mb-6">
-          {/* Progress indicator */}
+      {/* Fixed Header with Progress and Score */}
+      <motion.header
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="sticky top-[10%] z-50 backdrop-blur-lg bg-background/80 border-b border-border/50"
+      >
+        <div className="w-full max-w-4xl mx-auto px-4 py-4">
+          {/* Progress indicator with answer history */}
           {currentQuestionNumber && totalQuestions && (
-            <div className="flex-1 max-w-md">
-              <QuizProgress
-                current={currentQuestionNumber}
-                total={totalQuestions}
-                theme={theme}
-              />
-            </div>
+            <QuizProgress
+              current={currentQuestionNumber}
+              total={totalQuestions}
+              completedAnswers={completedAnswers}
+              showInstantFeedback={showInstantFeedback}
+            />
           )}
-
-          {/* Current Score Display */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="flex items-center gap-3 px-4 py-2 rounded-xl border-2"
-            style={{
-              backgroundColor: `${theme.primary}10`,
-              borderColor: `${theme.primary}30`,
-            }}
-          >
-            <div
-              className="p-2 rounded-full"
-              style={{ backgroundColor: theme.primary }}
-            >
-              <Trophy className="w-4 h-4 text-white" />
-            </div>
-            <div className="text-right">
-              <div className="text-xs text-gray-500 font-medium">Score</div>
-              <div
-                className="text-lg font-bold"
-                style={{ color: theme.primary }}
-              >
-                {currentSessionScore.toLocaleString()}
-              </div>
-            </div>
-          </motion.div>
         </div>
-      </div>
+      </motion.header>
 
-      {/* Main content area */}
-      <div className="flex-1 flex items-center justify-center p-4">
+      {/* Main content area - Better spacing */}
+      <div className="flex-1 flex items-center justify-center px-4 py-8">
         <div className="w-full max-w-3xl">
           {currentQuestion ? (
-            <div className="space-y-8">
+            <div className="space-y-6">
               <QuestionDisplay
                 question={currentQuestion}
                 onSubmit={onSubmitAnswer}
@@ -125,31 +102,29 @@ export function QuizInterface({
               {/* Show Next Question button after instant feedback */}
               {showInstantFeedback && lastAnswerResult && (
                 <motion.div
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 1.2 }}
+                  transition={{ delay: 0.8, duration: 0.3 }}
                   className="flex justify-center"
                 >
                   <Button
                     onClick={onNextQuestion}
                     size="lg"
-                    className="px-8 py-4 text-xl font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 group"
-                    style={{ backgroundColor: theme.primary }}
+                    variant={"fancy"}
+                    className="px-6 py-3 font-semibold rounded-lg  transition-shadow duration-200 group bg-primary text-white"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-full bg-white/20">
-                        {lastAnswerResult?.isQuizComplete ? (
-                          <Trophy className="w-5 h-5" />
-                        ) : (
-                          <Target className="w-5 h-5" />
-                        )}
-                      </div>
+                    <div className="flex items-center gap-2">
+                      {lastAnswerResult?.isQuizComplete ? (
+                        <Trophy className="w-4 h-4" />
+                      ) : (
+                        <></>
+                      )}
                       <span>
                         {lastAnswerResult?.isQuizComplete
                           ? "View Results"
                           : "Next Question"}
                       </span>
-                      <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                      <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform duration-200" />
                     </div>
                   </Button>
                 </motion.div>
@@ -157,8 +132,9 @@ export function QuizInterface({
             </div>
           ) : lastAnswerResult && showInstantFeedback ? (
             <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
+              initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.4 }}
               className="text-center py-12"
             >
               <div
@@ -176,11 +152,12 @@ export function QuizInterface({
             </motion.div>
           ) : (
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="quiz-card-elevated p-8 text-center space-y-6 rounded-2xl"
+              transition={{ duration: 0.4 }}
+              className="quiz-card-elevated p-8 text-center space-y-6 rounded-xl"
               style={{
-                background: `linear-gradient(135deg, ${theme.primary}05, ${theme.secondary}05)`,
+                background: `linear-gradient(135deg, ${theme.primary}03, ${theme.secondary}03)`,
               }}
             >
               <div
@@ -199,13 +176,13 @@ export function QuizInterface({
                 </p>
               </div>
 
-              <div className="w-48 h-2 bg-quiz-border-subtle rounded-full mx-auto overflow-hidden">
+              <div className="w-48 h-1.5 bg-quiz-border-subtle rounded-full mx-auto overflow-hidden">
                 <motion.div
                   className="h-full rounded-full"
                   style={{ backgroundColor: theme.primary }}
                   initial={{ width: "0%" }}
                   animate={{ width: "75%" }}
-                  transition={{ duration: 2, ease: "easeInOut" }}
+                  transition={{ duration: 1.5, ease: "easeInOut" }}
                 />
               </div>
             </motion.div>

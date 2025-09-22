@@ -274,7 +274,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
 
                     _logger.LogInformation("Answer set to Pending for background grading.");
                 }
-
+                var currentQuestion = session.CurrentQuizQuestion.Question;
                 // Clear current question tracking
                 session.CurrentQuizQuestionId = null;
                 session.CurrentQuestionStartTime = null;
@@ -327,9 +327,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                 // and the answer was incorrect or timed out
                 if (hasInstantFeedback && (userAnswer.Status == AnswerStatus.Incorrect || userAnswer.Status == AnswerStatus.TimedOut))
                 {
-                    var question = session.CurrentQuizQuestion.Question;
-
-                    switch (question)
+                    switch (currentQuestion)
                     {
                         case MultipleChoiceQuestion mcQuestion:
                             // Find the correct option ID

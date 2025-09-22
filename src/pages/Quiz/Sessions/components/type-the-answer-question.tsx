@@ -137,24 +137,26 @@ export function TypeTheAnswerQuestion({
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
       >
-        <Button
-          onClick={handleSubmit}
-          disabled={!answer.trim() || isSubmitting || isDisabled}
-          size="lg"
-          className="px-8 py-3 text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 min-w-[200px]"
-          style={{ backgroundColor: theme.primary }}
-        >
-          {isSubmitting ? (
-            <div className="flex items-center gap-2">
-              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              Submitting...
-            </div>
-          ) : instantFeedback && answerResult ? (
-            "Answer Submitted"
-          ) : (
-            "Submit Answer"
-          )}
-        </Button>
+        {/* Only show button if not answered */}
+        {!instantFeedback || !answerResult ? (
+          <Button
+            onClick={handleSubmit}
+            disabled={!answer.trim() || isSubmitting || isDisabled}
+            size="lg"
+            variant={"fancy"}
+            className="px-8 py-3 text-lg font-semibold rounded-xl min-w-[200px]"
+            style={{ backgroundColor: theme.primary }}
+          >
+            {isSubmitting ? (
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                Submitting...
+              </div>
+            ) : (
+              "Submit Answer"
+            )}
+          </Button>
+        ) : null}
       </motion.div>
     </div>
   );

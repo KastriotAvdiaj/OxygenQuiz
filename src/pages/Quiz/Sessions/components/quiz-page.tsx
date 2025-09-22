@@ -22,11 +22,8 @@ export function QuizPage({
 }: QuizPageProps) {
   const navigate = useNavigate();
 
-  // Apply category-based theming
   const theme = useQuizTheme({ colorPalette: categoryColorPalette });
 
-  // Central hook for managing the entire quiz session flow.
-  // It handles initialization, question fetching, and error states.
   const {
     quizSession,
     currentQuestion,
@@ -40,12 +37,11 @@ export function QuizPage({
     setCurrentQuestionNumber,
     fetchNextQuestion,
     isValidationError, // This flag is crucial for our specific error case
+    completedAnswers, // NEW: Get completed answers from the hook
   } = useQuizSession({ quizId, userId });
 
-  // API mutation for submitting an answer
   const submitAnswerMutation = useSubmitAnswer();
 
-  // --- Derived State ---
   // Simple flags derived from hook/mutation state to keep render logic clean.
   const isSubmitting = submitAnswerMutation.isPending;
   const showInstantFeedback = quizSession?.hasInstantFeedback ?? false;
@@ -76,7 +72,6 @@ export function QuizPage({
           handleAnswerSubmissionSuccess(answerResult);
         },
         onError: (error) => {
-          // You could implement more robust UI feedback here if needed
           console.error("Failed to submit answer:", error);
         },
       }
@@ -92,14 +87,10 @@ export function QuizPage({
     }
   };
 
-  // --- Render Logic ---
-
-  // 1. Show a loading screen during the initial session creation and first question fetch.
   if (isInitialLoading) {
     return <LoadingScreen theme={theme} message="Preparing your quiz..." />;
   }
 
-  // 2. If an error occurs during initialization, show a detailed error screen.
   if (error) {
     return (
       <ErrorScreen
@@ -113,7 +104,6 @@ export function QuizPage({
     );
   }
 
-  // 3. Fallback: If there's no error but the session still couldn't be created.
   if (!quizSession) {
     return (
       <ErrorScreen
@@ -128,7 +118,6 @@ export function QuizPage({
     );
   }
 
-  // 4. Success: Render the main quiz interface.
   return (
     <QuizInterface
       sessionId={quizSession.id}
@@ -143,6 +132,7 @@ export function QuizPage({
       showInstantFeedback={showInstantFeedback}
       quizTitle={quizSession.quizTitle}
       category={quizSession.category}
+      completedAnswers={completedAnswers} // NEW: Pass completed answers
     />
   );
 }

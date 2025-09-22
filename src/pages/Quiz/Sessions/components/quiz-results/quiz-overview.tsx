@@ -130,7 +130,7 @@ export function QuizOverview({ session }: QuizOverviewProps) {
                 <CheckCircle className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-primary">
+                <div className="text-3xl font-bold text-primary">
                   {stats.correctAnswers}
                 </div>
                 {/* <p className="text-xs text-muted-foreground">Well done!</p> */}
@@ -144,7 +144,7 @@ export function QuizOverview({ session }: QuizOverviewProps) {
                 <XCircle className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-red-600">
+                <div className="text-3xl font-bold text-red-600">
                   {stats.incorrectAnswers}
                 </div>
                 {/* <p className="text-xs text-muted-foreground">
@@ -160,7 +160,7 @@ export function QuizOverview({ session }: QuizOverviewProps) {
                 <Timer className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-gray-400">
+                <div className="text-3xl font-bold text-gray-400">
                   {stats.timeoutAnswers}
                 </div>
                 {/* <p className="text-xs text-muted-foreground">

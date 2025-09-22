@@ -2,7 +2,10 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, XCircle } from "lucide-react";
-import type { CurrentQuestion, InstantFeedbackAnswerResult } from "../quiz-session-types";
+import type {
+  CurrentQuestion,
+  InstantFeedbackAnswerResult,
+} from "../quiz-session-types";
 
 interface MultipleChoiceQuestionProps {
   question: CurrentQuestion;
@@ -28,7 +31,10 @@ export function MultipleChoiceQuestion({
 
     if (optionId === answerResult.correctOptionId) {
       return "correct";
-    } else if (selectedOptionId === optionId && answerResult.status !== "Correct") {
+    } else if (
+      selectedOptionId === optionId &&
+      answerResult.status !== "Correct"
+    ) {
       return "incorrect";
     }
     return "default";
@@ -57,21 +63,49 @@ export function MultipleChoiceQuestion({
                 className={`
                   w-full p-4 rounded-xl border-2 transition-all duration-300
                   flex items-center gap-4 text-left group
-                  ${isSelected && !answerResult ? 'shadow-lg transform scale-[1.02]' : ''}
-                  ${feedbackState === 'correct' ? 'border-green-500 bg-green-50 dark:bg-green-900/20' : ''}
-                  ${feedbackState === 'incorrect' ? 'border-red-500 bg-red-50 dark:bg-red-900/20' : ''}
-                  ${feedbackState === 'default' && isSelected ? `bg-opacity-10` : ''}
-                  ${feedbackState === 'default' && !isSelected ? 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 bg-white dark:bg-gray-800' : ''}
+                  ${
+                    isSelected && !answerResult
+                      ? "shadow-lg transform scale-[1.02]"
+                      : ""
+                  }
+                  ${
+                    feedbackState === "correct"
+                      ? "border-green-500 bg-green-50 dark:bg-green-900/20"
+                      : ""
+                  }
+                  ${
+                    feedbackState === "incorrect"
+                      ? "border-red-500 bg-red-50 dark:bg-red-900/20"
+                      : ""
+                  }
+                  ${
+                    feedbackState === "default" && isSelected
+                      ? `bg-opacity-10`
+                      : ""
+                  }
+                  ${
+                    feedbackState === "default" && !isSelected
+                      ? "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 bg-white dark:bg-gray-800"
+                      : ""
+                  }
                 `}
                 style={{
-                  borderColor: feedbackState === 'correct' ? '#10b981' 
-                    : feedbackState === 'incorrect' ? '#ef4444'
-                    : isSelected ? theme.primary
-                    : undefined,
-                  backgroundColor: feedbackState === 'correct' ? '#10b98115'
-                    : feedbackState === 'incorrect' ? '#ef444415'
-                    : isSelected ? `${theme.primary}15`
-                    : undefined,
+                  borderColor:
+                    feedbackState === "correct"
+                      ? "#10b981"
+                      : feedbackState === "incorrect"
+                      ? "#ef4444"
+                      : isSelected
+                      ? theme.primary
+                      : undefined,
+                  backgroundColor:
+                    feedbackState === "correct"
+                      ? "#10b98115"
+                      : feedbackState === "incorrect"
+                      ? "#ef444415"
+                      : isSelected
+                      ? `${theme.primary}15`
+                      : undefined,
                 }}
               >
                 {/* Option indicator */}
@@ -81,19 +115,27 @@ export function MultipleChoiceQuestion({
                     transition-all duration-200 shrink-0
                   `}
                   style={{
-                    borderColor: feedbackState === 'correct' ? '#10b981'
-                      : feedbackState === 'incorrect' ? '#ef4444'
-                      : isSelected ? theme.primary
-                      : '#d1d5db',
-                    backgroundColor: feedbackState === 'correct' ? '#10b981'
-                      : feedbackState === 'incorrect' ? '#ef4444'
-                      : isSelected ? theme.primary
-                      : 'transparent',
+                    borderColor:
+                      feedbackState === "correct"
+                        ? "#10b981"
+                        : feedbackState === "incorrect"
+                        ? "#ef4444"
+                        : isSelected
+                        ? theme.primary
+                        : "#d1d5db",
+                    backgroundColor:
+                      feedbackState === "correct"
+                        ? "#10b981"
+                        : feedbackState === "incorrect"
+                        ? "#ef4444"
+                        : isSelected
+                        ? theme.primary
+                        : "transparent",
                   }}
                 >
-                  {feedbackState === 'correct' ? (
+                  {feedbackState === "correct" ? (
                     <CheckCircle className="w-4 h-4 text-white" />
-                  ) : feedbackState === 'incorrect' ? (
+                  ) : feedbackState === "incorrect" ? (
                     <XCircle className="w-4 h-4 text-white" />
                   ) : isSelected ? (
                     <div className="w-3 h-3 rounded-full bg-white" />
@@ -106,9 +148,21 @@ export function MultipleChoiceQuestion({
                 <span
                   className={`
                     text-lg font-medium flex-1 transition-colors
-                    ${feedbackState === 'correct' ? 'text-green-700 dark:text-green-300' : ''}
-                    ${feedbackState === 'incorrect' ? 'text-red-700 dark:text-red-300' : ''}
-                    ${feedbackState === 'default' ? 'text-gray-900 dark:text-gray-100' : ''}
+                    ${
+                      feedbackState === "correct"
+                        ? "text-green-700 dark:text-green-300"
+                        : ""
+                    }
+                    ${
+                      feedbackState === "incorrect"
+                        ? "text-red-700 dark:text-red-300"
+                        : ""
+                    }
+                    ${
+                      feedbackState === "default"
+                        ? "text-gray-900 dark:text-gray-100"
+                        : ""
+                    }
                   `}
                 >
                   {option.text}
@@ -121,10 +175,10 @@ export function MultipleChoiceQuestion({
                     animate={{ scale: 1 }}
                     className="shrink-0"
                   >
-                    {feedbackState === 'correct' && (
+                    {feedbackState === "correct" && (
                       <CheckCircle className="w-6 h-6 text-green-600" />
                     )}
-                    {feedbackState === 'incorrect' && (
+                    {feedbackState === "incorrect" && (
                       <XCircle className="w-6 h-6 text-red-600" />
                     )}
                   </motion.div>
@@ -141,24 +195,26 @@ export function MultipleChoiceQuestion({
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
       >
-        <Button
-          onClick={() => onSubmit(selectedOptionId)}
-          disabled={selectedOptionId === null || isSubmitting || (instantFeedback && !!answerResult)}
-          size="lg"
-          className="px-8 py-3 text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 min-w-[200px]"
-          style={{ backgroundColor: theme.primary }}
-        >
-          {isSubmitting ? (
-            <div className="flex items-center gap-2">
-              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              Submitting...
-            </div>
-          ) : instantFeedback && answerResult ? (
-            "Answer Submitted"
-          ) : (
-            "Submit Answer"
-          )}
-        </Button>
+        {/* Only show the button if not submitted */}
+        {!instantFeedback || !answerResult ? (
+          <Button
+            onClick={() => onSubmit(selectedOptionId)}
+            disabled={selectedOptionId === null || isSubmitting}
+            size="lg"
+            variant={"fancy"}
+            className="px-8 py-3 text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 min-w-[200px]"
+            style={{ backgroundColor: theme.primary }}
+          >
+            {isSubmitting ? (
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                Submitting...
+              </div>
+            ) : (
+              "Submit Answer"
+            )}
+          </Button>
+        ) : null}
       </motion.div>
     </div>
   );

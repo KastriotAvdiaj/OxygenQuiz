@@ -57,40 +57,45 @@ export function QuestionDisplay({
   return (
     <motion.div
       key={question.quizQuestionId}
-      initial={{ opacity: 0, y: 30 }}
+      initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, ease: "easeOut" }}
-      className="space-y-8"
+      transition={{ duration: 0.4, ease: "easeOut" }}
+      className="space-y-6"
     >
-      {/* Question Card */}
+      {/* Timer - Better positioned at the top */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ delay: 0.1 }}
+        className="flex justify-center"
+      >
+        <QuizTimer
+          initialTime={question.timeRemainingInSeconds}
+          onTimeUp={handleTimeUp}
+          theme={theme}
+        />
+      </motion.div>
+
+      {/* Question Card - Cleaner design */}
       <div className="relative">
         <motion.div
-          className="quiz-card-elevated p-8 text-center relative overflow-hidden rounded-2xl"
-          style={{
-            background: `linear-gradient(135deg, ${theme.primary}05, ${theme.secondary}05)`,
-          }}
+          className="quiz-card-elevated p-8 text-center relative overflow-hidden rounded-xl border-2 border-dashed border-primary bg-primary/10"
+          initial={{ opacity: 0, scale: 0.98 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.2, duration: 0.4 }}
         >
-          {/* Background decoration */}
+          {/* Subtle background decoration */}
           <div
-            className="absolute inset-0 opacity-5"
+            className="absolute inset-0 opacity-3 "
             style={{ background: theme.gradients.subtle }}
           />
 
-          {/* Timer */}
-          <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-10">
-            <QuizTimer
-              initialTime={question.timeRemainingInSeconds}
-              onTimeUp={handleTimeUp}
-              theme={theme}
-            />
-          </div>
-
           {/* Question text */}
           <motion.h2
-            className="mt-8 text-2xl md:text-3xl font-bold quiz-text-primary leading-relaxed relative z-10"
-            initial={{ opacity: 0, y: 10 }}
+            className="text-2xl md:text-3xl font-bold quiz-text-primary leading-relaxed relative z-10"
+            initial={{ opacity: 0, y: 5 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
+            transition={{ delay: 0.3, duration: 0.3 }}
           >
             {question.questionText}
           </motion.h2>
@@ -99,10 +104,10 @@ export function QuestionDisplay({
         {/* Instant Feedback Display */}
         {instantFeedback && answerResult && (
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            className="mt-6"
+            transition={{ delay: 0.4, duration: 0.3 }}
+            className="mt-4"
           >
             <FeedbackDisplay result={answerResult} theme={theme} />
           </motion.div>
@@ -113,7 +118,7 @@ export function QuestionDisplay({
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.3 }}
+        transition={{ delay: 0.25, duration: 0.3 }}
         className="relative z-10"
       >
         {renderQuestionContent()}
