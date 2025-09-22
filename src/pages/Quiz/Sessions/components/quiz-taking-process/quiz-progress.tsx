@@ -5,7 +5,7 @@ import { Check, X } from "lucide-react";
 import {
   InstantFeedbackAnswerResult,
   AnswerStatus,
-} from "../quiz-session-types";
+} from "../../quiz-session-types";
 
 interface QuizProgressProps {
   current: number;
@@ -27,9 +27,7 @@ export function QuizProgress({
   ): "correct" | "incorrect" | "current" | "completed" | "upcoming" => {
     const questionNumber = questionIndex + 1;
 
-    // Check if this question has been completed
     if (questionNumber < current) {
-      // If instant feedback is disabled, just show as completed (no correct/incorrect indication)
       if (!showInstantFeedback) {
         return "completed";
       }
@@ -61,8 +59,8 @@ export function QuizProgress({
         };
       case "completed":
         return {
-          bg: "bg-quiz-success",
-          border: "border-quiz-success",
+          bg: "bg-primary",
+          border: "border-primary",
           icon: null, // Show question number, not an icon
         };
       case "current":

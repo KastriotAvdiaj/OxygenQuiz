@@ -1,7 +1,7 @@
 // src/pages/Quiz/Sessions/components/__tests__/true-or-false-question.test.tsx
 
 import { render, screen, fireEvent } from "@testing-library/react";
-import { TrueOrFalseQuestion } from "../true-or-false-question";
+import { TrueOrFalseQuestion } from "../quiz-taking-process/question-display-type-files/true-or-false-question";
 import { QuestionType } from "@/types/question-types";
 import { CurrentQuestion } from "../../quiz-session-types";
 

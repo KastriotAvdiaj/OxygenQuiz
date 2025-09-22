@@ -7,7 +7,7 @@ import {
 import type {
   CurrentQuestion,
   InstantFeedbackAnswerResult,
-} from "../quiz-session-types";
+} from "../../quiz-session-types";
 import { motion } from "framer-motion";
 import { Loader2, ArrowRight, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";

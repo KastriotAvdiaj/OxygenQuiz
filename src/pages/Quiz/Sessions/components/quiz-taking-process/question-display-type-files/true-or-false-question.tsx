@@ -5,7 +5,7 @@ import { Check, X } from "lucide-react";
 import type {
   CurrentQuestion,
   InstantFeedbackAnswerResult,
-} from "../quiz-session-types";
+} from "../../../quiz-session-types";
 
 interface TrueOrFalseQuestionProps {
   question: CurrentQuestion;

@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Loader2, AlertCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useSubmitAnswer } from "../api/submit-answer";
+import { useSubmitAnswer } from "../../api/submit-answer";
 import { QuizInterface } from "./quiz-interface";
 import {
   useQuizTheme,

@@ -1,7 +1,7 @@
 // src/pages/Quiz/Sessions/components/__tests__/question-display.test.tsx
 
 import { render, screen } from "@testing-library/react";
-import { QuestionDisplay } from "../question-display";
+import { QuestionDisplay } from "../quiz-taking-process/question-display";
 import { QuestionType } from "@/types/question-types";
 import { CurrentQuestion } from "../../quiz-session-types";
 

@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/form";
 import { CheckCircle, XCircle } from "lucide-react";
-import type { InstantFeedbackAnswerResult } from "../quiz-session-types";
+import type { InstantFeedbackAnswerResult } from "../../../quiz-session-types";
 
 interface TypeTheAnswerQuestionProps {
   onSubmit: (selectedOptionId: number | null, submittedAnswer?: string) => void;

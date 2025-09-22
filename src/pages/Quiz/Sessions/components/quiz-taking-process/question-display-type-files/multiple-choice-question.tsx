@@ -5,7 +5,7 @@ import { CheckCircle, XCircle } from "lucide-react";
 import type {
   CurrentQuestion,
   InstantFeedbackAnswerResult,
-} from "../quiz-session-types";
+} from "../../../quiz-session-types";
 
 interface MultipleChoiceQuestionProps {
   question: CurrentQuestion;

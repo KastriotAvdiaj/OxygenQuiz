@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { CheckCircle, XCircle, Clock } from "lucide-react";
-import type { InstantFeedbackAnswerResult } from "../quiz-session-types";
+import type { InstantFeedbackAnswerResult } from "../../quiz-session-types";
 
 interface FeedbackDisplayProps {
   result: InstantFeedbackAnswerResult;
@@ -8,7 +8,11 @@ interface FeedbackDisplayProps {
   className?: string;
 }
 
-export function FeedbackDisplay({ result, theme, className = "" }: FeedbackDisplayProps) {
+export function FeedbackDisplay({
+  result,
+  theme,
+  className = "",
+}: FeedbackDisplayProps) {
   const isCorrect = result.status === "Correct";
   const isTimedOut = result.status === "TimedOut";
 
@@ -19,16 +23,12 @@ export function FeedbackDisplay({ result, theme, className = "" }: FeedbackDispl
       transition={{ duration: 0.4, ease: "easeOut" }}
       className={`flex items-center justify-center gap-3 p-4 rounded-xl ${className}`}
       style={{
-        backgroundColor: isCorrect 
-          ? "#10b98120" 
-          : isTimedOut 
-            ? "#f59e0b20" 
-            : "#ef444420",
-        borderColor: isCorrect 
-          ? "#10b981" 
-          : isTimedOut 
-            ? "#f59e0b" 
-            : "#ef4444",
+        backgroundColor: isCorrect
+          ? "#10b98120"
+          : isTimedOut
+          ? "#f59e0b20"
+          : "#ef444420",
+        borderColor: isCorrect ? "#10b981" : isTimedOut ? "#f59e0b" : "#ef4444",
         borderWidth: "2px",
       }}
     >
@@ -38,11 +38,11 @@ export function FeedbackDisplay({ result, theme, className = "" }: FeedbackDispl
         animate={{ scale: 1 }}
         transition={{ delay: 0.1, type: "spring", stiffness: 200 }}
         className={`p-2 rounded-full ${
-          isCorrect 
-            ? "bg-green-500" 
-            : isTimedOut 
-              ? "bg-yellow-500" 
-              : "bg-red-500"
+          isCorrect
+            ? "bg-green-500"
+            : isTimedOut
+            ? "bg-yellow-500"
+            : "bg-red-500"
         }`}
       >
         {isCorrect ? (
@@ -61,16 +61,16 @@ export function FeedbackDisplay({ result, theme, className = "" }: FeedbackDispl
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2 }}
           className={`text-lg font-semibold ${
-            isCorrect 
-              ? "text-green-700 dark:text-green-300" 
-              : isTimedOut 
-                ? "text-yellow-700 dark:text-yellow-300" 
-                : "text-red-700 dark:text-red-300"
+            isCorrect
+              ? "text-green-700 dark:text-green-300"
+              : isTimedOut
+              ? "text-yellow-700 dark:text-yellow-300"
+              : "text-red-700 dark:text-red-300"
           }`}
         >
           {isCorrect ? "Correct!" : isTimedOut ? "Time's Up!" : "Incorrect"}
         </motion.span>
-        
+
         {/* Score Display */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}

@@ -16,7 +16,7 @@ import {
 import { QuizQuestionProvider } from "@/pages/Dashboard/Pages/Quiz/components/Create-Quiz-Form/Quiz-questions-context";
 import { DashboardErrorElement } from "@/pages/UtilityPages/Error/Dashboard-Error-Element";
 import { quizLoader } from "../pages/Dashboard/Pages/Quiz/Quiz";
-import { QuizPageRouteWrapper } from "@/pages/Quiz/Sessions/components/quiz-page-route-wrapper";
+import { QuizPageRouteWrapper } from "@/pages/Quiz/Sessions/components/quiz-taking-process/quiz-page-route-wrapper";
 import { QuizResultsRouteWrapper } from "@/pages/Quiz/Sessions/components/quiz-results/quiz-results-route-wrapper";
 
 enum HeaderBehavior {
