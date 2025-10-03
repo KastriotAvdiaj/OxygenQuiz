@@ -40,9 +40,9 @@ public abstract class BaseApiController : ControllerBase
             return BadRequest(new { message = message, isCustomMessage = isCustomMessage });
         }
 
-        return StatusCode(StatusCodes.Status500InternalServerError, new { 
-            message = message, 
-            isCustomMessage = isCustomMessage 
+        return StatusCode(StatusCodes.Status500InternalServerError, new {
+            message, 
+            isCustomMessage 
         });
     }
 

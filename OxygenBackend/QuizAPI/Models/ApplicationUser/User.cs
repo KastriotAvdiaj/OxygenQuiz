@@ -1,6 +1,5 @@
 ﻿using QuizAPI.ManyToManyTables;
 using QuizAPI.Models.Quiz;
-using System.ComponentModel.DataAnnotations.Schema;
 
 namespace QuizAPI.Models
 {

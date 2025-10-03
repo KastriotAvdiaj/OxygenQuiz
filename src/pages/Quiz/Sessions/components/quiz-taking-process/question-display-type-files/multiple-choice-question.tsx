@@ -42,7 +42,7 @@ export function MultipleChoiceQuestion({
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 gap-4">
+      <div className="grid grid-cols-2 gap-4">
         {question.options.map((option, index) => {
           const feedbackState = getFeedbackState(option.id);
           const isSelected = selectedOptionId === option.id;
@@ -202,7 +202,7 @@ export function MultipleChoiceQuestion({
             disabled={selectedOptionId === null || isSubmitting}
             size="lg"
             variant={"fancy"}
-            className="px-8 py-3 text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 min-w-[200px]"
+            className="px-8 py-3 text-lg font-semibold min-w-[200px]"
             style={{ backgroundColor: theme.primary }}
           >
             {isSubmitting ? (

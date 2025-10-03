@@ -1,208 +1,203 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IdentityModel.Tokens.Jwt;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using System.IdentityModel.Tokens.Jwt;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using QuizAPI.Data;
+using QuizAPI.Controllers;
 using QuizAPI.DTOs.User;
 using QuizAPI.Models;
-using QuizAPI.Services;
+using QuizAPI.Services.Interfaces;
 
 namespace QuizAPI.Controllers.Users
 {
+    /// <summary>
+    /// Controller for managing user operations
+    /// </summary>
     [Route("api/[controller]")]
     [ApiController]
     public class UsersController : BaseApiController
     {
-        private readonly ApplicationDbContext _context;
-        private readonly DashboardService _dashboardService;
+        private readonly IUserService _userService;
 
-        public UsersController(ApplicationDbContext context, DashboardService dashboardService)
+        public UsersController(IUserService userService)
         {
-            _context = context;
-            _dashboardService = dashboardService;
+            _userService = userService;
         }
 
-        // GET: api/Users
+        /// <summary>
+        /// Gets all users with their details
+        /// </summary>
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<FullUserDTO>>> GetUsers()
+        [ProducesResponseType(typeof(IEnumerable<FullUserDTO>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetUsers()
         {
-            if (_context.Users == null)
+            var users = await _userService.GetAllUsersAsync();
+
+            if (users == null || !users.Any())
             {
-                return NotFound();
+                return NotFound("No users found");
             }
-            var totalUsers = _dashboardService.GetTotalCount<User>();
-            var users = await _context.Users.Include(u => u.Role).ToListAsync();
 
-            var userDTOs = users.Select(user => new FullUserDTO
-            {
-                Id = user.Id,
-                ImmutableName = user.ImmutableName,
-                Username = user.Username,
-                Email = user.Email,
-                DateRegistered = user.DateRegistered,
-                Role = MapRoleIdToRole(user.RoleId),
-                IsDeleted = user.IsDeleted,
-                TotalUsers = totalUsers,
-                LastLogin = user.LastLogin,
-                ProfileImageUrl = user.ProfileImageUrl
-            }).ToList();
-
-            return Ok(userDTOs);
+            return Ok(users);
         }
 
-        private static string MapRoleIdToRole(int roleId)
-        {
-            return roleId switch
-            {
-                2 => "admin",
-                1 => "user",
-                3 => "superadmin",
-                _ => "user"
-            };
-        }
-
-        private static int MapRoleToRoleId(string role)
-        {
-            return role.ToLower() switch
-            {
-                "admin" => 1,
-                "user" => 2,
-                "superadmin" => 3,
-                _ => 2 // default to user if role is unknown
-            };
-        }
-
-       
-
-        // GET: api/Users/5
+        /// <summary>
+        /// Gets a specific user by ID
+        /// </summary>
         [HttpGet("{id}")]
-        public async Task<ActionResult<User>> GetUser(Guid id)
+        [ProducesResponseType(typeof(User), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetUser(Guid id)
         {
-            if (_context.Users == null)
-            {
-                return NotFound();
-            }
-            var user = await _context.Users.FindAsync(id);
+            var user = await _userService.GetUserByIdAsync(id);
 
             if (user == null)
             {
-                return NotFound();
+                return NotFound($"User with ID {id} not found");
             }
 
-            return user;
+            return Ok(user);
         }
 
-        // PUT: api/Users/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+        /// <summary>
+        /// Gets a user by username
+        /// </summary>
+        [HttpGet("username/{username}")]
+        [ProducesResponseType(typeof(User), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> GetUserByUsername(string username)
+        {
+            if (string.IsNullOrWhiteSpace(username))
+            {
+                return BadRequest("Username cannot be empty");
+            }
+
+            var user = await _userService.GetUserByUsernameAsync(username);
+
+            if (user == null)
+            {
+                return NotFound($"User with username '{username}' not found");
+            }
+
+            return Ok(user);
+        }
+
+        /// <summary>
+        /// Gets multiple users by their IDs
+        /// </summary>
+        [HttpPost("batch")]
+        [ProducesResponseType(typeof(IEnumerable<User>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> GetUsersByIds([FromBody] IEnumerable<Guid> userIds)
+        {
+            if (userIds == null || !userIds.Any())
+            {
+                return BadRequest("User IDs list cannot be empty");
+            }
+
+            var users = await _userService.GetUsersByIdsAsync(userIds);
+            return Ok(users);
+        }
+
+        /// <summary>
+        /// Updates a user's information
+        /// </summary>
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutUser(Guid id, User user)
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> UpdateUser(Guid id, [FromBody] User user)
         {
             if (id != user.Id)
             {
-                return BadRequest();
+                return BadRequest("User ID in URL does not match user ID in body");
             }
 
-            _context.Entry(user).State = EntityState.Modified;
+            var success = await _userService.UpdateUserAsync(id, user);
+
+            if (!success)
+            {
+                return NotFound($"User with ID {id} not found");
+            }
+
+            return NoContent();
+        }
+
+        /// <summary>
+        /// Creates a new user
+        /// </summary>
+        [HttpPost]
+        [ProducesResponseType(typeof(User), StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> CreateUser([FromBody] TemporaryUserCR userCreateModel)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
 
             try
             {
-                await _context.SaveChangesAsync();
+                var newUser = await _userService.CreateUserAsync(userCreateModel);
+                return CreatedAtAction(nameof(GetUser), new { id = newUser.Id }, newUser);
             }
-            catch (DbUpdateConcurrencyException)
+            catch (Exception ex)
             {
-                if (!UserExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
+                return BadRequest($"Failed to create user: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Soft deletes a user (marks as deleted)
+        /// </summary>
+        [HttpDelete("{id}")]
+        [Authorize]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> DeleteUser(Guid id, [FromHeader] string authorization)
+        {
+            // Validate JWT token
+            var tokenValidationResult = ValidateJwtToken(authorization);
+            if (!tokenValidationResult.IsValid)
+            {
+                return Unauthorized(tokenValidationResult.ErrorMessage);
+            }
+
+            var success = await _userService.DeleteUserAsync(id);
+
+            if (!success)
+            {
+                return NotFound($"User with ID {id} not found");
             }
 
             return NoContent();
         }
 
-        // POST: api/Users
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost]
-        public async Task<ActionResult<User>> PostUser(TemporaryUserCR user)
-        {
-            if (_context.Users == null)
-            {
-                return Problem("Entity set 'ApplicationDbContext.Users'  is null.");
-            }
-
-            int roleId = !string.IsNullOrEmpty(user.Role)
-                ? MapRoleToRoleId(user.Role)
-                : 2;
-
-            var newUser = new User
-            {
-                Id = Guid.NewGuid(),
-                Username = user.Username,
-                Email = user.Email,
-                ImmutableName = user.Username.ToLower(),
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword(user.Password),
-                DateRegistered = DateTime.UtcNow,
-                LastLogin = DateTime.UtcNow,
-                RoleId = roleId,
-                IsDeleted = false,
-                ProfileImageUrl = string.Empty
-            };
-            _context.Users.Add(newUser);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction("GetUser", new { id = newUser.Id }, newUser);
-        }
-
-        // DELETE: api/Users/5
-        [HttpDelete("{id}")]
-        [Authorize]
-        public async Task<IActionResult> DeleteUser(Guid id, [FromHeader] string authorization)
+        private static (bool IsValid, string? ErrorMessage) ValidateJwtToken(string authorization)
         {
             if (string.IsNullOrEmpty(authorization) || !authorization.StartsWith("Bearer "))
             {
-                return Unauthorized("Invalid or missing token.");
+                return (false, "Invalid or missing token.");
             }
 
-            var token = authorization.Substring("Bearer ".Length).Trim();
-
-            var handler = new JwtSecurityTokenHandler();
-            var jwtToken = handler.ReadJwtToken(token);
-
-            Console.WriteLine($"Token Expiration Time (UTC): {jwtToken.ValidTo}");
-            Console.WriteLine($"Current Server Time (UTC): {DateTime.UtcNow}");
-
-            if (jwtToken.ValidTo < DateTime.UtcNow)
+            try
             {
-                return Unauthorized("Token has expired.");
-            }
+                var token = authorization.Substring("Bearer ".Length).Trim();
+                var handler = new JwtSecurityTokenHandler();
+                var jwtToken = handler.ReadJwtToken(token);
 
-            if (_context.Users == null)
+                if (jwtToken.ValidTo < DateTime.UtcNow)
+                {
+                    return (false, "Token has expired.");
+                }
+
+                return (true, null);
+            }
+            catch (Exception)
             {
-                return NotFound();
+                return (false, "Invalid token format.");
             }
-            var user = await _context.Users.FindAsync(id);
-            if (user == null)
-            {
-                return NotFound();
-            }
-
-            user.IsDeleted = true;
-            await _context.SaveChangesAsync();
-
-            return NoContent();
-        }
-
-        private bool UserExists(Guid id)
-        {
-            return (_context.Users?.Any(e => e.Id == id)).GetValueOrDefault();
         }
     }
 }
