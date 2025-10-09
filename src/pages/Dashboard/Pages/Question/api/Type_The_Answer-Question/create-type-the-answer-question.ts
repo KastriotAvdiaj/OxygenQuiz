@@ -6,6 +6,8 @@ import { getTypeTheAnswerQuestionsQueryOptions } from "./get-type-the-answer-que
 import { UnspecifiedIds } from "../../../Quiz/components/Create-Quiz-Form/constants";
 import { TypeTheAnswerQuestion } from "@/types/question-types";
 
+console.log("UnspecifiedIds", UnspecifiedIds);
+
 export const createTypeTheAnswerQuestionInputSchema = z.object({
   text:             z.string().min(1, "Question is required"),
   difficultyId:     z

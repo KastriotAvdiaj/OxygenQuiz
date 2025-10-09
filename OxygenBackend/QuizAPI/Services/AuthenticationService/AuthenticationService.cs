@@ -1,5 +1,4 @@
 ﻿using AutoMapper;
-using Microsoft.CodeAnalysis.Scripting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using QuizAPI.Data;
@@ -9,28 +8,13 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 
-namespace QuizAPI.Services
+namespace QuizAPI.Services.AuthenticationService
 {
-    public interface IAuthenticationService
+    public class AuthenticationService(ApplicationDbContext context, IConfiguration configuration, IMapper mapper) : IAuthenticationService
     {
-        Task<AuthResult> SignupAsync(string email, string username, string password);
-        Task<AuthResult> LoginAsync(string email, string password);
-
-        Task<FullUserDTO> GetUserByIdAsync(Guid userId);
-    }
-
-    public class AuthenticationService : IAuthenticationService
-    {
-        private readonly ApplicationDbContext _context;
-        private readonly IConfiguration _configuration;
-        private readonly IMapper _mapper;
-
-        public AuthenticationService(ApplicationDbContext context, IConfiguration configuration, IMapper mapper)
-        {
-            _context = context;
-            _configuration = configuration;
-            _mapper = mapper;
-        }
+        private readonly ApplicationDbContext _context = context;
+        private readonly IConfiguration _configuration = configuration;
+        private readonly IMapper _mapper = mapper;
 
         public async Task<AuthResult> SignupAsync(string email, string username, string password)
         {

@@ -153,6 +153,8 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
         const schema = getValidationSchema(question.type);
 
         // Transform question to match API schema format
+
+        console.log("Validating question:", question);
         const questionData = {
           text: question.text,
           difficultyId: question.difficultyId,

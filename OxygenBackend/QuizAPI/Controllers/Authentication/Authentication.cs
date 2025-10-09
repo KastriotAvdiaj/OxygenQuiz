@@ -1,12 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using QuizAPI.Services;
-using QuizAPI.Models;
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 using QuizAPI.Data;
-using QuizAPI.DTOs;
-using QuizAPI.DTOs.User;
 using Microsoft.AspNetCore.Authorization;
+using QuizAPI.Services.AuthenticationService;
 
 namespace QuizAPI.Controllers.Authentication
 {

@@ -1,50 +1,31 @@
 ﻿namespace QuizAPI.Controllers.Image.Services
 {
-
-    public class ImageCleanUpService : BackgroundService
+    public class ImageCleanUpService
     {
-        private readonly IServiceProvider _serviceProvider;
+        private readonly IImageService _imageService;
         private readonly ILogger<ImageCleanUpService> _logger;
-        private readonly TimeSpan _runInterval = TimeSpan.FromHours(24); // Run once per day
 
         public ImageCleanUpService(
-            IServiceProvider serviceProvider,
+            IImageService imageService,
             ILogger<ImageCleanUpService> logger)
         {
-            _serviceProvider = serviceProvider;
+            _imageService = imageService;
             _logger = logger;
         }
 
-        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
-        {
-            _logger.LogInformation("Image cleanup service is starting");
-
-            using var timer = new PeriodicTimer(_runInterval);
-
-            // Run immediately on startup, then on the interval
-            await RunCleanupAsync();
-
-            while (await timer.WaitForNextTickAsync(stoppingToken) && !stoppingToken.IsCancellationRequested)
-            {
-                await RunCleanupAsync();
-            }
-        }
-
-        private async Task RunCleanupAsync()
+        // This method will be called by Hangfire
+        public async Task RunCleanupAsync()
         {
             try
             {
-                _logger.LogInformation("Running scheduled image cleanup");
-
-                // Create a new scope to resolve scoped services
-                using var scope = _serviceProvider.CreateScope();
-                var imageService = scope.ServiceProvider.GetRequiredService<IImageService>();
-
-                await imageService.CleanUpUnusedImagesAsync();
+                _logger.LogInformation("Running scheduled image cleanup via Hangfire");
+                await _imageService.CleanUpUnusedImagesAsync();
+                _logger.LogInformation("Image cleanup completed successfully");
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred during image cleanup");
+                throw; // Let Hangfire handle the retry
             }
         }
     }

@@ -46,11 +46,11 @@ const Login: React.FC = () => {
           },
           onError: (error: unknown) => {
             console.error("Login failed:", error);
-            useNotifications.getState().addNotification({
-              type: "error",
-              title: "Error",
-              message: "Login failed. Please try again.",
-            });
+            // useNotifications.getState().addNotification({
+            //   type: "error",
+            //   title: "Error",
+            //   message: "Login failed. Please try again.",
+            // });
           },
         }
       );
