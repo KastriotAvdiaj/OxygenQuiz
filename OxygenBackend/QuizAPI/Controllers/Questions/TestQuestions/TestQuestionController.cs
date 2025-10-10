@@ -7,7 +7,6 @@ namespace QuizAPI.Controllers.Questions.TestQuestions
 {
     [ApiController]
     [Route("api/questions")]
-    [Authorize] // Ensure users are authenticated
     public class TestQuestionController : ControllerBase
     {
         private readonly ITestQuestionService _testQuestionService;

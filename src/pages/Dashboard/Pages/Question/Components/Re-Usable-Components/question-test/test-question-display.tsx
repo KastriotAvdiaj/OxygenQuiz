@@ -8,7 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { Clock, AlertCircle } from "lucide-react";
 import { QuestionType } from "@/types/question-types";
 import { TestConfig, TestResult } from "./test-question-button";
-import { useTestQuestionMutation } from "../../../api/test-question";
+import { useTestQuestion } from "../../../api/test-question";
 import { Spinner } from "@/components/ui";
 
 interface TestQuestionDisplayProps {
@@ -31,7 +31,7 @@ export const TestQuestionDisplay = ({
   const [textAnswer, setTextAnswer] = useState("");
   const [isTimedOut, setIsTimedOut] = useState(false);
 
-  const testQuestionMutation = useTestQuestionMutation();
+  const testQuestionMutation = useTestQuestion();
 
   // Timer countdown
   useEffect(() => {
@@ -73,7 +73,7 @@ export const TestQuestionDisplay = ({
     }
 
     try {
-      const result = await testQuestionMutation.mutateAsync(submittedAnswer);
+      const result = await testQuestionMutation.mutateAsync({ data: submittedAnswer });
       onTestComplete({
         isCorrect: result.isCorrect,
         score: result.score,

@@ -23,8 +23,22 @@ namespace QuizAPI.Controllers.Questions.TestQuestions.Services
         {
             try
             {
+                // 1️ Convert QuestionType string -> enum
+                if (!Enum.TryParse<QuestionType>(request.QuestionType, true, out var questionTypeEnum))
+                {
+                    _logger.LogError("Invalid question type received: {QuestionType}", request.QuestionType);
+                    throw new ArgumentException($"Invalid question type: {request.QuestionType}");
+                }
+
+                // 2️ Convert PointSystem string -> enum
+                if (!Enum.TryParse<PointSystem>(request.PointSystem, true, out var pointSystemEnum))
+                {
+                    _logger.LogError("Invalid point system received: {PointSystem}", request.PointSystem);
+                    throw new ArgumentException($"Invalid point system: {request.PointSystem}");
+                }
+
                 // Load the question based on type
-                QuestionBase? question = await LoadQuestionAsync(request.QuestionId, request.QuestionType);
+                QuestionBase? question = await LoadQuestionAsync(request.QuestionId, questionTypeEnum);
 
                 if (question == null)
                 {
@@ -40,7 +54,7 @@ namespace QuizAPI.Controllers.Questions.TestQuestions.Services
                 int score = 0;
                 if (isCorrect && !request.TimedOut)
                 {
-                    score = CalculateScore(request.TimeLimitInSeconds, request.TimeTaken, request.PointSystem);
+                    score = CalculateScore(request.TimeLimitInSeconds, request.TimeTaken, pointSystemEnum);
                 }
 
                 // Get correct answer for display

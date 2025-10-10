@@ -28,7 +28,6 @@ interface UpdateMultipleChoiceQuestionFormProps {
 export const UpdateMultipleChoiceQuestionForm: React.FC<
   UpdateMultipleChoiceQuestionFormProps
 > = ({ question }) => {
-  console.log("question", question);
   const { addNotification } = useNotifications();
   const [imageUrl, setImageUrl] = useState(question.imageUrl || "");
   const { queryData } = useQuizForm();

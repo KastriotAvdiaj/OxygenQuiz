@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/form";
 import {
   Select,
@@ -11,6 +10,7 @@ import {
 import { PlayCircle } from "lucide-react";
 import { TestConfig } from "./test-question-button";
 import { PointSystem } from "@/pages/Dashboard/Pages/Quiz/components/Create-Quiz-Form/types";
+import { LiftedButton } from "@/common/LiftedButton";
 
 
 interface TestConfigurationProps {
@@ -52,12 +52,12 @@ export const TestConfiguration = ({
               setConfig({ ...config, timeLimitInSeconds: parseInt(value) })
             }
           >
-            <SelectTrigger id="timeLimit" className="w-full">
+            <SelectTrigger id="timeLimit" className="w-full" variant="quiz">
               <SelectValue placeholder="Select time limit" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent variant="quiz">
               {TIME_LIMIT_OPTIONS.map((option) => (
-                <SelectItem key={option.value} value={option.value.toString()}>
+                <SelectItem key={option.value} value={option.value.toString()} variant="quiz">
                   {option.label}
                 </SelectItem>
               ))}
@@ -78,17 +78,17 @@ export const TestConfiguration = ({
               setConfig({ ...config, pointSystem: value as PointSystem })
             }
           >
-            <SelectTrigger id="pointSystem" className="w-full">
+            <SelectTrigger id="pointSystem" className="w-full"  variant="quiz">
               <SelectValue placeholder="Select point system" />
             </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={PointSystem.Standard}>
+            <SelectContent variant="quiz">
+              <SelectItem value={PointSystem.Standard} variant="quiz">
                 Standard (1x points)
               </SelectItem>
-              <SelectItem value={PointSystem.Double}>
+              <SelectItem value={PointSystem.Double} variant="quiz">
                 Double (2x points)
               </SelectItem>
-              <SelectItem value={PointSystem.Quadruple}>
+              <SelectItem value={PointSystem.Quadruple} variant="quiz">
                 Quadruple (4x points)
               </SelectItem>
             </SelectContent>
@@ -100,14 +100,13 @@ export const TestConfiguration = ({
       </div>
 
       <div className="flex justify-end pt-4">
-        <Button
+        <LiftedButton
           onClick={handleStartTest}
-          className="gap-2 bg-purple-600 hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-800"
-          size="lg"
+          className="gap-2 bg-primary text-white"
         >
           <PlayCircle className="h-5 w-5" />
           Start Test
-        </Button>
+        </LiftedButton>
       </div>
     </div>
   );

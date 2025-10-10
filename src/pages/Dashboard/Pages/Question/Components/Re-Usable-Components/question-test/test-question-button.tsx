@@ -86,19 +86,19 @@ export const TestQuestionButton = ({
             <LiftedButton
               variant="icon"
               onClick={handleOpenDialog}
-              className="rounded-xl bg-purple-500"
+              className="rounded-xl bg-primary"
             >
               <FaFlask className="h-4 w-4" />
             </LiftedButton>
           </TooltipTrigger>
-          <TooltipContent className="bg-muted dark:bg-background border-foreground/50">
+          <TooltipContent className="bg-background border-foreground/50">
             <p>Test Question</p>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
 
       <Dialog open={isOpen} onOpenChange={handleCloseDialog}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-background dark:border-foreground/30">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto border bg-background dark:border-foreground/30">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold">
               {testStage === "config" && "Configure Test"}

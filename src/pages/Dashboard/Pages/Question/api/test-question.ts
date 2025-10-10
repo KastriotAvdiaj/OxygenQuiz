@@ -1,22 +1,25 @@
-
 import { useMutation } from "@tanstack/react-query";
-import { api } from "@/lib/Api-client";
+import { z } from "zod";
+import { apiService } from "@/lib/Api-client";
+import { MutationConfig } from "@/lib/React-query";
 import { QuestionType } from "@/types/question-types";
 import { PointSystem } from "../../Quiz/components/Create-Quiz-Form/types";
 
-export interface TestQuestionRequest {
-  questionId: number;
-  questionType: QuestionType;
-  timeLimitInSeconds: number;
-  pointSystem: PointSystem;
-  timeTaken: number;
-  timedOut: boolean;
+export const testQuestionInputSchema = z.object({
+  questionId: z.number().int().positive("Question ID is required"),
+  questionType: z.nativeEnum(QuestionType),
+  timeLimitInSeconds: z.number().int().nonnegative(),
+  pointSystem: z.nativeEnum(PointSystem),
+  timeTaken: z.number().nonnegative(),
+  timedOut: z.boolean(),
   // For Multiple Choice
-  selectedOptionId?: number;
-  selectedOptionIds?: number[]; //for multiple selections
+  selectedOptionId: z.number().int().positive().optional(),
+  selectedOptionIds: z.array(z.number().int().positive()).optional(),
   // For True/False and Type Answer
-  answer?: string;
-}
+  answer: z.string().optional(),
+});
+
+export type TestQuestionInput = z.infer<typeof testQuestionInputSchema>;
 
 export interface TestQuestionResponse {
   isCorrect: boolean;
@@ -24,15 +27,27 @@ export interface TestQuestionResponse {
   correctAnswer: string;
 }
 
-export const testQuestion = async (
-  data: TestQuestionRequest
-): Promise<TestQuestionResponse> => {
-  const response = await api.post("/questions/test", data);
-  return response.data;
+export const testQuestion = ({ data }: { data: TestQuestionInput }): Promise<TestQuestionResponse> => {
+    console.log('Testing question with data:', data);
+  return apiService.post('/questions/test', data);
 };
 
-export const useTestQuestionMutation = () => {
+type UseTestQuestionOptions = {
+  mutationConfig?: MutationConfig<typeof testQuestion>;
+};
+
+export const useTestQuestion = ({ mutationConfig }: UseTestQuestionOptions = {}) => {
+  const { onSuccess, onError, ...restConfig } = mutationConfig || {};
+
   return useMutation({
     mutationFn: testQuestion,
+    onSuccess: (...args) => {
+      onSuccess?.(...args);
+    },
+    onError: (error, variables, context) => {
+      console.error('Error testing question:', error);
+      onError?.(error, variables, context);
+    },
+    ...restConfig,
   });
 };

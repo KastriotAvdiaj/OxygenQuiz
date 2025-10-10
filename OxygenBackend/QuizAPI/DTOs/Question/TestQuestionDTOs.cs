@@ -10,14 +10,14 @@ namespace QuizAPI.DTOs.Question
         public int QuestionId { get; set; }
 
         [Required]
-        public QuestionType QuestionType { get; set; }
+        public required string QuestionType { get; set; }
 
         [Required]
         [Range(5, 300)]
         public int TimeLimitInSeconds { get; set; }
 
         [Required]
-        public PointSystem PointSystem { get; set; }
+        public required string PointSystem { get; set; }
 
         [Required]
         [Range(0, double.MaxValue)]
