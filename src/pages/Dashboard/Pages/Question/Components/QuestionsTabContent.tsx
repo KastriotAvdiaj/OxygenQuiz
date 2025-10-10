@@ -87,7 +87,6 @@ export const QuestionTabContent = ({
       </p>
     );
   }
-
   // Render the appropriate question list based on the type
   const renderQuestionList = () => {
     switch (questionType) {

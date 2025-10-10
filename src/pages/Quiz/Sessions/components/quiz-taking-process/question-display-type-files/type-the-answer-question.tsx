@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/form";
 import { CheckCircle, XCircle } from "lucide-react";
 import type { InstantFeedbackAnswerResult } from "../../../quiz-session-types";
 
-interface TypeTheAnswerQuestionProps {
+export interface TypeTheAnswerQuestionProps {
   onSubmit: (selectedOptionId: number | null, submittedAnswer?: string) => void;
   isSubmitting: boolean;
   theme: ReturnType<typeof import("@/hooks/use-quiz-theme").useQuizTheme>;
