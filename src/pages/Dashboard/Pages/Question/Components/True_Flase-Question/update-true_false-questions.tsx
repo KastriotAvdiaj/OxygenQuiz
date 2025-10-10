@@ -3,8 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Form, FormDrawer, Input, Label } from "@/components/ui/form";
 import { useNotifications } from "@/common/Notifications";
 import { Separator } from "@/components/ui/separator";
-import { LiftedButton } from "@/common/LiftedButton";
-
 import ImageUpload from "@/utils/Image-Upload";
 import {
   updateTrueFalseQuestionInputSchema,
@@ -15,8 +13,9 @@ import { CategorySelect } from "../../Entities/Categories/Components/select-ques
 import { LanguageSelect } from "../../Entities/Language/components/select-question-language";
 import { useQuizForm } from "../../../Quiz/components/Create-Quiz-Form/use-quiz-form";
 import { VisibilitySelect } from "../../Entities/select-visibility";
-import { Check, Edit2Icon } from "lucide-react";
+import { Check, Pen } from "lucide-react";
 import { TrueFalseQuestion } from "@/types/question-types";
+import { IconButtonWithTooltip } from "../Re-Usable-Components/delete-question";
 
 interface UpdateTrueFalseQuestionFormProps {
   question: TrueFalseQuestion;
@@ -51,9 +50,11 @@ export const UpdateTrueFalseQuestionForm: React.FC<
     <FormDrawer
       isDone={updateQuestionMutation.isSuccess}
       triggerButton={
-        <LiftedButton variant="icon">
-          <Edit2Icon className="size-4" />
-        </LiftedButton>
+         <IconButtonWithTooltip
+                      icon={<Pen className="size-4" />}
+                      tooltip="Edit Question"
+                      variant="icon"
+                    />
       }
       title="Update True/False Question"
       submitButton={

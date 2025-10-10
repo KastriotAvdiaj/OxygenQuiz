@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Trash2 } from "lucide-react";
+import { Pen, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Form, FormDrawer, Input, Label } from "@/components/ui/form";
 import { useNotifications } from "@/common/Notifications";
@@ -11,7 +11,6 @@ import { DifficultySelect } from "../../Entities/Difficulty/Components/select-qu
 import { CategorySelect } from "../../Entities/Categories/Components/select-question-category";
 import { LanguageSelect } from "../../Entities/Language/components/select-question-language";
 import { VisibilitySelect } from "../../Entities/select-visibility";
-import { Edit2Icon } from "lucide-react";
 import {
   Switch,
   Tooltip,
@@ -26,6 +25,7 @@ import {
   useUpdateTypeTheAnswerQuestion,
 } from "../../api/Type_The_Answer-Question/update-type_the_answer-question";
 import { TypeTheAnswerQuestion } from "@/types/question-types";
+import { IconButtonWithTooltip } from "../Re-Usable-Components/delete-question";
 
 interface UpdateTypeAnswerQuestionFormProps {
   question: TypeTheAnswerQuestion;
@@ -64,9 +64,11 @@ export const UpdateTypeAnswerQuestionForm: React.FC<
     <FormDrawer
       isDone={updateQuestionMutation.isSuccess}
       triggerButton={
-        <LiftedButton variant="icon">
-          <Edit2Icon className="size-4" />
-        </LiftedButton>
+        <IconButtonWithTooltip
+              icon={<Pen className="size-4" />}
+              tooltip="Edit Question"
+              variant="icon"
+            />
       }
       title="Update Type The Answer Question"
       submitButton={

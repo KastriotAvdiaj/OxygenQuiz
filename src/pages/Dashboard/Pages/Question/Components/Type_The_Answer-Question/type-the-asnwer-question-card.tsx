@@ -18,6 +18,7 @@ import { DeleteQuestion } from "../Re-Usable-Components/delete-question";
 import UpdateTypeAnswerQuestionForm from "./update-type_the_asnwer-question";
 import { QuestionType, TypeTheAnswerQuestion } from "@/types/question-types";
 import { memo } from "react";
+import { TestQuestionButton } from "../Re-Usable-Components/question-test/test-question-button";
 
 interface TypeTheAnswerQuestionCardProps {
   question: TypeTheAnswerQuestion;
@@ -325,11 +326,12 @@ export const TypeTheAnswerQuestionCard = ({
                 </div>
               </div>
               <section className="flex items-center justify-end gap-2 mr-2">
-                <UpdateTypeAnswerQuestionForm question={question} />
                 <DeleteQuestion
                   id={question.id}
                   questionType={QuestionType.TypeTheAnswer}
                 />
+                <TestQuestionButton question={question} questionType={QuestionType.TypeTheAnswer} />
+                <UpdateTypeAnswerQuestionForm question={question} />
               </section>
             </AccordionContent>
           </AccordionItem>

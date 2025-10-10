@@ -12,6 +12,7 @@ import { DeleteQuestion } from "../Re-Usable-Components/delete-question";
 import { UpdateTrueFalseQuestionForm } from "./update-true_false-questions";
 import { QuestionType, TrueFalseQuestion } from "@/types/question-types";
 import { memo } from "react";
+import { TestQuestionButton } from "../Re-Usable-Components/question-test/test-question-button";
 
 interface TrueFalseQuestionCardProps {
   question: TrueFalseQuestion;
@@ -212,11 +213,12 @@ export const TrueFalseQuestionCard = ({
                 </div>
               </div>
               <section className="flex items-center justify-end gap-2 mr-2">
-                <UpdateTrueFalseQuestionForm question={question} />
                 <DeleteQuestion
                   id={question.id}
                   questionType={QuestionType.TrueFalse}
-                />
+                  />
+                <TestQuestionButton question={question} questionType={QuestionType.TrueFalse} />
+                <UpdateTrueFalseQuestionForm question={question} />
               </section>
             </AccordionContent>
           </AccordionItem>
