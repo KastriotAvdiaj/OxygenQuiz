@@ -20,6 +20,12 @@ export interface QueryData {
   error: Error | null;
 }
 
+export enum PointSystem {
+  Standard = "Standard",
+  Double = "Double",
+  Quadruple = "Quadruple",
+}
+
 export interface QuestionSettings {
   pointSystem: string;
   timeLimitInSeconds: number;

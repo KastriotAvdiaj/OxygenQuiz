@@ -19,6 +19,7 @@ import { VisibilitySelect } from "../../Entities/select-visibility";
 import { LiftedButton } from "@/common/LiftedButton";
 import ImageUpload from "@/utils/Image-Upload";
 import { MultipleChoiceQuestion } from "@/types/question-types";
+import { IconButtonWithTooltip } from "../Re-Usable-Components/delete-question";
 
 interface UpdateMultipleChoiceQuestionFormProps {
   question: MultipleChoiceQuestion;
@@ -47,9 +48,12 @@ export const UpdateMultipleChoiceQuestionForm: React.FC<
     <FormDrawer
       isDone={updateQuestionMutation.isSuccess}
       triggerButton={
-        <LiftedButton variant="icon">
-          <Pen className="size-4" />
-        </LiftedButton>
+         <IconButtonWithTooltip
+      icon={<Pen className="size-4" />}
+      tooltip="Edit Question"
+      variant="icon"
+    />
+        
       }
       title="Update Question"
       submitButton={

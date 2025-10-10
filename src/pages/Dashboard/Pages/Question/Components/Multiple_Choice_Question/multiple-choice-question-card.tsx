@@ -12,6 +12,7 @@ import { DeleteQuestion } from "../Re-Usable-Components/delete-question";
 import UpdateMultipleChoiceQuestionForm from "./update-multiple-choice-question";
 import { AnswerOption, MultipleChoiceQuestion, QuestionType } from "@/types/question-types";
 import { memo } from "react";
+import { TestQuestionButton } from "../Re-Usable-Components/question-test/test-question-button";
 
 interface MultipleChoiceQuestionCardProps {
   question: MultipleChoiceQuestion;
@@ -105,6 +106,7 @@ export const MultipleChoiceQuestionCard = ({
               ID: {question.id}
             </Badge>
             <div className="flex items-center gap-1">
+              <TestQuestionButton question={question} questionType={QuestionType.MultipleChoice} />
               <DeleteQuestion
                 id={question.id}
                 questionType={QuestionType.MultipleChoice}
@@ -221,6 +223,7 @@ export const MultipleChoiceQuestionCard = ({
                 </div>
               </div>
               <section className="flex items-center justify-end gap-2 mr-2">
+                <TestQuestionButton question={question} questionType={QuestionType.MultipleChoice} />
                 <DeleteQuestion
                   id={question.id}
                   questionType={QuestionType.MultipleChoice}

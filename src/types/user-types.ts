@@ -1,5 +1,6 @@
 // types/user.types.ts
 
+import { ROLES } from "@/lib/authorization";
 import { Entity } from "./common-types";
 
 
@@ -13,7 +14,7 @@ export type User = Entity<{
   isDeleted: boolean;
   lastLogin: string;
   profileImageUrl: string;
-  role: string;
+  role: ROLES;
 }, string>;
 
 export type UserBasic = {

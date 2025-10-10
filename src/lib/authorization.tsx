@@ -39,6 +39,7 @@ export const useAuthorization = () => {
       if (allowedRoles && allowedRoles.length > 0 && user.data) {
         // console.log(allowedRoles?.includes(user.data.role));
 
+        const allowedRoles: ROLES[] = [ROLES.Admin, ROLES.SuperAdmin]; 
         return allowedRoles?.includes(user.data.role);
       }
 
