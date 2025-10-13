@@ -107,7 +107,7 @@ namespace QuizAPI.Mapping
                           return new List<AnswerOptionForQuizPlaying>
                           {
                             new() { ID = 1, Text = "True" },
-                            new() { ID = 0, Text = "False"}
+                            new() { ID = 2, Text = "False"}
                           };
                       }
 

@@ -776,13 +776,11 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
 
         private async Task<QuizSessionDto?> GetSessionDtoAsync(Guid sessionId)
         {
-            // No more manual .Include() statements.
-            // ProjectTo reads your mapping profile and generates the single, optimal SQL query
             // with all the necessary JOINs to get the data, including AnswerOptions.
             var sessionDto = await _context.QuizSessions
                 .Where(s => s.Id == sessionId)
                 .AsNoTracking()
-                .ProjectTo<QuizSessionDto>(_mapper.ConfigurationProvider) // The magic is here
+                .ProjectTo<QuizSessionDto>(_mapper.ConfigurationProvider) 
                 .FirstOrDefaultAsync();
 
             return sessionDto;

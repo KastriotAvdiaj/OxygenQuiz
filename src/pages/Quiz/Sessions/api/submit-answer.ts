@@ -15,6 +15,7 @@ export const submitAnswerInputSchema = z.object({
 export type SubmitAnswerInput = z.infer<typeof submitAnswerInputSchema>;
 
 export const submitAnswer = ({ data }: { data: SubmitAnswerInput }): Promise<InstantFeedbackAnswerResult> => {
+  console.log('Submitting answer:', data);
   return apiService.post('/QuizSessions/answer', data);
 };
 

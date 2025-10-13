@@ -28,7 +28,7 @@ export function TrueOrFalseQuestion({
 
   // Find the True and False options from the question options
   const trueOption = question.options.find((opt) => opt.id === 1);
-  const falseOption = question.options.find((opt) => opt.id === 0);
+  const falseOption = question.options.find((opt) => opt.id === 2);
 
   const getFeedbackState = (optionId: number) => {
     if (!instantFeedback || !answerResult) return "default";

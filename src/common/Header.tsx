@@ -62,8 +62,6 @@ const Header = ({ BackgroundColor }: HeaderProps) => {
     };
   }, []);
 
-  console.log(BackgroundColor);
-
   return (
     <HeaderComponent
       ref={headerRef}
