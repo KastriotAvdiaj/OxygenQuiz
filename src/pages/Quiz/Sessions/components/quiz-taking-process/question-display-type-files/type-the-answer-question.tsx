@@ -49,7 +49,7 @@ export function TypeTheAnswerQuestion({
             type="text"
             value={answer}
             onChange={(e) => setAnswer(e.target.value)}
-            onKeyPress={handleKeyPress}
+            onKeyUp={handleKeyPress}
             placeholder="Type your answer here..."
             className={`
               h-16 text-xl text-center border-3 rounded-xl transition-all duration-300

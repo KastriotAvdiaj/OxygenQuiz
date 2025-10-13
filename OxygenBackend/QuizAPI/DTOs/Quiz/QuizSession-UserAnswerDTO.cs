@@ -106,7 +106,7 @@ namespace QuizAPI.DTOs.Quiz
         public List<AnswerOptionForQuizPlaying> Options { get; set; } = new();
         public int TimeLimitInSeconds { get; set; }
         public int TimeRemainingInSeconds { get; set; }
-        public QuestionType QuestionType { get; set; }
+        public required string QuestionType { get; set; }
      
     }
 
