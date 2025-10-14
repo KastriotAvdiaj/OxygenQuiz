@@ -65,6 +65,8 @@ const CreateQuizForm = () => {
     getQuestionErrors,
     validateAllQuestionsForSubmit,
     resetAllValidationStates,
+    activeTab,
+    setActiveTab,
   } = useQuiz();
   const { addNotification } = useNotifications();
   const navigate = useNavigate();
@@ -81,7 +83,7 @@ const CreateQuizForm = () => {
   const createTypeTheAnswerMutation = useCreateTypeTheAnswerQuestion();
 
   const [isCreatingQuestions, setIsCreatingQuestions] = useState(false);
-  const [activeTab, setActiveTab] = useState("quiz");
+  // const [activeTab, setActiveTab] = useState("quiz");
 
   // Type guards
   const isAnyQuestion = (q: any): q is AnyQuestion => {
@@ -343,8 +345,8 @@ const CreateQuizForm = () => {
                   </TabsList>
                 </CardHeader>
 
-                <TabsContent value="questions" className="flex items-center">
-                  <section className="flex flex-col gap-4 p-4">
+                <TabsContent value="questions" className="flex items-center justify-center w-full">
+                  <section className="flex flex-col gap-4 p-4 w-full">
                     {displayQuestion && (
                       <QuestionSettingsCard
                         question={displayQuestion}

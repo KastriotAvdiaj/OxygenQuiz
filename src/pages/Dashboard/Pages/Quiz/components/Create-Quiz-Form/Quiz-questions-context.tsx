@@ -72,6 +72,8 @@ interface QuizContextType {
     question: QuizQuestion;
     settings: QuestionSettings;
   }>;
+  activeTab: string;
+  setActiveTab: (tab: string) => void;
 
   // Function to update ("NEW") questions
   updateQuestion: (questionId: number, updatedQuestion: QuizQuestion) => void;
@@ -121,6 +123,7 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
   const [questionSettings, setQuestionSettings] = useState<QuestionSettingsMap>(
     {}
   );
+  const [activeTab, setActiveTab] = useState<string>("quiz");
 
   // NEW: Track which questions have been validated (per-question validation state)
   const [validatedQuestions, setValidatedQuestions] = useState<Set<number>>(
@@ -335,7 +338,7 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
             },
           }));
         }
-
+    setActiveTab("questions");  
         return newQuestions;
       }
       return prevSelected;
@@ -407,6 +410,7 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
   };
 
   const commitTempSelection = (): void => {
+    setActiveTab("questions");  
     setAddedQuestions((prevSelected) => {
       setDisplayQuestion(tempSelectedQuestions[0]);
       const newQuestions = tempSelectedQuestions.filter(
@@ -585,6 +589,8 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
     copySettingsToQuestion,
     resetQuestionSettings,
     getQuestionsWithSettings,
+    activeTab, 
+    setActiveTab,
 
     // Method for updating "NEW" question
     updateQuestion,
