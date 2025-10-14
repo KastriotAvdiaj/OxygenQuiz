@@ -376,7 +376,9 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
 
         return newSettings;
       });
-
+      if (filtered.length === 0) {
+        setActiveTab("quiz");
+      } 
       return filtered;
     });
   };
@@ -461,12 +463,12 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
         prevQuestions.map((q) => (q.id === questionId ? updatedQuestion : q))
       );
 
-      if (displayQuestion?.id === questionId) {
-        setDisplayQuestion(updatedQuestion);
-      }
+       setDisplayQuestion((prev) => 
+      prev?.id === questionId ? updatedQuestion : prev
+    );
     },
     [
-      displayQuestion,
+      // displayQuestion,
       validateQuestion,
       setQuestionErrors,
       clearQuestionErrors,

@@ -54,14 +54,19 @@ export const MultipleChoiceFormCard: React.FC<MultipleChoiceFormCardProps> = ({
 
   useEffect(() => {
     const updatedQuestion = {
-      ...question,
+      id: question.id,
+      categoryId: question.categoryId,
+      difficultyId: question.difficultyId,
+      languageId: question.languageId,
+      type: question.type,
+      visibility: question.visibility,
       text: debouncedQuestionState.text,
       imageUrl: debouncedQuestionState.imageUrl,
       allowMultipleSelections: debouncedQuestionState.allowMultipleSelections,
       answerOptions: debouncedQuestionState.answerOptions,
     };
     updateQuestion(question.id, updatedQuestion);
-  }, [debouncedQuestionState, question.id, updateQuestion]);
+  }, [debouncedQuestionState, question.id, question.type, updateQuestion]);
 
   const handleAddOption = () => {
     if (answerOptions.length < 4) {
