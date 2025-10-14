@@ -1,4 +1,4 @@
-import RotatingText from "@/common/Effect-Related/word-switching";
+import RotatingText from "@/common/Effect-Related/RotatingText";
 import { ChooseQuiz } from "./components/choose-quiz-dialog";
 export const Home = () => {
   return (

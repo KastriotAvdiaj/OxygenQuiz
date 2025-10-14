@@ -277,8 +277,7 @@ const CreateQuizForm = () => {
       className="mt-0 w-full"
       onSubmit={handleQuizSubmit}
       schema={createQuizInputSchema}
-      options={{ mode: "onSubmit" }}
-    >
+      options={{ mode: "onSubmit" }}>
       {({ register, formState, setValue, watch, clearErrors }) => {
         useEffect(() => {
           const questions = addedQuestions.map(
@@ -345,14 +344,20 @@ const CreateQuizForm = () => {
                   </TabsList>
                 </CardHeader>
 
-                <TabsContent value="questions" className="flex items-center justify-center w-full">
+                <TabsContent
+                  value="questions"
+                  className="flex items-center justify-center w-full">
                   <section className="flex flex-col gap-4 p-4 w-full">
-                    {displayQuestion && (
+                    {addedQuestions.length === 0 ? (
+                      <div className="text-muted-foreground text-center py-8">
+                        No questions added yet
+                      </div>
+                    ) : displayQuestion ? (
                       <QuestionSettingsCard
                         question={displayQuestion}
                         showCopyActions={addedQuestions.length > 1}
                       />
-                    )}
+                    ) : null}
                   </section>
                 </TabsContent>
 
@@ -363,8 +368,7 @@ const CreateQuizForm = () => {
                       <div>
                         <Label
                           htmlFor="title"
-                          className="text-sm font-medium flex items-center gap-1"
-                        >
+                          className="text-sm font-medium flex items-center gap-1">
                           Quiz Title <span className="text-destructive">*</span>
                         </Label>
                         <Input
@@ -380,8 +384,7 @@ const CreateQuizForm = () => {
                       <div>
                         <Label
                           htmlFor="description"
-                          className="text-sm font-medium"
-                        >
+                          className="text-sm font-medium">
                           Description
                         </Label>
                         <Textarea
@@ -455,35 +458,30 @@ const CreateQuizForm = () => {
                           value={watch("visibility") || ""}
                           onValueChange={(value) =>
                             setValue("visibility", value)
-                          }
-                        >
+                          }>
                           <SelectTrigger
                             variant={`${
                               errors.visibility ? "incorrect" : "quiz"
                             }`}
-                            className="w-full"
-                          >
+                            className="w-full">
                             <SelectValue placeholder="Select visibility..." />
                           </SelectTrigger>
                           <SelectContent
                             variant={`${
                               errors.visibility ? "incorrect" : "quiz"
-                            }`}
-                          >
+                            }`}>
                             <SelectItem
                               variant={`${
                                 errors.visibility ? "incorrect" : "quiz"
                               }`}
-                              value="Public"
-                            >
+                              value="Public">
                               Public
                             </SelectItem>
                             <SelectItem
                               variant={`${
                                 errors.visibility ? "incorrect" : "quiz"
                               }`}
-                              value="Private"
-                            >
+                              value="Private">
                               Private
                             </SelectItem>
                           </SelectContent>
@@ -509,8 +507,7 @@ const CreateQuizForm = () => {
                       <div className="flex items-center justify-between">
                         <Label
                           htmlFor="showFeedback"
-                          className="text-sm font-medium flex items-center gap-2"
-                        >
+                          className="text-sm font-medium flex items-center gap-2">
                           💬 Instant Feedback
                         </Label>
                         <Switch
@@ -525,8 +522,7 @@ const CreateQuizForm = () => {
                       <div className="flex items-center justify-between">
                         <Label
                           htmlFor="shuffleQuestions"
-                          className="text-sm font-medium flex items-center gap-2"
-                        >
+                          className="text-sm font-medium flex items-center gap-2">
                           <Shuffle className="h-3 w-3" />
                           Shuffle Questions
                         </Label>
@@ -542,8 +538,7 @@ const CreateQuizForm = () => {
                       <div className="flex items-center justify-between">
                         <Label
                           htmlFor="isPublished"
-                          className="text-sm font-medium flex items-center gap-2"
-                        >
+                          className="text-sm font-medium flex items-center gap-2">
                           <Upload className="h-3 w-3" />
                           Publish Quiz
                         </Label>
@@ -570,13 +565,11 @@ const CreateQuizForm = () => {
                     open={isAddQuestionDialogOpen}
                     onOpenChange={(open) =>
                       open ? openAddQuestionDialog() : closeAddQuestionDialog()
-                    }
-                  >
+                    }>
                     <DialogTrigger asChild>
                       <LiftedButton
                         type="button"
-                        className="flex items-center gap-2"
-                      >
+                        className="flex items-center gap-2">
                         + Create New
                       </LiftedButton>
                     </DialogTrigger>
@@ -597,8 +590,7 @@ const CreateQuizForm = () => {
                                 createNewMultipleChoiceQuestion(tempId);
                               addQuestionToQuiz(newQuestion);
                               closeAddQuestionDialog();
-                            }}
-                          >
+                            }}>
                             Multiple Choice
                           </LiftedButton>
                           <LiftedButton
@@ -610,8 +602,7 @@ const CreateQuizForm = () => {
                                 createNewTrueFalseQuestion(tempId);
                               addQuestionToQuiz(newQuestion);
                               closeAddQuestionDialog();
-                            }}
-                          >
+                            }}>
                             True/False
                           </LiftedButton>
                           <LiftedButton
@@ -623,8 +614,7 @@ const CreateQuizForm = () => {
                                 createNewTypeTheAnswerQuestion(tempId);
                               addQuestionToQuiz(newQuestion);
                               closeAddQuestionDialog();
-                            }}
-                          >
+                            }}>
                             Type The Answer
                           </LiftedButton>
                         </div>
@@ -658,8 +648,7 @@ const CreateQuizForm = () => {
                         <Button
                           variant="outline"
                           type="button"
-                          className="group hover:bg-primary hover:text-primary-foreground transition-all duration-300"
-                        >
+                          className="group hover:bg-primary hover:text-primary-foreground transition-all duration-300">
                           <PlusCircle className="mr-2 h-4 w-4 group-hover:rotate-90 transition-transform" />
                           Add Your First Question
                         </Button>
@@ -673,8 +662,7 @@ const CreateQuizForm = () => {
                   <LiftedButton
                     type="submit"
                     disabled={isSubmitting}
-                    variant="default"
-                  >
+                    variant="default">
                     <div className="flex items-center justify-center">
                       <Spinner
                         size="sm"
