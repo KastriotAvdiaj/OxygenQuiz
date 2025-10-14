@@ -78,21 +78,20 @@ export function QuizResults({
         </Tabs>
 
         {/* Persistent Action Buttons */}
-        <div className="flex flex-col sm:flex-row gap-3 justify-center mt-8 pt-8 border-t">
+        <div className="flex flex-col sm:flex-row gap-3 justify-center mt-8 pt-8">
           <Button
             onClick={handleRetryQuiz}
-            className="flex items-center gap-2 text-white bg-primary hover:bg-primary/90"
-          >
-            <RotateCcw className="h-4 w-4" />
+            variant={"fancy"}
+            className="flex items-center gap-2 text-white bg-primary text-2xl py-6 px-6 hover:bg-primary/90">
+            <RotateCcw className="h-6 w-6" />
             Try Again
           </Button>
 
           <Button
             onClick={handleSelectNewQuiz}
-            variant="outline"
-            className="flex items-center gap-2"
-          >
-            <Home className="h-4 w-4" />
+            variant={"fancy"}
+            className="flex items-center gap-2 text-2xl py-6 px-6">
+            <Home className="h-6 w-6" />
             Choose New Quiz
           </Button>
         </div>

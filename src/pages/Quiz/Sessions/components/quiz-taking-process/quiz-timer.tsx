@@ -67,10 +67,9 @@ export function QuizTimer({ initialTime, onTimeUp, theme }: QuizTimerProps) {
 
   return (
     <motion.div
-      className="quiz-timer relative h-16 w-16"
+      className="quiz-timer relative h-32 w-32" // Changed size from h-16 w-16
       animate={isCriticalTime ? { scale: [1, 1.1, 1] } : {}}
-      transition={{ duration: 0.5, repeat: isCriticalTime ? Infinity : 0 }}
-    >
+      transition={{ duration: 0.5, repeat: isCriticalTime ? Infinity : 0 }}>
       <svg className="h-full w-full" viewBox="0 0 100 100">
         {/* Background circle */}
         <circle
@@ -105,14 +104,14 @@ export function QuizTimer({ initialTime, onTimeUp, theme }: QuizTimerProps) {
       </svg>
       <div className="absolute inset-0 flex items-center justify-center">
         <span
-          className={`text-xl font-bold transition-colors duration-300 ${
+          className={`text-4xl font-bold transition-colors duration-300 ${
+            // Changed font size from text-xl
             isCriticalTime
               ? "text-red-400"
               : isLowTime
               ? "text-yellow-400"
               : "quiz-text-primary"
-          }`}
-        >
+          }`}>
           {timeLeft}
         </span>
       </div>

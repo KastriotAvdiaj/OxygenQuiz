@@ -55,8 +55,7 @@ export function MultipleChoiceQuestion({
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: index * 0.1 }}
               whileHover={{ scale: isDisabled ? 1 : 1.02 }}
-              whileTap={{ scale: isDisabled ? 1 : 0.98 }}
-            >
+              whileTap={{ scale: isDisabled ? 1 : 0.98 }}>
               <button
                 onClick={() => !isDisabled && setSelectedOptionId(option.id)}
                 disabled={isDisabled}
@@ -106,8 +105,7 @@ export function MultipleChoiceQuestion({
                       : isSelected
                       ? `${theme.primary}15`
                       : undefined,
-                }}
-              >
+                }}>
                 {/* Option indicator */}
                 <div
                   className={`
@@ -131,8 +129,7 @@ export function MultipleChoiceQuestion({
                         : isSelected
                         ? theme.primary
                         : "transparent",
-                  }}
-                >
+                  }}>
                   {feedbackState === "correct" ? (
                     <CheckCircle className="w-4 h-4 text-white" />
                   ) : feedbackState === "incorrect" ? (
@@ -163,8 +160,7 @@ export function MultipleChoiceQuestion({
                         ? "text-gray-900 dark:text-gray-100"
                         : ""
                     }
-                  `}
-                >
+                  `}>
                   {option.text}
                 </span>
 
@@ -173,8 +169,7 @@ export function MultipleChoiceQuestion({
                   <motion.div
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
-                    className="shrink-0"
-                  >
+                    className="shrink-0">
                     {feedbackState === "correct" && (
                       <CheckCircle className="w-6 h-6 text-green-600" />
                     )}
@@ -193,8 +188,7 @@ export function MultipleChoiceQuestion({
         className="flex justify-center pt-4"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4 }}
-      >
+        transition={{ delay: 0.4 }}>
         {/* Only show the button if not submitted */}
         {!instantFeedback || !answerResult ? (
           <Button
@@ -202,9 +196,8 @@ export function MultipleChoiceQuestion({
             disabled={selectedOptionId === null || isSubmitting}
             size="lg"
             variant={"fancy"}
-            className="px-8 py-3 text-lg font-semibold min-w-[200px]"
-            style={{ backgroundColor: theme.primary }}
-          >
+            className="px-8 py-6 text-2xl font-semibold min-w-[200px]"
+            style={{ backgroundColor: theme.primary }}>
             {isSubmitting ? (
               <div className="flex items-center gap-2">
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />

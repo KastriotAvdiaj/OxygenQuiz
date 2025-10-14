@@ -53,7 +53,7 @@ export function QuizOverview({ session }: QuizOverviewProps) {
 
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
+        <Card className="border border-primary">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm text-muted-foreground flex items-center gap-2">
               <Trophy className="h-4 w-4" />
@@ -70,7 +70,7 @@ export function QuizOverview({ session }: QuizOverviewProps) {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border border-primary">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm text-muted-foreground flex items-center gap-2">
               <Target className="h-4 w-4" />
@@ -87,7 +87,7 @@ export function QuizOverview({ session }: QuizOverviewProps) {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border border-primary">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm text-muted-foreground flex items-center gap-2">
               <Clock className="h-4 w-4" />
@@ -104,7 +104,7 @@ export function QuizOverview({ session }: QuizOverviewProps) {
       </div>
 
       {/* Progress and Breakdown */}
-      <Card>
+      <Card className="border border-primary">
         <CardHeader>
           <CardTitle>Performance Breakdown</CardTitle>
         </CardHeader>

@@ -1,5 +1,4 @@
 import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
 import { QuizTimer } from "./quiz-timer";
 import { QuestionType } from "@/types/question-types";
 import {
@@ -29,24 +28,6 @@ export function QuestionDisplay({
   instantFeedback = false,
   answerResult = null,
 }: QuestionDisplayProps) {
-  const [typingComplete, setTypingComplete] = useState(false);
-
-  useEffect(() => {
-    // Reset typing for new question
-    setTypingComplete(false);
-
-    // Grace period: Force show everything after 3 seconds
-    const gracePeriodTimer = setTimeout(() => {
-      setTypingComplete(true);
-    }, 3000);
-
-    return () => clearTimeout(gracePeriodTimer);
-  }, [question.quizQuestionId]);
-
-  const handleTypingComplete = () => {
-    setTypingComplete(true);
-  };
-
   const handleTimeUp = () => {
     onSubmit(null);
   };
@@ -80,20 +61,18 @@ export function QuestionDisplay({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
       className="space-y-6">
-      {/* Timer - shown after typing completes */}
-      {typingComplete && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.3 }}
-          className="flex justify-center">
-          <QuizTimer
-            initialTime={question.timeRemainingInSeconds}
-            onTimeUp={handleTimeUp}
-            theme={theme}
-          />
-        </motion.div>
-      )}
+      {/* Timer - always visible */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.3 }}
+        className="flex justify-center">
+        <QuizTimer
+          initialTime={question.timeRemainingInSeconds}
+          onTimeUp={handleTimeUp}
+          theme={theme}
+        />
+      </motion.div>
 
       {/* Question Card - always visible */}
       <motion.div
@@ -109,20 +88,19 @@ export function QuestionDisplay({
           />
 
           {/* Question text with typing effect */}
-          <h2 className="text-2xl md:text-3xl font-bold quiz-text-primary leading-relaxed relative z-10">
+          <h2 className="text-5xl md:text-4xl font-bold quiz-text-primary leading-relaxed relative z-10">
             <TextType
               text={[question.questionText]}
-              typingSpeed={30}
+              typingSpeed={25}
               pauseDuration={500}
               showCursor={true}
               cursorCharacter="|"
-              onSentenceComplete={handleTypingComplete}
             />
           </h2>
         </div>
 
         {/* Instant Feedback Display */}
-        {instantFeedback && answerResult && typingComplete && (
+        {instantFeedback && answerResult && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -133,16 +111,14 @@ export function QuestionDisplay({
         )}
       </motion.div>
 
-      {/* Question Content - shown after typing completes */}
-      {typingComplete && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.3 }}
-          className="relative z-10">
-          {renderQuestionContent()}
-        </motion.div>
-      )}
+      {/* Question Content - always visible */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3 }}
+        className="relative z-10">
+        {renderQuestionContent()}
+      </motion.div>
     </motion.div>
   );
 }

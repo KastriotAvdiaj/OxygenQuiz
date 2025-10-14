@@ -43,8 +43,7 @@ export function TypeTheAnswerQuestion({
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="w-full max-w-lg relative"
-        >
+          className="w-full max-w-lg relative">
           <Input
             type="text"
             value={answer}
@@ -88,8 +87,7 @@ export function TypeTheAnswerQuestion({
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
-              className="absolute right-4 top-1/2 -translate-y-1/2"
-            >
+              className="absolute right-4 top-1/2 -translate-y-1/2">
               {isCorrect ? (
                 <CheckCircle className="w-6 h-6 text-green-600" />
               ) : (
@@ -108,8 +106,7 @@ export function TypeTheAnswerQuestion({
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="text-center p-4 rounded-lg bg-gray-100 dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700"
-            >
+              className="text-center p-4 rounded-lg bg-gray-100 dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700">
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
                 Correct answer:
               </p>
@@ -124,8 +121,7 @@ export function TypeTheAnswerQuestion({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4 }}
-            className="text-sm text-gray-500 text-center"
-          >
+            className="text-sm text-gray-500 text-center">
             Press Enter or click Submit to answer
           </motion.div>
         )}
@@ -135,8 +131,7 @@ export function TypeTheAnswerQuestion({
         className="flex justify-center pt-4"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-      >
+        transition={{ delay: 0.3 }}>
         {/* Only show button if not answered */}
         {!instantFeedback || !answerResult ? (
           <Button
@@ -144,9 +139,8 @@ export function TypeTheAnswerQuestion({
             disabled={!answer.trim() || isSubmitting || isDisabled}
             size="lg"
             variant={"fancy"}
-            className="px-8 py-3 text-lg font-semibold rounded-xl min-w-[200px]"
-            style={{ backgroundColor: theme.primary }}
-          >
+            className="px-8 py-6 text-2xl font-semibold rounded-xl min-w-[200px]"
+            style={{ backgroundColor: theme.primary }}>
             {isSubmitting ? (
               <div className="flex items-center gap-2">
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />

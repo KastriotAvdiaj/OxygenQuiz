@@ -56,8 +56,7 @@ export function TrueOrFalseQuestion({
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.1 }}
             whileHover={{ scale: isDisabled ? 1 : 1.03 }}
-            whileTap={{ scale: isDisabled ? 1 : 0.97 }}
-          >
+            whileTap={{ scale: isDisabled ? 1 : 0.97 }}>
             <button
               onClick={() => !isDisabled && setSelectedOptionId(trueOption.id)}
               disabled={isDisabled}
@@ -105,8 +104,7 @@ export function TrueOrFalseQuestion({
                     ? `${theme.primary}15`
                     : undefined,
                 borderWidth: "3px",
-              }}
-            >
+              }}>
               <div className="flex items-center gap-3">
                 <div
                   className="w-8 h-8 rounded-full flex items-center justify-center"
@@ -117,8 +115,7 @@ export function TrueOrFalseQuestion({
                         : selectedOptionId === trueOption.id
                         ? theme.primary
                         : "#22c55e",
-                  }}
-                >
+                  }}>
                   <Check className="w-5 h-5 text-white" />
                 </div>
                 <span>True</span>
@@ -132,8 +129,7 @@ export function TrueOrFalseQuestion({
                         getFeedbackState(trueOption.id) === "correct"
                           ? "text-green-600"
                           : "text-red-600"
-                      }`}
-                    >
+                      }`}>
                       {getFeedbackState(trueOption.id) === "correct"
                         ? "✓"
                         : "✗"}
@@ -151,8 +147,7 @@ export function TrueOrFalseQuestion({
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.2 }}
             whileHover={{ scale: isDisabled ? 1 : 1.03 }}
-            whileTap={{ scale: isDisabled ? 1 : 0.97 }}
-          >
+            whileTap={{ scale: isDisabled ? 1 : 0.97 }}>
             <button
               onClick={() => !isDisabled && setSelectedOptionId(falseOption.id)}
               disabled={isDisabled}
@@ -200,8 +195,7 @@ export function TrueOrFalseQuestion({
                     ? `${theme.primary}15`
                     : undefined,
                 borderWidth: "3px",
-              }}
-            >
+              }}>
               <div className="flex items-center gap-3">
                 <div
                   className="w-8 h-8 rounded-full flex items-center justify-center"
@@ -212,8 +206,7 @@ export function TrueOrFalseQuestion({
                         : selectedOptionId === falseOption.id
                         ? theme.primary
                         : "#ef4444",
-                  }}
-                >
+                  }}>
                   <X className="w-5 h-5 text-white" />
                 </div>
                 <span>False</span>
@@ -227,8 +220,7 @@ export function TrueOrFalseQuestion({
                         getFeedbackState(falseOption.id) === "correct"
                           ? "text-green-600"
                           : "text-red-600"
-                      }`}
-                    >
+                      }`}>
                       {getFeedbackState(falseOption.id) === "correct"
                         ? "✓"
                         : "✗"}
@@ -244,8 +236,7 @@ export function TrueOrFalseQuestion({
         className="flex justify-center pt-4"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-      >
+        transition={{ delay: 0.3 }}>
         {/* Only show button if not answered */}
         {!instantFeedback || !answerResult ? (
           <Button
@@ -253,9 +244,8 @@ export function TrueOrFalseQuestion({
             disabled={selectedOptionId === null || isSubmitting || isDisabled}
             size="lg"
             variant={"fancy"}
-            className="px-8 py-3 text-lg font-semibold rounded-xl min-w-[200px]"
-            style={{ backgroundColor: theme.primary }}
-          >
+            className="px-8 py-6 text-2xl font-semibold rounded-xl min-w-[200px]"
+            style={{ backgroundColor: theme.primary }}>
             {isSubmitting ? (
               <div className="flex items-center gap-2">
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
