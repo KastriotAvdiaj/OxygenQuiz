@@ -41,7 +41,7 @@
     "@tanstack/react-table": "^8.20.5",
     "@tanstack/react-virtual": "^3.11.1",
     "@testing-library/user-event": "^14.5.2",
-    "class-variance-authority": "^0.7.0",
+    "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "framer-motion": "^11.11.17",

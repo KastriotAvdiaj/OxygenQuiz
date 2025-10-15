@@ -28,7 +28,7 @@ const buttonVariants = cva(
         dashboard:
           "flex w-full text-foreground bg-background justify-start text-[17px] items-center rounded hover:bg-muted active:scale-95",
         quiz: "flex justify-center items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-yellow-400 to-red-500 text-white shadow-lg hover:ring-2 hover:ring-offset-2 hover:ring-yellow-500 active:scale-95 transition-all duration-300",
-        fancy: "fancy-button font-secondary",
+        fancy: "fancy-button font-header",
       },
       size: {
         dashboard: "px-2.5 py-2",

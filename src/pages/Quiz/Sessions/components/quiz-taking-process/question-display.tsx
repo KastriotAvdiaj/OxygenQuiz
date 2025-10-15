@@ -71,6 +71,7 @@ export function QuestionDisplay({
           initialTime={question.timeRemainingInSeconds}
           onTimeUp={handleTimeUp}
           theme={theme}
+          size="md"
         />
       </motion.div>
 
@@ -81,7 +82,6 @@ export function QuestionDisplay({
         transition={{ duration: 0.3 }}
         className="relative">
         <div className="quiz-card-elevated p-8 text-center relative overflow-hidden rounded-xl border-2 border-dashed border-primary bg-primary/10">
-          {/* Subtle background decoration */}
           <div
             className="absolute inset-0 opacity-3"
             style={{ background: theme.gradients.subtle }}

@@ -3,18 +3,36 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
 
+type TimerSize = "sm" | "md" | "lg" | "xl";
+
 interface QuizTimerProps {
   initialTime: number;
   onTimeUp: () => void;
   theme: ReturnType<typeof import("@/hooks/use-quiz-theme").useQuizTheme>;
+  size?: TimerSize;
 }
 
-export function QuizTimer({ initialTime, onTimeUp, theme }: QuizTimerProps) {
+const CIRCLE_CIRCUMFERENCE = 283;
+const LOW_TIME_THRESHOLD = 25;
+const CRITICAL_TIME_THRESHOLD = 10;
+
+const SIZE_CLASSES: Record<TimerSize, { container: string; text: string }> = {
+  sm: { container: "h-16 w-16", text: "text-lg" },
+  md: { container: "h-24 w-24", text: "text-2xl" },
+  lg: { container: "h-32 w-32", text: "text-4xl" },
+  xl: { container: "h-40 w-40", text: "text-5xl" },
+};
+
+export function QuizTimer({ 
+  initialTime, 
+  onTimeUp, 
+  theme, 
+  size = "lg" 
+}: QuizTimerProps) {
   const [timeLeft, setTimeLeft] = useState(initialTime);
   const timeUpCalledRef = useRef(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Memoize the onTimeUp callback to prevent unnecessary re-renders
   const handleTimeUp = useCallback(() => {
     if (!timeUpCalledRef.current) {
       timeUpCalledRef.current = true;
@@ -23,28 +41,23 @@ export function QuizTimer({ initialTime, onTimeUp, theme }: QuizTimerProps) {
   }, [onTimeUp]);
 
   useEffect(() => {
-    // Reset the timeUpCalled flag when initialTime changes (new question)
     timeUpCalledRef.current = false;
     setTimeLeft(initialTime);
   }, [initialTime]);
 
   useEffect(() => {
-    // Clear any existing interval
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
     }
 
-    // Don't start timer if timeUp has been called
     if (timeUpCalledRef.current) {
       return;
     }
 
-    // Start the timer
     intervalRef.current = setInterval(() => {
       setTimeLeft((prevTime) => {
         const newTime = prevTime - 1;
         if (newTime <= 0 && !timeUpCalledRef.current) {
-          // Call handleTimeUp in the next tick to avoid state update during render
           setTimeout(() => handleTimeUp(), 0);
           return 0;
         }
@@ -52,26 +65,39 @@ export function QuizTimer({ initialTime, onTimeUp, theme }: QuizTimerProps) {
       });
     }, 1000);
 
-    // Cleanup function
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
     };
-  }, [handleTimeUp]); // Remove timeLeft from dependencies to prevent unnecessary re-renders
+  }, [handleTimeUp]);
 
   const percentage = (timeLeft / initialTime) * 100;
-  const isLowTime = percentage < 25;
-  const isCriticalTime = percentage < 10;
+  const isLowTime = percentage < LOW_TIME_THRESHOLD;
+  const isCriticalTime = percentage < CRITICAL_TIME_THRESHOLD;
+
+  const getTimerColor = (): string => {
+    if (isCriticalTime) return "#ef4444";
+    if (isLowTime) return "#f59e0b";
+    return theme.primary;
+  };
+
+  const getTextColorClass = (): string => {
+    if (isCriticalTime) return "text-red-400";
+    if (isLowTime) return "text-yellow-400";
+    return "quiz-text-primary";
+  };
+
+  const sizeClasses = SIZE_CLASSES[size];
 
   return (
     <motion.div
-      className="quiz-timer relative h-32 w-32" // Changed size from h-16 w-16
+      className={`quiz-timer relative ${sizeClasses.container}`}
       animate={isCriticalTime ? { scale: [1, 1.1, 1] } : {}}
-      transition={{ duration: 0.5, repeat: isCriticalTime ? Infinity : 0 }}>
+      transition={{ duration: 0.5, repeat: isCriticalTime ? Infinity : 0 }}
+    >
       <svg className="h-full w-full" viewBox="0 0 100 100">
-        {/* Background circle */}
         <circle
           className="stroke-current text-quiz-border-subtle"
           strokeWidth="8"
@@ -80,7 +106,6 @@ export function QuizTimer({ initialTime, onTimeUp, theme }: QuizTimerProps) {
           r="45"
           fill="transparent"
         />
-        {/* Progress circle */}
         <motion.circle
           className="stroke-current"
           strokeWidth="8"
@@ -89,29 +114,15 @@ export function QuizTimer({ initialTime, onTimeUp, theme }: QuizTimerProps) {
           cy="50"
           r="45"
           fill="transparent"
-          strokeDasharray="283"
-          strokeDashoffset={283 - (283 * percentage) / 100}
-          style={{
-            color: isCriticalTime
-              ? "#ef4444" // Red for critical time
-              : isLowTime
-              ? "#f59e0b" // Yellow for low time
-              : theme.primary,
-          }}
+          strokeDasharray={CIRCLE_CIRCUMFERENCE}
+          strokeDashoffset={CIRCLE_CIRCUMFERENCE - (CIRCLE_CIRCUMFERENCE * percentage) / 100}
+          style={{ color: getTimerColor() }}
           transform="rotate(-90 50 50)"
           transition={{ duration: 1, ease: "linear" }}
         />
       </svg>
       <div className="absolute inset-0 flex items-center justify-center">
-        <span
-          className={`text-4xl font-bold transition-colors duration-300 ${
-            // Changed font size from text-xl
-            isCriticalTime
-              ? "text-red-400"
-              : isLowTime
-              ? "text-yellow-400"
-              : "quiz-text-primary"
-          }`}>
+        <span className={`${sizeClasses.text} font-bold transition-colors duration-300 ${getTextColorClass()}`}>
           {timeLeft}
         </span>
       </div>

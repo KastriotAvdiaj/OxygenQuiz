@@ -28,32 +28,10 @@ export function QuizOverview({ session }: QuizOverviewProps) {
 
   return (
     <div className="space-y-6">
-      {/* Performance Header */}
-      {/* <Card>
-        <CardContent className="pt-6">
-          <div className="text-center space-y-4">
-            <PerformanceIcon 
-              className="h-12 w-12 mx-auto" 
-              style={{ color: performance.color }} 
-            />
-            <div>
-              <h2 
-                className="text-2xl font-bold mb-1" 
-                style={{ color: performance.color }}
-              >
-                {performance.level}
-              </h2>
-              <p className="text-muted-foreground">
-                You scored {stats.scorePercentage}% on this quiz
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card> */}
 
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="border border-primary">
+        <Card className="border border-primary dark:bg-primary/10">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm text-muted-foreground flex items-center gap-2">
               <Trophy className="h-4 w-4" />
@@ -70,7 +48,7 @@ export function QuizOverview({ session }: QuizOverviewProps) {
           </CardContent>
         </Card>
 
-        <Card className="border border-primary">
+        <Card className="border border-primary dark:bg-primary/10">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm text-muted-foreground flex items-center gap-2">
               <Target className="h-4 w-4" />
@@ -87,7 +65,7 @@ export function QuizOverview({ session }: QuizOverviewProps) {
           </CardContent>
         </Card>
 
-        <Card className="border border-primary">
+        <Card className="border border-primary dark:bg-primary/10">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm text-muted-foreground flex items-center gap-2">
               <Clock className="h-4 w-4" />
@@ -104,7 +82,7 @@ export function QuizOverview({ session }: QuizOverviewProps) {
       </div>
 
       {/* Progress and Breakdown */}
-      <Card className="border border-primary">
+      <Card className="border border-primary dark:bg-primary/10">
         <CardHeader>
           <CardTitle>Performance Breakdown</CardTitle>
         </CardHeader>

@@ -31,9 +31,9 @@ export function QuestionReview({ session }: QuestionReviewProps) {
       case AnswerStatus.Correct:
         return <CheckCircle className="h-5 w-5 text-green-400" />;
       case AnswerStatus.Incorrect:
-        return <XCircle className="h-5 w-5 text-red-600" />;
+        return <XCircle className="h-5 w-5 text-red-600 dark:text-red-400" />;
       case AnswerStatus.TimedOut:
-        return <Timer className="h-5 w-5 text-yellow-600" />;
+        return <Timer className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />;
       default:
         return <XCircle className="h-5 w-5 text-muted-foreground" />;
     }
@@ -42,15 +42,58 @@ export function QuestionReview({ session }: QuestionReviewProps) {
   const getStatusColor = (status: string) => {
     switch (status) {
       case AnswerStatus.Correct:
-        return "bg-green-100 text-green-800 border-green-200";
+        return "bg-green-100 text-green-600 border-green-200";
       case AnswerStatus.Incorrect:
-        return "bg-red-100 text-red-800 border-red-200";
+        return "bg-red-100 text-red-600 border-red-200";
       case AnswerStatus.TimedOut:
-        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+        return "bg-yellow-100 text-yellow-600 border-yellow-200";
       default:
         return "bg-muted text-foreground border-border";
     }
   };
+
+  const getOptionClassName = (isSelected: boolean, isCorrect: boolean) => {
+    let className = "p-3 rounded-lg";
+    
+    if (isSelected && isCorrect) {
+      className += " bg-green-200 border border-green-200 text-green-600 dark:bg-green-600 dark:border-green-700 dark:text-green-100";
+    } else if (isSelected && !isCorrect) {
+      className += " bg-red-50 border border-red-200 text-red-600 dark:bg-red-900 dark:border-red-600 dark:text-red-200";
+    } else if (!isSelected && isCorrect) {
+      className += " bg-green-50 border border-green-200 text-green-600 dark:bg-green-900 dark:border-green-600 dark:text-green-200";
+    } else {
+      className += " bg-muted dark:bg-muted-foreground/20";
+    }
+    
+    return className;
+  };
+
+  const renderOptionBadges = (isSelected: boolean, isCorrect: boolean) => (
+    <div className="flex items-center gap-2">
+      {isSelected && (
+        <Badge variant="secondary" className="text-xs">
+          Your Answer
+        </Badge>
+      )}
+      {isCorrect && (
+        <Badge
+          variant="secondary"
+          className="text-xs bg-green-100 text-green-600"
+        >
+          Correct
+        </Badge>
+      )}
+    </div>
+  );
+
+  const renderOption = (text: string, isSelected: boolean, isCorrect: boolean) => (
+    <div className={getOptionClassName(isSelected, isCorrect)}>
+      <div className="flex items-center justify-between">
+        <span>{text}</span>
+        {renderOptionBadges(isSelected, isCorrect)}
+      </div>
+    </div>
+  );
 
   const renderQuestionContent = (answer: any, questionNumber: number) => {
     const timeSpent = formatDuration(answer.timeSpentInSeconds * 1000);
@@ -96,40 +139,9 @@ export function QuestionReview({ session }: QuestionReviewProps) {
                 const isSelected = answer.selectedOptionId === option.id;
                 const isCorrect = option.isCorrect;
 
-                let optionClass = " p-3 rounded-lg";
-                if (isSelected && isCorrect) {
-                  optionClass +=
-                    " bg-green-200 border border-green-200 text-green-600 dark:bg-green-800 dark:border-green-700 dark:text-green-100";
-                } else if (isSelected && !isCorrect) {
-                  optionClass +=
-                    " bg-red-50 border border-red-200 text-red-800 dark:bg-red-900 dark:border-red-800 dark:text-red-200";
-                } else if (!isSelected && isCorrect) {
-                  optionClass +=
-                    " bg-green-50 border border-green-200 text-green-800 dark:bg-green-900 dark:border-green-800 dark:text-green-200";
-                } else {
-                  optionClass += " bg-muted dark:bg-muted-foreground/20";
-                }
-
                 return (
-                  <div key={option.id} className={optionClass}>
-                    <div className="flex items-center justify-between">
-                      <span>{option.text}</span>
-                      <div className="flex items-center gap-2">
-                        {isSelected && (
-                          <Badge variant="secondary" className="text-xs">
-                            Your Answer
-                          </Badge>
-                        )}
-                        {isCorrect && (
-                          <Badge
-                            variant="secondary"
-                            className="text-xs bg-green-100 text-green-800"
-                          >
-                            Correct
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
+                  <div key={option.id}>
+                    {renderOption(option.text, isSelected, isCorrect)}
                   </div>
                 );
               })}
@@ -142,43 +154,11 @@ export function QuestionReview({ session }: QuestionReviewProps) {
               {["True", "False"].map((optionText) => {
                 const isSelected = answer.submittedAnswer === optionText;
                 const isCorrect =
-                  (answer.correctAnswerBoolean ? "True" : "False") ===
-                  optionText;
-
-                let optionClass = " p-3 rounded-lg";
-                if (isSelected && isCorrect) {
-                  optionClass +=
-                    " bg-green-200 border border-green-200 text-green-600 dark:bg-green-800 dark:border-green-700 dark:text-green-100";
-                } else if (isSelected && !isCorrect) {
-                  optionClass +=
-                    " bg-red-50 border border-red-200 text-red-800 dark:bg-red-900 dark:border-red-800 dark:text-red-200";
-                } else if (!isSelected && isCorrect) {
-                  optionClass +=
-                    " bg-green-50 border border-green-200 text-green-800 dark:bg-green-900 dark:border-green-800 dark:text-green-200";
-                } else {
-                  optionClass += " bg-muted dark:bg-muted-foreground/20";
-                }
+                  (answer.correctAnswerBoolean ? "True" : "False") === optionText;
 
                 return (
-                  <div key={optionText} className={optionClass}>
-                    <div className="flex items-center justify-between">
-                      <span>{optionText}</span>
-                      <div className="flex items-center gap-2">
-                        {isSelected && (
-                          <Badge variant="secondary" className="text-xs">
-                            Your Answer
-                          </Badge>
-                        )}
-                        {isCorrect && (
-                          <Badge
-                            variant="secondary"
-                            className="text-xs bg-green-100 text-green-800"
-                          >
-                            Correct
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
+                  <div key={optionText}>
+                    {renderOption(optionText, isSelected, isCorrect)}
                   </div>
                 );
               })}
@@ -190,7 +170,7 @@ export function QuestionReview({ session }: QuestionReviewProps) {
             <div className="space-y-2">
               {answer.status === AnswerStatus.Correct ? (
                 // If correct, show one green block for the user's answer
-                <div className="p-3 rounded-lg bg-green-200 border border-green-200 text-green-600 dark:bg-green-800 dark:border-green-700 dark:text-green-100">
+                <div className={getOptionClassName(true, true)}>
                   <div className="flex items-center justify-between">
                     <span>{answer.submittedAnswer}</span>
                     <div className="flex items-center gap-2">
@@ -199,7 +179,7 @@ export function QuestionReview({ session }: QuestionReviewProps) {
                       </Badge>
                       <Badge
                         variant="secondary"
-                        className="text-xs bg-green-100 text-green-800"
+                        className="text-xs bg-green-100 text-green-600"
                       >
                         Correct
                       </Badge>
@@ -208,7 +188,7 @@ export function QuestionReview({ session }: QuestionReviewProps) {
                 </div>
               ) : (
                 // If incorrect, show user's answer in red
-                <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-800 dark:bg-red-900 dark:border-red-800 dark:text-red-200">
+                <div className={getOptionClassName(true, false)}>
                   <div className="flex items-center justify-between">
                     <span>{answer.submittedAnswer || "No answer"}</span>
                     <Badge variant="secondary" className="text-xs">
@@ -220,12 +200,12 @@ export function QuestionReview({ session }: QuestionReviewProps) {
 
               {/* Always show the correct answer in a green block if the user was incorrect */}
               {answer.status !== AnswerStatus.Correct && (
-                <div className="p-3 rounded-lg bg-green-50 border border-green-200 text-green-800 dark:bg-green-900 dark:border-green-800 dark:text-green-200">
+                <div className={getOptionClassName(false, true)}>
                   <div className="flex items-center justify-between">
                     <span>{answer.correctAnswerText}</span>
                     <Badge
                       variant="secondary"
-                      className="text-xs bg-green-100 text-green-800"
+                      className="text-xs bg-green-100 text-green-600"
                     >
                       Correct Answer
                     </Badge>
@@ -282,13 +262,13 @@ export function QuestionReview({ session }: QuestionReviewProps) {
       {/* List View */}
       {viewMode === "list" && (
         <Card>
-          <CardContent className="p-0">
+          <CardContent className="p-0 border border-primary rounded-md">
             {session.userAnswers.map((answer, index) => (
               <div key={answer.id}>
                 <div className="p-6">
                   {renderQuestionContent(answer, index + 1)}
                 </div>
-                {index < session.userAnswers.length - 1 && <Separator />}
+                {index < session.userAnswers.length - 1 && <Separator className="bg-primary"/>}
               </div>
             ))}
           </CardContent>
@@ -298,7 +278,7 @@ export function QuestionReview({ session }: QuestionReviewProps) {
       {/* Cards View */}
       {viewMode === "cards" && (
         <div className="space-y-4">
-          <Card>
+          <Card className="border border-primary dark:bg-primary/10">
             <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg">
@@ -307,6 +287,9 @@ export function QuestionReview({ session }: QuestionReviewProps) {
                 </CardTitle>
                 <div className="flex items-center gap-2">
                   <Button
+                    // className={`${currentQuestionIndex === 0 ? '' : 'border-primary'}`}
+                    className="border-primary"
+
                     variant="outline"
                     size="sm"
                     onClick={() =>
@@ -320,6 +303,7 @@ export function QuestionReview({ session }: QuestionReviewProps) {
                   </Button>
                   <Button
                     variant="outline"
+                    className="border-primary"
                     size="sm"
                     onClick={() =>
                       setCurrentQuestionIndex(
@@ -351,10 +335,10 @@ export function QuestionReview({ session }: QuestionReviewProps) {
             {session.userAnswers.map((answer, index) => (
               <Button
                 key={answer.id}
-                variant={index === currentQuestionIndex ? "default" : "outline"}
+                variant="outline"
                 size="sm"
                 onClick={() => setCurrentQuestionIndex(index)}
-                className="flex items-center gap-2 min-w-[60px]"
+                className={`flex items-center gap-2 min-w-[60px] ${currentQuestionIndex === index ? 'bg-muted border-foreground/20' : ''}`}
               >
                 {getStatusIcon(answer.status)}
                 {index + 1}

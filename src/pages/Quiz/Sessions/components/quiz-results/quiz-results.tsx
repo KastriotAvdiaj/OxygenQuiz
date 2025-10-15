@@ -41,7 +41,7 @@ export function QuizResults({
   };
 
   return (
-    <div className="bg-background">
+    <div className="bg-background font-quiz">
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         {/* Header */}
         <div className="mb-8 text-center">
@@ -92,7 +92,7 @@ export function QuizResults({
             variant={"fancy"}
             className="flex items-center gap-2 text-2xl py-6 px-6">
             <Home className="h-6 w-6" />
-            Choose New Quiz
+            New Quiz
           </Button>
         </div>
       </div>
