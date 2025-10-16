@@ -81,7 +81,7 @@ export function QuizSelection() {
     [navigate, close]
   );
   return (
-    <div className="relative min-h-screen pb-20 text-foreground bg-cover bg-center bg-[url('/assets/backgroundImage3.jpgs')] dark:bg-[url('/assets/darkBackgroundImage.jpg')]">
+    <div className="relative min-h-screen pb-20 text-foreground bg-cover bg-center bg-[url('/assets/backgroundImage3.jpgs')] dark:bg-[url('/assets/darkBackgroundImage.jpg')] font-quiz">
       <QuizHeader />
 
       <div className="container relative mx-auto p-4">

@@ -47,7 +47,7 @@ export function QuizStartModal({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
-        className="sm:max-w-md mx-auto border-2 text-white"
+        className="sm:max-w-md mx-auto border-2 text-white font-quiz"
         style={{
           background: `linear-gradient(135deg, ${primaryColor}85, ${primaryColor}45)`,
           borderColor: `${primaryColor}60`,
@@ -155,7 +155,7 @@ export function QuizStartModal({
                 text: "#ffffff",
                 border: "#fecaca",
               }}
-              className="px-6 py-6 group/button border-2 text-white hover:opacity-90 transition-opacity !font-secondary !text-2xl"
+              className="px-6 py-6 group/button border-2 text-white hover:opacity-90 transition-opacity !font-quiz !text-2xl"
               style={{
                 backgroundColor: primaryColor,
                 borderColor: primaryColor,

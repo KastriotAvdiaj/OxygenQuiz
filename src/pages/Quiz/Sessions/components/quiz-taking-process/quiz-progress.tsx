@@ -120,9 +120,9 @@ export function QuizProgress({
               {correctAnswers}/{completedAnswers.length} correct
             </span>
           )}
-          <span className="quiz-text-secondary text-sm">
+          {/* <span className="quiz-text-secondary text-sm">
             {Math.round(progressPercentage)}% Complete
-          </span>
+          </span> */}
         </div>
       </div>
 

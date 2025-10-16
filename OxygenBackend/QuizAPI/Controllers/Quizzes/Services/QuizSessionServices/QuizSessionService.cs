@@ -10,6 +10,7 @@ using QuizAPI.ManyToManyTables;
 using QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.AbandonmentService;
 using QuizAPI.Controllers.Quizzes.Services.AnswerGradingServices;
 using AutoMapper.QueryableExtensions;
+using QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.SubmitAnswerService;
 
 namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
 {
@@ -20,6 +21,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
         private readonly IMapper _mapper;
         private readonly ISessionAbandonmentService _abandonmentService;
         private readonly IAnswerGradingService _gradingService;
+        private readonly ISubmitAnswerService _submitAnswerService;
         private readonly QuizSessionOptions _options;
 
         public QuizSessionService(
@@ -28,7 +30,9 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
             IMapper mapper,
             ISessionAbandonmentService abandonmentService,
             IAnswerGradingService gradingService,
-            IOptions<QuizSessionOptions> options)
+            ISubmitAnswerService submitAnswerService,
+            IOptions<QuizSessionOptions> options
+            )
         {
             _context = context;
             _logger = logger;
@@ -36,6 +40,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
             _abandonmentService = abandonmentService;
             _gradingService = gradingService;
             _options = options.Value;
+            _submitAnswerService = submitAnswerService;
         }
 
         #region Live Quiz Flow
@@ -185,6 +190,9 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
 
         public async Task<Result<InstantFeedbackAnswerResultDto>> SubmitAnswerAsync(UserAnswerCM model)
         {
+            /*Doesnt work properly*/
+            /*return await _submitAnswerService.SubmitAnswerAsync(model);*/
+            /*OLD SUBMITANSWER ASYNC*/
             try
             {
                 _logger.LogInformation("SubmitAnswerAsync called with model: {@Model}", model);
@@ -234,17 +242,6 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
 
                 _logger.LogInformation("Mapped UserAnswer before processing: {@UserAnswer}", userAnswer);
 
-                // Handle True/False questions
-                if (session.CurrentQuizQuestion.Question is TrueFalseQuestion)
-                {
-                    var originalSelectedOptionId = userAnswer.SelectedOptionId;
-                    userAnswer.SelectedOptionId = null;
-                    userAnswer.SubmittedAnswer = originalSelectedOptionId == 1 ? "True" : "False";
-
-                    _logger.LogInformation("True/False handling: OriginalOptionId={Original}, ConvertedAnswer={Converted}",
-                        originalSelectedOptionId, userAnswer.SubmittedAnswer);
-                }
-
                 // Initialize answer based on whether we have instant feedback
                 bool hasInstantFeedback = session.Quiz.ShowFeedbackImmediately;
                 _logger.LogInformation("Session {SessionId}: HasInstantFeedback={HasInstantFeedback}", session.Id, hasInstantFeedback);
@@ -256,6 +253,17 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                 }
                 else if (hasInstantFeedback)
                 {
+                    // Handle True/False questions
+                    if (session.CurrentQuizQuestion.Question is TrueFalseQuestion)
+                    {
+                        var originalSelectedOptionId = userAnswer.SelectedOptionId;
+                        userAnswer.SelectedOptionId = null;
+                        userAnswer.SubmittedAnswer = originalSelectedOptionId == 1 ? "True" : "False";
+
+                        _logger.LogInformation("True/False handling: OriginalOptionId={Original}, ConvertedAnswer={Converted}",
+                            originalSelectedOptionId, userAnswer.SubmittedAnswer);
+                    }
+
                     var gradingResult = await _gradingService.GradeAnswerAsync(
                         session.CurrentQuizQuestionId.Value,
                         userAnswer,
@@ -699,80 +707,6 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
         #endregion
 
         #region Private Helper Methods
-
-        //DEPRICATED SINCE NEW ANSWER GRADING SERVICE
-
-        /*private async Task<(bool IsCorrect, int Score)> GradeAnswerAsync(QuestionBase question, UserAnswer answer, DateTime questionStartTime)
-        {
-            bool isCorrect = false;
-
-            switch (question)
-            {
-                case MultipleChoiceQuestion mcq:
-                    var correctOption = await _context.AnswerOptions
-                        .AsNoTracking()
-                        .FirstOrDefaultAsync(o => o.QuestionId == mcq.Id && o.IsCorrect);
-                    isCorrect = correctOption?.Id == answer.SelectedOptionId;
-                    break;
-                case TrueFalseQuestion tfq:
-                    bool submittedBool = string.Equals(answer.SubmittedAnswer, "True", StringComparison.OrdinalIgnoreCase);
-                    isCorrect = tfq.CorrectAnswer == submittedBool;
-                    break;
-                case TypeTheAnswerQuestion taq:
-                    var comparison = taq.IsCaseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
-                    isCorrect = string.Equals(taq.CorrectAnswer, answer.SubmittedAnswer, comparison);
-
-                    if (!isCorrect && taq.AcceptableAnswers.Any())
-                    {
-                        isCorrect = taq.AcceptableAnswers.Any(acceptable =>
-                            string.Equals(acceptable, answer.SubmittedAnswer, comparison));
-                    }
-                    break;
-            }
-
-            if (!isCorrect) return (false, 0);
-
-            var quizQuestion = await _context.QuizQuestions
-                .AsNoTracking()
-                .FirstOrDefaultAsync(qq => qq.Id == answer.QuizQuestionId);
-
-            if (quizQuestion == null) return (true, 10);
-
-            var score = CalculateScore(quizQuestion, answer, questionStartTime);
-            return (true, score);
-        }
-
-        private int CalculateScore(QuizQuestion quizQuestion, UserAnswer answer, DateTime questionStartTime)
-        {
-            const int BASE_POINTS = 10;
-            double timeBonus = 0;
-
-            var timeTaken = answer.SubmittedTime - questionStartTime;
-
-            if (timeTaken.TotalSeconds > 0 && quizQuestion.TimeLimitInSeconds > 0)
-            {
-                var timeRemainingSeconds = Math.Max(0, quizQuestion.TimeLimitInSeconds - (int)timeTaken.TotalSeconds);
-                timeBonus = (double)timeRemainingSeconds / quizQuestion.TimeLimitInSeconds * 0.5;
-            }
-
-            var pointsWithTimeBonus = (int)(BASE_POINTS * (1 + timeBonus));
-
-            var multiplier = quizQuestion.PointSystem switch
-            {
-                PointSystem.Standard => 1,
-                PointSystem.Double => 2,
-                PointSystem.Quadruple => 4,
-                _ => 1
-            };
-
-            var finalScore = pointsWithTimeBonus * multiplier;
-
-            _logger.LogDebug("Score calculation - Base: {Base}, Time bonus: {TimeBonus:P}, Multiplier: {Multiplier}x, Final: {Final}",
-                BASE_POINTS, timeBonus, multiplier, finalScore);
-
-            return Math.Max(1, finalScore);
-        }*/
-
 
         private async Task<QuizSessionDto?> GetSessionDtoAsync(Guid sessionId)
         {

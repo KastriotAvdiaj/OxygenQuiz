@@ -4,7 +4,7 @@
     {
         public const string SectionName = "QuizSession";
 
-        public int GracePeriodSeconds { get; set; } = 2;
+        public double GracePeriodSeconds { get; set; } = 0;
         public int QuestionBufferSeconds { get; set; } = 5;
         public double TotalTimeoutBufferPercentage { get; set; } = 0.5;
         public double ActivityTimeoutMultiplier { get; set; } = 2.0;
