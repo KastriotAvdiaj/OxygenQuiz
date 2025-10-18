@@ -1,4 +1,5 @@
-﻿using Bogus;
+using Bogus;
+using Microsoft.Extensions.Configuration;
 using QuizAPI.Models;
 using System.Text.Json; // Make sure this using is present
 
@@ -7,14 +8,51 @@ namespace QuizAPI.Data
     public class DataSeeder
     {
         private readonly ApplicationDbContext _context;
+        private readonly IConfiguration _configuration;
 
-        public DataSeeder(ApplicationDbContext context)
+        public DataSeeder(ApplicationDbContext context, IConfiguration configuration)
         {
             _context = context;
+            _configuration = configuration;
         }
 
         public void SeedData()
         {
+            var seedDataSection = _configuration.GetSection("SeedData");
+            if (!seedDataSection.Exists())
+            {
+                throw new InvalidOperationException("SeedData configuration section is missing.");
+            }
+
+            var superAdminSection = seedDataSection.GetSection("SuperAdmin");
+            if (!superAdminSection.Exists())
+            {
+                throw new InvalidOperationException("SeedData:SuperAdmin configuration section is missing.");
+            }
+
+            var superAdminUsername = superAdminSection["Username"];
+            var superAdminEmail = superAdminSection["Email"];
+            var superAdminPassword = superAdminSection["Password"];
+            var defaultUserPassword = seedDataSection["DefaultUserPassword"];
+
+            if (string.IsNullOrWhiteSpace(superAdminUsername) ||
+                string.IsNullOrWhiteSpace(superAdminEmail) ||
+                string.IsNullOrWhiteSpace(superAdminPassword))
+            {
+                throw new InvalidOperationException("SeedData:SuperAdmin configuration is missing required values.");
+            }
+
+            if (string.IsNullOrWhiteSpace(defaultUserPassword))
+            {
+                throw new InvalidOperationException("SeedData:DefaultUserPassword configuration value is missing.");
+            }
+
+            var normalizedSuperAdminUsername = superAdminUsername.Trim();
+            var normalizedSuperAdminEmail = superAdminEmail.Trim();
+            var normalizedSuperAdminPassword = superAdminPassword.Trim();
+            var normalizedDefaultUserPassword = defaultUserPassword.Trim();
+            var hashedSuperAdminPassword = BCrypt.Net.BCrypt.HashPassword(normalizedSuperAdminPassword);
+
             // 1. Seed Roles
             if (!_context.Roles.Any())
             {
@@ -44,10 +82,10 @@ namespace QuizAPI.Data
                 users.Add(new User
                 {
                     Id = Guid.NewGuid(),
-                    Username = "admin",
-                    ImmutableName = "admin",
-                    Email = "kaloti.avdiaj@gmail.com",
-                    PasswordHash = BCrypt.Net.BCrypt.HashPassword("admin"),
+                    Username = normalizedSuperAdminUsername,
+                    ImmutableName = normalizedSuperAdminUsername.ToLowerInvariant(),
+                    Email = normalizedSuperAdminEmail,
+                    PasswordHash = hashedSuperAdminPassword,
                     DateRegistered = DateTime.UtcNow,
                     RoleId = roleSuperAdmin.Id,
                     ConcurrencyStamp = Guid.NewGuid(),
@@ -63,7 +101,7 @@ namespace QuizAPI.Data
                     Username = faker.Internet.UserName(),
                     ImmutableName = faker.Internet.UserName(),
                     Email = faker.Internet.Email(),
-                    PasswordHash = BCrypt.Net.BCrypt.HashPassword("1"),
+                    PasswordHash = BCrypt.Net.BCrypt.HashPassword(normalizedDefaultUserPassword),
                     DateRegistered = DateTime.UtcNow,
                     RoleId = roleAdmin.Id,
                     ConcurrencyStamp = Guid.NewGuid(),
@@ -82,7 +120,7 @@ namespace QuizAPI.Data
                         Username = username,
                         ImmutableName = username.ToLowerInvariant(),
                         Email = faker.Internet.Email(),
-                        PasswordHash = BCrypt.Net.BCrypt.HashPassword("1"),
+                        PasswordHash = BCrypt.Net.BCrypt.HashPassword(normalizedDefaultUserPassword),
                         DateRegistered = faker.Date.Past(1),
                         RoleId = roleUser.Id,
                         ConcurrencyStamp = Guid.NewGuid(),

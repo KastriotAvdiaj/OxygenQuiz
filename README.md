@@ -107,4 +107,9 @@ The recommended target environment is AWS Fargate on ECS with supporting managed
 3. **FastAPI Microservice** – Containerize with a lightweight Python base image and deploy to ECS alongside the backend once the LLM integration is complete. Until then, keep it disabled in production environments.【F:microservice/main.py†L1-L118】
 4. **Secrets & Configuration** – Store sensitive configuration (JWT keys, database credentials, API keys) in AWS Secrets Manager. Non-secret configuration (API base URLs, feature flags) should be stored in Systems Manager Parameter Store and injected via ECS task definitions or environment files.
 
+### Secrets management strategy
+- **AWS Systems Manager Parameter Store** – Define non-sensitive application settings (e.g., `Jwt:Issuer`, `SeedData` defaults, feature flags) as `String` parameters. Attach them to your ECS tasks via the `secrets` or `environmentFiles` sections, or map them to Elastic Beanstalk configuration options using `.ebextensions` files.
+- **AWS Secrets Manager** – Keep sensitive values such as database credentials, JWT signing keys, and third-party API tokens as secrets. Reference them directly from ECS task definitions (Fargate `secrets` block) or Elastic Beanstalk environment configuration so that containers receive them as environment variables at runtime.
+- **Local development parity** – Mirror production variable names in `.env` and `appsettings.*.json` (see `.env.example` and `OxygenBackend/QuizAPI/appsettings.Template.json`) so that swapping between local `.env` files, ECS task definitions, and Elastic Beanstalk configuration requires no code changes.
+
 Infrastructure as Code (IaC) scripts (Terraform or AWS CDK) will live under `infrastructure/` when available. Update this section with direct links once those scripts are committed.
