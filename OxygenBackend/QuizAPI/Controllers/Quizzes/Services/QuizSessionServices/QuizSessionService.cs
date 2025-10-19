@@ -21,7 +21,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
         private readonly IMapper _mapper;
         private readonly ISessionAbandonmentService _abandonmentService;
         private readonly IAnswerGradingService _gradingService;
-        private readonly ISubmitAnswerService _submitAnswerService;
+       /* private readonly ISubmitAnswerService _submitAnswerService;*/
         private readonly QuizSessionOptions _options;
 
         public QuizSessionService(
@@ -30,7 +30,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
             IMapper mapper,
             ISessionAbandonmentService abandonmentService,
             IAnswerGradingService gradingService,
-            ISubmitAnswerService submitAnswerService,
+            /*ISubmitAnswerService submitAnswerService,*/
             IOptions<QuizSessionOptions> options
             )
         {
@@ -40,7 +40,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
             _abandonmentService = abandonmentService;
             _gradingService = gradingService;
             _options = options.Value;
-            _submitAnswerService = submitAnswerService;
+            /*_submitAnswerService = submitAnswerService;*/
         }
 
         #region Live Quiz Flow

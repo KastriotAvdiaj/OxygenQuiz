@@ -27,8 +27,8 @@ dist-ssr
 #backend 
 
 /OxygenBackend/QuizAPI/Program.cs
-/OxygenBackend/QuizAPI/appsettings.json
-/OxygenBackend/QuizAPI/appsettings.Developement.json
+# /OxygenBackend/QuizAPI/appsettings.json doesn't cotnain sensitive info
+# /OxygenBackend/QuizAPI/appsettings.Developement.json this was spelt wrong and doesn't cotnain sensitive info
 /OxygenBackend/QuizAPI/obj
 /OxygenBackend/QuizAPI/bin
 /OxygenBackend/QuizAPI/.vs
