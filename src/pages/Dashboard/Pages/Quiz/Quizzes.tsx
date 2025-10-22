@@ -80,10 +80,10 @@ export const Quizzes = () => {
     selectedIsActive,
   ]);
 
-  const handlePageChange = (newPage: number) => {
-    setPageNumber(newPage);
-    window.scrollTo(0, 0);
-  };
+  // const handlePageChange = (newPage: number) => {
+  //   setPageNumber(newPage);
+  //   window.scrollTo(0, 0);
+  // };
 
   // Check if filter data is still loading
   const isFilterDataLoading =
@@ -113,7 +113,7 @@ export const Quizzes = () => {
 
   // Extract the quiz data from the paginated response
   const quizzes = quizData.data?.data ?? [];
-  const pagination = quizData.data?.pagination;
+  // const pagination = quizData.data?.pagination;
 
   return (
     <div className="container mx-auto py-8 px-4 md:px-0">
