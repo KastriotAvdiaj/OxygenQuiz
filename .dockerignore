@@ -1,0 +1,11 @@
+node_modules
+venv
+.git
+.gitignore
+Dockerfile
+OxygenBackend/
+microservice/
+.dockerignore
+.env*
+coverage
+npm-debug.log*

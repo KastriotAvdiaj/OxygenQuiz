@@ -1,26 +1,25 @@
-# Stage 1: Build the React app
-FROM node:18-alpine as build
+# Stage 1: Install production dependencies with npm ci
+FROM node:20-alpine AS deps
 
 WORKDIR /app
 
 # Copy package.json and lockfile and install deps
-COPY package*.json ./
-RUN npm install
+COPY package.json package-lock.json ./
+RUN npm ci
 
-# Copy the rest of the frontend source code
+# Stage 2: Build the Vite frontend
+FROM node:20-alpine AS build
+WORKDIR /app
+
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-
-# Build React app for production
 RUN npm run build
 
-# Stage 2: Serve the React app with nginx
-FROM nginx:alpine
+# Stage 3: Serve the compiled assets with nginx
+FROM nginx:1.27-alpine AS production
 
-# Copy the build output to nginx html directory
-COPY --from=build /app/build /usr/share/nginx/html
+COPY --from=build /app/dist /usr/share/nginx/html
 
-# Expose port 80
 EXPOSE 80
 
-# Start nginx server
 CMD ["nginx", "-g", "daemon off;"]
