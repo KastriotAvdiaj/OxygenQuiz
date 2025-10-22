@@ -30,6 +30,12 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { ColorCard } from "@/common/ColouredCard";
 import { useNotifications } from "@/common/Notifications";
 
@@ -88,9 +94,9 @@ export const ColorPaletteInput: React.FC<ColorPaletteInputProps> = ({
 
   // Generate LLM prompt and copy to clipboard
   const copyLLMText = async () => {
-    const prompt = `Generate a color palette of ${colorCount} colors for the category "${
-      category || "general"
-    }", where the first color is going to be the main color. Use the colors that best represent the category. Return only the hex color codes in the format #RRGGBB, separated by commas. Do not include any other text or explanation.`;
+    const prompt = category
+      ? `Generate a color palette of ${colorCount} colors for the category "${category}", where the first color is going to be the main color. Use the colors that best represent the category. Return only the hex color codes in the format #RRGGBB, separated by commas. Do not include any other text or explanation. Should the category be invalid, return the message "Category name invalid".`
+      : 'Return the message "Category name invalid".';
 
     try {
       await navigator.clipboard.writeText(prompt);
@@ -100,6 +106,11 @@ export const ColorPaletteInput: React.FC<ColorPaletteInputProps> = ({
         message: "Copied Message To Clipboard",
       });
     } catch (err) {
+      addNotification({
+        type: "error",
+        title: "error",
+        message: "An error occurred while copying the text",
+      });
       console.error("Failed to copy text: ", err);
     }
   };
@@ -167,18 +178,16 @@ export const ColorPaletteInput: React.FC<ColorPaletteInputProps> = ({
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">Color Palette</CardTitle>
+          <CardTitle className="text-sm">Color Palette</CardTitle>
           <div className="flex items-center space-x-2">
             <Label
               htmlFor="color-count"
-              className="text-sm text-muted-foreground"
-            >
+              className="text-sm text-muted-foreground">
               Colors
             </Label>
             <Select
               value={String(colorCount)}
-              onValueChange={(value) => updateColorCount(parseInt(value))}
-            >
+              onValueChange={(value) => updateColorCount(parseInt(value))}>
               <SelectTrigger id="color-count" className="w-20">
                 <SelectValue placeholder="Count" />
               </SelectTrigger>
@@ -198,8 +207,7 @@ export const ColorPaletteInput: React.FC<ColorPaletteInputProps> = ({
           <CollapsibleTrigger asChild>
             <Button
               variant="ghost"
-              className="w-full justify-between flex p-2 h-auto text-sm font-medium text-foreground bg-muted dark:bg-background/60 dark:hover:bg-background my-6"
-            >
+              className="rounded-md w-full justify-between flex p-2 h-auto text-sm font-medium text-foreground bg-muted dark:bg-background/60 dark:hover:bg-background my-6">
               <span className="flex items-center space-x-2">
                 <Palette className="h-4 w-4" />
                 <span>AI Color Assistant</span>
@@ -223,17 +231,29 @@ export const ColorPaletteInput: React.FC<ColorPaletteInputProps> = ({
                 <p className="text-sm text-muted-foreground mb-2">
                   Generate AI prompt for {colorCount} colors
                 </p>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={copyLLMText}
-                  disabled={!category}
-                  className="flex items-center space-x-2 bg-background/60"
-                >
-                  <Copy className="h-4 w-4" />
-                  <span>Copy LLM Text</span>
-                </Button>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="inline-block">
+                        <Button
+                          type="button"
+                          variant="default"
+                          size="sm"
+                          onClick={copyLLMText}
+                          disabled={!category}
+                          className="flex items-center space-x-2">
+                          <Copy className="h-4 w-4" />
+                          <span>Copy LLM Text</span>
+                        </Button>
+                      </div>
+                    </TooltipTrigger>
+                    {!category && (
+                      <TooltipContent className="bg-background">
+                        <p>Please type the category first.</p>
+                      </TooltipContent>
+                    )}
+                  </Tooltip>
+                </TooltipProvider>
               </div>
             </div>
 
@@ -254,12 +274,11 @@ export const ColorPaletteInput: React.FC<ColorPaletteInputProps> = ({
                 </div>
                 <Button
                   type="button"
-                  variant="outline"
+                  variant="default"
                   size="sm"
                   onClick={handlePasteColors}
                   disabled={!isPasteValid}
-                  className="flex items-center space-x-2"
-                >
+                  className="flex items-center space-x-2">
                   <Palette className="h-4 w-4" />
                   <span>Apply</span>
                 </Button>
@@ -291,8 +310,7 @@ export const ColorPaletteInput: React.FC<ColorPaletteInputProps> = ({
           <div key={index} className="flex items-center space-x-3">
             <Label
               htmlFor={`color-${index}`}
-              className="w-8 text-sm text-muted-foreground"
-            >
+              className="w-8 text-sm text-muted-foreground">
               #{index + 1}
             </Label>
             <input
@@ -347,8 +365,7 @@ export const ColorPaletteInput: React.FC<ColorPaletteInputProps> = ({
             <Button
               variant="outline"
               className="bg-background rounded-sm"
-              disabled={validColors.length === 0}
-            >
+              disabled={validColors.length === 0}>
               <Eye className="mr-2 h-4 w-4" />
               Preview
             </Button>
@@ -389,8 +406,7 @@ export const ColorPaletteInput: React.FC<ColorPaletteInputProps> = ({
                   size="md"
                   animated={false}
                   borderAnimation={true}
-                  className="max-w-none"
-                >
+                  className="max-w-none">
                   <div className="p-4 flex-1 flex flex-col justify-center items-center">
                     <Badge
                       variant="secondary"
@@ -398,8 +414,7 @@ export const ColorPaletteInput: React.FC<ColorPaletteInputProps> = ({
                       style={{
                         backgroundColor: `${validColors[0] || "#6366f1"}20`,
                         borderColor: `${validColors[0] || "#6366f1"}40`,
-                      }}
-                    >
+                      }}>
                       {category || "Category Name"}
                     </Badge>
                     <div className="text-center text-foreground">
