@@ -1,12 +1,11 @@
-import { useMutation, useQueryClient, QueryKey } from '@tanstack/react-query';
+import { useMutation, useQueryClient, QueryKey } from "@tanstack/react-query";
 
 import { getMultipleChoiceQuestionsQueryOptions } from "./Normal-Question/get-multiple-choice-questions";
-import { getTrueFalseQuestionsQueryOptions } from './True_False-Question/get-true_false-questions';
-import { getTypeTheAnswerQuestionsQueryOptions } from './Type_The_Answer-Question/get-type-the-answer-questions';
-import { apiService } from '@/lib/Api-client';
-import { MutationConfig } from '@/lib/React-query';
-import { QuestionType } from '@/types/question-types';
-
+import { getTrueFalseQuestionsQueryOptions } from "./True_False-Question/get-true_false-questions";
+import { getTypeTheAnswerQuestionsQueryOptions } from "./Type_The_Answer-Question/get-type-the-answer-questions";
+import { apiService } from "@/lib/Api-client";
+import { MutationConfig } from "@/lib/React-query";
+import { QuestionType } from "@/types/question-types";
 
 type DeleteQuestionApiDTO = {
   questionId: number;
@@ -17,7 +16,9 @@ export const deleteQuestion = ({ questionId }: DeleteQuestionApiDTO) => {
 };
 
 // Map QuestionType enum values to their corresponding query options functions
-const questionQueryOptionsMap: { [key in QuestionType]?: () => { queryKey: QueryKey } } = {
+const questionQueryOptionsMap: {
+  [key in QuestionType]?: () => { queryKey: QueryKey };
+} = {
   [QuestionType.MultipleChoice]: getMultipleChoiceQuestionsQueryOptions,
   [QuestionType.TrueFalse]: getTrueFalseQuestionsQueryOptions,
   [QuestionType.TypeTheAnswer]: getTypeTheAnswerQuestionsQueryOptions,
@@ -44,17 +45,20 @@ export const useDeleteQuestion = ({
         const queryKeyToInvalidate = getQueryOptionsFn().queryKey;
         queryClient.invalidateQueries({ queryKey: queryKeyToInvalidate });
       } else {
-         // Optional: Fallback invalidation or warning
-         console.warn(`Query options mapping not found for QuestionType: ${questionType}.`);
-         // queryClient.invalidateQueries({ queryKey: ['questions'] }); // Example fallback
+        // Optional: Fallback invalidation or warning
+        console.warn(
+          `Query options mapping not found for QuestionType: ${questionType}.`
+        );
+        // queryClient.invalidateQueries({ queryKey: ['questions'] }); // Example fallback
       }
 
       onSuccess?.(data, variables, context);
     },
-    onError: (error, variables, context) => {
-        onError?.(error, variables, context);
+    onError: (error, variables, onMutateResult, context) => {
+      onError?.(error, variables, onMutateResult, context);
     },
-    mutationFn: (variables: { questionId: number }) => deleteQuestion(variables),
+    mutationFn: (variables: { questionId: number }) =>
+      deleteQuestion(variables),
     ...restConfig,
   });
 };

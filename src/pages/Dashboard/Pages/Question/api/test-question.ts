@@ -27,16 +27,22 @@ export interface TestQuestionResponse {
   correctAnswer: string;
 }
 
-export const testQuestion = ({ data }: { data: TestQuestionInput }): Promise<TestQuestionResponse> => {
-    console.log('Testing question with data:', data);
-  return apiService.post('/questions/test', data);
+export const testQuestion = ({
+  data,
+}: {
+  data: TestQuestionInput;
+}): Promise<TestQuestionResponse> => {
+  console.log("Testing question with data:", data);
+  return apiService.post("/questions/test", data);
 };
 
 type UseTestQuestionOptions = {
   mutationConfig?: MutationConfig<typeof testQuestion>;
 };
 
-export const useTestQuestion = ({ mutationConfig }: UseTestQuestionOptions = {}) => {
+export const useTestQuestion = ({
+  mutationConfig,
+}: UseTestQuestionOptions = {}) => {
   const { onSuccess, onError, ...restConfig } = mutationConfig || {};
 
   return useMutation({
@@ -44,9 +50,9 @@ export const useTestQuestion = ({ mutationConfig }: UseTestQuestionOptions = {})
     onSuccess: (...args) => {
       onSuccess?.(...args);
     },
-    onError: (error, variables, context) => {
-      console.error('Error testing question:', error);
-      onError?.(error, variables, context);
+    onError: (error, variables, onMutateResult, context) => {
+      console.error("Error testing question:", error);
+      onError?.(error, variables, onMutateResult, context);
     },
     ...restConfig,
   });

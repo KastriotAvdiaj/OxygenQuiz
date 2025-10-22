@@ -52,8 +52,7 @@ export const columns: ColumnDef<User>[] = [
         <div
           className={`flex items-center justify-center p-1 rounded-[2rem] text-[12px] font-semibold  ${
             isDeleted ? "bg-red-100 text-red-700" : "bg-primary text-white"
-          }`}
-        >
+          }`}>
           {isDeleted ? (
             <>
               <UserX className="w-3 h-3 mr-2" /> deleted
@@ -84,15 +83,16 @@ export const columns: ColumnDef<User>[] = [
     header: "Actions",
     cell: ({ row }) => {
       const user = row.original;
+
       const mainUser = useUser();
+      if (!mainUser?.data) return null;
 
       const { open, isOpen, close } = useDisclosure();
 
       return (
         <DropdownMenu
           open={isOpen}
-          onOpenChange={(state) => (state ? open() : close())}
-        >
+          onOpenChange={(state) => (state ? open() : close())}>
           <DropdownMenuTrigger asChild>
             <Button variant="default" className="h-8 w-8 p-0 rounded">
               <span className="sr-only">Open menu</span>
@@ -102,8 +102,7 @@ export const columns: ColumnDef<User>[] = [
           <DropdownMenuContent align="end" className="bg-muted">
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
             <DropdownMenuItem
-              onClick={() => navigator.clipboard.writeText(user.id)}
-            >
+              onClick={() => navigator.clipboard.writeText(user.id)}>
               <Copy size={16} /> Copy ID
             </DropdownMenuItem>
             <DropdownMenuSeparator className="bg-background/60" />
@@ -112,8 +111,7 @@ export const columns: ColumnDef<User>[] = [
               onClick={(e) => {
                 e.stopPropagation();
                 e.preventDefault();
-              }}
-            >
+              }}>
               <DeleteUser id={user.id} closeDropDown={close} />
             </DropdownMenuItem>
             <DropdownMenuSeparator className="bg-background/60" />

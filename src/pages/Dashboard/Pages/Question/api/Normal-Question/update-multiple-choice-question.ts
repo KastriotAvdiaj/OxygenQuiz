@@ -7,21 +7,32 @@ import { getMultipleChoiceQuestionsQueryOptions } from "./get-multiple-choice-qu
 import { MultipleChoiceQuestion } from "@/types/question-types";
 
 export const updateMultipleChoiceQuestionInputSchema = z.object({
-  id: z.number().int().optional(), 
+  id: z.number().int().optional(),
   text: z.string().min(1, "Question is required"),
-  imageUrl: z.string().nullable().optional(), 
-  difficultyId: z.number().int().positive({ message: "Difficulty is required" }),
+  imageUrl: z.string().nullable().optional(),
+  difficultyId: z
+    .number()
+    .int()
+    .positive({ message: "Difficulty is required" }),
   categoryId: z.number().int().positive({ message: "Category is required" }),
   languageId: z.number().int().positive({ message: "Language is required" }),
   visibility: z.string().min(1, "Visibility is required"),
-  
+
   answerOptions: answerOptionsSchema,
-  allowMultipleSelections: z.boolean().default(false)
+  allowMultipleSelections: z.boolean().default(false),
 });
 
-export type UpdateMultipleChoiceQuestionInput = z.infer<typeof updateMultipleChoiceQuestionInputSchema>;
+export type UpdateMultipleChoiceQuestionInput = z.infer<
+  typeof updateMultipleChoiceQuestionInputSchema
+>;
 
-export const updateMultipleChoiceQuestion = ({ data, questionId }: { data: UpdateMultipleChoiceQuestionInput, questionId: number}): Promise<MultipleChoiceQuestion> => {
+export const updateMultipleChoiceQuestion = ({
+  data,
+  questionId,
+}: {
+  data: UpdateMultipleChoiceQuestionInput;
+  questionId: number;
+}): Promise<MultipleChoiceQuestion> => {
   return (
     console.log("data", data, questionId),
     api.put(`/questions/multiplechoice/${questionId}`, data)
@@ -32,20 +43,24 @@ type UseUpdateMultipleChoiceQuestionOptions = {
   mutationConfig?: MutationConfig<typeof updateMultipleChoiceQuestion>;
 };
 
-export const useUpdateMultipleChoiceQuestion = ({ mutationConfig }: UseUpdateMultipleChoiceQuestionOptions = {}) => {
+export const useUpdateMultipleChoiceQuestion = ({
+  mutationConfig,
+}: UseUpdateMultipleChoiceQuestionOptions = {}) => {
   const queryClient = useQueryClient();
-  
+
   const { onSuccess, onError, ...restConfig } = mutationConfig || {};
 
   return useMutation({
     mutationFn: updateMultipleChoiceQuestion,
     onSuccess: (data, ...args) => {
-      queryClient.refetchQueries({ queryKey: getMultipleChoiceQuestionsQueryOptions().queryKey });
+      queryClient.refetchQueries({
+        queryKey: getMultipleChoiceQuestionsQueryOptions().queryKey,
+      });
       onSuccess?.(data, ...args);
     },
-    onError: (error, variables, context) => {
-      console.error('Error updating question:', error);
-      onError?.(error, variables, context);
+    onError: (error, variables, onMutateResult, context) => {
+      console.error("Error updating question:", error);
+      onError?.(error, variables, onMutateResult, context);
     },
     ...restConfig,
   });

@@ -38,11 +38,10 @@ export const DrawerFilled = () => {
                 <Button
                   className="rounded hover:bg-[#FE2A2A] hover:text-white w-full"
                   onClick={() => {
-                    logout.mutate();
+                    logout.mutate({});
                     close();
                   }}
-                  variant="outline"
-                >
+                  variant="outline">
                   Logout
                 </Button>
               </DrawerClose>
@@ -54,8 +53,7 @@ export const DrawerFilled = () => {
           <NavLink to={"/login"}>
             <Button
               className="bg-[#4B3EF3] text-white custom-button"
-              variant={"default"}
-            >
+              variant={"default"}>
               Login
             </Button>
           </NavLink>

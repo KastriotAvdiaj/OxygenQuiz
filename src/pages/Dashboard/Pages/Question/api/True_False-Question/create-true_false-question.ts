@@ -7,51 +7,66 @@ import { UnspecifiedIds } from "../../../Quiz/components/Create-Quiz-Form/consta
 import { TrueFalseQuestion } from "@/types/question-types";
 
 export const createTrueFalseQuestionInputSchema = z.object({
-  text:          z.string().min(1, "Question is required"),
-  difficultyId:  z
-                    .number().int().positive("Choose a difficulty")
-                    .optional()
-                    .default(UnspecifiedIds.difficultyId),
-  categoryId:    z
-                    .number().int().positive("Choose a category")
-                    .optional()
-                    .default(UnspecifiedIds.categoryId),
-  languageId:    z
-                    .number().int().positive("Choose a language")
-                    .optional()
-                    .default(UnspecifiedIds.languageId),
-  visibility:    z.string().optional(),
-  imageUrl:      z.string().optional(),
+  text: z.string().min(1, "Question is required"),
+  difficultyId: z
+    .number()
+    .int()
+    .positive("Choose a difficulty")
+    .optional()
+    .default(UnspecifiedIds.difficultyId),
+  categoryId: z
+    .number()
+    .int()
+    .positive("Choose a category")
+    .optional()
+    .default(UnspecifiedIds.categoryId),
+  languageId: z
+    .number()
+    .int()
+    .positive("Choose a language")
+    .optional()
+    .default(UnspecifiedIds.languageId),
+  visibility: z.string().optional(),
+  imageUrl: z.string().optional(),
   correctAnswer: z.boolean().default(false),
-}
-);
+});
 
-export type CreateQuestionInput = z.infer<typeof createTrueFalseQuestionInputSchema>;
+export type CreateQuestionInput = z.infer<
+  typeof createTrueFalseQuestionInputSchema
+>;
 
-export const createTrueFalseQuestion = ({ data }: { data: CreateQuestionInput }): Promise<TrueFalseQuestion> => {
+export const createTrueFalseQuestion = ({
+  data,
+}: {
+  data: CreateQuestionInput;
+}): Promise<TrueFalseQuestion> => {
   return (
-    console.log("data", data),
-    apiService.post('/questions/truefalse', data));
+    console.log("data", data), apiService.post("/questions/truefalse", data)
+  );
 };
 
 type UseCreateTrueFalseQuestionOptions = {
   mutationConfig?: MutationConfig<typeof createTrueFalseQuestion>;
 };
 
-export const useCreateTrueFalseQuestion = ({ mutationConfig }: UseCreateTrueFalseQuestionOptions = {}) => {
+export const useCreateTrueFalseQuestion = ({
+  mutationConfig,
+}: UseCreateTrueFalseQuestionOptions = {}) => {
   const queryClient = useQueryClient();
-  
+
   const { onSuccess, onError, ...restConfig } = mutationConfig || {};
 
   return useMutation({
     mutationFn: createTrueFalseQuestion,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({ queryKey: getTrueFalseQuestionsQueryOptions().queryKey });
+      queryClient.invalidateQueries({
+        queryKey: getTrueFalseQuestionsQueryOptions().queryKey,
+      });
       onSuccess?.(...args);
     },
-    onError: (error, variables, context) => {
-      console.error('Error creating question:', error);
-      onError?.(error, variables, context);
+    onError: (error, variables, onMutateResult, context) => {
+      console.error("Error creating question:", error);
+      onError?.(error, variables, onMutateResult, context);
     },
     ...restConfig,
   });

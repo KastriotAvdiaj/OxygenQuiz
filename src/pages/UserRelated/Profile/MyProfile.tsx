@@ -9,9 +9,8 @@ const MyProfile = () => {
   const Data = useUser();
 
   if (!Data?.data) return null;
-
   const user: User = Data.data;
-  console.log(user);
+
 
   const initials =
     typeof user.username === "string"
