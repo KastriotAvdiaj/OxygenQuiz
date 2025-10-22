@@ -44,9 +44,9 @@ export const useCreateQuestionCategory = ({
       });
       onSuccess?.(...args);
     },
-    onError: (error, variables, context) => {
+    onError: (error, variables, onMutateResult, context) => {
       console.error("Error creating question category:", error);
-      onError?.(error, variables, context);
+      onError?.(error, variables, onMutateResult, context);
     },
     ...restConfig,
   });

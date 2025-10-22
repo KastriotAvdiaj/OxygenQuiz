@@ -7,6 +7,9 @@ import { User } from "@/types/user-types";
 
 const MyProfile = () => {
   const Data = useUser();
+
+  if (!Data?.data) return null;
+
   const user: User = Data.data;
   console.log(user);
 

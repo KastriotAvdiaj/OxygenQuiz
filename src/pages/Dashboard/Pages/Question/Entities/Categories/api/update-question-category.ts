@@ -46,9 +46,9 @@ export const useUpdateQuestionCategory = ({
       });
       onSuccess?.(...args);
     },
-    onError: (error, variables, context) => {
+    onError: (error, variables,onMutateResult, context) => {
       console.error("Error updating question category:", error);
-      onError?.(error, variables, context);
+      onError?.(error, variables,onMutateResult, context);
     },
     ...restConfig,
   });
