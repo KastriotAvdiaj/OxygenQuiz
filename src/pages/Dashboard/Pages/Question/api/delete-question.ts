@@ -38,7 +38,7 @@ export const useDeleteQuestion = ({
   const { onSuccess, onError, ...restConfig } = mutationConfig || {};
 
   return useMutation({
-    onSuccess: (data, variables, context) => {
+    onSuccess: (data, variables, onMutateResult, context) => {
       const getQueryOptionsFn = questionQueryOptionsMap[questionType];
 
       if (getQueryOptionsFn) {
@@ -52,7 +52,7 @@ export const useDeleteQuestion = ({
         // queryClient.invalidateQueries({ queryKey: ['questions'] }); // Example fallback
       }
 
-      onSuccess?.(data, variables, context);
+      onSuccess?.(data, variables, onMutateResult, context);
     },
     onError: (error, variables, onMutateResult, context) => {
       onError?.(error, variables, onMutateResult, context);
