@@ -51,10 +51,9 @@ llmApi.interceptors.response.use(
   }
 );
 
-console.log("API URL:", import.meta.env.VITE_API_URL);
-
 export const api = Axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+  baseURL: `http://3.70.217.174:8080/api`,
+  // baseURL: `https://localhost:7153/api`,
 });
 
 api.interceptors.request.use(authRequestInterceptor);
