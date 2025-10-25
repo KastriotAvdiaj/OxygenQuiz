@@ -51,6 +51,7 @@ namespace QuizAPI.Controllers.Questions
 
         // GET: api/QuestionCategories/5
         [HttpGet("{id}")]
+        [Authorize]
         public async Task<ActionResult<QuestionCategory>> GetQuestionCategory(int id)
         {
             if (_context.QuestionCategories == null)
