@@ -1,25 +1,19 @@
-name: Build and Push Frontend
+name: Build and Push Backend
 
 on:
   push:
     branches: [main]
     paths:
-      - 'src/**'
-      - 'public/**'
-      - 'package.json'
-      - 'package-lock.json'
-      - 'vite.config.ts'
-      - 'tailwind.config.js'
-      - 'Dockerfile'
-      - '.github/workflows/build-frontend.yml'
+      - "OxygenBackend/**"
+      - ".github/workflows/build-backend.yml"
   workflow_dispatch:
 
 env:
   AWS_REGION: eu-central-1
-  FRONTEND_IMAGE: oxygenquiz/frontend
+  BACKEND_IMAGE: oxygenquiz/backend
 
 jobs:
-  build-and-push-frontend:
+  build-and-push-backend:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -36,8 +30,8 @@ jobs:
       - run: |
           docker buildx build \
             --platform linux/amd64 \
-            --file Dockerfile \
-            --tag ${{ steps.login-ecr.outputs.registry }}/${{ env.FRONTEND_IMAGE }}:${{ github.sha }} \
-            --tag ${{ steps.login-ecr.outputs.registry }}/${{ env.FRONTEND_IMAGE }}:latest \
+            --file OxygenBackend/Dockerfile \
+            --tag ${{ steps.login-ecr.outputs.registry }}/${{ env.BACKEND_IMAGE }}:${{ github.sha }} \
+            --tag ${{ steps.login-ecr.outputs.registry }}/${{ env.BACKEND_IMAGE }}:latest \
             --push \
-            .
+            OxygenBackend
