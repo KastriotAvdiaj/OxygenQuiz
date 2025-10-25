@@ -52,7 +52,7 @@ llmApi.interceptors.response.use(
 );
 
 export const api = Axios.create({
-  baseURL: `http://3.70.217.174:8080/api`,
+  baseURL: `http://3.76.222.101:8080/api`,
   // baseURL: `https://localhost:7153/api`,
 });
 
