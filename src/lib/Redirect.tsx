@@ -24,5 +24,6 @@ export const RedirectIfLoggedIn = ({
     return <Navigate to="/" replace />;
   }
 
+  
   return component;
 };
