@@ -27,6 +27,7 @@ namespace QuizAPI.Controllers.Questions
 
         // GET: api/QuestionCategories
         [HttpGet]
+        [Authorize]
         public async Task<ActionResult<IEnumerable<QuestionCategoryDTO>>> GetQuestionCategories()
         {
             if (_context.QuestionCategories == null)
