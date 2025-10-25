@@ -21,6 +21,7 @@ export const quizSelectionLoader =
     return await queryClient.ensureQueryData(options);
   };
 
+  
 // Optimized container animation variants
 const containerVariants = {
   hidden: { opacity: 0 },
