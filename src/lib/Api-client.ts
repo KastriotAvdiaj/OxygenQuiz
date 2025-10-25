@@ -1,33 +1,33 @@
-import Axios, { InternalAxiosRequestConfig, AxiosResponse } from 'axios';
-import Cookies from 'js-cookie';
-import { AUTH_COOKIE } from './authHelpers';
-import { useNotifications } from '@/common/Notifications';
+import Axios, { InternalAxiosRequestConfig, AxiosResponse } from "axios";
+import Cookies from "js-cookie";
+import { AUTH_COOKIE } from "./authHelpers";
+import { useNotifications } from "@/common/Notifications";
 
 const CUSTOM_ERROR_PATTERNS = [
-  'not found or you\'re not authorized',
-  'used in a quiz and cannot be deleted',
-  'already exists',
-  'cannot be deleted',
-  'not authorized',
-  'insufficient permissions',
-  'already have an active session',
+  "not found or you're not authorized",
+  "used in a quiz and cannot be deleted",
+  "already exists",
+  "cannot be deleted",
+  "not authorized",
+  "insufficient permissions",
+  "already have an active session",
 ];
 
 function isCustomErrorMessage(message: string): boolean {
-  return CUSTOM_ERROR_PATTERNS.some(pattern => 
+  return CUSTOM_ERROR_PATTERNS.some((pattern) =>
     message.toLowerCase().includes(pattern.toLowerCase())
   );
 }
 
 function authRequestInterceptor(config: InternalAxiosRequestConfig) {
   if (config.headers) {
-    config.headers.Accept = 'application/json';
+    config.headers.Accept = "application/json";
 
     // Retrieve the token from the cookie
     const token = Cookies.get(AUTH_COOKIE);
     if (token) {
       // Attach the token to the Authorization header
-      config.headers['Authorization'] = `Bearer ${token}`;
+      config.headers["Authorization"] = `Bearer ${token}`;
     }
   }
 
@@ -36,8 +36,8 @@ function authRequestInterceptor(config: InternalAxiosRequestConfig) {
 }
 
 export const llmApi = Axios.create({
-  baseURL: "http://localhost:8000",
-})
+  baseURL: import.meta.env.VITE_LLM_URL,
+});
 
 llmApi.interceptors.response.use(
   (response) => {
@@ -52,7 +52,7 @@ llmApi.interceptors.response.use(
 );
 
 export const api = Axios.create({
-  baseURL: "https://localhost:7153/api/",
+  baseURL: import.meta.env.VITE_API_URL,
 });
 
 api.interceptors.request.use(authRequestInterceptor);
@@ -70,27 +70,28 @@ api.interceptors.response.use(
       return Promise.reject(error);
     }
     if (status === 401) {
-      console.log('Unauthorized:', error);
+      console.log("Unauthorized:", error);
       Cookies.remove(AUTH_COOKIE);
     } else {
-      const isCustomMessage = error.response?.data?.isCustomMessage || isCustomErrorMessage(message);
-      
+      const isCustomMessage =
+        error.response?.data?.isCustomMessage || isCustomErrorMessage(message);
+
       let displayMessage = message;
-      
+
       if (!isCustomMessage) {
-        displayMessage = 'An unexpected error occurred. Please try again.';
-        
-        console.error('System error:', {
+        displayMessage = "An unexpected error occurred. Please try again.";
+
+        console.error("System error:", {
           status,
           message,
           url: error.config?.url,
-          method: error.config?.method
+          method: error.config?.method,
         });
       }
 
       useNotifications.getState().addNotification({
-        type: 'error',
-        title: 'Error',
+        type: "error",
+        title: "Error",
         message: displayMessage,
       });
     }
@@ -105,36 +106,50 @@ export const apiService = {
     const response = await api.get<T>(url, config);
     return response.data;
   },
-  
+
   async post<T = any>(url: string, data?: any, config = {}): Promise<T> {
     const response = await api.post<T>(url, data, config);
     return response.data;
   },
-  
+
   async put<T = any>(url: string, data?: any, config = {}): Promise<T> {
     const response = await api.put<T>(url, data, config);
     return response.data;
   },
-  
+
   async delete<T = any>(url: string, config = {}): Promise<T> {
     const response = await api.delete<T>(url, config);
     return response.data;
   },
-  
+
   // Full response methods (when you need headers or other response data)
-  async getWithMeta<T = any>(url: string, config = {}): Promise<AxiosResponse<T>> {
+  async getWithMeta<T = any>(
+    url: string,
+    config = {}
+  ): Promise<AxiosResponse<T>> {
     return api.get<T>(url, config);
   },
-  
-  async postWithMeta<T = any>(url: string, data?: any, config = {}): Promise<AxiosResponse<T>> {
+
+  async postWithMeta<T = any>(
+    url: string,
+    data?: any,
+    config = {}
+  ): Promise<AxiosResponse<T>> {
     return api.post<T>(url, data, config);
   },
-  
-  async putWithMeta<T = any>(url: string, data?: any, config = {}): Promise<AxiosResponse<T>> {
+
+  async putWithMeta<T = any>(
+    url: string,
+    data?: any,
+    config = {}
+  ): Promise<AxiosResponse<T>> {
     return api.put<T>(url, data, config);
   },
-  
-  async deleteWithMeta<T = any>(url: string, config = {}): Promise<AxiosResponse<T>> {
+
+  async deleteWithMeta<T = any>(
+    url: string,
+    config = {}
+  ): Promise<AxiosResponse<T>> {
     return api.delete<T>(url, config);
-  }
+  },
 };
