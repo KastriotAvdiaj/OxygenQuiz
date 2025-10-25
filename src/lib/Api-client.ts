@@ -35,7 +35,6 @@ function authRequestInterceptor(config: InternalAxiosRequestConfig) {
   return config;
 }
 
-
 export const llmApi = Axios.create({
   baseURL: import.meta.env.VITE_LLM_URL,
 });
@@ -50,13 +49,13 @@ llmApi.interceptors.response.use(
   (error) => {
     return Promise.reject(error);
   }
-); 
+);
 
 export const api = Axios.create({
   baseURL: import.meta.env.VITE_API_URL,
 });
-
-api.interceptors.request.use(authRequestInterceptor);
+console.log("API URL:", import.meta.env.VITE_API_URL),
+  api.interceptors.request.use(authRequestInterceptor);
 api.interceptors.response.use(
   (response) => {
     return response;
