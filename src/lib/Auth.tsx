@@ -90,7 +90,7 @@ const authConfig = {
     if (!response.user) {
       throw new Error("Authentication failed: User data not received");
     }
-
+ 
     return response.user;
   },
   registerFn: async (data: RegisterInput) => {
