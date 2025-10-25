@@ -9,8 +9,8 @@ on:
 env:
   AWS_REGION: eu-central-1
   CLUSTER_NAME: oxygenquiz-cluster
-  FRONTEND_SERVICE: oxygenquiz-frontend-service
-  BACKEND_SERVICE: oxygenquiz-backend-service
+  FRONTEND_SERVICE: oxygenquiz-frontend-task-service-zcvl0ody
+  BACKEND_SERVICE: oxygenquiz-backend-task-service-40izafl8
 
 jobs:
   deploy:
