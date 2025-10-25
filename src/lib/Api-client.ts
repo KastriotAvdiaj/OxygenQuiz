@@ -51,6 +51,8 @@ llmApi.interceptors.response.use(
   }
 );
 
+console.log("API URL:", import.meta.env.VITE_API_URL);
+
 export const api = Axios.create({
   baseURL: import.meta.env.VITE_API_URL,
 });
