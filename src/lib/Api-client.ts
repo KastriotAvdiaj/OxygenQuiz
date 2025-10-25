@@ -49,7 +49,7 @@ llmApi.interceptors.response.use(
   (error) => {
     return Promise.reject(error);
   }
-);
+); 
 
 export const api = Axios.create({
   baseURL: import.meta.env.VITE_API_URL,
