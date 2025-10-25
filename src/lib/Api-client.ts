@@ -35,6 +35,7 @@ function authRequestInterceptor(config: InternalAxiosRequestConfig) {
   return config;
 }
 
+
 export const llmApi = Axios.create({
   baseURL: import.meta.env.VITE_LLM_URL,
 });
