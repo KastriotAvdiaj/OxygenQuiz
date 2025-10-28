@@ -13,7 +13,7 @@ import {
   QuizQuestion,
 } from "./types";
 import { z } from "zod";
-import { createMultipleChoiceQuestionInputSchema } from "../../../Question/api/Normal-Question/create-multiple-choice-question";
+import { createMultipleChoiceQuestionInputSchema } from "../../../Question/api/Multiple_Choice_Question/create-multiple-choice-question";
 import { createTrueFalseQuestionInputSchema } from "../../../Question/api/True_False-Question/create-true_false-question";
 import { createTypeTheAnswerQuestionInputSchema } from "../../../Question/api/Type_The_Answer-Question/create-type-the-answer-question";
 import { QuestionType, AnyQuestion } from "@/types/question-types";
@@ -338,7 +338,7 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
             },
           }));
         }
-    setActiveTab("questions");  
+        setActiveTab("questions");
         return newQuestions;
       }
       return prevSelected;
@@ -378,7 +378,7 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
       });
       if (filtered.length === 0) {
         setActiveTab("quiz");
-      } 
+      }
       return filtered;
     });
   };
@@ -412,7 +412,7 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
   };
 
   const commitTempSelection = (): void => {
-    setActiveTab("questions");  
+    setActiveTab("questions");
     setAddedQuestions((prevSelected) => {
       setDisplayQuestion(tempSelectedQuestions[0]);
       const newQuestions = tempSelectedQuestions.filter(
@@ -463,9 +463,9 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
         prevQuestions.map((q) => (q.id === questionId ? updatedQuestion : q))
       );
 
-       setDisplayQuestion((prev) => 
-      prev?.id === questionId ? updatedQuestion : prev
-    );
+      setDisplayQuestion((prev) =>
+        prev?.id === questionId ? updatedQuestion : prev
+      );
     },
     [
       // displayQuestion,
@@ -591,7 +591,7 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
     copySettingsToQuestion,
     resetQuestionSettings,
     getQuestionsWithSettings,
-    activeTab, 
+    activeTab,
     setActiveTab,
 
     // Method for updating "NEW" question

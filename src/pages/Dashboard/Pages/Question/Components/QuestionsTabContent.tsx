@@ -1,4 +1,4 @@
-import { useMultipleChoiceQuestionData } from "../api/Normal-Question/get-multiple-choice-questions";
+import { useMultipleChoiceQuestionData } from "../api/Multiple_Choice_Question/get-multiple-choice-questions";
 import { useTrueFalseQuestionData } from "../api/True_False-Question/get-true_false-questions";
 import { useTypeTheAnswerQuestionData } from "../api/Type_The_Answer-Question/get-type-the-answer-questions";
 

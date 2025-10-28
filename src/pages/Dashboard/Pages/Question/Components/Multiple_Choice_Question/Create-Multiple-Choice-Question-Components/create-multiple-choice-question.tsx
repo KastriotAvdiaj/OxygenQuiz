@@ -14,7 +14,7 @@ import { LiftedButton } from "@/common/LiftedButton";
 import {
   createMultipleChoiceQuestionInputSchema,
   useCreateMultipleChoiceQuestion,
-} from "../../../api/Normal-Question/create-multiple-choice-question";
+} from "../../../api/Multiple_Choice_Question/create-multiple-choice-question";
 import ImageUpload from "@/utils/Image-Upload";
 import {
   QuestionCategory,
@@ -66,12 +66,10 @@ export const CreateMultipleChoiceForm: React.FC<
           type="submit"
           size="default"
           isPending={createQuestionMutation.isPending}
-          disabled={createQuestionMutation.isPending}
-        >
+          disabled={createQuestionMutation.isPending}>
           Submit
         </Button>
-      }
-    >
+      }>
       <Form
         id="create-multiple-choice-question"
         className="w-[500px]"
@@ -90,8 +88,7 @@ export const CreateMultipleChoiceForm: React.FC<
             },
           });
         }}
-        schema={createMultipleChoiceQuestionInputSchema}
-      >
+        schema={createMultipleChoiceQuestionInputSchema}>
         {({ register, formState, control, setValue, watch, clearErrors }) => {
           const { fields, append, remove } = useFieldArray({
             control,
@@ -227,8 +224,7 @@ export const CreateMultipleChoiceForm: React.FC<
                   return (
                     <div
                       key={field.id}
-                      className="flex items-center justify-between gap-6"
-                    >
+                      className="flex items-center justify-between gap-6">
                       <Input
                         variant="minimal"
                         className={`${
@@ -249,8 +245,7 @@ export const CreateMultipleChoiceForm: React.FC<
                         />
                         <Label
                           htmlFor={`correct-${index}`}
-                          className="text-xs text-gray-600 mt-1"
-                        >
+                          className="text-xs text-gray-600 mt-1">
                           Correct{" "}
                           {allowMultipleSelections ? "Option" : "Answer"}
                         </Label>
@@ -259,8 +254,7 @@ export const CreateMultipleChoiceForm: React.FC<
                         variant="icon"
                         className="rounded-xl bg-red-500"
                         onClick={() => remove(index)}
-                        disabled={fields.length <= 2}
-                      >
+                        disabled={fields.length <= 2}>
                         <Trash2 className="h-4 w-4" />
                       </LiftedButton>
                     </div>
@@ -276,8 +270,7 @@ export const CreateMultipleChoiceForm: React.FC<
                   type="button"
                   className="text-sm"
                   onClick={() => append({ text: "", isCorrect: false })}
-                  disabled={addOptionDisabled}
-                >
+                  disabled={addOptionDisabled}>
                   + Add Answer Option
                 </LiftedButton>
               </div>

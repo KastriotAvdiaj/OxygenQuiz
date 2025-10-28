@@ -10,7 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import {
   updateMultipleChoiceQuestionInputSchema,
   useUpdateMultipleChoiceQuestion,
-} from "../../api/Normal-Question/update-multiple-choice-question";
+} from "../../api/Multiple_Choice_Question/update-multiple-choice-question";
 import { useQuizForm } from "../../../Quiz/components/Create-Quiz-Form/use-quiz-form";
 import { CategorySelect } from "../../Entities/Categories/Components/select-question-category";
 import { DifficultySelect } from "../../Entities/Difficulty/Components/select-question-difficulty";
@@ -47,12 +47,11 @@ export const UpdateMultipleChoiceQuestionForm: React.FC<
     <FormDrawer
       isDone={updateQuestionMutation.isSuccess}
       triggerButton={
-         <IconButtonWithTooltip
-      icon={<Pen className="size-4" />}
-      tooltip="Edit Question"
-      variant="icon"
-    />
-        
+        <IconButtonWithTooltip
+          icon={<Pen className="size-4" />}
+          tooltip="Edit Question"
+          variant="icon"
+        />
       }
       title="Update Question"
       submitButton={
@@ -63,12 +62,10 @@ export const UpdateMultipleChoiceQuestionForm: React.FC<
           type="submit"
           size="default"
           isPending={updateQuestionMutation.isPending}
-          disabled={updateQuestionMutation.isPending}
-        >
+          disabled={updateQuestionMutation.isPending}>
           Update
         </Button>
-      }
-    >
+      }>
       <Form
         id="update-question"
         className="w-[500px]"
@@ -99,8 +96,7 @@ export const UpdateMultipleChoiceQuestionForm: React.FC<
             questionId: question.id,
           });
         }}
-        schema={updateMultipleChoiceQuestionInputSchema}
-      >
+        schema={updateMultipleChoiceQuestionInputSchema}>
         {({ register, formState, control, setValue, watch, clearErrors }) => {
           const { fields, remove, append } = useFieldArray({
             control,
@@ -186,8 +182,7 @@ export const UpdateMultipleChoiceQuestionForm: React.FC<
                   return (
                     <div
                       key={field.id}
-                      className="flex items-center justify-between gap-6"
-                    >
+                      className="flex items-center justify-between gap-6">
                       <Input
                         className={`${
                           formState.errors["answerOptions"]
@@ -208,8 +203,7 @@ export const UpdateMultipleChoiceQuestionForm: React.FC<
                         />
                         <Label
                           htmlFor={`correct-${index}`}
-                          className="text-xs text-gray-600 mt-1"
-                        >
+                          className="text-xs text-gray-600 mt-1">
                           Correct
                         </Label>
                       </div>
@@ -217,8 +211,7 @@ export const UpdateMultipleChoiceQuestionForm: React.FC<
                         variant="icon"
                         className="rounded-xl bg-red-400"
                         onClick={() => remove(index)}
-                        disabled={fields.length <= 2}
-                      >
+                        disabled={fields.length <= 2}>
                         <Trash2 className="h-4 w-4 " />
                       </LiftedButton>
                     </div>
@@ -234,8 +227,7 @@ export const UpdateMultipleChoiceQuestionForm: React.FC<
                   variant="addSave"
                   size="sm"
                   onClick={() => append({ text: "", isCorrect: false })}
-                  disabled={addOptionDisabled}
-                >
+                  disabled={addOptionDisabled}>
                   Add Answer Option
                 </Button>
               </div>

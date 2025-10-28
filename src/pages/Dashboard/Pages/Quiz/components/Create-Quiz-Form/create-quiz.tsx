@@ -48,7 +48,7 @@ import {
 } from "./constants";
 import { NewQuestionCard } from "./components/new-display-quiz-question-card/main-display-quiz-question-card";
 import { QuestionType } from "@/types/question-types";
-import { useCreateMultipleChoiceQuestion } from "../../../Question/api/Normal-Question/create-multiple-choice-question";
+import { useCreateMultipleChoiceQuestion } from "../../../Question/api/Multiple_Choice_Question/create-multiple-choice-question";
 import { useCreateTrueFalseQuestion } from "../../../Question/api/True_False-Question/create-true_false-question";
 import { useCreateTypeTheAnswerQuestion } from "../../../Question/api/Type_The_Answer-Question/create-type-the-answer-question";
 import { CreatedQuestionsPanel } from "./components/question-panel/questions-panel";

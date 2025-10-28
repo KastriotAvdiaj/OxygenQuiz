@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient, QueryKey } from "@tanstack/react-query";
 
-import { getMultipleChoiceQuestionsQueryOptions } from "./Normal-Question/get-multiple-choice-questions";
+import { getMultipleChoiceQuestionsQueryOptions } from "./Multiple_Choice_Question/get-multiple-choice-questions";
 import { getTrueFalseQuestionsQueryOptions } from "./True_False-Question/get-true_false-questions";
 import { getTypeTheAnswerQuestionsQueryOptions } from "./Type_The_Answer-Question/get-type-the-answer-questions";
 import { apiService } from "@/lib/Api-client";
