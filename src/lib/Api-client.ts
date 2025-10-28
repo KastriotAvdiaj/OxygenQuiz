@@ -52,8 +52,8 @@ llmApi.interceptors.response.use(
 );
 
 export const api = Axios.create({
-  baseURL: `https://d4h8e1xy4vtiq.cloudfront.net/api`,
-  // baseURL: `https://localhost:7153/api`,
+  // baseURL: `https://d4h8e1xy4vtiq.cloudfront.net/api`,
+  baseURL: `https://localhost:7153/api`,
 });
 
 api.interceptors.request.use(authRequestInterceptor);

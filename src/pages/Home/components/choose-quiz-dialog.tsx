@@ -23,18 +23,15 @@ export const ChooseQuiz = () => {
         <Button
           variant={"fancy"}
           className={`text-5xl px-9 py-7 font-secondary`}
-          disabled={isLoading || isNavigating}
-        >
+          disabled={isLoading || isNavigating}>
           Play
         </Button>
       }
       randomQuizButton={
         <Button
           variant={"fancy"}
-          disabled={isLoading || isNavigating}
-          onClick={handleQuizNavigation}
-          isPending={isLoading || isNavigating}
-        >
+          disabled={true}
+          onClick={handleQuizNavigation}>
           Random Quiz
         </Button>
       }
@@ -43,8 +40,7 @@ export const ChooseQuiz = () => {
           <Button
             variant={"fancy"}
             disabled={isLoading || isNavigating}
-            isPending={isLoading || isNavigating}
-          >
+            isPending={isLoading || isNavigating}>
             Choose a Quiz
           </Button>
         </Link>

@@ -17,7 +17,7 @@ export const createMultipleChoiceQuestionInputSchema = z.object({
   imageUrl: z.string().optional(),
   answerOptions: answerOptionsSchema,
   allowMultipleSelections: z.boolean().default(false),
-  visibility: z.string().optional().default("Global"),
+  visibility: z.string().optional().default("Private"),
 });
 
 export type CreateMultipleChoiceQuestionInput = z.infer<

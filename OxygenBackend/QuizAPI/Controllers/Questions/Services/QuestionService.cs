@@ -232,7 +232,7 @@ namespace QuizAPI.Controllers.Questions.Services
             }
             else
             {
-                question.Visibility = QuestionVisibility.Global;
+                question.Visibility = QuestionVisibility.Private;
             }
 
             _context.MultipleChoiceQuestions.Add(question);
