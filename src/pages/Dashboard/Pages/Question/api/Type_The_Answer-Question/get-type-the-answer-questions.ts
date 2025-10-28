@@ -2,8 +2,17 @@ import { queryOptions, useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/Api-client";
 import { QueryConfig } from "@/lib/React-query";
 import { AxiosResponse } from "axios";
-import { cleanQueryParams, extractPaginationFromHeaders } from "@/lib/pagination-query";
-import { PaginatedTypeTheAnswerQuestionResponse } from "@/types/question-types";
+import {
+  cleanQueryParams,
+  extractPaginationFromHeaders,
+} from "@/lib/pagination-query";
+import type {
+  PaginatedTypeTheAnswerQuestionResponse,
+  QuestionType,
+} from "@/types/question-types";
+import { getDashboardFetcher } from "@/lib/api/dashboard";
+import { useUser } from "@/lib/Auth";
+import { ROLES } from "@/lib/authorization";
 
 export type GetTypeTheAnswerQuestionsParams = {
   pageNumber?: number;
@@ -14,16 +23,25 @@ export type GetTypeTheAnswerQuestionsParams = {
   languageId?: number | null;
   visibility?: string | null;
   userId?: string | null;
+  type?: QuestionType;
 };
 
 export const getTypeTheAnswerQuestions = async (
-  params: GetTypeTheAnswerQuestionsParams
+  params: GetTypeTheAnswerQuestionsParams,
+  role?: ROLES
 ): Promise<PaginatedTypeTheAnswerQuestionResponse> => {
-  const cleanParams = cleanQueryParams(params as Record<string, any>);
-  const queryString = new URLSearchParams(cleanParams).toString();
-  const result: AxiosResponse = await api.get(
-    `/questions/typeTheAnswer?${queryString}`
+  const { url, params: additionalParams } = getDashboardFetcher(
+    "typeTheAnswerQuestions",
+    role
   );
+  const mergedParams = {
+    ...params,
+    ...(additionalParams ?? {}),
+  };
+  const cleanParams = cleanQueryParams(mergedParams as Record<string, any>);
+  const queryString = new URLSearchParams(cleanParams).toString();
+  const endpoint = queryString ? `${url}?${queryString}` : url;
+  const result: AxiosResponse = await api.get(endpoint);
   const pagination = extractPaginationFromHeaders(result);
 
   return {
@@ -33,11 +51,12 @@ export const getTypeTheAnswerQuestions = async (
 };
 
 export const getTypeTheAnswerQuestionsQueryOptions = (
-  params: GetTypeTheAnswerQuestionsParams = {}
+  params: GetTypeTheAnswerQuestionsParams = {},
+  role?: ROLES
 ) => {
   return queryOptions({
-    queryKey: ["typeTheAnswerQuestions", params],
-    queryFn: () => getTypeTheAnswerQuestions(params),
+    queryKey: ["typeTheAnswerQuestions", params, role ?? "default"],
+    queryFn: () => getTypeTheAnswerQuestions(params, role),
   });
 };
 
@@ -50,8 +69,11 @@ export const useTypeTheAnswerQuestionData = ({
   queryConfig,
   params,
 }: UseTypeTheAnswerQuestionOptions) => {
+  const { data: user } = useUser();
+  const role = user?.role;
+
   return useQuery({
-    ...getTypeTheAnswerQuestionsQueryOptions(params),
+    ...getTypeTheAnswerQuestionsQueryOptions(params, role),
     ...queryConfig,
   });
 };
