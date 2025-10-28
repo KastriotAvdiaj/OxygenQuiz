@@ -2,8 +2,17 @@ import { queryOptions, useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/Api-client";
 import { QueryConfig } from "@/lib/React-query";
 import { AxiosResponse } from "axios";
-import { cleanQueryParams, extractPaginationFromHeaders } from "@/lib/pagination-query";
-import { PaginatedTrueFalseQuestionResponse } from "@/types/question-types";
+import {
+  cleanQueryParams,
+  extractPaginationFromHeaders,
+} from "@/lib/pagination-query";
+import type {
+  PaginatedTrueFalseQuestionResponse,
+  QuestionType,
+} from "@/types/question-types";
+import { getDashboardFetcher } from "@/lib/api/dashboard";
+import { useUser } from "@/lib/Auth";
+import { ROLES } from "@/lib/authorization";
 
 export type GetTrueFalseQuestionsParams = {
   pageNumber?: number;
@@ -14,16 +23,25 @@ export type GetTrueFalseQuestionsParams = {
   languageId?: number | null;
   visibility?: string | null;
   userId?: string | null;
+  type?: QuestionType;
 };
 
 export const getTrueFalseQuestions = async (
-  params: GetTrueFalseQuestionsParams
+  params: GetTrueFalseQuestionsParams,
+  role?: ROLES
 ): Promise<PaginatedTrueFalseQuestionResponse> => {
-  const cleanParams = cleanQueryParams(params as Record<string, any>);
-  const queryString = new URLSearchParams(cleanParams).toString();
-  const result: AxiosResponse = await api.get(
-    `/questions/truefalse?${queryString}`
+  const { url, params: additionalParams } = getDashboardFetcher(
+    "trueFalseQuestions",
+    role
   );
+  const mergedParams = {
+    ...params,
+    ...(additionalParams ?? {}),
+  };
+  const cleanParams = cleanQueryParams(mergedParams as Record<string, any>);
+  const queryString = new URLSearchParams(cleanParams).toString();
+  const endpoint = queryString ? `${url}?${queryString}` : url;
+  const result: AxiosResponse = await api.get(endpoint);
   const pagination = extractPaginationFromHeaders(result);
 
   return {
@@ -33,13 +51,14 @@ export const getTrueFalseQuestions = async (
 };
 
 export const getTrueFalseQuestionsQueryOptions = (
-  params: GetTrueFalseQuestionsParams = {}
+  params: GetTrueFalseQuestionsParams = {},
+  role?: ROLES
 ) => {
   return queryOptions({
-    queryKey: ["trueFalseQuestions", params],
-    queryFn: () => getTrueFalseQuestions(params),
-  refetchOnMount: false,
-  refetchOnWindowFocus: false,
+    queryKey: ["trueFalseQuestions", params, role ?? "default"],
+    queryFn: () => getTrueFalseQuestions(params, role),
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
   });
 };
 
@@ -52,8 +71,11 @@ export const useTrueFalseQuestionData = ({
   queryConfig,
   params,
 }: UseTrueFalseQuestionOptions) => {
+  const { data: user } = useUser();
+  const role = user?.role;
+
   return useQuery({
-    ...getTrueFalseQuestionsQueryOptions(params),
+    ...getTrueFalseQuestionsQueryOptions(params, role),
     ...queryConfig,
   });
 };
