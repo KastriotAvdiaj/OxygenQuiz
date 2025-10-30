@@ -1,9 +1,15 @@
 import { queryOptions, useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/Api-client";
 import { QueryConfig } from "@/lib/React-query";
-import { AxiosResponse } from "axios";
-import { cleanQueryParams, extractPaginationFromHeaders } from "@/lib/pagination-query";
-import { PaginatedTrueFalseQuestionResponse } from "@/types/question-types";
+import {
+  cleanQueryParams,
+  extractPaginationFromHeaders,
+} from "@/lib/pagination-query";
+import type {
+  PaginatedTrueFalseQuestionResponse,
+  QuestionType,
+} from "@/types/question-types";
+import { getDashboardFetcher } from "@/lib/api/dashboard";
 
 export type GetTrueFalseQuestionsParams = {
   pageNumber?: number;
@@ -14,32 +20,39 @@ export type GetTrueFalseQuestionsParams = {
   languageId?: number | null;
   visibility?: string | null;
   userId?: string | null;
+  type?: QuestionType;
 };
 
 export const getTrueFalseQuestions = async (
   params: GetTrueFalseQuestionsParams
 ): Promise<PaginatedTrueFalseQuestionResponse> => {
-  const cleanParams = cleanQueryParams(params as Record<string, any>);
+  const { url } = getDashboardFetcher("trueFalseQuestions");
+  const cleanParams = cleanQueryParams(params as Record<string, unknown>);
   const queryString = new URLSearchParams(cleanParams).toString();
-  const result: AxiosResponse = await api.get(
-    `/questions/truefalse?${queryString}`
-  );
-  const pagination = extractPaginationFromHeaders(result);
+  const endpoint = queryString ? `${url}?${queryString}` : url;
+  const response = await api.get<PaginatedTrueFalseQuestionResponse>(endpoint);
+  const body = response.data;
+  const pagination = body.pagination ?? extractPaginationFromHeaders(response) ?? undefined;
 
   return {
-    data: result.data,
-    pagination: pagination || undefined,
+    ...body,
+    pagination,
   };
 };
+
+export const trueFalseQuestionsQueryKey = ["trueFalseQuestions"] as const;
 
 export const getTrueFalseQuestionsQueryOptions = (
   params: GetTrueFalseQuestionsParams = {}
 ) => {
   return queryOptions({
-    queryKey: ["trueFalseQuestions", params],
+    queryKey: [
+      ...trueFalseQuestionsQueryKey,
+      params,
+    ],
     queryFn: () => getTrueFalseQuestions(params),
-  refetchOnMount: false,
-  refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
   });
 };
 

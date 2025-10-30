@@ -1,9 +1,12 @@
 import { queryOptions, useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/Api-client";
 import { QueryConfig } from "@/lib/React-query";
-import { AxiosResponse } from "axios";
-import { cleanQueryParams, extractPaginationFromHeaders } from "@/lib/pagination-query";
+import {
+  cleanQueryParams,
+  extractPaginationFromHeaders,
+} from "@/lib/pagination-query";
 import { PaginatedQuizSummaryResponse } from "@/types/quiz-types";
+import { getDashboardFetcher } from "@/lib/api/dashboard";
 
 export type GetAllQuizzesParams = {
   pageNumber?: number;
@@ -18,16 +21,17 @@ export type GetAllQuizzesParams = {
 export const getAllQuizzes = async (
   params: GetAllQuizzesParams
 ): Promise<PaginatedQuizSummaryResponse> => {
-  const cleanParams = cleanQueryParams(params);
+  const { url } = getDashboardFetcher("quizzes");
+  const cleanParams = cleanQueryParams(params as Record<string, unknown>);
   const queryString = new URLSearchParams(cleanParams).toString();
-  const result: AxiosResponse = await api.get(
-    `/quiz?${queryString}`
-  );
-  const pagination = extractPaginationFromHeaders(result);
+  const endpoint = queryString ? `${url}?${queryString}` : url;
+  const response = await api.get<PaginatedQuizSummaryResponse>(endpoint);
+  const body = response.data;
+  const pagination = body.pagination ?? extractPaginationFromHeaders(response) ?? undefined;
 
   return {
-    data: result.data,
-    pagination: pagination || undefined,
+    ...body,
+    pagination,
   };
 };
 

@@ -1,9 +1,15 @@
 import { queryOptions, useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/Api-client";
 import { QueryConfig } from "@/lib/React-query";
-import { AxiosResponse } from "axios";
-import { cleanQueryParams, extractPaginationFromHeaders } from "@/lib/pagination-query";
-import { PaginatedMultipleChoiceQuestionResponse } from "@/types/question-types";
+import {
+  cleanQueryParams,
+  extractPaginationFromHeaders,
+} from "@/lib/pagination-query";
+import type {
+  PaginatedMultipleChoiceQuestionResponse,
+  QuestionType,
+} from "@/types/question-types";
+import { getDashboardFetcher } from "@/lib/api/dashboard";
 
 export type GetMultipleChoiceQuestionsParams = {
   pageNumber?: number;
@@ -14,29 +20,38 @@ export type GetMultipleChoiceQuestionsParams = {
   languageId?: number;
   visibility?: string;
   userId?: string;
+  type?: QuestionType;
 };
 
 export const getMultipleChoiceQuestions = async (
   params: GetMultipleChoiceQuestionsParams
 ): Promise<PaginatedMultipleChoiceQuestionResponse> => {
-  const cleanParams = cleanQueryParams(params);
+  const { url } = getDashboardFetcher("multipleChoiceQuestions");
+  const cleanParams = cleanQueryParams(params as Record<string, unknown>);
   const queryString = new URLSearchParams(cleanParams).toString();
-  const result: AxiosResponse = await api.get(
-    `/questions/multiplechoice?${queryString}`
-  );
-  const pagination = extractPaginationFromHeaders(result);
+  const endpoint = queryString ? `${url}?${queryString}` : url;
+  const response = await api.get<PaginatedMultipleChoiceQuestionResponse>(endpoint);
+  const body = response.data;
+  const pagination = body.pagination ?? extractPaginationFromHeaders(response) ?? undefined;
 
   return {
-    data: result.data,
-    pagination: pagination || undefined,
+    ...body,
+    pagination,
   };
 };
+
+export const multipleChoiceQuestionsQueryKey = [
+  "multipleChoiceQuestions",
+] as const;
 
 export const getMultipleChoiceQuestionsQueryOptions = (
   params: GetMultipleChoiceQuestionsParams = {}
 ) => {
   return queryOptions({
-    queryKey: ["multipleChoiceQuestions", params],
+    queryKey: [
+      ...multipleChoiceQuestionsQueryKey,
+      params,
+    ],
     queryFn: () => getMultipleChoiceQuestions(params),
   });
 };

@@ -10,36 +10,10 @@ using QuizAPI.Services;
 using System.Security.Claims;
 using QuizAPI.Controllers.Questions.Services;
 using QuizAPI.Controllers.Questions.Services.AnswerOptions;
-using System.Text.Json;
+using QuizAPI.Extensions;
 
 namespace QuizAPI.Controllers.Questions
 {
-
-    public static class HttpExtensions
-    {
-        public static void AddPaginationHeader(this HttpResponse response, int currentPage,
-            int itemsPerPage, int totalItems, int totalPages, bool hasNextPage, bool hasPreviousPage)
-        {
-            var paginationHeader = new
-            {
-                currentPage,
-                itemsPerPage,
-                totalItems,
-                totalPages,
-                hasNextPage,
-                hasPreviousPage
-            };
-
-            var options = new JsonSerializerOptions
-            {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-            };
-
-            response.Headers.Append("Pagination", JsonSerializer.Serialize(paginationHeader, options));
-            // To allow the client to access the header
-            /*response.Headers.Add("Access-Control-Expose-Headers", "Pagination");*/ // REMOVED THIS BECAUSE IT IS REDUNDANT AND WE'RE ALREADY USING CORS
-        }
-    }
 
     [ApiController]
     [Route("api/[controller]")]
