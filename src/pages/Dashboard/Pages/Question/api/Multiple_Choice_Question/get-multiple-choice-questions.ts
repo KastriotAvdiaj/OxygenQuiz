@@ -45,10 +45,14 @@ export const getMultipleChoiceQuestions = async (
   const pagination = extractPaginationFromHeaders(result);
 
   return {
-    data: result.data,
-    pagination: pagination || undefined,
+    ...body,
+    pagination,
   };
 };
+
+export const multipleChoiceQuestionsQueryKey = [
+  "multipleChoiceQuestions",
+] as const;
 
 export const getMultipleChoiceQuestionsQueryOptions = (
   params: GetMultipleChoiceQuestionsParams = {},

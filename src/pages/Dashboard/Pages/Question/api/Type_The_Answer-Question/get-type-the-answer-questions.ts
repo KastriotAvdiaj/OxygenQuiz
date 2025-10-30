@@ -45,10 +45,14 @@ export const getTypeTheAnswerQuestions = async (
   const pagination = extractPaginationFromHeaders(result);
 
   return {
-    data: result.data,
-    pagination: pagination || undefined,
+    ...body,
+    pagination,
   };
 };
+
+export const typeTheAnswerQuestionsQueryKey = [
+  "typeTheAnswerQuestions",
+] as const;
 
 export const getTypeTheAnswerQuestionsQueryOptions = (
   params: GetTypeTheAnswerQuestionsParams = {},

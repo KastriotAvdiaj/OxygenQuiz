@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { apiService } from "@/lib/Api-client";
 import { MutationConfig } from "@/lib/React-query";
-import { getTypeTheAnswerQuestionsQueryOptions } from "./get-type-the-answer-questions";
+import { typeTheAnswerQuestionsQueryKey } from "./get-type-the-answer-questions";
 import { UnspecifiedIds } from "../../../Quiz/components/Create-Quiz-Form/constants";
 import { TypeTheAnswerQuestion } from "@/types/question-types";
 
@@ -85,7 +85,7 @@ export const useCreateTypeTheAnswerQuestion = ({
     mutationFn: createTypeTheAnswerQuestion,
     onSuccess: (...args) => {
       queryClient.invalidateQueries({
-        queryKey: getTypeTheAnswerQuestionsQueryOptions().queryKey,
+        queryKey: typeTheAnswerQuestionsQueryKey,
       });
       onSuccess?.(...args);
     },

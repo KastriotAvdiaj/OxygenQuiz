@@ -45,10 +45,12 @@ export const getTrueFalseQuestions = async (
   const pagination = extractPaginationFromHeaders(result);
 
   return {
-    data: result.data,
-    pagination: pagination || undefined,
+    ...body,
+    pagination,
   };
 };
+
+export const trueFalseQuestionsQueryKey = ["trueFalseQuestions"] as const;
 
 export const getTrueFalseQuestionsQueryOptions = (
   params: GetTrueFalseQuestionsParams = {},

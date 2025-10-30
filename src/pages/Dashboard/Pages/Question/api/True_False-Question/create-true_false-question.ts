@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { apiService } from "@/lib/Api-client";
 import { MutationConfig } from "@/lib/React-query";
-import { getTrueFalseQuestionsQueryOptions } from "./get-true_false-questions";
+import { trueFalseQuestionsQueryKey } from "./get-true_false-questions";
 import { UnspecifiedIds } from "../../../Quiz/components/Create-Quiz-Form/constants";
 import { TrueFalseQuestion } from "@/types/question-types";
 
@@ -60,7 +60,7 @@ export const useCreateTrueFalseQuestion = ({
     mutationFn: createTrueFalseQuestion,
     onSuccess: (...args) => {
       queryClient.invalidateQueries({
-        queryKey: getTrueFalseQuestionsQueryOptions().queryKey,
+        queryKey: trueFalseQuestionsQueryKey,
       });
       onSuccess?.(...args);
     },

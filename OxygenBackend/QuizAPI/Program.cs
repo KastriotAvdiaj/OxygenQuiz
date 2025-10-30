@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using MongoDB.Driver;
+using QuizAPI.Controllers.Dashboard.Services;
 using QuizAPI.Controllers.Image.Services;
 using QuizAPI.Controllers.Questions.Services;
 using QuizAPI.Controllers.Questions.Services.AnswerOptions;
@@ -70,6 +71,8 @@ builder.Services.AddScoped<IQuizService, QuizService>();
 builder.Services.AddScoped<IQuestionService, QuestionService>();
 builder.Services.AddScoped<ITestQuestionService, TestQuestionService>();
 builder.Services.AddScoped<IAnswerOptionService, AnswerOptionService>();
+builder.Services.AddScoped<IDashboardQuestionsService, DashboardQuestionsService>();
+builder.Services.AddScoped<IDashboardQuizService, DashboardQuizService>();
 
 // Session & Answer Services
 builder.Services.AddScoped<IQuizSessionService, QuizSessionService>();

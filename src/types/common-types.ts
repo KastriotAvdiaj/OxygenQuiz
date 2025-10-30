@@ -22,3 +22,9 @@ export interface PaginatedResponse<T> {
   data: T[];
   pagination?: Pagination;
 }
+
+export type DashboardViewMode = "my" | "admin";
+
+export interface DashboardPaginatedResponse<T> extends PaginatedResponse<T> {
+  mode: DashboardViewMode;
+}
