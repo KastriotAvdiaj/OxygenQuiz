@@ -3,7 +3,7 @@ import { z } from "zod";
 import { apiService } from "@/lib/Api-client";
 import { MutationConfig } from "@/lib/React-query";
 import { answerOptionsSchema } from "../../../Quiz/api/create-quiz";
-import { multipleChoiceQuestionsQueryKey } from "./get-multiple-choice-questions";
+import { getMultipleChoiceQuestionsQueryOptions } from "./get-multiple-choice-questions";
 import { MultipleChoiceQuestion } from "@/types/question-types";
 
 export const createMultipleChoiceQuestionInputSchema = z.object({
@@ -47,7 +47,7 @@ export const useCreateMultipleChoiceQuestion = ({
     mutationFn: createMultipleChoiceQuestion,
     onSuccess: (...args) => {
       queryClient.invalidateQueries({
-        queryKey: multipleChoiceQuestionsQueryKey,
+        queryKey: getMultipleChoiceQuestionsQueryOptions().queryKey,
       });
       onSuccess?.(...args);
     },

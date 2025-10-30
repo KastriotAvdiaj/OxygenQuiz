@@ -1,8 +1,8 @@
 import { useMutation, useQueryClient, QueryKey } from "@tanstack/react-query";
 
-import { multipleChoiceQuestionsQueryKey } from "./Multiple_Choice_Question/get-multiple-choice-questions";
-import { trueFalseQuestionsQueryKey } from "./True_False-Question/get-true_false-questions";
-import { typeTheAnswerQuestionsQueryKey } from "./Type_The_Answer-Question/get-type-the-answer-questions";
+import { getMultipleChoiceQuestionsQueryOptions } from "./Multiple_Choice_Question/get-multiple-choice-questions";
+import { getTrueFalseQuestionsQueryOptions } from "./True_False-Question/get-true_false-questions";
+import { getTypeTheAnswerQuestionsQueryOptions } from "./Type_The_Answer-Question/get-type-the-answer-questions";
 import { apiService } from "@/lib/Api-client";
 import { MutationConfig } from "@/lib/React-query";
 import { QuestionType } from "@/types/question-types";
@@ -16,12 +16,12 @@ export const deleteQuestion = ({ questionId }: DeleteQuestionApiDTO) => {
 };
 
 // Map QuestionType enum values to their corresponding query options functions
-const questionQueryKeyMap: {
-  [key in QuestionType]?: QueryKey;
+const questionQueryOptionsMap: {
+  [key in QuestionType]?: () => { queryKey: QueryKey };
 } = {
-  [QuestionType.MultipleChoice]: multipleChoiceQuestionsQueryKey,
-  [QuestionType.TrueFalse]: trueFalseQuestionsQueryKey,
-  [QuestionType.TypeTheAnswer]: typeTheAnswerQuestionsQueryKey,
+  [QuestionType.MultipleChoice]: getMultipleChoiceQuestionsQueryOptions,
+  [QuestionType.TrueFalse]: getTrueFalseQuestionsQueryOptions,
+  [QuestionType.TypeTheAnswer]: getTypeTheAnswerQuestionsQueryOptions,
 };
 
 type UseDeleteQuestionOptions = {
@@ -39,9 +39,10 @@ export const useDeleteQuestion = ({
 
   return useMutation({
     onSuccess: (data, variables, onMutateResult, context) => {
-      const queryKeyToInvalidate = questionQueryKeyMap[questionType];
+      const getQueryOptionsFn = questionQueryOptionsMap[questionType];
 
-      if (queryKeyToInvalidate) {
+      if (getQueryOptionsFn) {
+        const queryKeyToInvalidate = getQueryOptionsFn().queryKey;
         queryClient.invalidateQueries({ queryKey: queryKeyToInvalidate });
       } else {
         // Optional: Fallback invalidation or warning

@@ -40,8 +40,8 @@ export const getAllQuizzes = async (
   const pagination = extractPaginationFromHeaders(result);
 
   return {
-    ...body,
-    pagination,
+    data: result.data,
+    pagination: pagination || undefined,
   };
 };
 

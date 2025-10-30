@@ -1,6 +1,6 @@
 // types/quiz.types.ts
 
-import { DashboardPaginatedResponse } from "./common-types";
+import { PaginatedResponse } from "./common-types";
 import { AnyQuestion, CategoryDTO, DifficultyDTO, LanguageDTO } from "./question-types";
 import { UserBasic } from "./user-types";
 
@@ -66,4 +66,4 @@ export type Quiz = {
   questions: QuizQuestionDTO[]; // List<T> from C# becomes an array T[]
 };
 
-export type PaginatedQuizSummaryResponse = DashboardPaginatedResponse<QuizSummaryDTO>;
+export type PaginatedQuizSummaryResponse = PaginatedResponse<QuizSummaryDTO>;

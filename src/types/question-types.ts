@@ -1,5 +1,5 @@
 import { UserBasic } from "./user-types";
-import { DashboardPaginatedResponse } from "./common-types";
+import { PaginatedResponse } from "./common-types";
 
 export type CategoryDTO = {
   id: number;
@@ -111,7 +111,7 @@ export type IndividualQuestion = {
   answerOptions: AnswerOption[];
 };
 
-export type PaginatedQuestionResponse = DashboardPaginatedResponse<QuestionBase>;
-export type PaginatedMultipleChoiceQuestionResponse = DashboardPaginatedResponse<MultipleChoiceQuestion>;
-export type PaginatedTrueFalseQuestionResponse = DashboardPaginatedResponse<TrueFalseQuestion>;
-export type PaginatedTypeTheAnswerQuestionResponse = DashboardPaginatedResponse<TypeTheAnswerQuestion>;
+export type PaginatedQuestionResponse = PaginatedResponse<QuestionBase>;
+export type PaginatedMultipleChoiceQuestionResponse = PaginatedResponse<MultipleChoiceQuestion>;
+export type PaginatedTrueFalseQuestionResponse = PaginatedResponse<TrueFalseQuestion>;
+export type PaginatedTypeTheAnswerQuestionResponse = PaginatedResponse<TypeTheAnswerQuestion>;
