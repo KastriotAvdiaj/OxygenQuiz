@@ -19,6 +19,8 @@ import { quizLoader } from "../pages/Dashboard/Pages/Quiz/Quiz";
 import { QuizPageRouteWrapper } from "@/pages/Quiz/Sessions/components/quiz-taking-process/quiz-page-route-wrapper";
 import { QuizResultsRouteWrapper } from "@/pages/Quiz/Sessions/components/quiz-results/quiz-results-route-wrapper";
 
+
+
 enum HeaderBehavior {
   DEFAULT = "default",
   OVERLAY_TRANSPARENT = "overlay-transparent",
@@ -48,7 +50,8 @@ const createAppRouter = (queryClient: QueryClient) =>
         <>
           <HomeLayout
             headerBehavior={HeaderBehavior.OVERLAY_TRANSPARENT}
-            squares={true}
+            // squares={true}
+            // effect="prismatic"
             children={<Home />}
           />
         </>
@@ -58,7 +61,7 @@ const createAppRouter = (queryClient: QueryClient) =>
       path: "/about-us",
       element: (
         <>
-          <HomeLayout children={<AboutUs />} />
+          <HomeLayout children={<AboutUs />} lightning={true} />
         </>
       ),
     },
@@ -110,7 +113,7 @@ const createAppRouter = (queryClient: QueryClient) =>
         <>
           <HomeLayout
             children={<QuizResultsRouteWrapper />}
-            headerColor={false}
+            headerBehavior={HeaderBehavior.OVERLAY_SOLID}
           />
         </>
       ),

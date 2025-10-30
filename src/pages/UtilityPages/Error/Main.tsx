@@ -67,9 +67,10 @@ export const MainErrorFallback: React.FC<FallbackProps> = ({
             </LiftedButton>
             <LiftedButton
               onClick={() => (window.location.href = "/")}
-              className="w-full bg-muted"
-              backgroundColorForBorder="bg-background">
-              Go to Home
+              className="w-full text-foreground bg-muted"
+              // backgroundColorForBorder="bg-background text-foreground"
+            >
+              Go Home
             </LiftedButton>
           </div>
         </CardContent>

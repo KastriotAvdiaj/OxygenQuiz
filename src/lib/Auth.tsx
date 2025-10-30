@@ -90,7 +90,7 @@ const authConfig = {
     if (!response.user) {
       throw new Error("Authentication failed: User data not received");
     }
- 
+
     return response.user;
   },
   registerFn: async (data: RegisterInput) => {
@@ -157,6 +157,8 @@ export const createAuthLoader =
 // Usage examples:
 export const userAuthLoader = createAuthLoader;
 export const adminAuthLoader = (queryClient: QueryClient) =>
-  createAuthLoader(queryClient, { requiredRoles: ["Admin", "SuperAdmin"] });
+  createAuthLoader(queryClient, {
+    requiredRoles: ["Admin", "SuperAdmin", "User"],
+  });
 export const superAdminAuthLoader = (queryClient: QueryClient) =>
   createAuthLoader(queryClient, { requiredRoles: ["SuperAdmin"] });
