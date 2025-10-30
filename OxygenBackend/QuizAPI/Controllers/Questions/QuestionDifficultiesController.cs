@@ -1,15 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using QuizAPI.Data;
-using QuizAPI.Models;
 using QuizAPI.DTOs.Question;
-using System.Security.Claims;
-using Microsoft.AspNetCore.Authorization;
+using QuizAPI.Models;
+using QuizAPI.Services.CurrentUserService;
+
 
 namespace QuizAPI.Controllers.Questions
 {
@@ -18,31 +15,28 @@ namespace QuizAPI.Controllers.Questions
     public class QuestionDifficultiesController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
+        private readonly ICurrentUserService _currentUserService;
 
-        public QuestionDifficultiesController(ApplicationDbContext context)
+        public QuestionDifficultiesController(ApplicationDbContext context, ICurrentUserService currentUserService)
         {
             _context = context;
+            _currentUserService = currentUserService;
         }
 
         // GET: api/QuestionDifficulties
         [HttpGet]
         public async Task<ActionResult<IEnumerable<QuestionDifficultyDTO>>> GetQuestionDifficulties()
         {
-          if (_context.QuestionDifficulties == null)
-          {
-              return NotFound();
-          }
-
-          var questionDifficulties = await _context.QuestionDifficulties
-              .Select(qd => new QuestionDifficultyDTO
-              {
-                  ID = qd.ID,
-                  Level = qd.Level,
-                  Weight = qd.Weight,
-                  CreatedAt = qd.CreatedAt,
-                  Username = qd.User.Username
-              })
-              .ToListAsync();
+            var questionDifficulties = await _context.QuestionDifficulties
+                .Select(qd => new QuestionDifficultyDTO
+                {
+                    ID = qd.ID,
+                    Level = qd.Level,
+                    Weight = qd.Weight,
+                    CreatedAt = qd.CreatedAt,
+                    Username = qd.User.Username
+                })
+                .ToListAsync();
             return Ok(questionDifficulties);
         }
 
@@ -50,10 +44,6 @@ namespace QuizAPI.Controllers.Questions
         [HttpGet("{id}")]
         public async Task<ActionResult<QuestionDifficulty>> GetQuestionDifficulty(int id)
         {
-          if (_context.QuestionDifficulties == null)
-          {
-              return NotFound();
-          }
             var questionDifficulty = await _context.QuestionDifficulties.FindAsync(id);
 
             if (questionDifficulty == null)
@@ -65,11 +55,15 @@ namespace QuizAPI.Controllers.Questions
         }
 
         // PUT: api/QuestionDifficulties/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [Authorize(Roles = "SuperAdmin")]
         [HttpPut("{id}")]
+        [Authorize(Roles = "SuperAdmin, Admin")]
         public async Task<IActionResult> PutQuestionDifficulty(int id, QuestionDifficulty questionDifficulty)
         {
+            if (!_currentUserService.IsAdmin)
+            {
+                return Forbid();
+            }
+
             if (id != questionDifficulty.ID)
             {
                 return BadRequest();
@@ -97,19 +91,13 @@ namespace QuizAPI.Controllers.Questions
         }
 
         // POST: api/QuestionDifficulties
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
+        [Authorize(Roles = "SuperAdmin, Admin")]
         public async Task<ActionResult<QuestionDifficulty>> PostQuestionDifficulty(QuestionDifficultyCM questionDifficulty)
         {
-            if (_context.QuestionDifficulties == null)
-            {
-                return Problem("Entity set 'ApplicationDbContext.QuestionDifficulties'  is null.");
-            }
+            var userId = _currentUserService.UserId;
 
-
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-            if (string.IsNullOrEmpty(userId))
+            if (userId == null)
             {
                 return Unauthorized(new { message = "User ID not found in token." });
             }
@@ -119,23 +107,27 @@ namespace QuizAPI.Controllers.Questions
                 Level = questionDifficulty.Level,
                 Weight = questionDifficulty.Weight,
                 CreatedAt = DateTime.UtcNow,
-                UserId = Guid.Parse(userId)
+                UserId = userId.Value // Use .Value because the service returns a nullable Guid
             };
+
             _context.QuestionDifficulties.Add(qDifficulty);
             await _context.SaveChangesAsync();
 
+            // Return a DTO or use CreatedAtAction for better REST compliance
             return Ok(qDifficulty);
         }
 
         // DELETE: api/QuestionDifficulties/5
-        [Authorize(Roles = "SuperAdmin")]
         [HttpDelete("{id}")]
+        [Authorize(Roles = "SuperAdmin")]
+
         public async Task<IActionResult> DeleteQuestionDifficulty(int id)
         {
-            if (_context.QuestionDifficulties == null)
+            if (!_currentUserService.IsAdmin)
             {
-                return NotFound();
+                return Forbid();
             }
+
             var questionDifficulty = await _context.QuestionDifficulties.FindAsync(id);
             if (questionDifficulty == null)
             {

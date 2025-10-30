@@ -1,47 +1,24 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using QuizAPI.Controllers.Questions.Services;
 using QuizAPI.DTOs.Question;
 using QuizAPI.Extensions;
 using QuizAPI.Models;
+using QuizAPI.Services.CurrentUserService;
 using System.Security.Claims;
-using QuizAPI.Controllers.Questions.Services;
 
 namespace QuizAPI.Controllers.Questions
 {
-
-    /* public static class HttpExtensions
-     {
-         public static void AddPaginationHeader(this HttpResponse response, int currentPage,
-             int itemsPerPage, int totalItems, int totalPages, bool hasNextPage, bool hasPreviousPage)
-         {
-             var paginationHeader = new
-             {
-                 currentPage,
-                 itemsPerPage,
-                 totalItems,
-                 totalPages,
-                 hasNextPage,
-                 hasPreviousPage
-             };
-
-             var options = new JsonSerializerOptions
-             {
-                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-             };
-
-             response.Headers.Append("Pagination", JsonSerializer.Serialize(paginationHeader, options));
-         }
-     }*/
-    //CREATED A SPECIFIC FILE FOR THE ABOVE EXTENSION METHOD
 
     [ApiController]
     [Route("api/[controller]")]
     public class QuestionsController : BaseApiController
     {
         private readonly IQuestionService _questionService;
-
-        public QuestionsController(IQuestionService questionService)
+        private readonly ICurrentUserService _currentUserService;
+        public QuestionsController(IQuestionService questionService, ICurrentUserService currentUserService)
         {
+            _currentUserService = currentUserService;
             _questionService = questionService;
         }
 
@@ -133,12 +110,17 @@ namespace QuizAPI.Controllers.Questions
 
         // POST: api/questions/multiplechoice
         [HttpPost("multiplechoice")]
-      /*  [Authorize]*/
+        [Authorize]
         public async Task<IActionResult> CreateMultipleChoiceQuestion(MultipleChoiceQuestionCM questionCM)
         {
-            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+            var userId = _currentUserService.UserId;
 
-            var createdQuestion = await _questionService.CreateMultipleChoiceQuestionAsync(questionCM, userId);
+            if (userId == null)
+            {
+                return Unauthorized("User ID claim could not be found in the token.");
+            }
+
+            var createdQuestion = await _questionService.CreateMultipleChoiceQuestionAsync(questionCM, userId.Value);
 
             return CreatedAtAction(
                 nameof(GetQuestion),
@@ -152,9 +134,14 @@ namespace QuizAPI.Controllers.Questions
         [Authorize]
         public async Task<IActionResult> CreateTrueFalseQuestion(TrueFalseQuestionCM questionCM)
         {
-            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+            var userId = _currentUserService.UserId;
 
-            var createdQuestion = await _questionService.CreateTrueFalseQuestionAsync(questionCM, userId);
+            if (userId == null)
+            {
+                return Unauthorized("User ID claim could not be found in the token.");
+            }
+
+            var createdQuestion = await _questionService.CreateTrueFalseQuestionAsync(questionCM, userId.Value);
 
             return CreatedAtAction(
                 nameof(GetQuestion),
@@ -168,9 +155,14 @@ namespace QuizAPI.Controllers.Questions
         [Authorize]
         public async Task<IActionResult> CreateTypeTheAnswerQuestion(TypeTheAnswerQuestionCM questionCM)
         {
-            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+            var userId = _currentUserService.UserId;
 
-            var createdQuestion = await _questionService.CreateTypeTheAnswerQuestionAsync(questionCM, userId);
+            if (userId == null)
+            {
+                return Unauthorized("User ID claim could not be found in the token.");
+            }
+
+            var createdQuestion = await _questionService.CreateTypeTheAnswerQuestionAsync(questionCM, userId.Value);
 
             return CreatedAtAction(
                 nameof(GetQuestion),
@@ -187,8 +179,8 @@ namespace QuizAPI.Controllers.Questions
             if (id != questionUM.Id)
                 return BadRequest("ID mismatch between URL and request body.");
 
-            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
-            var updatedQuestion = await _questionService.UpdateMultipleChoiceQuestionAsync(questionUM, userId);
+            var userId = _currentUserService.UserId;
+            var updatedQuestion = await _questionService.UpdateMultipleChoiceQuestionAsync(questionUM, userId.Value);
 
             if (updatedQuestion == null)
                 return NotFound();
@@ -204,8 +196,8 @@ namespace QuizAPI.Controllers.Questions
             if (id != questionUM.Id)
                 return BadRequest("ID mismatch between URL and request body.");
 
-            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
-            var updatedQuestion = await _questionService.UpdateTrueFalseQuestionAsync(questionUM, userId);
+            var userId = _currentUserService.UserId;
+            var updatedQuestion = await _questionService.UpdateTrueFalseQuestionAsync(questionUM, userId.Value);
 
             if (updatedQuestion == null)
             {
@@ -224,8 +216,8 @@ namespace QuizAPI.Controllers.Questions
                 return BadRequest("ID mismatch between URL and request body.");
 
 
-            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
-            var updatedQuestion = await _questionService.UpdateTypeTheAnswerQuestionAsync(questionUM, userId);
+            var userId = _currentUserService.UserId;
+            var updatedQuestion = await _questionService.UpdateTypeTheAnswerQuestionAsync(questionUM, userId.Value);
 
             if (updatedQuestion == null)
             {
@@ -240,8 +232,8 @@ namespace QuizAPI.Controllers.Questions
         [Authorize]
         public async Task<IActionResult> DeleteQuestion(int id)
         {
-            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
-            var (success, errorMessage, isCustomMessage) = await _questionService.DeleteQuestionAsync(id, userId);
+            var userId = _currentUserService.UserId;
+            var (success, errorMessage, isCustomMessage) = await _questionService.DeleteQuestionAsync(id, userId.Value);
 
             if (!success)
             {
@@ -277,8 +269,8 @@ namespace QuizAPI.Controllers.Questions
         [Authorize]
         public async Task<ActionResult<IEnumerable<QuestionBaseDTO>>> GetMyQuestions()
         {
-            var userId = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
-            var questions = await _questionService.GetQuestionsByUserAsync(userId);
+            var userId = _currentUserService.UserId;
+            var questions = await _questionService.GetQuestionsByUserAsync(userId.Value);
             return Ok(questions);
         }
 

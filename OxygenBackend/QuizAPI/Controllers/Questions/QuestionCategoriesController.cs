@@ -1,13 +1,11 @@
-﻿
-using System.Security.Claims;
+﻿using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using QuizAPI.Data;
 using QuizAPI.DTOs.Question;
-using System.Text.Json;
 using QuizAPI.Models;
-using AutoMapper;
+using QuizAPI.Services.CurrentUserService; 
 
 namespace QuizAPI.Controllers.Questions
 {
@@ -17,30 +15,25 @@ namespace QuizAPI.Controllers.Questions
     {
         private readonly ApplicationDbContext _context;
         private readonly IMapper _mapper;
+        private readonly ICurrentUserService _currentUserService;
 
-
-        public QuestionCategoriesController(ApplicationDbContext context, IMapper mapper)
+        public QuestionCategoriesController(ApplicationDbContext context, IMapper mapper, ICurrentUserService currentUserService)
         {
             _context = context;
             _mapper = mapper;
+            _currentUserService = currentUserService;
         }
 
         // GET: api/QuestionCategories
         [HttpGet]
-        [Authorize]
         public async Task<ActionResult<IEnumerable<QuestionCategoryDTO>>> GetQuestionCategories()
         {
-            if (_context.QuestionCategories == null)
-            {
-                return NotFound();
-            }
-
             var questionCategories = await _context.QuestionCategories
                 .Select(qc => new QuestionCategoryDTO
                 {
                     Id = qc.Id,
                     Name = qc.Name,
-                    Username = qc.User.Username,
+                    Username = qc.User.Username, 
                     ColorPaletteJson = qc.ColorPaletteJson,
                     CreatedAt = qc.CreatedAt
                 })
@@ -50,14 +43,10 @@ namespace QuizAPI.Controllers.Questions
         }
 
         // GET: api/QuestionCategories/5
+        // Returns a single universal category. No ownership check is needed.
         [HttpGet("{id}")]
-        [Authorize]
         public async Task<ActionResult<QuestionCategory>> GetQuestionCategory(int id)
         {
-            if (_context.QuestionCategories == null)
-            {
-                return NotFound();
-            }
             var questionCategory = await _context.QuestionCategories.FindAsync(id);
 
             if (questionCategory == null)
@@ -69,11 +58,16 @@ namespace QuizAPI.Controllers.Questions
         }
 
         // PUT: api/QuestionCategories/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        /* [Authorize(Roles = "SuperAdmin")]*/
+        // Updates a universal category. Only an admin should be able to do this.
         [HttpPut("{id}")]
+        [Authorize(Roles = "SuperAdmin, Admin")]
         public async Task<IActionResult> PutQuestionCategory(int id, QuestionCategoryCM questionCategory)
         {
+            if (!_currentUserService.IsAdmin)
+            {
+                return Forbid(); 
+            }
+
             var category = await _context.QuestionCategories.FindAsync(id);
 
             if (category == null)
@@ -81,32 +75,15 @@ namespace QuizAPI.Controllers.Questions
                 return NotFound(new { message = "Category not found." });
             }
 
-            // Map CM to existing entity, excluding UserId and CreatedAt
             _mapper.Map(questionCategory, category);
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!QuestionCategoryExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
+            await _context.SaveChangesAsync();
             return NoContent();
         }
 
         // POST: api/QuestionCategories
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-
         [HttpPost]
+        [Authorize(Roles = "SuperAdmin, Admin")]
+
         public async Task<ActionResult<QuestionCategoryDTO>> PostQuestionCategory(QuestionCategoryCM questionCategory)
         {
             if (!ModelState.IsValid)
@@ -114,18 +91,16 @@ namespace QuizAPI.Controllers.Questions
                 return BadRequest(ModelState);
             }
 
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userId = _currentUserService.UserId;
 
-            if (string.IsNullOrEmpty(userIdClaim))
+            if (userId == null)
             {
+                // This safeguard is still useful in case the token is valid but missing the claim.
                 return Unauthorized(new { message = "User ID not found in token." });
             }
 
-            var userId = Guid.Parse(userIdClaim);
-
-            // AutoMapper handles mapping + ColorPaletteJson serialization
             var category = _mapper.Map<QuestionCategory>(questionCategory);
-            category.UserId = userId;
+            category.UserId = userId.Value; 
             category.CreatedAt = DateTime.UtcNow;
 
             _context.QuestionCategories.Add(category);
@@ -136,14 +111,16 @@ namespace QuizAPI.Controllers.Questions
         }
 
         // DELETE: api/QuestionCategories/5
-        [Authorize(Roles = "SuperAdmin")]
         [HttpDelete("{id}")]
+        [Authorize(Roles = "SuperAdmin")]
         public async Task<IActionResult> DeleteQuestionCategory(int id)
         {
-            if (_context.QuestionCategories == null)
+            // REFACTOR: 7. Use the service for a consistent authorization check.
+            if (!_currentUserService.IsAdmin)
             {
-                return NotFound();
+                return Forbid();
             }
+
             var questionCategory = await _context.QuestionCategories.FindAsync(id);
             if (questionCategory == null)
             {
@@ -156,9 +133,5 @@ namespace QuizAPI.Controllers.Questions
             return NoContent();
         }
 
-        private bool QuestionCategoryExists(int id)
-        {
-            return (_context.QuestionCategories?.Any(e => e.Id == id)).GetValueOrDefault();
-        }
     }
 }

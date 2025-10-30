@@ -16,6 +16,7 @@ using QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.UserAnswerService
 using QuizAPI.Data;
 using QuizAPI.Services;
 using QuizAPI.Services.AuthenticationService;
+using QuizAPI.Services.CurrentUserService;
 using QuizAPI.Services.Interfaces;
 using System.Text;
 
@@ -79,10 +80,13 @@ builder.Services.AddScoped<IUserAnswerService, UserAnswerService>();
 builder.Services.AddScoped<IAnswerGradingService, AnswerGradingService>();
 builder.Services.AddScoped<ISessionAbandonmentService, SessionAbandonmentService>();
 builder.Services.AddScoped<DashboardService>();
+builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 
 // Image Services (ImageCleanUpService without interface as requested)
 builder.Services.AddScoped<IImageService, ImageService>();
 builder.Services.AddScoped<ImageCleanUpService>();
+
+builder.Services.AddHttpContextAccessor();
 
 // --- JWT Authentication ---
 var jwtKey = configuration["Jwt:Key"];

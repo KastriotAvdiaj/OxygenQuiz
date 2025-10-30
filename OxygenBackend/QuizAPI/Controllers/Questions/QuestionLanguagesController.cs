@@ -1,15 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Security.Claims;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using QuizAPI.Data;
 using QuizAPI.DTOs.Question;
 using QuizAPI.Models;
+using QuizAPI.Services.CurrentUserService;
+using System.Security.Claims;
 
 namespace QuizAPI.Controllers.Questions
 {
@@ -18,9 +15,12 @@ namespace QuizAPI.Controllers.Questions
     public class QuestionLanguagesController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
+        private readonly ICurrentUserService _currentUserService;
 
-        public QuestionLanguagesController(ApplicationDbContext context)
+
+        public QuestionLanguagesController(ApplicationDbContext context, ICurrentUserService userService)
         {
+            _currentUserService = userService;
             _context = context;
         }
 
@@ -102,9 +102,9 @@ namespace QuizAPI.Controllers.Questions
               return Problem("Entity set 'ApplicationDbContext.QuestionLanguages'  is null.");
           }
 
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userId = _currentUserService.UserId;
 
-            if (string.IsNullOrEmpty(userId))
+            if (userId == null)
             {
                 return Unauthorized(new { message = "User ID not found in token." });
             }
@@ -112,7 +112,7 @@ namespace QuizAPI.Controllers.Questions
             var qLanguage = new QuestionLanguage
             {
                 Language = questionLanguage.Language,
-                UserId = Guid.Parse(userId),
+                UserId = userId.Value,
                 CreatedAt = DateTime.UtcNow
             };
 
