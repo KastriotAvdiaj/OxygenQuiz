@@ -6,42 +6,27 @@ import {
   cleanQueryParams,
   extractPaginationFromHeaders,
 } from "@/lib/pagination-query";
-import type {
-  PaginatedTypeTheAnswerQuestionResponse,
-  QuestionType,
-} from "@/types/question-types";
-import { getDashboardFetcher } from "@/lib/api/dashboard";
-import { useUser } from "@/lib/Auth";
-import { ROLES } from "@/lib/authorization";
+import type { PaginatedTypeTheAnswerQuestionResponse } from "@/types/question-types";
 
 export type GetTypeTheAnswerQuestionsParams = {
   pageNumber?: number;
   pageSize?: number;
   searchTerm?: string;
-  categoryId?: number | null;
-  difficultyId?: number | null;
-  languageId?: number | null;
-  visibility?: string | null;
-  userId?: string | null;
-  type?: QuestionType;
+  categoryId?: number;
+  difficultyId?: number;
+  languageId?: number;
+  visibility?: string;
+  userId?: string;
 };
 
 export const getTypeTheAnswerQuestions = async (
-  params: GetTypeTheAnswerQuestionsParams,
-  role?: ROLES
+  params: GetTypeTheAnswerQuestionsParams
 ): Promise<PaginatedTypeTheAnswerQuestionResponse> => {
-  const { url, params: additionalParams } = getDashboardFetcher(
-    "typeTheAnswerQuestions",
-    role
-  );
-  const mergedParams = {
-    ...params,
-    ...(additionalParams ?? {}),
-  };
-  const cleanParams = cleanQueryParams(mergedParams as Record<string, any>);
+  const cleanParams = cleanQueryParams(params);
   const queryString = new URLSearchParams(cleanParams).toString();
-  const endpoint = queryString ? `${url}?${queryString}` : url;
-  const result: AxiosResponse = await api.get(endpoint);
+  const result: AxiosResponse = await api.get(
+    `/questions/typetheanswer?${queryString}`
+  );
   const pagination = extractPaginationFromHeaders(result);
 
   return {
@@ -51,12 +36,11 @@ export const getTypeTheAnswerQuestions = async (
 };
 
 export const getTypeTheAnswerQuestionsQueryOptions = (
-  params: GetTypeTheAnswerQuestionsParams = {},
-  role?: ROLES
+  params: GetTypeTheAnswerQuestionsParams = {}
 ) => {
   return queryOptions({
-    queryKey: ["typeTheAnswerQuestions", params, role ?? "default"],
-    queryFn: () => getTypeTheAnswerQuestions(params, role),
+    queryKey: ["typeTheAnswerQuestions", params],
+    queryFn: () => getTypeTheAnswerQuestions(params),
   });
 };
 
@@ -69,11 +53,8 @@ export const useTypeTheAnswerQuestionData = ({
   queryConfig,
   params,
 }: UseTypeTheAnswerQuestionOptions) => {
-  const { data: user } = useUser();
-  const role = user?.role;
-
   return useQuery({
-    ...getTypeTheAnswerQuestionsQueryOptions(params, role),
+    ...getTypeTheAnswerQuestionsQueryOptions(params),
     ...queryConfig,
   });
 };

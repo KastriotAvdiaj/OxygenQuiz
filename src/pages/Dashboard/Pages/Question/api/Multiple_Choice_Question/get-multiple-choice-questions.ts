@@ -6,13 +6,7 @@ import {
   cleanQueryParams,
   extractPaginationFromHeaders,
 } from "@/lib/pagination-query";
-import type {
-  PaginatedMultipleChoiceQuestionResponse,
-  QuestionType,
-} from "@/types/question-types";
-import { getDashboardFetcher } from "@/lib/api/dashboard";
-import { useUser } from "@/lib/Auth";
-import { ROLES } from "@/lib/authorization";
+import type { PaginatedMultipleChoiceQuestionResponse } from "@/types/question-types";
 
 export type GetMultipleChoiceQuestionsParams = {
   pageNumber?: number;
@@ -23,25 +17,16 @@ export type GetMultipleChoiceQuestionsParams = {
   languageId?: number;
   visibility?: string;
   userId?: string;
-  type?: QuestionType;
 };
 
 export const getMultipleChoiceQuestions = async (
-  params: GetMultipleChoiceQuestionsParams,
-  role?: ROLES
+  params: GetMultipleChoiceQuestionsParams
 ): Promise<PaginatedMultipleChoiceQuestionResponse> => {
-  const { url, params: additionalParams } = getDashboardFetcher(
-    "multipleChoiceQuestions",
-    role
-  );
-  const mergedParams = {
-    ...params,
-    ...(additionalParams ?? {}),
-  };
-  const cleanParams = cleanQueryParams(mergedParams);
+  const cleanParams = cleanQueryParams(params);
   const queryString = new URLSearchParams(cleanParams).toString();
-  const endpoint = queryString ? `${url}?${queryString}` : url;
-  const result: AxiosResponse = await api.get(endpoint);
+  const result: AxiosResponse = await api.get(
+    `/questions/multiplechoice?${queryString}`
+  );
   const pagination = extractPaginationFromHeaders(result);
 
   return {
@@ -51,12 +36,11 @@ export const getMultipleChoiceQuestions = async (
 };
 
 export const getMultipleChoiceQuestionsQueryOptions = (
-  params: GetMultipleChoiceQuestionsParams = {},
-  role?: ROLES
+  params: GetMultipleChoiceQuestionsParams = {}
 ) => {
   return queryOptions({
-    queryKey: ["multipleChoiceQuestions", params, role ?? "default"],
-    queryFn: () => getMultipleChoiceQuestions(params, role),
+    queryKey: ["multipleChoiceQuestions", params],
+    queryFn: () => getMultipleChoiceQuestions(params),
   });
 };
 
@@ -69,11 +53,8 @@ export const useMultipleChoiceQuestionData = ({
   queryConfig,
   params,
 }: UseMultipleChoiceQuestionOptions) => {
-  const { data: user } = useUser();
-  const role = user?.role;
-
   return useQuery({
-    ...getMultipleChoiceQuestionsQueryOptions(params, role),
+    ...getMultipleChoiceQuestionsQueryOptions(params),
     ...queryConfig,
   });
 };

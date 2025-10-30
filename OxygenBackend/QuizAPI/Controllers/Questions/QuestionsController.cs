@@ -1,45 +1,38 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using QuizAPI.Data;
 using QuizAPI.DTOs.Question;
-using QuizAPI.DTOs.Shared;
-using QuizAPI.DTOs.User;
+using QuizAPI.Extensions;
 using QuizAPI.Models;
-using QuizAPI.Services;
 using System.Security.Claims;
 using QuizAPI.Controllers.Questions.Services;
-using QuizAPI.Controllers.Questions.Services.AnswerOptions;
-using System.Text.Json;
 
 namespace QuizAPI.Controllers.Questions
 {
 
-    public static class HttpExtensions
-    {
-        public static void AddPaginationHeader(this HttpResponse response, int currentPage,
-            int itemsPerPage, int totalItems, int totalPages, bool hasNextPage, bool hasPreviousPage)
-        {
-            var paginationHeader = new
-            {
-                currentPage,
-                itemsPerPage,
-                totalItems,
-                totalPages,
-                hasNextPage,
-                hasPreviousPage
-            };
+    /* public static class HttpExtensions
+     {
+         public static void AddPaginationHeader(this HttpResponse response, int currentPage,
+             int itemsPerPage, int totalItems, int totalPages, bool hasNextPage, bool hasPreviousPage)
+         {
+             var paginationHeader = new
+             {
+                 currentPage,
+                 itemsPerPage,
+                 totalItems,
+                 totalPages,
+                 hasNextPage,
+                 hasPreviousPage
+             };
 
-            var options = new JsonSerializerOptions
-            {
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-            };
+             var options = new JsonSerializerOptions
+             {
+                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+             };
 
-            response.Headers.Append("Pagination", JsonSerializer.Serialize(paginationHeader, options));
-            // To allow the client to access the header
-            /*response.Headers.Add("Access-Control-Expose-Headers", "Pagination");*/ // REMOVED THIS BECAUSE IT IS REDUNDANT AND WE'RE ALREADY USING CORS
-        }
-    }
+             response.Headers.Append("Pagination", JsonSerializer.Serialize(paginationHeader, options));
+         }
+     }*/
+    //CREATED A SPECIFIC FILE FOR THE ABOVE EXTENSION METHOD
 
     [ApiController]
     [Route("api/[controller]")]

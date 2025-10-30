@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using QuizAPI.Controllers.Questions;
+using QuizAPI.Extensions;
 using QuizAPI.Controllers.Quizzes.Services.QuizServices;
 using QuizAPI.DTOs.Quiz;
 using QuizAPI.Models;

@@ -59,6 +59,16 @@ namespace QuizAPI.Data
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+
+            //INDEXES FOR DASHBOARD
+
+            modelBuilder.Entity<Quiz>()
+                .HasIndex(q => new { q.UserId, q.Visibility, q.Id });
+
+            modelBuilder.Entity<QuestionBase>()
+                .HasIndex(q => new { q.UserId, q.Visibility, q.Id });
+
+
             base.OnModelCreating(modelBuilder);
             // Configure many-to-many relationship between Role and UpdatedAt tables.
             modelBuilder.Entity<RoleUpdatedAt>()
