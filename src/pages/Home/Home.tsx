@@ -20,9 +20,6 @@ export const Home = () => {
         />
       </div>
       <div className="flex items-center flex-col justify-center items-center">
-        {/* <h1 className="text-7xl font-secondary text-center">
-          Take part in the game and train your brain to think faster.
-        </h1> */}
         <ChooseQuiz />
       </div>
     </div>
