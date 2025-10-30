@@ -7,9 +7,6 @@ import {
   extractPaginationFromHeaders,
 } from "@/lib/pagination-query";
 import { PaginatedQuizSummaryResponse } from "@/types/quiz-types";
-import { getDashboardFetcher } from "@/lib/api/dashboard";
-import { useUser } from "@/lib/Auth";
-import { ROLES } from "@/lib/authorization";
 
 export type GetAllQuizzesParams = {
   pageNumber?: number;
@@ -22,21 +19,11 @@ export type GetAllQuizzesParams = {
 };
 
 export const getAllQuizzes = async (
-  params: GetAllQuizzesParams,
-  role?: ROLES
+  params: GetAllQuizzesParams
 ): Promise<PaginatedQuizSummaryResponse> => {
-  const { url, params: additionalParams } = getDashboardFetcher(
-    "quizzes",
-    role
-  );
-  const mergedParams = {
-    ...params,
-    ...(additionalParams ?? {}),
-  };
-  const cleanParams = cleanQueryParams(mergedParams);
+  const cleanParams = cleanQueryParams(params);
   const queryString = new URLSearchParams(cleanParams).toString();
-  const endpoint = queryString ? `${url}?${queryString}` : url;
-  const result: AxiosResponse = await api.get(endpoint);
+  const result: AxiosResponse = await api.get(`/quiz?${queryString}`);
   const pagination = extractPaginationFromHeaders(result);
 
   return {
@@ -45,13 +32,10 @@ export const getAllQuizzes = async (
   };
 };
 
-export const getAllQuizzesQueryOptions = (
-  params: GetAllQuizzesParams = {},
-  role?: ROLES
-) => {
+export const getAllQuizzesQueryOptions = (params: GetAllQuizzesParams = {}) => {
   return queryOptions({
-    queryKey: ["quiz", params, role ?? "default"],
-    queryFn: () => getAllQuizzes(params, role),
+    queryKey: ["quiz", params],
+    queryFn: () => getAllQuizzes(params),
   });
 };
 
@@ -64,11 +48,8 @@ export const useAllQuizzesData = ({
   queryConfig,
   params,
 }: UseAllQuizzesOptions) => {
-  const { data: user } = useUser();
-  const role = user?.role;
-
   return useQuery({
-    ...getAllQuizzesQueryOptions(params, role),
+    ...getAllQuizzesQueryOptions(params),
     ...queryConfig,
   });
 };
