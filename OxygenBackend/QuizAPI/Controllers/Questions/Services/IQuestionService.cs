@@ -16,11 +16,8 @@ namespace QuizAPI.Controllers.Questions.Services
         Task<List<QuestionBaseDTO>> GetQuestionsByUserAsync(Guid userId);
 
         // Type-specific get methods
-        Task<List<MultipleChoiceQuestionDTO>> GetMultipleChoiceQuestionsAsync();
         Task<PagedList<MultipleChoiceQuestionDTO>> GetPaginatedMultipleChoiceQuestionsAsync(QuestionFilterParams filterParams);
-        Task<List<TrueFalseQuestionDTO>> GetTrueFalseQuestionsAsync();
         Task<PagedList<TrueFalseQuestionDTO>> GetPaginatedTrueFalseQuestionsAsync(QuestionFilterParams filterParams);
-        Task<List<TypeTheAnswerQuestionDTO>> GetTypeTheAnswerQuestionsAsync();
         Task<PagedList<TypeTheAnswerQuestionDTO>> GetPaginatedTypeTheAnswerQuestionsAsync(QuestionFilterParams filterParams);
 
 

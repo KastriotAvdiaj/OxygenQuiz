@@ -102,23 +102,10 @@ namespace QuizAPI.Controllers.Questions.Services
             }
         }
 
-        public async Task<List<MultipleChoiceQuestionDTO>> GetMultipleChoiceQuestionsAsync()
-        {
-            var questions = await _context.MultipleChoiceQuestions
-                .Include(q => q.AnswerOptions)
-                .Include(q => q.Difficulty)
-                .Include(q => q.Category)
-                .Include(q => q.Language)
-                .Include(q => q.User)
-                .ToListAsync();
-
-            return _mapper.Map<List<MultipleChoiceQuestionDTO>>(questions);
-        }
-
 /*NEW PAGINATED METHOD*/
         public async Task<PagedList<MultipleChoiceQuestionDTO>> GetPaginatedMultipleChoiceQuestionsAsync(QuestionFilterParams filterParams)
         {
-            IQueryable<MultipleChoiceQuestion> query = _context.MultipleChoiceQuestions
+            IQueryable<MultipleChoiceQuestion> query = _context.MultipleChoiceQuestions.AsNoTracking()
                 .Include(q => q.AnswerOptions)
                 .Include(q => q.Difficulty)
                 .Include(q => q.Category)
@@ -137,23 +124,9 @@ namespace QuizAPI.Controllers.Questions.Services
                 filterParams.PageSize);
         }
 
-        public async Task<List<TrueFalseQuestionDTO>> GetTrueFalseQuestionsAsync()
-        {
-            var questions = await _context.TrueFalseQuestions
-                .Include(q => q.Difficulty)
-                .Include(q => q.Category)
-                .Include(q => q.Language)
-                .Include(q => q.User)
-                .ToListAsync();
-
-            return _mapper.Map<List<TrueFalseQuestionDTO>>(questions);
-        }
-
-        /*NEW PAGINATED METHOD*/
-
         public async Task<PagedList<TrueFalseQuestionDTO>> GetPaginatedTrueFalseQuestionsAsync(QuestionFilterParams filterParams)
         {
-            IQueryable<TrueFalseQuestion> query = _context.TrueFalseQuestions
+            IQueryable<TrueFalseQuestion> query = _context.TrueFalseQuestions.AsNoTracking()
                 .Include(q => q.Difficulty)
                 .Include(q => q.Category)
                 .Include(q => q.Language)
@@ -171,22 +144,10 @@ namespace QuizAPI.Controllers.Questions.Services
                 filterParams.PageSize);
         }
 
-        public async Task<List<TypeTheAnswerQuestionDTO>> GetTypeTheAnswerQuestionsAsync()
-        {
-            var questions = await _context.TypeTheAnswerQuestions
-                .Include(q => q.Difficulty)
-                .Include(q => q.Category)
-                .Include(q => q.Language)
-                .Include(q => q.User)
-                .ToListAsync();
-
-            return _mapper.Map<List<TypeTheAnswerQuestionDTO>>(questions);
-        }
-        /*NEW PAGINATED METHOD*/
 
         public async Task<PagedList<TypeTheAnswerQuestionDTO>> GetPaginatedTypeTheAnswerQuestionsAsync(QuestionFilterParams filterParams)
         {
-            IQueryable<TypeTheAnswerQuestion> query = _context.TypeTheAnswerQuestions
+            IQueryable<TypeTheAnswerQuestion> query = _context.TypeTheAnswerQuestions.AsNoTracking()
                 .Include(q => q.Difficulty)
                 .Include(q => q.Category)
                 .Include(q => q.Language)

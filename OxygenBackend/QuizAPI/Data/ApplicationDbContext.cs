@@ -81,14 +81,14 @@ namespace QuizAPI.Data
             );
 
             modelBuilder.Entity<QuestionBase>().HasQueryFilter(q =>
-        _current.IsAdmin ||                                 // 1. Admin can see everything.
-        q.UserId == _current.UserId ||                      // 2. You can see questions you own.
-        q.Visibility != QuestionVisibility.Private ||               // 3. You can see any public question.
-        q.QuizQuestions.Any(qq =>                           // 4. OR the question is in a quiz you can see.
-            _current.UserId != null &&
-            (qq.Quiz.UserId == _current.UserId || qq.Quiz.Visibility == QuizVisibility.Public)
-        )
-    );
+                _current.IsAdmin ||                                 // 1. Admin can see everything.
+                q.UserId == _current.UserId ||                      // 2. You can see questions you own.
+                q.Visibility != QuestionVisibility.Private ||               // 3. You can see any public question.
+                q.QuizQuestions.Any(qq =>                           // 4. OR the question is in a quiz you can see.
+                    _current.UserId != null &&
+                    (qq.Quiz.UserId == _current.UserId || qq.Quiz.Visibility == QuizVisibility.Public)
+                )
+        );
 
             //GLOBAL QUERY FILTERS
 
