@@ -24,8 +24,8 @@ const getUser = async (): Promise<User | null> => {
 
 const logout = (): Promise<void> => {
   return new Promise((resolve) => {
-    Cookies.remove(AUTH_COOKIE);
     window.location.href = "/";
+    Cookies.remove(AUTH_COOKIE);
     resolve();
   });
 };
@@ -154,11 +154,10 @@ export const createAuthLoader =
     }
   };
 
-// Usage examples:
 export const userAuthLoader = createAuthLoader;
 export const adminAuthLoader = (queryClient: QueryClient) =>
   createAuthLoader(queryClient, {
-    requiredRoles: ["Admin", "SuperAdmin", "User"],
+    requiredRoles: ["Admin", "SuperAdmin"],
   });
 export const superAdminAuthLoader = (queryClient: QueryClient) =>
   createAuthLoader(queryClient, { requiredRoles: ["SuperAdmin"] });

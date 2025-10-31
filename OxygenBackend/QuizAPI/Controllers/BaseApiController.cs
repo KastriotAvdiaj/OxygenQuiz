@@ -30,7 +30,7 @@ public abstract class BaseApiController : ControllerBase
     {
         if (message.Contains("not found", StringComparison.OrdinalIgnoreCase))
         {
-            return NotFound(new { message = message, isCustomMessage = isCustomMessage });
+            return NotFound(new { message, isCustomMessage });
         }
 
         if (message.Contains("already exists", StringComparison.OrdinalIgnoreCase) ||
@@ -76,14 +76,14 @@ public abstract class BaseApiController : ControllerBase
             {
                 return NotFound(new { 
                     message = errorMessage,
-                    isCustomMessage = isCustomMessage,
+                    isCustomMessage,
                     errors = result.ValidationErrors 
                 });
             }
             
             return BadRequest(new { 
                 message = errorMessage,
-                isCustomMessage = isCustomMessage,
+                isCustomMessage,
                 errors = result.ValidationErrors 
             });
         }
@@ -96,8 +96,8 @@ public abstract class BaseApiController : ControllerBase
         // Check for common patterns to return more specific status codes.
         if (message.Contains("not found", StringComparison.OrdinalIgnoreCase))
         {
-            return NotFound(new { 
-                message = message,
+            return NotFound(new {
+                message,
                 isCustomMessage = isCustom 
             });
         }
@@ -106,14 +106,14 @@ public abstract class BaseApiController : ControllerBase
             message.Contains("already have an active session", StringComparison.OrdinalIgnoreCase))
         {
             return Conflict(new { 
-                message = message,
+                message,
                 isCustomMessage = isCustom 
             });
         }
 
         // For all other errors, we assume it's a server-side issue.
         return StatusCode(StatusCodes.Status500InternalServerError, new { 
-            message = message,
+            message,
             isCustomMessage = isCustom 
         });
     }

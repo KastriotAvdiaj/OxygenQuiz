@@ -18,8 +18,7 @@ import { DashboardErrorElement } from "@/pages/UtilityPages/Error/Dashboard-Erro
 import { quizLoader } from "../pages/Dashboard/Pages/Quiz/Quiz";
 import { QuizPageRouteWrapper } from "@/pages/Quiz/Sessions/components/quiz-taking-process/quiz-page-route-wrapper";
 import { QuizResultsRouteWrapper } from "@/pages/Quiz/Sessions/components/quiz-results/quiz-results-route-wrapper";
-
-
+import { dashboardEntryLoader } from "@/lib/dashboardEntryLoader";
 
 enum HeaderBehavior {
   DEFAULT = "default",
@@ -131,6 +130,10 @@ const createAppRouter = (queryClient: QueryClient) =>
       element: <AccessDeniedPage />,
     },
     {
+      path: "/go/dashboard",
+      loader: dashboardEntryLoader(),
+    },
+    {
       path: "/dashboard/*",
       element: <AppRoot />,
       id: "dashboardRoot",
@@ -235,6 +238,16 @@ const createAppRouter = (queryClient: QueryClient) =>
           },
         },
       ],
+    },
+    {
+      path: "/my-dashboard",
+      errorElement: <DashboardErrorElement />,
+      loader: userAuthLoader(queryClient),
+      element: (
+        <>
+          <div>My Dashboard</div>
+        </>
+      ),
     },
     {
       path: "my-profile",

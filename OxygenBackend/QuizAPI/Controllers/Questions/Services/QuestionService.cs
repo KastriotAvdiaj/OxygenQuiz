@@ -26,7 +26,7 @@ namespace QuizAPI.Controllers.Questions.Services
 
         public async Task<List<QuestionBaseDTO>> GetAllQuestionsAsync(string visibility = null)
         {
-            IQueryable<QuestionBase> query = _context.Questions
+            IQueryable<QuestionBase> query = _context.Questions.AsNoTracking()
                 .Include(q => q.Difficulty)
                 .Include(q => q.Category)
                 .Include(q => q.Language)
@@ -47,7 +47,7 @@ namespace QuizAPI.Controllers.Questions.Services
 
         public async Task<PagedList<QuestionBaseDTO>> GetPaginatedQuestionsAsync(QuestionFilterParams filterParams)
         {
-            IQueryable<QuestionBase> query = _context.Questions
+            IQueryable<QuestionBase> query = _context.Questions.AsNoTracking()
                 .Include(q => q.Difficulty)
                 .Include(q => q.Category)
                 .Include(q => q.Language)
