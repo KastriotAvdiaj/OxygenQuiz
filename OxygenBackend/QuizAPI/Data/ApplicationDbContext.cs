@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using QuizAPI.Services.CurrentUserService;
 using QuizAPI.ManyToManyTables;
 using QuizAPI.Models;
 using QuizAPI.Models.Quiz;
@@ -8,8 +8,10 @@ using QuizAPI.Models.Statistics.Questions;
 using System.Text.Json;
 namespace QuizAPI.Data
 {
+
     public class ApplicationDbContext : DbContext
     {
+        private readonly ICurrentUserService _current;
 
         public DbSet<User> Users { get; set; }
 
@@ -53,20 +55,42 @@ namespace QuizAPI.Data
 
         public DbSet<Drejtimi> Drejtimet { get; set; }
 
-        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
+        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options, ICurrentUserService current) : base(options)
         {
+            _current = current;
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
 
             //INDEXES FOR DASHBOARD
-
             modelBuilder.Entity<Quiz>()
                 .HasIndex(q => new { q.UserId, q.Visibility, q.Id });
 
             modelBuilder.Entity<QuestionBase>()
                 .HasIndex(q => new { q.UserId, q.Visibility, q.Id });
+            //INDEXES FOR DASHBOARD
+
+            //GLOBAL QUERY FILTERS
+            // Users: only see their own *or* public items by default
+            modelBuilder.Entity<Quiz>().HasQueryFilter(q =>
+                _current.IsAdmin || (
+                    (_current.UserId != null) &&
+                    (q.UserId == _current.UserId || q.Visibility != QuizVisibility.Private)
+                )
+            );
+
+            modelBuilder.Entity<QuestionBase>().HasQueryFilter(q =>
+        _current.IsAdmin ||                                 // 1. Admin can see everything.
+        q.UserId == _current.UserId ||                      // 2. You can see questions you own.
+        q.Visibility != QuestionVisibility.Private ||               // 3. You can see any public question.
+        q.QuizQuestions.Any(qq =>                           // 4. OR the question is in a quiz you can see.
+            _current.UserId != null &&
+            (qq.Quiz.UserId == _current.UserId || qq.Quiz.Visibility == QuizVisibility.Public)
+        )
+    );
+
+            //GLOBAL QUERY FILTERS
 
 
             base.OnModelCreating(modelBuilder);
