@@ -27,6 +27,7 @@ import { LanguagesView } from "./Entities/Language/components/language-view";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { QuestionTabContent } from "./Components/QuestionsTabContent";
 import { QuestionType } from "@/types/question-types";
+import { Authorization, ROLES } from "@/lib/authorization";
 
 export const Questions = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -102,8 +103,7 @@ export const Questions = () => {
           open={isAddQuestionDialogOpen}
           onOpenChange={(open) =>
             open ? openAddQuestionDialog() : closeAddQuestionDialog()
-          }
-        >
+          }>
           <DialogTrigger asChild>
             <LiftedButton className="flex items-center gap-2">
               Add Question +
@@ -159,8 +159,7 @@ export const Questions = () => {
         <Tabs
           value={activeTab}
           onValueChange={(value) => setActiveTab(value as QuestionType)}
-          className="w-full"
-        >
+          className="w-full">
           <TabsList className="grid grid-cols-3 mb-6">
             <TabsTrigger value={QuestionType.MultipleChoice}>
               Multiple Choice
@@ -202,12 +201,13 @@ export const Questions = () => {
           </TabsContent>
         </Tabs>
       </Card>
-
-      <div className="flex flex-col gap-6 mt-6">
-        <CategoryView />
-        <DifficultyView />
-        <LanguagesView />
-      </div>
+      <Authorization allowedRoles={[ROLES.Admin, ROLES.SuperAdmin]}>
+        <div className="flex flex-col gap-6 mt-6">
+          <CategoryView />
+          <DifficultyView />
+          <LanguagesView />
+        </div>
+      </Authorization>
     </div>
   );
 };

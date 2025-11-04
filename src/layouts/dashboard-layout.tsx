@@ -46,8 +46,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             bg-background relative shadow-md transition-all duration-300 ease-in-out flex-none
             ${isNavCollapsed ? "w-20" : "w-64"}
           `}
-          aria-label="Dashboard navigation"
-        >
+          aria-label="Dashboard navigation">
           <DashboardNav
             setActivePage={setActivePage}
             activePage={activePage}

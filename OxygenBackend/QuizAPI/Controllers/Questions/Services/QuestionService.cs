@@ -422,19 +422,21 @@ namespace QuizAPI.Controllers.Questions.Services
         }
 
 
-        public async Task<(bool Success, string? ErrorMessage, bool IsCustomMessage)> DeleteQuestionAsync(int id, Guid userId)
+        public async Task<(bool Success, string? ErrorMessage, bool IsCustomMessage)> DeleteQuestionAsync(int id, Guid userId, bool isAdmin)
         {
-            var question = await _context.Questions
-                .FirstOrDefaultAsync(q => q.Id == id && q.UserId == userId);
+            var question = await _context.Questions.FirstOrDefaultAsync(q => q.Id == id);
 
             if (question == null)
-                return (false, "Question not found or you're not authorized.", true); // Custom message
+                return (false, "Question not found.", true);
 
-            var isPartOfQuiz = await _context.QuizQuestions
-                .AnyAsync(qq => qq.QuestionId == id);
+            // Check authorization: Admin can delete any, regular users can only delete their own
+            if (!isAdmin && question.UserId != userId)
+                return (false, "You're not authorized to delete this question.", true);
+
+            var isPartOfQuiz = await _context.QuizQuestions.AnyAsync(qq => qq.QuestionId == id);
 
             if (isPartOfQuiz)
-                return (false, "This question is being used in a quiz and cannot be deleted.", true); 
+                return (false, "This question is being used in a quiz and cannot be deleted.", true);
 
             try
             {
@@ -450,10 +452,9 @@ namespace QuizAPI.Controllers.Questions.Services
             }
             catch (Exception ex)
             {
-                return (false, "An error occurred while deleting the question.", false); 
+                return (false, "An error occurred while deleting the question.", false);
             }
         }
-
 
         public async Task<List<QuestionBaseDTO>> GetQuestionsByCategoryAsync(int categoryId)
         {

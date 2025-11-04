@@ -37,7 +37,7 @@ public abstract class BaseApiController : ControllerBase
             message.Contains("cannot be deleted", StringComparison.OrdinalIgnoreCase) ||
             message.Contains("already have an active session", StringComparison.OrdinalIgnoreCase))
         {
-            return BadRequest(new { message = message, isCustomMessage = isCustomMessage });
+            return BadRequest(new { message, isCustomMessage });
         }
 
         return StatusCode(StatusCodes.Status500InternalServerError, new {

@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FallbackProps } from "react-error-boundary";
-import { AlertCircle, RefreshCcw } from "lucide-react";
+import { AlertCircle, Home, RefreshCcw } from "lucide-react";
 import { LiftedButton } from "@/common/LiftedButton";
 
 // const isDevelopment = import.meta.env.DEV;
@@ -55,7 +55,7 @@ export const MainErrorFallback: React.FC<FallbackProps> = ({
             </div>
           )}
 
-          <div className="flex flex-col gap-2 pt-4">
+          <div className="flex flex-col gap-4 pt-4 w-fit mx-auto">
             <LiftedButton
               onClick={() => {
                 resetErrorBoundary();
@@ -70,7 +70,7 @@ export const MainErrorFallback: React.FC<FallbackProps> = ({
               className="w-full text-foreground bg-muted"
               // backgroundColorForBorder="bg-background text-foreground"
             >
-              Go Home
+              <Home className="mr-2 h-4 w-4" /> Go Home
             </LiftedButton>
           </div>
         </CardContent>

@@ -233,7 +233,9 @@ namespace QuizAPI.Controllers.Questions
         public async Task<IActionResult> DeleteQuestion(int id)
         {
             var userId = _currentUserService.UserId;
-            var (success, errorMessage, isCustomMessage) = await _questionService.DeleteQuestionAsync(id, userId.Value);
+            var isAdmin = _currentUserService.IsAdmin;
+
+            var (success, errorMessage, isCustomMessage) = await _questionService.DeleteQuestionAsync(id, userId.Value, isAdmin);
 
             if (!success)
             {

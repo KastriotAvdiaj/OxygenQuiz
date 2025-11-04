@@ -1,6 +1,5 @@
 import * as React from "react";
 
-
 import { useUser } from "@/lib/Auth";
 import { MultipleChoiceQuestion } from "@/types/question-types";
 import { User } from "@/types/user-types";
@@ -11,7 +10,7 @@ export enum ROLES {
   User = "User",
 }
 
-type RoleTypes = keyof typeof ROLES;
+type RoleTypes = ROLES;
 
 export const POLICIES = {
   "comment:delete": (user: User, question: MultipleChoiceQuestion) => {
@@ -35,15 +34,10 @@ export const useAuthorization = () => {
   }
 
   const checkAccess = React.useCallback(
-    ({ allowedRoles }: { allowedRoles: RoleTypes[] }) => {
-      if (allowedRoles && allowedRoles.length > 0 && user.data) {
-        // console.log(allowedRoles?.includes(user.data.role));
-
-        const allowedRoles: ROLES[] = [ROLES.Admin, ROLES.SuperAdmin]; 
-        return allowedRoles?.includes(user.data.role);
-      }
-
-      return true;
+    ({ allowedRoles }: { allowedRoles: ROLES[] }) => {
+      if (!user.data) return false;
+      if (allowedRoles.length === 0) return true;
+      return allowedRoles.includes(user.data.role as ROLES);
     },
     [user.data]
   );
@@ -73,15 +67,14 @@ export const Authorization = ({
 }: AuthorizationProps) => {
   const { checkAccess } = useAuthorization();
 
-  let canAccess = false;
+  const canAccess = allowedRoles
+    ? checkAccess({ allowedRoles })
+    : policyCheck ?? false;
 
-  if (allowedRoles) {
-    canAccess = checkAccess({ allowedRoles });
-  }
-
-  if (typeof policyCheck !== "undefined") {
-    canAccess = policyCheck;
-  }
+  console.log("Authorization check:", {
+    allowedRoles,
+    canAccess,
+  });
 
   return <>{canAccess ? children : forbiddenFallback}</>;
 };

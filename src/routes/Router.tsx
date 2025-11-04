@@ -131,13 +131,14 @@ const createAppRouter = (queryClient: QueryClient) =>
     },
     {
       path: "/go/dashboard",
-      loader: dashboardEntryLoader(),
+      loader: dashboardEntryLoader(queryClient),
+      errorElement: <DashboardErrorElement />,
     },
     {
       path: "/dashboard/*",
       element: <AppRoot />,
       id: "dashboardRoot",
-      loader: adminAuthLoader(queryClient),
+      loader: userAuthLoader(queryClient),
       errorElement: <DashboardErrorElement />,
       children: [
         {
@@ -243,11 +244,7 @@ const createAppRouter = (queryClient: QueryClient) =>
       path: "/my-dashboard",
       errorElement: <DashboardErrorElement />,
       loader: userAuthLoader(queryClient),
-      element: (
-        <>
-          <div>My Dashboard</div>
-        </>
-      ),
+      element: <AppRoot />,
     },
     {
       path: "my-profile",

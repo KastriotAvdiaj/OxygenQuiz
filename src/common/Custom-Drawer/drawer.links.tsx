@@ -23,8 +23,7 @@ export const DrawerLinks = ({
       variant={"drawer"}
       size={"drawerSize"}
       className="w-full"
-      onClick={close}
-    >
+      onClick={close}>
       <LiaUserFriendsSolid className="text-sm" /> Friends
     </Button>
 
@@ -35,7 +34,7 @@ export const DrawerLinks = ({
     </NavLink>
 
     {isAdmin && (
-      <NavLink to="/dashboard" onClick={close} className="w-full">
+      <NavLink to="/go/dashboard" onClick={close} className="w-full">
         <Button variant={"drawer"} size={"drawerSize"} className="w-full">
           <RiDashboard2Fill className="text-sm" /> Dashboard
         </Button>

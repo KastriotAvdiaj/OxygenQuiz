@@ -7,7 +7,7 @@ import { AUTH_COOKIE } from "./authHelpers";
 import { AuthResponse, User } from "@/types/user-types";
 import { QueryClient } from "@tanstack/react-query";
 
-const getUser = async (): Promise<User | null> => {
+export const getUser = async (): Promise<User | null> => {
   try {
     const user: User = (await api.get("Authentication/me")).data;
     if (!user) {
