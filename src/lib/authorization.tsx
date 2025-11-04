@@ -24,6 +24,19 @@ export const POLICIES = {
 
     return false;
   },
+  "question:modify": (user: User, question: MultipleChoiceQuestion) => {
+    // Admins and SuperAdmins can modify any question
+    if (user.role === "Admin" || user.role === "SuperAdmin") {
+      return true;
+    }
+
+    // Users can only modify their own questions
+    if (user.role === "User" && question.user.id === user.id) {
+      return true;
+    }
+
+    return false;
+  },
 };
 
 export const useAuthorization = () => {
@@ -42,7 +55,17 @@ export const useAuthorization = () => {
     [user.data]
   );
 
-  return { checkAccess, role: user.data.role };
+  const checkPolicy = React.useCallback(
+    (policyName: keyof typeof POLICIES, resource?: any) => {
+      if (!user.data) return false;
+      const policy = POLICIES[policyName];
+      if (!policy) return false;
+      return policy(user.data, resource);
+    },
+    [user.data]
+  );
+
+  return { checkAccess, checkPolicy, role: user.data.role };
 };
 
 type AuthorizationProps = {
@@ -52,29 +75,29 @@ type AuthorizationProps = {
   | {
       allowedRoles: RoleTypes[];
       policyCheck?: never;
+      resource?: never;
     }
   | {
       allowedRoles?: never;
-      policyCheck: boolean;
+      policyCheck: keyof typeof POLICIES;
+      resource?: any;
     }
 );
 
 export const Authorization = ({
   policyCheck,
   allowedRoles,
+  resource,
   forbiddenFallback = null,
   children,
 }: AuthorizationProps) => {
-  const { checkAccess } = useAuthorization();
+  const { checkAccess, checkPolicy } = useAuthorization();
 
   const canAccess = allowedRoles
     ? checkAccess({ allowedRoles })
-    : policyCheck ?? false;
-
-  console.log("Authorization check:", {
-    allowedRoles,
-    canAccess,
-  });
+    : policyCheck
+    ? checkPolicy(policyCheck, resource)
+    : false;
 
   return <>{canAccess ? children : forbiddenFallback}</>;
 };

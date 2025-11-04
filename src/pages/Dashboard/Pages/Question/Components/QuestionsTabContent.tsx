@@ -93,6 +93,7 @@ export const QuestionTabContent = ({
       case QuestionType.MultipleChoice:
         return (
           <>
+            {/* PAGE USER MEANS THAT IT IS USED IN THE QUESTION SELECT MODAL  */}
             {page == "user" ? (
               <QuestionListComponent questions={mcqQuery.data?.data || []} />
             ) : (

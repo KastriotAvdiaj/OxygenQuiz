@@ -10,9 +10,14 @@ import { CheckCircle, XCircle, ChevronDown, ImageIcon } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { DeleteQuestion } from "../Re-Usable-Components/delete-question";
 import UpdateMultipleChoiceQuestionForm from "./update-multiple-choice-question";
-import { AnswerOption, MultipleChoiceQuestion, QuestionType } from "@/types/question-types";
+import {
+  AnswerOption,
+  MultipleChoiceQuestion,
+  QuestionType,
+} from "@/types/question-types";
 import { memo } from "react";
 import { TestQuestionButton } from "../Re-Usable-Components/question-test/test-question-button";
+import { Authorization } from "@/lib/authorization";
 
 interface MultipleChoiceQuestionCardProps {
   question: MultipleChoiceQuestion;
@@ -23,7 +28,6 @@ export const MultipleChoiceQuestionCard = ({
   question,
   viewMode = "list",
 }: MultipleChoiceQuestionCardProps) => {
-  
   if (viewMode === "grid") {
     // Compact grid view - always expanded, no accordion
     return (
@@ -35,10 +39,11 @@ export const MultipleChoiceQuestionCard = ({
               {question.imageUrl && (
                 <Badge
                   variant="outline"
-                  className="ml-2 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800/50"
-                >
+                  className="ml-2 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800/50">
                   <ImageIcon className="h-3 w-3 mr-1" />
-                  <span className="text-blue-600 dark:text-blue-400 text-xs">Image</span>
+                  <span className="text-blue-600 dark:text-blue-400 text-xs">
+                    Image
+                  </span>
                 </Badge>
               )}
             </CardTitle>
@@ -52,12 +57,11 @@ export const MultipleChoiceQuestionCard = ({
                   "text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800/50",
                 question.difficulty.level === "Hard" &&
                   "text-red-600 dark:text-red-400 border-red-200 dark:border-red-800/50"
-              )}
-            >
+              )}>
               {question.difficulty.level}
             </Badge>
           </div>
-          
+
           {/* Compact badges */}
           <div className="flex flex-wrap items-center gap-1 mt-2">
             <Badge variant="secondary" className="text-xs font-normal">
@@ -89,8 +93,7 @@ export const MultipleChoiceQuestionCard = ({
                   option.isCorrect
                     ? "bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800"
                     : "bg-red-50 border-red-200 dark:bg-red-900/10 dark:border-red-800/50"
-                )}
-              >
+                )}>
                 {option.isCorrect ? (
                   <CheckCircle className="h-3 w-3 text-green-500 dark:text-green-400 flex-shrink-0 mr-2" />
                 ) : (
@@ -106,7 +109,10 @@ export const MultipleChoiceQuestionCard = ({
               ID: {question.id}
             </Badge>
             <div className="flex items-center gap-1">
-              <TestQuestionButton question={question} questionType={QuestionType.MultipleChoice} />
+              <TestQuestionButton
+                question={question}
+                questionType={QuestionType.MultipleChoice}
+              />
               <DeleteQuestion
                 id={question.id}
                 questionType={QuestionType.MultipleChoice}
@@ -129,8 +135,7 @@ export const MultipleChoiceQuestionCard = ({
             {question.imageUrl && (
               <Badge
                 variant="outline"
-                className="ml-2 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800/50"
-              >
+                className="ml-2 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800/50">
                 <ImageIcon className="h-3 w-3 mr-1" />
                 <span className="text-blue-600 dark:text-blue-400">Image</span>
               </Badge>
@@ -149,8 +154,7 @@ export const MultipleChoiceQuestionCard = ({
                   "text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800/50",
                 question.difficulty.level === "Hard" &&
                   "text-red-600 dark:text-red-400 border-red-200 dark:border-red-800/50"
-              )}
-            >
+              )}>
               {question.difficulty.level}
             </Badge>
           </div>
@@ -201,8 +205,7 @@ export const MultipleChoiceQuestionCard = ({
                         option.isCorrect
                           ? "bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800"
                           : "bg-red-50 border-red-200 dark:bg-red-900/10 dark:border-red-800/50"
-                      )}
-                    >
+                      )}>
                       {option.isCorrect ? (
                         <CheckCircle className="h-4 w-4 text-green-500 dark:text-green-400 flex-shrink-0 mr-2" />
                       ) : (
@@ -222,14 +225,19 @@ export const MultipleChoiceQuestionCard = ({
                   })}
                 </div>
               </div>
-              <section className="flex items-center justify-end gap-2 mr-2">
-                <DeleteQuestion
-                  id={question.id}
-                  questionType={QuestionType.MultipleChoice}
-                />
-                <TestQuestionButton question={question} questionType={QuestionType.MultipleChoice} />
-                <UpdateMultipleChoiceQuestionForm question={question} />
-              </section>
+              <Authorization policyCheck="question:modify" resource={question}>
+                <section className="flex items-center justify-end gap-2 mr-2">
+                  <DeleteQuestion
+                    id={question.id}
+                    questionType={QuestionType.MultipleChoice}
+                  />
+                  <TestQuestionButton
+                    question={question}
+                    questionType={QuestionType.MultipleChoice}
+                  />
+                  <UpdateMultipleChoiceQuestionForm question={question} />
+                </section>
+              </Authorization>
             </AccordionContent>
           </AccordionItem>
         </Accordion>
