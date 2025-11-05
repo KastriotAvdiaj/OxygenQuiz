@@ -24,7 +24,8 @@ export const QuizFilters = ({
   onCategoryChange,
   difficulties,
   selectedDifficultyId,
-  onDifficultyChange,   languages,
+  onDifficultyChange,
+  languages,
   selectedLanguageId,
   onLanguageChange,
   selectedVisibility,
@@ -52,6 +53,11 @@ export const QuizFilters = ({
   //   ]);
 
   const presets: FilterPreset[] = [
+    {
+      id: "my-quizzes",
+      label: "My Quizzes",
+      filters: { visibility: "Private" }, //NEED TO FIX THIS BECAUSE PRIVATE DOES NOT MEAN MY QIZ IT MEANS ANY QUIZ THAT IS NOT PUBLIC
+    },
     { id: "all", label: "All Quizzes", filters: {}, isDefault: true },
     {
       id: "my-quizzes",
@@ -290,7 +296,7 @@ export const QuizFilters = ({
         totalActiveFilters={totalActiveFilters}
         onClearAll={clearAllFilters}
       />
-      
+
       <section className="space-y-2">
         <Label>Existing Filters</Label>
         <FilterPresets
@@ -299,7 +305,7 @@ export const QuizFilters = ({
           onApplyPreset={(p) => applyFiltersFromObject(p.filters)}
         />
       </section>
-      
+
       {/* <SavedFiltersList
         savedFilters={savedFilters}
         onApply={(f) => applyFiltersFromObject(f.filters)}

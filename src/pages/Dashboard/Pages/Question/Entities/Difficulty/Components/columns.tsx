@@ -2,7 +2,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { Edit } from "lucide-react";
 import { DeleteQuestionDifficulty } from "./delete-question-difficulty";
 import formatDate from "@/lib/date-format";
-import { Authorization } from "@/lib/authorization";
+import { Authorization, ROLES } from "@/lib/authorization";
 import { LiftedButton } from "@/common/LiftedButton";
 import { QuestionDifficulty } from "@/types/question-types";
 
@@ -33,7 +33,7 @@ export const difficultyColumns: ColumnDef<QuestionDifficulty>[] = [
       const difficulty = row.original;
       return (
         <div className="flex items-center space-x-2">
-          <Authorization allowedRoles={["SuperAdmin"]}>
+          <Authorization allowedRoles={[ROLES.SuperAdmin]}>
             <LiftedButton variant="icon">
               <Edit size={16} />
             </LiftedButton>

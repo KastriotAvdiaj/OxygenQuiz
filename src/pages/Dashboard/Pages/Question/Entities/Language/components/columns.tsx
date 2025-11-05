@@ -2,7 +2,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import { Edit } from "lucide-react";
 import formatDate from "@/lib/date-format";
 import { DeleteQuestionLanguage } from "./delete-question-language";
-import { Authorization } from "@/lib/authorization";
+import { Authorization, ROLES } from "@/lib/authorization";
 import { LiftedButton } from "@/common/LiftedButton";
 import { QuestionLanguage } from "@/types/question-types";
 
@@ -29,7 +29,7 @@ export const langaugeColumns: ColumnDef<QuestionLanguage>[] = [
       const language = row.original;
       return (
         <div className="flex items-center space-x-2">
-          <Authorization allowedRoles={["SuperAdmin"]}>
+          <Authorization allowedRoles={[ROLES.SuperAdmin]}>
             <LiftedButton variant="icon">
               <Edit size={16} />
             </LiftedButton>

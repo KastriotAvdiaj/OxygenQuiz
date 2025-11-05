@@ -4,22 +4,22 @@ import { QuizHeader } from "./components/quiz-header";
 import { motion } from "framer-motion";
 import { ArchiveX } from "lucide-react";
 import {
-  getAllQuizzesQueryOptions,
+  // getAllQuizzesQueryOptions,
   useAllQuizzesData,
 } from "../Dashboard/Pages/Quiz/api/get-all-quizzes";
-import { LoaderFunction, useNavigate } from "react-router";
-import { QueryClient } from "@tanstack/react-query";
+import {  useNavigate } from "react-router";
+// import { QueryClient } from "@tanstack/react-query";
 import { QuizStartModal } from "./components/quiz-start-modal";
 import { QuizSummaryDTO } from "@/types/quiz-types";
 import { useDisclosure } from "@/hooks/use-disclosure";
 
-export const quizSelectionLoader =
-  (queryClient: QueryClient): LoaderFunction =>
-  async () => {
-    const initialParams = {};
-    const options = getAllQuizzesQueryOptions(initialParams);
-    return await queryClient.ensureQueryData(options);
-  };
+// export const quizSelectionLoader =
+//   (queryClient: QueryClient): LoaderFunction =>
+//   async () => {
+//     const initialParams = {};
+//     const options = getAllQuizzesQueryOptions(initialParams);
+//     return await queryClient.ensureQueryData(options);
+//   };
 
   
 // Optimized container animation variants

@@ -1,24 +1,62 @@
 import { lazy, useMemo } from "react";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
-import { adminAuthLoader, userAuthLoader } from "../lib/Auth";
-import { AppRoot } from "../pages/AppRoot";
+import { userAuthLoader } from "../lib/Auth";
+// import { AppRoot } from "../pages/AppRoot";
 import { QueryClient, useQueryClient } from "@tanstack/react-query";
 
 import { RedirectIfLoggedIn } from "../lib/Redirect";
 import "../global.css";
 import { Navigate } from "react-router-dom";
-import { HomeLayout } from "@/layouts/layout";
-import QuizCreator from "@/pages/Dashboard/Pages/Quiz/components/Create-Quiz-Form/create-quiz";
-import {
-  QuizSelection,
-  quizSelectionLoader,
-} from "@/pages/Quiz/Quiz-Selection";
-import { QuizQuestionProvider } from "@/pages/Dashboard/Pages/Quiz/components/Create-Quiz-Form/Quiz-questions-context";
-import { DashboardErrorElement } from "@/pages/UtilityPages/Error/Dashboard-Error-Element";
-import { quizLoader } from "../pages/Dashboard/Pages/Quiz/Quiz";
-import { QuizPageRouteWrapper } from "@/pages/Quiz/Sessions/components/quiz-taking-process/quiz-page-route-wrapper";
-import { QuizResultsRouteWrapper } from "@/pages/Quiz/Sessions/components/quiz-results/quiz-results-route-wrapper";
-import { dashboardEntryLoader } from "@/lib/dashboardEntryLoader";
+// import { HomeLayout } from "@/layouts/layout";
+// import QuizCreator from "@/pages/Dashboard/Pages/Quiz/components/Create-Quiz-Form/create-quiz";
+//import  {QuizSelection} from "@/pages/Quiz/Quiz-Selection";
+// import { QuizQuestionProvider } from "@/pages/Dashboard/Pages/Quiz/components/Create-Quiz-Form/Quiz-questions-context";
+// import { DashboardErrorElement } from "@/pages/UtilityPages/Error/Dashboard-Error-Element";
+import { quizLoader } from "@/loaders/quiz.loader";
+// import { QuizPageRouteWrapper } from "@/pages/Quiz/Sessions/components/quiz-taking-process/quiz-page-route-wrapper";
+// import { QuizResultsRouteWrapper } from "@/pages/Quiz/Sessions/components/quiz-results/quiz-results-route-wrapper";
+import { dashboardEntryLoader } from "@/loaders/dashboardEntryLoader";
+import { quizSelectionLoader } from "@/loaders/quiz-selection.loader";
+const HomeLayout = lazy(() => {
+  console.log("Loading HomeLayout chunk...");
+  return import("@/layouts/layout").then((module) => ({
+    default: module.HomeLayout,
+  }));
+});
+const AppRoot = lazy(() =>
+  import("../pages/AppRoot").then((module) => ({ default: module.AppRoot }))
+);
+const QuizSelection = lazy(() =>
+  import("@/pages/Quiz/Quiz-Selection").then((module) => ({
+    default: module.QuizSelection,
+  }))
+);
+const QuizPageRouteWrapper = lazy(() =>
+  import(
+    "@/pages/Quiz/Sessions/components/quiz-taking-process/quiz-page-route-wrapper"
+  ).then((module) => ({ default: module.QuizPageRouteWrapper }))
+);
+const QuizResultsRouteWrapper = lazy(() =>
+  import(
+    "@/pages/Quiz/Sessions/components/quiz-results/quiz-results-route-wrapper"
+  ).then((module) => ({ default: module.QuizResultsRouteWrapper }))
+);
+const QuizCreator = lazy(
+  () =>
+    import(
+      "@/pages/Dashboard/Pages/Quiz/components/Create-Quiz-Form/create-quiz"
+    )
+);
+const DashboardErrorElement = lazy(() =>
+  import("@/pages/UtilityPages/Error/Dashboard-Error-Element").then(
+    (module) => ({ default: module.DashboardErrorElement })
+  )
+);
+const QuizQuestionProvider = lazy(() =>
+  import(
+    "@/pages/Dashboard/Pages/Quiz/components/Create-Quiz-Form/Quiz-questions-context"
+  ).then((module) => ({ default: module.QuizQuestionProvider }))
+);
 
 enum HeaderBehavior {
   DEFAULT = "default",
@@ -223,9 +261,7 @@ const createAppRouter = (queryClient: QueryClient) =>
             return { Component: Users };
           },
           loader: async () => {
-            const { usersLoader } = await import(
-              "../pages/Dashboard/Pages/User/Users"
-            );
+            const { usersLoader } = await import("../loaders/users.loader");
             return usersLoader(queryClient);
           },
         },

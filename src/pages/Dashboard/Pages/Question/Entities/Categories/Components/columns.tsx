@@ -2,7 +2,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import formatDate from "@/lib/date-format";
 import { Edit } from "lucide-react";
 import { DeleteQuestionCategory } from "./delete-question-category";
-import { Authorization } from "@/lib/authorization";
+import { Authorization, ROLES } from "@/lib/authorization";
 import { LiftedButton } from "@/common/LiftedButton";
 import { QuestionCategory } from "@/types/question-types";
 import UpdateQuestionCategoryForm from "./update-question-category";
@@ -30,7 +30,7 @@ export const categoryColumns: ColumnDef<QuestionCategory>[] = [
       const category = row.original;
       return (
         <div className="flex items-center space-x-2">
-          <Authorization allowedRoles={["SuperAdmin"]}>
+          <Authorization allowedRoles={[ROLES.SuperAdmin]}>
             <UpdateQuestionCategoryForm
               triggerButton={
                 <LiftedButton variant="icon">

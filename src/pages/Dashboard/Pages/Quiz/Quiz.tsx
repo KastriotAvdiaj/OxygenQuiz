@@ -1,6 +1,5 @@
-import { QueryClient } from "@tanstack/react-query";
-import { LoaderFunctionArgs, useParams } from "react-router";
-import { getQuizQueryOptions, useQuizData } from "./api/get-quiz";
+import { useParams } from "react-router";
+import { useQuizData } from "./api/get-quiz";
 import { CardContent, CardHeader, Spinner } from "@/components/ui";
 import { ContentLayout } from "@/layouts/individual-content-layout";
 import { Edit2, EyeOff, Eye, Share2, BarChart3 } from "lucide-react";
@@ -11,7 +10,6 @@ import { QuizProperties } from "./components/quiz-properties";
 import { QuizQuestions } from "./components/quiz-questions";
 import { useNavigate } from "react-router";
 import { LiftedButton } from "@/common/LiftedButton";
-import { handleLoaderError } from "@/lib/loaderError";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,24 +21,24 @@ import {
 import { useMemo } from "react";
 import { IconButtonWithTooltip } from "../Question/Components/Re-Usable-Components/delete-question";
 
-export const quizLoader =
-  (queryClient: QueryClient) =>
-  async ({ params }: LoaderFunctionArgs) => {
-    const quizId = Number(params.quizId as string);
+// export const quizLoader =
+//   (queryClient: QueryClient) =>
+//   async ({ params }: LoaderFunctionArgs) => {
+//     const quizId = Number(params.quizId as string);
 
-    if (isNaN(quizId) || quizId <= 0) {
-      throw new Error("Invalid quiz ID");
-    }
+//     if (isNaN(quizId) || quizId <= 0) {
+//       throw new Error("Invalid quiz ID");
+//     }
 
-    const quizQuery = getQuizQueryOptions(quizId);
+//     const quizQuery = getQuizQueryOptions(quizId);
 
-    const quiz = await handleLoaderError(async () => {
-      const cachedData = queryClient.getQueryData(quizQuery.queryKey);
-      return cachedData || queryClient.fetchQuery(quizQuery);
-    });
+//     const quiz = await handleLoaderError(async () => {
+//       const cachedData = queryClient.getQueryData(quizQuery.queryKey);
+//       return cachedData || queryClient.fetchQuery(quizQuery);
+//     });
 
-    return { quiz };
-  };
+//     return { quiz };
+//   };
 
 export const QuizRoute = () => {
   const params = useParams();

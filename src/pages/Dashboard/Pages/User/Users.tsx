@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { QueryClient } from "@tanstack/react-query";
 import { useLoaderData } from "react-router-dom"; // 1. Import useLoaderData
-import { getUsersQueryOptions, useUserData } from "./api/get-users";
+import { useUserData } from "./api/get-users";
 import { User } from "@/types/user-types"; // Assuming this is your user type
 
 // UI Components
@@ -11,24 +10,6 @@ import { DataTable } from "@/components/ui/data-table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatsCards } from "./Components/stats-cards";
 import { UserControls } from "./Components/user-page-button-group";
-import { handleLoaderError } from "@/lib/loaderError";
-
-// 3. Refactor the loader to use the helper
-export const usersLoader = (queryClient: QueryClient) => async () => {
-  const query = getUsersQueryOptions();
-
-  const users = await handleLoaderError(() => {
-    const cachedData = queryClient.getQueryData(query.queryKey);
-    return cachedData
-      ? Promise.resolve(cachedData)
-      : queryClient.fetchQuery(query);
-  });
-  
-  //TODO: Pagination can be added later if needed
-  //TODO: When user is logged out and in the dashboard page, they can still see the data. Fix that.
-  // 4. Return the data in an object (best practice)
-  return { users };
-};
 
 export const Users = () => {
   const { users: initialUsers } = useLoaderData() as { users: User[] };
@@ -36,7 +17,7 @@ export const Users = () => {
   const usersQuery = useUserData({
     initialData: initialUsers,
   });
-  
+
   const [searchTerm, setSearchTerm] = useState("");
 
   // This `isLoading` will now only be true for background refetches, not the initial render

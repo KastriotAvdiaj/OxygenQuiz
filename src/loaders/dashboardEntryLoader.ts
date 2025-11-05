@@ -1,6 +1,6 @@
 import { redirect } from "react-router-dom";
 import { QueryClient } from "@tanstack/react-query";
-import { getUser } from "./Auth";
+import { getUser } from "../lib/Auth";
 
 export const dashboardEntryLoader = (queryClient: QueryClient) => async () => {
   const user = await queryClient.fetchQuery({
