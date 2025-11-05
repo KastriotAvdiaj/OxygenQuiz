@@ -21,6 +21,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useMemo } from "react";
+import { IconButtonWithTooltip } from "../Question/Components/Re-Usable-Components/delete-question";
 
 export const quizLoader =
   (queryClient: QueryClient) =>
@@ -101,8 +102,7 @@ export const QuizRoute = () => {
               <h1 className="font-bold text-3xl">{quiz.title}</h1>
               <Badge
                 variant={quiz.isPublished ? "default" : "secondary"}
-                className={quiz.isPublished ? "bg-green-500 text-white" : ""}
-              >
+                className={quiz.isPublished ? "bg-green-500 text-white" : ""}>
                 {quizStats?.status}
               </Badge>
             </div>
@@ -129,8 +129,7 @@ export const QuizRoute = () => {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem
-                  onClick={() => navigate(`/quiz/${quiz.id}/edit`)}
-                >
+                  onClick={() => navigate(`/quiz/${quiz.id}/edit`)}>
                   <Edit2 className="h-4 w-4 mr-2" />
                   Edit Quiz
                 </DropdownMenuItem>
@@ -208,37 +207,58 @@ export const QuizRoute = () => {
               size="sm"
               onClick={() => {
                 /* Share functionality */
-              }}
-            >
+              }}>
               <Share2 className="h-4 w-4 mr-2" />
               Share Quiz
             </Button>
           </div>
 
           <div className="hidden md:flex gap-2 text-sm">
-            <LiftedButton
-              className="bg-background hover:bg-muted text-foreground border-foreground"
-              onClick={() => {
-                /* Toggle publish state */
-              }}
-            >
-              {quiz.isPublished ? (
-                <>
+            <IconButtonWithTooltip
+              variant="default"
+              tooltip="Feature not implemented"
+              icon={
+                quiz.isPublished ? (
                   <EyeOff className="h-4 w-4 mr-2" />
-                  Unpublish
-                </>
-              ) : (
-                <>
+                ) : (
                   <Eye className="h-4 w-4 mr-2" />
-                  Publish
-                </>
-              )}
-            </LiftedButton>
-
-            <LiftedButton onClick={() => navigate(`/quiz/${quiz.id}/edit`)}>
-              <Edit2 className="h-4 w-4 mr-2" />
-              Edit Quiz
-            </LiftedButton>
+                )
+              }
+              buttonText={quiz.isPublished ? "Unpublish" : "Publish"}
+              className="bg-background hover:bg-muted text-foreground border-foreground"
+              disabled>
+              <LiftedButton
+                disabled
+                className="bg-background hover:bg-muted text-foreground border-foreground"
+                onClick={() => {
+                  /* Toggle publish state */
+                }}>
+                {quiz.isPublished ? (
+                  <>
+                    <EyeOff className="h-4 w-4 mr-2" />
+                    Unpublish
+                  </>
+                ) : (
+                  <>
+                    <Eye className="h-4 w-4 mr-2" />
+                    Publish
+                  </>
+                )}
+              </LiftedButton>
+            </IconButtonWithTooltip>
+            <IconButtonWithTooltip
+              variant="default"
+              tooltip="Feature not implemented"
+              icon={<Edit2 className="h-4 w-4 mr-2" />}
+              buttonText="Edit Quiz"
+              disabled>
+              <LiftedButton
+                disabled
+                onClick={() => navigate(`/quiz/${quiz.id}/edit`)}>
+                <Edit2 className="h-4 w-4 mr-2" />
+                Edit Quiz
+              </LiftedButton>
+            </IconButtonWithTooltip>
 
             <DeleteQuiz
               useLiftedButton={true}

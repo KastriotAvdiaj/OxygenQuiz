@@ -17,7 +17,6 @@ import {
 } from "@/types/question-types";
 import { memo } from "react";
 import { TestQuestionButton } from "../Re-Usable-Components/question-test/test-question-button";
-import { Authorization } from "@/lib/authorization";
 
 interface MultipleChoiceQuestionCardProps {
   question: MultipleChoiceQuestion;
@@ -114,8 +113,8 @@ export const MultipleChoiceQuestionCard = ({
                 questionType={QuestionType.MultipleChoice}
               />
               <DeleteQuestion
-                id={question.id}
                 questionType={QuestionType.MultipleChoice}
+                question={question}
               />
               <UpdateMultipleChoiceQuestionForm question={question} />
             </div>
@@ -225,19 +224,17 @@ export const MultipleChoiceQuestionCard = ({
                   })}
                 </div>
               </div>
-              <Authorization policyCheck="question:modify" resource={question}>
-                <section className="flex items-center justify-end gap-2 mr-2">
-                  <DeleteQuestion
-                    id={question.id}
-                    questionType={QuestionType.MultipleChoice}
-                  />
-                  <TestQuestionButton
-                    question={question}
-                    questionType={QuestionType.MultipleChoice}
-                  />
-                  <UpdateMultipleChoiceQuestionForm question={question} />
-                </section>
-              </Authorization>
+              <section className="flex items-center justify-end gap-2 mr-2">
+                <DeleteQuestion
+                  question={question}
+                  questionType={QuestionType.MultipleChoice}
+                />
+                <TestQuestionButton
+                  question={question}
+                  questionType={QuestionType.MultipleChoice}
+                />
+                <UpdateMultipleChoiceQuestionForm question={question} />
+              </section>
             </AccordionContent>
           </AccordionItem>
         </Accordion>

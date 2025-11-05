@@ -34,8 +34,7 @@ export const TrueFalseQuestionCard = ({
               {question.imageUrl && (
                 <Badge
                   variant="outline"
-                  className="ml-2 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800/50"
-                >
+                  className="ml-2 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800/50">
                   <ImageIcon className="h-3 w-3 mr-1" />
                   <span className="text-blue-600 dark:text-blue-400 text-xs">
                     Image
@@ -53,8 +52,7 @@ export const TrueFalseQuestionCard = ({
                   "text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800/50",
                 question.difficulty.level === "Hard" &&
                   "text-red-600 dark:text-red-400 border-red-200 dark:border-red-800/50"
-              )}
-            >
+              )}>
               {question.difficulty.level}
             </Badge>
           </div>
@@ -88,8 +86,7 @@ export const TrueFalseQuestionCard = ({
               question.correctAnswer
                 ? "bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800"
                 : "bg-red-50 border-red-200 dark:bg-red-900/10 dark:border-red-800/50"
-            )}
-          >
+            )}>
             {question.correctAnswer ? (
               <CheckCircle className="h-3 w-3 text-green-500 dark:text-green-400 flex-shrink-0 mr-2" />
             ) : (
@@ -107,7 +104,7 @@ export const TrueFalseQuestionCard = ({
             <div className="flex items-center gap-1">
               <UpdateTrueFalseQuestionForm question={question} />
               <DeleteQuestion
-                id={question.id}
+                question={question}
                 questionType={QuestionType.TrueFalse}
               />
             </div>
@@ -127,8 +124,7 @@ export const TrueFalseQuestionCard = ({
             {question.imageUrl && (
               <Badge
                 variant="outline"
-                className="ml-2 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800/50"
-              >
+                className="ml-2 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800/50">
                 <ImageIcon className="h-3 w-3 mr-1" />
                 <span className="text-blue-600 dark:text-blue-400">Image</span>
               </Badge>
@@ -147,8 +143,7 @@ export const TrueFalseQuestionCard = ({
                   "text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800/50",
                 question.difficulty.level === "Hard" &&
                   "text-red-600 dark:text-red-400 border-red-200 dark:border-red-800/50"
-              )}
-            >
+              )}>
               {question.difficulty.level}
             </Badge>
           </div>
@@ -191,8 +186,7 @@ export const TrueFalseQuestionCard = ({
                     question.correctAnswer
                       ? "bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800"
                       : "bg-red-50 border-red-200 dark:bg-red-900/10 dark:border-red-800/50"
-                  )}
-                >
+                  )}>
                   {question.correctAnswer ? (
                     <CheckCircle className="h-4 w-4 text-green-500 dark:text-green-400 flex-shrink-0 mr-2" />
                   ) : (
@@ -214,10 +208,13 @@ export const TrueFalseQuestionCard = ({
               </div>
               <section className="flex items-center justify-end gap-2 mr-2">
                 <DeleteQuestion
-                  id={question.id}
+                  question={question}
                   questionType={QuestionType.TrueFalse}
-                  />
-                <TestQuestionButton question={question} questionType={QuestionType.TrueFalse} />
+                />
+                <TestQuestionButton
+                  question={question}
+                  questionType={QuestionType.TrueFalse}
+                />
                 <UpdateTrueFalseQuestionForm question={question} />
               </section>
             </AccordionContent>

@@ -40,8 +40,7 @@ export const TypeTheAnswerQuestionCard = ({
               {question.imageUrl && (
                 <Badge
                   variant="outline"
-                  className="ml-2 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800/50"
-                >
+                  className="ml-2 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800/50">
                   <ImageIcon className="h-3 w-3 mr-1" />
                   <span className="text-blue-600 dark:text-blue-400 text-xs">
                     Image
@@ -59,8 +58,7 @@ export const TypeTheAnswerQuestionCard = ({
                   "text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800/50",
                 question.difficulty.level === "Hard" &&
                   "text-red-600 dark:text-red-400 border-red-200 dark:border-red-800/50"
-              )}
-            >
+              )}>
               {question.difficulty.level}
             </Badge>
           </div>
@@ -100,8 +98,7 @@ export const TypeTheAnswerQuestionCard = ({
               {question.isCaseSensitive ? (
                 <Badge
                   variant="outline"
-                  className="text-xs bg-blue-50 dark:bg-blue-900/20"
-                >
+                  className="text-xs bg-blue-50 dark:bg-blue-900/20">
                   <CaseSensitive className="h-3 w-3 mr-1" />
                   Case Sensitive
                 </Badge>
@@ -115,16 +112,14 @@ export const TypeTheAnswerQuestionCard = ({
               {question.allowPartialMatch ? (
                 <Badge
                   variant="outline"
-                  className="text-xs bg-green-50 dark:bg-green-900/20"
-                >
+                  className="text-xs bg-green-50 dark:bg-green-900/20">
                   <SearchCheck className="h-3 w-3 mr-1" />
                   Partial
                 </Badge>
               ) : (
                 <Badge
                   variant="outline"
-                  className="text-xs bg-red-50 dark:bg-red-900/20"
-                >
+                  className="text-xs bg-red-50 dark:bg-red-900/20">
                   <SearchX className="h-3 w-3 mr-1" />
                   Exact
                 </Badge>
@@ -142,8 +137,7 @@ export const TypeTheAnswerQuestionCard = ({
                 {question.acceptableAnswers.slice(0, 2).map((answer, index) => (
                   <div
                     key={index}
-                    className="p-1 px-2 rounded-md bg-muted/50 dark:bg-muted/30 font-mono text-xs"
-                  >
+                    className="p-1 px-2 rounded-md bg-muted/50 dark:bg-muted/30 font-mono text-xs">
                     {answer}
                   </div>
                 ))}
@@ -163,7 +157,7 @@ export const TypeTheAnswerQuestionCard = ({
             <div className="flex items-center gap-1">
               <UpdateTypeAnswerQuestionForm question={question} />
               <DeleteQuestion
-                id={question.id}
+                question={question}
                 questionType={QuestionType.TypeTheAnswer}
               />
             </div>
@@ -183,8 +177,7 @@ export const TypeTheAnswerQuestionCard = ({
             {question.imageUrl && (
               <Badge
                 variant="outline"
-                className="ml-2 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800/50"
-              >
+                className="ml-2 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800/50">
                 <ImageIcon className="h-3 w-3 mr-1" />
                 <span className="text-blue-600 dark:text-blue-400">Image</span>
               </Badge>
@@ -204,8 +197,7 @@ export const TypeTheAnswerQuestionCard = ({
                   "text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-900/30",
                 question.difficulty.level === "Hard" &&
                   "text-red-600 dark:text-red-400 border-red-200 dark:border-red-800/50 bg-red-50 dark:bg-red-900/30"
-              )}
-            >
+              )}>
               {question.difficulty.level}
             </Badge>
           </div>
@@ -302,8 +294,7 @@ export const TypeTheAnswerQuestionCard = ({
                       {question.acceptableAnswers.map((answer, index) => (
                         <li
                           key={index}
-                          className="p-1.5 px-2 rounded-md bg-muted/50 dark:bg-muted/30 border border-transparent dark:hover:border-foreground/20 font-mono text-xs"
-                        >
+                          className="p-1.5 px-2 rounded-md bg-muted/50 dark:bg-muted/30 border border-transparent dark:hover:border-foreground/20 font-mono text-xs">
                           {answer}
                         </li>
                       ))}
@@ -327,10 +318,13 @@ export const TypeTheAnswerQuestionCard = ({
               </div>
               <section className="flex items-center justify-end gap-2 mr-2">
                 <DeleteQuestion
-                  id={question.id}
+                  question={question}
                   questionType={QuestionType.TypeTheAnswer}
                 />
-                <TestQuestionButton question={question} questionType={QuestionType.TypeTheAnswer} />
+                <TestQuestionButton
+                  question={question}
+                  questionType={QuestionType.TypeTheAnswer}
+                />
                 <UpdateTypeAnswerQuestionForm question={question} />
               </section>
             </AccordionContent>
