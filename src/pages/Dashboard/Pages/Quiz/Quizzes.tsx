@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useReducer } from "react";
 import { DataTable, Card, Spinner } from "@/components/ui";
 import { Link } from "react-router-dom";
 import { quizColumns } from "./components/Data-Table-Columns/columns";
@@ -21,28 +21,36 @@ import {
 import { Input } from "@/components/ui/form";
 import { GrFormNextLink } from "react-icons/gr";
 import { QuizFilters } from "./components/Quiz-Filter";
+import {
+  filterReducer,
+  initialFilterState,
+} from "./components/Quiz-Filter/filter-config";
 
 export const Quizzes = () => {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [debouncedSearchTerm] = useDebounce(searchTerm, 500);
-  const [selectedCategoryId, setSelectedCategoryId] = useState<
-    number | undefined
-  >();
-  const [selectedDifficultyId, setSelectedDifficultyId] = useState<
-    number | undefined
-  >();
-  const [selectedLanguageId, setSelectedLanguageId] = useState<
-    number | undefined
-  >();
-  const [selectedVisibility, setSelectedVisibility] = useState<
-    string | undefined
-  >();
-  const [selectedIsPublished, setSelectedIsPublished] = useState<
-    boolean | undefined
-  >();
-  const [selectedIsActive, setSelectedIsActive] = useState<
-    boolean | undefined
-  >();
+  // const [searchTerm, setSearchTerm] = useState("");
+
+  // const [selectedCategoryId, setSelectedCategoryId] = useState<
+  //   number | undefined
+  // >();
+  // const [selectedDifficultyId, setSelectedDifficultyId] = useState<
+  //   number | undefined
+  // >();
+  // const [selectedLanguageId, setSelectedLanguageId] = useState<
+  //   number | undefined
+  // >();
+  // const [selectedVisibility, setSelectedVisibility] = useState<
+  //   string | undefined
+  // >();
+  // const [selectedIsPublished, setSelectedIsPublished] = useState<
+  //   boolean | undefined
+  // >();
+  // const [selectedIsActive, setSelectedIsActive] = useState<
+  //   boolean | undefined
+  // >();
+
+  const [filterState, dispatch] = useReducer(filterReducer, initialFilterState);
+  const [debouncedSearchTerm] = useDebounce(filterState.searchTerm, 500);
+
   const [pageNumber, setPageNumber] = useState(1);
   const [pageSize] = useState(10);
 
@@ -55,12 +63,12 @@ export const Quizzes = () => {
     pageNumber: pageNumber,
     pageSize: pageSize,
     searchTerm: debouncedSearchTerm || undefined,
-    categoryId: selectedCategoryId,
-    difficultyId: selectedDifficultyId,
-    languageId: selectedLanguageId,
-    visibility: selectedVisibility,
-    isPublished: selectedIsPublished,
-    isActive: selectedIsActive,
+    categoryId: filterState.selectedCategoryId,
+    difficultyId: filterState.selectedDifficultyId,
+    languageId: filterState.selectedLanguageId,
+    visibility: filterState.selectedVisibility,
+    isPublished: filterState.selectedIsPublished,
+    isActive: filterState.selectedIsActive,
   };
 
   const quizData = useAllQuizzesData({
@@ -72,12 +80,12 @@ export const Quizzes = () => {
     setPageNumber(1);
   }, [
     debouncedSearchTerm,
-    selectedCategoryId,
-    selectedDifficultyId,
-    selectedLanguageId,
-    selectedVisibility,
-    selectedIsPublished,
-    selectedIsActive,
+    filterState.selectedCategoryId,
+    filterState.selectedDifficultyId,
+    filterState.selectedLanguageId,
+    filterState.selectedVisibility,
+    filterState.selectedIsPublished,
+    filterState.selectedIsActive,
   ]);
 
   // const handlePageChange = (newPage: number) => {
@@ -148,24 +156,26 @@ export const Quizzes = () => {
       <Card className="p-6 bg-card border dark:border-foreground/30">
         {/* Filters section */}
         <QuizFilters
-          searchTerm={searchTerm}
-          onSearchTermChange={setSearchTerm}
+          filterState={filterState}
+          dispatch={dispatch}
           categories={categoriesQuery.data || []}
-          selectedCategoryId={selectedCategoryId}
-          onCategoryChange={setSelectedCategoryId}
           difficulties={difficultiesQuery.data || []}
-          selectedDifficultyId={selectedDifficultyId}
-          onDifficultyChange={setSelectedDifficultyId}
           languages={languagesQuery.data || []}
-          selectedLanguageId={selectedLanguageId}
-          onLanguageChange={setSelectedLanguageId}
-          selectedVisibility={selectedVisibility}
-          onVisibilityChange={setSelectedVisibility}
-          selectedIsPublished={selectedIsPublished}
-          onIsPublishedChange={setSelectedIsPublished}
-          selectedIsActive={selectedIsActive}
-          onIsActiveChange={setSelectedIsActive}
-          totalResults={quizzes.length}
+          // searchTerm={searchTerm}
+          // onSearchTermChange={setSearchTerm}
+          // selectedCategoryId={selectedCategoryId}
+          // onCategoryChange={setSelectedCategoryId}
+          // selectedDifficultyId={selectedDifficultyId}
+          // onDifficultyChange={setSelectedDifficultyId}
+          // selectedLanguageId={selectedLanguageId}
+          // onLanguageChange={setSelectedLanguageId}
+          // selectedVisibility={selectedVisibility}
+          // onVisibilityChange={setSelectedVisibility}
+          // selectedIsPublished={selectedIsPublished}
+          // onIsPublishedChange={setSelectedIsPublished}
+          // selectedIsActive={selectedIsActive}
+          // onIsActiveChange={setSelectedIsActive}
+          totalResults={quizData.data?.pagination?.totalItems || 0}
         />
 
         <Separator className="my-6" />

@@ -1,8 +1,11 @@
 /** Defines shared TypeScript interfaces and types for the quiz filtering system. */
 
-import { QuestionCategory, QuestionDifficulty, QuestionLanguage } from "@/types/question-types";
-
-
+import {
+  QuestionCategory,
+  QuestionDifficulty,
+  QuestionLanguage,
+} from "@/types/question-types";
+import { FilterAction, FilterState } from "./filter-config";
 
 export interface ActiveFilter {
   key: string;
@@ -36,22 +39,24 @@ export interface CurrentFilters {
 }
 
 export interface QuizFiltersProps {
-  searchTerm: string;
-  onSearchTermChange: (term: string) => void;
-  categories: QuestionCategory[];
-  selectedCategoryId?: number;
-  onCategoryChange: (categoryId?: number) => void;
+  // searchTerm: string;
+  // onSearchTermChange: (term: string) => void;
+  // selectedCategoryId?: number;
+  // onCategoryChange: (categoryId?: number) => void;
+  // selectedDifficultyId?: number;
+  // onDifficultyChange: (difficultyId?: number) => void;
+  // selectedLanguageId?: number;
+  // onLanguageChange: (languageId?: number) => void;
+  // selectedVisibility?: string;
+  // onVisibilityChange: (visibility?: string) => void;
+  // selectedIsPublished?: boolean;
+  // onIsPublishedChange: (isPublished?: boolean) => void;
+  // selectedIsActive?: boolean;
+  // onIsActiveChange: (isActive?: boolean) => void;
+  filterState: FilterState;
+  dispatch: React.Dispatch<FilterAction>;
   difficulties: QuestionDifficulty[];
-  selectedDifficultyId?: number;
-  onDifficultyChange: (difficultyId?: number) => void;
   languages: QuestionLanguage[];
-  selectedLanguageId?: number;
-  onLanguageChange: (languageId?: number) => void;
-  selectedVisibility?: string;
-  onVisibilityChange: (visibility?: string) => void;
-  selectedIsPublished?: boolean;
-  onIsPublishedChange: (isPublished?: boolean) => void;
-  selectedIsActive?: boolean;
-  onIsActiveChange: (isActive?: boolean) => void;
+  categories: QuestionCategory[];
   totalResults?: number;
 }
