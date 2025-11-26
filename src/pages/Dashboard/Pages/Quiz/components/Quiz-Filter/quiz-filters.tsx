@@ -17,20 +17,6 @@ import { FilterPanel } from "./filter-panel";
 import { Label } from "@/components/ui/form/label";
 
 export const QuizFilters = ({
-  // searchTerm,
-  // onSearchTermChange,
-  // selectedCategoryId,
-  // onCategoryChange,
-  // selectedDifficultyId,
-  // onDifficultyChange,
-  // selectedLanguageId,
-  // onLanguageChange,
-  // selectedVisibility,
-  // onVisibilityChange,
-  // selectedIsPublished,
-  // onIsPublishedChange,
-  // selectedIsActive,
-  // onIsActiveChange,
   filterState,
   dispatch,
   categories,

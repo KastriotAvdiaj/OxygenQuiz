@@ -28,7 +28,7 @@ const buttonVariants = cva(
         dashboard:
           "flex w-full text-foreground bg-background justify-start text-[17px] items-center rounded hover:bg-muted active:scale-95",
         quiz: "flex justify-center items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-yellow-400 to-red-500 text-white shadow-lg hover:ring-2 hover:ring-offset-2 hover:ring-yellow-500 active:scale-95 transition-all duration-300",
-        fancy: "fancy-button font-quiz",
+        fancy: "fancy-button  ",
       },
       size: {
         dashboard: "px-2.5 py-2",
@@ -107,8 +107,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         disabled={isPending || props.disabled}
         style={fancyStyle}
-        {...props}
-      >
+        {...props}>
         {isPending && (
           <div className="absolute flex items-center justify-center inset-0">
             <Spinner size="sm" variant="light" />
@@ -118,8 +117,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         <span
           className={cn("flex items-center justify-center gap-2", {
             invisible: isPending,
-          })}
-        >
+          })}>
           {icon && <span className="mr-2">{icon}</span>}
           {children}
         </span>

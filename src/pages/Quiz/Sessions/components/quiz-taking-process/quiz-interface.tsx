@@ -107,7 +107,7 @@ export function QuizInterface({
 
   return (
     <main
-      className="min-h-screen flex flex-col font-quiz"
+      className="min-h-screen flex flex-col  "
       style={{
         background: `
           radial-gradient(circle at 20% 80%, ${theme.primary}08 0%, transparent 50%),

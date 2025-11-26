@@ -28,19 +28,18 @@ export const FilterPresets = ({
 
   return (
     <div className="flex flex-wrap gap-2">
-      {presets.map((preset) => {
+      {presets.map((preset, index) => {
         const isActive = isPresetActive(preset);
         return (
           <LiftedButton
-            key={preset.id}
+            key={index}
             onClick={() => onApplyPreset(preset)}
             backgroundColorForBorder="bg-muted"
             className={`h-8 px-4 gap-2 text-sm ${
               isActive
                 ? "bg-primary text-white shadow-md px-2 hover:translate-y-[-0px]"
                 : "hover:bg-foreground/70 hover:text-background bg-background text-foreground"
-            }`}
-          >
+            }`}>
             {preset.isFavorite && <Star className="w-3 h-3" />}
             {preset.label}
             {isActive && <Check className="w-3 h-3" />}
