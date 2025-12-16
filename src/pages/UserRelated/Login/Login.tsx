@@ -8,9 +8,6 @@ import { GoBackButton } from "@/common/Go-Back-Button";
 import { useSearchParams } from "react-router-dom";
 import { O2Button } from "@/common/O2Button";
 import { useNotifications } from "@/common/Notifications";
-// import Squares from "@/common/Effect-Related/background-squares";
-// import { useTheme } from "@/components/ui";
-// import OxygenBackground from "../../../assets/oxygenquiz.jpeg";
 import OxygenBackground from "/assets/oxygenquiz2.jpg";
 
 /**
@@ -20,8 +17,6 @@ import OxygenBackground from "/assets/oxygenquiz2.jpg";
  */
 
 const Login: React.FC = () => {
-
-
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { mutate: login, isPending, isError } = useLogin();
@@ -46,11 +41,6 @@ const Login: React.FC = () => {
           },
           onError: (error: unknown) => {
             console.error("Login failed:", error);
-            // useNotifications.getState().addNotification({
-            //   type: "error",
-            //   title: "Error",
-            //   message: "Login failed. Please try again.",
-            // });
           },
         }
       );
@@ -67,11 +57,11 @@ const Login: React.FC = () => {
         style={{ backgroundImage: `url(${OxygenBackground})` }}
       />
 
-      {/* Gray Overlay */}
-      <div className="absolute inset-0 backdrop-blur-sm" /> 
+      {/* Dark Overlay for better contrast */}
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
 
       {/* Content Container */}
-      <div className="relative h-full w-full flex flex-col bg-transparent">
+      <div className="relative h-full w-full flex flex-col">
         <div className="relative flex justify-center pt-10">
           <div className="absolute top-4 flex justify-between gap-5 w-full px-5">
             <GoBackButton />
@@ -81,31 +71,36 @@ const Login: React.FC = () => {
         </div>
 
         <div className="flex-grow flex items-center justify-center z-20">
-          <div className=" backdrop-blur-md text-foreground p-8 rounded shadow-xl max-w-lg flex-grow flex flex-col items-center justify-center">
-            <div className="w-[70%]">
-              <h2 className="text-3xl text-white font-semibold mb-6 text-center">
+          {/* Form container with semi-transparent background */}
+          <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-md p-8 rounded-lg shadow-2xl max-w-lg w-full mx-4">
+            <div className="w-full">
+              <h2 className="text-3xl font-semibold mb-6 text-center text-gray-900 dark:text-white">
                 Welcome Back
               </h2>
               {isError && (
-                <p className="text-red-500 font-semibold py-2">
+                <p className="text-red-600 dark:text-red-400 font-semibold py-2 text-center">
                   Login failed. Please try again.
                 </p>
               )}
               <LoginForm onLogin={handleLogin} isPending={isPending} />
               <div className="text-center mt-4">
-                <p className="text-sm">
+                <p className="text-sm text-gray-700 dark:text-gray-300">
                   Don't have an account?{" "}
-                  <a href="/signup" className="text-foreground underline">
+                  <a
+                    href="/signup"
+                    className="text-blue-600 dark:text-blue-400 underline hover:text-blue-700 dark:hover:text-blue-300">
                     Sign up
                   </a>
                 </p>
               </div>
               <div className="relative mt-8">
                 <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-300"></div>
+                  <div className="w-full border-t border-gray-300 dark:border-gray-600"></div>
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="bg-muted px-2">OR</span>
+                  <span className="bg-white dark:bg-gray-900 px-2 text-gray-600 dark:text-gray-400">
+                    OR
+                  </span>
                 </div>
               </div>
               <SocialButtons />

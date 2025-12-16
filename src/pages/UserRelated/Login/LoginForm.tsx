@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 
 /**
  *
- * @LoginForm '
+ * @LoginForm
  *
  */
 
@@ -58,8 +58,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, isPending }) => {
         onClick={handleSubmit}
         variant={"addSave"}
         isPending={isPending}
-        className="w-full py-3 text-white"
-      >
+        className="w-full py-3">
         Log in
       </Button>
     </form>

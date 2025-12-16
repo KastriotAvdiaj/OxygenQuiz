@@ -23,6 +23,11 @@ interface LayoutProps {
   overlay?: boolean;
 }
 
+// FIX: Define static objects outside the component to ensure referential stability.
+// This prevents the PrismaticBurst from re-initializing its canvas on every render.
+const PRISMATIC_COLORS = ["#ff007a", "#1602faff", "#ffffff"];
+const PRISMATIC_OFFSET = { x: 0, y: 0 };
+
 export const HomeLayout = ({
   children,
   effect,
@@ -80,18 +85,27 @@ export const HomeLayout = ({
         );
       case "prismatic":
         return (
-          <div style={{ width: "100%", height: "100%", position: "absolute" }}>
+          <div
+            style={{
+              width: "100%",
+              height: "100%",
+              position: "absolute",
+              top: 0, // Ensure it anchors to top-left
+              left: 0, // Ensure it anchors to top-left
+              zIndex: 0, // Ensure it stays behind content if content is relative/z-indexed
+              pointerEvents: "none", // Critical: prevents effect from blocking scroll/clicks
+            }}>
             <PrismaticBurst
               animationType="rotate3d"
               intensity={2}
               speed={0.5}
               distort={1.0}
               paused={false}
-              offset={{ x: 0, y: 0 }}
+              offset={PRISMATIC_OFFSET} // Uses stable reference
               hoverDampness={0.25}
-              rayCount={24}
-              mixBlendMode="lighten"
-              colors={["#ff007a", "#1602faff", "#ffffff"]}
+              rayCount={2}
+              // mixBlendMode="lighten"
+              colors={PRISMATIC_COLORS} // Uses stable reference
             />
           </div>
         );
@@ -114,11 +128,17 @@ export const HomeLayout = ({
             : shouldAddPadding
             ? "calc(100vh - var(--header-height, 4rem))"
             : "100vh",
+          position: "relative", // Ensure this container is the anchor for absolute children
         }}>
         {renderEffect()}
 
-        {/* Auto-manage content padding for overlay behavior */}
-        {shouldWrapContent ? <div>{children}</div> : children}
+        {/* 
+          Ensure children have relative positioning so they sit above 
+          the absolute positioned background effect if z-indexing is tricky 
+        */}
+        <div style={{ position: "relative", zIndex: 1 }}>
+          {shouldWrapContent ? <div>{children}</div> : children}
+        </div>
       </div>
     </>
   );

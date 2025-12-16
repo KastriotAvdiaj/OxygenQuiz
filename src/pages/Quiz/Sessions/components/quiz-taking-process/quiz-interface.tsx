@@ -117,12 +117,11 @@ export function QuizInterface({
         ...theme.cssVars,
       }}>
       {/* Fixed Header with Progress and Score */}
-      <motion.header
+      {/* <motion.header
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         className="sticky top-[5%] z-50 backdrop-blur-lg border-b border-border/50">
         <div className="w-full max-w-4xl mx-auto px-4 py-4">
-          {/* Progress indicator with answer history */}
           {currentQuestionNumber && totalQuestions && (
             <QuizProgress
               current={currentQuestionNumber}
@@ -132,7 +131,7 @@ export function QuizInterface({
             />
           )}
         </div>
-      </motion.header>
+      </motion.header> */}
 
       {/* Main content area - Better spacing */}
       <div className="flex-1 flex items-center justify-center px-4 py-8 mb-40">

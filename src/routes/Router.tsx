@@ -88,7 +88,7 @@ const createAppRouter = (queryClient: QueryClient) =>
           <HomeLayout
             headerBehavior={HeaderBehavior.OVERLAY_TRANSPARENT}
             // squares={true}
-            // effect="prismatic"
+            effect="squares"
             children={<Home />}
           />
         </>
