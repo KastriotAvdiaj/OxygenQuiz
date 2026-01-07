@@ -313,9 +313,9 @@ const CreateQuizForm = () => {
         };
 
         return (
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 p-4 items-start min-h-0">
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 p-4 items-start min-h-0">
             {/* Quiz Details Sidebar */}
-            <Card className="md:text-xs lg:text-sm h-fit md:col-span-1 bg-background border-2 border-primary/30">
+            <Card className="md:text-xs lg:text-sm h-fit lg:col-span-1 bg-background border-2 border-primary/30">
               <Tabs value={activeTab} onValueChange={setActiveTab}>
                 <CardHeader className="w-full relative bg-primary/10 text-center border-b border-primary/30 px-2 py-4">
                   <TabsList className="w-full border-none bg-none shadow-none ">
@@ -557,7 +557,7 @@ const CreateQuizForm = () => {
             </Card>
 
             {/* Main Quiz Creator Area */}
-            <Card className="bg-background justify-center border-2 border-primary/30 rounded-xl shadow-lg flex flex-col items-center w-full md:col-span-3">
+            <Card className="bg-background justify-center border-2 border-primary/30 rounded-xl shadow-lg flex flex-col items-center w-full lg:col-span-3">
               <CardHeader className="w-full relative bg-primary/10 p-4 text-center border-b border-primary/30">
                 <section className="flex justify-center gap-4 rounded-lg">
                   <SelectQuestionComponent />
@@ -681,7 +681,7 @@ const CreateQuizForm = () => {
               </CardFooter>
             </Card>
 
-            <div className="md:col-span-1">
+            <div className="lg:col-span-1">
               <CreatedQuestionsPanel />
             </div>
           </div>
