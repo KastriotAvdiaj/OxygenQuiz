@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Hangfire;
+using Hangfire.PostgreSql;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -20,13 +21,14 @@ using QuizAPI.Services.CurrentUserService;
 using QuizAPI.Services.Interfaces;
 using System.Text;
 
+
 var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
 var environment = builder.Environment;
 
 // --- Database Context ---
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(configuration.GetConnectionString("MSSQLConnection")));
+    options.UseNpgsql(configuration.GetConnectionString("PostgresConnection")));
 
 // --- MongoDB ---
 builder.Services.AddSingleton<IMongoClient>(_ =>
@@ -55,7 +57,8 @@ builder.Services.AddScoped<DataSeeder>();
 // --- Hangfire ---
 builder.Services.AddHangfire(config =>
 {
-    config.UseSqlServerStorage(configuration.GetConnectionString("MSSQLConnection"));
+    config.UsePostgreSqlStorage(options =>
+        options.UseNpgsqlConnection(configuration.GetConnectionString("PostgresConnection")));
 });
 builder.Services.AddHangfireServer();
 

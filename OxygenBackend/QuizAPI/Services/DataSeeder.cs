@@ -83,11 +83,11 @@ namespace QuizAPI.Data
                         ImmutableName = username.ToLowerInvariant(),
                         Email = faker.Internet.Email(),
                         PasswordHash = BCrypt.Net.BCrypt.HashPassword("1"),
-                        DateRegistered = faker.Date.Past(1),
+                        DateRegistered = faker.Date.Past(1).ToUniversalTime(),
                         RoleId = roleUser.Id,
                         ConcurrencyStamp = Guid.NewGuid(),
                         IsDeleted = false,
-                        LastLogin = faker.Date.Recent(),
+                        LastLogin = faker.Date.Recent().ToUniversalTime(),
                         ProfileImageUrl = faker.Internet.Avatar()
                     });
                 }
