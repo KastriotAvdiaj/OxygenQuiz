@@ -8,6 +8,7 @@ import {
   useCallback,
 } from "react";
 import { gsap } from "gsap";
+import { cn } from "@/utils/cn";
 
 interface TextTypeProps {
   className?: string;
@@ -183,25 +184,60 @@ const TextType = ({
     hideCursorWhileTyping &&
     (currentCharIndex < textArray[currentTextIndex].length || isDeleting);
 
+  const currentFullText = textArray[currentTextIndex];
+
   return createElement(
     Component,
     {
       ref: containerRef,
-      className: `inline-block whitespace-pre-wrap tracking-tight ${className}`,
+      // 1. Grid creates the "stacking" context.
+      // 2. text-center ensures children align to the middle.
+      className: cn(
+        "grid text-center whitespace-pre-wrap tracking-tight",
+        className
+      ),
       ...props,
     },
-    <span className="inline" style={{ color: getCurrentTextColor() }}>
-      {displayedText}
+    /* 1. GHOST LAYER 
+       This occupies the "true" space. Because it's in a grid cell, 
+       it defines the width of that cell even while invisible. */
+    <span
+      className="invisible select-none pointer-events-none block"
+      style={{
+        gridArea: "1 / 1",
+      }}>
+      {currentFullText}
+      {/* Include the cursor character in the ghost to reserve space for it too */}
+      {showCursor && <span className="ml-1">{cursorCharacter}</span>}
     </span>,
-    showCursor && (
-      <span
-        ref={cursorRef}
-        className={`ml-1 inline-block opacity-100 ${
-          shouldHideCursor ? "hidden" : ""
-        } ${cursorClassName}`}>
-        {cursorCharacter}
-      </span>
-    )
+
+    /* 2. TYPING LAYER 
+       This sits in the exact same grid cell (1 / 1). 
+       Because the container is text-center, this will align to the ghost. */
+    <div
+      className="block"
+      style={{
+        gridArea: "1 / 1",
+        color: getCurrentTextColor(),
+      }}>
+      <span className="inline">{displayedText}</span>
+
+      {showCursor && (
+        <span
+          ref={cursorRef}
+          className={cn(
+            "inline-block w-[2px] h-[1.1em] bg-current ml-1",
+            shouldHideCursor ? "opacity-0" : "opacity-100",
+            cursorClassName
+          )}
+          style={{
+            transform: "translateY(15%)",
+            verticalAlign: "baseline",
+          }}>
+          {typeof cursorCharacter === "string" ? null : cursorCharacter}
+        </span>
+      )}
+    </div>
   );
 };
 

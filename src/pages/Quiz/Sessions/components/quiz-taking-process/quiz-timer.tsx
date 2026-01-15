@@ -23,11 +23,10 @@ const SIZE_CLASSES: Record<TimerSize, { container: string; text: string }> = {
   xl: { container: "h-40 w-40", text: "text-5xl" },
 };
 
-export function QuizTimer({ 
-  initialTime, 
-  onTimeUp, 
-  theme, 
-  size = "lg" 
+export function QuizTimer({
+  initialTime,
+  onTimeUp,
+  size = "lg",
 }: QuizTimerProps) {
   const [timeLeft, setTimeLeft] = useState(initialTime);
   const timeUpCalledRef = useRef(false);
@@ -80,7 +79,7 @@ export function QuizTimer({
   const getTimerColor = (): string => {
     if (isCriticalTime) return "#ef4444";
     if (isLowTime) return "#f59e0b";
-    return theme.primary;
+    return "#103bfcff";
   };
 
   const getTextColorClass = (): string => {
@@ -95,8 +94,7 @@ export function QuizTimer({
     <motion.div
       className={`quiz-timer relative ${sizeClasses.container}`}
       animate={isCriticalTime ? { scale: [1, 1.1, 1] } : {}}
-      transition={{ duration: 0.5, repeat: isCriticalTime ? Infinity : 0 }}
-    >
+      transition={{ duration: 0.5, repeat: isCriticalTime ? Infinity : 0 }}>
       <svg className="h-full w-full" viewBox="0 0 100 100">
         <circle
           className="stroke-current text-quiz-border-subtle"
@@ -115,14 +113,19 @@ export function QuizTimer({
           r="45"
           fill="transparent"
           strokeDasharray={CIRCLE_CIRCUMFERENCE}
-          strokeDashoffset={CIRCLE_CIRCUMFERENCE - (CIRCLE_CIRCUMFERENCE * percentage) / 100}
+          strokeDashoffset={
+            CIRCLE_CIRCUMFERENCE - (CIRCLE_CIRCUMFERENCE * percentage) / 100
+          }
           style={{ color: getTimerColor() }}
           transform="rotate(-90 50 50)"
           transition={{ duration: 1, ease: "linear" }}
         />
       </svg>
       <div className="absolute inset-0 flex items-center justify-center">
-        <span className={`${sizeClasses.text} font-bold transition-colors duration-300 ${getTextColorClass()}`}>
+        <span
+          className={`${
+            sizeClasses.text
+          } font-bold transition-colors duration-300 ${getTextColorClass()}`}>
           {timeLeft}
         </span>
       </div>

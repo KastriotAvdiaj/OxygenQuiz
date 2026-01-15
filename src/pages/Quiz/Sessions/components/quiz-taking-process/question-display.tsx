@@ -81,17 +81,17 @@ export function QuestionDisplay({
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.3 }}
         className="relative">
-        <div className="quiz-card-elevated p-8 text-center relative overflow-hidden rounded-xl border-2 border-dashed border-primary bg-primary/10">
+        <div className="quiz-card-elevated p-8 text-center relative overflow-hidden rounded-xl border-2 border-dashed border-primary bg-primary/20">
           <div
             className="absolute inset-0 opacity-3"
             style={{ background: theme.gradients.subtle }}
           />
 
           {/* Question text with typing effect */}
-          <h2 className="text-5xl md:text-4xl font-bold quiz-text-primary leading-relaxed relative z-10">
+          <h2 className="text-5xl md:text-4xl font-bold leading-relaxed relative z-10">
             <TextType
               text={[question.questionText]}
-              typingSpeed={25}
+              typingSpeed={15}
               pauseDuration={500}
               showCursor={true}
               cursorCharacter="|"

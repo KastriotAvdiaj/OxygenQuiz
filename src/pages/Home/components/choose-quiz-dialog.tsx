@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui";
-import { ChooseQuizDialog } from "./quiz-confirmation-dialog";
+// import { ChooseQuizDialog } from "./quiz-conf    irmation-dialog";
 import { Link, useNavigation } from "react-router-dom";
 import { useState } from "react";
 
@@ -17,34 +17,15 @@ export const ChooseQuiz = () => {
   };
 
   return (
-    <ChooseQuizDialog
-      title="Choose Quiz Mode"
-      triggerButton={
-        <Button
-          variant={"fancy"}
-          className={`text-5xl px-9 py-7 font-secondary`}
-          disabled={isLoading || isNavigating}>
-          Play
-        </Button>
-      }
-      randomQuizButton={
-        <Button
-          variant={"fancy"}
-          disabled={true}
-          onClick={handleQuizNavigation}>
-          Random Quiz
-        </Button>
-      }
-      chooseQuizButton={
-        <Link to="/choose-quiz" onClick={handleQuizNavigation}>
-          <Button
-            variant={"fancy"}
-            disabled={isLoading || isNavigating}
-            isPending={isLoading || isNavigating}>
-            Choose a Quiz
-          </Button>
-        </Link>
-      }
-    />
+    <Link to="/choose-quiz">
+      <Button
+        variant={"fancy"}
+        className={`text-5xl p-9 font-secondary`}
+        disabled={isLoading || isNavigating}
+        onClick={handleQuizNavigation}
+      >
+        Explore
+      </Button>
+    </Link>
   );
 };
