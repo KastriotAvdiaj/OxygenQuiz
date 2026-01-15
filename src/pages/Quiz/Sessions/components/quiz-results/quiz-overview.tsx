@@ -15,7 +15,6 @@ import { Progress } from "@/components/ui/progress";
 
 interface QuizOverviewProps {
   session: QuizSession;
-  theme: ReturnType<typeof import("@/hooks/use-quiz-theme").useQuizTheme>;
 }
 
 export function QuizOverview({ session }: QuizOverviewProps) {

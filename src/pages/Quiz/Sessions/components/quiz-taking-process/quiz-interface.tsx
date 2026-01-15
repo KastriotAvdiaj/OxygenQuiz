@@ -1,9 +1,5 @@
 import { QuestionDisplay } from "./question-display";
-import { QuizProgress } from "./quiz-progress";
-import {
-  useQuizTheme,
-  type CategoryColorPalette,
-} from "@/hooks/use-quiz-theme";
+// import { QuizProgress } from "./quiz-progress";
 import type {
   CurrentQuestion,
   InstantFeedbackAnswerResult,
@@ -27,8 +23,6 @@ interface QuizInterfaceProps {
     selectedOptionId: number | null,
     submittedAnswer?: string
   ) => void;
-  // Optional category theming
-  categoryColorPalette?: CategoryColorPalette;
   currentQuestionNumber?: number;
   totalQuestions?: number;
   // Instant feedback state
@@ -45,17 +39,11 @@ export function QuizInterface({
   isSubmitting,
   onNextQuestion,
   onSubmitAnswer,
-  categoryColorPalette,
-  currentQuestionNumber,
-  totalQuestions,
+  // currentQuestionNumber,
+  // totalQuestions,
   showInstantFeedback = false,
-  completedAnswers = [],
-}: QuizInterfaceProps) {
-  // Apply category-based theming
-  const theme = useQuizTheme({
-    colorPalette: categoryColorPalette,
-  });
-
+}: // completedAnswers = [],
+QuizInterfaceProps) {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [autoAdvanceCounter, setAutoAdvanceCounter] = React.useState(3);
 
@@ -110,11 +98,10 @@ export function QuizInterface({
       className="min-h-screen flex flex-col  "
       style={{
         background: `
-          radial-gradient(circle at 20% 80%, ${theme.primary}08 0%, transparent 50%),
-          radial-gradient(circle at 80% 20%, ${theme.secondary}08 0%, transparent 50%),
+          radial-gradient(circle at 20% 80%, primary 08 0%, transparent 50%),
+          radial-gradient(circle at 80% 20%, primary 08 0%, transparent 50%),
           hsl(var(--background))
         `,
-        ...theme.cssVars,
       }}>
       {/* Fixed Header with Progress and Score */}
       {/* <motion.header
@@ -142,7 +129,6 @@ export function QuizInterface({
                 question={currentQuestion}
                 onSubmit={onSubmitAnswer}
                 isSubmitting={isSubmitting}
-                theme={theme}
                 instantFeedback={showInstantFeedback}
                 answerResult={lastAnswerResult}
               />
@@ -158,7 +144,7 @@ export function QuizInterface({
                     onClick={handleNextQuestion}
                     size="lg"
                     variant={"fancy"}
-                    className="p-6 text-2xl font-semibold rounded-lg transition-shadow duration-200 group bg-primary text-white">
+                    className="p-6 text-2xl tracking-wide font-semibold font-secondary rounded-lg transition-shadow duration-200 group bg-primary text-white">
                     <div className="flex items-center gap-2">
                       {lastAnswerResult?.isQuizComplete ? (
                         <Trophy className="w-4 h-4" />
@@ -168,7 +154,7 @@ export function QuizInterface({
                       <span>
                         {lastAnswerResult?.isQuizComplete
                           ? "View Results"
-                          : "Next Question"}
+                          : "Next"}
                       </span>
                       <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform duration-200" />
                     </div>
@@ -176,19 +162,16 @@ export function QuizInterface({
 
                   {/* Auto-advance countdown */}
                   <div className="flex flex-col items-center gap-2">
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                    <p className="text-sm text-gray-600 dark:text-gray-400 ">
                       Advancing in{" "}
-                      <span
-                        className="font-bold"
-                        style={{ color: theme.primary }}>
+                      <span className="font-bold color-primary">
                         {autoAdvanceCounter}s
                       </span>
                     </p>
                     {/* Progress bar */}
                     <div className="w-32 h-1 bg-gray-300 dark:bg-gray-600 rounded-full overflow-hidden">
                       <motion.div
-                        className="h-full rounded-full"
-                        style={{ backgroundColor: theme.primary }}
+                        className="h-full rounded-full bg-primary"
                         initial={{ width: "100%" }}
                         animate={{
                           width: `${(autoAdvanceCounter / 3) * 100}%`,
@@ -206,9 +189,7 @@ export function QuizInterface({
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.4 }}
               className="text-center py-12">
-              <div
-                className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center"
-                style={{ backgroundColor: theme.primary }}>
+              <div className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center bg-primary">
                 <Trophy className="w-8 h-8 text-white" />
               </div>
               <h2 className="text-2xl font-bold quiz-text-primary mb-2">
@@ -225,11 +206,9 @@ export function QuizInterface({
               transition={{ duration: 0.4 }}
               className="quiz-card-elevated p-8 text-center space-y-6 rounded-xl"
               style={{
-                background: `linear-gradient(135deg, ${theme.primary}03, ${theme.secondary}03)`,
+                background: `linear-gradient(135deg, primary/3, primary/5)`,
               }}>
-              <div
-                className="w-12 h-12 rounded-full mx-auto flex items-center justify-center mb-4"
-                style={{ backgroundColor: theme.primary }}>
+              <div className="w-12 h-12 rounded-full mx-auto flex items-center justify-center mb-4 bg-primary">
                 <Loader2 className="h-6 w-6 animate-spin text-white" />
               </div>
 
@@ -244,8 +223,7 @@ export function QuizInterface({
 
               <div className="w-48 h-1.5 bg-quiz-border-subtle rounded-full mx-auto overflow-hidden">
                 <motion.div
-                  className="h-full rounded-full"
-                  style={{ backgroundColor: theme.primary }}
+                  className="h-full rounded-full bg-primary"
                   initial={{ width: "0%" }}
                   animate={{ width: "75%" }}
                   transition={{ duration: 1.5, ease: "easeInOut" }}

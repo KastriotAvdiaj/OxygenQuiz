@@ -8,7 +8,6 @@ type TimerSize = "sm" | "md" | "lg" | "xl";
 interface QuizTimerProps {
   initialTime: number;
   onTimeUp: () => void;
-  theme: ReturnType<typeof import("@/hooks/use-quiz-theme").useQuizTheme>;
   size?: TimerSize;
 }
 

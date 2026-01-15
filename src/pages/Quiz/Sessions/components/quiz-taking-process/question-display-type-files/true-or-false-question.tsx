@@ -11,7 +11,6 @@ interface TrueOrFalseQuestionProps {
   question: CurrentQuestion;
   onSubmit: (selectedOptionId: number | null, submittedAnswer?: string) => void;
   isSubmitting: boolean;
-  theme: ReturnType<typeof import("@/hooks/use-quiz-theme").useQuizTheme>;
   instantFeedback?: boolean;
   answerResult?: InstantFeedbackAnswerResult | null;
 }
@@ -20,7 +19,6 @@ export function TrueOrFalseQuestion({
   question,
   onSubmit,
   isSubmitting,
-  theme,
   instantFeedback = false,
   answerResult = null,
 }: TrueOrFalseQuestionProps) {
@@ -93,7 +91,7 @@ export function TrueOrFalseQuestion({
                     : getFeedbackState(trueOption.id) === "incorrect"
                     ? "#ef4444"
                     : selectedOptionId === trueOption.id
-                    ? theme.primary
+                    ? "#2540d9"
                     : undefined,
                 backgroundColor:
                   getFeedbackState(trueOption.id) === "correct"
@@ -101,7 +99,7 @@ export function TrueOrFalseQuestion({
                     : getFeedbackState(trueOption.id) === "incorrect"
                     ? "#ef444415"
                     : selectedOptionId === trueOption.id
-                    ? `${theme.primary}15`
+                    ? `"#2540d9"/15`
                     : undefined,
                 borderWidth: "3px",
               }}>
@@ -113,7 +111,7 @@ export function TrueOrFalseQuestion({
                       getFeedbackState(trueOption.id) === "correct"
                         ? "#10b981"
                         : selectedOptionId === trueOption.id
-                        ? theme.primary
+                        ? "#2540d9"
                         : "#22c55e",
                   }}>
                   <Check className="w-5 h-5 text-white" />
@@ -184,7 +182,7 @@ export function TrueOrFalseQuestion({
                     : getFeedbackState(falseOption.id) === "incorrect"
                     ? "#ef4444"
                     : selectedOptionId === falseOption.id
-                    ? theme.primary
+                    ? "#2540d9"
                     : undefined,
                 backgroundColor:
                   getFeedbackState(falseOption.id) === "correct"
@@ -192,7 +190,7 @@ export function TrueOrFalseQuestion({
                     : getFeedbackState(falseOption.id) === "incorrect"
                     ? "#ef444415"
                     : selectedOptionId === falseOption.id
-                    ? `${theme.primary}15`
+                    ? `"#2540d9"/15`
                     : undefined,
                 borderWidth: "3px",
               }}>
@@ -204,7 +202,7 @@ export function TrueOrFalseQuestion({
                       getFeedbackState(falseOption.id) === "correct"
                         ? "#10b981"
                         : selectedOptionId === falseOption.id
-                        ? theme.primary
+                        ? "#2540d9"
                         : "#ef4444",
                   }}>
                   <X className="w-5 h-5 text-white" />
@@ -244,15 +242,14 @@ export function TrueOrFalseQuestion({
             disabled={selectedOptionId === null || isSubmitting || isDisabled}
             size="lg"
             variant={"fancy"}
-            className="px-8 py-6 text-2xl font-semibold rounded-xl min-w-[200px]"
-            style={{ backgroundColor: theme.primary }}>
+            className="px-8 py-6 text-2xl font-semibold font-secondary rounded-xl min-w-[200px] bg-primary text-white">
             {isSubmitting ? (
               <div className="flex items-center gap-2">
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 Submitting...
               </div>
             ) : (
-              "Submit Answer"
+              "Submit"
             )}
           </Button>
         ) : null}

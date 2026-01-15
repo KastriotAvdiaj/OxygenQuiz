@@ -10,14 +10,12 @@ import { QuizOverview } from "./quiz-overview";
 import { QuestionReview } from "./question-review";
 interface QuizResultsProps {
   session: QuizSession;
-  theme: ReturnType<typeof import("@/hooks/use-quiz-theme").useQuizTheme>;
   onRetryQuiz?: () => void;
   onSelectNewQuiz?: () => void;
 }
 
 export function QuizResults({
   session,
-  theme,
   onRetryQuiz,
   onSelectNewQuiz,
 }: QuizResultsProps) {
@@ -69,7 +67,7 @@ export function QuizResults({
           </TabsList>
 
           <TabsContent value="overview">
-            <QuizOverview session={session} theme={theme} />
+            <QuizOverview session={session} />
           </TabsContent>
 
           <TabsContent value="review">
@@ -82,7 +80,7 @@ export function QuizResults({
           <Button
             onClick={handleRetryQuiz}
             variant={"fancy"}
-            className="flex items-center gap-2 text-white bg-primary text-2xl py-6 px-6 hover:bg-primary/90">
+            className="flex items-center gap-2 text-white font-secondary bg-primary text-2xl py-6 px-6 hover:bg-primary/90">
             <RotateCcw className="h-6 w-6" />
             Try Again
           </Button>
@@ -90,7 +88,7 @@ export function QuizResults({
           <Button
             onClick={handleSelectNewQuiz}
             variant={"fancy"}
-            className="flex items-center gap-2 text-2xl py-6 px-6">
+            className="flex items-center gap-2 text-2xl font-secondary py-6 px-6">
             <Home className="h-6 w-6" />
             New Quiz
           </Button>

@@ -15,7 +15,6 @@ interface QuestionDisplayProps {
   question: CurrentQuestion;
   onSubmit: (selectedOptionId: number | null, submittedAnswer?: string) => void;
   isSubmitting: boolean;
-  theme: ReturnType<typeof import("@/hooks/use-quiz-theme").useQuizTheme>;
   instantFeedback?: boolean;
   answerResult?: InstantFeedbackAnswerResult | null;
 }
@@ -24,7 +23,6 @@ export function QuestionDisplay({
   question,
   onSubmit,
   isSubmitting,
-  theme,
   instantFeedback = false,
   answerResult = null,
 }: QuestionDisplayProps) {
@@ -37,7 +35,6 @@ export function QuestionDisplay({
       question,
       onSubmit,
       isSubmitting,
-      theme,
       instantFeedback,
       answerResult,
     };
@@ -70,7 +67,6 @@ export function QuestionDisplay({
         <QuizTimer
           initialTime={question.timeRemainingInSeconds}
           onTimeUp={handleTimeUp}
-          theme={theme}
           size="md"
         />
       </motion.div>
@@ -82,10 +78,7 @@ export function QuestionDisplay({
         transition={{ duration: 0.3 }}
         className="relative">
         <div className="quiz-card-elevated p-8 text-center relative overflow-hidden rounded-xl border-2 border-dashed border-primary bg-primary/20">
-          <div
-            className="absolute inset-0 opacity-3"
-            style={{ background: theme.gradients.subtle }}
-          />
+          <div className="absolute inset-0 opacity-3" />
 
           {/* Question text with typing effect */}
           <h2 className="text-5xl md:text-4xl font-bold leading-relaxed relative z-10">
@@ -106,7 +99,7 @@ export function QuestionDisplay({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
             className="mt-4">
-            <FeedbackDisplay result={answerResult} theme={theme} />
+            <FeedbackDisplay result={answerResult} />
           </motion.div>
         )}
       </motion.div>

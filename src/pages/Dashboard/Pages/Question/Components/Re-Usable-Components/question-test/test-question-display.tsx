@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Label,Input } from "@/components/ui/form";
+import { Label, Input } from "@/components/ui/form";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
 import { Clock, AlertCircle } from "lucide-react";
@@ -73,7 +73,9 @@ export const TestQuestionDisplay = ({
     }
 
     try {
-      const result = await testQuestionMutation.mutateAsync({ data: submittedAnswer });
+      const result = await testQuestionMutation.mutateAsync({
+        data: submittedAnswer,
+      });
       onTestComplete({
         isCorrect: result.isCorrect,
         score: result.score,
@@ -85,7 +87,10 @@ export const TestQuestionDisplay = ({
     }
   };
 
-  const handleMultipleSelectionChange = (optionId: number, checked: boolean) => {
+  const handleMultipleSelectionChange = (
+    optionId: number,
+    checked: boolean
+  ) => {
     if (checked) {
       setSelectedOptionIds([...selectedOptionIds, optionId]);
     } else {
@@ -95,7 +100,7 @@ export const TestQuestionDisplay = ({
 
   const canSubmit = () => {
     if (isTimedOut) return false;
-    
+
     if (questionType === QuestionType.MultipleChoice) {
       return question.allowMultipleSelections
         ? selectedOptionIds.length > 0
@@ -113,8 +118,15 @@ export const TestQuestionDisplay = ({
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Clock className={`h-5 w-5 ${isWarning ? "text-red-500" : "text-muted-foreground"}`} />
-            <span className={`text-lg font-semibold ${isWarning ? "text-red-500" : ""}`}>
+            <Clock
+              className={`h-5 w-5 ${
+                isWarning ? "text-red-500" : "text-muted-foreground"
+              }`}
+            />
+            <span
+              className={`text-lg font-semibold ${
+                isWarning ? "text-red-500" : ""
+              }`}>
               {timeRemaining}s remaining
             </span>
           </div>
@@ -158,19 +170,23 @@ export const TestQuestionDisplay = ({
                   Select all that apply:
                 </p>
                 {question.answerOptions.map((option: any) => (
-                  <div key={option.id} className="flex items-center space-x-2 p-3 border rounded-md hover:bg-accent/50 dark:border-foreground/30">
+                  <div
+                    key={option.id}
+                    className="flex items-center space-x-2 p-3 border rounded-md hover:bg-accent/50 dark:border-foreground/30">
                     <Checkbox
                       id={`option-${option.id}`}
                       checked={selectedOptionIds.includes(option.id)}
                       onCheckedChange={(checked) =>
-                        handleMultipleSelectionChange(option.id, checked as boolean)
+                        handleMultipleSelectionChange(
+                          option.id,
+                          checked as boolean
+                        )
                       }
                       disabled={isTimedOut}
                     />
                     <Label
                       htmlFor={`option-${option.id}`}
-                      className="flex-1 cursor-pointer"
-                    >
+                      className="flex-1 cursor-pointer">
                       {option.text}
                     </Label>
                   </div>
@@ -180,12 +196,18 @@ export const TestQuestionDisplay = ({
               <RadioGroup
                 value={selectedOptionId?.toString()}
                 onValueChange={(value) => setSelectedOptionId(parseInt(value))}
-                disabled={isTimedOut}
-              >
+                disabled={isTimedOut}>
                 {question.answerOptions.map((option: any) => (
-                  <div key={option.id} className="flex items-center space-x-2 p-3 border rounded-md hover:bg-accent/50 dark:border-foreground/30">
-                    <RadioGroupItem value={option.id.toString()} id={`option-${option.id}`} />
-                    <Label htmlFor={`option-${option.id}`} className="flex-1 cursor-pointer">
+                  <div
+                    key={option.id}
+                    className="flex items-center space-x-2 p-3 border rounded-md hover:bg-accent/50 dark:border-foreground/30">
+                    <RadioGroupItem
+                      value={option.id.toString()}
+                      id={`option-${option.id}`}
+                    />
+                    <Label
+                      htmlFor={`option-${option.id}`}
+                      className="flex-1 cursor-pointer">
                       {option.text}
                     </Label>
                   </div>
@@ -199,15 +221,18 @@ export const TestQuestionDisplay = ({
           <RadioGroup
             value={textAnswer}
             onValueChange={setTextAnswer}
-            disabled={isTimedOut}
-          >
+            disabled={isTimedOut}>
             <div className="flex items-center space-x-2 p-3 border rounded-md hover:bg-accent/50 dark:border-foreground/30">
               <RadioGroupItem value="True" id="true" />
-              <Label htmlFor="true" className="flex-1 cursor-pointer">True</Label>
+              <Label htmlFor="true" className="flex-1 cursor-pointer">
+                True
+              </Label>
             </div>
             <div className="flex items-center space-x-2 p-3 border rounded-md hover:bg-accent/50 dark:border-foreground/30">
               <RadioGroupItem value="False" id="false" />
-              <Label htmlFor="false" className="flex-1 cursor-pointer">False</Label>
+              <Label htmlFor="false" className="flex-1 cursor-pointer">
+                False
+              </Label>
             </div>
           </RadioGroup>
         )}
@@ -233,15 +258,14 @@ export const TestQuestionDisplay = ({
           onClick={() => handleSubmit(false)}
           disabled={!canSubmit() || testQuestionMutation.isPending}
           className="gap-2"
-          size="lg"
-        >
+          size="lg">
           {testQuestionMutation.isPending ? (
             <>
               <Spinner size="sm" />
               Submitting...
             </>
           ) : (
-            "Submit Answer"
+            "Submit"
           )}
         </Button>
       </div>

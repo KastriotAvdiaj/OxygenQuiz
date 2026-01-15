@@ -3,26 +3,15 @@ import { Loader2, AlertCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSubmitAnswer } from "../../api/submit-answer";
 import { QuizInterface } from "./quiz-interface";
-import {
-  useQuizTheme,
-  type CategoryColorPalette,
-} from "@/hooks/use-quiz-theme";
 import { useQuizSession } from "@/hooks/use-quiz-session";
 
 interface QuizPageProps {
   quizId: number;
   userId: string;
-  categoryColorPalette?: CategoryColorPalette;
 }
 
-export function QuizPage({
-  quizId,
-  userId,
-  categoryColorPalette,
-}: QuizPageProps) {
+export function QuizPage({ quizId, userId }: QuizPageProps) {
   const navigate = useNavigate();
-
-  const theme = useQuizTheme({ colorPalette: categoryColorPalette });
 
   const {
     quizSession,
@@ -88,13 +77,12 @@ export function QuizPage({
   };
 
   if (isInitialLoading) {
-    return <LoadingScreen theme={theme} message="Preparing your quiz..." />;
+    return <LoadingScreen message="Preparing your quiz..." />;
   }
 
   if (error) {
     return (
       <ErrorScreen
-        theme={theme}
         error={error}
         onRetry={handleRetry}
         onGoBack={handleGoBack}
@@ -107,7 +95,6 @@ export function QuizPage({
   if (!quizSession) {
     return (
       <ErrorScreen
-        theme={theme}
         error="Unable to start quiz session. The session could not be found."
         onRetry={handleRetry}
         onGoBack={handleGoBack}
@@ -126,7 +113,6 @@ export function QuizPage({
       isSubmitting={isSubmitting}
       onNextQuestion={handleNextQuestion}
       onSubmitAnswer={handleSubmitAnswer}
-      categoryColorPalette={categoryColorPalette}
       currentQuestionNumber={currentQuestionNumber}
       totalQuestions={quizSession.totalQuestions}
       showInstantFeedback={showInstantFeedback}
@@ -139,18 +125,16 @@ export function QuizPage({
 
 // --- UI Components ---
 
-const LoadingScreen = ({ theme, message }: { theme: any; message: string }) => (
+const LoadingScreen = ({ message }: { message: string }) => (
   <div
     className="flex h-screen w-full items-center justify-center"
     style={{
       background: `
-        radial-gradient(circle at 20% 80%, ${theme.primary}15 0%, transparent 50%),
-        radial-gradient(circle at 80% 20%, ${theme.secondary}15 0%, transparent 50%),
+        radial-gradient(circle at 20% 80%,primary/15 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, primary/30 0%, transparent 50%),
         hsl(var(--background))
       `,
-      ...theme.cssVars,
-    }}
-  >
+    }}>
     <div className="quiz-card-elevated p-8 text-center space-y-4">
       <Loader2 className="h-12 w-12 animate-spin mx-auto text-quiz-primary" />
       <p className="quiz-text-primary text-xl font-medium">{message}</p>
@@ -165,7 +149,6 @@ const LoadingScreen = ({ theme, message }: { theme: any; message: string }) => (
 );
 
 const ErrorScreen = ({
-  theme,
   error,
   onRetry,
   onGoBack,
@@ -173,7 +156,6 @@ const ErrorScreen = ({
   canRetry, // Receive the prop to determine if the "Try Again" button should render
   icon = "error",
 }: {
-  theme: any;
   error: string;
   onRetry: () => void;
   onGoBack: () => void;
@@ -185,13 +167,11 @@ const ErrorScreen = ({
     className="flex h-screen w-full items-center justify-center"
     style={{
       background: `
-        radial-gradient(circle at 20% 80%, ${theme.primary}15 0%, transparent 50%),
-        radial-gradient(circle at 80% 20%, ${theme.secondary}15 0%, transparent 50%),
+        radial-gradient(circle at 20% 80%, primary/15 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, primary/30 0%, transparent 50%),
         hsl(var(--background))
       `,
-      ...theme.cssVars,
-    }}
-  >
+    }}>
     <div className="text-center space-y-6 max-w-md p-4">
       <AlertCircle
         className={`h-16 w-16 mx-auto ${
@@ -201,8 +181,7 @@ const ErrorScreen = ({
       <h2
         className={`text-2xl font-bold ${
           icon === "error" ? "text-red-400" : "text-yellow-400"
-        }`}
-      >
+        }`}>
         Quiz Session Error
       </h2>
       <p className="text-gray-300">{error}</p>
@@ -216,8 +195,7 @@ const ErrorScreen = ({
           <Button
             onClick={onRetry}
             disabled={isRetrying}
-            className="flex items-center gap-2"
-          >
+            className="flex items-center gap-2">
             {isRetrying ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (

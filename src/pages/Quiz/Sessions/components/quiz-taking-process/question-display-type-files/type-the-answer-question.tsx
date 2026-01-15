@@ -8,7 +8,6 @@ import type { InstantFeedbackAnswerResult } from "../../../quiz-session-types";
 export interface TypeTheAnswerQuestionProps {
   onSubmit: (selectedOptionId: number | null, submittedAnswer?: string) => void;
   isSubmitting: boolean;
-  theme: ReturnType<typeof import("@/hooks/use-quiz-theme").useQuizTheme>;
   instantFeedback?: boolean;
   answerResult?: InstantFeedbackAnswerResult | null;
 }
@@ -16,7 +15,6 @@ export interface TypeTheAnswerQuestionProps {
 export function TypeTheAnswerQuestion({
   onSubmit,
   isSubmitting,
-  theme,
   instantFeedback = false,
   answerResult = null,
 }: TypeTheAnswerQuestionProps) {
@@ -68,7 +66,7 @@ export function TypeTheAnswerQuestion({
                     ? "#10b981"
                     : "#ef4444"
                   : answer.trim()
-                  ? theme.primary
+                  ? "#2540d9"
                   : undefined,
               backgroundColor:
                 instantFeedback && answerResult
@@ -139,15 +137,14 @@ export function TypeTheAnswerQuestion({
             disabled={!answer.trim() || isSubmitting || isDisabled}
             size="lg"
             variant={"fancy"}
-            className="px-8 py-6 text-2xl font-semibold rounded-xl min-w-[200px]"
-            style={{ backgroundColor: theme.primary }}>
+            className="px-8 py-6 text-2xl font-semibold rounded-xl min-w-[200px] font-quiz bg-primary text-white">
             {isSubmitting ? (
               <div className="flex items-center gap-2">
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 Submitting...
               </div>
             ) : (
-              "Submit Answer"
+              "Submit"
             )}
           </Button>
         ) : null}

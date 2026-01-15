@@ -4,13 +4,11 @@ import type { InstantFeedbackAnswerResult } from "../../quiz-session-types";
 
 interface FeedbackDisplayProps {
   result: InstantFeedbackAnswerResult;
-  theme: ReturnType<typeof import("@/hooks/use-quiz-theme").useQuizTheme>;
   className?: string;
 }
 
 export function FeedbackDisplay({
   result,
-  theme,
   className = "",
 }: FeedbackDisplayProps) {
   const isCorrect = result.status === "Correct";
@@ -30,8 +28,7 @@ export function FeedbackDisplay({
           : "#ef444420",
         borderColor: isCorrect ? "#10b981" : isTimedOut ? "#f59e0b" : "#ef4444",
         borderWidth: "2px",
-      }}
-    >
+      }}>
       {/* Status Icon */}
       <motion.div
         initial={{ scale: 0 }}
@@ -43,8 +40,7 @@ export function FeedbackDisplay({
             : isTimedOut
             ? "bg-yellow-500"
             : "bg-red-500"
-        }`}
-      >
+        }`}>
         {isCorrect ? (
           <CheckCircle className="w-6 h-6 text-white" />
         ) : isTimedOut ? (
@@ -66,8 +62,7 @@ export function FeedbackDisplay({
               : isTimedOut
               ? "text-yellow-700 dark:text-yellow-300"
               : "text-red-700 dark:text-red-300"
-          }`}
-        >
+          }`}>
           {isCorrect ? "Correct!" : isTimedOut ? "Time's Up!" : "Incorrect"}
         </motion.span>
 
@@ -76,9 +71,8 @@ export function FeedbackDisplay({
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="flex items-center gap-1"
-        >
-          <span className="text-2xl font-bold" style={{ color: theme.primary }}>
+          className="flex items-center gap-1">
+          <span className="text-2xl font-bold text-primary">
             +{result.scoreAwarded}
           </span>
           <span className="text-sm text-gray-500 font-medium">points</span>
@@ -90,8 +84,7 @@ export function FeedbackDisplay({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.4 }}
-        className="text-xs text-gray-500 ml-auto"
-      >
+        className="text-xs text-gray-500 ml-auto">
         {result.timeSpentInSeconds.toFixed(1)}s
       </motion.div>
     </motion.div>

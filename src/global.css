@@ -181,7 +181,7 @@ body {
   justify-content: center;
   margin: 10px;
   font-weight: bold;
-  text-transform: uppercase;
+  /* text-transform: uppercase; */
   color: var(--fancy-text, #fff);
   background-image: linear-gradient(to bottom right, var(--fancy-primary, #00c6ff), var(--fancy-secondary, #0072ff));
   border: none;
