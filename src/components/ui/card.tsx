@@ -1,28 +1,34 @@
 import * as React from "react";
-
 import { cn } from "@/utils/cn";
 import { useTheme } from "./theme-provider";
 
 const Card = React.forwardRef<
   HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement> & { variant?: "default" | "lifted" }
->(({ className, variant = "default", ...props }, ref) => {
+  React.HTMLAttributes<HTMLDivElement> & {
+    variant?: "default" | "lifted";
+    hover?: boolean;
+  }
+>(({ className, variant = "default", hover = true, ...props }, ref) => {
   const { theme } = useTheme();
   const hasCustomBorder = className?.includes("border") || false;
 
   if (variant === "lifted") {
     return (
       <div className="relative group">
+        {/* Background "Shadow" Element */}
         <div
           className={cn(
             "absolute top-1 left-1 w-full h-full bg-foreground border border-foreground/20 rounded-xl",
-            "opacity-100" 
+            "opacity-100"
           )}
         />
+        {/* Main Card Content */}
         <div
           ref={ref}
           className={cn(
-            "relative bg-card border-4 border-foreground rounded-xl transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:-translate-x-0.5",
+            "relative bg-card border-4 border-foreground rounded-xl transition-transform duration-200",
+            hover &&
+              "group-hover:-translate-y-0.5 group-hover:-translate-x-0.5",
             className
           )}
           {...props}

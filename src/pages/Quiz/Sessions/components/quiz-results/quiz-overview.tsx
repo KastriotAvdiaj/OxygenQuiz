@@ -1,17 +1,10 @@
 // src/components/quiz/QuizOverview.tsx
 
-import {
-  Trophy,
-  Target,
-  Clock,
-  CheckCircle,
-  XCircle,
-  Timer,
-} from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Trophy, Target, Clock} from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import { QuizSession } from "../../quiz-session-types";
 import { calculateQuizStats, formatDuration } from "./quiz-session-utils";
-import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
 
 interface QuizOverviewProps {
   session: QuizSession;
@@ -26,134 +19,80 @@ export function QuizOverview({ session }: QuizOverviewProps) {
       : 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-2xl mx-auto">
+      <Card
+        className="relative overflow-hidden bg-primary color-white"
+        variant="lifted"
+        >
+        <div className="absolute top-4 right-4">
+          <Badge
+            variant="outline"
+            className="bg-background/50 backdrop-blur-sm">
+            {session.category}
+          </Badge>
+        </div>
 
-      {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="border border-primary dark:bg-primary/10">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground flex items-center gap-2">
-              <Trophy className="h-4 w-4" />
-              Total Score
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-primary">
+        <CardContent className="pt-10 pb-8 text-center">
+          <div className="inline-flex items-center justify-center p-3 mb-4 rounded-full bg-primary/20">
+            <Trophy className="h-12 w-12" />
+          </div>
+
+          <h2 className="text-2xl font-medium uppercase tracking-wider mb-1">
+            Final Score
+          </h2>
+
+          <div className="flex items-baseline justify-center gap-1">
+            <span className="text-9xl font-black tracking-tighter">
               {session.totalScore}
-            </div>
-            <p className="text-sm text-muted-foreground">
-              out of {stats.maxPossibleScore} points
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="border border-primary dark:bg-primary/10">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground flex items-center gap-2">
-              <Target className="h-4 w-4" />
-              Accuracy
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-primary">
-              {stats.scorePercentage}%
-            </div>
-            <p className="text-sm text-muted-foreground">
-              {stats.correctAnswers} of {stats.totalQuestions} correct
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="border border-primary dark:bg-primary/10">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground flex items-center gap-2">
-              <Clock className="h-4 w-4" />
-              Time Taken
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-primary">
-              {formatDuration(timeTaken)}
-            </div>
-            <p className="text-sm text-muted-foreground">Total duration</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Progress and Breakdown */}
-      <Card className="border border-primary dark:bg-primary/10">
-        <CardHeader>
-          <CardTitle>Performance Breakdown</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Progress Bar */}
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span>Overall Progress</span>
-              <span className="font-medium">{stats.scorePercentage}%</span>
-            </div>
-            <Progress
-              value={stats.scorePercentage}
-              className="h-2 bg-muted dark:bg-foreground/10"
-            />
+            </span>
+            <span className="text-3xl font-medium">
+              / {stats.maxPossibleScore}
+            </span>
           </div>
 
-          {/* Answer Breakdown */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {/* Correct Answers Card */}
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Correct</CardTitle>
-                <CheckCircle className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-primary">
-                  {stats.correctAnswers}
-                </div>
-                {/* <p className="text-xs text-muted-foreground">Well done!</p> */}
-              </CardContent>
-            </Card>
-
-            {/* Incorrect Answers Card */}
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Incorrect</CardTitle>
-                <XCircle className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-red-600">
-                  {stats.incorrectAnswers}
-                </div>
-                {/* <p className="text-xs text-muted-foreground">
-                  Room for improvement
-                </p> */}
-              </CardContent>
-            </Card>
-
-            {/* Timed Out Answers Card */}
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Timed Out</CardTitle>
-                <Timer className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-gray-400">
-                  {stats.timeoutAnswers}
-                </div>
-                {/* <p className="text-xs text-muted-foreground">
-                  Let's work on speed
-                </p> */}
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Category Performance - also in a Card for consistency */}
-          <div className="pt-4 border-t">
-            <div className="text-sm text-muted-foreground mb-1">Category</div>
-            <div className="font-medium text-primary">{session.category}</div>
+          <div className="mt-6 flex items-center justify-center gap-4 text-lg font-medium">
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-green-500/40 text-green-400 dark:text-green-400 border border-green-400">
+              <span className="h-2 w-2 rounded-full bg-green-400" />
+              {stats.correctAnswers} Correct
+            </div>
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-500/40 text-red-400 dark:text-red-400 border border-red-400">
+              <span className="h-2 w-2 rounded-full bg-red-400" />
+              {stats.incorrectAnswers} Incorrect
+            </div>
           </div>
         </CardContent>
       </Card>
+
+      {/* Secondary Metrics Row */}
+      <div className="grid grid-cols-2 gap-4">
+        <Card className="border-none bg-muted/50">
+          <CardContent className="p-4 flex items-center gap-4">
+            <div className="p-2 rounded-lg bg-background text-primary shadow-sm">
+              <Target className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-md text-muted-foreground font-medium uppercase">
+                Accuracy
+              </p>
+              <p className="text-2xl font-bold">{stats.scorePercentage}%</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-none bg-muted/50">
+          <CardContent className="p-4 flex items-center gap-4">
+            <div className="p-2 rounded-lg bg-background text-primary shadow-sm">
+              <Clock className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-md text-muted-foreground font-medium uppercase">
+                Time Taken
+              </p>
+              <p className="text-2xl font-bold">{formatDuration(timeTaken)}</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

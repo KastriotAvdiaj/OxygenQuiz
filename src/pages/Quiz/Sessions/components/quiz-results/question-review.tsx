@@ -278,7 +278,8 @@ export function QuestionReview({ session }: QuestionReviewProps) {
       {/* Cards View */}
       {viewMode === "cards" && (
         <div className="space-y-4">
-          <Card className="border border-primary dark:bg-primary/10">
+          <Card className=""
+          >
             <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg">

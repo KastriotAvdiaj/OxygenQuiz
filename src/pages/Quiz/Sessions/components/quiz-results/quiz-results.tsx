@@ -3,11 +3,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
 import { RotateCcw, Home, BarChart3, FileText } from "lucide-react";
 import { QuizSession } from "../../quiz-session-types";
 import { QuizOverview } from "./quiz-overview";
 import { QuestionReview } from "./question-review";
+import { LiftedButton } from "@/common/LiftedButton";
 interface QuizResultsProps {
   session: QuizSession;
   onRetryQuiz?: () => void;
@@ -77,21 +77,20 @@ export function QuizResults({
 
         {/* Persistent Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-3 justify-center mt-8 pt-8">
-          <Button
+          <LiftedButton
             onClick={handleRetryQuiz}
-            variant={"fancy"}
-            className="flex items-center gap-2 text-white font-secondary bg-primary text-2xl py-6 px-6 hover:bg-primary/90">
+            className="flex items-center font-secondary text-2xl">
             <RotateCcw className="h-6 w-6" />
             Try Again
-          </Button>
+          </LiftedButton>
 
-          <Button
+          <LiftedButton
             onClick={handleSelectNewQuiz}
-            variant={"fancy"}
-            className="flex items-center gap-2 text-2xl font-secondary py-6 px-6">
+            // variant={"fancy"}
+            className="flex items-center text-2xl font-secondary">
             <Home className="h-6 w-6" />
             New Quiz
-          </Button>
+          </LiftedButton>
         </div>
       </div>
     </div>
