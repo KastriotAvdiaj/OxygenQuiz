@@ -1,5 +1,5 @@
 import { configureAuth } from "react-query-auth";
-import { redirect } from "react-router-dom";
+import { redirect, LoaderFunctionArgs } from "react-router-dom";
 import { z } from "zod";
 import { api, apiService } from "./Api-client";
 import Cookies from "js-cookie";
@@ -114,7 +114,7 @@ export const createAuthLoader =
     queryClient: QueryClient,
     options?: { requiredRoles?: string[]; redirectPath?: string }
   ) =>
-  async (): Promise<{ user: User } | Response> => {
+  async ({ request }: LoaderFunctionArgs): Promise<{ user: User } | Response> => {
     const queryKey = ["authenticated-user"];
     const { requiredRoles, redirectPath = "/access-denied" } = options || {};
 
@@ -149,8 +149,9 @@ export const createAuthLoader =
 
       return { user };
     } catch (error) {
-      const currentPath = window.location.pathname;
-      return redirect(`/login?redirectTo=${encodeURIComponent(currentPath)}`);
+      const url = new URL(request.url);
+      const returnUrl = url.pathname + url.search;
+      return redirect(`/login?redirectTo=${encodeURIComponent(returnUrl)}`);
     }
   };
 
