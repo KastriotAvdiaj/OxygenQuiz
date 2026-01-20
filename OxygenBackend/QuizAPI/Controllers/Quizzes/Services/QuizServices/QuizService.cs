@@ -64,6 +64,45 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
             }
         }
 
+        public async Task<PagedList<QuizSummaryDTO>> GetPublicQuizzesAsync(QuizFilterParams filterParams)
+        {
+            try
+            {
+                var quizQuery = _context.Quizzes
+                    .Include(q => q.User)
+                    .Include(q => q.Category)
+                    .Include(q => q.Language)
+                    .Include(q => q.Difficulty)
+                    .Include(q => q.QuizQuestions)
+                    .Where(q => q.IsActive && q.IsPublished)
+                    .AsQueryable();
+
+                // Apply filters (reuse your existing filter method)
+                quizQuery = ApplyQuizFilters(quizQuery, filterParams);
+
+                // Apply pagination and convert to DTO
+                var pagedQuizzes = await PagedList<Quiz>.CreateAsync(
+                    quizQuery,
+                    filterParams.PageNumber,
+                    filterParams.PageSize
+                );
+
+                var quizDtos = _mapper.Map<List<QuizSummaryDTO>>(pagedQuizzes.Items);
+
+                return new PagedList<QuizSummaryDTO>(
+                    quizDtos,
+                    pagedQuizzes.TotalCount,
+                    pagedQuizzes.PageNumber,
+                    pagedQuizzes.PageSize
+                );
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving public quizzes");
+                throw;
+            }
+        }
+
         public async Task<PagedList<QuizSummaryDTO>> GetQuizzesByUserAsync(Guid userId, QuizFilterParams filterParams)
         {
             try
@@ -380,28 +419,6 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error toggling active status for quiz {QuizId}", quizId);
-                throw;
-            }
-        }
-
-        public async Task<IEnumerable<QuizSummaryDTO>> GetPublicQuizzesAsync()
-        {
-            try
-            {
-                var quizzes = await _context.Quizzes
-                    .Include(q => q.User)
-                    .Include(q => q.Category)
-                    .Include(q => q.Language)
-                    .Include(q => q.Difficulty)
-                    .Include(q => q.QuizQuestions)
-                    .Where(q => q.IsActive && q.IsPublished)
-                    .ToListAsync();
-
-                return _mapper.Map<List<QuizSummaryDTO>>(quizzes);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error retrieving public quizzes");
                 throw;
             }
         }

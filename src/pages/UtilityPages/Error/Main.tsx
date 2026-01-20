@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FallbackProps } from "react-error-boundary";
 import { AlertCircle, Home, RefreshCcw } from "lucide-react";
 import { LiftedButton } from "@/common/LiftedButton";
+import { AccessDeniedPage } from "../AccessDenied";
 
 // const isDevelopment = import.meta.env.DEV;
 const isDevelopment = false;

@@ -72,7 +72,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
         /// Get all publicly available quizzes
         /// </summary>
         /// <returns>List of publicly available quiz summaries</returns>
-        Task<IEnumerable<QuizSummaryDTO>> GetPublicQuizzesAsync();
+        Task<PagedList<QuizSummaryDTO>> GetPublicQuizzesAsync(QuizFilterParams filterParams);
 
         /// <summary>
         /// Delete a quiz and all its associated quiz-question relationships

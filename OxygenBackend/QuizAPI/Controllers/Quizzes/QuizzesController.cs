@@ -28,7 +28,7 @@ namespace QuizAPI.Controllers.Quizzes
         /// Get all quizzes (admin only)
         /// </summary>
         [HttpGet]
-        /*[Authorize(Roles = "Admin, SuperAdmin")]*/
+        [Authorize(Roles = "Admin, SuperAdmin")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
@@ -59,12 +59,21 @@ namespace QuizAPI.Controllers.Quizzes
         [HttpGet("public")]
         [AllowAnonymous]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetPublicQuizzes()
+        public async Task<IActionResult> GetPublicQuizzes([FromQuery] QuizFilterParams filterParams)
         {
             try
             {
-                var quizzes = await _quizService.GetPublicQuizzesAsync();
-                return Ok(quizzes);
+                // Add pagination support for public endpoint too
+                var pagedQuizzes = await _quizService.GetPublicQuizzesAsync(filterParams);
+                Response.AddPaginationHeader(
+                    pagedQuizzes.PageNumber,
+                    pagedQuizzes.PageSize,
+                    pagedQuizzes.TotalCount,
+                    pagedQuizzes.TotalPages,
+                    pagedQuizzes.HasNextPage,
+                    pagedQuizzes.HasPreviousPage
+                );
+                return Ok(pagedQuizzes.Items);
             }
             catch (Exception ex)
             {

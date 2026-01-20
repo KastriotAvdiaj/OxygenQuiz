@@ -73,12 +73,12 @@ namespace QuizAPI.Data
 
             //GLOBAL QUERY FILTERS
             // Users: only see their own *or* public items by default
+
             modelBuilder.Entity<Quiz>().HasQueryFilter(q =>
-                _current.IsAdmin || (
-                    (_current.UserId != null) &&
-                    (q.UserId == _current.UserId || q.Visibility != QuizVisibility.Private)
-                )
-            );
+                _current.IsAdmin ||
+                q.Visibility != QuizVisibility.Private || // Public quizzes visible to everyone
+                (_current.UserId != null && q.UserId == _current.UserId) // Own private quizzes only if authenticated
+                );
 
             modelBuilder.Entity<QuestionBase>().HasQueryFilter(q =>
                 _current.IsAdmin ||                                 // 1. Admin can see everything.

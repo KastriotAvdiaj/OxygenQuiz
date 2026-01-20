@@ -3,16 +3,13 @@ import { QuizCard } from "./components/quiz-card";
 import { QuizHeader } from "./components/quiz-header";
 import { motion } from "framer-motion";
 import { ArchiveX } from "lucide-react";
-import {
-  // getAllQuizzesQueryOptions,
-  useAllQuizzesData,
-} from "../Dashboard/Pages/Quiz/api/get-all-quizzes";
 import { useNavigate } from "react-router";
 // import { QueryClient } from "@tanstack/react-query";
 import { QuizStartModal } from "./components/quiz-start-modal";
 import { QuizSummaryDTO } from "@/types/quiz-types";
 import { useDisclosure } from "@/hooks/use-disclosure";
 import { Card } from "@/components/ui";
+import { usePublicQuizzesData } from "../Dashboard/Pages/Quiz/api/get-public-quizzes";
 
 // export const quizSelectionLoader =
 //   (queryClient: QueryClient): LoaderFunction =>
@@ -54,7 +51,7 @@ export function QuizSelection() {
   >(null);
   const { close, open, isOpen } = useDisclosure();
 
-  const { data: quizzesResponse } = useAllQuizzesData({
+  const { data: quizzesResponse } = usePublicQuizzesData({
     params: {
       searchTerm: searchQuery,
     },
@@ -62,7 +59,7 @@ export function QuizSelection() {
 
   const quizzes = useMemo(
     () => quizzesResponse?.data || [],
-    [quizzesResponse?.data]
+    [quizzesResponse?.data],
   );
 
   const handleQuizClick = useCallback((quiz: QuizSummaryDTO) => {
@@ -86,7 +83,7 @@ export function QuizSelection() {
         navigate(`/quiz/${quizId}/play`);
       }
     },
-    [navigate, close, selectedMode]
+    [navigate, close, selectedMode],
   );
   return (
     <div className="relative min-h-screen pb-20 text-foreground bg-cover bg-center  font-header">
