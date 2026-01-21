@@ -52,7 +52,7 @@ export const DrawerFilled = () => {
         <div className="flex gap-4 items-center text-foreground">
           <NavLink to={"/login"}>
             <Button
-              className="bg-[#4B3EF3] text-white custom-button"
+              className=" text-white custom-button"
               variant={"default"}>
               Login
             </Button>

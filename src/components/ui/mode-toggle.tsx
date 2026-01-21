@@ -15,10 +15,9 @@ export function ModeToggle({ className, text }: ModeToggleProps) {
 
   return (
     <Button
-      variant="outline"
       size="icon"
       className={cn(
-        "flex items-center gap-2 px-4 py-2 cursor-pointer w-[fit-content]",
+        "flex items-center gap-2 px-4 py-2 cursor-pointer w-[fit-content] bg-background text-foreground hover:bg-background/40 border border-border/50",
         className
       )}
       onClick={() => setTheme(isLightMode ? "dark" : "light")}

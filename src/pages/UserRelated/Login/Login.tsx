@@ -50,61 +50,71 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="relative h-screen w-full flex flex-col">
-      {/* Background Image */}
+    <div className="min-h-screen w-full flex items-center justify-center relative bg-background overflow-hidden">
+      {/* Background Image with Overlay */}
       <div
-        className="absolute inset-0 bg-cover bg-center"
+        className="absolute inset-0 bg-cover bg-center z-0"
         style={{ backgroundImage: `url(${OxygenBackground})` }}
       />
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] z-0" />
 
-      {/* Dark Overlay for better contrast */}
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
-
-      {/* Content Container */}
-      <div className="relative h-full w-full flex flex-col">
-        <div className="relative flex justify-center pt-10">
-          <div className="absolute top-4 flex justify-between gap-5 w-full px-5">
-            <GoBackButton />
-            <ModeToggle text={true} />
-          </div>
-          <O2Button />
+      {/* Main Container */}
+      <div className="w-full max-w-[90%] md:max-w-md lg:max-w-lg relative z-10 animate-in fade-in zoom-in duration-500">
+        
+        {/* Navigation Header */}
+        <div className="absolute -top-16 left-0 right-0 flex justify-between items-center px-2">
+           <GoBackButton />
+           <ModeToggle text={false} />
         </div>
 
-        <div className="flex-grow flex items-center justify-center z-20">
-          {/* Form container with semi-transparent background */}
-          <div className="bg-white/95 dark:bg-gray-900/95 backdrop-blur-md p-8 rounded-lg shadow-2xl max-w-lg w-full mx-4">
-            <div className="w-full">
-              <h2 className="text-3xl font-semibold mb-6 text-center text-gray-900 dark:text-white">
-                Welcome Back
-              </h2>
-              {isError && (
-                <p className="text-red-600 dark:text-red-400 font-semibold py-2 text-center">
-                  Login failed. Please try again.
-                </p>
-              )}
-              <LoginForm onLogin={handleLogin} isPending={isPending} />
-              <div className="text-center mt-4">
-                <p className="text-sm text-gray-700 dark:text-gray-300">
-                  Don't have an account?{" "}
-                  <a
-                    href="/signup"
-                    className="text-blue-600 dark:text-blue-400 underline hover:text-blue-700 dark:hover:text-blue-300">
-                    Sign up
-                  </a>
-                </p>
-              </div>
-              <div className="relative mt-8">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-300 dark:border-gray-600"></div>
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="bg-white dark:bg-gray-900 px-2 text-gray-600 dark:text-gray-400">
-                    OR
-                  </span>
-                </div>
-              </div>
-              <SocialButtons />
+        {/* Login Card */}
+        <div className="bg-card/95 backdrop-blur-xl border border-border/50 shadow-2xl rounded-2xl p-6 md:p-10 flex flex-col items-center gap-6">
+          
+          {/* Logo & Branding */}
+          <div className="flex flex-col items-center gap-2">
+            <div className="transform hover:scale-105 transition-transform duration-300">
+               <O2Button />
             </div>
+            <h2 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight text-center">
+              Welcome Back
+            </h2>
+          </div>
+
+          {/* Error Message */}
+          {isError && (
+            <div className="w-full bg-destructive/15 border border-destructive/50 rounded-lg p-3 text-sm text-destructive font-medium text-center animate-in slide-in-from-top-2">
+              Login failed. Please check your credentials.
+            </div>
+          )}
+
+          {/* Form */}
+          <LoginForm onLogin={handleLogin} isPending={isPending} />
+
+          {/* Footer Actions */}
+          <div className="w-full flex flex-col items-center gap-6 mt-2">
+            
+            <div className="relative w-full">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-muted" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="px-2 text-muted-foreground font-medium">
+                  Or continue with
+                </span>
+              </div>
+            </div>
+
+            <SocialButtons />
+
+            <p className="text-sm text-muted-foreground">
+              Don't have an account?{" "}
+              <a
+                href="/signup"
+                className="text-primary font-semibold hover:underline hover:text-primary/90 transition-colors"
+              >
+                Sign up
+              </a>
+            </p>
           </div>
         </div>
       </div>

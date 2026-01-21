@@ -1,11 +1,6 @@
 import React from "react";
-import { Divider } from "@/common/Divider";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Badge } from "@/components/ui/badge";
+import { Check, User, Mail } from "lucide-react";
 
 interface SignupProgressDisplayProps {
   step: number;
@@ -19,43 +14,35 @@ const SignupProgressDisplay: React.FC<SignupProgressDisplayProps> = ({
   username,
   email,
   setStep,
-}) => (
-  <TooltipProvider>
-    <div className="mt-6 mb-6 space-y-2 ">
+}) => {
+  if (step === 1) return null;
+
+  return (
+    <div className="flex flex-wrap gap-2 animate-in slide-in-from-left-2 duration-300">
       {step > 1 && (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <p
-              className="text-lg text-foreground bg-muted p-1 cursor-pointer hover:scale-105 transition-transform duration-300"
-              onClick={() => setStep(1)}
-            >
-              <strong className="text-foreground">Username:</strong> {username}
-            </p>
-          </TooltipTrigger>
-          <TooltipContent className="bg-background">
-            <p>Go back to username</p>
-          </TooltipContent>
-        </Tooltip>
+        <Badge
+          variant="secondary"
+          className="px-3 py-1 cursor-pointer hover:bg-secondary/80 transition-colors flex items-center gap-1.5"
+          onClick={() => setStep(1)}
+        >
+          <User className="w-3 h-3" />
+          <span className="font-medium">{username}</span>
+          <Check className="w-3 h-3 ml-1 text-green-500" />
+        </Badge>
       )}
       {step > 2 && (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <p
-              className="text-lg text-foreground bg-muted p-1 cursor-pointer hover:scale-105 transition-transform duration-300"
-              onClick={() => setStep(2)}
-            >
-              <strong className="text-foreground">Email:</strong> {email}
-            </p>
-          </TooltipTrigger>
-          <TooltipContent className="bg-background">
-            <p>Go back to email</p>
-          </TooltipContent>
-        </Tooltip>
+        <Badge
+          variant="secondary"
+          className="px-3 py-1 cursor-pointer hover:bg-secondary/80 transition-colors flex items-center gap-1.5"
+          onClick={() => setStep(2)}
+        >
+          <Mail className="w-3 h-3" />
+          <span className="font-medium">{email}</span>
+          <Check className="w-3 h-3 ml-1 text-green-500" />
+        </Badge>
       )}
-
-      <Divider />
     </div>
-  </TooltipProvider>
-);
+  );
+};
 
 export default SignupProgressDisplay;

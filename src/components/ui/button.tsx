@@ -29,6 +29,7 @@ const buttonVariants = cva(
           "flex w-full text-foreground bg-background justify-start text-[17px] items-center rounded hover:bg-muted active:scale-95",
         quiz: "flex justify-center items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-yellow-400 to-red-500 text-white shadow-lg hover:ring-2 hover:ring-offset-2 hover:ring-yellow-500 active:scale-95 transition-all duration-300",
         fancy: "fancy-button",
+        lifted: "lift-button",
       },
       size: {
         dashboard: "px-2.5 py-2",
@@ -107,20 +108,35 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         disabled={isPending || props.disabled}
         style={fancyStyle}
-        {...props}>
+        {...props}
+      >
         {isPending && (
-          <div className="absolute flex items-center justify-center inset-0">
+          <div className="absolute flex items-center justify-center inset-0 z-20">
             <Spinner size="sm" variant="light" />
           </div>
         )}
 
-        <span
-          className={cn("flex items-center justify-center gap-2", {
-            invisible: isPending,
-          })}>
-          {icon && <span className="mr-2">{icon}</span>}
-          {children}
-        </span>
+        {variant === "lifted" ? (
+          <span className="button_top flex items-center justify-center gap-2 w-full h-full">
+            <span
+              className={cn("flex items-center justify-center gap-2", {
+                invisible: isPending,
+              })}
+            >
+              {icon && <span className="mr-2">{icon}</span>}
+              {children}
+            </span>
+          </span>
+        ) : (
+          <span
+            className={cn("flex items-center justify-center gap-2", {
+              invisible: isPending,
+            })}
+          >
+            {icon && <span className="mr-2">{icon}</span>}
+            {children}
+          </span>
+        )}
       </Comp>
     );
   }
