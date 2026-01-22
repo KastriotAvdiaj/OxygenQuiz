@@ -42,7 +42,7 @@ export const Questions = () => {
     number | undefined
   >();
   const [pageNumber, setPageNumber] = useState(1);
-  const [pageSize] = useState(10);
+  const [pageSize] = useState(6);
 
   const [activeTab, setActiveTab] = useState<QuestionType>(
     QuestionType.MultipleChoice

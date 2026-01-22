@@ -47,7 +47,8 @@ builder.Services.AddCors(options =>
         builder.WithOrigins(allowedOrigins)
             .AllowAnyMethod()
             .AllowAnyHeader()
-            .AllowCredentials();
+            .AllowCredentials()
+            .WithExposedHeaders("Pagination");
     });
 });
 
