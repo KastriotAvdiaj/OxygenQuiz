@@ -9,7 +9,7 @@ import { TrueOrFalseQuestion } from "./question-display-type-files/true-or-false
 import { TypeTheAnswerQuestion } from "./question-display-type-files/type-the-answer-question";
 import { MultipleChoiceQuestion } from "./question-display-type-files/multiple-choice-question";
 import { FeedbackDisplay } from "./feedback-display";
-import TextType from "@/common/Effect-Related/TextType";
+// import TextType from "@/common/Effect-Related/TextType";
 
 interface QuestionDisplayProps {
   question: CurrentQuestion;
@@ -82,13 +82,14 @@ export function QuestionDisplay({
 
           {/* Question text with typing effect */}
           <h2 className="text-5xl md:text-4xl font-bold leading-relaxed relative z-10">
-            <TextType
+            {/* <TextType
               text={[question.questionText]}
               typingSpeed={15}
               pauseDuration={500}
               showCursor={true}
               cursorCharacter="|"
-            />
+            /> */}
+            {question.questionText}
           </h2>
         </div>
 

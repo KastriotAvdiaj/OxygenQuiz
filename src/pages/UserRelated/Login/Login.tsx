@@ -9,6 +9,7 @@ import { useSearchParams } from "react-router-dom";
 import { O2Button } from "@/common/O2Button";
 import { useNotifications } from "@/common/Notifications";
 import OxygenBackground from "/assets/oxygenquiz2.jpg";
+import { Card } from "@/components/ui";
 
 /**
  *
@@ -59,7 +60,7 @@ const Login: React.FC = () => {
       <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] z-0" />
 
       {/* Main Container */}
-      <div className="w-full max-w-[90%] md:max-w-md lg:max-w-lg relative z-10 animate-in fade-in zoom-in duration-500">
+      <div className="w-full max-w-[90%] md:max-w-md lg:max-w-lg relative z-10">
         
         {/* Navigation Header */}
         <div className="absolute -top-16 left-0 right-0 flex justify-between items-center px-2">
@@ -68,7 +69,7 @@ const Login: React.FC = () => {
         </div>
 
         {/* Login Card */}
-        <div className="bg-card/95 backdrop-blur-xl border border-border/50 shadow-2xl rounded-2xl p-6 md:p-10 flex flex-col items-center gap-6">
+        <Card className="bg-card/95 backdrop-blur-xl border border-border/50 shadow-2xl rounded-2xl p-6 md:p-10 flex flex-col items-center gap-6">
           
           {/* Logo & Branding */}
           <div className="flex flex-col items-center gap-2">
@@ -116,7 +117,7 @@ const Login: React.FC = () => {
               </a>
             </p>
           </div>
-        </div>
+        </Card>
       </div>
     </div>
   );
