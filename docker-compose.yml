@@ -1,11 +1,12 @@
 version: '3.9'
+
 services:
   backend:
     build:
-      context: .
-      dockerfile: OxygenBackend/Dockerfile
+      context: ./oxygenbackend/quizapi
+      dockerfile: Dockerfile
     ports:
-      - "8000:8080" 
+      - "5000:8080"
     depends_on:
       postgres:
         condition: service_healthy
@@ -17,7 +18,7 @@ services:
 
   frontend:
     build:
-      context: .   # since frontend Dockerfile is in repo root
+      context: . 
       dockerfile: Dockerfile
     ports:
       - "5173:80"

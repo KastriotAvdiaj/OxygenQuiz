@@ -51,11 +51,6 @@ export const QuizFilters = ({
   } = filterState;
 
   const presets: FilterPreset[] = [
-    {
-      id: "my-quizzes",
-      label: "My Quizzes",
-      filters: { visibility: "Private" }, //NEED TO FIX THIS BECAUSE PRIVATE DOES NOT MEAN MY QUIZ IT MEANS ANY QUIZ THAT IS NOT PUBLIC
-    },
     { id: "all", label: "All Quizzes", filters: {}, isDefault: true },
     {
       id: "my-quizzes",
