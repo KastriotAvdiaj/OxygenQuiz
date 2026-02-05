@@ -10,7 +10,7 @@ export function QuizHeader() {
           transition={{ duration: 0.6 }}
         >
           <h1 className="text-4xl md:text-6xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary/70 font-header">
-            Quiz Adventure
+            {/* Quiz Adventure */}
           </h1>
         </motion.div>
       </div>

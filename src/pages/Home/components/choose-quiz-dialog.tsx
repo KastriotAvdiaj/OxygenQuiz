@@ -17,7 +17,7 @@ export const ChooseQuiz = () => {
   };
 
   return (
-    <Link to="/choose-quiz">
+    <Link to="/choose-mode">
       <Button
         variant={"fancy"}
         className={`text-5xl p-9 font-secondary`}

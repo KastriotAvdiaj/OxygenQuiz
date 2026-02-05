@@ -1,19 +1,21 @@
 version: '3.9'
+
 services:
   backend:
     build:
-      context: .
-      dockerfile: OxygenBackend/QuizAPI/Dockerfile
+      context: ./oxygenbackend/quizapi
+      dockerfile: Dockerfile
     ports:
-      - "5000:80"
+      - "5000:8080"
     depends_on:
       - postgres
     environment:
       - ConnectionStrings__PostgresConnection=Host=postgres;Database=OxygenQuiz;Username=postgres;Password=123
+      - ASPNETCORE_ENVIRONMENT=Development
 
   frontend:
     build:
-      context: .   # since frontend Dockerfile is in repo root
+      context: . 
       dockerfile: Dockerfile
     ports:
       - "3000:80"
@@ -24,7 +26,7 @@ services:
     image: postgres:15
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
+      POSTGRES_PASSWORD: 123
       POSTGRES_DB: OxygenQuiz
     ports:
       - "5432:5432"

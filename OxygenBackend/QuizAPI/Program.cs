@@ -19,6 +19,7 @@ using QuizAPI.Services;
 using QuizAPI.Services.AuthenticationService;
 using QuizAPI.Services.CurrentUserService;
 using QuizAPI.Services.Interfaces;
+using QuizAPI.Services.QuizSessionServices;
 using System.Text;
 
 
@@ -79,6 +80,7 @@ builder.Services.AddScoped<IAnswerOptionService, AnswerOptionService>();
 // Session & Answer Services
 builder.Services.AddScoped<IQuizSessionService, QuizSessionService>();
 builder.Services.AddScoped<IUserAnswerService, UserAnswerService>();
+builder.Services.AddSingleton<IQuizSessionManager, InMemoryQuizSessionManager>();
 
 // Business Logic Services
 builder.Services.AddScoped<IAnswerGradingService, AnswerGradingService>();
@@ -119,6 +121,7 @@ builder.Services.AddAuthentication(options =>
 
 // --- Controllers & Swagger ---
 builder.Services.AddControllers();
+builder.Services.AddSignalR();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -153,6 +156,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+
 if (app.Environment.IsDevelopment())
 {
     app.UseHttpsRedirection();
@@ -163,6 +167,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UseHangfireDashboard("/hangfire");
 app.MapControllers();
+app.MapHub<QuizAPI.Hubs.QuizHub>("/quizHub");
 
 RecurringJob.AddOrUpdate<ImageCleanUpService>(
     "image-cleanup-daily",

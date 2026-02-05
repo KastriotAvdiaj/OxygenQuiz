@@ -17,6 +17,7 @@ interface QuizStartModalProps {
   isOpen: boolean;
   onClose: () => void;
   onStartQuiz: (quizId: number) => void;
+  mode?: string;
 }
 
 export function QuizStartModal({
@@ -24,6 +25,7 @@ export function QuizStartModal({
   isOpen,
   onClose,
   onStartQuiz,
+  mode = "single",
 }: QuizStartModalProps) {
   const primaryColor = quiz.colorPaletteJson
     ? JSON.parse(quiz.colorPaletteJson)[0]
@@ -157,7 +159,7 @@ export function QuizStartModal({
                 borderColor: primaryColor,
               }}>
               {/* <Play className="h-4 w-4 mr-2" /> */}
-              Start Quiz
+              {mode === "multiplayer" ? "Create Lobby" : "Start Quiz"}
             </Button>
           </div>
         </motion.div>

@@ -1,6 +1,0 @@
-bin
-obj
-Dockerfile
-*.user
-*.suo
-.vs
