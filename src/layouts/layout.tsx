@@ -118,17 +118,15 @@ export const HomeLayout = ({
     <>
       <Header BackgroundColor={hasHeaderBackground} />
       <div
-        className={`bg-background text-foreground ${
-          finalEffect !== "none" ? "overflow-hidden" : "overflow-y-auto"
-        }`}
+        className="bg-background font-quiz text-foreground overflow-y-auto"
         style={{
           paddingTop: shouldAddPadding ? "var(--header-height, 4rem)" : "0",
-          minHeight: isOverlay
+          height: isOverlay
             ? "100vh"
             : shouldAddPadding
             ? "calc(100vh - var(--header-height, 4rem))"
             : "100vh",
-          position: "relative", // Ensure this container is the anchor for absolute children
+          position: "relative",
         }}>
         {renderEffect()}
 

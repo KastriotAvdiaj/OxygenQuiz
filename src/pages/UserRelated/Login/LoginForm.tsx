@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import InputField from "@/common/InputField";
-import { LiftedButton } from "@/common/LiftedButton";
+import { Button } from "@/components/ui";
 
 /**
  *
@@ -59,15 +59,14 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, isPending }) => {
       </div>
       
       <div className="pt-2">
-        <LiftedButton
+        <Button
           onClick={handleSubmit}
           isPending={isPending}
-          className="text-base shadow-lg"
-          outerClassName="w-full"
+          className="text-xl shadow-lg w-full p-6 text-white"
           disabled={isPending}
         >
           Sign In
-        </LiftedButton>
+        </Button>
       </div>
     </form>
   );

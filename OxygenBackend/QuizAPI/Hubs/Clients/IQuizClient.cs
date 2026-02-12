@@ -12,4 +12,9 @@ public interface IQuizClient
     Task CurrentParticipants(List<Participant> participants);
     Task PlayerReadyChanged(string username, bool isReady);
     Task GameStarted(string quizId);
+    Task HostChanged(string newHostUsername);
+    
+    // New events for lobby redesign
+    Task QuizSelected(string quizId, string quizTitle);
+    Task LobbySettingsChanged(string lobbyName, int maxPlayers);
 }

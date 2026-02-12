@@ -13,12 +13,11 @@ import { Navigate } from "react-router-dom";
 // import { QuizQuestionProvider } from "@/pages/Dashboard/Pages/Quiz/components/Create-Quiz-Form/Quiz-questions-context";
 // import { DashboardErrorElement } from "@/pages/UtilityPages/Error/Dashboard-Error-Element";
 import { quizLoader } from "@/loaders/quiz.loader";
-// import { QuizPageRouteWrapper } from "@/pages/Quiz/Sessions/components/quiz-taking-process/quiz-page-route-wrapper";
-// import { QuizResultsRouteWrapper } from "@/pages/Quiz/Sessions/components/quiz-results/quiz-results-route-wrapper";
 import { dashboardEntryLoader } from "@/loaders/dashboardEntryLoader";
 import { quizSelectionLoader } from "@/loaders/quiz-selection.loader";
-import { MultiplayerLobby } from "@/pages/Quiz/components/multiplayer-lobby";
-import { MultiplayerHostWrapper } from "@/pages/Quiz/Multiplayer-Host-Wrapper";
+import { MultiplayerLobbyPage } from "@/pages/Quiz/Multiplayer/MultiplayerLobbyPage";
+import { CreateLobby } from "@/pages/Quiz/Multiplayer/components/create-lobby";
+import { JoinLobby } from "@/pages/Quiz/Multiplayer/components/join-lobby";
 const HomeLayout = lazy(() => {
   console.log("Loading HomeLayout chunk...");
   return import("@/layouts/layout").then((module) => ({
@@ -39,7 +38,7 @@ const GameModeSelection = lazy(() =>
   }))
 );
 const MultiplayerMenu = lazy(() =>
-  import("@/pages/Quiz/Multiplayer-Menu").then((module) => ({
+  import("@/pages/Quiz/Multiplayer/Multiplayer-Menu").then((module) => ({
     default: module.MultiplayerMenu,
   }))
 );
@@ -98,8 +97,7 @@ const createAppRouter = (queryClient: QueryClient) =>
       element: (
         <>
           <HomeLayout
-            headerBehavior={HeaderBehavior.OVERLAY_TRANSPARENT}
-            // squares={true}
+            headerBehavior={HeaderBehavior.OVERLAY_SOLID}
             effect="squares"
             children={<Home />}
           />
@@ -152,44 +150,29 @@ const createAppRouter = (queryClient: QueryClient) =>
       ),
     },
     {
-      path: "/multiplayer-menu",
+      path: "/multiplayer/create",
       element: (
         <>
-          <HomeLayout
-            headerBehavior={HeaderBehavior.OVERLAY_TRANSPARENT}
-            children={
-              <div className="min-h-screen flex items-center justify-center p-4">
-                <MultiplayerMenu />
-              </div>
-            }
-          />
+          <CreateLobby />
         </>
       ),
     },
     {
-      path: "/join-session",
+      path: "/multiplayer/join",
       element: (
         <>
-          <HomeLayout
-            headerBehavior={HeaderBehavior.OVERLAY_TRANSPARENT}
-            children={
-              <div className="min-h-screen flex items-center justify-center p-4">
-                <MultiplayerLobby quizId="" quizTitle="Join Game" mode="join" />
-              </div>
-            }
-          />
+          <JoinLobby />
         </>
       ),
     },
     {
-      path: "/quiz/:quizId/multiplayer",
-      loader: quizLoader(queryClient),
-      errorElement: <DashboardErrorElement />,
+      path: "/multiplayer/lobby/:sessionId",
       element: (
         <>
           <HomeLayout
-            headerBehavior={HeaderBehavior.OVERLAY_TRANSPARENT}
-            children={<MultiplayerHostWrapper />}
+            headerBehavior={HeaderBehavior.DEFAULT}
+            effect="none"
+            children={<MultiplayerLobbyPage />}
           />
         </>
       ),

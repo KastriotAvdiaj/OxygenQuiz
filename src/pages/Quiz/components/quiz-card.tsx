@@ -106,7 +106,7 @@ export function QuizCard({ quiz, onClick }: QuizCardProps) {
                   {quiz.category}
                 </Badge>
 
-                <CardTitle className="text-lg sm:text-xl md:text-2xl font-bold leading-tight text-center text-foreground drop-shadow-sm line-clamp-3">
+                <CardTitle className="text-lg sm:text-xl md:text-2xl font-bold leading-tight text-center text-foreground drop-shadow-sm line-clamp-3 tracking-wider">
                   {quiz.title}
                 </CardTitle>
               </div>
@@ -133,7 +133,7 @@ export function QuizCard({ quiz, onClick }: QuizCardProps) {
                       </Badge>
                     </div>
 
-                    <CardTitle className="text-base sm:text-lg md:text-xl font-bold leading-tight line-clamp-2 text-foreground drop-shadow-sm">
+                    <CardTitle className="text-base sm:text-lg md:text-xl font-bold leading-tight line-clamp-2 text-foreground drop-shadow-sm tracking-wider">
                       {quiz.title}
                     </CardTitle>
                   </CardHeader>

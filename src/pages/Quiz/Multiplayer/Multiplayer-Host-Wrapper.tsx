@@ -1,5 +1,5 @@
 import { useLoaderData } from "react-router-dom";
-import { MultiplayerLobby } from "./components/multiplayer-lobby";
+import { MultiplayerLobbyPage } from "./MultiplayerLobbyPage";
 import { Quiz } from "@/types/quiz-types";
 
 export const MultiplayerHostWrapper = () => {
@@ -7,7 +7,7 @@ export const MultiplayerHostWrapper = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
-      <MultiplayerLobby 
+      <MultiplayerLobbyPage 
         quizId={quiz.id.toString()} 
         quizTitle={quiz.title}
         questionCount={quiz.questionCount}

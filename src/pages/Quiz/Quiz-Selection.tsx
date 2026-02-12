@@ -87,7 +87,7 @@ export function QuizSelection() {
   );
 
   return (
-    <div className="relative min-h-screen pb-20 text-foreground bg-cover bg-center  font-header">
+    <div className="relative pb-6 sm:pb-12 md:pb-20 text-foreground bg-cover bg-center tracking-wider">
       <QuizHeader />
 
       <div className="container relative mx-auto p-4">
@@ -116,7 +116,7 @@ export function QuizSelection() {
           )}
 
           <motion.div
-            className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4"
+            className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 md:gap-8 lg:grid-cols-4"
             variants={containerVariants}
             initial="hidden"
             animate="visible">

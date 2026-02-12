@@ -3,8 +3,8 @@ using QuizAPI.Services.Interfaces;
 
 namespace QuizAPI.Services.QuizSessionServices;
 
-    public class InMemoryQuizSessionManager : IQuizSessionManager
-    {
+public class InMemoryQuizSessionManager : IQuizSessionManager
+{
         // Key: SessionId, Value: MultiplayerSession
         private readonly ConcurrentDictionary<string, MultiplayerSession> _sessions = new();
 
@@ -113,6 +113,7 @@ namespace QuizAPI.Services.QuizSessionServices;
             return Task.CompletedTask;
         }
 
+
         public Task<string?> GetHostUsernameAsync(string sessionId)
         {
              if (_sessions.TryGetValue(sessionId, out var session))
@@ -121,4 +122,65 @@ namespace QuizAPI.Services.QuizSessionServices;
              }
              return Task.FromResult<string?>(null);
         }
+
+        public Task<bool> IsHostAsync(string sessionId, string username)
+        {
+            if (_sessions.TryGetValue(sessionId, out var session))
+            {
+                return Task.FromResult(session.HostUsername == username);
+            }
+            return Task.FromResult(false);
+        }
+
+        public Task<MultiplayerSession> CreateSessionAsync(string sessionId, string lobbyName, int maxPlayers, string hostUsername, string connectionId)
+        {
+            var session = new MultiplayerSession
+            {
+                SessionId = sessionId,
+                LobbyName = lobbyName,
+                MaxPlayers = maxPlayers,
+                HostUsername = hostUsername,
+                SelectedQuizId = null
+            };
+
+            if (!_sessions.TryAdd(sessionId, session))
+            {
+                throw new InvalidOperationException($"Session {sessionId} already exists");
+            }
+
+            // Add host as first participant
+            var hostParticipant = new Participant
+            {
+                Username = hostUsername,
+                ConnectionId = connectionId,
+                IsHost = true,
+                IsReady = false
+            };
+
+            lock (session)
+            {
+                session.Participants.Add(hostParticipant);
+            }
+
+            return Task.FromResult(session);
+        }
+
+        public Task SetQuizAsync(string sessionId, string quizId)
+        {
+            if (_sessions.TryGetValue(sessionId, out var session))
+            {
+                lock (session)
+                {
+                    session.SelectedQuizId = quizId;
+                }
+                return Task.CompletedTask;
+            }
+            throw new InvalidOperationException($"Session {sessionId} not found");
+        }
+
+        public Task<MultiplayerSession?> GetSessionAsync(string sessionId)
+        {
+        _sessions.TryGetValue(sessionId, out var session);
+        return Task.FromResult(session);
     }
+}
