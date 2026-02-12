@@ -16,7 +16,8 @@ module.exports = {
   				'serif'
   			],
 			secondary: ['Barriecito', 'system-ui'],
-			quiz: ['Quiz-Card-Font', 'system-ui'],
+			quiz:['DynaPuff', 'system-ui'],
+			// quiz: ['Quiz-Card-Font', 'system-ui'],
   		},
   		scale: {
   			'101': '1.01',

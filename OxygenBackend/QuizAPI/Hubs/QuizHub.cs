@@ -35,6 +35,8 @@ public class QuizHub : Hub<IQuizClient>
 
     public async Task LeaveSession(string sessionId, string username)
     {
+        var wasHost = await _sessionManager.IsHostAsync(sessionId, username);
+        
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, sessionId);
         
         await _sessionManager.RemoveParticipantAsync(sessionId, username);
@@ -44,6 +46,16 @@ public class QuizHub : Hub<IQuizClient>
         Context.Items.Remove("Username");
 
         await Clients.Group(sessionId).UserLeft(username);
+        
+        // If host left, notify about new host
+        if (wasHost)
+        {
+            var newHostUsername = await _sessionManager.GetHostUsernameAsync(sessionId);
+            if (newHostUsername != null)
+            {
+                await Clients.Group(sessionId).HostChanged(newHostUsername);
+            }
+        }
     }
 
     public override async Task OnDisconnectedAsync(Exception? exception)
@@ -57,9 +69,21 @@ public class QuizHub : Hub<IQuizClient>
 
             if (!string.IsNullOrEmpty(sessionId) && !string.IsNullOrEmpty(username))
             {
+                var wasHost = await _sessionManager.IsHostAsync(sessionId, username);
+                
                 // Clean up the participant
                 await _sessionManager.RemoveParticipantAsync(sessionId, username);
                 await Clients.Group(sessionId).UserLeft(username);
+                
+                // If host disconnected, notify about new host
+                if (wasHost)
+                {
+                    var newHostUsername = await _sessionManager.GetHostUsernameAsync(sessionId);
+                    if (newHostUsername != null)
+                    {
+                        await Clients.Group(sessionId).HostChanged(newHostUsername);
+                    }
+                }
             }
         }
 
@@ -71,6 +95,58 @@ public class QuizHub : Hub<IQuizClient>
         // In a real scenario, we might process this, calculate score, etc.
         // For now, we just broadcast that an answer was submitted (maybe for progress bars)
         await Clients.Group(sessionId).AnswerSubmitted(username);
+    }
+
+    public async Task ToggleReady(string sessionId, string username, bool isReady)
+    {
+        await _sessionManager.SetPlayerReadyAsync(sessionId, username, isReady);
+        await Clients.Group(sessionId).PlayerReadyChanged(username, isReady);
+    }
+
+    public async Task CreateSession(string sessionId, string lobbyName, int maxPlayers, string username)
+    {
+        try
+        {
+            // Create session with settings
+            var session = await _sessionManager.CreateSessionAsync(sessionId, lobbyName, maxPlayers, username, Context.ConnectionId);
+            
+            // Add to SignalR Group
+            await Groups.AddToGroupAsync(Context.ConnectionId, sessionId);
+            
+            // Store in Context for disconnect handling
+            Context.Items["SessionId"] = sessionId;
+            Context.Items["Username"] = username;
+            
+            // Send session info to creator
+            await Clients.Caller.CurrentParticipants(session.Participants);
+        }
+        catch (InvalidOperationException ex)
+        {
+            // Session already exists - throw error to client
+            throw new HubException(ex.Message);
+        }
+    }
+
+    public async Task SelectQuiz(string sessionId, string quizId, string quizTitle)
+    {
+        // Verify caller is host
+        var username = Context.Items["Username"] as string;
+        if (string.IsNullOrEmpty(username))
+        {
+            throw new HubException("User not authenticated");
+        }
+        
+        var isHost = await _sessionManager.IsHostAsync(sessionId, username);
+        if (!isHost)
+        {
+            throw new HubException("Only the host can select a quiz");
+        }
+        
+        // Set quiz
+        await _sessionManager.SetQuizAsync(sessionId, quizId);
+        
+        // Broadcast to all participants
+        await Clients.Group(sessionId).QuizSelected(quizId, quizTitle);
     }
 
     public async Task StartQuiz(string sessionId, string quizId)

@@ -20,7 +20,7 @@ export const ChooseQuiz = () => {
     <Link to="/choose-mode">
       <Button
         variant={"fancy"}
-        className={`text-5xl p-9 font-secondary`}
+        className={`text-5xl p-9`}
         disabled={isLoading || isNavigating}
         onClick={handleQuizNavigation}
       >

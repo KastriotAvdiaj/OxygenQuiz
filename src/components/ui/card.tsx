@@ -18,7 +18,7 @@ const Card = React.forwardRef<
         {/* Background "Shadow" Element */}
         <div
           className={cn(
-            "absolute top-1 left-1 w-full h-full bg-foreground border border-foreground/20 rounded-xl",
+            "absolute top-1 left-2 w-full h-[98.5%] bg-foreground border border-foreground/20 rounded-xl",
             "opacity-100"
           )}
         />

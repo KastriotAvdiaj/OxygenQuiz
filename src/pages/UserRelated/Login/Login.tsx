@@ -9,7 +9,7 @@ import { useSearchParams } from "react-router-dom";
 import { O2Button } from "@/common/O2Button";
 import { useNotifications } from "@/common/Notifications";
 import OxygenBackground from "/assets/oxygenquiz2.jpg";
-import { Card } from "@/components/ui";
+
 
 /**
  *
@@ -51,39 +51,52 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center relative bg-background overflow-hidden">
-      {/* Background Image with Overlay */}
-      <div
-        className="absolute inset-0 bg-cover bg-center z-0"
-        style={{ backgroundImage: `url(${OxygenBackground})` }}
-      />
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] z-0" />
-
-      {/* Main Container */}
-      <div className="w-full max-w-[90%] md:max-w-md lg:max-w-lg relative z-10">
+    <div className="min-h-screen w-full flex flex-col lg:flex-row bg-background font-quiz">
+      {/* Left Side - Background Image with Branding */}
+      <div className="relative lg:w-1/2 h-[30vh] lg:h-screen flex items-center justify-center overflow-hidden">
+        {/* Background Image */}
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: `url(${OxygenBackground})` }}
+        />
         
-        {/* Navigation Header */}
-        <div className="absolute -top-16 left-0 right-0 flex justify-between items-center px-2">
-           <GoBackButton />
-           <ModeToggle text={false} />
+        {/* Dark overlay for text readability */}
+        <div className="absolute inset-0 bg-black/40" />
+        
+        {/* Content */}
+        <div className="relative z-10 text-center px-8 space-y-4">
+          <div className="transform hover:scale-105 transition-transform duration-300 flex justify-center font-header">
+            <O2Button />
+          </div>
+          <h1 className="text-3xl lg:text-5xl font-bold text-white tracking-tight">
+            Welcome Back
+          </h1>
+          <p className="text-lg lg:text-xl text-white/90 max-w-md mx-auto">
+            Sign in to continue your learning journey
+          </p>
+        </div>
+      </div>
+
+      {/* Right Side - Login Form */}
+      <div className="flex-1 lg:w-1/2 flex items-center justify-center p-6 lg:p-12 relative">
+        {/* Navigation Controls */}
+        <div className="absolute top-6 right-6 flex items-center gap-3">
+          <GoBackButton />
+          <ModeToggle text={false} />
         </div>
 
-        {/* Login Card */}
-        <Card className="bg-card/95 backdrop-blur-xl border border-border/50 shadow-2xl rounded-2xl p-6 md:p-10 flex flex-col items-center gap-6">
-          
-          {/* Logo & Branding */}
-          <div className="flex flex-col items-center gap-2">
-            <div className="transform hover:scale-105 transition-transform duration-300">
-               <O2Button />
-            </div>
-            <h2 className="text-2xl md:text-3xl font-bold text-foreground tracking-tight text-center">
-              Welcome Back
-            </h2>
+        {/* Form Container */}
+        <div className="w-full max-w-md space-y-8">
+          <div className="space-y-2">
+            <h2 className="text-3xl font-bold text-foreground">Sign In</h2>
+            <p className="text-muted-foreground">
+              Enter your credentials to access your account
+            </p>
           </div>
 
           {/* Error Message */}
           {isError && (
-            <div className="w-full bg-destructive/15 border border-destructive/50 rounded-lg p-3 text-sm text-destructive font-medium text-center animate-in slide-in-from-top-2">
+            <div className="bg-destructive/15 border border-destructive/50 rounded-lg p-4 text-sm text-destructive font-medium animate-in slide-in-from-top-2">
               Login failed. Please check your credentials.
             </div>
           )}
@@ -91,33 +104,32 @@ const Login: React.FC = () => {
           {/* Form */}
           <LoginForm onLogin={handleLogin} isPending={isPending} />
 
-          {/* Footer Actions */}
-          <div className="w-full flex flex-col items-center gap-6 mt-2">
-            
-            <div className="relative w-full">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-muted" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="px-2 text-muted-foreground font-medium">
-                  Or continue with
-                </span>
-              </div>
+          {/* Divider */}
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-border" />
             </div>
-
-            <SocialButtons />
-
-            <p className="text-sm text-muted-foreground">
-              Don't have an account?{" "}
-              <a
-                href="/signup"
-                className="text-primary font-semibold hover:underline hover:text-primary/90 transition-colors"
-              >
-                Sign up
-              </a>
-            </p>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-3 text-muted-foreground font-medium">
+                Or continue with
+              </span>
+            </div>
           </div>
-        </Card>
+
+          {/* Social Buttons */}
+          <SocialButtons />
+
+          {/* Sign Up Link */}
+          <p className="text-center text-sm text-muted-foreground">
+            Don't have an account?{" "}
+            <a
+              href="/signup"
+              className="text-primary font-semibold hover:underline hover:text-primary/90 transition-colors"
+            >
+              Sign up
+            </a>
+          </p>
+        </div>
       </div>
     </div>
   );
