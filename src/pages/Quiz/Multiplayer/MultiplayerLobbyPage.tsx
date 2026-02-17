@@ -10,18 +10,12 @@ import { LobbyInfoBanner } from "./components/lobby/lobby-info-banner";
 interface MultiplayerLobbyPageProps {
   quizId?: string;
   quizTitle?: string;
-  questionCount?: number;
-  difficulty?: string;
-  category?: string;
   mode?: "create" | "join";
 }
 
 export const MultiplayerLobbyPage = ({
   quizId = "",
   quizTitle = "Multiplayer Lobby",
-  questionCount = 10,
-  difficulty = "Medium",
-  category = "General Knowledge",
   mode = "join",
 }: MultiplayerLobbyPageProps) => {
   const {
@@ -47,20 +41,16 @@ export const MultiplayerLobbyPage = ({
   } = useLobbyConnection({ mode, quizId });
 
   return (
-    <div className="relative w-full text-foreground bg-cover bg-center font-header flex justify-center items-start p-2 sm:p-4 py-2 sm:py-4 md:py-8">
+    <div className="relative w-full min-h-full text-foreground bg-cover bg-center font-header flex justify-center items-center p-2 sm:p-3 py-2 sm:py-3 md:py-4">
       <Card
         variant="lifted"
         hover={false}
-        className="w-full max-w-2xl md:max-w-3xl lg:max-w-4xl bg-background my-2"
+        className="w-full max-w-2xl md:max-w-3xl lg:max-w-4xl bg-background"
       >
         <LobbyHeader
           mode={mode}
           quizTitle={quizTitle}
-          isConnected={isConnected}
           hasJoined={hasJoined}
-          questionCount={questionCount}
-          difficulty={difficulty}
-          category={category}
         />
 
         <CardContent className="p-3 sm:p-4 md:p-6 transition-all duration-300">
@@ -77,7 +67,7 @@ export const MultiplayerLobbyPage = ({
               onJoin={handleJoinSession}
             />
           ) : (
-            <div className="space-y-3 sm:space-y-4 md:space-y-6">
+            <div className="space-y-2 sm:space-y-3">
               <LobbyInfoBar
                 participantCount={participants.length}
                 sessionId={sessionId}

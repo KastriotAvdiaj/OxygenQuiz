@@ -23,11 +23,6 @@ interface LayoutProps {
   overlay?: boolean;
 }
 
-// FIX: Define static objects outside the component to ensure referential stability.
-// This prevents the PrismaticBurst from re-initializing its canvas on every render.
-const PRISMATIC_COLORS = ["#ff007a", "#1602faff", "#ffffff"];
-const PRISMATIC_OFFSET = { x: 0, y: 0 };
-
 export const HomeLayout = ({
   children,
   effect,
@@ -83,32 +78,6 @@ export const HomeLayout = ({
         return (
           <Lightning hue={220} xOffset={0} speed={1} intensity={1} size={1} />
         );
-      case "prismatic":
-        return (
-          <div
-            style={{
-              width: "100%",
-              height: "100%",
-              position: "absolute",
-              top: 0, // Ensure it anchors to top-left
-              left: 0, // Ensure it anchors to top-left
-              zIndex: 0, // Ensure it stays behind content if content is relative/z-indexed
-              pointerEvents: "none", // Critical: prevents effect from blocking scroll/clicks
-            }}>
-            <PrismaticBurst
-              animationType="rotate3d"
-              intensity={2}
-              speed={0.5}
-              distort={1.0}
-              paused={false}
-              offset={PRISMATIC_OFFSET} // Uses stable reference
-              hoverDampness={0.25}
-              rayCount={2}
-              // mixBlendMode="lighten"
-              colors={PRISMATIC_COLORS} // Uses stable reference
-            />
-          </div>
-        );
       default:
         return null;
     }
@@ -121,20 +90,12 @@ export const HomeLayout = ({
         className="bg-background font-quiz text-foreground overflow-y-auto"
         style={{
           paddingTop: shouldAddPadding ? "var(--header-height, 4rem)" : "0",
-          height: isOverlay
-            ? "100vh"
-            : shouldAddPadding
-            ? "calc(100vh - var(--header-height, 4rem))"
-            : "100vh",
+          height: "100vh",
           position: "relative",
         }}>
         {renderEffect()}
 
-        {/* 
-          Ensure children have relative positioning so they sit above 
-          the absolute positioned background effect if z-indexing is tricky 
-        */}
-        <div style={{ position: "relative", zIndex: 1 }}>
+        <div style={{ position: "relative", zIndex: 1, height: "100%" }}>
           {shouldWrapContent ? <div>{children}</div> : children}
         </div>
       </div>

@@ -118,7 +118,7 @@ export const CreateLobbyDialog = ({ open, onOpenChange }: CreateLobbyDialogProps
                 <span className="text-xl font-bold">−</span>
               </Button>
               <div className="flex-1 rounded-lg p-2 text-center flex items-center justify-center">
-              <div className="bg-muted/50 w-fit px-4 py-2 rounded-md">
+              <div className="bg-muted/50 w-fit px-4 py-2 rounded-md shadow-md">
                 <div className="flex items-center justify-center gap-2">
                   <Users className="h-5 w-5 text-muted-foreground" />
                   <span className="text-3xl font-bold font-mono text-primary">
@@ -151,8 +151,9 @@ export const CreateLobbyDialog = ({ open, onOpenChange }: CreateLobbyDialogProps
           <Button
             type="button"
             onClick={handleCancel}
+            variant={"outline"}
             disabled={isCreating}
-            className="w-full sm:w-auto bg-background text-foreground rounded-md hover:bg-background/80 py-4"
+            className="w-full sm:w-auto text-foreground rounded-md py-4"
           >
             Cancel
           </Button>

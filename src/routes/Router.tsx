@@ -17,7 +17,6 @@ import { dashboardEntryLoader } from "@/loaders/dashboardEntryLoader";
 import { quizSelectionLoader } from "@/loaders/quiz-selection.loader";
 import { MultiplayerLobbyPage } from "@/pages/Quiz/Multiplayer/MultiplayerLobbyPage";
 import { CreateLobby } from "@/pages/Quiz/Multiplayer/components/create-lobby";
-import { JoinLobby } from "@/pages/Quiz/Multiplayer/components/join-lobby";
 const HomeLayout = lazy(() => {
   console.log("Loading HomeLayout chunk...");
   return import("@/layouts/layout").then((module) => ({
@@ -119,7 +118,7 @@ const createAppRouter = (queryClient: QueryClient) =>
       element: (
         <>
           <HomeLayout
-            headerBehavior={HeaderBehavior.OVERLAY_TRANSPARENT}
+            headerBehavior={HeaderBehavior.DEFAULT}
             children={<GameModeSelection />}
           />
         </>
@@ -130,7 +129,7 @@ const createAppRouter = (queryClient: QueryClient) =>
       element: (
         <>
           <HomeLayout
-            headerBehavior={HeaderBehavior.OVERLAY_TRANSPARENT}
+            headerBehavior={HeaderBehavior.DEFAULT}
             children={<MultiplayerMenu />}
           />
         </>
@@ -143,7 +142,7 @@ const createAppRouter = (queryClient: QueryClient) =>
       element: (
         <>
           <HomeLayout
-            headerBehavior={HeaderBehavior.OVERLAY_TRANSPARENT}
+            headerBehavior={HeaderBehavior.DEFAULT}
             children={<QuizSelection />}
           />
         </>
@@ -154,14 +153,6 @@ const createAppRouter = (queryClient: QueryClient) =>
       element: (
         <>
           <CreateLobby />
-        </>
-      ),
-    },
-    {
-      path: "/multiplayer/join",
-      element: (
-        <>
-          <JoinLobby />
         </>
       ),
     },
@@ -185,7 +176,7 @@ const createAppRouter = (queryClient: QueryClient) =>
         <>
           <HomeLayout
             children={<QuizPageRouteWrapper />}
-            headerBehavior={HeaderBehavior.OVERLAY_TRANSPARENT}
+            headerBehavior={HeaderBehavior.DEFAULT}
           />
         </>
       ),

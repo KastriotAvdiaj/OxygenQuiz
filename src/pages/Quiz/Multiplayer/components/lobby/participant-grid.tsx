@@ -13,7 +13,7 @@ export const ParticipantGrid = ({
   currentUsername,
 }: ParticipantGridProps) => {
   return (
-    <div className="min-h-[160px] sm:min-h-[200px] md:min-h-[250px] rounded-lg sm:rounded-xl border-2 border-primary/20 p-2.5 sm:p-4 md:p-5 bg-background/50 relative overflow-hidden transition-all duration-300">
+    <div className="rounded-lg sm:rounded-xl border-2 border-primary/20 p-2.5 sm:p-3 md:p-4 bg-background/50 relative overflow-hidden transition-all duration-300">
       {/* Dot pattern background */}
       <div
         className="absolute inset-0 opacity-[0.03] pointer-events-none"
@@ -25,7 +25,7 @@ export const ParticipantGrid = ({
       />
 
       {participants.length === 0 ? (
-        <div className="h-full min-h-[120px] sm:min-h-[160px] flex flex-col items-center justify-center text-muted-foreground space-y-2 sm:space-y-3 relative z-10">
+        <div className="h-full min-h-[100px] sm:min-h-[120px] flex flex-col items-center justify-center text-muted-foreground space-y-2 relative z-10">
           <div className="p-2.5 sm:p-3 md:p-4 rounded-full bg-muted/50">
             <Users className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 opacity-50" />
           </div>

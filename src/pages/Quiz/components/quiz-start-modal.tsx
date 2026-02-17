@@ -49,7 +49,7 @@ export function QuizStartModal({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
-        className="sm:max-w-md mx-auto border-2 text-white  "
+        className="sm:max-w-md mx-auto border-2 text-white font-quiz"
         style={{
           background: `linear-gradient(135deg, ${primaryColor}85, ${primaryColor}45)`,
           borderColor: `${primaryColor}60`,
@@ -82,7 +82,7 @@ export function QuizStartModal({
               </Badge>
             </div>
 
-            <DialogTitle className="text-xl font-bold leading-tight text-left pr-8 text-white">
+            <DialogTitle className="text-xl font-bold leading-tight text-left pr-8 text-white tracking-wider">
               {quiz.title}
             </DialogTitle>
 
