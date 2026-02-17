@@ -10,35 +10,27 @@ public class InMemoryQuizSessionManager : IQuizSessionManager
 
         public Task<Participant> AddParticipantAsync(string sessionId, string username, string connectionId)
         {
-            var session = _sessions.GetOrAdd(sessionId, _ => new MultiplayerSession 
-            { 
-                SessionId = sessionId,
-                HostUsername = username // First user is host
-            });
+            if (!_sessions.TryGetValue(sessionId, out var session))
+            {
+                throw new InvalidOperationException($"Session {sessionId} not found. The lobby may not exist.");
+            }
 
             lock (session)
             {
                 var participant = session.Participants.FirstOrDefault(p => p.Username == username);
                 if (participant == null)
                 {
-                    // New participant
-                    bool isHost = session.Participants.Count == 0; // Double check in case of race?
-                    // Actually GetOrAdd handles creation, but multiple threads could get the same existing session.
-                    // If GetOrAdd created it, HostUsername is set.
-                    // But if existing session, HostUsername is already set.
-                    
-                    // Enforce host logic: If session host matches this user, or no participants yet
-                    if (session.Participants.Count == 0)
+                    // Enforce max players
+                    if (session.MaxPlayers > 0 && session.Participants.Count >= session.MaxPlayers)
                     {
-                        session.HostUsername = username;
-                        isHost = true;
+                        throw new InvalidOperationException("This lobby is full.");
                     }
 
                     participant = new Participant
                     {
                         Username = username,
                         ConnectionId = connectionId,
-                        IsHost = isHost,
+                        IsHost = false,
                         IsReady = false
                     };
                     session.Participants.Add(participant);

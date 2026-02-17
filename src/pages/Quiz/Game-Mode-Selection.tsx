@@ -6,18 +6,14 @@ export function GameModeSelection() {
   const navigate = useNavigate();
 
   return (
-    <div className="flex flex-col h-full text-foreground">
-      {/* Back nav */}
-      <div className="container mx-auto px-4 pt-4 sm:pt-6">
+    <div className="flex-1 flex flex-col items-center justify-center h-full text-foreground">
+      <div className="px-4 pb-16 sm:pb-20 md:pb-24">
         <button
           onClick={() => navigate("/")}
-          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6 sm:mb-8"
         >
           <ArrowLeft className="w-4 h-4" /> Back to Home
         </button>
-      </div>
-
-      <div className="flex-1 flex flex-col items-center justify-center px-4 py-4 sm:py-6 md:py-8">
         <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 sm:mb-6 md:mb-8 text-center">
           Select Game Mode
         </h1>

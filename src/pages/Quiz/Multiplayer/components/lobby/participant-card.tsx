@@ -15,7 +15,7 @@ export const ParticipantCard = ({
 }: ParticipantCardProps) => {
   return (
     <div
-      className={`group relative flex items-center gap-2.5 sm:gap-3 p-2.5 sm:p-3 md:p-4 rounded-lg sm:rounded-xl border-2 shadow-sm transition-all hover:shadow-md hover:-translate-y-1 ${
+      className={`group relative flex items-center gap-2 sm:gap-3 p-2 sm:p-2.5 md:p-3 rounded-lg sm:rounded-xl border-2 shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 ${
         participant.isReady
           ? "border-emerald-500 bg-emerald-500/5"
           : "border-border bg-card hover:border-primary/50"

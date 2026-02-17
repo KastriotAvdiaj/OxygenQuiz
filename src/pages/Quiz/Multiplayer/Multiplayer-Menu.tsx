@@ -3,25 +3,22 @@ import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { useState } from "react";
 import { CreateLobbyDialog } from "./components/create-lobby-dialog";
+import { JoinLobbyDialog } from "./components/join-lobby-dialog";
 
 export function MultiplayerMenu() {
   const navigate = useNavigate();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isJoinDialogOpen, setIsJoinDialogOpen] = useState(false);
 
   return (
-    <div className="flex flex-col h-full text-foreground font-header">
-      {/* Back nav */}
-      <div className="container mx-auto px-4 pt-4 sm:pt-6">
+    <div className="flex-1 flex flex-col items-center justify-center h-full text-foreground">
+      <div className=" px-4 pb-16 sm:pb-20 md:pb-24">
         <button
           onClick={() => navigate("/choose-mode")}
-          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6 sm:mb-8 self-start"
         >
           <ArrowLeft className="w-4 h-4" /> Back to Mode Selection
         </button>
-      </div>
-
-      {/* Content — fills remaining space and centers the cards */}
-      <div className="flex-1 flex flex-col items-center justify-center px-4 py-4 sm:py-6 md:py-8">
         <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 sm:mb-6 md:mb-8 text-center">
           Multiplayer
         </h1>
@@ -46,7 +43,7 @@ export function MultiplayerMenu() {
             <Card
               variant="lifted"
               className="text-center space-y-2 sm:space-y-3 cursor-pointer p-4 sm:p-6 md:p-8 hover:scale-105 transition-transform hover:z-50 h-full flex flex-col justify-center"
-              onClick={() => navigate("/multiplayer/join")}
+              onClick={() => setIsJoinDialogOpen(true)}
             >
               <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-primary font-quiz tracking-wider">
                 Join Lobby
@@ -63,6 +60,12 @@ export function MultiplayerMenu() {
       <CreateLobbyDialog
         open={isCreateDialogOpen}
         onOpenChange={setIsCreateDialogOpen}
+      />
+
+      {/* Join Lobby Dialog */}
+      <JoinLobbyDialog
+        open={isJoinDialogOpen}
+        onOpenChange={setIsJoinDialogOpen}
       />
     </div>
   );
