@@ -157,6 +157,18 @@ const createAppRouter = (queryClient: QueryClient) =>
       ),
     },
     {
+      path: "/multiplayer/join",
+      element: (
+        <>
+          <HomeLayout
+            headerBehavior={HeaderBehavior.DEFAULT}
+            effect="none"
+            children={<MultiplayerLobbyPage />}
+          />
+        </>
+      ),
+    },
+    {
       path: "/multiplayer/lobby/:sessionId",
       element: (
         <>

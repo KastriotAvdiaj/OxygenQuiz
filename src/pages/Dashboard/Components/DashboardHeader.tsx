@@ -18,7 +18,7 @@ export const DashboardHeader = () => {
   };
 
   return (
-    <HeaderComponent className="shadow-md z-8 relative">
+    <HeaderComponent className="shadow-md border-b border-border z-8 relative">
       <div className="flex flex-col items-center p-2">
         <p className="text-foreground text-5xl font-bold pt-3 px-6 italic">
           OXYGEN

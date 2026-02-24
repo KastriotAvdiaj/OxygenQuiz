@@ -3,7 +3,7 @@
 import { Trophy, Target, Clock} from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { QuizSession } from "../../quiz-session-types";
-import { calculateQuizStats, formatDuration } from "./quiz-session-utils";
+import { calculateQuizStats, formatDuration, getPerformanceLevel } from "./quiz-session-utils";
 import { Badge } from "@/components/ui/badge";
 
 interface QuizOverviewProps {
@@ -12,6 +12,7 @@ interface QuizOverviewProps {
 
 export function QuizOverview({ session }: QuizOverviewProps) {
   const stats = calculateQuizStats(session);
+  const performance = getPerformanceLevel(stats.normalizedScore);
   const timeTaken =
     session.endTime && session.startTime
       ? new Date(session.endTime).getTime() -
@@ -43,12 +44,16 @@ export function QuizOverview({ session }: QuizOverviewProps) {
 
           <div className="flex items-baseline justify-center gap-1">
             <span className="text-9xl font-black tracking-tighter">
-              {session.totalScore}
+              {stats.normalizedScore}
             </span>
             <span className="text-3xl font-medium">
-              / {stats.maxPossibleScore}
+              / 100
             </span>
           </div>
+
+          <p className="mt-2 text-lg font-semibold tracking-wide" style={{ color: performance.color }}>
+            {performance.level}
+          </p>
 
           <div className="mt-6 flex items-center justify-center gap-4 text-lg font-medium">
             <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-green-500/40 text-green-400 dark:text-green-400 border border-green-400">
@@ -72,9 +77,9 @@ export function QuizOverview({ session }: QuizOverviewProps) {
             </div>
             <div>
               <p className="text-md text-muted-foreground font-medium uppercase">
-                Accuracy
+                Raw Score
               </p>
-              <p className="text-2xl font-bold">{stats.scorePercentage}%</p>
+              <p className="text-2xl font-bold">{stats.rawTotalScore} pts</p>
             </div>
           </CardContent>
         </Card>

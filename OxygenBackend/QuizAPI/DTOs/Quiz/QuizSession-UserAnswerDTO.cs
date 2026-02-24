@@ -26,9 +26,43 @@ namespace QuizAPI.DTOs.Quiz
             public CurrentQuestionDto? ActiveQuestion { get; set; }
         }
 
+        /// <summary>
+        /// The result of resolving and resuming a quiz session.
+        /// Contains the resolved state after auto-timing-out any expired questions.
+        /// </summary>
+        public class ResumeResultDto
+        {
+            public QuizSessionDto Session { get; set; } = null!;
+
+            /// <summary>
+            /// The question the user should resume on. Null if the quiz is complete.
+            /// </summary>
+            public CurrentQuestionDto? ActiveQuestion { get; set; }
+
+            /// <summary>
+            /// The 1-based question number the user is on (e.g., 3 = third question).
+            /// </summary>
+            public int QuestionNumber { get; set; }
+
+            /// <summary>
+            /// True if all remaining questions timed out and the quiz auto-completed.
+            /// </summary>
+            public bool IsQuizComplete { get; set; }
+
+            /// <summary>
+            /// How many questions were auto-marked as TimedOut during the catch-up.
+            /// </summary>
+            public int SkippedCount { get; set; }
+        }
+
     public class QuizSessionCM
         {
             public int QuizId { get; set; }
+            public Guid UserId { get; set; }
+        }
+
+        public class ResumeRequestDto
+        {
             public Guid UserId { get; set; }
         }
 
@@ -113,6 +147,7 @@ namespace QuizAPI.DTOs.Quiz
     public class QuizSessionSummaryDto
         {
             public Guid Id { get; set; }
+            public int QuizId { get; set; }
             public string QuizTitle { get; set; } = string.Empty;
             public DateTime StartTime { get; set; }
             public DateTime? EndTime { get; set; }

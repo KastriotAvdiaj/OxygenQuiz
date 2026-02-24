@@ -120,11 +120,11 @@ QuizInterfaceProps) {
         </div>
       </motion.header> */}
 
-      {/* Main content area - Better spacing */}
-      <div className="flex-1 flex items-center justify-center px-4 py-8 mb-40">
+      {/* Main content area */}
+      <div className="flex-1 flex items-center justify-center px-3 py-4 sm:px-4 sm:py-6 md:py-8">
         <div className="w-full max-w-3xl">
           {currentQuestion ? (
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               <QuestionDisplay
                 question={currentQuestion}
                 onSubmit={onSubmitAnswer}
@@ -144,7 +144,7 @@ QuizInterfaceProps) {
                     onClick={handleNextQuestion}
                     size="lg"
                     variant={"fancy"}
-                    className="p-6 text-2xl tracking-wide font-semibold font-secondary rounded-lg transition-shadow duration-200 group bg-primary text-white">
+                    className="p-4 sm:p-6 text-lg sm:text-2xl tracking-wide font-semibold font-secondary rounded-lg transition-shadow duration-200 group bg-primary text-white">
                     <div className="flex items-center gap-2">
                       {lastAnswerResult?.isQuizComplete ? (
                         <Trophy className="w-4 h-4" />
@@ -161,8 +161,8 @@ QuizInterfaceProps) {
                   </Button>
 
                   {/* Auto-advance countdown */}
-                  <div className="flex flex-col items-center gap-2">
-                    <p className="text-sm text-gray-600 dark:text-gray-400 ">
+                  <div className="flex flex-col items-center gap-1.5 sm:gap-2">
+                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                       Advancing in{" "}
                       <span className="font-bold color-primary">
                         {autoAdvanceCounter}s

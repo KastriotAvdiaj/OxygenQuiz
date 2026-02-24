@@ -8,6 +8,7 @@ type TimerSize = "sm" | "md" | "lg" | "xl";
 interface QuizTimerProps {
   initialTime: number;
   onTimeUp: () => void;
+  onTick?: (timeLeft: number) => void;
   size?: TimerSize;
 }
 
@@ -25,6 +26,7 @@ const SIZE_CLASSES: Record<TimerSize, { container: string; text: string }> = {
 export function QuizTimer({
   initialTime,
   onTimeUp,
+  onTick,
   size = "lg",
 }: QuizTimerProps) {
   const [timeLeft, setTimeLeft] = useState(initialTime);
@@ -57,8 +59,10 @@ export function QuizTimer({
         const newTime = prevTime - 1;
         if (newTime <= 0 && !timeUpCalledRef.current) {
           setTimeout(() => handleTimeUp(), 0);
+          onTick?.(0);
           return 0;
         }
+        onTick?.(newTime);
         return newTime;
       });
     }, 1000);

@@ -79,7 +79,7 @@ export function QuizResults({
         <div className="flex flex-col sm:flex-row gap-3 justify-center mt-8 pt-8">
           <LiftedButton
             onClick={handleRetryQuiz}
-            className="flex items-center font-secondary text-2xl">
+            className="flex items-center text-2xl">
             <RotateCcw className="h-6 w-6" />
             Try Again
           </LiftedButton>
@@ -87,7 +87,7 @@ export function QuizResults({
           <LiftedButton
             onClick={handleSelectNewQuiz}
             // variant={"fancy"}
-            className="flex items-center text-2xl font-secondary">
+            className="flex items-center text-2xl">
             <Home className="h-6 w-6" />
             New Quiz
           </LiftedButton>

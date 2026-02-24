@@ -9,8 +9,11 @@ export interface QuizStats {
   correctAnswers: number;
   incorrectAnswers: number;
   timeoutAnswers: number;
-  scorePercentage: number;
-  maxPossibleScore: number;
+  accuracyPercentage: number;
+  /** Score normalized to 0–100 based on accuracy (correctAnswers / totalQuestions × 100) */
+  normalizedScore: number;
+  /** Raw total score from the backend (sum of points with time bonuses) */
+  rawTotalScore: number;
 }
 
 export interface PerformanceLevel {
@@ -31,26 +34,19 @@ export function calculateQuizStats(session: QuizSession): QuizStats {
     (answer) => answer.status === AnswerStatus.TimedOut
   ).length;
 
-  const scorePercentage =
+  const accuracyPercentage =
     totalQuestions > 0
       ? Math.round((correctAnswers / totalQuestions) * 100)
       : 0;
-  
-  // Calculate max possible score based on actual question scores
-  const maxPossibleScore = session.userAnswers.reduce((total, answer) => {
-    // Assume each question has the same max score as what they actually got
-    // or use a default if score is 0 (for incorrect answers)
-    const questionMaxScore = answer.score > 0 ? answer.score : 15; // fallback to 15
-    return total + questionMaxScore;
-  }, 0);
 
   return {
     totalQuestions,
     correctAnswers,
     incorrectAnswers,
     timeoutAnswers,
-    scorePercentage,
-    maxPossibleScore,
+    accuracyPercentage,
+    normalizedScore: accuracyPercentage,
+    rawTotalScore: session.totalScore,
   };
 }
 

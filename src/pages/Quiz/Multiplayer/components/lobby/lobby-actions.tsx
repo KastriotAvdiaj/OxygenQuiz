@@ -26,7 +26,7 @@ export const LobbyActions = ({
         <Button
           onClick={onToggleReady}
           variant={isReady ? "outline" : "default"}
-          className={`flex-1 h-9 sm:h-11 md:h-12 text-xs sm:text-base md:text-lg font-bold font-quiz tracking-wider transition-all shadow-lg ${
+          className={`flex-1 h-9 sm:h-11 md:h-12 text-xs sm:text-base md:text-lg text-white font-bold font-quiz tracking-wider transition-all shadow-lg ${
             isReady
               ? "border-2 border-emerald-500 text-emerald-600 hover:bg-emerald-50"
               : "hover:-translate-y-1"

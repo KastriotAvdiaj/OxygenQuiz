@@ -523,6 +523,245 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
             }
         }
 
+        /// <summary>
+        /// Resolves a session's state by auto-timing-out any expired questions,
+        /// then returns the correct question for the user to resume on.
+        /// This is the "mathematical catch-up" — no background timers needed.
+        /// </summary>
+        public async Task<Result<ResumeResultDto>> ResolveAndResumeAsync(Guid sessionId, Guid userId)
+        {
+            try
+            {
+                var session = await _context.QuizSessions
+                    .Include(s => s.Quiz)
+                        .ThenInclude(q => q.QuizQuestions)
+                            .ThenInclude(qq => qq.Question)
+                    .Include(s => s.UserAnswers)
+                    .FirstOrDefaultAsync(s => s.Id == sessionId && s.UserId == userId && !s.IsCompleted);
+
+                if (session == null)
+                    return Result<ResumeResultDto>.ValidationFailure("Session not found or already completed.");
+
+                if (await _abandonmentService.IsSessionAbandonedAsync(session))
+                {
+                    await MarkSessionAbandoned(session, AbandonmentReason.Timeout);
+                    return Result<ResumeResultDto>.Success(BuildCompletedResult(session, sessionId));
+                }
+
+                var answeredIds = session.UserAnswers.Select(ua => ua.QuizQuestionId).ToHashSet();
+                var unansweredQuestions = session.Quiz.QuizQuestions
+                    .Where(qq => !answeredIds.Contains(qq.Id))
+                    .OrderBy(qq => qq.OrderInQuiz)
+                    .ToList();
+
+                // If no unanswered questions remain, the quiz is already done
+                if (!unansweredQuestions.Any())
+                {
+                    await CompleteSession(session);
+                    return Result<ResumeResultDto>.Success(BuildCompletedResult(session, sessionId));
+                }
+
+                var skippedCount = 0;
+
+                // --- Step 1: Handle the currently active question (if any) ---
+                double overflowSeconds = 0;
+
+                if (session.CurrentQuizQuestionId != null && session.CurrentQuestionStartTime.HasValue)
+                {
+                    var currentQuestion = unansweredQuestions
+                        .FirstOrDefault(qq => qq.Id == session.CurrentQuizQuestionId);
+
+                    if (currentQuestion != null)
+                    {
+                        var elapsed = (DateTime.UtcNow - session.CurrentQuestionStartTime.Value).TotalSeconds;
+                        var timeLimit = currentQuestion.TimeLimitInSeconds;
+
+                        if (elapsed <= timeLimit)
+                        {
+                            // User came back in time — resume this question
+                            return await BuildResumeOnCurrentQuestion(
+                                session, sessionId, currentQuestion, answeredIds.Count, elapsed);
+                        }
+
+                        // Time expired — auto-mark as timed out
+                        CreateTimedOutAnswer(session, currentQuestion);
+                        skippedCount++;
+                        overflowSeconds = elapsed - timeLimit;
+
+                        // Remove from unanswered list since we just handled it
+                        unansweredQuestions = unansweredQuestions
+                            .Where(qq => qq.Id != currentQuestion.Id)
+                            .ToList();
+                    }
+
+                    // Clear the active question tracking
+                    session.CurrentQuizQuestionId = null;
+                    session.CurrentQuestionStartTime = null;
+                }
+
+                // --- Step 2: Walk through remaining questions, timing out any that would have expired ---
+                foreach (var question in unansweredQuestions.ToList())
+                {
+                    if (overflowSeconds >= question.TimeLimitInSeconds)
+                    {
+                        // This question's entire time window has passed
+                        CreateTimedOutAnswer(session, question);
+                        skippedCount++;
+                        overflowSeconds -= question.TimeLimitInSeconds;
+                        unansweredQuestions.Remove(question);
+                    }
+                    else
+                    {
+                        // This is the question the user should resume on
+                        var timeRemaining = question.TimeLimitInSeconds - (int)overflowSeconds;
+
+                        await _context.SaveChangesAsync();
+
+                        return await BuildResumeOnNewQuestion(
+                            session, sessionId, question, answeredIds.Count + skippedCount, timeRemaining, skippedCount);
+                    }
+                }
+
+                // --- Step 3: All questions timed out — complete the quiz ---
+                await _context.SaveChangesAsync();
+                await CompleteSession(session);
+
+                var completedSessionDto = await GetSessionDtoAsync(sessionId);
+                return Result<ResumeResultDto>.Success(new ResumeResultDto
+                {
+                    Session = completedSessionDto!,
+                    IsQuizComplete = true,
+                    SkippedCount = skippedCount,
+                    QuestionNumber = answeredIds.Count + skippedCount,
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error resolving and resuming session {SessionId} for user {UserId}",
+                    sessionId, userId);
+                return Result<ResumeResultDto>.Failure("Failed to resume session.");
+            }
+        }
+
+        #region Resume Helpers
+
+        /// <summary>
+        /// Creates a UserAnswer record with TimedOut status for a question that expired while the user was away.
+        /// </summary>
+        private void CreateTimedOutAnswer(QuizSession session, QuizQuestion question)
+        {
+            var timedOutAnswer = new UserAnswer
+            {
+                SessionId = session.Id,
+                QuizQuestionId = question.Id,
+                Status = AnswerStatus.TimedOut,
+                Score = 0,
+                QuestionStartTime = session.CurrentQuestionStartTime ?? DateTime.UtcNow,
+                SubmittedTime = null,
+                SelectedOptionId = null,
+                SubmittedAnswer = null,
+            };
+
+            _context.UserAnswers.Add(timedOutAnswer);
+
+            _logger.LogInformation(
+                "Auto-timed-out question {QuestionId} for session {SessionId}",
+                question.Id, session.Id);
+        }
+
+        /// <summary>
+        /// User came back while the current question is still active — resume it with reduced time.
+        /// </summary>
+        private async Task<Result<ResumeResultDto>> BuildResumeOnCurrentQuestion(
+            QuizSession session, Guid sessionId, QuizQuestion question, int answeredCount, double elapsed)
+        {
+            await LoadQuestionDetails(question);
+            var questionDto = _mapper.Map<CurrentQuestionDto>(question);
+            questionDto.TimeRemainingInSeconds = Math.Max(0, question.TimeLimitInSeconds - (int)elapsed);
+
+            var sessionDto = await GetSessionDtoAsync(sessionId);
+            return Result<ResumeResultDto>.Success(new ResumeResultDto
+            {
+                Session = sessionDto!,
+                ActiveQuestion = questionDto,
+                QuestionNumber = answeredCount + 1,
+                IsQuizComplete = false,
+                SkippedCount = 0,
+            });
+        }
+
+        /// <summary>
+        /// The current question timed out and we've landed on a new one — set it as active with adjusted time.
+        /// </summary>
+        private async Task<Result<ResumeResultDto>> BuildResumeOnNewQuestion(
+            QuizSession session, Guid sessionId, QuizQuestion question, int answeredCount, int timeRemaining, int skippedCount)
+        {
+            // Set this question as the current active question
+            session.CurrentQuizQuestionId = question.Id;
+            session.CurrentQuestionStartTime = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
+            await LoadQuestionDetails(question);
+            var questionDto = _mapper.Map<CurrentQuestionDto>(question);
+            questionDto.TimeRemainingInSeconds = timeRemaining;
+
+            var sessionDto = await GetSessionDtoAsync(sessionId);
+            return Result<ResumeResultDto>.Success(new ResumeResultDto
+            {
+                Session = sessionDto!,
+                ActiveQuestion = questionDto,
+                QuestionNumber = answeredCount + 1,
+                IsQuizComplete = false,
+                SkippedCount = skippedCount,
+            });
+        }
+
+        /// <summary>
+        /// Loads answer options for multiple-choice questions (needed for mapping to DTOs).
+        /// </summary>
+        private async Task LoadQuestionDetails(QuizQuestion quizQuestion)
+        {
+            if (quizQuestion.Question is MultipleChoiceQuestion)
+            {
+                await _context.Entry(quizQuestion.Question)
+                    .Collection(q => ((MultipleChoiceQuestion)q).AnswerOptions)
+                    .LoadAsync();
+            }
+        }
+
+        private async Task CompleteSession(QuizSession session)
+        {
+            session.IsCompleted = true;
+            session.EndTime = DateTime.UtcNow;
+            session.CurrentQuizQuestionId = null;
+            session.CurrentQuestionStartTime = null;
+            await _context.SaveChangesAsync();
+        }
+
+        private async Task MarkSessionAbandoned(QuizSession session, AbandonmentReason reason)
+        {
+            session.IsCompleted = true;
+            session.EndTime = DateTime.UtcNow;
+            session.CurrentQuizQuestionId = null;
+            session.CurrentQuestionStartTime = null;
+            session.AbandonmentReason = reason;
+            session.AbandonedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+        }
+
+        private ResumeResultDto BuildCompletedResult(QuizSession session, Guid sessionId)
+        {
+            return new ResumeResultDto
+            {
+                Session = _mapper.Map<QuizSessionDto>(session),
+                IsQuizComplete = true,
+                SkippedCount = 0,
+                QuestionNumber = session.UserAnswers?.Count ?? 0,
+            };
+        }
+
+        #endregion
+
         public async Task<Result<QuizSessionDto>> GetSessionAsync(Guid sessionId)
         {
             try
