@@ -22,6 +22,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
 
         Task<Result<QuizSessionDto>> AbandonAndCreateNewSessionAsync(Guid existingSessionId, QuizSessionCM model);
         Task<Result<QuizSessionDto>> ResumeSessionAsync(Guid sessionId, Guid userId);
+        Task<Result<ResumeResultDto>> ResolveAndResumeAsync(Guid sessionId, Guid userId);
 
         /// <summary>
         /// Gets the current grading status for a session (useful for non-instant feedback quizzes)

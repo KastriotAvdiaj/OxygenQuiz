@@ -25,7 +25,7 @@ export const JoinForm = ({
   onJoin,
 }: JoinFormProps) => {
   return (
-    <div className="max-w-md mx-auto space-y-3 sm:space-y-4">
+    <div className="max-w-md mx-auto space-y-3 sm:space-y-6">
       <div className="space-y-2.5 sm:space-y-3">
         <div className="space-y-1 sm:space-y-1.5">
           <label
@@ -35,6 +35,7 @@ export const JoinForm = ({
             Username
           </label>
           <Input
+            variant="quiz"
             id="username"
             placeholder="Enter your username"
             value={username}
@@ -54,13 +55,14 @@ export const JoinForm = ({
               Room Code
             </label>
             <Input
+              variant="quiz"
               id="sessionId"
               placeholder="Enter room code"
               value={sessionId}
               onChange={(e) => onSessionIdChange(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && onJoin()}
               disabled={!isConnected}
-              className="h-9 sm:h-10 md:h-11 text-sm sm:text-base font-mono tracking-wider border-2 border-primary/20 focus-visible:border-primary transition-all"
+              className="h-9 sm:h-10 md:h-11 text-sm sm:text-base tracking-wider border-2 border-primary/20 focus-visible:border-primary transition-all"
             />
           </div>
         )}
@@ -69,14 +71,14 @@ export const JoinForm = ({
       <Button
         onClick={onJoin}
         disabled={!isConnected || !username.trim() || !sessionId.trim() || isJoining}
-        className="w-full h-10 sm:h-11 md:h-12 text-sm sm:text-base md:text-lg font-bold font-quiz tracking-wider shadow-lg hover:translate-y-[-2px] transition-all"
+        className="w-full h-10 sm:h-11 md:h-12 text-sm sm:text-base md:text-lg font-bold font-quiz tracking-wider shadow-lg hover:translate-y-[-2px] transition-all text-white"
         size="lg"
       >
         {isJoining ? "Joining..." : mode === "create" ? "Create Lobby" : "Join Lobby"}
       </Button>
 
       {joinError && (
-        <p className="text-xs sm:text-sm text-destructive mt-2">{joinError}</p>
+        <p className="text-xs sm:text-sm text-destructive mt-2 font-quiz">{joinError}</p>
       )}
     </div>
   );

@@ -18,18 +18,17 @@ export const NotFoundContent = ({
   linkTo = "/",
 }: NotFoundContentProps) => {
   return (
-    <Card className="w-full max-w-md text-center shadow-lg">
+    <Card className="w-full max-w-md text-center shadow-lg font-quiz">
       <CardHeader>
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900">
-          <SearchX className="h-10 w-10 text-blue-500 dark:text-blue-400" />
-        </div>
         <CardTitle className="mt-4 text-3xl font-bold">{title}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-8">
         <p className="text-muted-foreground">{message}</p>
-        <Button variant="fancy" className="mt-6 w-full ">
-          <Link to={linkTo}>{linkText}</Link>
-        </Button>
+        <Link to={linkTo}>
+          <Button variant="fancy" className="mt-6 w-full ">
+            {linkText}
+          </Button>
+        </Link>
       </CardContent>
     </Card>
   );

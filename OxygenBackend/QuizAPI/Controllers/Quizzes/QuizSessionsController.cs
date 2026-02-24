@@ -140,6 +140,20 @@ public class QuizSessionsController : BaseApiController
 
     #endregion
 
+    /// <summary>
+    /// Resolves and resumes a quiz session. Auto-times-out any expired questions
+    /// using mathematical catch-up, then returns the correct question to resume on.
+    /// </summary>
+    [HttpPost("{sessionId:guid}/resolve-and-resume")]
+    [ProducesResponseType(typeof(ResumeResultDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ResolveAndResume(Guid sessionId, [FromBody] ResumeRequestDto request)
+    {
+        var result = await _quizSessionService.ResolveAndResumeAsync(sessionId, request.UserId);
+        return HandleResult(result);
+    }
+
     #region --- Grading Status Endpoints ---
 
     /// <summary>

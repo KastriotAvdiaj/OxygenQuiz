@@ -1,34 +1,38 @@
 import { useEffect, useState } from "react";
-import { Info, CircleAlert, CircleX, CircleCheck, X } from "lucide-react";
+import { Info, CircleAlert, CircleX, CircleCheck, X, Timer, Zap } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
 const icons = {
-  info: <Info className="size-4" aria-hidden="true" />,
-  success: <CircleCheck className="size-4" aria-hidden="true" />,
-  warning: <CircleAlert className="size-4" aria-hidden="true" />,
-  error: <CircleX className="size-4" aria-hidden="true" />,
+  info: <Info className="size-5" aria-hidden="true" />,
+  success: <CircleCheck className="size-5" aria-hidden="true" />,
+  warning: <Timer className="size-5" aria-hidden="true" />,
+  error: <CircleX className="size-5" aria-hidden="true" />,
 };
 
 const styles = {
   info: {
-    bg: "bg-blue-500/10 border-blue-500/20",
-    text: "text-blue-400",
-    icon: "text-blue-400",
+    bg: "from-blue-600/90 to-blue-700/90 border-blue-400/30",
+    text: "text-white",
+    icon: "text-blue-200",
+    glow: "shadow-blue-500/20",
   },
   success: {
-    bg: "bg-emerald-500/10 border-emerald-500/20",
-    text: "text-emerald-400",
-    icon: "text-emerald-400",
+    bg: "from-emerald-600/90 to-emerald-700/90 border-emerald-400/30",
+    text: "text-white",
+    icon: "text-emerald-200",
+    glow: "shadow-emerald-500/20",
   },
   warning: {
-    bg: "bg-amber-500/10 border-amber-500/20",
-    text: "text-amber-400",
-    icon: "text-amber-400",
+    bg: "from-amber-300/95 to-orange-400/95 border-amber-300/30",
+    text: "text-white",
+    icon: "text-amber-100",
+    glow: "shadow-amber-500/30",
   },
   error: {
-    bg: "bg-red-500/10 border-red-500/20",
-    text: "text-red-400",
-    icon: "text-red-400",
+    bg: "from-red-600/90 to-red-700/90 border-red-400/30",
+    text: "text-white",
+    icon: "text-red-200",
+    glow: "shadow-red-500/20",
   },
 };
 
@@ -46,17 +50,25 @@ export type TopNotificationProps = {
 export const TopNotification = ({
   notification: { id, type, title, message },
   onDismiss,
-  timeout = 4000,
+  timeout = 5000,
 }: TopNotificationProps) => {
   const [visible, setVisible] = useState(true);
+  const [progress, setProgress] = useState(100);
   const style = styles[type];
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setVisible(false);
-    }, timeout);
+    const startTime = Date.now();
+    const interval = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      const remaining = Math.max(0, 100 - (elapsed / timeout) * 100);
+      setProgress(remaining);
+      if (remaining <= 0) {
+        clearInterval(interval);
+        setVisible(false);
+      }
+    }, 50);
 
-    return () => clearTimeout(timer);
+    return () => clearInterval(interval);
   }, [timeout]);
 
   return (
@@ -64,10 +76,14 @@ export const TopNotification = ({
       {visible && (
         <motion.div
           className="pointer-events-auto"
-          initial={{ opacity: 0, y: -20, scale: 0.95 }}
+          initial={{ opacity: 0, y: -30, scale: 0.9 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: -20, scale: 0.95 }}
-          transition={{ duration: 0.25, ease: "easeOut" }}
+          transition={{
+            type: "spring",
+            stiffness: 400,
+            damping: 25,
+          }}
           onAnimationComplete={(definition) => {
             if (definition === "exit") {
               onDismiss(id);
@@ -75,32 +91,75 @@ export const TopNotification = ({
           }}
         >
           <div
-            className={`flex items-center gap-3 rounded-xl border px-4 py-3 shadow-lg backdrop-blur-md ${style.bg}`}
+            className={`
+              relative overflow-hidden rounded-2xl border
+              bg-gradient-to-r ${style.bg}
+              px-5 py-3.5 shadow-xl ${style.glow}
+              backdrop-blur-xl min-w-[280px] max-w-[420px]
+            `}
             role="alert"
             aria-label={title}
           >
-            <span className={`flex-shrink-0 ${style.icon}`}>
-              {icons[type]}
-            </span>
-            <div className="flex flex-col min-w-0">
-              <span
-                className={`text-sm font-medium leading-tight ${style.text}`}
+            {/* Animated background shimmer */}
+            <motion.div
+              className="absolute inset-0 opacity-10"
+              style={{
+                background:
+                  "linear-gradient(90deg, transparent 0%, white 50%, transparent 100%)",
+                backgroundSize: "200% 100%",
+              }}
+              animate={{ backgroundPosition: ["200% 0%", "-200% 0%"] }}
+              transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+            />
+
+            <div className="relative flex items-center gap-3">
+              {/* Icon with pulse effect */}
+              <motion.div
+                className={`flex-shrink-0 ${style.icon}`}
+                animate={{ scale: [1, 1.15, 1] }}
+                transition={{
+                  duration: 1.5,
+                  repeat: 1,
+                  ease: "easeInOut",
+                }}
               >
-                {title}
-              </span>
-              {message && (
-                <span className="text-xs text-muted-foreground mt-0.5 leading-tight">
-                  {message}
-                </span>
-              )}
+                {icons[type]}
+              </motion.div>
+
+              {/* Content */}
+              <div className="flex flex-col min-w-0 flex-1">
+                <div className="flex items-center gap-1.5">
+                  <span
+                    className={`text-sm font-bold leading-tight ${style.text}`}
+                  >
+                    {title}
+                  </span>
+                </div>
+                {message && (
+                  <span className="text-xs text-white/70 mt-0.5 leading-snug">
+                    {message}
+                  </span>
+                )}
+              </div>
+
+              {/* Dismiss button */}
+              <button
+                className="flex-shrink-0 ml-1 rounded-full p-1 text-white/50 hover:text-white hover:bg-white/10 transition-all"
+                onClick={() => setVisible(false)}
+              >
+                <span className="sr-only">Close</span>
+                <X className="size-3.5" aria-hidden="true" />
+              </button>
             </div>
-            <button
-              className={`flex-shrink-0 ml-2 rounded-md p-0.5 opacity-60 hover:opacity-100 transition-opacity ${style.text}`}
-              onClick={() => setVisible(false)}
-            >
-              <span className="sr-only">Close</span>
-              <X className="size-3.5" aria-hidden="true" />
-            </button>
+
+            {/* Progress bar */}
+            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white/10">
+              <motion.div
+                className="h-full bg-white/40 rounded-full"
+                style={{ width: `${progress}%` }}
+                transition={{ duration: 0.05 }}
+              />
+            </div>
           </div>
         </motion.div>
       )}

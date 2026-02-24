@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/form";
@@ -10,6 +10,8 @@ export interface TypeTheAnswerQuestionProps {
   isSubmitting: boolean;
   instantFeedback?: boolean;
   answerResult?: InstantFeedbackAnswerResult | null;
+  isTimedOut?: boolean;
+  onSelectionChange?: (optionId: number | null, textAnswer?: string) => void;
 }
 
 export function TypeTheAnswerQuestion({
@@ -17,8 +19,16 @@ export function TypeTheAnswerQuestion({
   isSubmitting,
   instantFeedback = false,
   answerResult = null,
+  isTimedOut = false,
+  onSelectionChange,
 }: TypeTheAnswerQuestionProps) {
   const [answer, setAnswer] = useState<string>("");
+
+  // Sync current text to parent ref
+  useEffect(() => {
+    const trimmed = answer.trim();
+    onSelectionChange?.(null, trimmed || undefined);
+  }, [answer, onSelectionChange]);
 
   const handleSubmit = () => {
     const trimmedAnswer = answer.trim();
@@ -26,17 +36,24 @@ export function TypeTheAnswerQuestion({
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && answer.trim() && !isSubmitting && !answerResult) {
+    if (
+      e.key === "Enter" &&
+      answer.trim() &&
+      !isSubmitting &&
+      !answerResult &&
+      !isTimedOut
+    ) {
       handleSubmit();
     }
   };
 
   const isCorrect = answerResult?.status === "Correct";
-  const isDisabled = instantFeedback && !!answerResult;
+  const isAnswered = instantFeedback && !!answerResult;
+  const isDisabled = isAnswered || isTimedOut;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col items-center space-y-6">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col items-center space-y-4 sm:space-y-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -49,7 +66,7 @@ export function TypeTheAnswerQuestion({
             onKeyUp={handleKeyPress}
             placeholder="Type your answer here..."
             className={`
-              h-16 text-xl text-center border-3 rounded-xl transition-all duration-300
+              h-12 sm:h-16 text-lg sm:text-xl text-center border-3 rounded-xl transition-all duration-300
               ${isDisabled ? "cursor-not-allowed" : ""}
               ${
                 instantFeedback && answerResult
@@ -87,9 +104,9 @@ export function TypeTheAnswerQuestion({
               animate={{ scale: 1 }}
               className="absolute right-4 top-1/2 -translate-y-1/2">
               {isCorrect ? (
-                <CheckCircle className="w-6 h-6 text-green-600" />
+                <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
               ) : (
-                <XCircle className="w-6 h-6 text-red-600" />
+                <XCircle className="w-5 h-5 sm:w-6 sm:h-6 text-red-600" />
               )}
             </motion.div>
           )}
@@ -104,51 +121,51 @@ export function TypeTheAnswerQuestion({
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="text-center p-4 rounded-lg bg-gray-100 dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700">
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+              className="text-center p-3 sm:p-4 rounded-lg bg-gray-100 dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700">
+              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-1">
                 Correct answer:
               </p>
-              <p className="text-lg font-semibold text-green-700 dark:text-green-300">
+              <p className="text-base sm:text-lg font-semibold text-green-700 dark:text-green-300">
                 {answerResult.correctAnswer}
               </p>
             </motion.div>
           )}
 
-        {!answerResult && (
+        {!answerResult && !isTimedOut && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4 }}
-            className="text-sm text-gray-500 text-center">
+            className="text-xs sm:text-sm text-gray-500 text-center">
             Press Enter or click Submit to answer
           </motion.div>
         )}
       </div>
 
-      <motion.div
-        className="flex justify-center pt-4"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}>
-        {/* Only show button if not answered */}
-        {!instantFeedback || !answerResult ? (
+      {/* Submit button */}
+      {(!instantFeedback || !answerResult) && !isTimedOut && (
+        <motion.div
+          className="flex justify-center pt-2 sm:pt-4"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}>
           <Button
             onClick={handleSubmit}
             disabled={!answer.trim() || isSubmitting || isDisabled}
             size="lg"
             variant={"fancy"}
-            className="px-8 py-6 text-2xl font-semibold rounded-xl min-w-[200px] font-quiz bg-primary text-white">
+            className="px-6 py-4 sm:px-8 sm:py-6 text-lg sm:text-2xl font-semibold rounded-xl min-w-[160px] sm:min-w-[200px] font-quiz bg-primary text-white">
             {isSubmitting ? (
               <div className="flex items-center gap-2">
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 Submitting...
               </div>
             ) : (
               "Submit"
             )}
           </Button>
-        ) : null}
-      </motion.div>
+        </motion.div>
+      )}
     </div>
   );
 }

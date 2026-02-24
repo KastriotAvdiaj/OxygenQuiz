@@ -105,3 +105,30 @@ export interface QuizSession {
   quizDescription?: string;
   category: string;
 }
+
+export interface QuizSessionSummary {
+  id: string;
+  quizId: number;
+  quizTitle: string;
+  startTime: string;
+  endTime: string | null;
+  totalScore: number;
+  totalQuestions: number;
+  correctAnswers: number;
+  isCompleted: boolean;
+  duration: string | null;
+  abandonmentReason?: AbandonmentReason;
+  abandonedAt?: string | null;
+}
+
+/**
+ * Returned by the resolve-and-resume endpoint after the backend
+ * catches up on any timed-out questions.
+ */
+export interface ResumeResult {
+  session: QuizSession;
+  activeQuestion: CurrentQuestion | null;
+  questionNumber: number;
+  isQuizComplete: boolean;
+  skippedCount: number;
+}

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useMultiplayer } from "@/hooks/useMultiplayer";
 import { useNotifications } from "@/common/Notifications";
 
@@ -16,11 +16,12 @@ interface UseLobbyConnectionOptions {
 
 export const useLobbyConnection = ({ mode = "join", quizId = "" }: UseLobbyConnectionOptions) => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { connection, isConnected, joinSession, leaveSession } = useMultiplayer();
   const { addNotification } = useNotifications();
 
   const [username, setUsername] = useState("");
-  const [sessionId, setSessionId] = useState("");
+  const [sessionId, setSessionId] = useState(searchParams.get("code")?.toUpperCase() || "");
   const [hasJoined, setHasJoined] = useState(false);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [copied, setCopied] = useState(false);
