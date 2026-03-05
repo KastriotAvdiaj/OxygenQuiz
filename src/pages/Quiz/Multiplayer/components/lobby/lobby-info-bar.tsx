@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Users, Copy, Check } from "lucide-react";
+import { Users, Copy, Check, LogOut } from "lucide-react";
 
 interface LobbyInfoBarProps {
   participantCount: number;
@@ -39,18 +39,17 @@ export const LobbyInfoBar = ({
           onClick={onCopyInvite}
           variant="outline"
           size="sm"
-          className="gap-1 border text-xs font-bold h-7 sm:h-8 px-2 sm:px-3"
+          className="gap-1 border border-foreground/40 text-xs font-bold h-7 sm:h-8 px-2 sm:px-3"
         >
           {copied ? (
             <>
               <Check className="w-3 h-3 text-emerald-500" />
-              <span className="hidden sm:inline">Copied</span>
+              {/* <span className="hidden sm:inline">Copied</span> */}
               <span className="sm:hidden">✓</span>
             </>
           ) : (
             <>
               <Copy className="w-3 h-3" />
-              <span>Invite</span>
             </>
           )}
         </Button>
@@ -59,9 +58,9 @@ export const LobbyInfoBar = ({
           onClick={onLeave}
           variant="outline"
           size="sm"
-          className="border border-destructive/20 hover:bg-destructive hover:text-destructive-foreground hover:border-destructive transition-colors text-xs font-bold h-7 sm:h-8 px-2 sm:px-3"
+          className="border border-destructive hover:bg-destructive hover:text-destructive-foreground hover:border-destructive transition-colors text-destructive text-xs font-bold h-7 sm:h-8 px-2 sm:px-2"
         >
-          Leave
+          <LogOut className="w-4 h-4" />
         </Button>
       </div>
     </div>

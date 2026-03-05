@@ -44,7 +44,7 @@ export function MultiplayerMenu() {
               variant="lifted"
               className="text-center space-y-2 sm:space-y-3 cursor-pointer p-4 sm:p-6 md:p-8 hover:scale-105 transition-transform hover:z-50 h-full flex flex-col justify-center"
               onClick={() => setIsJoinDialogOpen(true)}
-            >
+            > 
               <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-primary font-quiz tracking-wider">
                 Join Lobby
               </h2>

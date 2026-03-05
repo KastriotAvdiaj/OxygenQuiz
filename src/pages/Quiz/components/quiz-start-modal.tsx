@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -8,7 +8,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { HelpCircle, Clock, User, Calendar, X } from "lucide-react";
+import { HelpCircle, Clock, User, Calendar, Play, Users } from "lucide-react";
 import type { QuizSummaryDTO } from "@/types/quiz-types";
 import { secondsToMinutes } from "./quiz-card";
 
@@ -27,9 +27,24 @@ export function QuizStartModal({
   onStartQuiz,
   mode = "single",
 }: QuizStartModalProps) {
-  const primaryColor = quiz.colorPaletteJson
-    ? JSON.parse(quiz.colorPaletteJson)[0]
-    : "#6366f1";
+  const colors = useMemo(() => {
+    try {
+      return quiz.colorPaletteJson
+        ? (JSON.parse(quiz.colorPaletteJson) as string[])
+        : ["#6366f1", "#8b5cf6", "#06b6d4"];
+    } catch {
+      return ["#6366f1", "#8b5cf6", "#06b6d4"];
+    }
+  }, [quiz.colorPaletteJson]);
+
+  const primaryColor = colors[0];
+
+  const gradientStyle = useMemo(() => {
+    if (quiz.gradient && colors.length > 1) {
+      return `linear-gradient(135deg, ${colors.join(", ")})`;
+    }
+    return primaryColor;
+  }, [colors, quiz.gradient, primaryColor]);
 
   const handleStartQuiz = () => {
     onStartQuiz(quiz.id);
@@ -41,128 +56,129 @@ export function QuizStartModal({
     const dateObj = typeof date === "string" ? new Date(date) : date;
     return dateObj.toLocaleDateString("en-US", {
       year: "numeric",
-      month: "long",
+      month: "short",
       day: "numeric",
     });
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent
-        className="sm:max-w-md mx-auto border-2 text-white font-quiz"
-        style={{
-          background: `linear-gradient(135deg, ${primaryColor}85, ${primaryColor}45)`,
-          borderColor: `${primaryColor}60`,
-          backdropFilter: "blur(30px)",
-        }}>
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.95 }}
-          transition={{ duration: 0.2 }}>
-          {/* Close button */}
-          <button
-            onClick={onClose}
-            className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none z-10">
-            <X className="h-4 w-4" />
-            <span className="sr-only">Close</span>
-          </button>
+      <DialogContent className="sm:max-w-md mx-auto border-[3px] border-foreground bg-card font-quiz p-0 overflow-hidden gap-0">
+        {/* Top gradient accent strip */}
+        <div
+          className="h-2.5 w-full"
+          style={{ background: gradientStyle }}
+        />
 
+        <div className="p-5 sm:p-6 space-y-5">
           <DialogHeader className="space-y-3">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 flex-wrap">
               <Badge
                 variant="secondary"
-                className="text-xs font-medium px-3 py-1 rounded-full border"
+                className="text-[10px] sm:text-xs font-bold px-2.5 py-0.5 rounded-full border tracking-wider uppercase"
                 style={{
-                  backgroundColor: `${primaryColor}25`,
-                  borderColor: `${primaryColor}50`,
+                  backgroundColor: `${primaryColor}15`,
+                  borderColor: `${primaryColor}40`,
                   color: primaryColor,
-                }}>
+                }}
+              >
                 {quiz.category}
+              </Badge>
+              <Badge
+                variant="secondary"
+                className="text-[10px] sm:text-xs font-bold px-2.5 py-0.5 rounded-full border tracking-wider uppercase"
+              >
+                {quiz.difficulty}
               </Badge>
             </div>
 
-            <DialogTitle className="text-xl font-bold leading-tight text-left pr-8 text-white tracking-wider">
+            <DialogTitle className="text-xl sm:text-2xl font-bold leading-tight text-left pr-6 text-foreground tracking-wider">
               {quiz.title}
             </DialogTitle>
 
             {quiz.description && (
-              <DialogDescription className="text-sm text-muted-foreground text-left">
+              <DialogDescription className="text-sm text-muted-foreground text-left leading-relaxed">
                 {quiz.description}
               </DialogDescription>
             )}
           </DialogHeader>
 
-          {/* Quiz details */}
-          <div className="space-y-4 mt-6">
-            <div className="grid grid-cols-2 gap-4">
+          {/* Stats grid */}
+          <div
+            className="rounded-lg border-2 p-3 sm:p-4 space-y-3"
+            style={{ borderColor: `${primaryColor}30` }}
+          >
+            <div className="grid grid-cols-2 gap-3">
               <div className="flex items-center gap-2 text-sm">
-                <HelpCircle
-                  className="h-4 w-4"
-                  style={{ color: primaryColor }}
-                />
-                <span className="font-medium">Questions</span>
-                <span className="text-gray-400">{quiz.questionCount}</span>
+                <div
+                  className="p-1.5 rounded-md"
+                  style={{ backgroundColor: `${primaryColor}15` }}
+                >
+                  <HelpCircle className="h-3.5 w-3.5" style={{ color: primaryColor }} />
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Questions</p>
+                  <p className="font-bold text-foreground">{quiz.questionCount}</p>
+                </div>
               </div>
 
-              {quiz.timeLimitInSeconds && (
-                <div className="flex items-center gap-2 text-sm">
-                  <Clock className="h-4 w-4" style={{ color: primaryColor }} />
-                  <span className="font-medium">Time limit</span>
-                  <span className="text-gray-400">
-                    {secondsToMinutes(quiz.timeLimitInSeconds)}
-                  </span>
+              <div className="flex items-center gap-2 text-sm">
+                <div
+                  className="p-1.5 rounded-md"
+                  style={{ backgroundColor: `${primaryColor}15` }}
+                >
+                  <Clock className="h-3.5 w-3.5" style={{ color: primaryColor }} />
                 </div>
-              )}
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Time Limit</p>
+                  <p className="font-bold text-foreground">
+                    {quiz.timeLimitInSeconds > 0 ? secondsToMinutes(quiz.timeLimitInSeconds) : "None"}
+                  </p>
+                </div>
+              </div>
             </div>
 
-            {/* Creator and date info */}
-            <div className="space-y-2 pt-2 border-t border-border/50">
+            {/* Divider */}
+            <div className="h-px w-full bg-border/50" />
+
+            {/* Author & Date */}
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
               {quiz.user && (
-                <div className="flex items-center gap-2 text-sm">
-                  <User className="h-4 w-4" style={{ color: primaryColor }} />
-                  <span className="font-medium">Created by</span>
-                  <span className="text-gray-400">{quiz.user}</span>
+                <div className="flex items-center gap-1.5">
+                  <User className="h-3 w-3" style={{ color: primaryColor }} />
+                  <span className="font-medium">{quiz.user}</span>
                 </div>
               )}
-
               {quiz.createdAt && (
-                <div className="flex items-center gap-2 text-sm">
-                  <Calendar
-                    className="h-4 w-4"
-                    style={{ color: primaryColor }}
-                  />
-                  <span className="font-medium">Created</span>
-                  <span className="text-gray-400">
-                    {formatDate(quiz.createdAt)}
-                  </span>
+                <div className="flex items-center gap-1.5">
+                  <Calendar className="h-3 w-3" style={{ color: primaryColor }} />
+                  <span className="font-medium">{formatDate(quiz.createdAt)}</span>
                 </div>
               )}
             </div>
           </div>
 
-          {/* Action buttons */}
-          <div className="flex items-center justify-center mt-6">
-            <Button
-              onClick={handleStartQuiz}
-              variant="fancy"
-              fancyColors={{
-                primary: `${primaryColor}`,
-                secondary: `${primaryColor}`,
-                shadow: `${primaryColor}90`,
-                text: "#ffffff",
-                border: "#fecaca",
-              }}
-              className="px-6 py-6 group/button border-2 text-white hover:opacity-90 transition-opacity !  !text-2xl"
-              style={{
-                backgroundColor: primaryColor,
-                borderColor: primaryColor,
-              }}>
-              {/* <Play className="h-4 w-4 mr-2" /> */}
-              {mode === "multiplayer" ? "Create Lobby" : "Start Quiz"}
-            </Button>
-          </div>
-        </motion.div>
+          {/* Action button */}
+          <Button
+            onClick={handleStartQuiz}
+            className="w-full h-12 text-base font-bold font-quiz tracking-wider border-[3px] border-foreground text-white transition-all hover:-translate-y-0.5 hover:shadow-lg"
+            style={{
+              backgroundColor: primaryColor,
+            }}
+          >
+            {mode === "multiplayer" ? (
+              <>
+                <Users className="h-4 w-4 mr-2" />
+                Create Lobby
+              </>
+            ) : (
+              <>
+                <Play className="h-4 w-4 mr-2 fill-current" />
+                Start Quiz
+              </>
+            )}
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );

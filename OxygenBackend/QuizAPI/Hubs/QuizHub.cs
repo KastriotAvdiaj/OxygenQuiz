@@ -7,10 +7,12 @@ namespace QuizAPI.Hubs;
 public class QuizHub : Hub<IQuizClient>
 {
     private readonly IQuizSessionManager _sessionManager;
+    private readonly IServiceProvider _serviceProvider;
 
-    public QuizHub(IQuizSessionManager sessionManager)
+    public QuizHub(IQuizSessionManager sessionManager, IServiceProvider serviceProvider)
     {
         _sessionManager = sessionManager;
+        _serviceProvider = serviceProvider;
     }
 
     public async Task JoinSession(string sessionId, string username)
@@ -66,24 +68,40 @@ public class QuizHub : Hub<IQuizClient>
         {
             var sessionId = sessionIdObj as string;
             var username = usernameObj as string;
+            var connectionId = Context.ConnectionId;
 
             if (!string.IsNullOrEmpty(sessionId) && !string.IsNullOrEmpty(username))
             {
-                var wasHost = await _sessionManager.IsHostAsync(sessionId, username);
-                
-                // Clean up the participant
-                await _sessionManager.RemoveParticipantAsync(sessionId, username);
-                await Clients.Group(sessionId).UserLeft(username);
-                
-                // If host disconnected, notify about new host
-                if (wasHost)
+                // Use a background task to delay participant removal, granting a 5s grace period for page refreshes
+                _ = Task.Run(async () =>
                 {
-                    var newHostUsername = await _sessionManager.GetHostUsernameAsync(sessionId);
-                    if (newHostUsername != null)
+                    await Task.Delay(5000); 
+
+                    using var scope = _serviceProvider.CreateScope();
+                    var sessionManager = scope.ServiceProvider.GetRequiredService<IQuizSessionManager>();
+                    var hubContext = scope.ServiceProvider.GetRequiredService<IHubContext<QuizHub, IQuizClient>>();
+
+                    var participants = await sessionManager.GetParticipantsAsync(sessionId);
+                    var p = participants.FirstOrDefault(x => x.Username == username);
+                    
+                    // Only remove if they exist and still have the OLD connection ID (meaning they didn't reconnect)
+                    if (p != null && p.ConnectionId == connectionId)
                     {
-                        await Clients.Group(sessionId).HostChanged(newHostUsername);
+                        var wasHost = await sessionManager.IsHostAsync(sessionId, username);
+                        
+                        await sessionManager.RemoveParticipantAsync(sessionId, username);
+                        await hubContext.Clients.Group(sessionId).UserLeft(username);
+                        
+                        if (wasHost)
+                        {
+                            var newHostUsername = await sessionManager.GetHostUsernameAsync(sessionId);
+                            if (newHostUsername != null)
+                            {
+                                await hubContext.Clients.Group(sessionId).HostChanged(newHostUsername);
+                            }
+                        }
                     }
-                }
+                });
             }
         }
 

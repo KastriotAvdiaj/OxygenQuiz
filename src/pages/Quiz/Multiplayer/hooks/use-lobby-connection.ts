@@ -1,7 +1,13 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useMultiplayer } from "@/hooks/useMultiplayer";
 import { useNotifications } from "@/common/Notifications";
+import { useNavigationGuard } from "./use-navigation-guard";
+
+export interface SelectedQuiz {
+  id: string;
+  title: string;
+}
 
 export interface Participant {
   username: string;
@@ -11,13 +17,12 @@ export interface Participant {
 
 interface UseLobbyConnectionOptions {
   mode?: "create" | "join";
-  quizId?: string;
 }
 
-export const useLobbyConnection = ({ mode = "join", quizId = "" }: UseLobbyConnectionOptions) => {
+export const useLobbyConnection = ({ mode = "join" }: UseLobbyConnectionOptions) => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { connection, isConnected, joinSession, leaveSession } = useMultiplayer();
+  const { connection, isConnected, joinSession, leaveSession, selectQuiz } = useMultiplayer();
   const { addNotification } = useNotifications();
 
   const [username, setUsername] = useState("");
@@ -27,6 +32,28 @@ export const useLobbyConnection = ({ mode = "join", quizId = "" }: UseLobbyConne
   const [copied, setCopied] = useState(false);
   const [isJoining, setIsJoining] = useState(false);
   const [joinError, setJoinError] = useState<string | null>(null);
+  const [selectedQuiz, setSelectedQuiz] = useState<SelectedQuiz | null>(null);
+
+  // Refs to capture latest values for the cleanup effect
+  const sessionIdRef = useRef(sessionId);
+  const usernameRef = useRef(username);
+  const hasJoinedRef = useRef(hasJoined);
+
+  useEffect(() => { sessionIdRef.current = sessionId; }, [sessionId]);
+  useEffect(() => { usernameRef.current = username; }, [username]);
+  useEffect(() => { hasJoinedRef.current = hasJoined; }, [hasJoined]);
+
+  // Auto-leave when the component unmounts (e.g., browser back button)
+  useEffect(() => {
+    return () => {
+      if (hasJoinedRef.current && sessionIdRef.current && usernameRef.current) {
+        leaveSession(sessionIdRef.current, usernameRef.current).catch((err) =>
+          console.error("Failed to leave session on unmount:", err)
+        );
+        sessionStorage.removeItem("quiz_session");
+      }
+    };
+  }, [leaveSession]);
 
   const currentUser = useMemo(
     () => participants.find((p) => p.username === username),
@@ -35,7 +62,12 @@ export const useLobbyConnection = ({ mode = "join", quizId = "" }: UseLobbyConne
   const isHost = currentUser?.isHost ?? false;
   const isReady = currentUser?.isReady ?? false;
   const allPlayersReady = participants.length > 0 && participants.every((p) => p.isReady);
-  const canStartQuiz = isHost && participants.length >= 2 && allPlayersReady;
+  const hasSelectedQuiz = selectedQuiz !== null;
+
+  // Navigation guard — blocks accidental back-button / navigation while in the lobby
+  const { showLeaveDialog, confirmNavigation, cancelNavigation } =
+    useNavigationGuard(hasJoined);
+  const canStartQuiz = isHost && participants.length >= 2 && allPlayersReady && hasSelectedQuiz;
 
   const generateRoomCode = () => {
     return Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -110,6 +142,10 @@ export const useLobbyConnection = ({ mode = "join", quizId = "" }: UseLobbyConne
       navigate(`/quiz/${startedQuizId}/play`);
     });
 
+    connection.on("QuizSelected", (quizId: string, quizTitle: string) => {
+      setSelectedQuiz({ id: quizId, title: quizTitle });
+    });
+
     return () => {
       connection.off("UserJoined");
       connection.off("CurrentParticipants");
@@ -117,13 +153,16 @@ export const useLobbyConnection = ({ mode = "join", quizId = "" }: UseLobbyConne
       connection.off("PlayerReadyChanged");
       connection.off("HostChanged");
       connection.off("GameStarted");
+      connection.off("QuizSelected");
     };
   }, [connection, addNotification, navigate, username]);
+
+  const autoResumeAttempted = useRef(false);
 
   // Auto-resume session from sessionStorage
   useEffect(() => {
     const storedSession = sessionStorage.getItem("quiz_session");
-    if (!storedSession || !isConnected || hasJoined) return;
+    if (!storedSession || !isConnected || hasJoined || autoResumeAttempted.current) return;
 
     try {
       const { sessionId: storedId, username: storedUser } = JSON.parse(storedSession);
@@ -132,6 +171,7 @@ export const useLobbyConnection = ({ mode = "join", quizId = "" }: UseLobbyConne
         mode === "join" || (mode === "create" && storedId === sessionId);
 
       if (storedId && storedUser && shouldAutoResume) {
+        autoResumeAttempted.current = true;
         setSessionId(storedId);
         setUsername(storedUser);
 
@@ -228,9 +268,29 @@ export const useLobbyConnection = ({ mode = "join", quizId = "" }: UseLobbyConne
     }
   }, [isReady, connection, sessionId, username, addNotification]);
 
+  const handleSelectQuiz = useCallback(
+    async (quizId: string, quizTitle: string) => {
+      try {
+        await selectQuiz(sessionId, quizId, quizTitle);
+        addNotification({
+          type: "success",
+          title: `Selected: ${quizTitle}`,
+        });
+      } catch (err) {
+        console.error("SelectQuiz failed", err);
+        addNotification({
+          type: "error",
+          title: "Failed to select quiz",
+        });
+      }
+    },
+    [sessionId, selectQuiz, addNotification]
+  );
+
   const handleStartQuiz = useCallback(() => {
+    if (!selectedQuiz) return;
     connection
-      ?.invoke("StartQuiz", sessionId, quizId)
+      ?.invoke("StartQuiz", sessionId, selectedQuiz.id)
       .then(() => {
         addNotification({
           type: "success",
@@ -244,7 +304,7 @@ export const useLobbyConnection = ({ mode = "join", quizId = "" }: UseLobbyConne
           title: "Failed to start quiz",
         });
       });
-  }, [connection, sessionId, quizId, addNotification]);
+  }, [connection, sessionId, selectedQuiz, addNotification]);
 
   return {
     // State
@@ -258,12 +318,19 @@ export const useLobbyConnection = ({ mode = "join", quizId = "" }: UseLobbyConne
     isJoining,
     joinError,
     isConnected,
+    selectedQuiz,
 
     // Computed
     isHost,
     isReady,
     allPlayersReady,
     canStartQuiz,
+    hasSelectedQuiz,
+
+    // Navigation guard
+    showLeaveDialog,
+    confirmNavigation,
+    cancelNavigation,
 
     // Actions
     handleJoinSession,
@@ -271,5 +338,6 @@ export const useLobbyConnection = ({ mode = "join", quizId = "" }: UseLobbyConne
     handleCopyInvite,
     handleToggleReady,
     handleStartQuiz,
+    handleSelectQuiz,
   };
 };

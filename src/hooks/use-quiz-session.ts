@@ -376,15 +376,15 @@ export const useQuizSession = ({
 
       setCompletedAnswers((prev) => [...prev, answerResult]);
 
-      if (answerResult.isQuizComplete) {
+      if (hasInstantFeedback) {
+        // Always show feedback first — for the last question, the "View Results"
+        // button (or auto-advance) will navigate to results after the user sees it.
+        setLastAnswerResult(answerResult);
+      } else if (answerResult.isQuizComplete) {
         navigate(`/quiz/results/${quizSession!.id}`);
       } else {
-        if (hasInstantFeedback) {
-          setLastAnswerResult(answerResult);
-        } else {
-          setCurrentQuestionNumber((prev) => prev + 1);
-          fetchNextQuestion(quizSession!.id);
-        }
+        setCurrentQuestionNumber((prev) => prev + 1);
+        fetchNextQuestion(quizSession!.id);
       }
     },
     [navigate, quizSession, fetchNextQuestion]

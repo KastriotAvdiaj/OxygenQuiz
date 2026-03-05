@@ -72,6 +72,12 @@ namespace QuizAPI.DTOs.Quiz
             public int QuizQuestionId { get; set; }
             public int? SelectedOptionId { get; set; }
             public string? SubmittedAnswer { get; set; }
+            /// <summary>
+            /// Set to true by the frontend when the client-side timer expired.
+            /// The backend uses this alongside its own server-side clock check
+            /// to reliably determine timeouts regardless of network latency.
+            /// </summary>
+            public bool IsTimedOut { get; set; } = false;
         }
 
         // Data Transfer Objects

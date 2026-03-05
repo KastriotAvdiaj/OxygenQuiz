@@ -21,7 +21,8 @@ interface QuizInterfaceProps {
   onNextQuestion: () => void;
   onSubmitAnswer: (
     selectedOptionId: number | null,
-    submittedAnswer?: string
+    submittedAnswer?: string,
+    isTimedOut?: boolean
   ) => void;
   currentQuestionNumber?: number;
   totalQuestions?: number;
@@ -47,10 +48,12 @@ QuizInterfaceProps) {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [autoAdvanceCounter, setAutoAdvanceCounter] = React.useState(3);
 
-  // Auto-click button after 3 seconds
+  // Auto-advance after 3 seconds — but NOT on the last question
+  const isQuizComplete = lastAnswerResult?.isQuizComplete ?? false;
+
   useEffect(() => {
-    // Only set timeout if instant feedback is shown and there's a result
-    if (showInstantFeedback && lastAnswerResult) {
+    // Only auto-advance for mid-quiz feedback, not the final question
+    if (showInstantFeedback && lastAnswerResult && !lastAnswerResult.isQuizComplete) {
       // Reset counter
       setAutoAdvanceCounter(3);
 
@@ -146,40 +149,40 @@ QuizInterfaceProps) {
                     variant={"fancy"}
                     className="p-4 sm:p-6 text-lg sm:text-2xl tracking-wide font-semibold font-secondary rounded-lg transition-shadow duration-200 group bg-primary text-white">
                     <div className="flex items-center gap-2">
-                      {lastAnswerResult?.isQuizComplete ? (
+                      {isQuizComplete && (
                         <Trophy className="w-4 h-4" />
-                      ) : (
-                        <></>
                       )}
                       <span>
-                        {lastAnswerResult?.isQuizComplete
-                          ? "View Results"
+                        {isQuizComplete
+                          ? "Finish"
                           : "Next"}
                       </span>
                       <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform duration-200" />
                     </div>
                   </Button>
 
-                  {/* Auto-advance countdown */}
-                  <div className="flex flex-col items-center gap-1.5 sm:gap-2">
-                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-                      Advancing in{" "}
-                      <span className="font-bold color-primary">
-                        {autoAdvanceCounter}s
-                      </span>
-                    </p>
-                    {/* Progress bar */}
-                    <div className="w-32 h-1 bg-gray-300 dark:bg-gray-600 rounded-full overflow-hidden">
-                      <motion.div
-                        className="h-full rounded-full bg-primary"
-                        initial={{ width: "100%" }}
-                        animate={{
-                          width: `${(autoAdvanceCounter / 3) * 100}%`,
-                        }}
-                        transition={{ duration: 0.3 }}
-                      />
+                  {/* Auto-advance countdown — hidden on last question */}
+                  {!isQuizComplete && (
+                    <div className="flex flex-col items-center gap-1.5 sm:gap-2">
+                      <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                        Advancing in{" "}
+                        <span className="font-bold color-primary">
+                          {autoAdvanceCounter}s
+                        </span>
+                      </p>
+                      {/* Progress bar */}
+                      <div className="w-32 h-1 bg-gray-300 dark:bg-gray-600 rounded-full overflow-hidden">
+                        <motion.div
+                          className="h-full rounded-full bg-primary"
+                          initial={{ width: "100%" }}
+                          animate={{
+                            width: `${(autoAdvanceCounter / 3) * 100}%`,
+                          }}
+                          transition={{ duration: 0.3 }}
+                        />
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </motion.div>
               )}
             </div>

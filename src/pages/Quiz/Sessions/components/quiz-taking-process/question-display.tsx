@@ -15,7 +15,7 @@ import { Clock } from "lucide-react";
 
 interface QuestionDisplayProps {
   question: CurrentQuestion;
-  onSubmit: (selectedOptionId: number | null, submittedAnswer?: string) => void;
+  onSubmit: (selectedOptionId: number | null, submittedAnswer?: string, isTimedOut?: boolean) => void;
   isSubmitting: boolean;
   instantFeedback?: boolean;
   answerResult?: InstantFeedbackAnswerResult | null;
@@ -64,7 +64,7 @@ export function QuestionDisplay({
 
     setIsTimedOut(true);
     hasSubmittedRef.current = true;
-    onSubmit(null);
+    onSubmit(null, undefined, true);
 
     // Show a notification tip
     useNotifications.getState().addNotification({
@@ -110,7 +110,7 @@ export function QuestionDisplay({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
       className="space-y-4 sm:space-y-6">
-      {/* Timer */}
+      {/* Timer — freezes once the answer is submitted or timed out */}
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -118,7 +118,9 @@ export function QuestionDisplay({
         className="flex justify-center">
         <QuizTimer
           initialTime={question.timeRemainingInSeconds}
+          totalTime={question.timeLimitInSeconds}
           onTimeUp={handleTimeUp}
+          isPaused={!!answerResult || isTimedOut}
           size="md"
         />
       </motion.div>
