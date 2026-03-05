@@ -14,26 +14,16 @@ const Card = React.forwardRef<
 
   if (variant === "lifted") {
     return (
-      <div className="relative group h-full">
-        {/* Background "Shadow" Element */}
-        <div
-          className={cn(
-            "absolute top-1 left-2 w-full h-[98.5%] bg-foreground border border-foreground/20 rounded-xl",
-            "opacity-100"
-          )}
-        />
-        {/* Main Card Content */}
         <div
           ref={ref}
           className={cn(
-            "relative bg-card border-4 border-foreground rounded-xl transition-transform duration-200",
+            "relative bg-card border-4 border-foreground dark:border-foreground/60 rounded-xl transition-transform duration-200" ,
             hover &&
               "group-hover:-translate-y-0.5 group-hover:-translate-x-0.5",
             className
           )}
           {...props}
         />
-      </div>
     );
   }
 

@@ -43,7 +43,8 @@ export function QuizPage({ quizId, userId }: QuizPageProps) {
   // --- Event Handlers ---
   const handleSubmitAnswer = (
     selectedOptionId: number | null,
-    submittedAnswer?: string
+    submittedAnswer?: string,
+    isTimedOut?: boolean
   ) => {
     if (!quizSession?.id || !currentQuestion || isSubmitting) return;
 
@@ -54,6 +55,7 @@ export function QuizPage({ quizId, userId }: QuizPageProps) {
           quizQuestionId: currentQuestion.quizQuestionId,
           selectedOptionId,
           submittedAnswer,
+          isTimedOut: isTimedOut ?? false,
         },
       },
       {
@@ -76,6 +78,11 @@ export function QuizPage({ quizId, userId }: QuizPageProps) {
 
   const handleNextQuestion = () => {
     if (quizSession?.id) {
+      // If the last answer marked the quiz as complete, go straight to results
+      if (lastAnswerResult?.isQuizComplete) {
+        navigate(`/quiz/results/${quizSession.id}`);
+        return;
+      }
       setCurrentQuestionNumber((prev) => prev + 1);
       fetchNextQuestion(quizSession.id);
     }

@@ -10,6 +10,7 @@ export const submitAnswerInputSchema = z.object({
   quizQuestionId: z.number().int(),
   selectedOptionId: z.number().int().optional().nullable(),
   submittedAnswer: z.string().optional().nullable(),
+  isTimedOut: z.boolean().optional().default(false),
 });
 
 export type SubmitAnswerInput = z.infer<typeof submitAnswerInputSchema>;

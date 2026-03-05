@@ -67,7 +67,8 @@ export function FeedbackDisplay({
         </motion.span>
 
         {/* Score Display */}
-        <motion.div
+        {/* Removed score display since it's not necessary for single player quizzes */}
+        {/* <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
@@ -76,7 +77,7 @@ export function FeedbackDisplay({
             +{result.scoreAwarded}
           </span>
           <span className="text-sm text-gray-500 font-medium">points</span>
-        </motion.div>
+        </motion.div> */}
       </div>
 
       {/* Time spent indicator */}

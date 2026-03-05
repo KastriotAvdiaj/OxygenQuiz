@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Info, CircleAlert, CircleX, CircleCheck, X, Timer, Zap } from "lucide-react";
+import { Info, CircleX, CircleCheck, X, Timer } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 
 const icons = {
@@ -9,30 +9,27 @@ const icons = {
   error: <CircleX className="size-5" aria-hidden="true" />,
 };
 
+
 const styles = {
   info: {
-    bg: "from-blue-600/90 to-blue-700/90 border-blue-400/30",
-    text: "text-white",
-    icon: "text-blue-200",
-    glow: "shadow-blue-500/20",
+    border: "border-blue-200 dark:border-blue-800",
+    icon: "text-blue-600 dark:text-blue-400",
+    progress: "bg-blue-500",
   },
   success: {
-    bg: "from-emerald-600/90 to-emerald-700/90 border-emerald-400/30",
-    text: "text-white",
-    icon: "text-emerald-200",
-    glow: "shadow-emerald-500/20",
+    border: "border-emerald-200 dark:border-emerald-800",
+    icon: "text-emerald-600 dark:text-emerald-400",
+    progress: "bg-emerald-500",
   },
   warning: {
-    bg: "from-amber-300/95 to-orange-400/95 border-amber-300/30",
-    text: "text-white",
-    icon: "text-amber-100",
-    glow: "shadow-amber-500/30",
+    border: "border-amber-200 dark:border-amber-800",
+    icon: "text-amber-600 dark:text-amber-400",
+    progress: "bg-amber-500",
   },
   error: {
-    bg: "from-red-600/90 to-red-700/90 border-red-400/30",
-    text: "text-white",
-    icon: "text-red-200",
-    glow: "shadow-red-500/20",
+    border: "border-red-200 dark:border-red-800",
+    icon: "text-red-600 dark:text-red-400",
+    progress: "bg-red-500",
   },
 };
 
@@ -92,10 +89,10 @@ export const TopNotification = ({
         >
           <div
             className={`
-              relative overflow-hidden rounded-2xl border
-              bg-gradient-to-r ${style.bg}
-              px-5 py-3.5 shadow-xl ${style.glow}
-              backdrop-blur-xl min-w-[280px] max-w-[420px]
+              relative overflow-hidden rounded-2xl border-4 ${style.border}
+              bg-background font-quiz
+              px-5 py-3.5 shadow-xl
+              min-w-[280px] max-w-[420px]
             `}
             role="alert"
             aria-label={title}
@@ -130,13 +127,13 @@ export const TopNotification = ({
               <div className="flex flex-col min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">
                   <span
-                    className={`text-sm font-bold leading-tight ${style.text}`}
+                    className={`text-sm font-bold leading-tight `}
                   >
                     {title}
                   </span>
                 </div>
                 {message && (
-                  <span className="text-xs text-white/70 mt-0.5 leading-snug">
+                  <span className="text-xs text-foreground/70 mt-0.5 leading-snug">
                     {message}
                   </span>
                 )}

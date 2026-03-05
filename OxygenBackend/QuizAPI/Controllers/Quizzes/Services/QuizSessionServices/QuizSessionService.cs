@@ -230,7 +230,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                 var questionStartTime = session.CurrentQuestionStartTime.Value;
                 var timeLimit = session.CurrentQuizQuestion!.TimeLimitInSeconds + _options.GracePeriodSeconds;
                 var timeTaken = DateTime.UtcNow - questionStartTime;
-                bool isTimedOut = timeTaken.TotalSeconds > timeLimit;
+                bool isTimedOut = timeTaken.TotalSeconds > timeLimit || model.IsTimedOut;
 
                 _logger.LogInformation("Session {SessionId}: TimeTaken={TimeTakenSeconds}s, Limit={TimeLimitSeconds}s, TimedOut={TimedOut}",
                     session.Id, timeTaken.TotalSeconds, timeLimit, isTimedOut);

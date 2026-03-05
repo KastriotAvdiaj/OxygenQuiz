@@ -25,7 +25,7 @@ export const JoinForm = ({
   onJoin,
 }: JoinFormProps) => {
   return (
-    <div className="max-w-md mx-auto space-y-3 sm:space-y-6">
+    <div className="max-w-md mx-auto space-y-3 sm:space-y-8">
       <div className="space-y-2.5 sm:space-y-3">
         <div className="space-y-1 sm:space-y-1.5">
           <label

@@ -7,6 +7,7 @@ interface LobbyActionsProps {
   canStartQuiz: boolean;
   allPlayersReady: boolean;
   participants: Participant[];
+  hasSelectedQuiz: boolean;
   onToggleReady: () => void;
   onStartQuiz: () => void;
 }
@@ -17,9 +18,18 @@ export const LobbyActions = ({
   canStartQuiz,
   allPlayersReady,
   participants,
+  hasSelectedQuiz,
   onToggleReady,
   onStartQuiz,
 }: LobbyActionsProps) => {
+  const getStartButtonText = () => {
+    if (!hasSelectedQuiz) return "Select a Quiz";
+    if (participants.length < 2) return "Waiting...";
+    if (!allPlayersReady)
+      return `Waiting (${participants.filter((p) => !p.isReady).length})`;
+    return "START GAME";
+  };
+
   return (
     <div className="flex flex-col sm:flex-row items-stretch gap-2 sm:gap-3">
       {!isHost && (
@@ -56,11 +66,7 @@ export const LobbyActions = ({
             className="flex-[2] h-9 sm:h-11 md:h-12 text-xs sm:text-base md:text-lg font-bold font-quiz tracking-wider shadow-lg hover:-translate-y-1 transition-all"
             size="lg"
           >
-            {participants.length < 2
-              ? "Waiting..."
-              : !allPlayersReady
-                ? `Waiting (${participants.filter((p) => !p.isReady).length})`
-                : "START GAME"}
+            {getStartButtonText()}
           </Button>
         </>
       )}
