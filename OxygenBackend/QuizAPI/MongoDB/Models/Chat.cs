@@ -27,9 +27,6 @@ namespace ChatApp.Models
         [BsonElement("username")]
         public string Username { get; set; } = string.Empty;
 
-        [BsonElement("displayName")]
-        public string DisplayName { get; set; } = string.Empty;
-
         [BsonElement("avatarUrl")]
         public string? AvatarUrl { get; set; }
 

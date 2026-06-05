@@ -1,10 +1,11 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
-using QuizAPI.Services.CurrentUserService;
 using QuizAPI.ManyToManyTables;
 using QuizAPI.Models;
 using QuizAPI.Models.Quiz;
 using QuizAPI.Models.Statistics.Questions;
+using QuizAPI.Services;
+using QuizAPI.Services.CurrentUserService;
 using System.Text.Json;
 namespace QuizAPI.Data
 {
@@ -26,6 +27,10 @@ namespace QuizAPI.Data
         public DbSet<QuizSession> QuizSessions { get; set; }
 
         public DbSet<UserAnswer> UserAnswers { get; set; }
+
+        public DbSet<UserRole> UserRoles { get; set; }
+        
+        public DbSet<RolePermission> RolePermissions { get; set; }
 
         public DbSet<QuizQuestion> QuizQuestions { get; set; }
 
@@ -54,6 +59,7 @@ namespace QuizAPI.Data
         public DbSet<Universiteti> Universitetet { get; set; }
 
         public DbSet<Drejtimi> Drejtimet { get; set; }
+
 
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options, ICurrentUserService current) : base(options)
         {
@@ -92,6 +98,50 @@ namespace QuizAPI.Data
 
             //GLOBAL QUERY FILTERS
 
+            PermissionSeeder.Seed(modelBuilder);
+
+
+            // USER config
+
+            modelBuilder.Entity<User>()
+                .Property(u => u.ConcurrencyStamp)
+                .IsConcurrencyToken();
+
+            modelBuilder.Entity<User>()
+                .HasQueryFilter(u => !u.IsDeleted);
+
+            //User - Role many-to-many relationship
+
+            modelBuilder.Entity<UserRole>()
+                .HasKey(ur => ur.Id);
+            modelBuilder.Entity<UserRole>()
+                .HasOne(ur => ur.User)
+                .WithMany(u => u.UserRoles)
+                .HasForeignKey(ur => ur.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<UserRole>()
+                .HasOne(ur => ur.Role)
+                .WithMany()
+                .HasForeignKey(ur => ur.RoleId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // INDEXES AND RELATIONSHIPS FOR ROLE PERMISSIONS
+            modelBuilder.Entity<RolePermission>()
+                .HasKey(rp => rp.Id);
+
+            // Configure the Role side (One Role -> Many RolePermissions)
+            modelBuilder.Entity<RolePermission>()
+                .HasOne(rp => rp.Role)
+                .WithMany() // Kept clean/unidirectional if your Role entity doesn't track collections
+                .HasForeignKey(rp => rp.RoleId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Configure the Permission side (One Permission -> Many RolePermissions)
+            modelBuilder.Entity<RolePermission>()
+                .HasOne(rp => rp.Permission)
+                .WithMany(p => p.RolePermissions)
+                .HasForeignKey(rp => rp.PermissionId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             base.OnModelCreating(modelBuilder);
             // Configure many-to-many relationship between Role and UpdatedAt tables.

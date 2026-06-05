@@ -1,132 +1,79 @@
-﻿using AutoMapper;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using QuizAPI.Data;
-using QuizAPI.DTOs.User;
+﻿using QuizAPI.DTOs.Authentication;
+using QuizAPI.Exceptions;
+using QuizAPI.ManyToManyTables;
+using QuizAPI.Mapping;
 using QuizAPI.Models;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
+using QuizAPI.Repositories.Interfaces;
 
-namespace QuizAPI.Services.AuthenticationService
+namespace QuizAPI.Services.AuthenticationService;
+
+public class AuthenticationService(
+    IUserRepository userRepository,
+    IRoleRepository roleRepository,
+    ITokenService tokenService) : IAuthenticationService
 {
-    public class AuthenticationService(ApplicationDbContext context, IConfiguration configuration, IMapper mapper) : IAuthenticationService
+    private const string DefaultRoleName = "User";
+
+    private readonly IUserRepository _userRepository = userRepository;
+    private readonly IRoleRepository _roleRepository = roleRepository;
+    private readonly ITokenService _tokenService = tokenService;
+
+    public async Task<AuthResponseDTO> SignupAsync(SignupDTO dto, CancellationToken ct = default)
     {
-        private readonly ApplicationDbContext _context = context;
-        private readonly IConfiguration _configuration = configuration;
-        private readonly IMapper _mapper = mapper;
+        var immutableName = dto.Username.ToLowerInvariant();
 
-        public async Task<AuthResult> SignupAsync(string email, string username, string password)
+        if (await _userRepository.EmailExistsAsync(dto.Email, ct))
+            throw new ConflictException("Email is already in use.");
+
+        if (await _userRepository.UsernameExistsAsync(immutableName, ct))
+            throw new ConflictException("Username is already taken.");
+
+        var defaultRole = await _roleRepository.GetByNameAsync(DefaultRoleName, ct)
+            ?? throw new InvalidOperationException(
+                $"Default role '{DefaultRoleName}' is missing. Seed it before allowing signups.");
+
+        var user = new User
         {
-            // Check if the user already exists
-            var existingUser = await _context.Users.SingleOrDefaultAsync(u => u.Email == email);
-            if (existingUser != null)
+            Id = Guid.NewGuid(),
+            Email = dto.Email,
+            Username = dto.Username,
+            ImmutableName = immutableName,
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
+            DateRegistered = DateTime.UtcNow,
+            LastLogin = DateTime.UtcNow,
+            IsDeleted = false,
+            ProfileImageUrl = string.Empty,
+            UserRoles = new List<UserRole>
             {
-                return new AuthResult { Success = false, Message = "Email is already in use." };
+                new() { RoleId = defaultRole.Id, AssignedAt = DateTime.UtcNow }
             }
+        };
 
-            // Create a new user
-            var user = new User
-            {
-                Id = Guid.NewGuid(),
-                Email = email,
-                Username = username,
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
-                DateRegistered = DateTime.UtcNow,
-                LastLogin = DateTime.UtcNow,
-                RoleId = 2, 
-                IsDeleted = false,
-                ImmutableName = username.ToLower(), // Immutable Name
-                ProfileImageUrl = string.Empty
-            };
+        await _userRepository.AddAsync(user, ct);
+        await _userRepository.SaveChangesAsync(ct);
 
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
+        var roleNames = new[] { defaultRole.Name! };
+        var token = _tokenService.GenerateToken(user, roleNames);
 
-            // Generate JWT token
-            var token = GenerateJwtToken(user);
-            return new AuthResult { Success = true, Token = token };
-        }
-
-        public async Task<FullUserDTO> GetUserByIdAsync(Guid userId)
-        {
-            var user = await _context.Users
-                .Include(u => u.Role)
-                .SingleOrDefaultAsync(u => u.Id == userId && !u.IsDeleted);
-
-            if (user == null)
-            {
-                return null;
-            }
-
-            return _mapper.Map<FullUserDTO>(user);
-        }
-
-        public async Task<AuthResult> LoginAsync(string email, string password)
-        {
-            // Check if the user exists and include the role in the query
-            var user = await _context.Users
-                .Include(u => u.Role)
-                .SingleOrDefaultAsync(u => u.Email == email && !u.IsDeleted);
-
-            if (user == null || !BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
-            {
-                return new AuthResult { Success = false, Message = "Invalid credentials." };
-            }
-
-            if (user.Role == null)
-            {
-                return new AuthResult { Success = false, Message = "Invalid credentials." };
-            }
-
-            // Update last login BEFORE creating DTO so it's reflected in the response
-            user.LastLogin = DateTime.UtcNow;
-            await _context.SaveChangesAsync();
-
-            // Create DTO using AutoMapper
-            var userDTO = _mapper.Map<FullUserDTO>(user);
-
-            // Generate JWT token
-            var token = GenerateJwtToken(user);
-
-            return new AuthResult
-            {
-                Success = true,
-                Token = token,
-                User = userDTO,
-                Message = "Successfully logged in!"
-            };
-        }
-
-        private string GenerateJwtToken(User user)
-        {
-            var claims = new[]
-            {
-                new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-                new Claim(JwtRegisteredClaimNames.Email, user.Email),
-                new Claim("Username", user.Username),
-                new Claim(ClaimTypes.Role, user.Role.Name),
-            };
-
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-            var token = new JwtSecurityToken(
-                issuer: _configuration["Jwt:Issuer"],
-                audience: _configuration["Jwt:Audience"],
-                claims: claims,
-                expires: DateTime.UtcNow.AddHours(1),
-                signingCredentials: creds);
-
-            return new JwtSecurityTokenHandler().WriteToken(token);
-        }
+        return new AuthResponseDTO { Token = token, User = user.ToDto(roleNames) };
     }
 
-    public class AuthResult
+    public async Task<AuthResponseDTO> LoginAsync(LoginDTO dto, CancellationToken ct = default)
     {
-        public bool Success { get; set; }
-        public string Message { get; set; }
-        public FullUserDTO User { get; set; }
-        public string Token { get; set; }
+        var user = await _userRepository.GetByEmailAsync(dto.Email, tracked: true, ct);
+
+        if (user is null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
+            throw new UnauthorizedException("Invalid credentials.");
+
+        user.LastLogin = DateTime.UtcNow;
+        await _userRepository.SaveChangesAsync(ct);
+
+        var roleNames = user.UserRoles
+            .Select(ur => ur.Role.Name!)
+            .ToArray();
+
+        var token = _tokenService.GenerateToken(user, roleNames);
+
+        return new AuthResponseDTO { Token = token, User = user.ToDto(roleNames) };
     }
 }

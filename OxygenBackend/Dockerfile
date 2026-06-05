@@ -3,10 +3,10 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-COPY QuizAPI/QuizAPI.csproj ./
+COPY OxygenBackend/QuizAPI/QuizAPI.csproj ./
 RUN dotnet restore QuizAPI.csproj
 
-COPY QuizAPI/. ./
+COPY OxygenBackend/QuizAPI/. ./
 RUN dotnet publish QuizAPI.csproj -c Release -o /app/publish --no-restore
 
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime

@@ -4,10 +4,13 @@
     public class UserDTO
     {
         public Guid Id { get; set; }
-        public string Email { get; set; }
-        public string Username { get; set; }
-
-        public string Role { get; set; }
+        public string Username { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public DateTime DateRegistered { get; set; }
+        public DateTime LastLogin { get; set; }
+        public bool IsDeleted { get; set; }
+        public string? ProfileImageUrl { get; set; }
+        public IReadOnlyList<string> Roles { get; set; } = Array.Empty<string>();
     }
 
 }

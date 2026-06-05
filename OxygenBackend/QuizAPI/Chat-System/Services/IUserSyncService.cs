@@ -1,4 +1,4 @@
-﻿using ChatApp.Models;
+﻿/*using ChatApp.Models;
 
 namespace QuizAPI.Chat_System.Services
 {
@@ -50,4 +50,4 @@ namespace QuizAPI.Chat_System.Services
         /// <param name="userId">The unique identifier of the user to sync.</param>
         Task SyncUserInfoToMongoAsync(Guid userId);
     }
-}
+}*/

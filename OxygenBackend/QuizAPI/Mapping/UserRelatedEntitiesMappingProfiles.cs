@@ -1,23 +1,28 @@
-﻿using AutoMapper;
-using QuizAPI.DTOs.User;
+﻿using QuizAPI.DTOs.User;
 using QuizAPI.Models;
 
 namespace QuizAPI.Mapping
 {
-    public class UserRelatedEntitiesMappingProfiles: Profile
+    public static class UserMappings
     {
-        public UserRelatedEntitiesMappingProfiles()
+        public static UserDTO ToDto(this User user) =>
+            user.ToDto(user.UserRoles.Select(ur => ur.Role.Name));
+
+        // Overload for when roles are already resolved (e.g. right after create),
+        // so we don't re-walk UserRoles.
+        public static UserDTO ToDto(this User user, IEnumerable<string> roleNames) => new()
         {
-            CreateMap<User, UserDTO>()
-                .ForMember(dest => dest.Role, opt => opt.MapFrom(src => src.Role.Name));
+            Id = user.Id,
+            Username = user.Username,
+            Email = user.Email,
+            DateRegistered = user.DateRegistered,
+            LastLogin = user.LastLogin,
+            IsDeleted = user.IsDeleted,
+            ProfileImageUrl = user.ProfileImageUrl,
+            Roles = roleNames.ToList()
+        };
 
-           
-            CreateMap<User, UserBasicDTO>();
-
-            CreateMap<User, FullUserDTO>()
-                .ForMember(dest => dest.Role, opt => opt.MapFrom(src => src.Role.Name))
-                .ForMember(dest => dest.TotalUsers, opt => opt.Ignore());
-
-        }
+        public static IReadOnlyList<UserDTO> ToDtoList(this IEnumerable<User> users) =>
+            users.Select(u => u.ToDto()).ToList();
     }
 }

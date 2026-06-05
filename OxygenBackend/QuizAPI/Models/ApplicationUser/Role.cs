@@ -17,5 +17,9 @@ namespace QuizAPI.Models
 
         // Navigation property to the join table
         public ICollection<RoleUpdatedAt> RoleUpdatedAt { get; set; }
+
+        public ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
+
+        public ICollection<RolePermission> RolePermissions { get; set; }
     }
 }

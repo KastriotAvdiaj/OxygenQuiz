@@ -21,7 +21,9 @@ dist-ssr
 *.ntvs*
 *.njsproj
 *.sw?
-
+.env.local
+.env.development
+.env.production
 
 
 #backend 

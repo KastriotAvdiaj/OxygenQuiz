@@ -1,4 +1,4 @@
-﻿namespace ChatApp.Services.Implementation
+﻿/*namespace ChatApp.Services.Implementation
 {
     using ChatApp.Models;
     using Microsoft.Extensions.Caching.Memory;
@@ -174,4 +174,4 @@
             // This would be implemented in ChatRoomRepository and MessageRepository
         }
     }
-}
+}*/

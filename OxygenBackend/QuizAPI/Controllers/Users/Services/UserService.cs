@@ -1,148 +1,114 @@
-﻿using Microsoft.EntityFrameworkCore;
-using QuizAPI.Data;
-using QuizAPI.DTOs.User;
+﻿using QuizAPI.DTOs.User;
+using QuizAPI.Exceptions;
+using QuizAPI.ManyToManyTables;
 using QuizAPI.Models;
+using QuizAPI.Repositories.Interfaces;
 using QuizAPI.Services.Interfaces;
+using QuizAPI.Mapping;
 
 namespace QuizAPI.Services
 {
     public class UserService : IUserService
     {
-        private readonly ApplicationDbContext _context;
-        private readonly DashboardService _dashboardService;
+        private readonly IUserRepository _userRepository;
+        private readonly IRoleRepository _roleRepository;
 
-        public UserService(ApplicationDbContext context, DashboardService dashboardService)
+        public UserService(IUserRepository userRepository, IRoleRepository roleRepository)
         {
-            _context = context;
-            _dashboardService = dashboardService;
+            _userRepository = userRepository;
+            _roleRepository = roleRepository;
         }
 
-        public async Task<IEnumerable<FullUserDTO>> GetAllUsersAsync()
+        public async Task<IReadOnlyList<UserDTO>> GetAllUsersAsync(CancellationToken ct = default)
         {
-            var totalUsers = _dashboardService.GetTotalCount<User>();
-            var users = await _context.Users.Include(u => u.Role).ToListAsync();
-
-            return users.Select(user => new FullUserDTO
-            {
-                Id = user.Id,
-                ImmutableName = user.ImmutableName,
-                Username = user.Username,
-                Email = user.Email,
-                DateRegistered = user.DateRegistered,
-                Role = MapRoleIdToRole(user.RoleId),
-                IsDeleted = user.IsDeleted,
-                TotalUsers = totalUsers,
-                LastLogin = user.LastLogin,
-                ProfileImageUrl = user.ProfileImageUrl
-            }).ToList();
+            var users = await _userRepository.GetAllAsync(ct);
+            return users.ToDtoList();
         }
 
-        public async Task<User?> GetUserByIdAsync(Guid userId)
+        public async Task<UserDTO?> GetUserByIdAsync(Guid userId, CancellationToken ct = default)
         {
-            return await _context.Users.FindAsync(userId);
+            var user = await _userRepository.GetByIdAsync(userId, ct: ct);
+            return user?.ToDto();
         }
 
-        public async Task<User?> GetUserByUsernameAsync(string username)
+        public async Task<UserDTO?> GetUserByUsernameAsync(string username, CancellationToken ct = default)
         {
-            if (string.IsNullOrWhiteSpace(username))
-                return null;
-
-            return await _context.Users
-                .FirstOrDefaultAsync(u => u.Username.ToLower() == username.ToLower());
+            if (string.IsNullOrWhiteSpace(username)) return null;
+            var user = await _userRepository.GetByUsernameAsync(username, ct);
+            return user?.ToDto();
         }
 
-        public async Task<IEnumerable<User>> GetUsersByIdsAsync(IEnumerable<Guid> userIds)
+        public async Task<IReadOnlyList<UserDTO>> GetUsersByIdsAsync(IEnumerable<Guid> userIds, CancellationToken ct = default)
         {
-            if (userIds == null || !userIds.Any())
-                return Enumerable.Empty<User>();
-
-            return await _context.Users
-                .Where(u => userIds.Contains(u.Id))
-                .ToListAsync();
+            var ids = userIds?.ToList() ?? new List<Guid>();
+            if (ids.Count == 0) return Array.Empty<UserDTO>();
+            var users = await _userRepository.GetByIdsAsync(ids, ct);
+            return users.ToDtoList();
         }
 
-        public async Task<User> CreateUserAsync(TemporaryUserCR userCreateModel)
+        public async Task<UserDTO> CreateUserAsync(CreateUserDTO dto, CancellationToken ct = default)
         {
-            int roleId = !string.IsNullOrEmpty(userCreateModel.Role)
-                ? MapRoleToRoleId(userCreateModel.Role)
-                : 2;
+            var immutableName = dto.Username.Trim().ToLowerInvariant();
 
-            var newUser = new User
+            if (await _userRepository.UsernameExistsAsync(immutableName, ct))
+                throw new ConflictException($"Username '{dto.Username}' is already taken.");
+
+            if (await _userRepository.EmailExistsAsync(dto.Email.Trim(), ct))
+                throw new ConflictException($"Email '{dto.Email}' is already registered.");
+
+            var requested = dto.Roles is { Count: > 0 } ? dto.Roles : new[] { "user" };
+            var roles = await _roleRepository.GetByNamesAsync(requested, ct);
+
+            var missing = requested.Select(r => r.ToLowerInvariant())
+                .Except(roles.Select(r => r.Name.ToLowerInvariant()))
+                .ToList();
+            if (missing.Count > 0)
+                throw new ConflictException($"Unknown role(s): {string.Join(", ", missing)}");
+
+            var user = new User
             {
                 Id = Guid.NewGuid(),
-                Username = userCreateModel.Username,
-                Email = userCreateModel.Email,
-                ImmutableName = userCreateModel.Username.ToLower(),
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword(userCreateModel.Password),
+                Username = dto.Username.Trim(),
+                ImmutableName = immutableName,
+                Email = dto.Email.Trim(),
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
                 DateRegistered = DateTime.UtcNow,
                 LastLogin = DateTime.UtcNow,
-                RoleId = roleId,
                 IsDeleted = false,
-                ProfileImageUrl = string.Empty
+                ProfileImageUrl = string.Empty,
+                UserRoles = roles.Select(r => new UserRole { RoleId = r.Id }).ToList()
             };
 
-            _context.Users.Add(newUser);
-            await _context.SaveChangesAsync();
+            await _userRepository.AddAsync(user, ct);
+            await _userRepository.SaveChangesAsync(ct);
 
-            return newUser;
+            return user.ToDto(roles.Select(r => r.Name));
         }
 
-        public async Task<bool> UpdateUserAsync(Guid userId, User user)
+        public async Task UpdateUserAsync(Guid userId, UpdateUserDTO dto, CancellationToken ct = default)
         {
-            if (userId != user.Id)
-                return false;
+            var user = await _userRepository.GetByIdAsync(userId, tracked: true, ct: ct)
+                ?? throw new NotFoundException($"User with ID {userId} not found.");
 
-            _context.Entry(user).State = EntityState.Modified;
+            // Only whitelisted fields — overposting is impossible here.
+            user.Email = dto.Email.Trim();
+            user.ProfileImageUrl = dto.ProfileImageUrl;
+            user.ConcurrencyStamp = Guid.NewGuid();
 
-            try
-            {
-                await _context.SaveChangesAsync();
-                return true;
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!await UserExistsAsync(userId))
-                    return false;
-                throw;
-            }
+            await _userRepository.SaveChangesAsync(ct);
         }
 
-        public async Task<bool> DeleteUserAsync(Guid userId)
+        public async Task DeleteUserAsync(Guid userId, CancellationToken ct = default)
         {
-            var user = await _context.Users.FindAsync(userId);
-            if (user == null)
-                return false;
+            var user = await _userRepository.GetByIdAsync(userId, tracked: true, ct: ct)
+                ?? throw new NotFoundException($"User with ID {userId} not found.");
 
             user.IsDeleted = true;
-            await _context.SaveChangesAsync();
-            return true;
+            await _userRepository.SaveChangesAsync(ct);
         }
 
-        public async Task<bool> UserExistsAsync(Guid userId)
-        {
-            return await _context.Users.AnyAsync(e => e.Id == userId);
-        }
-
-        private static string MapRoleIdToRole(int roleId)
-        {
-            return roleId switch
-            {
-                2 => "admin",
-                1 => "user",
-                3 => "superadmin",
-                _ => "user"
-            };
-        }
-
-        private static int MapRoleToRoleId(string role)
-        {
-            return role.ToLower() switch
-            {
-                "admin" => 1,
-                "user" => 2,
-                "superadmin" => 3,
-                _ => 2 // default to user if role is unknown
-            };
-        }
+        public Task<bool> UserExistsAsync(Guid userId, CancellationToken ct = default) =>
+            _userRepository.ExistsAsync(userId, ct);
+  
     }
 }

@@ -3,9 +3,10 @@ venv
 .git
 .gitignore
 Dockerfile
-OxygenBackend/
 microservice/
 .dockerignore
-.env*
+.env
 coverage
 npm-debug.log*
+**/bin
+**/obj

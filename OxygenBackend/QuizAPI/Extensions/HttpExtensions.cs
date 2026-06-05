@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using QuizAPI.Models;
+using System.Text.Json;
 
 namespace QuizAPI.Extensions
 {
@@ -23,6 +24,17 @@ namespace QuizAPI.Extensions
             };
 
             response.Headers.Append("Pagination", JsonSerializer.Serialize(paginationHeader, options));
+        }
+
+        public static void AddPaginationHeader<T>(this HttpResponse response, PagedList<T> pagedList)
+        {
+            response.AddPaginationHeader(
+                pagedList.PageNumber,
+                pagedList.PageSize,
+                pagedList.TotalCount,
+                pagedList.TotalPages,
+                pagedList.HasNextPage,
+                pagedList.HasPreviousPage);
         }
     }
 }

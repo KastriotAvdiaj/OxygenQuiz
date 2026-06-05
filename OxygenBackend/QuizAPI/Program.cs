@@ -1,4 +1,5 @@
-﻿using AutoMapper;
+﻿using System.Security.Claims;
+using System.Text;
 using Hangfire;
 using Hangfire.PostgreSql;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -15,10 +16,14 @@ using QuizAPI.Controllers.Quizzes.Services.QuizSessionServices;
 using QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.AbandonmentService;
 using QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.UserAnswerService;
 using QuizAPI.Data;
+using QuizAPI.Middleware;
+using QuizAPI.Repositories;
+using QuizAPI.Repositories.Interfaces;
 using QuizAPI.Services;
 using QuizAPI.Services.AuthenticationService;
 using QuizAPI.Services.CurrentUserService;
 using QuizAPI.Services.Interfaces;
+using QuizAPI.Services.Permissions;
 using System.Text;
 
 
@@ -53,7 +58,7 @@ builder.Services.AddCors(options =>
 });
 
 // --- DataSeeder Registration ---
-builder.Services.AddScoped<DataSeeder>();
+//builder.Services.AddScoped<DataSeeder>();
 
 // --- Hangfire ---
 builder.Services.AddHangfire(config =>
@@ -66,11 +71,27 @@ builder.Services.AddHangfireServer();
 // --- AutoMapper ---
 builder.Services.AddAutoMapper(typeof(Program));
 
+//IMemoryCache
+builder.Services.AddMemoryCache();
+
 // --- Service Registrations ---
+
+// User related services and repositories
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IRoleRepository, RoleRepository>();
+builder.Services.AddScoped<IUserService, UserService>();
+
+// Exception Handling services
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddProblemDetails();
+
+// Permission service
+builder.Services.AddScoped<IPermissionService, PermissionService>();
 
 // Core Entity Services
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
+builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IQuizService, QuizService>();
 builder.Services.AddScoped<IQuestionService, QuestionService>();
 builder.Services.AddScoped<ITestQuestionService, TestQuestionService>();
@@ -93,8 +114,9 @@ builder.Services.AddScoped<ImageCleanUpService>();
 builder.Services.AddHttpContextAccessor();
 
 // --- JWT Authentication ---
-var jwtKey = configuration["Jwt:Key"];
-var key = Encoding.ASCII.GetBytes(jwtKey ?? "SECRET_KEY");
+var jwtKey = configuration["Jwt:Key"]
+    ?? throw new InvalidOperationException("Jwt:Key is not configured.");
+var key = Encoding.UTF8.GetBytes(jwtKey);
 
 builder.Services.AddAuthentication(options =>
 {
@@ -105,6 +127,7 @@ builder.Services.AddAuthentication(options =>
 {
     options.RequireHttpsMetadata = !environment.IsDevelopment();
     options.SaveToken = true;
+    options.MapInboundClaims = false;   // keep 'sub'/'email' literal — see /me
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuer = true,
@@ -125,26 +148,26 @@ builder.Services.AddSwaggerGen();
 var app = builder.Build();
 
 // --- Database Migration & Seeding ---
-using (var scope = app.Services.CreateScope())
-{
-    var services = scope.ServiceProvider;
-    try
-    {
-        var context = services.GetRequiredService<ApplicationDbContext>();
-        context.Database.Migrate();
-        Console.WriteLine("✅ Database migrated successfully.");
+//using (var scope = app.Services.CreateScope())
+//{
+//    var services = scope.ServiceProvider;
+//    try
+//    {
+//        var context = services.GetRequiredService<ApplicationDbContext>();
+//        context.Database.Migrate();
+//        Console.WriteLine("Database migrated successfully.");
 
-        // Run DataSeeder
-        var seeder = services.GetRequiredService<DataSeeder>();
-        seeder.SeedData();
-        Console.WriteLine("✅ Database seeded successfully.");
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"❌ Database operation failed: {ex.Message}");
-        Console.WriteLine($"Stack trace: {ex.StackTrace}");
-    }
-}
+//        // Run DataSeeder
+//        var seeder = services.GetRequiredService<DataSeeder>();
+//        seeder.SeedData();
+//        Console.WriteLine("Database seeded successfully.");
+//    }
+//    catch (Exception ex)
+//    {
+//        Console.WriteLine($"Database operation failed: {ex.Message}");
+//        Console.WriteLine($"Stack trace: {ex.StackTrace}");
+//    }
+//}
 
 // --- Middleware Configuration ---
 if (app.Environment.IsDevelopment())
@@ -157,6 +180,8 @@ if (app.Environment.IsDevelopment())
 {
     app.UseHttpsRedirection();
 }
+
+app.UseExceptionHandler();
 
 app.UseCors("AllowReactApp");
 app.UseAuthentication();

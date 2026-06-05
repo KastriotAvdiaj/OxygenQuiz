@@ -14,5 +14,7 @@ namespace QuizAPI.Models
 
         public ICollection<PermissionUpdatedAt> PermissionUpdatedAt { get; set; }
 
+        public ICollection<RolePermission> RolePermissions { get; set; } = new List<RolePermission>();
+
     }
 }

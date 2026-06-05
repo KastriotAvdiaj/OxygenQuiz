@@ -5,173 +5,137 @@ using QuizAPI.DTOs.Question;
 using QuizAPI.Extensions;
 using QuizAPI.Models;
 using QuizAPI.Services.CurrentUserService;
-using System.Security.Claims;
+using QuizAPI.Services.Permissions;
 
 namespace QuizAPI.Controllers.Questions
 {
-
     [ApiController]
     [Route("api/[controller]")]
     public class QuestionsController : BaseApiController
     {
         private readonly IQuestionService _questionService;
         private readonly ICurrentUserService _currentUserService;
-        public QuestionsController(IQuestionService questionService, ICurrentUserService currentUserService)
+        private readonly IPermissionService _permissionService;
+
+        public QuestionsController(
+            IQuestionService questionService,
+            ICurrentUserService currentUserService,
+            IPermissionService permissionService)
         {
-            _currentUserService = currentUserService;
             _questionService = questionService;
+            _currentUserService = currentUserService;
+            _permissionService = permissionService;
         }
 
-        // GET: api/questions
+        // ── GET ───────────────────────────────────────────────────────────────
+
         [HttpGet]
         public async Task<IActionResult> GetQuestions([FromQuery] QuestionFilterParams filterParams)
         {
             var pagedQuestions = await _questionService.GetPaginatedQuestionsAsync(filterParams);
-
-            Response.AddPaginationHeader(
-                 pagedQuestions.PageNumber,
-                 pagedQuestions.PageSize,
-                 pagedQuestions.TotalCount,
-                 pagedQuestions.TotalPages,
-                 pagedQuestions.HasNextPage,
-                 pagedQuestions.HasPreviousPage
-                 );
-
+            Response.AddPaginationHeader(pagedQuestions);
             return Ok(pagedQuestions.Items);
         }
 
-        // GET: api/questions/5
         [HttpGet("{id}")]
         public async Task<IActionResult> GetQuestion(int id)
         {
             var question = await _questionService.GetQuestionByIdAsync(id);
-
-            if (question == null)
-            {
-                return NotFound();
-            }
-
-            return Ok(question);
+            return question == null ? NotFound() : Ok(question);
         }
 
-        // GET: api/questions/multiplechoice
         [HttpGet("multiplechoice")]
         public async Task<IActionResult> GetMultipleChoiceQuestions([FromQuery] QuestionFilterParams filterParams)
         {
             var pagedQuestions = await _questionService.GetPaginatedMultipleChoiceQuestionsAsync(filterParams);
-
-            Response.AddPaginationHeader(
-                 pagedQuestions.PageNumber,
-                 pagedQuestions.PageSize,
-                 pagedQuestions.TotalCount,
-                 pagedQuestions.TotalPages,
-                 pagedQuestions.HasNextPage,
-                 pagedQuestions.HasPreviousPage
-                 );
-
+            Response.AddPaginationHeader(pagedQuestions);
             return Ok(pagedQuestions.Items);
         }
 
-        // GET: api/questions/truefalse
-        [HttpGet("trueFalse")]
+        [HttpGet("truefalse")]
         public async Task<IActionResult> GetTrueFalseQuestions([FromQuery] QuestionFilterParams filterParams)
         {
             var pagedQuestions = await _questionService.GetPaginatedTrueFalseQuestionsAsync(filterParams);
-
-            Response.AddPaginationHeader(
-                            pagedQuestions.PageNumber,
-                            pagedQuestions.PageSize,
-                            pagedQuestions.TotalCount,
-                            pagedQuestions.TotalPages,
-                            pagedQuestions.HasNextPage,
-                            pagedQuestions.HasPreviousPage
-                            );
-
+            Response.AddPaginationHeader(pagedQuestions);
             return Ok(pagedQuestions.Items);
         }
 
-        // GET: api/questions/typeanswer
-        [HttpGet("typeTheAnswer")]
+        [HttpGet("typetheanswer")]
         public async Task<IActionResult> GetTypeTheAnswerQuestions([FromQuery] QuestionFilterParams filterParams)
         {
             var pagedQuestions = await _questionService.GetPaginatedTypeTheAnswerQuestionsAsync(filterParams);
-
-            Response.AddPaginationHeader(
-                pagedQuestions.PageNumber,
-                pagedQuestions.PageSize,
-                pagedQuestions.TotalCount,
-                pagedQuestions.TotalPages,
-                pagedQuestions.HasNextPage,
-                pagedQuestions.HasPreviousPage
-                );
-
+            Response.AddPaginationHeader(pagedQuestions);
             return Ok(pagedQuestions.Items);
         }
 
-        // POST: api/questions/multiplechoice
+        [HttpGet("category/{categoryId}")]
+        public async Task<IActionResult> GetQuestionsByCategory(int categoryId)
+            => Ok(await _questionService.GetQuestionsByCategoryAsync(categoryId));
+
+        [HttpGet("difficulty/{difficultyId}")]
+        public async Task<IActionResult> GetQuestionsByDifficulty(int difficultyId)
+            => Ok(await _questionService.GetQuestionsByDifficultyAsync(difficultyId));
+
+        [HttpGet("myQuestions")]
+        [Authorize]
+        public async Task<IActionResult> GetMyQuestions([FromQuery] QuestionFilterParams filterParams)
+        {
+            var userId = _currentUserService.UserId;
+            if (userId == null) return Unauthorized();
+
+            filterParams.UserId = userId.Value;
+
+            var pagedQuestions = await _questionService.GetPaginatedQuestionsAsync(filterParams);
+            Response.AddPaginationHeader(pagedQuestions);
+            return Ok(pagedQuestions.Items);
+        }
+
+        // ── CREATE ────────────────────────────────────────────────────────────
+
         [HttpPost("multiplechoice")]
         [Authorize]
         public async Task<IActionResult> CreateMultipleChoiceQuestion(MultipleChoiceQuestionCM questionCM)
         {
             var userId = _currentUserService.UserId;
+            if (userId == null) return Unauthorized();
 
-            if (userId == null)
-            {
-                return Unauthorized("User ID claim could not be found in the token.");
-            }
+            if (!await _permissionService.HasPermissionAsync(userId.Value, "question:create"))
+                return Forbid();
 
             var createdQuestion = await _questionService.CreateMultipleChoiceQuestionAsync(questionCM, userId.Value);
-
-            return CreatedAtAction(
-                nameof(GetQuestion),
-                new { id = createdQuestion.Id },
-                createdQuestion
-            );
+            return CreatedAtAction(nameof(GetQuestion), new { id = createdQuestion.Id }, createdQuestion);
         }
 
-        // POST: api/questions/truefalse
         [HttpPost("truefalse")]
         [Authorize]
         public async Task<IActionResult> CreateTrueFalseQuestion(TrueFalseQuestionCM questionCM)
         {
             var userId = _currentUserService.UserId;
+            if (userId == null) return Unauthorized();
 
-            if (userId == null)
-            {
-                return Unauthorized("User ID claim could not be found in the token.");
-            }
+            if (!await _permissionService.HasPermissionAsync(userId.Value, "question:create"))
+                return Forbid();
 
             var createdQuestion = await _questionService.CreateTrueFalseQuestionAsync(questionCM, userId.Value);
-
-            return CreatedAtAction(
-                nameof(GetQuestion),
-                new { id = createdQuestion.Id },
-                createdQuestion
-            );
+            return CreatedAtAction(nameof(GetQuestion), new { id = createdQuestion.Id }, createdQuestion);
         }
 
-        // POST: api/questions/typeanswer
         [HttpPost("typetheanswer")]
         [Authorize]
         public async Task<IActionResult> CreateTypeTheAnswerQuestion(TypeTheAnswerQuestionCM questionCM)
         {
             var userId = _currentUserService.UserId;
+            if (userId == null) return Unauthorized();
 
-            if (userId == null)
-            {
-                return Unauthorized("User ID claim could not be found in the token.");
-            }
+            if (!await _permissionService.HasPermissionAsync(userId.Value, "question:create"))
+                return Forbid();
 
             var createdQuestion = await _questionService.CreateTypeTheAnswerQuestionAsync(questionCM, userId.Value);
-
-            return CreatedAtAction(
-                nameof(GetQuestion),
-                new { id = createdQuestion.Id },
-                createdQuestion
-            );
+            return CreatedAtAction(nameof(GetQuestion), new { id = createdQuestion.Id }, createdQuestion);
         }
 
-        // PUT: api/questions/multiplechoice
+        // ── UPDATE ────────────────────────────────────────────────────────────
+
         [HttpPut("multiplechoice/{id}")]
         [Authorize]
         public async Task<IActionResult> UpdateMultipleChoiceQuestion(int id, [FromBody] MultipleChoiceQuestionUM questionUM)
@@ -180,15 +144,20 @@ namespace QuizAPI.Controllers.Questions
                 return BadRequest("ID mismatch between URL and request body.");
 
             var userId = _currentUserService.UserId;
-            var updatedQuestion = await _questionService.UpdateMultipleChoiceQuestionAsync(questionUM, userId.Value);
+            if (userId == null) return Unauthorized();
 
-            if (updatedQuestion == null)
-                return NotFound();
+            var ownerId = await _questionService.GetQuestionOwnerAsync(id);
+            if (ownerId == null) return NotFound();
 
-            return NoContent();
+            if (!await _permissionService.CanActOnResourceAsync(userId.Value, ownerId.Value, "question", "update"))
+                return Forbid();
+
+            var canUpdateAny = await _permissionService.HasPermissionAsync(userId.Value, "question:update:any");
+            var result = await _questionService.UpdateMultipleChoiceQuestionAsync(questionUM, userId.Value, canUpdateAny);
+
+            return result == null ? NotFound() : NoContent();
         }
 
-        // PUT: api/questions/truefalse
         [HttpPut("truefalse/{id}")]
         [Authorize]
         public async Task<IActionResult> UpdateTrueFalseQuestion(int id, [FromBody] TrueFalseQuestionUM questionUM)
@@ -197,17 +166,20 @@ namespace QuizAPI.Controllers.Questions
                 return BadRequest("ID mismatch between URL and request body.");
 
             var userId = _currentUserService.UserId;
-            var updatedQuestion = await _questionService.UpdateTrueFalseQuestionAsync(questionUM, userId.Value);
+            if (userId == null) return Unauthorized();
 
-            if (updatedQuestion == null)
-            {
-                return NotFound();
-            }
+            var ownerId = await _questionService.GetQuestionOwnerAsync(id);
+            if (ownerId == null) return NotFound();
 
-            return NoContent();
+            if (!await _permissionService.CanActOnResourceAsync(userId.Value, ownerId.Value, "question", "update"))
+                return Forbid();
+
+            var canUpdateAny = await _permissionService.HasPermissionAsync(userId.Value, "question:update:any");
+            var result = await _questionService.UpdateTrueFalseQuestionAsync(questionUM, userId.Value, canUpdateAny);
+
+            return result == null ? NotFound() : NoContent();
         }
 
-        // PUT: api/questions/typeanswer
         [HttpPut("typetheanswer/{id}")]
         [Authorize]
         public async Task<IActionResult> UpdateTypeTheAnswerQuestion(int id, [FromBody] TypeTheAnswerQuestionUM questionUM)
@@ -215,89 +187,42 @@ namespace QuizAPI.Controllers.Questions
             if (id != questionUM.Id)
                 return BadRequest("ID mismatch between URL and request body.");
 
-
             var userId = _currentUserService.UserId;
-            var updatedQuestion = await _questionService.UpdateTypeTheAnswerQuestionAsync(questionUM, userId.Value);
+            if (userId == null) return Unauthorized();
 
-            if (updatedQuestion == null)
-            {
-                return NotFound();
-            }
+            var ownerId = await _questionService.GetQuestionOwnerAsync(id);
+            if (ownerId == null) return NotFound();
 
-            return NoContent();
+            if (!await _permissionService.CanActOnResourceAsync(userId.Value, ownerId.Value, "question", "update"))
+                return Forbid();
+
+            var canUpdateAny = await _permissionService.HasPermissionAsync(userId.Value, "question:update:any");
+            var result = await _questionService.UpdateTypeTheAnswerQuestionAsync(questionUM, userId.Value, canUpdateAny);
+
+            return result == null ? NotFound() : NoContent();
         }
 
-        // DELETE: api/questions/5
+        // ── DELETE ────────────────────────────────────────────────────────────
+
         [HttpDelete("{id}")]
         [Authorize]
         public async Task<IActionResult> DeleteQuestion(int id)
         {
             var userId = _currentUserService.UserId;
-            var isAdmin = _currentUserService.IsAdmin;
+            if (userId == null) return Unauthorized();
 
-            var (success, errorMessage, isCustomMessage) = await _questionService.DeleteQuestionAsync(id, userId.Value, isAdmin);
+            var ownerId = await _questionService.GetQuestionOwnerAsync(id);
+            if (ownerId == null) return NotFound();
 
-            if (!success)
-            {
-                return HandleCustomError(errorMessage, isCustomMessage);
-            }
+            if (!await _permissionService.CanActOnResourceAsync(userId.Value, ownerId.Value, "question", "delete"))
+                return Forbid();
 
-            return Ok(new
-            {
-                success = true,
-                message = "Question deleted successfully."
-            });
-        }
+            var canDeleteAny = await _permissionService.HasPermissionAsync(userId.Value, "question:delete:any");
+            var (success, errorMessage, isCustomMessage) = await _questionService.DeleteQuestionAsync(id, userId.Value, canDeleteAny);
 
-
-        // GET: api/questions/category/5
-        [HttpGet("category/{categoryId}")]
-        public async Task<IActionResult> GetQuestionsByCategory(int categoryId)
-        {
-            var questions = await _questionService.GetQuestionsByCategoryAsync(categoryId);
-            return Ok(questions);
-        }
-
-        // GET: api/questions/difficulty/5
-        [HttpGet("difficulty/{difficultyId}")]
-        public async Task<IActionResult> GetQuestionsByDifficulty(int difficultyId)
-        {
-            var questions = await _questionService.GetQuestionsByDifficultyAsync(difficultyId);
-            return Ok(questions);
-        }
-
-        // GET: api/questions/user
-        [HttpGet("user")]
-        [Authorize]
-        public async Task<ActionResult<IEnumerable<QuestionBaseDTO>>> GetMyQuestions()
-        {
-            var userId = _currentUserService.UserId;
-            var questions = await _questionService.GetQuestionsByUserAsync(userId.Value);
-            return Ok(questions);
-        }
-
-        [Authorize]
-        [HttpGet("myQuestions")]
-        public async Task<ActionResult<List<QuestionBaseDTO>>> GetMyQuestions([FromQuery] QuestionFilterParams filterParams)
-        {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userId))
-                return Unauthorized();
-
-            filterParams.UserId = Guid.Parse(userId);
-
-            var pagedQuestions = await _questionService.GetPaginatedQuestionsAsync(filterParams);
-
-            Response.AddPaginationHeader(
-                 pagedQuestions.PageNumber,
-                 pagedQuestions.PageSize,
-                 pagedQuestions.TotalCount,
-                 pagedQuestions.TotalPages,
-                 pagedQuestions.HasNextPage,
-                 pagedQuestions.HasPreviousPage
-                 );
-
-            return Ok(pagedQuestions.Items);
+            return success
+                ? Ok(new { success = true, message = "Question deleted successfully." })
+                : HandleCustomError(errorMessage, isCustomMessage);
         }
     }
 }
