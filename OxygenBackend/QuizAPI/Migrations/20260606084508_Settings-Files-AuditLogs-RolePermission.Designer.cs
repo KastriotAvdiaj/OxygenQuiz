@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using QuizAPI.Data;
@@ -11,9 +12,11 @@ using QuizAPI.Data;
 namespace QuizAPI.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260606084508_Settings-Files-AuditLogs-RolePermission")]
+    partial class SettingsFilesAuditLogsRolePermission
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1005,32 +1008,6 @@ namespace QuizAPI.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Roles");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            ConcurrencyStamp = new Guid("11111111-1111-1111-1111-111111111111"),
-                            Description = "Administrator",
-                            Name = "Admin",
-                            isActive = true
-                        },
-                        new
-                        {
-                            Id = 2,
-                            ConcurrencyStamp = new Guid("22222222-2222-2222-2222-222222222222"),
-                            Description = "Regular user",
-                            Name = "User",
-                            isActive = true
-                        },
-                        new
-                        {
-                            Id = 3,
-                            ConcurrencyStamp = new Guid("33333333-3333-3333-3333-333333333333"),
-                            Description = "Super Administrator",
-                            Name = "SuperAdmin",
-                            isActive = true
-                        });
                 });
 
             modelBuilder.Entity("QuizAPI.Models.Statistics.Questions.QuestionStatistics", b =>

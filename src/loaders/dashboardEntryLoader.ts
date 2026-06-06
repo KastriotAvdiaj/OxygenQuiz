@@ -10,6 +10,7 @@ export const dashboardEntryLoader = (queryClient: QueryClient) => async () => {
 
   if (!user) return redirect("/login");
 
-  const isAdmin = user.role === "Admin" || user.role === "SuperAdmin";
+  const isAdmin =
+    user.roles?.includes("Admin") || user.roles?.includes("SuperAdmin");
   return redirect(isAdmin ? "/dashboard" : "/my-dashboard");
 };

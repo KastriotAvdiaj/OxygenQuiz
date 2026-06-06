@@ -1,6 +1,13 @@
 import React from "react";
 import Step from "./Step";
 
+export interface StepFeedback {
+  error?: string;
+  success?: string;
+  isChecking?: boolean;
+  nextDisabled?: boolean;
+}
+
 interface SignupStepsProps {
   step: number;
   formData: {
@@ -12,6 +19,8 @@ interface SignupStepsProps {
   handleChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleNext: () => void;
   handlePreviousStep: () => void;
+  /** Validation / availability feedback for the currently visible step. */
+  feedback: StepFeedback;
 }
 
 const SignupSteps: React.FC<SignupStepsProps> = ({
@@ -20,6 +29,7 @@ const SignupSteps: React.FC<SignupStepsProps> = ({
   handleChange,
   handleNext,
   handlePreviousStep,
+  feedback,
 }) => {
   const steps = [
     {
@@ -61,6 +71,10 @@ const SignupSteps: React.FC<SignupStepsProps> = ({
       onChange={handleChange}
       isLastStep={step === steps.length}
       isFirstStep={step === 1}
+      error={feedback.error}
+      success={feedback.success}
+      isChecking={feedback.isChecking}
+      nextDisabled={feedback.nextDisabled}
     />
   );
 };

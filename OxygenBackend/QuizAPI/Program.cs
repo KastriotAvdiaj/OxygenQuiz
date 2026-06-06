@@ -58,8 +58,8 @@ builder.Services.AddCors(options =>
     });
 });
 
-// --- DataSeeder Registration ---
-//builder.Services.AddScoped<DataSeeder>();
+// --- Seeder Registration ---
+builder.Services.AddScoped<QuizAPI.Services.DbSeeder>();
 
 // --- Hangfire ---
 builder.Services.AddHangfire(config =>
@@ -80,6 +80,8 @@ builder.Services.AddMemoryCache();
 // User related services and repositories
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IRoleRepository, RoleRepository>();
+builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+builder.Services.AddScoped<IFileRepository, FileRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
 
 // Exception Handling services
@@ -112,6 +114,9 @@ builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 // Image Services (ImageCleanUpService without interface as requested)
 builder.Services.AddScoped<IImageService, ImageService>();
 builder.Services.AddScoped<ImageCleanUpService>();
+
+// Generic file upload service
+builder.Services.AddScoped<QuizAPI.Controllers.Files.Services.IFileService, QuizAPI.Controllers.Files.Services.FileService>();
 
 builder.Services.AddHttpContextAccessor();
 
@@ -151,26 +156,26 @@ builder.Services.AddSwaggerGen();
 var app = builder.Build();
 
 // --- Database Migration & Seeding ---
-//using (var scope = app.Services.CreateScope())
-//{
-//    var services = scope.ServiceProvider;
-//    try
-//    {
-//        var context = services.GetRequiredService<ApplicationDbContext>();
-//        context.Database.Migrate();
-//        Console.WriteLine("Database migrated successfully.");
+// Apply pending migrations (this also applies HasData reference seeding: roles, permissions),
+// then run the runtime seeder (admin account + dev-only sample data).
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var context = services.GetRequiredService<ApplicationDbContext>();
+        await context.Database.MigrateAsync();
 
-//        // Run DataSeeder
-//        var seeder = services.GetRequiredService<DataSeeder>();
-//        seeder.SeedData();
-//        Console.WriteLine("Database seeded successfully.");
-//    }
-//    catch (Exception ex)
-//    {
-//        Console.WriteLine($"Database operation failed: {ex.Message}");
-//        Console.WriteLine($"Stack trace: {ex.StackTrace}");
-//    }
-//}
+        var seeder = services.GetRequiredService<QuizAPI.Services.DbSeeder>();
+        await seeder.SeedAsync();
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "Database migration/seeding failed.");
+        throw; // fail fast: a broken schema/seed shouldn't serve traffic
+    }
+}
 
 // --- Middleware Configuration ---
 if (app.Environment.IsDevelopment())

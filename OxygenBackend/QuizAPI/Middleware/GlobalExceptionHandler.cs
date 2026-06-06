@@ -16,6 +16,7 @@ namespace QuizAPI.Middleware
             var (status, title) = ex switch
             {
                 NotFoundException => (StatusCodes.Status404NotFound, ex.Message),
+                AppValidationException => (StatusCodes.Status400BadRequest, ex.Message),
                 ConflictException => (StatusCodes.Status409Conflict, ex.Message),
                 UnauthorizedException => (StatusCodes.Status401Unauthorized, ex.Message),
                 _ => (StatusCodes.Status500InternalServerError, "An unexpected error occurred.")

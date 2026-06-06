@@ -15,4 +15,8 @@
     public sealed class UnauthorizedException(string message) : AppException(message)
     {
     }
+
+    public sealed class AppValidationException(string message) : AppException(message)
+    {
+    }
 }

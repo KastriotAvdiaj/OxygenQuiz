@@ -22,12 +22,16 @@ export const getUser = async (): Promise<User | null> => {
   }
 };
 
-const logout = (): Promise<void> => {
-  return new Promise((resolve) => {
-    window.location.href = "/";
-    Cookies.remove(AUTH_COOKIE);
-    resolve();
-  });
+const logout = async (): Promise<void> => {
+  // Revoke the server-side refresh token (clears the HttpOnly cookie too).
+  // Best-effort: never block sign-out on a failed call.
+  try {
+    await api.post("Authentication/logout");
+  } catch {
+    // ignore
+  }
+  Cookies.remove(AUTH_COOKIE);
+  window.location.href = "/";
 };
 
 export const loginInputSchema = z.object({
@@ -41,33 +45,25 @@ const loginWithEmailAndPassword = (data: LoginInput): Promise<AuthResponse> => {
   return apiService.post("Authentication/login", data);
 };
 
-export const registerInputSchema = z
-  .object({
-    email: z.string().min(1, "Required"),
-    firstName: z.string().min(1, "Required"),
-    lastName: z.string().min(1, "Required"),
-    password: z.string().min(1, "Required"),
-  })
-  .and(
-    z
-      .object({
-        teamId: z.string().min(1, "Required"),
-        teamName: z.null().default(null),
-      })
-      .or(
-        z.object({
-          teamName: z.string().min(1, "Required"),
-          teamId: z.null().default(null),
-        })
-      )
-  );
+// Mirrors the backend SignupDTO validation: valid email, username 3–50, password 8–128.
+export const registerInputSchema = z.object({
+  email: z.string().min(1, "Required").email("Invalid email"),
+  username: z
+    .string()
+    .min(3, "Username must be at least 3 characters")
+    .max(50, "Username must be at most 50 characters"),
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters")
+    .max(128, "Password must be at most 128 characters"),
+});
 
 export type RegisterInput = z.infer<typeof registerInputSchema>;
 
 const registerWithEmailAndPassword = (
   data: RegisterInput
 ): Promise<AuthResponse> => {
-  return api.post("/auth/register", data);
+  return apiService.post("Authentication/signup", data);
 };
 
 // Configure auth with react-query-auth
@@ -95,6 +91,16 @@ const authConfig = {
   },
   registerFn: async (data: RegisterInput) => {
     const response = await registerWithEmailAndPassword(data);
+
+    if (!response || !response.token) {
+      throw new Error("Registration failed: Token not received");
+    }
+
+    Cookies.set(AUTH_COOKIE, response.token, {
+      secure: true,
+      sameSite: "strict",
+      expires: 1,
+    });
 
     // Use the user data from registration response
     if (!response.user) {
@@ -140,9 +146,12 @@ export const createAuthLoader =
         throw new Error("User not authenticated");
       }
 
-      // Check roles if specified
+      // Check roles if specified. Many-to-many: allow if the user holds ANY required role.
       if (requiredRoles && requiredRoles.length > 0) {
-        if (!requiredRoles.includes(user.role)) {
+        const hasRequiredRole = requiredRoles.some((r) =>
+          user!.roles?.includes(r)
+        );
+        if (!hasRequiredRole) {
           return redirect(redirectPath);
         }
       }

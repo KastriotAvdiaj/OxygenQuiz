@@ -56,6 +56,10 @@ namespace QuizAPI.Data
 
         public DbSet<ImageAsset> ImageAssets { get; set; }
 
+        public DbSet<RefreshToken> RefreshTokens { get; set; }
+
+        public DbSet<FileRecord> Files { get; set; }
+
         public DbSet<Universiteti> Universitetet { get; set; }
 
         public DbSet<Drejtimi> Drejtimet { get; set; }
@@ -98,6 +102,9 @@ namespace QuizAPI.Data
 
             //GLOBAL QUERY FILTERS
 
+            // Static reference data (model-based seeding). Roles first: PermissionSeeder's
+            // RolePermission rows reference these role IDs (Admin=1, User=2, SuperAdmin=3).
+            RoleSeeder.Seed(modelBuilder);
             PermissionSeeder.Seed(modelBuilder);
 
 
@@ -125,9 +132,24 @@ namespace QuizAPI.Data
                 .HasForeignKey(ur => ur.RoleId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            // Refresh tokens: one user -> many tokens, cascade on user delete, unique hash lookup.
+            modelBuilder.Entity<RefreshToken>()
+                .HasOne(rt => rt.User)
+                .WithMany()
+                .HasForeignKey(rt => rt.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<RefreshToken>()
+                .HasIndex(rt => rt.TokenHash)
+                .IsUnique();
+
+            // Generic file records: index the polymorphic owner for fast lookups.
+            modelBuilder.Entity<FileRecord>()
+                .HasIndex(f => new { f.Entity, f.EntityId });
+
             // INDEXES AND RELATIONSHIPS FOR ROLE PERMISSIONS
             modelBuilder.Entity<RolePermission>()
-                .HasKey(rp => rp.Id);
+    .HasKey(rp => new { rp.RoleId, rp.PermissionId });
 
             // Configure the Role side (One Role -> Many RolePermissions)
             modelBuilder.Entity<RolePermission>()

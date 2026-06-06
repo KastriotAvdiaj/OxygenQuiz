@@ -5,7 +5,7 @@ using QuizAPI.Extensions;
 using QuizAPI.Controllers.Quizzes.Services.QuizServices;
 using QuizAPI.DTOs.Quiz;
 using QuizAPI.Models;
-using System.Security.Claims;
+using QuizAPI.Services.CurrentUserService;
 
 namespace QuizAPI.Controllers.Quizzes
 {
@@ -15,13 +15,16 @@ namespace QuizAPI.Controllers.Quizzes
     {
         private readonly IQuizService _quizService;
         private readonly ILogger<QuizController> _logger;
+        private readonly ICurrentUserService _currentUser;
 
         public QuizController(
             IQuizService quizService,
-            ILogger<QuizController> logger)
+            ILogger<QuizController> logger,
+            ICurrentUserService currentUser)
         {
             _quizService = quizService ?? throw new ArgumentNullException(nameof(quizService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _currentUser = currentUser ?? throw new ArgumentNullException(nameof(currentUser));
         }
 
         /// <summary>
@@ -359,16 +362,8 @@ namespace QuizAPI.Controllers.Quizzes
         /// <summary>
         /// Helper method to get the current user's ID
         /// </summary>
-        private Guid GetCurrentUserId()
-        {
-            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-            if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
-            {
-                throw new InvalidOperationException("User ID not found or invalid");
-            }
-
-            return userId;
-        }
+        private Guid GetCurrentUserId() =>
+            _currentUser.UserId
+            ?? throw new InvalidOperationException("User ID not found or invalid");
     }
 }

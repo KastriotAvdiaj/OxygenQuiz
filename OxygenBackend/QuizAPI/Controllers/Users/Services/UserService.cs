@@ -109,6 +109,19 @@ namespace QuizAPI.Services
 
         public Task<bool> UserExistsAsync(Guid userId, CancellationToken ct = default) =>
             _userRepository.ExistsAsync(userId, ct);
-  
+
+        public async Task<bool> IsUsernameAvailableAsync(string username, CancellationToken ct = default)
+        {
+            if (string.IsNullOrWhiteSpace(username)) return false;
+            // ImmutableName is the lower-cased uniqueness key, matching signup/create.
+            var immutableName = username.Trim().ToLowerInvariant();
+            return !await _userRepository.UsernameExistsAsync(immutableName, ct);
+        }
+
+        public async Task<bool> IsEmailAvailableAsync(string email, CancellationToken ct = default)
+        {
+            if (string.IsNullOrWhiteSpace(email)) return false;
+            return !await _userRepository.EmailExistsAsync(email.Trim(), ct);
+        }
     }
 }

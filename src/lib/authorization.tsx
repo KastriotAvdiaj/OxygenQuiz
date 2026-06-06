@@ -12,13 +12,17 @@ export enum ROLES {
 
 type RoleTypes = ROLES;
 
+// Helper: does the user hold any of the given roles?
+const hasRole = (user: User, ...roles: string[]) =>
+  user.roles?.some((r) => roles.includes(r)) ?? false;
+
 export const POLICIES = {
   "comment:delete": (user: User, question: MultipleChoiceQuestion) => {
-    if (user.role === "Admin") {
+    if (hasRole(user, "Admin", "SuperAdmin")) {
       return true;
     }
 
-    if (user.role === "User" && question.user.id === user.id) {
+    if (question.user.id === user.id) {
       return true;
     }
 
@@ -26,12 +30,12 @@ export const POLICIES = {
   },
   "question:modify": (user: User, question: MultipleChoiceQuestion) => {
     // Admins and SuperAdmins can modify any question
-    if (user.role === "Admin" || user.role === "SuperAdmin") {
+    if (hasRole(user, "Admin", "SuperAdmin")) {
       return true;
     }
 
     // Users can only modify their own questions
-    if (user.role === "User" && question.user.id === user.id) {
+    if (question.user.id === user.id) {
       return true;
     }
 
@@ -50,7 +54,8 @@ export const useAuthorization = () => {
     ({ allowedRoles }: { allowedRoles: ROLES[] }) => {
       if (!user.data) return false;
       if (allowedRoles.length === 0) return true;
-      return allowedRoles.includes(user.data.role as ROLES);
+      // Many-to-many: allow if the user holds ANY of the allowed roles.
+      return allowedRoles.some((r) => user.data!.roles?.includes(r));
     },
     [user.data]
   );
@@ -65,7 +70,7 @@ export const useAuthorization = () => {
     [user.data]
   );
 
-  return { checkAccess, checkPolicy, role: user.data.role };
+  return { checkAccess, checkPolicy, roles: user.data.roles };
 };
 
 type AuthorizationProps = {

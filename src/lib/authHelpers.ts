@@ -70,7 +70,8 @@ export const AUTH_COOKIE = `quiz_app_token`;
 // }
 
 export function requireAdmin(user: any) {
-  if (user.role !== 'ADMIN') {
+  const roles: string[] = user?.roles ?? [];
+  if (!roles.includes('Admin') && !roles.includes('SuperAdmin')) {
     throw Error('Unauthorized');
   }
 }

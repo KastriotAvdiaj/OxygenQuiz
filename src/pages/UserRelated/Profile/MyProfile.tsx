@@ -31,9 +31,19 @@ const MyProfile = () => {
           </Avatar>
           <div className="flex flex-col">
             <CardTitle className="text-xl">{user.username}</CardTitle>
-            <Badge variant="outline" className="w-fit mt-1">
-              {user.role}
-            </Badge>
+            <div className="flex flex-wrap gap-1 mt-1">
+              {user.roles?.length ? (
+                user.roles.map((role) => (
+                  <Badge key={role} variant="outline" className="w-fit">
+                    {role}
+                  </Badge>
+                ))
+              ) : (
+                <Badge variant="outline" className="w-fit">
+                  No role
+                </Badge>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent>

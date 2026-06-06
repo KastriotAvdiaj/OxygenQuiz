@@ -10,20 +10,19 @@ export const RedirectIfLoggedIn = ({
   const [searchParams] = useSearchParams();
 
   if (user?.data) {
-    const { role } = user.data;
+    const { roles } = user.data;
 
     const redirectTo = searchParams.get("redirectTo");
     if (redirectTo) {
       return <Navigate to={redirectTo} replace />;
     }
 
-    if (role === "SuperAdmin") {
+    if (roles?.includes("SuperAdmin")) {
       return <Navigate to="/dashboard" replace />;
     }
 
     return <Navigate to="/" replace />;
   }
 
-  
   return component;
 };

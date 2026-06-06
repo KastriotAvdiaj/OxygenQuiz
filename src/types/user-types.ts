@@ -1,20 +1,18 @@
 // types/user.types.ts
 
-import { ROLES } from "@/lib/authorization";
 import { Entity } from "./common-types";
 
 
 export type User = Entity<{
-  immutableName: string;
   username: string;
   email: string;
-  passwordHash: string;
   dateRegistered: string;
   userUpdatedAt: string | null;
   isDeleted: boolean;
   lastLogin: string;
   profileImageUrl: string;
-  role: ROLES;
+  // Many-to-many: a user now has a collection of role names (0, 1, or many).
+  roles: string[];
 }, string>;
 
 export type UserBasic = {

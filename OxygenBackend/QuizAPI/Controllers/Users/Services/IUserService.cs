@@ -13,6 +13,12 @@ namespace QuizAPI.Services.Interfaces
         Task DeleteUserAsync(Guid userId, CancellationToken ct = default);
         Task<bool> UserExistsAsync(Guid userId, CancellationToken ct = default);
 
+        /// <summary>True if the username is free (case-insensitive). Used by signup to give live feedback.</summary>
+        Task<bool> IsUsernameAvailableAsync(string username, CancellationToken ct = default);
+
+        /// <summary>True if the email is not already registered.</summary>
+        Task<bool> IsEmailAvailableAsync(string email, CancellationToken ct = default);
+
 /*
         /// <summary>
         /// Returns a lightweight chat-subsystem projection for a single user.

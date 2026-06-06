@@ -31,8 +31,12 @@ export const columns: ColumnDef<User>[] = [
     header: "Email",
   },
   {
-    accessorKey: "role",
-    header: "Role",
+    accessorKey: "roles",
+    header: "Roles",
+    cell: ({ row }) => {
+      const roles = row.original.roles ?? [];
+      return roles.length ? roles.join(", ") : "—";
+    },
   },
   {
     accessorKey: "dateRegistered",

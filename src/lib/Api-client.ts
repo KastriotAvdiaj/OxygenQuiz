@@ -57,13 +57,44 @@ export const api = Axios.create({
 });
 
 api.interceptors.request.use(authRequestInterceptor);
+
+// --- Silent refresh on 401 -------------------------------------------------
+// The API now actually validates JWTs, so an expired access token yields 401.
+// We try the refresh-token cookie once (POST /Authentication/refresh), store the
+// new access token, and replay the original request. A single-flight promise
+// makes concurrent 401s share one refresh call.
+let refreshPromise: Promise<string> | null = null;
+
+async function refreshAccessToken(): Promise<string> {
+  // Bare axios call so we don't re-enter this interceptor. withCredentials sends
+  // the HttpOnly refresh cookie.
+  const response = await Axios.post(
+    `${api.defaults.baseURL}/Authentication/refresh`,
+    {},
+    { withCredentials: true }
+  );
+  const newToken: string | undefined = response.data?.token;
+  if (!newToken) {
+    throw new Error("Refresh did not return a token");
+  }
+  Cookies.set(AUTH_COOKIE, newToken, {
+    secure: true,
+    sameSite: "strict",
+    expires: 1,
+  });
+  return newToken;
+}
+
 api.interceptors.response.use(
   (response) => {
     return response;
   },
-  (error) => {
+  async (error) => {
     const status = error.response?.status;
-    const message = error.response?.data?.message || error.message;
+    // ProblemDetails (RFC 7807): the message lives in detail/title, not `message`.
+    const data = error.response?.data;
+    const message =
+      data?.detail || data?.title || data?.message || error.message;
 
     // If it's a 404, just reject the promise without a notification.
     // The loader's error handler will take care of the UI.
@@ -71,6 +102,30 @@ api.interceptors.response.use(
       return Promise.reject(error);
     }
     if (status === 401) {
+      const originalRequest = error.config || {};
+      const isRefreshCall =
+        typeof originalRequest.url === "string" &&
+        originalRequest.url.includes("Authentication/refresh");
+
+      // Try a single silent refresh, then replay the original request once.
+      if (!originalRequest._retry && !isRefreshCall) {
+        originalRequest._retry = true;
+        try {
+          refreshPromise = refreshPromise ?? refreshAccessToken();
+          const newToken = await refreshPromise;
+          refreshPromise = null;
+
+          originalRequest.headers = originalRequest.headers ?? {};
+          originalRequest.headers["Authorization"] = `Bearer ${newToken}`;
+          return api(originalRequest);
+        } catch (refreshError) {
+          refreshPromise = null;
+          console.log("Refresh failed, signing out:", refreshError);
+          Cookies.remove(AUTH_COOKIE);
+          return Promise.reject(error);
+        }
+      }
+
       console.log("Unauthorized:", error);
       Cookies.remove(AUTH_COOKIE);
     } else {

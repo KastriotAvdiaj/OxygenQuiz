@@ -40,6 +40,29 @@ namespace QuizAPI.Controllers.Users
             return user is null ? NotFound($"User '{username}' not found") : Ok(user);
         }
 
+        /// <summary>
+        /// Live availability check for signup. Pass <c>username</c> and/or <c>email</c>;
+        /// the response only includes the fields you asked about. Anonymous on purpose.
+        /// </summary>
+        [HttpGet("availability")]
+        [AllowAnonymous]
+        [ProducesResponseType(typeof(AvailabilityDTO), StatusCodes.Status200OK)]
+        public async Task<ActionResult<AvailabilityDTO>> CheckAvailability(
+            [FromQuery] string? username,
+            [FromQuery] string? email,
+            CancellationToken ct)
+        {
+            var result = new AvailabilityDTO();
+
+            if (!string.IsNullOrWhiteSpace(username))
+                result.UsernameAvailable = await _userService.IsUsernameAvailableAsync(username, ct);
+
+            if (!string.IsNullOrWhiteSpace(email))
+                result.EmailAvailable = await _userService.IsEmailAvailableAsync(email, ct);
+
+            return Ok(result);
+        }
+
         [HttpPost("batch")]
         [ProducesResponseType(typeof(IEnumerable<UserDTO>), StatusCodes.Status200OK)]
         public async Task<ActionResult<IEnumerable<UserDTO>>> GetUsersByIds(
