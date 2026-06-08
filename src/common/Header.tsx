@@ -5,6 +5,8 @@ import { HeaderComponent } from "./HeaderComponent";
 import { ModeToggle } from "@/components/ui/mode-toggle";
 import { Divider } from "./Divider";
 import HoverEffect from "./HoverEffect";
+import { useUser } from "@/lib/Auth";
+import { NotificationBell } from "@/features/notifications/components/NotificationBell";
 
 interface HeaderProps {
   BackgroundColor?: boolean;
@@ -13,6 +15,7 @@ interface HeaderProps {
 const Header = ({ BackgroundColor }: HeaderProps) => {
   const [hidden, setHidden] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
+  const { data: currentUser } = useUser();
 
   // Update CSS custom property when header height changes
   useEffect(() => {
@@ -102,6 +105,7 @@ const Header = ({ BackgroundColor }: HeaderProps) => {
         <p className="text-3xl font-bold text-foreground font-quiz">OXYGEN</p>
       </div>
       <div className="col-span-1 flex justify-end items-center gap-3">
+        {currentUser && <NotificationBell />}
         <ModeToggle className="rounded-[2rem] px-2" />
         <Divider orientation="vertical" thickness="1px" length="24px" />
         <DrawerFilled />

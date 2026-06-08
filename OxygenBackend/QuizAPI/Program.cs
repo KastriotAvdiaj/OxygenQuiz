@@ -82,6 +82,8 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IRoleRepository, RoleRepository>();
 builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 builder.Services.AddScoped<IFileRepository, FileRepository>();
+builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
+builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
 
 // Exception Handling services
@@ -118,6 +120,10 @@ builder.Services.AddScoped<ImageCleanUpService>();
 // Generic file upload service
 builder.Services.AddScoped<QuizAPI.Controllers.Files.Services.IFileService, QuizAPI.Controllers.Files.Services.FileService>();
 
+// Audit trail + in-app notifications
+builder.Services.AddScoped<QuizAPI.Services.Audit.IAuditService, QuizAPI.Services.Audit.AuditService>();
+builder.Services.AddScoped<QuizAPI.Controllers.Notifications.Services.INotificationService, QuizAPI.Controllers.Notifications.Services.NotificationService>();
+
 builder.Services.AddHttpContextAccessor();
 
 // --- JWT Authentication ---
@@ -144,6 +150,22 @@ builder.Services.AddAuthentication(options =>
         ValidIssuer = configuration["Jwt:Issuer"],
         ValidAudience = configuration["Jwt:Audience"],
         IssuerSigningKey = new SymmetricSecurityKey(key)
+    };
+
+    // WebSockets can't send an Authorization header, so SignalR passes the JWT in the
+    // access_token query string. Read it for the notification hub handshake.
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            var accessToken = context.Request.Query["access_token"];
+            var path = context.HttpContext.Request.Path;
+            if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/notificationHub"))
+            {
+                context.Token = accessToken;
+            }
+            return Task.CompletedTask;
+        }
     };
 });
 
@@ -198,6 +220,7 @@ app.UseAuthorization();
 app.UseHangfireDashboard("/hangfire");
 app.MapControllers();
 app.MapHub<QuizAPI.Hubs.QuizHub>("/quizHub");
+app.MapHub<QuizAPI.Hubs.NotificationHub>("/notificationHub");
 
 RecurringJob.AddOrUpdate<ImageCleanUpService>(
     "image-cleanup-daily",

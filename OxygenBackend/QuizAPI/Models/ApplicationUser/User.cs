@@ -17,8 +17,6 @@ namespace QuizAPI.Models
         public DateTime DateRegistered { get; set; }
 
         public virtual ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
-        // Navigation property to the collection of UpdatedAtTable
-        public ICollection<UserUpdatedAt> UserUpdatedAt { get; set; }
 
         // Navigation property to the collection of QuizSession
         public ICollection<QuizSession> QuizSessions { get; set; }

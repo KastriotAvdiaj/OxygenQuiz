@@ -5,6 +5,7 @@ using QuizAPI.Models;
 using QuizAPI.Repositories.Interfaces;
 using QuizAPI.Services.Interfaces;
 using QuizAPI.Mapping;
+using QuizAPI.Services.Audit;
 
 namespace QuizAPI.Services
 {
@@ -12,11 +13,13 @@ namespace QuizAPI.Services
     {
         private readonly IUserRepository _userRepository;
         private readonly IRoleRepository _roleRepository;
+        private readonly IAuditService _auditService;
 
-        public UserService(IUserRepository userRepository, IRoleRepository roleRepository)
+        public UserService(IUserRepository userRepository, IRoleRepository roleRepository, IAuditService auditService)
         {
             _userRepository = userRepository;
             _roleRepository = roleRepository;
+            _auditService = auditService;
         }
 
         public async Task<IReadOnlyList<UserDTO>> GetAllUsersAsync(CancellationToken ct = default)
@@ -105,6 +108,13 @@ namespace QuizAPI.Services
 
             user.IsDeleted = true;
             await _userRepository.SaveChangesAsync(ct);
+
+            await _auditService.LogAsync(
+                "UserDeleted",
+                entity: "User",
+                entityId: userId.ToString(),
+                oldValue: new { user.Username, user.Email },
+                ct: ct);
         }
 
         public Task<bool> UserExistsAsync(Guid userId, CancellationToken ct = default) =>

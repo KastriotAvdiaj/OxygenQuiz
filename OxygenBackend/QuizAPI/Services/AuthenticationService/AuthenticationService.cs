@@ -4,6 +4,8 @@ using QuizAPI.ManyToManyTables;
 using QuizAPI.Mapping;
 using QuizAPI.Models;
 using QuizAPI.Repositories.Interfaces;
+using QuizAPI.Services.Audit;
+using QuizAPI.Controllers.Notifications.Services;
 
 namespace QuizAPI.Services.AuthenticationService;
 
@@ -11,7 +13,9 @@ public class AuthenticationService(
     IUserRepository userRepository,
     IRoleRepository roleRepository,
     IRefreshTokenRepository refreshTokenRepository,
-    ITokenService tokenService) : IAuthenticationService
+    ITokenService tokenService,
+    IAuditService auditService,
+    INotificationService notificationService) : IAuthenticationService
 {
     private const string DefaultRoleName = "User";
 
@@ -19,6 +23,8 @@ public class AuthenticationService(
     private readonly IRoleRepository _roleRepository = roleRepository;
     private readonly IRefreshTokenRepository _refreshTokenRepository = refreshTokenRepository;
     private readonly ITokenService _tokenService = tokenService;
+    private readonly IAuditService _auditService = auditService;
+    private readonly INotificationService _notificationService = notificationService;
 
     public async Task<AuthResult> SignupAsync(SignupDTO dto, CancellationToken ct = default)
     {
@@ -54,6 +60,18 @@ public class AuthenticationService(
         await _userRepository.AddAsync(user, ct);
         await _userRepository.SaveChangesAsync(ct);
 
+        // Welcome the new user with a persistent notification (waits in their bell until
+        // they next load the app) and record the signup as a critical action.
+        await _notificationService.CreateAsync(
+            user.Id,
+            "welcome",
+            "Welcome to Oxygen Quiz!",
+            $"Hi {user.Username}, your account is ready. Jump in and start a quiz.",
+            ct);
+
+        await _auditService.LogAsync(
+            "UserSignedUp", entity: "User", entityId: user.Id.ToString(), userId: user.Id, ct: ct);
+
         var roleNames = new[] { defaultRole.Name! };
         return await BuildAuthResultAsync(user, roleNames, ct);
     }
@@ -63,7 +81,11 @@ public class AuthenticationService(
         var user = await _userRepository.GetByEmailAsync(dto.Email, tracked: true, ct);
 
         if (user is null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
+        {
+            await _auditService.LogAsync(
+                "LoginFailed", entity: "User", newValue: new { dto.Email }, ct: ct);
             throw new UnauthorizedException("Invalid credentials.");
+        }
 
         user.LastLogin = DateTime.UtcNow;
         await _userRepository.SaveChangesAsync(ct);
@@ -71,6 +93,9 @@ public class AuthenticationService(
         var roleNames = user.UserRoles
             .Select(ur => ur.Role.Name!)
             .ToArray();
+
+        await _auditService.LogAsync(
+            "UserLoggedIn", entity: "User", entityId: user.Id.ToString(), userId: user.Id, ct: ct);
 
         return await BuildAuthResultAsync(user, roleNames, ct);
     }

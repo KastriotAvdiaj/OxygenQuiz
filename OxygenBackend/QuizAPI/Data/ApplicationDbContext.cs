@@ -45,13 +45,6 @@ namespace QuizAPI.Data
 
         public DbSet<Role> Roles { get; set; }
 
-        public DbSet<UpdatedAt> UpdatedAt { get; set; }
-
-        public DbSet<RoleUpdatedAt> RoleUpdatedAt { get; set; }
-
-        public DbSet<PermissionUpdatedAt> PermissionUpdatedAt { get; set; }
-        public DbSet<UserUpdatedAt> UserUpdatedAt { get; set; }
-
         public DbSet<QuestionStatistics> QuestionStatistics { get; set; }
 
         public DbSet<ImageAsset> ImageAssets { get; set; }
@@ -59,6 +52,10 @@ namespace QuizAPI.Data
         public DbSet<RefreshToken> RefreshTokens { get; set; }
 
         public DbSet<FileRecord> Files { get; set; }
+
+        public DbSet<AuditLog> AuditLogs { get; set; }
+
+        public DbSet<Notification> Notifications { get; set; }
 
         public DbSet<Universiteti> Universitetet { get; set; }
 
@@ -166,55 +163,23 @@ namespace QuizAPI.Data
                 .OnDelete(DeleteBehavior.Cascade);
 
             base.OnModelCreating(modelBuilder);
-            // Configure many-to-many relationship between Role and UpdatedAt tables.
-            modelBuilder.Entity<RoleUpdatedAt>()
-                .HasKey(ru => new { ru.RoleId, ru.UpdatedAtId });
 
-            modelBuilder.Entity<RoleUpdatedAt>()
-                .HasOne(ru => ru.Role)
-                .WithMany(r => r.RoleUpdatedAt)
-                .HasForeignKey(ru => ru.RoleId);
+            // Audit log: index the common query axes (who / which entity / when).
+            modelBuilder.Entity<AuditLog>()
+                .HasIndex(a => new { a.Entity, a.EntityId });
+            modelBuilder.Entity<AuditLog>()
+                .HasIndex(a => a.UserId);
+            modelBuilder.Entity<AuditLog>()
+                .HasIndex(a => a.CreatedAt);
 
-            modelBuilder.Entity<RoleUpdatedAt>()
-                .HasOne(ru => ru.UpdatedAt)
-                .WithMany(u => u.RoleUpdatedAt)
-                .HasForeignKey(ru => ru.UpdatedAtId);
-
-            // Configure many-to-many relationship between Permission and UpdatedAt tables.
-            modelBuilder.Entity<PermissionUpdatedAt>()
-                .HasKey(ru => new { ru.PermissionId, ru.UpdatedAtId });
-
-            modelBuilder.Entity<PermissionUpdatedAt>()
-                .HasOne(ru => ru.Permission)
-                .WithMany(r => r.PermissionUpdatedAt)
-                .HasForeignKey(ru => ru.PermissionId);
-
-            modelBuilder.Entity<PermissionUpdatedAt>()
-                .HasOne(ru => ru.UpdatedAt)
-                .WithMany(u => u.PermissionUpdatedAt)
-                .HasForeignKey(ru => ru.UpdatedAtId);
-
-            // Configure many-to-many relationship between User and UpdatedAt tables.
-            modelBuilder.Entity<UserUpdatedAt>()
-                .HasKey(ru => new { ru.UserId, ru.UpdatedAtId });
-
-            modelBuilder.Entity<UserUpdatedAt>()
-                .HasOne(ru => ru.User)
-                .WithMany(r => r.UserUpdatedAt)
-                .HasForeignKey(ru => ru.UserId)
-                .OnDelete(DeleteBehavior.NoAction); // Or DeleteBehavior.NoAction
-
-            modelBuilder.Entity<UserUpdatedAt>()
-                .HasOne(ru => ru.UpdatedAt)
-                .WithMany(u => u.UserUpdatedAt)
-                .HasForeignKey(ru => ru.UpdatedAtId)
-                .OnDelete(DeleteBehavior.NoAction); // Or DeleteBehavior.NoAction
-
-            modelBuilder.Entity<UpdatedAt>()
-                .HasOne(u => u.User)
+            // Notifications: one user -> many, cascade on user delete, fast "my unread" lookups.
+            modelBuilder.Entity<Notification>()
+                .HasOne<User>()
                 .WithMany()
-                .HasForeignKey(u => u.UserId)
-                .OnDelete(DeleteBehavior.NoAction);
+                .HasForeignKey(n => n.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<Notification>()
+                .HasIndex(n => new { n.UserId, n.IsRead });
 
 
             // Configuration for Question-AnswerOptions relationship
