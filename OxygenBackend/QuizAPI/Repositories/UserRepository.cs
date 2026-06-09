@@ -17,12 +17,22 @@ namespace QuizAPI.Repositories
                 .Include(u => u.UserRoles)
                     .ThenInclude(ur => ur.Role);
 
+        // Auth paths (login, /me, refresh) also need each role's permissions
+        // so the DTO can carry a flat permission list. Heavier, so it's only
+        // used where the permissions are actually consumed.
+        private IQueryable<User> WithRolesAndPermissions() =>
+            _context.Users
+                .Include(u => u.UserRoles)
+                    .ThenInclude(ur => ur.Role)
+                        .ThenInclude(r => r.RolePermissions)
+                            .ThenInclude(rp => rp.Permission);
+
         public async Task<IReadOnlyList<User>> GetAllAsync(CancellationToken ct = default) =>
             await WithRoles().AsNoTracking().ToListAsync(ct);
 
         public async Task<User?> GetByIdAsync(Guid id, bool tracked = false, CancellationToken ct = default)
         {
-            var query = WithRoles();
+            var query = WithRolesAndPermissions();
             if (!tracked) query = query.AsNoTracking();
             return await query.FirstOrDefaultAsync(u => u.Id == id, ct);
         }
@@ -33,7 +43,7 @@ namespace QuizAPI.Repositories
 
         public async Task<User?> GetByEmailAsync(string email, bool tracked = false, CancellationToken ct = default)
         {
-            var query = WithRoles();
+            var query = WithRolesAndPermissions();
             if (!tracked) query = query.AsNoTracking();
             return await query.SingleOrDefaultAsync(u => u.Email == email, ct);
         }

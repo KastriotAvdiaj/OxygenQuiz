@@ -1,6 +1,10 @@
 import { lazy, useMemo } from "react";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
-import { userAuthLoader } from "../lib/Auth";
+import { adminAuthLoader, permissionAuthLoader, userAuthLoader } from "../lib/Auth";
+import {
+  adminDashboardNavButtons,
+  userDashboardNavButtons,
+} from "@/pages/Dashboard/Components/dashboardNavConfig";
 // import { AppRoot } from "../pages/AppRoot";
 import { QueryClient, useQueryClient } from "@tanstack/react-query";
 
@@ -87,6 +91,13 @@ const Signup = lazy(() => import("../pages/UserRelated/Signup/Signup"));
 const AccessDeniedPage = lazy(() =>
   import("../pages/UtilityPages/AccessDenied").then((module) => ({
     default: module.AccessDeniedPage,
+  }))
+);
+// Public profile of another user. Route is scaffolded but not yet linked from
+// the UI (see UsersController.GetPublicProfile, also marked not-yet-used).
+const UserProfile = lazy(() =>
+  import("../pages/UserRelated/Profile/UserProfile").then((module) => ({
+    default: module.UserProfile,
   }))
 );
 const createAppRouter = (queryClient: QueryClient) =>
@@ -237,12 +248,18 @@ const createAppRouter = (queryClient: QueryClient) =>
       errorElement: <DashboardErrorElement />,
     },
     {
-      path: "/dashboard/*",
-      element: <AppRoot />,
-      id: "dashboardRoot",
-      loader: userAuthLoader(queryClient),
-      errorElement: <DashboardErrorElement />,
-      children: [
+  path: "/dashboard/*",
+  element: (
+    <AppRoot
+      basePath="/dashboard"
+      navItems={adminDashboardNavButtons}
+      fullWidthPaths={["/dashboard/quizzes/create-quiz"]}
+    />
+  ),
+  id: "dashboardRoot",
+  loader: adminAuthLoader(queryClient),   // was userAuthLoader — admins only
+  errorElement: <DashboardErrorElement />,
+  children: [
         {
           index: true,
           element: <Navigate to="/dashboard/questions" replace />,
@@ -317,16 +334,97 @@ const createAppRouter = (queryClient: QueryClient) =>
           },
         },
         {
-          path: "users",
+          path: "audit-logs",
           lazy: async () => {
-            const { Users } = await import(
-              "../pages/Dashboard/Pages/User/Users"
+            const { AuditLog } = await import(
+              "../pages/Dashboard/Pages/AuditLog/AuditLog"
             );
-            return { Component: Users };
+            return { Component: AuditLog };
           },
-          loader: async () => {
-            const { usersLoader } = await import("../loaders/users.loader");
-            return usersLoader(queryClient);
+        },
+       {
+        path: "users",
+        lazy: async () => {
+          const { Users } = await import("../pages/Dashboard/Pages/User/Users");
+          return { Component: Users };
+        },
+        loader: async (args) => {
+          const auth = await permissionAuthLoader(queryClient, ["user:view"])(args);
+          if (auth instanceof Response) return auth; // redirect — stop here
+          const { usersLoader } = await import("../loaders/users.loader");
+          return usersLoader(queryClient)(); // ← note the extra ()
+        },
+      },
+        {
+          path: "*",
+          lazy: async () => {
+            const { NotFoundRoute } = await import(
+              "../pages/UtilityPages/NotFound/Not-Found"
+            );
+            return { Component: NotFoundRoute };
+          },
+        },
+      ],
+    },
+    {
+      path: "/my-dashboard",
+      id: "myDashboardRoot",
+      errorElement: <DashboardErrorElement />,
+      loader: userAuthLoader(queryClient),
+      element: (
+        <AppRoot
+          basePath="/my-dashboard"
+          navItems={userDashboardNavButtons}
+          fullWidthPaths={["/my-dashboard/quizzes/create"]}
+        />
+      ),
+      children: [
+        {
+          index: true,
+          element: <Navigate to="/my-dashboard/profile" replace />,
+        },
+        {
+          path: "profile",
+          lazy: async () => {
+            const { MyProfile } = await import(
+              "../pages/UserDashboard/MyProfile"
+            );
+            return { Component: MyProfile };
+          },
+        },
+        {
+          path: "questions",
+          lazy: async () => {
+            const { MyQuestions } = await import(
+              "../pages/UserDashboard/MyQuestions"
+            );
+            return { Component: MyQuestions };
+          },
+        },
+        {
+          path: "quizzes",
+          lazy: async () => {
+            const { MyQuizzes } = await import(
+              "../pages/UserDashboard/MyQuizzes"
+            );
+            return { Component: MyQuizzes };
+          },
+        },
+        {
+          path: "quizzes/create",
+          element: (
+            <QuizQuestionProvider>
+              <QuizCreator />
+            </QuizQuestionProvider>
+          ),
+        },
+        {
+          path: "settings",
+          lazy: async () => {
+            const { Settings } = await import(
+              "../pages/UserRelated/SettingsPage/Settings"
+            );
+            return { Component: Settings };
           },
         },
         {
@@ -341,12 +439,6 @@ const createAppRouter = (queryClient: QueryClient) =>
       ],
     },
     {
-      path: "/my-dashboard",
-      errorElement: <DashboardErrorElement />,
-      loader: userAuthLoader(queryClient),
-      element: <AppRoot />,
-    },
-    {
       path: "my-profile",
       lazy: async () => {
         const { ProfileWrapper } = await import(
@@ -354,6 +446,16 @@ const createAppRouter = (queryClient: QueryClient) =>
         );
         return { Component: ProfileWrapper };
       },
+    },
+    {
+      // Scaffolded public profile — not linked from anywhere in the UI yet.
+      path: "/users/:userId",
+      element: (
+        <HomeLayout
+          headerBehavior={HeaderBehavior.DEFAULT}
+          children={<UserProfile />}
+        />
+      ),
     },
     {
       path: "*",

@@ -122,6 +122,8 @@ export const useCreateQuiz = ({
       queryClient.invalidateQueries({
         queryKey: getAllQuizzesQueryOptions().queryKey,
       });
+      // Refresh the user-dashboard ("my") quizzes list + profile total too.
+      queryClient.invalidateQueries({ queryKey: ["myQuizzes"] });
       onSuccess?.(...args);
     },
     onError: (error, variables, onMutateResult, context) => {

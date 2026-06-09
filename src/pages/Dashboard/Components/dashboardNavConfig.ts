@@ -1,6 +1,6 @@
 import { FaChartLine } from "react-icons/fa6";
 import { RiQuestionAnswerFill } from "react-icons/ri";
-import { FaFolderOpen, FaUsers } from "react-icons/fa";
+import { FaFolderOpen, FaUsers, FaUserCircle, FaCog, FaHistory } from "react-icons/fa";
 import { PiLockKeyFill } from "react-icons/pi";
 
 export type DashboardNavItem = {
@@ -10,7 +10,8 @@ export type DashboardNavItem = {
   roles?: string[];
 };
 
-export const dashboardNavButtons: DashboardNavItem[] = [
+// Admin / SuperAdmin dashboard (/dashboard)
+export const adminDashboardNavButtons: DashboardNavItem[] = [
   {
     id: "application",
     label: "Application",
@@ -38,5 +39,35 @@ export const dashboardNavButtons: DashboardNavItem[] = [
     label: "Permissions",
     icon: PiLockKeyFill,
     roles: ["SuperAdmin"],
+  },
+  {
+    id: "audit-logs",
+    label: "Audit Log",
+    icon: FaHistory,
+    roles: ["Admin", "SuperAdmin"],
+  },
+];
+
+// Regular-user dashboard (/my-dashboard). No `roles` → always visible.
+export const userDashboardNavButtons: DashboardNavItem[] = [
+  {
+    id: "profile",
+    label: "Profile",
+    icon: FaUserCircle,
+  },
+  {
+    id: "questions",
+    label: "My Questions",
+    icon: RiQuestionAnswerFill,
+  },
+  {
+    id: "quizzes",
+    label: "My Quizzes",
+    icon: FaFolderOpen,
+  },
+  {
+    id: "settings",
+    label: "Settings",
+    icon: FaCog,
   },
 ];

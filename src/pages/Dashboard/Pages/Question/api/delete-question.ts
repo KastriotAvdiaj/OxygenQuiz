@@ -52,6 +52,9 @@ export const useDeleteQuestion = ({
         // queryClient.invalidateQueries({ queryKey: ['questions'] }); // Example fallback
       }
 
+      // Refresh the user-dashboard ("my") lists + profile total too.
+      queryClient.invalidateQueries({ queryKey: ["myQuestions"] });
+
       onSuccess?.(data, variables, onMutateResult, context);
     },
     onError: (error, variables, onMutateResult, context) => {

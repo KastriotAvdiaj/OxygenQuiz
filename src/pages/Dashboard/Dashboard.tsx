@@ -3,6 +3,7 @@
 import { Suspense, lazy } from "react";
 import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import { DashboardNav } from "@/pages/Dashboard/Components/DashboardNav";
+import { adminDashboardNavButtons } from "@/pages/Dashboard/Components/dashboardNavConfig";
 import { DashboardHeader } from "./Components/DashboardHeader";
 import { Spinner } from "@/components/ui";
 
@@ -45,6 +46,7 @@ export const Dashboard = () => {
       </div>
       <div className="h-full bg-background">
         <DashboardNav
+          navItems={adminDashboardNavButtons}
           setActivePage={setActivePage}
           activePage={location.pathname.split("/").pop() || "application"}
         />

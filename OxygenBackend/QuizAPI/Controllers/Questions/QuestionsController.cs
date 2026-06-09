@@ -6,6 +6,7 @@ using QuizAPI.Extensions;
 using QuizAPI.Models;
 using QuizAPI.Services.CurrentUserService;
 using QuizAPI.Services.Permissions;
+using QuizAPI.Services.Audit;
 
 namespace QuizAPI.Controllers.Questions
 {
@@ -16,15 +17,18 @@ namespace QuizAPI.Controllers.Questions
         private readonly IQuestionService _questionService;
         private readonly ICurrentUserService _currentUserService;
         private readonly IPermissionService _permissionService;
+        private readonly IAuditService _auditService;
 
         public QuestionsController(
             IQuestionService questionService,
             ICurrentUserService currentUserService,
-            IPermissionService permissionService)
+            IPermissionService permissionService,
+            IAuditService auditService)
         {
             _questionService = questionService;
             _currentUserService = currentUserService;
             _permissionService = permissionService;
+            _auditService = auditService;
         }
 
         // ── GET ───────────────────────────────────────────────────────────────
@@ -83,11 +87,41 @@ namespace QuizAPI.Controllers.Questions
             var userId = _currentUserService.UserId;
             if (userId == null) return Unauthorized();
 
+            // Server-derived ownership: overwrites anything the client sent, so a
+            // user can only ever see their own questions regardless of query params.
             filterParams.UserId = userId.Value;
 
-            var pagedQuestions = await _questionService.GetPaginatedQuestionsAsync(filterParams);
-            Response.AddPaginationHeader(pagedQuestions);
-            return Ok(pagedQuestions.Items);
+            // Return full typed DTOs (with answer options, etc.) so the client can
+            // render and edit them. The UserId filter set above is applied inside
+            // each typed method via ApplyFilters.
+            switch (filterParams.Type)
+            {
+                case QuestionType.MultipleChoice:
+                {
+                    var paged = await _questionService.GetPaginatedMultipleChoiceQuestionsAsync(filterParams);
+                    Response.AddPaginationHeader(paged);
+                    return Ok(paged.Items);
+                }
+                case QuestionType.TrueFalse:
+                {
+                    var paged = await _questionService.GetPaginatedTrueFalseQuestionsAsync(filterParams);
+                    Response.AddPaginationHeader(paged);
+                    return Ok(paged.Items);
+                }
+                case QuestionType.TypeTheAnswer:
+                {
+                    var paged = await _questionService.GetPaginatedTypeTheAnswerQuestionsAsync(filterParams);
+                    Response.AddPaginationHeader(paged);
+                    return Ok(paged.Items);
+                }
+                default:
+                {
+                    // No type specified — fall back to the lightweight base list.
+                    var paged = await _questionService.GetPaginatedQuestionsAsync(filterParams);
+                    Response.AddPaginationHeader(paged);
+                    return Ok(paged.Items);
+                }
+            }
         }
 
         // ── CREATE ────────────────────────────────────────────────────────────
@@ -103,6 +137,9 @@ namespace QuizAPI.Controllers.Questions
                 return Forbid();
 
             var createdQuestion = await _questionService.CreateMultipleChoiceQuestionAsync(questionCM, userId.Value);
+            await _auditService.LogAsync(
+                AuditActions.QuestionCreated, "Question", createdQuestion.Id.ToString(),
+                newValue: new { createdQuestion.Id, Type = "MultipleChoice" });
             return CreatedAtAction(nameof(GetQuestion), new { id = createdQuestion.Id }, createdQuestion);
         }
 
@@ -117,6 +154,9 @@ namespace QuizAPI.Controllers.Questions
                 return Forbid();
 
             var createdQuestion = await _questionService.CreateTrueFalseQuestionAsync(questionCM, userId.Value);
+            await _auditService.LogAsync(
+                AuditActions.QuestionCreated, "Question", createdQuestion.Id.ToString(),
+                newValue: new { createdQuestion.Id, Type = "TrueFalse" });
             return CreatedAtAction(nameof(GetQuestion), new { id = createdQuestion.Id }, createdQuestion);
         }
 
@@ -131,6 +171,9 @@ namespace QuizAPI.Controllers.Questions
                 return Forbid();
 
             var createdQuestion = await _questionService.CreateTypeTheAnswerQuestionAsync(questionCM, userId.Value);
+            await _auditService.LogAsync(
+                AuditActions.QuestionCreated, "Question", createdQuestion.Id.ToString(),
+                newValue: new { createdQuestion.Id, Type = "TypeTheAnswer" });
             return CreatedAtAction(nameof(GetQuestion), new { id = createdQuestion.Id }, createdQuestion);
         }
 
@@ -155,7 +198,11 @@ namespace QuizAPI.Controllers.Questions
             var canUpdateAny = await _permissionService.HasPermissionAsync(userId.Value, "question:update:any");
             var result = await _questionService.UpdateMultipleChoiceQuestionAsync(questionUM, userId.Value, canUpdateAny);
 
-            return result == null ? NotFound() : NoContent();
+            if (result == null) return NotFound();
+            await _auditService.LogAsync(
+                AuditActions.QuestionUpdated, "Question", id.ToString(),
+                newValue: new { Type = "MultipleChoice", OwnerId = ownerId, ByOwner = ownerId == userId.Value });
+            return NoContent();
         }
 
         [HttpPut("truefalse/{id}")]
@@ -177,7 +224,11 @@ namespace QuizAPI.Controllers.Questions
             var canUpdateAny = await _permissionService.HasPermissionAsync(userId.Value, "question:update:any");
             var result = await _questionService.UpdateTrueFalseQuestionAsync(questionUM, userId.Value, canUpdateAny);
 
-            return result == null ? NotFound() : NoContent();
+            if (result == null) return NotFound();
+            await _auditService.LogAsync(
+                AuditActions.QuestionUpdated, "Question", id.ToString(),
+                newValue: new { Type = "TrueFalse", OwnerId = ownerId, ByOwner = ownerId == userId.Value });
+            return NoContent();
         }
 
         [HttpPut("typetheanswer/{id}")]
@@ -199,7 +250,11 @@ namespace QuizAPI.Controllers.Questions
             var canUpdateAny = await _permissionService.HasPermissionAsync(userId.Value, "question:update:any");
             var result = await _questionService.UpdateTypeTheAnswerQuestionAsync(questionUM, userId.Value, canUpdateAny);
 
-            return result == null ? NotFound() : NoContent();
+            if (result == null) return NotFound();
+            await _auditService.LogAsync(
+                AuditActions.QuestionUpdated, "Question", id.ToString(),
+                newValue: new { Type = "TypeTheAnswer", OwnerId = ownerId, ByOwner = ownerId == userId.Value });
+            return NoContent();
         }
 
         // ── DELETE ────────────────────────────────────────────────────────────
@@ -220,9 +275,14 @@ namespace QuizAPI.Controllers.Questions
             var canDeleteAny = await _permissionService.HasPermissionAsync(userId.Value, "question:delete:any");
             var (success, errorMessage, isCustomMessage) = await _questionService.DeleteQuestionAsync(id, userId.Value, canDeleteAny);
 
-            return success
-                ? Ok(new { success = true, message = "Question deleted successfully." })
-                : HandleCustomError(errorMessage, isCustomMessage);
+            if (!success)
+                return HandleCustomError(errorMessage, isCustomMessage);
+
+            await _auditService.LogAsync(
+                AuditActions.QuestionDeleted, "Question", id.ToString(),
+                oldValue: new { OwnerId = ownerId, ByOwner = ownerId == userId.Value });
+
+            return Ok(new { success = true, message = "Question deleted successfully." });
         }
     }
 }

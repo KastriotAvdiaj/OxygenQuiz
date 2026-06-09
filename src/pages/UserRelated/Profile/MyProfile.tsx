@@ -1,80 +1,33 @@
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { useQuery } from "@tanstack/react-query";
 import { useUser } from "@/lib/Auth";
-import formatDate from "@/lib/date-format";
 import { User } from "@/types/user-types";
+import { getMyQuestionsTotalQueryOptions } from "@/pages/UserDashboard/api/get-my-questions";
+import { useMyQuizzesData } from "@/pages/UserDashboard/api/get-my-quizzes";
+import { ProfileView } from "./ProfileView";
 
-const MyProfile = () => {
-  const Data = useUser();
+// "Self" container: fetches the signed-in user's own data (self-scoped endpoints)
+// and renders the shared ProfileView with isOwnProfile.
+export const MyProfile = () => {
+  const userQuery = useUser();
+  const questionsTotalQuery = useQuery(getMyQuestionsTotalQueryOptions());
+  const quizzesQuery = useMyQuizzesData({ params: { pageSize: 1 } });
 
-  if (!Data?.data) return null;
-  const user: User = Data.data;
-
-
-  const initials =
-    typeof user.username === "string"
-      ? user.username
-          .split(" ")
-          .map((name: string) => name[0])
-          .join("")
-          .toUpperCase()
-      : "?";
+  if (!userQuery?.data) return null;
+  const user: User = userQuery.data;
 
   return (
-    <div className="pt-20">
-      <Card className="max-w-md mx-auto">
-        <CardHeader className="flex flex-row items-center gap-4 pb-2">
-          <Avatar className="h-16 w-16">
-            <AvatarImage src={user.profileImageUrl} alt={user.username} />
-            <AvatarFallback>{initials}</AvatarFallback>
-          </Avatar>
-          <div className="flex flex-col">
-            <CardTitle className="text-xl">{user.username}</CardTitle>
-            <div className="flex flex-wrap gap-1 mt-1">
-              {user.roles?.length ? (
-                user.roles.map((role) => (
-                  <Badge key={role} variant="outline" className="w-fit">
-                    {role}
-                  </Badge>
-                ))
-              ) : (
-                <Badge variant="outline" className="w-fit">
-                  No role
-                </Badge>
-              )}
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="grid grid-cols-3 gap-1 text-sm">
-              <span className="font-medium">Email:</span>
-              <span className="col-span-2">{user.email}</span>
-            </div>
-
-            <div className="grid grid-cols-3 gap-1 text-sm">
-              <span className="font-medium">Registered:</span>
-              <span className="col-span-2">
-                {formatDate(user.dateRegistered)}
-              </span>
-            </div>
-
-            <div className="grid grid-cols-3 gap-1 text-sm">
-              <span className="font-medium">Last login:</span>
-              <span className="col-span-2">{formatDate(user.lastLogin)}</span>
-            </div>
-
-            <div className="grid grid-cols-3 gap-1 text-sm">
-              <span className="font-medium">Last updated:</span>
-              <span className="col-span-2">
-                {formatDate(user.userUpdatedAt)}
-              </span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+    <ProfileView
+      isOwnProfile
+      username={user.username}
+      email={user.email}
+      profileImageUrl={user.profileImageUrl}
+      roles={user.roles}
+      dateRegistered={user.dateRegistered}
+      lastLogin={user.lastLogin}
+      questionsCount={questionsTotalQuery.data ?? 0}
+      quizzesCount={quizzesQuery.data?.pagination?.totalItems ?? 0}
+    />
   );
 };
+
 export default MyProfile;

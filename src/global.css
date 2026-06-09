@@ -2,12 +2,19 @@
 @import 'tailwindcss/components';
 @import 'tailwindcss/utilities';
 
+/* User-selectable font zones. Overwritten at runtime from the user's settings
+   (see SettingsApplier). Defaults match the previous look. */
+:root {
+  --font-app: "Noto Sans";
+  --font-quiz: "DynaPuff";
+}
+
 html, body {
   margin: 0;
   padding: 0;
   height: 100%;
   overflow: hidden;
-  font-family: sans-serif;
+  font-family: var(--font-app), sans-serif;
   color: hsl(var(--foreground));
   background-color: hsl(var(--background))
 }

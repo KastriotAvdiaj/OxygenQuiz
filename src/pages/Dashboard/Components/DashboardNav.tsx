@@ -1,10 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Divider } from "../../../common/Divider";
-import { dashboardNavButtons } from "./dashboardNavConfig";
+import type { DashboardNavItem } from "./dashboardNavConfig";
 import { Authorization, ROLES } from "@/lib/authorization";
 
 type DashboardNavProps = {
+  navItems: DashboardNavItem[];
   setActivePage: (page: string) => void;
   activePage: string;
   isCollapsed?: boolean;
@@ -12,6 +13,7 @@ type DashboardNavProps = {
 };
 
 export const DashboardNav: React.FC<DashboardNavProps> = ({
+  navItems,
   setActivePage,
   activePage,
   isCollapsed = false,
@@ -42,7 +44,7 @@ export const DashboardNav: React.FC<DashboardNavProps> = ({
           </>
         )}
 
-        {dashboardNavButtons.map((button) => (
+        {navItems.map((button) => (
           <Authorization
             key={button.id}
             allowedRoles={button.roles?.map((r) => r as ROLES) ?? []}>

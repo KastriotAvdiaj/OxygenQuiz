@@ -4,12 +4,19 @@ import { Outlet, useLocation } from "react-router-dom";
 import { Spinner } from "@/components/ui/Spinner";
 import { DashboardLayout } from "@/layouts/dashboard-layout";
 import { MainErrorFallback } from "./UtilityPages/Error/Main";
+import type { DashboardNavItem } from "./Dashboard/Components/dashboardNavConfig";
 
-export const AppRoot = () => {
+type AppRootProps = {
+  basePath: string;
+  navItems: DashboardNavItem[];
+  fullWidthPaths?: string[];
+};
+
+export const AppRoot = ({ basePath, navItems, fullWidthPaths }: AppRootProps) => {
   const location = useLocation();
 
   return (
-    <DashboardLayout>
+    <DashboardLayout basePath={basePath} navItems={navItems} fullWidthPaths={fullWidthPaths}>
       <Suspense
         fallback={
           <div className="flex h-screen w-screen items-center justify-center">

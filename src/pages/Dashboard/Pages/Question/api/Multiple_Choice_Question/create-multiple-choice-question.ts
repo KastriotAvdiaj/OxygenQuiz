@@ -49,6 +49,8 @@ export const useCreateMultipleChoiceQuestion = ({
       queryClient.invalidateQueries({
         queryKey: getMultipleChoiceQuestionsQueryOptions().queryKey,
       });
+      // Refresh the user-dashboard ("my") lists + profile total too.
+      queryClient.invalidateQueries({ queryKey: ["myQuestions"] });
       onSuccess?.(...args);
     },
     onError: (error, variables, onMutateResult, context) => {

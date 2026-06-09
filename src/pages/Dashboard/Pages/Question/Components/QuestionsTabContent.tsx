@@ -1,6 +1,11 @@
 import { useMultipleChoiceQuestionData } from "../api/Multiple_Choice_Question/get-multiple-choice-questions";
 import { useTrueFalseQuestionData } from "../api/True_False-Question/get-true_false-questions";
 import { useTypeTheAnswerQuestionData } from "../api/Type_The_Answer-Question/get-type-the-answer-questions";
+import {
+  useMyMultipleChoiceQuestionData,
+  useMyTrueFalseQuestionData,
+  useMyTypeTheAnswerQuestionData,
+} from "@/pages/UserDashboard/api/get-my-questions";
 
 import { MultipleChoiceQuestionList } from "./Multiple_Choice_Question/multiple-choice-question-list";
 import { TrueFalseQuestionList } from "../Components/True_Flase-Question/true-false-question-list";
@@ -25,6 +30,10 @@ interface QuestionTabContentProps {
   onPageChange: (newPage: number) => void;
   page?: string;
   isModalOpen: boolean;
+  // "all"  → admin endpoints (every question)
+  // "mine" → /questions/myQuestions (only the current user's). Defaults to "all"
+  //          so existing admin usage is unchanged.
+  scope?: "all" | "mine";
 }
 
 export const QuestionTabContent = ({
@@ -33,28 +42,62 @@ export const QuestionTabContent = ({
   onPageChange,
   page = "admin", // Default to "admin" if not provided
   isModalOpen,
+  scope = "all",
 }: QuestionTabContentProps) => {
-  // Keep all queries active but only fetch when needed
-  const mcqQuery = useMultipleChoiceQuestionData({
+  const isMine = scope === "mine";
+
+  // Only the hook matching the active scope + tab actually fetches; the rest stay
+  // disabled. (Hooks must be called unconditionally, so we call both sets.)
+
+  // ── "all" scope (admin) ──────────────────────────────────
+  const mcqAll = useMultipleChoiceQuestionData({
     params: queryParams,
     queryConfig: {
-      enabled: isModalOpen && questionType === QuestionType.MultipleChoice,
+      enabled:
+        !isMine && isModalOpen && questionType === QuestionType.MultipleChoice,
+    },
+  });
+  const trueFalseAll = useTrueFalseQuestionData({
+    params: queryParams,
+    queryConfig: {
+      enabled:
+        !isMine && isModalOpen && questionType === QuestionType.TrueFalse,
+    },
+  });
+  const typeAnswerAll = useTypeTheAnswerQuestionData({
+    params: queryParams,
+    queryConfig: {
+      enabled:
+        !isMine && isModalOpen && questionType === QuestionType.TypeTheAnswer,
     },
   });
 
-  const trueFalseQuery = useTrueFalseQuestionData({
+  // ── "mine" scope (user) ──────────────────────────────────
+  const mcqMine = useMyMultipleChoiceQuestionData({
     params: queryParams,
     queryConfig: {
-      enabled: isModalOpen && questionType === QuestionType.TrueFalse,
+      enabled:
+        isMine && isModalOpen && questionType === QuestionType.MultipleChoice,
+    },
+  });
+  const trueFalseMine = useMyTrueFalseQuestionData({
+    params: queryParams,
+    queryConfig: {
+      enabled: isMine && isModalOpen && questionType === QuestionType.TrueFalse,
+    },
+  });
+  const typeAnswerMine = useMyTypeTheAnswerQuestionData({
+    params: queryParams,
+    queryConfig: {
+      enabled:
+        isMine && isModalOpen && questionType === QuestionType.TypeTheAnswer,
     },
   });
 
-  const typeAnswerQuery = useTypeTheAnswerQuestionData({
-    params: queryParams,
-    queryConfig: {
-      enabled: isModalOpen && questionType === QuestionType.TypeTheAnswer,
-    },
-  });
+  // Pick the source for the current scope; the rest of the component is unchanged.
+  const mcqQuery = isMine ? mcqMine : mcqAll;
+  const trueFalseQuery = isMine ? trueFalseMine : trueFalseAll;
+  const typeAnswerQuery = isMine ? typeAnswerMine : typeAnswerAll;
 
   // Get the relevant query based on question type
   const getActiveQuery = () => {

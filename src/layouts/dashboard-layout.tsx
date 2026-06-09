@@ -2,26 +2,33 @@ import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { DashboardHeader } from "@/pages/Dashboard/Components/DashboardHeader";
 import { DashboardNav } from "@/pages/Dashboard/Components/DashboardNav";
-
-const QUIZ_CREATOR_PATH = "/dashboard/quizzes/create-quiz";
+import type { DashboardNavItem } from "@/pages/Dashboard/Components/dashboardNavConfig";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
+  basePath: string; // "/dashboard" | "/my-dashboard"
+  navItems: DashboardNavItem[];
+  fullWidthPaths?: string[]; // paths that hide the nav (e.g. quiz creator)
 }
 
-export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
+export const DashboardLayout = ({
+  children,
+  basePath,
+  navItems,
+  fullWidthPaths = [],
+}: DashboardLayoutProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isNavCollapsed, setIsNavCollapsed] = useState(false);
 
   const setActivePage = (page: string) => {
-    navigate(`/dashboard/${page}`);
+    navigate(`${basePath}/${page}`);
   };
 
-  const isQuizCreatorPage = location.pathname === QUIZ_CREATOR_PATH;
-  const activePage = location.pathname.split("/").pop() || "questions";
+  const activePage = location.pathname.split("/").pop() || "";
+  const isFullWidth = fullWidthPaths.includes(location.pathname);
 
-  if (isQuizCreatorPage) {
+  if (isFullWidth) {
     // Show header but no nav
     return (
       <div className="text-foreground h-screen flex flex-col">
@@ -48,6 +55,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           `}
           aria-label="Dashboard navigation">
           <DashboardNav
+            navItems={navItems}
             setActivePage={setActivePage}
             activePage={activePage}
             isCollapsed={isNavCollapsed}

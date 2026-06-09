@@ -118,46 +118,59 @@ export const { useUser, useLogin, useLogout, useRegister, AuthLoader } =
 export const createAuthLoader =
   (
     queryClient: QueryClient,
-    options?: { requiredRoles?: string[]; redirectPath?: string }
+    options?: {
+      requiredRoles?: string[];
+      requiredPermissions?: string[];
+      redirectPath?: string;
+    }
   ) =>
   async ({ request }: LoaderFunctionArgs): Promise<{ user: User } | Response> => {
     const queryKey = ["authenticated-user"];
-    const { requiredRoles, redirectPath = "/access-denied" } = options || {};
+    const {
+      requiredRoles,
+      requiredPermissions,
+      redirectPath = "/access-denied",
+    } = options || {};
 
     try {
       let user = queryClient.getQueryData<User>(queryKey);
 
       if (!user) {
-        const fetchedUser = await queryClient.fetchQuery({
+        user = await queryClient.fetchQuery({
           queryKey,
           queryFn: async (): Promise<User> => {
             const userData = await getUser();
-            if (!userData) {
-              throw new Error("User not authenticated");
-            }
+            if (!userData) throw new Error("User not authenticated");
             return userData;
           },
-          staleTime: 5 * 60 * 1000, // 5 minutes
+          staleTime: 5 * 60 * 1000,
         });
-        user = fetchedUser;
       }
 
-      if (!user) {
-        throw new Error("User not authenticated");
-      }
+      if (!user) throw new Error("User not authenticated");
 
-      // Check roles if specified. Many-to-many: allow if the user holds ANY required role.
-      if (requiredRoles && requiredRoles.length > 0) {
-        const hasRequiredRole = requiredRoles.some((r) =>
-          user!.roles?.includes(r)
-        );
-        if (!hasRequiredRole) {
-          return redirect(redirectPath);
+      // SuperAdmin bypasses every route gate — its access never depends
+      // on the role/permission tables.
+      const isSuperAdmin = user.roles?.includes("SuperAdmin") ?? false;
+
+      if (!isSuperAdmin) {
+        // Role gate — allow if the user holds ANY required role.
+        if (requiredRoles && requiredRoles.length > 0) {
+          const ok = requiredRoles.some((r) => user!.roles?.includes(r));
+          if (!ok) return redirect(redirectPath);
+        }
+
+        // Permission gate — allow if the user holds ANY required permission.
+        if (requiredPermissions && requiredPermissions.length > 0) {
+          const ok = requiredPermissions.some((p) =>
+            user!.permissions?.includes(p)
+          );
+          if (!ok) return redirect(redirectPath);
         }
       }
 
       return { user };
-    } catch (error) {
+    } catch {
       const url = new URL(request.url);
       const returnUrl = url.pathname + url.search;
       return redirect(`/login?redirectTo=${encodeURIComponent(returnUrl)}`);
@@ -165,9 +178,15 @@ export const createAuthLoader =
   };
 
 export const userAuthLoader = createAuthLoader;
+
 export const adminAuthLoader = (queryClient: QueryClient) =>
-  createAuthLoader(queryClient, {
-    requiredRoles: ["Admin", "SuperAdmin"],
-  });
+  createAuthLoader(queryClient, { requiredRoles: ["Admin", "SuperAdmin"] });
+
 export const superAdminAuthLoader = (queryClient: QueryClient) =>
   createAuthLoader(queryClient, { requiredRoles: ["SuperAdmin"] });
+
+// New: gate a route by permission instead of role.
+export const permissionAuthLoader = (
+  queryClient: QueryClient,
+  requiredPermissions: string[]
+) => createAuthLoader(queryClient, { requiredPermissions });

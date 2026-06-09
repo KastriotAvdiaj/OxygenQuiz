@@ -1,6 +1,6 @@
 import { Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useTheme } from "./theme-provider";
+import { useThemeSetting } from "@/hooks/use-theme-setting";
 import { cn } from "@/utils/cn";
 
 type ModeToggleProps = {
@@ -9,7 +9,8 @@ type ModeToggleProps = {
 };
 
 export function ModeToggle({ className, text }: ModeToggleProps) {
-  const { theme, setTheme } = useTheme();
+  // changeTheme applies locally and persists to the user's settings when signed in.
+  const { theme, changeTheme } = useThemeSetting();
 
   const isLightMode = theme === "light";
 
@@ -20,7 +21,7 @@ export function ModeToggle({ className, text }: ModeToggleProps) {
         "flex items-center gap-2 px-4 py-2 cursor-pointer w-[fit-content] bg-background text-foreground hover:bg-background/40 border border-border/50",
         className
       )}
-      onClick={() => setTheme(isLightMode ? "dark" : "light")}
+      onClick={() => changeTheme(isLightMode ? "dark" : "light")}
     >
       {isLightMode ? (
         <>

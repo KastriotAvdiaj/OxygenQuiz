@@ -11,6 +11,8 @@
         public bool IsDeleted { get; set; }
         public string? ProfileImageUrl { get; set; }
         public IReadOnlyList<string> Roles { get; set; } = Array.Empty<string>();
+        // Flat permission strings the user holds, derived from their roles.
+        public IReadOnlyList<string> Permissions { get; set; } = Array.Empty<string>();
     }
 
 }

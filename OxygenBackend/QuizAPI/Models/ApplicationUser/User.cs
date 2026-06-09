@@ -30,6 +30,9 @@ namespace QuizAPI.Models
 
         public string? ProfileImageUrl { get; set; }
 
+        // 1:1 per-user preferences (music, sound, theme, etc.)
+        public UserSettings? Settings { get; set; }
+
         public User()
         {
             ConcurrencyStamp = Guid.NewGuid();

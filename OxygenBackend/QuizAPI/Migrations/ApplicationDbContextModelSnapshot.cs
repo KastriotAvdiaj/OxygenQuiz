@@ -63,14 +63,9 @@ namespace QuizAPI.Migrations
                     b.Property<int>("PermissionId")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("RoleId1")
-                        .HasColumnType("integer");
-
                     b.HasKey("RoleId", "PermissionId");
 
                     b.HasIndex("PermissionId");
-
-                    b.HasIndex("RoleId1");
 
                     b.HasIndex("RoleId", "PermissionId")
                         .IsUnique();
@@ -302,17 +297,12 @@ namespace QuizAPI.Migrations
                     b.Property<int>("RoleId")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("RoleId1")
-                        .HasColumnType("integer");
-
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
                     b.HasIndex("RoleId");
-
-                    b.HasIndex("RoleId1");
 
                     b.HasIndex("UserId", "RoleId")
                         .IsUnique();
@@ -1163,6 +1153,46 @@ namespace QuizAPI.Migrations
                     b.ToTable("Users");
                 });
 
+            modelBuilder.Entity("QuizAPI.Models.UserSettings", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AppFont")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("MusicEnabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("MusicVolume")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("QuizFont")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("ShowTimer")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("SoundEffectsEnabled")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("SoundEffectsVolume")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Theme")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("UserId");
+
+                    b.ToTable("UserSettings");
+                });
+
             modelBuilder.Entity("QuizAPI.Models.MultipleChoiceQuestion", b =>
                 {
                     b.HasBaseType("QuizAPI.Models.QuestionBase");
@@ -1238,14 +1268,10 @@ namespace QuizAPI.Migrations
                         .IsRequired();
 
                     b.HasOne("QuizAPI.Models.Role", "Role")
-                        .WithMany()
+                        .WithMany("RolePermissions")
                         .HasForeignKey("RoleId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.HasOne("QuizAPI.Models.Role", null)
-                        .WithMany("RolePermissions")
-                        .HasForeignKey("RoleId1");
 
                     b.Navigation("Permission");
 
@@ -1255,14 +1281,10 @@ namespace QuizAPI.Migrations
             modelBuilder.Entity("QuizAPI.ManyToManyTables.UserRole", b =>
                 {
                     b.HasOne("QuizAPI.Models.Role", "Role")
-                        .WithMany()
+                        .WithMany("UserRoles")
                         .HasForeignKey("RoleId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.HasOne("QuizAPI.Models.Role", null)
-                        .WithMany("UserRoles")
-                        .HasForeignKey("RoleId1");
 
                     b.HasOne("QuizAPI.Models.User", "User")
                         .WithMany("UserRoles")
@@ -1485,6 +1507,17 @@ namespace QuizAPI.Migrations
                     b.Navigation("Question");
                 });
 
+            modelBuilder.Entity("QuizAPI.Models.UserSettings", b =>
+                {
+                    b.HasOne("QuizAPI.Models.User", "User")
+                        .WithOne("Settings")
+                        .HasForeignKey("QuizAPI.Models.UserSettings", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("QuizAPI.ManyToManyTables.QuizQuestion", b =>
                 {
                     b.Navigation("UserAnswers");
@@ -1537,6 +1570,8 @@ namespace QuizAPI.Migrations
             modelBuilder.Entity("QuizAPI.Models.User", b =>
                 {
                     b.Navigation("QuizSessions");
+
+                    b.Navigation("Settings");
 
                     b.Navigation("UserRoles");
                 });

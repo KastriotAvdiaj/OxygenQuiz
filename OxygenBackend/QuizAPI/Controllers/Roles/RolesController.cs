@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using QuizAPI.Data;
 using QuizAPI.Models;
+using QuizAPI.Services.Audit;
 
 namespace QuizAPI.Controllers.Roles
 {
@@ -15,10 +16,12 @@ namespace QuizAPI.Controllers.Roles
     public class RolesController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
+        private readonly IAuditService _auditService;
 
-        public RolesController(ApplicationDbContext context)
+        public RolesController(ApplicationDbContext context, IAuditService auditService)
         {
             _context = context;
+            _auditService = auditService;
         }
 
         // GET: api/Roles
@@ -78,6 +81,10 @@ namespace QuizAPI.Controllers.Roles
                 }
             }
 
+            await _auditService.LogAsync(
+                AuditActions.RoleUpdated, "Role", role.Id.ToString(),
+                newValue: new { role.Id, role.Name });
+
             return NoContent();
         }
 
@@ -92,6 +99,10 @@ namespace QuizAPI.Controllers.Roles
             }
             _context.Roles.Add(role);
             await _context.SaveChangesAsync();
+
+            await _auditService.LogAsync(
+                AuditActions.RoleCreated, "Role", role.Id.ToString(),
+                newValue: new { role.Id, role.Name });
 
             return CreatedAtAction("GetRole", new { id = role.Id }, role);
         }
@@ -112,6 +123,10 @@ namespace QuizAPI.Controllers.Roles
 
             _context.Roles.Remove(role);
             await _context.SaveChangesAsync();
+
+            await _auditService.LogAsync(
+                AuditActions.RoleDeleted, "Role", role.Id.ToString(),
+                oldValue: new { role.Id, role.Name });
 
             return NoContent();
         }

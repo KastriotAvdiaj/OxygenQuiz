@@ -31,6 +31,29 @@ namespace QuizAPI.Controllers.Users
             return user is null ? NotFound($"User with ID {id} not found") : Ok(user);
         }
 
+        /// <summary>
+        /// Public, safe-to-expose profile for a user (no email/permissions/last login).
+        /// NOT YET USED: scaffolded for the upcoming public profile page
+        /// (/users/:userId on the frontend). No part of the UI links here yet.
+        /// </summary>
+        [HttpGet("{id:guid}/profile")]
+        [ProducesResponseType(typeof(PublicUserProfileDTO), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<PublicUserProfileDTO>> GetPublicProfile(Guid id, CancellationToken ct)
+        {
+            var user = await _userService.GetUserByIdAsync(id, ct);
+            if (user is null) return NotFound($"User with ID {id} not found");
+
+            return Ok(new PublicUserProfileDTO
+            {
+                Id = user.Id,
+                Username = user.Username,
+                ProfileImageUrl = user.ProfileImageUrl,
+                DateRegistered = user.DateRegistered,
+                Roles = user.Roles,
+            });
+        }
+
         [HttpGet("username/{username}")]
         [ProducesResponseType(typeof(UserDTO), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]

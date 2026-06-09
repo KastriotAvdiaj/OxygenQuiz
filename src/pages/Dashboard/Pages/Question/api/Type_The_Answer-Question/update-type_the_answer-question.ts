@@ -76,6 +76,8 @@ export const useUpdateTypeTheAnswerQuestion = ({
       queryClient.refetchQueries({
         queryKey: getTypeTheAnswerQuestionsQueryOptions().queryKey,
       });
+      // Refresh the user-dashboard ("my") lists too.
+      queryClient.refetchQueries({ queryKey: ["myQuestions"] });
       onSuccess?.(data, ...args);
     },
     onError: (error, variables, onMutateResult, context) => {

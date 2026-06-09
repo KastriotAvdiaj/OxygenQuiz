@@ -112,6 +112,7 @@ builder.Services.AddScoped<IAnswerGradingService, AnswerGradingService>();
 builder.Services.AddScoped<ISessionAbandonmentService, SessionAbandonmentService>();
 builder.Services.AddScoped<DashboardService>();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
+builder.Services.AddScoped<QuizAPI.Services.SettingsService.ISettingsService, QuizAPI.Services.SettingsService.SettingsService>();
 
 // Image Services (ImageCleanUpService without interface as requested)
 builder.Services.AddScoped<IImageService, ImageService>();

@@ -9,6 +9,7 @@ import { MainErrorFallback } from "./pages/UtilityPages/Error/Main";
 import { AuthLoader } from "./lib/Auth";
 import { queryConfig } from "./lib/React-query";
 import { Notifications } from "./common/Notifications";
+import { SettingsApplier } from "./common/SettingsApplier";
 import { MultiplayerProvider } from "./context/multiplayer-context";
 
 type AppProviderProps = {
@@ -44,6 +45,7 @@ export const AppProvider = ({ children }: AppProviderProps) => {
                   </div>
                 )}
               >
+                <SettingsApplier />
                 <MultiplayerProvider>
                   {children}
                 </MultiplayerProvider>

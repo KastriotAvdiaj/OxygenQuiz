@@ -16,8 +16,10 @@ module.exports = {
   				'serif'
   			],
 			secondary: ['Barriecito', 'system-ui'],
-			quiz:['DynaPuff', 'system-ui'],
-			// quiz: ['Quiz-Card-Font', 'system-ui'],
+			// User-selectable zones resolve through CSS variables (set at runtime from
+			// the user's settings). Fallbacks keep them working if the var is unset.
+			quiz: ['var(--font-quiz)', 'DynaPuff', 'system-ui'],
+			app: ['var(--font-app)', 'Noto Sans', 'sans-serif'],
   		},
   		scale: {
   			'101': '1.01',

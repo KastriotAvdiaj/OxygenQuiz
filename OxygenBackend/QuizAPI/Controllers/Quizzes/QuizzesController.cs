@@ -6,6 +6,7 @@ using QuizAPI.Controllers.Quizzes.Services.QuizServices;
 using QuizAPI.DTOs.Quiz;
 using QuizAPI.Models;
 using QuizAPI.Services.CurrentUserService;
+using QuizAPI.Services.Audit;
 
 namespace QuizAPI.Controllers.Quizzes
 {
@@ -16,15 +17,18 @@ namespace QuizAPI.Controllers.Quizzes
         private readonly IQuizService _quizService;
         private readonly ILogger<QuizController> _logger;
         private readonly ICurrentUserService _currentUser;
+        private readonly IAuditService _auditService;
 
         public QuizController(
             IQuizService quizService,
             ILogger<QuizController> logger,
-            ICurrentUserService currentUser)
+            ICurrentUserService currentUser,
+            IAuditService auditService)
         {
             _quizService = quizService ?? throw new ArgumentNullException(nameof(quizService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _currentUser = currentUser ?? throw new ArgumentNullException(nameof(currentUser));
+            _auditService = auditService ?? throw new ArgumentNullException(nameof(auditService));
         }
 
         /// <summary>
@@ -217,6 +221,10 @@ namespace QuizAPI.Controllers.Quizzes
                 var userId = GetCurrentUserId();
                 var createdQuiz = await _quizService.CreateQuizAsync(userId, quizCM);
 
+                await _auditService.LogAsync(
+                    AuditActions.QuizCreated, "Quiz", createdQuiz.Id.ToString(),
+                    newValue: new { createdQuiz.Id });
+
                 return CreatedAtAction(nameof(GetQuizById), new { id = createdQuiz.Id }, createdQuiz);
             }
             catch (InvalidOperationException ex)
@@ -256,6 +264,9 @@ namespace QuizAPI.Controllers.Quizzes
                 {
                     return NotFound();
                 }
+
+                await _auditService.LogAsync(
+                    AuditActions.QuizUpdated, "Quiz", quizUM.Id.ToString());
 
                 return Ok(updatedQuiz);
             }
@@ -349,6 +360,9 @@ namespace QuizAPI.Controllers.Quizzes
                 {
                     return NotFound();
                 }
+
+                await _auditService.LogAsync(
+                    AuditActions.QuizDeleted, "Quiz", id.ToString());
 
                 return NoContent();
             }

@@ -27,7 +27,7 @@ export const DrawerLinks = ({
       <LiaUserFriendsSolid className="text-sm" /> Friends
     </Button>
 
-    <NavLink to={"/settings"} onClick={close} className="w-full">
+    <NavLink to={"/my-dashboard/settings"} onClick={close} className="w-full">
       <Button variant={"drawer"} size={"drawerSize"} className="w-full">
         <Settings className="text-sm" size={14} /> Settings
       </Button>

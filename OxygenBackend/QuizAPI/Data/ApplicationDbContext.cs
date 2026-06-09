@@ -61,6 +61,8 @@ namespace QuizAPI.Data
 
         public DbSet<Drejtimi> Drejtimet { get; set; }
 
+        public DbSet<UserSettings> UserSettings { get; set; }
+
 
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options, ICurrentUserService current) : base(options)
         {
@@ -123,10 +125,22 @@ namespace QuizAPI.Data
                 .WithMany(u => u.UserRoles)
                 .HasForeignKey(ur => ur.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
+            // Wire the inverse (r => r.UserRoles) so this maps to the real RoleId FK.
+            // Leaving WithMany() empty made EF invent a shadow "RoleId1" key for
+            // Role.UserRoles (same flaw we fixed on RolePermission).
             modelBuilder.Entity<UserRole>()
                 .HasOne(ur => ur.Role)
-                .WithMany()
+                .WithMany(r => r.UserRoles)
                 .HasForeignKey(ur => ur.RoleId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Per-user settings: 1:1 with User, shared primary key (UserId), cascade on delete.
+            modelBuilder.Entity<UserSettings>()
+                .HasKey(s => s.UserId);
+            modelBuilder.Entity<UserSettings>()
+                .HasOne(s => s.User)
+                .WithOne(u => u.Settings)
+                .HasForeignKey<UserSettings>(s => s.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
             // Refresh tokens: one user -> many tokens, cascade on user delete, unique hash lookup.
@@ -148,10 +162,14 @@ namespace QuizAPI.Data
             modelBuilder.Entity<RolePermission>()
     .HasKey(rp => new { rp.RoleId, rp.PermissionId });
 
-            // Configure the Role side (One Role -> Many RolePermissions)
+            // Configure the Role side (One Role -> Many RolePermissions).
+            // IMPORTANT: wire the inverse navigation (r => r.RolePermissions) so this
+            // maps to the real RoleId FK. Leaving WithMany() empty made EF create a
+            // separate relationship with a shadow "RoleId1" key, so role.RolePermissions
+            // always loaded empty and every permission check failed.
             modelBuilder.Entity<RolePermission>()
                 .HasOne(rp => rp.Role)
-                .WithMany() // Kept clean/unidirectional if your Role entity doesn't track collections
+                .WithMany(r => r.RolePermissions)
                 .HasForeignKey(rp => rp.RoleId)
                 .OnDelete(DeleteBehavior.Cascade);
 

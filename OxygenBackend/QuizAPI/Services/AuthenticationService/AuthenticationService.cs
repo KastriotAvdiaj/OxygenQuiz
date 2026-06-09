@@ -70,10 +70,16 @@ public class AuthenticationService(
             ct);
 
         await _auditService.LogAsync(
-            "UserSignedUp", entity: "User", entityId: user.Id.ToString(), userId: user.Id, ct: ct);
+            AuditActions.UserSignedUp, entity: "User", entityId: user.Id.ToString(), userId: user.Id, ct: ct);
 
-        var roleNames = new[] { defaultRole.Name! };
-        return await BuildAuthResultAsync(user, roleNames, ct);
+        // Reload with the full role/permission graph: the in-memory entity above
+        // only carries RoleIds, so user.ToDto() (which walks Role + RolePermissions)
+        // would otherwise NPE / return no permissions.
+        var created = await _userRepository.GetByIdAsync(user.Id, tracked: false, ct)
+            ?? throw new InvalidOperationException("User not found immediately after creation.");
+
+        var roleNames = created.UserRoles.Select(ur => ur.Role.Name!).ToArray();
+        return await BuildAuthResultAsync(created, roleNames, ct);
     }
 
     public async Task<AuthResult> LoginAsync(LoginDTO dto, CancellationToken ct = default)
@@ -83,7 +89,7 @@ public class AuthenticationService(
         if (user is null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
         {
             await _auditService.LogAsync(
-                "LoginFailed", entity: "User", newValue: new { dto.Email }, ct: ct);
+                AuditActions.LoginFailed, entity: "User", newValue: new { dto.Email }, ct: ct);
             throw new UnauthorizedException("Invalid credentials.");
         }
 
@@ -95,7 +101,7 @@ public class AuthenticationService(
             .ToArray();
 
         await _auditService.LogAsync(
-            "UserLoggedIn", entity: "User", entityId: user.Id.ToString(), userId: user.Id, ct: ct);
+            AuditActions.UserLoggedIn, entity: "User", entityId: user.Id.ToString(), userId: user.Id, ct: ct);
 
         return await BuildAuthResultAsync(user, roleNames, ct);
     }
@@ -158,7 +164,7 @@ public class AuthenticationService(
 
         return new AuthResult
         {
-            Response = new AuthResponseDTO { Token = accessToken, User = user.ToDto(roleNames) },
+            Response = new AuthResponseDTO { Token = accessToken, User = user.ToDto() },
             RawRefreshToken = rawRefresh,
             RefreshTokenExpiresAt = refreshExpiry
         };

@@ -85,6 +85,14 @@ namespace QuizAPI.Services
             await _userRepository.AddAsync(user, ct);
             await _userRepository.SaveChangesAsync(ct);
 
+            // Captures who created the account and which roles were granted.
+            await _auditService.LogAsync(
+                AuditActions.UserCreated,
+                entity: "User",
+                entityId: user.Id.ToString(),
+                newValue: new { user.Username, Roles = roles.Select(r => r.Name) },
+                ct: ct);
+
             return user.ToDto(roles.Select(r => r.Name));
         }
 
@@ -110,7 +118,7 @@ namespace QuizAPI.Services
             await _userRepository.SaveChangesAsync(ct);
 
             await _auditService.LogAsync(
-                "UserDeleted",
+                AuditActions.UserDeleted,
                 entity: "User",
                 entityId: userId.ToString(),
                 oldValue: new { user.Username, user.Email },

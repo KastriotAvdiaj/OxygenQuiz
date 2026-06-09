@@ -56,6 +56,8 @@ export const useUpdateMultipleChoiceQuestion = ({
       queryClient.refetchQueries({
         queryKey: getMultipleChoiceQuestionsQueryOptions().queryKey,
       });
+      // Refresh the user-dashboard ("my") lists too.
+      queryClient.refetchQueries({ queryKey: ["myQuestions"] });
       onSuccess?.(data, ...args);
     },
     onError: (error, variables, onMutateResult, context) => {

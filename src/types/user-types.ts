@@ -11,8 +11,9 @@ export type User = Entity<{
   isDeleted: boolean;
   lastLogin: string;
   profileImageUrl: string;
-  // Many-to-many: a user now has a collection of role names (0, 1, or many).
+  // Many-to-many: a user has a collection of role names (0, 1, or many).
   roles: string[];
+  permissions: string[];
 }, string>;
 
 export type UserBasic = {
@@ -33,4 +34,13 @@ export type Role = Entity<{
 export type AuthResponse = {
   token: string;
   user: User;
+};
+
+// Public, safe-to-expose profile of any user (mirrors backend PublicUserProfileDTO).
+export type PublicUserProfile = {
+  id: string;
+  username: string;
+  profileImageUrl: string | null;
+  dateRegistered: string;
+  roles: string[];
 };
