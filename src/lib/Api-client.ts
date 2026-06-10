@@ -1,6 +1,5 @@
 import Axios, { InternalAxiosRequestConfig, AxiosResponse } from "axios";
-import Cookies from "js-cookie";
-import { AUTH_COOKIE } from "./authHelpers";
+import { getAccessToken, setAccessToken, clearAccessToken } from "./token-store";
 import { useNotifications } from "@/common/Notifications";
 
 const CUSTOM_ERROR_PATTERNS = [
@@ -23,8 +22,8 @@ function authRequestInterceptor(config: InternalAxiosRequestConfig) {
   if (config.headers) {
     config.headers.Accept = "application/json";
 
-    // Retrieve the token from the cookie
-    const token = Cookies.get(AUTH_COOKIE);
+    // Retrieve the token from the in-memory store (never a cookie/localStorage).
+    const token = getAccessToken();
     if (token) {
       // Attach the token to the Authorization header
       config.headers["Authorization"] = `Bearer ${token}`;
@@ -77,11 +76,7 @@ async function refreshAccessToken(): Promise<string> {
   if (!newToken) {
     throw new Error("Refresh did not return a token");
   }
-  Cookies.set(AUTH_COOKIE, newToken, {
-    secure: true,
-    sameSite: "strict",
-    expires: 1,
-  });
+  setAccessToken(newToken);
   return newToken;
 }
 
@@ -121,13 +116,13 @@ api.interceptors.response.use(
         } catch (refreshError) {
           refreshPromise = null;
           console.log("Refresh failed, signing out:", refreshError);
-          Cookies.remove(AUTH_COOKIE);
+          clearAccessToken();
           return Promise.reject(error);
         }
       }
 
       console.log("Unauthorized:", error);
-      Cookies.remove(AUTH_COOKIE);
+      clearAccessToken();
     } else {
       const isCustomMessage =
         error.response?.data?.isCustomMessage || isCustomErrorMessage(message);

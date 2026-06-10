@@ -7,6 +7,7 @@ using QuizAPI.DTOs.Quiz;
 using QuizAPI.ManyToManyTables;
 using QuizAPI.Models;
 using QuizAPI.Models.Quiz;
+using QuizAPI.Filtering;
 using System.Linq;
 
 namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
@@ -62,6 +63,43 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                 _logger.LogError(ex, "Error retrieving all quizzes");
                 throw;
             }
+        }
+
+        /// <summary>
+        /// Shared filtering framework for quizzes (filters + search + sort + body-envelope
+        /// pagination). See docs/filtering.md. Quizzes map through AutoMapper after
+        /// materialising (the summary DTO isn't a straight SQL projection), so this uses the
+        /// "map" overload of <see cref="PagedResponse{T}.CreateAsync"/>.
+        ///
+        /// The two flags are server-enforced scope clamps applied BEFORE the client's filters:
+        ///   - <paramref name="restrictToUserId"/>: only this user's quizzes ("my quizzes").
+        ///   - <paramref name="publicOnly"/>: only active + published quizzes (public catalogue).
+        /// </summary>
+        public async Task<PagedResponse<QuizSummaryDTO>> SearchQuizzesAsync(
+            FilterQuery query,
+            Guid? restrictToUserId = null,
+            bool publicOnly = false,
+            CancellationToken ct = default)
+        {
+            IQueryable<Quiz> q = _context.Quizzes.AsNoTracking()
+                .Include(x => x.User)
+                .Include(x => x.Category)
+                .Include(x => x.Language)
+                .Include(x => x.Difficulty)
+                .Include(x => x.QuizQuestions);
+
+            if (restrictToUserId is { } uid)
+                q = q.Where(x => x.UserId == uid);
+
+            if (publicOnly)
+                q = q.Where(x => x.IsActive && x.IsPublished);
+
+            q = FilterEngine.Apply(q, query, QuizFilterFields.Fields);
+
+            return await PagedResponse<QuizSummaryDTO>.CreateAsync(
+                q, query.Page, query.PageSize,
+                rows => _mapper.Map<List<QuizSummaryDTO>>(rows),
+                ct);
         }
 
         public async Task<PagedList<QuizSummaryDTO>> GetPublicQuizzesAsync(QuizFilterParams filterParams)

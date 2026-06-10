@@ -1,5 +1,6 @@
 ﻿using QuizAPI.DTOs.Question;
 using QuizAPI.DTOs.Shared;
+using QuizAPI.Filtering;
 using QuizAPI.Models;
 
 namespace QuizAPI.Controllers.Questions.Services
@@ -11,6 +12,19 @@ namespace QuizAPI.Controllers.Questions.Services
         // Get methods
         Task<List<QuestionBaseDTO>> GetAllQuestionsAsync(string visibility = null);
         Task<PagedList<QuestionBaseDTO>> GetPaginatedQuestionsAsync(QuestionFilterParams filterParams);
+
+        // Shared filtering framework (operators + search + sort + body-envelope pagination).
+        // SearchQuestionsAsync returns lightweight base DTOs; the typed variants return the
+        // rich per-type DTOs the type-tabbed UI needs. See docs/filtering.md.
+        Task<PagedResponse<QuestionBaseDTO>> SearchQuestionsAsync(
+            FilterQuery query, Guid? restrictToUserId = null, CancellationToken ct = default);
+
+        Task<PagedResponse<MultipleChoiceQuestionDTO>> SearchMultipleChoiceQuestionsAsync(
+            FilterQuery query, Guid? restrictToUserId = null, CancellationToken ct = default);
+        Task<PagedResponse<TrueFalseQuestionDTO>> SearchTrueFalseQuestionsAsync(
+            FilterQuery query, Guid? restrictToUserId = null, CancellationToken ct = default);
+        Task<PagedResponse<TypeTheAnswerQuestionDTO>> SearchTypeTheAnswerQuestionsAsync(
+            FilterQuery query, Guid? restrictToUserId = null, CancellationToken ct = default);
         Task<QuestionBaseDTO> GetQuestionByIdAsync(int id);
         Task<List<QuestionBaseDTO>> GetQuestionsByCategoryAsync(int categoryId);
         Task<List<QuestionBaseDTO>> GetQuestionsByDifficultyAsync(int difficultyId);

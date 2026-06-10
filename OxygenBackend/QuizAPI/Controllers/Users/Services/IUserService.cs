@@ -1,10 +1,14 @@
 ﻿using QuizAPI.DTOs.User;
+using QuizAPI.Filtering;
 
 namespace QuizAPI.Services.Interfaces
 {
     public interface IUserService
     {
         Task<IReadOnlyList<UserDTO>> GetAllUsersAsync(CancellationToken ct = default);
+
+        // Shared filtering framework (search + filters + sort + body-envelope pagination).
+        Task<PagedResponse<UserDTO>> SearchUsersAsync(FilterQuery query, CancellationToken ct = default);
         Task<UserDTO?> GetUserByIdAsync(Guid userId, CancellationToken ct = default);
         Task<UserDTO?> GetUserByUsernameAsync(string username, CancellationToken ct = default);
         Task<IReadOnlyList<UserDTO>> GetUsersByIdsAsync(IEnumerable<Guid> userIds, CancellationToken ct = default);

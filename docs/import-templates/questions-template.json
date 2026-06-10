@@ -1,0 +1,45 @@
+[
+  {
+    "Type": "MultipleChoice",
+    "Text": "What is the capital of France?",
+    "CategoryId": 1,
+    "DifficultyId": 2,
+    "LanguageId": 3,
+    "Visibility": "Global",
+    "Options": "Paris|London|Berlin|Madrid",
+    "CorrectOptions": "Paris",
+    "AllowMultipleSelections": false
+  },
+  {
+    "Type": "MultipleChoice",
+    "Text": "Which of these are prime numbers?",
+    "CategoryId": 1,
+    "DifficultyId": 2,
+    "LanguageId": 3,
+    "Visibility": "Global",
+    "Options": "2|3|4|9",
+    "CorrectOptions": "2|3",
+    "AllowMultipleSelections": true
+  },
+  {
+    "Type": "TrueFalse",
+    "Text": "The Earth is the third planet from the Sun.",
+    "CategoryId": 1,
+    "DifficultyId": 2,
+    "LanguageId": 3,
+    "Visibility": "Global",
+    "CorrectAnswer": true
+  },
+  {
+    "Type": "TypeTheAnswer",
+    "Text": "What gas do plants absorb during photosynthesis?",
+    "CategoryId": 1,
+    "DifficultyId": 2,
+    "LanguageId": 3,
+    "Visibility": "Global",
+    "TypeAnswer": "Carbon Dioxide",
+    "AcceptableAnswers": "CO2|carbon dioxide",
+    "IsCaseSensitive": false,
+    "AllowPartialMatch": true
+  }
+]

@@ -28,15 +28,12 @@ import { QuestionType } from "@/types/question-types";
 export const MyQuestions = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm] = useDebounce(searchTerm, 500);
-  const [selectedCategoryId, setSelectedCategoryId] = useState<
-    number | undefined
-  >();
-  const [selectedDifficultyId, setSelectedDifficultyId] = useState<
-    number | undefined
-  >();
-  const [selectedLanguageId, setSelectedLanguageId] = useState<
-    number | undefined
-  >();
+  // Multi-select filters — empty array means "all".
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>([]);
+  const [selectedDifficultyIds, setSelectedDifficultyIds] = useState<number[]>([]);
+  const [selectedLanguageIds, setSelectedLanguageIds] = useState<number[]>([]);
+  const [createdFrom, setCreatedFrom] = useState("");
+  const [createdTo, setCreatedTo] = useState("");
   const [pageNumber, setPageNumber] = useState(1);
   const [pageSize] = useState(6);
 
@@ -58,18 +55,22 @@ export const MyQuestions = () => {
     pageNumber: pageNumber,
     pageSize: pageSize,
     searchTerm: debouncedSearchTerm || undefined,
-    categoryId: selectedCategoryId,
-    difficultyId: selectedDifficultyId,
-    languageId: selectedLanguageId,
+    categoryIds: selectedCategoryIds,
+    difficultyIds: selectedDifficultyIds,
+    languageIds: selectedLanguageIds,
+    createdFrom: createdFrom || undefined,
+    createdTo: createdTo || undefined,
   };
 
   useEffect(() => {
     setPageNumber(1);
   }, [
     debouncedSearchTerm,
-    selectedCategoryId,
-    selectedDifficultyId,
-    selectedLanguageId,
+    selectedCategoryIds,
+    selectedDifficultyIds,
+    selectedLanguageIds,
+    createdFrom,
+    createdTo,
     activeTab,
   ]);
 
@@ -140,14 +141,18 @@ export const MyQuestions = () => {
           searchTerm={searchTerm}
           onSearchTermChange={setSearchTerm}
           categories={categoriesQuery.data || []}
-          selectedCategoryId={selectedCategoryId}
-          onCategoryChange={(value) => setSelectedCategoryId(value)}
+          selectedCategoryIds={selectedCategoryIds}
+          onCategoryIdsChange={setSelectedCategoryIds}
           difficulties={difficultiesQuery.data || []}
-          selectedDifficultyId={selectedDifficultyId}
-          onDifficultyChange={(value) => setSelectedDifficultyId(value)}
+          selectedDifficultyIds={selectedDifficultyIds}
+          onDifficultyIdsChange={setSelectedDifficultyIds}
           languages={languagesQuery.data || []}
-          selectedLanguageId={selectedLanguageId}
-          onLanguageChange={(value) => setSelectedLanguageId(value)}
+          selectedLanguageIds={selectedLanguageIds}
+          onLanguageIdsChange={setSelectedLanguageIds}
+          createdFrom={createdFrom}
+          createdTo={createdTo}
+          onCreatedFromChange={setCreatedFrom}
+          onCreatedToChange={setCreatedTo}
         />
 
         <Separator className="my-6" />

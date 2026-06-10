@@ -1,8 +1,8 @@
 import { useEffect } from "react";
 import * as signalR from "@microsoft/signalr";
 import { useQueryClient } from "@tanstack/react-query";
-import Cookies from "js-cookie";
-import { AUTH_COOKIE } from "@/lib/authHelpers";
+import { getAccessToken } from "@/lib/token-store";
+import { useUser } from "@/lib/Auth";
 
 // Same origin the rest of the app targets (see Api-client.ts / multiplayer-context.tsx).
 const API_BASE = "https://localhost:7153";
@@ -15,9 +15,14 @@ const API_BASE = "https://localhost:7153";
  */
 export const useNotificationHub = () => {
   const queryClient = useQueryClient();
+  // The access token lives in memory and starts null on reload, so we key the
+  // connection on the authenticated user: once /me resolves (which means a token
+  // has been obtained), this effect re-runs and the hub connects.
+  const { data: user } = useUser();
 
   useEffect(() => {
-    const token = Cookies.get(AUTH_COOKIE);
+    if (!user) return;
+    const token = getAccessToken();
     if (!token) return;
 
     // Tracks an unmount that happens while the connection is still negotiating
@@ -28,7 +33,7 @@ export const useNotificationHub = () => {
 
     const connection = new signalR.HubConnectionBuilder()
       .withUrl(`${API_BASE}/notificationHub`, {
-        accessTokenFactory: () => Cookies.get(AUTH_COOKIE) ?? "",
+        accessTokenFactory: () => getAccessToken() ?? "",
       })
       .withAutomaticReconnect()
       .build();
@@ -54,5 +59,5 @@ export const useNotificationHub = () => {
         connection.stop();
       }
     };
-  }, [queryClient]);
+  }, [queryClient, user]);
 };

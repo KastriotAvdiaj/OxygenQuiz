@@ -30,6 +30,8 @@ namespace QuizAPI.Repositories
         public async Task<IReadOnlyList<User>> GetAllAsync(CancellationToken ct = default) =>
             await WithRoles().AsNoTracking().ToListAsync(ct);
 
+        public IQueryable<User> Query() => WithRoles().AsNoTracking();
+
         public async Task<User?> GetByIdAsync(Guid id, bool tracked = false, CancellationToken ct = default)
         {
             var query = WithRolesAndPermissions();

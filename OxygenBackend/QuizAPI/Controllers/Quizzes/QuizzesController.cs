@@ -7,6 +7,7 @@ using QuizAPI.DTOs.Quiz;
 using QuizAPI.Models;
 using QuizAPI.Services.CurrentUserService;
 using QuizAPI.Services.Audit;
+using QuizAPI.Filtering;
 
 namespace QuizAPI.Controllers.Quizzes
 {
@@ -117,6 +118,45 @@ namespace QuizAPI.Controllers.Quizzes
                 _logger.LogError(ex, "Error retrieving user's quizzes");
                 return HandleCustomError("An error occurred while processing your request", false);
             }
+        }
+
+        // ── SEARCH (shared filtering framework — see docs/filtering.md) ──────────
+        // Three scopes mirroring the list endpoints above, all returning the standard
+        // PagedResponse body envelope:
+        //   GET /api/quiz/search       public catalogue (active + published)
+        //   GET /api/quiz/mine/search  the caller's own quizzes
+        //   GET /api/quiz/all/search   everything (admin)
+        // Example:
+        //   /api/quiz/search?search=history&filter=categoryId:in:3,4&sort=createdAt:desc&page=1&pageSize=12
+
+        [HttpGet("search")]
+        [AllowAnonymous]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<IActionResult> SearchPublicQuizzes([FromQuery] FilterQuery query, CancellationToken ct)
+        {
+            var result = await _quizService.SearchQuizzesAsync(query, publicOnly: true, ct: ct);
+            return Ok(result);
+        }
+
+        [HttpGet("mine/search")]
+        [Authorize]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> SearchMyQuizzes([FromQuery] FilterQuery query, CancellationToken ct)
+        {
+            var userId = GetCurrentUserId();
+            var result = await _quizService.SearchQuizzesAsync(query, restrictToUserId: userId, ct: ct);
+            return Ok(result);
+        }
+
+        [HttpGet("all/search")]
+        [Authorize(Roles = "Admin, SuperAdmin")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public async Task<IActionResult> SearchAllQuizzes([FromQuery] FilterQuery query, CancellationToken ct)
+        {
+            var result = await _quizService.SearchQuizzesAsync(query, ct: ct);
+            return Ok(result);
         }
 
         /// <summary>

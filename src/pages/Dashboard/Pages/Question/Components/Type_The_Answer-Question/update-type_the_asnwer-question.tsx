@@ -62,7 +62,7 @@ export const UpdateTypeAnswerQuestionForm: React.FC<
   });
 
   return (
-    <Authorization policyCheck="question:modify" resource={question}>
+    <Authorization policyCheck="question:update" resource={question}>
       <FormDrawer
         isDone={updateQuestionMutation.isSuccess}
         triggerButton={

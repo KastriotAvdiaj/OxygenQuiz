@@ -6,6 +6,8 @@ using QuizAPI.Repositories.Interfaces;
 using QuizAPI.Services.Interfaces;
 using QuizAPI.Mapping;
 using QuizAPI.Services.Audit;
+using QuizAPI.Filtering;
+using QuizAPI.Controllers.Users;
 
 namespace QuizAPI.Services
 {
@@ -26,6 +28,57 @@ namespace QuizAPI.Services
         {
             var users = await _userRepository.GetAllAsync(ct);
             return users.ToDtoList();
+        }
+
+        /// <summary>
+        /// Shared filtering framework for users (search + filters + sort + body-envelope
+        /// pagination). Roles are mapped in memory after the page is materialised, so this
+        /// uses the "map" overload of <see cref="PagedResponse{T}.CreateAsync"/>. See docs/filtering.md.
+        /// </summary>
+        public async Task<PagedResponse<UserDTO>> SearchUsersAsync(
+            FilterQuery query, CancellationToken ct = default)
+        {
+            var source = _userRepository.Query();
+
+            // Role filtering is a collection (many-to-many) concern the generic engine
+            // deliberately doesn't handle (see UserFilterFields). We pull "role" rules out
+            // of the raw filter list, apply them here, and let the engine do the rest.
+            var roleNames = ExtractRoleFilter(query);
+            if (roleNames.Count > 0)
+                source = source.Where(u =>
+                    u.UserRoles.Any(ur => roleNames.Contains(ur.Role.Name.ToLower())));
+
+            source = FilterEngine.Apply(source, query, UserFilterFields.Fields);
+
+            return await PagedResponse<UserDTO>.CreateAsync(
+                source, query.Page, query.PageSize,
+                rows => rows.ToDtoList().ToList(),
+                ct);
+        }
+
+        /// <summary>
+        /// Removes "role" rules from <paramref name="query"/> (wire format:
+        /// filter=role:eq:Admin or filter=role:in:Admin,User) and returns the requested
+        /// role names lower-cased for a case-insensitive match. Mirrors the engine's
+        /// behaviour for malformed input: anything unparseable is silently skipped.
+        /// </summary>
+        private static List<string> ExtractRoleFilter(FilterQuery query)
+        {
+            var names = new List<string>();
+            query.Filter.RemoveAll(raw =>
+            {
+                if (!FilterRule.TryParse(raw, out var parsed)) return false;
+                if (!string.Equals(parsed.Field, "role", StringComparison.OrdinalIgnoreCase))
+                    return false;
+
+                // Only equality / set membership make sense for a role name.
+                if (parsed.Operator is FilterOperator.Eq or FilterOperator.In)
+                    names.AddRange(parsed.Values.Select(v => v.ToLowerInvariant()));
+
+                // Always remove role rules so the engine never sees them.
+                return true;
+            });
+            return names;
         }
 
         public async Task<UserDTO?> GetUserByIdAsync(Guid userId, CancellationToken ct = default)

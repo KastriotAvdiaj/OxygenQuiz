@@ -27,6 +27,8 @@ export const AUDIT_ACTIONS = [
   "RoleCreated",
   "RoleUpdated",
   "RoleDeleted",
+  "RolePermissionGranted",
+  "RolePermissionRevoked",
 ] as const;
 
 // Entity types the trail targets (for the filter dropdown).

@@ -1,5 +1,21 @@
 import { Pagination } from "@/types/common-types";
+import { PagedResponse } from "@/lib/filtering/types";
 import { AxiosResponse } from "axios";
+
+// Adapts the filtering framework's body envelope to the legacy `Pagination` shape used by
+// PaginationControls, so existing list UIs can consume framework endpoints unchanged.
+export function pagedResponseToPagination<T>(
+  response: PagedResponse<T>
+): Pagination {
+  return {
+    currentPage: response.page,
+    itemsPerPage: response.pageSize,
+    totalItems: response.totalItems,
+    totalPages: response.totalPages,
+    hasNextPage: response.hasNextPage,
+    hasPreviousPage: response.hasPreviousPage,
+  };
+}
 
 export function extractPaginationFromHeaders(
   response: AxiosResponse

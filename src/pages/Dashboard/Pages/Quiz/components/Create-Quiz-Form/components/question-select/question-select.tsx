@@ -4,7 +4,6 @@ import { QuestionType } from "@/types/question-types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui";
 import { LiftedButton } from "@/common/LiftedButton";
-import { QuestionFilters } from "../../../../../Question/Components/Re-Usable-Components/question-filters";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useQuestionCategoryData } from "../../../../../Question/Entities/Categories/api/get-question-categories";
 import { useQuestionDifficultyData } from "../../../../../Question/Entities/Difficulty/api/get-question-difficulties";
@@ -26,21 +25,13 @@ const SelectQuestionComponent: React.FC<SelectQuestionComponentProps> = ({
   maxSelections,
   title = "Select Questions from Pool",
   triggerButton,
-  // excludeQuestionIds = [],
 }) => {
   const { open, close, isOpen } = useDisclosure();
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm] = useDebounce(searchTerm, 500);
-  const [selectedCategoryId, setSelectedCategoryId] = useState<
-    number | undefined
-  >();
-  const [selectedDifficultyId, setSelectedDifficultyId] = useState<
-    number | undefined
-  >();
-  const [selectedLanguageId, setSelectedLanguageId] = useState<
-    number | undefined
-  >();
-
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>([]);
+  const [selectedDifficultyIds, setSelectedDifficultyIds] = useState<number[]>([]);
+  const [selectedLanguageIds, setSelectedLanguageIds] = useState<number[]>([]);
   const [activeTab, setActiveTab] = useState(QuestionType.MultipleChoice);
 
   const {
@@ -57,65 +48,47 @@ const SelectQuestionComponent: React.FC<SelectQuestionComponentProps> = ({
   const difficultiesQuery = useQuestionDifficultyData({});
   const languagesQuery = useQuestionLanguageData({});
 
+  const categories = categoriesQuery.data || [];
+  const difficulties = difficultiesQuery.data || [];
+  const languages = languagesQuery.data || [];
+
   const queryParams = {
     pageNumber: currentPage,
     pageSize: questionsPerPage,
     searchTerm: debouncedSearchTerm || undefined,
-    categoryId: selectedCategoryId,
-    difficultyId: selectedDifficultyId,
-    languageId: selectedLanguageId,
+    categoryIds: selectedCategoryIds.length > 0 ? selectedCategoryIds : undefined,
+    difficultyIds: selectedDifficultyIds.length > 0 ? selectedDifficultyIds : undefined,
+    languageIds: selectedLanguageIds.length > 0 ? selectedLanguageIds : undefined,
     questionType: activeTab,
     visibility: "Public",
-    // excludeIds: excludeQuestionIds, //needs to be added
+  };
+
+  const hasFilters =
+    searchTerm.length > 0 ||
+    selectedCategoryIds.length > 0 ||
+    selectedDifficultyIds.length > 0 ||
+    selectedLanguageIds.length > 0;
+
+  const clearAllFilters = () => {
+    setSearchTerm("");
+    setSelectedCategoryIds([]);
+    setSelectedDifficultyIds([]);
+    setSelectedLanguageIds([]);
   };
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [
-    debouncedSearchTerm,
-    selectedCategoryId,
-    selectedDifficultyId,
-    selectedLanguageId,
-    activeTab,
-  ]);
+  }, [debouncedSearchTerm, selectedCategoryIds, selectedDifficultyIds, selectedLanguageIds, activeTab]);
 
-  const handlePageChange = (newPage: number) => {
-    setCurrentPage(newPage);
-  };
-
-  const handleOpen = () => {
-    open();
-    setQuestionModalOpen(true);
-  };
-
-  const handleClose = () => {
-    close();
-    setQuestionModalOpen(false);
-  };
-
-  const handleAddSelectedQuestions = () => {
-    commitTempSelection();
-
-    // Call the callback if provided
-    // if (onQuestionsSelected) {
-    // You might need to pass the committed questions here
-    // onQuestionsSelected(tempSelectedQuestions);
-    // }
-
-    handleClose();
-  };
-
-  const handleCancel = () => {
-    clearTempSelection();
-    handleClose();
-  };
+  const handleOpen = () => { open(); setQuestionModalOpen(true); };
+  const handleClose = () => { close(); setQuestionModalOpen(false); };
+  const handleAddSelectedQuestions = () => { commitTempSelection(); handleClose(); };
+  const handleCancel = () => { clearTempSelection(); handleClose(); };
 
   return (
     <>
       {triggerButton ? (
-        React.cloneElement(triggerButton, {
-          onClick: handleOpen,
-        })
+        React.cloneElement(triggerButton, { onClick: handleOpen })
       ) : (
         <LiftedButton onClick={handleOpen} className="h-fit" type="button">
           <Plus className="h-4 w-4" />
@@ -125,42 +98,28 @@ const SelectQuestionComponent: React.FC<SelectQuestionComponentProps> = ({
 
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-            onClick={handleCancel}
-          />
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={handleCancel} />
 
-          <div className="relative bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-hidden border dark:border-gray-700">
-            {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
+          <div className="relative bg-background rounded-xl shadow-2xl max-w-3xl w-full mx-4 max-h-[90vh] flex flex-col border dark:border-foreground/20">
+
+            {/* ── Header ── */}
+            <div className="flex items-center justify-between px-6 py-4 border-b dark:border-foreground/10 shrink-0">
               <div>
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                  {title}
-                </h2>
+                <h2 className="text-base font-semibold text-foreground">{title}</h2>
                 {maxSelections && (
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                    Maximum {maxSelections} questions can be selected
-                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Maximum {maxSelections} questions</p>
                 )}
               </div>
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <div
-                    className={cn(
-                      "h-2 w-2 rounded-full",
-                      tempSelectedQuestionsCount > 0
-                        ? "bg-orange-500"
-                        : "bg-gray-300"
-                    )}
-                  />
-                  <span className="text-sm text-gray-600 dark:text-gray-400">
-                    {tempSelectedQuestionsCount} selected
-                    {maxSelections && ` / ${maxSelections}`}
+              <div className="flex items-center gap-3">
+                {tempSelectedQuestionsCount > 0 && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 border border-primary/20 px-2.5 py-1 text-xs font-medium text-primary">
+                    <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                    {tempSelectedQuestionsCount} selected{maxSelections && ` / ${maxSelections}`}
                   </span>
-                </div>
+                )}
                 <button
                   onClick={handleCancel}
-                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 text-xl transition-colors"
+                  className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-foreground/10 hover:text-foreground transition-colors"
                   aria-label="Close dialog"
                 >
                   ✕
@@ -168,105 +127,112 @@ const SelectQuestionComponent: React.FC<SelectQuestionComponentProps> = ({
               </div>
             </div>
 
-            {/* Content */}
-            <div className="p-6 overflow-y-auto max-h-[calc(90vh-180px)]">
-              <QuestionFilters
-                searchTerm={searchTerm}
-                onSearchTermChange={setSearchTerm}
-                categories={categoriesQuery.data || []}
-                selectedCategoryId={selectedCategoryId}
-                onCategoryChange={setSelectedCategoryId}
-                difficulties={difficultiesQuery.data || []}
-                selectedDifficultyId={selectedDifficultyId}
-                onDifficultyChange={setSelectedDifficultyId}
-                languages={languagesQuery.data || []}
-                selectedLanguageId={selectedLanguageId}
-                onLanguageChange={setSelectedLanguageId}
-              />
+            {/* ── Inline filter toolbar ── */}
+            <div className="px-6 py-3 border-b dark:border-foreground/10 bg-muted/30 shrink-0 flex flex-col gap-2">
+              {/* Search */}
+              <div className="relative flex items-center gap-2">
+                <div className="relative flex-1">
+                  <svg className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"
+                    xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+                  </svg>
+                  <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Search questions..."
+                    className="h-8 w-full rounded-md border border-foreground/20 bg-background pl-8 pr-8 text-xs placeholder:text-muted-foreground focus:border-primary/60 focus:outline-none focus:ring-2 focus:ring-primary/20 dark:border-foreground/30"
+                  />
+                  {searchTerm && (
+                    <button type="button" onClick={() => setSearchTerm("")}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+                      </svg>
+                    </button>
+                  )}
+                </div>
+                {hasFilters && (
+                  <button type="button" onClick={clearAllFilters}
+                    className="shrink-0 text-xs text-red-500 hover:text-red-600 px-2 py-1 rounded-md hover:bg-red-50 dark:hover:bg-red-950/30 border border-red-100 dark:border-red-900/30 transition-colors">
+                    Clear all
+                  </button>
+                )}
+              </div>
 
+              {/* 3-column filter dropdowns */}
+              <div className="grid grid-cols-3 gap-2">
+                <div className="flex flex-col gap-0.5">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">Category</label>
+                  <select
+                    value={selectedCategoryIds[0] ?? ""}
+                    onChange={(e) => setSelectedCategoryIds(e.target.value ? [Number(e.target.value)] : [])}
+                    className="h-7 w-full rounded-md border border-foreground/20 bg-background px-2 text-xs focus:border-primary/60 focus:outline-none focus:ring-2 focus:ring-primary/20 dark:border-foreground/30 dark:bg-background">
+                    <option value="">All categories</option>
+                    {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">Difficulty</label>
+                  <select
+                    value={selectedDifficultyIds[0] ?? ""}
+                    onChange={(e) => setSelectedDifficultyIds(e.target.value ? [Number(e.target.value)] : [])}
+                    className="h-7 w-full rounded-md border border-foreground/20 bg-background px-2 text-xs focus:border-primary/60 focus:outline-none focus:ring-2 focus:ring-primary/20 dark:border-foreground/30 dark:bg-background">
+                    <option value="">All difficulties</option>
+                    {difficulties.map((d) => <option key={d.id} value={d.id}>{d.level}</option>)}
+                  </select>
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">Language</label>
+                  <select
+                    value={selectedLanguageIds[0] ?? ""}
+                    onChange={(e) => setSelectedLanguageIds(e.target.value ? [Number(e.target.value)] : [])}
+                    className="h-7 w-full rounded-md border border-foreground/20 bg-background px-2 text-xs focus:border-primary/60 focus:outline-none focus:ring-2 focus:ring-primary/20 dark:border-foreground/30 dark:bg-background">
+                    <option value="">All languages</option>
+                    {languages.map((l) => <option key={l.id} value={l.id}>{l.language}</option>)}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* ── Scrollable content ── */}
+            <div className="flex-1 overflow-y-auto px-6 py-4">
               <Tabs
                 value={activeTab}
                 onValueChange={(value) => setActiveTab(value as QuestionType)}
-                className="w-full mt-4"
+                className="w-full"
               >
-                <TabsList className="grid grid-cols-3 mb-6 bg-gray-100 dark:bg-gray-800">
-                  <TabsTrigger
-                    value={QuestionType.MultipleChoice}
-                    className="data-[state=active]:bg-primary/80"
-                  >
-                    Multiple Choice
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value={QuestionType.TrueFalse}
-                    className="data-[state=active]:bg-primary/80"
-                  >
-                    True/False
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value={QuestionType.TypeTheAnswer}
-                    className="data-[state=active]:bg-primary/80"
-                  >
-                    Type Answer
-                  </TabsTrigger>
+                <TabsList className="grid grid-cols-3 mb-4">
+                  <TabsTrigger value={QuestionType.MultipleChoice}>Multiple Choice</TabsTrigger>
+                  <TabsTrigger value={QuestionType.TrueFalse}>True/False</TabsTrigger>
+                  <TabsTrigger value={QuestionType.TypeTheAnswer}>Type Answer</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value={QuestionType.MultipleChoice}>
-                  <QuestionTabContent
-                    questionType={QuestionType.MultipleChoice}
-                    queryParams={queryParams}
-                    onPageChange={handlePageChange}
-                    page="user"
-                    isModalOpen={isOpen}
-                  />
+                  <QuestionTabContent questionType={QuestionType.MultipleChoice} queryParams={queryParams} onPageChange={(p) => setCurrentPage(p)} page="user" isModalOpen={isOpen} />
                 </TabsContent>
-
                 <TabsContent value={QuestionType.TrueFalse}>
-                  <QuestionTabContent
-                    questionType={QuestionType.TrueFalse}
-                    queryParams={queryParams}
-                    onPageChange={handlePageChange}
-                    page="user"
-                    isModalOpen={isOpen}
-                  />
+                  <QuestionTabContent questionType={QuestionType.TrueFalse} queryParams={queryParams} onPageChange={(p) => setCurrentPage(p)} page="user" isModalOpen={isOpen} />
                 </TabsContent>
-
                 <TabsContent value={QuestionType.TypeTheAnswer}>
-                  <QuestionTabContent
-                    questionType={QuestionType.TypeTheAnswer}
-                    queryParams={queryParams}
-                    onPageChange={handlePageChange}
-                    page="user"
-                    isModalOpen={isOpen}
-                  />
+                  <QuestionTabContent questionType={QuestionType.TypeTheAnswer} queryParams={queryParams} onPageChange={(p) => setCurrentPage(p)} page="user" isModalOpen={isOpen} />
                 </TabsContent>
               </Tabs>
             </div>
 
-            {/* Footer */}
-            <div className="flex items-center justify-between p-6 border-t dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
-              <div className="flex items-center gap-3">
-                <div
-                  className={cn(
-                    "h-3 w-3 rounded-full transition-colors",
-                    tempSelectedQuestionsCount > 0
-                      ? "bg-orange-500"
-                      : "bg-gray-300"
-                  )}
-                />
-                <span className="text-sm text-gray-600 dark:text-gray-400">
-                  {tempSelectedQuestionsCount} question
-                  {tempSelectedQuestionsCount !== 1 ? "s" : ""} selected
-                  {maxSelections && ` (max: ${maxSelections})`}
-                </span>
-              </div>
+            {/* ── Footer ── */}
+            <div className="flex items-center justify-between px-6 py-4 border-t dark:border-foreground/10 bg-muted/20 shrink-0">
+              <span className="text-sm text-muted-foreground">
+                {tempSelectedQuestionsCount > 0 ? (
+                  <span className="font-medium text-foreground">
+                    {tempSelectedQuestionsCount} question{tempSelectedQuestionsCount !== 1 ? "s" : ""} selected
+                  </span>
+                ) : "No questions selected yet"}
+                {maxSelections && ` (max: ${maxSelections})`}
+              </span>
               <div className="flex gap-3">
-                <Button
-                  onClick={handleCancel}
-                  variant="outline"
-                  className="border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800"
-                >
-                  Cancel
-                </Button>
+                <Button onClick={handleCancel} variant="outline">Cancel</Button>
                 <Button
                   onClick={handleAddSelectedQuestions}
                   type="button"
@@ -274,11 +240,11 @@ const SelectQuestionComponent: React.FC<SelectQuestionComponentProps> = ({
                   className={cn(
                     "transition-all duration-200",
                     tempSelectedQuestionsCount > 0
-                      ? "bg-blue-600 hover:bg-blue-700 text-white"
-                      : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                      ? "bg-primary hover:bg-primary/90 text-primary-foreground"
+                      : "opacity-50 cursor-not-allowed"
                   )}
                 >
-                  Add Selected Questions ({tempSelectedQuestionsCount})
+                  Add {tempSelectedQuestionsCount > 0 ? `${tempSelectedQuestionsCount} ` : ""}Question{tempSelectedQuestionsCount !== 1 ? "s" : ""}
                 </Button>
               </div>
             </div>

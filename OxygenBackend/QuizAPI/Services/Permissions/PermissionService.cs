@@ -5,6 +5,8 @@ namespace QuizAPI.Services.Permissions
 {
     public class PermissionService : IPermissionService
     {
+        private const string SuperAdminRole = "SuperAdmin";
+
         private readonly ApplicationDbContext _context;
         private readonly IMemoryCache _cache;
         private static readonly TimeSpan CacheTTL = TimeSpan.FromMinutes(10);
@@ -17,13 +19,31 @@ namespace QuizAPI.Services.Permissions
 
         public async Task<bool> HasPermissionAsync(Guid userId, string permission)
         {
+            // SuperAdmin can do everything, regardless of which permission rows are seeded.
+            // This is the single backend source of truth for that rule (the frontend mirrors it).
+            if (await IsSuperAdminAsync(userId)) return true;
+
             var userPermissions = await GetPermissionsForUserAsync(userId);
             return userPermissions.Contains(permission);
         }
 
+        // Whether the user holds the SuperAdmin role. Cached like permissions to avoid a DB hit
+        // on every authorization check.
+        private async Task<bool> IsSuperAdminAsync(Guid userId)
+        {
+            var cacheKey = SuperAdminCacheKey(userId);
+            if (_cache.TryGetValue(cacheKey, out bool cached)) return cached;
+
+            var isSuperAdmin = await _context.UserRoles
+                .AnyAsync(ur => ur.UserId == userId && ur.Role.Name == SuperAdminRole);
+
+            _cache.Set(cacheKey, isSuperAdmin, CacheTTL);
+            return isSuperAdmin;
+        }
+
         private async Task<HashSet<string>> GetPermissionsForUserAsync(Guid userId)
         {
-            var cacheKey = $"permissions:user:{userId}";
+            var cacheKey = PermissionsCacheKey(userId);
 
             if (_cache.TryGetValue(cacheKey, out HashSet<string>? cached) && cached != null)
                 return cached;
@@ -41,10 +61,28 @@ namespace QuizAPI.Services.Permissions
             return permissions;
         }
 
+        private static string PermissionsCacheKey(Guid userId) => $"permissions:user:{userId}";
+        private static string SuperAdminCacheKey(Guid userId) => $"isSuperAdmin:user:{userId}";
+
         // Call this if you ever update a user's roles at runtime
         public void InvalidateCache(Guid userId)
         {
-            _cache.Remove($"permissions:user:{userId}");
+            _cache.Remove(PermissionsCacheKey(userId));
+            _cache.Remove(SuperAdminCacheKey(userId));
+        }
+
+        // A role's permissions changed — every user holding that role now has a stale
+        // cache entry. Resolve the affected users and evict each one.
+        public async Task InvalidateRoleAsync(int roleId)
+        {
+            var affectedUserIds = await _context.UserRoles
+                .Where(ur => ur.RoleId == roleId)
+                .Select(ur => ur.UserId)
+                .Distinct()
+                .ToListAsync();
+
+            foreach (var userId in affectedUserIds)
+                InvalidateCache(userId);
         }
 
         public async Task<bool> CanActOnResourceAsync(Guid userId, Guid ownerId, string resource, string action)

@@ -2,8 +2,7 @@ import { configureAuth } from "react-query-auth";
 import { redirect, LoaderFunctionArgs } from "react-router-dom";
 import { z } from "zod";
 import { api, apiService } from "./Api-client";
-import Cookies from "js-cookie";
-import { AUTH_COOKIE } from "./authHelpers";
+import { setAccessToken, clearAccessToken } from "./token-store";
 import { AuthResponse, User } from "@/types/user-types";
 import { QueryClient } from "@tanstack/react-query";
 
@@ -30,7 +29,7 @@ const logout = async (): Promise<void> => {
   } catch {
     // ignore
   }
-  Cookies.remove(AUTH_COOKIE);
+  clearAccessToken();
   window.location.href = "/";
 };
 
@@ -75,12 +74,8 @@ const authConfig = {
       throw new Error("Authentication failed: Token not received");
     }
 
-    // Set the token first
-    Cookies.set(AUTH_COOKIE, response.token, {
-      secure: true,
-      sameSite: "strict",
-      expires: 1,
-    });
+    // Hold the access token in memory only (no cookie/localStorage).
+    setAccessToken(response.token);
 
     // Use the user data from login response
     if (!response.user) {
@@ -96,11 +91,7 @@ const authConfig = {
       throw new Error("Registration failed: Token not received");
     }
 
-    Cookies.set(AUTH_COOKIE, response.token, {
-      secure: true,
-      sameSite: "strict",
-      expires: 1,
-    });
+    setAccessToken(response.token);
 
     // Use the user data from registration response
     if (!response.user) {

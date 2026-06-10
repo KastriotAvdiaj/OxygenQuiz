@@ -28,5 +28,9 @@ namespace QuizAPI.Services.Audit
         public const string RoleCreated = "RoleCreated";
         public const string RoleUpdated = "RoleUpdated";
         public const string RoleDeleted = "RoleDeleted";
+
+        // Permissions (role ↔ permission assignments, edited from the Permissions page).
+        public const string RolePermissionGranted = "RolePermissionGranted";
+        public const string RolePermissionRevoked = "RolePermissionRevoked";
     }
 }

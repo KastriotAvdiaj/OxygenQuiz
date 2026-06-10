@@ -125,6 +125,10 @@ builder.Services.AddScoped<QuizAPI.Controllers.Files.Services.IFileService, Quiz
 builder.Services.AddScoped<QuizAPI.Services.Audit.IAuditService, QuizAPI.Services.Audit.AuditService>();
 builder.Services.AddScoped<QuizAPI.Controllers.Notifications.Services.INotificationService, QuizAPI.Controllers.Notifications.Services.NotificationService>();
 
+// Data export / import (CSV / Excel / JSON) — stateless, so singletons are fine.
+builder.Services.AddSingleton<QuizAPI.Services.DataTransfer.IDataExportService, QuizAPI.Services.DataTransfer.DataExportService>();
+builder.Services.AddSingleton<QuizAPI.Services.DataTransfer.IDataImportService, QuizAPI.Services.DataTransfer.DataImportService>();
+
 builder.Services.AddHttpContextAccessor();
 
 // --- JWT Authentication ---

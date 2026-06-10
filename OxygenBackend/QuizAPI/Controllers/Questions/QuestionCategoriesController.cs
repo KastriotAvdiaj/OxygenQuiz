@@ -4,8 +4,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using QuizAPI.Data;
 using QuizAPI.DTOs.Question;
+using QuizAPI.Filtering;
 using QuizAPI.Models;
-using QuizAPI.Services.CurrentUserService; 
+using QuizAPI.Services.CurrentUserService;
 
 namespace QuizAPI.Controllers.Questions
 {
@@ -40,6 +41,29 @@ namespace QuizAPI.Controllers.Questions
                 .ToListAsync();
 
             return Ok(questionCategories);
+        }
+
+        // Filtered + paginated categories (shared filtering framework — see docs/filtering.md).
+        // Example: GET /api/questioncategories/search?search=geo&sort=name:asc
+        [HttpGet("search")]
+        public async Task<IActionResult> Search([FromQuery] FilterQuery query, CancellationToken ct)
+        {
+            var source = FilterEngine.Apply(
+                _context.QuestionCategories.AsNoTracking(), query, CategoryFilterFields.Fields);
+
+            var projected = source.Select(qc => new QuestionCategoryDTO
+            {
+                Id = qc.Id,
+                Name = qc.Name,
+                Username = qc.User.Username,
+                ColorPaletteJson = qc.ColorPaletteJson,
+                CreatedAt = qc.CreatedAt,
+                Gradient = qc.Gradient,
+            });
+
+            var result = await PagedResponse<QuestionCategoryDTO>.CreateAsync(
+                projected, query.Page, query.PageSize, ct);
+            return Ok(result);
         }
 
         // GET: api/QuestionCategories/5

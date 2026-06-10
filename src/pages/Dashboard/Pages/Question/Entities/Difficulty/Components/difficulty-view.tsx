@@ -4,6 +4,7 @@ import { Card } from "@/components/ui";
 import CreateQuestionDifficultyForm from "./create-question-difficulty";
 import { difficultyColumns } from "./columns";
 import { useQuestionDifficultyData } from "../api/get-question-difficulties";
+import { DataTransferControls } from "@/components/data-transfer/DataTransferControls";
 
 export const DifficultyView = () => {
   const questionDifficultiesQuery = useQuestionDifficultyData({});
@@ -14,7 +15,10 @@ export const DifficultyView = () => {
 
   return (
     <>
-      <h1 className="text-xl font-bold mt-4">Difficulty Management</h1>
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-xl font-bold">Difficulty Management</h1>
+        <DataTransferControls entity="difficulties" invalidateKey={["getQuestionDifficulties"]} />
+      </div>
 
       <Card className="flex flex-col justify-center align-items-end gap-2  p-8 bg-background border border-border">
         <div>

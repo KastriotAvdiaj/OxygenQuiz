@@ -77,7 +77,7 @@ export const DeleteQuestion = ({ questionType, question }: DeleteUserProps) => {
   });
 
   return (
-    <Authorization policyCheck="question:modify" resource={question}>
+    <Authorization policyCheck="question:delete" resource={question}>
       <ConfirmationDialog
         isDone={
           deleteQuestionMutation.isSuccess || deleteQuestionMutation.isError

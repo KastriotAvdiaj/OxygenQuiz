@@ -7,6 +7,7 @@ using QuizAPI.Models;
 using QuizAPI.Services.CurrentUserService;
 using QuizAPI.Services.Permissions;
 using QuizAPI.Services.Audit;
+using QuizAPI.Filtering;
 
 namespace QuizAPI.Controllers.Questions
 {
@@ -48,6 +49,62 @@ namespace QuizAPI.Controllers.Questions
             return question == null ? NotFound() : Ok(question);
         }
 
+        // ── SEARCH (shared filtering framework) ──────────
+        // All endpoints return the standard PagedResponse body envelope and accept the same
+        // FilterQuery, e.g.:
+        //   ?search=capital
+        //   &filter=categoryId:eq:3&filter=createdAt:between:2026-01-01,2026-03-31
+        //   &sort=createdAt:desc&page=1&pageSize=20
+        //
+        // "base" returns lightweight QuestionBase DTOs; the typed routes return rich per-type
+        // DTOs. Each has a "mine/…" twin whose ownership is forced server-side, so a caller's
+        // filters can only ever narrow within their own questions.
+
+        [HttpGet("search")]
+        public async Task<IActionResult> SearchQuestions([FromQuery] FilterQuery query, CancellationToken ct)
+            => Ok(await _questionService.SearchQuestionsAsync(query, ct: ct));
+
+        [HttpGet("multiplechoice/search")]
+        public async Task<IActionResult> SearchMultipleChoice([FromQuery] FilterQuery query, CancellationToken ct)
+            => Ok(await _questionService.SearchMultipleChoiceQuestionsAsync(query, ct: ct));
+
+        [HttpGet("truefalse/search")]
+        public async Task<IActionResult> SearchTrueFalse([FromQuery] FilterQuery query, CancellationToken ct)
+            => Ok(await _questionService.SearchTrueFalseQuestionsAsync(query, ct: ct));
+
+        [HttpGet("typetheanswer/search")]
+        public async Task<IActionResult> SearchTypeTheAnswer([FromQuery] FilterQuery query, CancellationToken ct)
+            => Ok(await _questionService.SearchTypeTheAnswerQuestionsAsync(query, ct: ct));
+
+        [HttpGet("mine/multiplechoice/search")]
+        [Authorize]
+        public async Task<IActionResult> SearchMyMultipleChoice([FromQuery] FilterQuery query, CancellationToken ct)
+        {
+            var userId = _currentUserService.UserId;
+            if (userId == null) return Unauthorized();
+            return Ok(await _questionService.SearchMultipleChoiceQuestionsAsync(query, restrictToUserId: userId.Value, ct: ct));
+        }
+
+        [HttpGet("mine/truefalse/search")]
+        [Authorize]
+        public async Task<IActionResult> SearchMyTrueFalse([FromQuery] FilterQuery query, CancellationToken ct)
+        {
+            var userId = _currentUserService.UserId;
+            if (userId == null) return Unauthorized();
+            return Ok(await _questionService.SearchTrueFalseQuestionsAsync(query, restrictToUserId: userId.Value, ct: ct));
+        }
+
+        [HttpGet("mine/typetheanswer/search")]
+        [Authorize]
+        public async Task<IActionResult> SearchMyTypeTheAnswer([FromQuery] FilterQuery query, CancellationToken ct)
+        {
+            var userId = _currentUserService.UserId;
+            if (userId == null) return Unauthorized();
+            return Ok(await _questionService.SearchTypeTheAnswerQuestionsAsync(query, restrictToUserId: userId.Value, ct: ct));
+        }
+
+        // My Old legacy endpoints (should be deleted)
+
         [HttpGet("multiplechoice")]
         public async Task<IActionResult> GetMultipleChoiceQuestions([FromQuery] QuestionFilterParams filterParams)
         {
@@ -71,6 +128,7 @@ namespace QuizAPI.Controllers.Questions
             Response.AddPaginationHeader(pagedQuestions);
             return Ok(pagedQuestions.Items);
         }
+        //
 
         [HttpGet("category/{categoryId}")]
         public async Task<IActionResult> GetQuestionsByCategory(int categoryId)

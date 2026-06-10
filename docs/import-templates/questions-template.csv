@@ -1,0 +1,5 @@
+Type,Text,CategoryId,DifficultyId,LanguageId,Visibility,Options,CorrectOptions,AllowMultipleSelections,CorrectAnswer,TypeAnswer,AcceptableAnswers,IsCaseSensitive,AllowPartialMatch
+MultipleChoice,What is the capital of France?,1,2,3,Global,Paris|London|Berlin|Madrid,Paris,false,,,,,
+MultipleChoice,Which of these are prime numbers?,1,2,3,Global,2|3|4|9,2|3,true,,,,,
+TrueFalse,The Earth is the third planet from the Sun.,1,2,3,Global,,,,true,,,,
+TypeTheAnswer,What gas do plants absorb during photosynthesis?,1,2,3,Global,,,,,Carbon Dioxide,CO2|carbon dioxide,false,true

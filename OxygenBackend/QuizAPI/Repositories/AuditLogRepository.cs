@@ -15,6 +15,8 @@ namespace QuizAPI.Repositories
         public async Task AddAsync(AuditLog log, CancellationToken ct = default) =>
             await _context.AuditLogs.AddAsync(log, ct);
 
+        public IQueryable<AuditLog> Query() => _context.AuditLogs.AsNoTracking();
+
         public async Task<(IReadOnlyList<AuditLog> Items, int Total)> QueryAsync(AuditLogQuery query, CancellationToken ct = default)
         {
             var q = _context.AuditLogs.AsNoTracking().AsQueryable();

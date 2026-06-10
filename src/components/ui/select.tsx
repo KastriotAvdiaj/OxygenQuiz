@@ -34,7 +34,7 @@ const SelectTrigger = React.forwardRef<
       variant === "incorrect" &&
         "font-header placeholder:text-center bg-gradient-to-r from-red-500/10 to-red-500/5 border-2 border-red-500/40 dark:border-red-500/60 text-foreground font-medium rounded-xl transform transition-all duration-200 dark:bg-gradient-to-r dark:from-red-500/20 dark:to-red-500/10 text-sm h-9 px-3 py-1.5 shadow-[0_3px_0_0_hsl(0_84%_60%/0.5)] hover:shadow-[0_2px_0_0_hsl(0_84%_60%/0.5)] hover:translate-y-px active:shadow-none active:translate-y-0.5 md:text-xs md:h-8 md:px-2.5 md:py-1 md:shadow-[0_2px_0_0_hsl(0_84%_60%/0.5)] md:hover:shadow-[0_1px_0_0_hsl(0_84%_60%/0.5)] md:hover:translate-y-px md:active:shadow-none md:active:translate-y-px lg:text-sm lg:h-9 lg:px-3 lg:py-1.5 lg:shadow-[0_3px_0_0_hsl(0_84%_60%/0.5)] lg:hover:shadow-[0_2px_0_0_hsl(0_84%_60%/0.5)] lg:hover:translate-y-px lg:active:shadow-none lg:active:translate-y-0.5",
       variant === "form" &&
-        "bg-background border-2 border-foreground/20 dark:border-foreground/30 rounded-lg transition-all duration-200 focus:border-primary/60 focus:ring-2 focus:ring-primary/20 focus:ring-offset-0 hover:border-foreground/40 dark:hover:border-foreground/50 shadow-inner shadow-foreground/5 dark:shadow-foreground/10 h-10 px-4 py-2 text-sm font-medium placeholder:text-foreground/60 placeholder:font-normal",
+        "bg-background border-2 border-foreground/20 dark:border-foreground/30 rounded-md transition-all duration-200 focus:border-primary/60 focus:ring-2 focus:ring-primary/20 focus:ring-offset-0 hover:border-foreground/40 dark:hover:border-foreground/50 shadow-inner shadow-foreground/5 dark:shadow-foreground/10 h-8 px-2 py-1 text-xs font-medium placeholder:text-foreground/60 placeholder:font-normal",
       variant === "form-error" &&
         "bg-background border-2 border-red-500/50 dark:border-red-500/60 rounded-lg transition-all duration-200 focus:border-red-500/70 focus:ring-2 focus:ring-red-500/20 focus:ring-offset-0 hover:border-red-500/60 dark:hover:border-red-500/70 shadow-inner shadow-red-500/10 dark:shadow-red-500/20 h-10 px-4 py-2 text-sm font-medium placeholder:text-red-500/70 placeholder:font-normal text-foreground bg-red-50/50 dark:bg-red-950/20",
       className
@@ -176,7 +176,7 @@ const SelectItem = React.forwardRef<
       variant === "incorrect" &&
         "text-center rounded-lg transition-colors duration-150 text-xs py-1.5 hover:bg-red-500/10 data-[highlighted]:bg-red-500/20 data-[highlighted]:text-foreground focus:bg-red-500/20 focus:text-foreground md:text-xs md:py-1 lg:text-xs lg:py-1.5",
       variant === "form" &&
-        "rounded-md transition-colors duration-150 text-sm py-2 pl-3 pr-9 hover:bg-foreground/5 data-[highlighted]:bg-foreground/10 data-[highlighted]:text-foreground focus:bg-foreground/10 focus:text-foreground font-medium",
+        "rounded-md transition-colors duration-150 text-xs py-1.5 pl-2 pr-7 hover:bg-foreground/5 data-[highlighted]:bg-foreground/10 data-[highlighted]:text-foreground focus:bg-foreground/10 focus:text-foreground font-medium",
       variant === "form-error" &&
         "rounded-md transition-colors duration-150 text-sm py-2 pl-3 pr-9 hover:bg-red-500/5 data-[highlighted]:bg-red-500/10 data-[highlighted]:text-foreground focus:bg-red-500/10 focus:text-foreground font-medium",
       className

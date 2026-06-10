@@ -1,31 +1,16 @@
 // Components/UserControls.tsx
+// Action buttons for the Users page. Search + filtering now live in <UserFilters />.
 import { Download, RefreshCw } from "lucide-react";
 import CreateUserForm from "./create-user";
 import { LiftedButton } from "@/common/LiftedButton";
-import { SearchInput } from "@/lib/Search-Input";
 
 interface UserControlsProps {
-  searchTerm: string;
-  setSearchTerm: (value: string) => void;
   onRefresh: () => void;
 }
 
-export const UserControls = ({
-  searchTerm,
-  setSearchTerm,
-  onRefresh,
-}: UserControlsProps) => {
+export const UserControls = ({ onRefresh }: UserControlsProps) => {
   return (
-    <div className="flex items-center justify-between my-4">
-      <div className="flex items-center space-x-2">
-        <SearchInput
-          placeholder="Search users..."
-          onSearch={(value) => setSearchTerm(value)}
-          initialValue={searchTerm}
-          className="max-w-sm"
-        />
-      </div>
-
+    <div className="flex items-center justify-end my-4">
       <div className="flex items-center space-x-2">
         <CreateUserForm />
         <LiftedButton className="text-xs" onClick={onRefresh}>

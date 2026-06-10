@@ -1,0 +1,175 @@
+import { Button, Card } from "@/components/ui";
+import { MultiSelect } from "@/components/ui/multi-select";
+import { DateRangeFilter } from "@/components/ui/date-range-filter";
+import { TriStateSelect, type TriState } from "@/components/ui/tri-state-select";
+import {
+  ActiveFilterPills,
+  type ActiveFilterPill,
+} from "@/components/ui/active-filter-pills";
+import { Filter } from "lucide-react";
+import { RiFilterOffLine } from "react-icons/ri";
+import { SearchInput } from "@/lib/Search-Input";
+import { ROLES } from "@/lib/authorization";
+import { Separator } from "@/components/ui/separator";
+
+const ROLE_OPTIONS = Object.values(ROLES).map((r) => ({ label: r, value: r }));
+
+interface UserFiltersProps {
+  searchTerm: string;
+  onSearchTermChange: (term: string) => void;
+
+  // Role membership (many-to-many; resolved server-side in UserService).
+  roles: string[];
+  onRolesChange: (values: string[]) => void;
+
+  registeredFrom: string;
+  registeredTo: string;
+  onRegisteredFromChange: (value: string) => void;
+  onRegisteredToChange: (value: string) => void;
+
+  lastLoginFrom: string;
+  lastLoginTo: string;
+  onLastLoginFromChange: (value: string) => void;
+  onLastLoginToChange: (value: string) => void;
+
+  // Account status: any / only deleted / only active.
+  deleted: TriState;
+  onDeletedChange: (value: TriState) => void;
+}
+
+/**
+ * Sidebar filter panel for the Users page — same card pattern as the
+ * quizzes/questions pages so the dashboard filter UX stays consistent.
+ */
+export const UserFilters = ({
+  searchTerm,
+  onSearchTermChange,
+  roles,
+  onRolesChange,
+  registeredFrom,
+  registeredTo,
+  onRegisteredFromChange,
+  onRegisteredToChange,
+  lastLoginFrom,
+  lastLoginTo,
+  onLastLoginFromChange,
+  onLastLoginToChange,
+  deleted,
+  onDeletedChange,
+}: UserFiltersProps) => {
+  const activeCount =
+    roles.length +
+    (registeredFrom ? 1 : 0) +
+    (registeredTo ? 1 : 0) +
+    (lastLoginFrom ? 1 : 0) +
+    (lastLoginTo ? 1 : 0) +
+    (deleted !== "any" ? 1 : 0);
+
+  const hasActiveFilters = Boolean(searchTerm) || activeCount > 0;
+
+  const resetFilters = () => {
+    onSearchTermChange("");
+    onRolesChange([]);
+    onRegisteredFromChange("");
+    onRegisteredToChange("");
+    onLastLoginFromChange("");
+    onLastLoginToChange("");
+    onDeletedChange("any");
+  };
+
+  const pills: ActiveFilterPill[] = roles.map((r) => ({
+    id: `role-${r}`,
+    label: `Role: ${r}`,
+    onRemove: () => onRolesChange(roles.filter((x) => x !== r)),
+  }));
+  if (deleted !== "any")
+    pills.push({
+      id: "deleted",
+      label: `Status: ${deleted === "yes" ? "Deleted" : "Active"}`,
+      onRemove: () => onDeletedChange("any"),
+    });
+  if (registeredFrom)
+    pills.push({ id: "reg-from", label: `Registered from: ${registeredFrom}`, onRemove: () => onRegisteredFromChange("") });
+  if (registeredTo)
+    pills.push({ id: "reg-to", label: `Registered to: ${registeredTo}`, onRemove: () => onRegisteredToChange("") });
+  if (lastLoginFrom)
+    pills.push({ id: "login-from", label: `Last login from: ${lastLoginFrom}`, onRemove: () => onLastLoginFromChange("") });
+  if (lastLoginTo)
+    pills.push({ id: "login-to", label: `Last login to: ${lastLoginTo}`, onRemove: () => onLastLoginToChange("") });
+
+  return (
+    <Card className="flex flex-col gap-4 p-4 bg-card border dark:border-foreground/30 shadow-sm">
+      <div className="border-b pb-4 dark:border-foreground/10">
+        <h2 className="mb-3 text-xs font-bold uppercase tracking-wider text-muted-foreground/80">
+          Search
+        </h2>
+        <SearchInput
+          placeholder="Search users by name or email..."
+          onSearch={onSearchTermChange}
+          initialValue={searchTerm}
+          className="!my-0"
+        />
+      </div>
+
+      <div>
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground/80">
+            <Filter className="h-3.5 w-3.5 text-primary" />
+            Filters
+            {activeCount > 0 && (
+              <span className="rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold text-primary-foreground">
+                {activeCount}
+              </span>
+            )}
+          </h3>
+          {hasActiveFilters && (
+            <Button
+              onClick={resetFilters}
+              variant="ghost"
+              className="flex items-center gap-1.5 rounded-md text-xs text-red-500 hover:text-red-600 dark:hover:bg-red-950/40 hover:bg-red-50 bg-red-50/50 dark:border-red-900/30 px-2 border border-red-100 h-7 transition-colors">
+              <RiFilterOffLine className="h-3.5 w-3.5" />
+              Clear
+            </Button>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 gap-3">
+          <MultiSelect<string>
+            label="Roles"
+            placeholder="Any role"
+            options={ROLE_OPTIONS}
+            selected={roles}
+            onChange={onRolesChange}
+          />
+          <TriStateSelect
+            label="Account status"
+            value={deleted}
+            onChange={onDeletedChange}
+            yesLabel="Deleted"
+            noLabel="Active"
+          />
+          <DateRangeFilter
+            label="Registered date"
+            from={registeredFrom}
+            to={registeredTo}
+            onFromChange={onRegisteredFromChange}
+            onToChange={onRegisteredToChange}
+          />
+          <DateRangeFilter
+            label="Last login"
+            from={lastLoginFrom}
+            to={lastLoginTo}
+            onFromChange={onLastLoginFromChange}
+            onToChange={onLastLoginToChange}
+          />
+        </div>
+      </div>
+
+      {pills.length > 0 && (
+        <div className="pt-2 border-t dark:border-foreground/10">
+          <ActiveFilterPills pills={pills} onClearAll={resetFilters} />
+        </div>
+      )}
+    </Card>
+  );
+};

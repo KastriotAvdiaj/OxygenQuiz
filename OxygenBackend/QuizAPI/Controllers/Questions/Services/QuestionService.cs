@@ -7,6 +7,7 @@ using AutoMapper.QueryableExtensions;
 using QuizAPI.Controllers.Questions.Services.AnswerOptions;
 using QuizAPI.Controllers.Image.Services;
 using QuizAPI.Services.Permissions;
+using QuizAPI.Filtering;
 
 namespace QuizAPI.Controllers.Questions.Services
 {
@@ -63,6 +64,75 @@ namespace QuizAPI.Controllers.Questions.Services
                 projectedQuery,
                 filterParams.PageNumber,
                 filterParams.PageSize);
+        }
+
+        /// <summary>
+        /// Reference implementation of the shared filtering framework. Applies the generic
+        /// <see cref="FilterQuery"/> (filters + search + sort) against the whitelisted
+        /// <see cref="QuestionFilterFields"/>, then projects + pages into the standard
+        /// <see cref="PagedResponse{T}"/> body envelope.
+        ///
+        /// <paramref name="restrictToUserId"/> is a server-derived ownership clamp: when set
+        /// (e.g. the "my questions" endpoint) it is applied as a hard Where BEFORE the
+        /// client's filters, so a caller can never widen their scope via query params.
+        /// </summary>
+        public async Task<PagedResponse<QuestionBaseDTO>> SearchQuestionsAsync(
+            FilterQuery query, Guid? restrictToUserId = null, CancellationToken ct = default)
+        {
+            IQueryable<QuestionBase> q = _context.Questions.AsNoTracking()
+                .Include(x => x.Difficulty)
+                .Include(x => x.Category)
+                .Include(x => x.Language)
+                .Include(x => x.User);
+
+            if (restrictToUserId is { } uid)
+                q = q.Where(x => x.UserId == uid);
+
+            q = FilterEngine.Apply(q, query, QuestionFilterFields.Fields);
+
+            var projected = q.ProjectTo<QuestionBaseDTO>(_mapper.ConfigurationProvider);
+            return await PagedResponse<QuestionBaseDTO>.CreateAsync(
+                projected, query.Page, query.PageSize, ct);
+        }
+
+        // Typed variants of the search above — same framework, but they return the rich
+        // per-type DTOs (answer options, correct answer, …) the type-tabbed UI renders.
+        public Task<PagedResponse<MultipleChoiceQuestionDTO>> SearchMultipleChoiceQuestionsAsync(
+            FilterQuery query, Guid? restrictToUserId = null, CancellationToken ct = default) =>
+            SearchTypedAsync<MultipleChoiceQuestion, MultipleChoiceQuestionDTO>(
+                _context.MultipleChoiceQuestions.AsNoTracking().Include(x => x.AnswerOptions),
+                query, restrictToUserId, ct);
+
+        public Task<PagedResponse<TrueFalseQuestionDTO>> SearchTrueFalseQuestionsAsync(
+            FilterQuery query, Guid? restrictToUserId = null, CancellationToken ct = default) =>
+            SearchTypedAsync<TrueFalseQuestion, TrueFalseQuestionDTO>(
+                _context.TrueFalseQuestions.AsNoTracking(), query, restrictToUserId, ct);
+
+        public Task<PagedResponse<TypeTheAnswerQuestionDTO>> SearchTypeTheAnswerQuestionsAsync(
+            FilterQuery query, Guid? restrictToUserId = null, CancellationToken ct = default) =>
+            SearchTypedAsync<TypeTheAnswerQuestion, TypeTheAnswerQuestionDTO>(
+                _context.TypeTheAnswerQuestions.AsNoTracking(), query, restrictToUserId, ct);
+
+        // Shared core for the typed searches: scope clamp → framework filter → project → page.
+        // The caller supplies the type-specific base query (with its Includes); everything else
+        // is identical, so the filtering/sorting/paging logic lives in exactly one place.
+        private async Task<PagedResponse<TDto>> SearchTypedAsync<TEntity, TDto>(
+            IQueryable<TEntity> baseQuery, FilterQuery query, Guid? restrictToUserId, CancellationToken ct)
+            where TEntity : QuestionBase
+        {
+            IQueryable<TEntity> source = baseQuery
+                .Include(x => x.Difficulty)
+                .Include(x => x.Category)
+                .Include(x => x.Language)
+                .Include(x => x.User);
+
+            if (restrictToUserId is { } uid)
+                source = source.Where(x => x.UserId == uid);
+
+            source = FilterEngine.Apply(source, query, QuestionFilterFields.For<TEntity>());
+
+            var projected = source.ProjectTo<TDto>(_mapper.ConfigurationProvider);
+            return await PagedResponse<TDto>.CreateAsync(projected, query.Page, query.PageSize, ct);
         }
 
         public async Task<QuestionBaseDTO> GetQuestionByIdAsync(int id)

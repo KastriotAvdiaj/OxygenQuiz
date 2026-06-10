@@ -1,11 +1,12 @@
-import { useState, useEffect, useReducer } from "react";
-import { DataTable, Card, Spinner } from "@/components/ui";
+import { useState, useEffect } from "react";
+import { DataTable, Card, Spinner, Button } from "@/components/ui";
 import { Link } from "react-router-dom";
 import { quizColumns } from "@/pages/Dashboard/Pages/Quiz/components/Data-Table-Columns/columns";
-import { useMyQuizzesData } from "./api/get-my-quizzes";
+import { useSearchQuizzes } from "@/pages/Dashboard/Pages/Quiz/api/search-quizzes";
+import { rule, type FilterQuery, type FilterRule } from "@/lib/filtering";
 import { useDebounce } from "@/hooks/use-debounce";
 
-import { Separator } from "@/components/ui/separator";
+
 import { useQuestionCategoryData } from "@/pages/Dashboard/Pages/Question/Entities/Categories/api/get-question-categories";
 import { useQuestionDifficultyData } from "@/pages/Dashboard/Pages/Question/Entities/Difficulty/api/get-question-difficulties";
 import { useQuestionLanguageData } from "@/pages/Dashboard/Pages/Question/Entities/Language/api/get-question-language";
@@ -19,49 +20,72 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/form";
 import { GrFormNextLink } from "react-icons/gr";
-import { QuizFilters } from "@/pages/Dashboard/Pages/Quiz/components/Quiz-Filter";
 import {
-  filterReducer,
-  initialFilterState,
-} from "@/pages/Dashboard/Pages/Quiz/components/Quiz-Filter/filter-config";
+  QuizFiltersPanel,
+  type TriState,
+} from "@/pages/Dashboard/Pages/Quiz/components/quiz-filters-panel";
+import { Filter } from "lucide-react";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 
 export const MyQuizzes = () => {
-  const [filterState, dispatch] = useReducer(filterReducer, initialFilterState);
-  const [debouncedSearchTerm] = useDebounce(filterState.searchTerm, 500);
+  // Same filter state as the admin page, minus the author filter (these are the user's own).
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm] = useDebounce(searchTerm, 500);
+  const [categoryIds, setCategoryIds] = useState<number[]>([]);
+  const [difficultyIds, setDifficultyIds] = useState<number[]>([]);
+  const [languageIds, setLanguageIds] = useState<number[]>([]);
+  const [visibilities, setVisibilities] = useState<string[]>([]);
+  const [published, setPublished] = useState<TriState>("any");
+  const [active, setActive] = useState<TriState>("any");
+  const [createdFrom, setCreatedFrom] = useState("");
+  const [createdTo, setCreatedTo] = useState("");
 
   const [pageNumber, setPageNumber] = useState(1);
   const [pageSize] = useState(10);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const categoriesQuery = useQuestionCategoryData({});
   const difficultiesQuery = useQuestionDifficultyData({});
   const languagesQuery = useQuestionLanguageData({});
 
-  const queryParams = {
-    pageNumber: pageNumber,
-    pageSize: pageSize,
-    searchTerm: debouncedSearchTerm || undefined,
-    categoryId: filterState.selectedCategoryId,
-    difficultyId: filterState.selectedDifficultyId,
-    languageId: filterState.selectedLanguageId,
-    visibility: filterState.selectedVisibility,
-    isPublished: filterState.selectedIsPublished,
-    isActive: filterState.selectedIsActive,
+  const filters: FilterRule[] = [];
+  if (categoryIds.length) filters.push(rule.in("categoryId", categoryIds));
+  if (difficultyIds.length) filters.push(rule.in("difficultyId", difficultyIds));
+  if (languageIds.length) filters.push(rule.in("languageId", languageIds));
+  if (visibilities.length) filters.push(rule.in("visibility", visibilities));
+  if (published !== "any") filters.push(rule.eq("isPublished", published === "yes"));
+  if (active !== "any") filters.push(rule.eq("isActive", active === "yes"));
+  if (createdFrom && createdTo) filters.push(rule.between("createdAt", createdFrom, createdTo));
+  else if (createdFrom) filters.push(rule.gte("createdAt", createdFrom));
+  else if (createdTo) filters.push(rule.lte("createdAt", createdTo));
+
+  const query: FilterQuery = {
+    page: pageNumber,
+    pageSize,
+    search: debouncedSearchTerm || undefined,
+    filters,
   };
 
-  const quizData = useMyQuizzesData({
-    params: queryParams,
-  });
+  // "mine" scope: ownership is enforced server-side (see /quiz/mine/search).
+  const quizData = useSearchQuizzes({ scope: "mine", query });
 
   useEffect(() => {
     setPageNumber(1);
   }, [
     debouncedSearchTerm,
-    filterState.selectedCategoryId,
-    filterState.selectedDifficultyId,
-    filterState.selectedLanguageId,
-    filterState.selectedVisibility,
-    filterState.selectedIsPublished,
-    filterState.selectedIsActive,
+    categoryIds,
+    difficultyIds,
+    languageIds,
+    visibilities,
+    published,
+    active,
+    createdFrom,
+    createdTo,
   ]);
 
   const isFilterDataLoading =
@@ -77,25 +101,38 @@ export const MyQuizzes = () => {
     );
   }
 
-  if (quizData.isLoading) {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <Spinner size="lg" />
-      </div>
-    );
-  }
+  const quizzes = quizData.data?.items ?? [];
 
-  if (quizData.isError) {
-    return <p>Failed to load quizzes. Try again later.</p>;
-  }
-
-  const quizzes = quizData.data?.data ?? [];
+  const activeFilterCount =
+    categoryIds.length +
+    difficultyIds.length +
+    languageIds.length +
+    visibilities.length +
+    (published !== "any" ? 1 : 0) +
+    (active !== "any" ? 1 : 0) +
+    (createdFrom ? 1 : 0) +
+    (createdTo ? 1 : 0);
 
   return (
     <div className="container mx-auto py-8 px-4 md:px-0">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">My Quizzes</h1>
-        <Dialog>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-2 lg:hidden"
+            onClick={() => setFiltersOpen(true)}
+          >
+            <Filter className="h-4 w-4" />
+            Filters
+            {activeFilterCount > 0 && (
+              <span className="rounded-full bg-primary px-1.5 text-xs font-semibold text-primary-foreground">
+                {activeFilterCount}
+              </span>
+            )}
+          </Button>
+          <Dialog>
           <DialogTrigger asChild>
             <LiftedButton>+ Create Quiz</LiftedButton>
           </DialogTrigger>
@@ -119,22 +156,86 @@ export const MyQuizzes = () => {
             </section>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
-      <Card className="p-6 bg-card border dark:border-foreground/30">
-        <QuizFilters
-          filterState={filterState}
-          dispatch={dispatch}
-          categories={categoriesQuery.data || []}
-          difficulties={difficultiesQuery.data || []}
-          languages={languagesQuery.data || []}
-          totalResults={quizData.data?.pagination?.totalItems || 0}
-        />
+      {/* ── Content + Sidebar layout ── */}
+      <div className="flex gap-6 items-start">
+        {/* Table card */}
+        <div className="flex-1 min-w-0">
+          <Card className="p-6 bg-card border dark:border-foreground/30">
+            {quizData.isError ? (
+              <p className="text-center text-red-500 py-8">
+                Failed to load quizzes. Please try again later.
+              </p>
+            ) : quizData.isLoading ? (
+              <div className="flex justify-center items-center py-16">
+                <Spinner size="lg" />
+              </div>
+            ) : (
+              <DataTable data={quizzes} columns={quizColumns} />
+            )}
+          </Card>
+        </div>
 
-        <Separator className="my-6" />
+        {/* Sticky scrollable sidebar for desktop */}
+        <aside className="hidden lg:block w-80 xl:w-[350px] shrink-0 sticky top-6 self-start max-h-[calc(100vh-3rem)] overflow-y-auto pl-1">
+          <QuizFiltersPanel
+            searchTerm={searchTerm}
+            onSearchTermChange={setSearchTerm}
+            categories={categoriesQuery.data || []}
+            selectedCategoryIds={categoryIds}
+            onCategoryIdsChange={setCategoryIds}
+            difficulties={difficultiesQuery.data || []}
+            selectedDifficultyIds={difficultyIds}
+            onDifficultyIdsChange={setDifficultyIds}
+            languages={languagesQuery.data || []}
+            selectedLanguageIds={languageIds}
+            onLanguageIdsChange={setLanguageIds}
+            selectedVisibilities={visibilities}
+            onVisibilitiesChange={setVisibilities}
+            published={published}
+            onPublishedChange={setPublished}
+            active={active}
+            onActiveChange={setActive}
+            createdFrom={createdFrom}
+            createdTo={createdTo}
+            onCreatedFromChange={setCreatedFrom}
+            onCreatedToChange={setCreatedTo}
+          />
+        </aside>
+      </div>
 
-        <DataTable data={quizzes} columns={quizColumns} />
-      </Card>
+      <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
+        <SheetContent side="right" className="w-[350px] sm:max-w-md overflow-y-auto">
+          <SheetHeader className="mb-4">
+            <SheetTitle>Filters</SheetTitle>
+          </SheetHeader>
+          <QuizFiltersPanel
+            searchTerm={searchTerm}
+            onSearchTermChange={setSearchTerm}
+            categories={categoriesQuery.data || []}
+            selectedCategoryIds={categoryIds}
+            onCategoryIdsChange={setCategoryIds}
+            difficulties={difficultiesQuery.data || []}
+            selectedDifficultyIds={difficultyIds}
+            onDifficultyIdsChange={setDifficultyIds}
+            languages={languagesQuery.data || []}
+            selectedLanguageIds={languageIds}
+            onLanguageIdsChange={setLanguageIds}
+            selectedVisibilities={visibilities}
+            onVisibilitiesChange={setVisibilities}
+            published={published}
+            onPublishedChange={setPublished}
+            active={active}
+            onActiveChange={setActive}
+            createdFrom={createdFrom}
+            createdTo={createdTo}
+            onCreatedFromChange={setCreatedFrom}
+            onCreatedToChange={setCreatedTo}
+          />
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };

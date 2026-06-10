@@ -6,7 +6,7 @@ import { useSettingsData } from "./api/get-settings";
 import { useUpdateSettings } from "./api/update-settings";
 import { UserSettings } from "@/types/settings-types";
 import { normalizeFont, DEFAULT_APP_FONT, DEFAULT_QUIZ_FONT } from "@/lib/fonts";
-
+import { Save } from 'lucide-react';
 // Modular feature imports
 import { Section, Row } from "./components/SharedPrimitives";
 import { AudioSection } from "./components/AudioSection";
@@ -71,6 +71,7 @@ export const Settings = () => {
           disabled={!isDirty}
           isPending={updateSettings.isPending}
         >
+          <Save className="h-4 w-4" />
           Save changes
         </LiftedButton>
       </div>

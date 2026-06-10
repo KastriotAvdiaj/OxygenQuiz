@@ -47,7 +47,7 @@ export const SearchInput: React.FC<SearchInputProps> = ({
             onChange={(e) => setSearchTerm(e.target.value)}
             onKeyPress={handleKeyPress}
             disabled={disabled}
-            className="bg-muted px-8 rounded-full hover:bg-primary/20"
+            className="bg-muted px-8 rounded-md hover:bg-primary/20"
           />
           <SearchIcon className="h-4 w-4 absolute left-2 top-1/2 -translate-y-1/2 p-0 mt-[1px] text-muted-foreground hover:bg-muted " />
 

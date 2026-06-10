@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QuizAPI.DTOs.User;
+using QuizAPI.Filtering;
 using QuizAPI.Services.Interfaces;
 
 namespace QuizAPI.Controllers.Users
@@ -21,6 +22,15 @@ namespace QuizAPI.Controllers.Users
             var users = await _userService.GetAllUsersAsync(ct);
             return Ok(users); // empty list => 200 + [], not 404
         }
+
+        // Filtered + paginated users (shared filtering framework — see docs/filtering.md).
+        // Admin-only: the user list is sensitive. Example:
+        //   GET /api/users/search?search=alice&filter=isDeleted:eq:false&sort=dateRegistered:desc
+        [HttpGet("search")]
+        [Authorize(Roles = "Admin,SuperAdmin")]
+        [ProducesResponseType(typeof(PagedResponse<UserDTO>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> SearchUsers([FromQuery] FilterQuery query, CancellationToken ct)
+            => Ok(await _userService.SearchUsersAsync(query, ct));
 
         [HttpGet("{id:guid}")]
         [ProducesResponseType(typeof(UserDTO), StatusCodes.Status200OK)]

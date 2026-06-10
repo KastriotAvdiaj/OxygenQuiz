@@ -1,4 +1,5 @@
 ﻿using QuizAPI.DTOs.Quiz;
+using QuizAPI.Filtering;
 using QuizAPI.ManyToManyTables;
 using QuizAPI.Models;
 using QuizAPI.Models.Quiz;
@@ -13,6 +14,14 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
         /// <param name="includeInactive">Whether to include inactive quizzes</param>
         /// <returns>List of quiz summaries</returns>
         Task<PagedList<QuizSummaryDTO>> GetAllQuizzesAsync(QuizFilterParams filterParam);
+
+        // Reference implementation of the shared filtering framework (operators + search +
+        // sort + body-envelope pagination). See docs/filtering.md.
+        Task<PagedResponse<QuizSummaryDTO>> SearchQuizzesAsync(
+            FilterQuery query,
+            Guid? restrictToUserId = null,
+            bool publicOnly = false,
+            CancellationToken ct = default);
 
         /// <summary>
         /// Get quizzes created by a specific user
