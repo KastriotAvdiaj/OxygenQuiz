@@ -1,0 +1,102 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
+using QuizAPI.Data;
+using QuizAPI.ManyToManyTables;
+using QuizAPI.Models;
+using QuizAPI.Models.Quiz;
+using QuizAPI.Repositories.Interfaces;
+
+namespace QuizAPI.Repositories
+{
+    /// <summary>EF Core implementation of <see cref="IQuizRepository"/>.</summary>
+    public class QuizRepository : IQuizRepository
+    {
+        private readonly ApplicationDbContext _context;
+
+        public QuizRepository(ApplicationDbContext context) => _context = context;
+
+        // Standard navigations the quiz summary/detail DTOs need.
+        private static IQueryable<Quiz> WithRelations(IQueryable<Quiz> source) =>
+            source.Include(q => q.User)
+                  .Include(q => q.Category)
+                  .Include(q => q.Language)
+                  .Include(q => q.Difficulty)
+                  .Include(q => q.QuizQuestions);
+
+        public IQueryable<Quiz> Query() =>
+            WithRelations(_context.Quizzes.AsNoTracking());
+
+        public Task<Quiz?> GetByIdAsync(int id, CancellationToken ct = default) =>
+            WithRelations(_context.Quizzes.AsNoTracking()).FirstOrDefaultAsync(q => q.Id == id, ct);
+
+        public Task<bool> ExistsAsync(int id, CancellationToken ct = default) =>
+            _context.Quizzes.AsNoTracking().AnyAsync(q => q.Id == id, ct);
+
+        public async Task<List<QuizQuestion>> GetQuizQuestionsAsync(int quizId, CancellationToken ct = default) =>
+            await _context.QuizQuestions
+                .AsNoTracking()
+                .Include(qq => qq.Question)
+                    .ThenInclude(q => ((MultipleChoiceQuestion)q).AnswerOptions)
+                .Include(qq => qq.Question)
+                    .ThenInclude(q => q.Category)
+                .Include(qq => qq.Question)
+                    .ThenInclude(q => q.Difficulty)
+                .Include(qq => qq.Question)
+                    .ThenInclude(q => q.Language)
+                .Include(qq => qq.Question)
+                    .ThenInclude(q => q.User)
+                .Where(qq => qq.QuizId == quizId)
+                .OrderBy(qq => qq.OrderInQuiz)
+                .ToListAsync(ct);
+
+        // ── Tracked reads for mutation ────────────────────────────────────────────
+        public Task<Quiz?> GetWithQuestionsForUpdateAsync(int id, CancellationToken ct = default) =>
+            _context.Quizzes
+                .Include(q => q.QuizQuestions)
+                .FirstOrDefaultAsync(q => q.Id == id, ct);
+
+        public Task<Quiz?> GetTrackedAsync(int id, CancellationToken ct = default) =>
+            _context.Quizzes.FirstOrDefaultAsync(q => q.Id == id, ct);
+
+        // ── Validation helpers ────────────────────────────────────────────────────
+        public async Task<bool> ReferencedEntitiesExistAsync(
+            int categoryId, int languageId, int difficultyId, Guid? userId = null, CancellationToken ct = default)
+        {
+            var categoryExists = await _context.QuestionCategories.AnyAsync(c => c.Id == categoryId, ct);
+            var languageExists = await _context.QuestionLanguages.AnyAsync(l => l.Id == languageId, ct);
+            var difficultyExists = await _context.QuestionDifficulties.AnyAsync(d => d.ID == difficultyId, ct);
+            var userExists = userId is not { } uid || await _context.Users.AnyAsync(u => u.Id == uid, ct);
+
+            return categoryExists && languageExists && difficultyExists && userExists;
+        }
+
+        public async Task<bool> AllQuestionsExistAsync(IReadOnlyCollection<int> questionIds, CancellationToken ct = default)
+        {
+            var distinctIds = questionIds.Distinct().ToList();
+            if (distinctIds.Count == 0) return true;
+
+            var existingCount = await _context.Questions.CountAsync(q => distinctIds.Contains(q.Id), ct);
+            return existingCount == distinctIds.Count;
+        }
+
+        // ── Writes ────────────────────────────────────────────────────────────────
+        public async Task AddAsync(Quiz quiz, CancellationToken ct = default) =>
+            await _context.Quizzes.AddAsync(quiz, ct);
+
+        public async Task AddQuizQuestionsAsync(IEnumerable<QuizQuestion> quizQuestions, CancellationToken ct = default) =>
+            await _context.QuizQuestions.AddRangeAsync(quizQuestions, ct);
+
+        public async Task AddQuizQuestionAsync(QuizQuestion quizQuestion, CancellationToken ct = default) =>
+            await _context.QuizQuestions.AddAsync(quizQuestion, ct);
+
+        public void RemoveQuizQuestions(IEnumerable<QuizQuestion> quizQuestions) =>
+            _context.QuizQuestions.RemoveRange(quizQuestions);
+
+        public void Remove(Quiz quiz) => _context.Quizzes.Remove(quiz);
+
+        public Task<int> SaveChangesAsync(CancellationToken ct = default) => _context.SaveChangesAsync(ct);
+
+        public Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken ct = default) =>
+            _context.Database.BeginTransactionAsync(ct);
+    }
+}

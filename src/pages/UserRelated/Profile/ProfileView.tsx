@@ -6,6 +6,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { AvatarUploader } from "./components/AvatarUploader";
 import { Badge } from "@/components/ui/badge";
 import { LiftedButton } from "@/common/LiftedButton";
 import {
@@ -94,10 +95,18 @@ export const ProfileView = ({
         <div className="h-28" />
         <CardContent className="pt-0">
           <div className="flex flex-col sm:flex-row sm:items-end gap-4 -mt-12">
-            <Avatar className="h-24 w-24 ring-1 ring-primary">
-              <AvatarImage src={profileImageUrl ?? undefined} alt={username} />
-              <AvatarFallback className="text-2xl">{initials}</AvatarFallback>
-            </Avatar>
+            {isOwnProfile ? (
+              <AvatarUploader
+                username={username}
+                profileImageUrl={profileImageUrl}
+                initials={initials}
+              />
+            ) : (
+              <Avatar className="h-24 w-24 ring-1 ring-primary">
+                <AvatarImage src={profileImageUrl ?? undefined} alt={username} />
+                <AvatarFallback className="text-2xl">{initials}</AvatarFallback>
+              </Avatar>
+            )}
             <div className="flex-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-1">
               <div>
                 <h1 className="text-2xl font-bold leading-tight">{username}</h1>

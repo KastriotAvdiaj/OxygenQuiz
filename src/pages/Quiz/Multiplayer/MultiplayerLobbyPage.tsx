@@ -13,6 +13,9 @@ import { LeaveLobbyDialog } from "./components/lobby/leave-lobby-dialog";
 import { useDisclosure } from "@/hooks/use-disclosure";
 import { Button } from "@/components/ui/button";
 import { Pencil } from "lucide-react";
+import { useMatch } from "./hooks/use-match";
+import { MultiplayerGame } from "./components/game/MultiplayerGame";
+import { LobbyChat } from "./components/lobby/lobby-chat";
 
 interface MultiplayerLobbyPageProps {
   mode?: "create" | "join";
@@ -66,6 +69,13 @@ export const MultiplayerLobbyPage = ({
     closeManualLeave();
     handleLeaveSession();
   }, [closeManualLeave, handleLeaveSession]);
+
+  // Live match state (driven by server events). When a match is running we replace the lobby
+  // UI with the game view; exiting returns to the lobby so players can play again.
+  const match = useMatch({ sessionId, username });
+  if (match.isActive) {
+    return <MultiplayerGame username={username} match={match} onExit={match.reset} />;
+  }
 
   return (
     <div className="relative w-full min-h-full min-h-[calc(100vh-4rem)] text-foreground bg-cover bg-center font-header p-3 sm:p-4 md:p-6 lg:p-8 flex flex-col justify-center">
@@ -195,15 +205,10 @@ export const MultiplayerLobbyPage = ({
               </CardContent>
             </Card>
 
-            {/* Placeholder for future chat card */}
+            {/* Lobby chat (ephemeral) */}
             <Card variant="lifted" hover={false} className="w-full bg-background flex-1">
-              <CardContent className="p-4 sm:p-5 md:p-6 flex flex-col items-center justify-center min-h-[200px] text-center gap-2">
-                <h3 className="text-sm font-bold font-quiz tracking-wider text-muted-foreground uppercase">
-                  Lobby Chat
-                </h3>
-                <p className="text-xs text-muted-foreground/70">
-                  Coming soon...
-                </p>
+              <CardContent className="p-4 sm:p-5 md:p-6 h-full">
+                <LobbyChat sessionId={sessionId} username={username} />
               </CardContent>
             </Card>
 

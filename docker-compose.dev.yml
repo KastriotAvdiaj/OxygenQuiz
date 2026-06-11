@@ -1,0 +1,48 @@
+# Local development databases only (no app images).
+# Brings up MongoDB + PostgreSQL with host ports that match appsettings.json, so you can run the
+# API/frontend on your machine and point them at these containers.
+#
+#   Start:   docker compose -f docker-compose.dev.yml up -d
+#   Stop:    docker compose -f docker-compose.dev.yml down
+#   Wipe:    docker compose -f docker-compose.dev.yml down -v   (also deletes the data volumes)
+#
+# Mongo  → mongodb://localhost:27017      (matches ConnectionStrings:MongoDBConnection)
+# Postgres → localhost:5433, db OxygenQuiz, user/pass postgres/123  (matches PostgresConnection)
+
+services:
+  mongodb:
+    image: mongo:6
+    container_name: oxygen-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - oxygen-mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  postgres:
+    image: postgres:15
+    container_name: oxygen-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123
+      POSTGRES_DB: OxygenQuiz
+    # Host port 5433 → container 5432, because appsettings.json uses Port=5433.
+    ports:
+      - "5433:5432"
+    volumes:
+      - oxygen-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  oxygen-mongo-data:
+  oxygen-postgres-data:

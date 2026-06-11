@@ -15,4 +15,8 @@ public interface IQuizSessionManager
     Task<MultiplayerSession> CreateSessionAsync(string sessionId, string lobbyName, int maxPlayers, string hostUsername, string connectionId);
     Task SetQuizAsync(string sessionId, string quizId);
     Task<MultiplayerSession?> GetSessionAsync(string sessionId);
+
+    // Ephemeral lobby chat (in-memory, capped buffer).
+    Task<LobbyChatMessage> AddChatMessageAsync(string sessionId, string username, string text, bool isSystem = false);
+    Task<IReadOnlyList<LobbyChatMessage>> GetRecentMessagesAsync(string sessionId);
 }

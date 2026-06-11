@@ -1,0 +1,4 @@
+Username,Email,Password,Roles
+john_doe,john@example.com,ChangeMe123!,user
+jane_smith,jane@example.com,ChangeMe123!,Admin|user
+sam_lee,sam@example.com,,

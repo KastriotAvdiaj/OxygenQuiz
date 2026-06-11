@@ -6,6 +6,7 @@ using QuizAPI.DTOs.Quiz;
 using QuizAPI.ManyToManyTables;
 using QuizAPI.Models;
 using QuizAPI.Models.Quiz;
+using QuizAPI.Services.Scoring;
 
 namespace QuizAPI.Controllers.Quizzes.Services.AnswerGradingServices
 {
@@ -254,64 +255,24 @@ namespace QuizAPI.Controllers.Quizzes.Services.AnswerGradingServices
             }
         }
 
+        // Speed-weighted scoring now lives in the shared QuizScoring helper, so single-player and
+        // multiplayer stay in lockstep. This method just supplies the timing + point system and
+        // keeps the "no submitted time ⇒ 0" guard.
         private int CalculateScore(QuizQuestion quizQuestion, UserAnswer answer)
         {
-            // Handle Null SubmittedTime
             if (!answer.SubmittedTime.HasValue)
             {
                 _logger.LogDebug("No submitted time - returning 0 points");
                 return 0;
             }
 
-            const int BASE_POINTS = 10;
-            const double MAX_TIME_BONUS_FACTOR = 0.5;
-            double timeBonus = 0;
+            var timeTaken = answer.SubmittedTime.Value - answer.QuestionStartTime;
+            var result = QuizScoring.PointsForCorrectAnswer(
+                timeTaken, quizQuestion.TimeLimitInSeconds, quizQuestion.PointSystem);
 
-            TimeSpan timeTaken = answer.SubmittedTime.Value - answer.QuestionStartTime;
-
-            // DEBUG: Log all the timing values
-            _logger.LogDebug("=== SCORE CALCULATION DEBUG ===");
-            _logger.LogDebug("Question Start Time: {QuestionStartTime}", answer.QuestionStartTime);
-            _logger.LogDebug("Submitted Time: {SubmittedTime}", answer.SubmittedTime.Value);
-            _logger.LogDebug("Time Taken: {TimeTaken} seconds", timeTaken.TotalSeconds);
-            _logger.LogDebug("Time Limit: {TimeLimit} seconds", quizQuestion.TimeLimitInSeconds);
-
-            if (timeTaken.TotalSeconds >= 0 && quizQuestion.TimeLimitInSeconds > 0)
-            {
-                var timeRemainingSeconds = Math.Max(0, quizQuestion.TimeLimitInSeconds - timeTaken.TotalSeconds);
-                _logger.LogDebug("Time Remaining: {TimeRemaining} seconds", timeRemainingSeconds);
-
-                // Calculate the bonus as a percentage of the time remaining
-                timeBonus = (timeRemainingSeconds / quizQuestion.TimeLimitInSeconds) * MAX_TIME_BONUS_FACTOR;
-                _logger.LogDebug("Time Bonus Calculation: ({TimeRemaining} / {TimeLimit}) * {MaxFactor} = {TimeBonus}",
-                    timeRemainingSeconds, quizQuestion.TimeLimitInSeconds, MAX_TIME_BONUS_FACTOR, timeBonus);
-            }
-            else
-            {
-                _logger.LogDebug("No time bonus applied - TimeTaken: {TimeTaken}, TimeLimit: {TimeLimit}",
-                    timeTaken.TotalSeconds, quizQuestion.TimeLimitInSeconds);
-            }
-
-            var pointsWithTimeBonus = (int)(BASE_POINTS * (1 + timeBonus));
-            _logger.LogDebug("Points with time bonus: {BasePoints} * (1 + {TimeBonus}) = {PointsWithBonus}",
-                BASE_POINTS, timeBonus, pointsWithTimeBonus);
-
-            var multiplier = quizQuestion.PointSystem switch
-            {
-                PointSystem.Standard => 1,
-                PointSystem.Double => 2,
-                PointSystem.Quadruple => 4,
-                _ => 1
-            };
-            _logger.LogDebug("Point System Multiplier: {Multiplier}x", multiplier);
-
-            var finalScore = pointsWithTimeBonus * multiplier;
-            _logger.LogDebug("Final Score: {PointsWithBonus} * {Multiplier} = {FinalScore}",
-                pointsWithTimeBonus, multiplier, finalScore);
-
-            var result = Math.Max(1, finalScore);
-            _logger.LogInformation("Final score calculated: {Result}", result);
-            _logger.LogDebug("=== END SCORE CALCULATION DEBUG ===");
+            _logger.LogInformation(
+                "Score calculated: {Result} (timeTaken {TimeTaken}s, limit {Limit}s, system {System})",
+                result, timeTaken.TotalSeconds, quizQuestion.TimeLimitInSeconds, quizQuestion.PointSystem);
 
             return result;
         }

@@ -13,7 +13,7 @@ export const DrawerLinks = ({
   isAdmin: boolean;
 }) => (
   <>
-    <NavLink to={"/my-profile"} onClick={close} className="w-full">
+    <NavLink to={"my-dashboard/profile"} onClick={close} className="w-full">
       <Button variant={"drawer"} size={"drawerSize"} className="mt-6 w-full">
         <CgProfile className="text-sm" /> My Profile
       </Button>

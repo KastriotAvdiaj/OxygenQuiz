@@ -1,6 +1,6 @@
 # Image Upload Flow (ImageAsset pipeline)
 
-This documents the **existing** image upload system used when authoring quizzes and
+This documents the **primitive (first)** image upload system used when authoring quizzes and
 questions. It is a validated, **draft-aware** pipeline: an image can be uploaded and
 previewed *before* the entity that owns it exists, and any image that is never attached
 is garbage-collected automatically.

@@ -1,8 +1,9 @@
 // Components/UserControls.tsx
 // Action buttons for the Users page. Search + filtering now live in <UserFilters />.
-import { Download, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import CreateUserForm from "./create-user";
 import { LiftedButton } from "@/common/LiftedButton";
+import { DataTransferControls } from "@/components/data-transfer/DataTransferControls";
 
 interface UserControlsProps {
   onRefresh: () => void;
@@ -10,19 +11,16 @@ interface UserControlsProps {
 
 export const UserControls = ({ onRefresh }: UserControlsProps) => {
   return (
-    <div className="flex items-center justify-end my-4">
-      <div className="flex items-center space-x-2">
+    <div className="flex items-center justify-between my-4">
         <CreateUserForm />
-        <LiftedButton className="text-xs" onClick={onRefresh}>
+        <div className="flex items-center gap-2">
+
+        <LiftedButton className="text-xs bg-background text-foreground" onClick={onRefresh}>
           <RefreshCw className="mr-2 h-4 w-4" />
           Refresh
         </LiftedButton>
-
-        <LiftedButton className="text-xs">
-          <Download className="mr-2 h-4 w-4" />
-          Export
-        </LiftedButton>
-      </div>
+       <DataTransferControls entity="users" invalidateKey={["users"]} />
+          </div>
     </div>
   );
 };

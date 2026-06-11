@@ -67,8 +67,9 @@ public class InMemoryQuizSessionManager : IQuizSessionManager
                         }
                         else if (session.Participants.Count == 0)
                         {
-                            // Close session if empty?
-                             _sessions.TryRemove(sessionId, out _);
+                            // Lobby emptied: stop any running match loop, then close the session.
+                            session.MatchCts?.Cancel();
+                            _sessions.TryRemove(sessionId, out _);
                         }
                     }
                 }
@@ -175,4 +176,42 @@ public class InMemoryQuizSessionManager : IQuizSessionManager
         _sessions.TryGetValue(sessionId, out var session);
         return Task.FromResult(session);
     }
+
+        // Keep only the most recent N messages per lobby so the buffer can't grow unbounded.
+        private const int MaxRecentMessages = 50;
+
+        public Task<LobbyChatMessage> AddChatMessageAsync(string sessionId, string username, string text, bool isSystem = false)
+        {
+            if (!_sessions.TryGetValue(sessionId, out var session))
+                throw new InvalidOperationException($"Session {sessionId} not found.");
+
+            var message = new LobbyChatMessage
+            {
+                Username = username,
+                Text = text,
+                SentUtc = DateTime.UtcNow,
+                IsSystem = isSystem,
+            };
+
+            lock (session)
+            {
+                session.RecentMessages.Add(message);
+                if (session.RecentMessages.Count > MaxRecentMessages)
+                    session.RecentMessages.RemoveRange(0, session.RecentMessages.Count - MaxRecentMessages);
+            }
+
+            return Task.FromResult(message);
+        }
+
+        public Task<IReadOnlyList<LobbyChatMessage>> GetRecentMessagesAsync(string sessionId)
+        {
+            if (_sessions.TryGetValue(sessionId, out var session))
+            {
+                lock (session)
+                {
+                    return Task.FromResult<IReadOnlyList<LobbyChatMessage>>(session.RecentMessages.ToList());
+                }
+            }
+            return Task.FromResult<IReadOnlyList<LobbyChatMessage>>(new List<LobbyChatMessage>());
+        }
 }

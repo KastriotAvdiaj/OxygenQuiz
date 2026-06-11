@@ -3,6 +3,7 @@ using QuizAPI.Data;
 using QuizAPI.DTOs.Question;
 using QuizAPI.ManyToManyTables;
 using QuizAPI.Models;
+using QuizAPI.Services.Scoring;
 
 namespace QuizAPI.Controllers.Questions.TestQuestions.Services
 {
@@ -165,45 +166,14 @@ namespace QuizAPI.Controllers.Questions.TestQuestions.Services
             }
         }
 
+        // Delegates to the shared QuizScoring helper so practice/test scoring matches the real
+        // single-player and multiplayer scoring exactly.
         private int CalculateScore(int timeLimitInSeconds, double timeTaken, PointSystem pointSystem)
         {
-            const int BASE_POINTS = 10;
-            const double MAX_TIME_BONUS_FACTOR = 0.5;
+            var result = QuizScoring.PointsForCorrectAnswer(
+                TimeSpan.FromSeconds(timeTaken), timeLimitInSeconds, pointSystem);
 
-            _logger.LogDebug("=== TEST SCORE CALCULATION ===");
-            _logger.LogDebug("Time Taken: {TimeTaken} seconds", timeTaken);
-            _logger.LogDebug("Time Limit: {TimeLimit} seconds", timeLimitInSeconds);
-
-            double timeBonus = 0;
-
-            if (timeTaken >= 0 && timeLimitInSeconds > 0)
-            {
-                var timeRemainingSeconds = Math.Max(0, timeLimitInSeconds - timeTaken);
-                _logger.LogDebug("Time Remaining: {TimeRemaining} seconds", timeRemainingSeconds);
-
-                // Calculate the bonus as a percentage of the time remaining
-                timeBonus = (timeRemainingSeconds / timeLimitInSeconds) * MAX_TIME_BONUS_FACTOR;
-                _logger.LogDebug("Time Bonus: {TimeBonus}", timeBonus);
-            }
-
-            var pointsWithTimeBonus = (int)(BASE_POINTS * (1 + timeBonus));
-            _logger.LogDebug("Points with time bonus: {PointsWithBonus}", pointsWithTimeBonus);
-
-            var multiplier = pointSystem switch
-            {
-                PointSystem.Standard => 1,
-                PointSystem.Double => 2,
-                PointSystem.Quadruple => 4,
-                _ => 1
-            };
-            _logger.LogDebug("Point System Multiplier: {Multiplier}x", multiplier);
-
-            var finalScore = pointsWithTimeBonus * multiplier;
-            _logger.LogDebug("Final Score: {FinalScore}", finalScore);
-
-            var result = Math.Max(1, finalScore);
             _logger.LogInformation("Test score calculated: {Result}", result);
-
             return result;
         }
 

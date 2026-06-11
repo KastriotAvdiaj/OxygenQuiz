@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.SignalR;
 using QuizAPI.Hubs.Clients;
 using QuizAPI.Services.Interfaces;
+using QuizAPI.Services.QuizSessionServices;
 
 namespace QuizAPI.Hubs;
 
@@ -8,11 +9,16 @@ public class QuizHub : Hub<IQuizClient>
 {
     private readonly IQuizSessionManager _sessionManager;
     private readonly IServiceProvider _serviceProvider;
+    private readonly IMatchOrchestrator _matchOrchestrator;
 
-    public QuizHub(IQuizSessionManager sessionManager, IServiceProvider serviceProvider)
+    public QuizHub(
+        IQuizSessionManager sessionManager,
+        IServiceProvider serviceProvider,
+        IMatchOrchestrator matchOrchestrator)
     {
         _sessionManager = sessionManager;
         _serviceProvider = serviceProvider;
+        _matchOrchestrator = matchOrchestrator;
     }
 
     public async Task JoinSession(string sessionId, string username)
@@ -33,6 +39,35 @@ public class QuizHub : Hub<IQuizClient>
         // 5. Send CURRENT participants to the NEW user
         var currentParticipants = await _sessionManager.GetParticipantsAsync(sessionId);
         await Clients.Caller.CurrentParticipants(currentParticipants);
+
+        // 6. Send recent lobby chat so the new user has some context.
+        var recentMessages = await _sessionManager.GetRecentMessagesAsync(sessionId);
+        await Clients.Caller.ChatHistory(recentMessages);
+    }
+
+    // Ephemeral lobby chat. Available only while the session is in the lobby (not mid-match).
+    // The sender is taken from the connection context, never trusted from the client.
+    public async Task SendLobbyMessage(string sessionId, string text)
+    {
+        var username = Context.Items["Username"] as string;
+        if (string.IsNullOrEmpty(username))
+            throw new HubException("You are not in this lobby.");
+
+        var session = await _sessionManager.GetSessionAsync(sessionId);
+        if (session is null)
+            throw new HubException("Lobby not found.");
+
+        if (session.QuizState != QuizState.Lobby && session.QuizState != QuizState.Starting)
+            throw new HubException("Chat is only available in the lobby.");
+
+        text = (text ?? string.Empty).Trim();
+        if (text.Length == 0)
+            return;
+        if (text.Length > 500)
+            text = text.Substring(0, 500);
+
+        var message = await _sessionManager.AddChatMessageAsync(sessionId, username, text);
+        await Clients.Group(sessionId).ChatMessageReceived(message);
     }
 
     public async Task LeaveSession(string sessionId, string username)
@@ -108,11 +143,45 @@ public class QuizHub : Hub<IQuizClient>
         await base.OnDisconnectedAsync(exception);
     }
 
+    // Records a player's answer for the current question. The server grades it later (when the
+    // round closes) — nothing about correctness is sent back here. First submission of the round
+    // wins; late or duplicate submissions are ignored.
     public async Task SubmitAnswer(string sessionId, string username, string answer)
     {
-        // In a real scenario, we might process this, calculate score, etc.
-        // For now, we just broadcast that an answer was submitted (maybe for progress bars)
+        var session = await _sessionManager.GetSessionAsync(sessionId);
+        if (session is null || session.QuizState != QuizState.QuestionActive)
+            return; // not accepting answers right now
+
+        if (DateTime.UtcNow > session.QuestionDeadlineUtc)
+            return; // too late
+
+        var record = new RoundAnswer { Raw = answer, SubmittedUtc = DateTime.UtcNow };
+        if (!session.CurrentRoundAnswers.TryAdd(username, record))
+            return; // already answered this round
+
+        // Let everyone see this player has locked in (progress only — no correctness leaked).
         await Clients.Group(sessionId).AnswerSubmitted(username);
+    }
+
+    // Host-only: kick off the live match. Validates host here; the orchestrator validates the
+    // rest (quiz selected, enough players) and runs the question loop.
+    public async Task StartMatch(string sessionId)
+    {
+        var username = Context.Items["Username"] as string;
+        if (string.IsNullOrEmpty(username))
+            throw new HubException("You are not in this lobby.");
+
+        if (!await _sessionManager.IsHostAsync(sessionId, username))
+            throw new HubException("Only the host can start the match.");
+
+        try
+        {
+            await _matchOrchestrator.StartMatchAsync(sessionId);
+        }
+        catch (InvalidOperationException ex)
+        {
+            throw new HubException(ex.Message);
+        }
     }
 
     public async Task ToggleReady(string sessionId, string username, bool isReady)

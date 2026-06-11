@@ -116,49 +116,6 @@ export const Questions = () => {
             Filters
           </Button>
         </div>
-        <div className="flex items-center gap-3">
-          <Authorization allowedRoles={[ROLES.Admin, ROLES.SuperAdmin]}>
-            <DataTransferControls entity="questions" invalidateKey={["questions"]} />
-          </Authorization>
-          <Dialog
-            open={isAddQuestionDialogOpen}
-            onOpenChange={(open) =>
-              open ? openAddQuestionDialog() : closeAddQuestionDialog()
-            }>
-            <DialogTrigger asChild>
-              <LiftedButton className="flex items-center gap-2">
-                Add Question +
-              </LiftedButton>
-            </DialogTrigger>
-          <DialogContent className="bg-background p-4 rounded-md w-fit pt-8 dark:border border-foreground/30">
-            <DialogHeader>
-              <DialogTitle className="flex items-center justify-center">
-                Choose the type of question
-              </DialogTitle>
-            </DialogHeader>
-            <div className="flex flex-col gap-4 mt-4">
-              <CreateQuestionForm
-                languages={languagesQuery.data || []}
-                categories={categoriesQuery.data || []}
-                difficulties={difficultiesQuery.data || []}
-                onSuccess={closeAddQuestionDialog}
-              />
-              <CreateTrueFalseQuestionForm
-                languages={languagesQuery.data || []}
-                categories={categoriesQuery.data || []}
-                difficulties={difficultiesQuery.data || []}
-                onSuccess={closeAddQuestionDialog}
-              />
-              <CreateTypeAnswerQuestionForm
-                languages={languagesQuery.data || []}
-                categories={categoriesQuery.data || []}
-                difficulties={difficultiesQuery.data || []}
-                onSuccess={closeAddQuestionDialog}
-              />
-            </div>
-          </DialogContent>
-          </Dialog>
-        </div>
       </div>
 
       {/* Mobile Sheet for filters */}
@@ -193,6 +150,49 @@ export const Questions = () => {
         <div className="flex gap-6 items-start">
           <div className="flex-1 min-w-0">
             <Card className="p-6 bg-card border dark:border-foreground/30">
+             <div className="flex items-center justify-between gap-3 p-2 mb-4">
+              <Dialog
+                open={isAddQuestionDialogOpen}
+                onOpenChange={(open) =>
+                  open ? openAddQuestionDialog() : closeAddQuestionDialog()
+                }>
+                <DialogTrigger asChild>
+                  <LiftedButton className="flex items-center gap-2 text-xs">
+                    Add Question +
+                  </LiftedButton>
+                </DialogTrigger>
+              <DialogContent className="bg-background p-4 rounded-md w-fit pt-8 dark:border border-foreground/30">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center justify-center">
+                    Choose the type of question
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="flex flex-col gap-4 mt-4">
+                  <CreateQuestionForm
+                    languages={languagesQuery.data || []}
+                    categories={categoriesQuery.data || []}
+                    difficulties={difficultiesQuery.data || []}
+                    onSuccess={closeAddQuestionDialog}
+                  />
+                  <CreateTrueFalseQuestionForm
+                    languages={languagesQuery.data || []}
+                    categories={categoriesQuery.data || []}
+                    difficulties={difficultiesQuery.data || []}
+                    onSuccess={closeAddQuestionDialog}
+                  />
+                  <CreateTypeAnswerQuestionForm
+                    languages={languagesQuery.data || []}
+                    categories={categoriesQuery.data || []}
+                    difficulties={difficultiesQuery.data || []}
+                    onSuccess={closeAddQuestionDialog}
+                  />
+                </div>
+              </DialogContent>
+              </Dialog>
+            <Authorization allowedRoles={[ROLES.Admin, ROLES.SuperAdmin]}>
+            <DataTransferControls entity="questions" invalidateKey={["questions"]} />
+          </Authorization>
+        </div>
               <Tabs
                 value={activeTab}
                 onValueChange={(value) => setActiveTab(value as QuestionType)}

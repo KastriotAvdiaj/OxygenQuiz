@@ -411,6 +411,15 @@ const createAppRouter = (queryClient: QueryClient) =>
           },
         },
         {
+          path: "reports",
+          lazy: async () => {
+            const { MyReports } = await import(
+              "../pages/UserDashboard/MyReports"
+            );
+            return { Component: MyReports };
+          },
+        },
+        {
           path: "quizzes/create",
           element: (
             <QuizQuestionProvider>

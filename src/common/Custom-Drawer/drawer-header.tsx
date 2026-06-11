@@ -9,8 +9,8 @@ export const DrawerHeaderContent = () => {
     <>
       <div className="flex justify-start gap-4 items-center font-bold my-6 ">
         <Avatar className="cursor-pointer ">
-          <AvatarImage src="https://github.com/shadcn.png" />
-          <AvatarFallback>CN</AvatarFallback>
+          <AvatarImage src={user?.profileImageUrl ?? undefined} alt={user?.username ?? "User"} />
+          <AvatarFallback>{(user?.username?.[0] ?? "U").toUpperCase()}</AvatarFallback>
         </Avatar>
         {user ? user.username : "User"}
       </div>

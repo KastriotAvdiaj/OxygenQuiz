@@ -71,6 +71,30 @@ sequenceDiagram
 
 ---
 
+## Avatar change (implemented)
+
+Users can change their profile picture, built on top of this Files store but with stricter,
+avatar-specific safety.
+
+- **Endpoint:** `POST /api/users/me/avatar` (`[Authorize]`, multipart `file`, ≤ 5 MB). The user is
+  taken from the JWT — you can only change your own.
+- **Validation (`AvatarService`):** image-only allowlist (**JPG / JPEG / PNG / WebP**) **plus a real
+  content check** — the bytes are decoded with ImageSharp and the actual format is confirmed, so a
+  non-image renamed to `.png` is rejected. **SVG is intentionally excluded** (it can carry scripts →
+  stored XSS).
+- **Storage:** the file goes through `IFileService` with `entity = "User"`, `entityId = <user id>`.
+  The user's `ProfileImageUrl` is set to the new file's **absolute** URL, and the **previous avatar
+  is deleted** so old files don't pile up.
+- **Frontend:** a hover-to-change overlay on the profile avatar (`AvatarUploader`) with client-side
+  type/size guards and an instant local preview; on success it invalidates the `authenticated-user`
+  query so the new picture appears in the profile, header, and drawer at once.
+
+Why not the image pipeline? Avatars don't need the draft/associate/orphan-GC dance — the user
+already exists at upload time — so attach-on-upload (this store) is the right shape. We just added
+the image-content validation the generic store lacks.
+
+---
+
 ## Can both systems coexist? Yes.
 
 They do not collide on anything:

@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace QuizAPI.Services.QuizSessionServices
 {
@@ -16,6 +17,21 @@ namespace QuizAPI.Services.QuizSessionServices
         public DateTime QuestionStartTime { get; set; }
         public ConcurrentDictionary<string, int> PlayerScores { get; set; } = new();
         public ConcurrentDictionary<string, string> PlayerAnswers { get; set; } = new();
+
+        // ── Live-match runtime state (populated when a match starts; see MatchOrchestrator) ──
+        /// <summary>The quiz's questions for this match, loaded once at start.</summary>
+        public List<RoundQuestion> Questions { get; set; } = new();
+        /// <summary>When the current question stops accepting answers.</summary>
+        public DateTime QuestionDeadlineUtc { get; set; }
+        /// <summary>This round's submissions, keyed by username. Cleared each question.</summary>
+        public ConcurrentDictionary<string, RoundAnswer> CurrentRoundAnswers { get; set; } = new();
+        /// <summary>Running count of correct answers per player (for standings/tiebreak).</summary>
+        public ConcurrentDictionary<string, int> PlayerCorrect { get; set; } = new();
+        /// <summary>Cancels the match loop if the lobby is torn down mid-game.</summary>
+        public CancellationTokenSource? MatchCts { get; set; }
+
+        /// <summary>Ephemeral lobby chat — a capped buffer of recent messages (in-memory only).</summary>
+        public List<LobbyChatMessage> RecentMessages { get; set; } = new();
     }
 
     public class Participant

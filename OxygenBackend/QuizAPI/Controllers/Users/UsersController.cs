@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using QuizAPI.Controllers.Users.Services;
 using QuizAPI.DTOs.User;
 using QuizAPI.Filtering;
+using QuizAPI.Services.CurrentUserService;
 using QuizAPI.Services.Interfaces;
 
 namespace QuizAPI.Controllers.Users
@@ -12,8 +14,34 @@ namespace QuizAPI.Controllers.Users
     public class UsersController : BaseApiController
     {
         private readonly IUserService _userService;
+        private readonly IAvatarService _avatarService;
+        private readonly ICurrentUserService _currentUser;
 
-        public UsersController(IUserService userService) => _userService = userService;
+        public UsersController(
+            IUserService userService,
+            IAvatarService avatarService,
+            ICurrentUserService currentUser)
+        {
+            _userService = userService;
+            _avatarService = avatarService;
+            _currentUser = currentUser;
+        }
+
+        /// <summary>
+        /// Upload or replace the signed-in user's avatar. Accepts JPG/PNG/WebP only (validated by
+        /// real image content, not just the extension), ≤ 5 MB; replaces any previous avatar.
+        /// </summary>
+        [HttpPost("me/avatar")]
+        [Authorize]
+        [RequestSizeLimit(5 * 1024 * 1024)]
+        public async Task<IActionResult> UpdateMyAvatar([FromForm] IFormFile file, CancellationToken ct)
+        {
+            if (_currentUser.UserId is not Guid userId)
+                return Unauthorized();
+
+            var url = await _avatarService.UpdateAvatarAsync(userId, file, ct);
+            return Ok(new { profileImageUrl = url });
+        }
 
         [HttpGet]
         [ProducesResponseType(typeof(IEnumerable<UserDTO>), StatusCodes.Status200OK)]

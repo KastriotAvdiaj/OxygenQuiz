@@ -9,6 +9,8 @@ interface MultiplayerContextType {
   submitAnswer: (sessionId: string, username: string, answer: string) => Promise<void>;
   createSession: (sessionId: string, lobbyName: string, maxPlayers: number, username: string) => Promise<void>;
   selectQuiz: (sessionId: string, quizId: string, quizTitle: string) => Promise<void>;
+  startMatch: (sessionId: string) => Promise<void>;
+  sendLobbyMessage: (sessionId: string, text: string) => Promise<void>;
 }
 
 export const MultiplayerContext = createContext<MultiplayerContextType | undefined>(undefined);
@@ -106,8 +108,33 @@ export const MultiplayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
   }, []);
 
+  const startMatch = useCallback(async (sessionId: string) => {
+    if (connectionRef.current && connectionRef.current.state === signalR.HubConnectionState.Connected) {
+      try {
+        await connectionRef.current.invoke("StartMatch", sessionId);
+      } catch (err) {
+        console.error("Error starting match:", err);
+        // Surface the server's reason (e.g. "Need at least 2 players to start.").
+        throw new Error(err instanceof Error ? err.message : "Failed to start the match.");
+      }
+    } else {
+      throw new Error("Not connected to server. Please refresh and try again.");
+    }
+  }, []);
+
+  const sendLobbyMessage = useCallback(async (sessionId: string, text: string) => {
+    if (connectionRef.current && connectionRef.current.state === signalR.HubConnectionState.Connected) {
+      try {
+        await connectionRef.current.invoke("SendLobbyMessage", sessionId, text);
+      } catch (err) {
+        console.error("Error sending chat message:", err);
+        throw new Error(err instanceof Error ? err.message : "Failed to send message.");
+      }
+    }
+  }, []);
+
   return (
-    <MultiplayerContext.Provider value={{ connection, isConnected, joinSession, leaveSession, submitAnswer, createSession, selectQuiz }}>
+    <MultiplayerContext.Provider value={{ connection, isConnected, joinSession, leaveSession, submitAnswer, createSession, selectQuiz, startMatch, sendLobbyMessage }}>
       {children}
     </MultiplayerContext.Provider>
   );

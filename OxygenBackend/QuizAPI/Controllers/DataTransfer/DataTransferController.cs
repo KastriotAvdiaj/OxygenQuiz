@@ -91,12 +91,25 @@ namespace QuizAPI.Controllers.DataTransfer
             var rows = ParseFile<CategoryImportRow>(file, fmt);
             var result = new ImportResult();
 
+            // Existing names (lower-cased). Adding to this set as we go also catches duplicates
+            // that appear more than once within the same file.
+            var seenNames = (await _context.QuestionCategories.Select(c => c.Name).ToListAsync(ct))
+                .Select(n => (n ?? string.Empty).Trim().ToLowerInvariant())
+                .ToHashSet();
+
             foreach (var r in rows)
             {
                 if (string.IsNullOrWhiteSpace(r.Name))
                 {
                     result.Skipped++;
                     result.Errors.Add("Skipped a row with an empty Name.");
+                    continue;
+                }
+
+                if (!seenNames.Add(r.Name.Trim().ToLowerInvariant()))
+                {
+                    result.Skipped++;
+                    result.Errors.Add($"\"{r.Name.Trim()}\" already exists — skipped.");
                     continue;
                 }
 
@@ -145,12 +158,23 @@ namespace QuizAPI.Controllers.DataTransfer
             var rows = ParseFile<DifficultyImportRow>(file, fmt);
             var result = new ImportResult();
 
+            var seenLevels = (await _context.QuestionDifficulties.Select(d => d.Level).ToListAsync(ct))
+                .Select(l => (l ?? string.Empty).Trim().ToLowerInvariant())
+                .ToHashSet();
+
             foreach (var r in rows)
             {
                 if (string.IsNullOrWhiteSpace(r.Level))
                 {
                     result.Skipped++;
                     result.Errors.Add("Skipped a row with an empty Level.");
+                    continue;
+                }
+
+                if (!seenLevels.Add(r.Level.Trim().ToLowerInvariant()))
+                {
+                    result.Skipped++;
+                    result.Errors.Add($"\"{r.Level.Trim()}\" already exists — skipped.");
                     continue;
                 }
 
@@ -197,12 +221,23 @@ namespace QuizAPI.Controllers.DataTransfer
             var rows = ParseFile<LanguageImportRow>(file, fmt);
             var result = new ImportResult();
 
+            var seenLanguages = (await _context.QuestionLanguages.Select(l => l.Language).ToListAsync(ct))
+                .Select(l => (l ?? string.Empty).Trim().ToLowerInvariant())
+                .ToHashSet();
+
             foreach (var r in rows)
             {
                 if (string.IsNullOrWhiteSpace(r.Language))
                 {
                     result.Skipped++;
                     result.Errors.Add("Skipped a row with an empty Language.");
+                    continue;
+                }
+
+                if (!seenLanguages.Add(r.Language.Trim().ToLowerInvariant()))
+                {
+                    result.Skipped++;
+                    result.Errors.Add($"\"{r.Language.Trim()}\" already exists — skipped.");
                     continue;
                 }
 
@@ -332,12 +367,28 @@ namespace QuizAPI.Controllers.DataTransfer
             var rows = ParseFile<QuestionImportRow>(file, fmt);
             var result = new ImportResult();
 
+            // Dedupe key = "<Type>|<text>" over the current user's questions. Adding to the set as
+            // we go also catches duplicates that appear more than once within the same file.
+            var seenQuestions = (await _context.Questions
+                    .Where(q => q.UserId == userId)
+                    .Select(q => new { q.Type, q.Text })
+                    .ToListAsync(ct))
+                .Select(q => QuestionKey(q.Type, q.Text))
+                .ToHashSet();
+
             foreach (var r in rows)
             {
                 if (string.IsNullOrWhiteSpace(r.Text))
                 {
                     result.Skipped++;
                     result.Errors.Add("Skipped a question with empty Text.");
+                    continue;
+                }
+
+                if (!seenQuestions.Add(QuestionKey(ResolveQuestionType(r.Type), r.Text)))
+                {
+                    result.Skipped++;
+                    result.Errors.Add($"\"{Truncate(r.Text, 40)}\" already exists — skipped.");
                     continue;
                 }
 
@@ -442,6 +493,19 @@ namespace QuizAPI.Controllers.DataTransfer
         // "Global" / "Private" — defaults to Global on anything unrecognised.
         private static string NormalizeVisibility(string? raw) =>
             string.Equals(raw?.Trim(), "Private", StringComparison.OrdinalIgnoreCase) ? "Private" : "Global";
+
+        // Maps an import row's Type text to the enum — must match the create switch above so the
+        // dedupe key lines up with how the question is actually stored.
+        private static QuestionType ResolveQuestionType(string? raw) =>
+            (raw ?? string.Empty).Trim().ToLowerInvariant() switch
+            {
+                "truefalse" or "tf" => QuestionType.TrueFalse,
+                "typetheanswer" or "tta" => QuestionType.TypeTheAnswer,
+                _ => QuestionType.MultipleChoice,
+            };
+
+        private static string QuestionKey(QuestionType type, string? text) =>
+            $"{type}|{(text ?? string.Empty).Trim().ToLowerInvariant()}";
 
         private static List<string> SplitPipe(string? value) =>
             string.IsNullOrWhiteSpace(value)

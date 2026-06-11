@@ -287,21 +287,23 @@ export const useLobbyConnection = ({ mode = "join" }: UseLobbyConnectionOptions)
     [sessionId, selectQuiz, addNotification]
   );
 
+  // Kicks off the live multiplayer match. The server runs the question loop and pushes
+  // MatchStarting / QuestionStarted / QuestionEnded / MatchEnded to everyone (see useMatch).
   const handleStartQuiz = useCallback(() => {
     if (!selectedQuiz) return;
     connection
-      ?.invoke("StartQuiz", sessionId, selectedQuiz.id)
+      ?.invoke("StartMatch", sessionId)
       .then(() => {
         addNotification({
           type: "success",
-          title: "Starting quiz...",
+          title: "Starting match...",
         });
       })
       .catch((err) => {
-        console.error("StartQuiz failed", err);
+        console.error("StartMatch failed", err);
         addNotification({
           type: "error",
-          title: "Failed to start quiz",
+          title: err?.message ?? "Failed to start the match",
         });
       });
   }, [connection, sessionId, selectedQuiz, addNotification]);

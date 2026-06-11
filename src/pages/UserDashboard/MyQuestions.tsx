@@ -19,7 +19,6 @@ import {
   DialogContent,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Separator } from "@/components/ui/separator";
 import { QuestionFilters } from "@/pages/Dashboard/Pages/Question/Components/Re-Usable-Components/question-filters";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { QuestionTabContent } from "@/pages/Dashboard/Pages/Question/Components/QuestionsTabContent";
@@ -136,72 +135,79 @@ export const MyQuestions = () => {
         </Dialog>
       </div>
 
-      <Card className="p-6 bg-card border dark:border-foreground/30">
-        <QuestionFilters
-          searchTerm={searchTerm}
-          onSearchTermChange={setSearchTerm}
-          categories={categoriesQuery.data || []}
-          selectedCategoryIds={selectedCategoryIds}
-          onCategoryIdsChange={setSelectedCategoryIds}
-          difficulties={difficultiesQuery.data || []}
-          selectedDifficultyIds={selectedDifficultyIds}
-          onDifficultyIdsChange={setSelectedDifficultyIds}
-          languages={languagesQuery.data || []}
-          selectedLanguageIds={selectedLanguageIds}
-          onLanguageIdsChange={setSelectedLanguageIds}
-          createdFrom={createdFrom}
-          createdTo={createdTo}
-          onCreatedFromChange={setCreatedFrom}
-          onCreatedToChange={setCreatedTo}
-        />
+      {/* Main Layout Container */}
+      <div className="flex flex-col lg:flex-row gap-6 items-start">
+        {/* Left Side: Questions Table / Tabs */}
+        <div className="flex-1 w-full">
+          <Card className="p-6 bg-card border dark:border-foreground/30">
+            <Tabs
+              value={activeTab}
+              onValueChange={(value) => setActiveTab(value as QuestionType)}
+              className="w-full">
+              <TabsList className="grid grid-cols-3 mb-6">
+                <TabsTrigger value={QuestionType.MultipleChoice}>
+                  Multiple Choice
+                </TabsTrigger>
+                <TabsTrigger value={QuestionType.TrueFalse}>True/False</TabsTrigger>
+                <TabsTrigger value={QuestionType.TypeTheAnswer}>
+                  Type Answer
+                </TabsTrigger>
+              </TabsList>
 
-        <Separator className="my-6" />
+              <TabsContent value={QuestionType.MultipleChoice}>
+                <QuestionTabContent
+                  questionType={QuestionType.MultipleChoice}
+                  queryParams={queryParams}
+                  onPageChange={handlePageChange}
+                  isModalOpen={activeTab === QuestionType.MultipleChoice}
+                  scope="mine"
+                />
+              </TabsContent>
 
-        <Tabs
-          value={activeTab}
-          onValueChange={(value) => setActiveTab(value as QuestionType)}
-          className="w-full">
-          <TabsList className="grid grid-cols-3 mb-6">
-            <TabsTrigger value={QuestionType.MultipleChoice}>
-              Multiple Choice
-            </TabsTrigger>
-            <TabsTrigger value={QuestionType.TrueFalse}>True/False</TabsTrigger>
-            <TabsTrigger value={QuestionType.TypeTheAnswer}>
-              Type Answer
-            </TabsTrigger>
-          </TabsList>
+              <TabsContent value={QuestionType.TrueFalse}>
+                <QuestionTabContent
+                  questionType={QuestionType.TrueFalse}
+                  queryParams={queryParams}
+                  onPageChange={handlePageChange}
+                  isModalOpen={activeTab === QuestionType.TrueFalse}
+                  scope="mine"
+                />
+              </TabsContent>
 
-          <TabsContent value={QuestionType.MultipleChoice}>
-            <QuestionTabContent
-              questionType={QuestionType.MultipleChoice}
-              queryParams={queryParams}
-              onPageChange={handlePageChange}
-              isModalOpen={activeTab === QuestionType.MultipleChoice}
-              scope="mine"
+              <TabsContent value={QuestionType.TypeTheAnswer}>
+                <QuestionTabContent
+                  questionType={QuestionType.TypeTheAnswer}
+                  queryParams={queryParams}
+                  onPageChange={handlePageChange}
+                  isModalOpen={activeTab === QuestionType.TypeTheAnswer}
+                  scope="mine"
+                />
+              </TabsContent>
+            </Tabs>
+          </Card>
+        </div>
+
+        {/* Right Side: Filters Sidebar */}
+        <div className="w-full lg:w-80 shrink-0 sticky top-4">
+            <QuestionFilters
+              searchTerm={searchTerm}
+              onSearchTermChange={setSearchTerm}
+              categories={categoriesQuery.data || []}
+              selectedCategoryIds={selectedCategoryIds}
+              onCategoryIdsChange={setSelectedCategoryIds}
+              difficulties={difficultiesQuery.data || []}
+              selectedDifficultyIds={selectedDifficultyIds}
+              onDifficultyIdsChange={setSelectedDifficultyIds}
+              languages={languagesQuery.data || []}
+              selectedLanguageIds={selectedLanguageIds}
+              onLanguageIdsChange={setSelectedLanguageIds}
+              createdFrom={createdFrom}
+              createdTo={createdTo}
+              onCreatedFromChange={setCreatedFrom}
+              onCreatedToChange={setCreatedTo}
             />
-          </TabsContent>
-
-          <TabsContent value={QuestionType.TrueFalse}>
-            <QuestionTabContent
-              questionType={QuestionType.TrueFalse}
-              queryParams={queryParams}
-              onPageChange={handlePageChange}
-              isModalOpen={activeTab === QuestionType.TrueFalse}
-              scope="mine"
-            />
-          </TabsContent>
-
-          <TabsContent value={QuestionType.TypeTheAnswer}>
-            <QuestionTabContent
-              questionType={QuestionType.TypeTheAnswer}
-              queryParams={queryParams}
-              onPageChange={handlePageChange}
-              isModalOpen={activeTab === QuestionType.TypeTheAnswer}
-              scope="mine"
-            />
-          </TabsContent>
-        </Tabs>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 };

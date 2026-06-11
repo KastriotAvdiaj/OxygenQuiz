@@ -1,62 +1,47 @@
-﻿
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using QuizAPI.Controllers.Image.Services;
-using QuizAPI.Data;
 using QuizAPI.DTOs.Quiz;
+using QuizAPI.Filtering;
 using QuizAPI.ManyToManyTables;
 using QuizAPI.Models;
 using QuizAPI.Models.Quiz;
-using QuizAPI.Filtering;
-using System.Linq;
+using QuizAPI.Repositories.Interfaces;
 
 namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
 {
+    /// <summary>
+    /// Quiz business logic: filtering, validation, transactional create/update/delete, mapping and
+    /// image association. All database access is delegated to <see cref="IQuizRepository"/>; the
+    /// service keeps the transaction orchestration and logging. Public surface (IQuizService) is
+    /// unchanged.
+    /// </summary>
     public class QuizService : IQuizService
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IQuizRepository _quizzes;
         private readonly IMapper _mapper;
         private readonly ILogger<QuizService> _logger;
         private readonly IImageService _imageService;
 
         public QuizService(
-            ApplicationDbContext context,
+            IQuizRepository quizzes,
             IMapper mapper,
             ILogger<QuizService> logger,
             IImageService imageService)
         {
-            _context = context ?? throw new ArgumentNullException(nameof(context));
+            _quizzes = quizzes ?? throw new ArgumentNullException(nameof(quizzes));
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _imageService = imageService ?? throw new ArgumentNullException(nameof(imageService));
         }
 
+        // ── Reads ─────────────────────────────────────────────────────────────────
         public async Task<PagedList<QuizSummaryDTO>> GetAllQuizzesAsync(QuizFilterParams filterParams)
         {
             try
             {
-                var quizQuery = _context.Quizzes
-                    .Include(q => q.User)
-                    .Include(q => q.Category)
-                    .Include(q => q.Language)
-                    .Include(q => q.Difficulty)
-                    .Include(q => q.QuizQuestions)
-                    .AsQueryable();
-
-                // Apply filters
-                quizQuery = ApplyQuizFilters(quizQuery, filterParams);
-
-                // Apply pagination and convert to DTO
-                var pagedQuizzes = await PagedList<Quiz>.CreateAsync(quizQuery, filterParams.PageNumber, filterParams.PageSize);
-
-                var quizDtos = _mapper.Map<List<QuizSummaryDTO>>(pagedQuizzes.Items);
-
-                return new PagedList<QuizSummaryDTO>(
-                    quizDtos,
-                    pagedQuizzes.TotalCount,
-                    pagedQuizzes.PageNumber,
-                    pagedQuizzes.PageSize
-                );
+                var quizQuery = ApplyQuizFilters(_quizzes.Query(), filterParams);
+                return await ToSummaryPageAsync(quizQuery, filterParams);
             }
             catch (Exception ex)
             {
@@ -67,9 +52,9 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
 
         /// <summary>
         /// Shared filtering framework for quizzes (filters + search + sort + body-envelope
-        /// pagination). See docs/filtering.md. Quizzes map through AutoMapper after
-        /// materialising (the summary DTO isn't a straight SQL projection), so this uses the
-        /// "map" overload of <see cref="PagedResponse{T}.CreateAsync"/>.
+        /// pagination). See docs/filtering.md. Quizzes map through AutoMapper after materialising
+        /// (the summary DTO isn't a straight SQL projection), so this uses the "map" overload of
+        /// <see cref="PagedResponse{T}.CreateAsync"/>.
         ///
         /// The two flags are server-enforced scope clamps applied BEFORE the client's filters:
         ///   - <paramref name="restrictToUserId"/>: only this user's quizzes ("my quizzes").
@@ -81,12 +66,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
             bool publicOnly = false,
             CancellationToken ct = default)
         {
-            IQueryable<Quiz> q = _context.Quizzes.AsNoTracking()
-                .Include(x => x.User)
-                .Include(x => x.Category)
-                .Include(x => x.Language)
-                .Include(x => x.Difficulty)
-                .Include(x => x.QuizQuestions);
+            IQueryable<Quiz> q = _quizzes.Query();
 
             if (restrictToUserId is { } uid)
                 q = q.Where(x => x.UserId == uid);
@@ -106,33 +86,9 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
         {
             try
             {
-                var quizQuery = _context.Quizzes
-                    .Include(q => q.User)
-                    .Include(q => q.Category)
-                    .Include(q => q.Language)
-                    .Include(q => q.Difficulty)
-                    .Include(q => q.QuizQuestions)
-                    .Where(q => q.IsActive && q.IsPublished)
-                    .AsQueryable();
-
-                // Apply filters (reuse your existing filter method)
+                var quizQuery = _quizzes.Query().Where(q => q.IsActive && q.IsPublished);
                 quizQuery = ApplyQuizFilters(quizQuery, filterParams);
-
-                // Apply pagination and convert to DTO
-                var pagedQuizzes = await PagedList<Quiz>.CreateAsync(
-                    quizQuery,
-                    filterParams.PageNumber,
-                    filterParams.PageSize
-                );
-
-                var quizDtos = _mapper.Map<List<QuizSummaryDTO>>(pagedQuizzes.Items);
-
-                return new PagedList<QuizSummaryDTO>(
-                    quizDtos,
-                    pagedQuizzes.TotalCount,
-                    pagedQuizzes.PageNumber,
-                    pagedQuizzes.PageSize
-                );
+                return await ToSummaryPageAsync(quizQuery, filterParams);
             }
             catch (Exception ex)
             {
@@ -145,29 +101,9 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
         {
             try
             {
-                var quizQuery = _context.Quizzes
-                    .Include(q => q.User)
-                    .Include(q => q.Category)
-                    .Include(q => q.Language)
-                    .Include(q => q.Difficulty)
-                    .Include(q => q.QuizQuestions)
-                    .Where(q => q.UserId == userId)
-                    .AsQueryable();
-
-                // Apply filters
+                var quizQuery = _quizzes.Query().Where(q => q.UserId == userId);
                 quizQuery = ApplyQuizFilters(quizQuery, filterParams);
-
-                // Apply pagination and convert to DTO
-                var pagedQuizzes = await PagedList<Quiz>.CreateAsync(quizQuery, filterParams.PageNumber, filterParams.PageSize);
-
-                var quizDtos = _mapper.Map<List<QuizSummaryDTO>>(pagedQuizzes.Items);
-
-                return new PagedList<QuizSummaryDTO>(
-                    quizDtos,
-                    pagedQuizzes.TotalCount,
-                    pagedQuizzes.PageNumber,
-                    pagedQuizzes.PageSize
-                );
+                return await ToSummaryPageAsync(quizQuery, filterParams);
             }
             catch (Exception ex)
             {
@@ -180,15 +116,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
         {
             try
             {
-                var quiz = await _context.Quizzes
-                    .AsNoTracking()
-                    .Include(q => q.User)
-                    .Include(q => q.Category)
-                    .Include(q => q.Language)
-                    .Include(q => q.Difficulty)
-                    .Include(q => q.QuizQuestions) // Still need this for QuestionCount
-                    .FirstOrDefaultAsync(q => q.Id == id);
-
+                var quiz = await _quizzes.GetByIdAsync(id);
                 return quiz == null ? null : _mapper.Map<QuizDTO>(quiz);
             }
             catch (Exception ex)
@@ -202,32 +130,10 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
         {
             try
             {
-                // First check if quiz exists
-                var quizExists = await _context.Quizzes
-                    .AsNoTracking()
-                    .AnyAsync(q => q.Id == id);
-
-                if (!quizExists)
-                {
+                if (!await _quizzes.ExistsAsync(id))
                     return null;
-                }
 
-                var quizQuestions = await _context.QuizQuestions
-            .AsNoTracking()
-            .Include(qq => qq.Question)
-                .ThenInclude(q => ((MultipleChoiceQuestion)q).AnswerOptions)
-            .Include(qq => qq.Question)
-                .ThenInclude(q => q.Category)
-            .Include(qq => qq.Question)
-                .ThenInclude(q => q.Difficulty)
-            .Include(qq => qq.Question)
-                .ThenInclude(q => q.Language)
-            .Include(qq => qq.Question)
-                .ThenInclude(q => q.User)
-            .Where(qq => qq.QuizId == id)
-            .OrderBy(qq => qq.OrderInQuiz)
-            .ToListAsync();
-
+                var quizQuestions = await _quizzes.GetQuizQuestionsAsync(id);
                 return _mapper.Map<List<QuizQuestionDTO>>(quizQuestions);
             }
             catch (Exception ex)
@@ -237,42 +143,31 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
             }
         }
 
+        // ── Writes ────────────────────────────────────────────────────────────────
         public async Task<QuizDTO> CreateQuizAsync(Guid userId, QuizCM quizCM)
         {
-            using var transaction = await _context.Database.BeginTransactionAsync();
+            using var transaction = await _quizzes.BeginTransactionAsync();
 
             try
             {
-                var categoryExists = await _context.QuestionCategories.AnyAsync(c => c.Id == quizCM.CategoryId);
-                var languageExists = await _context.QuestionLanguages.AnyAsync(l => l.Id == quizCM.LanguageId);
-                var difficultyExists = await _context.QuestionDifficulties.AnyAsync(d => d.ID == quizCM.DifficultyId);
-                var userExists = await _context.Users.AnyAsync(u => u.Id == userId);
-
-                if (!categoryExists || !languageExists || !difficultyExists || !userExists)
-                {
+                var referencesExist = await _quizzes.ReferencedEntitiesExistAsync(
+                    quizCM.CategoryId, quizCM.LanguageId, quizCM.DifficultyId, userId);
+                if (!referencesExist)
                     throw new InvalidOperationException("Category, Language, Difficulty, or User does not exist.");
-                }
 
-                var questionIds = quizCM.Questions.Select(q => q.QuestionId).Distinct().ToList();
-                var existingQuestionCount = await _context.Questions.CountAsync(q => questionIds.Contains(q.Id));
-
-                if (existingQuestionCount != questionIds.Count)
-                {
+                var questionIds = quizCM.Questions.Select(q => q.QuestionId).ToList();
+                if (!await _quizzes.AllQuestionsExistAsync(questionIds))
                     throw new InvalidOperationException("One or more questions do not exist.");
-                }
 
-               
                 var quiz = _mapper.Map<Quiz>(quizCM);
                 quiz.UserId = userId;
                 quiz.CreatedAt = DateTime.UtcNow;
                 quiz.Version = 1;
                 quiz.IsActive = true;
-
                 quiz.TimeLimitInSeconds = quizCM.Questions.Sum(q => q.TimeLimitInSeconds);
 
-                _context.Quizzes.Add(quiz);
+                await _quizzes.AddAsync(quiz);
 
-               
                 var order = 1;
                 var quizQuestions = quizCM.Questions.Select(questionCM =>
                 {
@@ -282,45 +177,32 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                     return quizQuestion;
                 });
 
-                await _context.QuizQuestions.AddRangeAsync(quizQuestions);
-
-                await _context.SaveChangesAsync();
-
+                await _quizzes.AddQuizQuestionsAsync(quizQuestions);
+                await _quizzes.SaveChangesAsync();
                 await transaction.CommitAsync();
 
                 if (!string.IsNullOrEmpty(quizCM.ImageUrl))
-                {
                     await _imageService.AssociateImageWithEntityAsync(quizCM.ImageUrl, "Quizzes", quiz.Id);
-                }
 
-                var quizDto = _mapper.Map<QuizDTO>(quiz);
-                return quizDto;
-              
+                return _mapper.Map<QuizDTO>(quiz);
             }
             catch (Exception)
             {
-                // If anything fails, roll back the entire transaction.
+                // Roll back the entire transaction, then bubble up to higher-level handling.
                 await transaction.RollbackAsync();
-                // Re-throw the exception to be handled by higher-level code.
                 throw;
             }
         }
 
         public async Task<QuizDTO?> UpdateQuizAsync(Guid userId, QuizUM quizUM)
         {
-            using var transaction = await _context.Database.BeginTransactionAsync();
+            using var transaction = await _quizzes.BeginTransactionAsync();
 
             try
             {
-                // Retrieve quiz and verify ownership
-                var quiz = await _context.Quizzes
-                    .Include(q => q.QuizQuestions)
-                    .FirstOrDefaultAsync(q => q.Id == quizUM.Id);
-
+                var quiz = await _quizzes.GetWithQuestionsForUpdateAsync(quizUM.Id);
                 if (quiz == null)
-                {
                     return null;
-                }
 
                 if (quiz.UserId != userId)
                 {
@@ -329,32 +211,19 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                     return null;
                 }
 
-                // Check for concurrency conflicts
+                // Optimistic concurrency: reject a stale edit.
                 if (quiz.Version != quizUM.Version)
-                {
                     throw new DbUpdateConcurrencyException("Quiz has been modified by another user");
-                }
 
-                // Check if required entities exist
-                var categoryExists = await _context.QuestionCategories.AnyAsync(c => c.Id == quizUM.CategoryId);
-                var languageExists = await _context.QuestionLanguages.AnyAsync(l => l.Id == quizUM.LanguageId);
-                var difficultyExists = await _context.QuestionDifficulties.AnyAsync(d => d.ID == quizUM.DifficultyId);
-
-                if (!categoryExists || !languageExists || !difficultyExists)
-                {
+                var referencesExist = await _quizzes.ReferencedEntitiesExistAsync(
+                    quizUM.CategoryId, quizUM.LanguageId, quizUM.DifficultyId);
+                if (!referencesExist)
                     throw new InvalidOperationException("One or more required entities do not exist");
-                }
 
-                // Verify all questions exist
                 var questionIds = quizUM.Questions.Select(q => q.QuestionId).ToList();
-                var existingQuestionCount = await _context.Questions.CountAsync(q => questionIds.Contains(q.Id));
-
-                if (existingQuestionCount != questionIds.Count)
-                {
+                if (!await _quizzes.AllQuestionsExistAsync(questionIds))
                     throw new InvalidOperationException("One or more questions do not exist");
-                }
 
-                // Update quiz properties
                 quiz.Title = quizUM.Title;
                 quiz.Description = quizUM.Description;
                 quiz.CategoryId = quizUM.CategoryId;
@@ -367,24 +236,21 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                 quiz.IsActive = quizUM.IsActive;
                 quiz.Version += 1;
 
-                // Remove existing quiz questions
-                _context.QuizQuestions.RemoveRange(quiz.QuizQuestions);
+                // Replace the join rows wholesale.
+                _quizzes.RemoveQuizQuestions(quiz.QuizQuestions);
 
-                // Add updated quiz questions
                 foreach (var questionUM in quizUM.Questions)
                 {
                     var quizQuestion = _mapper.Map<QuizQuestion>(questionUM);
                     quizQuestion.QuizId = quiz.Id;
-
-                    await _context.QuizQuestions.AddAsync(quizQuestion);
+                    await _quizzes.AddQuizQuestionAsync(quizQuestion);
                 }
 
                 quiz.TimeLimitInSeconds = quizUM.Questions.Sum(q => q.TimeLimitInSeconds);
 
-                await _context.SaveChangesAsync();
+                await _quizzes.SaveChangesAsync();
                 await transaction.CommitAsync();
 
-                // Return full quiz details
                 return await GetQuizByIdAsync(quiz.Id);
             }
             catch (Exception ex)
@@ -399,13 +265,9 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
         {
             try
             {
-                var quiz = await _context.Quizzes
-                    .FirstOrDefaultAsync(q => q.Id == quizId);
-
+                var quiz = await _quizzes.GetTrackedAsync(quizId);
                 if (quiz == null)
-                {
                     return null;
-                }
 
                 if (quiz.UserId != userId)
                 {
@@ -417,7 +279,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                 quiz.IsPublished = !quiz.IsPublished;
                 quiz.Version += 1;
 
-                await _context.SaveChangesAsync();
+                await _quizzes.SaveChangesAsync();
 
                 return await GetQuizByIdAsync(quizId);
             }
@@ -432,13 +294,9 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
         {
             try
             {
-                var quiz = await _context.Quizzes
-                    .FirstOrDefaultAsync(q => q.Id == quizId);
-
+                var quiz = await _quizzes.GetTrackedAsync(quizId);
                 if (quiz == null)
-                {
                     return null;
-                }
 
                 if (quiz.UserId != userId)
                 {
@@ -450,7 +308,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                 quiz.IsActive = !quiz.IsActive;
                 quiz.Version += 1;
 
-                await _context.SaveChangesAsync();
+                await _quizzes.SaveChangesAsync();
 
                 return await GetQuizByIdAsync(quizId);
             }
@@ -463,19 +321,13 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
 
         public async Task<bool> DeleteQuizAsync(Guid userId, int quizId)
         {
-            using var transaction = await _context.Database.BeginTransactionAsync();
+            using var transaction = await _quizzes.BeginTransactionAsync();
 
             try
             {
-                // Retrieve quiz and verify ownership
-                var quiz = await _context.Quizzes
-                    .Include(q => q.QuizQuestions)
-                    .FirstOrDefaultAsync(q => q.Id == quizId);
-
+                var quiz = await _quizzes.GetWithQuestionsForUpdateAsync(quizId);
                 if (quiz == null)
-                {
                     return false;
-                }
 
                 if (quiz.UserId != userId)
                 {
@@ -484,16 +336,13 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                     return false;
                 }
 
-                // Remove quiz questions first (due to foreign key constraints)
+                // Remove the join rows first (FK constraints), then the quiz.
                 if (quiz.QuizQuestions.Any())
-                {
-                    _context.QuizQuestions.RemoveRange(quiz.QuizQuestions);
-                }
+                    _quizzes.RemoveQuizQuestions(quiz.QuizQuestions);
 
-                // Remove the quiz
-                _context.Quizzes.Remove(quiz);
+                _quizzes.Remove(quiz);
 
-                await _context.SaveChangesAsync();
+                await _quizzes.SaveChangesAsync();
                 await transaction.CommitAsync();
 
                 _logger.LogInformation("Quiz {QuizId} deleted successfully by user {UserId}", quizId, userId);
@@ -507,51 +356,51 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
             }
         }
 
+        // Materialise a filtered quiz query into a page of summary DTOs (map after paging, since
+        // QuizSummaryDTO is an AutoMapper projection rather than a straight SQL select).
+        private async Task<PagedList<QuizSummaryDTO>> ToSummaryPageAsync(
+            IQueryable<Quiz> quizQuery, QuizFilterParams filterParams)
+        {
+            var pagedQuizzes = await PagedList<Quiz>.CreateAsync(
+                quizQuery, filterParams.PageNumber, filterParams.PageSize);
+
+            var quizDtos = _mapper.Map<List<QuizSummaryDTO>>(pagedQuizzes.Items);
+
+            return new PagedList<QuizSummaryDTO>(
+                quizDtos,
+                pagedQuizzes.TotalCount,
+                pagedQuizzes.PageNumber,
+                pagedQuizzes.PageSize);
+        }
+
+        // Legacy QuizFilterParams filtering (predates the shared FilterEngine). Pure query
+        // composition over IQueryable, so it stays in the service rather than the repository.
         private static IQueryable<Quiz> ApplyQuizFilters(IQueryable<Quiz> query, QuizFilterParams filterParams)
         {
-            // Active/Inactive filter - fixed to use IsActive property from filterParams
             if (filterParams.IsActive.HasValue)
-            {
                 query = query.Where(q => q.IsActive == filterParams.IsActive.Value);
-            }
 
-            // Search term filter
             if (!string.IsNullOrEmpty(filterParams.SearchTerm))
             {
                 var searchTerm = filterParams.SearchTerm.ToLower();
                 query = query.Where(q => q.Title.ToLower().Contains(searchTerm) ||
-                                        q.Description.ToLower().Contains(searchTerm));
+                                         q.Description.ToLower().Contains(searchTerm));
             }
 
-            // Category filter
             if (filterParams.CategoryId.HasValue)
-            {
                 query = query.Where(q => q.CategoryId == filterParams.CategoryId.Value);
-            }
 
-            // Difficulty filter
             if (filterParams.DifficultyId.HasValue)
-            {
                 query = query.Where(q => q.DifficultyId == filterParams.DifficultyId.Value);
-            }
 
-            // Language filter
             if (filterParams.LanguageId.HasValue)
-            {
                 query = query.Where(q => q.LanguageId == filterParams.LanguageId.Value);
-            }
 
-            // Published filter - added missing filter
             if (filterParams.IsPublished.HasValue)
-            {
                 query = query.Where(q => q.IsPublished == filterParams.IsPublished.Value);
-            }
 
-            // User filter
             if (filterParams.UserId.HasValue)
-            {
                 query = query.Where(q => q.UserId == filterParams.UserId.Value);
-            }
 
             return query;
         }

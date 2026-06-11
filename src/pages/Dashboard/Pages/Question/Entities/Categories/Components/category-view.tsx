@@ -51,7 +51,6 @@ export const CategoryView = () => {
     <>
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-xl font-bold">Categories Management</h1>
-        <DataTransferControls entity="categories" invalidateKey={["questionCategories"]} />
       </div>
 
       {/* ── Table + side filter panel ── */}
@@ -59,8 +58,9 @@ export const CategoryView = () => {
         {/* Table card */}
         <div className="flex-1 min-w-0 w-full">
           <Card className="flex flex-col gap-4 p-8 bg-background border border-border">
-            <div>
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
               <CreateQuestionCategoryForm />
+              <DataTransferControls entity="categories" invalidateKey={["questionCategories"]} />
             </div>
 
             {categoriesQuery.isError ? (

@@ -84,6 +84,8 @@ builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 builder.Services.AddScoped<IFileRepository, FileRepository>();
 builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
 builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
+builder.Services.AddScoped<IQuestionRepository, QuestionRepository>();
+builder.Services.AddScoped<IQuizRepository, QuizRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
 
 // Exception Handling services
@@ -95,6 +97,7 @@ builder.Services.AddScoped<IPermissionService, PermissionService>();
 
 // Core Entity Services
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<QuizAPI.Controllers.Users.Services.IAvatarService, QuizAPI.Controllers.Users.Services.AvatarService>();
 builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IQuizService, QuizService>();
@@ -106,6 +109,8 @@ builder.Services.AddScoped<IAnswerOptionService, AnswerOptionService>();
 builder.Services.AddScoped<IQuizSessionService, QuizSessionService>();
 builder.Services.AddScoped<IUserAnswerService, UserAnswerService>();
 builder.Services.AddSingleton<IQuizSessionManager, InMemoryQuizSessionManager>();
+// Drives the live multiplayer match loop (singleton: it owns running matches). See docs/plans/multiplayer-phase1.md.
+builder.Services.AddSingleton<IMatchOrchestrator, MatchOrchestrator>();
 
 // Business Logic Services
 builder.Services.AddScoped<IAnswerGradingService, AnswerGradingService>();
@@ -128,6 +133,9 @@ builder.Services.AddScoped<QuizAPI.Controllers.Notifications.Services.INotificat
 // Data export / import (CSV / Excel / JSON) — stateless, so singletons are fine.
 builder.Services.AddSingleton<QuizAPI.Services.DataTransfer.IDataExportService, QuizAPI.Services.DataTransfer.DataExportService>();
 builder.Services.AddSingleton<QuizAPI.Services.DataTransfer.IDataImportService, QuizAPI.Services.DataTransfer.DataImportService>();
+
+// Dynamic reports (quiz performance, question analytics) — scoped, reads the DbContext.
+builder.Services.AddScoped<QuizAPI.Services.Reports.IReportService, QuizAPI.Services.Reports.ReportService>();
 
 builder.Services.AddHttpContextAccessor();
 
@@ -216,6 +224,10 @@ if (app.Environment.IsDevelopment())
 {
     app.UseHttpsRedirection();
 }
+
+// Serve uploaded files (avatars, quiz/question images) from wwwroot as static files.
+// Without this, URLs like /uploads/files/<guid>.png 404 even though the file exists on disk.
+app.UseStaticFiles();
 
 app.UseExceptionHandler();
 

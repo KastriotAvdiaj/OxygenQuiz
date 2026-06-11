@@ -17,4 +17,14 @@ public interface IQuizClient
     // New events for lobby redesign
     Task QuizSelected(string quizId, string quizTitle);
     Task LobbySettingsChanged(string lobbyName, int maxPlayers);
+
+    // ── Live match events (server-driven; see MatchOrchestrator) ──
+    Task MatchStarting(int countdownSeconds);
+    Task QuestionStarted(RoundQuestionView question, DateTime deadlineUtc);
+    Task QuestionEnded(QuestionResult result);
+    Task MatchEnded(MatchResult result);
+
+    // ── Lobby chat (ephemeral) ──
+    Task ChatMessageReceived(LobbyChatMessage message);
+    Task ChatHistory(IReadOnlyList<LobbyChatMessage> messages);
 }

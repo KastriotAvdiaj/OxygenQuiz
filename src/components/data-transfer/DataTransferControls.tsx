@@ -24,6 +24,7 @@ import {
   type ExportFormat,
   type TransferEntity,
 } from "@/lib/data-transfer/data-transfer-api";
+import { LiftedButton } from "@/common/LiftedButton";
 
 type DataTransferControlsProps = {
   /** Path segment for the API (e.g. "categories"). */
@@ -101,14 +102,14 @@ export const DataTransferControls = ({
     <div className={"flex items-center gap-2 " + (className ?? "")}>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="sm" disabled={busy !== null}>
+          <LiftedButton className="text-xs !bg-background text-foreground" outerClassName="bg:foreground" disabled={busy !== null}>
             {busy === "export" ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <Download className="h-4 w-4" />
             )}
             Export
-          </Button>
+          </LiftedButton>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem onClick={() => handleExport("csv")}>
@@ -125,10 +126,8 @@ export const DataTransferControls = ({
 
       {canImport && (
         <>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={busy !== null}
+          <LiftedButton
+          className="text-xs !bg-background text-foreground" outerClassName="bg:foreground" disabled={busy !== null}
             onClick={() => fileInputRef.current?.click()}
           >
             {busy === "import" ? (
@@ -137,7 +136,7 @@ export const DataTransferControls = ({
               <Upload className="h-4 w-4" />
             )}
             Import
-          </Button>
+          </LiftedButton>
           <input
             ref={fileInputRef}
             type="file"

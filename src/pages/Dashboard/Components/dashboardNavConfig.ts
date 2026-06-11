@@ -66,6 +66,11 @@ export const userDashboardNavButtons: DashboardNavItem[] = [
     icon: FaFolderOpen,
   },
   {
+    id: "reports",
+    label: "Reports",
+    icon: FaChartLine,
+  },
+  {
     id: "settings",
     label: "Settings",
     icon: FaCog,
