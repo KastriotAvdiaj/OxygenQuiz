@@ -8,6 +8,14 @@ public class InMemoryQuizSessionManager : IQuizSessionManager
         // Key: SessionId, Value: MultiplayerSession
         private readonly ConcurrentDictionary<string, MultiplayerSession> _sessions = new();
 
+        // Write-only MongoDB sink: every lobby chat line is also archived for system retention.
+        private readonly ILobbyChatArchiver _chatArchiver;
+
+        public InMemoryQuizSessionManager(ILobbyChatArchiver chatArchiver)
+        {
+            _chatArchiver = chatArchiver;
+        }
+
         public Task<Participant> AddParticipantAsync(string sessionId, string username, string connectionId)
         {
             if (!_sessions.TryGetValue(sessionId, out var session))
@@ -199,6 +207,10 @@ public class InMemoryQuizSessionManager : IQuizSessionManager
                 if (session.RecentMessages.Count > MaxRecentMessages)
                     session.RecentMessages.RemoveRange(0, session.RecentMessages.Count - MaxRecentMessages);
             }
+
+            // Persist to MongoDB for system retention (user + system lines). Fire-and-forget: this
+            // never blocks or breaks the live chat, and is not surfaced back to users.
+            _chatArchiver.Archive(sessionId, message);
 
             return Task.FromResult(message);
         }

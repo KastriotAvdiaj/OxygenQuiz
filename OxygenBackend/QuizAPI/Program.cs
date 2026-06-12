@@ -108,6 +108,8 @@ builder.Services.AddScoped<IAnswerOptionService, AnswerOptionService>();
 // Session & Answer Services
 builder.Services.AddScoped<IQuizSessionService, QuizSessionService>();
 builder.Services.AddScoped<IUserAnswerService, UserAnswerService>();
+// Write-only MongoDB sink for lobby chat retention; injected into the session manager below.
+builder.Services.AddSingleton<ILobbyChatArchiver, LobbyChatArchiver>();
 builder.Services.AddSingleton<IQuizSessionManager, InMemoryQuizSessionManager>();
 // Drives the live multiplayer match loop (singleton: it owns running matches). See docs/plans/multiplayer-phase1.md.
 builder.Services.AddSingleton<IMatchOrchestrator, MatchOrchestrator>();
