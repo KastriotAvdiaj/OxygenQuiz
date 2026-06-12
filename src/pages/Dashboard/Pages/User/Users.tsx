@@ -87,7 +87,7 @@ export const Users = () => {
   return (
     <div className="space-y-4 p-6">
 
-      {/* ── Content + Sidebar layout ── */}
+      {/* Content + Sidebar layout */}
       <div className="flex gap-6 items-start">
         {/* Table card */}
         <div className="flex-1 min-w-0">
@@ -111,7 +111,7 @@ export const Users = () => {
               </div>
             </CardHeader>
             <CardContent>
-              <UserControls onRefresh={() => usersQuery.refetch()} />
+              <UserControls onRefresh={() => usersQuery.refetch()} exportQuery={query} />
               {usersQuery.isError ? (
                 <p className="text-center text-red-500 py-8">
                   Failed to load users. Please try again later.

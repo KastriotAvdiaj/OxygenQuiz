@@ -24,6 +24,7 @@ import {
   type ExportFormat,
   type TransferEntity,
 } from "@/lib/data-transfer/data-transfer-api";
+import type { FilterQuery } from "@/lib/filtering/types";
 import { LiftedButton } from "@/common/LiftedButton";
 
 type DataTransferControlsProps = {
@@ -33,6 +34,11 @@ type DataTransferControlsProps = {
   invalidateKey: QueryKey;
   /** Hide the Import button (e.g. for read-only roles). Defaults to true. */
   canImport?: boolean;
+  /**
+   * The list's current filter query. When provided, the export applies the same filters so the
+   * download matches the visible table (across all pages). Omit for lists without filtering.
+   */
+  exportQuery?: FilterQuery;
   className?: string;
 };
 
@@ -45,6 +51,7 @@ export const DataTransferControls = ({
   entity,
   invalidateKey,
   canImport = true,
+  exportQuery,
   className,
 }: DataTransferControlsProps) => {
   const queryClient = useQueryClient();
@@ -55,7 +62,7 @@ export const DataTransferControls = ({
   const handleExport = async (format: ExportFormat) => {
     try {
       setBusy("export");
-      await exportData(entity, format);
+      await exportData(entity, format, exportQuery);
     } catch {
       addNotification({
         type: "error",
@@ -80,7 +87,7 @@ export const DataTransferControls = ({
       queryClient.invalidateQueries({ queryKey: invalidateKey });
 
       const detail = result.errors.length
-        ? ` ${result.errors.length} issue${result.errors.length > 1 ? "s" : ""} — see details.`
+        ? ` ${result.errors.length} issue${result.errors.length > 1 ? "s" : ""} - see details.`
         : "";
       addNotification({
         type: result.errors.length ? "warning" : "success",

@@ -57,10 +57,6 @@ namespace QuizAPI.Data
 
         public DbSet<Notification> Notifications { get; set; }
 
-        public DbSet<Universiteti> Universitetet { get; set; }
-
-        public DbSet<Drejtimi> Drejtimet { get; set; }
-
         public DbSet<UserSettings> UserSettings { get; set; }
 
 

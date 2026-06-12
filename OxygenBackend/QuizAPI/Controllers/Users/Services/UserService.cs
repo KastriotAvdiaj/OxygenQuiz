@@ -1,4 +1,5 @@
-﻿using QuizAPI.DTOs.User;
+﻿using Microsoft.EntityFrameworkCore;
+using QuizAPI.DTOs.User;
 using QuizAPI.Exceptions;
 using QuizAPI.ManyToManyTables;
 using QuizAPI.Models;
@@ -38,22 +39,42 @@ namespace QuizAPI.Services
         public async Task<PagedResponse<UserDTO>> SearchUsersAsync(
             FilterQuery query, CancellationToken ct = default)
         {
-            var source = _userRepository.Query();
-
-            // Role filtering is a collection (many-to-many) concern the generic engine
-            // deliberately doesn't handle (see UserFilterFields). We pull "role" rules out
-            // of the raw filter list, apply them here, and let the engine do the rest.
-            var roleNames = ExtractRoleFilter(query);
-            if (roleNames.Count > 0)
-                source = source.Where(u =>
-                    u.UserRoles.Any(ur => roleNames.Contains(ur.Role.Name.ToLower())));
-
-            source = FilterEngine.Apply(source, query, UserFilterFields.Fields);
+            var source = BuildFilteredUserQuery(query);
 
             return await PagedResponse<UserDTO>.CreateAsync(
                 source, query.Page, query.PageSize,
                 rows => rows.ToDtoList().ToList(),
                 ct);
+        }
+
+        /// <summary>
+        /// Same filtering as <see cref="SearchUsersAsync"/> (search + filters + sort + role
+        /// membership) but returns EVERY matching user, not a page. Used by the export endpoint so a
+        /// download reflects the exact filter the admin has applied to the table, across all pages.
+        /// </summary>
+        public async Task<IReadOnlyList<UserDTO>> GetFilteredUsersAsync(
+            FilterQuery query, CancellationToken ct = default)
+        {
+            var users = await BuildFilteredUserQuery(query).ToListAsync(ct);
+            return users.ToDtoList();
+        }
+
+        /// <summary>
+        /// Builds the filtered (but unpaginated) user query shared by search and export. Role
+        /// filtering is a many-to-many concern the generic engine deliberately doesn't handle
+        /// (see UserFilterFields): we pull "role" rules out of the raw filter list, apply them
+        /// here, then let the engine apply the rest (search, dates, isDeleted, sort).
+        /// </summary>
+        private IQueryable<User> BuildFilteredUserQuery(FilterQuery query)
+        {
+            var source = _userRepository.Query();
+
+            var roleNames = ExtractRoleFilter(query);
+            if (roleNames.Count > 0)
+                source = source.Where(u =>
+                    u.UserRoles.Any(ur => roleNames.Contains(ur.Role.Name.ToLower())));
+
+            return FilterEngine.Apply(source, query, UserFilterFields.Fields);
         }
 
         /// <summary>

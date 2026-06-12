@@ -381,32 +381,6 @@ namespace QuizAPI.Migrations
                     b.ToTable("AuditLogs");
                 });
 
-            modelBuilder.Entity("QuizAPI.Models.Drejtimi", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Duration")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int>("UniversitetiId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UniversitetiId");
-
-                    b.ToTable("Drejtimet");
-                });
-
             modelBuilder.Entity("QuizAPI.Models.FileRecord", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1089,27 +1063,6 @@ namespace QuizAPI.Migrations
                     b.ToTable("QuestionStatistics");
                 });
 
-            modelBuilder.Entity("QuizAPI.Models.Universiteti", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("City")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Universitetet");
-                });
-
             modelBuilder.Entity("QuizAPI.Models.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1306,17 +1259,6 @@ namespace QuizAPI.Migrations
                         .IsRequired();
 
                     b.Navigation("Question");
-                });
-
-            modelBuilder.Entity("QuizAPI.Models.Drejtimi", b =>
-                {
-                    b.HasOne("QuizAPI.Models.Universiteti", "Universiteti")
-                        .WithMany()
-                        .HasForeignKey("UniversitetiId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Universiteti");
                 });
 
             modelBuilder.Entity("QuizAPI.Models.Notification", b =>

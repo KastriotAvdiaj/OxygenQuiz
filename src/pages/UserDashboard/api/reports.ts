@@ -48,14 +48,20 @@ export async function fetchQuestionAnalytics(criteria: ReportCriteria): Promise<
   return response.data as QuestionAnalyticsRow[];
 }
 
-/** Downloads a report as a file in the chosen format. */
+/**
+ * Downloads a report as a file in the chosen format.
+ *
+ * The exact rows passed in are POSTed to the server and formatted as-is, so the download always
+ * matches what's on screen — including any client-side search/filtering applied to the table.
+ * (The server no longer re-queries, which is what previously caused exports to ignore filters.)
+ */
 export async function exportReport(
   type: ReportType,
   format: ReportExportFormat,
-  criteria: ReportCriteria
+  rows: QuizPerformanceRow[] | QuestionAnalyticsRow[]
 ): Promise<void> {
-  const response = await api.get(`/reports/${type}/export`, {
-    params: { ...toParams(criteria), format },
+  const response = await api.post(`/reports/${type}/export`, rows, {
+    params: { format },
     responseType: "blob",
   });
 

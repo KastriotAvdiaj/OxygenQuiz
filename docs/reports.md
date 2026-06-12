@@ -16,17 +16,32 @@ date criteria filter only the activity counted within each row.
 
 ## Criteria
 
-`from` / `to` (both optional). Dates are read **inclusively** — `to` covers the whole selected
-day. Empty = all-time.
+`from` / `to` (both optional, applied **server-side** when previewing). Dates are read
+**inclusively** — `to` covers the whole selected day. Empty = all-time.
+
+## On-screen filters (and export parity)
+
+After a report is generated, the table can be narrowed **client-side**: a text search (quiz title
+/ question text) plus Type and Category dropdowns for Question Analytics. These filters are applied
+in the browser to the previewed rows.
+
+**Export reflects exactly what's on screen.** Rather than re-querying, the export endpoints take
+the currently-visible (filtered) rows in the request body and run them straight through
+`IDataExportService`. This guarantees the download matches the table — including search/filter —
+and avoids the filter logic drifting between the preview and the export. (Previously export
+re-queried with only the dates, so any on-screen filtering was silently ignored.)
 
 ## API (`api/reports`, `[Authorize]`, scoped to the current user)
 
 | Method | Route | Purpose |
 |---|---|---|
 | GET | `/api/reports/quiz-performance?from=&to=` | Quiz-performance rows (JSON, for the preview table) |
-| GET | `/api/reports/quiz-performance/export?from=&to=&format=csv\|excel\|json` | Download the report |
+| POST | `/api/reports/quiz-performance/export?format=csv\|excel\|json` | Format the posted rows into a download |
 | GET | `/api/reports/question-analytics?from=&to=` | Question-analytics rows (JSON) |
-| GET | `/api/reports/question-analytics/export?from=&to=&format=...` | Download the report |
+| POST | `/api/reports/question-analytics/export?format=...` | Format the posted rows into a download |
+
+The `/export` endpoints take the row list as the JSON body (the rows the client is displaying) and
+return the file. `format` stays a query-string param.
 
 ## Files
 
@@ -40,9 +55,9 @@ day. Empty = all-time.
 - `Program.cs` — `IReportService` registered (scoped).
 
 **Frontend** (under `/my-dashboard/reports`)
-- `src/pages/UserDashboard/api/reports.ts` — fetch rows + download export.
+- `src/pages/UserDashboard/api/reports.ts` — fetch rows (GET) + POST the visible rows to download.
 - `src/pages/UserDashboard/MyReports.tsx` — report-type tabs, date criteria, Generate → table,
-  Export dropdown (CSV/Excel/JSON).
+  on-screen filters (search + Type/Category), Export dropdown (CSV/Excel/JSON) over the filtered rows.
 - Wired into the router (`reports` child) and the user-dashboard nav.
 
 ## Extending

@@ -9,6 +9,9 @@ namespace QuizAPI.Services.Interfaces
 
         // Shared filtering framework (search + filters + sort + body-envelope pagination).
         Task<PagedResponse<UserDTO>> SearchUsersAsync(FilterQuery query, CancellationToken ct = default);
+
+        // Same filtering as SearchUsersAsync but returns every matching user (no paging) — for export.
+        Task<IReadOnlyList<UserDTO>> GetFilteredUsersAsync(FilterQuery query, CancellationToken ct = default);
         Task<UserDTO?> GetUserByIdAsync(Guid userId, CancellationToken ct = default);
         Task<UserDTO?> GetUserByUsernameAsync(string username, CancellationToken ct = default);
         Task<IReadOnlyList<UserDTO>> GetUsersByIdsAsync(IEnumerable<Guid> userIds, CancellationToken ct = default);

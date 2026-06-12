@@ -11,6 +11,7 @@ using QuizAPI.Controllers.Questions.Services;
 using QuizAPI.Data;
 using QuizAPI.DTOs.DataTransfer;
 using QuizAPI.DTOs.Question;
+using QuizAPI.Filtering;
 using QuizAPI.DTOs.User;
 using QuizAPI.Models;
 using QuizAPI.Services.CurrentUserService;
@@ -255,12 +256,16 @@ namespace QuizAPI.Controllers.DataTransfer
         }
 
         // ── Users ───────────────────────────────────────────────────────────────
+        // Exports the users matching the same filter the admin has applied to the table (search,
+        // roles, date ranges, deleted state) by binding the shared FilterQuery — so the download
+        // reflects the visible list across all pages, not every user. An empty query exports all.
         [HttpGet("users/export")]
         [Authorize(Roles = "SuperAdmin, Admin")]
-        public async Task<IActionResult> ExportUsers([FromQuery] string? format, CancellationToken ct)
+        public async Task<IActionResult> ExportUsers(
+            [FromQuery] FilterQuery query, [FromQuery] string? format, CancellationToken ct)
         {
             DataFormatExtensions.TryParse(format, out var fmt);
-            var users = await _userService.GetAllUsersAsync(ct);
+            var users = await _userService.GetFilteredUsersAsync(query, ct);
             var rows = users.Select(u => new UserExportRow
             {
                 Id = u.Id,

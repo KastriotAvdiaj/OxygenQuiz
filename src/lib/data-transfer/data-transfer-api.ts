@@ -1,4 +1,6 @@
 import { api } from "@/lib/Api-client";
+import { buildFilterParams } from "@/lib/filtering/filter-builder";
+import type { FilterQuery } from "@/lib/filtering/types";
 
 // Mirrors QuizAPI's DataTransferController. One entity slug per list that supports
 // export/import; the slug is the path segment used by /api/datatransfer/{entity}/...
@@ -27,13 +29,27 @@ const EXTENSION: Record<ExportFormat, string> = {
  * Downloads a list as a file. Asks the API for a Blob, reads the server-suggested file
  * name from Content-Disposition (falling back to "{entity}.{ext}"), then triggers a
  * browser download. No data is held in component state.
+ *
+ * Pass the list's current `query` (the same FilterQuery driving the table) to export only the
+ * filtered set: the server applies the identical search/filter, so the download matches the
+ * visible list across all pages. Omit it to export everything. Pagination in the query is
+ * ignored by the export endpoint, and entities without filtering simply omit `query`.
  */
 export async function exportData(
   entity: TransferEntity,
-  format: ExportFormat
+  format: ExportFormat,
+  query?: FilterQuery
 ): Promise<void> {
+  // Reuse the filtering framework's serializer so export speaks the exact same wire format as
+  // the table's search request (filter=field:op:value, search=..., etc.). Drop pagination: the
+  // export returns the whole filtered set, not a page.
+  const params = query ? buildFilterParams(query) : new URLSearchParams();
+  params.delete("page");
+  params.delete("pageSize");
+  params.set("format", format);
+
   const response = await api.get(`/datatransfer/${entity}/export`, {
-    params: { format },
+    params,
     responseType: "blob",
   });
 
