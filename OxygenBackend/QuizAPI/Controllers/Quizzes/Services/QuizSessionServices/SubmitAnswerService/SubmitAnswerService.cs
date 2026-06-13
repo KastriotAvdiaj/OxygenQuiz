@@ -1,10 +1,10 @@
-﻿using AutoMapper;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using QuizAPI.Common;
 using QuizAPI.Controllers.Quizzes.Services.AnswerGradingServices;
 using QuizAPI.Data;
 using QuizAPI.DTOs.Quiz;
+using QuizAPI.Mapping;
 using QuizAPI.Models;
 using QuizAPI.Models.Quiz;
 
@@ -14,20 +14,17 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.SubmitAnswerS
     {
         private readonly ApplicationDbContext _context;
         private readonly IAnswerGradingService _gradingService;
-        private readonly IMapper _mapper;
         private readonly ILogger<SubmitAnswerService> _logger;
         private readonly QuizSessionOptions _options;
 
         public SubmitAnswerService(
             ApplicationDbContext context,
             IAnswerGradingService gradingService,
-            IMapper mapper,
             ILogger<SubmitAnswerService> logger,
             IOptions<QuizSessionOptions> options)
         {
             _context = context;
             _gradingService = gradingService;
-            _mapper = mapper;
             _logger = logger;
             _options = options.Value;
         }
@@ -124,7 +121,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.SubmitAnswerS
 
         private UserAnswer CreateUserAnswer(UserAnswerCM model, QuizSession session, TimeContext timeContext)
         {
-            var userAnswer = _mapper.Map<UserAnswer>(model);
+            var userAnswer = model.ToEntity();
             userAnswer.SubmittedTime = DateTime.UtcNow;
             userAnswer.QuestionStartTime = timeContext.StartTime;
 
