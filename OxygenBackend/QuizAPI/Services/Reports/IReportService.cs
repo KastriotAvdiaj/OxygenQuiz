@@ -11,5 +11,11 @@ namespace QuizAPI.Services.Reports
     {
         Task<List<QuizPerformanceRow>> GetQuizPerformanceAsync(Guid userId, ReportCriteria criteria, CancellationToken ct = default);
         Task<List<QuestionAnalyticsRow>> GetQuestionAnalyticsAsync(Guid userId, ReportCriteria criteria, CancellationToken ct = default);
+
+        /// <summary>
+        /// Full analytics for one quiz the user owns. Returns <c>null</c> if the quiz doesn't exist
+        /// or isn't owned by the caller (controller maps that to 404).
+        /// </summary>
+        Task<QuizAnalyticsDto?> GetQuizAnalyticsAsync(Guid userId, int quizId, ReportCriteria criteria, CancellationToken ct = default);
     }
 }

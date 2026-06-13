@@ -8,6 +8,7 @@ import { DeleteQuiz } from "./components/delete-quiz";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { QuizProperties } from "./components/quiz-properties";
 import { QuizQuestions } from "./components/quiz-questions";
+import { QuizAnalytics } from "./components/quiz-analytics";
 import { useNavigate } from "react-router";
 import { LiftedButton } from "@/common/LiftedButton";
 import { Badge } from "@/components/ui/badge";
@@ -185,12 +186,7 @@ export const QuizRoute = () => {
             </TabsContent>
 
             <TabsContent value="analytics" className="space-y-4">
-              <div className="text-center py-8">
-                <BarChart3 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <p className="text-muted-foreground">
-                  Analytics will be available once the quiz has responses
-                </p>
-              </div>
+              <QuizAnalytics quizId={quiz.id} />
             </TabsContent>
           </div>
         </Tabs>
