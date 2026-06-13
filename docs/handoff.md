@@ -47,16 +47,22 @@ Paste this into a new chat to bootstrap context.
 2. **Drop an audio file** at `public/audio/background-music.mp3` (music is silent until then).
 3. **Dormant scaffolds (intentionally unlinked):** `/users/:userId` public profile
    and `GET /api/users/{id}/profile`. Nothing links to them yet.
-4. **Security gaps flagged, not yet fixed:**
-   - `RolesController` has NO `[Authorize]` — anyone can CRUD roles. Should be
-     `[Authorize(Roles = "SuperAdmin")]`.
-   - `GET /api/users/{id}` returns the full `UserDTO` (incl. permissions) with no auth.
+4. **Security gaps — partly fixed:**
+   - ✅ `RolesController` is now `[Authorize(Roles = "SuperAdmin")]` (was fully anonymous).
+   - ✅ `ImageUploadController` is now `[Authorize]` (was anonymous upload).
+   - ✅ `UsersController`: list-all + create are now `[Authorize(Roles = "Admin,SuperAdmin")]`;
+     update/delete now require **self-or-admin** (closed the cross-user IDOR).
+   - ✅ DataTransfer `*/export` endpoints are now `[Authorize(Roles = "SuperAdmin, Admin")]`
+     (matching the imports; `questions/export` was leaking answer keys).
+   - ⚠️ Still open: `GET /api/users/{id}`, `GET /api/users/username/{username}`, and
+     `POST /api/users/batch` return the full `UserDTO` (incl. email) with no auth. Left as-is
+     because the frontend may read them anonymously; revisit (slim DTO or auth) before launch.
 5. **Minor:** font "sync" state is inferred (`appFont === quizFont`), not stored;
    question *update* hooks now refetch but consider consistency; audit Actor column
    shows raw userId (no username resolution).
 
 ## Possible next steps we discussed
-- Lock down RolesController / public-user endpoints.
+- Lock down the remaining public-user read endpoints (see gap ⚠️ above); RolesController is done.
 - Make the public profile live (link to it; add public-by-id count endpoints; decide auth).
 - Optional `refetchInterval` (focus-only) on the audit page for near-live updates.
 - Resolve usernames in the audit log; expandable old/new detail view.

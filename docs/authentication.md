@@ -92,7 +92,7 @@ Add integration tests against the auth endpoints with `WebApplicationFactory`: l
 
 ## Recommended improvements
 
-1. **Move the JWT signing key out of source control.** `appsettings.json` commits `Jwt:Key` in plaintext — anyone with the repo can forge tokens. Use user-secrets / environment variables / a secrets manager, and rotate the key.
+1. **Move the JWT signing key out of source control — done.** `Jwt:Key` (and the DB/Mongo connection strings) are no longer committed: `appsettings.json` holds only non-secret config. Dev reads the key from **.NET user-secrets**; prod reads it from the **`Jwt__Key` environment variable** (see `appsettings.example.json` and the README "Backend" config section). The previously-committed key has been **rotated**, so the value still in git history can no longer sign valid tokens. The app **fails fast at startup** if `Jwt:Key` is missing.
 2. **Refresh-token reuse detection.** Today, replaying a rotated token just 401s. Detect it instead — if a token that's already `Revoked` is presented, treat it as theft and revoke the user's whole token family (`RevokeAllForUserAsync` already exists but is unused).
 3. **Expose "log out everywhere."** Wire `RevokeAllForUserAsync` to an endpoint so users (or admins) can kill all sessions; also call it on password change.
 4. **Clean up stale tokens.** Add a Hangfire recurring job (Hangfire is already configured) to delete expired/revoked `RefreshTokens` rows.

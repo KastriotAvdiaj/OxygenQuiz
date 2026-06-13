@@ -44,12 +44,16 @@ Install the following tools before working with the project:
    npm run dev
    ```
    The script enables HTTPS and points Vite at certificates in `./certs`. Use mkcert to generate `certs/cert.crt` and `certs/cert.key` if they are missing.【F:package.json†L7-L15】
-3. **Start the ASP.NET API**
+3. **Configure backend secrets (first run only)**
+   The API reads its JWT key, connection strings, and seed admin password from user-secrets — it
+   will not start without them. See [Environment Configuration → Backend](#backend-oxygenbackendquizapiappsettingsjson)
+   for the exact `dotnet user-secrets set` commands.
+4. **Start the ASP.NET API**
    ```bash
    dotnet run --project OxygenBackend/QuizAPI
    ```
    The API listens on the default Kestrel ports (HTTPS `https://localhost:7153` in development).
-4. **(Optional) Start the FastAPI microservice**
+5. **(Optional) Start the FastAPI microservice**
 
    ```bash
    uvicorn microservice.main:app --reload --port 8000
@@ -73,17 +77,37 @@ Define Vite environment variables to override the default axios base URLs and HT
 
 ### Backend (`OxygenBackend/QuizAPI/appsettings.*.json`)
 
-Populate the following sections in each environment-specific settings file (`appsettings.Development.json`, `appsettings.Production.json`, etc.). Use ASP.NET Core user secrets locally for sensitive values and AWS Secrets Manager in production.
+The committed `appsettings.json` holds **only non-secret configuration**. Secrets and connection
+strings are **never committed** — they are supplied out-of-band:
 
-| Section / Key                 | Description                                                                  | Usage                                                                                                                                                                                                                | AWS Provisioning                                                                       |
-| ----------------------------- | ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| `ConnectionStrings:SqlServer` | Primary SQL Server or Azure SQL connection string for Entity Framework Core. | Consumed when configuring `ApplicationDbContext` (EF models live in `OxygenBackend/QuizAPI/Data`).【F:OxygenBackend/QuizAPI/Data/ApplicationDbContext.cs†L1-L118】【F:OxygenBackend/QuizAPI/QuizAPI.csproj†L14-L24】 | Store in AWS Secrets Manager as `SecureString` and reference from ECS task + RDS.      |
-| `ConnectionStrings:Hangfire`  | Optional Hangfire SQL connection string if a dedicated database is used.     | Required by background jobs configured via Hangfire services.                                                                                                                                                        | Store in Secrets Manager or Parameter Store depending on sensitivity.                  |
-| `Jwt:Key`                     | Symmetric signing key for JWT issuance.                                      | Used by `AuthenticationService.GenerateJwtToken`.【F:OxygenBackend/QuizAPI/Services/AuthenticationService/AuthenticationService.cs†L101-L121】                                                                       | Secrets Manager (rotation supported) injected as environment variable or mounted file. |
-| `Jwt:Issuer`                  | JWT issuer claim.                                                            | Used during token creation.【F:OxygenBackend/QuizAPI/Services/AuthenticationService/AuthenticationService.cs†L111-L118】                                                                                             | Parameter Store (String) or Secrets Manager when bundled with `Jwt:Key`.               |
-| `Jwt:Audience`                | JWT audience claim.                                                          | Used during token creation.【F:OxygenBackend/QuizAPI/Services/AuthenticationService/AuthenticationService.cs†L115-L118】                                                                                             | Parameter Store (String) or Secrets Manager when bundled with `Jwt:Key`.               |
-| `MongoDb:ConnectionString`    | Optional MongoDB connection string for the `MongoDbSettings` POCO.           | Provide if MongoDB-backed features are enabled.【F:OxygenBackend/QuizAPI/MongoDB/MongoDbSettings.cs†L1-L8】                                                                                                          | Secrets Manager or Parameter Store based on usage.                                     |
-| `MongoDb:DatabaseName`        | MongoDB database name.                                                       | Used with `MongoDbSettings`.【F:OxygenBackend/QuizAPI/MongoDB/MongoDbSettings.cs†L1-L8】                                                                                                                             | Parameter Store (String).                                                              |
+- **Development:** [.NET user-secrets](https://learn.microsoft.com/aspnet/core/security/app-secrets)
+  (the project already has a `UserSecretsId`). Set them once:
+  ```bash
+  cd OxygenBackend/QuizAPI
+  dotnet user-secrets set "Jwt:Key" "$(openssl rand -base64 48)"
+  dotnet user-secrets set "ConnectionStrings:PostgresConnection" "Host=localhost;Port=5433;Database=OxygenQuiz;Username=postgres;Password=<your-local-pw>"
+  dotnet user-secrets set "ConnectionStrings:MongoDBConnection" "mongodb://localhost:27017"
+  dotnet user-secrets set "Seed:AdminPassword" "<your-local-admin-pw>"
+  ```
+- **Production:** environment variables. ASP.NET Core maps nested keys with a double underscore
+  (`Jwt:Key` → `Jwt__Key`). Store them in AWS Secrets Manager / SSM Parameter Store (or your host's
+  secret store) and inject into the container.
+
+The app **fails fast at startup** if a required secret is missing — there are no hardcoded
+fallbacks. [`appsettings.example.json`](OxygenBackend/QuizAPI/appsettings.example.json) is the
+authoritative list of what must be provided.
+
+| Key (`:` local / `__` env var) | Secret? | Where to set | Description |
+| --- | --- | --- | --- |
+| `ConnectionStrings:PostgresConnection` | **Yes** | user-secrets / env | Primary Postgres connection for EF Core **and** Hangfire (no separate Hangfire DB). |
+| `ConnectionStrings:MongoDBConnection`  | **Yes** | user-secrets / env | MongoDB connection (lobby chat archive / chat features). |
+| `Jwt:Key`                              | **Yes** | user-secrets / env | Symmetric JWT signing key (HS256). Must be ≥ 32 bytes and unique per environment. |
+| `Seed:AdminPassword`                   | **Yes** | user-secrets / env | Password for the admin account seeded on first startup. |
+| `Jwt:Issuer`                           | No      | `appsettings.json` | JWT issuer claim. |
+| `Jwt:Audience`                         | No      | `appsettings.json` | JWT audience claim. |
+| `MongoDB:DatabaseName`                 | No      | `appsettings.json` | MongoDB database name. |
+| `Cors:AllowedOrigins`                  | No      | `appsettings.{env}.json` | Allowed frontend origins (array). |
+| `Seed:AdminUsername` / `Seed:AdminEmail` | No    | `appsettings.{env}.json` | Admin account display fields. |
 
 ### FastAPI Microservice (`microservice/.env`)
 
@@ -116,7 +140,7 @@ All production secrets should be created as encrypted parameters or secrets, tag
 The recommended target environment is AWS Fargate on ECS with supporting managed services. For the React client we standardize on **Option A** (static hosting via S3 + CloudFront) to minimize operational overhead while still enabling global TLS termination through ACM-managed certificates:
 
 1. **Frontend** – Build the static bundle with `npm run build`, upload the generated `dist/` directory to an S3 bucket, and serve it behind an Amazon CloudFront distribution. CloudFront terminates TLS using an AWS Certificate Manager (ACM) certificate mapped to the desired domains.【F:package.json†L7-L15】
-2. **Backend API** – Package the .NET API into a container image, push to Amazon ECR, and run it on ECS Fargate with an Application Load Balancer (ALB). Attach an ACM certificate to the ALB listener for TLS termination before forwarding HTTP traffic to the containers. Configure RDS for the SQL Server database and, if needed, Amazon MQ/MemoryDB for background tasks.【F:OxygenBackend/Dockerfile†L1-L26】【F:OxygenBackend/QuizAPI/QuizAPI.csproj†L14-L24】
+2. **Backend API** – Package the .NET API into a container image, push to Amazon ECR, and run it on ECS Fargate with an Application Load Balancer (ALB). Attach an ACM certificate to the ALB listener for TLS termination before forwarding HTTP traffic to the containers. Configure RDS for **PostgreSQL** (used by both EF Core and Hangfire) and provision MongoDB (e.g. MongoDB Atlas) for chat features.【F:OxygenBackend/Dockerfile†L1-L26】【F:OxygenBackend/QuizAPI/QuizAPI.csproj†L14-L24】
 3. **FastAPI Microservice** – Containerize with a lightweight Python base image and deploy to ECS alongside the backend once the LLM integration is complete. Until then, keep it disabled in production environments.【F:microservice/main.py†L1-L118】
 4. **Secrets & Configuration** – Store sensitive configuration (JWT keys, database credentials, API keys) in AWS Secrets Manager. Non-secret configuration (API base URLs, feature flags) should be stored in Systems Manager Parameter Store and injected via ECS task definitions or environment files.
 

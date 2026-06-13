@@ -108,7 +108,7 @@ They do not collide on anything:
 | Owner link | `EntityType` + `int EntityId` (bookkeeping) | `Entity` + `string EntityId` |
 | Lifecycle | upload → associate → GC orphans | attach-on-upload, no GC |
 | Validation | image content + dimensions (ImageSharp) | extension allowlist + size |
-| Auth | open (used inside authoring) | `[Authorize]` |
+| Auth | `[Authorize]` (used inside authoring) | `[Authorize]` |
 
 Separate tables, routes, storage folders, and services means no migration or shared state
 is needed for them to run side by side.
