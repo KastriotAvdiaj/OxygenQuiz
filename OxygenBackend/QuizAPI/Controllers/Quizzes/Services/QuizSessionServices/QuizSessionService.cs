@@ -63,16 +63,19 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                 // Check for abandonment first
                 if (await _abandonmentService.IsSessionAbandonedAsync(session))
                 {
-                    // Mark as abandoned and return completed state
+                    // Mark as abandoned and return completed state.
+                    // App-clock timestamp (see GetNextQuestionAsync) so EndTime/AbandonedAt stay
+                    // consistent with the app-clock StartTime when durations are computed.
+                    var abandonedAt = DateTime.UtcNow;
                     await _context.QuizSessions
                     .Where(s => s.Id == sessionId)
                     .ExecuteUpdateAsync(s => s
                         .SetProperty(x => x.IsCompleted, true)
-                        .SetProperty(x => x.EndTime, DateTime.UtcNow)
+                        .SetProperty(x => x.EndTime, abandonedAt)
                         .SetProperty(x => x.CurrentQuizQuestionId, (int?)null)
                         .SetProperty(x => x.CurrentQuestionStartTime, (DateTime?)null)
                         .SetProperty(x => x.AbandonmentReason, AbandonmentReason.Timeout) // NEW
-                        .SetProperty(x => x.AbandonedAt, DateTime.UtcNow));
+                        .SetProperty(x => x.AbandonedAt, abandonedAt));
 
                     return Result<QuizStateDto>.Success(new QuizStateDto { Status = LiveQuizStatus.Completed });
                 }
@@ -153,12 +156,18 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                     return Result<CurrentQuestionDto>.ValidationFailure("No more questions available.");
                 }
 
-                // Atomic update with race condition protection
+                // Atomic update with race condition protection.
+                // Capture the start time in C# first: a bare `DateTime.UtcNow` inside ExecuteUpdate
+                // is translated to the DATABASE clock (SQL now()), whereas SubmittedTime is stamped
+                // with the APP clock. Any drift between the two (e.g. a containerised DB whose clock
+                // runs ahead) then makes a fast answer record a NEGATIVE elapsed time. Using one
+                // captured app-clock value keeps both timestamps on the same clock.
+                var questionStartedAt = DateTime.UtcNow;
                 var updatedRows = await _context.QuizSessions
                     .Where(s => s.Id == sessionId && s.CurrentQuizQuestionId == null && !s.IsCompleted)
                     .ExecuteUpdateAsync(s => s
                         .SetProperty(x => x.CurrentQuizQuestionId, nextQuizQuestion.Id)
-                        .SetProperty(x => x.CurrentQuestionStartTime, DateTime.UtcNow));
+                        .SetProperty(x => x.CurrentQuestionStartTime, questionStartedAt));
 
                 if (updatedRows == 0)
                 {
