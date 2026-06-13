@@ -53,7 +53,10 @@ namespace QuizAPI.Services.Reports
                 .Select(q =>
                 {
                     var attempts = byQuiz[q.Id].ToList();
-                    var completed = attempts.Where(a => a.IsCompleted).ToList();
+                    // A session abandoned by timeout is flagged IsCompleted, so exclude abandoned
+                    // ones here: a "completion" means the user actually finished the quiz, and an
+                    // abandoned session's wall-clock duration is idle time, not play time.
+                    var completed = attempts.Where(a => a.IsCompleted && !a.Abandoned).ToList();
 
                     return new QuizPerformanceRow
                     {
@@ -162,7 +165,10 @@ namespace QuizAPI.Services.Reports
                 })
                 .ToListAsync(ct);
 
-            var completed = sessions.Where(s => s.IsCompleted).ToList();
+            // Abandoned-by-timeout sessions are flagged IsCompleted, but they aren't real
+            // completions — their wall-clock duration is mostly idle time and would skew the
+            // averages (e.g. a quiz "taking" 42 minutes). Count only genuinely finished sessions.
+            var completed = sessions.Where(s => s.IsCompleted && !s.Abandoned).ToList();
 
             // The quiz's questions (so a question with no answers still appears with zeros).
             var quizQuestions = await _context.QuizQuestions.AsNoTracking()
