@@ -1,10 +1,10 @@
-using AutoMapper;
-using AutoMapper.QueryableExtensions;
+using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using QuizAPI.Controllers.Image.Services;
 using QuizAPI.Controllers.Questions.Services.AnswerOptions;
 using QuizAPI.DTOs.Question;
 using QuizAPI.Filtering;
+using QuizAPI.Mapping;
 using QuizAPI.Models;
 using QuizAPI.Repositories.Interfaces;
 
@@ -18,18 +18,15 @@ namespace QuizAPI.Controllers.Questions.Services
     public class QuestionService : IQuestionService
     {
         private readonly IQuestionRepository _questions;
-        private readonly IMapper _mapper;
         private readonly IAnswerOptionService _answerOptionService;
         private readonly IImageService _imageService;
 
         public QuestionService(
             IQuestionRepository questions,
-            IMapper mapper,
             IAnswerOptionService answerOptionService,
             IImageService imageService)
         {
             _questions = questions;
-            _mapper = mapper;
             _answerOptionService = answerOptionService;
             _imageService = imageService;
         }
@@ -45,13 +42,13 @@ namespace QuizAPI.Controllers.Questions.Services
                 query = query.Where(q => q.Visibility == visibilityEnum);
             }
 
-            return _mapper.Map<List<QuestionBaseDTO>>(await query.ToListAsync());
+            return (await query.ToListAsync()).ToDtoList();
         }
 
         public async Task<PagedList<QuestionBaseDTO>> GetPaginatedQuestionsAsync(QuestionFilterParams filterParams)
         {
             var query = ApplyFilters(_questions.Query(), filterParams);
-            var projected = query.ProjectTo<QuestionBaseDTO>(_mapper.ConfigurationProvider);
+            var projected = query.Select(QuestionMappers.ProjectBase);
 
             return await PagedList<QuestionBaseDTO>.CreateAsync(
                 projected, filterParams.PageNumber, filterParams.PageSize);
@@ -77,7 +74,7 @@ namespace QuizAPI.Controllers.Questions.Services
 
             q = FilterEngine.Apply(q, query, QuestionFilterFields.Fields);
 
-            var projected = q.ProjectTo<QuestionBaseDTO>(_mapper.ConfigurationProvider);
+            var projected = q.Select(QuestionMappers.ProjectBase);
             return await PagedResponse<QuestionBaseDTO>.CreateAsync(
                 projected, query.Page, query.PageSize, ct);
         }
@@ -86,24 +83,26 @@ namespace QuizAPI.Controllers.Questions.Services
         // per-type DTOs (answer options, correct answer, …) the type-tabbed UI renders.
         public Task<PagedResponse<MultipleChoiceQuestionDTO>> SearchMultipleChoiceQuestionsAsync(
             FilterQuery query, Guid? restrictToUserId = null, CancellationToken ct = default) =>
-            SearchTypedAsync<MultipleChoiceQuestion, MultipleChoiceQuestionDTO>(
-                _questions.QueryMultipleChoice(), query, restrictToUserId, ct);
+            SearchTypedAsync(
+                _questions.QueryMultipleChoice(), QuestionMappers.ProjectMultipleChoice, query, restrictToUserId, ct);
 
         public Task<PagedResponse<TrueFalseQuestionDTO>> SearchTrueFalseQuestionsAsync(
             FilterQuery query, Guid? restrictToUserId = null, CancellationToken ct = default) =>
-            SearchTypedAsync<TrueFalseQuestion, TrueFalseQuestionDTO>(
-                _questions.QueryTrueFalse(), query, restrictToUserId, ct);
+            SearchTypedAsync(
+                _questions.QueryTrueFalse(), QuestionMappers.ProjectTrueFalse, query, restrictToUserId, ct);
 
         public Task<PagedResponse<TypeTheAnswerQuestionDTO>> SearchTypeTheAnswerQuestionsAsync(
             FilterQuery query, Guid? restrictToUserId = null, CancellationToken ct = default) =>
-            SearchTypedAsync<TypeTheAnswerQuestion, TypeTheAnswerQuestionDTO>(
-                _questions.QueryTypeTheAnswer(), query, restrictToUserId, ct);
+            SearchTypedAsync(
+                _questions.QueryTypeTheAnswer(), QuestionMappers.ProjectTypeTheAnswer, query, restrictToUserId, ct);
 
         // Shared core for the typed searches: scope clamp → framework filter → project → page.
-        // The repository supplies the type-specific base query (with its includes); everything
-        // else is identical, so the filtering/sorting/paging logic lives in exactly one place.
+        // The repository supplies the type-specific base query (with its includes) and the caller
+        // supplies the projection; everything else is identical, so the filtering/sorting/paging
+        // logic lives in exactly one place.
         private async Task<PagedResponse<TDto>> SearchTypedAsync<TEntity, TDto>(
-            IQueryable<TEntity> source, FilterQuery query, Guid? restrictToUserId, CancellationToken ct)
+            IQueryable<TEntity> source, Expression<Func<TEntity, TDto>> projection,
+            FilterQuery query, Guid? restrictToUserId, CancellationToken ct)
             where TEntity : QuestionBase
         {
             if (restrictToUserId is { } uid)
@@ -111,7 +110,7 @@ namespace QuizAPI.Controllers.Questions.Services
 
             source = FilterEngine.Apply(source, query, QuestionFilterFields.For<TEntity>());
 
-            var projected = source.ProjectTo<TDto>(_mapper.ConfigurationProvider);
+            var projected = source.Select(projection);
             return await PagedResponse<TDto>.CreateAsync(projected, query.Page, query.PageSize, ct);
         }
 
@@ -124,12 +123,12 @@ namespace QuizAPI.Controllers.Questions.Services
             return question.Type switch
             {
                 QuestionType.MultipleChoice =>
-                    _mapper.Map<MultipleChoiceQuestionDTO>(await _questions.GetMultipleChoiceByIdAsync(id)),
+                    (await _questions.GetMultipleChoiceByIdAsync(id))?.ToDto(),
                 QuestionType.TrueFalse =>
-                    _mapper.Map<TrueFalseQuestionDTO>(await _questions.GetTrueFalseByIdAsync(id)),
+                    (await _questions.GetTrueFalseByIdAsync(id))?.ToDto(),
                 QuestionType.TypeTheAnswer =>
-                    _mapper.Map<TypeTheAnswerQuestionDTO>(await _questions.GetTypeTheAnswerByIdAsync(id)),
-                _ => _mapper.Map<QuestionBaseDTO>(question),
+                    (await _questions.GetTypeTheAnswerByIdAsync(id))?.ToDto(),
+                _ => question.ToDto(),
             };
         }
 
@@ -139,7 +138,7 @@ namespace QuizAPI.Controllers.Questions.Services
         public async Task<PagedList<MultipleChoiceQuestionDTO>> GetPaginatedMultipleChoiceQuestionsAsync(QuestionFilterParams filterParams)
         {
             var query = ApplyFilters(_questions.QueryMultipleChoice(), filterParams);
-            var projected = query.ProjectTo<MultipleChoiceQuestionDTO>(_mapper.ConfigurationProvider);
+            var projected = query.Select(QuestionMappers.ProjectMultipleChoice);
 
             return await PagedList<MultipleChoiceQuestionDTO>.CreateAsync(
                 projected, filterParams.PageNumber, filterParams.PageSize);
@@ -148,7 +147,7 @@ namespace QuizAPI.Controllers.Questions.Services
         public async Task<PagedList<TrueFalseQuestionDTO>> GetPaginatedTrueFalseQuestionsAsync(QuestionFilterParams filterParams)
         {
             var query = ApplyFilters(_questions.QueryTrueFalse(), filterParams);
-            var projected = query.ProjectTo<TrueFalseQuestionDTO>(_mapper.ConfigurationProvider);
+            var projected = query.Select(QuestionMappers.ProjectTrueFalse);
 
             return await PagedList<TrueFalseQuestionDTO>.CreateAsync(
                 projected, filterParams.PageNumber, filterParams.PageSize);
@@ -157,7 +156,7 @@ namespace QuizAPI.Controllers.Questions.Services
         public async Task<PagedList<TypeTheAnswerQuestionDTO>> GetPaginatedTypeTheAnswerQuestionsAsync(QuestionFilterParams filterParams)
         {
             var query = ApplyFilters(_questions.QueryTypeTheAnswer(), filterParams);
-            var projected = query.ProjectTo<TypeTheAnswerQuestionDTO>(_mapper.ConfigurationProvider);
+            var projected = query.Select(QuestionMappers.ProjectTypeTheAnswer);
 
             return await PagedList<TypeTheAnswerQuestionDTO>.CreateAsync(
                 projected, filterParams.PageNumber, filterParams.PageSize);
@@ -166,7 +165,7 @@ namespace QuizAPI.Controllers.Questions.Services
         // ── Creates ─────────────────────────────────────────────────────────────────
         public async Task<MultipleChoiceQuestionDTO> CreateMultipleChoiceQuestionAsync(MultipleChoiceQuestionCM questionCM, Guid userId)
         {
-            var question = _mapper.Map<MultipleChoiceQuestion>(questionCM);
+            var question = questionCM.ToEntity();
 
             foreach (var answerOption in question.AnswerOptions)
                 answerOption.Question = question;
@@ -187,12 +186,12 @@ namespace QuizAPI.Controllers.Questions.Services
                 await _imageService.AssociateImageWithEntityAsync(questionCM.ImageUrl, "Question", question.Id);
 
             var created = await _questions.GetMultipleChoiceByIdAsync(question.Id);
-            return _mapper.Map<MultipleChoiceQuestionDTO>(created);
+            return created?.ToDto();
         }
 
         public async Task<TrueFalseQuestionDTO> CreateTrueFalseQuestionAsync(TrueFalseQuestionCM questionCM, Guid userId)
         {
-            var question = _mapper.Map<TrueFalseQuestion>(questionCM);
+            var question = questionCM.ToEntity();
 
             question.UserId = userId;
             question.CreatedAt = DateTime.UtcNow;
@@ -207,12 +206,12 @@ namespace QuizAPI.Controllers.Questions.Services
                 await _imageService.AssociateImageWithEntityAsync(questionCM.ImageUrl, "Question", question.Id);
 
             var created = await _questions.GetTrueFalseByIdAsync(question.Id);
-            return _mapper.Map<TrueFalseQuestionDTO>(created);
+            return created?.ToDto();
         }
 
         public async Task<TypeTheAnswerQuestionDTO> CreateTypeTheAnswerQuestionAsync(TypeTheAnswerQuestionCM questionCM, Guid userId)
         {
-            var question = _mapper.Map<TypeTheAnswerQuestion>(questionCM);
+            var question = questionCM.ToEntity();
 
             question.UserId = userId;
             question.CreatedAt = DateTime.UtcNow;
@@ -227,7 +226,7 @@ namespace QuizAPI.Controllers.Questions.Services
                 await _imageService.AssociateImageWithEntityAsync(questionCM.ImageUrl, "Question", question.Id);
 
             var created = await _questions.GetTypeTheAnswerByIdAsync(question.Id);
-            return _mapper.Map<TypeTheAnswerQuestionDTO>(created);
+            return created?.ToDto();
         }
 
         // ── Updates ───────────────────────────────────────────────────────────────
@@ -240,7 +239,7 @@ namespace QuizAPI.Controllers.Questions.Services
                 questionUM.Id, canUpdateAny ? null : userId);
             if (existingQuestion == null) return null;
 
-            _mapper.Map(questionUM, existingQuestion);
+            questionUM.ApplyTo(existingQuestion);
 
             if (Enum.TryParse(questionUM.Visibility, true, out QuestionVisibility vis))
                 existingQuestion.Visibility = vis;
@@ -253,7 +252,7 @@ namespace QuizAPI.Controllers.Questions.Services
             await _questions.SaveChangesAsync();
 
             var updated = await _questions.GetMultipleChoiceByIdAsync(existingQuestion.Id);
-            return _mapper.Map<MultipleChoiceQuestionDTO>(updated);
+            return updated?.ToDto();
         }
 
         public async Task<TrueFalseQuestionDTO> UpdateTrueFalseQuestionAsync(
@@ -263,7 +262,7 @@ namespace QuizAPI.Controllers.Questions.Services
                 questionUM.Id, canUpdateAny ? null : userId);
             if (existingQuestion == null) return null;
 
-            _mapper.Map(questionUM, existingQuestion);
+            questionUM.ApplyTo(existingQuestion);
 
             if (Enum.TryParse(questionUM.Visibility, true, out QuestionVisibility visibility))
                 existingQuestion.Visibility = visibility;
@@ -274,7 +273,7 @@ namespace QuizAPI.Controllers.Questions.Services
             await _questions.SaveChangesAsync();
 
             var updated = await _questions.GetTrueFalseByIdAsync(existingQuestion.Id);
-            return _mapper.Map<TrueFalseQuestionDTO>(updated);
+            return updated?.ToDto();
         }
 
         public async Task<TypeTheAnswerQuestionDTO> UpdateTypeTheAnswerQuestionAsync(
@@ -284,7 +283,7 @@ namespace QuizAPI.Controllers.Questions.Services
                 questionUM.Id, canUpdateAny ? null : userId);
             if (existingQuestion == null) return null;
 
-            _mapper.Map(questionUM, existingQuestion);
+            questionUM.ApplyTo(existingQuestion);
 
             if (Enum.TryParse(questionUM.Visibility, true, out QuestionVisibility visibility))
                 existingQuestion.Visibility = visibility;
@@ -295,7 +294,7 @@ namespace QuizAPI.Controllers.Questions.Services
             await _questions.SaveChangesAsync();
 
             var updated = await _questions.GetTypeTheAnswerByIdAsync(existingQuestion.Id);
-            return _mapper.Map<TypeTheAnswerQuestionDTO>(updated);
+            return updated?.ToDto();
         }
 
         // ── Delete ────────────────────────────────────────────────────────────────
@@ -331,19 +330,19 @@ namespace QuizAPI.Controllers.Questions.Services
         public async Task<List<QuestionBaseDTO>> GetQuestionsByCategoryAsync(int categoryId)
         {
             var questions = await _questions.Query().Where(q => q.CategoryId == categoryId).ToListAsync();
-            return _mapper.Map<List<QuestionBaseDTO>>(questions);
+            return questions.ToDtoList();
         }
 
         public async Task<List<QuestionBaseDTO>> GetQuestionsByDifficultyAsync(int difficultyId)
         {
             var questions = await _questions.Query().Where(q => q.DifficultyId == difficultyId).ToListAsync();
-            return _mapper.Map<List<QuestionBaseDTO>>(questions);
+            return questions.ToDtoList();
         }
 
         public async Task<List<QuestionBaseDTO>> GetQuestionsByUserAsync(Guid userId)
         {
             var questions = await _questions.Query().Where(q => q.UserId == userId).ToListAsync();
-            return _mapper.Map<List<QuestionBaseDTO>>(questions);
+            return questions.ToDtoList();
         }
 
         // Legacy QuestionFilterParams filtering (predates the shared FilterEngine). Pure query

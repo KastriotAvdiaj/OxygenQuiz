@@ -69,9 +69,6 @@ builder.Services.AddHangfire(config =>
 });
 builder.Services.AddHangfireServer();
 
-// --- AutoMapper ---
-builder.Services.AddAutoMapper(typeof(Program));
-
 //IMemoryCache
 builder.Services.AddMemoryCache();
 

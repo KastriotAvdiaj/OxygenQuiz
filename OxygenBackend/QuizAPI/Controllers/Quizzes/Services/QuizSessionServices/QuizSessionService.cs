@@ -1,15 +1,14 @@
-using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using QuizAPI.Common;
 using QuizAPI.Data;
 using QuizAPI.DTOs.Quiz;
+using QuizAPI.Mapping;
 using QuizAPI.Models;
 using QuizAPI.Models.Quiz;
 using QuizAPI.ManyToManyTables;
 using QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.AbandonmentService;
 using QuizAPI.Controllers.Quizzes.Services.AnswerGradingServices;
-using AutoMapper.QueryableExtensions;
 using QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.SubmitAnswerService;
 
 namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
@@ -18,7 +17,6 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
     {
         private readonly ApplicationDbContext _context;
         private readonly ILogger<QuizSessionService> _logger;
-        private readonly IMapper _mapper;
         private readonly ISessionAbandonmentService _abandonmentService;
         private readonly IAnswerGradingService _gradingService;
        /* private readonly ISubmitAnswerService _submitAnswerService;*/
@@ -27,7 +25,6 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
         public QuizSessionService(
             ApplicationDbContext context,
             ILogger<QuizSessionService> logger,
-            IMapper mapper,
             ISessionAbandonmentService abandonmentService,
             IAnswerGradingService gradingService,
             /*ISubmitAnswerService submitAnswerService,*/
@@ -36,7 +33,6 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
         {
             _context = context;
             _logger = logger;
-            _mapper = mapper;
             _abandonmentService = abandonmentService;
             _gradingService = gradingService;
             _options = options.Value;
@@ -96,7 +92,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                 if (session.CurrentQuizQuestionId != null && session.CurrentQuestionStartTime.HasValue)
                 {
                     stateDto.Status = LiveQuizStatus.InProgress;
-                    var activeQuestionDto = _mapper.Map<CurrentQuestionDto>(session.CurrentQuizQuestion);
+                    var activeQuestionDto = session.CurrentQuizQuestion?.ToCurrentQuestionDto();
 
                     var timeTaken = DateTime.UtcNow - session.CurrentQuestionStartTime.Value;
                     var timeRemaining = activeQuestionDto.TimeLimitInSeconds - (int)timeTaken.TotalSeconds;
@@ -176,7 +172,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                         .LoadAsync();
                 }
 
-                var questionDto = _mapper.Map<CurrentQuestionDto>(fullQuestionForMapping);
+                var questionDto = fullQuestionForMapping.ToCurrentQuestionDto();
                 questionDto.TimeRemainingInSeconds = questionDto.TimeLimitInSeconds;
 
                 return Result<CurrentQuestionDto>.Success(questionDto);
@@ -236,7 +232,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                     session.Id, timeTaken.TotalSeconds, timeLimit, isTimedOut);
 
                 // Create the user answer record
-                var userAnswer = _mapper.Map<UserAnswer>(model);
+                var userAnswer = model.ToEntity();
                 userAnswer.SubmittedTime = DateTime.UtcNow;
                 userAnswer.QuestionStartTime = questionStartTime;
 
@@ -412,7 +408,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                 }
 
                 // No existing session, create new one
-                var session = _mapper.Map<QuizSession>(model);
+                var session = model.ToEntity();
                 session.Id = Guid.NewGuid();
                 session.StartTime = DateTime.UtcNow;
                 session.TotalScore = 0;
@@ -472,7 +468,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                 if (quiz == null)
                     return Result<QuizSessionDto>.ValidationFailure("Quiz not found or not available.");
 
-                var newSession = _mapper.Map<QuizSession>(model);
+                var newSession = model.ToEntity();
                 newSession.Id = Guid.NewGuid();
                 newSession.StartTime = DateTime.UtcNow;
                 newSession.TotalScore = 0;
@@ -676,7 +672,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
             QuizSession session, Guid sessionId, QuizQuestion question, int answeredCount, double elapsed)
         {
             await LoadQuestionDetails(question);
-            var questionDto = _mapper.Map<CurrentQuestionDto>(question);
+            var questionDto = question.ToCurrentQuestionDto();
             questionDto.TimeRemainingInSeconds = Math.Max(0, question.TimeLimitInSeconds - (int)elapsed);
 
             var sessionDto = await GetSessionDtoAsync(sessionId);
@@ -702,7 +698,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
             await _context.SaveChangesAsync();
 
             await LoadQuestionDetails(question);
-            var questionDto = _mapper.Map<CurrentQuestionDto>(question);
+            var questionDto = question.ToCurrentQuestionDto();
             questionDto.TimeRemainingInSeconds = timeRemaining;
 
             var sessionDto = await GetSessionDtoAsync(sessionId);
@@ -753,7 +749,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
         {
             return new ResumeResultDto
             {
-                Session = _mapper.Map<QuizSessionDto>(session),
+                Session = session.ToDto(),
                 IsQuizComplete = true,
                 SkippedCount = 0,
                 QuestionNumber = session.UserAnswers?.Count ?? 0,
@@ -791,7 +787,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                     .OrderByDescending(s => s.StartTime)
                     .ToListAsync();
 
-                var sessionDtos = _mapper.Map<List<QuizSessionSummaryDto>>(sessions);
+                var sessionDtos = sessions.ToSummaryDtoList();
                 return Result<List<QuizSessionSummaryDto>>.Success(sessionDtos);
             }
             catch (Exception ex)
@@ -953,7 +949,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
             var sessionDto = await _context.QuizSessions
                 .Where(s => s.Id == sessionId)
                 .AsNoTracking()
-                .ProjectTo<QuizSessionDto>(_mapper.ConfigurationProvider) 
+                .Select(QuizSessionMappers.ProjectSession) 
                 .FirstOrDefaultAsync();
 
             return sessionDto;

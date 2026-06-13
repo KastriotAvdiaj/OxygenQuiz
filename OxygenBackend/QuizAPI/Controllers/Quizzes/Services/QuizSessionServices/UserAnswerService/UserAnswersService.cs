@@ -1,8 +1,8 @@
-﻿using AutoMapper;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using QuizAPI.Common;
 using QuizAPI.Data;
 using QuizAPI.DTOs.Quiz;
+using QuizAPI.Mapping;
 
 namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.UserAnswerService
 {
@@ -10,13 +10,11 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.UserAnswerSer
     {
         private readonly ApplicationDbContext _context;
         private readonly ILogger<UserAnswerService> _logger;
-        private readonly IMapper _mapper;
 
-        public UserAnswerService(ApplicationDbContext context, ILogger<UserAnswerService> logger, IMapper mapper)
+        public UserAnswerService(ApplicationDbContext context, ILogger<UserAnswerService> logger)
         {
             _context = context;
             _logger = logger;
-            _mapper = mapper;
         }
 
         public async Task<Result<List<UserAnswerDto>>> GetSessionAnswersAsync(Guid sessionId)
@@ -30,7 +28,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.UserAnswerSer
                     .Where(ua => ua.SessionId == sessionId)
                     .ToListAsync();
 
-                var answerDtos = _mapper.Map<List<UserAnswerDto>>(answers);
+                var answerDtos = answers.ToDtoList();
                 return Result<List<UserAnswerDto>>.Success(answerDtos);
             }
             catch (Exception ex)
