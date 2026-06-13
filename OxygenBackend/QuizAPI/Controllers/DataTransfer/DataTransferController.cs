@@ -63,6 +63,7 @@ namespace QuizAPI.Controllers.DataTransfer
 
         // ── Categories ──────────────────────────────────────────────────────────
         [HttpGet("categories/export")]
+        [Authorize(Roles = "SuperAdmin, Admin")]
         public async Task<IActionResult> ExportCategories([FromQuery] string? format, CancellationToken ct)
         {
             DataFormatExtensions.TryParse(format, out var fmt);
@@ -131,6 +132,7 @@ namespace QuizAPI.Controllers.DataTransfer
 
         // ── Difficulties ────────────────────────────────────────────────────────
         [HttpGet("difficulties/export")]
+        [Authorize(Roles = "SuperAdmin, Admin")]
         public async Task<IActionResult> ExportDifficulties([FromQuery] string? format, CancellationToken ct)
         {
             DataFormatExtensions.TryParse(format, out var fmt);
@@ -195,6 +197,7 @@ namespace QuizAPI.Controllers.DataTransfer
 
         // ── Languages ───────────────────────────────────────────────────────────
         [HttpGet("languages/export")]
+        [Authorize(Roles = "SuperAdmin, Admin")]
         public async Task<IActionResult> ExportLanguages([FromQuery] string? format, CancellationToken ct)
         {
             DataFormatExtensions.TryParse(format, out var fmt);
@@ -322,6 +325,7 @@ namespace QuizAPI.Controllers.DataTransfer
 
         // ── Questions (all three subtypes) ───────────────────────────────────────
         [HttpGet("questions/export")]
+        [Authorize(Roles = "SuperAdmin, Admin")]
         public async Task<IActionResult> ExportQuestions([FromQuery] string? format, CancellationToken ct)
         {
             DataFormatExtensions.TryParse(format, out var fmt);
