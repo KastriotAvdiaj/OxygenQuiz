@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FallbackProps } from "react-error-boundary";
 import { AlertCircle, Home, RefreshCcw } from "lucide-react";
 import { LiftedButton } from "@/common/LiftedButton";
+import { getErrorFontClass } from "../errorFontZone";
 // import { AccessDeniedPage } from "../AccessDenied";
 
 // const isDevelopment = import.meta.env.DEV;
@@ -19,7 +20,7 @@ export const MainErrorFallback: React.FC<FallbackProps> = ({
 
   return (
     <div
-      className="flex min-h-screen w-full items-center justify-center bg-background p-4 "
+      className={`${getErrorFontClass()} flex min-h-screen w-full items-center justify-center bg-background p-4`}
       role="alert">
       <Card className="w-full max-w-md text-center border shadow-lg bg-background dark:border-muted dark:bg-primary/10">
         <CardHeader>
