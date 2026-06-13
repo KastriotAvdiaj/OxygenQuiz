@@ -58,6 +58,16 @@ namespace QuizAPI.Controllers.Reports
             return File(file.Content, file.ContentType, file.FileName);
         }
 
+        // ── Single-quiz analytics (individual quiz page) ──────────────────────────
+        [HttpGet("quiz/{quizId:int}/analytics")]
+        public async Task<IActionResult> QuizAnalytics(int quizId, [FromQuery] ReportCriteria criteria, CancellationToken ct)
+        {
+            if (_currentUser.UserId is not Guid userId) return Unauthorized();
+
+            var analytics = await _reports.GetQuizAnalyticsAsync(userId, quizId, criteria, ct);
+            return analytics is null ? NotFound() : Ok(analytics);
+        }
+
         // ── Question analytics ────────────────────────────────────────────────────
         [HttpGet("question-analytics")]
         public async Task<IActionResult> QuestionAnalytics([FromQuery] ReportCriteria criteria, CancellationToken ct)

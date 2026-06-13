@@ -2,6 +2,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.IO;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -15,6 +16,7 @@ namespace QuizAPI.Controllers.Image
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize] // Uploads must be by an authenticated user (storage abuse / unsolicited content).
     public class ImageUploadController : ControllerBase
     {
         private readonly IWebHostEnvironment _env;

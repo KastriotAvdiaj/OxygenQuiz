@@ -44,6 +44,7 @@ namespace QuizAPI.Controllers.Users
         }
 
         [HttpGet]
+        [Authorize(Roles = "Admin,SuperAdmin")] // Full user list is sensitive (matches /search).
         [ProducesResponseType(typeof(IEnumerable<UserDTO>), StatusCodes.Status200OK)]
         public async Task<ActionResult<IEnumerable<UserDTO>>> GetUsers(CancellationToken ct)
         {
@@ -133,7 +134,9 @@ namespace QuizAPI.Controllers.Users
             return Ok(users);
         }
 
+        // Admin-initiated user creation. Public self-signup goes through AuthenticationController.
         [HttpPost]
+        [Authorize(Roles = "Admin,SuperAdmin")]
         [ProducesResponseType(typeof(UserDTO), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -144,10 +147,14 @@ namespace QuizAPI.Controllers.Users
         }
 
         [HttpPut("{id:guid}")]
+        [Authorize]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> UpdateUser(Guid id, [FromBody] UpdateUserDTO dto, CancellationToken ct)
         {
+            if (!CanActOnUser(id)) return Forbid();
+
             await _userService.UpdateUserAsync(id, dto, ct);
             return NoContent();
         }
@@ -159,8 +166,19 @@ namespace QuizAPI.Controllers.Users
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> DeleteUser(Guid id, CancellationToken ct)
         {
+            if (!CanActOnUser(id)) return Forbid();
+
             await _userService.DeleteUserAsync(id, ct);
             return NoContent();
         }
+
+        /// <summary>
+        /// True if the caller is acting on their own account, or is an Admin/SuperAdmin.
+        /// Prevents one authenticated user from mutating another user's account (IDOR).
+        /// </summary>
+        private bool CanActOnUser(Guid targetUserId) =>
+            _currentUser.UserId == targetUserId
+            || User.IsInRole("Admin")
+            || User.IsInRole("SuperAdmin");
     }
 }

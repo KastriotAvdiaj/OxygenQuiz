@@ -135,6 +135,145 @@ namespace QuizAPI.Services.Reports
                 .ToList();
         }
 
+        public async Task<QuizAnalyticsDto?> GetQuizAnalyticsAsync(
+            Guid userId, int quizId, ReportCriteria criteria, CancellationToken ct = default)
+        {
+            var (from, toExclusive) = NormalizeRange(criteria);
+
+            // Ownership gate: only the quiz's creator may view its analytics.
+            var quiz = await _context.Quizzes.AsNoTracking()
+                .Where(q => q.Id == quizId && q.UserId == userId)
+                .Select(q => new { q.Id, q.Title })
+                .FirstOrDefaultAsync(ct);
+            if (quiz is null) return null;
+
+            // Sessions for this quiz within the window.
+            var sessions = await _context.QuizSessions.AsNoTracking()
+                .Where(s => s.QuizId == quizId)
+                .Where(s => from == null || s.StartTime >= from)
+                .Where(s => toExclusive == null || s.StartTime < toExclusive)
+                .Select(s => new
+                {
+                    s.TotalScore,
+                    s.IsCompleted,
+                    s.StartTime,
+                    s.EndTime,
+                    Abandoned = s.AbandonedAt != null,
+                })
+                .ToListAsync(ct);
+
+            var completed = sessions.Where(s => s.IsCompleted).ToList();
+
+            // The quiz's questions (so a question with no answers still appears with zeros).
+            var quizQuestions = await _context.QuizQuestions.AsNoTracking()
+                .Where(qq => qq.QuizId == quizId)
+                .Select(qq => new
+                {
+                    qq.QuestionId,
+                    qq.OrderInQuiz,
+                    Text = qq.Question.Text,
+                    Type = qq.Question.Type,
+                })
+                .ToListAsync(ct);
+
+            // Answers to this quiz's questions within the window.
+            var answers = await _context.UserAnswers.AsNoTracking()
+                .Where(a => a.QuizQuestion.QuizId == quizId)
+                .Where(a => from == null || (a.SubmittedTime != null && a.SubmittedTime >= from))
+                .Where(a => toExclusive == null || (a.SubmittedTime != null && a.SubmittedTime < toExclusive))
+                .Select(a => new
+                {
+                    a.QuizQuestion.QuestionId,
+                    a.Status,
+                    a.QuestionStartTime,
+                    a.SubmittedTime,
+                })
+                .ToListAsync(ct);
+
+            var answersByQuestion = answers.ToLookup(a => a.QuestionId);
+
+            var questionRows = quizQuestions
+                .OrderBy(q => q.OrderInQuiz)
+                .Select(q =>
+                {
+                    var outcomes = answersByQuestion[q.QuestionId].ToList();
+                    var correct = outcomes.Count(o => o.Status == AnswerStatus.Correct);
+                    var incorrect = outcomes.Count(o => o.Status == AnswerStatus.Incorrect);
+
+                    var times = outcomes
+                        .Where(o => o.SubmittedTime != null)
+                        .Select(o => (o.SubmittedTime!.Value - o.QuestionStartTime).TotalSeconds)
+                        .Where(seconds => seconds >= 0)
+                        .ToList();
+
+                    return new QuizQuestionAnalyticsRow
+                    {
+                        QuestionId = q.QuestionId,
+                        Order = q.OrderInQuiz,
+                        Text = Truncate(q.Text, 120),
+                        Type = q.Type.ToString(),
+                        TimesAnswered = outcomes.Count,
+                        CorrectCount = correct,
+                        IncorrectCount = incorrect,
+                        CorrectRate = Percent(correct, outcomes.Count),
+                        AverageTimeSeconds = times.Count == 0 ? 0 : Math.Round(times.Average(), 1),
+                    };
+                })
+                .ToList();
+
+            return new QuizAnalyticsDto
+            {
+                QuizId = quiz.Id,
+                Title = quiz.Title,
+                Attempts = sessions.Count,
+                Completed = completed.Count,
+                Abandoned = sessions.Count(s => s.Abandoned),
+                CompletionRate = Percent(completed.Count, sessions.Count),
+                AverageScore = completed.Count == 0 ? 0 : Math.Round(completed.Average(a => (double)a.TotalScore), 1),
+                AverageDurationSeconds = AverageDuration(completed.Select(a => (a.StartTime, a.EndTime))),
+                HighestScore = completed.Count == 0 ? 0 : completed.Max(a => a.TotalScore),
+                ScoreDistribution = BuildScoreDistribution(completed.Select(a => a.TotalScore).ToList()),
+                AttemptsOverTime = sessions
+                    .GroupBy(s => s.StartTime.Date)
+                    .OrderBy(g => g.Key)
+                    .Select(g => new AttemptsByDayPoint
+                    {
+                        Date = g.Key,
+                        Attempts = g.Count(),
+                        Completed = g.Count(s => s.IsCompleted),
+                    })
+                    .ToList(),
+                Questions = questionRows,
+            };
+        }
+
+        // Bucket completed-attempt scores into 5 equal-width bands from 0 to the highest score.
+        // Returns an empty list when there are no completed attempts (nothing to plot).
+        private static List<ScoreBucket> BuildScoreDistribution(List<int> scores)
+        {
+            if (scores.Count == 0) return new List<ScoreBucket>();
+
+            var max = scores.Max();
+            if (max <= 0)
+                return new List<ScoreBucket> { new() { Label = "0", Count = scores.Count } };
+
+            const int bucketCount = 5;
+            var width = (int)Math.Ceiling(max / (double)bucketCount);
+            var buckets = new List<ScoreBucket>();
+
+            for (var i = 0; i < bucketCount; i++)
+            {
+                var lo = i * width;
+                var hi = (i + 1) * width;            // exclusive upper bound (inclusive on the last)
+                var isLast = i == bucketCount - 1;
+
+                var count = scores.Count(s => s >= lo && (isLast ? s <= hi : s < hi));
+                buckets.Add(new ScoreBucket { Label = $"{lo}–{hi}", Count = count });
+            }
+
+            return buckets;
+        }
+
         // Date-only criteria read inclusively: "from" snaps to the start of the day, "to" to the
         // start of the next day (so the whole "to" day is included). The timestamps are stored as
         // UTC (timestamptz), and Npgsql requires comparison values to be Kind=Utc, so we mark them.
