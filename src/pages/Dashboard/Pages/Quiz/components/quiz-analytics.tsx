@@ -44,8 +44,12 @@ const tooltipStyle = {
 const formatDuration = (seconds: number) => {
   if (!seconds) return "—";
   const m = Math.floor(seconds / 60);
+  // Sub-minute durations keep one decimal (e.g. "0.1s", "1.2s") — the backend already
+  // rounds to one decimal, so this surfaces that precision instead of flooring it to whole
+  // seconds. At minute scale the fractional second is noise, so round it off.
+  if (m === 0) return `${seconds.toFixed(1)}s`;
   const s = Math.round(seconds % 60);
-  return m > 0 ? `${m}m ${s}s` : `${s}s`;
+  return `${m}m ${s}s`;
 };
 
 const formatDay = (iso: string) =>
