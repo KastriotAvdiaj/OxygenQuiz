@@ -7,7 +7,10 @@ the existing export framework (`IDataExportService`).
 ## Reports
 
 - **Quiz Performance** — per quiz you own: attempts, completed, abandoned, completion %, average
-  score (over completed attempts), average duration. Built from `QuizSessions`.
+  score (over completed attempts), average duration. Built from `QuizSessions`. A *completion*
+  means a session that was genuinely finished — sessions abandoned by timeout are flagged
+  `IsCompleted` internally but are **excluded** from "completed", the completion rate, and the
+  score/duration averages (otherwise an abandoned session's idle time would skew the duration).
 - **Question Analytics** — per question you own: times used in quizzes, times answered, correct /
   incorrect counts, correct %. Built from `UserAnswers` joined through `QuizQuestions`.
 

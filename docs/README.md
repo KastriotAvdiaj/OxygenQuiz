@@ -57,18 +57,21 @@ needed for a first run.
 
 ### 1. Database
 
-Have a PostgreSQL 15 server running. By default the API connects using the
-`PostgresConnection` string in `OxygenBackend/QuizAPI/appsettings.json`:
+Have a PostgreSQL 15 server running. Connection strings and other secrets are **not** committed
+to `appsettings.json` — supply them via .NET **user-secrets** for local dev (the project already
+has a `UserSecretsId`). The app fails fast at startup if a required value is missing. At minimum:
 
+```bash
+cd OxygenBackend/QuizAPI
+dotnet user-secrets set "ConnectionStrings:PostgresConnection" "Host=localhost;Port=5433;Database=OxygenQuiz;Username=postgres;Password=<your-pw>"
+dotnet user-secrets set "ConnectionStrings:MongoDBConnection" "mongodb://localhost:27017"
+dotnet user-secrets set "Jwt:Key" "$(openssl rand -base64 48)"
+dotnet user-secrets set "Seed:AdminPassword" "<admin-pw>"
 ```
-Host=localhost;Port=5433;Database=OxygenQuiz;Username=postgres;Password=...
-```
 
-Update the host/port/username/password to match your local PostgreSQL (note the default
-port here is **5433**, not the standard 5432). The `OxygenQuiz` database will be created/
-migrated automatically the first time the API runs.
-
-`MongoDBConnection` now defaults to `mongodb://localhost:27017`.
+Note the default Postgres port here is **5433**, not the standard 5432. The full list of required
+keys is in `OxygenBackend/QuizAPI/appsettings.example.json` (and the root README's "Backend" config
+section). The `OxygenQuiz` database is created/migrated automatically the first time the API runs.
 
 **Run the databases in Docker (recommended):** a `docker-compose.dev.yml` at the repo root brings
 up MongoDB and PostgreSQL with host ports that already match `appsettings.json` (Mongo 27017,
@@ -116,9 +119,9 @@ The dev server runs at **https://localhost:5173**. The API base URL comes from
 
 ## First login
 
-The seeder creates a default administrator account on first run. See
-`OxygenBackend/QuizAPI/Services/DbSeeder.cs` for the seeded username/password, and change
-the password after your first sign-in.
+The seeder creates a default administrator account on first run, from `Seed:AdminUsername`
+(in `appsettings.Development.json`) and `Seed:AdminPassword` (the user-secret you set above).
+Change the password after your first sign-in.
 
 ## Optional — AI / LLM chat microservice
 

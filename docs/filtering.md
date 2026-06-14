@@ -108,7 +108,8 @@ default sort so paging is stable.
 
        q = FilterEngine.Apply(q, query, QuestionFilterFields.Fields);
 
-       var projected = q.ProjectTo<QuestionBaseDTO>(_mapper.ConfigurationProvider);
+       // Project to the DTO with a static, EF-translatable projection (see Mapping/EntityMappers.cs).
+       var projected = q.Select(QuestionMappers.ProjectBase);
        return await PagedResponse<QuestionBaseDTO>.CreateAsync(projected, query.Page, query.PageSize, ct);
    }
    ```
