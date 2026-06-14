@@ -14,7 +14,13 @@ services:
         condition: service_healthy
     environment:
       - ConnectionStrings__PostgresConnection=Host=postgres;Database=OxygenQuiz;Username=postgres;Password=123
+      - ConnectionStrings__MongoDBConnection=mongodb://mongodb:27017
       - ASPNETCORE_ENVIRONMENT=Development
+      # Dev-only secrets so the container boots (user-secrets aren't available inside the
+      # container, and the app fails fast without these). Use real secrets in production —
+      # never these committed values.
+      - Jwt__Key=dev-only-insecure-key-change-in-production-0123456789
+      - Seed__AdminPassword=admin
 
   frontend:
     build:
