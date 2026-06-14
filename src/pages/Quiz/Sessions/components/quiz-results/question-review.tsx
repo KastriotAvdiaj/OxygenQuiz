@@ -98,6 +98,19 @@ export function QuestionReview({ session }: QuestionReviewProps) {
   const renderQuestionContent = (answer: any, questionNumber: number) => {
     const timeSpent = formatDuration(answer.timeSpentInSeconds * 1000);
 
+    // Multi-select MC answers store the chosen option ids as a CSV in submittedAnswer;
+    // single-select uses selectedOptionId. Build the set of ids the user picked.
+    const selectedOptionIds = new Set<number>(
+      answer.questionType === "MultipleChoice" && answer.submittedAnswer
+        ? String(answer.submittedAnswer)
+            .split(",")
+            .map((s: string) => parseInt(s.trim(), 10))
+            .filter((n: number) => !Number.isNaN(n))
+        : answer.selectedOptionId != null
+        ? [answer.selectedOptionId]
+        : []
+    );
+
     return (
       <div className="space-y-4">
         {/* Question Header */}
@@ -136,7 +149,7 @@ export function QuestionReview({ session }: QuestionReviewProps) {
           {answer.questionType === "MultipleChoice" && answer.answerOptions && (
             <div className="space-y-2">
               {answer.answerOptions.map((option: any) => {
-                const isSelected = answer.selectedOptionId === option.id;
+                const isSelected = selectedOptionIds.has(option.id);
                 const isCorrect = option.isCorrect;
 
                 return (

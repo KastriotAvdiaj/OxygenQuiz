@@ -208,6 +208,25 @@ namespace QuizAPI.Controllers.Quizzes.Services.AnswerGradingServices
 
         #region Private Helper Methods
 
+        // Multi-select answers arrive as a comma-separated list of option ids in SubmittedAnswer
+        // (e.g. "11,9"); single-select answers use SelectedOptionId. Returns the chosen option ids.
+        private static HashSet<int> ParseSelectedOptionIds(UserAnswer answer)
+        {
+            if (!string.IsNullOrWhiteSpace(answer.SubmittedAnswer))
+            {
+                var ids = answer.SubmittedAnswer
+                    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                    .Where(s => int.TryParse(s, out _))
+                    .Select(int.Parse)
+                    .ToHashSet();
+                if (ids.Count > 0) return ids;
+            }
+
+            return answer.SelectedOptionId.HasValue
+                ? new HashSet<int> { answer.SelectedOptionId.Value }
+                : new HashSet<int>();
+        }
+
         // Modified to accept context parameter for both sync and async operations
         private async Task<(bool IsCorrect, int Score)> CalculateScoreAsync(
             ApplicationDbContext context,
@@ -229,10 +248,23 @@ namespace QuizAPI.Controllers.Quizzes.Services.AnswerGradingServices
             switch (question)
             {
                 case MultipleChoiceQuestion mcq:
-                    var correctOption = await context.AnswerOptions
+                    var correctIds = (await context.AnswerOptions
                         .AsNoTracking()
-                        .FirstOrDefaultAsync(o => o.QuestionId == mcq.Id && o.IsCorrect);
-                    return correctOption?.Id == answer.SelectedOptionId;
+                        .Where(o => o.QuestionId == mcq.Id && o.IsCorrect)
+                        .Select(o => o.Id)
+                        .ToListAsync()).ToHashSet();
+
+                    if (mcq.AllowMultipleSelections)
+                    {
+                        // All-or-nothing: the chosen set must match the correct set exactly —
+                        // every correct option selected and no incorrect ones.
+                        var selectedIds = ParseSelectedOptionIds(answer);
+                        return selectedIds.Count > 0 && selectedIds.SetEquals(correctIds);
+                    }
+
+                    // Single-answer: the one chosen option must be a correct option.
+                    return answer.SelectedOptionId.HasValue
+                        && correctIds.Contains(answer.SelectedOptionId.Value);
 
                 case TrueFalseQuestion tfq:
                     bool submittedBool = string.Equals(answer.SubmittedAnswer, "True", StringComparison.OrdinalIgnoreCase);

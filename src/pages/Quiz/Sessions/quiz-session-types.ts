@@ -41,6 +41,7 @@ export interface CurrentQuestion {
   timeLimitInSeconds: number;
   timeRemainingInSeconds: number;
   questionType: QuestionType;
+  allowMultipleSelections?: boolean; // MC questions that accept more than one correct option
   explanation?: string; // Optional explanation for the correct answer
   instantFeedback?: boolean; // Whether to show instant feedback for this question
 }
@@ -51,6 +52,7 @@ export interface InstantFeedbackAnswerResult {
   scoreAwarded: number;
   isQuizComplete: boolean;
   correctOptionId?: number;
+  correctOptionIds?: number[]; // All correct options for multi-select MC questions
   correctAnswer?: string;
   acceptableAnswers?: string[];
   timeSpentInSeconds: number;

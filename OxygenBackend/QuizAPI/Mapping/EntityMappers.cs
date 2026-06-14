@@ -609,7 +609,9 @@ namespace QuizAPI.Mapping
                 QuestionText = qq.Question.Text,
                 TimeLimitInSeconds = qq.TimeLimitInSeconds,
                 QuestionType = qq.Question.Type.ToString(),
-                Options = options
+                Options = options,
+                AllowMultipleSelections =
+                    qq.Question is MultipleChoiceQuestion mcQuestion && mcQuestion.AllowMultipleSelections
             };
         }
 

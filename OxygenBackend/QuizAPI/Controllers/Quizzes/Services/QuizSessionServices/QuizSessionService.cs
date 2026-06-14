@@ -343,10 +343,15 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                     switch (currentQuestion)
                     {
                         case MultipleChoiceQuestion mcQuestion:
-                            // Find the correct option ID
-                            resultDto.CorrectOptionId = mcQuestion.AnswerOptions
-                                .FirstOrDefault(o => o.IsCorrect)?.Id;
-                            _logger.LogInformation("MC Question: CorrectOptionId={CorrectOptionId}", resultDto.CorrectOptionId);
+                            // All correct option ids (multi-select highlights every one);
+                            // CorrectOptionId stays populated for single-answer questions.
+                            var correctIds = mcQuestion.AnswerOptions
+                                .Where(o => o.IsCorrect)
+                                .Select(o => o.Id)
+                                .ToList();
+                            resultDto.CorrectOptionIds = correctIds;
+                            resultDto.CorrectOptionId = correctIds.FirstOrDefault();
+                            _logger.LogInformation("MC Question: CorrectOptionIds={CorrectOptionIds}", string.Join(",", correctIds));
                             break;
 
                         case TrueFalseQuestion tfQuestion:

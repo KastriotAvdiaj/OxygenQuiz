@@ -147,7 +147,13 @@ namespace QuizAPI.DTOs.Quiz
         public int TimeLimitInSeconds { get; set; }
         public int TimeRemainingInSeconds { get; set; }
         public required string QuestionType { get; set; }
-     
+
+        /// <summary>
+        /// True for multiple-choice questions that accept more than one correct option.
+        /// The client renders checkboxes + a "select all that apply" hint and submits the
+        /// chosen option ids as a comma-separated list in <c>SubmittedAnswer</c>.
+        /// </summary>
+        public bool AllowMultipleSelections { get; set; }
     }
 
     public class QuizSessionSummaryDto
@@ -221,6 +227,13 @@ namespace QuizAPI.DTOs.Quiz
         /// Only provided when instant feedback is enabled and answer was incorrect/timed out.
         /// </summary>
         public List<string>? AcceptableAnswers { get; set; }
+
+        /// <summary>
+        /// For multiple-choice questions that allow multiple selections: the full set of correct
+        /// option ids (so the client can highlight every correct option). For single-answer
+        /// questions <see cref="CorrectOptionId"/> is used instead.
+        /// </summary>
+        public List<int>? CorrectOptionIds { get; set; }
 
         /// <summary>
         /// Time spent on the question in seconds.
