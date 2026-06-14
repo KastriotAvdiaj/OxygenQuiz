@@ -1,8 +1,8 @@
-using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using QuizAPI.Controllers.Image.Services;
 using QuizAPI.DTOs.Quiz;
 using QuizAPI.Filtering;
+using QuizAPI.Mapping;
 using QuizAPI.ManyToManyTables;
 using QuizAPI.Models;
 using QuizAPI.Models.Quiz;
@@ -19,18 +19,15 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
     public class QuizService : IQuizService
     {
         private readonly IQuizRepository _quizzes;
-        private readonly IMapper _mapper;
         private readonly ILogger<QuizService> _logger;
         private readonly IImageService _imageService;
 
         public QuizService(
             IQuizRepository quizzes,
-            IMapper mapper,
             ILogger<QuizService> logger,
             IImageService imageService)
         {
             _quizzes = quizzes ?? throw new ArgumentNullException(nameof(quizzes));
-            _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _imageService = imageService ?? throw new ArgumentNullException(nameof(imageService));
         }
@@ -52,8 +49,8 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
 
         /// <summary>
         /// Shared filtering framework for quizzes (filters + search + sort + body-envelope
-        /// pagination). See docs/filtering.md. Quizzes map through AutoMapper after materialising
-        /// (the summary DTO isn't a straight SQL projection), so this uses the "map" overload of
+        /// pagination). See docs/filtering.md. Quizzes are mapped to summary DTOs after
+        /// materialising, so this uses the "map" overload of
         /// <see cref="PagedResponse{T}.CreateAsync"/>.
         ///
         /// The two flags are server-enforced scope clamps applied BEFORE the client's filters:
@@ -78,7 +75,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
 
             return await PagedResponse<QuizSummaryDTO>.CreateAsync(
                 q, query.Page, query.PageSize,
-                rows => _mapper.Map<List<QuizSummaryDTO>>(rows),
+                rows => rows.ToSummaryDtoList(),
                 ct);
         }
 
@@ -117,7 +114,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
             try
             {
                 var quiz = await _quizzes.GetByIdAsync(id);
-                return quiz == null ? null : _mapper.Map<QuizDTO>(quiz);
+                return quiz?.ToDto();
             }
             catch (Exception ex)
             {
@@ -134,7 +131,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                     return null;
 
                 var quizQuestions = await _quizzes.GetQuizQuestionsAsync(id);
-                return _mapper.Map<List<QuizQuestionDTO>>(quizQuestions);
+                return quizQuestions.ToDtoList();
             }
             catch (Exception ex)
             {
@@ -159,7 +156,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                 if (!await _quizzes.AllQuestionsExistAsync(questionIds))
                     throw new InvalidOperationException("One or more questions do not exist.");
 
-                var quiz = _mapper.Map<Quiz>(quizCM);
+                var quiz = quizCM.ToEntity();
                 quiz.UserId = userId;
                 quiz.CreatedAt = DateTime.UtcNow;
                 quiz.Version = 1;
@@ -171,7 +168,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                 var order = 1;
                 var quizQuestions = quizCM.Questions.Select(questionCM =>
                 {
-                    var quizQuestion = _mapper.Map<QuizQuestion>(questionCM);
+                    var quizQuestion = questionCM.ToEntity();
                     quizQuestion.Quiz = quiz;
                     quizQuestion.OrderInQuiz = order++;
                     return quizQuestion;
@@ -184,7 +181,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                 if (!string.IsNullOrEmpty(quizCM.ImageUrl))
                     await _imageService.AssociateImageWithEntityAsync(quizCM.ImageUrl, "Quizzes", quiz.Id);
 
-                return _mapper.Map<QuizDTO>(quiz);
+                return quiz.ToDto();
             }
             catch (Exception)
             {
@@ -241,7 +238,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
 
                 foreach (var questionUM in quizUM.Questions)
                 {
-                    var quizQuestion = _mapper.Map<QuizQuestion>(questionUM);
+                    var quizQuestion = questionUM.ToEntity();
                     quizQuestion.QuizId = quiz.Id;
                     await _quizzes.AddQuizQuestionAsync(quizQuestion);
                 }
@@ -356,15 +353,14 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
             }
         }
 
-        // Materialise a filtered quiz query into a page of summary DTOs (map after paging, since
-        // QuizSummaryDTO is an AutoMapper projection rather than a straight SQL select).
+        // Materialise a filtered quiz query into a page of summary DTOs (map after paging).
         private async Task<PagedList<QuizSummaryDTO>> ToSummaryPageAsync(
             IQueryable<Quiz> quizQuery, QuizFilterParams filterParams)
         {
             var pagedQuizzes = await PagedList<Quiz>.CreateAsync(
                 quizQuery, filterParams.PageNumber, filterParams.PageSize);
 
-            var quizDtos = _mapper.Map<List<QuizSummaryDTO>>(pagedQuizzes.Items);
+            var quizDtos = pagedQuizzes.Items.ToSummaryDtoList();
 
             return new PagedList<QuizSummaryDTO>(
                 quizDtos,

@@ -1,10 +1,10 @@
-﻿using AutoMapper;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using QuizAPI.Data;
 using QuizAPI.DTOs.Question;
 using QuizAPI.Filtering;
+using QuizAPI.Mapping;
 using QuizAPI.Models;
 using QuizAPI.Services.CurrentUserService;
 
@@ -15,13 +15,11 @@ namespace QuizAPI.Controllers.Questions
     public class QuestionCategoriesController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
-        private readonly IMapper _mapper;
         private readonly ICurrentUserService _currentUserService;
 
-        public QuestionCategoriesController(ApplicationDbContext context, IMapper mapper, ICurrentUserService currentUserService)
+        public QuestionCategoriesController(ApplicationDbContext context, ICurrentUserService currentUserService)
         {
             _context = context;
-            _mapper = mapper;
             _currentUserService = currentUserService;
         }
 
@@ -99,7 +97,7 @@ namespace QuizAPI.Controllers.Questions
                 return NotFound(new { message = "Category not found." });
             }
 
-            _mapper.Map(questionCategory, category);
+            questionCategory.ApplyTo(category);
             await _context.SaveChangesAsync();
             return NoContent();
         }
@@ -123,14 +121,14 @@ namespace QuizAPI.Controllers.Questions
                 return Unauthorized(new { message = "User ID not found in token." });
             }
 
-            var category = _mapper.Map<QuestionCategory>(questionCategory);
-            category.UserId = userId.Value; 
+            var category = questionCategory.ToEntity();
+            category.UserId = userId.Value;
             category.CreatedAt = DateTime.UtcNow;
 
             _context.QuestionCategories.Add(category);
             await _context.SaveChangesAsync();
 
-            var dto = _mapper.Map<QuestionCategoryDTO>(category);
+            var dto = category.ToDto();
             return CreatedAtAction(nameof(GetQuestionCategory), new { id = category.Id }, dto);
         }
 
