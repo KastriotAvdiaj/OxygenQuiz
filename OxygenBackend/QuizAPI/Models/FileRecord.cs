@@ -24,6 +24,10 @@ namespace QuizAPI.Models
         [MaxLength(500)]
         public string FilePath { get; set; } = string.Empty;
 
+        /// <summary>MIME type of the stored file, e.g. "image/png", "audio/mpeg", "video/mp4".</summary>
+        [MaxLength(100)]
+        public string? ContentType { get; set; }
+
         public long FileSize { get; set; }
 
         public Guid? UploadedBy { get; set; }

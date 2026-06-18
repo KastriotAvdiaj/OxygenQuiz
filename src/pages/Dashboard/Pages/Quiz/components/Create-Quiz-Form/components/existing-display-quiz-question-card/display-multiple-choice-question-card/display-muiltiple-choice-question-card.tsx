@@ -20,9 +20,9 @@ export const getQuestionTypeStyles = (type: QuestionType) => {
       };
     case QuestionType.TrueFalse:
       return {
-        borderColor: "border-purple-500/80",
-        backgroundColor: "bg-purple-300/10",
-        previewBorderColor: "border-purple-500",
+        borderColor: "border-primary/80",
+        backgroundColor: "bg-primary/10",
+        previewBorderColor: "border-primary",
       };
     case QuestionType.TypeTheAnswer:
       return {

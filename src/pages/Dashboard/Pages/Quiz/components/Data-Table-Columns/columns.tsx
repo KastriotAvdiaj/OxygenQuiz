@@ -84,7 +84,14 @@ export const quizColumns: ColumnDef<QuizSummaryDTO>[] = [
     accessorKey: "isPublished",
     header: "Status",
     cell: ({ row }) => {
-      const isPublished = row.original.isPublished;
+      const { isPublished, deletedAt } = row.original;
+      if (deletedAt) {
+        return (
+          <span className="bg-destructive/15 text-destructive border border-destructive/30 py-1 px-3 rounded-full">
+            Deleted
+          </span>
+        );
+      }
       return (
         <div>
           {isPublished ? (
@@ -130,15 +137,19 @@ export const quizColumns: ColumnDef<QuizSummaryDTO>[] = [
             >
               <Copy size={16} /> Copy ID
             </DropdownMenuItem>
-            <DropdownMenuSeparator className="bg-background/60" />
-            <DropdownMenuItem
-              onClick={(e) => {
-                e.stopPropagation();
-                e.preventDefault();
-              }}
-            >
-              <DeleteQuiz id={quiz.id} finished={close} />
-            </DropdownMenuItem>
+            {!quiz.deletedAt && (
+              <>
+                <DropdownMenuSeparator className="bg-background/60" />
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                  }}
+                >
+                  <DeleteQuiz id={quiz.id} finished={close} />
+                </DropdownMenuItem>
+              </>
+            )}
             <DropdownMenuSeparator className="bg-background/60" />
             <DropdownMenuItem className="hover:bg-background">
               <Link

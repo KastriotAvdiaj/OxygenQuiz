@@ -19,24 +19,21 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
         private readonly ILogger<QuizSessionService> _logger;
         private readonly ISessionAbandonmentService _abandonmentService;
         private readonly IAnswerGradingService _gradingService;
-       /* private readonly ISubmitAnswerService _submitAnswerService;*/
-        private readonly QuizSessionOptions _options;
+        private readonly ISubmitAnswerService _submitAnswerService;
 
         public QuizSessionService(
             ApplicationDbContext context,
             ILogger<QuizSessionService> logger,
             ISessionAbandonmentService abandonmentService,
             IAnswerGradingService gradingService,
-            /*ISubmitAnswerService submitAnswerService,*/
-            IOptions<QuizSessionOptions> options
+            ISubmitAnswerService submitAnswerService
             )
         {
             _context = context;
             _logger = logger;
             _abandonmentService = abandonmentService;
             _gradingService = gradingService;
-            _options = options.Value;
-            /*_submitAnswerService = submitAnswerService;*/
+            _submitAnswerService = submitAnswerService;
         }
 
         #region Live Quiz Flow
@@ -195,193 +192,12 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
 
         public async Task<Result<InstantFeedbackAnswerResultDto>> SubmitAnswerAsync(UserAnswerCM model)
         {
-            /*Doesnt work properly*/
-            /*return await _submitAnswerService.SubmitAnswerAsync(model);*/
-            /*OLD SUBMITANSWER ASYNC*/
-            try
-            {
-                _logger.LogInformation("SubmitAnswerAsync called with model: {@Model}", model);
-
-                using var transaction = await _context.Database.BeginTransactionAsync();
-
-                var session = await _context.QuizSessions
-                    .Include(s => s.Quiz)
-                    .Include(s => s.CurrentQuizQuestion)
-                        .ThenInclude(qq => qq!.Question)
-                    .FirstOrDefaultAsync(s => s.Id == model.SessionId);
-
-                if (session == null)
-                {
-                    _logger.LogWarning("Session {SessionId} not found.", model.SessionId);
-                    return Result<InstantFeedbackAnswerResultDto>.ValidationFailure("Session not found.");
-                }
-                if (session.IsCompleted)
-                {
-                    _logger.LogWarning("Session {SessionId} is already completed.", session.Id);
-                    return Result<InstantFeedbackAnswerResultDto>.ValidationFailure("This quiz session is already completed.");
-                }
-                if (session.CurrentQuizQuestionId == null || session.CurrentQuestionStartTime == null)
-                {
-                    _logger.LogWarning("Session {SessionId} not expecting an answer right now.", session.Id);
-                    return Result<InstantFeedbackAnswerResultDto>.ValidationFailure("Not currently expecting an answer. Please request the next question.");
-                }
-                if (session.CurrentQuizQuestionId != model.QuizQuestionId)
-                {
-                    _logger.LogWarning("Session {SessionId} got mismatched question Id. Expected {Expected}, got {Actual}",
-                        session.Id, session.CurrentQuizQuestionId, model.QuizQuestionId);
-                    return Result<InstantFeedbackAnswerResultDto>.ValidationFailure("Submitted answer is for the wrong question.");
-                }
-
-                var questionStartTime = session.CurrentQuestionStartTime.Value;
-                var timeLimit = session.CurrentQuizQuestion!.TimeLimitInSeconds + _options.GracePeriodSeconds;
-                var timeTaken = DateTime.UtcNow - questionStartTime;
-                bool isTimedOut = timeTaken.TotalSeconds > timeLimit || model.IsTimedOut;
-
-                _logger.LogInformation("Session {SessionId}: TimeTaken={TimeTakenSeconds}s, Limit={TimeLimitSeconds}s, TimedOut={TimedOut}",
-                    session.Id, timeTaken.TotalSeconds, timeLimit, isTimedOut);
-
-                // Create the user answer record
-                var userAnswer = model.ToEntity();
-                userAnswer.SubmittedTime = DateTime.UtcNow;
-                userAnswer.QuestionStartTime = questionStartTime;
-
-                _logger.LogInformation("Mapped UserAnswer before processing: {@UserAnswer}", userAnswer);
-
-                // Initialize answer based on whether we have instant feedback
-                bool hasInstantFeedback = session.Quiz.ShowFeedbackImmediately;
-                _logger.LogInformation("Session {SessionId}: HasInstantFeedback={HasInstantFeedback}", session.Id, hasInstantFeedback);
-
-                if (isTimedOut)
-                {
-                    userAnswer.Status = AnswerStatus.TimedOut;
-                    userAnswer.Score = 0;
-                }
-                else if (hasInstantFeedback)
-                {
-                    // Handle True/False questions
-                    if (session.CurrentQuizQuestion.Question is TrueFalseQuestion)
-                    {
-                        var originalSelectedOptionId = userAnswer.SelectedOptionId;
-                        userAnswer.SelectedOptionId = null;
-                        userAnswer.SubmittedAnswer = originalSelectedOptionId == 1 ? "True" : "False";
-
-                        _logger.LogInformation("True/False handling: OriginalOptionId={Original}, ConvertedAnswer={Converted}",
-                            originalSelectedOptionId, userAnswer.SubmittedAnswer);
-                    }
-
-                    var gradingResult = await _gradingService.GradeAnswerAsync(
-                        session.CurrentQuizQuestionId.Value,
-                        userAnswer,
-                        session.CurrentQuestionStartTime.Value);
-
-                    userAnswer.Status = gradingResult.Status;
-                    userAnswer.Score = gradingResult.Score;
-                    session.TotalScore += userAnswer.Score;
-
-                    _logger.LogInformation("Grading result: Status={Status}, Score={Score}", gradingResult.Status, gradingResult.Score);
-                }
-                else
-                {
-                    userAnswer.Status = AnswerStatus.Pending;
-                    userAnswer.Score = 0;
-
-                    _logger.LogInformation("Answer set to Pending for background grading.");
-                }
-                var currentQuestion = session.CurrentQuizQuestion.Question;
-                // Clear current question tracking
-                session.CurrentQuizQuestionId = null;
-                session.CurrentQuestionStartTime = null;
-
-                // Add answer to database
-                _context.UserAnswers.Add(userAnswer);
-                await _context.SaveChangesAsync();
-
-                _logger.LogInformation("UserAnswer saved with Id={UserAnswerId}, Status={Status}, Score={Score}",
-                    userAnswer.Id, userAnswer.Status, userAnswer.Score);
-
-                // Check if quiz is complete
-                var totalQuestionsInQuiz = await _context.QuizQuestions.CountAsync(qq => qq.QuizId == session.QuizId);
-                var answeredQuestions = await _context.UserAnswers.CountAsync(ua => ua.SessionId == session.Id);
-                bool isQuizComplete = totalQuestionsInQuiz == answeredQuestions;
-
-                _logger.LogInformation("Quiz progress: {Answered}/{Total} answered. Complete={Complete}",
-                    answeredQuestions, totalQuestionsInQuiz, isQuizComplete);
-
-                if (isQuizComplete)
-                {
-                    session.IsCompleted = true;
-                    session.EndTime = DateTime.UtcNow;
-                    await _context.SaveChangesAsync();
-
-                    _logger.LogInformation("Session {SessionId} marked complete at {EndTime}", session.Id, session.EndTime);
-                }
-
-                //  COMMIT TRANSACTION FIRST - Ensure all data is persisted
-                await transaction.CommitAsync();
-                _logger.LogInformation("Transaction committed for UserAnswer {UserAnswerId}", userAnswer.Id);
-
-                //  THEN ENQUEUE BACKGROUND GRADING - After data is guaranteed to be visible
-                if (!hasInstantFeedback && !isTimedOut)
-                {
-                    _gradingService.EnqueueAnswerGrading(userAnswer.Id, questionStartTime);
-                    _logger.LogInformation("Enqueued answer grading for UserAnswerId={UserAnswerId}", userAnswer.Id);
-                }
-
-                // Build the result DTO with instant feedback enhancements
-                var resultDto = new InstantFeedbackAnswerResultDto
-                {
-                    Status = hasInstantFeedback ? userAnswer.Status : AnswerStatus.Pending,
-                    ScoreAwarded = hasInstantFeedback ? userAnswer.Score : 0,
-                    IsQuizComplete = isQuizComplete,
-                    TimeSpentInSeconds = timeTaken.TotalSeconds
-                };
-
-                // Add correct answer information only when instant feedback is enabled 
-                // and the answer was incorrect or timed out
-                if (hasInstantFeedback && (userAnswer.Status == AnswerStatus.Incorrect || userAnswer.Status == AnswerStatus.TimedOut))
-                {
-                    switch (currentQuestion)
-                    {
-                        case MultipleChoiceQuestion mcQuestion:
-                            // All correct option ids (multi-select highlights every one);
-                            // CorrectOptionId stays populated for single-answer questions.
-                            var correctIds = mcQuestion.AnswerOptions
-                                .Where(o => o.IsCorrect)
-                                .Select(o => o.Id)
-                                .ToList();
-                            resultDto.CorrectOptionIds = correctIds;
-                            resultDto.CorrectOptionId = correctIds.FirstOrDefault();
-                            _logger.LogInformation("MC Question: CorrectOptionIds={CorrectOptionIds}", string.Join(",", correctIds));
-                            break;
-
-                        case TrueFalseQuestion tfQuestion:
-                            // Provide the correct True/False answer as a string
-                            resultDto.CorrectAnswer = tfQuestion.CorrectAnswer ? "True" : "False";
-                            _logger.LogInformation("T/F Question: CorrectAnswer={CorrectAnswer}", resultDto.CorrectAnswer);
-                            break;
-
-                        case TypeTheAnswerQuestion ttaQuestion:
-                            // Provide the primary correct answer and acceptable alternatives
-                            resultDto.CorrectAnswer = ttaQuestion.CorrectAnswer;
-                            if (ttaQuestion.AcceptableAnswers?.Any() == true)
-                            {
-                                resultDto.AcceptableAnswers = ttaQuestion.AcceptableAnswers.ToList();
-                            }
-                            _logger.LogInformation("TTA Question: CorrectAnswer={CorrectAnswer}, AcceptableAnswers={AcceptableAnswersCount}",
-                                resultDto.CorrectAnswer, resultDto.AcceptableAnswers?.Count ?? 0);
-                            break;
-                    }
-                }
-
-                _logger.LogInformation("Returning result: {@ResultDto}", resultDto);
-
-                return Result<InstantFeedbackAnswerResultDto>.Success(resultDto);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error submitting answer for session {SessionId}", model.SessionId);
-                return Result<InstantFeedbackAnswerResultDto>.Failure("An error occurred while submitting the answer.");
-            }
+            // Delegated to the dedicated SubmitAnswerService — the single source of truth for the
+            // submit / grade / persist flow. An inline copy used to live (and actually run) here in
+            // parallel with the service; the two were reconciled (True/False normalisation on every
+            // path, the client IsTimedOut flag honoured, multi-select correct-option ids surfaced)
+            // and the inline version removed so there is only one implementation to maintain.
+            return await _submitAnswerService.SubmitAnswerAsync(model);
         }
 
 

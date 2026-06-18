@@ -12,8 +12,10 @@ namespace QuizAPI.Repositories.Interfaces
     public interface IQuizRepository
     {
         /// <summary>No-tracking quiz query with the standard navigations (User / Category /
-        /// Language / Difficulty / QuizQuestions) included, for filtering + mapping.</summary>
-        IQueryable<Quiz> Query();
+        /// Language / Difficulty / QuizQuestions) included, for filtering + mapping.
+        /// When <paramref name="includeDeleted"/> is true the global soft-delete query filter is
+        /// bypassed (admin-only), so soft-deleted quizzes are returned alongside live ones.</summary>
+        IQueryable<Quiz> Query(bool includeDeleted = false);
 
         Task<Quiz?> GetByIdAsync(int id, CancellationToken ct = default);
         Task<bool> ExistsAsync(int id, CancellationToken ct = default);

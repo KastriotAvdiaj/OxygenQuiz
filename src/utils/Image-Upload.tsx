@@ -165,40 +165,40 @@ const AdminImageUpload: React.FC<BaseImageUploadProps> = ({
   const previewStyle = backgroundColor ? { backgroundColor } : {};
 
   return (
-    <div className={className}>
+    <div className={`w-full max-w-sm ${className}`}>
       {preview ? (
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <div className={`w-full rounded-md overflow-hidden border dark:${borderColor}`} style={previewStyle}>
             <img
               src={preview}
               alt="Uploaded preview"
-              className="w-full h-auto max-h-48 object-contain mx-auto"
+              className="w-full h-auto max-h-36 sm:max-h-44 object-contain mx-auto"
             />
           </div>
           <button
             type="button"
             onClick={handleClear}
             disabled={disabled}
-            className="text-sm text-red-600 hover:text-red-800 disabled:opacity-50"
+            className="text-xs text-red-600 hover:text-red-800 disabled:opacity-50 font-medium"
           >
             Remove Image
           </button>
         </div>
       ) : (
-        <div className="space-y-4">
-          <div className="flex flex-col gap-2">
+        <div className="space-y-2">
+          <div className="flex flex-col gap-1.5">
             <input
               type="file"
               accept="image/*"
               onChange={handleInputChange}
               disabled={disabled || uploading}
-              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 disabled:opacity-50 focus:outline-none cursor-pointer"
+              className="block w-full text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 disabled:opacity-50 focus:outline-none cursor-pointer"
             />
-            {error && <p className="text-red-500 text-sm">{error}</p>}
+            {error && <p className="text-red-500 text-xs">{error}</p>}
             {uploading && (
               <div className="flex items-center">
-                <div className="mr-2 h-4 w-4 rounded-full border-2 border-primary border-t-transparent animate-spin"></div>
-                <p className="text-sm text-muted-foreground">
+                <div className="mr-2 h-3.5 w-3.5 rounded-full border-2 border-primary border-t-transparent animate-spin"></div>
+                <p className="text-xs text-muted-foreground">
                   Uploading image...
                 </p>
               </div>
@@ -293,21 +293,18 @@ const UserImageUpload: React.FC<UserImageUploadProps> = ({
     : (backgroundColor === "bg-green-50 dark:bg-green-900/20" ? defaultBg : backgroundColor);
 
   return (
-    <div className={`w-full max-w-md mx-auto ${className}`}>
-      <div className="mb-4 text-center">
-      </div>
-
+    <div className={`w-full max-w-xs sm:max-w-sm mx-auto ${className}`}>
       {preview ? (
-        <div className="space-y-4">
+        <div className="space-y-3">
           <div className="relative group">
-            <div className={`rounded-xl overflow-hidden border-2 ${borderColor} ${backgroundColor} p-2`}>
+            <div className={`rounded-xl overflow-hidden border-2 ${borderColor} ${backgroundColor} p-1.5`}>
               <img
                 src={preview}
                 alt="Quiz image preview"
-                className="w-full h-48 object-cover rounded-lg"
+                className="w-full h-36 sm:h-40 object-cover rounded-lg"
               />
-              <div className="absolute top-3 right-3 bg-green-500 rounded-full p-1.5">
-                <CheckCircle className="w-4 h-4 text-white" />
+              <div className="absolute top-2.5 right-2.5 bg-green-500 rounded-full p-1">
+                <CheckCircle className="w-3.5 h-3.5 text-white" />
               </div>
             </div>
 
@@ -315,18 +312,18 @@ const UserImageUpload: React.FC<UserImageUploadProps> = ({
               type="button"
               onClick={handleClear}
               disabled={disabled}
-              className="mt-3 w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="mt-2 w-full flex items-center justify-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/30 text-xs text-red-600 dark:text-red-400 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
             >
-              <X className="w-4 h-4" />
+              <X className="w-3.5 h-3.5" />
               Remove Image
             </button>
           </div>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-2.5">
           <div
             className={`
-              relative border-2 border-dashed ${dropZoneBorder} ${dropZoneBg} backdrop-blur-xl rounded-xl p-8 text-center transition-all duration-200
+              relative border-2 border-dashed ${dropZoneBorder} ${dropZoneBg} backdrop-blur-xl rounded-xl p-5 sm:p-6 text-center transition-all duration-200
               ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
             `}
             onDragEnter={handleDrag}
@@ -342,17 +339,17 @@ const UserImageUpload: React.FC<UserImageUploadProps> = ({
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
             />
 
-            <div className="flex flex-col items-center space-y-4">
+            <div className="flex flex-col items-center space-y-2.5">
               {uploading ? (
                 <>
-                  <div className="p-4 bg-blue-100 dark:bg-blue-900/30 rounded-full">
-                    <div className="w-8 h-8 border-3 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                  <div className="p-2.5 bg-blue-100 dark:bg-blue-900/30 rounded-full">
+                    <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
                   </div>
                   <div>
-                    <p className="text-lg font-medium text-blue-600 dark:text-blue-400">
+                    <p className="text-sm font-medium text-blue-600 dark:text-blue-400">
                       Uploading your image...
                     </p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
                       Please wait while we process your file
                     </p>
                   </div>
@@ -360,26 +357,26 @@ const UserImageUpload: React.FC<UserImageUploadProps> = ({
               ) : (
                 <>
                   <div
-                    className={`p-4 rounded-full ${
+                    className={`p-2.5 rounded-full ${
                       dragActive
                         ? "bg-blue-100 dark:bg-blue-900/30"
                         : "bg-gray-100 dark:bg-gray-800"
                     }`}
                   >
                     {dragActive ? (
-                      <Upload className="w-8 h-8 text-blue-500" />
+                      <Upload className="w-6 h-6 text-blue-500" />
                     ) : (
-                      <Image className="w-8 h-8 text-gray-400" />
+                      <Image className="w-6 h-6 text-gray-400" />
                     )}
                   </div>
                   <div>
-                    <p className="text-lg font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-0.5">
                       {dragActive ? "Drop your image here" : "Choose an image"}
                     </p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
                       Drag & drop or click to browse
                     </p>
-                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                    <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">
                       JPG, PNG, GIF up to 5MB
                     </p>
                   </div>
@@ -389,14 +386,14 @@ const UserImageUpload: React.FC<UserImageUploadProps> = ({
           </div>
 
           {error && (
-            <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-              <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
-              <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+            <div className="flex items-center gap-1.5 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+              <AlertCircle className="w-3.5 h-3.5 text-red-500 flex-shrink-0" />
+              <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
             </div>
           )}
 
           <div className="text-center">
-            <p className="text-xs text-gray-500 dark:text-gray-400">
+            <p className="text-[11px] text-gray-400 dark:text-gray-500">
               Images help make your quiz more engaging and visual
             </p>
           </div>
@@ -419,7 +416,6 @@ export const ImageUpload: React.FC<
   return <UserImageUpload {...props} />;
 };
 
-// Named exports for direct usage
 export { AdminImageUpload, UserImageUpload };
 
 export default ImageUpload;

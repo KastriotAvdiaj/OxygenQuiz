@@ -232,6 +232,11 @@ namespace QuizAPI.Data
                 HasForeignKey(q => q.UserId).
                 OnDelete(DeleteBehavior.Restrict);
 
+            // Soft delete: hide quizzes with a DeletedAt timestamp from every query automatically.
+            // Played sessions / user answers are left untouched (their Quiz FK stays Restrict), so
+            // history survives. Admin reads bypass this with IgnoreQueryFilters (see QuizRepository).
+            modelBuilder.Entity<Quiz>().HasQueryFilter(q => q.DeletedAt == null);
+
             //Configuration for Quiz and User relationship
             modelBuilder.Entity<QuizQuestion>()
                 .HasOne(qq => qq.Quiz)

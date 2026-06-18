@@ -79,6 +79,13 @@ namespace QuizAPI.Models.Quiz
 
         public int Version { get; set; } = 1;
 
+        /// <summary>
+        /// Soft-delete marker. Null = live. When set, the quiz is hidden from every query by the
+        /// global query filter (see ApplicationDbContext) while its played sessions / user answers
+        /// stay intact. Admins can still surface these rows via IgnoreQueryFilters.
+        /// </summary>
+        public DateTime? DeletedAt { get; set; }
+
 
         public ICollection<QuizQuestion> QuizQuestions { get; set; } = new List<QuizQuestion>();
     }

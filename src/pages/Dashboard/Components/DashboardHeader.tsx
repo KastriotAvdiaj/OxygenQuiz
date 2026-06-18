@@ -28,13 +28,13 @@ export const DashboardHeader = () => {
       <div className="bg-background px-4 flex justify-end items-center gap-3">
         <Button
           variant={"outline"}
-          className="rounded-[0.2rem]"
+          className="rounded-sm"
           onClick={goBack}
         >
           <Undo2 size={20} /> Back
         </Button>
         <NavLink to="/">
-          <Button variant={"outline"}>
+          <Button variant={"outline"} className="rounded-sm">
             <Home size={20} />
             Home
           </Button>

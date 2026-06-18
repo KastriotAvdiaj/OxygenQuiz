@@ -24,12 +24,30 @@ namespace QuizAPI.Models
         TypeTheAnswer,
     }
 
+    public enum QuestionMediaType
+    {
+        None,
+        Image,
+        Audio,
+        Video,
+    }
+
     public abstract class QuestionBase
     {
         public int Id { get; set; }
         public string Text { get; set; } = string.Empty;
 
+        /// <summary>
+        /// Legacy image URL. Superseded by <see cref="MediaUrl"/> + <see cref="MediaType"/>,
+        /// but retained so existing image questions keep working without a data migration.
+        /// </summary>
         public string? ImageUrl { get; set; }
+
+        /// <summary>URL of an optional media attachment (image, audio, or video) shown with the question.</summary>
+        public string? MediaUrl { get; set; }
+
+        /// <summary>Which kind of media <see cref="MediaUrl"/> points to. None when there is no attachment.</summary>
+        public QuestionMediaType MediaType { get; set; } = QuestionMediaType.None;
 
         [Required]
         public QuestionVisibility Visibility { get; set; } = QuestionVisibility.Global;

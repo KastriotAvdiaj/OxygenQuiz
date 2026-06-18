@@ -36,6 +36,8 @@ export type FilterQuery = {
   search?: string;
   sort?: SortRule[];
   filters?: FilterRule[];
+  // Admin-only: also return soft-deleted rows (the quiz all/search endpoint honours this).
+  includeDeleted?: boolean;
 };
 
 // The standard body envelope every filtered endpoint returns.

@@ -83,32 +83,36 @@ body {
   }
  
   .dark {
-    --background: 220 20% 8%;
-    --foreground: 210 40% 98%;
-    --foreground-lighter: 210 30% 85%;
-    --card: 220 20% 8%;
-    --card-foreground: 210 40% 98%;
-    --popover: 220 20% 8%;
-    --popover-foreground: 210 40% 98%;
+    /* Neutral near-black surface ramp (hue 240, very low saturation) so contrast between
+       stacked items comes from lightness, not a blue tint. Anchored to the two reference
+       shades: base #121214 (240 5% 7%) and elevated #1a1a1e (240 7% 11%). The brand
+       --primary stays blue and is reserved for accents/actions, not surfaces. */
+    --background: 240 6% 7%;          /* #121214 — deepest base */
+    --foreground: 240 10% 96%;
+    --foreground-lighter: 240 8% 80%;
+    --card: 240 6% 11%;               /* #1a1a1e — elevated surface */
+    --card-foreground: 240 10% 96%;
+    --popover: 240 6% 11%;
+    --popover-foreground: 240 10% 96%;
     --primary: 217.2 91.2% 59.8%;
     --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32% 18%;
-    --muted-foreground: 217.2 20% 70%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --secondary: 240 5% 15%;          /* item-on-card contrast, neutral */
+    --secondary-foreground: 240 10% 96%;
+    --muted: 240 5% 15%;
+    --muted-foreground: 240 6% 65%;
+    --accent: 240 5% 18%;             /* hover/active surface, a touch lighter */
+    --accent-foreground: 240 10% 98%;
     --destructive: 0 62.8% 37.6%;
     --destructive-foreground: 210 40% 98%;
-    --border: 217.2 40% 20%;
-    --input: 217.2 40% 20%;
-    --ring: 224.3 76.3% 48%;
+    --border: 240 5% 18%;
+    --input: 240 5% 18%;
+    --ring: 217.2 91.2% 59.8%;        /* focus ring = brand primary */
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
-    
+
     /* Quiz-specific theme variables - Dark Mode */
     --quiz-primary: var(--primary);
     --quiz-primary-light: 217.2 91.2% 70%;
@@ -119,10 +123,10 @@ body {
     --quiz-error-light: 0 84% 75%;
     --quiz-warning: 38 92% 60%;
     --quiz-warning-light: 38 92% 75%;
-    --quiz-neutral: 215 20% 65%;
+    --quiz-neutral: 240 6% 65%;
     --quiz-surface: var(--card);
-    --quiz-surface-elevated: 217.2 40% 15%;
-    --quiz-border-subtle: 217.2 40% 22%;
+    --quiz-surface-elevated: 240 6% 14%;
+    --quiz-border-subtle: 240 5% 18%;
     --quiz-text-primary: var(--foreground);
     --quiz-text-secondary: var(--muted-foreground);
     --quiz-shadow: 0 0% 0%;

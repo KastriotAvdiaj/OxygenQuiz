@@ -53,17 +53,19 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
         /// materialising, so this uses the "map" overload of
         /// <see cref="PagedResponse{T}.CreateAsync"/>.
         ///
-        /// The two flags are server-enforced scope clamps applied BEFORE the client's filters:
+        /// The flags are server-enforced scope clamps applied BEFORE the client's filters:
         ///   - <paramref name="restrictToUserId"/>: only this user's quizzes ("my quizzes").
         ///   - <paramref name="publicOnly"/>: only active + published quizzes (public catalogue).
+        ///   - <paramref name="includeDeleted"/>: admin-only; also returns soft-deleted quizzes.
         /// </summary>
         public async Task<PagedResponse<QuizSummaryDTO>> SearchQuizzesAsync(
             FilterQuery query,
             Guid? restrictToUserId = null,
             bool publicOnly = false,
+            bool includeDeleted = false,
             CancellationToken ct = default)
         {
-            IQueryable<Quiz> q = _quizzes.Query();
+            IQueryable<Quiz> q = _quizzes.Query(includeDeleted);
 
             if (restrictToUserId is { } uid)
                 q = q.Where(x => x.UserId == uid);
@@ -316,38 +318,36 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
             }
         }
 
-        public async Task<bool> DeleteQuizAsync(Guid userId, int quizId)
+        public async Task<bool> DeleteQuizAsync(Guid userId, int quizId, bool isAdmin = false)
         {
-            using var transaction = await _quizzes.BeginTransactionAsync();
-
             try
             {
-                var quiz = await _quizzes.GetWithQuestionsForUpdateAsync(quizId);
+                // GetTrackedAsync honours the global query filter, so an already soft-deleted quiz
+                // reads back as null and we return false (treated as 404) — idempotent delete.
+                var quiz = await _quizzes.GetTrackedAsync(quizId);
                 if (quiz == null)
                     return false;
 
-                if (quiz.UserId != userId)
+                // Owners can delete their own quizzes; admins / super-admins can delete any quiz.
+                if (!isAdmin && quiz.UserId != userId)
                 {
                     _logger.LogWarning("User {UserId} attempted to delete quiz {QuizId} owned by {OwnerId}",
                         userId, quizId, quiz.UserId);
                     return false;
                 }
 
-                // Remove the join rows first (FK constraints), then the quiz.
-                if (quiz.QuizQuestions.Any())
-                    _quizzes.RemoveQuizQuestions(quiz.QuizQuestions);
-
-                _quizzes.Remove(quiz);
-
+                // Soft delete: stamp DeletedAt instead of removing the row. The quiz disappears from
+                // every list (global query filter) while its QuizSessions / UserAnswers — i.e. the
+                // played matches — stay valid. No FK juggling, so quizzes that have been played
+                // delete cleanly instead of throwing on the QuizSession Restrict constraint.
+                quiz.DeletedAt = DateTime.UtcNow;
                 await _quizzes.SaveChangesAsync();
-                await transaction.CommitAsync();
 
-                _logger.LogInformation("Quiz {QuizId} deleted successfully by user {UserId}", quizId, userId);
+                _logger.LogInformation("Quiz {QuizId} soft-deleted by user {UserId}", quizId, userId);
                 return true;
             }
             catch (Exception ex)
             {
-                await transaction.RollbackAsync();
                 _logger.LogError(ex, "Error deleting quiz {QuizId} for user {UserId}", quizId, userId);
                 throw;
             }

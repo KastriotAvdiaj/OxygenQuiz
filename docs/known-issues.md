@@ -95,3 +95,14 @@ Auth-specific enhancements are tracked in [authentication.md](authentication.md)
 Detailed in [authentication.md](authentication.md) "Recommended improvements":
 refresh-token reuse detection, "log out everywhere", a stale-token cleanup job,
 and tightening `ClockSkew`. All **P3**.
+
+
+# Quiz full error
+
+When an extra person tries to enter a quiz room after the max amount of people it doesn't specify the reason
+the app didn't allow for them to join.
+
+# Start another quiz game
+
+The app throws this error "An unexpected error occurred invoking 'StartMatch' on the server. HubException: The match has already started."
+after the first quiz game ended and the host tries to start another one.

@@ -42,7 +42,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.SubmitAnswerS
                 if (!validationResult.IsSuccess)
                     return Result<InstantFeedbackAnswerResultDto>.ValidationFailure(validationResult.ValidationErrors);
 
-                var timeContext = CalculateTimeContext(session!);
+                var timeContext = CalculateTimeContext(session!, model);
                 var userAnswer = CreateUserAnswer(model, session, timeContext);
 
                 await ProcessAnswerAsync(userAnswer, session, timeContext);
@@ -106,12 +106,15 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.SubmitAnswerS
             return Result.Success();
         }
 
-        private TimeContext CalculateTimeContext(QuizSession session)
+        private TimeContext CalculateTimeContext(QuizSession session, UserAnswerCM model)
         {
             var questionStartTime = session.CurrentQuestionStartTime!.Value;
             var timeLimit = session.CurrentQuizQuestion!.TimeLimitInSeconds + _options.GracePeriodSeconds;
             var timeTaken = DateTime.UtcNow - questionStartTime;
-            var isTimedOut = timeTaken.TotalSeconds > timeLimit;
+            // A timeout is tripped by either the server-side clock OR the client's own timer flag
+            // (the client may have expired before the request arrived). Dropping model.IsTimedOut —
+            // as this service did originally — let late client submissions score as live answers.
+            var isTimedOut = timeTaken.TotalSeconds > timeLimit || model.IsTimedOut;
 
             _logger.LogInformation("Session {SessionId}: TimeTaken={TimeTakenSeconds}s, Limit={TimeLimitSeconds}s, TimedOut={TimedOut}",
                 session.Id, timeTaken.TotalSeconds, timeLimit, isTimedOut);
@@ -131,6 +134,13 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.SubmitAnswerS
 
         private async Task ProcessAnswerAsync(UserAnswer userAnswer, QuizSession session, TimeContext timeContext)
         {
+            // Normalise True/False answers (selectedOptionId 1/2 -> SubmittedAnswer "True"/"False")
+            // for EVERY path. This previously lived only in the immediate-feedback branch, so quizzes
+            // with ShowFeedbackImmediately = false persisted a null SubmittedAnswer. The background
+            // grader then read that as "not True", marking every True-correct question wrong, and the
+            // results review (which matches on SubmittedAnswer) had no answer to highlight.
+            NormalizeTrueFalseAnswer(userAnswer, session.CurrentQuizQuestion!.Question);
+
             if (timeContext.IsTimedOut)
             {
                 MarkAsTimedOut(userAnswer);
@@ -156,8 +166,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.SubmitAnswerS
 
         private async Task GradeAnswerImmediatelyAsync(UserAnswer userAnswer, QuizSession session)
         {
-            NormalizeTrueFalseAnswer(userAnswer, session.CurrentQuizQuestion!.Question);
-
+            // NOTE: True/False normalisation now happens once in ProcessAnswerAsync, before this runs.
             var gradingResult = await _gradingService.GradeAnswerAsync(
                 session.CurrentQuizQuestionId!.Value,
                 userAnswer,
@@ -267,10 +276,16 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.SubmitAnswerS
             switch (question)
             {
                 case MultipleChoiceQuestion mcQuestion:
-                    resultDto.CorrectOptionId = mcQuestion.AnswerOptions
-                        .FirstOrDefault(o => o.IsCorrect)?.Id;
-                    _logger.LogInformation("MC Question: CorrectOptionId={CorrectOptionId}",
-                        resultDto.CorrectOptionId);
+                    // Surface every correct option (multi-select needs the full set to highlight);
+                    // CorrectOptionId stays populated for single-answer clients.
+                    var correctIds = mcQuestion.AnswerOptions
+                        .Where(o => o.IsCorrect)
+                        .Select(o => o.Id)
+                        .ToList();
+                    resultDto.CorrectOptionIds = correctIds;
+                    resultDto.CorrectOptionId = correctIds.FirstOrDefault();
+                    _logger.LogInformation("MC Question: CorrectOptionIds={CorrectOptionIds}",
+                        string.Join(",", correctIds));
                     break;
 
                 case TrueFalseQuestion tfQuestion:

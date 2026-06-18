@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { HelpCircle, Clock, User, Calendar, Play, Users } from "lucide-react";
 import type { QuizSummaryDTO } from "@/types/quiz-types";
 import { secondsToMinutes } from "./quiz-card";
+import { LiftedButton } from "@/common/LiftedButton";
 
 interface QuizStartModalProps {
   quiz: QuizSummaryDTO;
@@ -31,9 +32,9 @@ export function QuizStartModal({
     try {
       return quiz.colorPaletteJson
         ? (JSON.parse(quiz.colorPaletteJson) as string[])
-        : ["#6366f1", "#8b5cf6", "#06b6d4"];
+        : ["#6366f1", "#3b82f6", "#06b6d4"];
     } catch {
-      return ["#6366f1", "#8b5cf6", "#06b6d4"];
+      return ["#6366f1", "#3b82f6", "#06b6d4"];
     }
   }, [quiz.colorPaletteJson]);
 
@@ -63,7 +64,7 @@ export function QuizStartModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md mx-auto border-[3px] border-foreground bg-card font-quiz p-0 overflow-hidden gap-0">
+      <DialogContent className="sm:max-w-md mx-auto  border-foreground bg-card font-quiz p-0 overflow-hidden gap-0">
         {/* Top gradient accent strip */}
         <div
           className="h-2.5 w-full"
@@ -158,10 +159,12 @@ export function QuizStartModal({
             </div>
           </div>
 
+          <div className="w-full">
           {/* Action button */}
-          <Button
+          <LiftedButton
             onClick={handleStartQuiz}
-            className="w-full h-12 text-base font-bold font-quiz tracking-wider border-[3px] border-foreground text-white transition-all hover:-translate-y-0.5 hover:shadow-lg"
+            outerClassName="w-full"
+            className="h-12 w-full text-base font-bold font-quiz tracking-wider border-[2px] border-foreground text-white transition-all hover:-translate-y-0.5 hover:shadow-lg"
             style={{
               backgroundColor: primaryColor,
             }}
@@ -177,7 +180,8 @@ export function QuizStartModal({
                 Start Quiz
               </>
             )}
-          </Button>
+          </LiftedButton>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

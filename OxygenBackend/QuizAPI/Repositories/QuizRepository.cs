@@ -23,8 +23,13 @@ namespace QuizAPI.Repositories
                   .Include(q => q.Difficulty)
                   .Include(q => q.QuizQuestions);
 
-        public IQueryable<Quiz> Query() =>
-            WithRelations(_context.Quizzes.AsNoTracking());
+        public IQueryable<Quiz> Query(bool includeDeleted = false)
+        {
+            IQueryable<Quiz> quizzes = _context.Quizzes.AsNoTracking();
+            if (includeDeleted)
+                quizzes = quizzes.IgnoreQueryFilters(); // admin: surface soft-deleted quizzes too
+            return WithRelations(quizzes);
+        }
 
         public Task<Quiz?> GetByIdAsync(int id, CancellationToken ct = default) =>
             WithRelations(_context.Quizzes.AsNoTracking()).FirstOrDefaultAsync(q => q.Id == id, ct);

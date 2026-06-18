@@ -38,7 +38,7 @@ export const TrueFalseCard: React.FC<ExistingQuestionCardProps> = (props) => {
       <TrueFalseAnswers question={question} />
       <QuestionMetadata
         question={question}
-        backgroundColor="bg-purple-200/50 dark:bg-purple-900/30 shadow-md"
+        backgroundColor="bg-primary/15 dark:bg-primary/25 shadow-md"
       />
       <QuestionFooter question={question} />
     </BaseQuestionCard>

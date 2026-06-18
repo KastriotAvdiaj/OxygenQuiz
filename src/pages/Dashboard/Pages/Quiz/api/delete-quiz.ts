@@ -1,7 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/Api-client";
 import { MutationConfig } from "@/lib/React-query";
-import { getAllQuizzesQueryOptions } from "./get-all-quizzes";
 
 type DeleteQuizDTO = {
     quizId: number;
@@ -24,10 +23,11 @@ type DeleteQuizDTO = {
   
     return useMutation({
       onSuccess: (...args) => {
-        queryClient.invalidateQueries({
-          queryKey: getAllQuizzesQueryOptions().queryKey,
-        });
-        // Refresh the user-dashboard ("my") quizzes list + profile total too.
+        // Quiz lists live under two key families: ["quiz", …] (getAll + single) and
+        // ["quizzes", …] (search/public/mine — what the dashboard table actually uses).
+        // Invalidate both prefixes so every list refetches, plus the user-dashboard list.
+        queryClient.invalidateQueries({ queryKey: ["quiz"] });
+        queryClient.invalidateQueries({ queryKey: ["quizzes"] });
         queryClient.invalidateQueries({ queryKey: ["myQuizzes"] });
         onSuccess?.(...args);
       },

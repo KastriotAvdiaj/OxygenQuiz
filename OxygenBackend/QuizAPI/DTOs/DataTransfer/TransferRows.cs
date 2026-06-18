@@ -117,6 +117,45 @@ namespace QuizAPI.DTOs.DataTransfer
         public bool AllowPartialMatch { get; set; }
     }
 
+    // ── Quizzes ─────────────────────────────────────────────────────────────────
+    public sealed class QuizExportRow
+    {
+        public int Id { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string? Description { get; set; }
+        public string Category { get; set; } = string.Empty;
+        public string Language { get; set; } = string.Empty;
+        public string Difficulty { get; set; } = string.Empty;
+        public string Visibility { get; set; } = string.Empty;
+        public int TimeLimitInSeconds { get; set; }
+        public bool ShuffleQuestions { get; set; }
+        public bool ShowFeedbackImmediately { get; set; }
+        public bool IsPublished { get; set; }
+        public int QuestionCount { get; set; }
+        public string QuestionIds { get; set; } = string.Empty; // pipe-separated, in quiz order: "12|15|18"
+        public string CreatedBy { get; set; } = string.Empty;
+        public DateTime CreatedAt { get; set; }
+    }
+
+    public sealed class QuizImportRow
+    {
+        public string Title { get; set; } = string.Empty;
+        public string? Description { get; set; }
+        public int CategoryId { get; set; }
+        public int LanguageId { get; set; }
+        public int DifficultyId { get; set; }
+        public string Visibility { get; set; } = "Private";   // Private / Public / Friends
+        public int? TimeLimitInSeconds { get; set; }
+        public bool ShuffleQuestions { get; set; }
+        public bool ShowFeedbackImmediately { get; set; }
+        public bool IsPublished { get; set; }
+
+        // Optional pipe-separated IDs of EXISTING questions to attach, in order: "12|15|18".
+        // Blank imports the quiz as a draft you finish in the editor; any id that doesn't exist
+        // causes the whole row to be skipped (CreateQuizAsync validates the set).
+        public string? QuestionIds { get; set; }
+    }
+
     // ── Import outcome (returned to the client) ─────────────────────────────────
     public sealed class ImportResult
     {

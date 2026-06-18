@@ -73,7 +73,9 @@ export function TrueOrFalseQuestion({
   ) => {
     const feedback = getFeedbackState(option.id);
     const isSelected = selectedOptionId === option.id;
-    const defaultColor = isTrue ? "#22c55e" : "#ef4444";
+    // Neutral by default — True/False are distinguished by their icon + label, not by colour.
+    // Green/red is reserved for post-answer feedback (correct/incorrect) below.
+    const defaultColor = "hsl(var(--muted-foreground))";
 
     return (
       <motion.div
@@ -105,7 +107,7 @@ export function TrueOrFalseQuestion({
             }
             ${
               feedback === "default" && !isSelected
-                ? "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                ? "border-border hover:border-primary/40 bg-card text-foreground"
                 : ""
             }
           `}
@@ -116,7 +118,7 @@ export function TrueOrFalseQuestion({
                 : feedback === "incorrect"
                 ? "#ef4444"
                 : isSelected
-                ? "#2540d9"
+                ? "hsl(var(--primary))"
                 : undefined,
             backgroundColor:
               feedback === "correct"
@@ -124,7 +126,7 @@ export function TrueOrFalseQuestion({
                 : feedback === "incorrect"
                 ? "#ef444415"
                 : isSelected
-                ? "#2540d915"
+                ? "hsl(var(--primary) / 0.1)"
                 : undefined,
             borderWidth: "3px",
           }}>
@@ -136,7 +138,7 @@ export function TrueOrFalseQuestion({
                   feedback === "correct"
                     ? "#10b981"
                     : isSelected
-                    ? "#2540d9"
+                    ? "hsl(var(--primary))"
                     : defaultColor,
               }}>
               {isTrue ? (

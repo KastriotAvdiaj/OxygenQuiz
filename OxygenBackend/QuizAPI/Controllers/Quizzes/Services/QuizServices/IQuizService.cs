@@ -21,6 +21,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
             FilterQuery query,
             Guid? restrictToUserId = null,
             bool publicOnly = false,
+            bool includeDeleted = false,
             CancellationToken ct = default);
 
         /// <summary>
@@ -84,11 +85,12 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
         Task<PagedList<QuizSummaryDTO>> GetPublicQuizzesAsync(QuizFilterParams filterParams);
 
         /// <summary>
-        /// Delete a quiz and all its associated quiz-question relationships
+        /// Soft-delete a quiz (stamps DeletedAt; played sessions / answers are preserved).
         /// </summary>
         /// <param name="userId">ID of the user attempting to delete the quiz</param>
         /// <param name="quizId">ID of the quiz to delete</param>
+        /// <param name="isAdmin">When true, the ownership check is bypassed so admins can delete any quiz.</param>
         /// <returns>True if deleted successfully, false if not found or user doesn't have permission</returns>
-        Task<bool> DeleteQuizAsync(Guid userId, int quizId);
+        Task<bool> DeleteQuizAsync(Guid userId, int quizId, bool isAdmin = false);
     }
 }

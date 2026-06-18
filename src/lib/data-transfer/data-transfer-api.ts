@@ -9,7 +9,8 @@ export type TransferEntity =
   | "difficulties"
   | "languages"
   | "users"
-  | "questions";
+  | "questions"
+  | "quizzes";
 
 export type ExportFormat = "csv" | "excel" | "json";
 

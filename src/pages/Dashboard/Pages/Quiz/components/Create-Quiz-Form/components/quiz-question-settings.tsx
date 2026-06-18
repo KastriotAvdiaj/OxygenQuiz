@@ -122,7 +122,7 @@ export const QuestionSettingsCard: React.FC<QuestionSettingsCardProps> = ({
               variant="outline"
               size="sm"
               onClick={() => resetQuestionSettings(question.id)}
-              className="h-9 text-xs sm:text-sm flex-1 w-full sm:w-auto"
+              className="h-9 text-xs sm:text-sm flex-1 w-full sm:w-auto rounded-sm"
             >
               <RotateCcw className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-2" />
               Reset
@@ -132,7 +132,7 @@ export const QuestionSettingsCard: React.FC<QuestionSettingsCardProps> = ({
               <Select
                 onValueChange={(value) => handleCopyFrom(parseInt(value))}
               >
-                <SelectTrigger className="h-9 text-xs sm:text-sm flex-1 w-full sm:w-auto">
+                <SelectTrigger className="h-9 text-xs sm:text-sm flex-1 w-full sm:w-auto rounded-sm">
                   <div className="flex items-center">
                     <Copy className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-2" />
                     Copy From

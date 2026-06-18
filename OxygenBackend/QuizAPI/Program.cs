@@ -104,6 +104,9 @@ builder.Services.AddScoped<IAnswerOptionService, AnswerOptionService>();
 
 // Session & Answer Services
 builder.Services.AddScoped<IQuizSessionService, QuizSessionService>();
+builder.Services.AddScoped<
+    QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.SubmitAnswerService.ISubmitAnswerService,
+    QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.SubmitAnswerService.SubmitAnswerService>();
 builder.Services.AddScoped<IUserAnswerService, UserAnswerService>();
 // Write-only MongoDB sink for lobby chat retention; injected into the session manager below.
 builder.Services.AddSingleton<ILobbyChatArchiver, LobbyChatArchiver>();

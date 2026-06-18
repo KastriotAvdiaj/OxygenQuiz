@@ -82,7 +82,7 @@ FilterPanelProps) => {
         {/* Visibility Filter */}
         {/* <div className="space-y-3">
           <Label className="text-sm font-semibold text-foreground flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-purple-500"></div>Visibility
+            <div className="w-2 h-2 rounded-full bg-primary"></div>Visibility
           </Label>
           <Select
             value={selectedVisibility || ""}

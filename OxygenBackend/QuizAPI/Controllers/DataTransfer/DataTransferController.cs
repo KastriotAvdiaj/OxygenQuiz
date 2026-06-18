@@ -8,9 +8,11 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using QuizAPI.Controllers.Questions.Services;
+using QuizAPI.Controllers.Quizzes.Services.QuizServices;
 using QuizAPI.Data;
 using QuizAPI.DTOs.DataTransfer;
 using QuizAPI.DTOs.Question;
+using QuizAPI.DTOs.Quiz;
 using QuizAPI.Filtering;
 using QuizAPI.DTOs.User;
 using QuizAPI.Models;
@@ -38,6 +40,7 @@ namespace QuizAPI.Controllers.DataTransfer
         private readonly ICurrentUserService _currentUser;
         private readonly IUserService _userService;
         private readonly IQuestionService _questionService;
+        private readonly IQuizService _quizService;
         private readonly IDataExportService _exporter;
         private readonly IDataImportService _importer;
 
@@ -50,6 +53,7 @@ namespace QuizAPI.Controllers.DataTransfer
             ICurrentUserService currentUser,
             IUserService userService,
             IQuestionService questionService,
+            IQuizService quizService,
             IDataExportService exporter,
             IDataImportService importer)
         {
@@ -57,6 +61,7 @@ namespace QuizAPI.Controllers.DataTransfer
             _currentUser = currentUser;
             _userService = userService;
             _questionService = questionService;
+            _quizService = quizService;
             _exporter = exporter;
             _importer = importer;
         }
@@ -465,6 +470,126 @@ namespace QuizAPI.Controllers.DataTransfer
             return Ok(result);
         }
 
+        // ── Quizzes ──────────────────────────────────────────────────────────────
+        [HttpGet("quizzes/export")]
+        [Authorize(Roles = "SuperAdmin, Admin")]
+        public async Task<IActionResult> ExportQuizzes([FromQuery] string? format, CancellationToken ct)
+        {
+            DataFormatExtensions.TryParse(format, out var fmt);
+
+            // Soft-deleted quizzes are excluded automatically by the global query filter.
+            var quizzes = await _context.Quizzes.AsNoTracking()
+                .Include(q => q.Category)
+                .Include(q => q.Language)
+                .Include(q => q.Difficulty)
+                .Include(q => q.User)
+                .Include(q => q.QuizQuestions)
+                .OrderBy(q => q.Id)
+                .ToListAsync(ct);
+
+            var rows = quizzes.Select(q => new QuizExportRow
+            {
+                Id = q.Id,
+                Title = q.Title,
+                Description = q.Description,
+                Category = q.Category?.Name ?? string.Empty,
+                Language = q.Language?.Language ?? string.Empty,
+                Difficulty = q.Difficulty?.Level ?? string.Empty,
+                Visibility = q.Visibility.ToString(),
+                TimeLimitInSeconds = q.TimeLimitInSeconds ?? 0,
+                ShuffleQuestions = q.ShuffleQuestions,
+                ShowFeedbackImmediately = q.ShowFeedbackImmediately,
+                IsPublished = q.IsPublished,
+                QuestionCount = q.QuizQuestions.Count,
+                // Pipe-separated question ids in quiz order — round-trips back into import.
+                QuestionIds = string.Join("|", q.QuizQuestions
+                    .OrderBy(qq => qq.OrderInQuiz)
+                    .Select(qq => qq.QuestionId)),
+                CreatedBy = q.User?.Username ?? string.Empty,
+                CreatedAt = q.CreatedAt,
+            }).ToList();
+
+            return FileResultFor(_exporter.Export(rows, fmt, "quizzes"));
+        }
+
+        [HttpPost("quizzes/import")]
+        [Authorize(Roles = "SuperAdmin, Admin")]
+        public async Task<IActionResult> ImportQuizzes(IFormFile file, CancellationToken ct)
+        {
+            if (!TryReadFormat(file, out var fmt)) return BadRequest(InvalidFileMessage);
+            if (_currentUser.UserId is not Guid userId) return Unauthorized();
+
+            var rows = ParseFile<QuizImportRow>(file, fmt);
+            var result = new ImportResult();
+
+            // Dedupe by title over the caller's own quizzes. Adding to the set as we go also
+            // catches titles that repeat within the same file.
+            var seenTitles = (await _context.Quizzes
+                    .Where(q => q.UserId == userId)
+                    .Select(q => q.Title)
+                    .ToListAsync(ct))
+                .Select(t => (t ?? string.Empty).Trim().ToLowerInvariant())
+                .ToHashSet();
+
+            foreach (var r in rows)
+            {
+                if (string.IsNullOrWhiteSpace(r.Title))
+                {
+                    result.Skipped++;
+                    result.Errors.Add("Skipped a quiz with an empty Title.");
+                    continue;
+                }
+
+                if (!seenTitles.Add(r.Title.Trim().ToLowerInvariant()))
+                {
+                    result.Skipped++;
+                    result.Errors.Add($"\"{Truncate(r.Title.Trim(), 40)}\" already exists — skipped.");
+                    continue;
+                }
+
+                try
+                {
+                    // Attach existing questions if ids were supplied; otherwise the quiz comes in
+                    // as a draft. CreateQuizAsync validates the lookups and that every id exists.
+                    var questions = ParseQuestionIds(r.QuestionIds)
+                        .Select((qid, i) => new QuizQuestionCM
+                        {
+                            QuestionId = qid,
+                            OrderInQuiz = i + 1,
+                            PointSystem = "Standard",
+                        })
+                        .ToList();
+
+                    var quizCM = new QuizCM
+                    {
+                        Title = r.Title.Trim(),
+                        Description = r.Description?.Trim(),
+                        CategoryId = r.CategoryId,
+                        LanguageId = r.LanguageId,
+                        DifficultyId = r.DifficultyId,
+                        Visibility = NormalizeQuizVisibility(r.Visibility),
+                        TimeLimitInSeconds = r.TimeLimitInSeconds ?? 0,
+                        ShuffleQuestions = r.ShuffleQuestions,
+                        ShowFeedbackImmediately = r.ShowFeedbackImmediately,
+                        IsPublished = r.IsPublished,
+                        Questions = questions,
+                    };
+
+                    await _quizService.CreateQuizAsync(userId, quizCM);
+                    result.Imported++;
+                }
+                catch (Exception ex)
+                {
+                    // Roll the dedupe key back so a transient failure doesn't block a later valid row.
+                    seenTitles.Remove(r.Title.Trim().ToLowerInvariant());
+                    result.Skipped++;
+                    result.Errors.Add($"\"{Truncate(r.Title.Trim(), 40)}\": {ex.Message}");
+                }
+            }
+
+            return Ok(result);
+        }
+
         // ── helpers ──────────────────────────────────────────────────────────────
         private const string InvalidFileMessage = "Upload a .csv, .xlsx or .json file.";
 
@@ -502,6 +627,24 @@ namespace QuizAPI.Controllers.DataTransfer
         // "Global" / "Private" — defaults to Global on anything unrecognised.
         private static string NormalizeVisibility(string? raw) =>
             string.Equals(raw?.Trim(), "Private", StringComparison.OrdinalIgnoreCase) ? "Private" : "Global";
+
+        // Quiz visibility is its own enum (Private / Public / Friends). Defaults to Private on
+        // anything unrecognised so an imported quiz is never accidentally made public.
+        private static string NormalizeQuizVisibility(string? raw) =>
+            (raw ?? string.Empty).Trim().ToLowerInvariant() switch
+            {
+                "public" => "Public",
+                "friends" => "Friends",
+                _ => "Private",
+            };
+
+        // Parses a pipe-separated list of question ids ("12|15|18"); ignores blanks/non-numbers.
+        private static List<int> ParseQuestionIds(string? raw) =>
+            SplitPipe(raw)
+                .Select(s => int.TryParse(s, out var id) ? id : (int?)null)
+                .Where(id => id is > 0)
+                .Select(id => id!.Value)
+                .ToList();
 
         // Maps an import row's Type text to the enum — must match the create switch above so the
         // dedupe key lines up with how the question is actually stored.

@@ -2,7 +2,6 @@ import { z } from "zod";
 import { api } from "@/lib/Api-client";
 import { MutationConfig } from "@/lib/React-query";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
-import { getAllQuizzesQueryOptions } from "./get-all-quizzes";
 import { QuizSummaryDTO } from "@/types/quiz-types";
 
 export const answerOptionInputSchema = z.object({
@@ -119,10 +118,11 @@ export const useCreateQuiz = ({
   return useMutation({
     mutationFn: createQuiz,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({
-        queryKey: getAllQuizzesQueryOptions().queryKey,
-      });
-      // Refresh the user-dashboard ("my") quizzes list + profile total too.
+      // Quiz lists live under two key families: ["quiz", …] (getAll + single) and
+      // ["quizzes", …] (search/public/mine). Invalidate both prefixes plus the
+      // user-dashboard list so every quiz list picks up the new quiz.
+      queryClient.invalidateQueries({ queryKey: ["quiz"] });
+      queryClient.invalidateQueries({ queryKey: ["quizzes"] });
       queryClient.invalidateQueries({ queryKey: ["myQuizzes"] });
       onSuccess?.(...args);
     },

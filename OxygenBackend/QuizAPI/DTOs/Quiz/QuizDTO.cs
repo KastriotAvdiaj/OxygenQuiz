@@ -55,12 +55,16 @@ namespace QuizAPI.DTOs.Quiz
         public bool IsPublished { get; set; }
         public bool IsActive { get; set; }
         public DateTime CreatedAt { get; set; }
-        public int QuestionCount { get; set; } 
-        public string User { get; set; } = string.Empty; 
+        public int QuestionCount { get; set; }
+        public string User { get; set; } = string.Empty;
 
         public string? ColorPaletteJson { get; set; }
 
         public bool Gradient {  get; set; } = false;
+
+        // Soft-delete timestamp. Null = live. Only ever non-null in admin (includeDeleted) reads;
+        // the frontend uses it to badge a row as deleted.
+        public DateTime? DeletedAt { get; set; }
 
     }
     public class QuizDTO

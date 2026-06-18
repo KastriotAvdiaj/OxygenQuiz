@@ -21,6 +21,8 @@ namespace QuizAPI.DTOs.Question
         public UserBasicDTO User { get; set; }
         public DateTime CreatedAt { get; set; }
         public string? ImageUrl { get; set; }
+        public string? MediaUrl { get; set; }
+        public string MediaType { get; set; } = "None";
         public string Visibility { get; set; }
         public string Type { get; set; }
     }
@@ -50,6 +52,8 @@ namespace QuizAPI.DTOs.Question
         public string Text { get; set; } = string.Empty;
 
         public string? ImageUrl { get; set; }
+        public string? MediaUrl { get; set; }
+        public string MediaType { get; set; } = "None";
         public int DifficultyId { get; set; }
         public int CategoryId { get; set; }
         public int LanguageId { get; set; }
@@ -81,6 +85,8 @@ namespace QuizAPI.DTOs.Question
         public int Id { get; set; }
         public string Text { get; set; } = string.Empty;
         public string? ImageUrl { get; set; }
+        public string? MediaUrl { get; set; }
+        public string MediaType { get; set; } = "None";
         public int DifficultyId { get; set; }
         public int CategoryId { get; set; }
         public int LanguageId { get; set; }

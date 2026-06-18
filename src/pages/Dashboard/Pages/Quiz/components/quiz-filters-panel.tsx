@@ -2,6 +2,8 @@ import { Button, Card } from "@/components/ui";
 import { MultiSelect } from "@/components/ui/multi-select";
 import { DateRangeFilter } from "@/components/ui/date-range-filter";
 import { TriStateSelect, type TriState } from "@/components/ui/tri-state-select";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/form";
 import {
   ActiveFilterPills,
   type ActiveFilterPill,
@@ -60,6 +62,10 @@ interface QuizFiltersPanelProps {
   users?: QuizFilterUser[];
   selectedUserIds?: string[];
   onUserIdsChange?: (ids: string[]) => void;
+
+  // Admin-only "show deleted" toggle. Omit `onShowDeletedChange` to hide it.
+  showDeleted?: boolean;
+  onShowDeletedChange?: (value: boolean) => void;
 }
 
 export const QuizFiltersPanel = (props: QuizFiltersPanelProps) => {
@@ -88,9 +94,12 @@ export const QuizFiltersPanel = (props: QuizFiltersPanelProps) => {
     users,
     selectedUserIds = [],
     onUserIdsChange,
+    showDeleted = false,
+    onShowDeletedChange,
   } = props;
 
   const showUserFilter = Boolean(users && onUserIdsChange);
+  const showDeletedToggle = Boolean(onShowDeletedChange);
 
   const activeCount =
     selectedCategoryIds.length +
@@ -116,6 +125,7 @@ export const QuizFiltersPanel = (props: QuizFiltersPanelProps) => {
     onCreatedFromChange("");
     onCreatedToChange("");
     onUserIdsChange?.([]);
+    onShowDeletedChange?.(false);
   };
 
   // ── Active-filter pills ──────────────────────────────────────────────
@@ -239,6 +249,18 @@ export const QuizFiltersPanel = (props: QuizFiltersPanelProps) => {
             yesLabel="Active"
             noLabel="Inactive"
           />
+          {showDeletedToggle && (
+            <div className="flex flex-col gap-1">
+              <Label className="text-xs font-medium text-foreground">Deleted</Label>
+              <label className="flex h-9 min-w-max cursor-pointer items-center justify-between gap-4 rounded-md border border-input bg-background px-3 text-sm transition-colors hover:bg-accent/40">
+                <span className="text-muted-foreground whitespace-nowrap">Show deleted</span>
+                <Switch
+                  checked={showDeleted}
+                  onCheckedChange={(checked) => onShowDeletedChange?.(checked)}
+                />
+              </label>
+            </div>
+          )}
           {showUserFilter && (
             <MultiSelect<string>
               label="Author"

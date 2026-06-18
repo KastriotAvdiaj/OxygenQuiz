@@ -24,11 +24,11 @@ export const NewSmallTrueFalseCard: React.FC<NewSmallQuestionCardProps> = ({
     <div className="relative">
       <SmallBaseQuestionCard
         question={question}
-        borderColor={hasErrors ? "border-red-500" : "border-purple-500"}
+        borderColor={hasErrors ? "border-red-500" : "border-primary"}
         gradientColor={
           hasErrors
             ? "bg-gradient-to-r from-red-50 to-red-100 dark:from-red-950/20 dark:to-red-900/20"
-            : "bg-gradient-to-r from-background to-purple-500/30"
+            : "bg-gradient-to-r from-background to-primary/30"
         }
       >
         <NewSmallQuestionHeader
@@ -37,14 +37,14 @@ export const NewSmallTrueFalseCard: React.FC<NewSmallQuestionCardProps> = ({
           badgeColor={
             hasErrors
               ? "bg-red-100 text-red-600"
-              : "bg-purple-100 text-purple-600"
+              : "bg-primary/10 text-primary"
           }
           questionId={newTfQuestion.id}
           className={
             isSelected
               ? hasErrors
                 ? "bg-gradient-to-r from-red-50 to-red-200/50 dark:from-red-950/20 dark:to-red-900/30"
-                : "bg-gradient-to-r from-background to-purple-500/30"
+                : "bg-gradient-to-r from-background to-primary/30"
               : undefined
           }
         />

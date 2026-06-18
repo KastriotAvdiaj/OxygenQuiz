@@ -45,6 +45,8 @@ export function buildFilterParams(query: FilterQuery): URLSearchParams {
     params.set("sort", query.sort.map((s) => `${s.field}:${s.direction}`).join(","));
   }
 
+  if (query.includeDeleted) params.set("includeDeleted", "true");
+
   for (const r of query.filters ?? []) {
     if (!isUsable(r)) continue;
     params.append("filter", `${r.field}:${r.operator}:${r.values.map(String).join(",")}`);

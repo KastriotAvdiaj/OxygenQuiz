@@ -25,18 +25,18 @@ export const ExistingSmallTrueFalseCard: React.FC<
   return (
     <SmallBaseQuestionCard
       question={question}
-      borderColor="border-purple-500"
-      gradientColor="bg-gradient-to-r from-background to-purple-500/30"
+      borderColor="border-primary"
+      gradientColor="bg-gradient-to-r from-background to-primary/30"
     >
       <SmallQuestionHeader
         icon={<CheckCircle size={12} />}
         isPrivate={isPrivate}
         questionType="True/False"
-        badgeColor="bg-purple-100 text-purple-600"
+        badgeColor="bg-primary/10 text-primary"
         questionId={tfQuestion.id}
         className={
           isSelected
-            ? "bg-gradient-to-r from-background to-purple-500/30"
+            ? "bg-gradient-to-r from-background to-primary/30"
             : undefined
         }
       />

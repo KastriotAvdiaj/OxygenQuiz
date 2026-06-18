@@ -1,13 +1,23 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { QuizCard } from "./components/quiz-card";
-import { QuizToolbar, type SortOption } from "./components/quiz-header";
+import { QuizToolbar, ALL_FILTER, SORT_RULES, type SortOption } from "./components/quiz-header";
 import { motion } from "framer-motion";
 import { ArchiveX, ArrowLeft } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { QuizStartModal } from "./components/quiz-start-modal";
 import { QuizSummaryDTO } from "@/types/quiz-types";
 import { useDisclosure } from "@/hooks/use-disclosure";
-import { usePublicQuizzesData } from "../Dashboard/Pages/Quiz/api/get-public-quizzes";
+import { useDebounce } from "@/hooks/use-debounce";
+import { useSearchQuizzes } from "../Dashboard/Pages/Quiz/api/search-quizzes";
+import { rule, type FilterQuery, type FilterRule } from "@/lib/filtering";
+import { pagedResponseToPagination } from "@/lib/pagination-query";
+import { PaginationControls } from "@/pages/Dashboard/Pages/Question/Components/Re-Usable-Components/pagination-control";
+import { useQuestionCategoryData } from "../Dashboard/Pages/Question/Entities/Categories/api/get-question-categories";
+import { useQuestionDifficultyData } from "../Dashboard/Pages/Question/Entities/Difficulty/api/get-question-difficulties";
+import { useQuestionLanguageData } from "../Dashboard/Pages/Question/Entities/Language/api/get-question-language";
+
+// Number of quiz cards shown per page.
+const PAGE_SIZE = 12;
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -38,60 +48,59 @@ export function QuizSelection() {
   const navigate = useNavigate();
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [categoryId, setCategoryId] = useState(ALL_FILTER);
+  const [difficultyId, setDifficultyId] = useState(ALL_FILTER);
+  const [languageId, setLanguageId] = useState(ALL_FILTER);
   const [sortBy, setSortBy] = useState<SortOption>("newest");
+  const [pageNumber, setPageNumber] = useState(1);
   const [selectedQuiz, setSelectedQuiz] = useState<QuizSummaryDTO | null>(null);
   const { close, open, isOpen } = useDisclosure();
 
-  const { data: quizzesResponse } = usePublicQuizzesData({
-    params: {
-      searchTerm: searchQuery || undefined,
-    },
-  });
+  // Debounce search so we don't fire a request on every keystroke.
+  const debouncedSearch = useDebounce(searchQuery, 400);
 
-  const allQuizzes = useMemo(
-    () => quizzesResponse?.data || [],
-    [quizzesResponse?.data]
-  );
+  // Filter option lists (with ids) — the API filters by id, not by name.
+  const { data: categories = [] } = useQuestionCategoryData({});
+  const { data: difficulties = [] } = useQuestionDifficultyData({});
+  const { data: languages = [] } = useQuestionLanguageData({});
 
-  // Extract unique categories from quizzes
-  const categories = useMemo(() => {
-    const cats = new Set(allQuizzes.map((q) => q.category).filter(Boolean));
-    return Array.from(cats).sort();
-  }, [allQuizzes]);
+  // Build the server-side query: search + filters + sort + paging, all handled by
+  // the public quiz catalogue endpoint (/quiz/search, scope "public").
+  const filters: FilterRule[] = [];
+  if (categoryId !== ALL_FILTER) filters.push(rule.eq("categoryId", Number(categoryId)));
+  if (difficultyId !== ALL_FILTER) filters.push(rule.eq("difficultyId", Number(difficultyId)));
+  if (languageId !== ALL_FILTER) filters.push(rule.eq("languageId", Number(languageId)));
 
-  // Filter by category (client-side)
-  const filteredQuizzes = useMemo(() => {
-    let filtered = allQuizzes;
+  const query: FilterQuery = {
+    page: pageNumber,
+    pageSize: PAGE_SIZE,
+    search: debouncedSearch || undefined,
+    sort: [SORT_RULES[sortBy]],
+    filters,
+  };
 
-    if (selectedCategory !== "all") {
-      filtered = filtered.filter((q) => q.category === selectedCategory);
-    }
+  const { data: quizData, isLoading } = useSearchQuizzes({ scope: "public", query });
 
-    return filtered;
-  }, [allQuizzes, selectedCategory]);
+  const quizzes = quizData?.items ?? [];
+  const pagination = quizData ? pagedResponseToPagination(quizData) : undefined;
 
-  // Sort
-  const sortedQuizzes = useMemo(() => {
-    const sorted = [...filteredQuizzes];
+  const hasActiveFilters =
+    Boolean(searchQuery) ||
+    categoryId !== ALL_FILTER ||
+    difficultyId !== ALL_FILTER ||
+    languageId !== ALL_FILTER;
 
-    switch (sortBy) {
-      case "newest":
-        sorted.sort(
-          (a, b) =>
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
-        break;
-      case "alphabetical":
-        sorted.sort((a, b) => a.title.localeCompare(b.title));
-        break;
-      case "most-questions":
-        sorted.sort((a, b) => b.questionCount - a.questionCount);
-        break;
-    }
+  // Reset to the first page whenever the filter/search/sort criteria change.
+  useEffect(() => {
+    setPageNumber(1);
+  }, [debouncedSearch, categoryId, difficultyId, languageId, sortBy]);
 
-    return sorted;
-  }, [filteredQuizzes, sortBy]);
+  const clearFilters = useCallback(() => {
+    setSearchQuery("");
+    setCategoryId(ALL_FILTER);
+    setDifficultyId(ALL_FILTER);
+    setLanguageId(ALL_FILTER);
+  }, []);
 
   const handleQuizClick = useCallback(
     (quiz: QuizSummaryDTO) => {
@@ -119,7 +128,7 @@ export function QuizSelection() {
   );
 
   return (
-    <div className="relative text-foreground bg-cover bg-center tracking-wider h-full">
+    <div className="relative text-foreground bg-cover bg-center tracking-wider h-full bg-muted">
       <div className="container relative mx-auto px-4 sm:px-6 md:px-8 lg:px-10 py-4 sm:py-6 md:py-8 pb-8 sm:pb-12 md:pb-16">
         {/* Navigation + Title */}
         <div className="mb-4 sm:mb-5 md:mb-6">
@@ -148,17 +157,23 @@ export function QuizSelection() {
           <QuizToolbar
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
-            selectedCategory={selectedCategory}
-            onCategoryChange={setSelectedCategory}
+            categories={categories}
+            selectedCategoryId={categoryId}
+            onCategoryChange={setCategoryId}
+            difficulties={difficulties}
+            selectedDifficultyId={difficultyId}
+            onDifficultyChange={setDifficultyId}
+            languages={languages}
+            selectedLanguageId={languageId}
+            onLanguageChange={setLanguageId}
             sortBy={sortBy}
             onSortChange={setSortBy}
-            categories={categories}
-            resultCount={sortedQuizzes.length}
+            resultCount={pagination?.totalItems ?? quizzes.length}
           />
         </div>
 
         {/* Quiz Grid */}
-        {sortedQuizzes.length === 0 ? (
+        {!isLoading && quizzes.length === 0 ? (
           <motion.div
             className="flex h-64 sm:h-80 flex-col items-center justify-center gap-3 text-base sm:text-lg text-muted-foreground"
             initial={{ opacity: 0, y: 20 }}
@@ -167,12 +182,9 @@ export function QuizSelection() {
           >
             <ArchiveX className="h-8 w-8 sm:h-10 sm:w-10" />
             <span>No quizzes found</span>
-            {(searchQuery || selectedCategory !== "all") && (
+            {hasActiveFilters && (
               <button
-                onClick={() => {
-                  setSearchQuery("");
-                  setSelectedCategory("all");
-                }}
+                onClick={clearFilters}
                 className="text-sm text-primary hover:underline"
               >
                 Clear filters
@@ -186,7 +198,7 @@ export function QuizSelection() {
             initial="hidden"
             animate="visible"
           >
-            {sortedQuizzes.map((quiz) => (
+            {quizzes.map((quiz) => (
               <motion.div
                 key={quiz.id}
                 variants={itemVariants}
@@ -197,6 +209,15 @@ export function QuizSelection() {
             ))}
           </motion.div>
         )}
+
+        {/* Pagination */}
+        <PaginationControls
+          pagination={pagination}
+          onPageChange={(newPage) => {
+            setPageNumber(newPage);
+            window.scrollTo(0, 0);
+          }}
+        />
       </div>
 
       {isOpen && selectedQuiz && (

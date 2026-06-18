@@ -5,6 +5,8 @@ import { quizColumns } from "./components/Data-Table-Columns/columns";
 import { useSearchQuizzes } from "./api/search-quizzes";
 import { rule, type FilterQuery, type FilterRule } from "@/lib/filtering";
 import { useDebounce } from "@/hooks/use-debounce";
+import { PaginationControls } from "@/pages/Dashboard/Pages/Question/Components/Re-Usable-Components/pagination-control";
+import { pagedResponseToPagination } from "@/lib/pagination-query";
 
 import { useQuestionCategoryData } from "../Question/Entities/Categories/api/get-question-categories";
 import { useQuestionDifficultyData } from "../Question/Entities/Difficulty/api/get-question-difficulties";
@@ -22,6 +24,7 @@ import { Input } from "@/components/ui/form";
 import { GrFormNextLink } from "react-icons/gr";
 import { Filter } from "lucide-react";
 import { QuizFiltersPanel, type TriState } from "./components/quiz-filters-panel";
+import { DataTransferControls } from "@/components/data-transfer/DataTransferControls";
 
 export const Quizzes = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -38,6 +41,7 @@ export const Quizzes = () => {
   const [pageNumber, setPageNumber] = useState(1);
   const [pageSize] = useState(10);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [showDeleted, setShowDeleted] = useState(false);
 
   const categoriesQuery = useQuestionCategoryData({});
   const difficultiesQuery = useQuestionDifficultyData({});
@@ -61,6 +65,7 @@ export const Quizzes = () => {
     pageSize,
     search: debouncedSearchTerm || undefined,
     filters,
+    includeDeleted: showDeleted,
   };
 
   const quizData = useSearchQuizzes({ scope: "all", query });
@@ -68,7 +73,7 @@ export const Quizzes = () => {
   useEffect(() => {
     setPageNumber(1);
   }, [debouncedSearchTerm, categoryIds, difficultyIds, languageIds,
-      visibilities, published, active, authorIds, createdFrom, createdTo]);
+      visibilities, published, active, authorIds, createdFrom, createdTo, showDeleted]);
 
   const isFilterDataLoading =
     categoriesQuery.isLoading || difficultiesQuery.isLoading || languagesQuery.isLoading;
@@ -98,6 +103,7 @@ export const Quizzes = () => {
     onCreatedFromChange: setCreatedFrom, onCreatedToChange: setCreatedTo,
     users: (usersQuery.data || []).map((u) => ({ id: u.id, username: u.username })),
     selectedUserIds: authorIds, onUserIdsChange: setAuthorIds,
+    showDeleted, onShowDeletedChange: setShowDeleted,
   };
 
   const quizzes = quizData.data?.items ?? [];
@@ -108,6 +114,7 @@ export const Quizzes = () => {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Quiz Management</h1>
         <div className="flex items-center gap-2">
+          <DataTransferControls entity="quizzes" invalidateKey={["quizzes"]} />
           <Button
             variant="outline"
             size="sm"
@@ -154,7 +161,22 @@ export const Quizzes = () => {
             ) : quizData.isLoading ? (
               <div className="flex justify-center items-center py-16"><Spinner size="lg" /></div>
             ) : (
-              <DataTable data={quizzes} columns={quizColumns} />
+              <>
+                <DataTable data={quizzes} columns={quizColumns} />
+                <div className="mt-6">
+                  <PaginationControls
+                    pagination={
+                      quizData.data
+                        ? pagedResponseToPagination(quizData.data)
+                        : undefined
+                    }
+                    onPageChange={(newPage) => {
+                      setPageNumber(newPage);
+                      window.scrollTo(0, 0);
+                    }}
+                  />
+                </div>
+              </>
             )}
           </Card>
         </div>

@@ -1,0 +1,19 @@
+[
+  { "Type": "MultipleChoice", "Text": "Which programming language is primarily used for web page styling?", "CategoryId": 6, "DifficultyId": 1, "LanguageId": 2, "Visibility": "Global", "Options": "CSS|HTML|Python|C#", "CorrectOptions": "CSS", "AllowMultipleSelections": false },
+  { "Type": "MultipleChoice", "Text": "Which of these are programming languages?", "CategoryId": 6, "DifficultyId": 2, "LanguageId": 2, "Visibility": "Global", "Options": "Java|Python|MySQL|C++", "CorrectOptions": "Java|Python|C++", "AllowMultipleSelections": true },
+  { "Type": "MultipleChoice", "Text": "What does CPU stand for?", "CategoryId": 6, "DifficultyId": 2, "LanguageId": 2, "Visibility": "Global", "Options": "Central Processing Unit|Computer Processing Utility|Central Program Unit|Core Processing Utility", "CorrectOptions": "Central Processing Unit", "AllowMultipleSelections": false },
+  { "Type": "MultipleChoice", "Text": "Which symbol is commonly used to end a statement in C#?", "CategoryId": 6, "DifficultyId": 2, "LanguageId": 2, "Visibility": "Global", "Options": ";|:|#|@", "CorrectOptions": ";", "AllowMultipleSelections": false },
+  { "Type": "MultipleChoice", "Text": "Which of these data types can store decimal numbers in C#?", "CategoryId": 6, "DifficultyId": 3, "LanguageId": 2, "Visibility": "Global", "Options": "double|float|int|string", "CorrectOptions": "double|float", "AllowMultipleSelections": true },
+
+  { "Type": "TrueFalse", "Text": "HTML is a programming language.", "CategoryId": 6, "DifficultyId": 2, "LanguageId": 2, "Visibility": "Global", "CorrectAnswer": false },
+  { "Type": "TrueFalse", "Text": "A variable can be used to store data in a program.", "CategoryId": 6, "DifficultyId": 1, "LanguageId": 2, "Visibility": "Global", "CorrectAnswer": true },
+  { "Type": "TrueFalse", "Text": "Git is commonly used for version control.", "CategoryId": 6, "DifficultyId": 2, "LanguageId": 2, "Visibility": "Global", "CorrectAnswer": true },
+  { "Type": "TrueFalse", "Text": "An infinite loop is always desirable in application development.", "CategoryId": 6, "DifficultyId": 3, "LanguageId": 2, "Visibility": "Global", "CorrectAnswer": false },
+  { "Type": "TrueFalse", "Text": "JavaScript can run in modern web browsers.", "CategoryId": 6, "DifficultyId": 1, "LanguageId": 2, "Visibility": "Global", "CorrectAnswer": true },
+
+  { "Type": "TypeTheAnswer", "Text": "What keyword is used to declare a class in C#?", "CategoryId": 6, "DifficultyId": 2, "LanguageId": 2, "Visibility": "Global", "TypeAnswer": "class", "IsCaseSensitive": false, "AllowPartialMatch": false },
+  { "Type": "TypeTheAnswer", "Text": "What version control system is commonly used with GitHub?", "CategoryId": 6, "DifficultyId": 2, "LanguageId": 2, "Visibility": "Global", "TypeAnswer": "Git", "IsCaseSensitive": false, "AllowPartialMatch": false },
+  { "Type": "TypeTheAnswer", "Text": "What keyword is used to create a new object instance in C#?", "CategoryId": 6, "DifficultyId": 3, "LanguageId": 2, "Visibility": "Global", "TypeAnswer": "new", "IsCaseSensitive": false, "AllowPartialMatch": false },
+  { "Type": "TypeTheAnswer", "Text": "What does SQL stand for?", "CategoryId": 6, "DifficultyId": 3, "LanguageId": 2, "Visibility": "Global", "TypeAnswer": "Structured Query Language", "IsCaseSensitive": false, "AllowPartialMatch": false },
+  { "Type": "TypeTheAnswer", "Text": "Which programming language is the primary language used in ASP.NET Core applications?", "CategoryId": 6, "DifficultyId": 2, "LanguageId": 2, "Visibility": "Global", "TypeAnswer": "C#", "IsCaseSensitive": false, "AllowPartialMatch": false }
+]

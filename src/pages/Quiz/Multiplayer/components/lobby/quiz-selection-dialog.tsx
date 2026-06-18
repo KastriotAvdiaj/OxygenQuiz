@@ -1,5 +1,6 @@
-import { useState, useMemo, useCallback } from "react";
-import { usePublicQuizzesData } from "@/pages/Dashboard/Pages/Quiz/api/get-public-quizzes";
+import { useState, useCallback } from "react";
+import { useSearchQuizzes } from "@/pages/Dashboard/Pages/Quiz/api/search-quizzes";
+import { rule, type FilterQuery, type FilterRule } from "@/lib/filtering";
 import { Badge } from "@/components/ui/badge";
 import { HelpCircle, Clock, Check, ArchiveX } from "lucide-react";
 import type { QuizSummaryDTO } from "@/types/quiz-types";
@@ -12,7 +13,16 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { QuizToolbar, type SortOption } from "@/pages/Quiz/components/quiz-header";
+import {
+  QuizToolbar,
+  ALL_FILTER,
+  SORT_RULES,
+  type SortOption,
+} from "@/pages/Quiz/components/quiz-header";
+import { useDebounce } from "@/hooks/use-debounce";
+import { useQuestionCategoryData } from "@/pages/Dashboard/Pages/Question/Entities/Categories/api/get-question-categories";
+import { useQuestionDifficultyData } from "@/pages/Dashboard/Pages/Question/Entities/Difficulty/api/get-question-difficulties";
+import { useQuestionLanguageData } from "@/pages/Dashboard/Pages/Question/Entities/Language/api/get-question-language";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface QuizSelectionDialogProps {
@@ -29,54 +39,44 @@ export const QuizSelectionDialog = ({
   selectedQuiz,
 }: QuizSelectionDialogProps) => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [categoryId, setCategoryId] = useState(ALL_FILTER);
+  const [difficultyId, setDifficultyId] = useState(ALL_FILTER);
+  const [languageId, setLanguageId] = useState(ALL_FILTER);
   const [sortBy, setSortBy] = useState<SortOption>("newest");
 
-  const { data: quizzesResponse, isLoading } = usePublicQuizzesData({
-    params: {
-      searchTerm: searchQuery || undefined,
-    },
-  });
+  const debouncedSearch = useDebounce(searchQuery, 400);
 
-  const allQuizzes = useMemo(
-    () => quizzesResponse?.data || [],
-    [quizzesResponse?.data]
-  );
+  const { data: categories = [] } = useQuestionCategoryData({});
+  const { data: difficulties = [] } = useQuestionDifficultyData({});
+  const { data: languages = [] } = useQuestionLanguageData({});
 
-  // Extract unique categories from quizzes
-  const categories = useMemo(() => {
-    const cats = new Set(allQuizzes.map((q) => q.category).filter(Boolean));
-    return Array.from(cats).sort();
-  }, [allQuizzes]);
+  const filters: FilterRule[] = [];
+  if (categoryId !== ALL_FILTER) filters.push(rule.eq("categoryId", Number(categoryId)));
+  if (difficultyId !== ALL_FILTER) filters.push(rule.eq("difficultyId", Number(difficultyId)));
+  if (languageId !== ALL_FILTER) filters.push(rule.eq("languageId", Number(languageId)));
 
-  // Filter by category
-  const filteredQuizzes = useMemo(() => {
-    let filtered = allQuizzes;
-    if (selectedCategory !== "all") {
-      filtered = filtered.filter((q) => q.category === selectedCategory);
-    }
-    return filtered;
-  }, [allQuizzes, selectedCategory]);
+  const query: FilterQuery = {
+    search: debouncedSearch || undefined,
+    sort: [SORT_RULES[sortBy]],
+    filters,
+  };
 
-  // Sort quizzes
-  const sortedQuizzes = useMemo(() => {
-    const sorted = [...filteredQuizzes];
-    switch (sortBy) {
-      case "newest":
-        sorted.sort(
-          (a, b) =>
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
-        break;
-      case "alphabetical":
-        sorted.sort((a, b) => a.title.localeCompare(b.title));
-        break;
-      case "most-questions":
-        sorted.sort((a, b) => b.questionCount - a.questionCount);
-        break;
-    }
-    return sorted;
-  }, [filteredQuizzes, sortBy]);
+  const { data: quizData, isLoading } = useSearchQuizzes({ scope: "public", query });
+
+  const quizzes = quizData?.items ?? [];
+
+  const hasActiveFilters =
+    Boolean(searchQuery) ||
+    categoryId !== ALL_FILTER ||
+    difficultyId !== ALL_FILTER ||
+    languageId !== ALL_FILTER;
+
+  const clearFilters = useCallback(() => {
+    setSearchQuery("");
+    setCategoryId(ALL_FILTER);
+    setDifficultyId(ALL_FILTER);
+    setLanguageId(ALL_FILTER);
+  }, []);
 
   const handleQuizSelect = useCallback(
     (quiz: QuizSummaryDTO) => {
@@ -91,7 +91,7 @@ export const QuizSelectionDialog = ({
       <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col gap-0 p-0 overflow-hidden border-[3px] border-foreground">
         {/* Header gradient */}
         <div className="h-2 w-full bg-gradient-to-r from-primary via-primary/30 to-primary/30" />
-        
+
         <div className="p-4 sm:p-6 pb-2 space-y-4 flex flex-col flex-1 shrink-0">
           <DialogHeader className="space-y-2">
             <div className="flex items-center justify-between">
@@ -112,12 +112,18 @@ export const QuizSelectionDialog = ({
             <QuizToolbar
               searchQuery={searchQuery}
               onSearchChange={setSearchQuery}
-              selectedCategory={selectedCategory}
-              onCategoryChange={setSelectedCategory}
+              categories={categories}
+              selectedCategoryId={categoryId}
+              onCategoryChange={setCategoryId}
+              difficulties={difficulties}
+              selectedDifficultyId={difficultyId}
+              onDifficultyChange={setDifficultyId}
+              languages={languages}
+              selectedLanguageId={languageId}
+              onLanguageChange={setLanguageId}
               sortBy={sortBy}
               onSortChange={setSortBy}
-              categories={categories}
-              resultCount={sortedQuizzes.length}
+              resultCount={quizData?.totalItems ?? quizzes.length}
             />
           </div>
         </div>
@@ -129,7 +135,7 @@ export const QuizSelectionDialog = ({
               <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
               <span>Loading quizzes...</span>
             </div>
-          ) : sortedQuizzes.length === 0 ? (
+          ) : quizzes.length === 0 ? (
             <motion.div
               className="flex h-40 flex-col items-center justify-center gap-3 text-sm sm:text-base text-muted-foreground"
               initial={{ opacity: 0, scale: 0.95 }}
@@ -137,12 +143,9 @@ export const QuizSelectionDialog = ({
             >
               <ArchiveX className="h-8 w-8 sm:h-10 sm:w-10 opacity-50" />
               <span>No quizzes found</span>
-              {(searchQuery || selectedCategory !== "all") && (
+              {hasActiveFilters && (
                 <button
-                  onClick={() => {
-                    setSearchQuery("");
-                    setSelectedCategory("all");
-                  }}
+                  onClick={clearFilters}
                   className="text-xs text-primary hover:underline font-medium"
                 >
                   Clear filters
@@ -152,7 +155,7 @@ export const QuizSelectionDialog = ({
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <AnimatePresence mode="popLayout">
-                {sortedQuizzes.map((quiz) => {
+                {quizzes.map((quiz) => {
                   const isSelected = selectedQuiz?.id === quiz.id.toString();
                   const primaryColor = (() => {
                     try {
@@ -233,8 +236,8 @@ export const QuizSelectionDialog = ({
                             <Check className="h-3.5 w-3.5" />
                           </div>
                         ) : (
-                          <div 
-                            className="flex-shrink-0 mt-1 p-1.5 rounded-full border-2 border-transparent transition-colors duration-200 group-hover:border-primary/20" 
+                          <div
+                            className="flex-shrink-0 mt-1 p-1.5 rounded-full border-2 border-transparent transition-colors duration-200 group-hover:border-primary/20"
                           />
                         )}
                       </div>

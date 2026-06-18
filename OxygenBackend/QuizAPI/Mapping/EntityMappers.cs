@@ -91,6 +91,12 @@ namespace QuizAPI.Mapping
                 Text = q.Text,
                 CreatedAt = q.CreatedAt,
                 ImageUrl = q.ImageUrl,
+                MediaUrl = q.MediaUrl ?? q.ImageUrl,
+                MediaType =
+                    q.MediaType == QuestionMediaType.Image ? "Image" :
+                    q.MediaType == QuestionMediaType.Audio ? "Audio" :
+                    q.MediaType == QuestionMediaType.Video ? "Video" :
+                    (q.ImageUrl != null ? "Image" : "None"),
                 Visibility = q.Visibility.ToString(),
                 Type = q.Type.ToString(),
                 Difficulty = q.Difficulty == null ? null : new QuestionDifficultyDTO
@@ -132,6 +138,12 @@ namespace QuizAPI.Mapping
                 Text = q.Text,
                 CreatedAt = q.CreatedAt,
                 ImageUrl = q.ImageUrl,
+                MediaUrl = q.MediaUrl ?? q.ImageUrl,
+                MediaType =
+                    q.MediaType == QuestionMediaType.Image ? "Image" :
+                    q.MediaType == QuestionMediaType.Audio ? "Audio" :
+                    q.MediaType == QuestionMediaType.Video ? "Video" :
+                    (q.ImageUrl != null ? "Image" : "None"),
                 Visibility = q.Visibility.ToString(),
                 Type = q.Type.ToString(),
                 Difficulty = q.Difficulty == null ? null : new QuestionDifficultyDTO
@@ -177,6 +189,12 @@ namespace QuizAPI.Mapping
                 Text = q.Text,
                 CreatedAt = q.CreatedAt,
                 ImageUrl = q.ImageUrl,
+                MediaUrl = q.MediaUrl ?? q.ImageUrl,
+                MediaType =
+                    q.MediaType == QuestionMediaType.Image ? "Image" :
+                    q.MediaType == QuestionMediaType.Audio ? "Audio" :
+                    q.MediaType == QuestionMediaType.Video ? "Video" :
+                    (q.ImageUrl != null ? "Image" : "None"),
                 Visibility = q.Visibility.ToString(),
                 Type = q.Type.ToString(),
                 Difficulty = q.Difficulty == null ? null : new QuestionDifficultyDTO
@@ -219,6 +237,12 @@ namespace QuizAPI.Mapping
                 Text = q.Text,
                 CreatedAt = q.CreatedAt,
                 ImageUrl = q.ImageUrl,
+                MediaUrl = q.MediaUrl ?? q.ImageUrl,
+                MediaType =
+                    q.MediaType == QuestionMediaType.Image ? "Image" :
+                    q.MediaType == QuestionMediaType.Audio ? "Audio" :
+                    q.MediaType == QuestionMediaType.Video ? "Video" :
+                    (q.ImageUrl != null ? "Image" : "None"),
                 Visibility = q.Visibility.ToString(),
                 Type = q.Type.ToString(),
                 Difficulty = q.Difficulty == null ? null : new QuestionDifficultyDTO
@@ -279,11 +303,17 @@ namespace QuizAPI.Mapping
         public static List<QuestionBaseDTO> ToDtoList(this IEnumerable<QuestionBase> questions) =>
             questions.Select(ToDto).ToList();
 
+        // Parses the wire string ("Image"/"Audio"/"Video"/"None") into the enum, defaulting to None.
+        private static QuestionMediaType ParseMediaType(string? s) =>
+            Enum.TryParse<QuestionMediaType>(s, ignoreCase: true, out var t) ? t : QuestionMediaType.None;
+
         // ── Creation models → entities (service sets UserId/CreatedAt/Type/Visibility) ──
         public static MultipleChoiceQuestion ToEntity(this MultipleChoiceQuestionCM cm) => new()
         {
             Text = cm.Text,
             ImageUrl = cm.ImageUrl,
+            MediaUrl = cm.MediaUrl,
+            MediaType = ParseMediaType(cm.MediaType),
             DifficultyId = cm.DifficultyId,
             CategoryId = cm.CategoryId,
             LanguageId = cm.LanguageId,
@@ -297,6 +327,8 @@ namespace QuizAPI.Mapping
         {
             Text = cm.Text,
             ImageUrl = cm.ImageUrl,
+            MediaUrl = cm.MediaUrl,
+            MediaType = ParseMediaType(cm.MediaType),
             DifficultyId = cm.DifficultyId,
             CategoryId = cm.CategoryId,
             LanguageId = cm.LanguageId,
@@ -307,6 +339,8 @@ namespace QuizAPI.Mapping
         {
             Text = cm.Text,
             ImageUrl = cm.ImageUrl,
+            MediaUrl = cm.MediaUrl,
+            MediaType = ParseMediaType(cm.MediaType),
             DifficultyId = cm.DifficultyId,
             CategoryId = cm.CategoryId,
             LanguageId = cm.LanguageId,
@@ -323,6 +357,8 @@ namespace QuizAPI.Mapping
         {
             q.Text = um.Text;
             q.ImageUrl = um.ImageUrl;
+            q.MediaUrl = um.MediaUrl;
+            q.MediaType = ParseMediaType(um.MediaType);
             q.DifficultyId = um.DifficultyId;
             q.CategoryId = um.CategoryId;
             q.LanguageId = um.LanguageId;
@@ -370,7 +406,8 @@ namespace QuizAPI.Mapping
                 Language = q.Language == null ? string.Empty : q.Language.Language,
                 QuestionCount = q.QuizQuestions.Count,
                 User = q.User == null ? string.Empty : q.User.Username,
-                Visibility = q.Visibility.ToString()
+                Visibility = q.Visibility.ToString(),
+                DeletedAt = q.DeletedAt
             };
 
         public static readonly Expression<Func<Quiz, QuizDTO>> ProjectDetail =
@@ -607,6 +644,12 @@ namespace QuizAPI.Mapping
             {
                 QuizQuestionId = qq.Id,
                 QuestionText = qq.Question.Text,
+                // Prefer the new media fields; fall back to the legacy ImageUrl so old
+                // image-only questions still show during play.
+                MediaUrl = qq.Question.MediaUrl ?? qq.Question.ImageUrl,
+                MediaType = qq.Question.MediaType != QuestionMediaType.None
+                    ? qq.Question.MediaType.ToString()
+                    : (qq.Question.ImageUrl != null ? "Image" : "None"),
                 TimeLimitInSeconds = qq.TimeLimitInSeconds,
                 QuestionType = qq.Question.Type.ToString(),
                 Options = options,

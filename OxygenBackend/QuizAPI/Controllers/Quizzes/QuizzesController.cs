@@ -153,9 +153,14 @@ namespace QuizAPI.Controllers.Quizzes
         [Authorize(Roles = "Admin, SuperAdmin")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        public async Task<IActionResult> SearchAllQuizzes([FromQuery] FilterQuery query, CancellationToken ct)
+        public async Task<IActionResult> SearchAllQuizzes(
+            [FromQuery] FilterQuery query,
+            [FromQuery] bool includeDeleted,
+            CancellationToken ct)
         {
-            var result = await _quizService.SearchQuizzesAsync(query, ct: ct);
+            // includeDeleted is admin-only (this endpoint is already role-gated) and surfaces
+            // soft-deleted quizzes so they can be reviewed from the management table.
+            var result = await _quizService.SearchQuizzesAsync(query, includeDeleted: includeDeleted, ct: ct);
             return Ok(result);
         }
 
@@ -394,7 +399,7 @@ namespace QuizAPI.Controllers.Quizzes
             try
             {
                 var userId = GetCurrentUserId();
-                var deleted = await _quizService.DeleteQuizAsync(userId, id);
+                var deleted = await _quizService.DeleteQuizAsync(userId, id, _currentUser.IsAdmin);
 
                 if (!deleted)
                 {

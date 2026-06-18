@@ -24,9 +24,11 @@ export type QuizSummaryDTO = {
   visibility: string;
   isPublished: boolean;
   isActive: boolean;
-  createdAt: string; 
+  createdAt: string;
   questionCount: number;
   user: string;
+  /** Soft-delete timestamp. Only populated in admin (includeDeleted) reads; null/absent = live. */
+  deletedAt?: string | null;
 };
 
 /**

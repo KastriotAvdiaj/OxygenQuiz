@@ -1,0 +1,67 @@
+[
+  {
+    "Title": "C# Essentials",
+    "Description": "Test your knowledge of core C# concepts, syntax, and data types.",
+    "CategoryId": 6,
+    "LanguageId": 2,
+    "DifficultyId": 2,
+    "Visibility": "Public",
+    "TimeLimitInSeconds": 300,
+    "ShuffleQuestions": true,
+    "ShowFeedbackImmediately": true,
+    "IsPublished": true,
+    "QuestionIds": "338|339|345|347|349"
+  },
+  {
+    "Title": "Web Development Basics",
+    "Description": "A beginner-friendly quiz covering HTML, CSS, and JavaScript fundamentals.",
+    "CategoryId": 6,
+    "LanguageId": 2,
+    "DifficultyId": 1,
+    "Visibility": "Public",
+    "TimeLimitInSeconds": 180,
+    "ShuffleQuestions": true,
+    "ShowFeedbackImmediately": true,
+    "IsPublished": true,
+    "QuestionIds": "337|340|344"
+  },
+  {
+    "Title": "Programming Fundamentals",
+    "Description": "Core programming concepts including variables, loops, and source control.",
+    "CategoryId": 6,
+    "LanguageId": 2,
+    "DifficultyId": 2,
+    "Visibility": "Public",
+    "TimeLimitInSeconds": 240,
+    "ShuffleQuestions": false,
+    "ShowFeedbackImmediately": false,
+    "IsPublished": true,
+    "QuestionIds": "341|342|343|346"
+  },
+  {
+    "Title": "Developer Knowledge Check",
+    "Description": "A mixed programming quiz covering web technologies, C#, databases, and Git.",
+    "CategoryId": 6,
+    "LanguageId": 2,
+    "DifficultyId": 3,
+    "Visibility": "Public",
+    "TimeLimitInSeconds": 600,
+    "ShuffleQuestions": true,
+    "ShowFeedbackImmediately": false,
+    "IsPublished": true,
+    "QuestionIds": "337|338|339|341|342|344|345|346|348|349"
+  },
+  {
+    "Title": "Software Development Concepts",
+    "Description": "Questions focused on common software development tools and practices.",
+    "CategoryId": 6,
+    "LanguageId": 2,
+    "DifficultyId": 3,
+    "Visibility": "Public",
+    "TimeLimitInSeconds": 420,
+    "ShuffleQuestions": true,
+    "ShowFeedbackImmediately": false,
+    "IsPublished": true,
+    "QuestionIds": "342|343|346|347|348|349"
+  }
+]

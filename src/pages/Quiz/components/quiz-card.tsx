@@ -20,9 +20,9 @@ export function QuizCard({ quiz, onClick }: QuizCardProps) {
     try {
       return quiz.colorPaletteJson
         ? (JSON.parse(quiz.colorPaletteJson) as string[])
-        : ["#6366f1", "#8b5cf6", "#06b6d4"];
+        : ["#6366f1", "#3b82f6", "#06b6d4"];
     } catch {
-      return ["#6366f1", "#8b5cf6", "#06b6d4"];
+      return ["#6366f1", "#3b82f6", "#06b6d4"];
     }
   }, [quiz.colorPaletteJson]);
 
@@ -53,7 +53,7 @@ export function QuizCard({ quiz, onClick }: QuizCardProps) {
       {/* Main card body */}
       <div
         className={cn(
-          "relative bg-card border-[3px] border-foreground rounded-xl overflow-hidden",
+          "relative bg-card shadow-md rounded-xl overflow-hidden",
           "transition-transform duration-200 ease-out",
           "group-hover:-translate-y-0.5 group-hover:-translate-x-0.5"
         )}
@@ -61,7 +61,7 @@ export function QuizCard({ quiz, onClick }: QuizCardProps) {
         {/* Top accent gradient strip */}
         <div
           className="h-2 w-full"
-          style={{ background: gradientStyle }}
+          // style={{ background: gradientStyle }}
         />
 
         {/* Card content */}

@@ -16,7 +16,7 @@ namespace QuizAPI.Controllers.Files
 
         /// <summary>Upload a file and associate it with an owner entity (avatar, product photo, document, ...).</summary>
         [HttpPost]
-        [RequestSizeLimit(10 * 1024 * 1024)]
+        [RequestSizeLimit(100 * 1024 * 1024)] // 100 MB ceiling; per-kind limits enforced in FileService
         public async Task<IActionResult> Upload(
             [FromForm] IFormFile file,
             [FromForm] string entity,

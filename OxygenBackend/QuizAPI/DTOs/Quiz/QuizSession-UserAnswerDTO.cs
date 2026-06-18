@@ -143,6 +143,8 @@ namespace QuizAPI.DTOs.Quiz
         
         public int QuizQuestionId { get; set; }
         public string QuestionText { get; set; } = string.Empty;
+        public string? MediaUrl { get; set; }
+        public string MediaType { get; set; } = "None";
         public List<AnswerOptionForQuizPlaying> Options { get; set; } = new();
         public int TimeLimitInSeconds { get; set; }
         public int TimeRemainingInSeconds { get; set; }
