@@ -3,6 +3,7 @@ import Lightning from "@/common/Effect-Related/lightning-background";
 import PrismaticBurst from "@/common/Effect-Related/PrismaticBurst";
 import Header from "@/common/Header";
 import { useTheme } from "@/components/ui";
+import { EmailVerificationBanner } from "@/common/EmailVerificationBanner";
 
 type EffectType = "squares" | "lightning" | "prismatic" | "none";
 
@@ -96,6 +97,9 @@ export const HomeLayout = ({
         {renderEffect()}
 
         <div style={{ position: "relative", zIndex: 1, height: "100%" }}>
+          {/* Soft-gate nudge for unconfirmed users; self-hides otherwise. Skipped on overlay
+              headers, where there's no normal-flow header to sit beneath. */}
+          {!isOverlay && <EmailVerificationBanner />}
           {shouldWrapContent ? <div>{children}</div> : children}
         </div>
       </div>

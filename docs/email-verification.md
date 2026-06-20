@@ -1,7 +1,14 @@
 # Email verification — design
 
-> **Status: proposed / not yet implemented.** This document is the design we agreed
-> to build. Nothing here is wired up yet. See "Files to touch" for the change surface.
+> **Status: implemented (2026-06-21) — soft gate, with a dev email sender.**
+> Wired end-to-end: `EmailConfirmed` flag + `EmailVerificationTokens` table (migration
+> `AddEmailVerification`, which backfills existing users to confirmed), `IEmailSender`
+> (a dev `LoggingEmailSender` that logs the link — **swap for a real provider in prod**),
+> `verify-email` / `resend-verification` endpoints, the `/confirm-email` page, and the
+> app-wide "confirm your email" banner with resend.
+>
+> **Not yet done (optional follow-up):** action-gating — blocking hosting a lobby / publishing
+> a public quiz / exporting reports until confirmed. Today the gate is purely the banner nudge.
 
 ## The problem
 

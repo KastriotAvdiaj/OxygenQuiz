@@ -55,6 +55,26 @@ public class AuthenticationController(
         return NoContent();
     }
 
+    [HttpPost("verify-email")]
+    public async Task<IActionResult> VerifyEmail([FromBody] VerifyEmailDTO dto, CancellationToken ct)
+    {
+        await _authService.VerifyEmailAsync(dto.Token, ct);
+        return Ok();
+    }
+
+    [HttpPost("resend-verification")]
+    [Authorize]
+    public async Task<IActionResult> ResendVerification(CancellationToken ct)
+    {
+        var sub = User.FindFirstValue(JwtRegisteredClaimNames.Sub);
+        if (!Guid.TryParse(sub, out var userGuid))
+            return Unauthorized();
+
+        // Always 200 — the service is a no-op if already confirmed, so we never leak state.
+        await _authService.ResendVerificationAsync(userGuid, ct);
+        return Ok();
+    }
+
     [HttpGet("me")]
     [Authorize]
     public async Task<IActionResult> GetCurrentUser(CancellationToken ct)

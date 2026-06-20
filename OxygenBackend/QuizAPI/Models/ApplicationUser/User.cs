@@ -12,6 +12,11 @@ namespace QuizAPI.Models
 
         public string Email { get; set; }
 
+        // True once the user has proven they control their email via the confirmation link.
+        // New signups start false; pre-existing accounts are backfilled to true by the
+        // AddEmailVerification migration so they aren't retroactively nagged.
+        public bool EmailConfirmed { get; set; }
+
         public string PasswordHash { get; set; } = string.Empty;
 
         public DateTime DateRegistered { get; set; }

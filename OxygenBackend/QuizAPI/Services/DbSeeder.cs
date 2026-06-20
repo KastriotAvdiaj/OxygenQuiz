@@ -70,6 +70,7 @@ namespace QuizAPI.Services
                 Username = _config["Seed:AdminUsername"] ?? "admin",
                 ImmutableName = adminImmutableName,
                 Email = _config["Seed:AdminEmail"] ?? "admin@example.com",
+                EmailConfirmed = true,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
                 DateRegistered = DateTime.UtcNow,
                 LastLogin = DateTime.UtcNow,

@@ -14,5 +14,14 @@ namespace QuizAPI.Services.AuthenticationService
 
         /// <summary>SHA-256 hash of a raw refresh token, used to look up the stored row.</summary>
         string HashRefreshToken(string rawToken);
+
+        /// <summary>
+        /// Creates a one-time email-verification token. Returns the raw value (emailed to the user),
+        /// its hash (persisted), and the expiry.
+        /// </summary>
+        (string rawToken, string tokenHash, DateTime expiresAt) GenerateEmailVerificationToken();
+
+        /// <summary>SHA-256 hash of a raw token, used to look up the stored row.</summary>
+        string HashToken(string rawToken);
     }
 }

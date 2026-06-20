@@ -28,8 +28,18 @@ const SIZE_CONFIG: Record<
   TimerSize,
   { container: string; text: string; label: string; stroke: number }
 > = {
-  sm: { container: "h-16 w-16", text: "text-lg", label: "text-[9px]", stroke: 6 },
-  md: { container: "h-24 w-24", text: "text-2xl", label: "text-[10px]", stroke: 7 },
+  sm: {
+    container: "h-16 w-16",
+    text: "text-lg",
+    label: "text-[9px]",
+    stroke: 6,
+  },
+  md: {
+    container: "h-24 w-24",
+    text: "text-2xl",
+    label: "text-[10px]",
+    stroke: 7,
+  },
   lg: { container: "h-32 w-32", text: "text-4xl", label: "text-xs", stroke: 8 },
   xl: { container: "h-40 w-40", text: "text-5xl", label: "text-sm", stroke: 8 },
 };
@@ -97,7 +107,7 @@ export function QuizTimer({
     ? "#ef4444"
     : isLow
       ? "#f59e0b"
-      : "#4875f1ff";
+      : "rgb(37, 99, 235)";
 
   const glowColor = isCritical
     ? "rgba(239, 68, 68, 0.4)"

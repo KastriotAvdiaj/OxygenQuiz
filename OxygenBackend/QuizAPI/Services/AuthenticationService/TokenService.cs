@@ -13,6 +13,7 @@ namespace QuizAPI.Services.AuthenticationService
 
         private const int RefreshTokenBytes = 32;     // 256-bit token
         private const int RefreshTokenDays = 7;       // session lifetime
+        private const int EmailVerificationTokenHours = 24; // confirmation-link lifetime
 
         public string GenerateToken(User user, IReadOnlyCollection<string> roleNames)
         {
@@ -56,7 +57,18 @@ namespace QuizAPI.Services.AuthenticationService
             return (rawToken, tokenHash, expiresAt);
         }
 
-        public string HashRefreshToken(string rawToken)
+        public string HashRefreshToken(string rawToken) => HashToken(rawToken);
+
+        public (string rawToken, string tokenHash, DateTime expiresAt) GenerateEmailVerificationToken()
+        {
+            var bytes = RandomNumberGenerator.GetBytes(RefreshTokenBytes); // 256-bit, same strength
+            var rawToken = Base64UrlEncode(bytes);
+            var tokenHash = HashToken(rawToken);
+            var expiresAt = DateTime.UtcNow.AddHours(EmailVerificationTokenHours);
+            return (rawToken, tokenHash, expiresAt);
+        }
+
+        public string HashToken(string rawToken)
         {
             var hashBytes = SHA256.HashData(Encoding.UTF8.GetBytes(rawToken));
             return Convert.ToHexString(hashBytes); // 64 hex chars

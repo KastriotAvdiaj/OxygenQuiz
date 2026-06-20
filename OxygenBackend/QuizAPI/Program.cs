@@ -78,6 +78,7 @@ builder.Services.AddMemoryCache();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IRoleRepository, RoleRepository>();
 builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+builder.Services.AddScoped<IEmailVerificationTokenRepository, EmailVerificationTokenRepository>();
 builder.Services.AddScoped<IFileRepository, FileRepository>();
 builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
 builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
@@ -97,6 +98,8 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<QuizAPI.Controllers.Users.Services.IAvatarService, QuizAPI.Controllers.Users.Services.AvatarService>();
 builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
+// Email verification: dev logger sender today; swap for a real provider in prod (see docs/email-verification.md).
+builder.Services.AddScoped<QuizAPI.Services.Email.IEmailSender, QuizAPI.Services.Email.LoggingEmailSender>();
 builder.Services.AddScoped<IQuizService, QuizService>();
 builder.Services.AddScoped<IQuestionService, QuestionService>();
 builder.Services.AddScoped<ITestQuestionService, TestQuestionService>();

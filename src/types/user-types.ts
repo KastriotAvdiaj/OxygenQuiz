@@ -6,6 +6,7 @@ import { Entity } from "./common-types";
 export type User = Entity<{
   username: string;
   email: string;
+  emailConfirmed: boolean;
   dateRegistered: string;
   userUpdatedAt: string | null;
   isDeleted: boolean;

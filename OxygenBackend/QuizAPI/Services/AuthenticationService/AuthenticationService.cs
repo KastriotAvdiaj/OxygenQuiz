@@ -5,7 +5,9 @@ using QuizAPI.Mapping;
 using QuizAPI.Models;
 using QuizAPI.Repositories.Interfaces;
 using QuizAPI.Services.Audit;
+using QuizAPI.Services.Email;
 using QuizAPI.Controllers.Notifications.Services;
+using Microsoft.Extensions.Configuration;
 
 namespace QuizAPI.Services.AuthenticationService;
 
@@ -13,18 +15,24 @@ public class AuthenticationService(
     IUserRepository userRepository,
     IRoleRepository roleRepository,
     IRefreshTokenRepository refreshTokenRepository,
+    IEmailVerificationTokenRepository emailVerificationTokenRepository,
     ITokenService tokenService,
     IAuditService auditService,
-    INotificationService notificationService) : IAuthenticationService
+    INotificationService notificationService,
+    IEmailSender emailSender,
+    IConfiguration configuration) : IAuthenticationService
 {
     private const string DefaultRoleName = "User";
 
     private readonly IUserRepository _userRepository = userRepository;
     private readonly IRoleRepository _roleRepository = roleRepository;
     private readonly IRefreshTokenRepository _refreshTokenRepository = refreshTokenRepository;
+    private readonly IEmailVerificationTokenRepository _emailVerificationTokenRepository = emailVerificationTokenRepository;
     private readonly ITokenService _tokenService = tokenService;
     private readonly IAuditService _auditService = auditService;
     private readonly INotificationService _notificationService = notificationService;
+    private readonly IEmailSender _emailSender = emailSender;
+    private readonly IConfiguration _configuration = configuration;
 
     public async Task<AuthResult> SignupAsync(SignupDTO dto, CancellationToken ct = default)
     {
@@ -46,6 +54,7 @@ public class AuthenticationService(
             Email = dto.Email,
             Username = dto.Username,
             ImmutableName = immutableName,
+            EmailConfirmed = false,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
             DateRegistered = DateTime.UtcNow,
             LastLogin = DateTime.UtcNow,
@@ -59,6 +68,10 @@ public class AuthenticationService(
 
         await _userRepository.AddAsync(user, ct);
         await _userRepository.SaveChangesAsync(ct);
+
+        // Send the email-confirmation link. Soft gate: the account is usable immediately, but the
+        // UI nudges the user to confirm (see docs/email-verification.md).
+        await IssueAndSendVerificationEmailAsync(user, ct);
 
         // Welcome the new user with a persistent notification (waits in their bell until
         // they next load the app) and record the signup as a critical action.
@@ -169,4 +182,74 @@ public class AuthenticationService(
             RefreshTokenExpiresAt = refreshExpiry
         };
     }
+
+    public async Task VerifyEmailAsync(string rawToken, CancellationToken ct = default)
+    {
+        // 400 (not 401) on failure: this is an anonymous endpoint, and a 401 would trip the
+        // frontend's silent-refresh interceptor.
+        if (string.IsNullOrWhiteSpace(rawToken))
+            throw new AppValidationException("Invalid or expired verification link.");
+
+        var hash = _tokenService.HashToken(rawToken);
+        var stored = await _emailVerificationTokenRepository.GetActiveByHashAsync(hash, ct)
+            ?? throw new AppValidationException("Invalid or expired verification link.");
+
+        stored.ConsumedAt = DateTime.UtcNow;
+
+        var user = await _userRepository.GetByIdAsync(stored.UserId, tracked: true, ct)
+            ?? throw new AppValidationException("Invalid or expired verification link.");
+
+        user.EmailConfirmed = true;
+
+        // The consumed token and the user flag are tracked on the same DbContext, so one save
+        // persists both.
+        await _userRepository.SaveChangesAsync(ct);
+
+        await _auditService.LogAsync(
+            AuditActions.UserEmailConfirmed, entity: "User", entityId: user.Id.ToString(),
+            userId: user.Id, ct: ct);
+    }
+
+    public async Task ResendVerificationAsync(Guid userId, CancellationToken ct = default)
+    {
+        var user = await _userRepository.GetByIdAsync(userId, tracked: false, ct);
+        if (user is null || user.EmailConfirmed)
+            return; // already confirmed (or unknown) — nothing to do, and don't leak which
+
+        await IssueAndSendVerificationEmailAsync(user, ct);
+    }
+
+    // Supersedes any outstanding token for the user, issues a fresh single-use token (hash stored,
+    // raw value emailed), and sends the confirmation link. Shared by signup and resend.
+    private async Task IssueAndSendVerificationEmailAsync(User user, CancellationToken ct)
+    {
+        await _emailVerificationTokenRepository.InvalidateActiveForUserAsync(user.Id, ct);
+
+        var (raw, hash, expiresAt) = _tokenService.GenerateEmailVerificationToken();
+        await _emailVerificationTokenRepository.AddAsync(new EmailVerificationToken
+        {
+            Id = Guid.NewGuid(),
+            UserId = user.Id,
+            TokenHash = hash,
+            ExpiresAt = expiresAt,
+            CreatedAt = DateTime.UtcNow
+        }, ct);
+        await _emailVerificationTokenRepository.SaveChangesAsync(ct);
+
+        var link = $"{FrontendBaseUrl()}/confirm-email?token={Uri.EscapeDataString(raw)}";
+        var html =
+            $"<p>Hi {user.Username},</p>" +
+            "<p>Confirm your email to finish setting up your Oxygen Quiz account:</p>" +
+            $"<p><a href=\"{link}\">Confirm my email</a></p>" +
+            "<p>This link expires in 24 hours. If you didn't sign up, you can ignore this email.</p>";
+
+        await _emailSender.SendAsync(user.Email, "Confirm your Oxygen Quiz email", html, ct);
+    }
+
+    // The confirmation link points at the frontend. Prefer an explicit App:FrontendBaseUrl,
+    // else the first configured CORS origin, else the local dev default.
+    private string FrontendBaseUrl() =>
+        _configuration["App:FrontendBaseUrl"]
+        ?? _configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()?.FirstOrDefault()
+        ?? "https://localhost:5173";
 }

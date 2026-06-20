@@ -6,6 +6,7 @@
         public Guid Id { get; set; }
         public string Username { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
+        public bool EmailConfirmed { get; set; }
         public DateTime DateRegistered { get; set; }
         public DateTime LastLogin { get; set; }
         public bool IsDeleted { get; set; }

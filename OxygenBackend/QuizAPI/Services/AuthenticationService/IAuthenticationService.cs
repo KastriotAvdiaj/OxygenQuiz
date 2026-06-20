@@ -12,5 +12,11 @@ namespace QuizAPI.Services.AuthenticationService
 
         /// <summary>Revokes the supplied refresh token (idempotent).</summary>
         Task LogoutAsync(string? rawRefreshToken, CancellationToken ct = default);
+
+        /// <summary>Confirms a user's email from a one-time token. Throws if it's invalid or expired.</summary>
+        Task VerifyEmailAsync(string rawToken, CancellationToken ct = default);
+
+        /// <summary>Re-issues and re-sends a verification email for the user. No-op if already confirmed.</summary>
+        Task ResendVerificationAsync(Guid userId, CancellationToken ct = default);
     }
 }

@@ -88,6 +88,7 @@ const AboutUs = lazy(() =>
 );
 const Login = lazy(() => import("../pages/UserRelated/Login/Login"));
 const Signup = lazy(() => import("../pages/UserRelated/Signup/Signup"));
+const ConfirmEmail = lazy(() => import("@/pages/UserRelated/ConfirmEmail/ConfirmEmail"));
 const AccessDeniedPage = lazy(() =>
   import("../pages/UtilityPages/AccessDenied").then((module) => ({
     default: module.AccessDeniedPage,
@@ -236,6 +237,15 @@ const createAppRouter = (queryClient: QueryClient) =>
     {
       path: "/signup",
       element: <RedirectIfLoggedIn component={<Signup />} />,
+    },
+    {
+      // Public: the email-confirmation link is opened from the inbox, possibly while logged out.
+      path: "/confirm-email",
+      element: (
+        <HomeLayout headerBehavior={HeaderBehavior.DEFAULT}>
+          <ConfirmEmail />
+        </HomeLayout>
+      ),
     },
     {
       path: "/login",

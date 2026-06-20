@@ -51,6 +51,8 @@ namespace QuizAPI.Data
 
         public DbSet<RefreshToken> RefreshTokens { get; set; }
 
+        public DbSet<EmailVerificationToken> EmailVerificationTokens { get; set; }
+
         public DbSet<FileRecord> Files { get; set; }
 
         public DbSet<AuditLog> AuditLogs { get; set; }
@@ -148,6 +150,17 @@ namespace QuizAPI.Data
 
             modelBuilder.Entity<RefreshToken>()
                 .HasIndex(rt => rt.TokenHash)
+                .IsUnique();
+
+            // Email verification tokens: one user -> many tokens, cascade on user delete, unique hash lookup.
+            modelBuilder.Entity<EmailVerificationToken>()
+                .HasOne(t => t.User)
+                .WithMany()
+                .HasForeignKey(t => t.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<EmailVerificationToken>()
+                .HasIndex(t => t.TokenHash)
                 .IsUnique();
 
             // Generic file records: index the polymorphic owner for fast lookups.

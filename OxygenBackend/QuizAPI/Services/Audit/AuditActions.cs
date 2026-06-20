@@ -11,6 +11,7 @@ namespace QuizAPI.Services.Audit
         public const string UserLoggedIn = "UserLoggedIn";
         public const string LoginFailed = "LoginFailed";
         public const string UserSignedUp = "UserSignedUp";
+        public const string UserEmailConfirmed = "UserEmailConfirmed";
         public const string UserCreated = "UserCreated";
         public const string UserDeleted = "UserDeleted";
 
