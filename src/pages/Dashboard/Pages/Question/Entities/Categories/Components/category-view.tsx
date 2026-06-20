@@ -5,7 +5,7 @@ import { categoryColumns } from "./columns";
 import { CategoryFilters } from "./category-filters";
 import { useSearchQuestionCategories } from "../api/search-question-categories";
 import { useUserData } from "@/pages/Dashboard/Pages/User/api/get-users";
-import { PaginationControls } from "@/pages/Dashboard/Pages/Question/Components/Re-Usable-Components/pagination-control";
+import { PaginationControls } from "@/components/ui/pagination-control";
 import { pagedResponseToPagination } from "@/lib/pagination-query";
 import { rule, type FilterQuery, type FilterRule } from "@/lib/filtering";
 import { useDebounce } from "@/hooks/use-debounce";
@@ -14,7 +14,7 @@ import { DataTransferControls } from "@/components/data-transfer/DataTransferCon
 
 export const CategoryView = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [debouncedSearchTerm] = useDebounce(searchTerm, 500);
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
   const [gradient, setGradient] = useState<TriState>("any");
   const [creatorIds, setCreatorIds] = useState<string[]>([]);
   const [createdFrom, setCreatedFrom] = useState("");

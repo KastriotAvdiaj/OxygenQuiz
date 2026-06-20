@@ -82,6 +82,15 @@ To change the behavior: shorten `RefreshTokenDays` in `TokenService`, or to make
 ### E. Automated (suggested)
 Add integration tests against the auth endpoints with `WebApplicationFactory`: login→refresh→replay happy path; reuse of a rotated token returns 401; logout then refresh returns 401. Use a respawned/in-memory Postgres so token rows are real.
 
+## Planned work (designed, not yet built)
+
+- **Email verification** — signups are currently unverified (only format + uniqueness are
+  checked). Design for a double opt-in confirmation flow: [`email-verification.md`](./email-verification.md).
+- **Login required to play + account-based lobby identity** — ✅ implemented (2026-06-20):
+  multiplayer routes are auth-gated, the lobby identity is the authenticated account, and the
+  `QuizHub` is `[Authorize]`'d with the username taken from `Context.User`. See
+  [`play-auth-and-identity.md`](./play-auth-and-identity.md).
+
 ## Robustness — current strengths
 
 - Refresh tokens are **hashed at rest** (a DB leak can't be replayed) and **rotated** on every refresh.

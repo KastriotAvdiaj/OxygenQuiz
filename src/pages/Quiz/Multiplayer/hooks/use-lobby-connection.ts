@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useMultiplayer } from "@/hooks/useMultiplayer";
 import { useNotifications } from "@/common/Notifications";
+import { useUser } from "@/lib/Auth";
 import { useNavigationGuard } from "./use-navigation-guard";
 
 export interface SelectedQuiz {
@@ -24,8 +25,12 @@ export const useLobbyConnection = ({ mode = "join" }: UseLobbyConnectionOptions)
   const [searchParams] = useSearchParams();
   const { connection, isConnected, joinSession, leaveSession, selectQuiz } = useMultiplayer();
   const { addNotification } = useNotifications();
+  const { data: user } = useUser();
 
-  const [username, setUsername] = useState("");
+  // Identity always comes from the logged-in account — the lobby routes are auth-gated,
+  // so `user` is present. The host/participant name is therefore the real account username,
+  // never free-typed text.
+  const username = user?.username ?? "";
   const [sessionId, setSessionId] = useState(searchParams.get("code")?.toUpperCase() || "");
   const [hasJoined, setHasJoined] = useState(false);
   const [participants, setParticipants] = useState<Participant[]>([]);
@@ -47,7 +52,7 @@ export const useLobbyConnection = ({ mode = "join" }: UseLobbyConnectionOptions)
   useEffect(() => {
     return () => {
       if (hasJoinedRef.current && sessionIdRef.current && usernameRef.current) {
-        leaveSession(sessionIdRef.current, usernameRef.current).catch((err) =>
+        leaveSession(sessionIdRef.current).catch((err) =>
           console.error("Failed to leave session on unmount:", err)
         );
         sessionStorage.removeItem("quiz_session");
@@ -170,12 +175,12 @@ export const useLobbyConnection = ({ mode = "join" }: UseLobbyConnectionOptions)
       const shouldAutoResume =
         mode === "join" || (mode === "create" && storedId === sessionId);
 
-      if (storedId && storedUser && shouldAutoResume) {
+      // Only auto-resume a stored session that belongs to the current account.
+      if (storedId && storedUser === username && shouldAutoResume) {
         autoResumeAttempted.current = true;
         setSessionId(storedId);
-        setUsername(storedUser);
 
-        joinSession(storedId, storedUser)
+        joinSession(storedId)
           .then(() => {
             setHasJoined(true);
             console.log("Auto-resumed session:", storedId);
@@ -195,11 +200,11 @@ export const useLobbyConnection = ({ mode = "join" }: UseLobbyConnectionOptions)
       console.error("Failed to parse stored session", e);
       sessionStorage.removeItem("quiz_session");
     }
-  }, [isConnected, hasJoined, joinSession, mode, sessionId, addNotification]);
+  }, [isConnected, hasJoined, joinSession, mode, sessionId, addNotification, username]);
 
   const handleJoinSession = useCallback(async () => {
     if (!username.trim()) {
-      setJoinError("Username is required");
+      setJoinError("You must be logged in to join a lobby");
       return;
     }
     if (!sessionId.trim()) {
@@ -211,7 +216,7 @@ export const useLobbyConnection = ({ mode = "join" }: UseLobbyConnectionOptions)
     setJoinError(null);
 
     try {
-      await joinSession(sessionId, username);
+      await joinSession(sessionId);
       sessionStorage.setItem("quiz_session", JSON.stringify({ sessionId, username }));
       setHasJoined(true);
 
@@ -233,11 +238,10 @@ export const useLobbyConnection = ({ mode = "join" }: UseLobbyConnectionOptions)
   }, [username, sessionId, joinSession, addNotification]);
 
   const handleLeaveSession = useCallback(async () => {
-    await leaveSession(sessionId, username);
+    await leaveSession(sessionId);
     sessionStorage.removeItem("quiz_session");
     setHasJoined(false);
     setParticipants([]);
-    setUsername("");
     setSessionId("");
   }, [sessionId, username, leaveSession]);
 
@@ -258,7 +262,7 @@ export const useLobbyConnection = ({ mode = "join" }: UseLobbyConnectionOptions)
     const newReadyState = !isReady;
 
     try {
-      await connection?.invoke("ToggleReady", sessionId, username, newReadyState);
+      await connection?.invoke("ToggleReady", sessionId, newReadyState);
     } catch (err) {
       console.error("ToggleReady failed", err);
       addNotification({
@@ -311,7 +315,6 @@ export const useLobbyConnection = ({ mode = "join" }: UseLobbyConnectionOptions)
   return {
     // State
     username,
-    setUsername,
     sessionId,
     setSessionId,
     hasJoined,

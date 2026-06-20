@@ -156,7 +156,10 @@ if (participant.IsHost && session.Participants.Count > 0)
 - Hardcoded API URL (not environment-aware)
 - No unit or integration tests
 - No username uniqueness validation
-- No security/authentication
+- ~~No security/authentication~~ — **implemented 2026-06-20:** the lobby routes require login,
+  identity is derived from the authenticated account (the host's name is their real username),
+  and the hub is `[Authorize]`'d with the username taken from `Context.User` (no longer trusted
+  from the client). See [`play-auth-and-identity.md`](./play-auth-and-identity.md).
 
 ### 📋 Next Steps (Phase 2+)
 See [`implementation_plan.md`](file:///C:/Users/hp/.gemini/antigravity/brain/a79d957d-a384-46b9-adfc-42628fbd6534/implementation_plan.md) for detailed roadmap:

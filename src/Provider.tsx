@@ -4,7 +4,7 @@ import * as React from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { HelmetProvider } from "react-helmet-async";
 import { ThemeProvider } from "./components/ui/theme-provider";
-import { Spinner } from "./components/ui/Spinner";
+import { LoadingWave } from "./components/ui/loading-wave";
 import { MainErrorFallback } from "./pages/UtilityPages/Error/Main";
 import { AuthLoader } from "./lib/Auth";
 import { queryConfig } from "./lib/React-query";
@@ -28,7 +28,7 @@ export const AppProvider = ({ children }: AppProviderProps) => {
     <React.Suspense
       fallback={
         <div className="flex h-screen w-screen items-center justify-center bg-background">
-          <Spinner size="xl" />
+          <LoadingWave size="xl" />
         </div>
       }
     >
@@ -41,7 +41,7 @@ export const AppProvider = ({ children }: AppProviderProps) => {
               <AuthLoader
                 renderLoading={() => (
                   <div className="flex h-screen w-screen items-center justify-center bg-background">
-                    <Spinner size="xl" />
+                    <LoadingWave size="xl" />
                   </div>
                 )}
               >

@@ -43,6 +43,12 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.SubmitAnswerS
                     return Result<InstantFeedbackAnswerResultDto>.ValidationFailure(validationResult.ValidationErrors);
 
                 var timeContext = CalculateTimeContext(session!, model);
+
+                // Capture the question now: ClearCurrentQuestion nulls the CurrentQuizQuestionId FK,
+                // and EF relationship fixup then nulls the CurrentQuizQuestion navigation to match. If
+                // we read session.CurrentQuizQuestion later (in BuildResultDto) it would be null -> NRE.
+                var currentQuestion = session!.CurrentQuizQuestion!.Question;
+
                 var userAnswer = CreateUserAnswer(model, session, timeContext);
 
                 await ProcessAnswerAsync(userAnswer, session, timeContext);
@@ -59,7 +65,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.SubmitAnswerS
                 // Enqueue background grading after commit to ensure data is persisted
                 TryEnqueueBackgroundGrading(userAnswer, session.Quiz.ShowFeedbackImmediately, timeContext);
 
-                var resultDto = BuildResultDto(userAnswer, session, timeContext, isQuizComplete);
+                var resultDto = BuildResultDto(userAnswer, session, timeContext, isQuizComplete, currentQuestion);
 
                 _logger.LogInformation("Returning result: {@ResultDto}", resultDto);
                 return Result<InstantFeedbackAnswerResultDto>.Success(resultDto);
@@ -247,7 +253,8 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.SubmitAnswerS
             UserAnswer userAnswer,
             QuizSession session,
             TimeContext timeContext,
-            bool isQuizComplete)
+            bool isQuizComplete,
+            QuestionBase currentQuestion)
         {
             var hasInstantFeedback = session.Quiz.ShowFeedbackImmediately;
             var resultDto = new InstantFeedbackAnswerResultDto
@@ -260,7 +267,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.SubmitAnswerS
 
             if (hasInstantFeedback && ShouldShowCorrectAnswer(userAnswer.Status))
             {
-                PopulateCorrectAnswerInfo(resultDto, session.CurrentQuizQuestion!.Question);
+                PopulateCorrectAnswerInfo(resultDto, currentQuestion);
             }
 
             return resultDto;

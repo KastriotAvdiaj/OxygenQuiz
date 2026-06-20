@@ -8,7 +8,6 @@ interface JoinFormProps {
   isConnected: boolean;
   isJoining: boolean;
   joinError: string | null;
-  onUsernameChange: (value: string) => void;
   onSessionIdChange: (value: string) => void;
   onJoin: () => void;
 }
@@ -20,7 +19,6 @@ export const JoinForm = ({
   isConnected,
   isJoining,
   joinError,
-  onUsernameChange,
   onSessionIdChange,
   onJoin,
 }: JoinFormProps) => {
@@ -28,22 +26,13 @@ export const JoinForm = ({
     <div className="max-w-md mx-auto space-y-3 sm:space-y-8">
       <div className="space-y-2.5 sm:space-y-3">
         <div className="space-y-1 sm:space-y-1.5">
-          <label
-            htmlFor="username"
-            className="text-xs sm:text-sm font-bold font-quiz tracking-wide transition-all"
-          >
-            Username
-          </label>
-          <Input
-            variant="quiz"
-            id="username"
-            placeholder="Enter your username"
-            value={username}
-            onChange={(e) => onUsernameChange(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && onJoin()}
-            disabled={!isConnected}
-            className="h-9 sm:h-10 md:h-11 text-sm sm:text-base border-2 border-primary/20 focus-visible:border-primary transition-all"
-          />
+          <span className="text-xs sm:text-sm font-bold font-quiz tracking-wide">
+            Joining as
+          </span>
+          {/* Identity is the logged-in account — no longer free-typed. */}
+          <div className="flex h-9 sm:h-10 md:h-11 items-center rounded-md border-2 border-primary/20 bg-muted/40 px-3 text-sm sm:text-base font-bold font-quiz tracking-wide">
+            {username || "…"}
+          </div>
         </div>
 
         {mode === "join" && (

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Switch, Spinner, useTheme } from "@/components/ui";
+import { Switch, LoadingWave, useTheme } from "@/components/ui";
 import { LiftedButton } from "@/common/LiftedButton";
 import { Timer, Bell, Lock } from "lucide-react";
 import { useSettingsData } from "./api/get-settings";
@@ -35,7 +35,7 @@ export const Settings = () => {
   if (isLoading || !form) {
     return (
       <div className="flex justify-center items-center h-screen">
-        <Spinner size="lg" />
+        <LoadingWave size="lg" />
       </div>
     );
   }

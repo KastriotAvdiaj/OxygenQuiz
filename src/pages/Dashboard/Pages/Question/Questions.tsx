@@ -33,7 +33,7 @@ import { DataTransferControls } from "@/components/data-transfer/DataTransferCon
 
 export const Questions = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [debouncedSearchTerm] = useDebounce(searchTerm, 500);
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
   const [filtersOpen, setFiltersOpen] = useState(false);
   // Multi-select filters — empty array means "all".
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>([]);

@@ -1,7 +1,10 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useSearchQuizzes } from "@/pages/Dashboard/Pages/Quiz/api/search-quizzes";
 import { rule, type FilterQuery, type FilterRule } from "@/lib/filtering";
+import { pagedResponseToPagination } from "@/lib/pagination-query";
 import { Badge } from "@/components/ui/badge";
+import { LoadingWave } from "@/components/ui";
+import { PaginationControls } from "@/components/ui/pagination-control";
 import { HelpCircle, Clock, Check, ArchiveX } from "lucide-react";
 import type { QuizSummaryDTO } from "@/types/quiz-types";
 import { secondsToMinutes } from "@/pages/Quiz/components/quiz-card";
@@ -25,6 +28,10 @@ import { useQuestionDifficultyData } from "@/pages/Dashboard/Pages/Question/Enti
 import { useQuestionLanguageData } from "@/pages/Dashboard/Pages/Question/Entities/Language/api/get-question-language";
 import { motion, AnimatePresence } from "framer-motion";
 
+// Matches the /choose-quiz page size, so an identical filter/sort/page state reuses its
+// React-Query cache entry (key includes the full query object).
+const PAGE_SIZE = 12;
+
 interface QuizSelectionDialogProps {
   isOpen: boolean;
   onClose: () => void;
@@ -43,6 +50,9 @@ export const QuizSelectionDialog = ({
   const [difficultyId, setDifficultyId] = useState(ALL_FILTER);
   const [languageId, setLanguageId] = useState(ALL_FILTER);
   const [sortBy, setSortBy] = useState<SortOption>("newest");
+  const [pageNumber, setPageNumber] = useState(1);
+
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const debouncedSearch = useDebounce(searchQuery, 400);
 
@@ -56,6 +66,8 @@ export const QuizSelectionDialog = ({
   if (languageId !== ALL_FILTER) filters.push(rule.eq("languageId", Number(languageId)));
 
   const query: FilterQuery = {
+    page: pageNumber,
+    pageSize: PAGE_SIZE,
     search: debouncedSearch || undefined,
     sort: [SORT_RULES[sortBy]],
     filters,
@@ -64,6 +76,17 @@ export const QuizSelectionDialog = ({
   const { data: quizData, isLoading } = useSearchQuizzes({ scope: "public", query });
 
   const quizzes = quizData?.items ?? [];
+  const pagination = quizData ? pagedResponseToPagination(quizData) : undefined;
+
+  // Reset to the first page whenever the filter/search/sort criteria change.
+  useEffect(() => {
+    setPageNumber(1);
+  }, [debouncedSearch, categoryId, difficultyId, languageId, sortBy]);
+
+  const handlePageChange = useCallback((newPage: number) => {
+    setPageNumber(newPage);
+    scrollRef.current?.scrollTo({ top: 0 });
+  }, []);
 
   const hasActiveFilters =
     Boolean(searchQuery) ||
@@ -129,11 +152,13 @@ export const QuizSelectionDialog = ({
         </div>
 
         {/* Scrollable quiz list */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 pt-0 min-h-[300px] scrollbar-thin">
+        <div
+          ref={scrollRef}
+          className="flex-1 overflow-y-auto p-4 sm:p-6 pt-0 min-h-[300px] scrollbar-thin"
+        >
           {isLoading ? (
-            <div className="flex h-40 flex-col items-center justify-center gap-3 text-sm text-muted-foreground">
-              <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-              <span>Loading quizzes...</span>
+            <div className="flex h-40 flex-col items-center justify-center">
+              <LoadingWave size="md" />
             </div>
           ) : quizzes.length === 0 ? (
             <motion.div
@@ -248,6 +273,15 @@ export const QuizSelectionDialog = ({
             </div>
           )}
         </div>
+
+        {pagination && pagination.totalPages > 1 && (
+          <div className="border-t border-border/60 px-4 sm:px-6 py-2.5">
+            <PaginationControls
+              pagination={pagination}
+              onPageChange={handlePageChange}
+            />
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );

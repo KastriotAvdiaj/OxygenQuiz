@@ -168,14 +168,15 @@ builder.Services.AddAuthentication(options =>
     };
 
     // WebSockets can't send an Authorization header, so SignalR passes the JWT in the
-    // access_token query string. Read it for the notification hub handshake.
+    // access_token query string. Read it for the SignalR hub handshakes (notifications + quiz).
     options.Events = new JwtBearerEvents
     {
         OnMessageReceived = context =>
         {
             var accessToken = context.Request.Query["access_token"];
             var path = context.HttpContext.Request.Path;
-            if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/notificationHub"))
+            if (!string.IsNullOrEmpty(accessToken) &&
+                (path.StartsWithSegments("/notificationHub") || path.StartsWithSegments("/quizHub")))
             {
                 context.Token = accessToken;
             }

@@ -3,6 +3,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { LoadingWave } from "@/components/ui";
 import { QuizResults } from "./quiz-results";
 import { useGetSessionResults } from "../../api/get-quiz-session";
 
@@ -42,10 +43,7 @@ export function QuizResultsRouteWrapper({}) {
           `,
         }}>
         <div className="quiz-card-elevated p-8 text-center space-y-4">
-          <Loader2 className="h-12 w-12 animate-spin mx-auto text-quiz-primary" />
-          <p className="quiz-text-primary text-xl font-medium">
-            Loading your results...
-          </p>
+          <LoadingWave size="lg" variant="quiz" />
           <div className="w-32 h-2 bg-quiz-border-subtle rounded-full mx-auto overflow-hidden">
             <div
               className="h-full bg-quiz-primary rounded-full quiz-animate-pulse"

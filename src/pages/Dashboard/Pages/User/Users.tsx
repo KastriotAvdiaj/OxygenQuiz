@@ -15,7 +15,7 @@ import { StatsCards } from "./Components/stats-cards";
 import { UserControls } from "./Components/user-page-button-group";
 import { UserFilters } from "./Components/user-filters";
 import { DataTransferControls } from "@/components/data-transfer/DataTransferControls";
-import { PaginationControls } from "@/pages/Dashboard/Pages/Question/Components/Re-Usable-Components/pagination-control";
+import { PaginationControls } from "@/components/ui/pagination-control";
 import { useSearchUsers } from "./api/search-users";
 import { useDebounce } from "@/hooks/use-debounce";
 import { rule, type FilterQuery, type FilterRule } from "@/lib/filtering";
@@ -24,7 +24,7 @@ import type { TriState } from "@/components/ui/tri-state-select";
 
 export const Users = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [debouncedSearchTerm] = useDebounce(searchTerm, 500);
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
   const [roles, setRoles] = useState<string[]>([]);
   const [registeredFrom, setRegisteredFrom] = useState("");
   const [registeredTo, setRegisteredTo] = useState("");

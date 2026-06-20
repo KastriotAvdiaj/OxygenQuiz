@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMultiplayer } from "@/hooks/useMultiplayer";
+import { useUser } from "@/lib/Auth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/form";
@@ -12,8 +13,10 @@ export const CreateLobby = () => {
   const navigate = useNavigate();
   const { isConnected, createSession } = useMultiplayer();
   const { addNotification } = useNotifications();
-  
-  const [username, setUsername] = useState("");
+  const { data: user } = useUser();
+
+  // Host identity is the logged-in account (this route is auth-gated), never free-typed.
+  const username = user?.username ?? "";
   const [lobbyName, setLobbyName] = useState("");
   const [maxPlayers, setMaxPlayers] = useState(4);
   const [isCreating, setIsCreating] = useState(false);
@@ -28,7 +31,7 @@ export const CreateLobby = () => {
 
   const handleCreateLobby = async () => {
     if (!username.trim()) {
-      setError("Username is required");
+      setError("You must be logged in to create a lobby");
       return;
     }
 
@@ -39,8 +42,7 @@ export const CreateLobby = () => {
       await createSession(
         sessionId,
         lobbyName.trim() || "Quiz Lobby",
-        maxPlayers,
-        username.trim()
+        maxPlayers
       );
 
       // Store session info
@@ -105,17 +107,12 @@ export const CreateLobby = () => {
             </p>
           </div>
 
-          {/* Username Input */}
+          {/* Host identity — the logged-in account, not free-typed */}
           <div className="space-y-2">
-            <Input
-              type="text"
-              variant="quiz"
-              placeholder="Enter your username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="h-10 sm:h-12 text-base sm:text-lg"
-              maxLength={20}
-            />
+            <label className="text-sm font-medium">Hosting as</label>
+            <div className="flex h-10 sm:h-12 items-center rounded-md border-2 border-primary/20 bg-muted/40 px-3 text-base sm:text-lg font-bold font-quiz">
+              {username || "…"}
+            </div>
           </div>
 
           {/* Lobby Name Input */}

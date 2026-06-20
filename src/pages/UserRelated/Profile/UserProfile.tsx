@@ -1,5 +1,5 @@
 import { useParams } from "react-router-dom";
-import { Spinner } from "@/components/ui";
+import { LoadingWave } from "@/components/ui";
 import { usePublicProfile } from "./api/get-public-profile";
 import { ProfileView } from "./ProfileView";
 
@@ -15,7 +15,7 @@ export const UserProfile = () => {
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-screen">
-        <Spinner size="lg" />
+        <LoadingWave size="lg" />
       </div>
     );
   }

@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { LoadingWave } from "@/components/ui";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -281,7 +282,11 @@ export const MyReports = () => {
       {/* Results */}
       <Card className="bg-background border dark:border-foreground/30">
         <CardContent className="p-0">
-          {filtered === null ? (
+          {loading ? (
+            <div className="flex justify-center items-center py-12">
+              <LoadingWave size="md" />
+            </div>
+          ) : filtered === null ? (
             <p className="text-center text-muted-foreground py-12">
               Choose a report and press <span className="font-semibold">Generate</span>.
             </p>

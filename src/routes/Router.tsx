@@ -161,6 +161,7 @@ const createAppRouter = (queryClient: QueryClient) =>
     },
     {
       path: "/multiplayer/create",
+      loader: userAuthLoader(queryClient),
       element: (
         <>
           <CreateLobby />
@@ -169,6 +170,7 @@ const createAppRouter = (queryClient: QueryClient) =>
     },
     {
       path: "/multiplayer/join",
+      loader: userAuthLoader(queryClient),
       element: (
         <>
           <HomeLayout
@@ -181,6 +183,7 @@ const createAppRouter = (queryClient: QueryClient) =>
     },
     {
       path: "/multiplayer/lobby/:sessionId",
+      loader: userAuthLoader(queryClient),
       element: (
         <>
           <HomeLayout

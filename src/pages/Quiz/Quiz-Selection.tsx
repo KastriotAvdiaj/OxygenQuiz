@@ -11,7 +11,8 @@ import { useDebounce } from "@/hooks/use-debounce";
 import { useSearchQuizzes } from "../Dashboard/Pages/Quiz/api/search-quizzes";
 import { rule, type FilterQuery, type FilterRule } from "@/lib/filtering";
 import { pagedResponseToPagination } from "@/lib/pagination-query";
-import { PaginationControls } from "@/pages/Dashboard/Pages/Question/Components/Re-Usable-Components/pagination-control";
+import { PaginationControls } from "@/components/ui/pagination-control";
+import { LoadingWave } from "@/components/ui";
 import { useQuestionCategoryData } from "../Dashboard/Pages/Question/Entities/Categories/api/get-question-categories";
 import { useQuestionDifficultyData } from "../Dashboard/Pages/Question/Entities/Difficulty/api/get-question-difficulties";
 import { useQuestionLanguageData } from "../Dashboard/Pages/Question/Entities/Language/api/get-question-language";
@@ -173,7 +174,11 @@ export function QuizSelection() {
         </div>
 
         {/* Quiz Grid */}
-        {!isLoading && quizzes.length === 0 ? (
+        {isLoading ? (
+          <div className="flex h-64 sm:h-80 items-center justify-center">
+            <LoadingWave size="lg" />
+          </div>
+        ) : quizzes.length === 0 ? (
           <motion.div
             className="flex h-64 sm:h-80 flex-col items-center justify-center gap-3 text-base sm:text-lg text-muted-foreground"
             initial={{ opacity: 0, y: 20 }}

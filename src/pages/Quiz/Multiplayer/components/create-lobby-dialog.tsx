@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMultiplayer } from "@/hooks/useMultiplayer";
+import { useUser } from "@/lib/Auth";
 import { Button } from "@/components/ui/button";
 import { Users } from "lucide-react";
 import { useNotifications } from "@/common/Notifications";
@@ -22,7 +23,8 @@ export const CreateLobbyDialog = ({ open, onOpenChange }: CreateLobbyDialogProps
   const navigate = useNavigate();
   const { createSession } = useMultiplayer();
   const { addNotification } = useNotifications();
-  
+  const { data: user } = useUser();
+
   const [maxPlayers, setMaxPlayers] = useState(4);
   const [isCreating, setIsCreating] = useState(false);
 
@@ -31,31 +33,22 @@ export const CreateLobbyDialog = ({ open, onOpenChange }: CreateLobbyDialogProps
     return Math.random().toString(36).substring(2, 8).toUpperCase();
   };
 
-  // Get username from session storage or generate default
-  const getUsername = () => {
-    try {
-      const sessionData = sessionStorage.getItem("quiz_session");
-      if (sessionData) {
-        const parsed = JSON.parse(sessionData);
-        if (parsed.username) return parsed.username;
-      }
-    } catch (e) {
-      console.error("Error reading session storage:", e);
-    }
-    
-    // Fallback: generate random username
-    return `Player${Math.floor(Math.random() * 9999)}`;
-  };
-
   const handleCreateLobby = async () => {
+    // Hosting requires login — identity is the account, never a random/typed name.
+    if (!user) {
+      onOpenChange(false);
+      navigate("/login?redirectTo=/multiplayer-menu");
+      return;
+    }
+
     setIsCreating(true);
 
     try {
       const sessionId = generateRoomCode();
-      const username = getUsername();
+      const username = user.username;
       const lobbyName = `${username}'s Quiz Lobby`;
 
-      await createSession(sessionId, lobbyName, maxPlayers, username);
+      await createSession(sessionId, lobbyName, maxPlayers);
 
       // Store session info
       sessionStorage.setItem("quiz_session", JSON.stringify({ 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { DataTable, Card, Spinner, Button } from "@/components/ui";
+import { DataTable, Card, LoadingWave, Button } from "@/components/ui";
 import { Link } from "react-router-dom";
 import { quizColumns } from "@/pages/Dashboard/Pages/Quiz/components/Data-Table-Columns/columns";
 import { useSearchQuizzes } from "@/pages/Dashboard/Pages/Quiz/api/search-quizzes";
@@ -35,7 +35,7 @@ import {
 export const MyQuizzes = () => {
   // Same filter state as the admin page, minus the author filter (these are the user's own).
   const [searchTerm, setSearchTerm] = useState("");
-  const [debouncedSearchTerm] = useDebounce(searchTerm, 500);
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
   const [categoryIds, setCategoryIds] = useState<number[]>([]);
   const [difficultyIds, setDifficultyIds] = useState<number[]>([]);
   const [languageIds, setLanguageIds] = useState<number[]>([]);
@@ -96,7 +96,7 @@ export const MyQuizzes = () => {
   if (isFilterDataLoading) {
     return (
       <div className="flex justify-center items-center h-screen">
-        <Spinner size="lg" />
+        <LoadingWave size="lg" />
       </div>
     );
   }
@@ -170,7 +170,7 @@ export const MyQuizzes = () => {
               </p>
             ) : quizData.isLoading ? (
               <div className="flex justify-center items-center py-16">
-                <Spinner size="lg" />
+                <LoadingWave size="md" />
               </div>
             ) : (
               <DataTable data={quizzes} columns={quizColumns} />

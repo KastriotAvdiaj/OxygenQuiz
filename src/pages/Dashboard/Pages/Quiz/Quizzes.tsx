@@ -5,7 +5,7 @@ import { quizColumns } from "./components/Data-Table-Columns/columns";
 import { useSearchQuizzes } from "./api/search-quizzes";
 import { rule, type FilterQuery, type FilterRule } from "@/lib/filtering";
 import { useDebounce } from "@/hooks/use-debounce";
-import { PaginationControls } from "@/pages/Dashboard/Pages/Question/Components/Re-Usable-Components/pagination-control";
+import { PaginationControls } from "@/components/ui/pagination-control";
 import { pagedResponseToPagination } from "@/lib/pagination-query";
 
 import { useQuestionCategoryData } from "../Question/Entities/Categories/api/get-question-categories";
@@ -28,7 +28,7 @@ import { DataTransferControls } from "@/components/data-transfer/DataTransferCon
 
 export const Quizzes = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [debouncedSearchTerm] = useDebounce(searchTerm, 500);
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
   const [categoryIds, setCategoryIds] = useState<number[]>([]);
   const [difficultyIds, setDifficultyIds] = useState<number[]>([]);
   const [languageIds, setLanguageIds] = useState<number[]>([]);

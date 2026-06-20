@@ -63,6 +63,18 @@ Auth-specific enhancements are tracked in [authentication.md](authentication.md)
 - **P3 — Build warnings.** ~130 compiler warnings, mostly nullable-reference and
   a couple of duplicate `using` directives (`Program.cs` → `System.Text`;
   `TotalsController.cs` → `QuizAPI.Models`). Chip away incrementally.
+- **P3 — `!` on EF navigations can crash after the FK is cleared.** When a
+  tracked entity's foreign key is set to `null` and `SaveChanges` runs, EF
+  relationship fixup also nulls the matching navigation property. So any
+  `session.CurrentQuizQuestion!.Question`-style read *after* the question is
+  cleared NREs at runtime — the `!` only silences the compiler, it doesn't guard
+  anything. One instance (in `BuildResultDto`, on Incorrect/TimedOut answers) is
+  fixed by capturing the question before `ClearCurrentQuestion`, but the
+  null-forgiving pattern recurs across the quiz-session services. *Fix:* audit
+  for `!` on EF navigations that are dereferenced after a clear/`SaveChanges`,
+  and capture the reference before mutating the FK (or null-check instead of `!`).
+  → `OxygenBackend/QuizAPI/Controllers/Quizzes/Services/QuizSessionServices/` (esp.
+  `SubmitAnswerService`, `QuizSessionService`, `AbandonmentService`)
 
 ## Repo hygiene
 

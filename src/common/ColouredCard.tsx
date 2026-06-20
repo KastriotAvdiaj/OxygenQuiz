@@ -61,14 +61,14 @@ export function ColorCard({
         const parsed = JSON.parse(colorPalette);
         return Array.isArray(parsed) && parsed.length > 0
           ? parsed
-          : ["#6366f1", "#8b5cf6", "#06b6d4"];
+          : ["#6366f1", "#3b82f6", "#06b6d4"];
       }
       return Array.isArray(colorPalette) && colorPalette.length > 0
         ? colorPalette
-        : ["#6366f1", "#8b5cf6", "#06b6d4"];
+        : ["#6366f1", "#3b82f6", "#06b6d4"];
     } catch (error) {
       console.warn("Failed to parse colorPalette:", error);
-      return ["#6366f1", "#8b5cf6", "#06b6d4"];
+      return ["#6366f1", "#3b82f6", "#06b6d4"];
     }
   }, [colorPalette]);
 

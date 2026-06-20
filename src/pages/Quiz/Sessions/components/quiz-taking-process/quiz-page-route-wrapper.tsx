@@ -1,7 +1,7 @@
 import { Navigate, useParams } from "react-router-dom";
 import { QuizPage } from "./quiz-page";
 import { useUser } from "@/lib/Auth";
-import { Spinner } from "@/components/ui";
+import { LoadingWave } from "@/components/ui";
 
 export const QuizPageRouteWrapper = () => {
   const { quizId } = useParams<{ quizId: string }>();
@@ -17,7 +17,7 @@ export const QuizPageRouteWrapper = () => {
   if (isLoading) {
     return (
       <div className="flex justify-center items-center py-16">
-        <Spinner size="lg" />
+        <LoadingWave size="lg" />
       </div>
     );
   }

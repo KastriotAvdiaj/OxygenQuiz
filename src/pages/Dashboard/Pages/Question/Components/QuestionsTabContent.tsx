@@ -1,7 +1,7 @@
 import { MultipleChoiceQuestionList } from "./Multiple_Choice_Question/multiple-choice-question-list";
 import { TrueFalseQuestionList } from "../Components/True_Flase-Question/true-false-question-list";
 import { TypeTheAnswerQuestionList } from "../Components/Type_The_Answer-Question/type-the-asnwer-list";
-import { PaginationControls } from "./Re-Usable-Components/pagination-control";
+import { PaginationControls } from "@/components/ui/pagination-control";
 import { Spinner } from "@/components/ui";
 import { QuestionListComponent } from "../../Quiz/components/Create-Quiz-Form/components/question-select/select-common-question-list";
 import {

@@ -12,18 +12,18 @@ import { cn } from "@/utils/cn";
 
 /**
  * PaginationControls Component
- * 
+ *
  * A reusable pagination component that renders:
  * - Navigation buttons (First, Previous, Next, Last)
  * - Numeric page buttons with intelligent truncation (dots)
  * - Current page indication
- * 
+ *
  * Logic:
  * - Shows a range of page numbers around the current page (determined by siblingCount)
  * - Always shows first and last pages
  * - Truncates gaps with "..."
  * - Hides "First" and "Last" buttons if total pages are small (<= 3)
- * 
+ *
  * Props:
  * @param pagination - Object containing pagination state (currentPage, totalPages, etc.)
  * @param onPageChange - Callback function when a page is selected
@@ -76,7 +76,7 @@ export const PaginationControls = ({
       const rightItemCount = 3 + 2 * siblingCount;
       const rightRange = Array.from(
         { length: rightItemCount },
-        (_, i) => totalPages - rightItemCount + i + 1
+        (_, i) => totalPages - rightItemCount + i + 1,
       );
       return [firstPageIndex, "DOTS", ...rightRange];
     }
@@ -84,7 +84,7 @@ export const PaginationControls = ({
     if (shouldShowLeftDots && shouldShowRightDots) {
       const middleRange = Array.from(
         { length: rightSiblingIndex - leftSiblingIndex + 1 },
-        (_, i) => leftSiblingIndex + i
+        (_, i) => leftSiblingIndex + i,
       );
       return [firstPageIndex, "DOTS", ...middleRange, "DOTS", lastPageIndex];
     }
@@ -98,7 +98,7 @@ export const PaginationControls = ({
     <div
       className={cn(
         "flex flex-col items-center justify-center gap-3 py-6",
-        className
+        className,
       )}
     >
       <div className="flex items-center gap-2">
@@ -107,7 +107,7 @@ export const PaginationControls = ({
           <Button
             variant="secondary"
             size="icon"
-            className="h-10 w-10 hidden sm:flex disabled:opacity-30 border shadow-sm"
+            className="h-10 w-10 hidden sm:flex disabled:opacity-30 border shadow-sm rounded-sm"
             onClick={() => onPageChange(1)}
             disabled={currentPage === 1}
             aria-label="Go to first page"
@@ -115,12 +115,12 @@ export const PaginationControls = ({
             <ChevronsLeft className="h-5 w-5" />
           </Button>
         )}
-        
+
         {/* Previous Page Button */}
         <Button
-          variant="secondary" 
+          variant="secondary"
           size="icon"
-          className="h-10 w-10 disabled:opacity-30 border shadow-sm"
+          className="h-10 w-10 disabled:opacity-30 border shadow-sm rounded-sm"
           onClick={() => onPageChange(currentPage - 1)}
           disabled={!hasPreviousPage}
           aria-label="Go to previous page"
@@ -148,8 +148,10 @@ export const PaginationControls = ({
                 variant={pageNumber === currentPage ? "default" : "outline"}
                 size="icon"
                 className={cn(
-                  "h-10 w-10 transition-all", 
-                  pageNumber === currentPage ? "font-bold shadow-md" : "hover:bg-accent hover:text-accent-foreground"
+                  "h-10 w-10 transition-all rounded-sm",
+                  pageNumber === currentPage
+                    ? "font-bold shadow-md"
+                    : "hover:bg-accent hover:text-accent-foreground",
                 )}
                 onClick={() => onPageChange(pageNumber as number)}
                 aria-current={pageNumber === currentPage ? "page" : undefined}
@@ -164,7 +166,7 @@ export const PaginationControls = ({
         <Button
           variant="secondary"
           size="icon"
-          className="h-10 w-10 disabled:opacity-30 border shadow-sm"
+          className="h-10 w-10 disabled:opacity-30 border shadow-sm rounded-sm"
           onClick={() => onPageChange(currentPage + 1)}
           disabled={!hasNextPage}
           aria-label="Go to next page"
@@ -186,9 +188,10 @@ export const PaginationControls = ({
           </Button>
         )}
       </div>
-      
+
       <div className="text-sm text-muted-foreground font-medium">
-          Page <span className="text-foreground font-bold">{currentPage}</span> of {totalPages}
+        Page <span className="text-foreground font-bold">{currentPage}</span> of{" "}
+        {totalPages}
       </div>
     </div>
   );

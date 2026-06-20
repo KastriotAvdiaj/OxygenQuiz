@@ -59,17 +59,17 @@ const questionTypeColors: Record<
   },
   [QuestionType.TrueFalse]: {
     quiz:
-      "bg-gradient-to-r from-purple-500/10 to-purple-500/5 " +
-      "border-2 border-purple-500/30 dark:border-purple-500/50 " +
-      "shadow-[0_4px_0_0_rgba(168,85,247,0.7)] " +
-      "hover:shadow-[0_2px_0_0_rgba(168,85,247,0.5)] " +
-      "focus-visible:ring-purple-500 " +
-      "dark:from-purple-500/30 dark:to-purple-500/10",
+      "bg-gradient-to-r from-primary/10 to-primary/5 " +
+      "border-2 border-primary/30 dark:border-primary/50 " +
+      "shadow-[0_4px_0_0_hsl(var(--primary)/0.7)] " +
+      "hover:shadow-[0_2px_0_0_hsl(var(--primary)/0.5)] " +
+      "focus-visible:ring-primary " +
+      "dark:from-primary/30 dark:to-primary/10",
     display:
-      "bg-gradient-to-r from-purple-500/10 to-purple-500/5 " +
-      "border-2 border-purple-500/40 dark:border-purple-500/80 " +
-      "shadow-[0_4px_0_0_rgba(168,85,247,0.7)] " +
-      "dark:from-purple-500/40 dark:to-purple-500/10",
+      "bg-gradient-to-r from-primary/10 to-primary/5 " +
+      "border-2 border-primary/40 dark:border-primary/80 " +
+      "shadow-[0_4px_0_0_hsl(var(--primary)/0.7)] " +
+      "dark:from-primary/40 dark:to-primary/10",
   },
 };
 

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useMultiplayer } from "@/hooks/useMultiplayer";
+import { useUser } from "@/lib/Auth";
 import { useConnectionStatus } from "@/hooks/use-connection-status";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/form";
@@ -26,10 +27,12 @@ export const JoinLobbyDialog = ({ open, onOpenChange }: JoinLobbyDialogProps) =>
   const { joinSession } = useMultiplayer();
   const connectionStatus = useConnectionStatus();
   const { addNotification } = useNotifications();
+  const { data: user } = useUser();
 
   const canJoin = connectionStatus.status === "connected";
 
-  const [username, setUsername] = useState("");
+  // Identity is the logged-in account, not a typed name.
+  const username = user?.username ?? "";
   const [roomCode, setRoomCode] = useState("");
   const [isJoining, setIsJoining] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -51,8 +54,10 @@ export const JoinLobbyDialog = ({ open, onOpenChange }: JoinLobbyDialogProps) =>
   }, [open]);
 
   const handleJoinLobby = async () => {
-    if (!username.trim()) {
-      setError("Username is required");
+    // Joining requires login — invite links should prompt sign-in, not a typed username.
+    if (!user) {
+      onOpenChange(false);
+      navigate("/login?redirectTo=/multiplayer-menu");
       return;
     }
     if (!roomCode.trim()) {
@@ -64,7 +69,7 @@ export const JoinLobbyDialog = ({ open, onOpenChange }: JoinLobbyDialogProps) =>
     setError(null);
 
     try {
-      await joinSession(roomCode.toUpperCase(), username.trim());
+      await joinSession(roomCode.toUpperCase());
 
       // Store session info
       sessionStorage.setItem("quiz_session", JSON.stringify({
@@ -97,7 +102,6 @@ export const JoinLobbyDialog = ({ open, onOpenChange }: JoinLobbyDialogProps) =>
 
   const handleCancel = () => {
     onOpenChange(false);
-    setUsername("");
     setRoomCode("");
     setError(null);
   };
@@ -110,7 +114,7 @@ export const JoinLobbyDialog = ({ open, onOpenChange }: JoinLobbyDialogProps) =>
             Join Quiz Lobby
           </DialogTitle>
           <DialogDescription className="text-center">
-            Enter the room code and your username to join
+            Enter the room code to join
           </DialogDescription>
         </DialogHeader>
 
@@ -141,18 +145,12 @@ export const JoinLobbyDialog = ({ open, onOpenChange }: JoinLobbyDialogProps) =>
             />
           </div>
 
-          {/* Username Input */}
+          {/* Identity — the logged-in account, not free-typed */}
           <div className="space-y-2">
-            <label className="text-sm font-medium">Your Username *</label>
-            <Input
-              type="text"
-              variant="quiz"
-              placeholder="Enter your username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="h-12 text-base"
-              maxLength={20}
-            />
+            <label className="text-sm font-medium">Joining as</label>
+            <div className="flex h-12 items-center rounded-md border-2 border-primary/20 bg-muted/40 px-3 text-base font-bold font-quiz">
+              {username || "…"}
+            </div>
           </div>
 
           {/* Error Message */}
@@ -176,7 +174,7 @@ export const JoinLobbyDialog = ({ open, onOpenChange }: JoinLobbyDialogProps) =>
           <Button
             type="button"
             onClick={handleJoinLobby}
-            disabled={!canJoin || !username.trim() || !roomCode.trim() || isJoining}
+            disabled={!canJoin || !roomCode.trim() || isJoining}
             className="w-full sm:w-auto font-bold font-quiz text-white rounded-md"
           >
             {isJoining ? "Joining..." : "Join Lobby"}

@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using QuizAPI.Hubs.Clients;
 using QuizAPI.Services.Interfaces;
@@ -5,6 +6,7 @@ using QuizAPI.Services.QuizSessionServices;
 
 namespace QuizAPI.Hubs;
 
+[Authorize]
 public class QuizHub : Hub<IQuizClient>
 {
     private readonly IQuizSessionManager _sessionManager;
@@ -21,8 +23,17 @@ public class QuizHub : Hub<IQuizClient>
         _matchOrchestrator = matchOrchestrator;
     }
 
-    public async Task JoinSession(string sessionId, string username)
+    // The participant's identity is ALWAYS the authenticated account — never trusted from the
+    // client. The JWT carries a literal "username" claim (see TokenService); MapInboundClaims
+    // is off, so it stays under that name.
+    private string GetUsername() =>
+        Context.User?.FindFirst("username")?.Value
+        ?? throw new HubException("You must be logged in.");
+
+    public async Task JoinSession(string sessionId)
     {
+        var username = GetUsername();
+
         // 1. Add to SignalR Group
         await Groups.AddToGroupAsync(Context.ConnectionId, sessionId);
         
@@ -70,8 +81,9 @@ public class QuizHub : Hub<IQuizClient>
         await Clients.Group(sessionId).ChatMessageReceived(message);
     }
 
-    public async Task LeaveSession(string sessionId, string username)
+    public async Task LeaveSession(string sessionId)
     {
+        var username = GetUsername();
         var wasHost = await _sessionManager.IsHostAsync(sessionId, username);
         
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, sessionId);
@@ -146,8 +158,9 @@ public class QuizHub : Hub<IQuizClient>
     // Records a player's answer for the current question. The server grades it later (when the
     // round closes) — nothing about correctness is sent back here. First submission of the round
     // wins; late or duplicate submissions are ignored.
-    public async Task SubmitAnswer(string sessionId, string username, string answer)
+    public async Task SubmitAnswer(string sessionId, string answer)
     {
+        var username = GetUsername();
         var session = await _sessionManager.GetSessionAsync(sessionId);
         if (session is null || session.QuizState != QuizState.QuestionActive)
             return; // not accepting answers right now
@@ -184,14 +197,16 @@ public class QuizHub : Hub<IQuizClient>
         }
     }
 
-    public async Task ToggleReady(string sessionId, string username, bool isReady)
+    public async Task ToggleReady(string sessionId, bool isReady)
     {
+        var username = GetUsername();
         await _sessionManager.SetPlayerReadyAsync(sessionId, username, isReady);
         await Clients.Group(sessionId).PlayerReadyChanged(username, isReady);
     }
 
-    public async Task CreateSession(string sessionId, string lobbyName, int maxPlayers, string username)
+    public async Task CreateSession(string sessionId, string lobbyName, int maxPlayers)
     {
+        var username = GetUsername();
         try
         {
             // Create session with settings

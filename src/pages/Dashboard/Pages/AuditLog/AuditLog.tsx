@@ -18,7 +18,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import formatDate from "@/lib/date-format";
-import { PaginationControls } from "@/pages/Dashboard/Pages/Question/Components/Re-Usable-Components/pagination-control";
+import { PaginationControls } from "@/components/ui/pagination-control";
 import { pagedResponseToPagination } from "@/lib/pagination-query";
 import { rule, type FilterQuery, type FilterRule } from "@/lib/filtering";
 import { useSearchAuditLogs } from "./api/search-audit-logs";
@@ -53,7 +53,7 @@ const shortId = (id: string | null) => (id ? `${id.slice(0, 8)}…` : "system");
 
 export const AuditLog = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [debouncedSearchTerm] = useDebounce(searchTerm, 500);
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
   const [actions, setActions] = useState<string[]>([]);
   const [entities, setEntities] = useState<string[]>([]);
   const [actorIds, setActorIds] = useState<string[]>([]);

@@ -51,14 +51,13 @@ export type MatchPhase = "idle" | "starting" | "question" | "reveal" | "ended";
 
 interface UseMatchOptions {
   sessionId: string;
-  username: string;
 }
 
 /**
  * Subscribes to the server-driven match events on the shared SignalR connection and exposes the
  * current match state. The lobby page renders <MultiplayerGame> whenever `phase !== "idle"`.
  */
-export const useMatch = ({ sessionId, username }: UseMatchOptions) => {
+export const useMatch = ({ sessionId }: UseMatchOptions) => {
   const { connection, submitAnswer } = useMultiplayer();
 
   const [phase, setPhase] = useState<MatchPhase>("idle");
@@ -126,14 +125,14 @@ export const useMatch = ({ sessionId, username }: UseMatchOptions) => {
       if (hasSubmitted) return;
       setHasSubmitted(true);
       try {
-        await submitAnswer(sessionId, username, answer);
+        await submitAnswer(sessionId, answer);
       } catch (err) {
         // Let the player retry if the send failed.
         setHasSubmitted(false);
         throw err;
       }
     },
-    [hasSubmitted, submitAnswer, sessionId, username]
+    [hasSubmitted, submitAnswer, sessionId]
   );
 
   const reset = useCallback(() => {

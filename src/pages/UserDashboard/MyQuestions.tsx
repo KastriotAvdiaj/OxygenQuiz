@@ -3,7 +3,7 @@ import { useQuestionCategoryData } from "@/pages/Dashboard/Pages/Question/Entiti
 import { useQuestionDifficultyData } from "@/pages/Dashboard/Pages/Question/Entities/Difficulty/api/get-question-difficulties";
 import { useQuestionLanguageData } from "@/pages/Dashboard/Pages/Question/Entities/Language/api/get-question-language";
 
-import { Card, Spinner } from "@/components/ui";
+import { Card, LoadingWave } from "@/components/ui";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useDisclosure } from "@/hooks/use-disclosure";
 
@@ -26,7 +26,7 @@ import { QuestionType } from "@/types/question-types";
 
 export const MyQuestions = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [debouncedSearchTerm] = useDebounce(searchTerm, 500);
+  const debouncedSearchTerm = useDebounce(searchTerm, 500);
   // Multi-select filters — empty array means "all".
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>([]);
   const [selectedDifficultyIds, setSelectedDifficultyIds] = useState<number[]>([]);
@@ -86,7 +86,7 @@ export const MyQuestions = () => {
   if (isFilterDataLoading) {
     return (
       <div className="flex justify-center items-center h-screen">
-        <Spinner size="lg" />
+        <LoadingWave size="lg" />
       </div>
     );
   }

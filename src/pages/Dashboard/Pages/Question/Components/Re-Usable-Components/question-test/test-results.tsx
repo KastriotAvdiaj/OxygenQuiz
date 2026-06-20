@@ -64,16 +64,16 @@ export const TestResults = ({
       </Alert>
 
       {/* Score Card */}
-      <Card className="border-2 border-purple-200 dark:border-purple-800/50 bg-purple-50 dark:bg-purple-900/10">
+      <Card className="border-2 border-primary/20 dark:border-primary/40 bg-primary/5 dark:bg-primary/10">
         <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-purple-900 dark:text-purple-100">
+          <CardTitle className="flex items-center gap-2 text-primary">
             <Trophy className="h-5 w-5" />
             Your Score
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-baseline gap-2">
-            <span className="text-4xl font-bold text-purple-600 dark:text-purple-400">
+            <span className="text-4xl font-bold text-primary">
               {result.score}
             </span>
             <span className="text-lg text-muted-foreground">points</span>
