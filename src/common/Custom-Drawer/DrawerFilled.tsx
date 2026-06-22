@@ -16,8 +16,9 @@ import { DrawerClose } from "@/components/ui/drawer";
 import { NavLink } from "react-router-dom";
 
 export const DrawerFilled = () => {
-  const isAdmin = true;
   const { data: user } = useUser();
+  const isAdmin =
+    user?.roles?.some((r) => r === "Admin" || r === "SuperAdmin") ?? false;
   const logout = useLogout();
   const { isOpen, close, toggle } = useDisclosure();
 

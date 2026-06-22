@@ -295,6 +295,33 @@ const createAppRouter = (queryClient: QueryClient) =>
             return { Component: Questions };
           },
         },
+        {
+          path: "categories",
+          lazy: async () => {
+            const { CategoryView } = await import(
+              "../pages/Dashboard/Pages/Question/Entities/Categories/Components/category-view"
+            );
+            return { Component: CategoryView };
+          },
+        },
+        {
+          path: "difficulties",
+          lazy: async () => {
+            const { DifficultyView } = await import(
+              "../pages/Dashboard/Pages/Question/Entities/Difficulty/Components/difficulty-view"
+            );
+            return { Component: DifficultyView };
+          },
+        },
+        {
+          path: "languages",
+          lazy: async () => {
+            const { LanguagesView } = await import(
+              "../pages/Dashboard/Pages/Question/Entities/Language/components/language-view"
+            );
+            return { Component: LanguagesView };
+          },
+        },
         // {
         //   path: "questions/:questionId",
         //   lazy: async () => {

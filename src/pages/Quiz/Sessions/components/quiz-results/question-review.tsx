@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { AnswerStatus, QuizSession } from "../../quiz-session-types";
+import { QuestionMedia } from "@/common/QuestionMedia";
 import { formatDuration } from "./quiz-session-utils";
 
 interface QuestionReviewProps {
@@ -142,6 +143,14 @@ export function QuestionReview({ session }: QuestionReviewProps) {
             <div className="font-medium mt-1">{answer.score} pts</div>
           </div>
         </div>
+
+        {/* Optional question media */}
+        <QuestionMedia
+          mediaUrl={answer.mediaUrl}
+          mediaType={answer.mediaType}
+          alt="Question image"
+          className="!max-w-md"
+        />
 
         {/* Answer Content */}
         <div className="space-y-3">

@@ -1,6 +1,6 @@
 import { FaChartLine } from "react-icons/fa6";
 import { RiQuestionAnswerFill } from "react-icons/ri";
-import { FaFolderOpen, FaUsers, FaUserCircle, FaCog, FaHistory } from "react-icons/fa";
+import { FaFolderOpen, FaUsers, FaUserCircle, FaCog, FaHistory, FaTags, FaLanguage, FaSignal } from "react-icons/fa";
 import { PiLockKeyFill } from "react-icons/pi";
 
 export type DashboardNavItem = {
@@ -22,6 +22,24 @@ export const adminDashboardNavButtons: DashboardNavItem[] = [
     id: "questions",
     label: "Questions",
     icon: RiQuestionAnswerFill,
+  },
+  {
+    id: "categories",
+    label: "Categories",
+    icon: FaTags,
+    roles: ["Admin", "SuperAdmin"],
+  },
+  {
+    id: "difficulties",
+    label: "Difficulties",
+    icon: FaSignal,
+    roles: ["Admin", "SuperAdmin"],
+  },
+  {
+    id: "languages",
+    label: "Languages",
+    icon: FaLanguage,
+    roles: ["Admin", "SuperAdmin"],
   },
   {
     id: "quizzes",

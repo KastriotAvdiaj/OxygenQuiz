@@ -9,6 +9,7 @@ import { TrueOrFalseQuestion } from "./question-display-type-files/true-or-false
 import { TypeTheAnswerQuestion } from "./question-display-type-files/type-the-answer-question";
 import { MultipleChoiceQuestion } from "./question-display-type-files/multiple-choice-question";
 import { FeedbackDisplay } from "./feedback-display";
+import { QuestionMedia } from "@/common/QuestionMedia";
 import { useState, useRef, useCallback } from "react";
 import { useNotifications } from "@/common/Notifications";
 import { Clock } from "lucide-react";
@@ -137,6 +138,14 @@ export function QuestionDisplay({
             {question.questionText}
           </h2>
         </div>
+
+        {/* Optional question media (image/audio/video) */}
+        <QuestionMedia
+          mediaUrl={question.mediaUrl}
+          mediaType={question.mediaType}
+          alt="Question image"
+          className="mt-4"
+        />
 
         {/* Time's Up Banner — shown instead of feedback when timed out */}
         <AnimatePresence>

@@ -22,9 +22,6 @@ import {
 } from "@/components/ui/dialog";
 import CreateTypeAnswerQuestionForm from "./Components/Type_The_Answer-Question/create-type-the-answer-question";
 import { QuestionFilters } from "./Components/Re-Usable-Components/question-filters";
-import { CategoryView } from "./Entities/Categories/Components/category-view";
-import { DifficultyView } from "./Entities/Difficulty/Components/difficulty-view";
-import { LanguagesView } from "./Entities/Language/components/language-view";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { QuestionTabContent } from "./Components/QuestionsTabContent";
 import { QuestionType } from "@/types/question-types";
@@ -258,15 +255,6 @@ export const Questions = () => {
             />
           </aside>
         </div>
-
-        {/* Admin sections — each renders its own [content | 350px filter] row */}
-        <Authorization allowedRoles={[ROLES.Admin, ROLES.SuperAdmin]}>
-          <div className="flex flex-col gap-6">
-            <CategoryView />
-            <DifficultyView />
-            <LanguagesView />
-          </div>
-        </Authorization>
       </div>
     </div>
   );

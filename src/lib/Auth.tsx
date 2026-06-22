@@ -113,6 +113,12 @@ export const createAuthLoader =
       requiredRoles?: string[];
       requiredPermissions?: string[];
       redirectPath?: string;
+      /**
+       * Hide the route from unauthorized visitors: instead of redirecting to /login or
+       * /access-denied (either of which confirms the route exists), serve a 404. Used for the
+       * admin dashboard so normal users can't tell its pages are there.
+       */
+      notFoundOnDenied?: boolean;
     }
   ) =>
   async ({ request }: LoaderFunctionArgs): Promise<{ user: User } | Response> => {
@@ -121,12 +127,19 @@ export const createAuthLoader =
       requiredRoles,
       requiredPermissions,
       redirectPath = "/access-denied",
+      notFoundOnDenied = false,
     } = options || {};
 
-    try {
-      let user = queryClient.getQueryData<User>(queryKey);
+    // Thrown to the route's errorElement, which renders the generic "page not found" — so a hidden
+    // route is indistinguishable from one that doesn't exist. statusText "Hidden" lets the dashboard
+    // error element tell this apart from an in-dashboard resource-not-found.
+    const notFound = () =>
+      new Response("Not Found", { status: 404, statusText: "Hidden" });
 
-      if (!user) {
+    // Resolve the current user (from cache, else fetch). Any failure means "not signed in".
+    let user = queryClient.getQueryData<User>(queryKey);
+    if (!user) {
+      try {
         user = await queryClient.fetchQuery({
           queryKey,
           queryFn: async (): Promise<User> => {
@@ -136,42 +149,45 @@ export const createAuthLoader =
           },
           staleTime: 5 * 60 * 1000,
         });
+      } catch {
+        user = undefined;
       }
+    }
 
-      if (!user) throw new Error("User not authenticated");
-
-      // SuperAdmin bypasses every route gate — its access never depends
-      // on the role/permission tables.
-      const isSuperAdmin = user.roles?.includes("SuperAdmin") ?? false;
-
-      if (!isSuperAdmin) {
-        // Role gate — allow if the user holds ANY required role.
-        if (requiredRoles && requiredRoles.length > 0) {
-          const ok = requiredRoles.some((r) => user!.roles?.includes(r));
-          if (!ok) return redirect(redirectPath);
-        }
-
-        // Permission gate — allow if the user holds ANY required permission.
-        if (requiredPermissions && requiredPermissions.length > 0) {
-          const ok = requiredPermissions.some((p) =>
-            user!.permissions?.includes(p)
-          );
-          if (!ok) return redirect(redirectPath);
-        }
-      }
-
-      return { user };
-    } catch {
+    if (!user) {
+      if (notFoundOnDenied) throw notFound();
       const url = new URL(request.url);
       const returnUrl = url.pathname + url.search;
       return redirect(`/login?redirectTo=${encodeURIComponent(returnUrl)}`);
     }
+
+    // SuperAdmin bypasses every route gate — its access never depends on the role/permission tables.
+    const isSuperAdmin = user.roles?.includes("SuperAdmin") ?? false;
+    if (!isSuperAdmin) {
+      const roleOk =
+        !requiredRoles?.length ||
+        requiredRoles.some((r) => user!.roles?.includes(r));
+      const permissionOk =
+        !requiredPermissions?.length ||
+        requiredPermissions.some((p) => user!.permissions?.includes(p));
+
+      if (!roleOk || !permissionOk) {
+        if (notFoundOnDenied) throw notFound();
+        return redirect(redirectPath);
+      }
+    }
+
+    return { user };
   };
 
 export const userAuthLoader = createAuthLoader;
 
 export const adminAuthLoader = (queryClient: QueryClient) =>
-  createAuthLoader(queryClient, { requiredRoles: ["Admin", "SuperAdmin"] });
+  createAuthLoader(queryClient, {
+    requiredRoles: ["Admin", "SuperAdmin"],
+    // The admin dashboard is invisible to non-admins: deny with a 404, not access-denied/login.
+    notFoundOnDenied: true,
+  });
 
 export const superAdminAuthLoader = (queryClient: QueryClient) =>
   createAuthLoader(queryClient, { requiredRoles: ["SuperAdmin"] });

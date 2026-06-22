@@ -1,4 +1,4 @@
-import { QuestionType } from "@/types/question-types";
+import { QuestionType, QuestionMediaType } from "@/types/question-types";
 
 // Enums from the backend
 export enum AnswerStatus {
@@ -37,6 +37,10 @@ export interface AnswerOption {
 export interface CurrentQuestion {
   quizQuestionId: number;
   questionText: string;
+  // Optional media attachment shown with the question (absolute URL from the API). For legacy
+  // image-only questions the backend falls back to the old ImageUrl, with mediaType "Image".
+  mediaUrl?: string | null;
+  mediaType?: QuestionMediaType;
   options: AnswerOption[];
   timeLimitInSeconds: number;
   timeRemainingInSeconds: number;
@@ -73,6 +77,8 @@ export interface UserAnswer {
   selectedOptionId: number | null; // For MC/T-F questions
   submittedAnswer: string | null;
   questionText: string;
+  mediaUrl?: string | null;
+  mediaType?: QuestionMediaType;
   questionType: QuestionType; // matches backend enum
   timeLimitInSeconds: number;
   timeSpentInSeconds: number | null; // Calculated field

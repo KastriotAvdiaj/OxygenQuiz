@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { CgProfile } from "react-icons/cg";
 import { LiaUserFriendsSolid } from "react-icons/lia";
 import { Settings } from "lucide-react";
-import { RiDashboard2Fill } from "react-icons/ri";
+import { RiAdminFill } from "react-icons/ri";
+import { MdSpaceDashboard } from "react-icons/md";
 
 export const DrawerLinks = ({
   close,
@@ -39,13 +40,13 @@ export const DrawerLinks = ({
       <>
         <NavLink to="/dashboard" onClick={close} className="w-full">
           <Button variant={"drawer"} size={"drawerSize"} className="w-full">
-            <RiDashboard2Fill className="text-sm" /> Admin Dashboard
+            <RiAdminFill className="text-sm" /> Admin Dashboard
           </Button>
         </NavLink>
 
         <NavLink to="/my-dashboard" onClick={close} className="w-full">
           <Button variant={"drawer"} size={"drawerSize"} className="w-full">
-            <RiDashboard2Fill className="text-sm" /> Personal Dashboard
+            <MdSpaceDashboard className="text-sm" /> Personal Dashboard
           </Button>
         </NavLink>
       </>

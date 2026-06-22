@@ -97,7 +97,7 @@ export const PaginationControls = ({
   return (
     <div
       className={cn(
-        "flex flex-col items-center justify-center gap-3 py-6",
+        "flex flex-col items-center justify-center gap-3 py-6 mt-2",
         className,
       )}
     >
@@ -150,7 +150,7 @@ export const PaginationControls = ({
                 className={cn(
                   "h-10 w-10 transition-all rounded-sm",
                   pageNumber === currentPage
-                    ? "font-bold shadow-md"
+                    ? "font-bold shadow-md text-white"
                     : "hover:bg-accent hover:text-accent-foreground",
                 )}
                 onClick={() => onPageChange(pageNumber as number)}

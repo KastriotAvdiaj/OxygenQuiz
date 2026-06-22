@@ -3,9 +3,11 @@
 How a question carries an optional media attachment, where it is stored, and how it
 travels from creation through to the quiz-taking screen.
 
-> Status: **backend implemented**, **frontend pending** (upload UI in the question
-> editor and rendering in the play/review screens are the next step — see
-> [Frontend (planned)](#frontend-planned)).
+> Status: **backend implemented**. **Frontend: images work end-to-end** — upload in the
+> question editor, dashboard cards, and both quiz-taking screens (single-player + multiplayer)
+> render the attachment via a shared `QuestionMedia` component. Remaining: the answer-**review**
+> screen (needs media on the `UserAnswer` DTO) and a dedicated audio/video upload path. See
+> [Frontend](#7-frontend).
 
 ---
 
@@ -172,16 +174,27 @@ This adds `Questions.MediaUrl`, `Questions.MediaType` (int, default `0` = `None`
 
 ---
 
-## 7. Frontend (planned)
+## 7. Frontend
 
-Not yet implemented. The remaining work:
+**Done:**
 
-- A media picker in the question editor: upload via `POST /api/files`, then set
-  `MediaUrl` + `MediaType` on the question from the returned `FileDTO`.
-- Render media in the quiz-taking screen (`QuizInterface`) and the review screen, choosing
-  `<img>` / `<audio controls>` / `<video controls>` based on `MediaType`.
-- Add `mediaUrl` / `mediaType` to the relevant TypeScript types and the current-question
-  hook.
+- **Upload** in the question editor — the create/update forms attach an image via the legacy
+  `imageUrl` upload (`@/utils/Image-Upload`).
+- **Dashboard cards** render the image (`multiple-choice-question-card.tsx`, etc.).
+- **Quiz-taking screens** render the attachment via the shared **`QuestionMedia`** component
+  (`src/common/QuestionMedia.tsx`): single-player `question-display.tsx` and multiplayer
+  `MultiplayerGame.tsx` both use it. It renders `<img>` / `<audio controls>` / `<video controls>`
+  from `mediaType`, falling back to an image for legacy URL-only questions.
+- `mediaUrl` / `mediaType` added to the live `CurrentQuestion` type, plus a shared
+  `QuestionMediaType` string union in `question-types.ts`.
+
+**Remaining:**
+
+- The answer-**review** screen doesn't show media yet — the `UserAnswer` DTO would need
+  `MediaUrl` / `MediaType` (a backend mapper change) before the UI can render it.
+- A dedicated **audio/video** upload path in the editor. Today's editor uploads images via the
+  legacy endpoint; the generic `POST /api/files` route already supports the other kinds, so the
+  remaining work is the picker UI + setting `MediaUrl`/`MediaType` from the returned `FileDTO`.
 
 ---
 

@@ -34,6 +34,12 @@ export enum QuestionType {
   TypeTheAnswer = "TypeTheAnswer",
 }
 
+/**
+ * Kind of media attached to a question. Mirrors the backend `QuestionMediaType` enum
+ * (serialized as these strings). A question carries at most one attachment.
+ */
+export type QuestionMediaType = "None" | "Image" | "Audio" | "Video";
+
 export type QuestionCategory = {
   id: number;
   createdAt: string;

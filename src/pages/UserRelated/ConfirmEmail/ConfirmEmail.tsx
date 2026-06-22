@@ -5,6 +5,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { LoadingWave } from "@/components/ui";
 import { useUser } from "@/lib/Auth";
+import type { User } from "@/types/user-types";
 import { verifyEmail, useResendVerification } from "./api/email-verification";
 
 /**
@@ -22,9 +23,17 @@ export const ConfirmEmail = () => {
 
   const verify = useMutation({
     mutationFn: () => verifyEmail(token),
-    // Flip the cached user's emailConfirmed so the banner clears on this device.
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ["authenticated-user"] }),
+    onSuccess: () => {
+      // Flip the cached user optimistically so the banner clears immediately, then revalidate in
+      // the background. Important: do NOT *return* the invalidateQueries promise — in React Query
+      // v5 a returned promise keeps the mutation `pending` until it settles, which left this page
+      // stuck on "Confirming…" while the /me refetch was in flight.
+      queryClient.setQueryData<User | undefined>(
+        ["authenticated-user"],
+        (old) => (old ? { ...old, emailConfirmed: true } : old),
+      );
+      void queryClient.invalidateQueries({ queryKey: ["authenticated-user"] });
+    },
     throwOnError: false,
   });
 
@@ -54,7 +63,9 @@ export const ConfirmEmail = () => {
           </div>
         ) : verify.isSuccess ? (
           <>
-            <h1 className="text-2xl font-bold text-primary">Email confirmed 🎉</h1>
+            <h1 className="text-2xl font-bold text-primary">
+              Email confirmed successfully
+            </h1>
             <p className="text-muted-foreground">
               Your email is verified — you're all set.
             </p>
@@ -80,8 +91,8 @@ export const ConfirmEmail = () => {
                 {resend.isSuccess
                   ? "Sent — check your inbox"
                   : resend.isPending
-                  ? "Sending…"
-                  : "Resend confirmation email"}
+                    ? "Sending…"
+                    : "Resend confirmation email"}
               </Button>
             )}
           </>

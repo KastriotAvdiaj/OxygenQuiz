@@ -524,6 +524,12 @@ namespace QuizAPI.Mapping
                 SelectedOptionId = ua.SelectedOptionId,
                 SubmittedAnswer = ua.SubmittedAnswer,
                 QuestionText = ua.QuizQuestion.Question.Text,
+                MediaUrl = ua.QuizQuestion.Question.MediaUrl ?? ua.QuizQuestion.Question.ImageUrl,
+                MediaType =
+                    ua.QuizQuestion.Question.MediaType == QuestionMediaType.Image ? "Image" :
+                    ua.QuizQuestion.Question.MediaType == QuestionMediaType.Audio ? "Audio" :
+                    ua.QuizQuestion.Question.MediaType == QuestionMediaType.Video ? "Video" :
+                    (ua.QuizQuestion.Question.ImageUrl != null ? "Image" : "None"),
                 QuestionType = ua.QuizQuestion.Question.Type,
                 TimeLimitInSeconds = ua.QuizQuestion.TimeLimitInSeconds,
                 TimeSpentInSeconds = ua.SubmittedTime.HasValue
@@ -572,6 +578,12 @@ namespace QuizAPI.Mapping
                         SelectedOptionId = ua.SelectedOptionId,
                         SubmittedAnswer = ua.SubmittedAnswer,
                         QuestionText = ua.QuizQuestion.Question.Text,
+                        MediaUrl = ua.QuizQuestion.Question.MediaUrl ?? ua.QuizQuestion.Question.ImageUrl,
+                        MediaType =
+                            ua.QuizQuestion.Question.MediaType == QuestionMediaType.Image ? "Image" :
+                            ua.QuizQuestion.Question.MediaType == QuestionMediaType.Audio ? "Audio" :
+                            ua.QuizQuestion.Question.MediaType == QuestionMediaType.Video ? "Video" :
+                            (ua.QuizQuestion.Question.ImageUrl != null ? "Image" : "None"),
                         QuestionType = ua.QuizQuestion.Question.Type,
                         TimeLimitInSeconds = ua.QuizQuestion.TimeLimitInSeconds,
                         TimeSpentInSeconds = ua.SubmittedTime.HasValue

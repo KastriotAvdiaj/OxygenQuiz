@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Trophy, Check, X, Clock } from "lucide-react";
+import { QuestionMedia } from "@/common/QuestionMedia";
 import type { useMatch, ScoreboardEntry } from "../../hooks/use-match";
 
 interface MultiplayerGameProps {
@@ -92,9 +93,7 @@ const QuestionPanel = ({ match }: { match: ReturnType<typeof useMatch> }) => {
 
         <h2 className="text-xl sm:text-2xl font-bold text-center">{question.text}</h2>
 
-        {question.imageUrl && (
-          <img src={question.imageUrl} alt="" className="mx-auto max-h-56 rounded-md object-contain" />
-        )}
+        <QuestionMedia mediaUrl={question.imageUrl} alt="Question image" />
 
         {hasSubmitted ? (
           <p className="text-center text-emerald-600 font-semibold py-4">

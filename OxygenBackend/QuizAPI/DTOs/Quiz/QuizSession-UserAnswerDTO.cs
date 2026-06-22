@@ -112,6 +112,8 @@ namespace QuizAPI.DTOs.Quiz
 
         // --- Question Context ---
         public string QuestionText { get; set; } = string.Empty;
+        public string? MediaUrl { get; set; }
+        public string MediaType { get; set; } = "None";
         [JsonConverter(typeof(JsonStringEnumConverter))] // Ensures the enum is sent as a string
         public QuestionType QuestionType { get; set; }
         public int TimeLimitInSeconds { get; set; }
