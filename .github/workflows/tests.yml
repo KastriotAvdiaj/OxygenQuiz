@@ -1,0 +1,54 @@
+name: Tests
+
+# Deploy gate: runs the backend and frontend test suites on every push and pull
+# request to main. Re-enable the deploy workflows in .github/workflows.disabled and
+# add `needs: [backend-tests, frontend-tests]` to their jobs so a red suite blocks a
+# deploy. See docs/testing.md.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  backend-tests:
+    name: Backend (.NET) tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        run: dotnet restore OxygenBackend/QuizAPI.Tests/QuizAPI.Tests.csproj
+
+      - name: Test
+        run: >-
+          dotnet test OxygenBackend/QuizAPI.Tests/QuizAPI.Tests.csproj
+          --configuration Release
+          --no-restore
+          --logger "trx;LogFileName=test-results.trx"
+          --logger "console;verbosity=normal"
+
+  frontend-tests:
+    name: Frontend (Vitest) tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit tests
+        run: npx vitest run --project unit

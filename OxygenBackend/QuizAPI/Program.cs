@@ -25,7 +25,6 @@ using QuizAPI.Services.CurrentUserService;
 using QuizAPI.Services.Interfaces;
 using QuizAPI.Services.Permissions;
 using QuizAPI.Services.QuizSessionServices;
-using System.Text;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -188,6 +187,9 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
+// --- Rate limiting (app-level, behind Cloudflare) — see docs/rate-limiting.md ---
+builder.Services.AddOxygenRateLimiting();
+
 // --- Controllers & Swagger ---
 builder.Services.AddControllers();
 builder.Services.AddSignalR();
@@ -218,7 +220,67 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
+// --- Production configuration safety-guard ---
+// AllowedHosts / CORS / JWT issuer+audience can only be finalised once a real domain exists
+// (see docs/deployment.md §3–§4). Until then, make it impossible to *silently* ship Production
+// with launch-blocking defaults: collect any problems and log a loud warning for each. By default
+// this only warns (so an in-progress staging box still boots); set Security:EnforceProductionConfig
+// to make the same checks fatal once your domain is live, turning this into a hard launch gate.
+if (environment.IsProduction())
+{
+    var problems = new List<string>();
+
+    var allowedHosts = configuration["AllowedHosts"];
+    if (string.IsNullOrWhiteSpace(allowedHosts) || allowedHosts.Trim() == "*")
+        problems.Add("AllowedHosts is '*' (or unset) — set it to your real API host(s) to blunt host-header attacks.");
+
+    var prodCorsOrigins = configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
+    if (prodCorsOrigins.Length == 0)
+        problems.Add("Cors:AllowedOrigins is empty — the frontend won't be allowed to call the API.");
+    foreach (var origin in prodCorsOrigins)
+    {
+        if (origin.Contains("localhost", StringComparison.OrdinalIgnoreCase))
+            problems.Add($"Cors:AllowedOrigins contains a localhost origin ('{origin}') — remove it from Production.");
+        else if (origin.StartsWith("http://", StringComparison.OrdinalIgnoreCase))
+            problems.Add($"Cors:AllowedOrigins contains a non-HTTPS origin ('{origin}') — use https in Production.");
+    }
+
+    foreach (var settingKey in new[] { "Jwt:Issuer", "Jwt:Audience" })
+    {
+        var value = configuration[settingKey];
+        if (!string.IsNullOrWhiteSpace(value) && value.Contains("localhost", StringComparison.OrdinalIgnoreCase))
+            problems.Add($"{settingKey} still points at localhost ('{value}') — set it to your real domain.");
+    }
+
+    if (problems.Count > 0)
+    {
+        var header = $"Production configuration check found {problems.Count} issue(s) to fix before public launch (see docs/deployment.md §3):";
+        var body = string.Join(Environment.NewLine, problems.Select(p => "  • " + p));
+
+        if (configuration.GetValue<bool>("Security:EnforceProductionConfig"))
+            throw new InvalidOperationException(
+                header + Environment.NewLine + body + Environment.NewLine +
+                "Set Security:EnforceProductionConfig=false to downgrade this to a warning.");
+
+        app.Logger.LogWarning(
+            "{Header}{NewLine}{Body}{NewLine}(Set Security:EnforceProductionConfig=true to make these fatal once your domain is live.)",
+            header, Environment.NewLine, body, Environment.NewLine);
+    }
+}
+
 // --- Middleware Configuration ---
+
+// Security headers (first, so every response — controllers, static files, exports — gets them).
+// X-Content-Type-Options: nosniff stops browsers MIME-sniffing a response into something
+// executable. File exports already force Content-Disposition: attachment via the File(...,
+// fileDownloadName) overload; nosniff is the defense-in-depth complement against content-sniffing
+// of user-supplied data in those downloads (see docs/known-issues.md).
+app.Use(async (context, next) =>
+{
+    context.Response.Headers["X-Content-Type-Options"] = "nosniff";
+    await next();
+});
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -240,7 +302,19 @@ app.UseExceptionHandler();
 app.UseCors("AllowReactApp");
 app.UseAuthentication();
 app.UseAuthorization();
-app.UseHangfireDashboard("/hangfire");
+
+// After auth so rejection logging/limits can use identity later if needed; before endpoints so
+// limits apply to controller actions. SignalR hubs are exempted inside the limiter config.
+app.UseRateLimiter();
+
+// Dashboard has no login of its own — JWT bearer auth (this API's only auth scheme) can't
+// protect a page you open directly in a browser, since there's no header to attach. Until
+// there's a cookie-based admin login, the safest fix is to not expose it outside development.
+if (!environment.IsProduction())
+{
+    app.UseHangfireDashboard("/hangfire");
+}
+
 app.MapControllers();
 app.MapHub<QuizAPI.Hubs.QuizHub>("/quizHub");
 app.MapHub<QuizAPI.Hubs.NotificationHub>("/notificationHub");

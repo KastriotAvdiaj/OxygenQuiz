@@ -22,7 +22,7 @@ export const ProfileButton = React.forwardRef<
       className="flex items-center rounded-[2rem] gap-3 py-2 h-12 px-4 text-white"
     >
       My Profile
-      <Avatar className="cursor-pointer">
+      <Avatar className="cursor-pointer ring-2 ring-white shadow-sm">
         <AvatarImage src={user?.profileImageUrl ?? undefined} alt={user?.username ?? "User"} />
         <AvatarFallback>{(user?.username?.[0] ?? "U").toUpperCase()}</AvatarFallback>
       </Avatar>

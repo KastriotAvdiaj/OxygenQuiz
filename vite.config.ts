@@ -7,8 +7,9 @@ import mkcert from 'vite-plugin-mkcert'
 export default defineConfig({
   plugins: [react(),mkcert()],
   test: {
+    name: 'unit',
     environment: 'jsdom',
-    globals: true, 
+    globals: true,
   },
   resolve: {
     alias: {
