@@ -9,6 +9,7 @@ import { TrueOrFalseQuestion } from "./question-display-type-files/true-or-false
 import { TypeTheAnswerQuestion } from "./question-display-type-files/type-the-answer-question";
 import { MultipleChoiceQuestion } from "./question-display-type-files/multiple-choice-question";
 import { FeedbackDisplay } from "./feedback-display";
+import { QuestionCard } from "./question-card";
 import { QuestionMedia } from "@/common/QuestionMedia";
 import { useState, useRef, useCallback } from "react";
 import { useNotifications } from "@/common/Notifications";
@@ -132,12 +133,8 @@ export function QuestionDisplay({
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.3 }}
         className="relative">
-        <div className="quiz-card-elevated p-4 sm:p-6 md:p-8 text-center relative overflow-hidden rounded-xl border-2 border-dashed border-primary bg-primary/20">
-          <div className="absolute inset-0 opacity-3" />
-          <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold leading-relaxed relative z-10 tracking-wider">
-            {question.questionText}
-          </h2>
-        </div>
+        {/* Shared with the multiplayer match screen — see QuestionCard. */}
+        <QuestionCard text={question.questionText} />
 
         {/* Optional question media (image/audio/video) */}
         <QuestionMedia

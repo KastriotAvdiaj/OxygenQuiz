@@ -135,24 +135,39 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.AbandonmentSe
 
         public async Task MarkSessionsAsAbandonedAsync(List<QuizSession> sessions)
         {
-            var sessionIds = sessions.Select(s => s.Id).ToList();
+            // Guest sessions are never meant to outlive the attempt (see docs/guest-play.md) —
+            // an abandoned guest quiz is deleted outright instead of being kept around as
+            // "completed". Real-account sessions keep the existing mark-as-abandoned behavior.
+            var guestSessionIds = sessions.Where(s => s.IsGuestSession).Select(s => s.Id).ToList();
+            var realSessionIds = sessions.Where(s => !s.IsGuestSession).Select(s => s.Id).ToList();
 
-            // App-clock timestamp so EndTime/AbandonedAt stay consistent with the app-clock
-            // StartTime. A bare DateTime.UtcNow inside ExecuteUpdate is evaluated on the DATABASE
-            // clock, which drifts from the app clock and skews computed durations.
-            var abandonedAt = DateTime.UtcNow;
-            await _context.QuizSessions
-                .Where(s => sessionIds.Contains(s.Id))
-                .ExecuteUpdateAsync(s => s
-                    .SetProperty(x => x.IsCompleted, true)
-                    .SetProperty(x => x.EndTime, abandonedAt)
-                    .SetProperty(x => x.CurrentQuizQuestionId, (int?)null)
-                    .SetProperty(x => x.CurrentQuestionStartTime, (DateTime?)null)
-                    .SetProperty(x => x.AbandonmentReason, AbandonmentReason.Timeout)
-                    .SetProperty(x => x.AbandonedAt, abandonedAt));
+            if (guestSessionIds.Count > 0)
+            {
+                await _context.UserAnswers.Where(a => guestSessionIds.Contains(a.SessionId)).ExecuteDeleteAsync();
+                await _context.QuizSessions.Where(s => guestSessionIds.Contains(s.Id)).ExecuteDeleteAsync();
+                _logger.LogInformation("Deleted {Count} abandoned guest sessions: {SessionIds}",
+                    guestSessionIds.Count, string.Join(", ", guestSessionIds));
+            }
 
-            _logger.LogInformation("Marked {Count} sessions as abandoned: {SessionIds}",
-                sessions.Count, string.Join(", ", sessionIds));
+            if (realSessionIds.Count > 0)
+            {
+                // App-clock timestamp so EndTime/AbandonedAt stay consistent with the app-clock
+                // StartTime. A bare DateTime.UtcNow inside ExecuteUpdate is evaluated on the DATABASE
+                // clock, which drifts from the app clock and skews computed durations.
+                var abandonedAt = DateTime.UtcNow;
+                await _context.QuizSessions
+                    .Where(s => realSessionIds.Contains(s.Id))
+                    .ExecuteUpdateAsync(s => s
+                        .SetProperty(x => x.IsCompleted, true)
+                        .SetProperty(x => x.EndTime, abandonedAt)
+                        .SetProperty(x => x.CurrentQuizQuestionId, (int?)null)
+                        .SetProperty(x => x.CurrentQuestionStartTime, (DateTime?)null)
+                        .SetProperty(x => x.AbandonmentReason, AbandonmentReason.Timeout)
+                        .SetProperty(x => x.AbandonedAt, abandonedAt));
+
+                _logger.LogInformation("Marked {Count} sessions as abandoned: {SessionIds}",
+                    realSessionIds.Count, string.Join(", ", realSessionIds));
+            }
         }
     }
 }

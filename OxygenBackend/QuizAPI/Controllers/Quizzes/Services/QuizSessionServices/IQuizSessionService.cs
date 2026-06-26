@@ -14,7 +14,20 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
 
         // Session Management
         Task<Result<QuizSessionDto>> CreateSessionAsync(QuizSessionCM model);
+
+        // Guest play (see docs/guest-play.md) — no account, no persistence beyond the live attempt.
+        Task<Result<QuizSessionDto>> CreateGuestSessionAsync(int quizId);
+        Task<bool> IsGuestSessionAsync(Guid sessionId);
+        Task<Result> DiscardGuestSessionAsync(Guid sessionId);
         Task<Result<QuizSessionDto>> GetSessionAsync(Guid sessionId);
+
+        /// <summary>
+        /// Returns the owning UserId of a session, or null if the session doesn't exist.
+        /// Used by the authenticated controller to enforce ownership (IDOR protection) without
+        /// loading the whole session.
+        /// </summary>
+        Task<Guid?> GetSessionOwnerAsync(Guid sessionId);
+
         Task<Result<List<QuizSessionSummaryDto>>> GetUserSessionsAsync(Guid userId);
         Task<Result<QuizSessionDto>> CompleteSessionAsync(Guid sessionId);
         Task<Result<int>> CleanupAbandonedSessionsAsync();

@@ -62,6 +62,7 @@ namespace QuizAPI.Controllers.Users
             => Ok(await _userService.SearchUsersAsync(query, ct));
 
         [HttpGet("{id:guid}")]
+        [Authorize]
         [ProducesResponseType(typeof(UserDTO), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<UserDTO>> GetUser(Guid id, CancellationToken ct)
@@ -94,6 +95,7 @@ namespace QuizAPI.Controllers.Users
         }
 
         [HttpGet("username/{username}")]
+        [Authorize]
         [ProducesResponseType(typeof(UserDTO), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<UserDTO>> GetUserByUsername(string username, CancellationToken ct)
@@ -126,6 +128,7 @@ namespace QuizAPI.Controllers.Users
         }
 
         [HttpPost("batch")]
+        [Authorize]
         [ProducesResponseType(typeof(IEnumerable<UserDTO>), StatusCodes.Status200OK)]
         public async Task<ActionResult<IEnumerable<UserDTO>>> GetUsersByIds(
             [FromBody] IEnumerable<Guid> userIds, CancellationToken ct)

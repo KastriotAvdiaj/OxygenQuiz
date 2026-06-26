@@ -266,6 +266,85 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
 
 
 
+        /// <summary>
+        /// Creates a session for the shared guest account (see docs/guest-play.md). Deliberately
+        /// skips the "you already have an active session" check that real accounts get — every
+        /// guest shares the same UserId, so that check would (wrongly) treat one guest's in-progress
+        /// quiz as blocking a completely different guest from starting one.
+        /// </summary>
+        public async Task<Result<QuizSessionDto>> CreateGuestSessionAsync(int quizId)
+        {
+            try
+            {
+                var quiz = await _context.Quizzes
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(q => q.Id == quizId && q.IsActive && q.IsPublished);
+
+                if (quiz == null)
+                    return Result<QuizSessionDto>.ValidationFailure("Quiz not found or not available.");
+
+                var session = new QuizSession
+                {
+                    Id = Guid.NewGuid(),
+                    QuizId = quizId,
+                    UserId = QuizAPI.Services.GuestAccount.Id,
+                    StartTime = DateTime.UtcNow,
+                    TotalScore = 0,
+                    IsCompleted = false,
+                    IsGuestSession = true,
+                };
+
+                _context.QuizSessions.Add(session);
+                await _context.SaveChangesAsync();
+
+                var sessionDto = await GetSessionDtoAsync(session.Id);
+                return Result<QuizSessionDto>.Success(sessionDto!);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating guest quiz session for quiz {QuizId}", quizId);
+                return Result<QuizSessionDto>.Failure("Failed to create quiz session.");
+            }
+        }
+
+        public async Task<bool> IsGuestSessionAsync(Guid sessionId)
+        {
+            return await _context.QuizSessions
+                .AsNoTracking()
+                .Where(s => s.Id == sessionId)
+                .Select(s => s.IsGuestSession)
+                .FirstOrDefaultAsync();
+        }
+
+        /// <summary>
+        /// Permanently deletes a guest session and its answers right after the guest has viewed
+        /// their results — nothing about a guest attempt is meant to outlive that page view.
+        /// Refuses to touch a session that isn't flagged as a guest session.
+        /// </summary>
+        public async Task<Result> DiscardGuestSessionAsync(Guid sessionId)
+        {
+            try
+            {
+                var session = await _context.QuizSessions
+                    .FirstOrDefaultAsync(s => s.Id == sessionId && s.IsGuestSession);
+
+                if (session == null)
+                    return Result.ValidationFailure("Guest session not found.");
+
+                var answers = _context.UserAnswers.Where(a => a.SessionId == sessionId);
+                _context.UserAnswers.RemoveRange(answers);
+                _context.QuizSessions.Remove(session);
+                await _context.SaveChangesAsync();
+
+                return Result.Success();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error discarding guest session {SessionId}", sessionId);
+                return Result.Failure("Failed to discard guest session.");
+            }
+        }
+
         public async Task<Result<QuizSessionDto>> AbandonAndCreateNewSessionAsync(Guid existingSessionId, QuizSessionCM model)
         {
             try
@@ -602,6 +681,17 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                 _logger.LogError(ex, "Error retrieving session {SessionId}", sessionId);
                 return Result<QuizSessionDto>.Failure("Failed to retrieve session.");
             }
+        }
+
+        public async Task<Guid?> GetSessionOwnerAsync(Guid sessionId)
+        {
+            // Returns null when the session doesn't exist; the caller treats "not found" and
+            // "not yours" identically (404) so a real user's session id can't be probed.
+            return await _context.QuizSessions
+                .AsNoTracking()
+                .Where(s => s.Id == sessionId)
+                .Select(s => (Guid?)s.UserId)
+                .FirstOrDefaultAsync();
         }
 
         public async Task<Result<List<QuizSessionSummaryDto>>> GetUserSessionsAsync(Guid userId)

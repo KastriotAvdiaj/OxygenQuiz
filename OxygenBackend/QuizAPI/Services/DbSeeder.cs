@@ -40,11 +40,44 @@ namespace QuizAPI.Services
         public async Task SeedAsync(CancellationToken ct = default)
         {
             var admin = await EnsureAdminAsync(ct);
+            await EnsureGuestAccountAsync(ct);
 
             if (_env.IsDevelopment())
             {
                 await EnsureSampleDataAsync(admin.Id, ct);
             }
+        }
+
+        /// <summary>
+        /// Creates the single shared guest-play placeholder account (see docs/guest-play.md) if it
+        /// doesn't already exist. It never logs in — the password hash is unusable on purpose.
+        /// </summary>
+        private async Task EnsureGuestAccountAsync(CancellationToken ct)
+        {
+            var exists = await _db.Users
+                .IgnoreQueryFilters()
+                .AnyAsync(u => u.Id == GuestAccount.Id, ct);
+
+            if (exists) return;
+
+            var guest = new User
+            {
+                Id = GuestAccount.Id,
+                Username = GuestAccount.Username,
+                ImmutableName = GuestAccount.ImmutableName,
+                Email = GuestAccount.Email,
+                EmailConfirmed = true,
+                // Random, never communicated anywhere — this account is never used to log in.
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(Guid.NewGuid().ToString()),
+                DateRegistered = DateTime.UtcNow,
+                LastLogin = DateTime.UtcNow,
+                IsDeleted = false,
+                ProfileImageUrl = string.Empty,
+            };
+
+            _db.Users.Add(guest);
+            await _db.SaveChangesAsync(ct);
+            _logger.LogInformation("Seeded shared guest-play account.");
         }
 
         /// <summary>Creates the single admin/superadmin account if it doesn't already exist.</summary>

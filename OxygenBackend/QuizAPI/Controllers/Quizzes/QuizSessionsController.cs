@@ -1,20 +1,55 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using QuizAPI.Controllers.Quizzes.Services.AnswerGradingServices;
 using QuizAPI.Controllers.Quizzes.Services.QuizSessionServices;
 using QuizAPI.DTOs.Quiz;
+using QuizAPI.Services.CurrentUserService;
 
 namespace QuizAPI.Controllers;
 
 // Inherits from our BaseApiController to get the HandleResult helper method.
+//
+// Every route here operates on a quiz session that belongs to exactly one real account, so the
+// whole controller requires authentication and each session-scoped action verifies the caller owns
+// the session before doing anything (IDOR protection — see docs/known-issues.md P1). The user id is
+// always taken from the JWT, never from the request body/query, so a client can't act as someone
+// else by supplying a different UserId. Anonymous guest play lives in GuestQuizSessionsController.
 [ApiController] // Recommended to add this attribute
+[Authorize]
 [Route("api/[controller]")] // Recommended to add a route prefix
 public class QuizSessionsController : BaseApiController
 {
     private readonly IQuizSessionService _quizSessionService;
+    private readonly ICurrentUserService _currentUser;
 
-    public QuizSessionsController(IQuizSessionService quizSessionService)
+    public QuizSessionsController(
+        IQuizSessionService quizSessionService,
+        ICurrentUserService currentUser)
     {
         _quizSessionService = quizSessionService;
+        _currentUser = currentUser;
+    }
+
+    /// <summary>
+    /// Confirms the authenticated caller owns <paramref name="sessionId"/> (or is an admin).
+    /// Returns <c>null</c> when access is allowed; otherwise the IActionResult to return.
+    /// A session that doesn't exist and one owned by someone else both yield 404, so session ids
+    /// can't be probed for existence.
+    /// </summary>
+    private async Task<IActionResult?> EnsureSessionAccessAsync(Guid sessionId)
+    {
+        var currentUserId = _currentUser.UserId;
+        if (currentUserId is null)
+            return Unauthorized();
+
+        var ownerId = await _quizSessionService.GetSessionOwnerAsync(sessionId);
+        if (ownerId is null)
+            return NotFound();
+
+        if (ownerId != currentUserId && !_currentUser.IsAdmin)
+            return NotFound();
+
+        return null;
     }
 
     #region --- Live Quiz Flow ---
@@ -24,6 +59,9 @@ public class QuizSessionsController : BaseApiController
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetCurrentState(Guid sessionId)
     {
+        var denied = await EnsureSessionAccessAsync(sessionId);
+        if (denied != null) return denied;
+
         var result = await _quizSessionService.GetCurrentStateAsync(sessionId);
         return HandleResult(result);
     }
@@ -37,6 +75,9 @@ public class QuizSessionsController : BaseApiController
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetNextQuestion(Guid sessionId)
     {
+        var denied = await EnsureSessionAccessAsync(sessionId);
+        if (denied != null) return denied;
+
         var result = await _quizSessionService.GetNextQuestionAsync(sessionId);
         return HandleResult(result);
     }
@@ -50,6 +91,9 @@ public class QuizSessionsController : BaseApiController
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> SubmitAnswer([FromBody] UserAnswerCM model)
     {
+        var denied = await EnsureSessionAccessAsync(model.SessionId);
+        if (denied != null) return denied;
+
         var result = await _quizSessionService.SubmitAnswerAsync(model);
         return HandleResult(result);
     }
@@ -67,6 +111,12 @@ public class QuizSessionsController : BaseApiController
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> CreateSession([FromBody] QuizSessionCM model)
    {
+        var currentUserId = _currentUser.UserId;
+        if (currentUserId is null) return Unauthorized();
+
+        // Never trust a client-supplied UserId — pin the session to the authenticated caller.
+        model.UserId = currentUserId.Value;
+
         var result = await _quizSessionService.CreateSessionAsync(model);
 
         if (result.IsSuccess)
@@ -88,6 +138,9 @@ public class QuizSessionsController : BaseApiController
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetSession(Guid sessionId)
     {
+        var denied = await EnsureSessionAccessAsync(sessionId);
+        if (denied != null) return denied;
+
         var result = await _quizSessionService.GetSessionAsync(sessionId);
         return HandleResult(result);
     }
@@ -99,6 +152,13 @@ public class QuizSessionsController : BaseApiController
     [ProducesResponseType(typeof(List<QuizSessionSummaryDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetUserSessions(Guid userId)
     {
+        var currentUserId = _currentUser.UserId;
+        if (currentUserId is null) return Unauthorized();
+
+        // Only your own history is visible (admins may view anyone's).
+        if (userId != currentUserId && !_currentUser.IsAdmin)
+            return Forbid();
+
         var result = await _quizSessionService.GetUserSessionsAsync(userId);
         return HandleResult(result);
     }
@@ -111,14 +171,20 @@ public class QuizSessionsController : BaseApiController
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> CompleteSession(Guid sessionId)
     {
+        var denied = await EnsureSessionAccessAsync(sessionId);
+        if (denied != null) return denied;
+
         var result = await _quizSessionService.CompleteSessionAsync(sessionId);
         return HandleResult(result);
     }
 
     /// <summary>
     /// Manually triggers cleanup of abandoned quiz sessions. Useful for testing and immediate cleanup.
+    /// This is a global maintenance operation (it touches every user's abandoned sessions), so it is
+    /// restricted to admins.
     /// </summary>
     [HttpPost("cleanup")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
     [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
     public async Task<IActionResult> CleanupAbandonedSessions()
     {
@@ -134,6 +200,9 @@ public class QuizSessionsController : BaseApiController
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteSession(Guid sessionId)
     {
+        var denied = await EnsureSessionAccessAsync(sessionId);
+        if (denied != null) return denied;
+
         var result = await _quizSessionService.DeleteSessionAsync(sessionId);
         return HandleResult(result);
     }
@@ -150,7 +219,12 @@ public class QuizSessionsController : BaseApiController
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> ResolveAndResume(Guid sessionId, [FromBody] ResumeRequestDto request)
     {
-        var result = await _quizSessionService.ResolveAndResumeAsync(sessionId, request.UserId);
+        var currentUserId = _currentUser.UserId;
+        if (currentUserId is null) return Unauthorized();
+
+        // Resolve against the authenticated user — the service filters by UserId, so a session
+        // belonging to anyone else simply isn't found. The body's UserId is ignored.
+        var result = await _quizSessionService.ResolveAndResumeAsync(sessionId, currentUserId.Value);
         return HandleResult(result);
     }
 
@@ -165,6 +239,9 @@ public class QuizSessionsController : BaseApiController
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetGradingStatus(Guid sessionId)
     {
+        var denied = await EnsureSessionAccessAsync(sessionId);
+        if (denied != null) return denied;
+
         var result = await _quizSessionService.GetGradingStatusAsync(sessionId);
         return HandleResult(result);
     }
@@ -178,6 +255,9 @@ public class QuizSessionsController : BaseApiController
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetSessionResults(Guid sessionId, [FromQuery] int maxWaitSeconds = 30)
     {
+        var denied = await EnsureSessionAccessAsync(sessionId);
+        if (denied != null) return denied;
+
         var result = await _quizSessionService.GetSessionWithGradedAnswersAsync(sessionId, maxWaitSeconds);
         return HandleResult(result);
     }
@@ -192,6 +272,13 @@ public class QuizSessionsController : BaseApiController
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> AbandonAndCreateNewSession(Guid sessionId, [FromBody] QuizSessionCM model)
     {
+        var currentUserId = _currentUser.UserId;
+        if (currentUserId is null) return Unauthorized();
+
+        // Pin to the caller: the service requires the existing session to belong to model.UserId,
+        // so this both enforces ownership of the abandoned session and stamps the new one correctly.
+        model.UserId = currentUserId.Value;
+
         var result = await _quizSessionService.AbandonAndCreateNewSessionAsync(sessionId, model);
 
         if (result.IsSuccess)
@@ -214,7 +301,11 @@ public class QuizSessionsController : BaseApiController
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> ResumeSession(Guid sessionId, [FromQuery] Guid userId)
     {
-        var result = await _quizSessionService.ResumeSessionAsync(sessionId, userId);
+        var currentUserId = _currentUser.UserId;
+        if (currentUserId is null) return Unauthorized();
+
+        // Ignore the query-string userId — resume only the caller's own session.
+        var result = await _quizSessionService.ResumeSessionAsync(sessionId, currentUserId.Value);
         return HandleResult(result);
     }
 

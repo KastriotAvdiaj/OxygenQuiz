@@ -34,5 +34,12 @@ namespace QuizAPI.Models.Quiz
 
         public AbandonmentReason? AbandonmentReason { get; set; }
         public DateTime? AbandonedAt { get; set; }
+
+        /// <summary>
+        /// True for sessions created through the anonymous guest-play path (see docs/guest-play.md).
+        /// Guest sessions all share <see cref="QuizAPI.Services.GuestAccount.Id"/> as their UserId
+        /// and are deleted immediately once the guest views their results — never kept around.
+        /// </summary>
+        public bool IsGuestSession { get; set; } = false;
     }
 }

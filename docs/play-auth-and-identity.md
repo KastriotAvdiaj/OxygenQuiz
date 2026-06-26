@@ -22,8 +22,9 @@
 |-------|-----------|--------|--------|
 | `/choose-mode`, `/multiplayer-menu` | menus | — | public (fine — just browsing) |
 | `/choose-quiz` | `QuizSelection` | `quizSelectionLoader` (data only) | public |
-| `/quiz/:quizId/play` | `QuizPageRouteWrapper` | **`userAuthLoader`** | ✅ gated |
-| `/quiz/results/:sessionId[/review]` | results | **`userAuthLoader`** | ✅ gated |
+| `/quiz/:quizId/play` | `QuizPageRouteWrapper` | — (no loader) | ⚠️ logged-in users get the real flow; signed-out visitors get one free guest attempt — see [`guest-play.md`](./guest-play.md). The component itself decides, not the loader. |
+| `/quiz/results/:sessionId[/review]` | results | **`userAuthLoader`** | ✅ gated (real sessions only) |
+| `/quiz/results-guest/:sessionId` | guest results | — (no loader) | public on purpose — guest sessions only, see [`guest-play.md`](./guest-play.md) |
 | **`/multiplayer/create`** | `CreateLobby` | — | ❌ **public** |
 | **`/multiplayer/join`** | `MultiplayerLobbyPage` | — | ❌ **public** |
 | **`/multiplayer/lobby/:sessionId`** | `MultiplayerLobbyPage` | — | ❌ **public** |
@@ -119,7 +120,10 @@ After (A)+(B), the host is whoever created the lobby, named by their real userna
 
 ## Edge cases & decisions
 
-- **No more guest play.** Confirm we want *zero* anonymous play (recommended for consistency).
+- ~~**No more guest play.**~~ **Superseded (2026-06-22).** Singleplayer now allows one free
+  anonymous attempt per browser, with no persistence and a soft cookie-based limit — see
+  [`guest-play.md`](./guest-play.md). Multiplayer remains fully login-gated; nothing below about
+  the hub or identity-spoofing changes.
 - **Token expiry mid-lobby:** with `accessTokenFactory`, SignalR's reconnect re-reads a fresh
   token; the existing silent-refresh keeps the in-memory token current.
 - **Same account, two tabs:** username would collide in a lobby. Pre-existing concern; out of

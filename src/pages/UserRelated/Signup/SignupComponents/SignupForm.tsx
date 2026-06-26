@@ -37,7 +37,7 @@ export const SignupForm: React.FC = () => {
 
   const handlePreviousStep = () => setStep((prev) => Math.max(prev - 1, 1));
 
-  const passwordValid = formData.password.length >= 8;
+  const passwordValid = formData.password.length >= 12;
   const passwordsMatch =
     formData.confirmPassword.length > 0 &&
     formData.confirmPassword === formData.password;
@@ -81,7 +81,7 @@ export const SignupForm: React.FC = () => {
       case 3: {
         if (formData.password.length > 0 && !passwordValid)
           return {
-            error: "Password must be at least 8 characters",
+            error: "Password must be at least 12 characters",
             nextDisabled: true,
           };
         return { nextDisabled: !passwordValid };

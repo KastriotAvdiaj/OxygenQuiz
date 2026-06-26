@@ -61,6 +61,11 @@ namespace QuizAPI.DTOs.Quiz
             public Guid UserId { get; set; }
         }
 
+        public class GuestQuizSessionCM
+        {
+            public int QuizId { get; set; }
+        }
+
         public class ResumeRequestDto
         {
             public Guid UserId { get; set; }

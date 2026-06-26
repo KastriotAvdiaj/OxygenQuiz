@@ -44,7 +44,9 @@ const loginWithEmailAndPassword = (data: LoginInput): Promise<AuthResponse> => {
   return apiService.post("Authentication/login", data);
 };
 
-// Mirrors the backend SignupDTO validation: valid email, username 3–50, password 8–128.
+// Mirrors the backend SignupDTO validation: valid email, username 3–50, password 12–128.
+// The backend additionally rejects common/breached passwords (NotACommonPassword); that check
+// can only run server-side, so a weak-but-long password may still come back as a 400.
 export const registerInputSchema = z.object({
   email: z.string().min(1, "Required").email("Invalid email"),
   username: z
@@ -53,7 +55,7 @@ export const registerInputSchema = z.object({
     .max(50, "Username must be at most 50 characters"),
   password: z
     .string()
-    .min(8, "Password must be at least 8 characters")
+    .min(12, "Password must be at least 12 characters")
     .max(128, "Password must be at most 128 characters"),
 });
 

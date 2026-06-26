@@ -1,12 +1,14 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using QuizAPI.Models;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using QuizAPI.Models;
 using QuizAPI.Services;
 
 namespace QuizAPI.Controllers.Totals
 {
+    // Aggregate dashboard counts — admin-only, matching the rest of the dashboard surface.
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize(Roles = "Admin,SuperAdmin")]
     public class TotalsController : ControllerBase
     {
         private readonly DashboardService _dashboardService;

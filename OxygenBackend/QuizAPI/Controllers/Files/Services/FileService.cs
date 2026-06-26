@@ -12,7 +12,7 @@ namespace QuizAPI.Controllers.Files.Services
         // Per-kind extension allowlists. Adding a new supported type is a one-line change here.
         private static readonly HashSet<string> ImageExtensions = new(StringComparer.OrdinalIgnoreCase)
         {
-            ".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg",
+            ".jpg", ".jpeg", ".png", ".gif", ".webp",
         };
 
         private static readonly HashSet<string> AudioExtensions = new(StringComparer.OrdinalIgnoreCase)

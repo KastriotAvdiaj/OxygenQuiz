@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using QuizAPI.DTOs.Authentication;
+using QuizAPI.Middleware;                    // RateLimitingExtensions policy names
 using QuizAPI.Services.Interfaces;          // IUserService
 using System.IdentityModel.Tokens.Jwt;      // JwtRegisteredClaimNames
 using System.Security.Claims;
@@ -22,6 +24,7 @@ public class AuthenticationController(
     private readonly IUserService _userService = userService;
 
     [HttpPost("signup")]
+    [EnableRateLimiting(RateLimitingExtensions.AuthPolicy)]
     public async Task<IActionResult> Signup([FromBody] SignupDTO dto, CancellationToken ct)
     {
         var result = await _authService.SignupAsync(dto, ct);
@@ -30,6 +33,7 @@ public class AuthenticationController(
     }
 
     [HttpPost("login")]
+    [EnableRateLimiting(RateLimitingExtensions.AuthPolicy)]
     public async Task<IActionResult> Login([FromBody] LoginDTO dto, CancellationToken ct)
     {
         var result = await _authService.LoginAsync(dto, ct);
@@ -38,6 +42,7 @@ public class AuthenticationController(
     }
 
     [HttpPost("refresh")]
+    [EnableRateLimiting(RateLimitingExtensions.AuthPolicy)]
     public async Task<IActionResult> Refresh(CancellationToken ct)
     {
         var raw = Request.Cookies[RefreshCookieName];
@@ -56,6 +61,7 @@ public class AuthenticationController(
     }
 
     [HttpPost("verify-email")]
+    [EnableRateLimiting(RateLimitingExtensions.AuthPolicy)] // token guessing surface
     public async Task<IActionResult> VerifyEmail([FromBody] VerifyEmailDTO dto, CancellationToken ct)
     {
         await _authService.VerifyEmailAsync(dto.Token, ct);
@@ -64,6 +70,7 @@ public class AuthenticationController(
 
     [HttpPost("resend-verification")]
     [Authorize]
+    [EnableRateLimiting(RateLimitingExtensions.AuthPolicy)] // triggers emails — limit abuse
     public async Task<IActionResult> ResendVerification(CancellationToken ct)
     {
         var sub = User.FindFirstValue(JwtRegisteredClaimNames.Sub);

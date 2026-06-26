@@ -55,6 +55,11 @@ const QuizResultsRouteWrapper = lazy(() =>
     "@/pages/Quiz/Sessions/components/quiz-results/quiz-results-route-wrapper"
   ).then((module) => ({ default: module.QuizResultsRouteWrapper }))
 );
+const GuestQuizResultsRouteWrapper = lazy(() =>
+  import(
+    "@/pages/Quiz/Sessions/components/quiz-results/guest-quiz-results-route-wrapper"
+  ).then((module) => ({ default: module.GuestQuizResultsRouteWrapper }))
+);
 const QuizCreator = lazy(
   () =>
     import(
@@ -196,9 +201,10 @@ const createAppRouter = (queryClient: QueryClient) =>
       ),
     },
     {
+      // No auth loader: signed-out visitors get one free guest attempt (see docs/guest-play.md)
+      // — QuizPageRouteWrapper itself decides real vs. guest vs. redirect-to-login.
       path: "/quiz/:quizId/play",
       errorElement: <DashboardErrorElement />,
-      loader: userAuthLoader(queryClient),
       element: (
         <>
           <HomeLayout
@@ -216,6 +222,20 @@ const createAppRouter = (queryClient: QueryClient) =>
         <>
           <HomeLayout
             children={<QuizResultsRouteWrapper />}
+            headerBehavior={HeaderBehavior.OVERLAY_SOLID}
+          />
+        </>
+      ),
+    },
+    {
+      // Guest results — public on purpose, see docs/guest-play.md. Viewing this page is what
+      // spends the browser's one free guest quiz (GuestQuizResultsRouteWrapper calls /finish).
+      path: "/quiz/results-guest/:sessionId",
+      errorElement: <DashboardErrorElement />,
+      element: (
+        <>
+          <HomeLayout
+            children={<GuestQuizResultsRouteWrapper />}
             headerBehavior={HeaderBehavior.OVERLAY_SOLID}
           />
         </>

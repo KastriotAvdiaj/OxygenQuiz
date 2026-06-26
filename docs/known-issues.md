@@ -17,31 +17,101 @@ Auth-specific enhancements are tracked in [authentication.md](authentication.md)
 
 ## Security hardening (defense-in-depth — no known active exploit)
 
-- **P2 — SVG uploads allowed.** `FileService` permits `.svg`, and uploads are
-  served from the app's own origin, so a crafted SVG could execute script if a
-  user opens it directly (stored XSS).
-  *Fix:* drop `.svg` from the allow-list, or serve uploads from a separate
-  domain / with `Content-Disposition: attachment` + a strict CSP.
+- ~~**P2 — SVG uploads allowed.**~~ **Fixed.** Dropped `.svg` from `FileService`'s
+  image allow-list — uploads are served from the app's own origin, so a crafted
+  SVG opened directly would have executed script (stored XSS).
   → `OxygenBackend/QuizAPI/Controllers/Files/Services/FileService.cs`
-- **P2 — Hangfire dashboard has no auth filter.** `app.UseHangfireDashboard("/hangfire")`
-  is mapped with no `IDashboardAuthorizationFilter` (the default is local-only,
-  but that behaves unpredictably behind a reverse proxy / load balancer).
-  *Fix:* add an authorization filter restricting it to admins, or don't map it
-  in production.
+- ~~**P2 — Hangfire dashboard has no auth filter.**~~ **Fixed.** The dashboard
+  is now only mapped outside `Production`. A role-based authorization filter
+  wasn't viable yet because this API only does JWT-bearer auth (header-based),
+  and a dashboard opened directly in a browser has no header to check —
+  that becomes the right fix once there's a cookie-based admin login.
   → `OxygenBackend/QuizAPI/Program.cs`
-- **P2 — Public user-read endpoints leak email.** `GET /api/users/{id}`,
-  `GET /api/users/username/{username}`, and `POST /api/users/batch` return the
-  full `UserDTO` (including email) with no authentication.
-  *Fix:* require auth, or return a slim public profile DTO (no email/permissions).
-  → `OxygenBackend/QuizAPI/Controllers/Users/UsersController.cs` (also in [handoff.md](handoff.md))
+- ~~**P2 — Public user-read endpoints leak email.**~~ **Fixed.** Added
+  `[Authorize]` to `GET /api/users/{id}`, `GET /api/users/username/{username}`,
+  and `POST /api/users/batch` — confirmed nothing in the frontend calls them
+  anonymously.
+  → `OxygenBackend/QuizAPI/Controllers/Users/UsersController.cs`
+- ~~**P1 — Quiz session endpoints have no authentication or ownership checks.**~~
+  **Fixed (2026-06-23).** `QuizSessionsController` now carries `[Authorize]`, and
+  every session-scoped action verifies ownership before acting: a new
+  `IQuizSessionService.GetSessionOwnerAsync` backs a controller helper that
+  returns **404** for a session the caller doesn't own (so ids can't be probed).
+  The acting user is always taken from the JWT, never a client-supplied `userId`
+  — create / resume / resolve-and-resume / abandon-and-restart pin to the
+  authenticated identity, and `GET user/{userId}` is restricted to the caller's
+  own history (admins exempt). The global `cleanup` endpoint is now
+  `[Authorize(Roles = "Admin,SuperAdmin")]`. The shared `QuizSessionService` and
+  the anonymous `GuestQuizSessionsController` (which guards itself per-request via
+  `IsGuestSession`) were deliberately left untouched, so guest play and SignalR
+  multiplayer are unaffected.
+  → `OxygenBackend/QuizAPI/Controllers/Quizzes/QuizSessionsController.cs`
+- **New (2026-06-22) — guest singleplayer play.** Signed-out visitors can now
+  play one free singleplayer quiz per browser (soft, cookie-based limit; no
+  persistence; multiplayer stays fully login-gated). Full design, security
+  model, and lifecycle in [`guest-play.md`](./guest-play.md).
+- ~~**P2 — Admin-facing totals exposed with no auth.**~~ **Fixed (2026-06-23).**
+  `TotalsController` now carries `[Authorize(Roles = "Admin,SuperAdmin")]`, matching
+  the rest of the dashboard surface. (The only caller is the admin Dashboard, which
+  already sends the bearer token.)
+  → `OxygenBackend/QuizAPI/Controllers/Totals/TotalsController.cs`
+- ~~**P2 — Exported files served without `Content-Disposition: attachment`.**~~
+  **Fixed (2026-06-23).** Both export controllers were already returning files via
+  the `File(content, contentType, fileDownloadName)` overload, which sets
+  `Content-Disposition: attachment` — so downloads were never actually served
+  inline. The remaining gap (the content-sniffing vector) is now closed with a
+  global `X-Content-Type-Options: nosniff` response header, so a browser can't
+  MIME-sniff an export into something executable.
+  → `OxygenBackend/QuizAPI/Program.cs` (nosniff middleware),
+  `OxygenBackend/QuizAPI/Controllers/Reports/ReportsController.cs`,
+  `OxygenBackend/QuizAPI/Controllers/DataTransfer/DataTransferController.cs`
+- ~~**P2 — Signup password policy has no complexity requirement.**~~
+  **Fixed (2026-06-23).** Minimum length raised to 12 (from 8), and signup now
+  screens the password against a local common/breached-password blocklist
+  (`NotACommonPassword`) plus a trivial-pattern check — rather than hand-rolling
+  composition rules, per current NIST guidance. The embedded list is a small,
+  self-contained subset; it can be swapped for the full "Have I Been Pwned"
+  Pwned Passwords dataset (local copy or k-anonymity range API) if stronger
+  coverage is wanted later. The frontend signup schema mirrors the new 12-char
+  minimum.
+  → `OxygenBackend/QuizAPI/DTOs/Authentication/SignupDTO.cs`,
+  `OxygenBackend/QuizAPI/DTOs/Authentication/NotACommonPasswordAttribute.cs`,
+  `src/lib/Auth.tsx`
 - **P3 — `AllowedHosts: "*"`.** Set to the real host name(s) in production to
   blunt host-header attacks. → `OxygenBackend/QuizAPI/appsettings.json`
 - **P3 — Broad CORS.** The policy uses `AllowAnyHeader` + `AllowAnyMethod` with
   credentials. It's origin-restricted, so low risk, but tighten the header/method
   surface if practical. → `OxygenBackend/QuizAPI/Program.cs`
+- **P3 — Question search endpoints are fully public.** `GET /api/questions/search`
+  and the type-specific search variants (multiple-choice, true/false,
+  type-the-answer) have no `[Authorize]`, exposing question content/metadata
+  to anonymous callers. Confirm this is intentional (public quiz browsing) —
+  if any question content is meant to stay private to its owner, this needs
+  an auth/ownership filter to match.
+  → `OxygenBackend/QuizAPI/Controllers/Questions/QuestionsController.cs`
+- **P3 — Image upload allow-list drifted from `FileService`'s.** `ImageUploadController`
+  maintains its own separate format allow-list (still includes GIF) rather than
+  sharing `FileService`'s. Not a vulnerability on its own, but two allow-lists
+  for the same concern will eventually disagree.
+  *Fix:* consolidate on one allow-list/service.
+  → `OxygenBackend/QuizAPI/Controllers/Image/ImageUploadController.cs`
 
 ## Code quality / cleanup
 
+- **P3 — Multiplayer & singleplayer gameplay UIs diverged (being unified).**
+  The live multiplayer match screen (`MultiplayerGame.tsx`) was built with its
+  own bespoke question/answer markup (`QuestionPanel` + `AnswerInput`), visually
+  unlike the singleplayer experience (`QuestionDisplay` + the per-type answer
+  components, `QuizTimer`, `QuestionMedia`). They drift independently and a
+  styling change to one silently skips the other.
+  *In progress (2026-06-22):* the multiplayer **question screen** now reuses the
+  singleplayer leaf components via an adapter
+  (`MultiplayerQuestionView`) + a shared `QuestionCard`. Remaining divergence is
+  the inherently multiplayer-only phases (pre-match countdown, between-question
+  reveal/scoreboard, final results) — those have no singleplayer equivalent, so
+  they stay multiplayer-specific; only their theming should be kept in line.
+  → `src/pages/Quiz/Multiplayer/components/game/`,
+  `src/pages/Quiz/Sessions/components/quiz-taking-process/`
 - **P3 — Dead controller.** `AnswerOptionsController.cs` is entirely commented
   out (no live route). Delete the file.
   → `OxygenBackend/QuizAPI/Controllers/Questions/AnswerOptionsController.cs`
@@ -78,10 +148,12 @@ Auth-specific enhancements are tracked in [authentication.md](authentication.md)
 
 ## Repo hygiene
 
-- **P2 — Committed build artifacts.** A recursively nested `publish/` tree
-  (~355 files) is checked into git, including stale copies of the old (now
-  rotated) JWT key. *Fix:* `git rm -r --cached` it, add to `.gitignore`;
-  optionally scrub from history.
+- ~~**P2 — Committed build artifacts.**~~ **Fixed.** Untracked the
+  recursively-nested `publish/` tree (~355 files) and added it to `.gitignore`.
+  It contained stale copies of the JWT key from before it was rotated
+  (`750dd69`); the key is no longer live, and the decision was made to keep
+  the old commits as-is (no history rewrite) and rely on making the repo
+  private at publish time instead of rewriting shared git history.
 - **P3 — Tracked `.env` files.** `.env.production` / `.env.development` are
   tracked despite being listed in `.gitignore`. Only URLs today, but the pattern
   risks leaking a future secret. *Fix:* `git rm --cached` them.
