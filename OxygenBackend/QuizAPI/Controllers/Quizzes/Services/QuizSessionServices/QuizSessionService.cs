@@ -205,17 +205,33 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
 
         #region Session Management
 
+        /// <summary>
+        /// Whether <paramref name="userId"/> may start a session for <paramref name="quiz"/>:
+        /// Public quizzes are open to all; the owner may always play (including their own Drafts);
+        /// an Unlisted quiz additionally requires the matching share token. See docs/quiz-visibility.md.
+        /// </summary>
+        private static bool IsPlayAuthorized(Quiz quiz, Guid userId, string? shareToken) =>
+            quiz.Status == QuizStatus.Public
+            || quiz.UserId == userId
+            || (quiz.Status == QuizStatus.Unlisted
+                && !string.IsNullOrEmpty(quiz.ShareToken)
+                && string.Equals(quiz.ShareToken, shareToken, StringComparison.Ordinal));
+
         public async Task<Result<QuizSessionDto>> CreateSessionAsync(QuizSessionCM model)
         {
             try
             {
                 using var transaction = await _context.Database.BeginTransactionAsync();
 
+                // Bypass the discovery filter so Unlisted quizzes can be authorized explicitly below;
+                // soft-deleted quizzes are still excluded. Same failure message whether the quiz is
+                // missing or simply not accessible, so ids/tokens can't be probed for existence.
                 var quiz = await _context.Quizzes
                     .AsNoTracking()
-                    .FirstOrDefaultAsync(q => q.Id == model.QuizId && q.IsActive && q.IsPublished);
+                    .IgnoreQueryFilters()
+                    .FirstOrDefaultAsync(q => q.Id == model.QuizId && q.DeletedAt == null);
 
-                if (quiz == null)
+                if (quiz == null || !IsPlayAuthorized(quiz, model.UserId, model.ShareToken))
                     return Result<QuizSessionDto>.ValidationFailure("Quiz not found or not available.");
 
                 // Use the existing method (now with fixed logic)
@@ -276,9 +292,11 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
         {
             try
             {
+                // Guests can only play fully public quizzes — there's no account or token to
+                // authorize Unlisted/Draft access.
                 var quiz = await _context.Quizzes
                     .AsNoTracking()
-                    .FirstOrDefaultAsync(q => q.Id == quizId && q.IsActive && q.IsPublished);
+                    .FirstOrDefaultAsync(q => q.Id == quizId && q.Status == QuizStatus.Public);
 
                 if (quiz == null)
                     return Result<QuizSessionDto>.ValidationFailure("Quiz not found or not available.");
@@ -369,12 +387,13 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                 existingSession.AbandonmentReason = AbandonmentReason.UserInitiated; // NEW
                 existingSession.AbandonedAt = DateTime.UtcNow; // NEW
 
-                // Create new session
+                // Create new session (re-authorize the same way CreateSessionAsync does).
                 var quiz = await _context.Quizzes
                     .AsNoTracking()
-                    .FirstOrDefaultAsync(q => q.Id == model.QuizId && q.IsActive && q.IsPublished);
+                    .IgnoreQueryFilters()
+                    .FirstOrDefaultAsync(q => q.Id == model.QuizId && q.DeletedAt == null);
 
-                if (quiz == null)
+                if (quiz == null || !IsPlayAuthorized(quiz, model.UserId, model.ShareToken))
                     return Result<QuizSessionDto>.ValidationFailure("Quiz not found or not available.");
 
                 var newSession = model.ToEntity();

@@ -12,6 +12,7 @@ are all accepted (format is detected from the file extension).
 | Languages | `languages-template.csv` | `Language` (required) |
 | Users | `users-template.csv` | `Username`, `Email` (required); `Password` (blank → a default is set); `Roles` (pipe-separated, blank → `user`) |
 | Questions | `questions-template.csv` / `.json` | see below |
+| Quizzes | `quizzes-template.csv` | see [Quizzes](#quizzes) below |
 
 ## Notes
 
@@ -43,3 +44,17 @@ The richest list. Fill only the columns relevant to each row's `Type`:
 | `TypeAnswer` | TypeTheAnswer | the canonical correct answer |
 | `AcceptableAnswers` | TypeTheAnswer | accepted alternates, pipe-separated |
 | `IsCaseSensitive`, `AllowPartialMatch` | TypeTheAnswer | true/false |
+
+> Note: a question's `Visibility` (`Global` / `Private`) is separate from a quiz's `Status` below — they are different concepts.
+
+## Quizzes
+
+| Column | Meaning |
+|---|---|
+| `Title` | required; duplicates (same title, for you) are skipped |
+| `Description` | optional |
+| `CategoryId`, `LanguageId`, `DifficultyId` | integer IDs that **must already exist** (export those lists to find them) |
+| `Status` | `Draft`, `Unlisted`, or `Public` — the quiz's access state (see [quiz-visibility.md](../quiz-visibility.md)). Defaults to `Draft`; anything unrecognised also becomes `Draft` so a quiz is never accidentally published. Legacy `Private` / `Friends` values map to `Unlisted`. |
+| `TimeLimitInSeconds` | optional integer (recomputed from the questions on import) |
+| `ShuffleQuestions`, `ShowFeedbackImmediately` | true/false |
+| `QuestionIds` | optional pipe-separated IDs of **existing** questions, in order: `12\|15\|18`. Blank imports the quiz as a draft you finish in the editor; any id that doesn't exist skips the whole row. |

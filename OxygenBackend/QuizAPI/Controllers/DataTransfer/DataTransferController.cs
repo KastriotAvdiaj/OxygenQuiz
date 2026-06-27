@@ -495,11 +495,10 @@ namespace QuizAPI.Controllers.DataTransfer
                 Category = q.Category?.Name ?? string.Empty,
                 Language = q.Language?.Language ?? string.Empty,
                 Difficulty = q.Difficulty?.Level ?? string.Empty,
-                Visibility = q.Visibility.ToString(),
+                Status = q.Status.ToString(),
                 TimeLimitInSeconds = q.TimeLimitInSeconds ?? 0,
                 ShuffleQuestions = q.ShuffleQuestions,
                 ShowFeedbackImmediately = q.ShowFeedbackImmediately,
-                IsPublished = q.IsPublished,
                 QuestionCount = q.QuizQuestions.Count,
                 // Pipe-separated question ids in quiz order — round-trips back into import.
                 QuestionIds = string.Join("|", q.QuizQuestions
@@ -567,11 +566,10 @@ namespace QuizAPI.Controllers.DataTransfer
                         CategoryId = r.CategoryId,
                         LanguageId = r.LanguageId,
                         DifficultyId = r.DifficultyId,
-                        Visibility = NormalizeQuizVisibility(r.Visibility),
+                        Status = NormalizeQuizStatus(r.Status),
                         TimeLimitInSeconds = r.TimeLimitInSeconds ?? 0,
                         ShuffleQuestions = r.ShuffleQuestions,
                         ShowFeedbackImmediately = r.ShowFeedbackImmediately,
-                        IsPublished = r.IsPublished,
                         Questions = questions,
                     };
 
@@ -628,14 +626,15 @@ namespace QuizAPI.Controllers.DataTransfer
         private static string NormalizeVisibility(string? raw) =>
             string.Equals(raw?.Trim(), "Private", StringComparison.OrdinalIgnoreCase) ? "Private" : "Global";
 
-        // Quiz visibility is its own enum (Private / Public / Friends). Defaults to Private on
-        // anything unrecognised so an imported quiz is never accidentally made public.
-        private static string NormalizeQuizVisibility(string? raw) =>
+        // Quiz status (Draft / Unlisted / Public). Defaults to Draft on anything unrecognised so an
+        // imported quiz is never accidentally published. Legacy values from older exports are mapped:
+        // "private" / "friends" → Unlisted (published-but-not-discoverable, the closest equivalent).
+        private static string NormalizeQuizStatus(string? raw) =>
             (raw ?? string.Empty).Trim().ToLowerInvariant() switch
             {
                 "public" => "Public",
-                "friends" => "Friends",
-                _ => "Private",
+                "unlisted" or "private" or "friends" => "Unlisted",
+                _ => "Draft",
             };
 
         // Parses a pipe-separated list of question ids ("12|15|18"); ignores blanks/non-numbers.

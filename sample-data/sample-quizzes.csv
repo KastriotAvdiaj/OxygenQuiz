@@ -1,26 +1,26 @@
-Title,Description,CategoryId,LanguageId,DifficultyId,Visibility,TimeLimitInSeconds,ShuffleQuestions,ShowFeedbackImmediately,IsPublished,QuestionIds
-World History 101,"Test your knowledge of historical events, figures and eras.",3,2,2,Public,0,true,false,true,63|64|61|44|55|62
-Tech Basics,"Questions on computing, hardware and the digital world.",4,2,4,Public,0,true,true,true,67|82|73|81|69|86|70|75|65
-Science Fundamentals,"A set of science questions spanning chemistry, biology and physics.",2,2,2,Public,0,false,false,true,38|35|21|25|29|39|22|20|18
-Computing Essentials,"Questions on computing, hardware and the digital world.",4,2,2,Public,0,false,false,false,78|73|83|66|67|80|77
-The Digital World,"Questions on computing, hardware and the digital world.",4,2,2,Public,0,false,true,false,66|81|82|74|83|75|79|78|65|77
-Empires & Events,"Test your knowledge of historical events, figures and eras.",3,2,2,Friends,0,false,false,true,52|63|61|57|64|55|54|43|50|48
-Chemistry & Biology Basics,"A set of science questions spanning chemistry, biology and physics.",2,2,2,Private,0,false,false,false,26|23|41|38|42|13
-Gadgets & Gigabytes,"Questions on computing, hardware and the digital world.",4,2,2,Public,0,false,false,true,81|72|77|75|76|71|68|66
-History Buff Challenge,"Test your knowledge of historical events, figures and eras.",3,2,3,Public,0,true,false,true,48|51|52|43|47|56|54|62|57
-Science Trivia Night,"A set of science questions spanning chemistry, biology and physics.",2,2,3,Private,0,false,true,false,14|25|39|38|35|32|36|28|23|34
-Through the Ages,"Test your knowledge of historical events, figures and eras.",3,2,4,Public,0,false,false,true,49|57|48|46|53
-The Curious Scientist,"A set of science questions spanning chemistry, biology and physics.",2,2,4,Public,0,true,true,true,12|13|38|17|30|23|15
-Tech Trivia Sprint,"Questions on computing, hardware and the digital world.",4,2,2,Public,0,true,false,true,79|78|73|66|68
-Lab Legends,"A set of science questions spanning chemistry, biology and physics.",2,2,3,Public,0,true,false,true,12|17|27|22|15|33|28|3|40
-Past Masters,"Test your knowledge of historical events, figures and eras.",3,2,4,Public,0,true,true,true,54|50|60|62|59|53
-Innovation Quiz,"Questions on computing, hardware and the digital world.",4,2,3,Public,0,true,true,true,71|76|86|70|80|79
-Historical Milestones,"Test your knowledge of historical events, figures and eras.",3,2,2,Public,0,false,false,true,62|54|57|63|61|45
-Atoms to Organisms,"A set of science questions spanning chemistry, biology and physics.",2,2,2,Private,0,true,true,true,3|26|40|31|22|36|39|13|32
-Code & Hardware,"Questions on computing, hardware and the digital world.",4,2,3,Public,0,true,false,false,77|84|74|66|76|78
-Science Pop Quiz,"A set of science questions spanning chemistry, biology and physics.",2,2,4,Private,0,true,false,true,40|36|31|15|30|37
-Physics & Beyond,"A set of science questions spanning chemistry, biology and physics.",2,2,4,Public,0,false,true,true,12|3|36|34|31|14
-Web & Beyond,"Questions on computing, hardware and the digital world.",4,2,4,Public,0,false,false,false,1|72|70|73|80|71
-History Trivia,"Test your knowledge of historical events, figures and eras.",3,2,4,Public,0,true,true,true,54|57|61|59|56|62|47|51|45|63
-Nature of Things,"A set of science questions spanning chemistry, biology and physics.",2,2,4,Public,0,false,false,true,22|15|26|30|34|14
-Wars & Leaders,"Test your knowledge of historical events, figures and eras.",3,2,2,Public,0,true,false,true,60|44|50|49|51
+Title,Description,CategoryId,LanguageId,DifficultyId,Status,TimeLimitInSeconds,ShuffleQuestions,ShowFeedbackImmediately,QuestionIds
+World History 101,"Test your knowledge of historical events, figures and eras.",3,2,2,Public,0,true,false,63|64|61|44|55|62
+Tech Basics,"Questions on computing, hardware and the digital world.",4,2,4,Public,0,true,true,67|82|73|81|69|86|70|75|65
+Science Fundamentals,"A set of science questions spanning chemistry, biology and physics.",2,2,2,Public,0,false,false,38|35|21|25|29|39|22|20|18
+Computing Essentials,"Questions on computing, hardware and the digital world.",4,2,2,Draft,0,false,false,78|73|83|66|67|80|77
+The Digital World,"Questions on computing, hardware and the digital world.",4,2,2,Draft,0,false,true,66|81|82|74|83|75|79|78|65|77
+Empires & Events,"Test your knowledge of historical events, figures and eras.",3,2,2,Unlisted,0,false,false,52|63|61|57|64|55|54|43|50|48
+Chemistry & Biology Basics,"A set of science questions spanning chemistry, biology and physics.",2,2,2,Draft,0,false,false,26|23|41|38|42|13
+Gadgets & Gigabytes,"Questions on computing, hardware and the digital world.",4,2,2,Public,0,false,false,81|72|77|75|76|71|68|66
+History Buff Challenge,"Test your knowledge of historical events, figures and eras.",3,2,3,Public,0,true,false,48|51|52|43|47|56|54|62|57
+Science Trivia Night,"A set of science questions spanning chemistry, biology and physics.",2,2,3,Draft,0,false,true,14|25|39|38|35|32|36|28|23|34
+Through the Ages,"Test your knowledge of historical events, figures and eras.",3,2,4,Public,0,false,false,49|57|48|46|53
+The Curious Scientist,"A set of science questions spanning chemistry, biology and physics.",2,2,4,Public,0,true,true,12|13|38|17|30|23|15
+Tech Trivia Sprint,"Questions on computing, hardware and the digital world.",4,2,2,Public,0,true,false,79|78|73|66|68
+Lab Legends,"A set of science questions spanning chemistry, biology and physics.",2,2,3,Public,0,true,false,12|17|27|22|15|33|28|3|40
+Past Masters,"Test your knowledge of historical events, figures and eras.",3,2,4,Public,0,true,true,54|50|60|62|59|53
+Innovation Quiz,"Questions on computing, hardware and the digital world.",4,2,3,Public,0,true,true,71|76|86|70|80|79
+Historical Milestones,"Test your knowledge of historical events, figures and eras.",3,2,2,Public,0,false,false,62|54|57|63|61|45
+Atoms to Organisms,"A set of science questions spanning chemistry, biology and physics.",2,2,2,Unlisted,0,true,true,3|26|40|31|22|36|39|13|32
+Code & Hardware,"Questions on computing, hardware and the digital world.",4,2,3,Draft,0,true,false,77|84|74|66|76|78
+Science Pop Quiz,"A set of science questions spanning chemistry, biology and physics.",2,2,4,Unlisted,0,true,false,40|36|31|15|30|37
+Physics & Beyond,"A set of science questions spanning chemistry, biology and physics.",2,2,4,Public,0,false,true,12|3|36|34|31|14
+Web & Beyond,"Questions on computing, hardware and the digital world.",4,2,4,Draft,0,false,false,1|72|70|73|80|71
+History Trivia,"Test your knowledge of historical events, figures and eras.",3,2,4,Public,0,true,true,54|57|61|59|56|62|47|51|45|63
+Nature of Things,"A set of science questions spanning chemistry, biology and physics.",2,2,4,Public,0,false,false,22|15|26|30|34|14
+Wars & Leaders,"Test your knowledge of historical events, figures and eras.",3,2,2,Public,0,true,false,60|44|50|49|51

@@ -229,7 +229,10 @@ namespace QuizAPI.Services.QuizSessionServices
             using var scope = _scopeFactory.CreateScope();
             var quizzes = scope.ServiceProvider.GetRequiredService<IQuizRepository>();
 
-            var quizQuestions = await quizzes.GetQuizQuestionsAsync(quizId);
+            // ignoreFilters: the match runs in a background scope (no current user), and the host's
+            // selection was already authorized in QuizHub.SelectQuiz, so it's safe to load an owned
+            // Unlisted quiz's questions here.
+            var quizQuestions = await quizzes.GetQuizQuestionsAsync(quizId, ignoreFilters: true);
 
             return quizQuestions.Select(qq => new RoundQuestion
             {

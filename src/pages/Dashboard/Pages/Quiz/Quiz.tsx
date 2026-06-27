@@ -21,6 +21,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useMemo } from "react";
 import { IconButtonWithTooltip } from "../Question/Components/Re-Usable-Components/delete-question";
+import { useCreateShareLink, buildShareUrl } from "./api/create-share-link";
+import { useNotifications } from "@/common/Notifications";
 
 // export const quizLoader =
 //   (queryClient: QueryClient) =>
@@ -46,6 +48,25 @@ export const QuizRoute = () => {
   const quizId = Number(params.quizId as string);
   const quizQuery = useQuizData({ quizId });
   const navigate = useNavigate();
+  const { addNotification } = useNotifications();
+  const shareLink = useCreateShareLink();
+
+  const handleShare = () => {
+    shareLink.mutate(quizId, {
+      onSuccess: async ({ shareToken }) => {
+        const url = buildShareUrl(shareToken);
+        try {
+          await navigator.clipboard.writeText(url);
+          addNotification({ type: "success", title: "Share link copied to clipboard" });
+        } catch {
+          // Clipboard can be blocked (e.g. insecure context) — still surface the link.
+          addNotification({ type: "success", title: "Share link ready", message: url });
+        }
+      },
+      onError: () =>
+        addNotification({ type: "error", title: "Couldn't create share link" }),
+    });
+  };
 
   // Memoize derived data to prevent unnecessary recalculations
   const quizStats = useMemo(() => {
@@ -61,7 +82,7 @@ export const QuizRoute = () => {
           : quiz.questionCount > 10
           ? "Medium"
           : "Easy",
-      status: quiz.isPublished ? "Published" : "Draft",
+      status: quiz.status,
     };
   }, [quizQuery.data]);
 
@@ -100,8 +121,8 @@ export const QuizRoute = () => {
             <div className="flex items-center gap-3">
               <h1 className="font-bold text-3xl">{quiz.title}</h1>
               <Badge
-                variant={quiz.isPublished ? "default" : "secondary"}
-                className={quiz.isPublished ? "bg-green-500 text-white" : ""}>
+                variant={quiz.status !== "Draft" ? "default" : "secondary"}
+                className={quiz.status !== "Draft" ? "bg-green-500 text-white" : ""}>
                 {quizStats?.status}
               </Badge>
             </div>
@@ -137,7 +158,7 @@ export const QuizRoute = () => {
                   Share
                 </DropdownMenuItem>
                 <DropdownMenuItem>
-                  {quiz.isPublished ? (
+                  {quiz.status !== "Draft" ? (
                     <>
                       <EyeOff className="h-4 w-4 mr-2" />
                       Unpublish
@@ -199,11 +220,10 @@ export const QuizRoute = () => {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => {
-                /* Share functionality */
-              }}>
+              onClick={handleShare}
+              disabled={shareLink.isPending}>
               <Share2 className="h-4 w-4 mr-2" />
-              Share Quiz
+              {quiz.status === "Unlisted" ? "Copy share link" : "Share Quiz"}
             </Button>
           </div>
 
@@ -212,13 +232,13 @@ export const QuizRoute = () => {
               variant="default"
               tooltip="Feature not implemented"
               icon={
-                quiz.isPublished ? (
+                quiz.status !== "Draft" ? (
                   <EyeOff className="h-4 w-4 mr-2" />
                 ) : (
                   <Eye className="h-4 w-4 mr-2" />
                 )
               }
-              buttonText={quiz.isPublished ? "Unpublish" : "Publish"}
+              buttonText={quiz.status !== "Draft" ? "Unpublish" : "Publish"}
               className="bg-background hover:bg-muted text-foreground border-foreground"
               disabled>
               <LiftedButton
@@ -227,7 +247,7 @@ export const QuizRoute = () => {
                 onClick={() => {
                   /* Toggle publish state */
                 }}>
-                {quiz.isPublished ? (
+                {quiz.status !== "Draft" ? (
                   <>
                     <EyeOff className="h-4 w-4 mr-2" />
                     Unpublish

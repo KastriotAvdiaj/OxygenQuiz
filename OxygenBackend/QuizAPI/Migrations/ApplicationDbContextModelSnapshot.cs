@@ -859,20 +859,21 @@ namespace QuizAPI.Migrations
                     b.Property<string>("ImageUrl")
                         .HasColumnType("text");
 
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("IsPublished")
-                        .HasColumnType("boolean");
-
                     b.Property<int>("LanguageId")
                         .HasColumnType("integer");
+
+                    b.Property<string>("ShareToken")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
 
                     b.Property<bool>("ShowFeedbackImmediately")
                         .HasColumnType("boolean");
 
                     b.Property<bool>("ShuffleQuestions")
                         .HasColumnType("boolean");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
 
                     b.Property<int?>("TimeLimitInSeconds")
                         .HasMaxLength(2000)
@@ -889,9 +890,6 @@ namespace QuizAPI.Migrations
                     b.Property<int>("Version")
                         .HasColumnType("integer");
 
-                    b.Property<int>("Visibility")
-                        .HasColumnType("integer");
-
                     b.HasKey("Id");
 
                     b.HasIndex("CategoryId");
@@ -900,7 +898,11 @@ namespace QuizAPI.Migrations
 
                     b.HasIndex("LanguageId");
 
-                    b.HasIndex("UserId", "Visibility", "Id");
+                    b.HasIndex("ShareToken")
+                        .IsUnique()
+                        .HasFilter("\"ShareToken\" IS NOT NULL");
+
+                    b.HasIndex("UserId", "Status", "Id");
 
                     b.ToTable("Quizzes");
                 });

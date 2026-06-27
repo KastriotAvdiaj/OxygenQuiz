@@ -17,9 +17,7 @@ namespace QuizAPI.Controllers.Quizzes
             .Field("categoryId",   q => q.CategoryId,   new[] { Eq, In })
             .Field("difficultyId", q => q.DifficultyId, new[] { Eq, In })
             .Field("languageId",   q => q.LanguageId,   new[] { Eq, In })
-            .Field("visibility",   q => q.Visibility,   new[] { Eq, In })   // enum
-            .Field("isPublished",  q => q.IsPublished,  new[] { Eq })
-            .Field("isActive",     q => q.IsActive,     new[] { Eq })
+            .Field("status",       q => q.Status,       new[] { Eq, In })   // enum: Draft / Unlisted / Public
             .Field("userId",       q => q.UserId,       new[] { Eq, In })   // filter by one or more authors
             .Field("createdAt",    q => q.CreatedAt,    new[] { Eq, Gt, Gte, Lt, Lte, Between }, sortable: true, defaultSort: true);
     }

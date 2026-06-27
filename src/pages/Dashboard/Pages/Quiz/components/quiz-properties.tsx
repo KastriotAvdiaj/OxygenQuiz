@@ -76,14 +76,14 @@ export const quizProperties: QuizProperty[] = [
     getValue: (quiz) => formatDate(quiz.createdAt),
   },
   {
-    label: "Published",
+    label: "Status",
     getIcon: (quiz) =>
-      quiz.isPublished ? (
-        <Eye className="h-5 w-5 text-green-500" />
-      ) : (
+      quiz.status === "Draft" ? (
         <EyeOff className="h-5 w-5 text-red-500" />
+      ) : (
+        <Eye className="h-5 w-5 text-green-500" />
       ),
-    getValue: (quiz) => (quiz.isPublished ? "Yes" : "No"),
+    getValue: (quiz) => quiz.status,
   },
   {
     label: "Number of Questions",

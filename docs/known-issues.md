@@ -32,6 +32,11 @@ Auth-specific enhancements are tracked in [authentication.md](authentication.md)
   and `POST /api/users/batch` — confirmed nothing in the frontend calls them
   anonymously.
   → `OxygenBackend/QuizAPI/Controllers/Users/UsersController.cs`
+- ~~**P2 — `QuizHub.SelectQuiz` trusted the client's quiz id.**~~ **Fixed.** The host's
+  selection is now validated server-side via `IQuizService.CanHostQuizAsync` (Public quiz or one the
+  host owns), so a crafted SignalR call can't host an arbitrary quiz regardless of the picker UI.
+  Part of the quiz-visibility rework — see `docs/quiz-visibility.md`.
+  → `OxygenBackend/QuizAPI/Hubs/QuizHub.cs`
 - ~~**P1 — Quiz session endpoints have no authentication or ownership checks.**~~
   **Fixed (2026-06-23).** `QuizSessionsController` now carries `[Authorize]`, and
   every session-scoped action verifies ownership before acting: a new

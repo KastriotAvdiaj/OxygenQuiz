@@ -6,11 +6,23 @@ using QuizAPI.ManyToManyTables;
 namespace QuizAPI.Models.Quiz
 {
 
-    public enum QuizVisibility
+    /// <summary>
+    /// A quiz's single source of truth for who can reach it. Replaces the former
+    /// Visibility / IsPublished / IsActive trio (see docs/quiz-visibility.md).
+    /// </summary>
+    public enum QuizStatus
     {
-        Private,
-        Public,
-        Friends
+        /// <summary>Work in progress — only the owner (and admins) can see or play it.</summary>
+        Draft,
+
+        /// <summary>
+        /// Published but not discoverable. Playable only by someone holding the quiz's
+        /// <see cref="Quiz.ShareToken"/> link or invited into a lobby hosting it.
+        /// </summary>
+        Unlisted,
+
+        /// <summary>Published and discoverable in the public catalogue; anyone can play.</summary>
+        Public
     }
 
     public class Quiz
@@ -65,14 +77,15 @@ namespace QuizAPI.Models.Quiz
         public bool ShuffleQuestions { get; set; } = false;
 
         [Required]
-        public QuizVisibility Visibility { get; set; } = QuizVisibility.Private;
+        public QuizStatus Status { get; set; } = QuizStatus.Draft;
 
-
-        [Required]
-        public bool IsPublished { get; set; } = false; 
-
-        [Required]
-        public bool IsActive { get; set; } = true;
+        /// <summary>
+        /// Unguessable token that grants play access to an <see cref="QuizStatus.Unlisted"/> quiz.
+        /// Null until the owner generates a share link; cleared has no effect on Public/Draft quizzes.
+        /// Unique when present (filtered index in <see cref="Data.ApplicationDbContext"/>).
+        /// </summary>
+        [MaxLength(64)]
+        public string? ShareToken { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

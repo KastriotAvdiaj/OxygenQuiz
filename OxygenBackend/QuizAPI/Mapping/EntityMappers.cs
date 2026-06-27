@@ -396,8 +396,6 @@ namespace QuizAPI.Mapping
                 Description = q.Description,
                 ImageUrl = q.ImageUrl,
                 TimeLimitInSeconds = q.TimeLimitInSeconds ?? 0,
-                IsPublished = q.IsPublished,
-                IsActive = q.IsActive,
                 CreatedAt = q.CreatedAt,
                 Category = q.Category == null ? string.Empty : q.Category.Name,
                 ColorPaletteJson = q.Category == null ? null : q.Category.ColorPaletteJson,
@@ -406,7 +404,7 @@ namespace QuizAPI.Mapping
                 Language = q.Language == null ? string.Empty : q.Language.Language,
                 QuestionCount = q.QuizQuestions.Count,
                 User = q.User == null ? string.Empty : q.User.Username,
-                Visibility = q.Visibility.ToString(),
+                Status = q.Status.ToString(),
                 DeletedAt = q.DeletedAt
             };
 
@@ -419,13 +417,13 @@ namespace QuizAPI.Mapping
                 TimeLimitInSeconds = q.TimeLimitInSeconds ?? 0,
                 ShowFeedbackImmediately = q.ShowFeedbackImmediately,
                 ShuffleQuestions = q.ShuffleQuestions,
-                IsPublished = q.IsPublished,
-                IsActive = q.IsActive,
                 CreatedAt = q.CreatedAt,
                 Version = q.Version,
                 ImageUrl = q.ImageUrl,
                 QuestionCount = q.QuizQuestions.Count,
-                Visibility = q.Visibility.ToString(),
+                Status = q.Status.ToString(),
+                // ShareToken is deliberately left null here — the service populates it only on the
+                // owner's own read so the link never leaks to other callers.
                 User = q.User == null ? null : new UserBasicDTO
                 {
                     Id = q.User.Id,
@@ -491,10 +489,16 @@ namespace QuizAPI.Mapping
             TimeLimitInSeconds = cm.TimeLimitInSeconds,
             ShowFeedbackImmediately = cm.ShowFeedbackImmediately,
             ShuffleQuestions = cm.ShuffleQuestions,
-            IsPublished = cm.IsPublished,
             ImageUrl = cm.ImageUrl,
-            Visibility = Enum.Parse<QuizVisibility>(cm.Visibility, true)
+            Status = ParseStatus(cm.Status)
         };
+
+        /// <summary>
+        /// Parses a client-supplied status string, defaulting to <see cref="QuizStatus.Draft"/> on
+        /// anything unrecognised so a quiz is never accidentally published.
+        /// </summary>
+        public static QuizStatus ParseStatus(string? raw) =>
+            Enum.TryParse<QuizStatus>(raw, ignoreCase: true, out var status) ? status : QuizStatus.Draft;
 
         public static QuizQuestion ToEntity(this QuizQuestionCM cm) => new()
         {

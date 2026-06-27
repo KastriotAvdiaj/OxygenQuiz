@@ -1,5 +1,8 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
+using QuizAPI.Controllers.Quizzes.Services.QuizServices;
 using QuizAPI.Hubs.Clients;
 using QuizAPI.Services.Interfaces;
 using QuizAPI.Services.QuizSessionServices;
@@ -29,6 +32,17 @@ public class QuizHub : Hub<IQuizClient>
     private string GetUsername() =>
         Context.User?.FindFirst("username")?.Value
         ?? throw new HubException("You must be logged in.");
+
+    // The authenticated account's id, read the same way as CurrentUserService (NameIdentifier with a
+    // 'sub' fallback so it works regardless of inbound claim mapping).
+    private Guid GetUserId()
+    {
+        var raw = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                  ?? Context.User?.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
+        return Guid.TryParse(raw, out var id)
+            ? id
+            : throw new HubException("You must be logged in.");
+    }
 
     public async Task JoinSession(string sessionId)
     {
@@ -237,16 +251,30 @@ public class QuizHub : Hub<IQuizClient>
         {
             throw new HubException("User not authenticated");
         }
-        
+
         var isHost = await _sessionManager.IsHostAsync(sessionId, username);
         if (!isHost)
         {
             throw new HubException("Only the host can select a quiz");
         }
-        
+
+        // Validate the selection server-side — never trust the client-supplied quiz id. The host may
+        // only host a Public quiz or one they own (see docs/quiz-visibility.md). This closes the gap
+        // where a crafted call could host any quiz regardless of the "public only" picker UI.
+        if (!int.TryParse(quizId, out var parsedQuizId))
+            throw new HubException("Invalid quiz.");
+
+        var hostUserId = GetUserId();
+        using (var scope = _serviceProvider.CreateScope())
+        {
+            var quizService = scope.ServiceProvider.GetRequiredService<IQuizService>();
+            if (!await quizService.CanHostQuizAsync(parsedQuizId, hostUserId))
+                throw new HubException("You can't host this quiz.");
+        }
+
         // Set quiz
         await _sessionManager.SetQuizAsync(sessionId, quizId);
-        
+
         // Broadcast to all participants
         await Clients.Group(sessionId).QuizSelected(quizId, quizTitle);
     }

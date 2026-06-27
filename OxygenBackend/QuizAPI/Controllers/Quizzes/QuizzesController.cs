@@ -5,6 +5,7 @@ using QuizAPI.Extensions;
 using QuizAPI.Controllers.Quizzes.Services.QuizServices;
 using QuizAPI.DTOs.Quiz;
 using QuizAPI.Models;
+using QuizAPI.Models.Quiz;
 using QuizAPI.Services.CurrentUserService;
 using QuizAPI.Services.Audit;
 using QuizAPI.Filtering;
@@ -174,22 +175,20 @@ namespace QuizAPI.Controllers.Quizzes
         {
             try
             {
-                var quiz = await _quizService.GetQuizByIdAsync(id);
+                // Pass the caller so the owner's read carries the Unlisted ShareToken.
+                var currentUserId = _currentUser.UserId;
+                var quiz = await _quizService.GetQuizByIdAsync(id, currentUserId);
 
                 if (quiz == null)
                 {
                     return NotFound();
                 }
 
-                if (!quiz.IsPublished && !User.IsInRole("Admin"))
+                // Draft quizzes are visible only to their owner (and admins). Unlisted and Public
+                // quizzes can be fetched by id once you have it — Unlisted simply isn't discoverable.
+                if (IsDraft(quiz) && !_currentUser.IsAdmin)
                 {
-                    if (!User.Identity.IsAuthenticated)
-                    {
-                        return NotFound(); // Don't reveal existence to anonymous users
-                    }
-
-                    var userId = GetCurrentUserId();
-                    if (quiz.User.Id.ToString() != userId.ToString())
+                    if (currentUserId is null || quiz.User.Id != currentUserId)
                     {
                         return NotFound(); // Don't reveal existence to non-owners
                     }
@@ -221,15 +220,16 @@ namespace QuizAPI.Controllers.Quizzes
                     return Unauthorized();
                 }
 
-                // Apply same authorization logic as GetQuizById
-                if (!quiz.IsPublished && !User.IsInRole("Admin"))
+                // Apply same authorization logic as GetQuizById: a Draft quiz's questions are
+                // visible only to its owner (and admins).
+                if (IsDraft(quiz) && !_currentUser.IsAdmin)
                 {
-                    if (!User.Identity.IsAuthenticated)
+                    var currentUserId = _currentUser.UserId;
+                    if (currentUserId is null)
                     {
                         return Unauthorized();
                     }
-                    var userId = GetCurrentUserId();
-                    if (quiz.User.Id.ToString() != userId.ToString())
+                    if (quiz.User.Id != currentUserId)
                     {
                         return Forbid();
                     }
@@ -332,19 +332,23 @@ namespace QuizAPI.Controllers.Quizzes
         }
 
         /// <summary>
-        /// Toggle the publish status of a quiz
+        /// Sets a quiz's status (Draft / Unlisted / Public). Owner-only.
         /// </summary>
-        [HttpPatch("{id}/publish-status")]
+        [HttpPatch("{id}/status")]
         [Authorize]
         [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> TogglePublishStatus(int id)
+        public async Task<IActionResult> SetStatus(int id, [FromBody] SetQuizStatusRequest request)
         {
+            if (!Enum.TryParse<QuizStatus>(request.Status, ignoreCase: true, out var status))
+                return BadRequest("Status must be one of: Draft, Unlisted, Public.");
+
             try
             {
                 var userId = GetCurrentUserId();
-                var quiz = await _quizService.ToggleQuizPublishStatusAsync(userId, id);
+                var quiz = await _quizService.SetQuizStatusAsync(userId, id, status);
 
                 if (quiz == null)
                 {
@@ -355,36 +359,60 @@ namespace QuizAPI.Controllers.Quizzes
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error toggling publish status for quiz {QuizId}", id);
+                _logger.LogError(ex, "Error setting status for quiz {QuizId}", id);
                 return HandleCustomError("An error occurred while processing your request", false);
             }
         }
 
         /// <summary>
-        /// Toggle the active status of a quiz
+        /// Generates (or returns the existing) share link token for an owned quiz so it can be
+        /// played while Unlisted. Owner-only.
         /// </summary>
-        [HttpPatch("{id}/active-status")]
+        [HttpPost("{id}/share-link")]
         [Authorize]
-        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ShareLinkResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> ToggleActiveStatus(int id)
+        public async Task<IActionResult> CreateShareLink(int id)
         {
             try
             {
                 var userId = GetCurrentUserId();
-                var quiz = await _quizService.ToggleQuizActiveStatusAsync(userId, id);
+                var token = await _quizService.GenerateShareTokenAsync(userId, id);
 
-                if (quiz == null)
+                if (token == null)
                 {
                     return NotFound();
                 }
 
-                return Ok(quiz);
+                return Ok(new ShareLinkResponse { ShareToken = token });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error toggling active status for quiz {QuizId}", id);
+                _logger.LogError(ex, "Error generating share link for quiz {QuizId}", id);
+                return HandleCustomError("An error occurred while processing your request", false);
+            }
+        }
+
+        /// <summary>
+        /// Resolves a quiz from its Unlisted share token. Login is required (the token grants
+        /// access, the account ties the play to a user). Returns 404 for an unknown/Draft token.
+        /// </summary>
+        [HttpGet("shared/{token}")]
+        [Authorize]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetSharedQuiz(string token)
+        {
+            try
+            {
+                var quiz = await _quizService.GetQuizByShareTokenAsync(token);
+                return quiz == null ? NotFound() : Ok(quiz);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving shared quiz");
                 return HandleCustomError("An error occurred while processing your request", false);
             }
         }
@@ -424,5 +452,9 @@ namespace QuizAPI.Controllers.Quizzes
         private Guid GetCurrentUserId() =>
             _currentUser.UserId
             ?? throw new InvalidOperationException("User ID not found or invalid");
+
+        // A quiz is a Draft when its status string matches QuizStatus.Draft (case-insensitive).
+        private static bool IsDraft(QuizDTO quiz) =>
+            string.Equals(quiz.Status, nameof(QuizStatus.Draft), StringComparison.OrdinalIgnoreCase);
     }
 }

@@ -1,7 +1,6 @@
 import { Button, Card } from "@/components/ui";
 import { MultiSelect } from "@/components/ui/multi-select";
 import { DateRangeFilter } from "@/components/ui/date-range-filter";
-import { TriStateSelect, type TriState } from "@/components/ui/tri-state-select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/form";
 import {
@@ -17,15 +16,13 @@ import {
 } from "@/types/question-types";
 import { SearchInput } from "@/lib/Search-Input";
 
-// Re-exported so existing importers (Quizzes, MyQuizzes) keep their import path.
-export type { TriState };
-
 export type QuizFilterUser = { id: string; username: string };
 
-const VISIBILITY_OPTIONS = [
+// Single access/lifecycle dimension — replaces the old Visibility + Published + Active filters.
+const STATUS_OPTIONS = [
+  { label: "Draft", value: "Draft" },
+  { label: "Unlisted", value: "Unlisted" },
   { label: "Public", value: "Public" },
-  { label: "Private", value: "Private" },
-  { label: "Friends", value: "Friends" },
 ];
 
 interface QuizFiltersPanelProps {
@@ -44,14 +41,8 @@ interface QuizFiltersPanelProps {
   selectedLanguageIds: number[];
   onLanguageIdsChange: (ids: number[]) => void;
 
-  selectedVisibilities: string[];
-  onVisibilitiesChange: (values: string[]) => void;
-
-  published: TriState;
-  onPublishedChange: (value: TriState) => void;
-
-  active: TriState;
-  onActiveChange: (value: TriState) => void;
+  selectedStatuses: string[];
+  onStatusesChange: (values: string[]) => void;
 
   createdFrom: string;
   createdTo: string;
@@ -81,12 +72,8 @@ export const QuizFiltersPanel = (props: QuizFiltersPanelProps) => {
     languages,
     selectedLanguageIds,
     onLanguageIdsChange,
-    selectedVisibilities,
-    onVisibilitiesChange,
-    published,
-    onPublishedChange,
-    active,
-    onActiveChange,
+    selectedStatuses,
+    onStatusesChange,
     createdFrom,
     createdTo,
     onCreatedFromChange,
@@ -105,10 +92,8 @@ export const QuizFiltersPanel = (props: QuizFiltersPanelProps) => {
     selectedCategoryIds.length +
     selectedDifficultyIds.length +
     selectedLanguageIds.length +
-    selectedVisibilities.length +
+    selectedStatuses.length +
     selectedUserIds.length +
-    (published !== "any" ? 1 : 0) +
-    (active !== "any" ? 1 : 0) +
     (createdFrom ? 1 : 0) +
     (createdTo ? 1 : 0);
 
@@ -119,9 +104,7 @@ export const QuizFiltersPanel = (props: QuizFiltersPanelProps) => {
     onCategoryIdsChange([]);
     onDifficultyIdsChange([]);
     onLanguageIdsChange([]);
-    onVisibilitiesChange([]);
-    onPublishedChange("any");
-    onActiveChange("any");
+    onStatusesChange([]);
     onCreatedFromChange("");
     onCreatedToChange("");
     onUserIdsChange?.([]);
@@ -148,10 +131,10 @@ export const QuizFiltersPanel = (props: QuizFiltersPanelProps) => {
       difficulties.map((d) => ({ id: d.id, label: `Difficulty: ${d.level}` })), onDifficultyIdsChange),
     ...idPills("language", selectedLanguageIds,
       languages.map((l) => ({ id: l.id, label: `Language: ${l.language}` })), onLanguageIdsChange),
-    ...selectedVisibilities.map((v) => ({
-      id: `visibility-${v}`,
-      label: `Visibility: ${v}`,
-      onRemove: () => onVisibilitiesChange(selectedVisibilities.filter((x) => x !== v)),
+    ...selectedStatuses.map((v) => ({
+      id: `status-${v}`,
+      label: `Status: ${v}`,
+      onRemove: () => onStatusesChange(selectedStatuses.filter((x) => x !== v)),
     })),
     ...selectedUserIds.map((uid) => ({
       id: `user-${uid}`,
@@ -160,10 +143,6 @@ export const QuizFiltersPanel = (props: QuizFiltersPanelProps) => {
     })),
   ];
 
-  if (published !== "any")
-    pills.push({ id: "published", label: `Published: ${published === "yes" ? "Yes" : "No"}`, onRemove: () => onPublishedChange("any") });
-  if (active !== "any")
-    pills.push({ id: "active", label: `Active: ${active === "yes" ? "Yes" : "No"}`, onRemove: () => onActiveChange("any") });
   if (createdFrom)
     pills.push({ id: "from", label: `From: ${createdFrom}`, onRemove: () => onCreatedFromChange("") });
   if (createdTo)
@@ -229,25 +208,11 @@ export const QuizFiltersPanel = (props: QuizFiltersPanelProps) => {
             onChange={onLanguageIdsChange}
           />
           <MultiSelect<string>
-            label="Visibility"
-            placeholder="Any visibility"
-            options={VISIBILITY_OPTIONS}
-            selected={selectedVisibilities}
-            onChange={onVisibilitiesChange}
-          />
-          <TriStateSelect
-            label="Published"
-            value={published}
-            onChange={onPublishedChange}
-            yesLabel="Published"
-            noLabel="Unpublished"
-          />
-          <TriStateSelect
-            label="Active"
-            value={active}
-            onChange={onActiveChange}
-            yesLabel="Active"
-            noLabel="Inactive"
+            label="Status"
+            placeholder="Any status"
+            options={STATUS_OPTIONS}
+            selected={selectedStatuses}
+            onChange={onStatusesChange}
           />
           {showDeletedToggle && (
             <div className="flex flex-col gap-1">
