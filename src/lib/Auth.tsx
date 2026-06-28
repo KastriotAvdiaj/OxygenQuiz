@@ -57,6 +57,9 @@ export const registerInputSchema = z.object({
     .string()
     .min(12, "Password must be at least 12 characters")
     .max(128, "Password must be at most 128 characters"),
+  // Optional here: whether it's required depends on the backend Signup:RequireInviteCode flag,
+  // which the signup form reads via /Authentication/signup-config. The server enforces it on submit.
+  inviteCode: z.string().max(64).optional(),
 });
 
 export type RegisterInput = z.infer<typeof registerInputSchema>;

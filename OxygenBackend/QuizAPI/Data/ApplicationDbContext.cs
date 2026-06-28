@@ -53,6 +53,8 @@ namespace QuizAPI.Data
 
         public DbSet<EmailVerificationToken> EmailVerificationTokens { get; set; }
 
+        public DbSet<InviteCode> InviteCodes { get; set; }
+
         public DbSet<FileRecord> Files { get; set; }
 
         public DbSet<AuditLog> AuditLogs { get; set; }
@@ -171,6 +173,18 @@ namespace QuizAPI.Data
             modelBuilder.Entity<EmailVerificationToken>()
                 .HasIndex(t => t.TokenHash)
                 .IsUnique();
+
+            // Invite codes: unique hash lookup; optional FK to the redeeming user (kept on user
+            // delete so the audit trail survives — SetNull rather than Cascade).
+            modelBuilder.Entity<InviteCode>()
+                .HasIndex(c => c.CodeHash)
+                .IsUnique();
+
+            modelBuilder.Entity<InviteCode>()
+                .HasOne<User>()
+                .WithMany()
+                .HasForeignKey(c => c.ConsumedByUserId)
+                .OnDelete(DeleteBehavior.SetNull);
 
             // Generic file records: index the polymorphic owner for fast lookups.
             modelBuilder.Entity<FileRecord>()

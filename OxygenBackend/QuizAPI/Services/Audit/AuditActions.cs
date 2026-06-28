@@ -15,6 +15,11 @@ namespace QuizAPI.Services.Audit
         public const string UserCreated = "UserCreated";
         public const string UserDeleted = "UserDeleted";
 
+        // Invite codes (signup gate — see docs/invite-code-system-plan.md)
+        public const string InviteCodeRedeemed = "InviteCodeRedeemed";
+        public const string InviteCodesGenerated = "InviteCodesGenerated";
+        public const string InviteCodeRevoked = "InviteCodeRevoked";
+
         // Questions
         public const string QuestionCreated = "QuestionCreated";
         public const string QuestionUpdated = "QuestionUpdated";

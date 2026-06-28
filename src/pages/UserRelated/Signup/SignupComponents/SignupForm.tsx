@@ -11,12 +11,17 @@ import {
   useEmailAvailability,
   MIN_USERNAME_LENGTH,
 } from "../api/check-availability";
-
-const TOTAL_STEPS = 4;
+import { useSignupConfig } from "../api/signup-config";
 
 export const SignupForm: React.FC = () => {
   const navigate = useNavigate();
   const { mutate: registerUser, isPending } = useRegister();
+
+  // Drives whether an invite-code step is prepended. When required, every content step
+  // shifts down by one (offset), so step numbering below is computed, not hard-coded.
+  const { requireInviteCode } = useSignupConfig();
+  const offset = requireInviteCode ? 1 : 0;
+  const TOTAL_STEPS = 4 + offset;
 
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
@@ -24,6 +29,7 @@ export const SignupForm: React.FC = () => {
     email: "",
     password: "",
     confirmPassword: "",
+    inviteCode: "",
   });
 
   // Live, debounced uniqueness checks. These hooks self-gate, so they only hit the
@@ -32,7 +38,12 @@ export const SignupForm: React.FC = () => {
   const emailAvail = useEmailAvailability(formData.email);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    // Codes are case- and dash-insensitive server-side; uppercase as the user types for clarity.
+    const value =
+      e.target.name === "inviteCode"
+        ? e.target.value.toUpperCase()
+        : e.target.value;
+    setFormData({ ...formData, [e.target.name]: value });
   };
 
   const handlePreviousStep = () => setStep((prev) => Math.max(prev - 1, 1));
@@ -44,7 +55,15 @@ export const SignupForm: React.FC = () => {
 
   // Compute the feedback + gate for whichever step is showing.
   const getFeedback = (): StepFeedback => {
-    switch (step) {
+    // Invite-code step (only present when required) sits before the username step.
+    if (requireInviteCode && step === 1) {
+      const code = formData.inviteCode.trim();
+      // Basic non-empty gate; the server validates that the code is real and unused on submit.
+      return { nextDisabled: code.length === 0 };
+    }
+
+    // Map the visible step back to the original content-step numbering (1 = username, …).
+    switch (step - offset) {
       case 1: {
         const name = formData.username.trim();
         if (name.length > 0 && name.length < MIN_USERNAME_LENGTH)
@@ -106,6 +125,10 @@ export const SignupForm: React.FC = () => {
         email: formData.email.trim(),
         username: formData.username.trim(),
         password: formData.password,
+        // Only send a code when the gate is on; in open mode the field doesn't exist.
+        ...(requireInviteCode
+          ? { inviteCode: formData.inviteCode.trim() }
+          : {}),
       },
       {
         onSuccess: () => {
@@ -128,10 +151,11 @@ export const SignupForm: React.FC = () => {
             message,
           });
           // If the server reports a duplicate (race between the live check and
-          // submit), bounce the user back to the field that needs fixing.
+          // submit) or a bad invite code, bounce the user back to the field that needs fixing.
           const lower = String(message).toLowerCase();
-          if (lower.includes("email")) setStep(2);
-          else if (lower.includes("username")) setStep(1);
+          if (lower.includes("invite") || lower.includes("code")) setStep(1);
+          else if (lower.includes("email")) setStep(2 + offset);
+          else if (lower.includes("username")) setStep(1 + offset);
         },
       }
     );
@@ -158,6 +182,7 @@ export const SignupForm: React.FC = () => {
         username={formData.username}
         email={formData.email}
         setStep={setStep}
+        offset={offset}
       />
 
       <form
@@ -170,6 +195,7 @@ export const SignupForm: React.FC = () => {
         <SignupSteps
           step={step}
           formData={formData}
+          requireInviteCode={requireInviteCode}
           handleChange={handleChange}
           handleNext={advance}
           handlePreviousStep={handlePreviousStep}

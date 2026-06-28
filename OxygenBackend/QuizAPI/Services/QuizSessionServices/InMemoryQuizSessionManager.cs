@@ -8,13 +8,11 @@ public class InMemoryQuizSessionManager : IQuizSessionManager
         // Key: SessionId, Value: MultiplayerSession
         private readonly ConcurrentDictionary<string, MultiplayerSession> _sessions = new();
 
-        // Write-only MongoDB sink: every lobby chat line is also archived for system retention.
-        private readonly ILobbyChatArchiver _chatArchiver;
-
-        public InMemoryQuizSessionManager(ILobbyChatArchiver chatArchiver)
-        {
-            _chatArchiver = chatArchiver;
-        }
+        // Lobby chat is intentionally ephemeral: messages live only in the in-memory
+        // RecentMessages buffer below and are never persisted. The write-only MongoDB
+        // archiver (ILobbyChatArchiver) has been removed; to restore archival when the
+        // persistent chat system lands, re-inject it here and call it in
+        // AddChatMessageAsync. See docs/mongodb.md.
 
         public Task<Participant> AddParticipantAsync(string sessionId, string username, string connectionId)
         {
@@ -208,9 +206,8 @@ public class InMemoryQuizSessionManager : IQuizSessionManager
                     session.RecentMessages.RemoveRange(0, session.RecentMessages.Count - MaxRecentMessages);
             }
 
-            // Persist to MongoDB for system retention (user + system lines). Fire-and-forget: this
-            // never blocks or breaks the live chat, and is not surfaced back to users.
-            _chatArchiver.Archive(sessionId, message);
+            // No persistence: lobby chat is ephemeral and lives only in the in-memory buffer
+            // above. (Previously fire-and-forget archived to MongoDB — see docs/mongodb.md.)
 
             return Task.FromResult(message);
         }

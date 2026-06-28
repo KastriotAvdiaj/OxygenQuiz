@@ -48,9 +48,8 @@ preference — it's baked into the current architecture:
                      ▼                                ▼
         oxygenquiz.com / www              api.oxygenquiz.com
         (static SPA, CDN)                 (single .NET 8 container/VM)
-        Cloudflare Pages / Vercel          │   │        │
-                                           │   │        └── uploads ▶ S3 / Cloudflare R2
-                                           │   └── MongoDB Atlas (chat/notifications)
+        Cloudflare Pages / Vercel          │            │
+                                           │            └── uploads ▶ S3 / Cloudflare R2
                                            └── Managed Postgres (Neon / Supabase / RDS)
 ```
 
@@ -61,12 +60,12 @@ preference — it's baked into the current architecture:
 | **Frontend** | Cloudflare Pages | Vercel, AWS Amplify, S3+CloudFront | Static Vite build (`npm run build` → `dist/`). Free tier is plenty. |
 | **Backend** | Railway or Render (container) | Fly.io, Azure App Service, a Hetzner/DigitalOcean VPS | Must support WebSockets + persistent process. The VPS route can reuse your existing `docker-compose.yml`. |
 | **PostgreSQL** | Neon (or Supabase) | Render Postgres, AWS RDS, Azure Postgres Flexible | **Use managed** — you get automated backups / point-in-time restore. Don't self-host your primary data store unless you'll own backups. |
-| **MongoDB** | Atlas free tier (M0) | Self-host on the VPS | Only chat/notification retention today; M0 is enough to start. |
+| **MongoDB** | *Not needed* | — | **Disabled** — multiplayer chat is ephemeral, nothing is persisted. Only required if you re-enable the persistent chat system (see [`mongodb.md`](./mongodb.md)). |
 | **Uploads** | Cloudflare R2 (or S3) | Persistent volume on the host | See §1 — local disk is wiped on redeploy. |
 | **Edge / DNS / DDoS** | Cloudflare (free) | AWS CloudFront + WAF | The single most important piece for protecting a single-instance backend. |
 
 > **Why not "just one VPS with everything"?** You can — it's the cheapest, and your
-> `docker-compose.yml` already wires Postgres + Mongo + both apps. The trade-off is *you* own OS
+> `docker-compose.yml` already wires Postgres + both apps. The trade-off is *you* own OS
 > patching, TLS renewal, DB backups, and monitoring. Managed services cost a little more and
 > remove those chores. For a first launch, the managed-PaaS path gets you live faster with fewer
 > ways to lose data.
@@ -81,7 +80,7 @@ preference — it's baked into the current architecture:
 - [x] SVG upload removed, Hangfire dashboard gated to non-prod, public user-email endpoints gated, build artifacts untracked.
 
 **Config & secrets (nothing sensitive in source control):**
-- [ ] `Jwt:Key`, `ConnectionStrings:PostgresConnection`, `ConnectionStrings:MongoDBConnection`,
+- [ ] `Jwt:Key`, `ConnectionStrings:PostgresConnection`,
       `Seed:AdminPassword` supplied via the **host's environment variables / secret manager** —
       never committed. (Locally these come from .NET user-secrets; production is the env-var equivalent.)
 - [ ] `AllowedHosts` set to your real domain(s), not `"*"`.
@@ -220,7 +219,7 @@ the second category today.
 
 ## 8. Launch-day runbook (in order)
 
-1. **Provision data stores:** create the managed Postgres and the Atlas Mongo cluster; copy their connection strings.
+1. **Provision data store:** create the managed Postgres; copy its connection string. (No MongoDB — chat is ephemeral; see [`mongodb.md`](./mongodb.md).)
 2. **Provision uploads bucket:** S3/R2 bucket + credentials (or confirm a persistent volume).
 3. **Deploy the backend container** to Railway/Render/VPS with all secrets as env vars and
    `ASPNETCORE_ENVIRONMENT=Production`. On first boot it migrates + seeds (admin account, reference data).

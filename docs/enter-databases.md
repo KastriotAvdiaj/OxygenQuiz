@@ -20,6 +20,10 @@ POSTGRESS commands once executed into:
 2. type: "docker exec -it postgres-db psql -U postgres"
 
 
+> **Note:** MongoDB is currently **disabled** — the app no longer runs a Mongo container, so the
+> commands below don't apply until the persistent chat system is re-enabled. See
+> [`mongodb.md`](./mongodb.md).
+
 MONGODB commands once executed into:
 1. show dbs - List all available databases.
 2. use {databasename} - Connect or switch to a specific database.

@@ -5,7 +5,11 @@ using Hangfire.PostgreSql;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using MongoDB.Driver;
+// MongoDB is intentionally not wired into DI. It backed write-only lobby-chat
+// archival, which has been disabled so multiplayer chat is fully ephemeral. The
+// driver package and source files are kept for the future chat system.
+// To re-enable, see docs/mongodb.md.
+// using MongoDB.Driver;
 using QuizAPI.Controllers.Image.Services;
 using QuizAPI.Controllers.Questions.Services;
 using QuizAPI.Controllers.Questions.Services.AnswerOptions;
@@ -35,12 +39,14 @@ var environment = builder.Environment;
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(configuration.GetConnectionString("PostgresConnection")));
 
-// --- MongoDB ---
-builder.Services.AddSingleton<IMongoClient>(_ =>
-{
-    var connectionString = configuration.GetConnectionString("MongoDBConnection");
-    return new MongoClient(connectionString);
-});
+// --- MongoDB (disabled) ---
+// Multiplayer lobby chat is ephemeral; nothing is persisted, so no Mongo client is
+// registered. Re-enable here when the persistent chat system lands — see docs/mongodb.md.
+// builder.Services.AddSingleton<IMongoClient>(_ =>
+// {
+//     var connectionString = configuration.GetConnectionString("MongoDBConnection");
+//     return new MongoClient(connectionString);
+// });
 
 var allowedOrigins = configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
 
@@ -78,6 +84,7 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IRoleRepository, RoleRepository>();
 builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 builder.Services.AddScoped<IEmailVerificationTokenRepository, EmailVerificationTokenRepository>();
+builder.Services.AddScoped<IInviteCodeRepository, InviteCodeRepository>();
 builder.Services.AddScoped<IFileRepository, FileRepository>();
 builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
 builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
@@ -97,6 +104,8 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<QuizAPI.Controllers.Users.Services.IAvatarService, QuizAPI.Controllers.Users.Services.AvatarService>();
 builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
+// Invite-code signup gate (see docs/invite-code-system-plan.md). Stateless CSPRNG helper → singleton.
+builder.Services.AddSingleton<QuizAPI.Services.Invitations.IInviteCodeGenerator, QuizAPI.Services.Invitations.InviteCodeGenerator>();
 // Email verification: dev logger sender today; swap for a real provider in prod (see docs/email-verification.md).
 builder.Services.AddScoped<QuizAPI.Services.Email.IEmailSender, QuizAPI.Services.Email.LoggingEmailSender>();
 builder.Services.AddScoped<IQuizService, QuizService>();
@@ -110,8 +119,9 @@ builder.Services.AddScoped<
     QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.SubmitAnswerService.ISubmitAnswerService,
     QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.SubmitAnswerService.SubmitAnswerService>();
 builder.Services.AddScoped<IUserAnswerService, UserAnswerService>();
-// Write-only MongoDB sink for lobby chat retention; injected into the session manager below.
-builder.Services.AddSingleton<ILobbyChatArchiver, LobbyChatArchiver>();
+// Write-only MongoDB sink for lobby chat retention — disabled so chat stays ephemeral.
+// Re-register alongside IMongoClient to bring archival back (see docs/mongodb.md).
+// builder.Services.AddSingleton<ILobbyChatArchiver, LobbyChatArchiver>();
 builder.Services.AddSingleton<IQuizSessionManager, InMemoryQuizSessionManager>();
 // Drives the live multiplayer match loop (singleton: it owns running matches). See docs/plans/multiplayer-phase1.md.
 builder.Services.AddSingleton<IMatchOrchestrator, MatchOrchestrator>();

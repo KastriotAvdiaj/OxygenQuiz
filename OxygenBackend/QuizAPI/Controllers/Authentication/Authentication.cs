@@ -14,7 +14,8 @@ namespace QuizAPI.Controllers.Authentication;
 [Route("api/[controller]")]
 public class AuthenticationController(
     IAuthenticationService authService,
-    IUserService userService) : ControllerBase
+    IUserService userService,
+    IConfiguration configuration) : ControllerBase
 {
     private const string RefreshCookieName = "refresh_token";
     // Scope the cookie to the auth endpoints so it isn't attached to every API call.
@@ -22,6 +23,16 @@ public class AuthenticationController(
 
     private readonly IAuthenticationService _authService = authService;
     private readonly IUserService _userService = userService;
+    private readonly IConfiguration _configuration = configuration;
+
+    // GET: api/Authentication/signup-config
+    /// <summary>
+    /// Public signup configuration so the frontend can render the right form (e.g. show/require the
+    /// invite-code field) without hard-coding the flag. Anonymous — it leaks nothing sensitive.
+    /// </summary>
+    [HttpGet("signup-config")]
+    public IActionResult SignupConfig() =>
+        Ok(new { requireInviteCode = _configuration.GetValue<bool>("Signup:RequireInviteCode") });
 
     [HttpPost("signup")]
     [EnableRateLimiting(RateLimitingExtensions.AuthPolicy)]

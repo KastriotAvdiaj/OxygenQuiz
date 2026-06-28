@@ -10,11 +10,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      mongodb:
-        condition: service_healthy
     environment:
       - ConnectionStrings__PostgresConnection=Host=postgres;Database=OxygenQuiz;Username=postgres;Password=123
-      - ConnectionStrings__MongoDBConnection=mongodb://mongodb:27017
       - ASPNETCORE_ENVIRONMENT=Development
       # Dev-only secrets so the container boots (user-secrets aren't available inside the
       # container, and the app fails fast without these). Use real secrets in production —
@@ -47,17 +44,7 @@ services:
       timeout: 5s
       retries: 5
 
-  mongodb:
-    image: mongo:6
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongo-data:/data/db
-    healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+  # MongoDB removed: multiplayer chat is ephemeral and nothing is persisted to Mongo.
+  # See docs/mongodb.md to restore it for the future persistent chat system.
 volumes:
   postgres-data:
-  mongo-data:

@@ -1,3 +1,4 @@
+using QuizAPI.Data;
 using QuizAPI.DTOs.Authentication;
 using QuizAPI.Exceptions;
 using QuizAPI.ManyToManyTables;
@@ -6,6 +7,7 @@ using QuizAPI.Models;
 using QuizAPI.Repositories.Interfaces;
 using QuizAPI.Services.Audit;
 using QuizAPI.Services.Email;
+using QuizAPI.Services.Invitations;
 using QuizAPI.Controllers.Notifications.Services;
 using Microsoft.Extensions.Configuration;
 
@@ -16,10 +18,13 @@ public class AuthenticationService(
     IRoleRepository roleRepository,
     IRefreshTokenRepository refreshTokenRepository,
     IEmailVerificationTokenRepository emailVerificationTokenRepository,
+    IInviteCodeRepository inviteCodeRepository,
+    IInviteCodeGenerator inviteCodeGenerator,
     ITokenService tokenService,
     IAuditService auditService,
     INotificationService notificationService,
     IEmailSender emailSender,
+    ApplicationDbContext dbContext,
     IConfiguration configuration) : IAuthenticationService
 {
     private const string DefaultRoleName = "User";
@@ -28,15 +33,35 @@ public class AuthenticationService(
     private readonly IRoleRepository _roleRepository = roleRepository;
     private readonly IRefreshTokenRepository _refreshTokenRepository = refreshTokenRepository;
     private readonly IEmailVerificationTokenRepository _emailVerificationTokenRepository = emailVerificationTokenRepository;
+    private readonly IInviteCodeRepository _inviteCodeRepository = inviteCodeRepository;
+    private readonly IInviteCodeGenerator _inviteCodeGenerator = inviteCodeGenerator;
     private readonly ITokenService _tokenService = tokenService;
     private readonly IAuditService _auditService = auditService;
     private readonly INotificationService _notificationService = notificationService;
     private readonly IEmailSender _emailSender = emailSender;
+    private readonly ApplicationDbContext _dbContext = dbContext;
     private readonly IConfiguration _configuration = configuration;
 
     public async Task<AuthResult> SignupAsync(SignupDTO dto, CancellationToken ct = default)
     {
         var immutableName = dto.Username.ToLowerInvariant();
+
+        // Invite-code gate (only when the flag is on — see docs/invite-code-system-plan.md).
+        // Validate early for fast, friendly rejection before any writes; the code is only
+        // *consumed* after the user row is created (below), in the same transaction, so a failed
+        // signup never burns a code.
+        var requireInviteCode = _configuration.GetValue<bool>("Signup:RequireInviteCode");
+        string? inviteCodeHash = null;
+        if (requireInviteCode)
+        {
+            if (string.IsNullOrWhiteSpace(dto.InviteCode))
+                throw new AppValidationException("An invite code is required.");
+
+            inviteCodeHash = _inviteCodeGenerator.Hash(dto.InviteCode);
+            var redeemable = await _inviteCodeRepository.GetRedeemableByHashAsync(inviteCodeHash, ct);
+            if (redeemable is null)
+                throw new AppValidationException("Invalid or already-used invite code.");
+        }
 
         if (await _userRepository.EmailExistsAsync(dto.Email, ct))
             throw new ConflictException("Email is already in use.");
@@ -66,8 +91,29 @@ public class AuthenticationService(
             }
         };
 
+        // Wrap user creation + invite-code consumption in one transaction. If we lose the race for
+        // the code (someone else spent it between the early check and now), TryConsumeAsync reports
+        // 0 rows and we roll the new user back — so the cap is never exceeded and no half-state
+        // (a user with no code spent) is persisted.
+        await using var transaction = await _dbContext.Database.BeginTransactionAsync(ct);
+
         await _userRepository.AddAsync(user, ct);
         await _userRepository.SaveChangesAsync(ct);
+
+        if (requireInviteCode)
+        {
+            var rows = await _inviteCodeRepository.TryConsumeAsync(inviteCodeHash!, user.Id, ct);
+            if (rows != 1)
+            {
+                await transaction.RollbackAsync(ct);
+                throw new AppValidationException("Invalid or already-used invite code.");
+            }
+        }
+
+        await transaction.CommitAsync(ct);
+
+        // Everything below is a post-commit side effect: a rolled-back signup must send no email,
+        // create no notification, and write no audit row.
 
         // Send the email-confirmation link. Soft gate: the account is usable immediately, but the
         // UI nudges the user to confirm (see docs/email-verification.md).
@@ -84,6 +130,11 @@ public class AuthenticationService(
 
         await _auditService.LogAsync(
             AuditActions.UserSignedUp, entity: "User", entityId: user.Id.ToString(), userId: user.Id, ct: ct);
+
+        if (requireInviteCode)
+            await _auditService.LogAsync(
+                AuditActions.InviteCodeRedeemed, entity: "InviteCode", entityId: inviteCodeHash,
+                userId: user.Id, ct: ct);
 
         // Reload with the full role/permission graph: the in-memory entity above
         // only carries RoleIds, so user.ToDto() (which walks Role + RolePermissions)

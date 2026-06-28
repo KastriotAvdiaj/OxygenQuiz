@@ -7,7 +7,8 @@ The project has four parts:
 
 - **Frontend** — React 18 + Vite 5 (TypeScript) at the repo root (`src/`).
 - **Backend API** — ASP.NET Core (.NET 8) in `OxygenBackend/QuizAPI`.
-- **Databases** — PostgreSQL (primary) and MongoDB (optional, chat/notifications).
+- **Database** — PostgreSQL (primary). *(MongoDB is currently disabled — multiplayer chat is
+  ephemeral; see [`mongodb.md`](./mongodb.md).)*
 - **AI microservice** — optional Python/FastAPI + Ollama service in `microservice/` (LLM chat only).
 
 ---
@@ -21,7 +22,7 @@ The project has four parts:
 | **Node.js** | **20 LTS** (18+ works) | Building/running the frontend | Vite 5 requires Node 18+; the Docker image uses Node 20 |
 | **npm** | bundled with Node | Frontend dependencies | `package-lock.json` is committed — use `npm ci` for a clean install |
 | **PostgreSQL** | **15** | Primary database | Schema **migrates and seeds automatically** on first API start |
-| **MongoDB** | **6** | *Optional* | Only required for chat/notification features; the connection string is empty by default |
+| **MongoDB** | — | *Not needed* | **Disabled** — chat is ephemeral. Only required if you re-enable the persistent chat system ([`mongodb.md`](./mongodb.md)) |
 | **Docker + Docker Compose** | recent | *Optional* | One-command setup of databases + both apps |
 | **An IDE** | — | Development | Visual Studio 2022 recommended for the backend; VS Code / Rider also fine |
 | **Python** | 3.10+ | *Optional* | Only for the AI/LLM chat microservice |
@@ -38,7 +39,7 @@ Development, sample data) on startup.
 
 ## Option A — Docker Compose (quickest)
 
-Spins up PostgreSQL, MongoDB, the API, and the frontend together.
+Spins up PostgreSQL, the API, and the frontend together.
 
 ```bash
 docker compose up --build
@@ -46,7 +47,7 @@ docker compose up --build
 
 - Frontend → http://localhost:5173
 - API → http://localhost:5000
-- PostgreSQL → localhost:5432, MongoDB → localhost:27017
+- PostgreSQL → localhost:5432
 
 The Postgres connection string is injected by `docker-compose.yml`, so no extra config is
 needed for a first run.
@@ -64,26 +65,26 @@ has a `UserSecretsId`). The app fails fast at startup if a required value is mis
 ```bash
 cd OxygenBackend/QuizAPI
 dotnet user-secrets set "ConnectionStrings:PostgresConnection" "Host=localhost;Port=5433;Database=OxygenQuiz;Username=postgres;Password=<your-pw>"
-dotnet user-secrets set "ConnectionStrings:MongoDBConnection" "mongodb://localhost:27017"
 dotnet user-secrets set "Jwt:Key" "$(openssl rand -base64 48)"
 dotnet user-secrets set "Seed:AdminPassword" "<admin-pw>"
 ```
+
+> MongoDB is disabled, so no `MongoDBConnection` is needed. See [`mongodb.md`](./mongodb.md) if you
+> re-enable the persistent chat system.
 
 Note the default Postgres port here is **5433**, not the standard 5432. The full list of required
 keys is in `OxygenBackend/QuizAPI/appsettings.example.json` (and the root README's "Backend" config
 section). The `OxygenQuiz` database is created/migrated automatically the first time the API runs.
 
-**Run the databases in Docker (recommended):** a `docker-compose.dev.yml` at the repo root brings
-up MongoDB and PostgreSQL with host ports that already match `appsettings.json` (Mongo 27017,
-Postgres 5433) — no app images, just the databases:
+**Run the database in Docker (recommended):** a `docker-compose.dev.yml` at the repo root brings
+up PostgreSQL with a host port that already matches `appsettings.json` (Postgres 5433) — no app
+images, just the database:
 
 ```bash
-docker compose -f docker-compose.dev.yml up -d     # start Mongo + Postgres
+docker compose -f docker-compose.dev.yml up -d     # start Postgres
 docker compose -f docker-compose.dev.yml down      # stop
 docker compose -f docker-compose.dev.yml down -v   # stop + delete data
 ```
-
-Prefer just MongoDB on its own? `docker run -d --name oxygen-mongo -p 27017:27017 -v oxygen-mongo-data:/data/db mongo:6`.
 
 ### 2. Backend API
 
