@@ -1,7 +1,7 @@
 import { Form, Input, Label, Textarea } from "@/components/ui/form";
 import { Separator } from "@/components/ui/separator";
 import { useQuizForm } from "./use-quiz-form";
-import { Brain, PlusCircle, Clock, Eye, Shuffle, Upload } from "lucide-react";
+import { Brain, PlusCircle, Clock, Eye, Shuffle } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -452,45 +452,42 @@ const CreateQuizForm = () => {
                       <div>
                         <Label className="text-sm font-medium flex items-center gap-2 mb-2">
                           <Eye className="h-3 w-3" />
-                          Visibility
+                          Status
                         </Label>
                         <Select
-                          value={watch("visibility") || ""}
+                          value={watch("status") || "Draft"}
                           onValueChange={(value) =>
-                            setValue("visibility", value)
+                            setValue("status", value as "Draft" | "Unlisted" | "Public")
                           }>
                           <SelectTrigger
-                            variant={`${
-                              errors.visibility ? "incorrect" : "quiz"
-                            }`}
+                            variant={`${errors.status ? "incorrect" : "quiz"}`}
                             className="w-full">
-                            <SelectValue placeholder="Select visibility..." />
+                            <SelectValue placeholder="Select status..." />
                           </SelectTrigger>
                           <SelectContent
-                            variant={`${
-                              errors.visibility ? "incorrect" : "quiz"
-                            }`}>
+                            variant={`${errors.status ? "incorrect" : "quiz"}`}>
                             <SelectItem
-                              variant={`${
-                                errors.visibility ? "incorrect" : "quiz"
-                              }`}
-                              value="Public">
-                              Public
+                              variant={`${errors.status ? "incorrect" : "quiz"}`}
+                              value="Draft">
+                              Draft — only you can see it
                             </SelectItem>
                             <SelectItem
-                              variant={`${
-                                errors.visibility ? "incorrect" : "quiz"
-                              }`}
-                              value="Private">
-                              Private
+                              variant={`${errors.status ? "incorrect" : "quiz"}`}
+                              value="Unlisted">
+                              Unlisted — playable via share link
+                            </SelectItem>
+                            <SelectItem
+                              variant={`${errors.status ? "incorrect" : "quiz"}`}
+                              value="Public">
+                              Public — listed for everyone
                             </SelectItem>
                           </SelectContent>
                         </Select>
-                        {errors.visibility && (
+                        {errors.status && (
                           <p className="text-sm text-red-500 mt-1">
-                            {errors.visibility.message
-                              ? errors.visibility.message
-                              : "Please select a visibility option."}
+                            {errors.status.message
+                              ? errors.status.message
+                              : "Please select a status."}
                           </p>
                         )}
                       </div>
@@ -535,21 +532,6 @@ const CreateQuizForm = () => {
                         />
                       </div>
 
-                      <div className="flex items-center justify-between">
-                        <Label
-                          htmlFor="isPublished"
-                          className="text-sm font-medium flex items-center gap-2">
-                          <Upload className="h-3 w-3" />
-                          Publish Quiz
-                        </Label>
-                        <Switch
-                          id="isPublished"
-                          checked={watch("isPublished") || false}
-                          onCheckedChange={(checked) =>
-                            setValue("isPublished", checked)
-                          }
-                        />
-                      </div>
                     </div>
                   </CardContent>
                 </TabsContent>

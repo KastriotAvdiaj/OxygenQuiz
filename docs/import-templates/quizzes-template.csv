@@ -1,0 +1,4 @@
+Title,Description,CategoryId,LanguageId,DifficultyId,Status,TimeLimitInSeconds,ShuffleQuestions,ShowFeedbackImmediately,QuestionIds
+Sample Public Quiz,"A quiz everyone can find and play.",1,1,1,Public,0,false,false,1|2|3
+Sample Unlisted Quiz,"Playable only via its share link or a lobby invite.",1,1,1,Unlisted,0,false,false,1|2
+Sample Draft Quiz,"Work in progress — only you can see it.",1,1,1,Draft,0,false,false,

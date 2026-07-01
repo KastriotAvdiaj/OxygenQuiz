@@ -48,7 +48,7 @@ export const JoinForm = ({
               id="sessionId"
               placeholder="Enter room code"
               value={sessionId}
-              onChange={(e) => onSessionIdChange(e.target.value)}
+              onChange={(e) => onSessionIdChange(e.target.value.toUpperCase())}
               onKeyDown={(e) => e.key === "Enter" && onJoin()}
               disabled={!isConnected}
               className="h-9 sm:h-10 md:h-11 text-sm sm:text-base tracking-wider border-2 border-primary/20 focus-visible:border-primary transition-all"

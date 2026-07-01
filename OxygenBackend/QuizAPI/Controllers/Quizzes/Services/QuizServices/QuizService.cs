@@ -71,7 +71,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                 q = q.Where(x => x.UserId == uid);
 
             if (publicOnly)
-                q = q.Where(x => x.IsActive && x.IsPublished);
+                q = q.Where(x => x.Status == QuizStatus.Public);
 
             q = FilterEngine.Apply(q, query, QuizFilterFields.Fields);
 
@@ -85,7 +85,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
         {
             try
             {
-                var quizQuery = _quizzes.Query().Where(q => q.IsActive && q.IsPublished);
+                var quizQuery = _quizzes.Query().Where(q => q.Status == QuizStatus.Public);
                 quizQuery = ApplyQuizFilters(quizQuery, filterParams);
                 return await ToSummaryPageAsync(quizQuery, filterParams);
             }
@@ -111,16 +111,49 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
             }
         }
 
-        public async Task<QuizDTO?> GetQuizByIdAsync(int id)
+        public async Task<QuizDTO?> GetQuizByIdAsync(int id, Guid? currentUserId = null)
         {
             try
             {
                 var quiz = await _quizzes.GetByIdAsync(id);
-                return quiz?.ToDto();
+                if (quiz == null)
+                    return null;
+
+                var dto = quiz.ToDto();
+
+                // The share-link token is the owner's secret — only ever surface it on the owner's
+                // own read so it can't leak to other callers.
+                if (currentUserId is { } uid && quiz.UserId == uid)
+                    dto.ShareToken = quiz.ShareToken;
+
+                return dto;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error retrieving quiz {QuizId}", id);
+                throw;
+            }
+        }
+
+        public async Task<QuizDTO?> GetQuizByShareTokenAsync(string shareToken)
+        {
+            if (string.IsNullOrWhiteSpace(shareToken))
+                return null;
+
+            try
+            {
+                // Bypasses the global query filter on purpose: an Unlisted quiz is invisible to
+                // discovery, and the token IS the access grant. A Draft quiz is never reachable by
+                // link even if a token somehow exists.
+                var quiz = await _quizzes.GetByShareTokenAsync(shareToken);
+                if (quiz == null || quiz.Status == QuizStatus.Draft)
+                    return null;
+
+                return quiz.ToDto();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving quiz by share token");
                 throw;
             }
         }
@@ -162,7 +195,6 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                 quiz.UserId = userId;
                 quiz.CreatedAt = DateTime.UtcNow;
                 quiz.Version = 1;
-                quiz.IsActive = true;
                 quiz.TimeLimitInSeconds = quizCM.Questions.Sum(q => q.TimeLimitInSeconds);
 
                 await _quizzes.AddAsync(quiz);
@@ -231,8 +263,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                 quiz.TimeLimitInSeconds = quizUM.TimeLimitInSeconds;
                 quiz.ShowFeedbackImmediately = quizUM.ShowFeedbackImmediately;
                 quiz.ShuffleQuestions = quizUM.ShuffleQuestions;
-                quiz.IsPublished = quizUM.IsPublished;
-                quiz.IsActive = quizUM.IsActive;
+                quiz.Status = QuizMappers.ParseStatus(quizUM.Status);
                 quiz.Version += 1;
 
                 // Replace the join rows wholesale.
@@ -250,7 +281,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                 await _quizzes.SaveChangesAsync();
                 await transaction.CommitAsync();
 
-                return await GetQuizByIdAsync(quiz.Id);
+                return await GetQuizByIdAsync(quiz.Id, userId);
             }
             catch (Exception ex)
             {
@@ -260,7 +291,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
             }
         }
 
-        public async Task<QuizDTO?> ToggleQuizPublishStatusAsync(Guid userId, int quizId)
+        public async Task<QuizDTO?> SetQuizStatusAsync(Guid userId, int quizId, QuizStatus status)
         {
             try
             {
@@ -270,26 +301,26 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
 
                 if (quiz.UserId != userId)
                 {
-                    _logger.LogWarning("User {UserId} attempted to toggle publish status of quiz {QuizId} owned by {OwnerId}",
+                    _logger.LogWarning("User {UserId} attempted to change status of quiz {QuizId} owned by {OwnerId}",
                         userId, quizId, quiz.UserId);
                     return null;
                 }
 
-                quiz.IsPublished = !quiz.IsPublished;
+                quiz.Status = status;
                 quiz.Version += 1;
 
                 await _quizzes.SaveChangesAsync();
 
-                return await GetQuizByIdAsync(quizId);
+                return await GetQuizByIdAsync(quizId, userId);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error toggling publish status for quiz {QuizId}", quizId);
+                _logger.LogError(ex, "Error setting status for quiz {QuizId}", quizId);
                 throw;
             }
         }
 
-        public async Task<QuizDTO?> ToggleQuizActiveStatusAsync(Guid userId, int quizId)
+        public async Task<string?> GenerateShareTokenAsync(Guid userId, int quizId)
         {
             try
             {
@@ -299,24 +330,41 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
 
                 if (quiz.UserId != userId)
                 {
-                    _logger.LogWarning("User {UserId} attempted to toggle active status of quiz {QuizId} owned by {OwnerId}",
+                    _logger.LogWarning("User {UserId} attempted to generate a share link for quiz {QuizId} owned by {OwnerId}",
                         userId, quizId, quiz.UserId);
                     return null;
                 }
 
-                quiz.IsActive = !quiz.IsActive;
-                quiz.Version += 1;
+                // Generate lazily and reuse the existing token so the owner's link stays stable.
+                if (string.IsNullOrEmpty(quiz.ShareToken))
+                {
+                    quiz.ShareToken = GenerateToken();
+                    await _quizzes.SaveChangesAsync();
+                }
 
-                await _quizzes.SaveChangesAsync();
-
-                return await GetQuizByIdAsync(quizId);
+                return quiz.ShareToken;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error toggling active status for quiz {QuizId}", quizId);
+                _logger.LogError(ex, "Error generating share token for quiz {QuizId}", quizId);
                 throw;
             }
         }
+
+        public async Task<bool> CanHostQuizAsync(int quizId, Guid hostUserId)
+        {
+            var quiz = await _quizzes.GetByIdUnfilteredAsync(quizId);
+            if (quiz == null)
+                return false;
+
+            // A host may run a Public quiz or any quiz they own (Draft/Unlisted included — the lobby
+            // membership becomes the access grant for invited participants).
+            return quiz.Status == QuizStatus.Public || quiz.UserId == hostUserId;
+        }
+
+        // 16 random bytes → 32 hex chars: unguessable and URL-safe.
+        private static string GenerateToken() =>
+            Convert.ToHexString(System.Security.Cryptography.RandomNumberGenerator.GetBytes(16)).ToLowerInvariant();
 
         public async Task<bool> DeleteQuizAsync(Guid userId, int quizId, bool isAdmin = false)
         {
@@ -373,9 +421,6 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
         // composition over IQueryable, so it stays in the service rather than the repository.
         private static IQueryable<Quiz> ApplyQuizFilters(IQueryable<Quiz> query, QuizFilterParams filterParams)
         {
-            if (filterParams.IsActive.HasValue)
-                query = query.Where(q => q.IsActive == filterParams.IsActive.Value);
-
             if (!string.IsNullOrEmpty(filterParams.SearchTerm))
             {
                 var searchTerm = filterParams.SearchTerm.ToLower();
@@ -392,8 +437,9 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
             if (filterParams.LanguageId.HasValue)
                 query = query.Where(q => q.LanguageId == filterParams.LanguageId.Value);
 
-            if (filterParams.IsPublished.HasValue)
-                query = query.Where(q => q.IsPublished == filterParams.IsPublished.Value);
+            if (!string.IsNullOrEmpty(filterParams.Status)
+                && Enum.TryParse<QuizStatus>(filterParams.Status, ignoreCase: true, out var status))
+                query = query.Where(q => q.Status == status);
 
             if (filterParams.UserId.HasValue)
                 query = query.Where(q => q.UserId == filterParams.UserId.Value);

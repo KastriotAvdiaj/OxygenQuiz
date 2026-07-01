@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useMultiplayer } from "@/hooks/useMultiplayer";
 import { useNotifications } from "@/common/Notifications";
 import { useUser } from "@/lib/Auth";
@@ -23,6 +23,7 @@ interface UseLobbyConnectionOptions {
 export const useLobbyConnection = ({ mode = "join" }: UseLobbyConnectionOptions) => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const params = useParams<{ sessionId?: string }>();
   const { connection, isConnected, joinSession, leaveSession, selectQuiz } = useMultiplayer();
   const { addNotification } = useNotifications();
   const { data: user } = useUser();
@@ -31,7 +32,13 @@ export const useLobbyConnection = ({ mode = "join" }: UseLobbyConnectionOptions)
   // so `user` is present. The host/participant name is therefore the real account username,
   // never free-typed text.
   const username = user?.username ?? "";
-  const [sessionId, setSessionId] = useState(searchParams.get("code")?.toUpperCase() || "");
+  // The room code can arrive two ways and both must work identically:
+  //   • route param  — /multiplayer/lobby/:sessionId  (the Join dialog + create flow navigate here)
+  //   • ?code query   — /multiplayer/join?code=...      (the shared invite link)
+  // Prefer the route param, fall back to the query, and always normalise to upper-case so a typed
+  // code matches the host's upper-case code. See docs/multiplayer-join.md.
+  const codeFromUrl = (params.sessionId ?? searchParams.get("code") ?? "").toUpperCase();
+  const [sessionId, setSessionId] = useState(codeFromUrl);
   const [hasJoined, setHasJoined] = useState(false);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [copied, setCopied] = useState(false);
@@ -236,6 +243,18 @@ export const useLobbyConnection = ({ mode = "join" }: UseLobbyConnectionOptions)
       setIsJoining(false);
     }
   }, [username, sessionId, joinSession, addNotification]);
+
+  // Auto-join when we arrive with a room code in the URL — whether via the shared invite link
+  // (?code=) or the Join dialog / create flow navigating to /multiplayer/lobby/:sessionId. This is
+  // what makes "enter a code" behave the same as "open the invite link": the join happens here,
+  // once, after the connection is live, instead of being attempted prematurely by the dialog.
+  const urlJoinAttempted = useRef(false);
+  useEffect(() => {
+    if (mode !== "join" || !isConnected || hasJoined || isJoining) return;
+    if (!sessionId || !username || urlJoinAttempted.current) return;
+    urlJoinAttempted.current = true;
+    handleJoinSession();
+  }, [mode, isConnected, hasJoined, isJoining, sessionId, username, handleJoinSession]);
 
   const handleLeaveSession = useCallback(async () => {
     await leaveSession(sessionId);

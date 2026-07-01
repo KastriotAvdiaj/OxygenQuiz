@@ -4,10 +4,12 @@ Potential issues and improvements identified during the refactoring of the multi
 
 ---
 
-## 1. Duplicate Join Logic
-`join-lobby.tsx` and the lobby's `JoinForm` both implement session join logic independently. The `JoinLobby` page navigates to `/multiplayer/lobby/:sessionId` after joining, but the lobby page itself also contains a join form (used by the `create` mode). These two flows could be unified to reduce code duplication.
-
-**Suggestion:** Make the `JoinLobby` page the single entry point for joining, and have the lobby page always assume the user has already joined (removing the inline join form for "join" mode).
+## 1. Duplicate Join Logic — ✅ resolved
+The Join dialog used to perform its own `joinSession` before navigating, while the lobby page had a
+second, independent join path. The dialog now only navigates (`/multiplayer/lobby/:sessionId`) and
+the lobby page owns the single, connection-safe join (`useLobbyConnection` auto-joins from the URL
+code). This fixed "a typed code won't join but the invite link does." See
+[`docs/multiplayer-join.md`](../../../../docs/multiplayer-join.md).
 
 ---
 

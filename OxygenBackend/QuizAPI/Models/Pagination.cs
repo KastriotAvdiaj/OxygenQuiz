@@ -33,11 +33,9 @@ namespace QuizAPI.Models
         public int? CategoryId { get; set; }
         public int? DifficultyId { get; set; }
         public int? LanguageId { get; set; }
-        public string? Visibility { get; set; }
 
-        public bool? IsPublished { get; set; }
-
-        public bool? IsActive { get; set; }
+        /// <summary>Filter by lifecycle/access status: Draft / Unlisted / Public.</summary>
+        public string? Status { get; set; }
         public Guid? UserId { get; set; }
 
     }

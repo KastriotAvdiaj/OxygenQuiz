@@ -23,7 +23,7 @@ import {
 import { Input } from "@/components/ui/form";
 import { GrFormNextLink } from "react-icons/gr";
 import { Filter } from "lucide-react";
-import { QuizFiltersPanel, type TriState } from "./components/quiz-filters-panel";
+import { QuizFiltersPanel } from "./components/quiz-filters-panel";
 import { DataTransferControls } from "@/components/data-transfer/DataTransferControls";
 
 export const Quizzes = () => {
@@ -32,9 +32,7 @@ export const Quizzes = () => {
   const [categoryIds, setCategoryIds] = useState<number[]>([]);
   const [difficultyIds, setDifficultyIds] = useState<number[]>([]);
   const [languageIds, setLanguageIds] = useState<number[]>([]);
-  const [visibilities, setVisibilities] = useState<string[]>([]);
-  const [published, setPublished] = useState<TriState>("any");
-  const [active, setActive] = useState<TriState>("any");
+  const [statuses, setStatuses] = useState<string[]>([]);
   const [authorIds, setAuthorIds] = useState<string[]>([]);
   const [createdFrom, setCreatedFrom] = useState("");
   const [createdTo, setCreatedTo] = useState("");
@@ -52,10 +50,8 @@ export const Quizzes = () => {
   if (categoryIds.length) filters.push(rule.in("categoryId", categoryIds));
   if (difficultyIds.length) filters.push(rule.in("difficultyId", difficultyIds));
   if (languageIds.length) filters.push(rule.in("languageId", languageIds));
-  if (visibilities.length) filters.push(rule.in("visibility", visibilities));
+  if (statuses.length) filters.push(rule.in("status", statuses));
   if (authorIds.length) filters.push(rule.in("userId", authorIds));
-  if (published !== "any") filters.push(rule.eq("isPublished", published === "yes"));
-  if (active !== "any") filters.push(rule.eq("isActive", active === "yes"));
   if (createdFrom && createdTo) filters.push(rule.between("createdAt", createdFrom, createdTo));
   else if (createdFrom) filters.push(rule.gte("createdAt", createdFrom));
   else if (createdTo) filters.push(rule.lte("createdAt", createdTo));
@@ -73,7 +69,7 @@ export const Quizzes = () => {
   useEffect(() => {
     setPageNumber(1);
   }, [debouncedSearchTerm, categoryIds, difficultyIds, languageIds,
-      visibilities, published, active, authorIds, createdFrom, createdTo, showDeleted]);
+      statuses, authorIds, createdFrom, createdTo, showDeleted]);
 
   const isFilterDataLoading =
     categoriesQuery.isLoading || difficultiesQuery.isLoading || languagesQuery.isLoading;
@@ -84,8 +80,7 @@ export const Quizzes = () => {
 
   const activeFilterCount =
     categoryIds.length + difficultyIds.length + languageIds.length +
-    visibilities.length + authorIds.length +
-    (published !== "any" ? 1 : 0) + (active !== "any" ? 1 : 0) +
+    statuses.length + authorIds.length +
     (createdFrom ? 1 : 0) + (createdTo ? 1 : 0);
 
   const filterPanelProps = {
@@ -96,9 +91,7 @@ export const Quizzes = () => {
     selectedDifficultyIds: difficultyIds, onDifficultyIdsChange: setDifficultyIds,
     languages: languagesQuery.data || [],
     selectedLanguageIds: languageIds, onLanguageIdsChange: setLanguageIds,
-    selectedVisibilities: visibilities, onVisibilitiesChange: setVisibilities,
-    published, onPublishedChange: setPublished,
-    active, onActiveChange: setActive,
+    selectedStatuses: statuses, onStatusesChange: setStatuses,
     createdFrom, createdTo,
     onCreatedFromChange: setCreatedFrom, onCreatedToChange: setCreatedTo,
     users: (usersQuery.data || []).map((u) => ({ id: u.id, username: u.username })),

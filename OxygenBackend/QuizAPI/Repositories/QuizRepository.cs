@@ -37,9 +37,29 @@ namespace QuizAPI.Repositories
         public Task<bool> ExistsAsync(int id, CancellationToken ct = default) =>
             _context.Quizzes.AsNoTracking().AnyAsync(q => q.Id == id, ct);
 
-        public async Task<List<QuizQuestion>> GetQuizQuestionsAsync(int quizId, CancellationToken ct = default) =>
-            await _context.QuizQuestions
-                .AsNoTracking()
+        public Task<Quiz?> GetByShareTokenAsync(string shareToken, CancellationToken ct = default) =>
+            // IgnoreQueryFilters() also disables the soft-delete filter, so DeletedAt is checked here.
+            WithRelations(_context.Quizzes.AsNoTracking().IgnoreQueryFilters())
+                .FirstOrDefaultAsync(q => q.ShareToken == shareToken && q.DeletedAt == null, ct);
+
+        public Task<Quiz?> GetByIdUnfilteredAsync(int id, CancellationToken ct = default) =>
+            // Bypasses the discovery filter (Unlisted/Draft included); soft-deleted still excluded.
+            // Used by authorization checks that must see the quiz regardless of who is asking.
+            _context.Quizzes.AsNoTracking().IgnoreQueryFilters()
+                .FirstOrDefaultAsync(q => q.Id == id && q.DeletedAt == null, ct);
+
+        public async Task<List<QuizQuestion>> GetQuizQuestionsAsync(
+            int quizId, bool ignoreFilters = false, CancellationToken ct = default)
+        {
+            // When ignoreFilters is set the QuestionBase discovery filter is bypassed. The live
+            // multiplayer match uses this: it runs in a background scope (no current user), so an
+            // owned Unlisted quiz's questions would otherwise be filtered out. The caller is
+            // responsible for having authorized access to the quiz first.
+            var query = _context.QuizQuestions.AsNoTracking();
+            if (ignoreFilters)
+                query = query.IgnoreQueryFilters();
+
+            return await query
                 .Include(qq => qq.Question)
                     .ThenInclude(q => ((MultipleChoiceQuestion)q).AnswerOptions)
                 .Include(qq => qq.Question)
@@ -53,6 +73,7 @@ namespace QuizAPI.Repositories
                 .Where(qq => qq.QuizId == quizId)
                 .OrderBy(qq => qq.OrderInQuiz)
                 .ToListAsync(ct);
+        }
 
         // ── Tracked reads for mutation ────────────────────────────────────────────
         public Task<Quiz?> GetWithQuestionsForUpdateAsync(int id, CancellationToken ct = default) =>

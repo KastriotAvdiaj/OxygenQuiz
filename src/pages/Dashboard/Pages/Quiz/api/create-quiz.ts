@@ -51,16 +51,12 @@ export const createQuizInputSchema = z.object({
 
   showFeedbackImmediately: z.boolean().default(false),
 
-  visibility: z
-    .string()
-    .min(1, "Visibility is required")
-    .refine((val) => ["Public", "Private"].includes(val), {
-      message: "Visibility must be public or private",
-    }),
+  // Draft / Unlisted / Public — the quiz's single access state (see docs/quiz-visibility.md).
+  status: z
+    .enum(["Draft", "Unlisted", "Public"])
+    .default("Draft"),
 
   shuffleQuestions: z.boolean().default(false),
-
-  isPublished: z.boolean().default(false),
 
   questions: z
     .array(

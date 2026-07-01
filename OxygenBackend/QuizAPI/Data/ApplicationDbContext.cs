@@ -72,19 +72,28 @@ namespace QuizAPI.Data
 
             //INDEXES FOR DASHBOARD
             modelBuilder.Entity<Quiz>()
-                .HasIndex(q => new { q.UserId, q.Visibility, q.Id });
+                .HasIndex(q => new { q.UserId, q.Status, q.Id });
 
             modelBuilder.Entity<QuestionBase>()
                 .HasIndex(q => new { q.UserId, q.Visibility, q.Id });
             //INDEXES FOR DASHBOARD
 
-            //GLOBAL QUERY FILTERS
-            // Users: only see their own *or* public items by default
+            // A share token, when present, must be unique so it can be looked up directly.
+            // Filtered so the many quizzes without a token don't collide on NULL.
+            modelBuilder.Entity<Quiz>()
+                .HasIndex(q => q.ShareToken)
+                .IsUnique()
+                .HasFilter($"\"{nameof(Quiz.ShareToken)}\" IS NOT NULL");
 
+            //GLOBAL QUERY FILTERS
+            // Discovery rule (see docs/quiz-visibility.md): a quiz is only returned by default if it is
+            // Public, owned by the caller, or the caller is an admin. Draft/Unlisted quizzes never leak
+            // into lists — Unlisted access goes through the explicit share-token / lobby paths, which
+            // call IgnoreQueryFilters() deliberately.
             modelBuilder.Entity<Quiz>().HasQueryFilter(q =>
                 _current.IsAdmin ||
-                q.Visibility != QuizVisibility.Private || // Public quizzes visible to everyone
-                (_current.UserId != null && q.UserId == _current.UserId) // Own private quizzes only if authenticated
+                q.Status == QuizStatus.Public ||
+                (_current.UserId != null && q.UserId == _current.UserId)
                 );
 
             modelBuilder.Entity<QuestionBase>().HasQueryFilter(q =>
@@ -93,7 +102,7 @@ namespace QuizAPI.Data
                 q.Visibility != QuestionVisibility.Private ||               // 3. You can see any public question.
                 q.QuizQuestions.Any(qq =>                           // 4. OR the question is in a quiz you can see.
                     _current.UserId != null &&
-                    (qq.Quiz.UserId == _current.UserId || qq.Quiz.Visibility == QuizVisibility.Public)
+                    (qq.Quiz.UserId == _current.UserId || qq.Quiz.Status == QuizStatus.Public)
                 )
         );
 

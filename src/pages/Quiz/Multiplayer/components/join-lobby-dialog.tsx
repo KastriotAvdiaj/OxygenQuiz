@@ -1,12 +1,10 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useMultiplayer } from "@/hooks/useMultiplayer";
 import { useUser } from "@/lib/Auth";
 import { useConnectionStatus } from "@/hooks/use-connection-status";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/form";
 import { WifiOff, ServerOff } from "lucide-react";
-import { useNotifications } from "@/common/Notifications";
 import {
   Dialog,
   DialogContent,
@@ -24,9 +22,7 @@ interface JoinLobbyDialogProps {
 export const JoinLobbyDialog = ({ open, onOpenChange }: JoinLobbyDialogProps) => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { joinSession } = useMultiplayer();
   const connectionStatus = useConnectionStatus();
-  const { addNotification } = useNotifications();
   const { data: user } = useUser();
 
   const canJoin = connectionStatus.status === "connected";
@@ -34,7 +30,6 @@ export const JoinLobbyDialog = ({ open, onOpenChange }: JoinLobbyDialogProps) =>
   // Identity is the logged-in account, not a typed name.
   const username = user?.username ?? "";
   const [roomCode, setRoomCode] = useState("");
-  const [isJoining, setIsJoining] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Pre-fill room code from URL if present
@@ -49,11 +44,10 @@ export const JoinLobbyDialog = ({ open, onOpenChange }: JoinLobbyDialogProps) =>
   useEffect(() => {
     if (!open) {
       setError(null);
-      setIsJoining(false);
     }
   }, [open]);
 
-  const handleJoinLobby = async () => {
+  const handleJoinLobby = () => {
     // Joining requires login — invite links should prompt sign-in, not a typed username.
     if (!user) {
       onOpenChange(false);
@@ -65,39 +59,12 @@ export const JoinLobbyDialog = ({ open, onOpenChange }: JoinLobbyDialogProps) =>
       return;
     }
 
-    setIsJoining(true);
-    setError(null);
-
-    try {
-      await joinSession(roomCode.toUpperCase());
-
-      // Store session info
-      sessionStorage.setItem("quiz_session", JSON.stringify({
-        sessionId: roomCode.toUpperCase(),
-        username: username.trim()
-      }));
-
-      addNotification({
-        type: "success",
-        title: "Successfully joined lobby!"
-      });
-
-      // Close dialog and navigate to lobby
-      onOpenChange(false);
-      navigate(`/multiplayer/lobby/${roomCode.toUpperCase()}`);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Failed to join lobby";
-      setError(errorMessage);
-
-      addNotification({
-        type: "error",
-        title: "Failed to join lobby",
-        message: "Please check the room code and try again",
-        variant: "top-center",
-      });
-    } finally {
-      setIsJoining(false);
-    }
+    // Navigate to the lobby with the code in the URL and let the lobby page perform the actual
+    // join once its connection is live. Joining here (before navigation, possibly before the
+    // SignalR connection is ready) was the cause of "a typed code won't join but the invite link
+    // does" — the lobby now owns the single, connection-safe join. See docs/multiplayer-join.md.
+    onOpenChange(false);
+    navigate(`/multiplayer/lobby/${roomCode.toUpperCase()}`);
   };
 
   const handleCancel = () => {
@@ -166,7 +133,6 @@ export const JoinLobbyDialog = ({ open, onOpenChange }: JoinLobbyDialogProps) =>
             type="button"
             onClick={handleCancel}
             variant="outline"
-            disabled={isJoining}
             className="w-full sm:w-auto text-foreground rounded-md py-4"
           >
             Cancel
@@ -174,10 +140,10 @@ export const JoinLobbyDialog = ({ open, onOpenChange }: JoinLobbyDialogProps) =>
           <Button
             type="button"
             onClick={handleJoinLobby}
-            disabled={!canJoin || !roomCode.trim() || isJoining}
+            disabled={!canJoin || !roomCode.trim()}
             className="w-full sm:w-auto font-bold font-quiz text-white rounded-md"
           >
-            {isJoining ? "Joining..." : "Join Lobby"}
+            Join Lobby
           </Button>
         </DialogFooter>
       </DialogContent>

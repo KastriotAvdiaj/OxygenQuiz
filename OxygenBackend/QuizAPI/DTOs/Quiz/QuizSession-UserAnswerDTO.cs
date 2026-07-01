@@ -59,6 +59,12 @@ namespace QuizAPI.DTOs.Quiz
         {
             public int QuizId { get; set; }
             public Guid UserId { get; set; }
+
+            /// <summary>
+            /// Required to start a session for an Unlisted quiz you don't own — it's the access grant
+            /// from the share link. Ignored for Public quizzes and for quizzes you own.
+            /// </summary>
+            public string? ShareToken { get; set; }
         }
 
         public class GuestQuizSessionCM

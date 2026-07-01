@@ -15,7 +15,7 @@ export type GetAllQuizzesParams = {
   categoryId?: number;
   difficultyId?: number;
   languageId?: number;
-  visibility?: string;
+  status?: string;
 };
 
 export const getAllQuizzes = async (

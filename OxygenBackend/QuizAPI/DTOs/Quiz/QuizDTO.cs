@@ -24,15 +24,15 @@ namespace QuizAPI.DTOs.Quiz
             public int? TimeLimitInSeconds { get; set; } = 0; //THIS IS THE OVERALL TIME LIMIT FOR THE QUIZ, NOT FOR EACH QUESTION
 
             public bool ShowFeedbackImmediately { get; set; } = false;
-            public string Visibility { get; set; } = string.Empty;
+
+            /// <summary>Draft / Unlisted / Public (see <see cref="Models.Quiz.QuizStatus"/>).</summary>
+            public string Status { get; set; } = nameof(Models.Quiz.QuizStatus.Draft);
 
 
             [Required]
             public int DifficultyId { get; set; }
 
             public bool ShuffleQuestions { get; set; } = false;
-
-            public bool IsPublished { get; set; } = false;
             public string? ImageUrl { get; set; }
 
 
@@ -51,9 +51,7 @@ namespace QuizAPI.DTOs.Quiz
         public string? ImageUrl { get; set; }
         public int TimeLimitInSeconds { get; set; }
 
-        public string Visibility { get; set; } = string.Empty;
-        public bool IsPublished { get; set; }
-        public bool IsActive { get; set; }
+        public string Status { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; }
         public int QuestionCount { get; set; }
         public string User { get; set; } = string.Empty;
@@ -83,11 +81,15 @@ namespace QuizAPI.DTOs.Quiz
         public int TimeLimitInSeconds { get; set; }
         public bool ShowFeedbackImmediately { get; set; }
 
-        public string Visibility { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
+
+        /// <summary>
+        /// The Unlisted share-link token. Only ever populated on the owner's own detail read so the
+        /// owner can copy the link; null for everyone else and for Public/Draft quizzes.
+        /// </summary>
+        public string? ShareToken { get; set; }
 
         public bool ShuffleQuestions { get; set; }
-        public bool IsPublished { get; set; }
-        public bool IsActive { get; set; }
         public DateTime CreatedAt { get; set; }
         public int Version { get; set; }
 
@@ -118,21 +120,33 @@ namespace QuizAPI.DTOs.Quiz
         [Required]
         public int DifficultyId { get; set; }
 
-        public string Visibility { get; set; } = string.Empty;
+        /// <summary>Draft / Unlisted / Public (see <see cref="Models.Quiz.QuizStatus"/>).</summary>
+        public string Status { get; set; } = nameof(Models.Quiz.QuizStatus.Draft);
         public string? ImageUrl { get; set; }
 
 
         public int? TimeLimitInSeconds { get; set; }
         public bool ShowFeedbackImmediately { get; set; }
         public bool ShuffleQuestions { get; set; }
-        public bool IsPublished { get; set; }
-        public bool IsActive { get; set; } 
 
         public ICollection<QuizQuestionUM> Questions { get; set; } = new List<QuizQuestionUM>();
 
         [Required]
         public int Version { get; set; }
 
+    }
+
+    /// <summary>Body for PATCH /api/quiz/{id}/status. Status is Draft / Unlisted / Public.</summary>
+    public class SetQuizStatusRequest
+    {
+        [Required]
+        public string Status { get; set; } = string.Empty;
+    }
+
+    /// <summary>Response for POST /api/quiz/{id}/share-link.</summary>
+    public class ShareLinkResponse
+    {
+        public string ShareToken { get; set; } = string.Empty;
     }
 
 }

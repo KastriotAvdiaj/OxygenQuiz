@@ -22,7 +22,6 @@ import { Input } from "@/components/ui/form";
 import { GrFormNextLink } from "react-icons/gr";
 import {
   QuizFiltersPanel,
-  type TriState,
 } from "@/pages/Dashboard/Pages/Quiz/components/quiz-filters-panel";
 import { Filter } from "lucide-react";
 import {
@@ -39,9 +38,7 @@ export const MyQuizzes = () => {
   const [categoryIds, setCategoryIds] = useState<number[]>([]);
   const [difficultyIds, setDifficultyIds] = useState<number[]>([]);
   const [languageIds, setLanguageIds] = useState<number[]>([]);
-  const [visibilities, setVisibilities] = useState<string[]>([]);
-  const [published, setPublished] = useState<TriState>("any");
-  const [active, setActive] = useState<TriState>("any");
+  const [statuses, setStatuses] = useState<string[]>([]);
   const [createdFrom, setCreatedFrom] = useState("");
   const [createdTo, setCreatedTo] = useState("");
 
@@ -57,9 +54,7 @@ export const MyQuizzes = () => {
   if (categoryIds.length) filters.push(rule.in("categoryId", categoryIds));
   if (difficultyIds.length) filters.push(rule.in("difficultyId", difficultyIds));
   if (languageIds.length) filters.push(rule.in("languageId", languageIds));
-  if (visibilities.length) filters.push(rule.in("visibility", visibilities));
-  if (published !== "any") filters.push(rule.eq("isPublished", published === "yes"));
-  if (active !== "any") filters.push(rule.eq("isActive", active === "yes"));
+  if (statuses.length) filters.push(rule.in("status", statuses));
   if (createdFrom && createdTo) filters.push(rule.between("createdAt", createdFrom, createdTo));
   else if (createdFrom) filters.push(rule.gte("createdAt", createdFrom));
   else if (createdTo) filters.push(rule.lte("createdAt", createdTo));
@@ -81,9 +76,7 @@ export const MyQuizzes = () => {
     categoryIds,
     difficultyIds,
     languageIds,
-    visibilities,
-    published,
-    active,
+    statuses,
     createdFrom,
     createdTo,
   ]);
@@ -107,9 +100,7 @@ export const MyQuizzes = () => {
     categoryIds.length +
     difficultyIds.length +
     languageIds.length +
-    visibilities.length +
-    (published !== "any" ? 1 : 0) +
-    (active !== "any" ? 1 : 0) +
+    statuses.length +
     (createdFrom ? 1 : 0) +
     (createdTo ? 1 : 0);
 
@@ -192,12 +183,8 @@ export const MyQuizzes = () => {
             languages={languagesQuery.data || []}
             selectedLanguageIds={languageIds}
             onLanguageIdsChange={setLanguageIds}
-            selectedVisibilities={visibilities}
-            onVisibilitiesChange={setVisibilities}
-            published={published}
-            onPublishedChange={setPublished}
-            active={active}
-            onActiveChange={setActive}
+            selectedStatuses={statuses}
+            onStatusesChange={setStatuses}
             createdFrom={createdFrom}
             createdTo={createdTo}
             onCreatedFromChange={setCreatedFrom}
@@ -223,12 +210,8 @@ export const MyQuizzes = () => {
             languages={languagesQuery.data || []}
             selectedLanguageIds={languageIds}
             onLanguageIdsChange={setLanguageIds}
-            selectedVisibilities={visibilities}
-            onVisibilitiesChange={setVisibilities}
-            published={published}
-            onPublishedChange={setPublished}
-            active={active}
-            onActiveChange={setActive}
+            selectedStatuses={statuses}
+            onStatusesChange={setStatuses}
             createdFrom={createdFrom}
             createdTo={createdTo}
             onCreatedFromChange={setCreatedFrom}

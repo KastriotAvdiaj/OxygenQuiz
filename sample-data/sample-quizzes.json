@@ -5,11 +5,10 @@
     "CategoryId": 3,
     "LanguageId": 2,
     "DifficultyId": 2,
-    "Visibility": "Public",
+    "Status": "Public",
     "TimeLimitInSeconds": 0,
     "ShuffleQuestions": true,
     "ShowFeedbackImmediately": false,
-    "IsPublished": true,
     "QuestionIds": "63|64|61|44|55|62"
   },
   {
@@ -18,11 +17,10 @@
     "CategoryId": 4,
     "LanguageId": 2,
     "DifficultyId": 4,
-    "Visibility": "Public",
+    "Status": "Public",
     "TimeLimitInSeconds": 0,
     "ShuffleQuestions": true,
     "ShowFeedbackImmediately": true,
-    "IsPublished": true,
     "QuestionIds": "67|82|73|81|69|86|70|75|65"
   },
   {
@@ -31,11 +29,10 @@
     "CategoryId": 2,
     "LanguageId": 2,
     "DifficultyId": 2,
-    "Visibility": "Public",
+    "Status": "Public",
     "TimeLimitInSeconds": 0,
     "ShuffleQuestions": false,
     "ShowFeedbackImmediately": false,
-    "IsPublished": true,
     "QuestionIds": "38|35|21|25|29|39|22|20|18"
   },
   {
@@ -44,11 +41,10 @@
     "CategoryId": 4,
     "LanguageId": 2,
     "DifficultyId": 2,
-    "Visibility": "Public",
+    "Status": "Draft",
     "TimeLimitInSeconds": 0,
     "ShuffleQuestions": false,
     "ShowFeedbackImmediately": false,
-    "IsPublished": false,
     "QuestionIds": "78|73|83|66|67|80|77"
   },
   {
@@ -57,11 +53,10 @@
     "CategoryId": 4,
     "LanguageId": 2,
     "DifficultyId": 2,
-    "Visibility": "Public",
+    "Status": "Draft",
     "TimeLimitInSeconds": 0,
     "ShuffleQuestions": false,
     "ShowFeedbackImmediately": true,
-    "IsPublished": false,
     "QuestionIds": "66|81|82|74|83|75|79|78|65|77"
   },
   {
@@ -70,11 +65,10 @@
     "CategoryId": 3,
     "LanguageId": 2,
     "DifficultyId": 2,
-    "Visibility": "Friends",
+    "Status": "Unlisted",
     "TimeLimitInSeconds": 0,
     "ShuffleQuestions": false,
     "ShowFeedbackImmediately": false,
-    "IsPublished": true,
     "QuestionIds": "52|63|61|57|64|55|54|43|50|48"
   },
   {
@@ -83,11 +77,10 @@
     "CategoryId": 2,
     "LanguageId": 2,
     "DifficultyId": 2,
-    "Visibility": "Private",
+    "Status": "Draft",
     "TimeLimitInSeconds": 0,
     "ShuffleQuestions": false,
     "ShowFeedbackImmediately": false,
-    "IsPublished": false,
     "QuestionIds": "26|23|41|38|42|13"
   },
   {
@@ -96,11 +89,10 @@
     "CategoryId": 4,
     "LanguageId": 2,
     "DifficultyId": 2,
-    "Visibility": "Public",
+    "Status": "Public",
     "TimeLimitInSeconds": 0,
     "ShuffleQuestions": false,
     "ShowFeedbackImmediately": false,
-    "IsPublished": true,
     "QuestionIds": "81|72|77|75|76|71|68|66"
   },
   {
@@ -109,11 +101,10 @@
     "CategoryId": 3,
     "LanguageId": 2,
     "DifficultyId": 3,
-    "Visibility": "Public",
+    "Status": "Public",
     "TimeLimitInSeconds": 0,
     "ShuffleQuestions": true,
     "ShowFeedbackImmediately": false,
-    "IsPublished": true,
     "QuestionIds": "48|51|52|43|47|56|54|62|57"
   },
   {
@@ -122,11 +113,10 @@
     "CategoryId": 2,
     "LanguageId": 2,
     "DifficultyId": 3,
-    "Visibility": "Private",
+    "Status": "Draft",
     "TimeLimitInSeconds": 0,
     "ShuffleQuestions": false,
     "ShowFeedbackImmediately": true,
-    "IsPublished": false,
     "QuestionIds": "14|25|39|38|35|32|36|28|23|34"
   },
   {
@@ -135,11 +125,10 @@
     "CategoryId": 3,
     "LanguageId": 2,
     "DifficultyId": 4,
-    "Visibility": "Public",
+    "Status": "Public",
     "TimeLimitInSeconds": 0,
     "ShuffleQuestions": false,
     "ShowFeedbackImmediately": false,
-    "IsPublished": true,
     "QuestionIds": "49|57|48|46|53"
   },
   {
@@ -148,11 +137,10 @@
     "CategoryId": 2,
     "LanguageId": 2,
     "DifficultyId": 4,
-    "Visibility": "Public",
+    "Status": "Public",
     "TimeLimitInSeconds": 0,
     "ShuffleQuestions": true,
     "ShowFeedbackImmediately": true,
-    "IsPublished": true,
     "QuestionIds": "12|13|38|17|30|23|15"
   },
   {
@@ -161,11 +149,10 @@
     "CategoryId": 4,
     "LanguageId": 2,
     "DifficultyId": 2,
-    "Visibility": "Public",
+    "Status": "Public",
     "TimeLimitInSeconds": 0,
     "ShuffleQuestions": true,
     "ShowFeedbackImmediately": false,
-    "IsPublished": true,
     "QuestionIds": "79|78|73|66|68"
   },
   {
@@ -174,11 +161,10 @@
     "CategoryId": 2,
     "LanguageId": 2,
     "DifficultyId": 3,
-    "Visibility": "Public",
+    "Status": "Public",
     "TimeLimitInSeconds": 0,
     "ShuffleQuestions": true,
     "ShowFeedbackImmediately": false,
-    "IsPublished": true,
     "QuestionIds": "12|17|27|22|15|33|28|3|40"
   },
   {
@@ -187,11 +173,10 @@
     "CategoryId": 3,
     "LanguageId": 2,
     "DifficultyId": 4,
-    "Visibility": "Public",
+    "Status": "Public",
     "TimeLimitInSeconds": 0,
     "ShuffleQuestions": true,
     "ShowFeedbackImmediately": true,
-    "IsPublished": true,
     "QuestionIds": "54|50|60|62|59|53"
   },
   {
@@ -200,11 +185,10 @@
     "CategoryId": 4,
     "LanguageId": 2,
     "DifficultyId": 3,
-    "Visibility": "Public",
+    "Status": "Public",
     "TimeLimitInSeconds": 0,
     "ShuffleQuestions": true,
     "ShowFeedbackImmediately": true,
-    "IsPublished": true,
     "QuestionIds": "71|76|86|70|80|79"
   },
   {
@@ -213,11 +197,10 @@
     "CategoryId": 3,
     "LanguageId": 2,
     "DifficultyId": 2,
-    "Visibility": "Public",
+    "Status": "Public",
     "TimeLimitInSeconds": 0,
     "ShuffleQuestions": false,
     "ShowFeedbackImmediately": false,
-    "IsPublished": true,
     "QuestionIds": "62|54|57|63|61|45"
   },
   {
@@ -226,11 +209,10 @@
     "CategoryId": 2,
     "LanguageId": 2,
     "DifficultyId": 2,
-    "Visibility": "Private",
+    "Status": "Unlisted",
     "TimeLimitInSeconds": 0,
     "ShuffleQuestions": true,
     "ShowFeedbackImmediately": true,
-    "IsPublished": true,
     "QuestionIds": "3|26|40|31|22|36|39|13|32"
   },
   {
@@ -239,11 +221,10 @@
     "CategoryId": 4,
     "LanguageId": 2,
     "DifficultyId": 3,
-    "Visibility": "Public",
+    "Status": "Draft",
     "TimeLimitInSeconds": 0,
     "ShuffleQuestions": true,
     "ShowFeedbackImmediately": false,
-    "IsPublished": false,
     "QuestionIds": "77|84|74|66|76|78"
   },
   {
@@ -252,11 +233,10 @@
     "CategoryId": 2,
     "LanguageId": 2,
     "DifficultyId": 4,
-    "Visibility": "Private",
+    "Status": "Unlisted",
     "TimeLimitInSeconds": 0,
     "ShuffleQuestions": true,
     "ShowFeedbackImmediately": false,
-    "IsPublished": true,
     "QuestionIds": "40|36|31|15|30|37"
   },
   {
@@ -265,11 +245,10 @@
     "CategoryId": 2,
     "LanguageId": 2,
     "DifficultyId": 4,
-    "Visibility": "Public",
+    "Status": "Public",
     "TimeLimitInSeconds": 0,
     "ShuffleQuestions": false,
     "ShowFeedbackImmediately": true,
-    "IsPublished": true,
     "QuestionIds": "12|3|36|34|31|14"
   },
   {
@@ -278,11 +257,10 @@
     "CategoryId": 4,
     "LanguageId": 2,
     "DifficultyId": 4,
-    "Visibility": "Public",
+    "Status": "Draft",
     "TimeLimitInSeconds": 0,
     "ShuffleQuestions": false,
     "ShowFeedbackImmediately": false,
-    "IsPublished": false,
     "QuestionIds": "1|72|70|73|80|71"
   },
   {
@@ -291,11 +269,10 @@
     "CategoryId": 3,
     "LanguageId": 2,
     "DifficultyId": 4,
-    "Visibility": "Public",
+    "Status": "Public",
     "TimeLimitInSeconds": 0,
     "ShuffleQuestions": true,
     "ShowFeedbackImmediately": true,
-    "IsPublished": true,
     "QuestionIds": "54|57|61|59|56|62|47|51|45|63"
   },
   {
@@ -304,11 +281,10 @@
     "CategoryId": 2,
     "LanguageId": 2,
     "DifficultyId": 4,
-    "Visibility": "Public",
+    "Status": "Public",
     "TimeLimitInSeconds": 0,
     "ShuffleQuestions": false,
     "ShowFeedbackImmediately": false,
-    "IsPublished": true,
     "QuestionIds": "22|15|26|30|34|14"
   },
   {
@@ -317,11 +293,10 @@
     "CategoryId": 3,
     "LanguageId": 2,
     "DifficultyId": 2,
-    "Visibility": "Public",
+    "Status": "Public",
     "TimeLimitInSeconds": 0,
     "ShuffleQuestions": true,
     "ShowFeedbackImmediately": false,
-    "IsPublished": true,
     "QuestionIds": "60|44|50|49|51"
   }
 ]

@@ -33,11 +33,22 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
         Task<PagedList<QuizSummaryDTO>> GetQuizzesByUserAsync(Guid userId, QuizFilterParams filterParam);
 
         /// <summary>
-        /// Get a quiz by its ID with detailed information including questions
+        /// Get a quiz by its ID with detailed information.
         /// </summary>
         /// <param name="id">The quiz ID</param>
+        /// <param name="currentUserId">
+        /// When supplied and equal to the quiz owner, the returned DTO includes the Unlisted
+        /// <c>ShareToken</c>; otherwise the token is omitted so it never leaks to other callers.
+        /// </param>
         /// <returns>Detailed quiz information or null if not found</returns>
-        Task<QuizDTO?> GetQuizByIdAsync(int id);
+        Task<QuizDTO?> GetQuizByIdAsync(int id, Guid? currentUserId = null);
+
+        /// <summary>
+        /// Resolves an Unlisted quiz by its share token, bypassing discovery filters. The token is
+        /// the access grant (see docs/quiz-visibility.md). Returns null for an unknown token or a
+        /// Draft quiz.
+        /// </summary>
+        Task<QuizDTO?> GetQuizByShareTokenAsync(string shareToken);
 
         /// <summary>
         /// Get quiz questions with full question details
@@ -63,20 +74,29 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
         Task<QuizDTO?> UpdateQuizAsync(Guid userId, QuizUM quizUM);
 
         /// <summary>
-        /// Toggle quiz publish status (published/unpublished)
+        /// Sets a quiz's status (Draft / Unlisted / Public). Owner-only.
         /// </summary>
-        /// <param name="userId">ID of the user toggling the status</param>
+        /// <param name="userId">ID of the user changing the status</param>
         /// <param name="quizId">ID of the quiz</param>
+        /// <param name="status">The new status</param>
         /// <returns>Updated quiz or null if not found or user doesn't have permission</returns>
-        Task<QuizDTO?> ToggleQuizPublishStatusAsync(Guid userId, int quizId);
+        Task<QuizDTO?> SetQuizStatusAsync(Guid userId, int quizId, QuizStatus status);
 
         /// <summary>
-        /// Toggle quiz active status (active/inactive)
+        /// Lazily generates (or returns the existing) share token for an owned quiz so the owner can
+        /// build an Unlisted play link. Owner-only.
         /// </summary>
-        /// <param name="userId">ID of the user toggling the status</param>
+        /// <param name="userId">ID of the user requesting the link</param>
         /// <param name="quizId">ID of the quiz</param>
-        /// <returns>Updated quiz or null if not found or user doesn't have permission</returns>
-        Task<QuizDTO?> ToggleQuizActiveStatusAsync(Guid userId, int quizId);
+        /// <returns>The share token, or null if the quiz isn't found or the caller isn't the owner.</returns>
+        Task<string?> GenerateShareTokenAsync(Guid userId, int quizId);
+
+        /// <summary>
+        /// Whether <paramref name="hostUserId"/> may host <paramref name="quizId"/> in a multiplayer
+        /// lobby: true for a Public quiz or one the host owns (any status). Used to validate the
+        /// host's quiz selection server-side. See docs/quiz-visibility.md.
+        /// </summary>
+        Task<bool> CanHostQuizAsync(int quizId, Guid hostUserId);
 
         /// <summary>
         /// Get all publicly available quizzes

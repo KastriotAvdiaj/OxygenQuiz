@@ -6,6 +6,13 @@ import { UserBasic } from "./user-types";
 
 // types/quiz.types.ts
 
+/**
+ * A quiz's single access/lifecycle state (see docs/quiz-visibility.md):
+ * - Draft    — only the owner can see/play it.
+ * - Unlisted — playable via share link or lobby invite; not in the public catalogue.
+ * - Public   — discoverable and playable by everyone.
+ */
+export type QuizStatus = "Draft" | "Unlisted" | "Public";
 
 /**
  * A summary of a quiz, typically used for lists.
@@ -21,9 +28,7 @@ export type QuizSummaryDTO = {
   colorPaletteJson?:string;
   gradient:boolean;
   timeLimitInSeconds:number;
-  visibility: string;
-  isPublished: boolean;
-  isActive: boolean;
+  status: QuizStatus;
   createdAt: string;
   questionCount: number;
   user: string;
@@ -58,10 +63,10 @@ export type Quiz = {
   difficulty: DifficultyDTO;
   timeLimitInSeconds: number;
   showFeedbackImmediately: boolean;
-  visibility: string;
+  status: QuizStatus;
+  /** Unlisted share-link token. Only present on the owner's own read. */
+  shareToken?: string | null;
   shuffleQuestions: boolean;
-  isPublished: boolean;
-  isActive: boolean;
   createdAt: string; // DateTime from C# is serialized as a string
   version: number;
   questionCount: number;

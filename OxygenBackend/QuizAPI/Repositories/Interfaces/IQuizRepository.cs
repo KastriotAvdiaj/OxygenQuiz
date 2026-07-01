@@ -20,8 +20,24 @@ namespace QuizAPI.Repositories.Interfaces
         Task<Quiz?> GetByIdAsync(int id, CancellationToken ct = default);
         Task<bool> ExistsAsync(int id, CancellationToken ct = default);
 
-        /// <summary>The quiz's questions with full question detail, ordered by position.</summary>
-        Task<List<QuizQuestion>> GetQuizQuestionsAsync(int quizId, CancellationToken ct = default);
+        /// <summary>
+        /// Looks up a live quiz by its share token, bypassing the discovery query filter so an
+        /// Unlisted quiz is reachable (the token is the access grant). Soft-deleted quizzes are
+        /// still excluded. Returns null when no live quiz carries the token.
+        /// </summary>
+        Task<Quiz?> GetByShareTokenAsync(string shareToken, CancellationToken ct = default);
+
+        /// <summary>
+        /// Fetches a live quiz by id with the discovery filter bypassed (Unlisted/Draft included),
+        /// for authorization checks that must see the quiz regardless of the caller. Soft-deleted
+        /// quizzes are excluded.
+        /// </summary>
+        Task<Quiz?> GetByIdUnfilteredAsync(int id, CancellationToken ct = default);
+
+        /// <summary>The quiz's questions with full question detail, ordered by position.
+        /// When <paramref name="ignoreFilters"/> is true the QuestionBase discovery filter is
+        /// bypassed (used by the authorized multiplayer match running without a current user).</summary>
+        Task<List<QuizQuestion>> GetQuizQuestionsAsync(int quizId, bool ignoreFilters = false, CancellationToken ct = default);
 
         // ── Tracked reads for mutation ────────────────────────────────────────────
         Task<Quiz?> GetWithQuestionsForUpdateAsync(int id, CancellationToken ct = default);

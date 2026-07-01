@@ -81,10 +81,10 @@ export const quizColumns: ColumnDef<QuizSummaryDTO>[] = [
     header: "Language",
   },
   {
-    accessorKey: "isPublished",
+    accessorKey: "status",
     header: "Status",
     cell: ({ row }) => {
-      const { isPublished, deletedAt } = row.original;
+      const { status, deletedAt } = row.original;
       if (deletedAt) {
         return (
           <span className="bg-destructive/15 text-destructive border border-destructive/30 py-1 px-3 rounded-full">
@@ -92,16 +92,24 @@ export const quizColumns: ColumnDef<QuizSummaryDTO>[] = [
           </span>
         );
       }
+      if (status === "Public") {
+        return (
+          <span className="bg-primary py-1 px-3 rounded-full text-white">
+            Public
+          </span>
+        );
+      }
+      if (status === "Unlisted") {
+        return (
+          <span className="bg-amber-400/80 border border-foreground/30 text-foreground py-1 px-3 rounded-full">
+            Unlisted
+          </span>
+        );
+      }
       return (
-        <div>
-          {isPublished ? (
-            <span className="bg-primary py-1 px-3 rounded-full text-white">
-              Published
-            </span>
-          ) : (
-            <span className="bg-gray-300 border border-foreground/30 dark:bg-gray-500 p-1 px-3 rounded-full">Draft</span>
-          )}
-        </div>
+        <span className="bg-gray-300 border border-foreground/30 dark:bg-gray-500 p-1 px-3 rounded-full">
+          Draft
+        </span>
       );
     },
   },
