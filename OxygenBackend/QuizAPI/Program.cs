@@ -2,6 +2,7 @@
 using System.Text;
 using Hangfire;
 using Hangfire.PostgreSql;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -73,6 +74,15 @@ builder.Services.AddHangfireServer();
 
 //IMemoryCache
 builder.Services.AddMemoryCache();
+
+// --- Data Protection ---
+// Persist the Data Protection key ring to a mounted volume (/app/keys) instead of the container's
+// ephemeral filesystem. Without this, keys are regenerated every time the container is rebuilt,
+// which invalidates anything they encrypt (antiforgery tokens, protected cookies). The /app/keys
+// directory is created (owned by the app user) in the Dockerfile and mapped to a Docker volume.
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo("/app/keys"))
+    .SetApplicationName("OxygenQuiz");
 
 // --- Service Registrations ---
 
