@@ -65,4 +65,18 @@ namespace QuizAPI.Services.QuizSessionServices
             });
         }
     }
+
+    /// <summary>
+    /// No-op archiver used when MongoDB is not deployed. Lobby chat is ephemeral by design, so we
+    /// simply discard the retention copy. Satisfies <see cref="ILobbyChatArchiver"/> for the session
+    /// manager without requiring an <c>IMongoClient</c>. Swap back to <see cref="LobbyChatArchiver"/>
+    /// (and re-enable the Mongo registration in Program.cs) if chat retention is ever needed.
+    /// </summary>
+    public sealed class NoOpLobbyChatArchiver : ILobbyChatArchiver
+    {
+        public void Archive(string sessionId, LobbyChatMessage message)
+        {
+            // Intentionally empty — chat is not persisted in this deployment.
+        }
+    }
 }

@@ -36,11 +36,14 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(configuration.GetConnectionString("PostgresConnection")));
 
 // --- MongoDB ---
-builder.Services.AddSingleton<IMongoClient>(_ =>
-{
-    var connectionString = configuration.GetConnectionString("MongoDBConnection");
-    return new MongoClient(connectionString);
-});
+// Disabled for production: the only Mongo consumer was LobbyChatArchiver, a write-only audit sink
+// that nothing reads back. Lobby chat is ephemeral (SignalR in-memory), so we run without Mongo and
+// register a no-op archiver below. Re-enable this registration if you reintroduce a Mongo-backed feature.
+// builder.Services.AddSingleton<IMongoClient>(_ =>
+// {
+//     var connectionString = configuration.GetConnectionString("MongoDBConnection");
+//     return new MongoClient(connectionString);
+// });
 
 var allowedOrigins = configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
 
@@ -110,8 +113,10 @@ builder.Services.AddScoped<
     QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.SubmitAnswerService.ISubmitAnswerService,
     QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.SubmitAnswerService.SubmitAnswerService>();
 builder.Services.AddScoped<IUserAnswerService, UserAnswerService>();
-// Write-only MongoDB sink for lobby chat retention; injected into the session manager below.
-builder.Services.AddSingleton<ILobbyChatArchiver, LobbyChatArchiver>();
+// Mongo archiving disabled in production — use the no-op sink so the session manager still gets its
+// dependency while nothing touches Mongo. Swap back to LobbyChatArchiver (and re-enable the IMongoClient
+// registration above) if chat retention is ever needed.
+builder.Services.AddSingleton<ILobbyChatArchiver, NoOpLobbyChatArchiver>();
 builder.Services.AddSingleton<IQuizSessionManager, InMemoryQuizSessionManager>();
 // Drives the live multiplayer match loop (singleton: it owns running matches). See docs/plans/multiplayer-phase1.md.
 builder.Services.AddSingleton<IMatchOrchestrator, MatchOrchestrator>();
