@@ -324,10 +324,19 @@ app.MapControllers();
 app.MapHub<QuizAPI.Hubs.QuizHub>("/quizHub");
 app.MapHub<QuizAPI.Hubs.NotificationHub>("/notificationHub");
 
-RecurringJob.AddOrUpdate<ImageCleanUpService>(
-    "image-cleanup-daily",
-    service => service.RunCleanupAsync(),
-    Cron.Daily(2) // 2 AM every day
-);
+// Schedule recurring jobs through the DI-registered IRecurringJobManager rather than the static
+// RecurringJob API. The static API depends on Hangfire's global JobStorage.Current, which only gets
+// initialized as a side effect of mapping the Hangfire dashboard — and the dashboard is intentionally
+// NOT mapped in Production (see above). Resolving the manager from DI is wired to the configured
+// Postgres storage directly, so recurring jobs register correctly in every environment.
+using (var scope = app.Services.CreateScope())
+{
+    var recurringJobs = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
+    recurringJobs.AddOrUpdate<ImageCleanUpService>(
+        "image-cleanup-daily",
+        service => service.RunCleanupAsync(),
+        Cron.Daily(2) // 2 AM every day
+    );
+}
 
 app.Run();
