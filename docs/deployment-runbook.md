@@ -93,25 +93,28 @@ docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
 
 ---
 
-## 5. First thing to do next session — apply the Data Protection fix
+## 5. FIRST THING NEXT SESSION — pull the new change + apply the Data Protection fix
 
-The code + Dockerfile fixes are pushed; the server compose needs one edit, then a rebuild.
+The code + Dockerfile fixes (Data Protection key persistence) are pushed to GitHub. To deploy them:
 
-1. Edit the compose file on the server:
+1. **Pull the new change** (do this first):
+   ```bash
+   cd ~/OxygenQuiz
+   git pull
+   ```
+2. **Edit the compose file** on the server to add the keys volume:
    ```bash
    nano ~/OxygenQuiz/docker-compose.prod.yml
    ```
    - Add to the `backend:` service's `volumes:` list:  `- dpkeys:/app/keys`
    - Add to the top-level `volumes:` block:  `dpkeys:`
    (So the top-level block reads: `postgres-data:`, `uploads:`, `dpkeys:`.)
-2. Pull + rebuild:
+3. **Rebuild:**
    ```bash
-   cd ~/OxygenQuiz
-   git pull
    docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
    docker compose -f docker-compose.prod.yml logs --tail 40 backend
    ```
-3. Confirm the `/home/app/.aspnet/DataProtection-Keys` warning is gone and it's listening.
+4. Confirm the `/home/app/.aspnet/DataProtection-Keys` warning is **gone** and it's still listening.
 
 Then continue with **DNS on Cloudflare** (step 2 of the "Still to do" list in `deployment-progress.md`).
 

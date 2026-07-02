@@ -24,6 +24,13 @@ namespace QuizAPI.Models.Quiz
         public int? CurrentQuizQuestionId { get; set; }
         public DateTime? CurrentQuestionStartTime { get; set; }
 
+        /// <summary>
+        /// The <see cref="Quiz.Version"/> in effect when this session started. The session only
+        /// ever sees QuizQuestion rows visible to this version (see docs/quiz-editing.md), so an
+        /// owner editing the quiz mid-game never changes what an in-flight player is served.
+        /// </summary>
+        public int QuizVersion { get; set; } = 1;
+
         [ForeignKey(nameof(QuizId))]
         public virtual Quiz Quiz { get; set; } = null!;
         [ForeignKey(nameof(UserId))]

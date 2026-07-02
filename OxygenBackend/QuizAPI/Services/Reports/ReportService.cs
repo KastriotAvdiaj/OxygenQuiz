@@ -92,9 +92,10 @@ namespace QuizAPI.Services.Reports
                 })
                 .ToListAsync(ct);
 
-            // How many quizzes each owned question is used in.
+            // How many quizzes each owned question is used in. Live rows only — retired rows are
+            // past-version copies and would double-count (docs/quiz-editing.md).
             var usage = await _context.QuizQuestions.AsNoTracking()
-                .Where(qq => qq.Question.UserId == userId)
+                .Where(qq => qq.Question.UserId == userId && qq.RemovedInVersion == null)
                 .GroupBy(qq => qq.QuestionId)
                 .Select(g => new { QuestionId = g.Key, Count = g.Count() })
                 .ToDictionaryAsync(x => x.QuestionId, x => x.Count, ct);
@@ -170,9 +171,13 @@ namespace QuizAPI.Services.Reports
             // averages (e.g. a quiz "taking" 42 minutes). Count only genuinely finished sessions.
             var completed = sessions.Where(s => s.IsCompleted && !s.Abandoned).ToList();
 
-            // The quiz's questions (so a question with no answers still appears with zeros).
+            // The quiz's CURRENT questions (so a question with no answers still appears with
+            // zeros). Retired rows are excluded — an edited question would otherwise show up
+            // twice (answers are matched by QuestionId, so history from before an edit still
+            // counts toward the live row). Answers to questions REMOVED from the quiz drop out
+            // of this per-question table but still count in the session aggregates above.
             var quizQuestions = await _context.QuizQuestions.AsNoTracking()
-                .Where(qq => qq.QuizId == quizId)
+                .Where(qq => qq.QuizId == quizId && qq.RemovedInVersion == null)
                 .Select(qq => new
                 {
                     qq.QuestionId,

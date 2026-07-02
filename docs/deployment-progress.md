@@ -82,20 +82,23 @@ Confirmed healthy in the logs: migrations applied, admin seeded, Hangfire server
 
 ## Current step — apply the Data Protection fix (do this first tomorrow)
 
-The Hangfire fix is already running. The Data Protection fix is written in code but not yet deployed,
-and the server's compose file needs one small edit. Steps:
+The Hangfire fix is already running. The Data Protection fix is written in code and pushed to GitHub,
+but not yet deployed to the server. Steps:
 
-1. **On the server, edit `~/OxygenQuiz/docker-compose.prod.yml`** to add the keys volume:
-   - Under the `backend:` service `volumes:` list, add:  `- dpkeys:/app/keys`
-   - Under the top-level `volumes:` block (next to `postgres-data:` and `uploads:`), add:  `dpkeys:`
-2. **Pull the code fixes and rebuild:**
+1. **Pull the new change first:**
    ```bash
    cd ~/OxygenQuiz
    git pull
+   ```
+2. **Edit `~/OxygenQuiz/docker-compose.prod.yml`** to add the keys volume:
+   - Under the `backend:` service `volumes:` list, add:  `- dpkeys:/app/keys`
+   - Under the top-level `volumes:` block (next to `postgres-data:` and `uploads:`), add:  `dpkeys:`
+3. **Rebuild:**
+   ```bash
    docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
    docker compose -f docker-compose.prod.yml logs --tail 40 backend
    ```
-3. Confirm the Data Protection warning about `/home/app/.aspnet/DataProtection-Keys` is **gone** and it
+4. Confirm the Data Protection warning about `/home/app/.aspnet/DataProtection-Keys` is **gone** and it
    still reaches `Now listening on: http://[::]:8080`.
 
 > Note: because the key location changed, any antiforgery tokens/cookies issued before this rebuild

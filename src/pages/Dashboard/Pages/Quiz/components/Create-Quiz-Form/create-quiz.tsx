@@ -53,8 +53,20 @@ import { useCreateTrueFalseQuestion } from "../../../Question/api/True_False-Que
 import { useCreateTypeTheAnswerQuestion } from "../../../Question/api/Type_The_Answer-Question/create-type-the-answer-question";
 import { CreatedQuestionsPanel } from "./components/question-panel/questions-panel";
 import ImageUpload from "@/utils/Image-Upload";
+import { useUpdateQuiz, isVersionConflictError } from "../../api/update-quiz";
+import { Quiz } from "@/types/quiz-types";
 
-const CreateQuizForm = () => {
+interface CreateQuizFormProps {
+  /**
+   * Edit mode: the quiz being edited (loaded at its current version). The form is
+   * prefilled from it and submits an update instead of a create. Questions are seeded
+   * separately through QuizQuestionProvider's initialQuestions.
+   */
+  editQuiz?: Quiz;
+}
+
+const CreateQuizForm = ({ editQuiz }: CreateQuizFormProps = {}) => {
+  const isEditMode = editQuiz != null;
   const { queryData } = useQuizForm();
   const {
     addedQuestions,
@@ -166,6 +178,38 @@ const CreateQuizForm = () => {
     },
   });
 
+  const updateQuizMutation = useUpdateQuiz({
+    mutationConfig: {
+      onSuccess: () => {
+        addNotification({
+          type: "success",
+          title: "Success",
+          message: "Your changes were saved!",
+        });
+        navigate(`/dashboard/quiz/${editQuiz?.id}`);
+      },
+      onError: (error) => {
+        console.error("Quiz update error:", error);
+        if (isVersionConflictError(error)) {
+          // Optimistic-concurrency conflict: the quiz changed since this form was
+          // loaded (another tab or device). Saving now would overwrite those changes.
+          addNotification({
+            type: "error",
+            title: "Quiz changed elsewhere",
+            message:
+              "This quiz was modified since you opened it. Reload the page to get the latest version — your unsaved changes will be lost.",
+          });
+          return;
+        }
+        addNotification({
+          type: "error",
+          title: "Error",
+          message: "Failed to save changes. Please try again.",
+        });
+      },
+    },
+  });
+
   const handleQuizSubmit = async (values: any) => {
     try {
       setIsCreatingQuestions(true);
@@ -228,24 +272,40 @@ const CreateQuizForm = () => {
         })
       );
 
-      // Create the quiz with all question IDs
-      await createQuizMutation.mutateAsync({
-        data: {
-          ...values,
-          questions: processedQuestions,
-        },
-      });
+      if (isEditMode && editQuiz) {
+        // Save the edit at the version the quiz was loaded at — the backend uses it
+        // to reject stale writes (409) and to version the question changes so
+        // in-flight players finish the version they started (docs/quiz-editing.md).
+        await updateQuizMutation.mutateAsync({
+          data: {
+            ...values,
+            id: editQuiz.id,
+            version: editQuiz.version,
+            questions: processedQuestions,
+          },
+        });
+      } else {
+        // Create the quiz with all question IDs
+        await createQuizMutation.mutateAsync({
+          data: {
+            ...values,
+            questions: processedQuestions,
+          },
+        });
+      }
 
       // NEW: Reset all validation states after successful submission
       resetAllValidationStates();
     } catch (error) {
-      console.error("Error in quiz creation process:", error);
+      console.error("Error in quiz save process:", error);
       // Single error notification point - only show if it's not already handled by mutation
-      if (!createQuizMutation.isError) {
+      if (!createQuizMutation.isError && !updateQuizMutation.isError) {
         addNotification({
           type: "error",
           title: "Error",
-          message: "Failed to create quiz. Please try again.",
+          message: isEditMode
+            ? "Failed to save changes. Please try again."
+            : "Failed to create quiz. Please try again.",
         });
       }
     } finally {
@@ -273,11 +333,29 @@ const CreateQuizForm = () => {
 
   return (
     <Form
-      id="create-quiz"
+      id={isEditMode ? "edit-quiz" : "create-quiz"}
       className="mt-0 w-full"
       onSubmit={handleQuizSubmit}
       schema={createQuizInputSchema}
-      options={{ mode: "onSubmit" }}>
+      options={{
+        mode: "onSubmit",
+        // Edit mode: prefill every quiz-level field from the loaded quiz.
+        defaultValues: editQuiz
+          ? {
+              title: editQuiz.title,
+              description: editQuiz.description ?? "",
+              categoryId: editQuiz.category.id,
+              languageId: editQuiz.language.id,
+              difficultyId: editQuiz.difficulty.id,
+              imageUrl: editQuiz.imageUrl ?? "",
+              timeLimitInSeconds: editQuiz.timeLimitInSeconds,
+              showFeedbackImmediately: editQuiz.showFeedbackImmediately,
+              status: editQuiz.status,
+              shuffleQuestions: editQuiz.shuffleQuestions,
+              questions: [],
+            }
+          : undefined,
+      }}>
       {({ register, formState, setValue, watch, clearErrors }) => {
         useEffect(() => {
           const questions = addedQuestions.map(
@@ -293,9 +371,11 @@ const CreateQuizForm = () => {
 
         const { errors } = formState;
         const isSubmitting =
-          createQuizMutation.isPending || isCreatingQuestions;
+          createQuizMutation.isPending ||
+          updateQuizMutation.isPending ||
+          isCreatingQuestions;
 
-        const [imageUrl, setImageUrl] = useState("");
+        const [imageUrl, setImageUrl] = useState(editQuiz?.imageUrl ?? "");
 
         useEffect(() => {
           if (imageUrl) {
@@ -402,6 +482,7 @@ const CreateQuizForm = () => {
                     <ImageUpload
                       onUpload={handleImageUpload}
                       onRemove={handleImageRemove}
+                      initialImageUrl={editQuiz?.imageUrl ?? null}
                     />
 
                     {/* Dropdowns */}
@@ -655,6 +736,8 @@ const CreateQuizForm = () => {
                       <span className={isSubmitting ? "invisible" : "visible"}>
                         {isCreatingQuestions
                           ? "Creating Questions..."
+                          : isEditMode
+                          ? "Save Changes"
                           : "Finish"}
                       </span>
                     </div>

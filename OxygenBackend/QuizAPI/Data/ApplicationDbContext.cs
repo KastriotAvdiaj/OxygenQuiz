@@ -272,6 +272,14 @@ namespace QuizAPI.Data
                 .HasForeignKey(qq => qq.QuestionId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            // Quiz editing is copy-on-write (docs/quiz-editing.md): retired join rows stay in the
+            // table with RemovedInVersion set, so a question may legitimately appear twice for the
+            // same quiz across versions. Uniqueness is therefore only enforced among LIVE rows.
+            modelBuilder.Entity<QuizQuestion>()
+                .HasIndex(qq => new { qq.QuizId, qq.QuestionId })
+                .IsUnique()
+                .HasFilter("\"RemovedInVersion\" IS NULL");
+
 
 
             //Configuration for Quiz and Question relationship

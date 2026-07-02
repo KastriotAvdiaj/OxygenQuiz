@@ -71,6 +71,9 @@ namespace QuizAPI.Repositories
                 .Include(qq => qq.Question)
                     .ThenInclude(q => q.User)
                 .Where(qq => qq.QuizId == quizId)
+                // Only live rows — retired (edited-away) rows belong to past versions and are
+                // only ever served to sessions pinned to those versions (docs/quiz-editing.md).
+                .Where(qq => qq.RemovedInVersion == null)
                 .OrderBy(qq => qq.OrderInQuiz)
                 .ToListAsync(ct);
         }
@@ -78,7 +81,9 @@ namespace QuizAPI.Repositories
         // ── Tracked reads for mutation ────────────────────────────────────────────
         public Task<Quiz?> GetWithQuestionsForUpdateAsync(int id, CancellationToken ct = default) =>
             _context.Quizzes
-                .Include(q => q.QuizQuestions)
+                // The update diff only compares against the quiz's current content, so retired
+                // rows are left out (they must never be touched again once retired).
+                .Include(q => q.QuizQuestions.Where(qq => qq.RemovedInVersion == null))
                 .FirstOrDefaultAsync(q => q.Id == id, ct);
 
         public Task<Quiz?> GetTrackedAsync(int id, CancellationToken ct = default) =>
@@ -115,8 +120,8 @@ namespace QuizAPI.Repositories
         public async Task AddQuizQuestionAsync(QuizQuestion quizQuestion, CancellationToken ct = default) =>
             await _context.QuizQuestions.AddAsync(quizQuestion, ct);
 
-        public void RemoveQuizQuestions(IEnumerable<QuizQuestion> quizQuestions) =>
-            _context.QuizQuestions.RemoveRange(quizQuestions);
+        // NOTE: QuizQuestion rows are never hard-deleted (docs/quiz-editing.md) — edits retire
+        // rows by stamping RemovedInVersion instead, so session/answer FKs stay valid forever.
 
         public void Remove(Quiz quiz) => _context.Quizzes.Remove(quiz);
 

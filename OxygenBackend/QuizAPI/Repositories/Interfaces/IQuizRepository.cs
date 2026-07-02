@@ -56,7 +56,8 @@ namespace QuizAPI.Repositories.Interfaces
         Task AddAsync(Quiz quiz, CancellationToken ct = default);
         Task AddQuizQuestionsAsync(IEnumerable<QuizQuestion> quizQuestions, CancellationToken ct = default);
         Task AddQuizQuestionAsync(QuizQuestion quizQuestion, CancellationToken ct = default);
-        void RemoveQuizQuestions(IEnumerable<QuizQuestion> quizQuestions);
+        // QuizQuestion rows are never hard-deleted — edits retire rows via RemovedInVersion
+        // (docs/quiz-editing.md), so session/answer FKs stay valid forever.
         void Remove(Quiz quiz);
         Task<int> SaveChangesAsync(CancellationToken ct = default);
 

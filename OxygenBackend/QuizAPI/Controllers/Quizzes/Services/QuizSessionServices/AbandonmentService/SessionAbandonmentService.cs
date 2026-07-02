@@ -109,9 +109,16 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.AbandonmentSe
 
         private async Task<(TimeSpan TotalTimeout, TimeSpan ActivityTimeout)> CalculateTimeoutsAsync(QuizSession session)
         {
-            var quizQuestions = session.Quiz?.QuizQuestions ??
+            // Timeout math must mirror what the player is actually served: only the rows visible
+            // to the session's pinned quiz version (docs/quiz-editing.md).
+            var sessionVersion = session.QuizVersion;
+            var quizQuestions = session.Quiz?.QuizQuestions
+                                   .Where(qq => qq.IsVisibleToVersion(sessionVersion))
+                                   .ToList() ??
                                await _context.QuizQuestions
-                                   .Where(qq => qq.QuizId == session.QuizId)
+                                   .Where(qq => qq.QuizId == session.QuizId
+                                       && qq.CreatedInVersion <= sessionVersion
+                                       && (qq.RemovedInVersion == null || qq.RemovedInVersion > sessionVersion))
                                    .Select(qq => new { qq.TimeLimitInSeconds })
                                    .ToListAsync()
                                    .ContinueWith(t => t.Result.Select(x => new QuizQuestion { TimeLimitInSeconds = x.TimeLimitInSeconds }).ToList());

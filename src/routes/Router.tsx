@@ -286,7 +286,10 @@ const createAppRouter = (queryClient: QueryClient) =>
     <AppRoot
       basePath="/dashboard"
       navItems={adminDashboardNavButtons}
-      fullWidthPaths={["/dashboard/quizzes/create-quiz"]}
+      fullWidthPaths={[
+        "/dashboard/quizzes/create-quiz",
+        "/dashboard/quizzes/edit-quiz",
+      ]}
     />
   ),
   id: "dashboardRoot",
@@ -373,6 +376,17 @@ const createAppRouter = (queryClient: QueryClient) =>
               <QuizCreator />
             </QuizQuestionProvider>
           ),
+        },
+        {
+          // Edit mode of the same form — the wrapper loads the quiz + its questions
+          // and mounts QuizQuestionProvider itself (seeded with the existing questions).
+          path: "quizzes/edit-quiz/:quizId",
+          lazy: async () => {
+            const { EditQuizRoute } = await import(
+              "../pages/Dashboard/Pages/Quiz/components/Create-Quiz-Form/edit-quiz"
+            );
+            return { Component: EditQuizRoute };
+          },
         },
         {
           path: "quiz/:quizId",

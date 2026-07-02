@@ -139,7 +139,10 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                 }
 
                 var answeredQuestionIds = session.UserAnswers.Select(ua => ua.QuizQuestionId).ToHashSet();
+                // Only rows visible to the session's pinned quiz version: an edit made after this
+                // session started must not add, remove or reconfigure the player's questions.
                 var nextQuizQuestion = session.Quiz.QuizQuestions
+                    .Where(qq => qq.IsVisibleToVersion(session.QuizVersion))
                     .Where(qq => !answeredQuestionIds.Contains(qq.Id))
                     .OrderBy(qq => qq.OrderInQuiz)
                     .FirstOrDefault();
@@ -256,6 +259,10 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                 // No existing session, create new one
                 var session = model.ToEntity();
                 session.Id = Guid.NewGuid();
+                // Pin the session to the quiz version it starts on (docs/quiz-editing.md): the
+                // session is only ever served QuizQuestion rows visible to this version, so a
+                // concurrent edit by the owner can't change the game mid-flight.
+                session.QuizVersion = quiz.Version;
                 session.StartTime = DateTime.UtcNow;
                 session.TotalScore = 0;
                 session.IsCompleted = false;
@@ -310,6 +317,8 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                     TotalScore = 0,
                     IsCompleted = false,
                     IsGuestSession = true,
+                    // Same version pinning as regular sessions (docs/quiz-editing.md).
+                    QuizVersion = quiz.Version,
                 };
 
                 _context.QuizSessions.Add(session);
@@ -473,7 +482,9 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                 }
 
                 var answeredIds = session.UserAnswers.Select(ua => ua.QuizQuestionId).ToHashSet();
+                // Pinned-version view of the quiz — see GetNextQuestionAsync / docs/quiz-editing.md.
                 var unansweredQuestions = session.Quiz.QuizQuestions
+                    .Where(qq => qq.IsVisibleToVersion(session.QuizVersion))
                     .Where(qq => !answeredIds.Contains(qq.Id))
                     .OrderBy(qq => qq.OrderInQuiz)
                     .ToList();

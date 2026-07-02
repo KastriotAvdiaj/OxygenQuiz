@@ -63,6 +63,12 @@ GET /api/questions/search
 `in` and `between` take comma-separated values: `filter=type:in:MultipleChoice,TrueFalse`,
 `filter=createdAt:between:2026-01-01,2026-03-31`.
 
+> **Pseudo-sort exception:** the quiz search additionally understands
+> `sort=variety:desc` — a category-interleaving order that isn't a plain `ORDER BY
+> column` and therefore lives outside the whitelist. `FilterEngine` ignores the unknown
+> field as usual; `QuizService.SearchQuizzesAsync` detects and applies it afterwards.
+> See [quiz-discovery.md](quiz-discovery.md).
+
 ## Backend architecture (`QuizAPI.Filtering`)
 
 | File | Role |

@@ -26,7 +26,11 @@ export const DashboardLayout = ({
   };
 
   const activePage = location.pathname.split("/").pop() || "";
-  const isFullWidth = fullWidthPaths.includes(location.pathname);
+  // Exact match, or prefix match for parameterised paths (e.g. .../edit-quiz/:quizId).
+  const isFullWidth = fullWidthPaths.some(
+    (path) =>
+      location.pathname === path || location.pathname.startsWith(`${path}/`)
+  );
 
   if (isFullWidth) {
     // Show header but no nav

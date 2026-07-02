@@ -23,7 +23,7 @@ export function GameModeSelection() {
             <Card
               variant="lifted"
               className="text-center space-y-2 sm:space-y-3 cursor-pointer p-4 sm:p-6 md:p-8 bg-primary hover:scale-105 transition-transform hover:z-50 h-full flex flex-col justify-center"
-              onClick={() => navigate("/choose-quiz?mode=single")}
+              onClick={() => navigate("/choose-quiz")}
             >
               <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white font-quiz tracking-wider">
                 Single Player
