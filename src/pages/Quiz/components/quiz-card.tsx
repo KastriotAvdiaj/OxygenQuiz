@@ -28,12 +28,12 @@ export function QuizCard({ quiz, onClick }: QuizCardProps) {
 
   const primaryColor = colors[0];
 
-  const gradientStyle = useMemo(() => {
-    if (quiz.gradient && colors.length > 1) {
-      return `linear-gradient(135deg, ${colors.join(", ")})`;
-    }
-    return primaryColor;
-  }, [colors, quiz.gradient, primaryColor]);
+  // const gradientStyle = useMemo(() => {
+  //   if (quiz.gradient && colors.length > 1) {
+  //     return `linear-gradient(135deg, ${colors.join(", ")})`;
+  //   }
+  //   return primaryColor;
+  // }, [colors, quiz.gradient, primaryColor]);
 
   const handleClick = useCallback(() => {
     onClick?.(quiz);

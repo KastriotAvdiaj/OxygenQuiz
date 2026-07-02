@@ -40,7 +40,7 @@ export const useUpdateRolePermission = ({
     mutationFn: updateRolePermission,
 
     // Optimistically flip the cell so the toggle feels instant; snapshot for rollback.
-    onMutate: async (variables) => {
+    onMutate: async (variables, context) => {
       await queryClient.cancelQueries({ queryKey });
       const previous =
         queryClient.getQueryData<PermissionMatrix>(queryKey);
@@ -65,7 +65,7 @@ export const useUpdateRolePermission = ({
           : current
       );
 
-      onMutate?.(variables);
+      onMutate?.(variables, context);
       return { previous };
     },
 

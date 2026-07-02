@@ -10,7 +10,6 @@ import { Filter } from "lucide-react";
 import { RiFilterOffLine } from "react-icons/ri";
 import { SearchInput } from "@/lib/Search-Input";
 import { ROLES } from "@/lib/authorization";
-import { Separator } from "@/components/ui/separator";
 
 const ROLE_OPTIONS = Object.values(ROLES).map((r) => ({ label: r, value: r }));
 

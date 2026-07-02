@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import type * as signalR from "@microsoft/signalr";
 import { useMultiplayer } from "@/hooks/useMultiplayer";
 
 // Wire shapes mirror the server's match DTOs (SignalR serializes them camelCased).
