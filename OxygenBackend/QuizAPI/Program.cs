@@ -215,6 +215,20 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
+// --- Forwarded headers (behind Nginx + Cloudflare) ---
+// The app sits behind a reverse proxy (Nginx) and Cloudflare, so the original request scheme/IP
+// arrive in X-Forwarded-Proto / X-Forwarded-For. Without this the app thinks requests are http://
+// and builds http:// image/asset URLs that browsers block on the https:// site. See docs/production-runbook.md §0.
+var forwardedOptions = new ForwardedHeadersOptions
+{
+    ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor
+                     | Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto
+};
+// Nginx is the only ingress and runs on a trusted host, so trust the whole chain.
+forwardedOptions.KnownNetworks.Clear();
+forwardedOptions.KnownProxies.Clear();
+app.UseForwardedHeaders(forwardedOptions);
+
 // --- Database Migration & Seeding ---
 // Apply pending migrations (this also applies HasData reference seeding: roles, permissions),
 // then run the runtime seeder (admin account + dev-only sample data).

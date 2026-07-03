@@ -106,11 +106,32 @@ but not yet deployed to the server. Steps:
 
 ---
 
+## Local prep applied (2026-07-03, not yet deployed)
+
+- **Forwarded headers** — added the `UseForwardedHeaders` block after `var app = builder.Build();`
+  in `Program.cs` (production-runbook §0). Needed so the app builds `https://` URLs behind Nginx +
+  Cloudflare. Deploys with the next `git pull` + rebuild on the VPS.
+- **`VITE_API_URL`** — changed in `.env.production` from the dead AWS IP (`http://3.70.217.174:8080/api`)
+  to `https://api.oxygenquiz.com/api`. Takes effect on the next frontend build/deploy.
+- ⚠️ **`VITE_LLM_URL` still `http://3.79.13.249:8000`** — a bare IP over HTTP; the HTTPS frontend will
+  block it as mixed content. **DECISION PENDING:** give the LLM microservice its own TLS subdomain
+  (e.g. `llm.oxygenquiz.com`) or proxy it via Nginx under `api.oxygenquiz.com`. Only matters if the
+  LLM feature is used in production.
+
 ## Still to do (in order)
 
 1. **Apply the Data Protection fix** (the "Current step" above).
 2. **DNS on Cloudflare** — move `oxygenquiz.com` nameservers to Cloudflare; add `api` A record →
-   `89.167.23.147` (proxied), root + `www` → Cloudflare Pages.
+   `89.167.23.147` (proxied), root + `www` → the `oxygenquiz` Worker via custom domains.
+   - **Clean up the imported Spaceship records** (Cloudflare copied these on activation):
+     - **Delete** `A ftp → 203.161.45.17` and `A webdisk → 203.161.45.17` — leftover Spaceship/cPanel
+       placeholders, unused, and a subdomain-takeover risk if that IP is ever reassigned.
+     - **Replace** `A oxygenquiz.com → 203.161.45.17` (parking IP) and `CNAME www → oxygenquiz.com`
+       by attaching root + `www` as custom domains on the `oxygenquiz` Worker (this overwrites them
+       with the correct frontend records).
+     - **Add** `A api → 89.167.23.147`, proxied.
+     - **Email records** (`MX mx1/mx2.spacemail.com`, `SRV _autodiscover`, `TXT v=spf1...`): keep only
+       if using `@oxygenquiz.com` email; otherwise safe to remove. — *DECISION PENDING.*
 3. **Origin TLS + reverse proxy** — Cloudflare Origin cert on the VPS; install Nginx in front of the
    backend with WebSocket upgrade headers (SignalR); Cloudflare SSL mode → Full (strict).
 4. **Frontend to Cloudflare Pages** — `npm run build`, deploy `dist/`, set
