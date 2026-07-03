@@ -1,9 +1,9 @@
 import { useState, useCallback, useEffect } from "react";
 import { QuizCard } from "./components/quiz-card";
-import { QuizToolbar, ALL_FILTER, SORT_RULES, type SortOption } from "./components/quiz-header";
+import { QuizToolbar, ALL_FILTER, SORT_RULES, DEFAULT_SORT, type SortOption } from "./components/quiz-header";
 import { motion } from "framer-motion";
 import { ArchiveX, ArrowLeft } from "lucide-react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { QuizStartModal } from "./components/quiz-start-modal";
 import { QuizSummaryDTO } from "@/types/quiz-types";
 import { useDisclosure } from "@/hooks/use-disclosure";
@@ -43,16 +43,19 @@ const itemVariants = {
   },
 };
 
+// Single-player only: multiplayer hosts pick their quiz inside the lobby
+// (Multiplayer/components/lobby/quiz-selection-dialog.tsx), which shares the
+// same QuizToolbar. The old ?mode=multiplayer branch here was dead code.
 export function QuizSelection() {
-  const [searchParams] = useSearchParams();
-  const mode = searchParams.get("mode") || "single";
   const navigate = useNavigate();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryId, setCategoryId] = useState(ALL_FILTER);
   const [difficultyId, setDifficultyId] = useState(ALL_FILTER);
   const [languageId, setLanguageId] = useState(ALL_FILTER);
-  const [sortBy, setSortBy] = useState<SortOption>("newest");
+  // Defaults to "variety": the first page interleaves categories so new users see
+  // the breadth of quizzes on offer (docs/quiz-discovery.md).
+  const [sortBy, setSortBy] = useState<SortOption>(DEFAULT_SORT);
   const [pageNumber, setPageNumber] = useState(1);
   const [selectedQuiz, setSelectedQuiz] = useState<QuizSummaryDTO | null>(null);
   const { close, open, isOpen } = useDisclosure();
@@ -119,13 +122,9 @@ export function QuizSelection() {
   const handleStartQuiz = useCallback(
     (quizId: number) => {
       close();
-      if (mode === "multiplayer") {
-        navigate(`/quiz/${quizId}/multiplayer`);
-      } else {
-        navigate(`/quiz/${quizId}/play`);
-      }
+      navigate(`/quiz/${quizId}/play`);
     },
-    [navigate, close, mode]
+    [navigate, close]
   );
 
   return (
@@ -142,19 +141,15 @@ export function QuizSelection() {
             <span className="sm:hidden">Back</span>
           </button>
           <h2 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight">
-            {mode === "multiplayer"
-              ? "Select a Quiz to Host"
-              : "Select a Quiz to Play"}
+            Select a Quiz to Play
           </h2>
           <p className="text-sm sm:text-base text-muted-foreground mt-1">
-            {mode === "multiplayer"
-              ? "Choose a quiz to start a multiplayer session with friends."
-              : "Browse and pick a quiz to test your knowledge."}
+            Browse and pick a quiz to test your knowledge.
           </p>
         </div>
 
         {/* Toolbar */}
-        <div className="mb-5 sm:mb-6 md:mb-8 p-3 sm:p-4 rounded-xl bg-muted/30 border border-border/50">
+        <div className="mb-5 sm:mb-6 md:mb-8 p-3 sm:p-4 rounded-xl border-2 border-border bg-background">
           <QuizToolbar
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
@@ -170,6 +165,7 @@ export function QuizSelection() {
             sortBy={sortBy}
             onSortChange={setSortBy}
             resultCount={pagination?.totalItems ?? quizzes.length}
+            onClearFilters={clearFilters}
           />
         </div>
 
@@ -231,7 +227,6 @@ export function QuizSelection() {
           isOpen={isOpen}
           onClose={handleCloseModal}
           onStartQuiz={handleStartQuiz}
-          mode={mode}
         />
       )}
     </div>

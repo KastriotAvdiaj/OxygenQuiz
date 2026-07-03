@@ -1,6 +1,5 @@
 import Squares from "@/common/Effect-Related/background-squares";
 import Lightning from "@/common/Effect-Related/lightning-background";
-import PrismaticBurst from "@/common/Effect-Related/PrismaticBurst";
 import Header from "@/common/Header";
 import { useTheme } from "@/components/ui";
 import { EmailVerificationBanner } from "@/common/EmailVerificationBanner";

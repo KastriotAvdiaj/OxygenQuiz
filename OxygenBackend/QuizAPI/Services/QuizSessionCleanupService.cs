@@ -63,19 +63,25 @@ namespace QuizAPI.Services
 
                 foreach (var session in incompleteSessions)
                 {
+                    // Only the rows visible to the session's pinned quiz version count toward the
+                    // expected duration (docs/quiz-editing.md).
+                    var sessionQuestions = session.Quiz.QuizQuestions
+                        .Where(qq => qq.IsVisibleToVersion(session.QuizVersion))
+                        .ToList();
+
                     // Calculate expected quiz duration based on question time limits
-                    var totalQuizTimeInSeconds = session.Quiz.QuizQuestions.Sum(qq => qq.TimeLimitInSeconds) + (session.Quiz.QuizQuestions.Count * 5);
+                    var totalQuizTimeInSeconds = sessionQuestions.Sum(qq => qq.TimeLimitInSeconds) + (sessionQuestions.Count * 5);
                     var expectedQuizDuration = TimeSpan.FromSeconds(totalQuizTimeInSeconds);
-                    
+
                     var timeSinceStart = DateTime.UtcNow - session.StartTime;
-                    var timeSinceLastActivity = session.CurrentQuestionStartTime.HasValue 
-                        ? DateTime.UtcNow - session.CurrentQuestionStartTime.Value 
+                    var timeSinceLastActivity = session.CurrentQuestionStartTime.HasValue
+                        ? DateTime.UtcNow - session.CurrentQuestionStartTime.Value
                         : timeSinceStart;
 
                     // Session is abandoned if:
                     // 1. Total time since start exceeds expected quiz duration + 100% buffer, OR
                     // 2. Time since last activity exceeds 2x the longest question time limit + 2 minutes buffer
-                    var maxQuestionTime = session.Quiz.QuizQuestions.Any() ? session.Quiz.QuizQuestions.Max(qq => qq.TimeLimitInSeconds) : 300;
+                    var maxQuestionTime = sessionQuestions.Any() ? sessionQuestions.Max(qq => qq.TimeLimitInSeconds) : 300;
                     var activityTimeout = TimeSpan.FromSeconds(maxQuestionTime * 2 + 120); // 2x longest question + 2 minutes
                     var totalTimeout = expectedQuizDuration.Add(expectedQuizDuration); // +100% buffer for background cleanup
 

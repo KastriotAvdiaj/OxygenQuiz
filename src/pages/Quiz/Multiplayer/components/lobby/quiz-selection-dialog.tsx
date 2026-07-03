@@ -20,6 +20,7 @@ import {
   QuizToolbar,
   ALL_FILTER,
   SORT_RULES,
+  DEFAULT_SORT,
   type SortOption,
 } from "@/pages/Quiz/components/quiz-header";
 import { useDebounce } from "@/hooks/use-debounce";
@@ -49,7 +50,9 @@ export const QuizSelectionDialog = ({
   const [categoryId, setCategoryId] = useState(ALL_FILTER);
   const [difficultyId, setDifficultyId] = useState(ALL_FILTER);
   const [languageId, setLanguageId] = useState(ALL_FILTER);
-  const [sortBy, setSortBy] = useState<SortOption>("newest");
+  // Same "variety" default as /choose-quiz — hosts see the full breadth of
+  // categories on the first page (docs/quiz-discovery.md).
+  const [sortBy, setSortBy] = useState<SortOption>(DEFAULT_SORT);
   const [pageNumber, setPageNumber] = useState(1);
 
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -147,6 +150,7 @@ export const QuizSelectionDialog = ({
               sortBy={sortBy}
               onSortChange={setSortBy}
               resultCount={quizData?.totalItems ?? quizzes.length}
+              onClearFilters={clearFilters}
             />
           </div>
         </div>

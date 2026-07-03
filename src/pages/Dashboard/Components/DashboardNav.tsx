@@ -55,11 +55,11 @@ export const DashboardNav: React.FC<DashboardNavProps> = ({
               onClick={() => setActivePage(button.id)}
               active={activePage === button.id}>
               <button.icon />
-              {!isCollapsed && <span className="ml-2">{button.label}</span>}
+              {!isCollapsed && <span className="ml-2 text-sm">{button.label}</span>}
             </Button>
           </Authorization>
         ))}
-      </ul>
+      </ul> 
     </div>
   );
 };

@@ -11,10 +11,8 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Filter } from "lucide-react";
-import { StatsCards } from "./Components/stats-cards";
 import { UserControls } from "./Components/user-page-button-group";
 import { UserFilters } from "./Components/user-filters";
-import { DataTransferControls } from "@/components/data-transfer/DataTransferControls";
 import { PaginationControls } from "@/components/ui/pagination-control";
 import { useSearchUsers } from "./api/search-users";
 import { useDebounce } from "@/hooks/use-debounce";

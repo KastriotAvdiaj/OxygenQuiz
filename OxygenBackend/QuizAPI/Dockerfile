@@ -27,4 +27,9 @@ RUN dotnet publish "./QuizAPI.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+# Data Protection key ring lives here and is mounted to a Docker volume so keys survive container
+# rebuilds. Create it owned by the non-root app user ($APP_UID) so the app can write the keys.
+USER root
+RUN mkdir -p /app/keys && chown -R $APP_UID:$APP_UID /app/keys
+USER $APP_UID
 ENTRYPOINT ["dotnet", "QuizAPI.dll"]

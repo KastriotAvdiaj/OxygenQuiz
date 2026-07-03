@@ -98,17 +98,28 @@ const QuizContext = createContext<QuizContextType | undefined>(undefined);
 
 interface QuizProviderProps {
   children: ReactNode;
+  /**
+   * Edit mode: the quiz's existing questions and their per-question settings
+   * (time limit / point system / order), used to seed the form's state.
+   */
+  initialQuestions?: Array<{
+    question: QuizQuestion;
+    settings: QuestionSettings;
+  }>;
 }
 
 export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
   children,
+  initialQuestions,
 }) => {
-  // Permanent quiz selections
-  const [addedQuestions, setAddedQuestions] = useState<QuizQuestion[]>([]);
+  // Permanent quiz selections (seeded from the existing quiz in edit mode)
+  const [addedQuestions, setAddedQuestions] = useState<QuizQuestion[]>(
+    () => initialQuestions?.map(({ question }) => question) ?? []
+  );
 
-  // Display Question
+  // Display Question (edit mode opens on the quiz's first question)
   const [displayQuestion, setDisplayQuestion] = useState<QuizQuestion | null>(
-    null
+    () => initialQuestions?.[0]?.question ?? null
   );
 
   // Temporary modal selections
@@ -119,9 +130,15 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
   // Modal state
   const [isQuestionModalOpen, setIsQuestionModalOpen] = useState(false);
 
-  // Quiz Question Settings State
+  // Quiz Question Settings State (seeded from the existing quiz in edit mode)
   const [questionSettings, setQuestionSettings] = useState<QuestionSettingsMap>(
-    {}
+    () =>
+      Object.fromEntries(
+        (initialQuestions ?? []).map(({ question, settings }) => [
+          question.id,
+          settings,
+        ])
+      )
   );
   const [activeTab, setActiveTab] = useState<string>("quiz");
 

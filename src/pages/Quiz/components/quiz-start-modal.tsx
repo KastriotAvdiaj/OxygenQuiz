@@ -1,5 +1,4 @@
 import { useMemo } from "react";
-import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -8,17 +7,18 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { HelpCircle, Clock, User, Calendar, Play, Users } from "lucide-react";
+import { HelpCircle, Clock, User, Calendar, Play } from "lucide-react";
 import type { QuizSummaryDTO } from "@/types/quiz-types";
 import { secondsToMinutes } from "./quiz-card";
 import { LiftedButton } from "@/common/LiftedButton";
 
+// Single-player only — multiplayer hosting starts inside the lobby, never from
+// this modal (the old mode="multiplayer" branch was unreachable).
 interface QuizStartModalProps {
   quiz: QuizSummaryDTO;
   isOpen: boolean;
   onClose: () => void;
   onStartQuiz: (quizId: number) => void;
-  mode?: string;
 }
 
 export function QuizStartModal({
@@ -26,7 +26,6 @@ export function QuizStartModal({
   isOpen,
   onClose,
   onStartQuiz,
-  mode = "single",
 }: QuizStartModalProps) {
   const colors = useMemo(() => {
     try {
@@ -169,17 +168,8 @@ export function QuizStartModal({
               backgroundColor: primaryColor,
             }}
           >
-            {mode === "multiplayer" ? (
-              <>
-                <Users className="h-4 w-4 mr-2" />
-                Create Lobby
-              </>
-            ) : (
-              <>
-                <Play className="h-4 w-4 mr-2 fill-current" />
-                Start Quiz
-              </>
-            )}
+            <Play className="h-4 w-4 mr-2 fill-current" />
+            Start Quiz
           </LiftedButton>
           </div>
         </div>

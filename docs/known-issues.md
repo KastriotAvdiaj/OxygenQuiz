@@ -195,3 +195,40 @@ the app didn't allow for them to join.
 
 The app throws this error "An unexpected error occurred invoking 'StartMatch' on the server. HubException: The match has already started."
 after the first quiz game ended and the host tries to start another one.
+
+## Quiz editing (2026-07-02 — see docs/quiz-editing.md)
+
+- ~~**P1 — Editing a played quiz threw an FK violation / edits leaked into live games.**~~
+  **Fixed (2026-07-02).** `UpdateQuizAsync` used to delete every `QuizQuestion` row and
+  re-insert — but `UserAnswer.QuizQuestionId` / `QuizSession.CurrentQuizQuestionId` FK
+  those rows with `Restrict`, so any quiz that had ever been played could not be edited
+  at all; and sessions re-read the question list live, so an edit changed an in-flight
+  player's game. Replaced with copy-on-write version ranges on `QuizQuestion` plus a
+  `QuizVersion` pin on `QuizSession`. Full design in `docs/quiz-editing.md`.
+  → `QuizService.UpdateQuizAsync`, `QuizQuestionVersioning`, `QuizSessionService`
+
+- ~~**P2 — Migration not yet generated.**~~ **Fixed (2026-07-02).** Ran
+  `dotnet ef migrations add QuizEditingVersioning` and `update-database` against
+  the dev database — `QuizSessions.QuizVersion` backfilled from each quiz's
+  current `Version`, `QuizQuestions.CreatedInVersion` backfilled from the
+  column default (0) to 1. Migration applied cleanly, no errors.
+  → `OxygenBackend/QuizAPI/Migrations/20260702170817_QuizEditingVersioning.cs`
+
+- **P3 — Question *content* is not versioned.** Session pinning freezes a quiz's
+  question line-up, order, points and time limits — but `QuestionBase` rows (text,
+  answer options, correct answers) are shared across quizzes and unversioned. Editing a
+  question's content through the question editor still leaks into in-flight sessions
+  and rewrites history's view of what was asked. Fine for typo fixes; wrong if the
+  correct answer changes mid-game. Would need content snapshots (or blocking content
+  edits for questions in active sessions) — decide before it matters.
+
+- **P3 — Retired join rows keep granting question visibility.** The `QuestionBase`
+  discovery filter's "in a quiz you can see" clause doesn't distinguish live from
+  retired `QuizQuestion` rows. Deliberate for now: sessions pinned to old versions and
+  answer-history reads must still load those questions. Side effect: a private question
+  removed from a public quiz remains discoverable through that old membership.
+
+- **P3 — Publish/Unpublish button on the quiz detail page is still disabled**
+  ("Feature not implemented") even though `PATCH /api/quiz/{id}/status` exists and the
+  edit form can change status. Wire it to the endpoint when in the area.
+  → `src/pages/Dashboard/Pages/Quiz/Quiz.tsx`

@@ -149,7 +149,9 @@ export const QuizRoute = () => {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem
-                  onClick={() => navigate(`/quiz/${quiz.id}/edit`)}>
+                  onClick={() =>
+                    navigate(`/dashboard/quizzes/edit-quiz/${quiz.id}`)
+                  }>
                   <Edit2 className="h-4 w-4 mr-2" />
                   Edit Quiz
                 </DropdownMenuItem>
@@ -260,19 +262,13 @@ export const QuizRoute = () => {
                 )}
               </LiftedButton>
             </IconButtonWithTooltip>
-            <IconButtonWithTooltip
-              variant="default"
-              tooltip="Feature not implemented"
-              icon={<Edit2 className="h-4 w-4 mr-2" />}
-              buttonText="Edit Quiz"
-              disabled>
-              <LiftedButton
-                disabled
-                onClick={() => navigate(`/quiz/${quiz.id}/edit`)}>
-                <Edit2 className="h-4 w-4 mr-2" />
-                Edit Quiz
-              </LiftedButton>
-            </IconButtonWithTooltip>
+            <LiftedButton
+              onClick={() =>
+                navigate(`/dashboard/quizzes/edit-quiz/${quiz.id}`)
+              }>
+              <Edit2 className="h-4 w-4 mr-2" />
+              Edit Quiz
+            </LiftedButton>
 
             <DeleteQuiz
               useLiftedButton={true}

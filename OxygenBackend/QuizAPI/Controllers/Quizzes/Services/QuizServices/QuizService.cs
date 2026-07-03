@@ -75,6 +75,13 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
 
             q = FilterEngine.Apply(q, query, QuizFilterFields.Fields);
 
+            // "variety" is a pseudo sort field (not in the whitelist, so FilterEngine ignored
+            // it and applied the default sort — which this overrides). It interleaves
+            // categories so the catalogue's first page shows the app's breadth; see
+            // docs/quiz-discovery.md.
+            if (QuizVarietyOrdering.IsRequested(query.Sort))
+                q = QuizVarietyOrdering.Apply(q);
+
             return await PagedResponse<QuizSummaryDTO>.CreateAsync(
                 q, query.Page, query.PageSize,
                 rows => rows.ToSummaryDtoList(),
@@ -260,22 +267,25 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                 quiz.CategoryId = quizUM.CategoryId;
                 quiz.LanguageId = quizUM.LanguageId;
                 quiz.DifficultyId = quizUM.DifficultyId;
-                quiz.TimeLimitInSeconds = quizUM.TimeLimitInSeconds;
                 quiz.ShowFeedbackImmediately = quizUM.ShowFeedbackImmediately;
                 quiz.ShuffleQuestions = quizUM.ShuffleQuestions;
                 quiz.Status = QuizMappers.ParseStatus(quizUM.Status);
-                quiz.Version += 1;
 
-                // Replace the join rows wholesale.
-                _quizzes.RemoveQuizQuestions(quiz.QuizQuestions);
+                var newVersion = quiz.Version + 1;
 
-                foreach (var questionUM in quizUM.Questions)
-                {
-                    var quizQuestion = questionUM.ToEntity();
-                    quizQuestion.QuizId = quiz.Id;
-                    await _quizzes.AddQuizQuestionAsync(quizQuestion);
-                }
+                // Copy-on-write question diff (docs/quiz-editing.md): join rows are never updated
+                // in place or hard-deleted, so in-flight sessions and historical UserAnswers keep
+                // valid references. Removed/changed rows are retired via RemovedInVersion; changed
+                // and added questions get fresh rows stamped with the new version.
+                var diff = QuizQuestionVersioning.Diff(
+                    quiz.QuizQuestions, quizUM.Questions.ToList(), quiz.Id, newVersion);
 
+                foreach (var row in diff.ToRetire)
+                    row.RemovedInVersion = newVersion;
+
+                await _quizzes.AddQuizQuestionsAsync(diff.ToAdd);
+
+                quiz.Version = newVersion;
                 quiz.TimeLimitInSeconds = quizUM.Questions.Sum(q => q.TimeLimitInSeconds);
 
                 await _quizzes.SaveChangesAsync();

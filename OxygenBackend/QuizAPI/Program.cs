@@ -2,6 +2,7 @@
 using System.Text;
 using Hangfire;
 using Hangfire.PostgreSql;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -39,14 +40,12 @@ var environment = builder.Environment;
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(configuration.GetConnectionString("PostgresConnection")));
 
-// --- MongoDB (disabled) ---
-// Multiplayer lobby chat is ephemeral; nothing is persisted, so no Mongo client is
-// registered. Re-enable here when the persistent chat system lands — see docs/mongodb.md.
-// builder.Services.AddSingleton<IMongoClient>(_ =>
-// {
-//     var connectionString = configuration.GetConnectionString("MongoDBConnection");
-//     return new MongoClient(connectionString);
-// });
+// --- MongoDB ---
+builder.Services.AddSingleton<IMongoClient>(_ =>
+{
+    var connectionString = configuration.GetConnectionString("MongoDBConnection");
+    return new MongoClient(connectionString);
+});
 
 var allowedOrigins = configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
 
@@ -76,6 +75,15 @@ builder.Services.AddHangfireServer();
 
 //IMemoryCache
 builder.Services.AddMemoryCache();
+
+// --- Data Protection ---
+// Persist the Data Protection key ring to a mounted volume (/app/keys) instead of the container's
+// ephemeral filesystem. Without this, keys are regenerated every time the container is rebuilt,
+// which invalidates anything they encrypt (antiforgery tokens, protected cookies). The /app/keys
+// directory is created (owned by the app user) in the Dockerfile and mapped to a Docker volume.
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo("/app/keys"))
+    .SetApplicationName("OxygenQuiz");
 
 // --- Service Registrations ---
 
@@ -119,9 +127,8 @@ builder.Services.AddScoped<
     QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.SubmitAnswerService.ISubmitAnswerService,
     QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.SubmitAnswerService.SubmitAnswerService>();
 builder.Services.AddScoped<IUserAnswerService, UserAnswerService>();
-// Write-only MongoDB sink for lobby chat retention — disabled so chat stays ephemeral.
-// Re-register alongside IMongoClient to bring archival back (see docs/mongodb.md).
-// builder.Services.AddSingleton<ILobbyChatArchiver, LobbyChatArchiver>();
+// Write-only MongoDB sink for lobby chat retention; injected into the session manager below.
+builder.Services.AddSingleton<ILobbyChatArchiver, LobbyChatArchiver>();
 builder.Services.AddSingleton<IQuizSessionManager, InMemoryQuizSessionManager>();
 // Drives the live multiplayer match loop (singleton: it owns running matches). See docs/plans/multiplayer-phase1.md.
 builder.Services.AddSingleton<IMatchOrchestrator, MatchOrchestrator>();
@@ -329,10 +336,19 @@ app.MapControllers();
 app.MapHub<QuizAPI.Hubs.QuizHub>("/quizHub");
 app.MapHub<QuizAPI.Hubs.NotificationHub>("/notificationHub");
 
-RecurringJob.AddOrUpdate<ImageCleanUpService>(
-    "image-cleanup-daily",
-    service => service.RunCleanupAsync(),
-    Cron.Daily(2) // 2 AM every day
-);
+// Schedule recurring jobs through the DI-registered IRecurringJobManager rather than the static
+// RecurringJob API. The static API depends on Hangfire's global JobStorage.Current, which only gets
+// initialized as a side effect of mapping the Hangfire dashboard — and the dashboard is intentionally
+// NOT mapped in Production (see above). Resolving the manager from DI is wired to the configured
+// Postgres storage directly, so recurring jobs register correctly in every environment.
+using (var scope = app.Services.CreateScope())
+{
+    var recurringJobs = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
+    recurringJobs.AddOrUpdate<ImageCleanUpService>(
+        "image-cleanup-daily",
+        service => service.RunCleanupAsync(),
+        Cron.Daily(2) // 2 AM every day
+    );
+}
 
 app.Run();

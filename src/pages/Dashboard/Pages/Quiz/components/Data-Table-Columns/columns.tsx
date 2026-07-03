@@ -28,7 +28,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui";
-import { Copy, Eye, MoreHorizontal } from "lucide-react";
+import { Copy, Edit2, Eye, MoreHorizontal } from "lucide-react";
 import { DeleteQuiz } from "../delete-quiz";
 import { Link } from "react-router-dom";
 import { QuizSummaryDTO } from "@/types/quiz-types";
@@ -168,6 +168,17 @@ export const quizColumns: ColumnDef<QuizSummaryDTO>[] = [
                 View
               </Link>
             </DropdownMenuItem>
+            {!quiz.deletedAt && (
+              <DropdownMenuItem className="hover:bg-background">
+                <Link
+                  to={`/dashboard/quizzes/edit-quiz/${quiz.id}`}
+                  className="w-full h-full flex items-center gap-2"
+                >
+                  <Edit2 size={16} />
+                  Edit
+                </Link>
+              </DropdownMenuItem>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       );
