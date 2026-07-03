@@ -1,0 +1,12 @@
+{
+  // Cloudflare Workers config — deploys the built SPA (dist/) as static assets.
+  // Its presence stops Wrangler from auto-detecting a "Vite framework" project
+  // (which would require Vite >= 6). See https://developers.cloudflare.com/workers/static-assets/
+  "name": "oxygenquiz",
+  "compatibility_date": "2026-07-03",
+  "assets": {
+    "directory": "./dist",
+    // Serve index.html for unknown routes so client-side (react-router) routing works.
+    "not_found_handling": "single-page-application"
+  }
+}

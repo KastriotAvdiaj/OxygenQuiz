@@ -87,6 +87,8 @@ preference — it's baked into the current architecture:
 - [ ] CORS `Cors:AllowedOrigins` set to exactly `https://oxygenquiz.com` (and `www` if used).
 - [ ] `ASPNETCORE_ENVIRONMENT=Production` (this is what keeps the Hangfire dashboard unmapped and Swagger off).
 - [ ] A strong, unique `Seed:AdminPassword`; change the admin password after first login.
+- [ ] *(Optional, for a closed/gated test)* `Signup:RequireInviteCode=true` to restrict signup to
+      invite codes; mint them via `POST /api/admin/invite-codes` (see [`invite-code-system.md`](./invite-code-system.md)).
 
 > **Startup safety-guard.** On boot in Production the app self-checks the domain-dependent
 > settings above (`AllowedHosts`, `Cors:AllowedOrigins`, `Jwt:Issuer`/`Audience`) and logs a loud

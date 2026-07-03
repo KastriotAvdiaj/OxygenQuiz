@@ -1,0 +1,20 @@
+# Caddy reverse proxy + static SPA host for OxygenQuiz.
+# TLS uses the Cloudflare Origin Certificate (mounted at /etc/caddy/certs), so it
+# works behind Cloudflare's proxy with SSL/TLS mode "Full (strict)" — no ACME needed.
+# Caddy upgrades WebSocket connections automatically, so SignalR (/quizHub,
+# /notificationHub) works through this proxy with no extra config.
+
+# --- Frontend (the built Vite SPA, served as static files) ---
+oxygenquiz.com, www.oxygenquiz.com {
+    tls /etc/caddy/certs/origin-cert.pem /etc/caddy/certs/origin-key.pem
+    encode gzip
+    root * /srv
+    try_files {path} /index.html      # SPA fallback so client-side routes work
+    file_server
+}
+
+# --- Backend API + SignalR hubs ---
+api.oxygenquiz.com {
+    tls /etc/caddy/certs/origin-cert.pem /etc/caddy/certs/origin-key.pem
+    reverse_proxy backend:8080
+}
