@@ -4,10 +4,12 @@
 > [`deployment.md`](./deployment.md) (the strategy), [`vps-launch-checklist.md`](./vps-launch-checklist.md)
 > (the full step-by-step), and [`deployment-runbook.md`](./deployment-runbook.md) (copy-paste commands
 > to reconnect and check state).
-> Last updated: 2026-07-01 — **end of session: the backend is live on the VPS.**
+> Last updated: 2026-07-03 — **end of session: DNS is live on Cloudflare; the domain is Active.
+> Backend Data Protection fix deployed. Next up: Nginx reverse proxy + Origin cert to bring
+> `api.oxygenquiz.com` online.**
 >
-> **▶ Resuming? Open [`deployment-runbook.md`](./deployment-runbook.md) first** for the exact commands
-> to reconnect, then use the "Still to do" list below for what's next (DNS is the next step).
+> **▶ Resuming? Open [`deployment-runbook.md`](./deployment-runbook.md) §6** for the exact copy-paste
+> commands to finish the Nginx + Origin-cert step, then continue with the "Still to do" list below.
 
 ## Architecture we're deploying
 
@@ -80,33 +82,60 @@ Confirmed healthy in the logs: migrations applied, admin seeded, Hangfire server
 
 ---
 
-## Current step — apply the Data Protection fix (do this first tomorrow)
+## Done this session (2026-07-03)
 
-The Hangfire fix is already running. The Data Protection fix is written in code and pushed to GitHub,
-but not yet deployed to the server. Steps:
+### 8. Data Protection fix deployed ✅
+Added the `dpkeys:/app/keys` volume to `docker-compose.prod.yml` (backend `volumes:` + top-level
+`volumes:`) and rebuilt. Confirmed healthy: the `/home/app/.aspnet/DataProtection-Keys` warning is
+**gone**, keys now persist on the `oxygenquiz_dpkeys` volume, and it still reaches
+`Now listening on: http://[::]:8080`. (The remaining `No XML encryptor configured` warning is
+expected/benign — keys are stored unencrypted at rest on a root-only volume; fine for single-server.)
 
-1. **Pull the new change first:**
-   ```bash
-   cd ~/OxygenQuiz
-   git pull
-   ```
-2. **Edit `~/OxygenQuiz/docker-compose.prod.yml`** to add the keys volume:
-   - Under the `backend:` service `volumes:` list, add:  `- dpkeys:/app/keys`
-   - Under the top-level `volumes:` block (next to `postgres-data:` and `uploads:`), add:  `dpkeys:`
-3. **Rebuild:**
-   ```bash
-   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
-   docker compose -f docker-compose.prod.yml logs --tail 40 backend
-   ```
-4. Confirm the Data Protection warning about `/home/app/.aspnet/DataProtection-Keys` is **gone** and it
-   still reaches `Now listening on: http://[::]:8080`.
+### 9. DNS moved to Cloudflare — domain is ACTIVE ✅
+- Created a Cloudflare account, added `oxygenquiz.com` (Free plan).
+- Switched nameservers at **Spaceship** to `houston.ns.cloudflare.com` + `treasure.ns.cloudflare.com`
+  (removed `launch1/launch2.spaceship.net`).
+- Confirmed **DNSSEC is OFF** at Spaceship (0 DS records) — no conflict with the nameserver switch.
+- Cloudflare confirmed activation; the zone is live (Free plan).
 
-> Note: because the key location changed, any antiforgery tokens/cookies issued before this rebuild
-> become invalid — harmless now (no real users yet), which is exactly why we're doing it before launch.
+### 10. Local code prep — committed + pushed ✅
+- **Forwarded headers** — added the `UseForwardedHeaders` block after `var app = builder.Build();` in
+  `Program.cs` (production-runbook §0), so the app builds `https://` URLs behind Nginx + Cloudflare.
+- **`VITE_API_URL`** — changed in `.env.production` from the dead AWS IP (`http://3.70.217.174:8080/api`)
+  to `https://api.oxygenquiz.com/api`.
+- Committed as "Deploy prep: forwarded headers + production API URL" and pushed.
+  ⚠️ **Not yet deployed to the VPS** — needs `git pull` + rebuild (that's the first command tomorrow).
+
+### Decisions locked this session
+- **LLM feature: NOT used in production.** So `VITE_LLM_URL` (`http://3.79.13.249:8000`) can be ignored
+  for launch — no TLS subdomain / Nginx route needed for it now. (Revisit only if the LLM feature is
+  ever turned on.)
 
 ---
 
-## Local prep applied (2026-07-03, not yet deployed)
+## Current step — bring `api.oxygenquiz.com` online (Nginx + Origin cert)
+
+DNS is active but the backend is still **localhost-only** (`127.0.0.1:5000`); nothing external can
+reach it until the reverse proxy + TLS are in place. Full copy-paste commands are in
+[`deployment-runbook.md`](./deployment-runbook.md) §6. In order:
+
+1. **In Cloudflare (verify / do if not already):**
+   - DNS: `A api → 89.167.23.147`, **proxied**. Delete the junk `A ftp` and `A webdisk` (→ 203.161.45.17) records.
+   - SSL/TLS → Origin Server → **Create Certificate** for `oxygenquiz.com` + `*.oxygenquiz.com`, RSA, 15y.
+     **Save the cert + private key** — the key is shown only once; regenerate if it wasn't saved.
+2. **On the VPS — deploy the pushed code:** `git pull` then rebuild the backend (applies forwarded headers).
+3. **On the VPS — Nginx:** install nginx, save the Origin cert/key to `/etc/ssl/cloudflare/origin.pem`
+   and `origin.key` (chmod 600 the key), add the `api.oxygenquiz.com` server block (WebSocket upgrade
+   headers → `127.0.0.1:5000`), `sudo nginx -t`, `sudo systemctl reload nginx`.
+4. **Only after Nginx reloads cleanly:** set Cloudflare **SSL/TLS mode → Full (strict)**, then test
+   `https://api.oxygenquiz.com`.
+
+> ⚠️ Order matters: do **not** set Full (strict) before Nginx is serving 443 with the Origin cert, or
+> Cloudflare→origin will fail. Nginx first, verify, then flip the mode.
+
+---
+
+## Historical note — local prep detail (superseded by "Done this session §10")
 
 - **Forwarded headers** — added the `UseForwardedHeaders` block after `var app = builder.Build();`
   in `Program.cs` (production-runbook §0). Needed so the app builds `https://` URLs behind Nginx +
@@ -120,27 +149,25 @@ but not yet deployed to the server. Steps:
 
 ## Still to do (in order)
 
-1. **Apply the Data Protection fix** (the "Current step" above).
-2. **DNS on Cloudflare** — move `oxygenquiz.com` nameservers to Cloudflare; add `api` A record →
-   `89.167.23.147` (proxied), root + `www` → the `oxygenquiz` Worker via custom domains.
-   - **Clean up the imported Spaceship records** (Cloudflare copied these on activation):
-     - **Delete** `A ftp → 203.161.45.17` and `A webdisk → 203.161.45.17` — leftover Spaceship/cPanel
-       placeholders, unused, and a subdomain-takeover risk if that IP is ever reassigned.
-     - **Replace** `A oxygenquiz.com → 203.161.45.17` (parking IP) and `CNAME www → oxygenquiz.com`
-       by attaching root + `www` as custom domains on the `oxygenquiz` Worker (this overwrites them
-       with the correct frontend records).
-     - **Add** `A api → 89.167.23.147`, proxied.
-     - **Email records** (`MX mx1/mx2.spacemail.com`, `SRV _autodiscover`, `TXT v=spf1...`): keep only
-       if using `@oxygenquiz.com` email; otherwise safe to remove. — *DECISION PENDING.*
-3. **Origin TLS + reverse proxy** — Cloudflare Origin cert on the VPS; install Nginx in front of the
-   backend with WebSocket upgrade headers (SignalR); Cloudflare SSL mode → Full (strict).
-4. **Frontend to Cloudflare Pages** — `npm run build`, deploy `dist/`, set
-   `VITE_API_URL=https://api.oxygenquiz.com/api`, attach root + `www` domains.
-5. **Turn on the strict config gate** — uncomment `Security__EnforceProductionConfig=true` in the
+- [x] ~~Apply the Data Protection fix~~ — done this session (§8).
+- [x] ~~DNS on Cloudflare (nameservers + activation)~~ — done this session (§9).
+
+1. **Origin TLS + reverse proxy (NEXT)** — see "Current step" above and `deployment-runbook.md` §6.
+   Cloudflare Origin cert on the VPS; `git pull` + rebuild the backend (applies forwarded headers);
+   install Nginx with WebSocket upgrade headers → `127.0.0.1:5000`; then Cloudflare SSL mode → Full (strict).
+   - Still to confirm/finish in Cloudflare DNS: `A api → 89.167.23.147` (proxied) added; junk `A ftp`
+     and `A webdisk` (→ 203.161.45.17) deleted.
+2. **Frontend on Cloudflare** — already deployed via `wrangler deploy` (Worker `oxygenquiz`, static
+   assets, `wrangler.jsonc` in repo root). Remaining: rebuild with the new `VITE_API_URL` and attach
+   root + `www` as **custom domains** on the Worker (Workers & Pages → oxygenquiz → Domains & Routes).
+   This also replaces the parking-IP `A oxygenquiz.com` + `CNAME www` records.
+3. **Email records** (`MX mx1/mx2.spacemail.com`, `SRV _autodiscover`, `TXT v=spf1...`): keep only if
+   using `@oxygenquiz.com` email; otherwise safe to remove. — *DECISION PENDING.*
+4. **Turn on the strict config gate** — uncomment `Security__EnforceProductionConfig=true` in the
    compose once the real domain is serving, and rebuild.
-6. **Lock the origin to Cloudflare** — restrict `ufw` 80/443 to Cloudflare IP ranges; enable Bot Fight
+5. **Lock the origin to Cloudflare** — restrict `ufw` 80/443 to Cloudflare IP ranges; enable Bot Fight
    Mode + rate-limit rules on auth/guest endpoints.
-7. **Smoke test over HTTPS** — signup/login, guest play, a full 2-browser multiplayer match (WebSockets
+6. **Smoke test over HTTPS** — signup/login, guest play, a full 2-browser multiplayer match (WebSockets
    end to end), upload persists across a rebuild, admin reachable, Hangfire dashboard NOT reachable.
-8. **Change the seeded admin password** after first login.
-9. **Post-launch:** Postgres backup cron (`pg_dump` → object storage), basic uptime monitoring.
+7. **Change the seeded admin password** after first login.
+8. **Post-launch:** Postgres backup cron (`pg_dump` → object storage), basic uptime monitoring.
