@@ -41,11 +41,15 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(configuration.GetConnectionString("PostgresConnection")));
 
 // --- MongoDB ---
-builder.Services.AddSingleton<IMongoClient>(_ =>
-{
-    var connectionString = configuration.GetConnectionString("MongoDBConnection");
-    return new MongoClient(connectionString);
-});
+// Intentionally not registered. MongoDB backed write-only lobby-chat archival, which is
+// disabled in this deployment (see NoOpLobbyChatArchiver below). Re-enable this block and the
+// `using MongoDB.Driver;` import above, and swap the archiver registration back to
+// LobbyChatArchiver, if chat retention is ever needed. See docs/mongodb.md.
+// builder.Services.AddSingleton<IMongoClient>(_ =>
+// {
+//     var connectionString = configuration.GetConnectionString("MongoDBConnection");
+//     return new MongoClient(connectionString);
+// });
 
 var allowedOrigins = configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
 
@@ -127,8 +131,10 @@ builder.Services.AddScoped<
     QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.SubmitAnswerService.ISubmitAnswerService,
     QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.SubmitAnswerService.SubmitAnswerService>();
 builder.Services.AddScoped<IUserAnswerService, UserAnswerService>();
-// Write-only MongoDB sink for lobby chat retention; injected into the session manager below.
-builder.Services.AddSingleton<ILobbyChatArchiver, LobbyChatArchiver>();
+// Lobby chat is ephemeral in this deployment: use the no-op archiver so the session manager has
+// its dependency without requiring MongoDB. Swap back to LobbyChatArchiver (and re-enable the
+// IMongoClient registration above) to persist chat retention.
+builder.Services.AddSingleton<ILobbyChatArchiver, NoOpLobbyChatArchiver>();
 builder.Services.AddSingleton<IQuizSessionManager, InMemoryQuizSessionManager>();
 // Drives the live multiplayer match loop (singleton: it owns running matches). See docs/plans/multiplayer-phase1.md.
 builder.Services.AddSingleton<IMatchOrchestrator, MatchOrchestrator>();
