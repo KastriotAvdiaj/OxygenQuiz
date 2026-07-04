@@ -82,6 +82,13 @@ Auth-specific enhancements are tracked in [authentication.md](authentication.md)
   → `OxygenBackend/QuizAPI/DTOs/Authentication/SignupDTO.cs`,
   `OxygenBackend/QuizAPI/DTOs/Authentication/NotACommonPasswordAttribute.cs`,
   `src/lib/Auth.tsx`
+- ~~**P2 — Login form shipped baked-in admin credentials.**~~ **Fixed (2026-07-04).**
+  `LoginForm` initialized its state with a real admin email
+  (`kaloti.avdiaj@gmail.com`) and the password `admin`, which were compiled into
+  the **public** production JS bundle — exposing the admin email and strongly
+  implying the admin password. Reset both to empty strings. **Follow-up: change the
+  seeded admin password** if it is still `admin` (that pair was publicly visible
+  until this deployed). → `src/pages/UserRelated/Login/LoginForm.tsx`
 - **P3 — `AllowedHosts: "*"`.** Set to the real host name(s) in production to
   blunt host-header attacks. → `OxygenBackend/QuizAPI/appsettings.json`
 - **P3 — Broad CORS.** The policy uses `AllowAnyHeader` + `AllowAnyMethod` with
@@ -162,9 +169,52 @@ Auth-specific enhancements are tracked in [authentication.md](authentication.md)
 - **P3 — Tracked `.env` files.** `.env.production` / `.env.development` are
   tracked despite being listed in `.gitignore`. Only URLs today, but the pattern
   risks leaking a future secret. *Fix:* `git rm --cached` them.
+- **P2 — Private keys committed to the (public) repo.** `certs/` is tracked and
+  contains mkcert **local-dev** material, including private keys:
+  `create-ca-key.pem` (the mkcert root CA key) and `create-cert-key.pem`. These
+  only cover `localhost` dev HTTPS — **not** the Cloudflare Origin cert, which
+  lives only on the VPS at `/etc/ssl/cloudflare/` and is *not* in git. Limited
+  blast radius (the CA is only trusted on the dev machine that installed it), but
+  a private key must not sit in a public repo. *Fix:* `git rm -r --cached certs/`,
+  add `certs/` to `.gitignore`; then **rotate the mkcert CA** (`mkcert -uninstall`
+  → regenerate → recreate localhost certs) so the already-in-history key is
+  worthless without a history rewrite. → `certs/`
+- **P3 — Build artifacts tracked again.** `bin/` and `publish/` trees are back
+  under source control (e.g. `OxygenBackend/QuizAPI.Tests/bin/…`,
+  `OxygenBackend/QuizAPI/publish/publish/…`), despite the earlier cleanup. No
+  secrets in them (config comes from env), but it's repo bloat. *Fix:* untrack and
+  gitignore `**/bin/`, `**/obj/`, `**/publish/`.
+- **P3 — CRLF/LF line-ending churn on some frontend files.** `src/lib/Api-client.ts`,
+  `src/context/multiplayer-context.tsx`, and
+  `src/features/notifications/components/use-notification-hub.ts` show whole-file
+  diffs (hundreds of lines) even when only a couple of lines changed, because their
+  line endings flip between CRLF and LF. Content is identical; the diffs are just
+  noise (and can hide the real change in review). *Fix:* add a `.gitattributes` with
+  `* text=auto eol=lf`, then renormalize once (`git add --renormalize .`).
 
 ## Operations / deployment
 
+- ~~**P2 — Frontend deploys never activated (stale bundle served).**~~ **Root-caused + fixed
+  (2026-07-04).** Every `wrangler deploy` uploaded the new assets but then **errored at the final step**
+  — `wrangler.jsonc` declared no `routes` and the Worker had no `*.workers.dev` subdomain, so wrangler
+  had "nowhere to publish" and aborted before promoting the new version. Result: the fixed bundle was
+  uploaded but the **old bundle kept being served**, so production `oxygenquiz.com` still called
+  `https://localhost:7153` (→ `ERR_CONNECTION_REFUSED` / CORS) even though the committed code and
+  `.env.production` were correct. The site stayed reachable the whole time because the **custom-domain
+  binding** (added via the dashboard) serves the last good assets independently of the failing deploy
+  step. *Fix applied:* added `workers_dev: false` + `custom_domain` `routes` for `oxygenquiz.com` and
+  `www.oxygenquiz.com` to `wrangler.jsonc`, so `wrangler deploy` (and the Git build) now finish and
+  promote the new version. → `wrangler.jsonc`
+  - **Still worth doing:** pick **one** deploy path (Git-connected build *or* manual `wrangler`, not
+    both racing); always `npm run build` before deploying (the API URL is baked in at build time); after
+    a deploy, confirm the newest version is **Active** under Workers & Pages → oxygenquiz → Deployments
+    and hard-refresh (Ctrl+Shift+R).
+- **P3 — Stale CORS origins in `appsettings.Production.json`.** Still lists the old
+  AWS hosts (`*.cloudfront.net`, `*.amplifyapp.com`) instead of
+  `https://oxygenquiz.com`. Prod works because the compose file injects
+  `Cors__AllowedOrigins` via env vars at runtime, but the committed file is
+  misleading. *Fix:* update it to the real domain (or delete the key and rely on
+  the env var). → `OxygenBackend/QuizAPI/appsettings.Production.json`
 - **P2 — EF migrations run at startup.** `context.Database.MigrateAsync()` runs
   on boot; with more than one instance starting together this races. Only matters
   once you scale past a single instance. *Fix:* run migrations as a one-off step

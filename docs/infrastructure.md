@@ -313,6 +313,47 @@ startup safety-check that warns if any of these are still at insecure defaults; 
 check **fatal** (`Security__EnforceProductionConfig=true`) once the real domain is fully serving, so a
 misconfigured deploy refuses to boot rather than launching insecure.
 
+### How `appsettings` is loaded in production (and why some values look "wrong")
+
+> For the full, study-oriented version of this — the `__` nesting convention, arrays, how to inspect the
+> effective config, and the traps — see the dedicated [`configuration.md`](./configuration.md). Short
+> version below.
+
+.NET builds its configuration in **layers**, each overriding the one before it:
+
+1. **`appsettings.json`** — the base. Loaded in **every** environment. Holds safe defaults, several of
+   which are dev-oriented (`AllowedHosts: "*"`, `localhost` JWT issuer/audience). These look wrong for
+   production but are meant to be overridden.
+2. **`appsettings.{Environment}.json`** — loaded **only** when `ASPNETCORE_ENVIRONMENT` matches. In
+   production that's **`appsettings.Production.json`**. Crucially, **`appsettings.Development.json` is
+   never read in production** — so the localhost URLs, the sample seed data, and the
+   `Seed:AdminEmail = kaloti…` value in that file do **not** apply to the live server.
+3. **Environment variables** — override everything above (nested keys use `__`, e.g.
+   `Cors__AllowedOrigins__0`, `Seed__AdminPassword`, `Jwt__Issuer`). This is how the compose file
+   injects the real domain, CORS, JWT settings, and the secrets from `.env.prod` at runtime.
+4. **User-secrets** — development only; never in production.
+
+So the **effective production config** = `appsettings.json` + `appsettings.Production.json` + env vars.
+A value in `appsettings.json` being "incorrect" is usually harmless because an env var replaces it at
+runtime. The real trap is a setting that has **neither** an env-var override **nor** an entry in
+`appsettings.Production.json` — it silently falls back to the base file or a hard-coded default.
+
+> **Concrete example (the login gotcha):** the admin account is seeded from `Seed:AdminEmail`, which
+> defaults to **`admin@example.com`** in code. That key is only given the `kaloti…` value in
+> `appsettings.Development.json` (not loaded in prod). So unless `Seed__AdminEmail` is set as an env
+> var, the production admin's email is `admin@example.com` — log in with that, not the dev email.
+
+### Finding the admin login (bookmark this)
+
+Login is **by email + password**:
+
+- **Password** = `ADMIN_PASSWORD` in `~/OxygenQuiz/.env.prod` (and your password manager):
+  `ssh deploy@89.167.23.147` then `grep ADMIN_PASSWORD ~/OxygenQuiz/.env.prod`.
+- **Email** = `Seed__AdminEmail` if it was set at first boot, otherwise **`admin@example.com`**.
+- The admin is seeded **once**; changing `ADMIN_PASSWORD` afterward does nothing to an existing account.
+  Full commands (incl. querying the DB for the exact email) are in
+  [`deployment-runbook.md`](./deployment-runbook.md) → "Where's the admin password?".
+
 ---
 
 ## 12. Request lifecycle — following one API call

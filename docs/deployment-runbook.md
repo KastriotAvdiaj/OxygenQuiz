@@ -230,4 +230,34 @@ Then continue with the frontend rebuild + Worker custom domains (step 2 of "Stil
 | Secrets | `~/OxygenQuiz/.env.prod` (on server, chmod 600) + your password manager |
 | SSH private key | on this desktop, `C:\Users\Pc\.ssh\id_ed25519` (never leaves the machine) |
 | App logs | `docker compose ... logs backend` |
-| Admin login | username `admin`, password = `ADMIN_PASSWORD` from `.env.prod` (change after first login) |
+| Admin login | **Log in by EMAIL** (not username). Email = `Seed:AdminEmail`, or `admin@example.com` if that env var isn't set (the `kaloti@…` value is dev-only). Password = `ADMIN_PASSWORD` from `.env.prod`. Change after first login. |
+
+### Where's the admin password? (so you don't have to ask again)
+
+Login is **by email + password**:
+
+- **Password** — `ADMIN_PASSWORD` in `~/OxygenQuiz/.env.prod` on the server, and also in your
+  password manager. Read it with:
+  ```bash
+  ssh deploy@89.167.23.147
+  grep ADMIN_PASSWORD ~/OxygenQuiz/.env.prod
+  ```
+- **Email** — whatever `Seed__AdminEmail` was set to when the admin was first seeded. If it was
+  never set as an env var, the account defaults to **`admin@example.com`** (because
+  `appsettings.Development.json`, which holds the `kaloti@…` value, is NOT loaded in Production —
+  see "How appsettings is loaded in production" in [`infrastructure.md`](./infrastructure.md) §11).
+  Confirm the actual seeded email from the database (open a psql shell inside the postgres container,
+  so `$POSTGRES_USER`/`$POSTGRES_DB` expand *inside* the container, not your host shell):
+  ```bash
+  cd ~/OxygenQuiz
+  docker compose -f docker-compose.prod.yml exec postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
+  ```
+  then at the `psql` prompt (column names are PascalCase, so they must be double-quoted):
+  ```sql
+  SELECT "Username", "Email" FROM "Users" WHERE "ImmutableName" = 'admin';
+  \q
+  ```
+
+> ⚠️ The admin is seeded **once** — if it already exists, changing `ADMIN_PASSWORD` later does
+> nothing. To reset a forgotten admin password you must update the `PasswordHash` directly (BCrypt)
+> or delete the admin row and let it re-seed on the next boot.

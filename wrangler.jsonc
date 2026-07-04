@@ -4,6 +4,18 @@
   // (which would require Vite >= 6). See https://developers.cloudflare.com/workers/static-assets/
   "name": "oxygenquiz",
   "compatibility_date": "2026-07-03",
+  // Don't publish to a *.workers.dev URL. Without this (and without routes below),
+  // `wrangler deploy` uploads the assets but then ERRORS at the final step because it
+  // has nowhere to publish the Worker — so the new version never goes live and the old
+  // bundle keeps being served. See docs/known-issues.md (frontend deploy paths).
+  "workers_dev": false,
+  // Deploy to the custom domains attached to this Worker. These were first added via the
+  // Cloudflare dashboard; declaring them here makes `wrangler deploy` (and the Git-connected
+  // build) publish to them and finish cleanly.
+  "routes": [
+    { "pattern": "oxygenquiz.com", "custom_domain": true },
+    { "pattern": "www.oxygenquiz.com", "custom_domain": true }
+  ],
   "assets": {
     "directory": "./dist",
     // Serve index.html for unknown routes so client-side (react-router) routing works.
