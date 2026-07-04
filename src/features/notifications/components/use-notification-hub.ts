@@ -5,7 +5,8 @@ import { getAccessToken } from "@/lib/token-store";
 import { useUser } from "@/lib/Auth";
 
 // Same origin the rest of the app targets (see Api-client.ts / multiplayer-context.tsx).
-const API_BASE = "https://localhost:7153";
+// Derived from VITE_API_URL (which includes /api) so dev → localhost, prod → api.oxygenquiz.com.
+const API_BASE = import.meta.env.VITE_API_URL.replace(/\/api\/?$/, "");
 
 /**
  * Opens an authenticated SignalR connection to the notification hub and

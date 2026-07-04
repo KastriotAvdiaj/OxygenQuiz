@@ -32,7 +32,9 @@ export const MultiplayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
     // Rebuild when the account changes (login / logout / switch user).
     if (!userId) return;
 
-    const apiBaseUrl = "https://localhost:7153"; // Same as Api-client.ts
+    // Origin (without the /api suffix) for the SignalR hub, derived from VITE_API_URL so
+    // dev → https://localhost:7153 and prod → https://api.oxygenquiz.com automatically.
+    const apiBaseUrl = import.meta.env.VITE_API_URL.replace(/\/api\/?$/, "");
     const hubUrl = `${apiBaseUrl}/quizHub`;
 
     const newConnection = new signalR.HubConnectionBuilder()

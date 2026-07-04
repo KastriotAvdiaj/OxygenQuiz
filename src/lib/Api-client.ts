@@ -51,8 +51,10 @@ llmApi.interceptors.response.use(
 );
 
 export const api = Axios.create({
-  // baseURL: `https://d4h8e1xy4vtiq.cloudfront.net/api`,
-  baseURL: `https://localhost:7153/api`,
+  // Base URL comes from the Vite env files (already includes the /api suffix):
+  //   .env.development → https://localhost:7153/api
+  //   .env.production  → https://api.oxygenquiz.com/api
+  baseURL: import.meta.env.VITE_API_URL,
 });
 
 api.interceptors.request.use(authRequestInterceptor);

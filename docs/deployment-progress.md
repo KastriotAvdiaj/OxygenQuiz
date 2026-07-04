@@ -4,12 +4,14 @@
 > [`deployment.md`](./deployment.md) (the strategy), [`vps-launch-checklist.md`](./vps-launch-checklist.md)
 > (the full step-by-step), and [`deployment-runbook.md`](./deployment-runbook.md) (copy-paste commands
 > to reconnect and check state).
-> Last updated: 2026-07-03 — **end of session: DNS is live on Cloudflare; the domain is Active.
-> Backend Data Protection fix deployed. Next up: Nginx reverse proxy + Origin cert to bring
-> `api.oxygenquiz.com` online.**
+> Last updated: 2026-07-04 — **`api.oxygenquiz.com` is LIVE. Backend deployed on the VPS, Nginx
+> reverse proxy serving 443 with the Cloudflare Origin cert, Cloudflare SSL mode = Full (strict).
+> Verified end-to-end: `/api/AuditLogs` returns a real app `401 Unauthorized` (Bearer challenge)
+> through `Server: cloudflare`. Next up: frontend — rebuild with the new `VITE_API_URL` and attach the
+> domain to the Cloudflare Worker.**
 >
-> **▶ Resuming? Open [`deployment-runbook.md`](./deployment-runbook.md) §6** for the exact copy-paste
-> commands to finish the Nginx + Origin-cert step, then continue with the "Still to do" list below.
+> **▶ Resuming? See "Still to do" step 2 (Frontend on Cloudflare) below.** Runbook §6 (now annotated
+> line-by-line) documents the completed Nginx + Origin-cert step for reference.
 
 ## Architecture we're deploying
 
@@ -113,25 +115,65 @@ expected/benign — keys are stored unencrypted at rest on a root-only volume; f
 
 ---
 
-## Current step — bring `api.oxygenquiz.com` online (Nginx + Origin cert)
+## Done this session (2026-07-04)
 
-DNS is active but the backend is still **localhost-only** (`127.0.0.1:5000`); nothing external can
-reach it until the reverse proxy + TLS are in place. Full copy-paste commands are in
-[`deployment-runbook.md`](./deployment-runbook.md) §6. In order:
+### 11. CI build fix — MongoDB fully removed from DI ✅
+The `git push` at the end of the last session went red in GitHub Actions (`Tests` workflow → *Backend
+(.NET) tests*): `The type or namespace name 'IMongoClient'/'MongoClient' could not be found` at
+`Program.cs` L44 and L47. Root cause: last session we commented out the `using MongoDB.Driver;` import
+but **left the DI registration that uses it still active** — so the app no longer compiled, which
+failed `dotnet test` (the test build compiles the `QuizAPI` project it references). Two edits in
+`OxygenBackend/QuizAPI/Program.cs` finished the job the notes claimed was already done:
 
-1. **In Cloudflare (verify / do if not already):**
-   - DNS: `A api → 89.167.23.147`, **proxied**. Delete the junk `A ftp` and `A webdisk` (→ 203.161.45.17) records.
-   - SSL/TLS → Origin Server → **Create Certificate** for `oxygenquiz.com` + `*.oxygenquiz.com`, RSA, 15y.
-     **Save the cert + private key** — the key is shown only once; regenerate if it wasn't saved.
-2. **On the VPS — deploy the pushed code:** `git pull` then rebuild the backend (applies forwarded headers).
-3. **On the VPS — Nginx:** install nginx, save the Origin cert/key to `/etc/ssl/cloudflare/origin.pem`
-   and `origin.key` (chmod 600 the key), add the `api.oxygenquiz.com` server block (WebSocket upgrade
-   headers → `127.0.0.1:5000`), `sudo nginx -t`, `sudo systemctl reload nginx`.
-4. **Only after Nginx reloads cleanly:** set Cloudflare **SSL/TLS mode → Full (strict)**, then test
-   `https://api.oxygenquiz.com`.
+- Commented out the whole `AddSingleton<IMongoClient>(...)` block (the last live use of the Mongo
+  driver in this file), with a comment pointing to how to re-enable it.
+- Swapped the archiver registration from `AddSingleton<ILobbyChatArchiver, LobbyChatArchiver>()` to
+  `AddSingleton<ILobbyChatArchiver, NoOpLobbyChatArchiver>()` — the no-op needs no `IMongoClient`, so
+  DI resolves cleanly at runtime too (not just at compile time).
 
-> ⚠️ Order matters: do **not** set Full (strict) before Nginx is serving 443 with the Origin cert, or
-> Cloudflare→origin will fail. Nginx first, verify, then flip the mode.
+`ILobbyChatArchiver.cs` still keeps its own `using MongoDB.Driver;` and the package is still
+referenced, so the (now unused) `LobbyChatArchiver` class still compiles and can be swapped back in
+later. Pushed to `main`; the `Tests` workflow is green. (The Node.js 20 deprecation *warning* on the
+Actions runner is unrelated and harmless.)
+
+### 12. Cloudflare Origin certificate created + saved ✅
+SSL/TLS → Origin Server → **Create Certificate** for `oxygenquiz.com` + `*.oxygenquiz.com` (RSA, 15y,
+PEM). Copied both the **Origin Certificate** and the **Private Key** (the key is shown only once) and
+saved them before clicking OK. These get pasted onto the VPS as `/etc/ssl/cloudflare/origin.pem` and
+`origin.key` in the Nginx step below.
+
+### 13. `api.oxygenquiz.com` brought online (Nginx + Origin cert + Full strict) ✅
+- Deployed the pushed code on the VPS (`git pull` + rebuild); backend healthy, still listening on 8080.
+- Saved the Origin cert/key to `/etc/ssl/cloudflare/origin.pem` + `origin.key` (chmod 600 on the key).
+  **Gotcha hit + fixed:** the first paste omitted the `-----BEGIN/END-----` PEM delimiter lines, so
+  OpenSSL/nginx couldn't parse them (`No supported data to decode`). Re-pasted the *full* blocks
+  including the delimiter lines; `openssl x509` and `openssl rsa -check` then validated cleanly
+  (cert good to 2041-06-30).
+- Added the `api.oxygenquiz.com` Nginx server block (443 + Origin cert, `proxy_pass` → `127.0.0.1:5000`,
+  WebSocket upgrade headers for SignalR, port-80 → 443 redirect). `nginx -t` passed, reloaded.
+- Cloudflare SSL/TLS → **Full (strict)** saved.
+- **Verified end-to-end from the desktop:** `curl.exe -i https://api.oxygenquiz.com/api/AuditLogs` →
+  `HTTP/1.1 401 Unauthorized`, `Www-Authenticate: Bearer`, `Server: cloudflare`. A real app 401 (not a
+  Cloudflare 52x) proves Cloudflare → nginx → backend works with the cert validated.
+
+---
+
+## Current step — frontend on Cloudflare (rebuild + custom domain)
+
+The backend API is live at `https://api.oxygenquiz.com` (§13). Now point the frontend at it and put the
+site on the root domain:
+
+1. **Rebuild the frontend with the real API URL.** `.env.production` already has
+   `VITE_API_URL=https://api.oxygenquiz.com/api` (set §10). Rebuild so the bundle bakes it in, then
+   `wrangler deploy` the Worker (`oxygenquiz`, config in `wrangler.jsonc` at repo root).
+2. **Attach custom domains to the Worker.** Workers & Pages → `oxygenquiz` → Domains & Routes → add
+   `oxygenquiz.com` and `www.oxygenquiz.com`. This replaces the parking-IP `A oxygenquiz.com` +
+   `CNAME www` records.
+3. **Verify:** load `https://oxygenquiz.com`, confirm the app talks to `api.oxygenquiz.com` (network
+   tab, no mixed-content errors), then run the full smoke test (step 6 in "Still to do").
+
+> Reminder (decided §10): the LLM feature is off in production, so `VITE_LLM_URL` (bare-IP HTTP) is
+> ignored for launch — no TLS subdomain needed unless/until that feature is turned on.
 
 ---
 
@@ -151,16 +193,15 @@ reach it until the reverse proxy + TLS are in place. Full copy-paste commands ar
 
 - [x] ~~Apply the Data Protection fix~~ — done this session (§8).
 - [x] ~~DNS on Cloudflare (nameservers + activation)~~ — done this session (§9).
+- [x] ~~CI build fix (MongoDB removed from DI)~~ — done (§11).
+- [x] ~~Origin TLS + reverse proxy — `api.oxygenquiz.com` live, Full (strict), verified~~ — done (§13).
 
-1. **Origin TLS + reverse proxy (NEXT)** — see "Current step" above and `deployment-runbook.md` §6.
-   Cloudflare Origin cert on the VPS; `git pull` + rebuild the backend (applies forwarded headers);
-   install Nginx with WebSocket upgrade headers → `127.0.0.1:5000`; then Cloudflare SSL mode → Full (strict).
-   - Still to confirm/finish in Cloudflare DNS: `A api → 89.167.23.147` (proxied) added; junk `A ftp`
-     and `A webdisk` (→ 203.161.45.17) deleted.
-2. **Frontend on Cloudflare** — already deployed via `wrangler deploy` (Worker `oxygenquiz`, static
-   assets, `wrangler.jsonc` in repo root). Remaining: rebuild with the new `VITE_API_URL` and attach
-   root + `www` as **custom domains** on the Worker (Workers & Pages → oxygenquiz → Domains & Routes).
-   This also replaces the parking-IP `A oxygenquiz.com` + `CNAME www` records.
+1. **Frontend on Cloudflare (NEXT)** — already deployed once via `wrangler deploy` (Worker `oxygenquiz`,
+   static assets, `wrangler.jsonc` in repo root). Remaining: rebuild with the new `VITE_API_URL` and
+   attach root + `www` as **custom domains** on the Worker (Workers & Pages → oxygenquiz → Domains &
+   Routes). This also replaces the parking-IP `A oxygenquiz.com` + `CNAME www` records.
+   - Also (housekeeping): confirm `A api → 89.167.23.147` is proxied and delete junk `A ftp` / `A webdisk`
+     (→ 203.161.45.17) records if still present.
 3. **Email records** (`MX mx1/mx2.spacemail.com`, `SRV _autodiscover`, `TXT v=spf1...`): keep only if
    using `@oxygenquiz.com` email; otherwise safe to remove. — *DECISION PENDING.*
 4. **Turn on the strict config gate** — uncomment `Security__EnforceProductionConfig=true` in the
