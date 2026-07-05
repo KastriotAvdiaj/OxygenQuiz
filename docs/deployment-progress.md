@@ -4,14 +4,14 @@
 > [`deployment.md`](./deployment.md) (the strategy), [`vps-launch-checklist.md`](./vps-launch-checklist.md)
 > (the full step-by-step), and [`deployment-runbook.md`](./deployment-runbook.md) (copy-paste commands
 > to reconnect and check state).
-> Last updated: 2026-07-04 — **`api.oxygenquiz.com` is LIVE. Backend deployed on the VPS, Nginx
-> reverse proxy serving 443 with the Cloudflare Origin cert, Cloudflare SSL mode = Full (strict).
-> Verified end-to-end: `/api/AuditLogs` returns a real app `401 Unauthorized` (Bearer challenge)
-> through `Server: cloudflare`. Next up: frontend — rebuild with the new `VITE_API_URL` and attach the
-> domain to the Cloudflare Worker.**
+> Last updated: 2026-07-04 — **Both tiers are LIVE and connected. `oxygenquiz.com` (Cloudflare Worker)
+> serves the SPA, which talks to `api.oxygenquiz.com` (VPS behind Nginx + Cloudflare Full strict). Admin
+> login works (`admin@example.com`). Frontend API-URL bug, custom domains, and the Worker deploy config
+> are all fixed (§14). Next up: full smoke test + security cleanup before calling it launched.**
 >
-> **▶ Resuming? See "Still to do" step 2 (Frontend on Cloudflare) below.** Runbook §6 (now annotated
-> line-by-line) documents the completed Nginx + Origin-cert step for reference.
+> **▶ Resuming? See "Current step — smoke test + production hardening" below.** Architecture reference:
+> [`infrastructure.md`](./infrastructure.md); config model: [`configuration.md`](./configuration.md);
+> outstanding fixes: [`known-issues.md`](./known-issues.md).
 
 ## Architecture we're deploying
 
@@ -156,21 +156,49 @@ saved them before clicking OK. These get pasted onto the VPS as `/etc/ssl/cloudf
   `HTTP/1.1 401 Unauthorized`, `Www-Authenticate: Bearer`, `Server: cloudflare`. A real app 401 (not a
   Cloudflare 52x) proves Cloudflare → nginx → backend works with the cert validated.
 
+### 14. Frontend live on `oxygenquiz.com` + admin login working ✅
+The SPA is now served from Cloudflare and talks to the production API. Several fixes were needed along
+the way (all detailed in [`known-issues.md`](./known-issues.md)):
+
+- **Frontend ignored `VITE_API_URL`.** The API client and both SignalR hubs had
+  `https://localhost:7153` **hard-coded** — only the LLM client read an env var. So every production
+  build called localhost regardless of `.env.production`. Fixed all three to read `VITE_API_URL`
+  (deriving the hub origin by stripping `/api`): `src/lib/Api-client.ts`,
+  `src/context/multiplayer-context.tsx`, `src/features/notifications/components/use-notification-hub.ts`.
+- **Custom domains attached to the Worker.** Added `oxygenquiz.com` + `www` as custom domains (replacing
+  the parking-IP records). The apex now shows as a `Worker` DNS record; junk `A ftp`/`A webdisk` records
+  were already gone.
+- **Deploys never activated (the big one).** `wrangler deploy` uploaded assets but **errored before
+  promoting the new version** — `wrangler.jsonc` had no `routes` and there was no `workers.dev`
+  subdomain, so the *old* localhost bundle kept serving. Fixed by adding `workers_dev: false` +
+  `custom_domain` routes for both hostnames to `wrangler.jsonc`.
+- **Admin login.** Login is **by email**; the prod admin seeded as **`admin@example.com`** (the `kaloti@…`
+  seed email lives only in `appsettings.Development.json`, not loaded in prod). Logged in successfully
+  with `admin@example.com` + `ADMIN_PASSWORD`. See [`configuration.md`](./configuration.md) for the full
+  why, and [`deployment-runbook.md`](./deployment-runbook.md) → "Where's the admin password?".
+- **Baked-in creds removed.** `LoginForm` no longer pre-fills a real admin email/password into the
+  public bundle.
+- **Seed data is Development-only (not a bug).** Production shows 0 questions/categories because
+  `DbSeeder` gates `EnsureSampleDataAsync` behind `IsDevelopment()`. Prod only seeds the admin + guest
+  accounts + roles/permissions. Note: that same method also seeds the baseline **lookups** (languages/
+  difficulties/categories), so prod has none of those either — create them in the admin UI, or split the
+  seeder so lookups seed in every environment (decision pending).
+
 ---
 
-## Current step — frontend on Cloudflare (rebuild + custom domain)
+## Current step — smoke test + production hardening
 
-The backend API is live at `https://api.oxygenquiz.com` (§13). Now point the frontend at it and put the
-site on the root domain:
+Both tiers are live and connected (`oxygenquiz.com` → `api.oxygenquiz.com`, admin login works). What's
+left before calling it launched:
 
-1. **Rebuild the frontend with the real API URL.** `.env.production` already has
-   `VITE_API_URL=https://api.oxygenquiz.com/api` (set §10). Rebuild so the bundle bakes it in, then
-   `wrangler deploy` the Worker (`oxygenquiz`, config in `wrangler.jsonc` at repo root).
-2. **Attach custom domains to the Worker.** Workers & Pages → `oxygenquiz` → Domains & Routes → add
-   `oxygenquiz.com` and `www.oxygenquiz.com`. This replaces the parking-IP `A oxygenquiz.com` +
-   `CNAME www` records.
-3. **Verify:** load `https://oxygenquiz.com`, confirm the app talks to `api.oxygenquiz.com` (network
-   tab, no mixed-content errors), then run the full smoke test (step 6 in "Still to do").
+1. **Full smoke test over HTTPS** — signup/login, guest play, a 2-browser multiplayer match (WebSockets
+   end to end), upload persists across a rebuild, admin reachable, Hangfire dashboard NOT reachable.
+2. **Security cleanup** (tracked in [`known-issues.md`](./known-issues.md)) — remove committed `certs/`
+   (+ rotate the mkcert CA), change the seeded admin password, fix stale prod CORS origins in
+   `appsettings.Production.json`, add `.gitattributes` for line endings.
+3. **Lock down** — restrict `ufw` 80/443 to Cloudflare IP ranges; Bot Fight Mode + rate-limit rules;
+   turn on the strict config gate (`Security__EnforceProductionConfig=true`).
+4. **Post-launch** — Postgres backup cron + uptime monitoring.
 
 > Reminder (decided §10): the LLM feature is off in production, so `VITE_LLM_URL` (bare-IP HTTP) is
 > ignored for launch — no TLS subdomain needed unless/until that feature is turned on.
@@ -195,14 +223,13 @@ site on the root domain:
 - [x] ~~DNS on Cloudflare (nameservers + activation)~~ — done this session (§9).
 - [x] ~~CI build fix (MongoDB removed from DI)~~ — done (§11).
 - [x] ~~Origin TLS + reverse proxy — `api.oxygenquiz.com` live, Full (strict), verified~~ — done (§13).
+- [x] ~~Frontend on Cloudflare — SPA live on `oxygenquiz.com`, custom domains attached, API-URL +
+  wrangler deploy fixed, admin login works~~ — done (§14).
 
-1. **Frontend on Cloudflare (NEXT)** — already deployed once via `wrangler deploy` (Worker `oxygenquiz`,
-   static assets, `wrangler.jsonc` in repo root). Remaining: rebuild with the new `VITE_API_URL` and
-   attach root + `www` as **custom domains** on the Worker (Workers & Pages → oxygenquiz → Domains &
-   Routes). This also replaces the parking-IP `A oxygenquiz.com` + `CNAME www` records.
-   - Also (housekeeping): confirm `A api → 89.167.23.147` is proxied and delete junk `A ftp` / `A webdisk`
-     (→ 203.161.45.17) records if still present.
-3. **Email records** (`MX mx1/mx2.spacemail.com`, `SRV _autodiscover`, `TXT v=spf1...`): keep only if
+1. **Security cleanup (from [`known-issues.md`](./known-issues.md)):** remove committed `certs/`
+   (+ rotate mkcert CA), change the seeded admin password, fix stale prod CORS origins, add
+   `.gitattributes` for line endings. Login-form baked-in creds already fixed (§14).
+2. **Email records** (`MX mx1/mx2.spacemail.com`, `SRV _autodiscover`, `TXT v=spf1...`): keep only if
    using `@oxygenquiz.com` email; otherwise safe to remove. — *DECISION PENDING.*
 4. **Turn on the strict config gate** — uncomment `Security__EnforceProductionConfig=true` in the
    compose once the real domain is serving, and rebuild.

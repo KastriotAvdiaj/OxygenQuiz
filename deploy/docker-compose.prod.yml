@@ -33,6 +33,8 @@ services:
     environment:
       # Built here so the DB password is defined once (in .env as POSTGRES_PASSWORD).
       ConnectionStrings__PostgresConnection: "Host=postgres;Database=OxygenQuiz;Username=postgres;Password=${POSTGRES_PASSWORD}"
+      # Gate signup behind single-use invite codes. Set false to reopen public signup.
+      Signup__RequireInviteCode: "true"
     depends_on:
       postgres:
         condition: service_healthy

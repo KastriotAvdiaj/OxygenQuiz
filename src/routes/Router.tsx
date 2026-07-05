@@ -408,6 +408,15 @@ const createAppRouter = (queryClient: QueryClient) =>
           },
         },
         {
+          path: "invite-codes",
+          lazy: async () => {
+            const { InviteCodes } = await import(
+              "../pages/Dashboard/Pages/InviteCodes/InviteCodes"
+            );
+            return { Component: InviteCodes };
+          },
+        },
+        {
           path: "audit-logs",
           lazy: async () => {
             const { AuditLog } = await import(

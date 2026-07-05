@@ -200,8 +200,23 @@ Signup is a multi-step flow under `src/pages/UserRelated/Signup/`.
 - **`SignupSteps.tsx` / `SignupProgressDisplay.tsx`** — accept the prepended step / `offset`.
 - **`src/lib/Auth.tsx`** — `registerInputSchema` gained an optional `inviteCode`.
 
-There is no admin UI for generating codes yet — minting is done via the API (Swagger in dev, or any
-HTTP client) per the runbook below.
+### Admin page
+
+`src/pages/Dashboard/Pages/InviteCodes/` adds an **Invite Codes** tab to the admin dashboard
+(`/dashboard/invite-codes`, gated to `Admin`/`SuperAdmin` via the nav config and route). It's the
+UI over the admin endpoints in §7, so minting no longer requires Swagger/curl:
+
+- **Generate** — a dialog takes a count (1–200), optional label, and optional expiry, calls
+  `POST /api/admin/invite-codes`, and renders the returned plaintext codes **once** with a
+  "Copy all" button and a warning that they can't be re-read. Closing the dialog clears them.
+- **Track** — a status table (from `GET /api/admin/invite-codes`) shows each code's derived status
+  (**Available / Used / Revoked / Expired**), label, created/expiry dates, and — for used codes — who
+  redeemed it and when. Summary cards total the available/used/inactive counts.
+- **Revoke** — still-redeemable rows get a Revoke action (`POST .../{id}/revoke`).
+
+The three api modules mirror the existing react-query conventions (`get-invite-codes` query,
+`generate-invite-codes` + `revoke-invite-code` mutations that invalidate the list on success). The
+status DTO shape is duplicated as a TS type in `get-invite-codes.ts`.
 
 ---
 
@@ -238,11 +253,14 @@ only job is to provide the no-op signup transaction):
 ## 11. Operational runbook (for the test)
 
 1. Set `Signup__RequireInviteCode=true` on the server.
-2. Log in as admin → `POST /api/admin/invite-codes { "count": 25 }` → **copy the 25 codes now**
-   (they can't be re-read).
+2. Log in as admin → open **Dashboard → Invite Codes** → **Generate codes** (count 25) →
+   **copy them now** (they can't be re-read). Or hit `POST /api/admin/invite-codes { "count": 25 }`
+   directly if you prefer.
 3. Hand them out, one per tester.
-4. Watch `GET /api/admin/invite-codes` to see who's joined; once all are consumed, signup is closed.
-5. Need more? Generate another batch. Someone leaked a code? `POST .../{id}/revoke`.
+4. Watch the Invite Codes table (or `GET /api/admin/invite-codes`) to see who's joined; once all are
+   consumed, signup is closed.
+5. Need more? Generate another batch. Someone leaked a code? Revoke it from the table (or
+   `POST .../{id}/revoke`).
 6. **Going public later:** set `Signup__RequireInviteCode=false`. The frontend hides the field
    automatically. No code change, no migration.
 
@@ -271,6 +289,10 @@ only job is to provide the no-op signup transaction):
 - `src/pages/UserRelated/Signup/api/signup-config.ts` (new)
 - `src/pages/UserRelated/Signup/SignupComponents/{SignupForm,SignupSteps,SignupProgressDisplay}.tsx`
 - `src/lib/Auth.tsx`
+- `src/pages/Dashboard/Pages/InviteCodes/InviteCodes.tsx` (new) — admin page
+- `src/pages/Dashboard/Pages/InviteCodes/api/{get-invite-codes,generate-invite-codes,revoke-invite-code}.ts` (new)
+- `src/pages/Dashboard/Components/dashboardNavConfig.ts` — "Invite Codes" nav button
+- `src/routes/Router.tsx` — `/dashboard/invite-codes` route
 
 **Tests**
 - `QuizAPI.Tests/Auth/AuthenticationServiceTests.cs`

@@ -205,6 +205,16 @@ Auth-specific enhancements are tracked in [authentication.md](authentication.md)
   step. *Fix applied:* added `workers_dev: false` + `custom_domain` `routes` for `oxygenquiz.com` and
   `www.oxygenquiz.com` to `wrangler.jsonc`, so `wrangler deploy` (and the Git build) now finish and
   promote the new version. → `wrangler.jsonc`
+  - **Regressed then re-fixed (2026-07-05).** The `custom_domain` routes above worked for the first
+    deploy but broke every deploy after: because the domains already existed, wrangler's re-assertion
+    (`PUT .../workers/scripts/oxygenquiz/domains/records` with `replace_state=true`) returned **409
+    Conflict**, aborting with "Some triggers failed to deploy" / "No targets deployed" — so the old
+    bundle kept serving again. Confirmed via `WRANGLER_LOG=debug` (the 409 is otherwise hidden behind a
+    generic "a request failed"). It is **not** a permissions issue — it fails the same way with a
+    full-rights local login. *Fix:* stop wrangler from managing the domains — **removed the `routes`
+    block** and set **`workers_dev: true`**. The domains stay attached in the **dashboard** (which serves
+    the latest promoted deploy), and the workers.dev URL is the target that lets wrangler promote each
+    new version. → `wrangler.jsonc`
   - **Still worth doing:** pick **one** deploy path (Git-connected build *or* manual `wrangler`, not
     both racing); always `npm run build` before deploying (the API URL is baked in at build time); after
     a deploy, confirm the newest version is **Active** under Workers & Pages → oxygenquiz → Deployments

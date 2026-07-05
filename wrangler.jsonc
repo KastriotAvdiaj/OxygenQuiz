@@ -4,18 +4,23 @@
   // (which would require Vite >= 6). See https://developers.cloudflare.com/workers/static-assets/
   "name": "oxygenquiz",
   "compatibility_date": "2026-07-03",
-  // Don't publish to a *.workers.dev URL. Without this (and without routes below),
-  // `wrangler deploy` uploads the assets but then ERRORS at the final step because it
-  // has nowhere to publish the Worker — so the new version never goes live and the old
-  // bundle keeps being served. See docs/known-issues.md (frontend deploy paths).
-  "workers_dev": false,
-  // Deploy to the custom domains attached to this Worker. These were first added via the
-  // Cloudflare dashboard; declaring them here makes `wrangler deploy` (and the Git-connected
-  // build) publish to them and finish cleanly.
-  "routes": [
-    { "pattern": "oxygenquiz.com", "custom_domain": true },
-    { "pattern": "www.oxygenquiz.com", "custom_domain": true }
-  ],
+  // Keep the *.workers.dev URL ENABLED. It's the publish target that lets `wrangler deploy`
+  // finish cleanly. Without any target, wrangler aborts before promoting and the old bundle
+  // keeps serving (the original deploy bug). The public site still runs on the custom domains
+  // below; the workers.dev URL is just an extra, ignorable address.
+  // ONE-TIME SETUP: the account must have a workers.dev subdomain registered, or `wrangler
+  // deploy` prompts "register a workers.dev subdomain now?" — which would hang the CI build.
+  // Register it once (dashboard: Workers & Pages -> Subdomain, or answer Y to that prompt).
+  "workers_dev": true,
+  // NOTE: custom domains (oxygenquiz.com, www.oxygenquiz.com) are managed in the
+  // Cloudflare dashboard (Workers & Pages -> oxygenquiz -> Settings -> Domains & Routes),
+  // NOT here. A dashboard-attached custom domain automatically serves the Worker's latest
+  // promoted deployment, so every `wrangler deploy` goes live on them.
+  //
+  // They are deliberately NOT declared as `routes` with `custom_domain: true`: because they
+  // already exist, wrangler's re-assertion (PUT .../domains/records with replace_state) got
+  // a 409 Conflict every deploy, which aborted the whole command ("No targets deployed" +
+  // the old bundle kept serving). See docs/known-issues.md (frontend deploy paths).
   "assets": {
     "directory": "./dist",
     // Serve index.html for unknown routes so client-side (react-router) routing works.

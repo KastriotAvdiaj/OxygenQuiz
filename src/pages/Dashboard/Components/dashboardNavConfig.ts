@@ -1,6 +1,6 @@
 import { FaChartLine } from "react-icons/fa6";
 import { RiQuestionAnswerFill } from "react-icons/ri";
-import { FaFolderOpen, FaUsers, FaUserCircle, FaCog, FaHistory, FaTags, FaLanguage, FaSignal } from "react-icons/fa";
+import { FaFolderOpen, FaUsers, FaUserCircle, FaCog, FaHistory, FaTags, FaLanguage, FaSignal, FaTicketAlt } from "react-icons/fa";
 import { PiLockKeyFill } from "react-icons/pi";
 
 export type DashboardNavItem = {
@@ -57,6 +57,12 @@ export const adminDashboardNavButtons: DashboardNavItem[] = [
     label: "Permissions",
     icon: PiLockKeyFill,
     roles: ["SuperAdmin"],
+  },
+  {
+    id: "invite-codes",
+    label: "Invite Codes",
+    icon: FaTicketAlt,
+    roles: ["Admin", "SuperAdmin"],
   },
   {
     id: "audit-logs",
