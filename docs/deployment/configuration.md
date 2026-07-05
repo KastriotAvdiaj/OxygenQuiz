@@ -5,8 +5,8 @@
 > which one wins when they disagree. If you've ever looked at a value in `appsettings.json` and thought
 > "but that's not what production actually uses," this is the doc that explains why.
 >
-> Related: [`infrastructure.md`](./infrastructure.md) §11 (the short version + where secrets live),
-> [`deployment-runbook.md`](./deployment-runbook.md) (operational commands, admin login).
+> Related: [`infrastructure.md`](infrastructure.md) §11 (the short version + where secrets live),
+> [`deployment-runbook.md`](deployment-runbook.md) (operational commands, admin login).
 
 ---
 
@@ -148,7 +148,7 @@ doesn't touch an existing account — you'd have to reset the `PasswordHash` or 
 **B. Stale values in `appsettings.Production.json` look scary but are inert.** It still lists old AWS
 CORS origins. Because the compose injects `Cors__AllowedOrigins__*` env vars, those override the file at
 runtime — so prod CORS is actually correct despite the misleading file. (Still worth fixing the file so
-it doesn't mislead; tracked in [`known-issues.md`](./known-issues.md).)
+it doesn't mislead; tracked in [`known-issues.md`](known-issues.md).)
 
 **The general lesson:** a "wrong-looking" value in a JSON file is only a real problem if **no higher
 layer overrides it**. The dangerous settings are the ones with *no* env var and *no* entry in

@@ -1,5 +1,5 @@
 /**
- * Drives a guest (no-account) singleplayer quiz attempt — see docs/guest-play.md.
+ * Drives a guest (no-account) singleplayer quiz attempt — see docs/auth/guest-play.md.
  *
  * Deliberately much simpler than `useQuizSession`: there is no "resume an existing session"
  * concept (a guest only ever has the one session this hook just created) and no abandon/restart

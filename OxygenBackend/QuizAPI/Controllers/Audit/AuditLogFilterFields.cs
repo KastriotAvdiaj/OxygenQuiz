@@ -6,7 +6,7 @@ namespace QuizAPI.Controllers.Audit
 {
     /// <summary>
     /// Whitelist of fields clients may filter / search / sort the audit trail by. The default
-    /// sort keeps the "newest first" ordering the page relies on. See docs/filtering.md.
+    /// sort keeps the "newest first" ordering the page relies on. See docs/quiz/filtering.md.
     /// </summary>
     public static class AuditLogFilterFields
     {

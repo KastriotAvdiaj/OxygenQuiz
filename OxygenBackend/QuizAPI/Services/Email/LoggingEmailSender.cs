@@ -3,7 +3,7 @@ namespace QuizAPI.Services.Email
     /// <summary>
     /// Development email sender: doesn't actually send anything — it logs the message (including the
     /// confirmation link) so the flow is fully testable locally without an email provider. Swap for a
-    /// real provider (Resend / Postmark / SMTP) in production; see docs/email-verification.md.
+    /// real provider (Resend / Postmark / SMTP) in production; see docs/auth/email-verification.md.
     /// </summary>
     public class LoggingEmailSender : IEmailSender
     {

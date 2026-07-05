@@ -6,7 +6,7 @@ using Xunit;
 namespace QuizAPI.Tests.Editing;
 
 /// <summary>
-/// Unit tests for the copy-on-write quiz-edit diff (see docs/quiz-editing.md). The core invariant
+/// Unit tests for the copy-on-write quiz-edit diff (see docs/quiz/quiz-editing.md). The core invariant
 /// under test: an edit NEVER mutates or deletes an existing live join row — it only retires rows
 /// (RemovedInVersion) and inserts new ones — so in-flight sessions pinned to an older quiz version
 /// keep replaying exactly the question set, order, points and time limits they started with.

@@ -9,7 +9,7 @@ export const createQuizSessionInputSchema = z.object({
   // In a real app, this would come from auth state, not the component.
   userId: z.string().uuid(),
   // Required to start a session for an Unlisted quiz you don't own — the share-link grant.
-  // Ignored by the backend for Public quizzes and quizzes you own. See docs/quiz-visibility.md.
+  // Ignored by the backend for Public quizzes and quizzes you own. See docs/quiz/quiz-visibility.md.
   shareToken: z.string().optional(),
 });
 

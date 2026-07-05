@@ -88,7 +88,7 @@ namespace QuizAPI.Data
                 .HasFilter($"\"{nameof(Quiz.ShareToken)}\" IS NOT NULL");
 
             //GLOBAL QUERY FILTERS
-            // Discovery rule (see docs/quiz-visibility.md): a quiz is only returned by default if it is
+            // Discovery rule (see docs/quiz/quiz-visibility.md): a quiz is only returned by default if it is
             // Public, owned by the caller, or the caller is an admin. Draft/Unlisted quizzes never leak
             // into lists — Unlisted access goes through the explicit share-token / lobby paths, which
             // call IgnoreQueryFilters() deliberately.
@@ -286,7 +286,7 @@ namespace QuizAPI.Data
                 .HasForeignKey(qq => qq.QuestionId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // Quiz editing is copy-on-write (docs/quiz-editing.md): retired join rows stay in the
+            // Quiz editing is copy-on-write (docs/quiz/quiz-editing.md): retired join rows stay in the
             // table with RemovedInVersion set, so a question may legitimately appear twice for the
             // same quiz across versions. Uniqueness is therefore only enforced among LIVE rows.
             modelBuilder.Entity<QuizQuestion>()

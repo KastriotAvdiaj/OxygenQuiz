@@ -34,7 +34,7 @@ namespace QuizAPI.Services
         /// <summary>
         /// Shared filtering framework for users (search + filters + sort + body-envelope
         /// pagination). Roles are mapped in memory after the page is materialised, so this
-        /// uses the "map" overload of <see cref="PagedResponse{T}.CreateAsync"/>. See docs/filtering.md.
+        /// uses the "map" overload of <see cref="PagedResponse{T}.CreateAsync"/>. See docs/quiz/filtering.md.
         /// </summary>
         public async Task<PagedResponse<UserDTO>> SearchUsersAsync(
             FilterQuery query, CancellationToken ct = default)

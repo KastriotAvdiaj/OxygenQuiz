@@ -51,7 +51,7 @@ export const QuizSelectionDialog = ({
   const [difficultyId, setDifficultyId] = useState(ALL_FILTER);
   const [languageId, setLanguageId] = useState(ALL_FILTER);
   // Same "variety" default as /choose-quiz — hosts see the full breadth of
-  // categories on the first page (docs/quiz-discovery.md).
+  // categories on the first page (docs/quiz/quiz-discovery.md).
   const [sortBy, setSortBy] = useState<SortOption>(DEFAULT_SORT);
   const [pageNumber, setPageNumber] = useState(1);
 

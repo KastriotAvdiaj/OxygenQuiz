@@ -8,7 +8,7 @@ namespace QuizAPI.Models.Quiz
 
     /// <summary>
     /// A quiz's single source of truth for who can reach it. Replaces the former
-    /// Visibility / IsPublished / IsActive trio (see docs/quiz-visibility.md).
+    /// Visibility / IsPublished / IsActive trio (see docs/quiz/quiz-visibility.md).
     /// </summary>
     public enum QuizStatus
     {

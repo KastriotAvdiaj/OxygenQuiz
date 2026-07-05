@@ -23,7 +23,7 @@ export const ALL_FILTER = "all";
 /**
  * Sort options exposed to users. `variety` is a backend pseudo-sort that interleaves
  * categories (newest of each category first) so the catalogue's first page shows the
- * app's breadth — the default for both quiz pickers (see docs/quiz-discovery.md).
+ * app's breadth — the default for both quiz pickers (see docs/quiz/quiz-discovery.md).
  * The rest map to fields the backend whitelists as sortable (QuizFilterFields.cs:
  * `createdAt` and `title`).
  */

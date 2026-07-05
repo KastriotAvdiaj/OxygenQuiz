@@ -402,7 +402,7 @@ namespace QuizAPI.Mapping
                 Gradient = q.Category != null && q.Category.Gradient,
                 Difficulty = q.Difficulty == null ? string.Empty : q.Difficulty.Level,
                 Language = q.Language == null ? string.Empty : q.Language.Language,
-                // Live rows only — retired rows belong to past versions (docs/quiz-editing.md).
+                // Live rows only — retired rows belong to past versions (docs/quiz/quiz-editing.md).
                 QuestionCount = q.QuizQuestions.Count(qq => qq.RemovedInVersion == null),
                 User = q.User == null ? string.Empty : q.User.Username,
                 Status = q.Status.ToString(),
@@ -421,7 +421,7 @@ namespace QuizAPI.Mapping
                 CreatedAt = q.CreatedAt,
                 Version = q.Version,
                 ImageUrl = q.ImageUrl,
-                // Live rows only — retired rows belong to past versions (docs/quiz-editing.md).
+                // Live rows only — retired rows belong to past versions (docs/quiz/quiz-editing.md).
                 QuestionCount = q.QuizQuestions.Count(qq => qq.RemovedInVersion == null),
                 Status = q.Status.ToString(),
                 // ShareToken is deliberately left null here — the service populates it only on the
@@ -574,7 +574,7 @@ namespace QuizAPI.Mapping
                 QuizDescription = s.Quiz.Description,
                 Category = s.Quiz.Category.Name,
                 // Count only the rows visible to the session's pinned quiz version, so results and
-                // progress display the question set the player actually got (docs/quiz-editing.md).
+                // progress display the question set the player actually got (docs/quiz/quiz-editing.md).
                 TotalQuestions = s.Quiz.QuizQuestions.Count(qq =>
                     qq.CreatedInVersion <= s.QuizVersion
                     && (qq.RemovedInVersion == null || qq.RemovedInVersion > s.QuizVersion)),
@@ -626,7 +626,7 @@ namespace QuizAPI.Mapping
                 StartTime = s.StartTime,
                 EndTime = s.EndTime,
                 TotalScore = s.TotalScore,
-                // Pinned-version count — see ProjectSession above / docs/quiz-editing.md.
+                // Pinned-version count — see ProjectSession above / docs/quiz/quiz-editing.md.
                 TotalQuestions = s.Quiz.QuizQuestions.Count(qq =>
                     qq.CreatedInVersion <= s.QuizVersion
                     && (qq.RemovedInVersion == null || qq.RemovedInVersion > s.QuizVersion)),

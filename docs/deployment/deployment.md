@@ -2,9 +2,9 @@
 
 > **Status: pre-launch reference (written 2026-06-22).**
 > This is the single place to look for "where does X live in production and how do I ship it."
-> Security items that block launch are tracked in [`known-issues.md`](./known-issues.md);
-> auth specifics are in [`authentication.md`](./authentication.md). Local-dev setup is in
-> [`README.md`](./README.md) — this doc is strictly about **production**.
+> Security items that block launch are tracked in [`known-issues.md`](known-issues.md);
+> auth specifics are in [`authentication.md`](../auth/authentication.md). Local-dev setup is in
+> [`README.md`](../README.md) — this doc is strictly about **production**.
 
 ## How to use this doc
 
@@ -60,7 +60,7 @@ preference — it's baked into the current architecture:
 | **Frontend** | Cloudflare Pages | Vercel, AWS Amplify, S3+CloudFront | Static Vite build (`npm run build` → `dist/`). Free tier is plenty. |
 | **Backend** | Railway or Render (container) | Fly.io, Azure App Service, a Hetzner/DigitalOcean VPS | Must support WebSockets + persistent process. The VPS route can reuse your existing `docker-compose.yml`. |
 | **PostgreSQL** | Neon (or Supabase) | Render Postgres, AWS RDS, Azure Postgres Flexible | **Use managed** — you get automated backups / point-in-time restore. Don't self-host your primary data store unless you'll own backups. |
-| **MongoDB** | *Not needed* | — | **Disabled** — multiplayer chat is ephemeral, nothing is persisted. Only required if you re-enable the persistent chat system (see [`mongodb.md`](./mongodb.md)). |
+| **MongoDB** | *Not needed* | — | **Disabled** — multiplayer chat is ephemeral, nothing is persisted. Only required if you re-enable the persistent chat system (see [`mongodb.md`](../data/mongodb.md)). |
 | **Uploads** | Cloudflare R2 (or S3) | Persistent volume on the host | See §1 — local disk is wiped on redeploy. |
 | **Edge / DNS / DDoS** | Cloudflare (free) | AWS CloudFront + WAF | The single most important piece for protecting a single-instance backend. |
 
@@ -74,7 +74,7 @@ preference — it's baked into the current architecture:
 
 ## 3. Pre-deploy checklist
 
-**Security (block launch until done — see [`known-issues.md`](./known-issues.md)):**
+**Security (block launch until done — see [`known-issues.md`](known-issues.md)):**
 - [x] **P1** — `QuizSessionsController` now requires auth and enforces per-session ownership (IDOR closed); acting user comes from the JWT, not client input. *(2026-06-23)*
 - [x] **P2** — `TotalsController` gated to admins; exports confirmed attachment-disposition + global `nosniff` header; signup password policy raised to 12 chars with a breached-password blocklist. *(2026-06-23)*
 - [x] SVG upload removed, Hangfire dashboard gated to non-prod, public user-email endpoints gated, build artifacts untracked.
@@ -88,7 +88,7 @@ preference — it's baked into the current architecture:
 - [ ] `ASPNETCORE_ENVIRONMENT=Production` (this is what keeps the Hangfire dashboard unmapped and Swagger off).
 - [ ] A strong, unique `Seed:AdminPassword`; change the admin password after first login.
 - [ ] *(Optional, for a closed/gated test)* `Signup:RequireInviteCode=true` to restrict signup to
-      invite codes; mint them via `POST /api/admin/invite-codes` (see [`invite-code-system.md`](./invite-code-system.md)).
+      invite codes; mint them via `POST /api/admin/invite-codes` (see [`invite-code-system.md`](../auth/invite-code-system.md)).
 
 > **Startup safety-guard.** On boot in Production the app self-checks the domain-dependent
 > settings above (`AllowedHosts`, `Cors:AllowedOrigins`, `Jwt:Issuer`/`Audience`) and logs a loud
@@ -99,7 +99,7 @@ preference — it's baked into the current architecture:
 
 **Data & assets:**
 - [ ] Uploads pointed at S3/R2 (or a persistent volume confirmed to survive redeploys).
-- [ ] A real email sender configured if you gate on verification (today it's `LoggingEmailSender` — dev only; see [`email-verification.md`](./email-verification.md)).
+- [ ] A real email sender configured if you gate on verification (today it's `LoggingEmailSender` — dev only; see [`email-verification.md`](../auth/email-verification.md)).
 
 **Build sanity:**
 - [ ] `dotnet build` clean; `npm run build` produces `dist/`.
@@ -129,7 +129,7 @@ cleaner: serve the API under the *same* host at `/api` via a reverse proxy and d
 
 ## 5. Production hardening summary
 
-These mostly map to items already in [`known-issues.md`](./known-issues.md); collected here as a deploy gate.
+These mostly map to items already in [`known-issues.md`](known-issues.md); collected here as a deploy gate.
 
 - **HTTPS everywhere.** Terminate TLS at Cloudflare and at the host. Keep `RequireHttpsMetadata` on (it already is outside Development).
 - **`AllowedHosts`** → real domain (blunts host-header attacks).
@@ -156,13 +156,13 @@ Proxy all traffic through Cloudflare (orange cloud). Free tier gives you:
 ### Layer 2 — app-level rate limiting (.NET 8 built-in) ✅ implemented
 Defense in depth for anything that slips past the edge, plus targeted protection on high-risk
 endpoints. **This is done** — full details, limits, tuning, and testing in
-[`rate-limiting.md`](./rate-limiting.md). In short: a generous global per-IP safety net (excluding
+[`rate-limiting.md`](../development/rate-limiting.md). In short: a generous global per-IP safety net (excluding
 the SignalR hubs), a strict `auth` policy on login/signup/refresh/email-token endpoints, and a
 `guest` policy on guest-session creation; rejections return 429 + `Retry-After`.
 
 ⚠️ **Read the real client IP, not Cloudflare's** — the limiter partitions on `CF-Connecting-IP`, and
 in production you must **firewall the origin to Cloudflare's IP ranges** so that header can't be
-spoofed by hitting the origin directly. See [`rate-limiting.md` § Trusting the client IP](./rate-limiting.md).
+spoofed by hitting the origin directly. See [`rate-limiting.md` § Trusting the client IP](../development/rate-limiting.md).
 
 ### Layer 3 — reverse proxy (VPS route only)
 If you self-host on a VPS, add nginx in front with `limit_req` and TLS termination.
@@ -221,7 +221,7 @@ the second category today.
 
 ## 8. Launch-day runbook (in order)
 
-1. **Provision data store:** create the managed Postgres; copy its connection string. (No MongoDB — chat is ephemeral; see [`mongodb.md`](./mongodb.md).)
+1. **Provision data store:** create the managed Postgres; copy its connection string. (No MongoDB — chat is ephemeral; see [`mongodb.md`](../data/mongodb.md).)
 2. **Provision uploads bucket:** S3/R2 bucket + credentials (or confirm a persistent volume).
 3. **Deploy the backend container** to Railway/Render/VPS with all secrets as env vars and
    `ASPNETCORE_ENVIRONMENT=Production`. On first boot it migrates + seeds (admin account, reference data).
@@ -232,7 +232,7 @@ the second category today.
 8. **Turn on Cloudflare protection:** Bot Fight Mode + rate-limit rules on auth/guest endpoints (§6).
 9. **Smoke-test over real HTTPS:**
    - [ ] Signup → email/login flow.
-   - [ ] Guest play (one free quiz, then the cookie gate — see [`guest-play.md`](./guest-play.md)).
+   - [ ] Guest play (one free quiz, then the cookie gate — see [`guest-play.md`](../auth/guest-play.md)).
    - [ ] A full **multiplayer match** with two browsers (verifies WebSockets through Cloudflare).
    - [ ] File upload persists across a redeploy.
    - [ ] Admin dashboard reachable; Hangfire dashboard **not** reachable in prod.
@@ -250,7 +250,7 @@ the traffic, or you want zero-downtime deploys. The order to tackle it:
    the same matches. This is the big one that unlocks horizontal scaling.
 3. **Externalize Hangfire** (it already uses Postgres storage) and ensure only one scheduler runs.
 4. **Move migrations out of startup** into a one-off deploy step (avoids the multi-instance race
-   noted in [`known-issues.md`](./known-issues.md)).
+   noted in [`known-issues.md`](known-issues.md)).
 5. *Then* you can run 2+ instances behind the load balancer for rolling, zero-downtime deploys.
 
 Until you hit that wall, a single well-monitored instance behind Cloudflare is a perfectly
@@ -260,9 +260,9 @@ legitimate way to run this app.
 
 ## Related
 
-- [`rate-limiting.md`](./rate-limiting.md) — the implemented app-level limiter referenced in §6.
-- [`known-issues.md`](./known-issues.md) — the launch-blocker checklist this doc gates on.
-- [`authentication.md`](./authentication.md) — JWT, refresh cookie, the `SameSite` details referenced in §4.
-- [`guest-play.md`](./guest-play.md) — the guest flow to smoke-test in §8.
-- [`play-auth-and-identity.md`](./play-auth-and-identity.md) — why multiplayer is login-gated.
-- [`README.md`](./README.md) — local development setup (the dev-side counterpart to this doc).
+- [`rate-limiting.md`](../development/rate-limiting.md) — the implemented app-level limiter referenced in §6.
+- [`known-issues.md`](known-issues.md) — the launch-blocker checklist this doc gates on.
+- [`authentication.md`](../auth/authentication.md) — JWT, refresh cookie, the `SameSite` details referenced in §4.
+- [`guest-play.md`](../auth/guest-play.md) — the guest flow to smoke-test in §8.
+- [`play-auth-and-identity.md`](../auth/play-auth-and-identity.md) — why multiplayer is login-gated.
+- [`README.md`](../README.md) — local development setup (the dev-side counterpart to this doc).

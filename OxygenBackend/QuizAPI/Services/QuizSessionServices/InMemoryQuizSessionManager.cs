@@ -12,7 +12,7 @@ public class InMemoryQuizSessionManager : IQuizSessionManager
         // RecentMessages buffer below and are never persisted. The write-only MongoDB
         // archiver (ILobbyChatArchiver) has been removed; to restore archival when the
         // persistent chat system lands, re-inject it here and call it in
-        // AddChatMessageAsync. See docs/mongodb.md.
+        // AddChatMessageAsync. See docs/data/mongodb.md.
 
         public Task<Participant> AddParticipantAsync(string sessionId, string username, string connectionId)
         {
@@ -207,7 +207,7 @@ public class InMemoryQuizSessionManager : IQuizSessionManager
             }
 
             // No persistence: lobby chat is ephemeral and lives only in the in-memory buffer
-            // above. (Previously fire-and-forget archived to MongoDB — see docs/mongodb.md.)
+            // above. (Previously fire-and-forget archived to MongoDB — see docs/data/mongodb.md.)
 
             return Task.FromResult(message);
         }

@@ -5,7 +5,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
 {
     /// <summary>
     /// Pure copy-on-write diff between a quiz's live question rows and the incoming edit
-    /// (see docs/quiz-editing.md). Live rows are never mutated in place:
+    /// (see docs/quiz/quiz-editing.md). Live rows are never mutated in place:
     ///
     ///   - question dropped from the quiz      → retire the row (stamp RemovedInVersion)
     ///   - question's settings/order changed   → retire the row AND insert a replacement

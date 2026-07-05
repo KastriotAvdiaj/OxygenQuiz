@@ -2,11 +2,11 @@
 
 > **Status: implemented (2026-06-22).** App-level rate limiting using the built-in .NET 8 limiter.
 > This is **layer 2** of the abuse-protection strategy — Cloudflare is layer 1 and does the heavy
-> lifting against real DDoS. See [`deployment.md` §6](./deployment.md) for how the layers fit together.
+> lifting against real DDoS. See [`deployment.md` §6](../deployment/deployment.md) for how the layers fit together.
 
 ## Why this exists
 
-A single backend instance (see [`deployment.md` §1](./deployment.md)) can't absorb a flood by scaling
+A single backend instance (see [`deployment.md` §1](../deployment/deployment.md)) can't absorb a flood by scaling
 out, so we protect it in depth:
 
 1. **Cloudflare (edge)** — absorbs volumetric DDoS and applies coarse per-IP rules before traffic ever
@@ -103,6 +103,6 @@ The numbers above are sensible starting points, not law. Adjust in `RateLimiting
 
 ## Related
 
-- [`deployment.md`](./deployment.md) — §6 (the three-layer strategy), §1 (single-instance constraint).
-- [`known-issues.md`](./known-issues.md) — other pre-launch hardening items.
-- [`authentication.md`](./authentication.md) — the auth endpoints these policies protect.
+- [`deployment.md`](../deployment/deployment.md) — §6 (the three-layer strategy), §1 (single-instance constraint).
+- [`known-issues.md`](../deployment/known-issues.md) — other pre-launch hardening items.
+- [`authentication.md`](../auth/authentication.md) — the auth endpoints these policies protect.

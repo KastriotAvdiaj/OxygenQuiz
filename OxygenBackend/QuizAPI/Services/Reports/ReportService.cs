@@ -93,7 +93,7 @@ namespace QuizAPI.Services.Reports
                 .ToListAsync(ct);
 
             // How many quizzes each owned question is used in. Live rows only — retired rows are
-            // past-version copies and would double-count (docs/quiz-editing.md).
+            // past-version copies and would double-count (docs/quiz/quiz-editing.md).
             var usage = await _context.QuizQuestions.AsNoTracking()
                 .Where(qq => qq.Question.UserId == userId && qq.RemovedInVersion == null)
                 .GroupBy(qq => qq.QuestionId)

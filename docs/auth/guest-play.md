@@ -2,7 +2,7 @@
 
 > **Status: implemented (2026-06-22).**
 > Supersedes the "no guest play" decision recorded in
-> [`play-auth-and-identity.md`](./play-auth-and-identity.md) — see that file's "Edge cases"
+> [`play-auth-and-identity.md`](play-auth-and-identity.md) — see that file's "Edge cases"
 > section for the prior reasoning, kept for history.
 
 ## Product rule
@@ -13,7 +13,7 @@ saved anywhere. Guests **cannot** access multiplayer at all; that stays fully ga
 unchanged.
 
 This exists to lower signup friction (try the product before committing to an account) without
-reopening the security surface that made [`play-auth-and-identity.md`](./play-auth-and-identity.md)
+reopening the security surface that made [`play-auth-and-identity.md`](play-auth-and-identity.md)
 require login in the first place.
 
 ## The limit is soft, by design
@@ -88,7 +88,7 @@ Every route on `GuestQuizSessionsController` (except `can-play` and the create r
 session isn't flagged `IsGuestSession = true`. This is the load-bearing check: it means this
 anonymous surface can only ever read or write a session that was *itself* created through the
 guest path. It cannot be used to reach a real, logged-in user's session by guessing or enumerating
-a GUID — which is exactly the [IDOR class of bug](./known-issues.md) the authenticated
+a GUID — which is exactly the [IDOR class of bug](../deployment/known-issues.md) the authenticated
 `QuizSessionsController` still needs fixing for (that fix is independent of this feature: it's
 about deriving `UserId` from the JWT instead of trusting a client-supplied value, and doesn't
 affect guest play at all).
@@ -133,7 +133,7 @@ session id belongs to:
   navigates here, never to the real results route.
 
 Multiplayer routes are untouched — they still require login at the route level
-(`userAuthLoader` per [`play-auth-and-identity.md`](./play-auth-and-identity.md)), so a guest
+(`userAuthLoader` per [`play-auth-and-identity.md`](play-auth-and-identity.md)), so a guest
 never reaches them at all; there's no guest-mode fallback for multiplayer anywhere.
 
 ## Lifecycle of a guest session
@@ -175,13 +175,13 @@ its normal sweep window.
   a shared account, which reopens the "active session" collision problem `CreateGuestSessionAsync`
   currently sidesteps. Don't bolt this on without re-deriving that part.
 - **Want guest play in multiplayer?** Out of scope by design — `QuizHub` requires `[Authorize]`
-  and there is no plan to change that (see [`play-auth-and-identity.md`](./play-auth-and-identity.md)).
+  and there is no plan to change that (see [`play-auth-and-identity.md`](play-auth-and-identity.md)).
 
 ## Related
 
-- [`play-auth-and-identity.md`](./play-auth-and-identity.md) — why login is required at all;
+- [`play-auth-and-identity.md`](play-auth-and-identity.md) — why login is required at all;
   the "no guest play" line there is superseded by this doc.
-- [`known-issues.md`](./known-issues.md) — the still-open P1 (authenticated `QuizSessionsController`
+- [`known-issues.md`](../deployment/known-issues.md) — the still-open P1 (authenticated `QuizSessionsController`
   has no ownership check) is independent of this feature, but worth fixing with the same
   IDOR-prevention mindset used here.
-- [`quiz-grading.md`](./quiz-grading.md) — the grading engine guest sessions reuse unchanged.
+- [`quiz-grading.md`](../quiz/quiz-grading.md) — the grading engine guest sessions reuse unchanged.

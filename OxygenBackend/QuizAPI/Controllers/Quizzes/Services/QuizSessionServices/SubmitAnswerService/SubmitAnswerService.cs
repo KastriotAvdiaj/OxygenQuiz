@@ -213,7 +213,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.SubmitAnswerS
 
         private async Task<bool> CheckAndCompleteQuizAsync(QuizSession session)
         {
-            // Count only rows visible to the session's pinned quiz version (docs/quiz-editing.md) —
+            // Count only rows visible to the session's pinned quiz version (docs/quiz/quiz-editing.md) —
             // otherwise an edit mid-session would make the completion check impossible to satisfy
             // (retired rows inflate the total) or complete the quiz early (questions removed).
             var sessionVersion = session.QuizVersion;

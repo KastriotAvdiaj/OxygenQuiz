@@ -10,7 +10,7 @@ import {
 } from "../../api/guest-quiz-session";
 
 /**
- * Guest-play results page — see docs/guest-play.md. Viewing this page is the moment the guest's
+ * Guest-play results page — see docs/auth/guest-play.md. Viewing this page is the moment the guest's
  * one free quiz is "spent": as soon as results load, it calls /finish, which deletes the session
  * on the backend (nothing about a guest attempt is persisted) and sets the cookie that blocks a
  * second free attempt from this browser. Both "play again" and "new quiz" route to signup,

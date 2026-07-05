@@ -9,9 +9,9 @@ item, add it here instead of letting it float.
 - **P2** — address before / around a public production launch.
 - **P3** — cleanup / nice-to-have; do it when you're in the area.
 
-Auth-specific enhancements are tracked in [authentication.md](authentication.md)
+Auth-specific enhancements are tracked in [authentication.md](../auth/authentication.md)
 ("Recommended improvements"); the security-review status lives in
-[handoff.md](handoff.md). This file is the catch-all index.
+[handoff.md](../handoff.md). This file is the catch-all index.
 
 ---
 
@@ -35,7 +35,7 @@ Auth-specific enhancements are tracked in [authentication.md](authentication.md)
 - ~~**P2 — `QuizHub.SelectQuiz` trusted the client's quiz id.**~~ **Fixed.** The host's
   selection is now validated server-side via `IQuizService.CanHostQuizAsync` (Public quiz or one the
   host owns), so a crafted SignalR call can't host an arbitrary quiz regardless of the picker UI.
-  Part of the quiz-visibility rework — see `docs/quiz-visibility.md`.
+  Part of the quiz-visibility rework — see `docs/quiz/quiz-visibility.md`.
   → `OxygenBackend/QuizAPI/Hubs/QuizHub.cs`
 - ~~**P1 — Quiz session endpoints have no authentication or ownership checks.**~~
   **Fixed (2026-06-23).** `QuizSessionsController` now carries `[Authorize]`, and
@@ -54,7 +54,7 @@ Auth-specific enhancements are tracked in [authentication.md](authentication.md)
 - **New (2026-06-22) — guest singleplayer play.** Signed-out visitors can now
   play one free singleplayer quiz per browser (soft, cookie-based limit; no
   persistence; multiplayer stays fully login-gated). Full design, security
-  model, and lifecycle in [`guest-play.md`](./guest-play.md).
+  model, and lifecycle in [`guest-play.md`](../auth/guest-play.md).
 - ~~**P2 — Admin-facing totals exposed with no auth.**~~ **Fixed (2026-06-23).**
   `TotalsController` now carries `[Authorize(Roles = "Admin,SuperAdmin")]`, matching
   the rest of the dashboard surface. (The only caller is the admin Dashboard, which
@@ -241,7 +241,7 @@ Auth-specific enhancements are tracked in [authentication.md](authentication.md)
 
 ## Auth enhancements
 
-Detailed in [authentication.md](authentication.md) "Recommended improvements":
+Detailed in [authentication.md](../auth/authentication.md) "Recommended improvements":
 refresh-token reuse detection, "log out everywhere", a stale-token cleanup job,
 and tightening `ClockSkew`. All **P3**.
 
@@ -256,7 +256,7 @@ the app didn't allow for them to join.
 The app throws this error "An unexpected error occurred invoking 'StartMatch' on the server. HubException: The match has already started."
 after the first quiz game ended and the host tries to start another one.
 
-## Quiz editing (2026-07-02 — see docs/quiz-editing.md)
+## Quiz editing (2026-07-02 — see docs/quiz/quiz-editing.md)
 
 - ~~**P1 — Editing a played quiz threw an FK violation / edits leaked into live games.**~~
   **Fixed (2026-07-02).** `UpdateQuizAsync` used to delete every `QuizQuestion` row and
@@ -264,7 +264,7 @@ after the first quiz game ended and the host tries to start another one.
   those rows with `Restrict`, so any quiz that had ever been played could not be edited
   at all; and sessions re-read the question list live, so an edit changed an in-flight
   player's game. Replaced with copy-on-write version ranges on `QuizQuestion` plus a
-  `QuizVersion` pin on `QuizSession`. Full design in `docs/quiz-editing.md`.
+  `QuizVersion` pin on `QuizSession`. Full design in `docs/quiz/quiz-editing.md`.
   → `QuizService.UpdateQuizAsync`, `QuizQuestionVersioning`, `QuizSessionService`
 
 - ~~**P2 — Migration not yet generated.**~~ **Fixed (2026-07-02).** Ran

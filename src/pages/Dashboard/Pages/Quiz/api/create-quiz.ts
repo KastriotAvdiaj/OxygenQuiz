@@ -51,7 +51,7 @@ export const createQuizInputSchema = z.object({
 
   showFeedbackImmediately: z.boolean().default(false),
 
-  // Draft / Unlisted / Public — the quiz's single access state (see docs/quiz-visibility.md).
+  // Draft / Unlisted / Public — the quiz's single access state (see docs/quiz/quiz-visibility.md).
   status: z
     .enum(["Draft", "Unlisted", "Public"])
     .default("Draft"),

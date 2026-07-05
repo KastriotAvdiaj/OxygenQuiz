@@ -118,7 +118,7 @@ Signup itself (`SignupAsync`) gains: create with `EmailConfirmed = false` → ge
 **Recommended soft gate:** let them in, show a persistent "Confirm your email" banner with a
 **Resend** button, and block a small set of higher-trust actions until confirmed — candidates:
 **hosting a multiplayer lobby**, **publishing a public quiz**, **exporting reports**. The
-multiplayer-host gate connects directly to [`play-auth-and-identity.md`](./play-auth-and-identity.md)
+multiplayer-host gate connects directly to [`play-auth-and-identity.md`](play-auth-and-identity.md)
 (we can require `EmailConfirmed` to host).
 
 ## Frontend changes
@@ -182,5 +182,5 @@ These cut obvious garbage but never prove ownership. Always pair with the confir
 
 ## Related
 
-- [`authentication.md`](./authentication.md) — token scheme this builds on.
-- [`play-auth-and-identity.md`](./play-auth-and-identity.md) — the multiplayer-host gate.
+- [`authentication.md`](authentication.md) — token scheme this builds on.
+- [`play-auth-and-identity.md`](play-auth-and-identity.md) — the multiplayer-host gate.

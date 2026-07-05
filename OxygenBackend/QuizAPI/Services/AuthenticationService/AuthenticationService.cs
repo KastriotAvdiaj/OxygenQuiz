@@ -46,7 +46,7 @@ public class AuthenticationService(
     {
         var immutableName = dto.Username.ToLowerInvariant();
 
-        // Invite-code gate (only when the flag is on — see docs/invite-code-system-plan.md).
+        // Invite-code gate (only when the flag is on — see docs/auth/invite-code-system-plan.md).
         // Validate early for fast, friendly rejection before any writes; the code is only
         // *consumed* after the user row is created (below), in the same transaction, so a failed
         // signup never burns a code.
@@ -116,7 +116,7 @@ public class AuthenticationService(
         // create no notification, and write no audit row.
 
         // Send the email-confirmation link. Soft gate: the account is usable immediately, but the
-        // UI nudges the user to confirm (see docs/email-verification.md).
+        // UI nudges the user to confirm (see docs/auth/email-verification.md).
         await IssueAndSendVerificationEmailAsync(user, ct);
 
         // Welcome the new user with a persistent notification (waits in their bell until

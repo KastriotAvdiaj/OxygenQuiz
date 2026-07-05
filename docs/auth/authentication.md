@@ -85,11 +85,11 @@ Add integration tests against the auth endpoints with `WebApplicationFactory`: l
 ## Planned work (designed, not yet built)
 
 - **Email verification** — signups are currently unverified (only format + uniqueness are
-  checked). Design for a double opt-in confirmation flow: [`email-verification.md`](./email-verification.md).
+  checked). Design for a double opt-in confirmation flow: [`email-verification.md`](email-verification.md).
 - **Login required to play + account-based lobby identity** — ✅ implemented (2026-06-20):
   multiplayer routes are auth-gated, the lobby identity is the authenticated account, and the
   `QuizHub` is `[Authorize]`'d with the username taken from `Context.User`. See
-  [`play-auth-and-identity.md`](./play-auth-and-identity.md).
+  [`play-auth-and-identity.md`](play-auth-and-identity.md).
 
 ## Robustness — current strengths
 

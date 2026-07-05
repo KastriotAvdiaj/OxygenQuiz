@@ -13,7 +13,7 @@ namespace QuizAPI.ManyToManyTables
     }
 
     /// <summary>
-    /// Join row between a quiz and a question, versioned copy-on-write (see docs/quiz-editing.md).
+    /// Join row between a quiz and a question, versioned copy-on-write (see docs/quiz/quiz-editing.md).
     /// Rows are never updated in place or hard-deleted once created: an edit retires the old row
     /// (stamps <see cref="RemovedInVersion"/>) and inserts a replacement. In-flight sessions pin
     /// the <see cref="Models.Quiz.Quiz.Version"/> they started on and keep playing their rows,

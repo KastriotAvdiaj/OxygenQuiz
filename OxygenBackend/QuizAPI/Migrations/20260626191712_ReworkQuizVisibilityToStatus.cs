@@ -7,7 +7,7 @@ namespace QuizAPI.Migrations
     /// <summary>
     /// Collapses the Quizzes Visibility / IsPublished / IsActive trio into a single Status enum
     /// (0 = Draft, 1 = Unlisted, 2 = Public) and adds the nullable ShareToken that backs Unlisted
-    /// share links. See docs/quiz-visibility.md.
+    /// share links. See docs/quiz/quiz-visibility.md.
     ///
     /// The Visibility column is renamed to Status (both int), then its values are remapped from the
     /// old QuizVisibility (Private=0, Public=1, Friends=2) using IsActive/IsPublished — done BEFORE

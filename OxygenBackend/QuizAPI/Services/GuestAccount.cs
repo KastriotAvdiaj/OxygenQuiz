@@ -4,7 +4,7 @@ namespace QuizAPI.Services
     /// A single, fixed, shared "system" user row that every guest-play session is attached to
     /// (the <c>UserId</c> foreign key on <c>QuizSession</c> is non-nullable, so guest sessions
     /// need a real row to point at — they don't get their own per-guest account).
-    /// Seeded once by <see cref="DbSeeder"/>. See docs/guest-play.md for the full design.
+    /// Seeded once by <see cref="DbSeeder"/>. See docs/auth/guest-play.md for the full design.
     /// </summary>
     public static class GuestAccount
     {

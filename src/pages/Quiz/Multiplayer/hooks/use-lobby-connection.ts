@@ -36,7 +36,7 @@ export const useLobbyConnection = ({ mode = "join" }: UseLobbyConnectionOptions)
   //   • route param  — /multiplayer/lobby/:sessionId  (the Join dialog + create flow navigate here)
   //   • ?code query   — /multiplayer/join?code=...      (the shared invite link)
   // Prefer the route param, fall back to the query, and always normalise to upper-case so a typed
-  // code matches the host's upper-case code. See docs/multiplayer-join.md.
+  // code matches the host's upper-case code. See docs/quiz/multiplayer-join.md.
   const codeFromUrl = (params.sessionId ?? searchParams.get("code") ?? "").toUpperCase();
   const [sessionId, setSessionId] = useState(codeFromUrl);
   const [hasJoined, setHasJoined] = useState(false);

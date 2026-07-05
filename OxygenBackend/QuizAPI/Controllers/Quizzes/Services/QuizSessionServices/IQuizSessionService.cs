@@ -15,7 +15,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
         // Session Management
         Task<Result<QuizSessionDto>> CreateSessionAsync(QuizSessionCM model);
 
-        // Guest play (see docs/guest-play.md) — no account, no persistence beyond the live attempt.
+        // Guest play (see docs/auth/guest-play.md) — no account, no persistence beyond the live attempt.
         Task<Result<QuizSessionDto>> CreateGuestSessionAsync(int quizId);
         Task<bool> IsGuestSessionAsync(Guid sessionId);
         Task<Result> DiscardGuestSessionAsync(Guid sessionId);

@@ -1,5 +1,5 @@
 // Shared filtering types — the frontend mirror of QuizAPI.Filtering on the backend.
-// One model used by every filtered list endpoint (see docs/filtering.md).
+// One model used by every filtered list endpoint (see docs/quiz/filtering.md).
 
 export type FilterOperator =
   | "eq"

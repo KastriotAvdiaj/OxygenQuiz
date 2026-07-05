@@ -80,5 +80,5 @@ The chat work itself is a larger feature, but turning Mongo back on is mechanica
 
 ## Related
 
-- [`deployment.md`](./deployment.md) — production hosting (no Mongo needed at launch).
-- [`README.md`](./README.md) — local dev setup.
+- [`deployment.md`](../deployment/deployment.md) — production hosting (no Mongo needed at launch).
+- [`README.md`](../README.md) — local dev setup.

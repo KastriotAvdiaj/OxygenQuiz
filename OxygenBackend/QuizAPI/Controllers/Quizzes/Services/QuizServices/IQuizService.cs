@@ -16,7 +16,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
         Task<PagedList<QuizSummaryDTO>> GetAllQuizzesAsync(QuizFilterParams filterParam);
 
         // Reference implementation of the shared filtering framework (operators + search +
-        // sort + body-envelope pagination). See docs/filtering.md.
+        // sort + body-envelope pagination). See docs/quiz/filtering.md.
         Task<PagedResponse<QuizSummaryDTO>> SearchQuizzesAsync(
             FilterQuery query,
             Guid? restrictToUserId = null,
@@ -45,7 +45,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
 
         /// <summary>
         /// Resolves an Unlisted quiz by its share token, bypassing discovery filters. The token is
-        /// the access grant (see docs/quiz-visibility.md). Returns null for an unknown token or a
+        /// the access grant (see docs/quiz/quiz-visibility.md). Returns null for an unknown token or a
         /// Draft quiz.
         /// </summary>
         Task<QuizDTO?> GetQuizByShareTokenAsync(string shareToken);
@@ -94,7 +94,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
         /// <summary>
         /// Whether <paramref name="hostUserId"/> may host <paramref name="quizId"/> in a multiplayer
         /// lobby: true for a Public quiz or one the host owns (any status). Used to validate the
-        /// host's quiz selection server-side. See docs/quiz-visibility.md.
+        /// host's quiz selection server-side. See docs/quiz/quiz-visibility.md.
         /// </summary>
         Task<bool> CanHostQuizAsync(int quizId, Guid hostUserId);
 

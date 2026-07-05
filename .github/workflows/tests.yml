@@ -3,7 +3,7 @@ name: Tests
 # Deploy gate: runs the backend and frontend test suites on every push and pull
 # request to main. Re-enable the deploy workflows in .github/workflows.disabled and
 # add `needs: [backend-tests, frontend-tests]` to their jobs so a red suite blocks a
-# deploy. See docs/testing.md.
+# deploy. See docs/development/testing.md.
 
 on:
   push:

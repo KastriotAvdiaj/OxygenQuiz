@@ -275,7 +275,7 @@ const CreateQuizForm = ({ editQuiz }: CreateQuizFormProps = {}) => {
       if (isEditMode && editQuiz) {
         // Save the edit at the version the quiz was loaded at — the backend uses it
         // to reject stale writes (409) and to version the question changes so
-        // in-flight players finish the version they started (docs/quiz-editing.md).
+        // in-flight players finish the version they started (docs/quiz/quiz-editing.md).
         await updateQuizMutation.mutateAsync({
           data: {
             ...values,

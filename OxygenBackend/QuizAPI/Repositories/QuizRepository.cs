@@ -72,7 +72,7 @@ namespace QuizAPI.Repositories
                     .ThenInclude(q => q.User)
                 .Where(qq => qq.QuizId == quizId)
                 // Only live rows — retired (edited-away) rows belong to past versions and are
-                // only ever served to sessions pinned to those versions (docs/quiz-editing.md).
+                // only ever served to sessions pinned to those versions (docs/quiz/quiz-editing.md).
                 .Where(qq => qq.RemovedInVersion == null)
                 .OrderBy(qq => qq.OrderInQuiz)
                 .ToListAsync(ct);
@@ -120,7 +120,7 @@ namespace QuizAPI.Repositories
         public async Task AddQuizQuestionAsync(QuizQuestion quizQuestion, CancellationToken ct = default) =>
             await _context.QuizQuestions.AddAsync(quizQuestion, ct);
 
-        // NOTE: QuizQuestion rows are never hard-deleted (docs/quiz-editing.md) — edits retire
+        // NOTE: QuizQuestion rows are never hard-deleted (docs/quiz/quiz-editing.md) — edits retire
         // rows by stamping RemovedInVersion instead, so session/answer FKs stay valid forever.
 
         public void Remove(Quiz quiz) => _context.Quizzes.Remove(quiz);

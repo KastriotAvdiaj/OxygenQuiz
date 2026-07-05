@@ -45,6 +45,6 @@ services:
       retries: 5
 
   # MongoDB removed: multiplayer chat is ephemeral and nothing is persisted to Mongo.
-  # See docs/mongodb.md to restore it for the future persistent chat system.
+  # See docs/data/mongodb.md to restore it for the future persistent chat system.
 volumes:
   postgres-data:

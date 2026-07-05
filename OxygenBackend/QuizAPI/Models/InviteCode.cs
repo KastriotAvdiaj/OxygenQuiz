@@ -6,7 +6,7 @@ namespace QuizAPI.Models
     /// A single-use signup invitation. Mirrors <see cref="EmailVerificationToken"/>: only the
     /// SHA-256 hash of the normalized code is stored (the raw value is shown once at generation),
     /// so a DB leak exposes no usable codes. Redeemed atomically during signup — see
-    /// docs/invite-code-system-plan.md.
+    /// docs/auth/invite-code-system-plan.md.
     /// </summary>
     public class InviteCode
     {

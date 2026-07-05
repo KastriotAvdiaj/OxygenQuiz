@@ -1,8 +1,8 @@
 # Deployment Progress Log
 
 > Running record of the OxygenQuiz production deployment. Companion to
-> [`deployment.md`](./deployment.md) (the strategy), [`vps-launch-checklist.md`](./vps-launch-checklist.md)
-> (the full step-by-step), and [`deployment-runbook.md`](./deployment-runbook.md) (copy-paste commands
+> [`deployment.md`](deployment.md) (the strategy), [`vps-launch-checklist.md`](vps-launch-checklist.md)
+> (the full step-by-step), and [`deployment-runbook.md`](deployment-runbook.md) (copy-paste commands
 > to reconnect and check state).
 > Last updated: 2026-07-04 — **Both tiers are LIVE and connected. `oxygenquiz.com` (Cloudflare Worker)
 > serves the SPA, which talks to `api.oxygenquiz.com` (VPS behind Nginx + Cloudflare Full strict). Admin
@@ -10,8 +10,8 @@
 > are all fixed (§14). Next up: full smoke test + security cleanup before calling it launched.**
 >
 > **▶ Resuming? See "Current step — smoke test + production hardening" below.** Architecture reference:
-> [`infrastructure.md`](./infrastructure.md); config model: [`configuration.md`](./configuration.md);
-> outstanding fixes: [`known-issues.md`](./known-issues.md).
+> [`infrastructure.md`](infrastructure.md); config model: [`configuration.md`](configuration.md);
+> outstanding fixes: [`known-issues.md`](known-issues.md).
 
 ## Architecture we're deploying
 
@@ -158,7 +158,7 @@ saved them before clicking OK. These get pasted onto the VPS as `/etc/ssl/cloudf
 
 ### 14. Frontend live on `oxygenquiz.com` + admin login working ✅
 The SPA is now served from Cloudflare and talks to the production API. Several fixes were needed along
-the way (all detailed in [`known-issues.md`](./known-issues.md)):
+the way (all detailed in [`known-issues.md`](known-issues.md)):
 
 - **Frontend ignored `VITE_API_URL`.** The API client and both SignalR hubs had
   `https://localhost:7153` **hard-coded** — only the LLM client read an env var. So every production
@@ -174,8 +174,8 @@ the way (all detailed in [`known-issues.md`](./known-issues.md)):
   `custom_domain` routes for both hostnames to `wrangler.jsonc`.
 - **Admin login.** Login is **by email**; the prod admin seeded as **`admin@example.com`** (the `kaloti@…`
   seed email lives only in `appsettings.Development.json`, not loaded in prod). Logged in successfully
-  with `admin@example.com` + `ADMIN_PASSWORD`. See [`configuration.md`](./configuration.md) for the full
-  why, and [`deployment-runbook.md`](./deployment-runbook.md) → "Where's the admin password?".
+  with `admin@example.com` + `ADMIN_PASSWORD`. See [`configuration.md`](configuration.md) for the full
+  why, and [`deployment-runbook.md`](deployment-runbook.md) → "Where's the admin password?".
 - **Baked-in creds removed.** `LoginForm` no longer pre-fills a real admin email/password into the
   public bundle.
 - **Seed data is Development-only (not a bug).** Production shows 0 questions/categories because
@@ -193,7 +193,7 @@ left before calling it launched:
 
 1. **Full smoke test over HTTPS** — signup/login, guest play, a 2-browser multiplayer match (WebSockets
    end to end), upload persists across a rebuild, admin reachable, Hangfire dashboard NOT reachable.
-2. **Security cleanup** (tracked in [`known-issues.md`](./known-issues.md)) — remove committed `certs/`
+2. **Security cleanup** (tracked in [`known-issues.md`](known-issues.md)) — remove committed `certs/`
    (+ rotate the mkcert CA), change the seeded admin password, fix stale prod CORS origins in
    `appsettings.Production.json`, add `.gitattributes` for line endings.
 3. **Lock down** — restrict `ufw` 80/443 to Cloudflare IP ranges; Bot Fight Mode + rate-limit rules;
@@ -226,7 +226,7 @@ left before calling it launched:
 - [x] ~~Frontend on Cloudflare — SPA live on `oxygenquiz.com`, custom domains attached, API-URL +
   wrangler deploy fixed, admin login works~~ — done (§14).
 
-1. **Security cleanup (from [`known-issues.md`](./known-issues.md)):** remove committed `certs/`
+1. **Security cleanup (from [`known-issues.md`](known-issues.md)):** remove committed `certs/`
    (+ rotate mkcert CA), change the seeded admin password, fix stale prod CORS origins, add
    `.gitattributes` for line endings. Login-form baked-in creds already fixed (§14).
 2. **Email records** (`MX mx1/mx2.spacemail.com`, `SRV _autodiscover`, `TXT v=spf1...`): keep only if

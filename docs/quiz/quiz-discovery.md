@@ -26,7 +26,7 @@ because `FilterEngine` can only translate a sort into `ORDER BY column`, and var
 needs a *per-category rank*. The flow:
 
 1. The client sends `sort=variety:desc` like any other sort (same wire format,
-   see docs/filtering.md).
+   see docs/quiz/filtering.md).
 2. `FilterEngine` ignores the unknown field (its normal behaviour) and applies the
    default sort.
 3. `QuizService.SearchQuizzesAsync` detects the pseudo field via

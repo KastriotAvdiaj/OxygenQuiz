@@ -9,7 +9,7 @@ using Microsoft.IdentityModel.Tokens;
 // MongoDB is intentionally not wired into DI. It backed write-only lobby-chat
 // archival, which has been disabled so multiplayer chat is fully ephemeral. The
 // driver package and source files are kept for the future chat system.
-// To re-enable, see docs/mongodb.md.
+// To re-enable, see docs/data/mongodb.md.
 // using MongoDB.Driver;
 using QuizAPI.Controllers.Image.Services;
 using QuizAPI.Controllers.Questions.Services;
@@ -44,7 +44,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 // Intentionally not registered. MongoDB backed write-only lobby-chat archival, which is
 // disabled in this deployment (see NoOpLobbyChatArchiver below). Re-enable this block and the
 // `using MongoDB.Driver;` import above, and swap the archiver registration back to
-// LobbyChatArchiver, if chat retention is ever needed. See docs/mongodb.md.
+// LobbyChatArchiver, if chat retention is ever needed. See docs/data/mongodb.md.
 // builder.Services.AddSingleton<IMongoClient>(_ =>
 // {
 //     var connectionString = configuration.GetConnectionString("MongoDBConnection");
@@ -116,9 +116,9 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<QuizAPI.Controllers.Users.Services.IAvatarService, QuizAPI.Controllers.Users.Services.AvatarService>();
 builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
-// Invite-code signup gate (see docs/invite-code-system-plan.md). Stateless CSPRNG helper → singleton.
+// Invite-code signup gate (see docs/auth/invite-code-system-plan.md). Stateless CSPRNG helper → singleton.
 builder.Services.AddSingleton<QuizAPI.Services.Invitations.IInviteCodeGenerator, QuizAPI.Services.Invitations.InviteCodeGenerator>();
-// Email verification: dev logger sender today; swap for a real provider in prod (see docs/email-verification.md).
+// Email verification: dev logger sender today; swap for a real provider in prod (see docs/auth/email-verification.md).
 builder.Services.AddScoped<QuizAPI.Services.Email.IEmailSender, QuizAPI.Services.Email.LoggingEmailSender>();
 builder.Services.AddScoped<IQuizService, QuizService>();
 builder.Services.AddScoped<IQuestionService, QuestionService>();
@@ -210,7 +210,7 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-// --- Rate limiting (app-level, behind Cloudflare) — see docs/rate-limiting.md ---
+// --- Rate limiting (app-level, behind Cloudflare) — see docs/development/rate-limiting.md ---
 builder.Services.AddOxygenRateLimiting();
 
 // --- Controllers & Swagger ---
@@ -224,7 +224,7 @@ var app = builder.Build();
 // --- Forwarded headers (behind Nginx + Cloudflare) ---
 // The app sits behind a reverse proxy (Nginx) and Cloudflare, so the original request scheme/IP
 // arrive in X-Forwarded-Proto / X-Forwarded-For. Without this the app thinks requests are http://
-// and builds http:// image/asset URLs that browsers block on the https:// site. See docs/production-runbook.md §0.
+// and builds http:// image/asset URLs that browsers block on the https:// site. See docs/deployment/production-runbook.md §0.
 var forwardedOptions = new ForwardedHeadersOptions
 {
     ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor
@@ -259,7 +259,7 @@ using (var scope = app.Services.CreateScope())
 
 // --- Production configuration safety-guard ---
 // AllowedHosts / CORS / JWT issuer+audience can only be finalised once a real domain exists
-// (see docs/deployment.md §3–§4). Until then, make it impossible to *silently* ship Production
+// (see docs/deployment/deployment.md §3–§4). Until then, make it impossible to *silently* ship Production
 // with launch-blocking defaults: collect any problems and log a loud warning for each. By default
 // this only warns (so an in-progress staging box still boots); set Security:EnforceProductionConfig
 // to make the same checks fatal once your domain is live, turning this into a hard launch gate.
@@ -291,7 +291,7 @@ if (environment.IsProduction())
 
     if (problems.Count > 0)
     {
-        var header = $"Production configuration check found {problems.Count} issue(s) to fix before public launch (see docs/deployment.md §3):";
+        var header = $"Production configuration check found {problems.Count} issue(s) to fix before public launch (see docs/deployment/deployment.md §3):";
         var body = string.Join(Environment.NewLine, problems.Select(p => "  • " + p));
 
         if (configuration.GetValue<bool>("Security:EnforceProductionConfig"))
@@ -311,7 +311,7 @@ if (environment.IsProduction())
 // X-Content-Type-Options: nosniff stops browsers MIME-sniffing a response into something
 // executable. File exports already force Content-Disposition: attachment via the File(...,
 // fileDownloadName) overload; nosniff is the defense-in-depth complement against content-sniffing
-// of user-supplied data in those downloads (see docs/known-issues.md).
+// of user-supplied data in those downloads (see docs/deployment/known-issues.md).
 app.Use(async (context, next) =>
 {
     context.Response.Headers["X-Content-Type-Options"] = "nosniff";

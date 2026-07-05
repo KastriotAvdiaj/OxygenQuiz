@@ -2,9 +2,9 @@
 
 > A plain-language map of **where every part of OxygenQuiz runs in production and why it's built that
 > way**. This is the "how is this thing actually deployed" document. For the running log of what was
-> done and when, see [`deployment-progress.md`](./deployment-progress.md); for copy-paste operational
-> commands, see [`deployment-runbook.md`](./deployment-runbook.md); for the original strategy and the
-> options we weighed, see [`deployment.md`](./deployment.md).
+> done and when, see [`deployment-progress.md`](deployment-progress.md); for copy-paste operational
+> commands, see [`deployment-runbook.md`](deployment-runbook.md); for the original strategy and the
+> options we weighed, see [`deployment.md`](deployment.md).
 >
 > Last updated: 2026-07-04. Status: **backend live** at `https://api.oxygenquiz.com`; frontend
 > deployment (custom domain on the Worker) is the remaining step.
@@ -69,7 +69,7 @@ Everything downstream follows from this: we run **one** container on **one** VM 
 Lambda), we make sure WebSockets survive every hop (Cloudflare → Nginx → app), and we attach persistent
 storage so a restart doesn't lose data. The trade-off we accepted: every deploy/restart drops in-flight
 matches, which is fine at launch scale — deploy during quiet hours. The path past this limit (Redis
-backplane, shared match store) is documented in [`deployment.md`](./deployment.md) §9.
+backplane, shared match store) is documented in [`deployment.md`](deployment.md) §9.
 
 ---
 
@@ -273,7 +273,7 @@ topology:
   notifications live in Postgres, we disabled Mongo entirely: the `IMongoClient` registration is
   commented out and the chat archiver is swapped to a `NoOpLobbyChatArchiver`. That removes an entire
   database dependency from production. The Mongo-backed class and driver package are kept in the code so
-  the feature can be revived later (see [`mongodb.md`](./mongodb.md)). *(This is also what a build fix on
+  the feature can be revived later (see [`mongodb.md`](../data/mongodb.md)). *(This is also what a build fix on
   2026-07-04 finally completed — an earlier partial edit had removed the `using` but left the
   registration, breaking CI.)*
 
@@ -316,7 +316,7 @@ misconfigured deploy refuses to boot rather than launching insecure.
 ### How `appsettings` is loaded in production (and why some values look "wrong")
 
 > For the full, study-oriented version of this — the `__` nesting convention, arrays, how to inspect the
-> effective config, and the traps — see the dedicated [`configuration.md`](./configuration.md). Short
+> effective config, and the traps — see the dedicated [`configuration.md`](configuration.md). Short
 > version below.
 
 .NET builds its configuration in **layers**, each overriding the one before it:
@@ -352,7 +352,7 @@ Login is **by email + password**:
 - **Email** = `Seed__AdminEmail` if it was set at first boot, otherwise **`admin@example.com`**.
 - The admin is seeded **once**; changing `ADMIN_PASSWORD` afterward does nothing to an existing account.
   Full commands (incl. querying the DB for the exact email) are in
-  [`deployment-runbook.md`](./deployment-runbook.md) → "Where's the admin password?".
+  [`deployment-runbook.md`](deployment-runbook.md) → "Where's the admin password?".
 
 ---
 
@@ -380,7 +380,7 @@ all the way through Cloudflare → Nginx → the authenticated backend, not a Cl
 
 ## 13. Where the real build differs from the original plan
 
-The original strategy doc ([`deployment.md`](./deployment.md)) recommended *managed* Postgres (Neon/
+The original strategy doc ([`deployment.md`](deployment.md)) recommended *managed* Postgres (Neon/
 Supabase) and object storage (S3/R2) for uploads, to offload backups and durability. What we actually
 built is the **cheaper single-VPS variant**: Postgres self-hosted in Docker and uploads on a Docker
 volume. That's a deliberate, valid choice for launch scale — but it means **we own the backups**. The
@@ -410,8 +410,8 @@ cost, and where a missed backup would actually hurt.
 
 ## Related docs
 
-- [`deployment.md`](./deployment.md) — the strategy and the options we weighed (managed vs. VPS, serverless, scaling path).
-- [`deployment-progress.md`](./deployment-progress.md) — dated running log of what's been done.
-- [`deployment-runbook.md`](./deployment-runbook.md) — copy-paste operational commands (connect, deploy, Nginx setup).
-- [`rate-limiting.md`](./rate-limiting.md) — the app-level limiter and the `CF-Connecting-IP` trust model.
-- [`mongodb.md`](./mongodb.md) — how to re-enable MongoDB if the persistent chat system returns.
+- [`deployment.md`](deployment.md) — the strategy and the options we weighed (managed vs. VPS, serverless, scaling path).
+- [`deployment-progress.md`](deployment-progress.md) — dated running log of what's been done.
+- [`deployment-runbook.md`](deployment-runbook.md) — copy-paste operational commands (connect, deploy, Nginx setup).
+- [`rate-limiting.md`](../development/rate-limiting.md) — the app-level limiter and the `CF-Connecting-IP` trust model.
+- [`mongodb.md`](../data/mongodb.md) — how to re-enable MongoDB if the persistent chat system returns.

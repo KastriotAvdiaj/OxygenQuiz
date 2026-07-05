@@ -52,7 +52,7 @@ namespace QuizAPI.Controllers.Users
             return Ok(users); // empty list => 200 + [], not 404
         }
 
-        // Filtered + paginated users (shared filtering framework — see docs/filtering.md).
+        // Filtered + paginated users (shared filtering framework — see docs/quiz/filtering.md).
         // Admin-only: the user list is sensitive. Example:
         //   GET /api/users/search?search=alice&filter=isDeleted:eq:false&sort=dateRegistered:desc
         [HttpGet("search")]

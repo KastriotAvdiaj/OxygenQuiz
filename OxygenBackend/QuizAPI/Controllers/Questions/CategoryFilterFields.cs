@@ -6,7 +6,7 @@ namespace QuizAPI.Controllers.Questions
 {
     /// <summary>
     /// Whitelist of fields clients may filter / search / sort question categories by.
-    /// See docs/filtering.md.
+    /// See docs/quiz/filtering.md.
     /// </summary>
     public static class CategoryFilterFields
     {

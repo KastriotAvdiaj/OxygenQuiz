@@ -1,7 +1,7 @@
 # Deployment Runbook — quick commands
 
 > Copy-paste reference to reconnect to the server and drive the deployment. For *where we are* and
-> *what's next*, see [`deployment-progress.md`](./deployment-progress.md).
+> *what's next*, see [`deployment-progress.md`](deployment-progress.md).
 > Server: `deploy@89.167.23.147` · domain `oxygenquiz.com`.
 
 ---
@@ -245,7 +245,7 @@ Login is **by email + password**:
 - **Email** — whatever `Seed__AdminEmail` was set to when the admin was first seeded. If it was
   never set as an env var, the account defaults to **`admin@example.com`** (because
   `appsettings.Development.json`, which holds the `kaloti@…` value, is NOT loaded in Production —
-  see "How appsettings is loaded in production" in [`infrastructure.md`](./infrastructure.md) §11).
+  see "How appsettings is loaded in production" in [`infrastructure.md`](infrastructure.md) §11).
   Confirm the actual seeded email from the database (open a psql shell inside the postgres container,
   so `$POSTGRES_USER`/`$POSTGRES_DB` expand *inside* the container, not your host shell):
   ```bash

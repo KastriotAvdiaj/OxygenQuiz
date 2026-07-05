@@ -26,7 +26,7 @@ namespace QuizAPI.Models.Quiz
 
         /// <summary>
         /// The <see cref="Quiz.Version"/> in effect when this session started. The session only
-        /// ever sees QuizQuestion rows visible to this version (see docs/quiz-editing.md), so an
+        /// ever sees QuizQuestion rows visible to this version (see docs/quiz/quiz-editing.md), so an
         /// owner editing the quiz mid-game never changes what an in-flight player is served.
         /// </summary>
         public int QuizVersion { get; set; } = 1;
@@ -43,7 +43,7 @@ namespace QuizAPI.Models.Quiz
         public DateTime? AbandonedAt { get; set; }
 
         /// <summary>
-        /// True for sessions created through the anonymous guest-play path (see docs/guest-play.md).
+        /// True for sessions created through the anonymous guest-play path (see docs/auth/guest-play.md).
         /// Guest sessions all share <see cref="QuizAPI.Services.GuestAccount.Id"/> as their UserId
         /// and are deleted immediately once the guest views their results — never kept around.
         /// </summary>

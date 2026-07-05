@@ -1,4 +1,4 @@
-# Production stack for OxygenQuiz on a single VPS (see docs/production-runbook.md).
+# Production stack for OxygenQuiz on a single VPS (see docs/deployment/production-runbook.md).
 # Runs three containers: Caddy (TLS + reverse proxy + SPA static host), the .NET
 # backend, and PostgreSQL. The frontend is built locally and its dist/ is served by
 # Caddy from ./frontend-dist. Secrets live in ./.env (copied from .env.example).

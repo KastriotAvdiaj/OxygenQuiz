@@ -9,7 +9,7 @@ interface GuestQuizPageProps {
   quizId: number;
 }
 
-/** Guest-play counterpart of QuizPage — see docs/guest-play.md. No resume/abandon UI: a guest
+/** Guest-play counterpart of QuizPage — see docs/auth/guest-play.md. No resume/abandon UI: a guest
  * only ever has the one session this page creates. */
 export function GuestQuizPage({ quizId }: GuestQuizPageProps) {
   const navigate = useNavigate();

@@ -121,7 +121,7 @@ namespace QuizAPI.Controllers.Quizzes
             }
         }
 
-        // ── SEARCH (shared filtering framework — see docs/filtering.md) ──────────
+        // ── SEARCH (shared filtering framework — see docs/quiz/filtering.md) ──────────
         // Three scopes mirroring the list endpoints above, all returning the standard
         // PagedResponse body envelope:
         //   GET /api/quiz/search       public catalogue (active + published)

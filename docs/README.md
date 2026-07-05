@@ -8,7 +8,7 @@ The project has four parts:
 - **Frontend** — React 18 + Vite 5 (TypeScript) at the repo root (`src/`).
 - **Backend API** — ASP.NET Core (.NET 8) in `OxygenBackend/QuizAPI`.
 - **Database** — PostgreSQL (primary). *(MongoDB is currently disabled — multiplayer chat is
-  ephemeral; see [`mongodb.md`](./mongodb.md).)*
+  ephemeral; see [`mongodb.md`](data/mongodb.md).)*
 - **AI microservice** — optional Python/FastAPI + Ollama service in `microservice/` (LLM chat only).
 
 ---
@@ -22,7 +22,7 @@ The project has four parts:
 | **Node.js** | **20 LTS** (18+ works) | Building/running the frontend | Vite 5 requires Node 18+; the Docker image uses Node 20 |
 | **npm** | bundled with Node | Frontend dependencies | `package-lock.json` is committed — use `npm ci` for a clean install |
 | **PostgreSQL** | **15** | Primary database | Schema **migrates and seeds automatically** on first API start |
-| **MongoDB** | — | *Not needed* | **Disabled** — chat is ephemeral. Only required if you re-enable the persistent chat system ([`mongodb.md`](./mongodb.md)) |
+| **MongoDB** | — | *Not needed* | **Disabled** — chat is ephemeral. Only required if you re-enable the persistent chat system ([`mongodb.md`](data/mongodb.md)) |
 | **Docker + Docker Compose** | recent | *Optional* | One-command setup of databases + both apps |
 | **An IDE** | — | Development | Visual Studio 2022 recommended for the backend; VS Code / Rider also fine |
 | **Python** | 3.10+ | *Optional* | Only for the AI/LLM chat microservice |
@@ -69,7 +69,7 @@ dotnet user-secrets set "Jwt:Key" "$(openssl rand -base64 48)"
 dotnet user-secrets set "Seed:AdminPassword" "<admin-pw>"
 ```
 
-> MongoDB is disabled, so no `MongoDBConnection` is needed. See [`mongodb.md`](./mongodb.md) if you
+> MongoDB is disabled, so no `MongoDBConnection` is needed. See [`mongodb.md`](data/mongodb.md) if you
 > re-enable the persistent chat system.
 
 Note the default Postgres port here is **5433**, not the standard 5432. The full list of required

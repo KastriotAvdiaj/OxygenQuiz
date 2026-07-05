@@ -62,7 +62,7 @@ export const JoinLobbyDialog = ({ open, onOpenChange }: JoinLobbyDialogProps) =>
     // Navigate to the lobby with the code in the URL and let the lobby page perform the actual
     // join once its connection is live. Joining here (before navigation, possibly before the
     // SignalR connection is ready) was the cause of "a typed code won't join but the invite link
-    // does" — the lobby now owns the single, connection-safe join. See docs/multiplayer-join.md.
+    // does" — the lobby now owns the single, connection-safe join. See docs/quiz/multiplayer-join.md.
     onOpenChange(false);
     navigate(`/multiplayer/lobby/${roomCode.toUpperCase()}`);
   };

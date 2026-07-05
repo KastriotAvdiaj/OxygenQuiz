@@ -259,7 +259,7 @@ public class QuizHub : Hub<IQuizClient>
         }
 
         // Validate the selection server-side — never trust the client-supplied quiz id. The host may
-        // only host a Public quiz or one they own (see docs/quiz-visibility.md). This closes the gap
+        // only host a Public quiz or one they own (see docs/quiz/quiz-visibility.md). This closes the gap
         // where a crafted call could host any quiz regardless of the "public only" picker UI.
         if (!int.TryParse(quizId, out var parsedQuizId))
             throw new HubException("Invalid quiz.");

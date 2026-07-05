@@ -9,7 +9,7 @@ export type ShareLinkResponse = {
 
 /**
  * Generates (or returns the existing) share-link token for an owned quiz so it can be played while
- * Unlisted. Owner-only on the backend. See docs/quiz-visibility.md.
+ * Unlisted. Owner-only on the backend. See docs/quiz/quiz-visibility.md.
  */
 export const createShareLink = (quizId: number): Promise<ShareLinkResponse> =>
   api.post(`/quiz/${quizId}/share-link`);

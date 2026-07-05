@@ -110,7 +110,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.AbandonmentSe
         private async Task<(TimeSpan TotalTimeout, TimeSpan ActivityTimeout)> CalculateTimeoutsAsync(QuizSession session)
         {
             // Timeout math must mirror what the player is actually served: only the rows visible
-            // to the session's pinned quiz version (docs/quiz-editing.md).
+            // to the session's pinned quiz version (docs/quiz/quiz-editing.md).
             var sessionVersion = session.QuizVersion;
             var quizQuestions = session.Quiz?.QuizQuestions
                                    .Where(qq => qq.IsVisibleToVersion(sessionVersion))
@@ -142,7 +142,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.AbandonmentSe
 
         public async Task MarkSessionsAsAbandonedAsync(List<QuizSession> sessions)
         {
-            // Guest sessions are never meant to outlive the attempt (see docs/guest-play.md) —
+            // Guest sessions are never meant to outlive the attempt (see docs/auth/guest-play.md) —
             // an abandoned guest quiz is deleted outright instead of being kept around as
             // "completed". Real-account sessions keep the existing mark-as-abandoned behavior.
             var guestSessionIds = sessions.Where(s => s.IsGuestSession).Select(s => s.Id).ToList();

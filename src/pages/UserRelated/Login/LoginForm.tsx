@@ -13,10 +13,22 @@ interface LoginFormProps {
   isPending: boolean;
 }
 
+// --- Dev-only login prefill --------------------------------------------------
+// `import.meta.env.DEV` is true only under `npm run dev`. Vite replaces it with
+// the literal `false` in a production build, so this whole branch is dead code
+// there and gets stripped — these credentials NEVER ship in the prod bundle.
+//
+// The email is the seeded local admin (Seed:AdminEmail in appsettings.Development.json).
+// Put YOUR local seeded admin password (the Seed:AdminPassword user-secret) in the line
+// below. Do NOT use a real/production password here — it still lives in source control.
+const DEV_LOGIN = import.meta.env.DEV
+  ? { email: "kaloti.avdiaj@gmail.com", password: "admin" }
+  : { email: "", password: "" };
+
 const LoginForm: React.FC<LoginFormProps> = ({ onLogin, isPending }) => {
   const [formData, setFormData] = useState({
-    email: "",
-    password: "",
+    email: DEV_LOGIN.email,
+    password: DEV_LOGIN.password,
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -53,11 +65,16 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, isPending }) => {
             required
           />
           <div className="flex justify-end">
-             <a href="#" className="text-xs text-muted-foreground hover:text-primary transition-colors">Forgot password?</a>
+            <a
+              href="#"
+              className="text-xs text-muted-foreground hover:text-primary transition-colors"
+            >
+              Forgot password?
+            </a>
           </div>
         </div>
       </div>
-      
+
       <div className="pt-2">
         <Button
           onClick={handleSubmit}

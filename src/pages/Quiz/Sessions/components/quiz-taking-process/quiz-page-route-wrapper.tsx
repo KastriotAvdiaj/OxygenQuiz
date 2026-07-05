@@ -6,7 +6,7 @@ import { useGuestCanPlay } from "../../api/guest-quiz-session";
 import { LoadingWave } from "@/components/ui";
 
 /**
- * Singleplayer entry point — see docs/guest-play.md. Logged-in users always get the full
+ * Singleplayer entry point — see docs/auth/guest-play.md. Logged-in users always get the full
  * (persisted, resumable) flow. Signed-out visitors get one free guest attempt per browser
  * (a soft, cookie-based limit) before being sent to log in. Multiplayer has no such fallback:
  * it stays fully gated behind login at the route level (see Router.tsx).

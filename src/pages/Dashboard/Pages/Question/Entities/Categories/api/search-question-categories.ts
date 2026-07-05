@@ -3,7 +3,7 @@ import { QueryConfig } from "@/lib/React-query";
 import { fetchPaged, type FilterQuery, type PagedResponse } from "@/lib/filtering";
 import type { QuestionCategory } from "@/types/question-types";
 
-// Categories over the shared filtering framework (see docs/filtering.md).
+// Categories over the shared filtering framework (see docs/quiz/filtering.md).
 export const searchQuestionCategories = (
   query: FilterQuery
 ): Promise<PagedResponse<QuestionCategory>> =>

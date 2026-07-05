@@ -17,7 +17,7 @@ interface MultiplayerGameProps {
  *
  * The live-question phase reuses the singleplayer gameplay components via
  * <MultiplayerQuestionView> so both modes look the same; the countdown / reveal / results phases
- * are multiplayer-only and stay bespoke (see docs/known-issues.md).
+ * are multiplayer-only and stay bespoke (see docs/deployment/known-issues.md).
  */
 export const MultiplayerGame = ({ username, match, onExit }: MultiplayerGameProps) => {
   const { phase } = match;

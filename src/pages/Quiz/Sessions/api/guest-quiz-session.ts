@@ -1,4 +1,4 @@
-// Guest play (see docs/guest-play.md): same shapes as the authenticated quiz-session API,
+// Guest play (see docs/auth/guest-play.md): same shapes as the authenticated quiz-session API,
 // but talking to the anonymous /guest-quiz-sessions surface instead of /QuizSessions. Kept as a
 // separate file (mirroring the separate backend controller) so the authenticated flow's
 // resume/abandon logic never has to know guest play exists.

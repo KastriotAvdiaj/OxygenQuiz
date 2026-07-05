@@ -64,7 +64,7 @@ namespace QuizAPI.Services
                 foreach (var session in incompleteSessions)
                 {
                     // Only the rows visible to the session's pinned quiz version count toward the
-                    // expected duration (docs/quiz-editing.md).
+                    // expected duration (docs/quiz/quiz-editing.md).
                     var sessionQuestions = session.Quiz.QuizQuestions
                         .Where(qq => qq.IsVisibleToVersion(session.QuizVersion))
                         .ToList();

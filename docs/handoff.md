@@ -28,7 +28,7 @@ Paste this into a new chat to bootstrap context.
   `src/lib/fonts.ts`, loaded in `index.html`.
 - **Audit logging:** `IAuditService.LogAsync` (never throws, call AFTER save),
   verbs from `Services/Audit/AuditActions.cs`. Admin-only Audit Log page with
-  filters + manual Refresh. Docs in `docs/audit-logging.md`.
+  filters + manual Refresh. Docs in `docs/development/audit-logging.md`.
 
 ## What was built this session
 - User settings (theme, music/SFX + volume, show timer, app/quiz fonts) + settings page.

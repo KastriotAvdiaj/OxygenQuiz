@@ -49,7 +49,7 @@ namespace QuizAPI.Services
         }
 
         /// <summary>
-        /// Creates the single shared guest-play placeholder account (see docs/guest-play.md) if it
+        /// Creates the single shared guest-play placeholder account (see docs/auth/guest-play.md) if it
         /// doesn't already exist. It never logs in — the password hash is unusable on purpose.
         /// </summary>
         private async Task EnsureGuestAccountAsync(CancellationToken ct)

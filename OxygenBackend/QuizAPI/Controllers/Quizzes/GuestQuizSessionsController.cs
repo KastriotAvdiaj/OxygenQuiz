@@ -7,7 +7,7 @@ using QuizAPI.Middleware;
 namespace QuizAPI.Controllers;
 
 /// <summary>
-/// Anonymous singleplayer quiz play for visitors without an account. See docs/guest-play.md for
+/// Anonymous singleplayer quiz play for visitors without an account. See docs/auth/guest-play.md for
 /// the full design: one free quiz per browser (a soft, cookie-based limit — not a hard security
 /// boundary), nothing is persisted past the results page, and multiplayer stays fully gated
 /// behind login (enforced separately by <c>QuizHub</c>'s <c>[Authorize]</c>).

@@ -12,7 +12,7 @@ namespace QuizAPI.DTOs.Authentication
     /// predictable patterns without adding real strength. The embedded list is intentionally small
     /// and self-contained (no network call, no large dataset shipped); if stronger coverage is ever
     /// needed, swap this check for a lookup against the full "Have I Been Pwned" Pwned Passwords
-    /// dataset (local copy or its k-anonymity range API) — see docs/known-issues.md.
+    /// dataset (local copy or its k-anonymity range API) — see docs/deployment/known-issues.md.
     /// </summary>
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Parameter)]
     public sealed class NotACommonPasswordAttribute : ValidationAttribute

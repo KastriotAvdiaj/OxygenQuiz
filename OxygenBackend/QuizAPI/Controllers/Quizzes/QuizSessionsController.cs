@@ -11,7 +11,7 @@ namespace QuizAPI.Controllers;
 //
 // Every route here operates on a quiz session that belongs to exactly one real account, so the
 // whole controller requires authentication and each session-scoped action verifies the caller owns
-// the session before doing anything (IDOR protection — see docs/known-issues.md P1). The user id is
+// the session before doing anything (IDOR protection — see docs/deployment/known-issues.md P1). The user id is
 // always taken from the JWT, never from the request body/query, so a client can't act as someone
 // else by supplying a different UserId. Anonymous guest play lives in GuestQuizSessionsController.
 [ApiController] // Recommended to add this attribute

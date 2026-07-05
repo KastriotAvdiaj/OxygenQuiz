@@ -11,7 +11,7 @@ using QuizAPI.Services.Invitations;
 namespace QuizAPI.Controllers.Admin
 {
     /// <summary>
-    /// Mints and manages single-use signup invite codes (see docs/invite-code-system-plan.md).
+    /// Mints and manages single-use signup invite codes (see docs/auth/invite-code-system-plan.md).
     /// Admins only. Codes are stored hashed, so plaintext is returned exactly once — at generation.
     /// </summary>
     [ApiController]

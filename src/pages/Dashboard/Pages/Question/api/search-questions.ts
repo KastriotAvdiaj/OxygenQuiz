@@ -9,7 +9,7 @@ import {
 } from "@/lib/filtering";
 import type { QuestionBase } from "@/types/question-types";
 
-// Reference data hook for the shared filtering framework (see docs/filtering.md).
+// Reference data hook for the shared filtering framework (see docs/quiz/filtering.md).
 // Follows the project's getX / getXQueryOptions / useXData convention, but the params
 // are the generic FilterQuery instead of a hand-rolled per-endpoint param type.
 

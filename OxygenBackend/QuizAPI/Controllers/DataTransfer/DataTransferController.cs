@@ -499,7 +499,7 @@ namespace QuizAPI.Controllers.DataTransfer
                 TimeLimitInSeconds = q.TimeLimitInSeconds ?? 0,
                 ShuffleQuestions = q.ShuffleQuestions,
                 ShowFeedbackImmediately = q.ShowFeedbackImmediately,
-                // Live rows only — exports reflect the quiz's current content (docs/quiz-editing.md).
+                // Live rows only — exports reflect the quiz's current content (docs/quiz/quiz-editing.md).
                 QuestionCount = q.QuizQuestions.Count(qq => qq.RemovedInVersion == null),
                 // Pipe-separated question ids in quiz order — round-trips back into import.
                 QuestionIds = string.Join("|", q.QuizQuestions

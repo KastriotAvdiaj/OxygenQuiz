@@ -3,7 +3,7 @@ import { QueryConfig } from "@/lib/React-query";
 import { fetchPaged, type FilterQuery, type PagedResponse } from "@/lib/filtering";
 import type { AuditLog } from "@/types/audit-types";
 
-// Audit trail over the shared filtering framework (see docs/filtering.md). Admin-only.
+// Audit trail over the shared filtering framework (see docs/quiz/filtering.md). Admin-only.
 export const searchAuditLogs = (query: FilterQuery): Promise<PagedResponse<AuditLog>> =>
   fetchPaged<AuditLog>("/auditlogs/search", query);
 

@@ -9,7 +9,7 @@ interface QuestionCardProps {
 /**
  * The styled "question text" card shared by singleplayer (`QuestionDisplay`) and the live
  * multiplayer match (`MultiplayerQuestionView`). Kept as one component so the gameplay look
- * stays identical across both modes — change it here and both update. See docs/known-issues.md
+ * stays identical across both modes — change it here and both update. See docs/deployment/known-issues.md
  * ("Multiplayer & singleplayer gameplay UIs diverged").
  */
 export function QuestionCard({ text, className = "" }: QuestionCardProps) {

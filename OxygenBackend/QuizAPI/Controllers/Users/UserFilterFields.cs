@@ -8,7 +8,7 @@ namespace QuizAPI.Controllers.Users
     /// Whitelist of fields clients may filter / search / sort users by. Only scalar columns
     /// are exposed; role filtering is a collection concern and is intentionally not part of
     /// the generic engine — "role" rules (role:eq:Admin / role:in:Admin,User) are handled
-    /// separately in UserService.SearchUsersAsync. See docs/filtering.md.
+    /// separately in UserService.SearchUsersAsync. See docs/quiz/filtering.md.
     /// </summary>
     public static class UserFilterFields
     {

@@ -17,7 +17,7 @@ namespace QuizAPI.DTOs.Authentication
 
         // Optional at the DTO level so the same DTO works in both invite-only and open modes;
         // whether a code is *required* is enforced in AuthenticationService based on the
-        // Signup:RequireInviteCode flag. See docs/invite-code-system-plan.md.
+        // Signup:RequireInviteCode flag. See docs/auth/invite-code-system-plan.md.
         [MaxLength(64)]
         public string? InviteCode { get; set; }
     }

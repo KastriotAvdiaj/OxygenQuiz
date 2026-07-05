@@ -61,7 +61,7 @@ account or token to authorize Unlisted/Draft access.
 
 Quiz import/export uses a single `Status` column (`Draft` / `Unlisted` / `Public`). Legacy files
 that still carry `Visibility` (`Private` / `Friends`) map to `Unlisted`; unrecognised values default
-to `Draft`. See [import-templates/README.md](import-templates/README.md).
+to `Draft`. See [import-templates/README.md](../data/import-templates/README.md).
 
 ## Implementation status
 

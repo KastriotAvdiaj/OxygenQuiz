@@ -54,7 +54,7 @@ export function QuizSelection() {
   const [difficultyId, setDifficultyId] = useState(ALL_FILTER);
   const [languageId, setLanguageId] = useState(ALL_FILTER);
   // Defaults to "variety": the first page interleaves categories so new users see
-  // the breadth of quizzes on offer (docs/quiz-discovery.md).
+  // the breadth of quizzes on offer (docs/quiz/quiz-discovery.md).
   const [sortBy, setSortBy] = useState<SortOption>(DEFAULT_SORT);
   const [pageNumber, setPageNumber] = useState(1);
   const [selectedQuiz, setSelectedQuiz] = useState<QuizSummaryDTO | null>(null);

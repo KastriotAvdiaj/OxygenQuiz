@@ -41,7 +41,7 @@ namespace QuizAPI.Controllers.Questions
             return Ok(questionCategories);
         }
 
-        // Filtered + paginated categories (shared filtering framework — see docs/filtering.md).
+        // Filtered + paginated categories (shared filtering framework — see docs/quiz/filtering.md).
         // Example: GET /api/questioncategories/search?search=geo&sort=name:asc
         [HttpGet("search")]
         public async Task<IActionResult> Search([FromQuery] FilterQuery query, CancellationToken ct)

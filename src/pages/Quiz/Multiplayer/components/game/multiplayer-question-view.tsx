@@ -19,7 +19,7 @@ interface MultiplayerQuestionViewProps {
  * Live multiplayer question screen, rendered to look identical to singleplayer by reusing the
  * exact same leaf components (`QuizTimer`, `QuestionCard`, `QuestionMedia`, and the per-type
  * answer components). This adapter's whole job is to bridge the two different data/interaction
- * models — see docs/known-issues.md ("Multiplayer & singleplayer gameplay UIs diverged"):
+ * models — see docs/deployment/known-issues.md ("Multiplayer & singleplayer gameplay UIs diverged"):
  *
  *  - shape: the match wire type `RoundQuestionView` is mapped to the singleplayer `CurrentQuestion`.
  *  - answers: singleplayer components call `onSubmit(optionId, text)`; the match hub wants a single

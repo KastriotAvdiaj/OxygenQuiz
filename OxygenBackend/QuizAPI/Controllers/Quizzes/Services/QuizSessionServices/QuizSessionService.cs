@@ -211,7 +211,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
         /// <summary>
         /// Whether <paramref name="userId"/> may start a session for <paramref name="quiz"/>:
         /// Public quizzes are open to all; the owner may always play (including their own Drafts);
-        /// an Unlisted quiz additionally requires the matching share token. See docs/quiz-visibility.md.
+        /// an Unlisted quiz additionally requires the matching share token. See docs/quiz/quiz-visibility.md.
         /// </summary>
         private static bool IsPlayAuthorized(Quiz quiz, Guid userId, string? shareToken) =>
             quiz.Status == QuizStatus.Public
@@ -259,7 +259,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                 // No existing session, create new one
                 var session = model.ToEntity();
                 session.Id = Guid.NewGuid();
-                // Pin the session to the quiz version it starts on (docs/quiz-editing.md): the
+                // Pin the session to the quiz version it starts on (docs/quiz/quiz-editing.md): the
                 // session is only ever served QuizQuestion rows visible to this version, so a
                 // concurrent edit by the owner can't change the game mid-flight.
                 session.QuizVersion = quiz.Version;
@@ -290,7 +290,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
 
 
         /// <summary>
-        /// Creates a session for the shared guest account (see docs/guest-play.md). Deliberately
+        /// Creates a session for the shared guest account (see docs/auth/guest-play.md). Deliberately
         /// skips the "you already have an active session" check that real accounts get — every
         /// guest shares the same UserId, so that check would (wrongly) treat one guest's in-progress
         /// quiz as blocking a completely different guest from starting one.
@@ -317,7 +317,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                     TotalScore = 0,
                     IsCompleted = false,
                     IsGuestSession = true,
-                    // Same version pinning as regular sessions (docs/quiz-editing.md).
+                    // Same version pinning as regular sessions (docs/quiz/quiz-editing.md).
                     QuizVersion = quiz.Version,
                 };
 
@@ -482,7 +482,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                 }
 
                 var answeredIds = session.UserAnswers.Select(ua => ua.QuizQuestionId).ToHashSet();
-                // Pinned-version view of the quiz — see GetNextQuestionAsync / docs/quiz-editing.md.
+                // Pinned-version view of the quiz — see GetNextQuestionAsync / docs/quiz/quiz-editing.md.
                 var unansweredQuestions = session.Quiz.QuizQuestions
                     .Where(qq => qq.IsVisibleToVersion(session.QuizVersion))
                     .Where(qq => !answeredIds.Contains(qq.Id))

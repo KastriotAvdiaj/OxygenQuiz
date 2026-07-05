@@ -8,7 +8,7 @@
 #
 # Postgres → localhost:5433, db OxygenQuiz, user/pass postgres/123  (matches PostgresConnection)
 #
-# MongoDB was removed — multiplayer chat is ephemeral. See docs/mongodb.md to bring it back
+# MongoDB was removed — multiplayer chat is ephemeral. See docs/data/mongodb.md to bring it back
 # for the future persistent chat system.
 
 services:

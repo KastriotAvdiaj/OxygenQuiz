@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.RateLimiting;
 namespace QuizAPI.Middleware
 {
     /// <summary>
-    /// Application-level rate limiting (defense-in-depth behind Cloudflare). See docs/rate-limiting.md
+    /// Application-level rate limiting (defense-in-depth behind Cloudflare). See docs/development/rate-limiting.md
     /// for the why, the tuning, and how it fits with the edge layer.
     ///
     /// Two things to know when reading this:
@@ -101,7 +101,7 @@ namespace QuizAPI.Middleware
         /// hop of <c>X-Forwarded-For</c>, then the socket address. NOTE: these headers are only
         /// trustworthy when traffic is forced through the proxy (lock the origin's firewall to
         /// Cloudflare IP ranges) — otherwise a caller hitting the origin directly can spoof them.
-        /// See docs/rate-limiting.md § "Trusting the client IP".
+        /// See docs/development/rate-limiting.md § "Trusting the client IP".
         /// </summary>
         private static string ClientIp(HttpContext context)
         {

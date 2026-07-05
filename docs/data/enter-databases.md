@@ -10,19 +10,23 @@ POSTGRESS commands once executed into:
 
 # POSTGRES via Docker
 
-1. Go to "Exec" tab in the interface,
-2. type : "psql -U postgres",
+1. Go to the "Exec" tab of the `oxygen-postgres` container (Docker Desktop),
+2. type : "psql -U postgres -d OxygenQuiz",
 
 
 # POSTGRES via CMD
 
 1. Open CMD,
-2. type: "docker exec -it postgres-db psql -U postgres"
+2. type: "docker exec -it oxygen-postgres psql -U postgres -d OxygenQuiz"
+
+> The local dev container is named **`oxygen-postgres`** (see `docker-compose.dev.yml`), db
+> **OxygenQuiz**, user/pass **postgres/123**, on host port **5433**. (The production compose names
+> its container differently — this command is for local dev.)
 
 
 > **Note:** MongoDB is currently **disabled** — the app no longer runs a Mongo container, so the
 > commands below don't apply until the persistent chat system is re-enabled. See
-> [`mongodb.md`](./mongodb.md).
+> [`mongodb.md`](mongodb.md).
 
 MONGODB commands once executed into:
 1. show dbs - List all available databases.

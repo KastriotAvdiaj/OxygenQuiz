@@ -1,6 +1,6 @@
 # VPS Launch Checklist (Hetzner backend + Cloudflare Pages frontend)
 
-> Companion to [`deployment.md`](./deployment.md). That doc explains *why*; this one is the
+> Companion to [`deployment.md`](deployment.md). That doc explains *why*; this one is the
 > concrete, ordered "do this" for the split you chose:
 > **frontend on Cloudflare Pages, backend + SignalR on the Hetzner CX23 VPS, Cloudflare in front of both.**
 > Server: `ubuntu-4gb-hel1-1` · `89.167.23.147` · Ubuntu, 2 vCPU / 4 GB / 40 GB.

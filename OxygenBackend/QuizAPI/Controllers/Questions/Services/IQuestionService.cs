@@ -15,7 +15,7 @@ namespace QuizAPI.Controllers.Questions.Services
 
         // Shared filtering framework (operators + search + sort + body-envelope pagination).
         // SearchQuestionsAsync returns lightweight base DTOs; the typed variants return the
-        // rich per-type DTOs the type-tabbed UI needs. See docs/filtering.md.
+        // rich per-type DTOs the type-tabbed UI needs. See docs/quiz/filtering.md.
         Task<PagedResponse<QuestionBaseDTO>> SearchQuestionsAsync(
             FilterQuery query, Guid? restrictToUserId = null, CancellationToken ct = default);
 

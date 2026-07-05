@@ -3,7 +3,7 @@ import { QueryConfig } from "@/lib/React-query";
 import { fetchPaged, type FilterQuery, type PagedResponse } from "@/lib/filtering";
 import type { QuizSummaryDTO } from "@/types/quiz-types";
 
-// Shared filtering framework for quizzes (see docs/filtering.md). Three scopes mirror the
+// Shared filtering framework for quizzes (see docs/quiz/filtering.md). Three scopes mirror the
 // backend endpoints; each takes the same generic FilterQuery and returns a PagedResponse.
 type QuizSearchScope = "public" | "mine" | "all";
 

@@ -9,7 +9,7 @@ The Join dialog used to perform its own `joinSession` before navigating, while t
 second, independent join path. The dialog now only navigates (`/multiplayer/lobby/:sessionId`) and
 the lobby page owns the single, connection-safe join (`useLobbyConnection` auto-joins from the URL
 code). This fixed "a typed code won't join but the invite link does." See
-[`docs/multiplayer-join.md`](../../../../docs/multiplayer-join.md).
+[`docs/quiz/multiplayer-join.md`](../../../../docs/quiz/multiplayer-join.md).
 
 ---
 

@@ -5,7 +5,7 @@ using Xunit;
 namespace QuizAPI.Tests.Discovery;
 
 /// <summary>
-/// Tests for the catalogue's "variety" ordering (docs/quiz-discovery.md): the first page
+/// Tests for the catalogue's "variety" ordering (docs/quiz/quiz-discovery.md): the first page
 /// must interleave categories — newest of each category first — so new users see the
 /// breadth of the app instead of a wall of one category. The ordering is plain LINQ, so
 /// it runs identically here (in memory) and in SQL via EF.

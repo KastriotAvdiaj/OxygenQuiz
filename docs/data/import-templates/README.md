@@ -54,7 +54,7 @@ The richest list. Fill only the columns relevant to each row's `Type`:
 | `Title` | required; duplicates (same title, for you) are skipped |
 | `Description` | optional |
 | `CategoryId`, `LanguageId`, `DifficultyId` | integer IDs that **must already exist** (export those lists to find them) |
-| `Status` | `Draft`, `Unlisted`, or `Public` — the quiz's access state (see [quiz-visibility.md](../quiz-visibility.md)). Defaults to `Draft`; anything unrecognised also becomes `Draft` so a quiz is never accidentally published. Legacy `Private` / `Friends` values map to `Unlisted`. |
+| `Status` | `Draft`, `Unlisted`, or `Public` — the quiz's access state (see [quiz-visibility.md](../../quiz/quiz-visibility.md)). Defaults to `Draft`; anything unrecognised also becomes `Draft` so a quiz is never accidentally published. Legacy `Private` / `Friends` values map to `Unlisted`. |
 | `TimeLimitInSeconds` | optional integer (recomputed from the questions on import) |
 | `ShuffleQuestions`, `ShowFeedbackImmediately` | true/false |
 | `QuestionIds` | optional pipe-separated IDs of **existing** questions, in order: `12\|15\|18`. Blank imports the quiz as a draft you finish in the editor; any id that doesn't exist skips the whole row. |

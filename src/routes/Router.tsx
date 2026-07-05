@@ -201,7 +201,7 @@ const createAppRouter = (queryClient: QueryClient) =>
       ),
     },
     {
-      // No auth loader: signed-out visitors get one free guest attempt (see docs/guest-play.md)
+      // No auth loader: signed-out visitors get one free guest attempt (see docs/auth/guest-play.md)
       // — QuizPageRouteWrapper itself decides real vs. guest vs. redirect-to-login.
       path: "/quiz/:quizId/play",
       errorElement: <DashboardErrorElement />,
@@ -228,7 +228,7 @@ const createAppRouter = (queryClient: QueryClient) =>
       ),
     },
     {
-      // Guest results — public on purpose, see docs/guest-play.md. Viewing this page is what
+      // Guest results — public on purpose, see docs/auth/guest-play.md. Viewing this page is what
       // spends the browser's one free guest quiz (GuestQuizResultsRouteWrapper calls /finish).
       path: "/quiz/results-guest/:sessionId",
       errorElement: <DashboardErrorElement />,

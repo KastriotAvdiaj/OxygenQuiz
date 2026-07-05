@@ -7,7 +7,7 @@ import { createQuizInputSchema } from "./create-quiz";
 
 // Same shape as create, plus the id and the optimistic-concurrency version the
 // quiz was loaded at. The backend rejects the save with 409 when the version is
-// stale (someone else edited the quiz in the meantime) — see docs/quiz-editing.md.
+// stale (someone else edited the quiz in the meantime) — see docs/quiz/quiz-editing.md.
 export const updateQuizInputSchema = createQuizInputSchema.extend({
   id: z.number().int().positive(),
   version: z.number().int().positive(),

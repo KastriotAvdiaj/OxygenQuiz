@@ -7,7 +7,7 @@ import { useResendVerification } from "@/pages/UserRelated/ConfirmEmail/api/emai
 /**
  * Soft-gate nudge: a slim banner shown to logged-in users who haven't confirmed their email yet,
  * with a one-click resend. Renders nothing for anonymous or already-confirmed users, so it's safe
- * to mount globally. See docs/email-verification.md.
+ * to mount globally. See docs/auth/email-verification.md.
  */
 export const EmailVerificationBanner = () => {
   const { data: user } = useUser();

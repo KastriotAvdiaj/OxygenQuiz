@@ -167,12 +167,12 @@ backups with it.
 
 ## Notes
 
-- **Invite-only:** implemented (see [`invite-code-system.md`](invite-code-system.md)). To gate the
+- **Invite-only:** implemented (see [`invite-code-system.md`](../auth/invite-code-system.md)). To gate the
   test, set `Signup__RequireInviteCode=true` in `.env` (already listed in `.env.example`). After the
   stack is up, mint codes as admin: `POST /api/admin/invite-codes { "count": 25 }` — copy them once
   (they can't be re-read) and hand them out. Reopen public signup later with `=false`, no redeploy.
 - **Email:** the sender is still the dev-only logger (`LoggingEmailSender`), so verification emails
   are only logged, never delivered. Verification is a **soft gate** — testers can sign up and use
   everything without confirming, so this is fine for a closed test. Before a public launch, wire a
-  real `IEmailSender` provider (see [`email-verification.md`](email-verification.md)).
+  real `IEmailSender` provider (see [`email-verification.md`](../auth/email-verification.md)).
 - **Mongo:** removed — nothing to provision (see `mongodb.md`).

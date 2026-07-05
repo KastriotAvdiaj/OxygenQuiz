@@ -49,7 +49,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
 
         /// <summary>
         /// Shared filtering framework for quizzes (filters + search + sort + body-envelope
-        /// pagination). See docs/filtering.md. Quizzes are mapped to summary DTOs after
+        /// pagination). See docs/quiz/filtering.md. Quizzes are mapped to summary DTOs after
         /// materialising, so this uses the "map" overload of
         /// <see cref="PagedResponse{T}.CreateAsync"/>.
         ///
@@ -78,7 +78,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
             // "variety" is a pseudo sort field (not in the whitelist, so FilterEngine ignored
             // it and applied the default sort — which this overrides). It interleaves
             // categories so the catalogue's first page shows the app's breadth; see
-            // docs/quiz-discovery.md.
+            // docs/quiz/quiz-discovery.md.
             if (QuizVarietyOrdering.IsRequested(query.Sort))
                 q = QuizVarietyOrdering.Apply(q);
 
@@ -273,7 +273,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
 
                 var newVersion = quiz.Version + 1;
 
-                // Copy-on-write question diff (docs/quiz-editing.md): join rows are never updated
+                // Copy-on-write question diff (docs/quiz/quiz-editing.md): join rows are never updated
                 // in place or hard-deleted, so in-flight sessions and historical UserAnswers keep
                 // valid references. Removed/changed rows are retired via RemovedInVersion; changed
                 // and added questions get fresh rows stamped with the new version.

@@ -7,7 +7,7 @@ import { UserBasic } from "./user-types";
 // types/quiz.types.ts
 
 /**
- * A quiz's single access/lifecycle state (see docs/quiz-visibility.md):
+ * A quiz's single access/lifecycle state (see docs/quiz/quiz-visibility.md):
  * - Draft    — only the owner can see/play it.
  * - Unlisted — playable via share link or lobby invite; not in the public catalogue.
  * - Public   — discoverable and playable by everyone.

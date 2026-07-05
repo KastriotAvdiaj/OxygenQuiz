@@ -3,7 +3,7 @@ using QuizAPI.Models.Quiz;
 namespace QuizAPI.Controllers.Quizzes
 {
     /// <summary>
-    /// "Variety" ordering for the quiz catalogue (see docs/quiz-discovery.md): interleaves
+    /// "Variety" ordering for the quiz catalogue (see docs/quiz/quiz-discovery.md): interleaves
     /// categories so the first page shows the newest quiz of each category, then the second
     /// of each, and so on — new users immediately see the breadth of what the app offers
     /// instead of a wall of whatever category was published most recently.
