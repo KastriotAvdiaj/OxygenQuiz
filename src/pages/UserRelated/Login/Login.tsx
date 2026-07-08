@@ -59,10 +59,10 @@ const Login: React.FC = () => {
           className="absolute inset-0 bg-cover bg-center"
           style={{ backgroundImage: `url(${OxygenBackground})` }}
         />
-        
+
         {/* Dark overlay for text readability */}
         <div className="absolute inset-0 bg-black/40" />
-        
+
         {/* Content */}
         <div className="relative z-10 text-center px-8 space-y-4">
           <div className="transform hover:scale-105 transition-transform duration-300 flex justify-center font-header">

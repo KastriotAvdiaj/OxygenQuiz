@@ -6,7 +6,7 @@ import {
   Copy,
   Activity,
   UserX,
-  UserRoundPen,
+  UserRoundCog,
   MoreHorizontal,
 } from "lucide-react";
 import {
@@ -18,6 +18,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { DeleteUser } from "./delete-user";
+import { ChangeUserRole } from "./change-user-role";
 import formatDate from "@/lib/date-format";
 import { useUser } from "@/lib/Auth";
 
@@ -93,6 +94,21 @@ export const columns: ColumnDef<User>[] = [
 
       const { open, isOpen, close } = useDisclosure();
 
+      // Role-management gating (backend enforces the same rules):
+      //  - never let someone change their own role (self-demotion / lockout footgun)
+      //  - an Admin can't manage a SuperAdmin; only a SuperAdmin can.
+      const isSelf = user.id === mainUser.data.id;
+      const callerIsSuperAdmin =
+        mainUser.data.roles?.includes("SuperAdmin") ?? false;
+      const targetIsSuperAdmin = (user.roles ?? []).some(
+        (r) => r.toLowerCase() === "superadmin"
+      );
+      const canManageRoles =
+        !isSelf && (callerIsSuperAdmin || !targetIsSuperAdmin);
+      const disabledReason = isSelf
+        ? "You can't change your own role"
+        : "Only a SuperAdmin can change a SuperAdmin's role";
+
       return (
         <DropdownMenu
           open={isOpen}
@@ -119,9 +135,24 @@ export const columns: ColumnDef<User>[] = [
               <DeleteUser id={user.id} closeDropDown={close} />
             </DropdownMenuItem>
             <DropdownMenuSeparator className="bg-background/60" />
-            <DropdownMenuItem>
-              <UserRoundPen size={16} /> Edit User
-            </DropdownMenuItem>
+            {canManageRoles ? (
+              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                <ChangeUserRole
+                  user={{
+                    id: user.id,
+                    username: user.username,
+                    roles: user.roles ?? [],
+                  }}
+                  closeDropDown={close}
+                />
+              </DropdownMenuItem>
+            ) : (
+              <DropdownMenuItem disabled title={disabledReason}>
+                <span className="flex h-5 items-center gap-2 px-0 text-sm font-normal">
+                  <UserRoundCog size={16} /> Change Role
+                </span>
+              </DropdownMenuItem>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       );

@@ -1,0 +1,122 @@
+[
+  {
+    "Name": "Science",
+    "Gradient": true,
+    "ColorPaletteJson": "[\"#2563EB\",\"#22D3EE\"]"
+  },
+  {
+    "Name": "Mathematics",
+    "Gradient": true,
+    "ColorPaletteJson": "[\"#4F46E5\",\"#818CF8\"]"
+  },
+  {
+    "Name": "History",
+    "Gradient": true,
+    "ColorPaletteJson": "[\"#92400E\",\"#D97706\"]"
+  },
+  {
+    "Name": "Geography",
+    "Gradient": true,
+    "ColorPaletteJson": "[\"#047857\",\"#34D399\"]"
+  },
+  {
+    "Name": "Literature",
+    "Gradient": true,
+    "ColorPaletteJson": "[\"#9F1239\",\"#FB7185\"]"
+  },
+  {
+    "Name": "Music",
+    "Gradient": true,
+    "ColorPaletteJson": "[\"#7C3AED\",\"#EC4899\"]"
+  },
+  {
+    "Name": "Film & TV",
+    "Gradient": true,
+    "ColorPaletteJson": "[\"#B91C1C\",\"#F59E0B\"]"
+  },
+  {
+    "Name": "Sports",
+    "Gradient": true,
+    "ColorPaletteJson": "[\"#EA580C\",\"#EF4444\"]"
+  },
+  {
+    "Name": "Technology",
+    "Gradient": true,
+    "ColorPaletteJson": "[\"#0891B2\",\"#3B82F6\"]"
+  },
+  {
+    "Name": "Art & Design",
+    "Gradient": true,
+    "ColorPaletteJson": "[\"#DB2777\",\"#F97316\"]"
+  },
+  {
+    "Name": "Nature & Environment",
+    "Gradient": true,
+    "ColorPaletteJson": "[\"#15803D\",\"#84CC16\"]"
+  },
+  {
+    "Name": "Space & Astronomy",
+    "Gradient": true,
+    "ColorPaletteJson": "[\"#1E3A8A\",\"#7C3AED\"]"
+  },
+  {
+    "Name": "Biology",
+    "Gradient": true,
+    "ColorPaletteJson": "[\"#059669\",\"#10B981\"]"
+  },
+  {
+    "Name": "Chemistry",
+    "Gradient": true,
+    "ColorPaletteJson": "[\"#0D9488\",\"#A3E635\"]"
+  },
+  {
+    "Name": "Physics",
+    "Gradient": true,
+    "ColorPaletteJson": "[\"#1D4ED8\",\"#38BDF8\"]"
+  },
+  {
+    "Name": "Computer Science",
+    "Gradient": true,
+    "ColorPaletteJson": "[\"#0F172A\",\"#22D3EE\"]"
+  },
+  {
+    "Name": "General Knowledge",
+    "Gradient": true,
+    "ColorPaletteJson": "[\"#6366F1\",\"#A855F7\"]"
+  },
+  {
+    "Name": "Food & Drink",
+    "Gradient": true,
+    "ColorPaletteJson": "[\"#DC2626\",\"#FBBF24\"]"
+  },
+  {
+    "Name": "Travel",
+    "Gradient": true,
+    "ColorPaletteJson": "[\"#0EA5E9\",\"#14B8A6\"]"
+  },
+  {
+    "Name": "Politics",
+    "Gradient": true,
+    "ColorPaletteJson": "[\"#1E40AF\",\"#94A3B8\"]"
+  },
+  {
+    "Name": "Business & Economics",
+    "Gradient": true,
+    "ColorPaletteJson": "[\"#065F46\",\"#10B981\"]"
+  },
+  {
+    "Name": "Language & Grammar",
+    "Gradient": true,
+    "ColorPaletteJson": "[\"#6D28D9\",\"#D946EF\"]"
+  },
+  {
+    "Name": "Mythology & Folklore",
+    "Gradient": true,
+    "ColorPaletteJson": "[\"#B45309\",\"#7C3AED\"]"
+  },
+  {
+    "Name": "Video Games",
+    "Gradient": true,
+    "ColorPaletteJson": "[\"#8B5CF6\",\"#22D3EE\"]"
+  }
+]

@@ -1,4 +1,4 @@
-﻿using QuizAPI.DTOs.User;
+using QuizAPI.DTOs.User;
 using QuizAPI.Filtering;
 
 namespace QuizAPI.Services.Interfaces
@@ -17,6 +17,18 @@ namespace QuizAPI.Services.Interfaces
         Task<IReadOnlyList<UserDTO>> GetUsersByIdsAsync(IEnumerable<Guid> userIds, CancellationToken ct = default);
         Task<UserDTO> CreateUserAsync(CreateUserDTO dto, CancellationToken ct = default);
         Task UpdateUserAsync(Guid userId, UpdateUserDTO dto, CancellationToken ct = default);
+
+        /// <summary>
+        /// Replaces a user's role set (admin action). <paramref name="callerIsSuperAdmin"/> gates the
+        /// privileged transitions: only a SuperAdmin may grant or remove the SuperAdmin role — an
+        /// Admin can manage Admin/User but is refused (403) if the change touches SuperAdmin. The last
+        /// remaining SuperAdmin cannot be demoted (lockout guard). <paramref name="callerId"/> is
+        /// recorded on each new assignment and in the audit log.
+        /// </summary>
+        Task SetUserRolesAsync(
+            Guid userId, SetUserRolesDTO dto, bool callerIsSuperAdmin, Guid callerId,
+            CancellationToken ct = default);
+
         Task DeleteUserAsync(Guid userId, CancellationToken ct = default);
         Task<bool> UserExistsAsync(Guid userId, CancellationToken ct = default);
 

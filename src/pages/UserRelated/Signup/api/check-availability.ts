@@ -75,4 +75,52 @@ export const useEmailAvailability = (email: string) => {
   };
 };
 
+type InviteCodeValidityResponse = {
+  valid?: boolean;
+};
+
+// An invite code is CodeLength (10) chars once dashes/spaces are stripped and it's uppercased
+// (see backend InviteCodeGenerator). Mirror that here so we only hit the endpoint on a
+// plausibly-complete code — never mid-type, and never as a way to probe partial codes.
+const INVITE_CODE_LENGTH = 10;
+const normalizeInviteCode = (raw: string) =>
+  raw.replace(/[\s-]/g, "").toUpperCase();
+
+const fetchInviteValidity = (code: string): Promise<InviteCodeValidityResponse> =>
+  apiService.get("/Authentication/validate-invite-code", { params: { code } });
+
+/**
+ * Debounced, advisory check that an invite code is currently redeemable, so the signup form can
+ * reject a bad code on the first step instead of at submit. The query stays disabled until the
+ * code is the full expected length, so we don't spam the (rate-limited) endpoint while typing.
+ *
+ * Advisory only: signup still atomically validates and consumes the code, so `isValid` here is a
+ * fast-fail hint, not a guarantee. `throwOnError: false` keeps a background check from ever
+ * bubbling to an error boundary — its failure is handled inline (we don't hard-block on it).
+ */
+export const useInviteCodeValidity = (code: string) => {
+  const normalized = normalizeInviteCode(code);
+  const debounced = useDebounce(normalized, 400);
+  const longEnough = debounced.length === INVITE_CODE_LENGTH;
+
+  const query = useQuery({
+    queryKey: ["invite-code-validity", debounced],
+    queryFn: () => fetchInviteValidity(debounced),
+    enabled: longEnough,
+    staleTime: 60_000,
+    retry: false,
+    throwOnError: false,
+  });
+
+  return {
+    // True only once we have a definitive "redeemable" answer for the current value.
+    isValid: query.data?.valid === true,
+    isInvalid: query.data?.valid === false,
+    // "checking" covers both the debounce gap and the in-flight request.
+    isChecking: longEnough && (query.isFetching || debounced !== normalized),
+    isError: query.isError,
+    longEnough,
+  };
+};
+
 export { EMAIL_REGEX, MIN_USERNAME_LENGTH };

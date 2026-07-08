@@ -1,14 +1,15 @@
 import React from "react";
+import { MailPlus } from "lucide-react";
 import OxygenBackground from "/assets/oxygenquiz2.jpg";
 import SignupForm from "./SignupComponents/SignupForm";
 import SocialButtons from "@/lib/SocialButtons/SocialButtons";
 import { ModeToggle } from "@/components/ui/mode-toggle";
 import { O2Button } from "@/common/O2Button";
 import { GoBackButton } from "@/common/Go-Back-Button";
-    
+
 const Signup: React.FC = () => {
     return (
-    <div className="min-h-screen w-full flex flex-col lg:flex-row bg-background">
+    <div className="min-h-screen w-full flex flex-col lg:flex-row bg-background font-quiz">
       {/* Left Side - Background Image with Branding */}
       <div className="relative lg:w-1/2 h-[30vh] lg:h-screen flex items-center justify-center overflow-hidden">
         {/* Background Image */}
@@ -16,14 +17,20 @@ const Signup: React.FC = () => {
           className="absolute inset-0 bg-cover bg-center"
           style={{ backgroundImage: `url(${OxygenBackground})` }}
         />
-        
+
         {/* Dark overlay for text readability */}
         <div className="absolute inset-0 bg-black/40" />
-        
+
         {/* Content */}
         <div className="relative z-10 text-center px-8 space-y-4">
           <div className="transform hover:scale-105 transition-transform duration-300 flex justify-center">
             <O2Button />
+          </div>
+          <div className="flex justify-center">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/30 bg-white/10 px-3 py-1 text-xs font-medium uppercase tracking-wide text-white backdrop-blur-sm">
+              <MailPlus className="h-3.5 w-3.5" aria-hidden="true" />
+              Invite only &middot; Public launch coming soon
+            </span>
           </div>
           <h1 className="text-3xl lg:text-5xl font-bold text-white tracking-tight">
             Join Oxygen Quiz
@@ -48,6 +55,24 @@ const Signup: React.FC = () => {
             <h2 className="text-3xl font-bold text-foreground">Create Account</h2>
             <p className="text-muted-foreground">
               Fill in your details to get started
+            </p>
+          </div>
+
+          {/* Invite-only notice */}
+          <div
+            role="note"
+            className="flex items-start gap-3 rounded-lg border border-primary/30 bg-primary/10 p-4"
+          >
+            <MailPlus
+              className="mt-0.5 h-5 w-5 shrink-0 text-primary"
+              aria-hidden="true"
+            />
+            <p className="text-sm text-foreground/80">
+              <span className="font-semibold text-foreground">
+                Oxygen Quiz is invite only right now.
+              </span>{" "}
+              You'll need a valid invite code to create an account while we finish
+              building. We'll be opening up to everyone soon.
             </p>
           </div>
 

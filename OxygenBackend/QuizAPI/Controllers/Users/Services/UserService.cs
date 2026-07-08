@@ -7,6 +7,7 @@ using QuizAPI.Repositories.Interfaces;
 using QuizAPI.Services.Interfaces;
 using QuizAPI.Mapping;
 using QuizAPI.Services.Audit;
+using QuizAPI.Services.Permissions;
 using QuizAPI.Filtering;
 using QuizAPI.Controllers.Users;
 
@@ -17,12 +18,40 @@ namespace QuizAPI.Services
         private readonly IUserRepository _userRepository;
         private readonly IRoleRepository _roleRepository;
         private readonly IAuditService _auditService;
+        private readonly IPermissionService _permissionService;
 
-        public UserService(IUserRepository userRepository, IRoleRepository roleRepository, IAuditService auditService)
+        // The roles whose grant/removal is restricted to a SuperAdmin caller. Compared case-insensitively.
+        private static readonly HashSet<string> SuperAdminOnlyRoles =
+            new(StringComparer.OrdinalIgnoreCase) { "SuperAdmin" };
+
+        public UserService(
+            IUserRepository userRepository,
+            IRoleRepository roleRepository,
+            IAuditService auditService,
+            IPermissionService permissionService)
         {
             _userRepository = userRepository;
             _roleRepository = roleRepository;
             _auditService = auditService;
+            _permissionService = permissionService;
+        }
+
+        /// <summary>
+        /// Resolves role names to <see cref="Role"/> entities, rejecting any unknown name. Shared by
+        /// account creation and role changes so the two paths validate identically.
+        /// </summary>
+        private async Task<IReadOnlyList<Role>> ResolveRolesAsync(
+            IReadOnlyList<string> requested, CancellationToken ct)
+        {
+            var roles = await _roleRepository.GetByNamesAsync(requested, ct);
+
+            var missing = requested.Select(r => r.ToLowerInvariant())
+                .Except(roles.Select(r => r.Name.ToLowerInvariant()))
+                .ToList();
+            if (missing.Count > 0)
+                throw new ConflictException($"Unknown role(s): {string.Join(", ", missing)}");
+
+            return roles;
         }
 
         public async Task<IReadOnlyList<UserDTO>> GetAllUsersAsync(CancellationToken ct = default)
@@ -134,13 +163,7 @@ namespace QuizAPI.Services
                 throw new ConflictException($"Email '{dto.Email}' is already registered.");
 
             var requested = dto.Roles is { Count: > 0 } ? dto.Roles : new[] { "user" };
-            var roles = await _roleRepository.GetByNamesAsync(requested, ct);
-
-            var missing = requested.Select(r => r.ToLowerInvariant())
-                .Except(roles.Select(r => r.Name.ToLowerInvariant()))
-                .ToList();
-            if (missing.Count > 0)
-                throw new ConflictException($"Unknown role(s): {string.Join(", ", missing)}");
+            var roles = await ResolveRolesAsync(requested, ct);
 
             var user = new User
             {
@@ -181,6 +204,93 @@ namespace QuizAPI.Services
             user.ConcurrencyStamp = Guid.NewGuid();
 
             await _userRepository.SaveChangesAsync(ct);
+        }
+
+        public async Task SetUserRolesAsync(
+            Guid userId, SetUserRolesDTO dto, bool callerIsSuperAdmin, Guid callerId,
+            CancellationToken ct = default)
+        {
+            // De-duplicate the requested names (case-insensitively) before resolving.
+            var requested = dto.Roles
+                .Where(r => !string.IsNullOrWhiteSpace(r))
+                .Select(r => r.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            if (requested.Count == 0)
+                throw new AppValidationException("At least one role is required.");
+
+            var user = await _userRepository.GetByIdAsync(userId, tracked: true, ct: ct)
+                ?? throw new NotFoundException($"User with ID {userId} not found.");
+
+            // Validate names against the seeded roles (throws on anything unknown).
+            var desiredRoles = await ResolveRolesAsync(requested, ct);
+
+            // Canonical current/desired sets, keyed by the real role names so casing can't cause a
+            // spurious "change" (the DB is the source of truth for spelling).
+            var currentNames = user.UserRoles
+                .Select(ur => ur.Role.Name)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var desiredNames = desiredRoles
+                .Select(r => r.Name)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            var added = desiredNames.Except(currentNames, StringComparer.OrdinalIgnoreCase).ToList();
+            var removed = currentNames.Except(desiredNames, StringComparer.OrdinalIgnoreCase).ToList();
+
+            // No-op: nothing to change. Return quietly (idempotent) without an audit entry.
+            if (added.Count == 0 && removed.Count == 0)
+                return;
+
+            // Escalation gate: only a SuperAdmin may grant OR remove the SuperAdmin role. An Admin can
+            // freely manage Admin/User, but any change that touches a SuperAdmin-only role is refused.
+            var touchesRestricted = added.Concat(removed).Any(SuperAdminOnlyRoles.Contains);
+            if (touchesRestricted && !callerIsSuperAdmin)
+                throw new ForbiddenException(
+                    "Only a SuperAdmin can grant or remove the SuperAdmin role.");
+
+            // Lockout guard: never demote the last remaining SuperAdmin.
+            if (removed.Any(r => SuperAdminOnlyRoles.Contains(r)))
+            {
+                var superAdminCount = await _userRepository.Query()
+                    .CountAsync(u => u.UserRoles.Any(ur => ur.Role.Name == "SuperAdmin"), ct);
+                if (superAdminCount <= 1)
+                    throw new AppValidationException(
+                        "You can't remove the last SuperAdmin. Assign the role to another account first.");
+            }
+
+            // Apply the diff in place on the tracked collection: drop removed, add new (recording who
+            // assigned them and when).
+            var removedIds = user.UserRoles
+                .Where(ur => removed.Contains(ur.Role.Name, StringComparer.OrdinalIgnoreCase))
+                .ToList();
+            foreach (var ur in removedIds)
+                user.UserRoles.Remove(ur);
+
+            foreach (var role in desiredRoles.Where(r => added.Contains(r.Name, StringComparer.OrdinalIgnoreCase)))
+                user.UserRoles.Add(new UserRole
+                {
+                    RoleId = role.Id,
+                    AssignedAt = DateTime.UtcNow,
+                    AssignedByUserId = callerId,
+                });
+
+            // Invalidating other checks that keyed off the old identity.
+            user.ConcurrencyStamp = Guid.NewGuid();
+            await _userRepository.SaveChangesAsync(ct);
+
+            // The user's permission set is derived from their roles and cached — evict it so the next
+            // request re-resolves against the new roles. (Their existing JWT still carries the old role
+            // claims until it refreshes; server-side permission checks are correct immediately.)
+            _permissionService.InvalidateCache(userId);
+
+            await _auditService.LogAsync(
+                AuditActions.UserRolesChanged,
+                entity: "User",
+                entityId: userId.ToString(),
+                oldValue: new { Roles = currentNames.OrderBy(n => n).ToArray() },
+                newValue: new { Roles = desiredNames.OrderBy(n => n).ToArray() },
+                userId: callerId,
+                ct: ct);
         }
 
         public async Task DeleteUserAsync(Guid userId, CancellationToken ct = default)

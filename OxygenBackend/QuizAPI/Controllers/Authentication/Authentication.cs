@@ -34,6 +34,24 @@ public class AuthenticationController(
     public IActionResult SignupConfig() =>
         Ok(new { requireInviteCode = _configuration.GetValue<bool>("Signup:RequireInviteCode") });
 
+    // GET: api/Authentication/validate-invite-code?code=XXXX-XXXX-XX
+    /// <summary>
+    /// Advisory, non-consuming check that an invite code is currently redeemable, so the signup
+    /// form can reject a bad code up front instead of at the end. Anonymous, but rate-limited on
+    /// the same strict per-IP policy as the credential endpoints so it can't be used to enumerate
+    /// valid codes. Returns only a boolean — it deliberately does NOT distinguish "unknown" from
+    /// "already used" or "revoked". The authoritative validate-and-consume still happens at signup.
+    /// </summary>
+    [HttpGet("validate-invite-code")]
+    [AllowAnonymous]
+    [EnableRateLimiting(RateLimitingExtensions.AuthPolicy)]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> ValidateInviteCode([FromQuery] string? code, CancellationToken ct)
+    {
+        var valid = await _authService.IsInviteCodeRedeemableAsync(code, ct);
+        return Ok(new { valid });
+    }
+
     [HttpPost("signup")]
     [EnableRateLimiting(RateLimitingExtensions.AuthPolicy)]
     public async Task<IActionResult> Signup([FromBody] SignupDTO dto, CancellationToken ct)

@@ -146,6 +146,19 @@ public class AuthenticationService(
         return await BuildAuthResultAsync(created, roleNames, ct);
     }
 
+    public async Task<bool> IsInviteCodeRedeemableAsync(string? code, CancellationToken ct = default)
+    {
+        // Blank never matches — short-circuit before hashing.
+        if (string.IsNullOrWhiteSpace(code))
+            return false;
+
+        // Same Normalize+Hash path as generation and redemption, so a code that reads as valid
+        // here is looked up exactly as it will be at submit.
+        var hash = _inviteCodeGenerator.Hash(code);
+        var redeemable = await _inviteCodeRepository.GetRedeemableByHashAsync(hash, ct);
+        return redeemable is not null;
+    }
+
     public async Task<AuthResult> LoginAsync(LoginDTO dto, CancellationToken ct = default)
     {
         var user = await _userRepository.GetByEmailAsync(dto.Email, tracked: true, ct);

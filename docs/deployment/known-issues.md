@@ -142,6 +142,14 @@ Auth-specific enhancements are tracked in [authentication.md](../auth/authentica
   sessions/answers throws an FK error surfaced as a generic 500 instead of a
   friendly 409 ("can't delete a quiz that has been played").
   → `QuizService.DeleteQuizAsync`
+- **P3 — `GET /api/Roles` returns full `Role` entities.** The admin role picker
+  (`change-user-role.tsx` → `useRoles`) only needs `{ id, name }`, but the endpoint
+  serialises whole `Role` rows (incl. `ConcurrencyStamp` and empty nav collections).
+  Harmless today — no navigations are loaded, so there's no serialization cycle or
+  permission leak — but a small `RoleDTO` projection would be a tidier, less
+  over-exposed contract now that non-SuperAdmins can read it. See
+  [`docs/auth/user-role-management.md`](../auth/user-role-management.md).
+  → `OxygenBackend/QuizAPI/Controllers/Roles/RolesController.cs`
 - **P3 — Build warnings.** ~130 compiler warnings, mostly nullable-reference and
   a couple of duplicate `using` directives (`Program.cs` → `System.Text`;
   `TotalsController.cs` → `QuizAPI.Models`). Chip away incrementally.
@@ -157,6 +165,20 @@ Auth-specific enhancements are tracked in [authentication.md](../auth/authentica
   and capture the reference before mutating the FK (or null-check instead of `!`).
   → `OxygenBackend/QuizAPI/Controllers/Quizzes/Services/QuizSessionServices/` (esp.
   `SubmitAnswerService`, `QuizSessionService`, `AbandonmentService`)
+
+## Seed / reference data
+
+- **P3 — Only a small amount of reference data ships, and none of it is seeded.** The
+  categories / difficulties / languages that every question and quiz depend on are provided as
+  **importable starter files** only (`sample-data/reference-data/` — 24 categories, 6 difficulties,
+  4 languages), brought in through the admin Data Import UI. A fresh instance therefore starts with
+  an essentially empty set of these lookups until someone imports them. The `DbSeeder` seeds roles,
+  permissions, and a default admin, but deliberately **not** this catalogue data. *Options for later:*
+  grow the starter files, and/or promote a curated baseline (e.g. the core categories + the six
+  difficulty levels) into `DbSeeder` so a brand-new deployment has a sensible catalogue with no manual
+  import step. Keep the colour palettes (see `sample-data/reference-data/README.md`) if seeding
+  categories, so the quiz-select cards stay visually distinct.
+  → `sample-data/reference-data/`, `OxygenBackend/QuizAPI/Services/DbSeeder.cs`
 
 ## Repo hygiene
 

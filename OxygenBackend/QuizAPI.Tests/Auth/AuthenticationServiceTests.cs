@@ -214,6 +214,48 @@ public class AuthenticationServiceTests
         _inviteCodes.Verify(r => r.TryConsumeAsync(It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
+    // --- Advisory up-front invite-code check (IsInviteCodeRedeemableAsync) -------------------
+    // This is the non-consuming pre-check the signup form uses to reject a bad code on step 1.
+    // It must never consume a code and must fail closed on blank input.
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task IsInviteCodeRedeemable_WhenCodeBlank_ReturnsFalse_WithoutQuerying(string? code)
+    {
+        var valid = await CreateSut(requireInviteCode: true).IsInviteCodeRedeemableAsync(code);
+
+        Assert.False(valid);
+        // A blank code short-circuits before hashing — the repo is never hit.
+        _inviteCodes.Verify(r => r.GetRedeemableByHashAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task IsInviteCodeRedeemable_WhenUnknownCode_ReturnsFalse_AndNeverConsumes()
+    {
+        _inviteCodes.Setup(r => r.GetRedeemableByHashAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync((InviteCode?)null);
+
+        var valid = await CreateSut(requireInviteCode: true).IsInviteCodeRedeemableAsync("BAD-CODE");
+
+        Assert.False(valid);
+        _inviteCodes.Verify(r => r.TryConsumeAsync(It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task IsInviteCodeRedeemable_WhenRedeemableCode_ReturnsTrue_AndNeverConsumes()
+    {
+        _inviteCodes.Setup(r => r.GetRedeemableByHashAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(new InviteCode { Id = 1, CodeHash = "hash" });
+
+        var valid = await CreateSut(requireInviteCode: true).IsInviteCodeRedeemableAsync("K7QM-3FXP-9T");
+
+        Assert.True(valid);
+        // Crucially, an advisory check must NOT spend the code.
+        _inviteCodes.Verify(r => r.TryConsumeAsync(It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
     [Fact]
     public async Task Login_WhenUserNotFound_ThrowsUnauthorized()
     {

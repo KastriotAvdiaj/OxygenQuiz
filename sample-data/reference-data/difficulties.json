@@ -1,0 +1,26 @@
+[
+  {
+    "Level": "Easy",
+    "Weight": 1
+  },
+  {
+    "Level": "Medium-Easy",
+    "Weight": 2
+  },
+  {
+    "Level": "Medium",
+    "Weight": 3
+  },
+  {
+    "Level": "Medium-Hard",
+    "Weight": 4
+  },
+  {
+    "Level": "Hard",
+    "Weight": 5
+  },
+  {
+    "Level": "Expert",
+    "Weight": 6
+  }
+]

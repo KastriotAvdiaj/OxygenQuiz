@@ -18,6 +18,7 @@ namespace QuizAPI.Middleware
                 NotFoundException => (StatusCodes.Status404NotFound, ex.Message),
                 AppValidationException => (StatusCodes.Status400BadRequest, ex.Message),
                 ConflictException => (StatusCodes.Status409Conflict, ex.Message),
+                ForbiddenException => (StatusCodes.Status403Forbidden, ex.Message),
                 UnauthorizedException => (StatusCodes.Status401Unauthorized, ex.Message),
                 _ => (StatusCodes.Status500InternalServerError, "An unexpected error occurred.")
             };

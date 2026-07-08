@@ -15,8 +15,10 @@ trade-offs that were weighed, see [invite-code-system-plan.md](invite-code-syste
 1. An admin mints a batch of codes (`POST /api/admin/invite-codes`). The plaintext codes are
    returned **once** in that response; the database only ever stores their SHA-256 hashes.
 2. The admin hands codes out to testers.
-3. A tester enters their code on the signup form. The backend validates it early (fast rejection),
-   then **atomically consumes** it in the same transaction that creates the user.
+3. A tester enters their code on the signup form. The form checks it up front against a public,
+   rate-limited endpoint (advisory only) so a bad code is rejected on the first step. On final
+   submit the backend re-validates it and **atomically consumes** it in the same transaction that
+   creates the user — that submit-time check is the source of truth.
 4. A code is spent only on a **successful** signup. A duplicate-email/username failure, or losing a
    concurrent race for the same code, never burns it.
 5. When all codes are consumed (or revoked), no one else can sign up.
@@ -157,6 +159,27 @@ flag on ─► validate code ─► user guards ─► [TX: create user → cons
 > **Why the transaction?** It lets us have it both ways: validate early for UX, but only *commit*
 > the spent code together with the new user. Either both happen or neither does.
 
+### Advisory up-front check (non-consuming)
+
+`AuthenticationService.IsInviteCodeRedeemableAsync(code)` is a **read-only** companion to the
+consume path. It normalizes + hashes the code through the same `IInviteCodeGenerator` and looks it
+up with `GetRedeemableByHashAsync` — exactly the step-2 early check above, but with **no writes and
+no transaction**. It returns a bare `bool` (blank code → `false`), and never calls `TryConsumeAsync`.
+
+It exists purely so the signup form can fail a bad code on step 1 instead of after the user has
+filled in username, email, and password. It is deliberately **advisory**: a code that returns
+`true` here can still lose the race at submit (someone else spends it in between), which is why the
+transactional consume in `SignupAsync` remains the authority. Exposed via:
+
+```
+GET /api/Authentication/validate-invite-code?code=K7QM-3FXP-9T   ->   { "valid": true }
+```
+
+`[AllowAnonymous]` (the signup form is pre-auth) but `[EnableRateLimiting(AuthPolicy)]` — the same
+strict per-IP policy as login/signup/refresh. That matters: an anonymous "is this code good?" oracle
+is an enumeration surface, so it's rate-limited and returns **only** a boolean — it never reveals
+*why* a code failed (unknown vs. used vs. revoked vs. expired all read as `valid: false`).
+
 ### A note on the `ApplicationDbContext` dependency
 
 `AuthenticationService` now also takes `ApplicationDbContext` directly, purely to own the signup
@@ -193,10 +216,21 @@ Signup is a multi-step flow under `src/pages/UserRelated/Signup/`.
   `GET /api/Authentication/signup-config` and returns `{ requireInviteCode }`. It defaults to *not*
   required until the call resolves, so the form stays usable even if that anonymous call hiccups
   (the server still enforces the real rule on submit).
+- **`api/check-availability.ts`** — alongside the username/email availability hooks,
+  `useInviteCodeValidity(code)` is a debounced check against
+  `GET /api/Authentication/validate-invite-code`. It only fires once the code reaches its full
+  normalized length (10 chars, matching `InviteCodeGenerator`), uses `throwOnError: false` so a
+  background failure never hits an error boundary, and returns `{ isValid, isInvalid, isChecking,
+  isError, longEnough }` — the same shape convention as the other two.
 - **`SignupForm.tsx`** — when `requireInviteCode` is true, an **invite-code step is prepended** and
   every content step shifts down by one (`offset`). Step numbers are computed from `offset`, not
   hard-coded. The code is uppercased as the user types, sent as `inviteCode` in the register
-  payload, and a bad-code error from the server bounces the user back to the invite step.
+  payload, and a bad-code error from the server bounces the user back to the invite step. The
+  invite step's **Continue button is gated on `useInviteCodeValidity`** (mirroring how the
+  username/email steps gate on their availability checks): it shows a spinner while checking, an
+  inline error for an invalid/used code, and "Invite code accepted" on success. If that advisory
+  call can't be reached it does *not* hard-block — the user can proceed and the authoritative
+  submit-time check still applies.
 - **`SignupSteps.tsx` / `SignupProgressDisplay.tsx`** — accept the prepended step / `offset`.
 - **`src/lib/Auth.tsx`** — `registerInputSchema` gained an optional `inviteCode`.
 
@@ -242,6 +276,9 @@ only job is to provide the no-op signup transaction):
 - Flag on + `TryConsumeAsync` returns `0` (lost race) → rejected and **no side effects** (no email,
   notification, or `UserSignedUp` audit).
 - Flag off → signup proceeds **without touching the invite repository** (backwards compatible).
+- `IsInviteCodeRedeemableAsync`: blank/whitespace code → `false` **without querying** the repo;
+  unknown code → `false`; redeemable code → `true` — and in every case the code is **never
+  consumed** (`TryConsumeAsync` not called).
 
 > **Not covered by automated tests:** the true concurrent race against `ExecuteUpdateAsync` — EF's
 > in-memory provider doesn't support it. The unit tests exercise the service logic (consume returns
@@ -279,14 +316,15 @@ only job is to provide the no-op signup transaction):
 **Backend — edited**
 - `Data/ApplicationDbContext.cs` — `DbSet` + index/FK
 - `DTOs/Authentication/SignupDTO.cs` — `InviteCode`
-- `Services/AuthenticationService/AuthenticationService.cs` — gate + transactional consume
-- `Controllers/Authentication/Authentication.cs` — public `signup-config` endpoint
+- `Services/AuthenticationService/{IAuthenticationService,AuthenticationService}.cs` — gate + transactional consume, plus the non-consuming `IsInviteCodeRedeemableAsync`
+- `Controllers/Authentication/Authentication.cs` — public `signup-config` + rate-limited `validate-invite-code` endpoints
 - `Services/Audit/AuditActions.cs` — three new actions
 - `Program.cs` — register repository + generator
 - `appsettings.json` / `appsettings.example.json` — `Signup:RequireInviteCode`
 
 **Frontend — new/edited**
 - `src/pages/UserRelated/Signup/api/signup-config.ts` (new)
+- `src/pages/UserRelated/Signup/api/check-availability.ts` — `useInviteCodeValidity` up-front check
 - `src/pages/UserRelated/Signup/SignupComponents/{SignupForm,SignupSteps,SignupProgressDisplay}.tsx`
 - `src/lib/Auth.tsx`
 - `src/pages/Dashboard/Pages/InviteCodes/InviteCodes.tsx` (new) — admin page

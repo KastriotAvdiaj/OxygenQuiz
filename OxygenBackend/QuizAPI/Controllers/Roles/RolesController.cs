@@ -14,7 +14,9 @@ namespace QuizAPI.Controllers.Roles
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(Roles = "SuperAdmin")] // Role CRUD is a privilege-escalation surface; superadmin only.
+    // Authorized per-method: reads are open to Admin+SuperAdmin (the Users page needs the role list
+    // to populate its role picker), while role CRUD stays SuperAdmin-only (privilege-escalation surface).
+    [Authorize(Roles = "Admin,SuperAdmin")]
     public class RolesController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
@@ -58,6 +60,7 @@ namespace QuizAPI.Controllers.Roles
         // PUT: api/Roles/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
+        [Authorize(Roles = "SuperAdmin")]
         public async Task<IActionResult> PutRole(int id, Role role)
         {
             if (id != role.Id)
@@ -93,6 +96,7 @@ namespace QuizAPI.Controllers.Roles
         // POST: api/Roles
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
+        [Authorize(Roles = "SuperAdmin")]
         public async Task<ActionResult<Role>> PostRole(Role role)
         {
             if (_context.Roles == null)
@@ -111,6 +115,7 @@ namespace QuizAPI.Controllers.Roles
 
         // DELETE: api/Roles/5
         [HttpDelete("{id}")]
+        [Authorize(Roles = "SuperAdmin")]
         public async Task<IActionResult> DeleteRole(int id)
         {
             if (_context.Roles == null)

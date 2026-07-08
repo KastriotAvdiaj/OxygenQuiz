@@ -9,6 +9,7 @@ import { useNotifications } from "@/common/Notifications";
 import {
   useUsernameAvailability,
   useEmailAvailability,
+  useInviteCodeValidity,
   MIN_USERNAME_LENGTH,
 } from "../api/check-availability";
 import { useSignupConfig } from "../api/signup-config";
@@ -36,6 +37,8 @@ export const SignupForm: React.FC = () => {
   // API once the value is plausibly valid, and they never throw (see throwOnError).
   const usernameAvail = useUsernameAvailability(formData.username);
   const emailAvail = useEmailAvailability(formData.email);
+  // Only meaningful when the invite step is present; harmless (disabled) otherwise.
+  const inviteValidity = useInviteCodeValidity(formData.inviteCode);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     // Codes are case- and dash-insensitive server-side; uppercase as the user types for clarity.
@@ -58,8 +61,22 @@ export const SignupForm: React.FC = () => {
     // Invite-code step (only present when required) sits before the username step.
     if (requireInviteCode && step === 1) {
       const code = formData.inviteCode.trim();
-      // Basic non-empty gate; the server validates that the code is real and unused on submit.
-      return { nextDisabled: code.length === 0 };
+      if (code.length === 0) return { nextDisabled: true };
+      // Wait for the full-length code before judging it, so we don't flash "invalid" mid-type.
+      if (!inviteValidity.longEnough) return { nextDisabled: true };
+      if (inviteValidity.isChecking)
+        return { isChecking: true, nextDisabled: true };
+      if (inviteValidity.isInvalid)
+        return {
+          error: "This invite code isn't valid or has already been used",
+          nextDisabled: true,
+        };
+      if (inviteValidity.isValid)
+        return { success: "Invite code accepted", nextDisabled: false };
+      // Couldn't reach the check — don't hard-block; signup still validates and consumes the
+      // code atomically, and bounces back here (setStep(1)) if it's actually bad.
+      if (inviteValidity.isError) return { nextDisabled: false };
+      return { nextDisabled: true };
     }
 
     // Map the visible step back to the original content-step numbering (1 = username, …).

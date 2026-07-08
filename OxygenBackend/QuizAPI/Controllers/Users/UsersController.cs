@@ -162,6 +162,32 @@ namespace QuizAPI.Controllers.Users
             return NoContent();
         }
 
+        /// <summary>
+        /// Replaces a user's role set. Admin/SuperAdmin only, and the SuperAdmin role specifically can
+        /// only be granted or removed by a SuperAdmin (an Admin attempting it gets 403). The last
+        /// SuperAdmin can't be demoted. The body is the desired end-state list of role names.
+        /// </summary>
+        [HttpPut("{id:guid}/roles")]
+        [Authorize(Roles = "Admin,SuperAdmin")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
+        public async Task<IActionResult> SetUserRoles(
+            Guid id, [FromBody] SetUserRolesDTO dto, CancellationToken ct)
+        {
+            if (_currentUser.UserId is not Guid callerId)
+                return Unauthorized();
+
+            // The service enforces the fine-grained rule; the controller just tells it whether the
+            // caller is a SuperAdmin (from the validated JWT role claims).
+            var callerIsSuperAdmin = User.IsInRole("SuperAdmin");
+
+            await _userService.SetUserRolesAsync(id, dto, callerIsSuperAdmin, callerId, ct);
+            return NoContent();
+        }
+
         [HttpDelete("{id:guid}")]
         [Authorize]
         [ProducesResponseType(StatusCodes.Status204NoContent)]

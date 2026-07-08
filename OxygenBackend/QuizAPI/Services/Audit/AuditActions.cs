@@ -14,6 +14,8 @@ namespace QuizAPI.Services.Audit
         public const string UserEmailConfirmed = "UserEmailConfirmed";
         public const string UserCreated = "UserCreated";
         public const string UserDeleted = "UserDeleted";
+        // A user's role set was changed by an admin (from the Users page).
+        public const string UserRolesChanged = "UserRolesChanged";
 
         // Invite codes (signup gate — see docs/auth/invite-code-system-plan.md)
         public const string InviteCodeRedeemed = "InviteCodeRedeemed";
