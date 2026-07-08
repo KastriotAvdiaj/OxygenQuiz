@@ -23,7 +23,7 @@ import {
   type TransferEntity,
 } from "@/lib/data-transfer/data-transfer-api";
 import type { FilterQuery } from "@/lib/filtering/types";
-import { LiftedButton } from "@/common/LiftedButton";
+import { Button } from "../ui";
 
 type DataTransferControlsProps = {
   /** Path segment for the API (e.g. "categories"). */
@@ -73,7 +73,7 @@ export const DataTransferControls = ({
   };
 
   const handleFileSelected = async (
-    event: React.ChangeEvent<HTMLInputElement>
+    event: React.ChangeEvent<HTMLInputElement>,
   ) => {
     const file = event.target.files?.[0];
     event.target.value = ""; // allow re-selecting the same file later
@@ -96,7 +96,8 @@ export const DataTransferControls = ({
       addNotification({
         type: "error",
         title: "Import failed",
-        message: "The file could not be imported. Check the format and try again.",
+        message:
+          "The file could not be imported. Check the format and try again.",
       });
     } finally {
       setBusy(null);
@@ -107,14 +108,18 @@ export const DataTransferControls = ({
     <div className={"flex items-center gap-2 " + (className ?? "")}>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <LiftedButton className="text-xs !bg-background text-foreground" outerClassName="bg:foreground" disabled={busy !== null}>
+          <Button
+            variant="outline"
+            className="text-xs text-foreground rounded-md"
+            disabled={busy !== null}
+          >
             {busy === "export" ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <Download className="h-4 w-4" />
             )}
             Export
-          </LiftedButton>
+          </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem onClick={() => handleExport("csv")}>
@@ -131,8 +136,10 @@ export const DataTransferControls = ({
 
       {canImport && (
         <>
-          <LiftedButton
-          className="text-xs !bg-background text-foreground" outerClassName="bg:foreground" disabled={busy !== null}
+          <Button
+            variant="outline"
+            className="text-xs text-foreground rounded-md"
+            disabled={busy !== null}
             onClick={() => fileInputRef.current?.click()}
           >
             {busy === "import" ? (
@@ -141,7 +148,7 @@ export const DataTransferControls = ({
               <Upload className="h-4 w-4" />
             )}
             Import
-          </LiftedButton>
+          </Button>
           <input
             ref={fileInputRef}
             type="file"

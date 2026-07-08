@@ -142,11 +142,19 @@ api.interceptors.response.use(
         });
       }
 
-      useNotifications.getState().addNotification({
-        type: "error",
-        title: "Error",
-        message: displayMessage,
-      });
+      // Some callers surface their own field-specific error (e.g. the signup form,
+      // which shows the exact reason and bounces the user back to the bad step).
+      // They set `skipErrorToast` on the request so we don't also fire a duplicate
+      // generic toast for the same failure.
+      const skipErrorToast = (error.config as any)?.skipErrorToast;
+
+      if (!skipErrorToast) {
+        useNotifications.getState().addNotification({
+          type: "error",
+          title: "Error",
+          message: displayMessage,
+        });
+      }
     }
 
     return Promise.reject(error);

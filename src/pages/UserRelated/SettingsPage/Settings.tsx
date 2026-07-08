@@ -1,12 +1,15 @@
 import { useEffect, useState } from "react";
-import { Switch, LoadingWave, useTheme } from "@/components/ui";
-import { LiftedButton } from "@/common/LiftedButton";
+import { Switch, LoadingWave, useTheme, Button } from "@/components/ui";
 import { Timer, Bell, Lock } from "lucide-react";
 import { useSettingsData } from "./api/get-settings";
 import { useUpdateSettings } from "./api/update-settings";
 import { UserSettings } from "@/types/settings-types";
-import { normalizeFont, DEFAULT_APP_FONT, DEFAULT_QUIZ_FONT } from "@/lib/fonts";
-import { Save } from 'lucide-react';
+import {
+  normalizeFont,
+  DEFAULT_APP_FONT,
+  DEFAULT_QUIZ_FONT,
+} from "@/lib/fonts";
+import { Save } from "lucide-react";
 // Modular feature imports
 import { Section, Row } from "./components/SharedPrimitives";
 import { AudioSection } from "./components/AudioSection";
@@ -66,14 +69,15 @@ export const Settings = () => {
             Manage your preferences. Changes are saved to your account.
           </p>
         </div>
-        <LiftedButton
+        <Button
           onClick={handleSave}
           disabled={!isDirty}
           isPending={updateSettings.isPending}
+          className="text-white"
         >
           <Save className="h-4 w-4" />
           Save changes
-        </LiftedButton>
+        </Button>
       </div>
 
       {/* Audio Sub-section */}
@@ -92,7 +96,11 @@ export const Settings = () => {
       />
 
       {/* Quiz */}
-      <Section icon={Timer} title="Quiz" description="Defaults for taking quizzes.">
+      <Section
+        icon={Timer}
+        title="Quiz"
+        description="Defaults for taking quizzes."
+      >
         <Row
           title="Show timer"
           description="Display the countdown while taking a quiz."

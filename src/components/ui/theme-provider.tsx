@@ -35,16 +35,10 @@ export function ThemeProvider({
 
     root.classList.remove("light", "dark");
 
-    if (theme === "dark") {
-      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
-        .matches
-        ? "dark"
-        : "light";
-
-      root.classList.add(systemTheme);
-      return;
-    }
-
+    // Apply the selected theme directly. (Previously the "dark" branch applied
+    // the OS color-scheme instead — a leftover from the original 3-value
+    // "system" theme — which let the DOM class drift out of sync with `theme`
+    // and caused the toggle to need two clicks on first load.)
     root.classList.add(theme);
   }, [theme]);
 

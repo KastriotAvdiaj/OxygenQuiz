@@ -67,7 +67,13 @@ export type RegisterInput = z.infer<typeof registerInputSchema>;
 const registerWithEmailAndPassword = (
   data: RegisterInput
 ): Promise<AuthResponse> => {
-  return apiService.post("Authentication/signup", data);
+  // The signup form handles this error itself: it shows the exact, field-specific
+  // reason (e.g. "Invalid or already-used invite code.") and bounces the user back
+  // to the offending step. Skip the global interceptor toast so we don't stack a
+  // second, generic "Error" notification on top of it.
+  return apiService.post("Authentication/signup", data, {
+    skipErrorToast: true,
+  } as any);
 };
 
 // Configure auth with react-query-auth

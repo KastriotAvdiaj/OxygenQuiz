@@ -1,14 +1,8 @@
 import { Link } from "react-router-dom";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AvatarUploader } from "./components/AvatarUploader";
 import { Badge } from "@/components/ui/badge";
-import { LiftedButton } from "@/common/LiftedButton";
 import {
   HelpCircle,
   FolderOpen,
@@ -20,6 +14,7 @@ import {
   Lock,
 } from "lucide-react";
 import formatDate from "@/lib/date-format";
+import { Button } from "@/components/ui";
 
 /**
  * Presentational profile. Takes all its data as props so it can render either
@@ -103,7 +98,10 @@ export const ProfileView = ({
               />
             ) : (
               <Avatar className="h-24 w-24 ring-1 ring-primary">
-                <AvatarImage src={profileImageUrl ?? undefined} alt={username} />
+                <AvatarImage
+                  src={profileImageUrl ?? undefined}
+                  alt={username}
+                />
                 <AvatarFallback className="text-2xl">{initials}</AvatarFallback>
               </Avatar>
             )}
@@ -126,10 +124,10 @@ export const ProfileView = ({
                 </div>
               </div>
               {isOwnProfile && (
-                <LiftedButton disabled className="opacity-70">
+                <Button disabled className="opacity-70 text-white">
                   <Pencil className="h-4 w-4" />
                   Edit profile
-                </LiftedButton>
+                </Button>
               )}
             </div>
           </div>
@@ -174,9 +172,7 @@ export const ProfileView = ({
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
             <DetailRow label="Username" value={username} />
-            {isOwnProfile && email && (
-              <DetailRow label="Email" value={email} />
-            )}
+            {isOwnProfile && email && <DetailRow label="Email" value={email} />}
             {dateRegistered && (
               <DetailRow
                 label="Member since"
@@ -190,14 +186,15 @@ export const ProfileView = ({
             {isOwnProfile && (
               <div className="pt-3 flex flex-col gap-2">
                 <Link to="/my-dashboard/settings">
-                  <LiftedButton outerClassName="w-full" className="w-full">
+                  <Button className="w-full text-white">
                     <SettingsIcon className="h-4 w-4" />
                     Settings
-                  </LiftedButton>
+                  </Button>
                 </Link>
                 <button
                   disabled
-                  className="w-full rounded-lg border border-foreground/20 py-2 px-4 text-sm text-muted-foreground opacity-70 cursor-not-allowed">
+                  className="w-full rounded-lg border border-foreground/20 py-2 px-4 text-sm text-muted-foreground opacity-70 cursor-not-allowed"
+                >
                   Change password (soon)
                 </button>
               </div>
@@ -237,7 +234,8 @@ export const ProfileView = ({
               {Array.from({ length: 6 }).map((_, i) => (
                 <div
                   key={i}
-                  className="aspect-square rounded-lg border border-dashed border-foreground/20 flex items-center justify-center text-muted-foreground/60">
+                  className="aspect-square rounded-lg border border-dashed border-foreground/20 flex items-center justify-center text-muted-foreground/60"
+                >
                   <Lock className="h-5 w-5" />
                 </div>
               ))}
