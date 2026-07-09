@@ -169,15 +169,18 @@ export const quizColumns: ColumnDef<QuizSummaryDTO>[] = [
               </Link>
             </DropdownMenuItem>
             {!quiz.deletedAt && (
+              <>
+            <DropdownMenuSeparator className="bg-background/60" />
               <DropdownMenuItem className="hover:bg-background">
                 <Link
                   to={`/dashboard/quizzes/edit-quiz/${quiz.id}`}
                   className="w-full h-full flex items-center gap-2"
-                >
+                  >
                   <Edit2 size={16} />
                   Edit
                 </Link>
               </DropdownMenuItem>
+                  </>
             )}
           </DropdownMenuContent>
         </DropdownMenu>

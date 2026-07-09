@@ -1,5 +1,5 @@
 import { useUser } from "@/lib/Auth";
-import { useTheme } from "@/components/ui";
+import { useTheme } from "@/components/ui/theme-provider";
 import { ThemePreference } from "@/types/settings-types";
 import { useSettingsData } from "@/pages/UserRelated/SettingsPage/api/get-settings";
 import { useUpdateSettings } from "@/pages/UserRelated/SettingsPage/api/update-settings";

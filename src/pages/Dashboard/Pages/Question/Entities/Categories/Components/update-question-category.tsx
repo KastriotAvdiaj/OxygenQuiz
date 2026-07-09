@@ -44,7 +44,6 @@ export const UpdateQuestionCategoryForm: React.FC<
   });
 
   const onSubmit = (values: UpdateQuestionCategoryInput) => {
-    console.log(values);
     const validColors = palette.filter(
       (color) => color && /^#[0-9A-F]{6}$/i.test(color)
     );
@@ -59,7 +58,7 @@ export const UpdateQuestionCategoryForm: React.FC<
 
     const submissionData = {
       ...values,
-      colorPaletteJson: JSON.stringify(validColors),
+      colorPalette: validColors,
       gradient: isGradient,
     };
 
@@ -115,7 +114,7 @@ export const UpdateQuestionCategoryForm: React.FC<
             name: category.name,
             colorPalette: category.colorPaletteJson
               ? JSON.parse(category.colorPaletteJson)
-              : ["", "", ""],
+              : [],
           },
         }}
       >
