@@ -7,7 +7,7 @@ import {
   AnswerStatus,
   type CurrentQuestion,
   type InstantFeedbackAnswerResult,
-} from "../../quiz-session-types";
+} from "../../../../../types/quiz-session-types";
 
 /**
  * Teaching example: a PAGE-level flow rendered without the backend.

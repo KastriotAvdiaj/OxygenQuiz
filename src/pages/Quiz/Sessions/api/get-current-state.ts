@@ -1,7 +1,7 @@
 import { queryOptions, useQuery } from '@tanstack/react-query';
 import { apiService } from '@/lib/Api-client';
 import { QueryConfig } from '@/lib/React-query';
-import { QuizState } from '../quiz-session-types';
+import { QuizState } from '../../../../types/quiz-session-types';
 
 export const getCurrentState = ({ sessionId }: { sessionId: string }): Promise<QuizState> => {
   return apiService.get(`/QuizSessions/${sessionId}/current-state`);

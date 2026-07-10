@@ -5,7 +5,7 @@ import { Check, X } from "lucide-react";
 import {
   InstantFeedbackAnswerResult,
   AnswerStatus,
-} from "../../quiz-session-types";
+} from "../../../../../types/quiz-session-types";
 
 interface QuizProgressProps {
   current: number;

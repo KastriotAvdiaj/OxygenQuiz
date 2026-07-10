@@ -11,7 +11,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-primary flex items-center justify-center text-primary-foreground hover:bg-primary/90 active:scale-95 shadow-sm rounded-sm",
+          "bg-primary flex items-center justify-center text-white hover:bg-primary/90 active:scale-95 shadow-sm rounded-sm",
         icon: "bg-muted gap-2 shadow p-0 m-0",
         addSave:
           "flex justify-center items-center gap-2 shadow text-white bg-primary hover:bg-primary/70 active:scale-95",

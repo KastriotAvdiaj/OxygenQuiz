@@ -27,7 +27,7 @@ import {
   QuizSession,
   CurrentQuestion,
   InstantFeedbackAnswerResult,
-} from "@/pages/Quiz/Sessions/quiz-session-types";
+} from "@/types/quiz-session-types";
 import { useNotifications } from "@/common/Notifications";
 
 interface UseQuizSessionParams {

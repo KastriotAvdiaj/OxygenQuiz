@@ -1,5 +1,5 @@
 import { apiService } from '@/lib/Api-client';
-import type { QuizSession, QuizState, QuizSessionSummary, ResumeResult } from '../quiz-session-types';
+import type { QuizSession, QuizState, QuizSessionSummary, ResumeResult } from '../../../../types/quiz-session-types';
 
 /**
  * Resumes an existing quiz session that was interrupted but not completed.

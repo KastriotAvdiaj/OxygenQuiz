@@ -4,7 +4,7 @@ import { QuestionType } from "@/types/question-types";
 import {
   CurrentQuestion,
   InstantFeedbackAnswerResult,
-} from "../../quiz-session-types";
+} from "../../../../../types/quiz-session-types";
 import { TrueOrFalseQuestion } from "./question-display-type-files/true-or-false-question";
 import { TypeTheAnswerQuestion } from "./question-display-type-files/type-the-answer-question";
 import { MultipleChoiceQuestion } from "./question-display-type-files/multiple-choice-question";

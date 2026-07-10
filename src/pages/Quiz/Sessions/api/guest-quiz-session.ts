@@ -10,7 +10,7 @@ import {
   QuizSession,
   CurrentQuestion,
   InstantFeedbackAnswerResult,
-} from "../quiz-session-types";
+} from "../../../../types/quiz-session-types";
 import { SubmitAnswerInput } from "./submit-answer";
 
 export const getGuestCanPlay = (): Promise<{ canPlay: boolean }> => {

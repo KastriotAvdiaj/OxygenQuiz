@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RotateCcw, Home, BarChart3, FileText } from "lucide-react";
-import { QuizSession } from "../../quiz-session-types";
+import { QuizSession } from "../../../../../types/quiz-session-types";
 import { QuizOverview } from "./quiz-overview";
 import { QuestionReview } from "./question-review";
 import { LiftedButton } from "@/common/LiftedButton";

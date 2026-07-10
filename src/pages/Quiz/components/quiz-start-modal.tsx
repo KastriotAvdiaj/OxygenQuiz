@@ -10,7 +10,22 @@ import { Badge } from "@/components/ui/badge";
 import { HelpCircle, Clock, User, Calendar, Play } from "lucide-react";
 import type { QuizSummaryDTO } from "@/types/quiz-types";
 import { secondsToMinutes } from "./quiz-card";
-import { LiftedButton } from "@/common/LiftedButton";
+
+/**
+ * Pick black or white text for a given background color so the CTA label stays
+ * readable across every category palette (WCAG relative luminance).
+ */
+function readableTextColor(hex: string): string {
+  const c = hex.replace("#", "");
+  if (c.length !== 6) return "#ffffff";
+  const toLinear = (v: number) =>
+    v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+  const r = toLinear(parseInt(c.slice(0, 2), 16) / 255);
+  const g = toLinear(parseInt(c.slice(2, 4), 16) / 255);
+  const b = toLinear(parseInt(c.slice(4, 6), 16) / 255);
+  const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  return luminance > 0.5 ? "#0a0a0a" : "#ffffff";
+}
 
 // Single-player only — multiplayer hosting starts inside the lobby, never from
 // this modal (the old mode="multiplayer" branch was unreachable).
@@ -38,6 +53,10 @@ export function QuizStartModal({
   }, [quiz.colorPaletteJson]);
 
   const primaryColor = colors[0];
+  const ctaTextColor = useMemo(
+    () => readableTextColor(primaryColor),
+    [primaryColor]
+  );
 
   const gradientStyle = useMemo(() => {
     if (quiz.gradient && colors.length > 1) {
@@ -64,9 +83,9 @@ export function QuizStartModal({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md mx-auto  border-foreground bg-card font-quiz p-0 overflow-hidden gap-0">
-        {/* Top gradient accent strip */}
+        {/* Top accent strip — the category color, kept thin and deliberate. */}
         <div
-          className="h-2.5 w-full"
+          className="h-1.5 w-full"
           style={{ background: gradientStyle }}
         />
 
@@ -104,10 +123,7 @@ export function QuizStartModal({
           </DialogHeader>
 
           {/* Stats grid */}
-          <div
-            className="rounded-lg border-2 p-3 sm:p-4 space-y-3"
-            style={{ borderColor: `${primaryColor}30` }}
-          >
+          <div className="rounded-lg border border-border p-3 sm:p-4 space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <div className="flex items-center gap-2 text-sm">
                 <div
@@ -158,20 +174,17 @@ export function QuizStartModal({
             </div>
           </div>
 
-          <div className="w-full">
-          {/* Action button */}
-          <LiftedButton
+          {/* Action button — flat, category-tinted, with auto-contrast label so
+              it stays readable and consistent across every palette. */}
+          <button
+            type="button"
             onClick={handleStartQuiz}
-            outerClassName="w-full"
-            className="h-12 w-full text-base font-bold font-quiz tracking-wider border-[2px] border-foreground text-white transition-all hover:-translate-y-0.5 hover:shadow-lg"
-            style={{
-              backgroundColor: primaryColor,
-            }}
+            className="flex h-11 w-full items-center justify-center gap-2 rounded-lg text-base font-bold font-quiz tracking-wider transition-all duration-200 hover:brightness-95 active:scale-[0.99]"
+            style={{ backgroundColor: primaryColor, color: ctaTextColor }}
           >
-            <Play className="h-4 w-4 mr-2 fill-current" />
+            <Play className="h-4 w-4 fill-current" />
             Start Quiz
-          </LiftedButton>
-          </div>
+          </button>
         </div>
       </DialogContent>
     </Dialog>

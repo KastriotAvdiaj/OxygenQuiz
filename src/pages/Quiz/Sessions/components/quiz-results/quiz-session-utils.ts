@@ -1,7 +1,7 @@
 // src/components/quiz/quiz-utils.ts
 
 import { Trophy, Target } from "lucide-react";
-import { AnswerStatus, QuizSession } from "../../quiz-session-types";
+import { AnswerStatus, QuizSession } from "../../../../../types/quiz-session-types";
 
 
 export interface QuizStats {

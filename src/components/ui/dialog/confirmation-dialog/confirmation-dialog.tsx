@@ -14,13 +14,21 @@ import {
 } from "../dialog";
 
 export type ConfirmationDialogProps = {
-  triggerButton: React.ReactElement;
+  /** Optional. Omit when driving the dialog via `isOpen`/`onOpenChange`. */
+  triggerButton?: React.ReactElement;
   confirmButton: React.ReactElement;
   title: string;
   body?: string;
   cancelButtonText?: string;
   icon?: "danger" | "info";
   isDone?: boolean;
+  /**
+   * Controlled open state. When provided the dialog is fully controlled by the
+   * parent — useful for rendering it OUTSIDE a dropdown/menu so those layers
+   * can't unmount it mid-close (which strands `pointer-events: none` on <body>).
+   */
+  isOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
 };
 
 export const ConfirmationDialog = ({
@@ -31,29 +39,33 @@ export const ConfirmationDialog = ({
   cancelButtonText = "Cancel",
   icon = "danger",
   isDone = false,
+  isOpen: controlledOpen,
+  onOpenChange,
 }: ConfirmationDialogProps) => {
-  const { close, open, isOpen } = useDisclosure();
+  const { close: closeInternal, open: openInternal, isOpen: internalOpen } =
+    useDisclosure();
   const cancelButtonRef = React.useRef(null);
 
+  const isControlled = controlledOpen !== undefined;
+  const isOpen = isControlled ? controlledOpen : internalOpen;
+
+  const setOpen = React.useCallback(
+    (next: boolean) => {
+      if (isControlled) onOpenChange?.(next);
+      else if (next) openInternal();
+      else closeInternal();
+    },
+    [isControlled, onOpenChange, openInternal, closeInternal]
+  );
+
   useEffect(() => {
-    if (isDone) {
-      close();
-    }
-  }, [isDone, close]);
+    if (isDone) setOpen(false);
+  }, [isDone, setOpen]);
 
 
   return (
-    <Dialog
-    open={isOpen}
-    onOpenChange={(isOpen) => {
-      if (!isOpen) {
-        close();
-      } else {
-        open();
-      }
-    }}
-  >
-    <DialogTrigger asChild>{triggerButton}</DialogTrigger>
+    <Dialog open={isOpen} onOpenChange={setOpen}>
+    {triggerButton && <DialogTrigger asChild>{triggerButton}</DialogTrigger>}
     <DialogContent className="sm:max-w-[425px]">
       <DialogHeader className="flex">
         <DialogTitle className="flex items-center gap-2">
@@ -78,7 +90,11 @@ export const ConfirmationDialog = ({
 
       <DialogFooter>
         {confirmButton}
-        <Button ref={cancelButtonRef} variant="outline" onClick={close}>
+        <Button
+          ref={cancelButtonRef}
+          variant="outline"
+          onClick={() => setOpen(false)}
+        >
           {cancelButtonText}
         </Button>
       </DialogFooter>

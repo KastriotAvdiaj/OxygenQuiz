@@ -93,6 +93,10 @@ export const columns: ColumnDef<User>[] = [
       if (!mainUser?.data) return null;
 
       const { open, isOpen, close } = useDisclosure();
+      // Separate disclosure so the role dialog can live OUTSIDE the dropdown —
+      // otherwise the still-open menu steals pointer/focus and collapses the
+      // roles popover the moment you move the mouse.
+      const roleDialog = useDisclosure();
 
       // Role-management gating (backend enforces the same rules):
       //  - never let someone change their own role (self-demotion / lockout footgun)
@@ -110,6 +114,7 @@ export const columns: ColumnDef<User>[] = [
         : "Only a SuperAdmin can change a SuperAdmin's role";
 
       return (
+        <>
         <DropdownMenu
           open={isOpen}
           onOpenChange={(state) => (state ? open() : close())}>
@@ -136,15 +141,13 @@ export const columns: ColumnDef<User>[] = [
             </DropdownMenuItem>
             <DropdownMenuSeparator className="bg-background/60" />
             {canManageRoles ? (
-              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                <ChangeUserRole
-                  user={{
-                    id: user.id,
-                    username: user.username,
-                    roles: user.roles ?? [],
-                  }}
-                  closeDropDown={close}
-                />
+              <DropdownMenuItem
+                className="flex h-5 items-center gap-2 px-0 text-sm font-normal"
+                onSelect={() =>
+                  // Let the menu close first, then open the dialog next frame.
+                  requestAnimationFrame(() => roleDialog.open())
+                }>
+                <UserRoundCog size={16} /> Change Role
               </DropdownMenuItem>
             ) : (
               <DropdownMenuItem disabled title={disabledReason}>
@@ -155,6 +158,23 @@ export const columns: ColumnDef<User>[] = [
             )}
           </DropdownMenuContent>
         </DropdownMenu>
+
+        {/* Rendered outside the dropdown on purpose — see note above. */}
+        {canManageRoles && (
+          <ChangeUserRole
+            user={{
+              id: user.id,
+              username: user.username,
+              roles: user.roles ?? [],
+            }}
+            open={roleDialog.isOpen}
+            onOpenChange={(state) =>
+              state ? roleDialog.open() : roleDialog.close()
+            }
+            closeDropDown={roleDialog.close}
+          />
+        )}
+        </>
       );
     },
   },

@@ -11,6 +11,13 @@ type DeleteQuizProps = {
   id: number;
   finished: () => void;
   useLiftedButton?: boolean;
+  /**
+   * Controlled mode. Pass these to render the confirm dialog on its own (no
+   * trigger) from OUTSIDE a dropdown menu, so closing the menu — or the row
+   * unmounting after the list refetches — can't strand the dialog mid-close.
+   */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 };
 
 export const DeleteQuiz = ({
@@ -18,7 +25,10 @@ export const DeleteQuiz = ({
   finished,
   className,
   useLiftedButton,
+  open,
+  onOpenChange,
 }: DeleteQuizProps) => {
+  const isControlled = open !== undefined;
   const { addNotification } = useNotifications();
   const deleteQuizMutation = useDeleteQuiz({
     mutationConfig: {
@@ -35,12 +45,14 @@ export const DeleteQuiz = ({
 
   return (
     <ConfirmationDialog
+      isOpen={open}
+      onOpenChange={onOpenChange}
       isDone={deleteQuizMutation.isSuccess || deleteQuizMutation.isError}
       icon="danger"
       title="Delete Quiz"
       body="Are you sure you want to delete this quiz?"
       triggerButton={
-        useLiftedButton ? (
+        isControlled ? undefined : useLiftedButton ? (
           <LiftedButton
             className={cn(className)}
           >

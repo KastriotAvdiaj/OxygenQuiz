@@ -1,19 +1,7 @@
-// Uniform outline icon set (lucide-react) — consistent stroke weight across
-// the whole sidebar, matching the premium Cloudflare / GitHub look.
-import {
-  LineChart,
-  Folder,
-  MessageSquareText,
-  Users,
-  Lock,
-  Ticket,
-  History,
-  Tag,
-  Signal,
-  Languages,
-  CircleUser,
-  Settings,
-} from "lucide-react";
+import { FaChartLine } from "react-icons/fa6";
+import { RiQuestionAnswerFill } from "react-icons/ri";
+import { FaFolderOpen, FaUsers, FaUserCircle, FaCog, FaHistory, FaTags, FaLanguage, FaSignal, FaTicketAlt } from "react-icons/fa";
+import { PiLockKeyFill } from "react-icons/pi";
 
 export type DashboardNavItem = {
   id: string;
@@ -33,103 +21,103 @@ export const adminDashboardNavButtons: DashboardNavItem[] = [
   {
     id: "application",
     label: "Application",
-    icon: LineChart,
+    icon: FaChartLine,
     roles: ["Admin", "SuperAdmin"],
     group: "Overview",
   },
   {
     id: "quizzes",
     label: "Quizzes",
-    icon: Folder,
+    icon: FaFolderOpen,
     group: "Overview",
   },
   {
     id: "questions",
     label: "Questions",
-    icon: MessageSquareText,
+    icon: RiQuestionAnswerFill,
     group: "Overview",
   },
   {
     id: "users",
     label: "Users",
-    icon: Users,
+    icon: FaUsers,
     roles: ["Admin", "SuperAdmin"],
     group: "Access",
   },
   {
     id: "permissions",
     label: "Permissions",
-    icon: Lock,
+    icon: PiLockKeyFill,
     roles: ["SuperAdmin"],
     group: "Access",
   },
   {
     id: "invite-codes",
     label: "Invite Codes",
-    icon: Ticket,
+    icon: FaTicketAlt,
     roles: ["Admin", "SuperAdmin"],
     group: "Access",
   },
   {
     id: "audit-logs",
     label: "Audit Log",
-    icon: History,
+    icon: FaHistory,
     roles: ["Admin", "SuperAdmin"],
     group: "System",
   },
   {
     id: "categories",
     label: "Categories",
-    icon: Tag,
+    icon: FaTags,
     roles: ["Admin", "SuperAdmin"],
     group: "System",
   },
   {
     id: "difficulties",
     label: "Difficulties",
-    icon: Signal,
+    icon: FaSignal,
     roles: ["Admin", "SuperAdmin"],
     group: "System",
   },
   {
     id: "languages",
     label: "Languages",
-    icon: Languages,
+    icon: FaLanguage,
     roles: ["Admin", "SuperAdmin"],
     group: "System",
   },
 ];
 
-// Regular-user dashboard (/my-dashboard). No `roles` -> always visible.
+// Regular-user dashboard (/my-dashboard). No `roles` → always visible.
 export const userDashboardNavButtons: DashboardNavItem[] = [
   {
     id: "profile",
     label: "Profile",
-    icon: CircleUser,
+    icon: FaUserCircle,
     group: "Overview",
   },
   {
     id: "quizzes",
     label: "My Quizzes",
-    icon: Folder,
+    icon: FaFolderOpen,
     group: "Overview",
   },
   {
     id: "questions",
     label: "My Questions",
-    icon: MessageSquareText,
+    icon: RiQuestionAnswerFill,
     group: "Overview",
   },
   {
     id: "reports",
     label: "Reports",
-    icon: LineChart,
+    icon: FaChartLine,
     group: "Overview",
   },
   {
     id: "settings",
     label: "Settings",
-    icon: Settings,
+    icon: FaCog,
     group: "Account",
   },
 ];

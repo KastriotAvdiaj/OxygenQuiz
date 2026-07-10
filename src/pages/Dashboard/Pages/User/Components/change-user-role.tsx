@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { UserRoundCog } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -29,18 +29,48 @@ const sameSet = (a: string[], b: string[]) => {
 type ChangeUserRoleProps = {
   user: { id: string; username: string; roles: string[] };
   closeDropDown: () => void;
+  /**
+   * Controlled mode. Pass these to render the dialog (no trigger) from OUTSIDE
+   * the row's dropdown menu. Keeping it out of the menu prevents the still-open
+   * menu from stealing pointer/focus and collapsing the roles popover.
+   */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 };
 
-export const ChangeUserRole = ({ user, closeDropDown }: ChangeUserRoleProps) => {
+export const ChangeUserRole = ({
+  user,
+  closeDropDown,
+  open: controlledOpen,
+  onOpenChange,
+}: ChangeUserRoleProps) => {
   const { addNotification } = useNotifications();
   const { data: currentUser } = useUser();
   const callerIsSuperAdmin = currentUser?.roles?.includes(SUPERADMIN) ?? false;
 
-  const { isOpen, open, close } = useDisclosure();
+  const {
+    isOpen: internalOpen,
+    open: openInternal,
+    close: closeInternal,
+  } = useDisclosure();
+  const isControlled = controlledOpen !== undefined;
+  const isOpen = isControlled ? controlledOpen : internalOpen;
+  const setOpen = (next: boolean) => {
+    if (isControlled) onOpenChange?.(next);
+    else if (next) openInternal();
+    else closeInternal();
+  };
+  const close = () => setOpen(false);
   const { data: roles, isLoading: rolesLoading } = useRoles();
 
   const currentRoles = useMemo(() => user.roles ?? [], [user.roles]);
   const [selected, setSelected] = useState<string[]>(currentRoles);
+
+  // Reset the working selection to the user's current roles each time the
+  // dialog opens (it stays mounted between opens in controlled mode).
+  useEffect(() => {
+    if (isOpen) setSelected(currentRoles);
+  }, [isOpen, currentRoles]);
 
   // Data-driven options from the server, minus SuperAdmin when the caller can't assign it.
   const options = useMemo(() => {
@@ -79,12 +109,14 @@ export const ChangeUserRole = ({ user, closeDropDown }: ChangeUserRoleProps) => 
   const noneSelected = selected.length === 0;
 
   return (
-    <Dialog open={isOpen} onOpenChange={(next) => (next ? open() : close())}>
-      <DialogTrigger asChild>
-        <Button variant="userMenu" className="h-5 font-normal px-0 flex">
-          <UserRoundCog size={16} /> Change Role
-        </Button>
-      </DialogTrigger>
+    <Dialog open={isOpen} onOpenChange={setOpen}>
+      {!isControlled && (
+        <DialogTrigger asChild>
+          <Button variant="userMenu" className="h-5 font-normal px-0 flex">
+            <UserRoundCog size={16} /> Change Role
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Change roles</DialogTitle>

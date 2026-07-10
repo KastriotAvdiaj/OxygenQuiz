@@ -36,7 +36,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { ColorCard } from "@/common/ColouredCard";
+import { QuizCard } from "@/pages/Quiz/components/quiz-card";
+import type { QuizSummaryDTO } from "@/types/quiz-types";
 import { useNotifications } from "@/common/Notifications";
 
 interface ColorPaletteInputProps {
@@ -269,7 +270,7 @@ export const ColorPaletteInput: React.FC<ColorPaletteInputProps> = ({
                     placeholder="Paste color palette here (e.g., #FF5733, #33FF57, #3357FF)"
                     value={pasteInput}
                     onChange={(e) => setPasteInput(e.target.value)}
-                    className="text-sm !bg-background"
+                    className="text-sm "
                   />
                 </div>
                 <Button
@@ -397,36 +398,27 @@ export const ColorPaletteInput: React.FC<ColorPaletteInputProps> = ({
                 )}
               </div>
 
-              {/* Card Preview using ColorCard */}
+              {/* Card Preview — renders the real quiz card so admins see
+                  exactly how quizzes in this category will appear. */}
               <div>
                 <p className="text-sm font-medium mb-2">Card Preview</p>
-                <ColorCard
-                  colorPalette={validColors}
-                  gradient={isGradient}
-                  size="md"
-                  animated={false}
-                  borderAnimation={true}
-                  className="max-w-none">
-                  <div className="p-4 flex-1 flex flex-col justify-center items-center">
-                    <Badge
-                      variant="secondary"
-                      className="text-xs font-medium px-2 py-1 rounded-full mb-2 border"
-                      style={{
-                        backgroundColor: `${validColors[0] || "#6366f1"}20`,
-                        borderColor: `${validColors[0] || "#6366f1"}40`,
-                      }}>
-                      {category || "Category Name"}
-                    </Badge>
-                    <div className="text-center text-foreground">
-                      <h3 className="text-lg font-semibold mb-2 drop-shadow-sm">
-                        Preview Card
-                      </h3>
-                      <p className="text-sm opacity-90">
-                        This is how your card will look.
-                      </p>
-                    </div>
-                  </div>
-                </ColorCard>
+                <QuizCard
+                  quiz={
+                    {
+                      title: "Preview Quiz",
+                      description:
+                        "This is how quizzes in this category will look.",
+                      category: category || "Category Name",
+                      difficulty: "Medium",
+                      colorPaletteJson: JSON.stringify(
+                        validColors.length ? validColors : ["#6366f1"]
+                      ),
+                      timeLimitInSeconds: 300,
+                      questionCount: 12,
+                      user: "you",
+                    } as unknown as QuizSummaryDTO
+                  }
+                />
               </div>
             </div>
           </PopoverContent>

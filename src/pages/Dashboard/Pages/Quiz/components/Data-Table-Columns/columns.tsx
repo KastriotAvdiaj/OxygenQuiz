@@ -28,7 +28,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui";
-import { Copy, Edit2, Eye, MoreHorizontal } from "lucide-react";
+import { Copy, Edit2, Eye, MoreHorizontal, Trash2 } from "lucide-react";
 import { DeleteQuiz } from "../delete-quiz";
 import { Link } from "react-router-dom";
 import { QuizSummaryDTO } from "@/types/quiz-types";
@@ -124,8 +124,13 @@ export const quizColumns: ColumnDef<QuizSummaryDTO>[] = [
       const quiz = row.original;
 
       const { open, isOpen, close } = useDisclosure();
+      // Separate disclosure for the delete confirmation. It's rendered OUTSIDE the
+      // dropdown (below) so closing the menu can't unmount an open dialog and leave
+      // `pointer-events: none` stuck on <body>.
+      const deleteDialog = useDisclosure();
 
       return (
+        <>
         <DropdownMenu
           open={isOpen}
           onOpenChange={(state) => (state ? open() : close())}
@@ -149,12 +154,14 @@ export const quizColumns: ColumnDef<QuizSummaryDTO>[] = [
               <>
                 <DropdownMenuSeparator className="bg-background/60" />
                 <DropdownMenuItem
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    e.preventDefault();
+                  className="text-red-600 focus:text-red-600"
+                  onSelect={() => {
+                    // Let the menu finish closing, then open the dialog on the next
+                    // frame so the two Radix modal layers never overlap.
+                    requestAnimationFrame(() => deleteDialog.open());
                   }}
                 >
-                  <DeleteQuiz id={quiz.id} finished={close} />
+                  <Trash2 size={16} /> Delete
                 </DropdownMenuItem>
               </>
             )}
@@ -184,6 +191,17 @@ export const quizColumns: ColumnDef<QuizSummaryDTO>[] = [
             )}
           </DropdownMenuContent>
         </DropdownMenu>
+
+        {/* Rendered outside the dropdown on purpose — see note above. */}
+        <DeleteQuiz
+          id={quiz.id}
+          open={deleteDialog.isOpen}
+          onOpenChange={(state) =>
+            state ? deleteDialog.open() : deleteDialog.close()
+          }
+          finished={deleteDialog.close}
+        />
+        </>
       );
     },
   },

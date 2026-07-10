@@ -2,7 +2,7 @@
 
 import { Trophy, Target, Clock} from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { QuizSession } from "../../quiz-session-types";
+import { QuizSession } from "../../../../../types/quiz-session-types";
 import { calculateQuizStats, formatDuration, getPerformanceLevel } from "./quiz-session-utils";
 import { Badge } from "@/components/ui/badge";
 

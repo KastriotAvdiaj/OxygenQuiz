@@ -1,7 +1,7 @@
 import { useMutation } from '@tanstack/react-query';
 import { apiService } from '@/lib/Api-client';
 import { MutationConfig } from '@/lib/React-query';
-import { CurrentQuestion } from '../quiz-session-types';
+import { CurrentQuestion } from '../../../../types/quiz-session-types';
 
 export const getNextQuestion = ({ sessionId }: { sessionId: string }): Promise<CurrentQuestion> => {
   return apiService.get(`/QuizSessions/${sessionId}/next-question`);

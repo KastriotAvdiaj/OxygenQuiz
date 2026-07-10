@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
 import { QuestionType } from "@/types/question-types";
-import type { CurrentQuestion } from "@/pages/Quiz/Sessions/quiz-session-types";
+import type { CurrentQuestion } from "@/types/quiz-session-types";
 import { QuizTimer } from "@/pages/Quiz/Sessions/components/quiz-taking-process/quiz-timer";
 import { QuestionCard } from "@/pages/Quiz/Sessions/components/quiz-taking-process/question-card";
 import { TrueOrFalseQuestion } from "@/pages/Quiz/Sessions/components/quiz-taking-process/question-display-type-files/true-or-false-question";

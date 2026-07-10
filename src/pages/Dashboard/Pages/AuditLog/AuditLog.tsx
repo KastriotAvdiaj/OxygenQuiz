@@ -25,7 +25,6 @@ import { useSearchAuditLogs } from "./api/search-audit-logs";
 import { useUserData } from "@/pages/Dashboard/Pages/User/api/get-users";
 import { useDebounce } from "@/hooks/use-debounce";
 import { type AuditLog as AuditLogEntry } from "@/types/audit-types";
-import { LiftedButton } from "@/common/LiftedButton";
 import { AuditLogFilters } from "./components/audit-log-filters";
 
 const PAGE_SIZE = 25;
@@ -135,13 +134,13 @@ export const AuditLog = () => {
               </span>
             )}
           </Button>
-          <LiftedButton
+          <Button
             onClick={() => refetch()}
             disabled={isFetching}
             className="shrink-0 px-3 py-2 text-sm">
             <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
             Refresh
-          </LiftedButton>
+          </Button>
         </div>
       </div>
 

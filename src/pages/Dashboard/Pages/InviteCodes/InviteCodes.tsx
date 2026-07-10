@@ -20,7 +20,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/form/input";
 import { Label } from "@/components/ui/form/label";
-import { LiftedButton } from "@/common/LiftedButton";
 import { useNotifications } from "@/common/Notifications";
 import formatDate from "@/lib/date-format";
 import {
@@ -139,7 +138,7 @@ export const InviteCodes = () => {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <LiftedButton
+          <Button
             onClick={() => refetch()}
             disabled={isFetching}
             className="shrink-0 px-3 py-2 text-sm">
@@ -147,7 +146,7 @@ export const InviteCodes = () => {
               className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`}
             />
             Refresh
-          </LiftedButton>
+          </Button>
           <Button
             onClick={() => setDialogOpen(true)}
             className="flex items-center gap-2">

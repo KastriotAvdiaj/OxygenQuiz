@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { CheckCircle, XCircle, Clock } from "lucide-react";
-import type { InstantFeedbackAnswerResult } from "../../quiz-session-types";
+import type { InstantFeedbackAnswerResult } from "../../../../../types/quiz-session-types";
 
 interface FeedbackDisplayProps {
   result: InstantFeedbackAnswerResult;

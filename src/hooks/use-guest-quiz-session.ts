@@ -12,7 +12,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { useCreateGuestQuizSession, useGetGuestNextQuestion } from "@/pages/Quiz/Sessions/api/guest-quiz-session";
-import { QuizSession, CurrentQuestion, InstantFeedbackAnswerResult } from "@/pages/Quiz/Sessions/quiz-session-types";
+import { QuizSession, CurrentQuestion, InstantFeedbackAnswerResult } from "@/types/quiz-session-types";
 import { extractErrorMessage } from "./use-quiz-session";
 
 interface UseGuestQuizSessionParams {

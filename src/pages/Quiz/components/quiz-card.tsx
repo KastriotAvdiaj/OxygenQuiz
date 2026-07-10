@@ -1,5 +1,4 @@
 import { useCallback, useMemo } from "react";
-import { Badge } from "@/components/ui/badge";
 import { HelpCircle, Clock, ArrowRight } from "lucide-react";
 import type { QuizSummaryDTO } from "@/types/quiz-types";
 import { cn } from "@/utils/cn";
@@ -28,103 +27,84 @@ export function QuizCard({ quiz, onClick }: QuizCardProps) {
 
   const primaryColor = colors[0];
 
-  // const gradientStyle = useMemo(() => {
-  //   if (quiz.gradient && colors.length > 1) {
-  //     return `linear-gradient(135deg, ${colors.join(", ")})`;
-  //   }
-  //   return primaryColor;
-  // }, [colors, quiz.gradient, primaryColor]);
-
   const handleClick = useCallback(() => {
     onClick?.(quiz);
   }, [onClick, quiz]);
 
+  const questionLabel = quiz.questionCount === 1 ? "question" : "questions";
+
   return (
     <div
-      className="relative group w-full max-w-sm mx-auto cursor-pointer"
+      className="group w-full max-w-sm mx-auto cursor-pointer"
       onClick={handleClick}
     >
-      {/* Lifted shadow — uses quiz primary color for a branded feel */}
-      <div
-        className="absolute top-1.5 left-1.5 w-full h-full rounded-xl opacity-50 transition-all duration-200 group-hover:top-2 group-hover:left-2"
-        style={{ backgroundColor: primaryColor }}
-      />
-
-      {/* Main card body */}
       <div
         className={cn(
-          "relative bg-card shadow-md rounded-xl overflow-hidden",
-          "transition-transform duration-200 ease-out",
-          "group-hover:-translate-y-0.5 group-hover:-translate-x-0.5"
+          "relative overflow-hidden rounded-xl border border-border bg-card",
+          "transition-all duration-200 ease-out",
+          "hover:-translate-y-0.5 hover:border-foreground/20 hover:shadow-md"
         )}
       >
-        {/* Top accent gradient strip */}
+        {/* Colored identity rail — the quiz's primary palette color is the only
+            thing distinguishing one quiz from another, kept deliberate and small. */}
         <div
-          className="h-2 w-full"
-          // style={{ background: gradientStyle }}
+          className="absolute left-0 top-0 bottom-0 w-[3px]"
+          style={{ backgroundColor: primaryColor }}
         />
 
-        {/* Card content */}
-        <div className="p-4 sm:p-5 space-y-3">
-          {/* Category badge */}
-          <Badge
-            variant="secondary"
-            className="text-[10px] sm:text-xs font-bold px-2.5 py-0.5 rounded-full border tracking-wider uppercase"
-            style={{
-              backgroundColor: `${primaryColor}15`,
-              borderColor: `${primaryColor}40`,
-              color: primaryColor,
-            }}
+        <div className="p-4 pl-5 sm:p-5 sm:pl-6">
+          {/* Category */}
+          <p
+            className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide"
+            style={{ color: primaryColor }}
           >
             {quiz.category}
-          </Badge>
+          </p>
 
           {/* Title */}
-          <h3 className="text-base sm:text-lg font-bold font-quiz tracking-wider leading-snug text-foreground line-clamp-2">
+          <h3 className="font-quiz text-base font-semibold leading-snug text-foreground line-clamp-2">
             {quiz.title}
           </h3>
 
+          {/* Description */}
+          {quiz.description && (
+            <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground line-clamp-2">
+              {quiz.description}
+            </p>
+          )}
+
           {/* Meta info row */}
-          <div className="flex items-center gap-3 text-xs sm:text-sm text-muted-foreground">
-            <div className="flex items-center gap-1">
-              <HelpCircle className="h-3.5 w-3.5" style={{ color: primaryColor }} />
-              <span className="font-medium">{quiz.questionCount}q</span>
-            </div>
+          <div className="mt-4 flex items-center gap-4 border-t border-border pt-3 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1.5">
+              <HelpCircle className="h-3.5 w-3.5" />
+              {quiz.questionCount} {questionLabel}
+            </span>
 
             {quiz.timeLimitInSeconds > 0 && (
-              <div className="flex items-center gap-1">
-                <Clock className="h-3.5 w-3.5" style={{ color: primaryColor }} />
-                <span className="font-medium">
-                  {secondsToMinutes(quiz.timeLimitInSeconds)}
-                </span>
-              </div>
+              <span className="flex items-center gap-1.5">
+                <Clock className="h-3.5 w-3.5" />
+                {secondsToMinutes(quiz.timeLimitInSeconds)}
+              </span>
             )}
 
-            <div className="flex items-center gap-1 ml-auto">
-              <span className="font-medium text-muted-foreground/70">
-                {quiz.difficulty}
-              </span>
-            </div>
+            <span className="ml-auto capitalize">{quiz.difficulty}</span>
           </div>
 
-          {/* Divider */}
-          <div
-            className="h-px w-full opacity-20"
-            style={{ backgroundColor: primaryColor }}
-          />
-
-          {/* Footer — author + arrow */}
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground font-medium truncate max-w-[60%]">
+          {/* Footer — author + hover Play affordance */}
+          <div className="mt-3 flex items-center justify-between">
+            <span className="truncate text-xs text-muted-foreground">
               by {quiz.user}
             </span>
-            <div
-              className="flex items-center gap-1 text-xs font-bold font-quiz tracking-wider transition-transform duration-200 group-hover:translate-x-1"
+            <span
+              className={cn(
+                "flex items-center gap-1 text-xs font-medium",
+                "-translate-x-1 opacity-0 transition-all duration-200",
+                "group-hover:translate-x-0 group-hover:opacity-100"
+              )}
               style={{ color: primaryColor }}
             >
-              <span>PLAY</span>
-              <ArrowRight className="h-3.5 w-3.5" />
-            </div>
+              Play <ArrowRight className="h-3.5 w-3.5" />
+            </span>
           </div>
         </div>
       </div>

@@ -75,10 +75,8 @@ const NavItem = ({
       )}
 
       <Icon
-        size={18}
-        strokeWidth={1.75}
         className={cn(
-          "relative z-10 h-[18px] w-[18px] shrink-0 transition-colors",
+          "relative z-10 shrink-0 text-[17px] transition-colors",
           isActive
             ? "text-primary"
             : "text-muted-foreground group-hover:text-foreground"
@@ -95,9 +93,7 @@ const NavItem = ({
             transition={labelTransition}
             className={cn(
               "relative z-10 ml-3 overflow-hidden whitespace-nowrap text-[13px] font-medium",
-              isActive
-                ? "text-foreground"
-                : "text-muted-foreground group-hover:text-foreground"
+              isActive ? "text-foreground" : "text-muted-foreground group-hover:text-foreground"
             )}
           >
             {item.label}
@@ -163,7 +159,9 @@ export const DashboardNav: React.FC<DashboardNavProps> = ({
             <div key={group.name || `section-${groupIndex}`}>
               {group.name &&
                 (isCollapsed ? (
-                  groupIndex > 0 && <div className="mx-2 mb-2 h-px bg-border" />
+                  groupIndex > 0 && (
+                    <div className="mx-2 mb-2 h-px bg-border" />
+                  )
                 ) : (
                   <p className="mb-1.5 px-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
                     {group.name}

@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { apiService } from "@/lib/Api-client";
 import { MutationConfig } from "@/lib/React-query";
-import { InstantFeedbackAnswerResult } from "../quiz-session-types";
+import { InstantFeedbackAnswerResult } from "../../../../types/quiz-session-types";
 import { getCurrentStateQueryOptions } from "./get-current-state";
 
 export const submitAnswerInputSchema = z.object({

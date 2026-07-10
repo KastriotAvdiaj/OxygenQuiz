@@ -273,7 +273,11 @@ export const QuizRoute = () => {
             <DeleteQuiz
               useLiftedButton={true}
               className="w-fit bg-red-500 hover:bg-red-600"
-              finished={() => navigate("/dashboard/quizzes")}
+              // Defer navigation one tick so the dialog can close and Radix can
+              // restore <body> pointer-events before this page unmounts.
+              finished={() =>
+                setTimeout(() => navigate("/dashboard/quizzes"), 0)
+              }
               id={quiz.id}
             />
           </div>

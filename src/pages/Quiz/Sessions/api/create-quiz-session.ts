@@ -2,7 +2,7 @@ import { useMutation } from '@tanstack/react-query';
 import { z } from 'zod';
 import { apiService } from '@/lib/Api-client';
 import { MutationConfig } from '@/lib/React-query';
-import { QuizSession } from '../quiz-session-types';
+import { QuizSession } from '../../../../types/quiz-session-types';
 
 export const createQuizSessionInputSchema = z.object({
   quizId: z.number().int().positive(),
