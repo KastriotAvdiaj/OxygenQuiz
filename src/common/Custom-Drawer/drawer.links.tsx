@@ -34,22 +34,20 @@ export const DrawerLinks = ({
       </Button>
     </NavLink>
 
-    {/* Admins have two dashboards; link to both explicitly. Regular users only have
-        the personal dashboard, which they reach via My Profile / Settings above. */}
-    {isAdmin && (
-      <>
-        <NavLink to="/dashboard" onClick={close} className="w-full">
-          <Button variant={"drawer"} size={"drawerSize"} className="w-full">
-            <RiAdminFill className="text-sm" /> Admin Dashboard
-          </Button>
-        </NavLink>
+    {/* Every logged-in user has a personal dashboard. */}
+    <NavLink to="/my-dashboard" onClick={close} className="w-full">
+      <Button variant={"drawer"} size={"drawerSize"} className="w-full">
+        <MdSpaceDashboard className="text-sm" /> Dashboard
+      </Button>
+    </NavLink>
 
-        <NavLink to="/my-dashboard" onClick={close} className="w-full">
-          <Button variant={"drawer"} size={"drawerSize"} className="w-full">
-            <MdSpaceDashboard className="text-sm" /> Personal Dashboard
-          </Button>
-        </NavLink>
-      </>
+    {/* Admins additionally get the admin dashboard. */}
+    {isAdmin && (
+      <NavLink to="/dashboard" onClick={close} className="w-full">
+        <Button variant={"drawer"} size={"drawerSize"} className="w-full">
+          <RiAdminFill className="text-sm" /> Admin Dashboard
+        </Button>
+      </NavLink>
     )}
   </>
 );

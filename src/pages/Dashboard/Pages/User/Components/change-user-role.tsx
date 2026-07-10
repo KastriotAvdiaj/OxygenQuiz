@@ -133,6 +133,7 @@ export const ChangeUserRole = ({
             options={options}
             selected={selected}
             onChange={setSelected}
+            withinDialog
           />
           {noneSelected && (
             <p className="text-xs text-destructive">Select at least one role.</p>

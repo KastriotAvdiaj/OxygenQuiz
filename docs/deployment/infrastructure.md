@@ -207,7 +207,7 @@ deploy involves:
 | Volume | Mounted at | Why it exists |
 |---|---|---|
 | `oxygenquiz_postgres-data` | Postgres data dir | The actual database. Losing this = losing all data. |
-| `oxygenquiz_uploads` | backend `wwwroot/uploads` | User-uploaded files. Without a volume they'd vanish on every rebuild (§2). |
+| `oxygenquiz_uploads` | backend `wwwroot/uploads` | User-uploaded files. Without a volume they'd vanish on every rebuild (§2). The Dockerfile pre-creates this dir owned by the non-root app user so the volume is writable (see §9). |
 | `oxygenquiz_dpkeys` | backend `/app/keys` | ASP.NET **Data Protection** keys (see §9). |
 
 > Operational note: `docker compose down` keeps these volumes; only `down -v` deletes them. We never use
@@ -261,6 +261,16 @@ topology:
   survive rebuilds. (The Dockerfile pre-creates `/app/keys` owned by the non-root app user so it can
   write them.) A remaining "no XML encryptor configured" warning is expected and benign — the keys sit
   unencrypted at rest on a root-only volume, which is fine for a single server.
+
+- **Uploads directory ownership.** User uploads are written to `wwwroot/uploads`, mounted to the
+  `uploads` volume so they survive rebuilds (see the volume table in §7). The subtle part: the app runs
+  as a **non-root** user, and a fresh named volume inherits the ownership of its mount point *from the
+  image*. If `/app/wwwroot/uploads` doesn't exist in the image, Docker creates the mount point
+  **root-owned**, and the first upload fails with a permission-denied `500`. So the Dockerfile
+  pre-creates `/app/wwwroot/uploads` owned by the non-root app user — exactly the same fix as the Data
+  Protection keys above. Note this ownership is seeded only when the volume is first created: if a
+  root-owned `uploads` volume already exists from an earlier deploy, rebuilding the image alone won't
+  re-chown it — remove the volume (loses existing files) or `chown` it once inside the container.
 
 - **Hangfire scheduling fix.** Hangfire's recurring jobs were originally registered via the *static*
   `RecurringJob.AddOrUpdate`, which depends on a global that only got initialized as a side effect of

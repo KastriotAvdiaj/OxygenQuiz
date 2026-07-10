@@ -29,7 +29,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useEffect, useState } from "react";
 import { BsPatchQuestionFill } from "react-icons/bs";
 import { useNotifications } from "@/common/Notifications";
-import { useNavigate } from "react-router";
+import { useNavigate, useLocation } from "react-router";
 import { ExistingQuestionCard } from "./components/existing-display-quiz-question-card/main-display-quiz-question-export";
 import { QuestionSettingsCard } from "./components/quiz-question-settings";
 import {
@@ -82,6 +82,14 @@ const CreateQuizForm = ({ editQuiz }: CreateQuizFormProps = {}) => {
   } = useQuiz();
   const { addNotification } = useNotifications();
   const navigate = useNavigate();
+  const location = useLocation();
+  // This form is mounted under both the admin dashboard (/dashboard/...) and the
+  // personal dashboard (/my-dashboard/...). Redirect back into whichever section
+  // the user is actually in — a normal user has no access to /dashboard and would
+  // otherwise be bounced to a 404 after creating a quiz.
+  const dashboardBase = location.pathname.startsWith("/my-dashboard")
+    ? "/my-dashboard"
+    : "/dashboard";
 
   const {
     isOpen: isAddQuestionDialogOpen,
@@ -164,7 +172,7 @@ const CreateQuizForm = ({ editQuiz }: CreateQuizFormProps = {}) => {
           title: "Success",
           message: "Your quiz was created successfully!",
         });
-        navigate("/dashboard/quizzes");
+        navigate(`${dashboardBase}/quizzes`);
       },
       onError: (error) => {
         console.error("Quiz creation error:", error);
@@ -186,7 +194,13 @@ const CreateQuizForm = ({ editQuiz }: CreateQuizFormProps = {}) => {
           title: "Success",
           message: "Your changes were saved!",
         });
-        navigate(`/dashboard/quiz/${editQuiz?.id}`);
+        // Only the admin dashboard has a per-quiz detail route; the personal
+        // dashboard just has the quizzes list.
+        navigate(
+          dashboardBase === "/my-dashboard"
+            ? "/my-dashboard/quizzes"
+            : `/dashboard/quiz/${editQuiz?.id}`
+        );
       },
       onError: (error) => {
         console.error("Quiz update error:", error);

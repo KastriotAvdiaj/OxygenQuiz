@@ -104,8 +104,11 @@ a trimmed production compose (below).
   and delete the `postgres` service from compose. Automated backups included.
 
 **Uploads:** the backend writes to `wwwroot/uploads` on local disk. On a single VPS with a persistent
-volume this survives restarts (but NOT a container rebuild unless volume-mounted — see compose).
-For real durability, move to R2/S3 later (deployment.md §9).
+volume this survives restarts (but NOT a container rebuild unless volume-mounted — see compose). You do
+not need to pre-create the folder; the app and the volume mount create it. Because the container runs as
+a non-root user, the Dockerfile pre-creates `/app/wwwroot/uploads` owned by that user so the mounted
+volume is writable — without it the first upload fails with a permission-denied `500`. For real
+durability, move to R2/S3 later (deployment.md §9).
 
 **Origin TLS cert (so Cloudflare Full-strict works):**
 In Cloudflare dashboard → SSL/TLS → Origin Server → **Create Certificate**. Save the cert + key onto

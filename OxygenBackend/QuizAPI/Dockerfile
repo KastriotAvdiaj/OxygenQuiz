@@ -27,9 +27,11 @@ RUN dotnet publish "./QuizAPI.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-# Data Protection key ring lives here and is mounted to a Docker volume so keys survive container
-# rebuilds. Create it owned by the non-root app user ($APP_UID) so the app can write the keys.
+# Data Protection key ring (/app/keys) and user uploads (/app/wwwroot/uploads) both live on mounted
+# Docker volumes so they survive container rebuilds. Create them owned by the non-root app user
+# ($APP_UID) so the app can write to them — a named volume inherits the mount point's ownership from
+# the image, so without this the volume would be root-owned and uploads would fail with EACCES.
 USER root
-RUN mkdir -p /app/keys && chown -R $APP_UID:$APP_UID /app/keys
+RUN mkdir -p /app/keys /app/wwwroot/uploads && chown -R $APP_UID:$APP_UID /app/keys /app/wwwroot
 USER $APP_UID
 ENTRYPOINT ["dotnet", "QuizAPI.dll"]

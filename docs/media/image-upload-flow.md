@@ -149,3 +149,25 @@ delete.
   image is treated as an orphan and removed by the daily sweep. It is "optional" only in
   the sense that nothing crashes if you skip it; you just lose the image after 24h.
 - The image itself is optional on the entity (`ImageUrl` / `ProfileImageUrl` can be empty).
+
+---
+
+## Storage in production
+
+Files are written to `wwwroot/uploads` on the backend's local disk and served back as static files
+(`app.UseStaticFiles()`), so nothing extra is needed for the URLs to resolve. Two deployment notes:
+
+- **Persistence.** In Docker the container filesystem is ephemeral, so `wwwroot/uploads` is mounted to
+  a named volume (`uploads` → `/app/wwwroot/uploads` in `deploy/docker-compose.prod.yml`). Without it,
+  every rebuild wipes uploaded images.
+- **Writability.** The backend runs as a non-root user, and a fresh named volume inherits its mount
+  point's ownership from the image. The Dockerfile therefore pre-creates `/app/wwwroot/uploads` owned by
+  the app user; otherwise the volume mounts root-owned and uploads fail with a permission-denied `500`.
+  See `docs/deployment/infrastructure.md` §9 for the full rationale.
+
+You do **not** need to create the uploads folder manually — `SaveImageAsync` calls
+`Directory.CreateDirectory` and the volume mount creates the path. The only requirement is that the
+mounted directory be writable by the app user, which the Dockerfile handles.
+
+For multi-instance or serverless deployments, local disk stops working (instances don't share it) — move
+uploads to object storage (S3 / Cloudflare R2). See `docs/deployment/deployment.md` §9.

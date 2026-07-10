@@ -11,9 +11,17 @@ const PopoverAnchor = PopoverPrimitive.Anchor
 
 const PopoverContent = React.forwardRef<
   React.ElementRef<typeof PopoverPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Content>
->(({ className, align = "center", sideOffset = 4, ...props }, ref) => (
-  <PopoverPrimitive.Portal>
+  React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Content> & {
+    /**
+     * Render the content in a Portal to <body> (default). Set to false when the
+     * Popover lives inside a modal Radix Dialog: the modal locks the body with
+     * `pointer-events: none`, which would make portalled content unclickable.
+     * Rendering in-place keeps it inside the dialog's interactive subtree.
+     */
+    portalled?: boolean;
+  }
+>(({ className, align = "center", sideOffset = 4, portalled = true, ...props }, ref) => {
+  const content = (
     <PopoverPrimitive.Content
       ref={ref}
       align={align}
@@ -24,8 +32,14 @@ const PopoverContent = React.forwardRef<
       )}
       {...props}
     />
-  </PopoverPrimitive.Portal>
-))
+  );
+
+  return portalled ? (
+    <PopoverPrimitive.Portal>{content}</PopoverPrimitive.Portal>
+  ) : (
+    content
+  );
+})
 PopoverContent.displayName = PopoverPrimitive.Content.displayName
 
 export { Popover, PopoverTrigger, PopoverContent, PopoverAnchor }

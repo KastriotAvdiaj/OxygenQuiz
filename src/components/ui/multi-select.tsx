@@ -26,6 +26,12 @@ interface MultiSelectProps<TValue extends MultiSelectValue> {
   /** Show a filter box at the top of the list — useful for long lists (e.g. users). */
   searchable?: boolean;
   className?: string;
+  /**
+   * Set when this MultiSelect is used inside a modal Dialog. The options list is
+   * then rendered in-place instead of portalled to <body>, so the dialog's
+   * `pointer-events: none` lock doesn't swallow clicks on the options.
+   */
+  withinDialog?: boolean;
 }
 
 // Trigger styled to match the "form" Select variant (see components/ui/select.tsx) so it sits
@@ -44,6 +50,7 @@ export function MultiSelect<TValue extends MultiSelectValue = number>({
   onChange,
   searchable = false,
   className,
+  withinDialog = false,
 }: MultiSelectProps<TValue>) {
   const [query, setQuery] = React.useState("");
 
@@ -94,6 +101,7 @@ export function MultiSelect<TValue extends MultiSelectValue = number>({
 
         <PopoverContent
           align="start"
+          portalled={!withinDialog}
           className="w-[var(--radix-popover-trigger-width)] min-w-[12rem] p-1 dark:border-foreground/30">
           {searchable && (
             <div className="relative mb-1">

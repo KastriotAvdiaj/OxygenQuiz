@@ -142,7 +142,6 @@ export const columns: ColumnDef<User>[] = [
             <DropdownMenuSeparator className="bg-background/60" />
             {canManageRoles ? (
               <DropdownMenuItem
-                className="flex h-5 items-center gap-2 px-0 text-sm font-normal"
                 onSelect={() =>
                   // Let the menu close first, then open the dialog next frame.
                   requestAnimationFrame(() => roleDialog.open())
@@ -151,9 +150,7 @@ export const columns: ColumnDef<User>[] = [
               </DropdownMenuItem>
             ) : (
               <DropdownMenuItem disabled title={disabledReason}>
-                <span className="flex h-5 items-center gap-2 px-0 text-sm font-normal">
-                  <UserRoundCog size={16} /> Change Role
-                </span>
+                <UserRoundCog size={16} /> Change Role
               </DropdownMenuItem>
             )}
           </DropdownMenuContent>
