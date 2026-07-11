@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from "react";
 import { QuizCard } from "./components/quiz-card";
 import { QuizToolbar, ALL_FILTER, SORT_RULES, DEFAULT_SORT, type SortOption } from "./components/quiz-header";
 import { motion } from "framer-motion";
-import { ArchiveX, ArrowLeft } from "lucide-react";
+import { ArchiveX, ArrowLeft, ListFilter, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { QuizStartModal } from "./components/quiz-start-modal";
 import { QuizSummaryDTO } from "@/types/quiz-types";
@@ -94,16 +94,74 @@ export function QuizSelection() {
     difficultyId !== ALL_FILTER ||
     languageId !== ALL_FILTER;
 
-  // Reset to the first page whenever the filter/search/sort criteria change.
+  // Dismissible chips shown in the results header — one per active filter.
+  const filterChips: { key: string; label: string; onClear: () => void }[] = [];
+  if (searchQuery)
+    filterChips.push({
+      key: "search",
+      label: `“${searchQuery}”`,
+      onClear: () => setSearchQuery(""),
+    });
+  if (categoryId !== ALL_FILTER) {
+    const name = categories.find((c) => String(c.id) === categoryId)?.name;
+    if (name)
+      filterChips.push({
+        key: "category",
+        label: name,
+        onClear: () => setCategoryId(ALL_FILTER),
+      });
+  }
+  if (difficultyId !== ALL_FILTER) {
+    const level = difficulties.find((d) => String(d.id) === difficultyId)?.level;
+    if (level)
+      filterChips.push({
+        key: "difficulty",
+        label: level,
+        onClear: () => setDifficultyId(ALL_FILTER),
+      });
+  }
+  if (languageId !== ALL_FILTER) {
+    const lang = languages.find((l) => String(l.id) === languageId)?.language;
+    if (lang)
+      filterChips.push({
+        key: "language",
+        label: lang,
+        onClear: () => setLanguageId(ALL_FILTER),
+      });
+  }
+
+  const resultCount = pagination?.totalItems ?? quizzes.length;
+
+  // Search is debounced, so its page reset happens when the debounced value lands.
   useEffect(() => {
     setPageNumber(1);
-  }, [debouncedSearch, categoryId, difficultyId, languageId, sortBy]);
+  }, [debouncedSearch]);
+
+  // Filter/sort changes reset the page in the same render — resetting in an effect
+  // fired one render late and briefly queried an out-of-range page.
+  const handleCategoryChange = useCallback((v: string) => {
+    setCategoryId(v);
+    setPageNumber(1);
+  }, []);
+  const handleDifficultyChange = useCallback((v: string) => {
+    setDifficultyId(v);
+    setPageNumber(1);
+  }, []);
+  const handleLanguageChange = useCallback((v: string) => {
+    setLanguageId(v);
+    setPageNumber(1);
+  }, []);
+  const handleSortChange = useCallback((v: SortOption) => {
+    setSortBy(v);
+    setPageNumber(1);
+  }, []);
 
   const clearFilters = useCallback(() => {
     setSearchQuery("");
     setCategoryId(ALL_FILTER);
     setDifficultyId(ALL_FILTER);
     setLanguageId(ALL_FILTER);
+    setPageNumber(1);
   }, []);
 
   const handleQuizClick = useCallback(
@@ -146,27 +204,62 @@ export function QuizSelection() {
           <p className="text-sm sm:text-base text-muted-foreground mt-1">
             Browse and pick a quiz to test your knowledge.
           </p>
+          {/* Playful accent bar under the title, echoing the primary theme */}
+          <div className="mt-2.5 h-1 w-16 sm:w-20 rounded-full bg-gradient-to-r from-primary via-primary/60 to-primary/10" />
         </div>
 
-        {/* Toolbar */}
-        <div className="mb-5 sm:mb-6 md:mb-8 p-3 sm:p-4 rounded-xl border-2 border-border bg-background">
+        {/* Toolbar — no card wrapper: the lifted quiz-variant controls stand on their own */}
+        <div className="mb-4 sm:mb-5">
           <QuizToolbar
+            showCount={false}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
             categories={categories}
             selectedCategoryId={categoryId}
-            onCategoryChange={setCategoryId}
+            onCategoryChange={handleCategoryChange}
             difficulties={difficulties}
             selectedDifficultyId={difficultyId}
-            onDifficultyChange={setDifficultyId}
+            onDifficultyChange={handleDifficultyChange}
             languages={languages}
             selectedLanguageId={languageId}
-            onLanguageChange={setLanguageId}
+            onLanguageChange={handleLanguageChange}
             sortBy={sortBy}
-            onSortChange={setSortBy}
+            onSortChange={handleSortChange}
             resultCount={pagination?.totalItems ?? quizzes.length}
             onClearFilters={clearFilters}
           />
+        </div>
+
+        {/* Results header — visually separates the toolbar from the quiz grid.
+            The match-count pill and filter chips only appear while filtering:
+            a total is noise when browsing everything, but useful feedback once
+            the user has narrowed things down. */}
+        <div className="mb-5 sm:mb-6 md:mb-7 flex flex-wrap items-center gap-2 sm:gap-3">
+          {hasActiveFilters && (
+            <>
+              <span className="inline-flex items-center gap-1.5 rounded-full border-2 border-primary/40 dark:border-primary/60 bg-background px-3 py-1 text-xs font-header font-semibold text-primary shadow-[0_2px_0_0_hsl(var(--primary)/0.35)] whitespace-nowrap tabular-nums">
+                <ListFilter className="h-3.5 w-3.5" />
+                {isLoading
+                  ? "Searching…"
+                  : `${resultCount.toLocaleString()} ${
+                      resultCount === 1 ? "match" : "matches"
+                    }`}
+              </span>
+              {filterChips.map((chip) => (
+                <button
+                  key={chip.key}
+                  type="button"
+                  onClick={chip.onClear}
+                  title="Remove filter"
+                  className="group inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 text-xs font-medium text-foreground hover:border-destructive/40 hover:bg-destructive/10 hover:text-destructive transition-colors"
+                >
+                  {chip.label}
+                  <X className="h-3 w-3 opacity-60 group-hover:opacity-100" />
+                </button>
+              ))}
+            </>
+          )}
+          <div className="h-px flex-1 min-w-[3rem] bg-gradient-to-r from-primary/40 via-primary/15 to-transparent" />
         </div>
 
         {/* Quiz Grid */}
@@ -194,6 +287,11 @@ export function QuizSelection() {
           </motion.div>
         ) : (
           <motion.div
+            // Re-key per query: framer-motion only propagates "hidden" → "visible" when
+            // the container (re)mounts. Without this, swapping in cached results (e.g.
+            // rapidly toggling filters) mounts the new cards in the "hidden" variant and
+            // leaves them permanently invisible.
+            key={`${debouncedSearch}|${categoryId}|${difficultyId}|${languageId}|${sortBy}|${pageNumber}`}
             className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 md:gap-8 lg:grid-cols-3 xl:grid-cols-4"
             variants={containerVariants}
             initial="hidden"
