@@ -71,7 +71,18 @@ Notes:
 
 ---
 
-## 4. Deploying a code change (desktop → GitHub → server)
+## 4. Deploying a code change
+
+Frontend and backend deploy **independently, to different places**. Know which you changed:
+
+- **Backend** — anything under `OxygenBackend/` (C#). Runs on the **VPS** in Docker. Deploy = push, then
+  rebuild the container on the server (§4a).
+- **Frontend** — anything under `src/` (React/TS), incl. theme, forms, API client. It's a **static site
+  on Cloudflare Workers**; the VPS does **not** serve it. Deploy = `npm run build && npx wrangler deploy`
+  from your desktop (§4b). No server, no `git pull`, no Docker involved. A backend rebuild will **not**
+  make a frontend change live, and vice-versa. Full explanation: [`frontend-deploy-explained.md`](frontend-deploy-explained.md).
+
+### 4a. Backend change (desktop → GitHub → server)
 
 On the **desktop**:
 
@@ -90,6 +101,26 @@ cd ~/OxygenQuiz
 git pull
 docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
 ```
+
+### 4b. Frontend change (desktop → Cloudflare, no server)
+
+From the repo root on your **desktop**:
+
+```powershell
+cd C:\Users\Pc\source\repos\OxygenQuiz
+npm run build          # type-checks (tsc -b) + bundles into dist/ (bakes in VITE_API_URL from .env.production)
+npx wrangler deploy    # uploads dist/ and promotes it live on oxygenquiz.com
+```
+
+Then **hard-refresh** `oxygenquiz.com` (Ctrl+Shift+R) — if you still see the old site, it's almost
+always browser cache, not a failed deploy.
+
+- You must `npm run build` **before** deploying; Wrangler ships whatever is already in `dist/`.
+- Also `git commit && git push` so the repo matches what's live. If the Cloudflare **Workers Build** is
+  connected to the repo, a push will *also* deploy — so pick **one** path per change to avoid two
+  deploys racing (see `frontend-deploy-explained.md` §6).
+- Verify: Cloudflare dashboard → Workers & Pages → `oxygenquiz` → **Deployments**; newest should be
+  **Active**. Troubleshooting + deploy history: [`known-issues.md`](known-issues.md).
 
 ---
 
