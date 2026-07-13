@@ -245,6 +245,7 @@ namespace QuizAPI.Services.QuizSessionServices
                 Options = qq.Question is MultipleChoiceQuestion mc
                     ? mc.AnswerOptions.Select(o => new RoundOption { Id = o.Id, Text = o.Text }).ToList()
                     : new List<RoundOption>(),
+                AllowMultipleSelections = qq.Question is MultipleChoiceQuestion { AllowMultipleSelections: true },
             }).ToList();
         }
 
@@ -258,6 +259,7 @@ namespace QuizAPI.Services.QuizSessionServices
             ImageUrl = round.ImageUrl,
             TimeLimitSeconds = round.TimeLimitSeconds,
             Options = round.Options,
+            AllowMultipleSelections = round.AllowMultipleSelections,
         };
 
         private static List<ScoreboardEntry> BuildScoreboard(MultiplayerSession session) =>

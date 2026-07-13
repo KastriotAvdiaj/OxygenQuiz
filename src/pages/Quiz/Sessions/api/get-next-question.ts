@@ -4,7 +4,7 @@ import { MutationConfig } from '@/lib/React-query';
 import { CurrentQuestion } from '../../../../types/quiz-session-types';
 
 export const getNextQuestion = ({ sessionId }: { sessionId: string }): Promise<CurrentQuestion> => {
-  return apiService.get(`/QuizSessions/${sessionId}/next-question`);
+  return apiService.get(`/QuizSessions/${sessionId}/next-question`, { timeout: 20000 });
 };
 
 type UseGetNextQuestionOptions = {

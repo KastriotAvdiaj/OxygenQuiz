@@ -22,7 +22,7 @@ namespace QuizAPI.Models
 
         // Font family names (must be one the client preloads). Two zones:
         // AppFont = dashboard/UI body, QuizFont = quiz experience.
-        public string AppFont { get; set; } = "Noto Sans";
+        public string AppFont { get; set; } = "Baloo 2";
         public string QuizFont { get; set; } = "DynaPuff";
 
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;

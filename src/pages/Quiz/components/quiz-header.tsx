@@ -136,7 +136,7 @@ export function QuizToolbar({
             placeholder="Search quizzes..."
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="w-full h-9 md:h-8 lg:h-9 pl-9 pr-9 rounded-xl border-2 border-primary/40 dark:border-primary/60 bg-gradient-to-r from-primary/5 to-transparent dark:from-primary/10 text-sm md:text-xs lg:text-sm font-medium font-header placeholder:text-muted-foreground shadow-[0_3px_0_0_hsl(var(--primary)/0.35)] md:shadow-[0_2px_0_0_hsl(var(--primary)/0.35)] lg:shadow-[0_3px_0_0_hsl(var(--primary)/0.35)] focus:border-primary/70 focus:shadow-[0_2px_0_0_hsl(var(--primary)/0.45)] focus:translate-y-px focus:outline-none transition-all duration-200"
+            className="w-full h-9 md:h-8 lg:h-9 pl-9 pr-9 rounded-xl border-2 border-primary/40 dark:border-primary/60 bg-gradient-to-r from-primary/5 to-transparent text-sm md:text-xs lg:text-sm font-medium font-header placeholder:text-muted-foreground shadow-[0_3px_0_0_hsl(var(--primary)/0.35)] md:shadow-[0_2px_0_0_hsl(var(--primary)/0.35)] lg:shadow-[0_3px_0_0_hsl(var(--primary)/0.35)] focus:border-primary/70 focus:shadow-[0_2px_0_0_hsl(var(--primary)/0.45)] focus:translate-y-px focus:outline-none transition-all duration-200"
           />
           {searchQuery && (
             <button
@@ -174,7 +174,10 @@ export function QuizToolbar({
 
         {/* Difficulty Filter */}
         <div className="basis-[calc(50%-0.25rem)] sm:basis-auto">
-          <Select value={selectedDifficultyId} onValueChange={onDifficultyChange}>
+          <Select
+            value={selectedDifficultyId}
+            onValueChange={onDifficultyChange}
+          >
             <SelectTrigger
               variant="quiz"
               aria-label="Filter by difficulty"
@@ -187,7 +190,11 @@ export function QuizToolbar({
                 All Difficulties
               </SelectItem>
               {difficulties.map((diff) => (
-                <SelectItem variant="quiz" key={diff.id} value={String(diff.id)}>
+                <SelectItem
+                  variant="quiz"
+                  key={diff.id}
+                  value={String(diff.id)}
+                >
                   {diff.level}
                 </SelectItem>
               ))}
@@ -210,7 +217,11 @@ export function QuizToolbar({
                 All Languages
               </SelectItem>
               {languages.map((lang) => (
-                <SelectItem variant="quiz" key={lang.id} value={String(lang.id)}>
+                <SelectItem
+                  variant="quiz"
+                  key={lang.id}
+                  value={String(lang.id)}
+                >
                   {lang.language}
                 </SelectItem>
               ))}

@@ -31,7 +31,9 @@ export const createGuestQuizSession = ({
 }: {
   quizId: number;
 }): Promise<QuizSession> => {
-  return apiService.post("/guest-quiz-sessions", { quizId });
+  // Bound the request so a stalled backend surfaces as an error screen instead of
+  // leaving the guest stuck on "Preparing your quiz..." forever.
+  return apiService.post("/guest-quiz-sessions", { quizId }, { timeout: 20000 });
 };
 
 export const useCreateGuestQuizSession = ({
@@ -48,7 +50,9 @@ export const getGuestNextQuestion = ({
 }: {
   sessionId: string;
 }): Promise<CurrentQuestion> => {
-  return apiService.get(`/guest-quiz-sessions/${sessionId}/next-question`);
+  return apiService.get(`/guest-quiz-sessions/${sessionId}/next-question`, {
+    timeout: 20000,
+  });
 };
 
 export const useGetGuestNextQuestion = ({

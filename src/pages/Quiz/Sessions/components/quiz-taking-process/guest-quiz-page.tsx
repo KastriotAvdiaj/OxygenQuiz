@@ -1,5 +1,5 @@
-import { useNavigate } from "react-router-dom";
-import { Loader2, AlertCircle } from "lucide-react";
+import { useNavigate, Link } from "react-router-dom";
+import { Loader2, AlertCircle, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSubmitGuestAnswer } from "../../api/guest-quiz-session";
 import { QuizInterface } from "./quiz-interface";
@@ -81,10 +81,24 @@ export function GuestQuizPage({ quizId }: GuestQuizPageProps) {
         <div className="text-center space-y-6 max-w-md p-4">
           <AlertCircle className="h-16 w-16 mx-auto text-red-400" />
           <h2 className="text-2xl font-bold text-red-400">Quiz Session Error</h2>
-          <p className="text-gray-300">{error ?? "Unable to start the guest quiz session."}</p>
-          <Button onClick={handleGoBack} variant="outline">
-            Back to Quiz Selection
-          </Button>
+          <p className="text-gray-300">
+            {error ??
+              "Unable to start the guest quiz session. You can log in to play, or head back and try again."}
+          </p>
+          <div className="flex gap-4 justify-center">
+            <Button asChild>
+              <Link
+                to={`/login?redirectTo=${encodeURIComponent(
+                  window.location.pathname
+                )}`}>
+                <LogIn className="h-4 w-4 mr-2" />
+                Log In
+              </Link>
+            </Button>
+            <Button onClick={handleGoBack} variant="outline">
+              Back to Quiz Selection
+            </Button>
+          </div>
         </div>
       </div>
     );

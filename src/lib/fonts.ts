@@ -16,7 +16,7 @@ export const FONT_OPTIONS: FontOption[] = [
   { label: "Barriecito", value: "Barriecito" },
 ];
 
-export const DEFAULT_APP_FONT = "Noto Sans";
+export const DEFAULT_APP_FONT = "Baloo 2";
 export const DEFAULT_QUIZ_FONT = "DynaPuff";
 
 // Coalesce an unknown/empty stored value (e.g. an old row backfilled with "")

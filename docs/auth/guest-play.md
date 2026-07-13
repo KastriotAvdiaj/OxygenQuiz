@@ -106,7 +106,7 @@ reimplemented.
 | Piece | File | Purpose |
 |---|---|---|
 | Guest API client | `src/pages/Quiz/Sessions/api/guest-quiz-session.ts` | Talks to `/guest-quiz-sessions/*`. Kept separate from the real session API client (mirrors the backend split). |
-| `useGuestQuizSession` | `src/hooks/use-guest-quiz-session.ts` | Deliberately simpler than `useQuizSession` — no resume/abandon state machine, since a guest only has one session. |
+| `useGuestQuizSession` | `src/hooks/use-guest-quiz-session.ts` | Deliberately simpler than `useQuizSession` — no resume/abandon state machine, since a guest only has one session. Every path out of its loading state ends in either a session or a surfaced error (create-session / next-question requests are time-bounded at 20s, and an invalid quiz id errors immediately), so it can never leave the page stuck on "Preparing your quiz…". |
 | `GuestQuizPage` | `src/pages/Quiz/Sessions/components/quiz-taking-process/guest-quiz-page.tsx` | Reuses the same `QuizInterface` component the real flow uses — question rendering, timers, and feedback UI are shared. |
 | `QuizPageRouteWrapper` (modified) | `src/pages/Quiz/Sessions/components/quiz-taking-process/quiz-page-route-wrapper.tsx` | The single entry point for `/quiz/:quizId/play`. Branches three ways — see "Routing" below. |
 | `GuestQuizResultsRouteWrapper` | `src/pages/Quiz/Sessions/components/quiz-results/guest-quiz-results-route-wrapper.tsx` | Public results page at `/quiz/results-guest/:sessionId`. Calls `/finish` as soon as results load. |
@@ -121,9 +121,16 @@ visit /quiz/:quizId/play
  ├─ logged in?            → render <QuizPage>          (existing real flow, untouched)
  ├─ not logged in:
  │   ├─ GET /guest-quiz-sessions/can-play
- │   │   ├─ canPlay: true  → render <GuestQuizPage>
- │   │   └─ canPlay: false → redirect /login?redirectTo=...&guestUsed=1
+ │   │   ├─ canPlay: true   → render <GuestQuizPage>
+ │   │   ├─ canPlay: false  → redirect /login?redirectTo=...&guestUsed=1
+ │   │   └─ request failed   → render "Couldn't start the quiz" screen (Try Again / Log In)
 ```
+
+The `request failed` branch matters: the redirect-to-login path is only taken when the
+backend **actually** reports `canPlay: false`. A failed/unreachable `can-play` call must *not*
+be treated as "free quiz already spent" — that would silently send a first-time visitor to log
+in as if they'd used a quiz they never played. On error the wrapper renders a retry/login screen
+instead. (`QuizPageRouteWrapper` → `CantCheckGuestScreen`.)
 
 Results live on **two different routes**, so there is never ambiguity about which backend a given
 session id belongs to:

@@ -16,7 +16,9 @@ export const createQuizSessionInputSchema = z.object({
 export type CreateQuizSessionInput = z.infer<typeof createQuizSessionInputSchema>;
 
 export const createQuizSession = ({ data }: { data: CreateQuizSessionInput }): Promise<QuizSession> => {
-  return apiService.post('/quizsessions', data);
+  // Bound the request so a stalled backend surfaces as an error screen instead of
+  // leaving the page stuck on "Preparing your quiz..." forever.
+  return apiService.post('/quizsessions', data, { timeout: 20000 });
 };
 
 type UseCreateQuizSessionOptions = {

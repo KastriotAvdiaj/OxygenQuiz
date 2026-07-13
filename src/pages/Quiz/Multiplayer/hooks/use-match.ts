@@ -18,6 +18,7 @@ export interface RoundQuestionView {
   imageUrl?: string | null;
   timeLimitSeconds: number;
   options: RoundOption[];
+  allowMultipleSelections?: boolean;
 }
 
 export interface ScoreboardEntry {

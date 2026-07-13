@@ -204,8 +204,6 @@ export function QuizSelection() {
           <p className="text-sm sm:text-base text-muted-foreground mt-1">
             Browse and pick a quiz to test your knowledge.
           </p>
-          {/* Playful accent bar under the title, echoing the primary theme */}
-          <div className="mt-2.5 h-1 w-16 sm:w-20 rounded-full bg-gradient-to-r from-primary via-primary/60 to-primary/10" />
         </div>
 
         {/* Toolbar — no card wrapper: the lifted quiz-variant controls stand on their own */}

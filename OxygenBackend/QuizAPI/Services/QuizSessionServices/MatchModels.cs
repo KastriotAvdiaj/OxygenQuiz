@@ -18,6 +18,7 @@ namespace QuizAPI.Services.QuizSessionServices
         public string? ImageUrl { get; init; }
         public int TimeLimitSeconds { get; init; }
         public IReadOnlyList<RoundOption> Options { get; init; } = new List<RoundOption>();
+        public bool AllowMultipleSelections { get; init; }   // MC questions with >1 correct option
     }
 
     /// <summary>An answer choice shown to players. Deliberately has no "IsCorrect".</summary>
@@ -38,6 +39,7 @@ namespace QuizAPI.Services.QuizSessionServices
         public string? ImageUrl { get; init; }
         public int TimeLimitSeconds { get; init; }
         public IReadOnlyList<RoundOption> Options { get; init; } = new List<RoundOption>();
+        public bool AllowMultipleSelections { get; init; }   // lets the client render checkboxes
     }
 
     /// <summary>How one player did on the question that just ended.</summary>

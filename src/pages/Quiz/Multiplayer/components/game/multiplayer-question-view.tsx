@@ -165,5 +165,6 @@ function toCurrentQuestion(q: RoundQuestionView, secondsLeft: number): CurrentQu
     timeLimitInSeconds: q.timeLimitSeconds,
     timeRemainingInSeconds: secondsLeft,
     questionType,
+    allowMultipleSelections: q.allowMultipleSelections ?? false,
   };
 }

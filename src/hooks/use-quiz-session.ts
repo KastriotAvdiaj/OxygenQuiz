@@ -75,6 +75,16 @@ export const extractErrorMessage = (
   error: any,
   defaultMessage = "An error occurred"
 ): string => {
+  // A hung request that hit the client-side timeout (axios ECONNABORTED) has no
+  // server message — turn it into something the user can act on rather than
+  // surfacing a raw "timeout of 20000ms exceeded".
+  if (
+    error?.code === "ECONNABORTED" ||
+    /timeout/i.test(error?.message ?? "")
+  ) {
+    return "This is taking longer than expected. Please check your connection and try again.";
+  }
+
   return (
     error?.response?.data?.message || error?.message || defaultMessage
   );
@@ -299,12 +309,25 @@ export const useQuizSession = ({
   }, [existingActiveSession, quizId, userId, activateSession]);
 
   const initializeQuizSession = useCallback(async () => {
+    // Already started or finished — nothing to do (silent).
     if (
       initializationRef.current.hasInitialized ||
-      initializationRef.current.isInitializing ||
-      !quizId ||
-      !userId
+      initializationRef.current.isInitializing
     ) {
+      return;
+    }
+
+    // Can't start a session without a valid quiz and a signed-in user. Surface a
+    // clear, non-retryable error instead of silently returning, which would leave
+    // the page stuck on "Preparing your quiz..." forever.
+    if (!quizId || !userId) {
+      initializationRef.current.hasInitialized = true;
+      setIsValidationError(true); // a retry can't conjure a user/quiz
+      setError(
+        !userId
+          ? "You need to be signed in to play this quiz."
+          : "This quiz could not be found."
+      );
       return;
     }
 

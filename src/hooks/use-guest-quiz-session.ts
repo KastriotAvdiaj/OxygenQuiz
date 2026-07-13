@@ -59,7 +59,16 @@ export const useGuestQuizSession = ({ quizId }: UseGuestQuizSessionParams) => {
   );
 
   useEffect(() => {
-    if (hasInitialized.current || !quizId) return;
+    if (hasInitialized.current) return;
+
+    // Guard an invalid quiz id (e.g. a non-numeric URL param → NaN) with a clear
+    // error rather than silently leaving the page on "Preparing your quiz..." forever.
+    if (!quizId) {
+      hasInitialized.current = true;
+      setError("This quiz could not be found.");
+      return;
+    }
+
     hasInitialized.current = true;
 
     createSessionMutation.mutate(
