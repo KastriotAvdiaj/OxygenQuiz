@@ -102,19 +102,12 @@ export const Settings = () => {
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6">
       {/* Compact header — the sections are self-describing */}
-      <div className="mb-5">
-        <h1 className="text-xl font-bold sm:text-2xl">Settings</h1>
-        <p className="mt-0.5 text-sm text-muted-foreground">
-          Saved to your account.
-        </p>
-      </div>
+      <h1 className="mb-4 text-xl font-bold sm:text-2xl">Settings</h1>
 
       {/* Two columns on desktop keeps everything visible with less scrolling;
           items-start lets each card keep its natural height. */}
       <div className="grid items-start gap-4 lg:grid-cols-2">
         <AudioSection form={form} set={set} />
-
-        <AppearanceSection form={form} set={set} setTheme={setTheme} />
 
         <TypographySection
           form={form}
@@ -123,17 +116,15 @@ export const Settings = () => {
           syncFonts={syncFonts}
           setSyncFonts={setSyncFonts}
         />
+        <AppearanceSection form={form} set={set} setTheme={setTheme} />
 
-        <Section
-          icon={Timer}
-          title="Quiz"
-          description="Defaults for taking quizzes."
-        >
+
+        <Section icon={Timer} title="Quiz">
           <Row
             title="Show timer"
-            description="Display the countdown while taking a quiz."
             control={
               <Switch
+                size="sm"
                 checked={form.showTimer}
                 onCheckedChange={(v) => set("showTimer", v)}
               />
@@ -141,44 +132,36 @@ export const Settings = () => {
           />
           <Row
             title="Default difficulty"
-            description="Pre-select a difficulty for new quizzes."
             soon
             dimmed
             control={<span className="text-sm text-muted-foreground">Any</span>}
           />
         </Section>
 
-        <Section
-          icon={Bell}
-          title="Notifications"
-          description="Choose what we notify you about."
-        >
+        <Section icon={Bell} title="Notifications">
           <Row
             title="Email notifications"
-            description="Updates and summaries by email."
             soon
             dimmed
-            control={<Switch checked={false} disabled />}
+            control={<Switch size="sm" checked={false} disabled />}
           />
           <Row
             title="Push notifications"
-            description="In-app and browser alerts."
             soon
             dimmed
-            control={<Switch checked={false} disabled />}
+            control={<Switch size="sm" checked={false} disabled />}
           />
         </Section>
 
-        <Section icon={Lock} title="Account" description="Security and sign-in.">
+        <Section icon={Lock} title="Account">
           <Row
             title="Change password"
-            description="Update your account password."
             soon
             dimmed
             control={
               <button
                 disabled
-                className="cursor-not-allowed rounded-lg border border-foreground/20 px-3 py-1.5 text-sm text-muted-foreground"
+                className="cursor-not-allowed rounded-lg border border-foreground/20 px-2.5 py-1 text-sm text-muted-foreground"
               >
                 Change
               </button>

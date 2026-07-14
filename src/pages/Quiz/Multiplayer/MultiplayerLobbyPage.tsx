@@ -79,17 +79,16 @@ export const MultiplayerLobbyPage = ({
   return (
     <div className="relative w-full min-h-full min-h-[calc(100vh-4rem)] text-foreground bg-cover bg-center font-header p-3 sm:p-4 md:p-6 lg:p-8 flex flex-col justify-center">
       <div className="w-full max-w-7xl mx-auto flex flex-col lg:flex-row gap-4 lg:gap-6 items-stretch justify-center">
-        {/* Main Lobby Area (Left or Top) */}
+        {/* Main Lobby Area (Left or Top) — soft card, one elevation level */}
         <Card
-          variant="lifted"
           hover={false}
-          className="w-full flex-1 max-w-2xl mx-auto bg-background w-fit"
+          className="w-full flex-1 max-w-2xl mx-auto border border-border bg-card shadow-sm"
         >
-          <LobbyHeader
+          {/* <LobbyHeader
             mode={mode}
             quizTitle={selectedQuiz?.title ?? "Multiplayer Lobby"}
             hasJoined={hasJoined}
-          />
+          /> */}
 
           <CardContent className="p-3 sm:p-4 md:p-6 transition-all duration-300">
             {!hasJoined ? (
@@ -144,13 +143,11 @@ export const MultiplayerLobbyPage = ({
           <div className="w-full max-w-2xl lg:max-w-[360px] xl:max-w-[420px] mx-auto flex flex-col gap-4 lg:gap-6 shrink-0">
             
             {/* Quiz Selection Card */}
-            <Card variant="lifted" hover={false} className="w-full bg-background">
-              <CardContent className="p-4 sm:p-5 md:p-6 flex flex-col gap-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-bold font-quiz tracking-wider text-muted-foreground uppercase">
-                    Quiz Settings
-                  </h3>
-                </div>
+            <Card hover={false} className="w-full border border-border bg-card shadow-sm">
+              <CardContent className="p-4 sm:p-5 flex flex-col gap-3">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Quiz
+                </h3>
 
                 {/* Quiz selection — host sees picker inside a dialog, everyone sees selected quiz */}
                 {isHost ? (
@@ -204,8 +201,8 @@ export const MultiplayerLobbyPage = ({
             </Card>
 
             {/* Lobby chat (ephemeral) */}
-            <Card variant="lifted" hover={false} className="w-full bg-background flex-1">
-              <CardContent className="p-4 sm:p-5 md:p-6 h-full">
+            <Card hover={false} className="w-full border border-border bg-card shadow-sm flex-1">
+              <CardContent className="p-4 sm:p-5 h-full">
                 <LobbyChat sessionId={sessionId} username={username} />
               </CardContent>
             </Card>

@@ -4,8 +4,8 @@ namespace QuizAPI.Hubs.Clients;
 
 public interface IQuizClient
 {
-    // UserJoined: username, isFirstUser (Host)
-    Task UserJoined(string username, bool isFirstUser); 
+    // UserJoined: username, isFirstUser (Host), profileImageUrl (null when the account has no avatar)
+    Task UserJoined(string username, bool isFirstUser, string? profileImageUrl);
     Task UserLeft(string username);
     Task AnswerSubmitted(string username);
     // Provide full participant info

@@ -2,9 +2,9 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { apiService } from "@/lib/Api-client";
 import { MutationConfig } from "@/lib/React-query";
-import { getTrueFalseQuestionsQueryOptions } from "./get-true_false-questions";
 import { UnspecifiedIds } from "../../../Quiz/components/Create-Quiz-Form/constants";
 import { TrueFalseQuestion } from "@/types/question-types";
+import { myQuestionKeys, questionKeys } from "@/lib/query-keys";
 
 export const createTrueFalseQuestionInputSchema = z.object({
   text: z.string().min(1, "Question is required"),
@@ -59,11 +59,9 @@ export const useCreateTrueFalseQuestion = ({
   return useMutation({
     mutationFn: createTrueFalseQuestion,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({
-        queryKey: getTrueFalseQuestionsQueryOptions().queryKey,
-      });
-      // Refresh the user-dashboard ("my") lists + profile total too.
-      queryClient.invalidateQueries({ queryKey: ["myQuestions"] });
+      // Broad roots cover admin search, typed search, and the user dashboard.
+      queryClient.invalidateQueries({ queryKey: questionKeys.all });
+      queryClient.invalidateQueries({ queryKey: myQuestionKeys.all });
       onSuccess?.(...args);
     },
     onError: (error, variables, onMutateResult, context) => {

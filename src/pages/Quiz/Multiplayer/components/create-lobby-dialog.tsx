@@ -8,11 +8,11 @@ import { useNotifications } from "@/common/Notifications";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog/dialog";
+import { LiftedButton } from "@/common/LiftedButton";
 
 interface CreateLobbyDialogProps {
   open: boolean;
@@ -89,9 +89,9 @@ export const CreateLobbyDialog = ({ open, onOpenChange }: CreateLobbyDialogProps
           <DialogTitle className="text-2xl font-bold text-center tracking-wider">
             Create Quiz Lobby
           </DialogTitle>
-          <DialogDescription className="text-center">
+          {/* <DialogDescription className="text-center">
             Choose how many players can join your lobby
-          </DialogDescription>
+          </DialogDescription> */}
         </DialogHeader>
 
         <div className="py-6 font-quiz">
@@ -118,7 +118,7 @@ export const CreateLobbyDialog = ({ open, onOpenChange }: CreateLobbyDialogProps
                     {maxPlayers}
                   </span>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">players</p>
+                {/* <p className="text-xs text-muted-foreground mt-1">players</p> */}
               </div>
               </div>
               
@@ -141,23 +141,23 @@ export const CreateLobbyDialog = ({ open, onOpenChange }: CreateLobbyDialogProps
         </div>
 
         <DialogFooter className="gap-2 sm:gap-0">
-          <Button
+          <LiftedButton
             type="button"
             onClick={handleCancel}
-            variant={"outline"}
             disabled={isCreating}
-            className="w-full sm:w-auto text-foreground rounded-md py-4"
+            liftColor="#e5e7eb" // gray-200 — depth layers match the face
+            className="w-full sm:w-auto text-foreground rounded-md bg-background border border-gray-200"
           >
             Cancel
-          </Button>
-          <Button
+          </LiftedButton>
+          <LiftedButton
             type="button"
             onClick={handleCreateLobby}
             disabled={isCreating}
-            className="w-full sm:w-auto font-bold font-quiz text-white rounded-md"
+            className="w-full sm:w-auto font-quiz text-white"
           >
             {isCreating ? "Creating..." : "Create Lobby"}
-          </Button>
+          </LiftedButton>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -2,6 +2,7 @@ import { useQuery, queryOptions } from "@tanstack/react-query";
 import { api } from "@/lib/Api-client";
 import { QueryConfig } from "@/lib/React-query";
 import { IndividualQuestion } from "@/types/question-types";
+import { questionKeys } from "@/lib/query-keys";
 
 
 export const getIndividualQuestion = ({
@@ -16,7 +17,7 @@ export const getIndividualQuestionQueryOptions = (
   questionId: number
 ) => {
   return queryOptions({
-    queryKey: ["individualQuestion", questionId],
+    queryKey: questionKeys.detail(questionId),
     queryFn: () => getIndividualQuestion({questionId}),
   });
 };

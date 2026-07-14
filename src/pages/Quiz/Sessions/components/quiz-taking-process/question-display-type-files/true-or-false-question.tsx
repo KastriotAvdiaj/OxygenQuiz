@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
 import { Check, X } from "lucide-react";
 import type {
   CurrentQuestion,
   InstantFeedbackAnswerResult,
 } from "../../../../../../types/quiz-session-types";
+import { LiftedButton } from "@/common/LiftedButton";
 
 interface TrueOrFalseQuestionProps {
   question: CurrentQuestion;
@@ -185,12 +185,11 @@ export function TrueOrFalseQuestion({
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}>
-          <Button
+          <LiftedButton
             onClick={() => onSubmit(selectedOptionId)}
             disabled={selectedOptionId === null || isSubmitting || isDisabled}
-            size="lg"
-            variant={"fancy"}
-            className="px-6 py-4 sm:px-8 sm:py-6 text-lg sm:text-2xl font-semibold font-secondary rounded-xl min-w-[160px] sm:min-w-[200px] bg-primary text-white">
+            // variant={"fancy"}
+            className="px-6 py-4 sm:px-8 sm:py-6 text-lg sm:text-2xl font-semibold rounded-xl min-w-[160px] sm:min-w-[200px] bg-primary text-white">
             {isSubmitting ? (
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -199,7 +198,7 @@ export function TrueOrFalseQuestion({
             ) : (
               "Submit"
             )}
-          </Button>
+          </LiftedButton>
           {selectedOptionId !== null && (
             <p className="text-xs text-muted-foreground animate-in fade-in duration-300">
               Click the same option again to lock in

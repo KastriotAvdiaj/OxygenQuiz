@@ -14,6 +14,8 @@ export interface Participant {
   username: string;
   isReady: boolean;
   isHost: boolean;
+  /** Account avatar; null/undefined when the user has none. */
+  profileImageUrl?: string | null;
 }
 
 interface UseLobbyConnectionOptions {
@@ -96,26 +98,34 @@ export const useLobbyConnection = ({ mode = "join" }: UseLobbyConnectionOptions)
   useEffect(() => {
     if (!connection) return;
 
-    connection.on("UserJoined", (joinedUsername: string, isFirstUser: boolean) => {
-      setParticipants((prev) => {
-        if (prev.some((p) => p.username === joinedUsername)) return prev;
-        return [
-          ...prev,
-          {
-            username: joinedUsername,
-            isReady: false,
-            isHost: isFirstUser,
-          },
-        ];
-      });
-
-      if (joinedUsername !== username) {
-        addNotification({
-          type: "success",
-          title: `${joinedUsername} joined the lobby`,
+    connection.on(
+      "UserJoined",
+      (
+        joinedUsername: string,
+        isFirstUser: boolean,
+        profileImageUrl: string | null
+      ) => {
+        setParticipants((prev) => {
+          if (prev.some((p) => p.username === joinedUsername)) return prev;
+          return [
+            ...prev,
+            {
+              username: joinedUsername,
+              isReady: false,
+              isHost: isFirstUser,
+              profileImageUrl,
+            },
+          ];
         });
+
+        if (joinedUsername !== username) {
+          addNotification({
+            type: "success",
+            title: `${joinedUsername} joined the lobby`,
+          });
+        }
       }
-    });
+    );
 
     connection.on("CurrentParticipants", (currentParticipants: Participant[]) => {
       setParticipants(currentParticipants);

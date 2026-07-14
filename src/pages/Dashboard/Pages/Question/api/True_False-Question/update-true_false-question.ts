@@ -2,8 +2,12 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { api } from "@/lib/Api-client";
 import { MutationConfig } from "@/lib/React-query";
-import { getTrueFalseQuestionsQueryOptions } from "./get-true_false-questions";
 import { TrueFalseQuestion } from "@/types/question-types";
+import {
+  myQuestionKeys,
+  questionKeys,
+  quizQuestionKeys,
+} from "@/lib/query-keys";
 
 export const updateTrueFalseQuestionInputSchema = z.object({
   id: z.number().int().optional(),
@@ -31,10 +35,7 @@ export const updateTrueFalseQuestion = ({
   data: UpdateTrueFalseQuestionInput;
   questionId: number;
 }): Promise<TrueFalseQuestion> => {
-  return (
-    console.log("data", data, questionId),
-    api.put(`/questions/truefalse/${questionId}`, data)
-  );
+  return api.put(`/questions/truefalse/${questionId}`, data);
 };
 
 type UseUpdateTrueFalseQuestionOptions = {
@@ -51,11 +52,11 @@ export const useUpdateTrueFalseQuestion = ({
   return useMutation({
     mutationFn: updateTrueFalseQuestion,
     onSuccess: (data, ...args) => {
-      queryClient.refetchQueries({
-        queryKey: getTrueFalseQuestionsQueryOptions().queryKey,
-      });
-      // Refresh the user-dashboard ("my") lists too.
-      queryClient.refetchQueries({ queryKey: ["myQuestions"] });
+      // Invalidate the broad roots; prefix matching covers every list variant
+      // (admin search, typed search, user dashboard, quiz views).
+      queryClient.invalidateQueries({ queryKey: questionKeys.all });
+      queryClient.invalidateQueries({ queryKey: myQuestionKeys.all });
+      queryClient.invalidateQueries({ queryKey: quizQuestionKeys.all });
       onSuccess?.(data, ...args);
     },
     onError: (error, variables, onMutateResult, context) => {

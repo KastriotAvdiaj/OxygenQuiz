@@ -74,6 +74,14 @@ The multiplayer feature allows users to create or join real-time quiz lobbies us
 
 ## Key Features
 
+### Participant Avatars (added 2026-07-14)
+- `Participant` (backend + frontend) carries `ProfileImageUrl`, looked up from the account by the
+  hub on `JoinSession`/`CreateSession` (never trusted from the client, same rule as usernames).
+- `UserJoined` broadcasts `(username, isFirstUser, profileImageUrl)` so existing clients render
+  the newcomer's avatar without a refetch; `CurrentParticipants` includes it for late joiners.
+- The lobby's participant card shows the image when present and falls back to the colored-initial
+  tile when the account has no avatar (or the image URL fails to load).
+
 ### Host Management
 - **First user** in a session becomes host automatically
 - **Host reassignment**: When host leaves, next participant becomes host
@@ -161,6 +169,26 @@ if (participant.IsHost && session.Participants.Count > 0)
   and the hub is `[Authorize]`'d with the username taken from `Context.User` (no longer trusted
   from the client). See [`play-auth-and-identity.md`](../auth/play-auth-and-identity.md).
 
+The following were identified during the lobby refactor and re-verified against the code on
+2026-07-14 (absorbed from the now-deleted `src/pages/Quiz/Multiplayer/improvements.md`):
+
+- **Room codes are generated client-side** — still open. `Math.random().toString(36)` in
+  `use-lobby-connection.ts` and `create-lobby-dialog.tsx`, with no server-side uniqueness check
+  before `CreateSession`. Codes should be issued by the server (hub method or REST endpoint).
+- ~~`/multiplayer/create` full-page route is redundant~~ — **fixed 2026-07-14:** the route and the
+  full-page `create-lobby.tsx` were removed; the create-lobby dialog on the multiplayer menu is
+  the single create flow.
+- ~~`Multiplayer-Host-Wrapper.tsx` is dead code~~ — **fixed 2026-07-14:** deleted (nothing
+  referenced it and no route supplied its loader data).
+- ~~Multiplayer routes have no error boundaries~~ — **fixed 2026-07-14:** `/multiplayer-menu`,
+  `/multiplayer/join`, and `/multiplayer/lobby/:sessionId` now use `DashboardErrorElement`, same
+  as the quiz session routes.
+
+Two items from that list were already fixed and documented elsewhere: duplicate join logic
+(dialog navigates, lobby owns the single join — see [`multiplayer-join.md`](./multiplayer-join.md))
+and username-not-tied-to-auth (identity now always comes from the authenticated account, per the
+security note above).
+
 ### 📋 Next Steps (Phase 2+)
 See [`implementation_plan.md`](file:///C:/Users/hp/.gemini/antigravity/brain/a79d957d-a384-46b9-adfc-42628fbd6534/implementation_plan.md) for detailed roadmap:
 - **Phase 2**: Input validation, session cleanup, robustness
@@ -206,7 +234,7 @@ See [`implementation_plan.md`](file:///C:/Users/hp/.gemini/antigravity/brain/a79
 ### Client Events (IQuizClient)
 | Event | Parameters | Description |
 |-------|------------|-------------|
-| `UserJoined` | username, isFirstUser | User joined session |
+| `UserJoined` | username, isFirstUser, profileImageUrl | User joined session |
 | `UserLeft` | username | User left session |
 | `CurrentParticipants` | participants[] | Full participant list |
 | `PlayerReadyChanged` | username, isReady | Ready status changed |

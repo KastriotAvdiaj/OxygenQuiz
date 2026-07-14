@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ConfirmationDialog } from "@/components/ui/dialog";
 import { useNotifications } from "@/common/Notifications";
 import { useDeleteQuestion } from "../../api/delete-question";
-import { LiftedButton } from "@/common/LiftedButton";
+import { LiftedButton, type LiftedButtonProps } from "@/common/LiftedButton";
 import { Trash } from "lucide-react";
 import { AnyQuestion, QuestionType } from "@/types/question-types";
 import {
@@ -21,12 +21,12 @@ interface DeleteUserProps {
   question: AnyQuestion;
 }
 
+// Extends LiftedButtonProps so every lift option (liftColor, outerClassName,
+// isPending, …) passes straight through to the underlying LiftedButton.
 export interface IconButtonWithTooltipProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  extends Omit<LiftedButtonProps, "children"> {
   icon: React.ReactNode;
   tooltip: string;
-  variant?: "icon" | "default" | undefined;
-  className?: string;
   buttonText?: string;
 }
 
@@ -91,6 +91,7 @@ export const DeleteQuestion = ({ questionType, question }: DeleteUserProps) => {
             tooltip="Delete Question"
             variant="icon"
             className="rounded-xl bg-red-400"
+            liftColor="#f87171" // red-400 — depth layers match the face
           />
         }
         confirmButton={

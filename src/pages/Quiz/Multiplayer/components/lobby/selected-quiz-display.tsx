@@ -13,7 +13,7 @@ export const SelectedQuizDisplay = ({
 }: SelectedQuizDisplayProps) => {
   if (!selectedQuiz) {
     return (
-      <div className="rounded-lg border-2 border-dashed border-border/60 p-4 sm:p-5 text-center space-y-2">
+      <div className="rounded-lg border border-dashed border-border p-4 sm:p-5 text-center space-y-2">
         <Gamepad2 className="h-6 w-6 mx-auto text-muted-foreground/50" />
         <p className="text-sm font-medium text-muted-foreground">
           {isHost
@@ -25,7 +25,7 @@ export const SelectedQuizDisplay = ({
   }
 
   return (
-    <div className="rounded-lg border-2 border-primary/30 bg-primary/5 p-3 sm:p-4">
+    <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 sm:p-4">
       <div className="flex items-center gap-3">
         <div className="p-2 rounded-lg bg-primary/10 flex-shrink-0">
           <HelpCircle className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />

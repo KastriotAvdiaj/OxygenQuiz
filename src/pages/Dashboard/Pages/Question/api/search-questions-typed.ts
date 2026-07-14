@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { fetchPaged, type FilterQuery, type PagedResponse } from "@/lib/filtering";
 import { QuestionType } from "@/types/question-types";
+import { questionKeys } from "@/lib/query-keys";
 
 // Typed question search over the shared filtering framework (see docs/quiz/filtering.md).
 // One hook for all three question types and both scopes; the type/scope only pick the URL.
@@ -36,7 +37,7 @@ export const useTypedQuestionSearch = <T>({
   enabled?: boolean; // only the active tab fetches
 }) =>
   useQuery({
-    queryKey: ["questions", "typed-search", scope, type, query],
+    queryKey: questionKeys.typedSearch(scope, type, query),
     queryFn: () => searchTypedQuestions<T>(type, scope, query),
     enabled,
   });

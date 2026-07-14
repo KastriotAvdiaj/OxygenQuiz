@@ -30,9 +30,23 @@ export const ParticipantCard = ({
         </div>
       )}
 
-      {/* Avatar */}
+      {/* Avatar — real profile image when the account has one, colored initial otherwise */}
+      {participant.profileImageUrl ? (
+        <img
+          src={participant.profileImageUrl}
+          alt={`${participant.username}'s avatar`}
+          className="w-9 h-9 sm:w-11 sm:h-11 md:w-14 md:h-14 rounded-lg sm:rounded-xl object-cover shadow-inner border-2 border-white/20 flex-shrink-0"
+          onError={(e) => {
+            // Broken/expired image URL → hide it and reveal the initial fallback
+            e.currentTarget.style.display = "none";
+            e.currentTarget.nextElementSibling?.classList.remove("hidden");
+          }}
+        />
+      ) : null}
       <div
-        className={`w-9 h-9 sm:w-11 sm:h-11 md:w-14 md:h-14 rounded-lg sm:rounded-xl ${avatarColor} flex items-center justify-center text-white font-bold text-sm sm:text-lg md:text-xl shadow-inner border-2 border-white/20 flex-shrink-0`}
+        className={`${
+          participant.profileImageUrl ? "hidden" : ""
+        } w-9 h-9 sm:w-11 sm:h-11 md:w-14 md:h-14 rounded-lg sm:rounded-xl ${avatarColor} flex items-center justify-center text-white font-bold text-sm sm:text-lg md:text-xl shadow-inner border-2 border-white/20 flex-shrink-0`}
       >
         {participant.username ? participant.username.charAt(0).toUpperCase() : "?"}
       </div>

@@ -1,5 +1,12 @@
 import React from "react";
-import { Switch, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui";
+import {
+  Switch,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui";
 import { Type } from "lucide-react";
 import { UserSettings } from "@/types/settings-types";
 import { FONT_OPTIONS, applyFont } from "@/lib/fonts";
@@ -13,12 +20,12 @@ const FontSelect = ({
   onChange: (v: string) => void;
 }) => (
   <Select value={value} onValueChange={onChange}>
-    <SelectTrigger variant="quiz" className="w-44">
+    <SelectTrigger variant="minimal" className="w-40">
       <SelectValue />
     </SelectTrigger>
-    <SelectContent variant="quiz">
+    <SelectContent variant="minimal">
       {FONT_OPTIONS.map((f) => (
-        <SelectItem key={f.value} variant="quiz" value={f.value}>
+        <SelectItem key={f.value} variant="minimal" value={f.value}>
           <span style={{ fontFamily: f.value }}>{f.label}</span>
         </SelectItem>
       ))}
@@ -55,16 +62,12 @@ export const TypographySection = ({
   };
 
   return (
-    <Section
-      icon={Type}
-      title="Typography"
-      description="Choose fonts for the app and the quiz experience."
-    >
+    <Section icon={Type} title="Typography">
       <Row
-        title="Use one font everywhere"
-        description="Apply the same font to the dashboard and quizzes."
+        title="Same font everywhere"
         control={
           <Switch
+            size="sm"
             checked={syncFonts}
             onCheckedChange={(on) => {
               setSyncFonts(on);
@@ -80,7 +83,6 @@ export const TypographySection = ({
       {syncFonts ? (
         <Row
           title="Font"
-          description="Used across the whole app."
           control={
             <FontSelect
               value={form.appFont}
@@ -92,7 +94,6 @@ export const TypographySection = ({
         <>
           <Row
             title="Dashboard font"
-            description="Used across the dashboard and menus."
             control={
               <FontSelect
                 value={form.appFont}
@@ -102,7 +103,6 @@ export const TypographySection = ({
           />
           <Row
             title="Quiz font"
-            description="Used while taking and browsing quizzes."
             control={
               <FontSelect
                 value={form.quizFont}

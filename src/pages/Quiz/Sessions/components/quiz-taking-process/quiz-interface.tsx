@@ -6,9 +6,9 @@ import type {
 } from "../../../../../types/quiz-session-types";
 import { motion } from "framer-motion";
 import { Loader2, ArrowRight, Trophy } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { useEffect, useRef } from "react";
 import * as React from "react";
+import { LiftedButton } from "@/common/LiftedButton";
 
 interface QuizInterfaceProps {
   sessionId: string;
@@ -143,11 +143,9 @@ QuizInterfaceProps) {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.8, duration: 0.3 }}
                   className="flex flex-col items-center gap-4">
-                  <Button
+                  <LiftedButton
                     onClick={handleNextQuestion}
-                    size="lg"
-                    variant={"fancy"}
-                    className="p-4 sm:p-6 text-lg sm:text-2xl tracking-wide font-semibold font-secondary rounded-lg transition-shadow duration-200 group bg-primary text-white">
+                    className="p-4 sm:p-6 text-lg sm:text-2xl tracking-wide font-semibold rounded-md transition-shadow duration-200 group bg-primary text-white">
                     <div className="flex items-center gap-2">
                       {isQuizComplete && (
                         <Trophy className="w-4 h-4" />
@@ -159,7 +157,7 @@ QuizInterfaceProps) {
                       </span>
                       <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform duration-200" />
                     </div>
-                  </Button>
+                  </LiftedButton>
 
                   {/* Auto-advance countdown — hidden on last question */}
                   {!isQuizComplete && (

@@ -4,6 +4,7 @@ import { MutationConfig } from "@/lib/React-query";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { Quiz } from "@/types/quiz-types";
 import { createQuizInputSchema } from "./create-quiz";
+import { quizQuestionKeys } from "@/lib/query-keys";
 
 // Same shape as create, plus the id and the optimistic-concurrency version the
 // quiz was loaded at. The backend rejects the save with 409 when the version is
@@ -48,7 +49,7 @@ export const useUpdateQuiz = ({
       queryClient.invalidateQueries({ queryKey: ["quizzes"] });
       queryClient.invalidateQueries({ queryKey: ["myQuizzes"] });
       queryClient.invalidateQueries({
-        queryKey: ["quizQuestions", variables.data.id],
+        queryKey: quizQuestionKeys.byQuiz(variables.data.id),
       });
       onSuccess?.(...args);
     },

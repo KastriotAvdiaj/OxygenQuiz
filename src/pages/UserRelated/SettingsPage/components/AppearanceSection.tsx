@@ -1,4 +1,4 @@
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui";
+import { SegmentedControl } from "@/components/ui";
 import { Palette } from "lucide-react";
 import { ThemePreference, UserSettings } from "@/types/settings-types";
 import { Section, Row } from "./SharedPrimitives";
@@ -11,32 +11,27 @@ type AppearanceSectionProps = {
 
 export const AppearanceSection = ({ form, set, setTheme }: AppearanceSectionProps) => {
   return (
-    <Section icon={Palette} title="Appearance" description="How the app looks.">
+    <Section icon={Palette} title="Appearance">
       <Row
         title="Theme"
-        description="Light or dark."
         control={
-          <Select
+          <SegmentedControl
+            aria-label="Theme"
             value={form.theme}
             onValueChange={(v) => {
               const theme = v as ThemePreference;
               set("theme", theme);
               setTheme(theme);
             }}
-          >
-            <SelectTrigger variant="quiz" className="w-36">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent variant="quiz">
-              <SelectItem variant="quiz" value="light">Light</SelectItem>
-              <SelectItem variant="quiz" value="dark">Dark</SelectItem>
-            </SelectContent>
-          </Select>
+            options={[
+              { value: "light", label: "Light" },
+              { value: "dark", label: "Dark" },
+            ]}
+          />
         }
       />
       <Row
         title="Accent color"
-        description="Personalize the primary color."
         soon
         dimmed
         control={<span className="text-sm text-muted-foreground">Default</span>}

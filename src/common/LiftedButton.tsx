@@ -10,11 +10,19 @@ export interface LiftedButtonProps
   variant?: "default" | "icon";
   backgroundColorForBorder?: string; // Applied to the edge layer
   isPending?: boolean;
+  /**
+   * Base color for the 3D depth layers (edge gradient + drop shadow). Any CSS
+   * color, e.g. "hsl(var(--muted-foreground))" or "#7c3aed". Defaults to the
+   * theme primary — pass this when the front face isn't primary-colored so the
+   * button doesn't sit on a blue backdrop.
+   */
+  liftColor?: string;
 }
 
 // 3D "pushable" button: shadow (blurred, drops on press), edge (darker
-// primary gradient, gives depth), front (primary-colored face that lifts).
-// All colors derive from the theme's --primary variable.
+// gradient, gives depth), front (colored face that lifts). The depth layers
+// derive from --lift-base, which defaults to the theme's --primary and can be
+// overridden per-button via the `liftColor` prop.
 
 // Timing uses arbitrary properties (transition-duration / -timing-function
 // in square-bracket form): the equivalent duration/ease arbitrary-value
@@ -26,7 +34,10 @@ const springHover =
 const snapActive = "group-active:[transition-duration:34ms]";
 
 const edgeGradient =
-  "[background:linear-gradient(to_right,color-mix(in_srgb,hsl(var(--primary)),black_35%)_0%,color-mix(in_srgb,hsl(var(--primary)),black_18%)_8%,color-mix(in_srgb,hsl(var(--primary)),black_35%)_92%,color-mix(in_srgb,hsl(var(--primary)),black_50%)_100%)]";
+  "[background:linear-gradient(to_right,color-mix(in_srgb,var(--lift-base),black_35%)_0%,color-mix(in_srgb,var(--lift-base),black_18%)_8%,color-mix(in_srgb,var(--lift-base),black_35%)_92%,color-mix(in_srgb,var(--lift-base),black_50%)_100%)]";
+
+const shadowFill =
+  "[background:color-mix(in_srgb,var(--lift-base),transparent_60%)]";
 
 export const LiftedButton = React.forwardRef<
   HTMLButtonElement,
@@ -40,7 +51,9 @@ export const LiftedButton = React.forwardRef<
       disabled,
       backgroundColorForBorder,
       isPending,
+      liftColor,
       variant = "default",
+      style,
       ...props
     },
     ref
@@ -78,18 +91,28 @@ export const LiftedButton = React.forwardRef<
         className={cn(
           "group relative border-none bg-transparent p-0 font-thin outline-offset-4 transition-[filter] [transition-duration:250ms]",
           "focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary",
-          !isDisabled && "cursor-pointer hover:brightness-110",
+          // brightness-110 reads as a "shine" — keep it in light mode only
+          !isDisabled && "cursor-pointer hover:brightness-110 dark:hover:brightness-100",
           isDisabled && "cursor-not-allowed",
           outerClassName
         )}
         disabled={isDisabled}
+        style={
+          {
+            "--lift-base": liftColor ?? "hsl(var(--primary))",
+            ...style,
+          } as React.CSSProperties
+        }
         {...props}
         ref={ref}
       >
-        {/* Shadow */}
+        {/* Shadow — colored in light mode; in dark mode a colored blur reads
+            as a glow halo, so it falls back to a plain translucent black. */}
         <span
           className={cn(
-            "absolute inset-0 bg-primary/40 blur-[2px] will-change-transform",
+            "absolute inset-0 blur-[2px] will-change-transform",
+            shadowFill,
+            "dark:[background:rgb(0_0_0/0.45)]",
             rounded,
             shadow.rest,
             `transition-transform [transition-duration:600ms] ${springOut}`,

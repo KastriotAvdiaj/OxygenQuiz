@@ -18,7 +18,7 @@ const SelectValue = SelectPrimitive.Value;
 type SelectTriggerProps = React.ComponentPropsWithoutRef<
   typeof SelectPrimitive.Trigger
 > & {
-  variant?: "default" | "quiz" | "incorrect" | "form" | "form-error";
+  variant?: "default" | "quiz" | "incorrect" | "form" | "form-error" | "minimal";
 };
 
 const SelectTrigger = React.forwardRef<
@@ -40,21 +40,30 @@ const SelectTrigger = React.forwardRef<
         "bg-background border-2 border-foreground/20 dark:border-foreground/30 rounded-md transition-all duration-200 focus:border-primary/60 focus:ring-2 focus:ring-primary/20 focus:ring-offset-0 hover:border-foreground/40 dark:hover:border-foreground/50 shadow-inner shadow-foreground/5 dark:shadow-foreground/10 h-8 px-2 py-1 text-xs font-medium placeholder:text-foreground/60 placeholder:font-normal",
       variant === "form-error" &&
         "bg-background border-2 border-red-500/50 dark:border-red-500/60 rounded-lg transition-all duration-200 focus:border-red-500/70 focus:ring-2 focus:ring-red-500/20 focus:ring-offset-0 hover:border-red-500/60 dark:hover:border-red-500/70 shadow-inner shadow-red-500/10 dark:shadow-red-500/20 h-10 px-4 py-2 text-sm font-medium placeholder:text-red-500/70 placeholder:font-normal text-foreground bg-red-50/50 dark:bg-red-950/20",
+      // Minimal variant — quiet, professional control: hairline neutral border,
+      // soft shadow, no motion. Primary appears only on focus (ring) and in the
+      // dropdown's selected item.
+      variant === "minimal" &&
+        "h-8 rounded-lg border border-border bg-background px-2.5 text-sm font-normal shadow-sm transition-colors duration-150 hover:border-foreground/25 focus:ring-2 focus:ring-primary/30 focus:border-primary/50 data-[state=open]:border-primary/50 data-[state=open]:ring-2 data-[state=open]:ring-primary/20",
       className
     )}
     {...props}
   >
     {children}
     <SelectPrimitive.Icon asChild>
-      <CaretSortIcon
-        className={cn(
-          "h-4 w-4 opacity-50",
-          variant === "quiz" && "text-primary opacity-90",
-          variant === "incorrect" && "text-red-500 opacity-90",
-          variant === "form" && "text-foreground/60 opacity-80",
-          variant === "form-error" && "text-red-500 opacity-80"
-        )}
-      />
+      {variant === "minimal" ? (
+        <ChevronDownIcon className="h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform duration-150" />
+      ) : (
+        <CaretSortIcon
+          className={cn(
+            "h-4 w-4 opacity-50",
+            variant === "quiz" && "text-primary opacity-90",
+            variant === "incorrect" && "text-red-500 opacity-90",
+            variant === "form" && "text-foreground/60 opacity-80",
+            variant === "form-error" && "text-red-500 opacity-80"
+          )}
+        />
+      )}
     </SelectPrimitive.Icon>
   </SelectPrimitive.Trigger>
 ));
@@ -98,7 +107,7 @@ SelectScrollDownButton.displayName =
 type SelectContentProps = React.ComponentPropsWithoutRef<
   typeof SelectPrimitive.Content
 > & {
-  variant?: "default" | "quiz" | "incorrect" | "form" | "form-error";
+  variant?: "default" | "quiz" | "incorrect" | "form" | "form-error" | "minimal";
 };
 
 const SelectContent = React.forwardRef<
@@ -124,6 +133,8 @@ const SelectContent = React.forwardRef<
             "border-2 border-foreground/20 bg-background rounded-lg shadow-lg backdrop-blur-sm data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=open]:duration-200",
           variant === "form-error" &&
             "border-2 border-red-500/50 bg-background rounded-lg shadow-lg backdrop-blur-sm data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=open]:duration-200",
+          variant === "minimal" &&
+            "border border-border bg-background rounded-lg shadow-md data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=open]:duration-150",
           className
         )}
         position={position}
@@ -136,7 +147,8 @@ const SelectContent = React.forwardRef<
             position === "popper" &&
               "h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]",
             (variant === "quiz" || variant === "incorrect") && "p-0.5",
-            (variant === "form" || variant === "form-error") && "p-1"
+            (variant === "form" || variant === "form-error") && "p-1",
+            variant === "minimal" && "p-1"
           )}
         >
           {children}
@@ -163,7 +175,7 @@ SelectLabel.displayName = SelectPrimitive.Label.displayName;
 type SelectItemProps = React.ComponentPropsWithoutRef<
   typeof SelectPrimitive.Item
 > & {
-  variant?: "default" | "quiz" | "incorrect" | "form" | "form-error";
+  variant?: "default" | "quiz" | "incorrect" | "form" | "form-error" | "minimal";
 };
 
 const SelectItem = React.forwardRef<
@@ -182,6 +194,8 @@ const SelectItem = React.forwardRef<
         "rounded-md transition-colors duration-150 text-xs py-1.5 pl-2 pr-7 hover:bg-foreground/5 data-[highlighted]:bg-foreground/10 data-[highlighted]:text-foreground focus:bg-foreground/10 focus:text-foreground font-medium",
       variant === "form-error" &&
         "rounded-md transition-colors duration-150 text-sm py-2 pl-3 pr-9 hover:bg-red-500/5 data-[highlighted]:bg-red-500/10 data-[highlighted]:text-foreground focus:bg-red-500/10 focus:text-foreground font-medium",
+      variant === "minimal" &&
+        "rounded-md text-sm py-1.5 pl-2.5 pr-8 transition-colors duration-100 hover:bg-muted data-[highlighted]:bg-muted data-[highlighted]:text-foreground focus:bg-muted focus:text-foreground data-[state=checked]:font-medium",
       className
     )}
     {...props}
@@ -194,7 +208,8 @@ const SelectItem = React.forwardRef<
             variant === "quiz" && "text-primary",
             variant === "incorrect" && "text-red-500",
             variant === "form" && "text-primary",
-            variant === "form-error" && "text-red-500"
+            variant === "form-error" && "text-red-500",
+            variant === "minimal" && "h-3.5 w-3.5 text-primary"
           )}
         />
       </SelectPrimitive.ItemIndicator>

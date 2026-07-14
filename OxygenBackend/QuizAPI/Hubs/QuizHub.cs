@@ -2,7 +2,9 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
 using QuizAPI.Controllers.Quizzes.Services.QuizServices;
+using QuizAPI.Data;
 using QuizAPI.Hubs.Clients;
 using QuizAPI.Services.Interfaces;
 using QuizAPI.Services.QuizSessionServices;
@@ -44,22 +46,39 @@ public class QuizHub : Hub<IQuizClient>
             : throw new HubException("You must be logged in.");
     }
 
+    /// <summary>
+    /// The authenticated account's avatar URL (null when none is set). Looked up once per
+    /// join/create so participant lists can render real profile images.
+    /// </summary>
+    private async Task<string?> GetProfileImageUrlAsync()
+    {
+        var userId = GetUserId();
+        using var scope = _serviceProvider.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        return await db.Users
+            .Where(u => u.Id == userId)
+            .Select(u => u.ProfileImageUrl)
+            .FirstOrDefaultAsync();
+    }
+
     public async Task JoinSession(string sessionId)
     {
         var username = GetUsername();
+        var profileImageUrl = await GetProfileImageUrlAsync();
 
         // 1. Add to SignalR Group
         await Groups.AddToGroupAsync(Context.ConnectionId, sessionId);
-        
+
         // 2. Add to Session Manager (Persist State)
-        var participant = await _sessionManager.AddParticipantAsync(sessionId, username, Context.ConnectionId);
+        var participant = await _sessionManager.AddParticipantAsync(sessionId, username, Context.ConnectionId, profileImageUrl);
 
         // 3. Store in Context for OnDisconnected handling
         Context.Items["SessionId"] = sessionId;
         Context.Items["Username"] = username;
 
-        // 4. Broadcast to others that user joined
-        await Clients.Group(sessionId).UserJoined(username, participant.IsHost);
+        // 4. Broadcast to others that user joined (avatar included so existing
+        //    clients can render it without a refetch)
+        await Clients.Group(sessionId).UserJoined(username, participant.IsHost, participant.ProfileImageUrl);
 
         // 5. Send CURRENT participants to the NEW user
         var currentParticipants = await _sessionManager.GetParticipantsAsync(sessionId);
@@ -221,10 +240,11 @@ public class QuizHub : Hub<IQuizClient>
     public async Task CreateSession(string sessionId, string lobbyName, int maxPlayers)
     {
         var username = GetUsername();
+        var profileImageUrl = await GetProfileImageUrlAsync();
         try
         {
             // Create session with settings
-            var session = await _sessionManager.CreateSessionAsync(sessionId, lobbyName, maxPlayers, username, Context.ConnectionId);
+            var session = await _sessionManager.CreateSessionAsync(sessionId, lobbyName, maxPlayers, username, Context.ConnectionId, profileImageUrl);
             
             // Add to SignalR Group
             await Groups.AddToGroupAsync(Context.ConnectionId, sessionId);

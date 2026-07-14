@@ -39,8 +39,8 @@ export const LobbyChat = ({ sessionId, username }: LobbyChatProps) => {
 
   return (
     <div className="flex flex-col h-full min-h-[200px]">
-      <h3 className="text-sm font-bold font-quiz tracking-wider text-muted-foreground uppercase mb-3">
-        Lobby Chat
+      <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+        Chat
       </h3>
 
       <div

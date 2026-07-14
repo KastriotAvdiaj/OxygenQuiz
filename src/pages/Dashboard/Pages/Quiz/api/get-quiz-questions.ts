@@ -2,6 +2,7 @@ import { useQuery, queryOptions } from "@tanstack/react-query";
 import { apiService } from "@/lib/Api-client";
 import { QueryConfig } from "@/lib/React-query";
 import { QuizQuestionDTO } from "@/types/quiz-types";
+import { quizQuestionKeys } from "@/lib/query-keys";
 
 
 export const getQuizQuestions = ({
@@ -16,7 +17,7 @@ export const getQuizQuestionsQueryOptions = (
   quizId: number
 ) => {
   return queryOptions({
-    queryKey: ["quizQuestions", quizId],
+    queryKey: quizQuestionKeys.byQuiz(quizId),
     queryFn: () => getQuizQuestions({quizId}),
   });
 };

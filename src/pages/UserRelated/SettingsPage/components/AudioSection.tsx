@@ -10,12 +10,12 @@ type AudioSectionProps = {
 
 export const AudioSection = ({ form, set }: AudioSectionProps) => {
   return (
-    <Section icon={Music} title="Audio" description="Background music and sound effects.">
+    <Section icon={Music} title="Audio">
       <Row
         title="Background music"
-        description="Play looped music while you browse."
         control={
           <Switch
+            size="sm"
             checked={form.musicEnabled}
             onCheckedChange={(v) => set("musicEnabled", v)}
           />
@@ -34,9 +34,9 @@ export const AudioSection = ({ form, set }: AudioSectionProps) => {
       />
       <Row
         title="Sound effects"
-        description="Play sounds for quiz actions."
         control={
           <Switch
+            size="sm"
             checked={form.soundEffectsEnabled}
             onCheckedChange={(v) => set("soundEffectsEnabled", v)}
           />

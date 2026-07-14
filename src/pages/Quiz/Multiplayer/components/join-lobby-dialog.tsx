@@ -13,6 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog/dialog";
+import { LiftedButton } from "@/common/LiftedButton";
 
 interface JoinLobbyDialogProps {
   open: boolean;
@@ -129,22 +130,22 @@ export const JoinLobbyDialog = ({ open, onOpenChange }: JoinLobbyDialogProps) =>
         </div>
 
         <DialogFooter className="gap-2 sm:gap-0">
-          <Button
+          <LiftedButton
             type="button"
             onClick={handleCancel}
-            variant="outline"
-            className="w-full sm:w-auto text-foreground rounded-md py-4"
+            liftColor="#e5e7eb" // gray-200 — depth layers match the face
+            className="w-full sm:w-auto text-foreground rounded-md bg-background border border-gray-200"
           >
             Cancel
-          </Button>
-          <Button
+          </LiftedButton>
+          <LiftedButton
             type="button"
             onClick={handleJoinLobby}
             disabled={!canJoin || !roomCode.trim()}
             className="w-full sm:w-auto font-bold font-quiz text-white rounded-md"
           >
             Join Lobby
-          </Button>
+          </LiftedButton>
         </DialogFooter>
       </DialogContent>
     </Dialog>

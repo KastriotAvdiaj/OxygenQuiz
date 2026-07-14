@@ -34,11 +34,15 @@ export const useCreateQuestionLanguage = ({
 
   return useMutation({
     mutationFn: createQuestionLanguage,
-    onSuccess: (...args) => {
-      queryClient.invalidateQueries({
-        queryKey: getQuestionLanguageQueryOptions().queryKey,
-      });
-      onSuccess?.(...args);
+    onSuccess: (newLanguage, ...rest) => {
+      const { queryKey } = getQuestionLanguageQueryOptions();
+      // Instant UI update: append the record the backend returned.
+      queryClient.setQueryData<QuestionLanguage[]>(queryKey, (old) =>
+        old ? [...old, newLanguage] : [newLanguage]
+      );
+      // Background reconcile with server truth (sort order, concurrent edits).
+      queryClient.invalidateQueries({ queryKey });
+      onSuccess?.(newLanguage, ...rest);
     },
     onError: (error, variables, onMutateResult, context) => {
       console.error("Error creating question langauge:", error);

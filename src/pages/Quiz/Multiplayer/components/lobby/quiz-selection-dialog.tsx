@@ -26,7 +26,6 @@ import {
   QuizToolbar,
   SORT_RULES,
   DEFAULT_SORT,
-  type SortOption,
 } from "@/pages/Quiz/components/quiz-header";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useQuestionCategoryData } from "@/pages/Dashboard/Pages/Question/Entities/Categories/api/get-question-categories";
@@ -56,9 +55,6 @@ export const QuizSelectionDialog = ({
   selectedQuiz,
 }: QuizSelectionDialogProps) => {
   const [searchQuery, setSearchQuery] = useState("");
-  // Same "variety" default as /choose-quiz — hosts see the full breadth of
-  // categories on the first page (docs/quiz/quiz-discovery.md).
-  const [sortBy, setSortBy] = useState<SortOption>(DEFAULT_SORT);
   const [pageNumber, setPageNumber] = useState(1);
   // The facet panel is tucked behind a toggle — dialog space is tight.
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -81,11 +77,13 @@ export const QuizSelectionDialog = ({
   const { data: difficulties = [] } = useQuestionDifficultyData({});
   const { data: languages = [] } = useQuestionLanguageData({});
 
+  // No sort control in the dialog — space is tight, so it always uses the
+  // "variety" default (same as /choose-quiz; docs/quiz/quiz-discovery.md).
   const query: FilterQuery = {
     page: pageNumber,
     pageSize: PAGE_SIZE,
     search: debouncedSearch || undefined,
-    sort: [SORT_RULES[sortBy]],
+    sort: [SORT_RULES[DEFAULT_SORT]],
     filters,
   };
 
@@ -94,10 +92,10 @@ export const QuizSelectionDialog = ({
   const quizzes = quizData?.items ?? [];
   const pagination = quizData ? pagedResponseToPagination(quizData) : undefined;
 
-  // Reset to the first page whenever the filter/search/sort criteria change.
+  // Reset to the first page whenever the filter/search criteria change.
   useEffect(() => {
     setPageNumber(1);
-  }, [debouncedSearch, selectionKey, sortBy]);
+  }, [debouncedSearch, selectionKey]);
 
   const handlePageChange = useCallback((newPage: number) => {
     setPageNumber(newPage);
@@ -121,10 +119,9 @@ export const QuizSelectionDialog = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] flex flex-col gap-0 p-0 overflow-hidden border-[3px] border-foreground">
-        {/* Header gradient */}
-        <div className="h-2 w-full bg-gradient-to-r from-primary via-primary/30 to-primary/30" />
-
+      {/* Wider on large screens (the quiz grid gains a third column); still
+          near full-width on mobile and capped by the viewport. */}
+      <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-2xl lg:max-w-4xl xl:max-w-5xl max-h-[90vh] flex flex-col gap-0 p-0 overflow-hidden rounded-lg">
         <div className="p-4 sm:p-6 pb-2 space-y-4 flex flex-col shrink-0">
           <DialogHeader className="space-y-2">
             <div className="flex items-center justify-between">
@@ -145,8 +142,6 @@ export const QuizSelectionDialog = ({
             <QuizToolbar
               searchQuery={searchQuery}
               onSearchChange={setSearchQuery}
-              sortBy={sortBy}
-              onSortChange={setSortBy}
               resultCount={quizData?.totalItems ?? quizzes.length}
               activeFilterCount={(searchQuery ? 1 : 0) + facetCount}
               onClearFilters={clearFilters}
@@ -154,9 +149,9 @@ export const QuizSelectionDialog = ({
                 <CollapsibleTrigger asChild>
                   <button
                     type="button"
-                    className="inline-flex items-center gap-1.5 h-9 md:h-8 lg:h-9 px-3 rounded-xl border-2 border-primary/60 dark:border-primary/70 bg-background text-sm md:text-xs lg:text-sm font-medium shadow-[0_2px_0_0_var(--primary-edge)] hover:border-primary/80 active:shadow-none active:translate-y-0.5 transition-all"
+                    className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg border border-border bg-background text-sm shadow-sm transition-colors duration-150 hover:border-foreground/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 data-[state=open]:border-primary/50"
                   >
-                    <ListFilter className="h-4 w-4 text-primary/70" />
+                    <ListFilter className="h-4 w-4 text-muted-foreground" />
                     Filters
                     {facetCount > 0 && (
                       <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[11px] font-bold text-white tabular-nums">
@@ -174,7 +169,9 @@ export const QuizSelectionDialog = ({
               }
             />
             <CollapsibleContent>
-              <div className="mt-3 rounded-xl border border-border/60 bg-muted/30 px-3 py-2">
+              {/* Inset surface — the dialog itself is bg-muted, so bg-background
+                  reads as a clearly recessed panel in both themes. */}
+              <div className="mt-3 rounded-xl border border-border bg-background px-3 py-2.5">
                 <QuizFilterPanel
                   variant="compact"
                   categories={categories}
@@ -217,7 +214,7 @@ export const QuizSelectionDialog = ({
               )}
             </motion.div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
               <AnimatePresence mode="popLayout">
                 {quizzes.map((quiz) => {
                   const isSelected = selectedQuiz?.id === quiz.id.toString();

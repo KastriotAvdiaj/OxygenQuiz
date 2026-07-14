@@ -20,7 +20,6 @@ import { quizLoader } from "@/loaders/quiz.loader";
 import { dashboardEntryLoader } from "@/loaders/dashboardEntryLoader";
 import { quizSelectionLoader } from "@/loaders/quiz-selection.loader";
 import { MultiplayerLobbyPage } from "@/pages/Quiz/Multiplayer/MultiplayerLobbyPage";
-import { CreateLobby } from "@/pages/Quiz/Multiplayer/components/create-lobby";
 const HomeLayout = lazy(() => {
   console.log("Loading HomeLayout chunk...");
   return import("@/layouts/layout").then((module) => ({
@@ -143,6 +142,7 @@ const createAppRouter = (queryClient: QueryClient) =>
     },
     {
       path: "/multiplayer-menu",
+      errorElement: <DashboardErrorElement />,
       element: (
         <>
           <HomeLayout
@@ -165,18 +165,12 @@ const createAppRouter = (queryClient: QueryClient) =>
         </>
       ),
     },
-    {
-      path: "/multiplayer/create",
-      loader: userAuthLoader(queryClient),
-      element: (
-        <>
-          <CreateLobby />
-        </>
-      ),
-    },
+    // /multiplayer/create was removed 2026-07-14: the create-lobby dialog on the
+    // multiplayer menu replaced the full-page form (docs/quiz/multiplayer-analysis.md).
     {
       path: "/multiplayer/join",
       loader: userAuthLoader(queryClient),
+      errorElement: <DashboardErrorElement />,
       element: (
         <>
           <HomeLayout
@@ -190,6 +184,7 @@ const createAppRouter = (queryClient: QueryClient) =>
     {
       path: "/multiplayer/lobby/:sessionId",
       loader: userAuthLoader(queryClient),
+      errorElement: <DashboardErrorElement />,
       element: (
         <>
           <HomeLayout

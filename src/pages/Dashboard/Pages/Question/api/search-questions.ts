@@ -8,6 +8,7 @@ import {
   type PagedResponse,
 } from "@/lib/filtering";
 import type { QuestionBase } from "@/types/question-types";
+import { questionKeys } from "@/lib/query-keys";
 
 // Reference data hook for the shared filtering framework (see docs/quiz/filtering.md).
 // Follows the project's getX / getXQueryOptions / useXData convention, but the params
@@ -20,7 +21,7 @@ export const searchQuestions = (
 
 export const searchQuestionsQueryOptions = (query: FilterQuery = {}) =>
   queryOptions({
-    queryKey: ["questions", "search", query],
+    queryKey: questionKeys.search(query),
     queryFn: () => searchQuestions(query),
   });
 

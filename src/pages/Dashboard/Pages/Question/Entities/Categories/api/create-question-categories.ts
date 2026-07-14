@@ -38,11 +38,15 @@ export const useCreateQuestionCategory = ({
 
   return useMutation({
     mutationFn: createQuestionCategory,
-    onSuccess: (...args) => {
-      queryClient.invalidateQueries({
-        queryKey: getQuestionCategoriesQueryOptions().queryKey,
-      });
-      onSuccess?.(...args);
+    onSuccess: (newCategory, ...rest) => {
+      const { queryKey } = getQuestionCategoriesQueryOptions();
+      // Instant UI update: append the record the backend returned.
+      queryClient.setQueryData<QuestionCategory[]>(queryKey, (old) =>
+        old ? [...old, newCategory] : [newCategory]
+      );
+      // Background reconcile with server truth (sort order, concurrent edits).
+      queryClient.invalidateQueries({ queryKey });
+      onSuccess?.(newCategory, ...rest);
     },
     onError: (error, variables, onMutateResult, context) => {
       console.error("Error creating question category:", error);

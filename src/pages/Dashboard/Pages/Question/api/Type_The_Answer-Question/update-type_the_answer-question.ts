@@ -2,8 +2,12 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { api } from "@/lib/Api-client";
 import { MutationConfig } from "@/lib/React-query";
-import { getTypeTheAnswerQuestionsQueryOptions } from "./get-type-the-answer-questions";
 import { TypeTheAnswerQuestion } from "@/types/question-types";
+import {
+  myQuestionKeys,
+  questionKeys,
+  quizQuestionKeys,
+} from "@/lib/query-keys";
 
 export const updateTypeTheAnswerQuestionInputSchema = z.object({
   id: z.number().int().optional(),
@@ -43,9 +47,9 @@ export const updateTypeTheAnswerQuestion = ({
   data: UpdateTypeTheAnswerQuestionInput;
   questionId: number;
 }): Promise<TypeTheAnswerQuestion> => {
-  return (
-    console.log("data", data, questionId),
-    api.put(`/questions/typeTheAnswer/${questionId}`, transformFormData(data))
+  return api.put(
+    `/questions/typeTheAnswer/${questionId}`,
+    transformFormData(data)
   );
 };
 const transformFormData = (data: UpdateTypeTheAnswerQuestionInput) => {
@@ -73,11 +77,11 @@ export const useUpdateTypeTheAnswerQuestion = ({
   return useMutation({
     mutationFn: updateTypeTheAnswerQuestion,
     onSuccess: (data, ...args) => {
-      queryClient.refetchQueries({
-        queryKey: getTypeTheAnswerQuestionsQueryOptions().queryKey,
-      });
-      // Refresh the user-dashboard ("my") lists too.
-      queryClient.refetchQueries({ queryKey: ["myQuestions"] });
+      // Invalidate the broad roots; prefix matching covers every list variant
+      // (admin search, typed search, user dashboard, quiz views).
+      queryClient.invalidateQueries({ queryKey: questionKeys.all });
+      queryClient.invalidateQueries({ queryKey: myQuestionKeys.all });
+      queryClient.invalidateQueries({ queryKey: quizQuestionKeys.all });
       onSuccess?.(data, ...args);
     },
     onError: (error, variables, onMutateResult, context) => {

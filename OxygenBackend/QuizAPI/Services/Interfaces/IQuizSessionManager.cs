@@ -4,7 +4,7 @@ namespace QuizAPI.Services.Interfaces;
 
 public interface IQuizSessionManager
 {
-    Task<Participant> AddParticipantAsync(string sessionId, string username, string connectionId);
+    Task<Participant> AddParticipantAsync(string sessionId, string username, string connectionId, string? profileImageUrl = null);
     Task RemoveParticipantAsync(string sessionId, string username);
     Task<List<Participant>> GetParticipantsAsync(string sessionId);
     Task SetPlayerReadyAsync(string sessionId, string username, bool isReady);
@@ -12,7 +12,7 @@ public interface IQuizSessionManager
     Task<bool> IsHostAsync(string sessionId, string username);
     
     // New methods for lobby redesign
-    Task<MultiplayerSession> CreateSessionAsync(string sessionId, string lobbyName, int maxPlayers, string hostUsername, string connectionId);
+    Task<MultiplayerSession> CreateSessionAsync(string sessionId, string lobbyName, int maxPlayers, string hostUsername, string connectionId, string? hostProfileImageUrl = null);
     Task SetQuizAsync(string sessionId, string quizId);
     Task<MultiplayerSession?> GetSessionAsync(string sessionId);
 

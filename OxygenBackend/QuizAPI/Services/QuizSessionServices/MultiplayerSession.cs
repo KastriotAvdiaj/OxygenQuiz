@@ -40,6 +40,8 @@ namespace QuizAPI.Services.QuizSessionServices
         public bool IsReady { get; set; } = false;
         public bool IsHost { get; set; } = false;
         public string ConnectionId { get; set; } = string.Empty;
+        /// <summary>The account's avatar at join time; null when the user has none.</summary>
+        public string? ProfileImageUrl { get; set; }
     }
 
     public enum QuizState

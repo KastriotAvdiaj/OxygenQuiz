@@ -2,11 +2,9 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { apiService } from "@/lib/Api-client";
 import { MutationConfig } from "@/lib/React-query";
-import { getTypeTheAnswerQuestionsQueryOptions } from "./get-type-the-answer-questions";
 import { UnspecifiedIds } from "../../../Quiz/components/Create-Quiz-Form/constants";
 import { TypeTheAnswerQuestion } from "@/types/question-types";
-
-console.log("UnspecifiedIds", UnspecifiedIds);
+import { myQuestionKeys, questionKeys } from "@/lib/query-keys";
 
 export const createTypeTheAnswerQuestionInputSchema = z.object({
   text: z.string().min(1, "Question is required"),
@@ -84,11 +82,9 @@ export const useCreateTypeTheAnswerQuestion = ({
   return useMutation({
     mutationFn: createTypeTheAnswerQuestion,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({
-        queryKey: getTypeTheAnswerQuestionsQueryOptions().queryKey,
-      });
-      // Refresh the user-dashboard ("my") lists + profile total too.
-      queryClient.invalidateQueries({ queryKey: ["myQuestions"] });
+      // Broad roots cover admin search, typed search, and the user dashboard.
+      queryClient.invalidateQueries({ queryKey: questionKeys.all });
+      queryClient.invalidateQueries({ queryKey: myQuestionKeys.all });
       onSuccess?.(...args);
     },
     onError: (error, variables, onMutateResult, context) => {

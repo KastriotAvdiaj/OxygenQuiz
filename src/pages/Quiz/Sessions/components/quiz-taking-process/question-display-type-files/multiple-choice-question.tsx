@@ -6,6 +6,7 @@ import type {
   CurrentQuestion,
   InstantFeedbackAnswerResult,
 } from "../../../../../../types/quiz-session-types";
+import { LiftedButton } from "@/common/LiftedButton";
 
 interface MultipleChoiceQuestionProps {
   question: CurrentQuestion;
@@ -229,12 +230,11 @@ export function MultipleChoiceQuestion({
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}>
-          <Button
+          <LiftedButton
             onClick={submitSelection}
             disabled={selectedIds.length === 0 || isSubmitting}
-            size="lg"
-            variant={"fancy"}
-            className="px-6 py-4 sm:px-8 sm:py-6 text-lg sm:text-2xl font-secondary font-semibold min-w-[160px] sm:min-w-[200px] bg-primary text-white">
+            // variant={"fancy"}
+            className="px-6 py-4 sm:px-8 sm:py-6 text-lg sm:text-2xl font-semibold min-w-[160px] sm:min-w-[200px] bg-primary text-white">
             {isSubmitting ? (
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -243,7 +243,7 @@ export function MultipleChoiceQuestion({
             ) : (
               "Submit"
             )}
-          </Button>
+          </LiftedButton>
           {selectedIds.length > 0 && (
             <p className="text-xs text-muted-foreground animate-in fade-in duration-300">
               {isMulti

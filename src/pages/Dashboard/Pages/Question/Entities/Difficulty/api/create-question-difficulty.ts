@@ -38,11 +38,15 @@ export const useCreateQuestionDifficulty = ({
 
   return useMutation({
     mutationFn: createQuestionDifficulty,
-    onSuccess: (...args) => {
-      queryClient.invalidateQueries({
-        queryKey: getQuestionDifficultyQueryOptions().queryKey,
-      });
-      onSuccess?.(...args);
+    onSuccess: (newDifficulty, ...rest) => {
+      const { queryKey } = getQuestionDifficultyQueryOptions();
+      // Instant UI update: append the record the backend returned.
+      queryClient.setQueryData<QuestionDifficulty[]>(queryKey, (old) =>
+        old ? [...old, newDifficulty] : [newDifficulty]
+      );
+      // Background reconcile with server truth (sort order, concurrent edits).
+      queryClient.invalidateQueries({ queryKey });
+      onSuccess?.(newDifficulty, ...rest);
     },
     onError: (error, variables, onMutateResult, context) => {
       console.error("Error creating question difficulty:", error);

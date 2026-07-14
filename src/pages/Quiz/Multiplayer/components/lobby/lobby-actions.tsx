@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { Check, Play } from "lucide-react";
 import type { Participant } from "../../hooks/use-lobby-connection";
 
 interface LobbyActionsProps {
@@ -22,53 +23,74 @@ export const LobbyActions = ({
   onToggleReady,
   onStartQuiz,
 }: LobbyActionsProps) => {
-  const getStartButtonText = () => {
-    if (!hasSelectedQuiz) return "Select a Quiz";
-    if (participants.length < 2) return "Waiting...";
-    if (!allPlayersReady)
-      return `Waiting (${participants.filter((p) => !p.isReady).length})`;
-    return "START GAME";
+  // Why the game can't start yet — shown as text, not as a dead-looking button.
+  const getBlockedReason = () => {
+    if (!hasSelectedQuiz) return "Select a quiz to get started";
+    if (participants.length < 2) return "Waiting for more players to join…";
+    if (!allPlayersReady) {
+      const notReady = participants.filter((p) => !p.isReady).length;
+      return `Waiting for ${notReady} ${notReady === 1 ? "player" : "players"} to ready up…`;
+    }
+    return null;
   };
 
-  return (
-    <div className="flex flex-col sm:flex-row items-stretch gap-2 sm:gap-3">
-      {!isHost && (
+  const readyButton = (
+    <Button
+      onClick={onToggleReady}
+      variant="outline"
+      className={`flex-1 sm:flex-initial h-10 sm:h-11 px-6 text-sm sm:text-base font-bold font-quiz tracking-wider transition-colors ${
+        isReady
+          ? "border-emerald-500/60 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/15"
+          : ""
+      }`}
+    >
+      {isReady && <Check className="h-4 w-4" />}
+      {isReady ? "READY" : "READY UP"}
+    </Button>
+  );
+
+  if (!isHost) {
+    return (
+      <div className="flex items-stretch">
         <Button
           onClick={onToggleReady}
           variant={isReady ? "outline" : "default"}
-          className={`flex-1 h-9 sm:h-11 md:h-12 text-xs sm:text-base md:text-lg text-white font-bold font-quiz tracking-wider transition-all shadow-lg ${
+          className={`flex-1 h-10 sm:h-11 text-sm sm:text-base font-bold font-quiz tracking-wider transition-colors ${
             isReady
-              ? "border-2 border-emerald-500 text-emerald-600 hover:bg-emerald-50"
-              : "hover:-translate-y-1"
+              ? "border-emerald-500/60 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/15"
+              : "text-white"
           }`}
         >
-          {isReady ? "READY!" : "READY UP"}
+          {isReady && <Check className="h-4 w-4" />}
+          {isReady ? "READY" : "READY UP"}
         </Button>
-      )}
+      </div>
+    );
+  }
 
-      {isHost && (
-        <>
-          <Button
-            onClick={onToggleReady}
-            variant={isReady ? "outline" : "secondary"}
-            className={`flex-1 sm:flex-initial h-9 sm:h-11 md:h-12 px-4 sm:px-6 md:px-8 text-xs sm:text-base md:text-lg font-bold font-quiz tracking-wider transition-all ${
-              isReady
-                ? "border-2 border-emerald-500 text-emerald-600 bg-emerald-50/50"
-                : ""
-            }`}
-          >
-            {isReady ? "READY" : "READY UP"}
-          </Button>
+  // `canStartQuiz` is the single source of truth for the gate; the derived
+  // reason is only the human explanation (with a generic fallback).
+  const blockedReason = !canStartQuiz
+    ? getBlockedReason() ?? "Waiting to start…"
+    : null;
 
-          <Button
-            onClick={onStartQuiz}
-            disabled={!canStartQuiz}
-            className="flex-[2] h-9 sm:h-11 md:h-12 text-xs sm:text-base md:text-lg font-bold font-quiz tracking-wider shadow-lg hover:-translate-y-1 transition-all"
-            size="lg"
-          >
-            {getStartButtonText()}
-          </Button>
-        </>
+  return (
+    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
+      {readyButton}
+
+      {blockedReason ? (
+        // Status, not a button — a disabled primary CTA reads as broken UI.
+        <p className="flex flex-1 items-center justify-center sm:justify-start px-1 text-sm text-muted-foreground">
+          {blockedReason}
+        </p>
+      ) : (
+        <Button
+          onClick={onStartQuiz}
+          className="flex-1 h-10 sm:h-11 text-sm sm:text-base font-bold font-quiz tracking-wider text-white"
+        >
+          <Play className="h-4 w-4" />
+          START GAME
+        </Button>
       )}
     </div>
   );

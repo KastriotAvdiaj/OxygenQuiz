@@ -12,6 +12,7 @@ import type {
   PaginatedTrueFalseQuestionResponse,
   PaginatedTypeTheAnswerQuestionResponse,
 } from "@/types/question-types";
+import { myQuestionKeys } from "@/lib/query-keys";
 
 // User-scoped question fetching. Hits /questions/myQuestions, which derives the
 // owner from the auth token on the server — the client never sends a userId, so a
@@ -59,7 +60,7 @@ export const getMyQuestionsTotal = async (): Promise<number> => {
 
 export const getMyQuestionsTotalQueryOptions = () =>
   queryOptions({
-    queryKey: ["myQuestions", "total"],
+    queryKey: myQuestionKeys.total(),
     queryFn: getMyQuestionsTotal,
   });
 
@@ -74,7 +75,7 @@ export const getMyMultipleChoiceQuestionsQueryOptions = (
   params: GetMyQuestionsParams = {}
 ) =>
   queryOptions({
-    queryKey: ["myQuestions", "multipleChoice", params],
+    queryKey: myQuestionKeys.list("multipleChoice", params),
     queryFn: () => getMyMultipleChoiceQuestions(params),
   });
 
@@ -101,7 +102,7 @@ export const getMyTrueFalseQuestionsQueryOptions = (
   params: GetMyQuestionsParams = {}
 ) =>
   queryOptions({
-    queryKey: ["myQuestions", "trueFalse", params],
+    queryKey: myQuestionKeys.list("trueFalse", params),
     queryFn: () => getMyTrueFalseQuestions(params),
   });
 
@@ -128,7 +129,7 @@ export const getMyTypeTheAnswerQuestionsQueryOptions = (
   params: GetMyQuestionsParams = {}
 ) =>
   queryOptions({
-    queryKey: ["myQuestions", "typeTheAnswer", params],
+    queryKey: myQuestionKeys.list("typeTheAnswer", params),
     queryFn: () => getMyTypeTheAnswerQuestions(params),
   });
 

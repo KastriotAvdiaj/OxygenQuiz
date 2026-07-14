@@ -3,8 +3,12 @@ import { z } from "zod";
 import { api } from "@/lib/Api-client";
 import { MutationConfig } from "@/lib/React-query";
 import { answerOptionsSchema } from "../../../Quiz/api/create-quiz";
-import { getMultipleChoiceQuestionsQueryOptions } from "./get-multiple-choice-questions";
 import { MultipleChoiceQuestion } from "@/types/question-types";
+import {
+  myQuestionKeys,
+  questionKeys,
+  quizQuestionKeys,
+} from "@/lib/query-keys";
 
 export const updateMultipleChoiceQuestionInputSchema = z.object({
   id: z.number().int().optional(),
@@ -33,10 +37,7 @@ export const updateMultipleChoiceQuestion = ({
   data: UpdateMultipleChoiceQuestionInput;
   questionId: number;
 }): Promise<MultipleChoiceQuestion> => {
-  return (
-    console.log("data", data, questionId),
-    api.put(`/questions/multiplechoice/${questionId}`, data)
-  );
+  return api.put(`/questions/multiplechoice/${questionId}`, data);
 };
 
 type UseUpdateMultipleChoiceQuestionOptions = {
@@ -53,11 +54,11 @@ export const useUpdateMultipleChoiceQuestion = ({
   return useMutation({
     mutationFn: updateMultipleChoiceQuestion,
     onSuccess: (data, ...args) => {
-      queryClient.refetchQueries({
-        queryKey: getMultipleChoiceQuestionsQueryOptions().queryKey,
-      });
-      // Refresh the user-dashboard ("my") lists too.
-      queryClient.refetchQueries({ queryKey: ["myQuestions"] });
+      // Invalidate the broad roots; prefix matching covers every list variant
+      // (admin search, typed search, user dashboard, quiz views).
+      queryClient.invalidateQueries({ queryKey: questionKeys.all });
+      queryClient.invalidateQueries({ queryKey: myQuestionKeys.all });
+      queryClient.invalidateQueries({ queryKey: quizQuestionKeys.all });
       onSuccess?.(data, ...args);
     },
     onError: (error, variables, onMutateResult, context) => {

@@ -1,4 +1,4 @@
-import { MessageSquare, Gamepad2 } from "lucide-react";
+import { Info, Gamepad2 } from "lucide-react";
 import type { Participant } from "../../hooks/use-lobby-connection";
 
 interface LobbyInfoBannerProps {
@@ -7,6 +7,10 @@ interface LobbyInfoBannerProps {
   hasSelectedQuiz: boolean;
 }
 
+/**
+ * One quiet line of context under the actions — not a boxed banner.
+ * Amber icon while a quiz still needs picking, neutral otherwise.
+ */
 export const LobbyInfoBanner = ({
   isHost,
   participants,
@@ -16,46 +20,23 @@ export const LobbyInfoBanner = ({
 
   const hostUsername = participants.find((p) => p.isHost)?.username || "Host";
 
-  // Show quiz selection prompt when no quiz is selected
   if (!hasSelectedQuiz) {
     return (
-      <div className="rounded-lg sm:rounded-xl bg-amber-500/10 p-2 sm:p-3 border border-amber-500/20">
-        <div className="flex items-center gap-2 sm:gap-3">
-          <div className="p-1 sm:p-1.5 bg-background rounded-full shadow-sm flex-shrink-0">
-            <Gamepad2 className="w-3 h-3 sm:w-4 sm:h-4 text-amber-500" />
-          </div>
-          <div className="flex-1 text-xs sm:text-sm font-header">
-            <p className="font-bold text-xs sm:text-sm text-amber-600 dark:text-amber-400">
-              {isHost ? "Select a quiz to play" : `Waiting for ${hostUsername} to select a quiz`}
-            </p>
-            <p className="text-muted-foreground text-[10px] sm:text-xs">
-              {isHost
-                ? "Browse and pick a public quiz from the list above"
-                : "The host will choose a quiz for this session"}
-            </p>
-          </div>
-        </div>
-      </div>
+      <p className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground font-header">
+        <Gamepad2 className="h-3.5 w-3.5 shrink-0 text-amber-500" />
+        {isHost
+          ? "Pick a quiz in the Quiz panel to get started."
+          : `Waiting for ${hostUsername} to pick a quiz.`}
+      </p>
     );
   }
 
   return (
-    <div className="rounded-lg sm:rounded-xl bg-primary/5 p-2 sm:p-3 border border-primary/10">
-      <div className="flex items-center gap-2 sm:gap-3">
-        <div className="p-1 sm:p-1.5 bg-background rounded-full shadow-sm flex-shrink-0">
-          <MessageSquare className="w-3 h-3 sm:w-4 sm:h-4 text-primary" />
-        </div>
-        <div className="flex-1 text-xs sm:text-sm font-header">
-          <p className="font-bold text-xs sm:text-sm">
-            {isHost ? "You are the host" : `${hostUsername} is the host`}
-          </p>
-          <p className="text-muted-foreground text-[10px] sm:text-xs">
-            {isHost
-              ? "Start when all players are ready"
-              : "Host will start when ready"}
-          </p>
-        </div>
-      </div>
-    </div>
+    <p className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground font-header">
+      <Info className="h-3.5 w-3.5 shrink-0 text-primary/70" />
+      {isHost
+        ? "You're the host — start the game when everyone's ready."
+        : `${hostUsername} will start the game when everyone's ready.`}
+    </p>
   );
 };

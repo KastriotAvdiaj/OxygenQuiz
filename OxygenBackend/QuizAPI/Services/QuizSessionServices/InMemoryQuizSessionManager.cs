@@ -14,7 +14,7 @@ public class InMemoryQuizSessionManager : IQuizSessionManager
         // persistent chat system lands, re-inject it here and call it in
         // AddChatMessageAsync. See docs/data/mongodb.md.
 
-        public Task<Participant> AddParticipantAsync(string sessionId, string username, string connectionId)
+        public Task<Participant> AddParticipantAsync(string sessionId, string username, string connectionId, string? profileImageUrl = null)
         {
             if (!_sessions.TryGetValue(sessionId, out var session))
             {
@@ -37,7 +37,8 @@ public class InMemoryQuizSessionManager : IQuizSessionManager
                         Username = username,
                         ConnectionId = connectionId,
                         IsHost = false,
-                        IsReady = false
+                        IsReady = false,
+                        ProfileImageUrl = profileImageUrl
                     };
                     session.Participants.Add(participant);
                 }
@@ -47,8 +48,10 @@ public class InMemoryQuizSessionManager : IQuizSessionManager
                     participant.ConnectionId = connectionId;
                     // Ensure host status is consistent
                     participant.IsHost = (session.HostUsername == username);
+                    // Refresh the avatar (it may have changed since the first join)
+                    participant.ProfileImageUrl = profileImageUrl ?? participant.ProfileImageUrl;
                 }
-                
+
                 return Task.FromResult(participant);
             }
         }
@@ -131,7 +134,7 @@ public class InMemoryQuizSessionManager : IQuizSessionManager
             return Task.FromResult(false);
         }
 
-        public Task<MultiplayerSession> CreateSessionAsync(string sessionId, string lobbyName, int maxPlayers, string hostUsername, string connectionId)
+        public Task<MultiplayerSession> CreateSessionAsync(string sessionId, string lobbyName, int maxPlayers, string hostUsername, string connectionId, string? hostProfileImageUrl = null)
         {
             var session = new MultiplayerSession
             {
@@ -153,7 +156,8 @@ public class InMemoryQuizSessionManager : IQuizSessionManager
                 Username = hostUsername,
                 ConnectionId = connectionId,
                 IsHost = true,
-                IsReady = false
+                IsReady = false,
+                ProfileImageUrl = hostProfileImageUrl
             };
 
             lock (session)

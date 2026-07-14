@@ -3,8 +3,8 @@ import { z } from "zod";
 import { apiService } from "@/lib/Api-client";
 import { MutationConfig } from "@/lib/React-query";
 import { answerOptionsSchema } from "../../../Quiz/api/create-quiz";
-import { getMultipleChoiceQuestionsQueryOptions } from "./get-multiple-choice-questions";
 import { MultipleChoiceQuestion } from "@/types/question-types";
+import { myQuestionKeys, questionKeys } from "@/lib/query-keys";
 
 export const createMultipleChoiceQuestionInputSchema = z.object({
   text: z.string().min(1, "Question is required"),
@@ -46,11 +46,9 @@ export const useCreateMultipleChoiceQuestion = ({
   return useMutation({
     mutationFn: createMultipleChoiceQuestion,
     onSuccess: (...args) => {
-      queryClient.invalidateQueries({
-        queryKey: getMultipleChoiceQuestionsQueryOptions().queryKey,
-      });
-      // Refresh the user-dashboard ("my") lists + profile total too.
-      queryClient.invalidateQueries({ queryKey: ["myQuestions"] });
+      // Broad roots cover admin search, typed search, and the user dashboard.
+      queryClient.invalidateQueries({ queryKey: questionKeys.all });
+      queryClient.invalidateQueries({ queryKey: myQuestionKeys.all });
       onSuccess?.(...args);
     },
     onError: (error, variables, onMutateResult, context) => {

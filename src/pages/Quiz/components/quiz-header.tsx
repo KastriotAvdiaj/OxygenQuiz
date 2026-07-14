@@ -45,8 +45,12 @@ interface QuizToolbarProps {
   searchQuery: string;
   onSearchChange: (value: string) => void;
 
-  sortBy: SortOption;
-  onSortChange: (value: SortOption) => void;
+  /**
+   * Sort control — omit both to hide it (e.g. the multiplayer dialog, which
+   * always uses the default "variety" sort to save space).
+   */
+  sortBy?: SortOption;
+  onSortChange?: (value: SortOption) => void;
 
   resultCount: number;
 
@@ -98,9 +102,11 @@ export function QuizToolbar({
       {/* Single toolbar row — search capped on desktop, sort pinned right.
           Wraps gracefully: mobile gets search full-width with actions beneath. */}
       <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-        {/* Search — full width on mobile, capped on desktop so it doesn't dominate */}
+        {/* Search — full width on mobile, capped on desktop so it doesn't dominate.
+            Minimal style (matches the settings page): hairline border, soft
+            shadow, primary only on the focus ring. */}
         <div className="relative w-full lg:w-72 xl:w-80">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-primary/70 pointer-events-none" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
           <input
             type="text"
             role="searchbox"
@@ -108,11 +114,7 @@ export function QuizToolbar({
             placeholder="Search quizzes..."
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            // Same design language as LiftedButton: solid theme surface (readable
-            // in both themes), full-strength primary border, and a solid
-            // darkened-primary "edge". Press-in happens only on mousedown
-            // (:active) — while focused the field sits back up for typing.
-            className="w-full h-9 md:h-8 lg:h-9 pl-9 pr-9 rounded-xl border-2 border-primary/60 dark:border-primary/70 bg-background text-sm md:text-xs lg:text-sm font-medium font-header text-foreground placeholder:text-muted-foreground shadow-[0_3px_0_0_var(--primary-edge)] md:shadow-[0_2px_0_0_var(--primary-edge)] lg:shadow-[0_3px_0_0_var(--primary-edge)] hover:border-primary/80 hover:bg-primary/5 dark:hover:bg-primary/10 focus:border-primary focus:bg-primary/5 dark:focus:bg-primary/10 active:translate-y-[2px] active:shadow-[0_1px_0_0_var(--primary-edge)] focus:outline-none transition-all duration-200"
+            className="w-full h-9 pl-9 pr-9 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground shadow-sm transition-colors duration-150 hover:border-foreground/25 focus:border-primary/50 focus:ring-2 focus:ring-primary/30 focus:outline-none"
           />
           {searchQuery && (
             <button
@@ -143,28 +145,30 @@ export function QuizToolbar({
 
         {/* Sort + count — pinned to the right on desktop */}
         <div className="flex items-center gap-2 sm:gap-3 basis-full sm:basis-auto sm:ml-auto">
-          <div className="flex items-center gap-1.5 flex-1 sm:flex-initial">
-            <ArrowUpDown className="h-3.5 w-3.5 text-primary/60 hidden sm:block" />
-            <Select
-              value={sortBy}
-              onValueChange={(v) => onSortChange(v as SortOption)}
-            >
-              <SelectTrigger
-                variant="quiz"
-                aria-label="Sort quizzes"
-                className="w-full sm:w-[175px]"
+          {sortBy !== undefined && onSortChange && (
+            <div className="flex items-center gap-1.5 flex-1 sm:flex-initial">
+              <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground hidden sm:block" />
+              <Select
+                value={sortBy}
+                onValueChange={(v) => onSortChange(v as SortOption)}
               >
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent variant="quiz">
-                {(Object.keys(SORT_RULES) as SortOption[]).map((option) => (
-                  <SelectItem variant="quiz" key={option} value={option}>
-                    {SORT_LABELS[option]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+                <SelectTrigger
+                  variant="minimal"
+                  aria-label="Sort quizzes"
+                  className="h-9 w-full sm:w-[165px]"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent variant="minimal">
+                  {(Object.keys(SORT_RULES) as SortOption[]).map((option) => (
+                    <SelectItem variant="minimal" key={option} value={option}>
+                      {SORT_LABELS[option]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           {/* Result Count (optional — the page shows it in its results header instead) */}
           {showCount && (
