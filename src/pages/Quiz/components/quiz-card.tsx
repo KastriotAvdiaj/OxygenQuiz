@@ -34,13 +34,15 @@ export function QuizCard({ quiz, onClick }: QuizCardProps) {
   const questionLabel = quiz.questionCount === 1 ? "question" : "questions";
 
   return (
+    // h-full: the picker grid stretches rows (auto-rows-fr), so every card in
+    // a row renders the same height regardless of its content length.
     <div
-      className="group w-full max-w-sm mx-auto cursor-pointer"
+      className="group h-full w-full cursor-pointer"
       onClick={handleClick}
     >
       <div
         className={cn(
-          "relative overflow-hidden rounded-xl border border-border bg-card",
+          "relative flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card",
           "transition-all duration-200 ease-out",
           "hover:-translate-y-0.5 hover:border-foreground/20 hover:shadow-md"
         )}
@@ -52,7 +54,7 @@ export function QuizCard({ quiz, onClick }: QuizCardProps) {
           style={{ backgroundColor: primaryColor }}
         />
 
-        <div className="p-4 pl-5 sm:p-5 sm:pl-6">
+        <div className="flex flex-1 flex-col p-4 pl-5 sm:p-5 sm:pl-6">
           {/* Category */}
           <p
             className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide"
@@ -73,8 +75,12 @@ export function QuizCard({ quiz, onClick }: QuizCardProps) {
             </p>
           )}
 
+          {/* Spacer — absorbs the leftover height in stretched cards so the
+              meta row + footer stay pinned to the bottom edge */}
+          <div className="min-h-4 flex-1" aria-hidden />
+
           {/* Meta info row */}
-          <div className="mt-4 flex items-center gap-4 border-t border-border pt-3 text-xs text-muted-foreground">
+          <div className="flex items-center gap-4 border-t border-border pt-3 text-xs text-muted-foreground">
             <span className="flex items-center gap-1.5">
               <HelpCircle className="h-3.5 w-3.5" />
               {quiz.questionCount} {questionLabel}

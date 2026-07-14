@@ -195,6 +195,12 @@ to emit `FilterRule[]` instead of its bespoke per-field reducer — tracked belo
 - Frontend: `search-quizzes.ts` (`useSearchQuizzes`) + `QuizFiltersPanel` (categories, difficulties,
   languages, visibility, published/active tri-states, admin **author** filter, date range, pills).
   Used by the admin Quizzes page and **MyQuizzes** (scope `mine`, no author filter).
+- Public catalogue pickers (`/choose-quiz` and the multiplayer lobby dialog): faceted
+  multi-select filters in `src/pages/Quiz/components/quiz-filters/` — `useQuizFilterState`
+  holds the selections and serializes each facet to one `in` rule
+  (`categoryId`/`difficultyId`/`languageId`); `QuizFilterPanel`/`FacetSection` render the
+  collapsible checkbox groups with per-facet search and selected options pinned on top.
+  See docs/quiz/quiz-discovery.md for how the facets compose with the variety sort.
 
 **Users** ✅ wired end-to-end:
 - Backend: `UserFilterFields` (username/email search, isDeleted, registered/last-login ranges),

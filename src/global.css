@@ -79,7 +79,12 @@ body {
     --quiz-text-primary: var(--foreground);
     --quiz-text-secondary: var(--muted-foreground);
     --quiz-shadow: 0 0% 0%;
-    
+
+    /* Solid darkened primary — the "edge" color of the 3D pushable controls
+       (LiftedButton, quiz search/select). Solid rather than translucent so it
+       reads as primary on light and dark backgrounds alike; tracks --primary,
+       so it adapts to dark mode automatically. */
+    --primary-edge: color-mix(in srgb, hsl(var(--primary)), black 30%);
   }
  
   .dark {
@@ -186,56 +191,58 @@ body {
   transform: scaleY(1);
 }
 
+/* Fancy button — quiz CTA. Shares the 3D "pushable" motion language of
+   LiftedButton (spring lift on hover, 34ms snap on press) but keeps the pill
+   shape and gradient face. Colors derive from --quiz-primary (which falls
+   back to --primary); per-instance overrides still work via the --fancy-*
+   variables set by the Button component's fancyColors prop. */
 .fancy-button {
+  --fancy-face-1: var(--fancy-primary, hsl(var(--quiz-primary)));
+  --fancy-face-2: var(--fancy-secondary, color-mix(in srgb, hsl(var(--quiz-primary)), black 15%));
+  --fancy-edge: var(--fancy-shadow, color-mix(in srgb, hsl(var(--quiz-primary)), black 45%));
   display: flex;
   align-items: center;
   justify-content: center;
   margin: 10px;
   font-weight: bold;
-  /* text-transform: uppercase; */
   color: var(--fancy-text, #fff);
-  background-image: linear-gradient(to bottom right, var(--fancy-primary, #00c6ff), var(--fancy-secondary, #0072ff));
+  background-image: linear-gradient(to bottom right, var(--fancy-face-1), var(--fancy-face-2));
   border: none;
   border-radius: 40px;
-  box-shadow: 0px 4px 0px var(--fancy-shadow, #0072ff);
-  transition: all 0.2s ease-in-out;
+  box-shadow:
+    0 4px 0 var(--fancy-edge),
+    0 6px 10px color-mix(in srgb, hsl(var(--quiz-primary)), transparent 55%);
   cursor: pointer;
   position: relative;
+  will-change: transform;
+  transition:
+    transform 600ms cubic-bezier(0.3, 0.7, 0.4, 1),
+    box-shadow 600ms cubic-bezier(0.3, 0.7, 0.4, 1),
+    filter 250ms ease;
 }
 
 .fancy-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0px 6px 0px var(--fancy-shadow, #0072ff);
+  filter: brightness(110%);
+  box-shadow:
+    0 6px 0 var(--fancy-edge),
+    0 10px 14px color-mix(in srgb, hsl(var(--quiz-primary)), transparent 50%);
+  transition:
+    transform 250ms cubic-bezier(0.3, 0.7, 0.4, 1.5),
+    box-shadow 250ms cubic-bezier(0.3, 0.7, 0.4, 1.5),
+    filter 250ms ease;
 }
 
 .fancy-button:active {
-  transform: translateY(0px);
-  box-shadow: none;
-  background-image: linear-gradient(to bottom right, var(--fancy-secondary, #0072ff), var(--fancy-primary, #00c6ff));
-}
-
-.fancy-button:before,
-.fancy-button:after {
-  content: "";
-  position: absolute;
-  width: 0;
-  height: 0;
-}
-
-.fancy-button:before {
-  top: -3px;
-  left: -3px;
-  border-radius: 40px;
-  border-top: 3px solid var(--fancy-border, #fff);
-  border-left: 3px solid var(--fancy-border, #fff);
-}
-
-.fancy-button:after {
-  bottom: -3px;
-  right: -3px;
-  border-radius: 40px;
-  border-bottom: 3px solid var(--fancy-border, #fff);
-  border-right: 3px solid var(--fancy-border, #fff);
+  transform: translateY(3px);
+  background-image: linear-gradient(to bottom right, var(--fancy-face-2), var(--fancy-face-1));
+  box-shadow:
+    0 1px 0 var(--fancy-edge),
+    0 2px 4px color-mix(in srgb, hsl(var(--quiz-primary)), transparent 60%);
+  transition:
+    transform 34ms,
+    box-shadow 34ms,
+    filter 250ms ease;
 }
 
 

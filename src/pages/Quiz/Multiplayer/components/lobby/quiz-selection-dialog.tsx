@@ -1,14 +1,15 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useSearchQuizzes } from "@/pages/Dashboard/Pages/Quiz/api/search-quizzes";
-import { rule, type FilterQuery, type FilterRule } from "@/lib/filtering";
+import { type FilterQuery } from "@/lib/filtering";
 import { pagedResponseToPagination } from "@/lib/pagination-query";
 import { Badge } from "@/components/ui/badge";
 import { LoadingWave } from "@/components/ui";
 import { PaginationControls } from "@/components/ui/pagination-control";
-import { HelpCircle, Clock, Check, ArchiveX } from "lucide-react";
+import { HelpCircle, Clock, Check, ArchiveX, ChevronDown, ListFilter } from "lucide-react";
 import type { QuizSummaryDTO } from "@/types/quiz-types";
 import { secondsToMinutes } from "@/pages/Quiz/components/quiz-card";
 import type { SelectedQuiz } from "../../hooks/use-lobby-connection";
+import { cn } from "@/utils/cn";
 import {
   Dialog,
   DialogContent,
@@ -17,8 +18,12 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
   QuizToolbar,
-  ALL_FILTER,
   SORT_RULES,
   DEFAULT_SORT,
   type SortOption,
@@ -27,6 +32,10 @@ import { useDebounce } from "@/hooks/use-debounce";
 import { useQuestionCategoryData } from "@/pages/Dashboard/Pages/Question/Entities/Categories/api/get-question-categories";
 import { useQuestionDifficultyData } from "@/pages/Dashboard/Pages/Question/Entities/Difficulty/api/get-question-difficulties";
 import { useQuestionLanguageData } from "@/pages/Dashboard/Pages/Question/Entities/Language/api/get-question-language";
+import {
+  QuizFilterPanel,
+  useQuizFilterState,
+} from "@/pages/Quiz/components/quiz-filters";
 import { motion, AnimatePresence } from "framer-motion";
 
 // Matches the /choose-quiz page size, so an identical filter/sort/page state reuses its
@@ -47,26 +56,30 @@ export const QuizSelectionDialog = ({
   selectedQuiz,
 }: QuizSelectionDialogProps) => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [categoryId, setCategoryId] = useState(ALL_FILTER);
-  const [difficultyId, setDifficultyId] = useState(ALL_FILTER);
-  const [languageId, setLanguageId] = useState(ALL_FILTER);
   // Same "variety" default as /choose-quiz — hosts see the full breadth of
   // categories on the first page (docs/quiz/quiz-discovery.md).
   const [sortBy, setSortBy] = useState<SortOption>(DEFAULT_SORT);
   const [pageNumber, setPageNumber] = useState(1);
+  // The facet panel is tucked behind a toggle — dialog space is tight.
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const debouncedSearch = useDebounce(searchQuery, 400);
 
+  // Multi-select facets (category / difficulty / language) → `in` filter rules.
+  const {
+    selections,
+    toggle,
+    clear: clearFacets,
+    filters,
+    activeCount: facetCount,
+    selectionKey,
+  } = useQuizFilterState();
+
   const { data: categories = [] } = useQuestionCategoryData({});
   const { data: difficulties = [] } = useQuestionDifficultyData({});
   const { data: languages = [] } = useQuestionLanguageData({});
-
-  const filters: FilterRule[] = [];
-  if (categoryId !== ALL_FILTER) filters.push(rule.eq("categoryId", Number(categoryId)));
-  if (difficultyId !== ALL_FILTER) filters.push(rule.eq("difficultyId", Number(difficultyId)));
-  if (languageId !== ALL_FILTER) filters.push(rule.eq("languageId", Number(languageId)));
 
   const query: FilterQuery = {
     page: pageNumber,
@@ -84,25 +97,19 @@ export const QuizSelectionDialog = ({
   // Reset to the first page whenever the filter/search/sort criteria change.
   useEffect(() => {
     setPageNumber(1);
-  }, [debouncedSearch, categoryId, difficultyId, languageId, sortBy]);
+  }, [debouncedSearch, selectionKey, sortBy]);
 
   const handlePageChange = useCallback((newPage: number) => {
     setPageNumber(newPage);
     scrollRef.current?.scrollTo({ top: 0 });
   }, []);
 
-  const hasActiveFilters =
-    Boolean(searchQuery) ||
-    categoryId !== ALL_FILTER ||
-    difficultyId !== ALL_FILTER ||
-    languageId !== ALL_FILTER;
+  const hasActiveFilters = Boolean(searchQuery) || facetCount > 0;
 
   const clearFilters = useCallback(() => {
     setSearchQuery("");
-    setCategoryId(ALL_FILTER);
-    setDifficultyId(ALL_FILTER);
-    setLanguageId(ALL_FILTER);
-  }, []);
+    clearFacets();
+  }, [clearFacets]);
 
   const handleQuizSelect = useCallback(
     (quiz: QuizSummaryDTO) => {
@@ -118,7 +125,7 @@ export const QuizSelectionDialog = ({
         {/* Header gradient */}
         <div className="h-2 w-full bg-gradient-to-r from-primary via-primary/30 to-primary/30" />
 
-        <div className="p-4 sm:p-6 pb-2 space-y-4 flex flex-col flex-1 shrink-0">
+        <div className="p-4 sm:p-6 pb-2 space-y-4 flex flex-col shrink-0">
           <DialogHeader className="space-y-2">
             <div className="flex items-center justify-between">
               <DialogTitle className="text-xl sm:text-2xl font-bold font-quiz tracking-wider text-foreground">
@@ -133,26 +140,54 @@ export const QuizSelectionDialog = ({
             </DialogDescription>
           </DialogHeader>
 
-          {/* Toolbar section */}
-          <div className="pt-2">
+          {/* Toolbar + collapsible facet panel */}
+          <Collapsible open={filtersOpen} onOpenChange={setFiltersOpen}>
             <QuizToolbar
               searchQuery={searchQuery}
               onSearchChange={setSearchQuery}
-              categories={categories}
-              selectedCategoryId={categoryId}
-              onCategoryChange={setCategoryId}
-              difficulties={difficulties}
-              selectedDifficultyId={difficultyId}
-              onDifficultyChange={setDifficultyId}
-              languages={languages}
-              selectedLanguageId={languageId}
-              onLanguageChange={setLanguageId}
               sortBy={sortBy}
               onSortChange={setSortBy}
               resultCount={quizData?.totalItems ?? quizzes.length}
+              activeFilterCount={(searchQuery ? 1 : 0) + facetCount}
               onClearFilters={clearFilters}
+              filterAction={
+                <CollapsibleTrigger asChild>
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-1.5 h-9 md:h-8 lg:h-9 px-3 rounded-xl border-2 border-primary/60 dark:border-primary/70 bg-background text-sm md:text-xs lg:text-sm font-medium shadow-[0_2px_0_0_var(--primary-edge)] hover:border-primary/80 active:shadow-none active:translate-y-0.5 transition-all"
+                  >
+                    <ListFilter className="h-4 w-4 text-primary/70" />
+                    Filters
+                    {facetCount > 0 && (
+                      <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[11px] font-bold text-white tabular-nums">
+                        {facetCount}
+                      </span>
+                    )}
+                    <ChevronDown
+                      className={cn(
+                        "h-3.5 w-3.5 text-muted-foreground transition-transform duration-200",
+                        filtersOpen && "rotate-180"
+                      )}
+                    />
+                  </button>
+                </CollapsibleTrigger>
+              }
             />
-          </div>
+            <CollapsibleContent>
+              <div className="mt-3 rounded-xl border border-border/60 bg-muted/30 px-3 py-2">
+                <QuizFilterPanel
+                  variant="compact"
+                  categories={categories}
+                  difficulties={difficulties}
+                  languages={languages}
+                  selections={selections}
+                  onToggle={toggle}
+                  onClearAll={clearFacets}
+                  activeCount={facetCount}
+                />
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
         </div>
 
         {/* Scrollable quiz list */}

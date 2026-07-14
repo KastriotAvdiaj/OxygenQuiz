@@ -8,11 +8,16 @@ that: the default first page now interleaves categories, showing the newest quiz
 
 ## Where it applies
 
-Both quiz pickers, which share `QuizToolbar` and the same defaults:
+Both quiz pickers, which share `QuizToolbar` (search + sort), the faceted
+filter panel (`src/pages/Quiz/components/quiz-filters/` — multi-select
+category/difficulty/language checkboxes serialized as `in` rules), and the
+same defaults:
 
-- **Single player** — `/choose-quiz` (`src/pages/Quiz/Quiz-Selection.tsx`)
+- **Single player** — `/choose-quiz` (`src/pages/Quiz/Quiz-Selection.tsx`);
+  the panel renders as a left sidebar on desktop and a slide-in drawer on mobile
 - **Multiplayer** — the lobby's quiz picker dialog
-  (`src/pages/Quiz/Multiplayer/components/lobby/quiz-selection-dialog.tsx`)
+  (`src/pages/Quiz/Multiplayer/components/lobby/quiz-selection-dialog.tsx`);
+  the panel sits behind a "Filters" toggle in its compact variant
 
 Both default to the `Mixed Categories` sort option (`DEFAULT_SORT = "variety"` in
 `quiz-header.tsx`). Users can still switch to Newest/Oldest/A–Z; the variety option is
@@ -48,8 +53,10 @@ categories. The tie-breaker keeps the ordering fully deterministic, which server
 pagination requires — page 2 continues exactly where page 1 stopped.
 
 Because the rank is computed over the **filtered** source, variety composes with
-search and the category/difficulty/language filters (filtering to one category simply
-degrades to newest-first, as the single-category test asserts).
+search and the category/difficulty/language facets (the facets are multi-select,
+so an `in` filter over several categories still interleaves *those* categories;
+narrowing to a single one simply degrades to newest-first, as the single-category
+test asserts).
 
 ## Files
 

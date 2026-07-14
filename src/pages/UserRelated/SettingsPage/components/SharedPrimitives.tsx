@@ -1,11 +1,10 @@
 import React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui";
 import { Badge } from "@/components/ui/badge";
 
 export const SoonBadge = () => (
   <Badge
     variant="outline"
-    className="text-[10px] uppercase tracking-wide text-muted-foreground"
+    className="px-1.5 py-0 text-[10px] uppercase tracking-wide text-muted-foreground"
   >
     Soon
   </Badge>
@@ -18,23 +17,27 @@ type SectionProps = {
   children: React.ReactNode;
 };
 
+/**
+ * One settings group. Compact by design: icon and title share a slim header
+ * row (the description doubles as its subtitle), rows are tight and divided
+ * by hairlines, and the card sits on a subtle --primary-edge like the rest
+ * of the app's surfaces.
+ */
 export const Section = ({ icon: Icon, title, description, children }: SectionProps) => (
-  <Card className="border dark:border-foreground/30 mb-6 bg-background">
-    <CardHeader>
-      <div className="flex items-center gap-3">
-        <div className="rounded-lg bg-primary/10 text-primary p-2">
-          <Icon className="h-5 w-5" />
-        </div>
-        <div>
-          <CardTitle className="text-lg">{title}</CardTitle>
-          {description && (
-            <p className="text-sm text-muted-foreground">{description}</p>
-          )}
-        </div>
+  <section className="h-fit rounded-xl border border-border bg-card shadow-[0_2px_0_0_var(--primary-edge)]">
+    <header className="flex items-center gap-2.5 border-b border-border px-4 py-3 sm:px-5">
+      <span className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-primary/10 text-primary">
+        <Icon className="h-4 w-4" />
+      </span>
+      <div className="min-w-0">
+        <h2 className="text-sm font-semibold leading-tight">{title}</h2>
+        {description && (
+          <p className="truncate text-xs text-muted-foreground">{description}</p>
+        )}
       </div>
-    </CardHeader>
-    <CardContent className="divide-y divide-border pt-0">{children}</CardContent>
-  </Card>
+    </header>
+    <div className="divide-y divide-border/70 px-4 sm:px-5">{children}</div>
+  </section>
 );
 
 type RowProps = {
@@ -47,17 +50,17 @@ type RowProps = {
 
 export const Row = ({ title, description, control, soon, dimmed }: RowProps) => (
   <div
-    className={`flex items-center justify-between gap-4 py-4 first:pt-4 last:pb-0 ${
+    className={`flex items-center justify-between gap-4 py-3 ${
       dimmed ? "opacity-50" : ""
     }`}
   >
     <div className="min-w-0">
       <div className="flex items-center gap-2">
-        <span className="font-medium">{title}</span>
+        <span className="text-sm font-medium">{title}</span>
         {soon && <SoonBadge />}
       </div>
       {description && (
-        <p className="text-sm text-muted-foreground">{description}</p>
+        <p className="text-xs text-muted-foreground">{description}</p>
       )}
     </div>
     <div className="shrink-0">{control}</div>
@@ -71,7 +74,7 @@ type VolumeProps = {
 };
 
 export const VolumeSlider = ({ value, onChange, disabled }: VolumeProps) => (
-  <div className="flex items-center gap-3 w-44">
+  <div className="flex w-40 items-center gap-2.5">
     <input
       type="range"
       min={0}
@@ -79,9 +82,9 @@ export const VolumeSlider = ({ value, onChange, disabled }: VolumeProps) => (
       value={value}
       disabled={disabled}
       onChange={(e) => onChange(Number(e.target.value))}
-      className="w-full accent-primary disabled:cursor-not-allowed"
+      className="h-1.5 w-full cursor-pointer accent-primary disabled:cursor-not-allowed"
     />
-    <span className="text-sm tabular-nums w-9 text-right text-muted-foreground">
+    <span className="w-9 text-right text-xs tabular-nums text-muted-foreground">
       {value}%
     </span>
   </div>

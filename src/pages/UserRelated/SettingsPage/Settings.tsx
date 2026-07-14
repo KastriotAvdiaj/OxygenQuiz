@@ -100,93 +100,92 @@ export const Settings = () => {
   };
 
   return (
-    <div className="container mx-auto py-8 px-4 md:px-0 max-w-3xl">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold">Settings</h1>
-        <p className="text-muted-foreground mt-1">
-          Manage your preferences. Changes are saved to your account.
+    <div className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6">
+      {/* Compact header — the sections are self-describing */}
+      <div className="mb-5">
+        <h1 className="text-xl font-bold sm:text-2xl">Settings</h1>
+        <p className="mt-0.5 text-sm text-muted-foreground">
+          Saved to your account.
         </p>
       </div>
 
-      {/* Audio Sub-section */}
-      <AudioSection form={form} set={set} />
+      {/* Two columns on desktop keeps everything visible with less scrolling;
+          items-start lets each card keep its natural height. */}
+      <div className="grid items-start gap-4 lg:grid-cols-2">
+        <AudioSection form={form} set={set} />
 
-      {/* Appearance Sub-section */}
-      <AppearanceSection form={form} set={set} setTheme={setTheme} />
+        <AppearanceSection form={form} set={set} setTheme={setTheme} />
 
-      {/* Typography Sub-section */}
-      <TypographySection
-        form={form}
-        setForm={setForm}
-        set={set}
-        syncFonts={syncFonts}
-        setSyncFonts={setSyncFonts}
-      />
+        <TypographySection
+          form={form}
+          setForm={setForm}
+          set={set}
+          syncFonts={syncFonts}
+          setSyncFonts={setSyncFonts}
+        />
 
-      {/* Quiz */}
-      <Section
-        icon={Timer}
-        title="Quiz"
-        description="Defaults for taking quizzes."
-      >
-        <Row
-          title="Show timer"
-          description="Display the countdown while taking a quiz."
-          control={
-            <Switch
-              checked={form.showTimer}
-              onCheckedChange={(v) => set("showTimer", v)}
-            />
-          }
-        />
-        <Row
-          title="Default difficulty"
-          description="Pre-select a difficulty for new quizzes."
-          soon
-          dimmed
-          control={<span className="text-sm text-muted-foreground">Any</span>}
-        />
-      </Section>
+        <Section
+          icon={Timer}
+          title="Quiz"
+          description="Defaults for taking quizzes."
+        >
+          <Row
+            title="Show timer"
+            description="Display the countdown while taking a quiz."
+            control={
+              <Switch
+                checked={form.showTimer}
+                onCheckedChange={(v) => set("showTimer", v)}
+              />
+            }
+          />
+          <Row
+            title="Default difficulty"
+            description="Pre-select a difficulty for new quizzes."
+            soon
+            dimmed
+            control={<span className="text-sm text-muted-foreground">Any</span>}
+          />
+        </Section>
 
-      {/* Notifications (placeholder) */}
-      <Section
-        icon={Bell}
-        title="Notifications"
-        description="Choose what we notify you about."
-      >
-        <Row
-          title="Email notifications"
-          description="Updates and summaries by email."
-          soon
-          dimmed
-          control={<Switch checked={false} disabled />}
-        />
-        <Row
-          title="Push notifications"
-          description="In-app and browser alerts."
-          soon
-          dimmed
-          control={<Switch checked={false} disabled />}
-        />
-      </Section>
+        <Section
+          icon={Bell}
+          title="Notifications"
+          description="Choose what we notify you about."
+        >
+          <Row
+            title="Email notifications"
+            description="Updates and summaries by email."
+            soon
+            dimmed
+            control={<Switch checked={false} disabled />}
+          />
+          <Row
+            title="Push notifications"
+            description="In-app and browser alerts."
+            soon
+            dimmed
+            control={<Switch checked={false} disabled />}
+          />
+        </Section>
 
-      {/* Account (placeholder) */}
-      <Section icon={Lock} title="Account" description="Security and sign-in.">
-        <Row
-          title="Change password"
-          description="Update your account password."
-          soon
-          dimmed
-          control={
-            <button
-              disabled
-              className="rounded-lg border border-foreground/20 py-1.5 px-3 text-sm text-muted-foreground cursor-not-allowed"
-            >
-              Change
-            </button>
-          }
-        />
-      </Section>
+        <Section icon={Lock} title="Account" description="Security and sign-in.">
+          <Row
+            title="Change password"
+            description="Update your account password."
+            soon
+            dimmed
+            control={
+              <button
+                disabled
+                className="cursor-not-allowed rounded-lg border border-foreground/20 px-3 py-1.5 text-sm text-muted-foreground"
+              >
+                Change
+              </button>
+            }
+          />
+        </Section>
+      </div>
 
       {/* Floating save bar — fixed to the viewport, slides in whenever there are
           unsaved changes so the save action is always reachable without scrolling. */}
@@ -199,11 +198,11 @@ export const Settings = () => {
             transition={{ duration: 0.25, ease: "easeOut" }}
             className="fixed bottom-6 inset-x-0 z-50 flex justify-center pointer-events-none px-4"
           >
-            <div className="pointer-events-auto flex items-center gap-3 rounded-full border-2 border-primary border-dashed bg-background/95 backdrop-blur shadow-lg py-2 pl-5 pr-2">
+            <div className="pointer-events-auto flex items-center gap-3 rounded-full border-2 border-border bg-background/95 backdrop-blur shadow-lg py-2 pl-5 pr-2">
               <span className="text-sm font-medium text-muted-foreground">
                 You have unsaved changes
               </span>
-              <Button variant="outline" size="sm" onClick={handleDiscard}>
+              <Button variant="outline" size="sm" className="border-none" onClick={handleDiscard}>
                 <Undo2 className="h-4 w-4" />
                 Discard
               </Button>

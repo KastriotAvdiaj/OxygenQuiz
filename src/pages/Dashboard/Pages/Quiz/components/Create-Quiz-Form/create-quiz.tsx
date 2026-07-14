@@ -1,7 +1,7 @@
 import { Form, Input, Label, Textarea } from "@/components/ui/form";
 import { Separator } from "@/components/ui/separator";
 import { useQuizForm } from "./use-quiz-form";
-import { Brain, PlusCircle, Clock, Eye, Shuffle } from "lucide-react";
+import { Brain, PlusCircle, Clock, Eye, Shuffle, Folder, MessageSquareText } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -27,7 +27,6 @@ import { LanguageSelect } from "../../../Question/Entities/Language/components/s
 import { Spinner, Switch } from "@/components/ui";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useEffect, useState } from "react";
-import { BsPatchQuestionFill } from "react-icons/bs";
 import { useNotifications } from "@/common/Notifications";
 import { useNavigate, useLocation } from "react-router";
 import { ExistingQuestionCard } from "./components/existing-display-quiz-question-card/main-display-quiz-question-export";
@@ -413,9 +412,9 @@ const CreateQuizForm = ({ editQuiz }: CreateQuizFormProps = {}) => {
               <Tabs value={activeTab} onValueChange={setActiveTab}>
                 <CardHeader className="w-full relative bg-primary/10 text-center border-b border-primary/30 px-2 py-4">
                   <TabsList className="w-full border-none bg-none shadow-none ">
-                    <TabsTrigger value="quiz" className="!rounded-sm">
+                    <TabsTrigger value="quiz" className="rounded-xl">
                       <p className="flex gap-2 px-4 items-center">
-                        <Brain
+                        <Folder
                           className={`h-5 w-5 ${
                             activeTab === "quiz" ? "text-white" : "text-primary"
                           }`}
@@ -423,9 +422,9 @@ const CreateQuizForm = ({ editQuiz }: CreateQuizFormProps = {}) => {
                         Quiz Details
                       </p>
                     </TabsTrigger>
-                    <TabsTrigger value="questions" className="!rounded-sm">
+                    <TabsTrigger value="questions" className="rounded-xl">
                       <p className="flex gap-2 px-4 items-center">
-                        <BsPatchQuestionFill
+                        <MessageSquareText
                           className={`h-5 w-5 ${
                             activeTab === "questions"
                               ? "text-white"

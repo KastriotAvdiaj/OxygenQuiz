@@ -6,18 +6,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  QuestionCategory,
-  QuestionDifficulty,
-  QuestionLanguage,
-} from "@/types/question-types";
 import type { SortRule } from "@/lib/filtering";
-
-/**
- * Sentinel value used by the filter dropdowns to represent "no filter applied" (the default).
- * The Select component requires a non-empty string value, so we can't use "".
- */
-export const ALL_FILTER = "all";
 
 /**
  * Sort options exposed to users. `variety` is a backend pseudo-sort that interleaves
@@ -56,22 +45,17 @@ interface QuizToolbarProps {
   searchQuery: string;
   onSearchChange: (value: string) => void;
 
-  categories: QuestionCategory[];
-  selectedCategoryId: string;
-  onCategoryChange: (value: string) => void;
-
-  difficulties: QuestionDifficulty[];
-  selectedDifficultyId: string;
-  onDifficultyChange: (value: string) => void;
-
-  languages: QuestionLanguage[];
-  selectedLanguageId: string;
-  onLanguageChange: (value: string) => void;
-
   sortBy: SortOption;
   onSortChange: (value: SortOption) => void;
 
   resultCount: number;
+
+  /**
+   * How many filters (search text + facet selections) are currently active.
+   * Drives the "Clear" action's visibility. Facet filters themselves live in
+   * QuizFilterPanel (components/quiz-filters/) — the toolbar only reports them.
+   */
+  activeFilterCount?: number;
 
   /**
    * Whether to render the result count inside the toolbar (default true).
@@ -80,51 +64,39 @@ interface QuizToolbarProps {
   showCount?: boolean;
 
   /**
-   * Optional: when provided, a "Clear" action appears in the filters row while any
-   * search text or filter is active, resetting everything in one click.
+   * Optional: when provided, a "Clear" action appears while any search text or
+   * filter is active, resetting everything in one click.
    */
   onClearFilters?: () => void;
+
+  /**
+   * Optional slot rendered between search and sort — each picker mounts its
+   * filter-panel trigger here (mobile drawer button on /choose-quiz, the
+   * collapsible toggle in the multiplayer dialog).
+   */
+  filterAction?: React.ReactNode;
 }
 
 /**
- * Shared trigger styling layered on top of the `quiz` Select variant;
- * active (non-default) filters get a stronger border + primary text.
+ * Shared search + sort toolbar for the quiz pickers. The faceted filters
+ * (category/difficulty/language multi-select) live in QuizFilterPanel; this
+ * toolbar hosts their trigger via `filterAction`.
  */
-const triggerClass = (isActive: boolean) =>
-  `w-full sm:w-[160px] ${
-    isActive
-      ? "border-primary/80 dark:border-primary text-primary font-semibold"
-      : ""
-  }`;
-
 export function QuizToolbar({
   searchQuery,
   onSearchChange,
-  categories,
-  selectedCategoryId,
-  onCategoryChange,
-  difficulties,
-  selectedDifficultyId,
-  onDifficultyChange,
-  languages,
-  selectedLanguageId,
-  onLanguageChange,
   sortBy,
   onSortChange,
   resultCount,
+  activeFilterCount = 0,
   showCount = true,
   onClearFilters,
+  filterAction,
 }: QuizToolbarProps) {
-  const activeFilterCount =
-    (searchQuery ? 1 : 0) +
-    (selectedCategoryId !== ALL_FILTER ? 1 : 0) +
-    (selectedDifficultyId !== ALL_FILTER ? 1 : 0) +
-    (selectedLanguageId !== ALL_FILTER ? 1 : 0);
-
   return (
     <div>
-      {/* Single toolbar row — search capped on desktop, filters inline, sort pinned right.
-          Wraps gracefully: mobile gets search full-width with filters 2-up beneath. */}
+      {/* Single toolbar row — search capped on desktop, sort pinned right.
+          Wraps gracefully: mobile gets search full-width with actions beneath. */}
       <div className="flex flex-wrap items-center gap-2 sm:gap-3">
         {/* Search — full width on mobile, capped on desktop so it doesn't dominate */}
         <div className="relative w-full lg:w-72 xl:w-80">
@@ -136,7 +108,11 @@ export function QuizToolbar({
             placeholder="Search quizzes..."
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="w-full h-9 md:h-8 lg:h-9 pl-9 pr-9 rounded-xl border-2 border-primary/40 dark:border-primary/60 bg-gradient-to-r from-primary/5 to-transparent text-sm md:text-xs lg:text-sm font-medium font-header placeholder:text-muted-foreground shadow-[0_3px_0_0_hsl(var(--primary)/0.35)] md:shadow-[0_2px_0_0_hsl(var(--primary)/0.35)] lg:shadow-[0_3px_0_0_hsl(var(--primary)/0.35)] focus:border-primary/70 focus:shadow-[0_2px_0_0_hsl(var(--primary)/0.45)] focus:translate-y-px focus:outline-none transition-all duration-200"
+            // Same design language as LiftedButton: solid theme surface (readable
+            // in both themes), full-strength primary border, and a solid
+            // darkened-primary "edge". Press-in happens only on mousedown
+            // (:active) — while focused the field sits back up for typing.
+            className="w-full h-9 md:h-8 lg:h-9 pl-9 pr-9 rounded-xl border-2 border-primary/60 dark:border-primary/70 bg-background text-sm md:text-xs lg:text-sm font-medium font-header text-foreground placeholder:text-muted-foreground shadow-[0_3px_0_0_var(--primary-edge)] md:shadow-[0_2px_0_0_var(--primary-edge)] lg:shadow-[0_3px_0_0_var(--primary-edge)] hover:border-primary/80 hover:bg-primary/5 dark:hover:bg-primary/10 focus:border-primary focus:bg-primary/5 dark:focus:bg-primary/10 active:translate-y-[2px] active:shadow-[0_1px_0_0_var(--primary-edge)] focus:outline-none transition-all duration-200"
           />
           {searchQuery && (
             <button
@@ -149,85 +125,9 @@ export function QuizToolbar({
             </button>
           )}
         </div>
-        {/* Category Filter */}
-        <div className="basis-[calc(50%-0.25rem)] sm:basis-auto">
-          <Select value={selectedCategoryId} onValueChange={onCategoryChange}>
-            <SelectTrigger
-              variant="quiz"
-              aria-label="Filter by category"
-              className={triggerClass(selectedCategoryId !== ALL_FILTER)}
-            >
-              <SelectValue placeholder="All Categories" />
-            </SelectTrigger>
-            <SelectContent variant="quiz">
-              <SelectItem variant="quiz" value={ALL_FILTER}>
-                All Categories
-              </SelectItem>
-              {categories.map((cat) => (
-                <SelectItem variant="quiz" key={cat.id} value={String(cat.id)}>
-                  {cat.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
 
-        {/* Difficulty Filter */}
-        <div className="basis-[calc(50%-0.25rem)] sm:basis-auto">
-          <Select
-            value={selectedDifficultyId}
-            onValueChange={onDifficultyChange}
-          >
-            <SelectTrigger
-              variant="quiz"
-              aria-label="Filter by difficulty"
-              className={triggerClass(selectedDifficultyId !== ALL_FILTER)}
-            >
-              <SelectValue placeholder="All Difficulties" />
-            </SelectTrigger>
-            <SelectContent variant="quiz">
-              <SelectItem variant="quiz" value={ALL_FILTER}>
-                All Difficulties
-              </SelectItem>
-              {difficulties.map((diff) => (
-                <SelectItem
-                  variant="quiz"
-                  key={diff.id}
-                  value={String(diff.id)}
-                >
-                  {diff.level}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Language Filter */}
-        <div className="basis-[calc(50%-0.25rem)] sm:basis-auto">
-          <Select value={selectedLanguageId} onValueChange={onLanguageChange}>
-            <SelectTrigger
-              variant="quiz"
-              aria-label="Filter by language"
-              className={triggerClass(selectedLanguageId !== ALL_FILTER)}
-            >
-              <SelectValue placeholder="All Languages" />
-            </SelectTrigger>
-            <SelectContent variant="quiz">
-              <SelectItem variant="quiz" value={ALL_FILTER}>
-                All Languages
-              </SelectItem>
-              {languages.map((lang) => (
-                <SelectItem
-                  variant="quiz"
-                  key={lang.id}
-                  value={String(lang.id)}
-                >
-                  {lang.language}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        {/* Per-picker filter trigger (mobile drawer / dialog collapsible) */}
+        {filterAction}
 
         {/* Clear filters — only while something is actually filtering */}
         {onClearFilters && activeFilterCount > 0 && (

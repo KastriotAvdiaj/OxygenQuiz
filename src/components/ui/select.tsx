@@ -29,8 +29,11 @@ const SelectTrigger = React.forwardRef<
     ref={ref}
     className={cn(
       "flex h-9 w-full border text-foreground dark:border-foreground/30 border-foreground/70 items-center justify-between whitespace-nowrap rounded-md px-3 py-2 text-sm shadow-sm ring-offset-muted placeholder:text-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1",
+      // Quiz variant — same design language as LiftedButton: solid theme
+      // surface, full-strength primary border, and a solid darkened-primary
+      // "edge" (--primary-edge) that the control presses into on hover/open.
       variant === "quiz" &&
-        "font-header placeholder:text-center bg-gradient-to-r from-primary/10 to-primary/5 border-2 border-primary/40 dark:border-primary/60 text-foreground font-medium rounded-xl transform transition-all duration-200 dark:bg-gradient-to-r dark:from-primary/20 dark:to-primary/10 text-sm h-9 px-3 py-1.5 shadow-[0_3px_0_0_hsl(var(--primary)/0.5)] hover:shadow-[0_2px_0_0_hsl(var(--primary)/0.5)] hover:translate-y-px active:shadow-none active:translate-y-0.5 md:text-xs md:h-8 md:px-2.5 md:py-1 md:shadow-[0_2px_0_0_hsl(var(--primary)/0.5)] md:hover:shadow-[0_1px_0_0_hsl(var(--primary)/0.5)] md:hover:translate-y-px md:active:shadow-none md:active:translate-y-px lg:text-sm lg:h-9 lg:px-3 lg:py-1.5 lg:shadow-[0_3px_0_0_hsl(var(--primary)/0.5)] lg:hover:shadow-[0_2px_0_0_hsl(var(--primary)/0.5)] lg:hover:translate-y-px lg:active:shadow-none lg:active:translate-y-0.5",
+        "font-header placeholder:text-center bg-background hover:bg-primary/5 dark:hover:bg-primary/10 border-2 border-primary/60 dark:border-primary/70 text-foreground font-medium rounded-xl transition-all duration-200 text-sm h-9 px-3 py-1.5 shadow-[0_3px_0_0_var(--primary-edge)] hover:shadow-[0_2px_0_0_var(--primary-edge)] hover:translate-y-px active:shadow-none active:translate-y-0.5 data-[state=open]:shadow-none data-[state=open]:translate-y-0.5 data-[state=open]:border-primary md:text-xs md:h-8 md:px-2.5 md:py-1 md:shadow-[0_2px_0_0_var(--primary-edge)] md:hover:shadow-[0_1px_0_0_var(--primary-edge)] md:hover:translate-y-px md:active:shadow-none md:active:translate-y-px md:data-[state=open]:translate-y-px lg:text-sm lg:h-9 lg:px-3 lg:py-1.5 lg:shadow-[0_3px_0_0_var(--primary-edge)] lg:hover:shadow-[0_2px_0_0_var(--primary-edge)] lg:hover:translate-y-px lg:active:shadow-none lg:active:translate-y-0.5 lg:data-[state=open]:translate-y-0.5",
       variant === "incorrect" &&
         "font-header placeholder:text-center bg-gradient-to-r from-red-500/10 to-red-500/5 border-2 border-red-500/40 dark:border-red-500/60 text-foreground font-medium rounded-xl transform transition-all duration-200 dark:bg-gradient-to-r dark:from-red-500/20 dark:to-red-500/10 text-sm h-9 px-3 py-1.5 shadow-[0_3px_0_0_hsl(0_84%_60%/0.5)] hover:shadow-[0_2px_0_0_hsl(0_84%_60%/0.5)] hover:translate-y-px active:shadow-none active:translate-y-0.5 md:text-xs md:h-8 md:px-2.5 md:py-1 md:shadow-[0_2px_0_0_hsl(0_84%_60%/0.5)] md:hover:shadow-[0_1px_0_0_hsl(0_84%_60%/0.5)] md:hover:translate-y-px md:active:shadow-none md:active:translate-y-px lg:text-sm lg:h-9 lg:px-3 lg:py-1.5 lg:shadow-[0_3px_0_0_hsl(0_84%_60%/0.5)] lg:hover:shadow-[0_2px_0_0_hsl(0_84%_60%/0.5)] lg:hover:translate-y-px lg:active:shadow-none lg:active:translate-y-0.5",
       variant === "form" &&
@@ -114,7 +117,7 @@ const SelectContent = React.forwardRef<
           position === "popper" &&
             "data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1",
           variant === "quiz" &&
-            "border-2 border-primary/60 bg-background rounded-xl shadow-lg data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=open]:duration-300",
+            "border-2 border-primary/60 dark:border-primary/70 bg-background rounded-xl shadow-[0_3px_0_0_var(--primary-edge),0_10px_15px_-3px_rgb(0_0_0/0.15)] data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=open]:duration-300",
           variant === "incorrect" &&
             "border-2 border-red-500/60 bg-background rounded-xl shadow-lg data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=open]:duration-300",
           variant === "form" &&
@@ -172,7 +175,7 @@ const SelectItem = React.forwardRef<
     className={cn(
       "relative flex w-full cursor-default hover:bg-background data-[highlighted]:bg-background/70 cursor-pointer select-none items-center rounded-sm py-1.5 pl-2 pr-8 text-sm outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
       variant === "quiz" &&
-        "text-center rounded-lg transition-colors duration-150 text-xs py-1.5 hover:bg-primary/10 data-[highlighted]:bg-primary/20 data-[highlighted]:text-foreground focus:bg-primary/20 focus:text-foreground md:text-xs md:py-1 lg:text-xs lg:py-1.5",
+        "text-center rounded-lg transition-colors duration-150 text-xs py-1.5 hover:bg-primary/10 data-[highlighted]:bg-primary/20 data-[highlighted]:text-foreground focus:bg-primary/20 focus:text-foreground data-[state=checked]:text-primary data-[state=checked]:font-semibold md:text-xs md:py-1 lg:text-xs lg:py-1.5",
       variant === "incorrect" &&
         "text-center rounded-lg transition-colors duration-150 text-xs py-1.5 hover:bg-red-500/10 data-[highlighted]:bg-red-500/20 data-[highlighted]:text-foreground focus:bg-red-500/20 focus:text-foreground md:text-xs md:py-1 lg:text-xs lg:py-1.5",
       variant === "form" &&
