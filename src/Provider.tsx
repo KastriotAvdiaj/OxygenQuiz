@@ -5,7 +5,7 @@ import { ErrorBoundary } from "react-error-boundary";
 import { HelmetProvider } from "react-helmet-async";
 import { ThemeProvider } from "./components/ui/theme-provider";
 import { LoadingWave } from "./components/ui/loading-wave";
-import { MainErrorFallback } from "./pages/UtilityPages/Error/Main";
+import { MainErrorFallback } from "./pages/UtilityPages/Error/Main-Error-Boundary";
 import { AuthLoader } from "./lib/Auth";
 import { queryConfig } from "./lib/React-query";
 import { Notifications } from "./common/Notifications";

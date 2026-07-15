@@ -63,14 +63,14 @@ Install the following tools before working with the project:
 
    ## Environment Configuration
 
-### Frontend (`.env`, `.env.production`)
+### Frontend (`.env.development`, `.env.production`)
 
-Define Vite environment variables to override the default axios base URLs and HTTPS behavior. If an environment variable is omitted, the client falls back to the hard-coded defaults in `src/lib/Api-client.ts` and the dev script in `package.json`.
+Vite loads these per-mode files automatically (`.env.development` for `npm run dev`, `.env.production` for `npm run build`). They hold **only non-secret** config — every `VITE_`-prefixed value is inlined into the public client bundle at build time — so both files **are committed** to the repo (only machine-specific `*.local` overrides are gitignored). If a variable is omitted, the client falls back to the hard-coded defaults in `src/lib/Api-client.ts`.
 
-| Variable                | Description                                             | Default/Fallback                                                                                 | AWS Provisioning                                                                                    |
-| ----------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- |
-| `VITE_API_BASE_URL`     | Base URL for the ASP.NET API consumed by `apiService`.  | `https://localhost:7153/api/` (see `src/lib/Api-client.ts`).【F:src/lib/Api-client.ts†L49-L104】 | Store in AWS Systems Manager Parameter Store (String) and inject into the frontend task definition. |
-| `VITE_LLM_API_BASE_URL` | Base URL for the FastAPI microservice used by `llmApi`. | `http://localhost:8000` (see `src/lib/Api-client.ts`).【F:src/lib/Api-client.ts†L33-L47】        | Use Parameter Store; omit in production until LLM integration is approved.                          |
+| Variable         | Description                                                                | Default/Fallback                                                                        | AWS Provisioning                                                                                    |
+| ---------------- | ------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `VITE_API_URL`   | Base URL for **all** backend (ASP.NET) API calls; set as the axios `baseURL`. | `https://localhost:7153/api` (see `src/lib/Api-client.ts`).【F:src/lib/Api-client.ts†L49-L104】 | Store in AWS Systems Manager Parameter Store (String) and inject into the frontend task definition. |
+| `VITE_LLM_URL`   | Base URL for the FastAPI LLM microservice. **Currently disabled** (no LLM in use) — commented out in both env files. | `http://localhost:8000` (see `src/lib/Api-client.ts`).【F:src/lib/Api-client.ts†L33-L47】 | Leave unset until LLM integration is approved; then provide via Parameter Store as an HTTPS URL.    |
 | `HTTPS`                 | Enables HTTPS for `npm run dev`.                        | `true` (set in package script).【F:package.json†L7-L15】                                         | Configure as an ECS task environment variable when HTTPS dev tooling is required.                   |
 | `SSL_CERT_FILE`         | Path to the local certificate used by Vite.             | `./certs/cert.crt` (set in package script).【F:package.json†L7-L15】                             | Provide via Parameter Store referencing the mounted certificate path.                               |
 | `SSL_KEY_FILE`          | Path to the local private key used by Vite.             | `./certs/cert.key` (set in package script).【F:package.json†L7-L15】                             | Provide via Parameter Store referencing the mounted certificate path.                               |

@@ -134,7 +134,9 @@ pip install fastapi uvicorn ollama        # or use a requirements file if presen
 uvicorn main:app --port 8000
 ```
 
-The frontend points at this service via `VITE_LLM_URL` (default `http://localhost:8000`).
+The frontend points at this service via `VITE_LLM_URL` (default `http://localhost:8000`). This
+variable is **commented out in the committed env files** because the LLM feature is not currently used
+in production — uncomment it (with an HTTPS URL in prod) only when running the microservice.
 
 ---
 

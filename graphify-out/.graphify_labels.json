@@ -289,8 +289,6 @@
   "287": "Deployment Runbook — quick commands",
   "288": "Audit Logging",
   "289": "Rate Limiting",
-  "290": "PointSystem",
-  "291": ".OnModelCreating",
   "292": "OxygenQuiz — Session Handoff",
   "293": "NotACommonPasswordAttribute",
   "294": "upload-file.ts",
@@ -299,7 +297,6 @@
   "297": "Reference data (importable)",
   "298": "get-individual-question.ts",
   "299": "QuizEditingVersioning",
-  "300": "Notifications-store.ts",
   "301": "QuestionDifficultyDTO",
   "302": "20260612120000_RemoveUniversitetiDrejtimi.Designer.cs",
   "303": "CLAUDE.md",
@@ -510,9 +507,5 @@
   "508": "Category Color Palette (ColorPaletteJson)",
   "509": "difficulties.json",
   "510": "languages.json",
-  "511": "Reference Data (importable)",
-  "512": "Client-Side Room Code Generation",
-  "513": "Duplicate Join Logic (resolved)",
-  "514": "Multiplayer Lobby Identified Improvements",
-  "515": "Missing Error Boundaries"
+  "511": "Reference Data (importable)"
 }

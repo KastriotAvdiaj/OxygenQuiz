@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { LiftedButton } from "@/common/LiftedButton";
 
 interface NotFoundContentProps {
   title?: string;
@@ -22,11 +23,11 @@ export const NotFoundContent = ({
         <CardTitle className="mt-4 text-3xl font-bold">{title}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-8">
-        <p className="text-muted-foreground">{message}</p>
+        <p className="text-muted-foreground mb-6">{message}</p>
         <Link to={linkTo}>
-          <Button variant="fancy" className="mt-6 w-full ">
+          <LiftedButton className="w-full ">
             {linkText}
-          </Button>
+          </LiftedButton>
         </Link>
       </CardContent>
     </Card>

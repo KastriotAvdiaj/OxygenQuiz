@@ -3,7 +3,7 @@ import { ErrorBoundary } from "react-error-boundary";
 import { Outlet, useLocation } from "react-router-dom";
 import { Spinner } from "@/components/ui/Spinner";
 import { DashboardLayout } from "@/layouts/dashboard-layout";
-import { MainErrorFallback } from "./UtilityPages/Error/Main";
+import { MainErrorFallback } from "./UtilityPages/Error/Main-Error-Boundary";
 import type { DashboardNavItem } from "./Dashboard/Components/dashboardNavConfig";
 
 type AppRootProps = {

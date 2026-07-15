@@ -21,9 +21,9 @@ dist-ssr
 *.ntvs*
 *.njsproj
 *.sw?
-.env.local
-.env.development
-.env.production
+# Local, machine-specific overrides only. The non-secret per-mode files
+# (.env.development / .env.production) ARE committed so CI reproduces the build.
+# `*.local` above already covers .env.local and .env.*.local.
 
 
 #backend 

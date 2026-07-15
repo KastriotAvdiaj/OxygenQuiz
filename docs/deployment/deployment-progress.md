@@ -212,10 +212,11 @@ left before calling it launched:
   Cloudflare. Deploys with the next `git pull` + rebuild on the VPS.
 - **`VITE_API_URL`** — changed in `.env.production` from the dead AWS IP (`http://3.70.217.174:8080/api`)
   to `https://api.oxygenquiz.com/api`. Takes effect on the next frontend build/deploy.
-- ⚠️ **`VITE_LLM_URL` still `http://3.79.13.249:8000`** — a bare IP over HTTP; the HTTPS frontend will
-  block it as mixed content. **DECISION PENDING:** give the LLM microservice its own TLS subdomain
-  (e.g. `llm.oxygenquiz.com`) or proxy it via Nginx under `api.oxygenquiz.com`. Only matters if the
-  LLM feature is used in production.
+- ✅ **`VITE_LLM_URL` — RESOLVED (2026-07-15):** the bare-IP HTTP value (`http://3.79.13.249:8000`) was
+  removed and the variable is now commented out in both `.env.development` and `.env.production`, since
+  the LLM feature is not used in production. If it's ever enabled, give the microservice its own TLS
+  subdomain (e.g. `llm.oxygenquiz.com`) or proxy it via Nginx under `api.oxygenquiz.com`, and set
+  `VITE_LLM_URL` to that HTTPS URL — never a bare IP over HTTP.
 
 ## Still to do (in order)
 

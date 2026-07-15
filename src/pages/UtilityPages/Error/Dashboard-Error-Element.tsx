@@ -1,7 +1,7 @@
 import { useRouteError, isRouteErrorResponse } from "react-router-dom";
 import { NotFoundContent } from "../NotFound/Not-Found-Content";
 import { NotFoundRoute } from "../NotFound/Not-Found";
-import { MainErrorFallback } from "./Main";
+import { MainErrorFallback } from "./Main-Error-Boundary";
 import { getErrorFontClass } from "../errorFontZone";
 
 export const DashboardErrorElement = () => {
