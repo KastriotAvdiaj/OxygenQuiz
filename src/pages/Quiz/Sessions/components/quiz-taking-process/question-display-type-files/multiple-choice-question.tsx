@@ -55,7 +55,7 @@ export function MultipleChoiceQuestion({
       setSelectedIds((prev) =>
         prev.includes(optionId)
           ? prev.filter((id) => id !== optionId)
-          : [...prev, optionId]
+          : [...prev, optionId],
       );
     } else if (selectedIds[0] === optionId) {
       // Double-click on the already-selected option locks it in and submits.
@@ -68,9 +68,13 @@ export function MultipleChoiceQuestion({
   // Correct option ids reported by instant feedback (multi list, or the single id).
   const correctIds =
     answerResult?.correctOptionIds ??
-    (answerResult?.correctOptionId != null ? [answerResult.correctOptionId] : []);
+    (answerResult?.correctOptionId != null
+      ? [answerResult.correctOptionId]
+      : []);
 
-  const getFeedbackState = (optionId: number): "correct" | "incorrect" | "default" => {
+  const getFeedbackState = (
+    optionId: number,
+  ): "correct" | "incorrect" | "default" => {
     if (!instantFeedback || !answerResult) return "default";
 
     // On a correct answer the backend omits the correct ids, so treat the user's
@@ -95,7 +99,8 @@ export function MultipleChoiceQuestion({
             isMulti
               ? "border-primary/40 bg-primary/10 text-primary"
               : "border-gray-300 dark:border-gray-600 text-muted-foreground"
-          }`}>
+          }`}
+        >
           {isMulti ? (
             <ListChecks className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           ) : (
@@ -118,7 +123,8 @@ export function MultipleChoiceQuestion({
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: index * 0.1 }}
               whileHover={{ scale: isDisabled ? 1 : 1.02 }}
-              whileTap={{ scale: isDisabled ? 1 : 0.98 }}>
+              whileTap={{ scale: isDisabled ? 1 : 0.98 }}
+            >
               <button
                 onClick={() => !isDisabled && handleOptionClick(option.id)}
                 disabled={isDisabled}
@@ -140,19 +146,20 @@ export function MultipleChoiceQuestion({
                     feedbackState === "correct"
                       ? "#10b981"
                       : feedbackState === "incorrect"
-                      ? "#ef4444"
-                      : isSelected
-                      ? "#2540d9"
-                      : undefined,
+                        ? "#ef4444"
+                        : isSelected
+                          ? "#2540d9"
+                          : undefined,
                   backgroundColor:
                     feedbackState === "correct"
                       ? "#10b98115"
                       : feedbackState === "incorrect"
-                      ? "#ef444415"
-                      : isSelected
-                      ? "#2540d915"
-                      : undefined,
-                }}>
+                        ? "#ef444415"
+                        : isSelected
+                          ? "#2540d915"
+                          : undefined,
+                }}
+              >
                 {/* Option indicator — square (checkbox) for multi-select, round (radio) for single */}
                 <div
                   className={`
@@ -164,19 +171,20 @@ export function MultipleChoiceQuestion({
                       feedbackState === "correct"
                         ? "#10b981"
                         : feedbackState === "incorrect"
-                        ? "#ef4444"
-                        : isSelected
-                        ? "#2540d9"
-                        : "#d1d5db",
+                          ? "#ef4444"
+                          : isSelected
+                            ? "#2540d9"
+                            : "#d1d5db",
                     backgroundColor:
                       feedbackState === "correct"
                         ? "#10b981"
                         : feedbackState === "incorrect"
-                        ? "#ef4444"
-                        : isSelected
-                        ? "#2540d9"
-                        : "transparent",
-                  }}>
+                          ? "#ef4444"
+                          : isSelected
+                            ? "#2540d9"
+                            : "transparent",
+                  }}
+                >
                   {feedbackState === "correct" ? (
                     <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
                   ) : feedbackState === "incorrect" ? (
@@ -199,7 +207,8 @@ export function MultipleChoiceQuestion({
                     ${feedbackState === "correct" ? "text-green-700 dark:text-green-300" : ""}
                     ${feedbackState === "incorrect" ? "text-red-700 dark:text-red-300" : ""}
                     ${feedbackState === "default" ? "text-gray-900 dark:text-gray-100" : ""}
-                  `}>
+                  `}
+                >
                   {option.text}
                 </span>
 
@@ -208,7 +217,8 @@ export function MultipleChoiceQuestion({
                   <motion.div
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
-                    className="shrink-0">
+                    className="shrink-0"
+                  >
                     {feedbackState === "correct" && (
                       <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
                     )}
@@ -229,12 +239,14 @@ export function MultipleChoiceQuestion({
           className="flex flex-col items-center gap-2 pt-2 sm:pt-4"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}>
+          transition={{ delay: 0.4 }}
+        >
           <LiftedButton
             onClick={submitSelection}
             disabled={selectedIds.length === 0 || isSubmitting}
             // variant={"fancy"}
-            className="px-6 py-4 sm:px-8 sm:py-6 text-lg sm:text-2xl font-semibold min-w-[160px] sm:min-w-[200px] bg-primary text-white">
+            className="px-6 sm:px-8 sm:py-6 text-lg sm:text-2xl font-semibold min-w-[160px] sm:min-w-[200px] bg-primary text-white"
+          >
             {isSubmitting ? (
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
