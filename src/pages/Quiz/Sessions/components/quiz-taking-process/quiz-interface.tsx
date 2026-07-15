@@ -1,5 +1,4 @@
 import { QuestionDisplay } from "./question-display";
-// import { QuizProgress } from "./quiz-progress";
 import type {
   CurrentQuestion,
   InstantFeedbackAnswerResult,
@@ -40,11 +39,8 @@ export function QuizInterface({
   isSubmitting,
   onNextQuestion,
   onSubmitAnswer,
-  // currentQuestionNumber,
-  // totalQuestions,
   showInstantFeedback = false,
-}: // completedAnswers = [],
-QuizInterfaceProps) {
+}: QuizInterfaceProps) {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [autoAdvanceCounter, setAutoAdvanceCounter] = React.useState(3);
 
@@ -106,23 +102,6 @@ QuizInterfaceProps) {
           hsl(var(--background))
         `,
       }}>
-      {/* Fixed Header with Progress and Score */}
-      {/* <motion.header
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="sticky top-[5%] z-50 backdrop-blur-lg border-b border-border/50">
-        <div className="w-full max-w-4xl mx-auto px-4 py-4">
-          {currentQuestionNumber && totalQuestions && (
-            <QuizProgress
-              current={currentQuestionNumber}
-              total={totalQuestions}
-              completedAnswers={completedAnswers}
-              showInstantFeedback={showInstantFeedback}
-            />
-          )}
-        </div>
-      </motion.header> */}
-
       {/* Main content area */}
       <div className="flex-1 flex items-center justify-center px-3 py-4 sm:px-4 sm:py-6 md:py-8">
         <div className="w-full max-w-3xl">

@@ -5,7 +5,7 @@ import type {
   CurrentQuestion,
   InstantFeedbackAnswerResult,
 } from "../../../../../../types/quiz-session-types";
-import { LiftedButton } from "@/common/LiftedButton";
+import { QuizSubmitButton } from "../quiz-submit-button";
 
 interface TrueOrFalseQuestionProps {
   question: CurrentQuestion;
@@ -28,9 +28,14 @@ export function TrueOrFalseQuestion({
 }: TrueOrFalseQuestionProps) {
   const [selectedOptionId, setSelectedOptionId] = useState<number | null>(null);
 
-  // Find the True and False options from the question options
-  const trueOption = question.options.find((opt) => opt.id === 1);
-  const falseOption = question.options.find((opt) => opt.id === 2);
+  // Identify the True / False options by their semantic text, not by hard-coded ids.
+  // The backend fabricates exactly two options ("True", "False") for T/F questions
+  // (see EntityMappers.ToCurrentQuestionDto); we submit whichever id it gave us.
+  const isTrueText = (text: string) => text.trim().toLowerCase() === "true";
+  const trueOption =
+    question.options.find((opt) => isTrueText(opt.text)) ?? question.options[0];
+  const falseOption =
+    question.options.find((opt) => !isTrueText(opt.text)) ?? question.options[1];
 
   // Sync selection to parent ref
   useEffect(() => {
@@ -48,17 +53,23 @@ export function TrueOrFalseQuestion({
     }
   };
 
-  const getFeedbackState = (optionId: number) => {
+  const getFeedbackState = (option: { id: number; text: string }) => {
     if (!instantFeedback || !answerResult) return "default";
 
-    if (optionId === answerResult.correctOptionId) {
-      return "correct";
-    } else if (
-      selectedOptionId === optionId &&
-      answerResult.status !== "Correct"
-    ) {
-      return "incorrect";
+    // On a correct submission the backend omits the correct answer, so treat the user's
+    // own pick as correct. Otherwise highlight whichever option matches `correctAnswer`
+    // ("True"/"False") — the backend does NOT send correctOptionId for T/F questions.
+    if (answerResult.status === "Correct") {
+      return selectedOptionId === option.id ? "correct" : "default";
     }
+
+    const isThisCorrect =
+      answerResult.correctAnswer != null &&
+      option.text.trim().toLowerCase() ===
+        answerResult.correctAnswer.trim().toLowerCase();
+
+    if (isThisCorrect) return "correct";
+    if (selectedOptionId === option.id) return "incorrect";
     return "default";
   };
 
@@ -71,7 +82,7 @@ export function TrueOrFalseQuestion({
     animDelay: number,
     animX: number,
   ) => {
-    const feedback = getFeedbackState(option.id);
+    const feedback = getFeedbackState(option);
     const isSelected = selectedOptionId === option.id;
     // Neutral by default — True/False are distinguished by their icon + label, not by colour.
     // Green/red is reserved for post-answer feedback (correct/incorrect) below.
@@ -150,7 +161,7 @@ export function TrueOrFalseQuestion({
                 <X className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
               )}
             </div>
-            <span>{isTrue ? "True" : "False"}</span>
+            <span>{option.text}</span>
             {instantFeedback && answerResult && feedback !== "default" && (
               <motion.div
                 initial={{ scale: 0 }}
@@ -178,36 +189,20 @@ export function TrueOrFalseQuestion({
         {falseOption && renderOption(falseOption, false, 0.2, 20)}
       </div>
 
-      {/* Submit button */}
-      {(!instantFeedback || !answerResult) && !isTimedOut && (
-        <motion.div
-          className="flex flex-col items-center gap-2 pt-2 sm:pt-4"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-        >
-          <LiftedButton
-            onClick={() => onSubmit(selectedOptionId)}
-            disabled={selectedOptionId === null || isSubmitting || isDisabled}
-            // variant={"fancy"}
-            className="px-6 sm:px-8 text-lg sm:text-2xl font-semibold rounded-xl min-w-[160px] sm:min-w-[200px] bg-primary text-white"
-          >
-            {isSubmitting ? (
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                Submitting...
-              </div>
-            ) : (
-              "Submit"
-            )}
-          </LiftedButton>
-          {selectedOptionId !== null && (
-            <p className="text-xs text-muted-foreground animate-in fade-in duration-300">
-              Click the same option again to lock in
-            </p>
-          )}
-        </motion.div>
-      )}
+      {/* Submit button (shared across all question types) */}
+      <QuizSubmitButton
+        onSubmit={() => onSubmit(selectedOptionId)}
+        canSubmit={selectedOptionId !== null}
+        isSubmitting={isSubmitting}
+        answered={isAnswered}
+        isTimedOut={isTimedOut}
+        motionDelay={0.3}
+        hint={
+          selectedOptionId !== null
+            ? "Click the same option again to lock in"
+            : undefined
+        }
+      />
     </div>
   );
 }

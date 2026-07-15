@@ -36,7 +36,7 @@ QuestionType, AllowMultipleSelections, Options[]
 | Question type | `Options` |
 |---|---|
 | MultipleChoice | the real options as `{ ID, Text }` |
-| TrueFalse | synthetic `{ 1: "True" }`, `{ 2: "False" }` |
+| TrueFalse | synthetic `{ 1: "True" }`, `{ 2: "False" }` (ids defined once in `Models/Questions/TrueFalseOption.cs`) |
 | TypeTheAnswer | empty (free-text input) |
 
 ## Submitting an answer (`UserAnswerCM`)
@@ -51,7 +51,7 @@ How each type fills it:
 |---|---|
 | MultipleChoice (single) | `SelectedOptionId` = the chosen option id |
 | MultipleChoice (multi, `AllowMultipleSelections`) | `SubmittedAnswer` = **comma-separated** chosen ids, e.g. `"9,10"` (`SelectedOptionId` null) |
-| TrueFalse | `SelectedOptionId` = `1` (True) or `2` (False); the server converts it to `SubmittedAnswer` `"True"`/`"False"` |
+| TrueFalse | `SelectedOptionId` = `1` (True) or `2` (False) — synthetic ids from `TrueFalseOption`; the server converts the id to `SubmittedAnswer` `"True"`/`"False"` |
 | TypeTheAnswer | `SubmittedAnswer` = the typed text |
 | Timed out (client) | `IsTimedOut = true` |
 
@@ -107,6 +107,11 @@ The correct-answer fields are populated **only when the answer was wrong or time
 correct answer never reveals more than needed). For multiple-choice, `CorrectOptionIds` lists
 **every** correct option (used to highlight all of them on multi-select); `CorrectOptionId` is the
 first one, kept for single-answer clients.
+
+For **TrueFalse**, correctness is reported via `CorrectAnswer` (`"True"`/`"False"`) — **not**
+`CorrectOptionId`, which is left null for T/F. The client highlights the correct option by matching
+that string against the option text. (Comparing against `CorrectOptionId` was a past bug: it's never
+populated for T/F, so the correct option was never highlighted on a wrong answer.)
 
 ## Timeouts & abandonment
 

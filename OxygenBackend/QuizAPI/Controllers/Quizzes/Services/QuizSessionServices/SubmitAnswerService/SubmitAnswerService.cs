@@ -192,7 +192,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.SubmitAnswerS
 
             var originalSelectedOptionId = userAnswer.SelectedOptionId;
             userAnswer.SelectedOptionId = null;
-            userAnswer.SubmittedAnswer = originalSelectedOptionId == 1 ? "True" : "False";
+            userAnswer.SubmittedAnswer = TrueFalseOption.ToAnswerText(originalSelectedOptionId);
 
             _logger.LogInformation("True/False handling: OriginalOptionId={Original}, ConvertedAnswer={Converted}",
                 originalSelectedOptionId, userAnswer.SubmittedAnswer);

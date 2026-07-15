@@ -20,7 +20,6 @@ export const submitAnswer = ({
 }: {
   data: SubmitAnswerInput;
 }): Promise<InstantFeedbackAnswerResult> => {
-  console.log("Submitting answer:", data);
   return apiService.post("/QuizSessions/answer", data);
 };
 

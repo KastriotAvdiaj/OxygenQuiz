@@ -659,8 +659,8 @@ namespace QuizAPI.Mapping
                     .ToList(),
                 TrueFalseQuestion => new List<AnswerOptionForQuizPlaying>
                 {
-                    new() { ID = 1, Text = "True" },
-                    new() { ID = 2, Text = "False" }
+                    new() { ID = TrueFalseOption.TrueId, Text = TrueFalseOption.TrueText },
+                    new() { ID = TrueFalseOption.FalseId, Text = TrueFalseOption.FalseText }
                 },
                 _ => new List<AnswerOptionForQuizPlaying>()
             };

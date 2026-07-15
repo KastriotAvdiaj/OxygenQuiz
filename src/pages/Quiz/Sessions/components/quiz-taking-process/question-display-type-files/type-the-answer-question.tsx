@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { Input } from "@/components/ui/form";
 import { CheckCircle, XCircle } from "lucide-react";
 import type { InstantFeedbackAnswerResult } from "../../../../../../types/quiz-session-types";
-import { LiftedButton } from "@/common/LiftedButton";
+import { QuizSubmitButton } from "../quiz-submit-button";
 
 export interface TypeTheAnswerQuestionProps {
   onSubmit: (selectedOptionId: number | null, submittedAnswer?: string) => void;
@@ -142,29 +142,15 @@ export function TypeTheAnswerQuestion({
         )}
       </div>
 
-      {/* Submit button */}
-      {(!instantFeedback || !answerResult) && !isTimedOut && (
-        <motion.div
-          className="flex justify-center pt-2 sm:pt-4"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}>
-          <LiftedButton
-            onClick={handleSubmit}
-            disabled={!answer.trim() || isSubmitting || isDisabled}
-            // variant={"fancy"}
-            className="px-6 py-4 sm:px-8 sm:py-6 text-lg sm:text-2xl font-semibold rounded-xl min-w-[160px] sm:min-w-[200px] bg-primary text-white">
-            {isSubmitting ? (
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                Submitting...
-              </div>
-            ) : (
-              "Submit"
-            )}
-          </LiftedButton>
-        </motion.div>
-      )}
+      {/* Submit button (shared across all question types) */}
+      <QuizSubmitButton
+        onSubmit={handleSubmit}
+        canSubmit={!!answer.trim()}
+        isSubmitting={isSubmitting}
+        answered={isAnswered}
+        isTimedOut={isTimedOut}
+        motionDelay={0.3}
+      />
     </div>
   );
 }

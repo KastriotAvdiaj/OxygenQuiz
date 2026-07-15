@@ -1,12 +1,11 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
 import { CheckCircle, XCircle, ListChecks, CircleDot } from "lucide-react";
 import type {
   CurrentQuestion,
   InstantFeedbackAnswerResult,
 } from "../../../../../../types/quiz-session-types";
-import { LiftedButton } from "@/common/LiftedButton";
+import { QuizSubmitButton } from "../quiz-submit-button";
 
 interface MultipleChoiceQuestionProps {
   question: CurrentQuestion;
@@ -233,38 +232,22 @@ export function MultipleChoiceQuestion({
         })}
       </div>
 
-      {/* Submit button + hint */}
-      {(!instantFeedback || !answerResult) && !isTimedOut && (
-        <motion.div
-          className="flex flex-col items-center gap-2 pt-2 sm:pt-4"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-        >
-          <LiftedButton
-            onClick={submitSelection}
-            disabled={selectedIds.length === 0 || isSubmitting}
-            // variant={"fancy"}
-            className="px-6 sm:px-8 sm:py-6 text-lg sm:text-2xl font-semibold min-w-[160px] sm:min-w-[200px] bg-primary text-white"
-          >
-            {isSubmitting ? (
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                Submitting...
-              </div>
-            ) : (
-              "Submit"
-            )}
-          </LiftedButton>
-          {selectedIds.length > 0 && (
-            <p className="text-xs text-muted-foreground animate-in fade-in duration-300">
-              {isMulti
-                ? `${selectedIds.length} selected — Submit when you've picked all that apply`
-                : "Click the same option again to lock in"}
-            </p>
-          )}
-        </motion.div>
-      )}
+      {/* Submit button + hint (shared across all question types) */}
+      <QuizSubmitButton
+        onSubmit={submitSelection}
+        canSubmit={selectedIds.length > 0}
+        isSubmitting={isSubmitting}
+        answered={isAnswered}
+        isTimedOut={isTimedOut}
+        motionDelay={0.4}
+        hint={
+          selectedIds.length > 0
+            ? isMulti
+              ? `${selectedIds.length} selected — Submit when you've picked all that apply`
+              : "Click the same option again to lock in"
+            : undefined
+        }
+      />
     </div>
   );
 }
