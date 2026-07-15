@@ -69,7 +69,7 @@ export function TrueOrFalseQuestion({
     option: { id: number; text: string },
     isTrue: boolean,
     animDelay: number,
-    animX: number
+    animX: number,
   ) => {
     const feedback = getFeedbackState(option.id);
     const isSelected = selectedOptionId === option.id;
@@ -83,7 +83,8 @@ export function TrueOrFalseQuestion({
         animate={{ opacity: 1, x: 0 }}
         transition={{ delay: animDelay }}
         whileHover={{ scale: isDisabled ? 1 : 1.03 }}
-        whileTap={{ scale: isDisabled ? 1 : 0.97 }}>
+        whileTap={{ scale: isDisabled ? 1 : 0.97 }}
+      >
         <button
           onClick={() => !isDisabled && handleOptionClick(option.id)}
           disabled={isDisabled}
@@ -116,20 +117,21 @@ export function TrueOrFalseQuestion({
               feedback === "correct"
                 ? "#10b981"
                 : feedback === "incorrect"
-                ? "#ef4444"
-                : isSelected
-                ? "hsl(var(--primary))"
-                : undefined,
+                  ? "#ef4444"
+                  : isSelected
+                    ? "hsl(var(--primary))"
+                    : undefined,
             backgroundColor:
               feedback === "correct"
                 ? "#10b98115"
                 : feedback === "incorrect"
-                ? "#ef444415"
-                : isSelected
-                ? "hsl(var(--primary) / 0.1)"
-                : undefined,
+                  ? "#ef444415"
+                  : isSelected
+                    ? "hsl(var(--primary) / 0.1)"
+                    : undefined,
             borderWidth: "3px",
-          }}>
+          }}
+        >
           <div className="flex items-center gap-3">
             <div
               className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center"
@@ -138,9 +140,10 @@ export function TrueOrFalseQuestion({
                   feedback === "correct"
                     ? "#10b981"
                     : isSelected
-                    ? "hsl(var(--primary))"
-                    : defaultColor,
-              }}>
+                      ? "hsl(var(--primary))"
+                      : defaultColor,
+              }}
+            >
               {isTrue ? (
                 <Check className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
               ) : (
@@ -148,20 +151,17 @@ export function TrueOrFalseQuestion({
               )}
             </div>
             <span>{isTrue ? "True" : "False"}</span>
-            {instantFeedback &&
-              answerResult &&
-              feedback !== "default" && (
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  className={`text-xl font-bold ${
-                    feedback === "correct"
-                      ? "text-green-600"
-                      : "text-red-600"
-                  }`}>
-                  {feedback === "correct" ? "✓" : "✗"}
-                </motion.div>
-              )}
+            {instantFeedback && answerResult && feedback !== "default" && (
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className={`text-xl font-bold ${
+                  feedback === "correct" ? "text-green-600" : "text-red-600"
+                }`}
+              >
+                {feedback === "correct" ? "✓" : "✗"}
+              </motion.div>
+            )}
           </div>
         </button>
       </motion.div>
@@ -184,12 +184,14 @@ export function TrueOrFalseQuestion({
           className="flex flex-col items-center gap-2 pt-2 sm:pt-4"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}>
+          transition={{ delay: 0.3 }}
+        >
           <LiftedButton
             onClick={() => onSubmit(selectedOptionId)}
             disabled={selectedOptionId === null || isSubmitting || isDisabled}
             // variant={"fancy"}
-            className="px-6 py-4 sm:px-8 sm:py-6 text-lg sm:text-2xl font-semibold rounded-xl min-w-[160px] sm:min-w-[200px] bg-primary text-white">
+            className="px-6 sm:px-8 text-lg sm:text-2xl font-semibold rounded-xl min-w-[160px] sm:min-w-[200px] bg-primary text-white"
+          >
             {isSubmitting ? (
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />

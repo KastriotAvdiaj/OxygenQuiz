@@ -1,8 +1,5 @@
 import { useState } from "react";
 import {
-  CheckCircle,
-  XCircle,
-  Timer,
   Clock,
   List,
   Grid3X3,
@@ -13,9 +10,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { AnswerStatus, QuizSession } from "../../../../../types/quiz-session-types";
+import {
+  AnswerStatus,
+  QuizSession,
+} from "../../../../../types/quiz-session-types";
 import { QuestionMedia } from "@/common/QuestionMedia";
 import { formatDuration } from "./quiz-session-utils";
+import { cn } from "@/utils/cn";
 
 interface QuestionReviewProps {
   session: QuizSession;
@@ -27,45 +28,49 @@ export function QuestionReview({ session }: QuestionReviewProps) {
   const [viewMode, setViewMode] = useState<ViewMode>("cards");
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case AnswerStatus.Correct:
-        return <CheckCircle className="h-5 w-5 text-green-400" />;
-      case AnswerStatus.Incorrect:
-        return <XCircle className="h-5 w-5 text-red-600 dark:text-red-400" />;
-      case AnswerStatus.TimedOut:
-        return <Timer className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />;
-      default:
-        return <XCircle className="h-5 w-5 text-muted-foreground" />;
-    }
-  };
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case AnswerStatus.Correct:
-        return "bg-green-100 text-green-600 border-green-200";
+        return "bg-green-500/10 text-green-600 dark:text-green-400 border-transparent";
       case AnswerStatus.Incorrect:
-        return "bg-red-100 text-red-600 border-red-200";
+        return "bg-red-500/10 text-red-600 dark:text-red-400 border-transparent";
       case AnswerStatus.TimedOut:
-        return "bg-yellow-100 text-yellow-600 border-yellow-200";
+        return "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 border-transparent";
       default:
-        return "bg-muted text-foreground border-border";
+        return "bg-muted text-muted-foreground border-transparent";
+    }
+  };
+
+  // Faint status tint for the inactive question pills in the number bar
+  const getStatusTint = (status: string) => {
+    switch (status) {
+      case AnswerStatus.Correct:
+        return "bg-green-500/10 text-green-600 dark:text-green-400 hover:bg-green-500/20";
+      case AnswerStatus.Incorrect:
+        return "bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20";
+      case AnswerStatus.TimedOut:
+        return "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 hover:bg-yellow-500/20";
+      default:
+        return "bg-muted text-muted-foreground hover:bg-muted-foreground/20";
     }
   };
 
   const getOptionClassName = (isSelected: boolean, isCorrect: boolean) => {
-    let className = "p-3 rounded-lg";
-    
-    if (isSelected && isCorrect) {
-      className += " bg-green-200 border border-green-200 text-green-600 dark:bg-green-600 dark:border-green-700 dark:text-green-100";
+    // Subtle tint + colored left accent bar; text stays in the normal foreground
+    // color so the card reads calmly in both light and dark mode.
+    let className =
+      "p-2 sm:p-2.5 rounded-lg text-sm text-foreground border-l-4 border-transparent";
+
+    if (isCorrect) {
+      // The correct answer (whether or not the user picked it)
+      className += " bg-green-500/10 border-green-500";
     } else if (isSelected && !isCorrect) {
-      className += " bg-red-50 border border-red-200 text-red-600 dark:bg-red-900 dark:border-red-600 dark:text-red-200";
-    } else if (!isSelected && isCorrect) {
-      className += " bg-green-50 border border-green-200 text-green-600 dark:bg-green-900 dark:border-green-600 dark:text-green-200";
+      // The user's incorrect pick
+      className += " bg-red-500/10 border-red-500";
     } else {
-      className += " bg-muted dark:bg-muted-foreground/20";
+      className += " bg-muted/50 text-muted-foreground";
     }
-    
+
     return className;
   };
 
@@ -79,7 +84,7 @@ export function QuestionReview({ session }: QuestionReviewProps) {
       {isCorrect && (
         <Badge
           variant="secondary"
-          className="text-xs bg-green-100 text-green-600"
+          className="text-xs bg-green-500/15 text-green-600 dark:text-green-400 border-transparent"
         >
           Correct
         </Badge>
@@ -87,7 +92,11 @@ export function QuestionReview({ session }: QuestionReviewProps) {
     </div>
   );
 
-  const renderOption = (text: string, isSelected: boolean, isCorrect: boolean) => (
+  const renderOption = (
+    text: string,
+    isSelected: boolean,
+    isCorrect: boolean,
+  ) => (
     <div className={getOptionClassName(isSelected, isCorrect)}>
       <div className="flex items-center justify-between">
         <span>{text}</span>
@@ -108,22 +117,22 @@ export function QuestionReview({ session }: QuestionReviewProps) {
             .map((s: string) => parseInt(s.trim(), 10))
             .filter((n: number) => !Number.isNaN(n))
         : answer.selectedOptionId != null
-        ? [answer.selectedOptionId]
-        : []
+          ? [answer.selectedOptionId]
+          : [],
     );
 
     return (
-      <div className="space-y-4">
+      <div className="space-y-3">
         {/* Question Header */}
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-sm font-medium text-muted-foreground">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex-1 min-w-0">
+            <div className="flex flex-wrap items-center gap-1.5 mb-1.5">
+              <span className="text-xs font-medium text-muted-foreground">
                 Question {questionNumber}
               </span>
               <Badge
                 variant="outline"
-                className={getStatusColor(answer.status)}
+                className={cn("text-xs", getStatusColor(answer.status))}
               >
                 {answer.status}
               </Badge>
@@ -131,16 +140,16 @@ export function QuestionReview({ session }: QuestionReviewProps) {
                 {answer.questionType}
               </Badge>
             </div>
-            <h3 className="font-medium text-foreground mb-2">
+            <h3 className="text-sm sm:text-base font-medium text-foreground">
               {answer.questionText}
             </h3>
           </div>
-          <div className="text-right text-sm text-muted-foreground">
-            <div className="flex items-center gap-1">
+          <div className="text-right text-xs text-muted-foreground shrink-0">
+            <div className="flex items-center justify-end gap-1">
               <Clock className="h-3 w-3" />
               {timeSpent}
             </div>
-            <div className="font-medium mt-1">{answer.score} pts</div>
+            <div className="font-medium mt-0.5">{answer.score} pts</div>
           </div>
         </div>
 
@@ -153,10 +162,10 @@ export function QuestionReview({ session }: QuestionReviewProps) {
         />
 
         {/* Answer Content */}
-        <div className="space-y-3">
+        <div className="space-y-2">
           {/* Multiple Choice */}
           {answer.questionType === "MultipleChoice" && answer.answerOptions && (
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               {answer.answerOptions.map((option: any) => {
                 const isSelected = selectedOptionIds.has(option.id);
                 const isCorrect = option.isCorrect;
@@ -172,11 +181,12 @@ export function QuestionReview({ session }: QuestionReviewProps) {
 
           {/* True/False */}
           {answer.questionType === "TrueFalse" && (
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               {["True", "False"].map((optionText) => {
                 const isSelected = answer.submittedAnswer === optionText;
                 const isCorrect =
-                  (answer.correctAnswerBoolean ? "True" : "False") === optionText;
+                  (answer.correctAnswerBoolean ? "True" : "False") ===
+                  optionText;
 
                 return (
                   <div key={optionText}>
@@ -189,7 +199,7 @@ export function QuestionReview({ session }: QuestionReviewProps) {
 
           {/* Type the Answer */}
           {answer.questionType === "TypeTheAnswer" && (
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               {answer.status === AnswerStatus.Correct ? (
                 // If correct, show one green block for the user's answer
                 <div className={getOptionClassName(true, true)}>
@@ -201,7 +211,7 @@ export function QuestionReview({ session }: QuestionReviewProps) {
                       </Badge>
                       <Badge
                         variant="secondary"
-                        className="text-xs bg-green-100 text-green-600"
+                        className="text-xs bg-green-500/15 text-green-600 dark:text-green-400 border-transparent"
                       >
                         Correct
                       </Badge>
@@ -227,7 +237,7 @@ export function QuestionReview({ session }: QuestionReviewProps) {
                     <span>{answer.correctAnswerText}</span>
                     <Badge
                       variant="secondary"
-                      className="text-xs bg-green-100 text-green-600"
+                      className="text-xs bg-green-500/15 text-green-600 dark:text-green-400 border-transparent"
                     >
                       Correct Answer
                     </Badge>
@@ -255,16 +265,16 @@ export function QuestionReview({ session }: QuestionReviewProps) {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3 sm:space-y-4">
       {/* View Toggle */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold">Question Review</h2>
+      <div className="flex items-center justify-end gap-2">
+        {/* <h2 className="text-lg sm:text-xl font-semibold">Question Review</h2> */}
         <div className="flex items-center gap-2">
           <Button
             variant={viewMode === "list" ? "default" : "outline"}
             size="sm"
             onClick={() => setViewMode("list")}
-            className="flex items-center gap-2 dark:text-white"
+            className="flex items-center gap-1.5 sm:gap-2 dark:text-white px-2.5 sm:px-3"
           >
             <List className="h-4 w-4" />
             List
@@ -273,7 +283,7 @@ export function QuestionReview({ session }: QuestionReviewProps) {
             variant={viewMode === "cards" ? "default" : "outline"}
             size="sm"
             onClick={() => setViewMode("cards")}
-            className="flex items-center gap-2 dark:text-white"
+            className="flex items-center gap-1.5 sm:gap-2 dark:text-white px-2.5 sm:px-3"
           >
             <Grid3X3 className="h-4 w-4" />
             Cards
@@ -284,13 +294,15 @@ export function QuestionReview({ session }: QuestionReviewProps) {
       {/* List View */}
       {viewMode === "list" && (
         <Card>
-          <CardContent className="p-0 border border-primary rounded-md">
+          <CardContent className="p-0 border border-border rounded-md">
             {session.userAnswers.map((answer, index) => (
               <div key={answer.id}>
-                <div className="p-6">
+                <div className="p-4 sm:p-6">
                   {renderQuestionContent(answer, index + 1)}
                 </div>
-                {index < session.userAnswers.length - 1 && <Separator className="bg-primary"/>}
+                {index < session.userAnswers.length - 1 && (
+                  <Separator className="bg-border" />
+                )}
               </div>
             ))}
           </CardContent>
@@ -299,25 +311,22 @@ export function QuestionReview({ session }: QuestionReviewProps) {
 
       {/* Cards View */}
       {viewMode === "cards" && (
-        <div className="space-y-4">
-          <Card className=""
-          >
-            <CardHeader className="pb-4">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg">
+        <div className="space-y-3">
+          <Card className="border border-border rounded-md">
+            <CardHeader className="p-4 pb-2">
+              <div className="flex items-center justify-between gap-2">
+                <CardTitle className="text-sm sm:text-base">
                   Question {currentQuestionIndex + 1} of{" "}
                   {session.userAnswers.length}
                 </CardTitle>
                 <div className="flex items-center gap-2">
                   <Button
-                    // className={`${currentQuestionIndex === 0 ? '' : 'border-primary'}`}
-                    className="border-primary"
-
+                    className="border-border"
                     variant="outline"
                     size="sm"
                     onClick={() =>
                       setCurrentQuestionIndex(
-                        Math.max(0, currentQuestionIndex - 1)
+                        Math.max(0, currentQuestionIndex - 1),
                       )
                     }
                     disabled={currentQuestionIndex === 0}
@@ -326,14 +335,14 @@ export function QuestionReview({ session }: QuestionReviewProps) {
                   </Button>
                   <Button
                     variant="outline"
-                    className="border-primary"
+                    className="border-border"
                     size="sm"
                     onClick={() =>
                       setCurrentQuestionIndex(
                         Math.min(
                           session.userAnswers.length - 1,
-                          currentQuestionIndex + 1
-                        )
+                          currentQuestionIndex + 1,
+                        ),
                       )
                     }
                     disabled={
@@ -345,28 +354,42 @@ export function QuestionReview({ session }: QuestionReviewProps) {
                 </div>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-4 pt-0">
               {renderQuestionContent(
                 session.userAnswers[currentQuestionIndex],
-                currentQuestionIndex + 1
+                currentQuestionIndex + 1,
               )}
             </CardContent>
           </Card>
 
-          {/* Question Navigation */}
-          <div className="flex flex-wrap gap-2 justify-center">
-            {session.userAnswers.map((answer, index) => (
-              <Button
-                key={answer.id}
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentQuestionIndex(index)}
-                className={`flex items-center gap-2 min-w-[60px] ${currentQuestionIndex === index ? 'bg-muted border-foreground/20' : ''}`}
-              >
-                {getStatusIcon(answer.status)}
-                {index + 1}
-              </Button>
-            ))}
+          {/* Question Navigation Tabs */}
+          <div className="flex justify-center">
+            <div
+              role="tablist"
+              aria-label="Question navigation"
+              className="flex items-center gap-1 max-w-full overflow-x-auto rounded-xl bg-muted/50 p-1 border border-border"
+            >
+              {session.userAnswers.map((answer, index) => {
+                const isActive = currentQuestionIndex === index;
+                return (
+                  <button
+                    key={answer.id}
+                    role="tab"
+                    aria-selected={isActive}
+                    title={answer.status}
+                    onClick={() => setCurrentQuestionIndex(index)}
+                    className={cn(
+                      "inline-flex shrink-0 items-center justify-center min-w-[1.9rem] sm:min-w-[2.1rem] rounded-lg px-2 py-1 text-xs sm:text-sm font-semibold transition-colors duration-200",
+                      isActive
+                        ? "bg-primary text-white shadow-sm"
+                        : getStatusTint(answer.status),
+                    )}
+                  >
+                    {index + 1}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
       )}
