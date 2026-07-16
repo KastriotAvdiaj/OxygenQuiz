@@ -230,6 +230,9 @@ export const QuizRoute = () => {
           </div>
 
           <div className="hidden md:flex gap-2 text-sm">
+            {/* Publish toggle — feature not implemented yet, so disabled.
+                When wiring it up, add `onClick` here; it passes through to the
+                underlying LiftedButton via the component's ...props. */}
             <IconButtonWithTooltip
               variant="default"
               tooltip="Feature not implemented"
@@ -242,26 +245,8 @@ export const QuizRoute = () => {
               }
               buttonText={quiz.status !== "Draft" ? "Unpublish" : "Publish"}
               className="bg-background hover:bg-muted text-foreground border-foreground"
-              disabled>
-              <LiftedButton
-                disabled
-                className="bg-background hover:bg-muted text-foreground border-foreground"
-                onClick={() => {
-                  /* Toggle publish state */
-                }}>
-                {quiz.status !== "Draft" ? (
-                  <>
-                    <EyeOff className="h-4 w-4 mr-2" />
-                    Unpublish
-                  </>
-                ) : (
-                  <>
-                    <Eye className="h-4 w-4 mr-2" />
-                    Publish
-                  </>
-                )}
-              </LiftedButton>
-            </IconButtonWithTooltip>
+              disabled
+            />
             <LiftedButton
               onClick={() =>
                 navigate(`/dashboard/quizzes/edit-quiz/${quiz.id}`)

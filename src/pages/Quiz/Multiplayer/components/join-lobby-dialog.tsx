@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useUser } from "@/lib/Auth";
 import { useConnectionStatus } from "@/hooks/use-connection-status";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/form";
 import { WifiOff, ServerOff } from "lucide-react";
 import {

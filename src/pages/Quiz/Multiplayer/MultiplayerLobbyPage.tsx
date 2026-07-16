@@ -1,7 +1,6 @@
 import { useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useLobbyConnection } from "./hooks/use-lobby-connection";
-import { LobbyHeader } from "./components/lobby/lobby-header";
 import { JoinForm } from "./components/lobby/join-form";
 import { LobbyInfoBar } from "./components/lobby/lobby-info-bar";
 import { ParticipantGrid } from "./components/lobby/participant-grid";
