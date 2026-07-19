@@ -1,10 +1,10 @@
 import Squares from "@/common/Effect-Related/background-squares";
-import Lightning from "@/common/Effect-Related/lightning-background";
+import Prism from "@/common/Effect-Related/Prism";
 import Header from "@/common/Header";
 import { useTheme } from "@/components/ui";
 import { EmailVerificationBanner } from "@/common/EmailVerificationBanner";
 
-type EffectType = "squares" | "lightning" | "none";
+type EffectType = "squares" | "lightning" | "prism" | "none";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -74,9 +74,22 @@ export const HomeLayout = ({
             hoverFillColor={colors.hoverFillColor}
           />
         );
-      case "lightning":
+      case "prism":
+        // Absolute wrapper fills the container behind the content (Prism's own
+        // root is w-full/h-full relative). Transparent canvas, so the app
+        // background shows through and it works in both light and dark themes.
         return (
-          <Lightning hue={220} xOffset={0} speed={1} intensity={1} size={1} />
+          <div className="absolute inset-0">
+            <Prism
+              animationType="rotate"
+              timeScale={0.5}
+              glow={1}
+              bloom={1}
+              noise={0.5}
+              scale={3.6}
+              suspendWhenOffscreen
+            />
+          </div>
         );
       default:
         return null;
@@ -92,7 +105,8 @@ export const HomeLayout = ({
           paddingTop: shouldAddPadding ? "var(--header-height, 4rem)" : "0",
           height: "100vh",
           position: "relative",
-        }}>
+        }}
+      >
         {renderEffect()}
 
         <div style={{ position: "relative", zIndex: 1, height: "100%" }}>

@@ -66,16 +66,18 @@ export const CreateMultipleChoiceForm: React.FC<
           type="submit"
           size="default"
           isPending={createQuestionMutation.isPending}
-          disabled={createQuestionMutation.isPending}>
+          disabled={createQuestionMutation.isPending}
+        >
           Submit
         </Button>
-      }>
+      }
+    >
       <Form
         id="create-multiple-choice-question"
         className="w-[500px]"
         onSubmit={(values) => {
           const isCorrectSelected = values.answerOptions.some(
-            (option: any) => option.isCorrect
+            (option: any) => option.isCorrect,
           );
 
           if (!isCorrectSelected) {
@@ -88,7 +90,8 @@ export const CreateMultipleChoiceForm: React.FC<
             },
           });
         }}
-        schema={createMultipleChoiceQuestionInputSchema}>
+        schema={createMultipleChoiceQuestionInputSchema}
+      >
         {({ register, formState, control, setValue, watch, clearErrors }) => {
           const { fields, append, remove } = useFieldArray({
             control,
@@ -116,7 +119,7 @@ export const CreateMultipleChoiceForm: React.FC<
             if (!allowMultipleSelections) {
               // Count how many correct answers we have
               const correctAnswers = fields.filter((_, i) =>
-                watch(`answerOptions.${i}.isCorrect`)
+                watch(`answerOptions.${i}.isCorrect`),
               );
 
               // If we have more than one correct answer in single selection mode,
@@ -126,7 +129,7 @@ export const CreateMultipleChoiceForm: React.FC<
                   const shouldBeCorrect =
                     i ===
                     fields.findIndex((_, idx) =>
-                      watch(`answerOptions.${idx}.isCorrect`)
+                      watch(`answerOptions.${idx}.isCorrect`),
                     );
                   setValue(`answerOptions.${i}.isCorrect`, shouldBeCorrect);
                 });
@@ -138,7 +141,7 @@ export const CreateMultipleChoiceForm: React.FC<
             if (allowMultipleSelections) {
               setValue(
                 `answerOptions.${index}.isCorrect`,
-                !watch(`answerOptions.${index}.isCorrect`)
+                !watch(`answerOptions.${index}.isCorrect`),
               );
             } else {
               fields.forEach((_, i) => {
@@ -164,7 +167,7 @@ export const CreateMultipleChoiceForm: React.FC<
             <>
               <Input
                 id="questionText"
-                variant="quiz"
+                variant="minimal"
                 className={`py-2 w-full ${
                   formState.errors["text"] ? "border-red-500" : ""
                 }`}
@@ -224,7 +227,8 @@ export const CreateMultipleChoiceForm: React.FC<
                   return (
                     <div
                       key={field.id}
-                      className="flex items-center justify-between gap-6">
+                      className="flex items-center justify-between gap-6"
+                    >
                       <Input
                         variant="minimal"
                         className={`${
@@ -245,7 +249,8 @@ export const CreateMultipleChoiceForm: React.FC<
                         />
                         <Label
                           htmlFor={`correct-${index}`}
-                          className="text-xs text-gray-600 mt-1">
+                          className="text-xs text-gray-600 mt-1"
+                        >
                           Correct{" "}
                           {allowMultipleSelections ? "Option" : "Answer"}
                         </Label>
@@ -254,7 +259,8 @@ export const CreateMultipleChoiceForm: React.FC<
                         variant="icon"
                         className="rounded-xl bg-red-500"
                         onClick={() => remove(index)}
-                        disabled={fields.length <= 2}>
+                        disabled={fields.length <= 2}
+                      >
                         <Trash2 className="h-4 w-4" />
                       </LiftedButton>
                     </div>
@@ -270,7 +276,8 @@ export const CreateMultipleChoiceForm: React.FC<
                   type="button"
                   className="text-sm"
                   onClick={() => append({ text: "", isCorrect: false })}
-                  disabled={addOptionDisabled}>
+                  disabled={addOptionDisabled}
+                >
                   + Add Answer Option
                 </LiftedButton>
               </div>

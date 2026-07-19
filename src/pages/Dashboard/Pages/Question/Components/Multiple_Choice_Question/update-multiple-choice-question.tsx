@@ -19,7 +19,7 @@ import { VisibilitySelect } from "../../Entities/select-visibility";
 import { LiftedButton } from "@/common/LiftedButton";
 import ImageUpload from "@/utils/Image-Upload";
 import { MultipleChoiceQuestion } from "@/types/question-types";
-import { IconButtonWithTooltip } from "../Re-Usable-Components/delete-question";
+import { IconButtonWithTooltip } from "../Re-Usable-Components/icon-button-with-tooltip";
 import { Authorization } from "@/lib/authorization";
 
 interface UpdateMultipleChoiceQuestionFormProps {
@@ -149,7 +149,7 @@ export const UpdateMultipleChoiceQuestionForm: React.FC<
             return (
               <>
                 <Input
-                  variant="quiz"
+                  variant="minimal"
                   id="questionText"
                   className={formState.errors["text"] ? "border-red-500" : ""}
                   error={formState.errors["text"]}

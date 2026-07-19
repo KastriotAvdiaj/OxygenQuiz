@@ -25,7 +25,7 @@ import {
   useUpdateTypeTheAnswerQuestion,
 } from "../../api/Type_The_Answer-Question/update-type_the_answer-question";
 import { TypeTheAnswerQuestion } from "@/types/question-types";
-import { IconButtonWithTooltip } from "../Re-Usable-Components/delete-question";
+import { IconButtonWithTooltip } from "../Re-Usable-Components/icon-button-with-tooltip";
 import { Authorization } from "@/lib/authorization";
 
 interface UpdateTypeAnswerQuestionFormProps {
@@ -144,7 +144,7 @@ export const UpdateTypeAnswerQuestionForm: React.FC<
                 <Input
                   label="Question"
                   id="questionText"
-                  variant="quiz"
+                  variant="minimal"
                   className={`py-2 w-full ${
                     formState.errors["text"] ? "border-red-500" : ""
                   }`}

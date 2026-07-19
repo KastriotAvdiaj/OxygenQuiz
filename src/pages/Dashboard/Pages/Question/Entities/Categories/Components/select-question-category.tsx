@@ -17,7 +17,7 @@ interface BaseCategorySelectProps {
   clearErrors?: () => void;
   /** Base look when there's no error. "quiz" (default) is the pushable field; "minimal" is
    *  the quiet modern style used by settings panels. */
-  fieldVariant?: "quiz" | "minimal";
+  fieldVariant?: "quiz" | "minimal" | "form";
 }
 
 interface FormModeProps extends BaseCategorySelectProps {
@@ -59,7 +59,7 @@ export const CategorySelect: React.FC<CategorySelectProps> = (props) => {
           value={value ? value.toString() : "all"}
           onValueChange={(selectedValue) => {
             onChange(
-              selectedValue === "all" ? undefined : Number(selectedValue)
+              selectedValue === "all" ? undefined : Number(selectedValue),
             );
             clearErrors?.();
           }}
@@ -95,7 +95,7 @@ export const CategorySelect: React.FC<CategorySelectProps> = (props) => {
   // Form mode (default/existing behavior)
   const { value, onChange } = props as FormModeProps;
   const isValueValid = categories.some(
-    (category) => category.id.toString() === value
+    (category) => category.id.toString() === value,
   );
 
   return (

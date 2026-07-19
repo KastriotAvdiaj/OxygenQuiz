@@ -56,7 +56,7 @@ export const BaseQuestionFormCard: React.FC<BaseQuestionFormCardProps> = ({
           </section>
           <Input
             id="question-text"
-            variant={`${questionTextError ? "isIncorrect" : "quiz"}`}
+            variant={`${questionTextError ? "isIncorrect" : "minimal"}`}
             className="!text-[1.5rem] py-6 w-full"
             questionType={questionType}
             placeholder="Enter your question here..."

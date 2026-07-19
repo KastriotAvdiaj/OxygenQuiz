@@ -14,15 +14,21 @@ import { useQuestionLanguageData } from "../Question/Entities/Language/api/get-q
 import { useUserData } from "../User/api/get-users";
 import { LiftedButton } from "@/common/LiftedButton";
 import {
-  Dialog, DialogContent, DialogHeader,
-  DialogTitle, DialogTrigger,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
-  Sheet, SheetContent, SheetHeader, SheetTitle,
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
 } from "@/components/ui/sheet";
 import { GrFormNextLink } from "react-icons/gr";
 import { Filter, PencilLine, Sparkles } from "lucide-react";
-import { QuizFiltersPanel } from "./components/quiz-filters-panel";
+import { QuizFiltersPanel } from "./components/Quiz-Filter";
 import { DataTransferControls } from "@/components/data-transfer/DataTransferControls";
 
 export const Quizzes = () => {
@@ -47,11 +53,13 @@ export const Quizzes = () => {
 
   const filters: FilterRule[] = [];
   if (categoryIds.length) filters.push(rule.in("categoryId", categoryIds));
-  if (difficultyIds.length) filters.push(rule.in("difficultyId", difficultyIds));
+  if (difficultyIds.length)
+    filters.push(rule.in("difficultyId", difficultyIds));
   if (languageIds.length) filters.push(rule.in("languageId", languageIds));
   if (statuses.length) filters.push(rule.in("status", statuses));
   if (authorIds.length) filters.push(rule.in("userId", authorIds));
-  if (createdFrom && createdTo) filters.push(rule.between("createdAt", createdFrom, createdTo));
+  if (createdFrom && createdTo)
+    filters.push(rule.between("createdAt", createdFrom, createdTo));
   else if (createdFrom) filters.push(rule.gte("createdAt", createdFrom));
   else if (createdTo) filters.push(rule.lte("createdAt", createdTo));
 
@@ -67,35 +75,66 @@ export const Quizzes = () => {
 
   useEffect(() => {
     setPageNumber(1);
-  }, [debouncedSearchTerm, categoryIds, difficultyIds, languageIds,
-      statuses, authorIds, createdFrom, createdTo, showDeleted]);
+  }, [
+    debouncedSearchTerm,
+    categoryIds,
+    difficultyIds,
+    languageIds,
+    statuses,
+    authorIds,
+    createdFrom,
+    createdTo,
+    showDeleted,
+  ]);
 
   const isFilterDataLoading =
-    categoriesQuery.isLoading || difficultiesQuery.isLoading || languagesQuery.isLoading;
+    categoriesQuery.isLoading ||
+    difficultiesQuery.isLoading ||
+    languagesQuery.isLoading;
 
   if (isFilterDataLoading) {
-    return <div className="flex justify-center items-center h-screen"><Spinner size="lg" /></div>;
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <Spinner size="lg" />
+      </div>
+    );
   }
 
   const activeFilterCount =
-    categoryIds.length + difficultyIds.length + languageIds.length +
-    statuses.length + authorIds.length +
-    (createdFrom ? 1 : 0) + (createdTo ? 1 : 0);
+    categoryIds.length +
+    difficultyIds.length +
+    languageIds.length +
+    statuses.length +
+    authorIds.length +
+    (createdFrom ? 1 : 0) +
+    (createdTo ? 1 : 0);
 
   const filterPanelProps = {
-    searchTerm, onSearchTermChange: setSearchTerm,
+    searchTerm,
+    onSearchTermChange: setSearchTerm,
     categories: categoriesQuery.data || [],
-    selectedCategoryIds: categoryIds, onCategoryIdsChange: setCategoryIds,
+    selectedCategoryIds: categoryIds,
+    onCategoryIdsChange: setCategoryIds,
     difficulties: difficultiesQuery.data || [],
-    selectedDifficultyIds: difficultyIds, onDifficultyIdsChange: setDifficultyIds,
+    selectedDifficultyIds: difficultyIds,
+    onDifficultyIdsChange: setDifficultyIds,
     languages: languagesQuery.data || [],
-    selectedLanguageIds: languageIds, onLanguageIdsChange: setLanguageIds,
-    selectedStatuses: statuses, onStatusesChange: setStatuses,
-    createdFrom, createdTo,
-    onCreatedFromChange: setCreatedFrom, onCreatedToChange: setCreatedTo,
-    users: (usersQuery.data || []).map((u) => ({ id: u.id, username: u.username })),
-    selectedUserIds: authorIds, onUserIdsChange: setAuthorIds,
-    showDeleted, onShowDeletedChange: setShowDeleted,
+    selectedLanguageIds: languageIds,
+    onLanguageIdsChange: setLanguageIds,
+    selectedStatuses: statuses,
+    onStatusesChange: setStatuses,
+    createdFrom,
+    createdTo,
+    onCreatedFromChange: setCreatedFrom,
+    onCreatedToChange: setCreatedTo,
+    users: (usersQuery.data || []).map((u) => ({
+      id: u.id,
+      username: u.username,
+    })),
+    selectedUserIds: authorIds,
+    onUserIdsChange: setAuthorIds,
+    showDeleted,
+    onShowDeletedChange: setShowDeleted,
   };
 
   const quizzes = quizData.data?.items ?? [];
@@ -145,8 +184,8 @@ export const Quizzes = () => {
                   <div>
                     <p className="font-semibold">Create manually</p>
                     <p className="text-muted-foreground text-xs mt-1">
-                      Build the quiz yourself — pick existing questions from the bank or
-                      write new ones from scratch.
+                      Build the quiz yourself — pick existing questions from the
+                      bank or write new ones from scratch.
                     </p>
                   </div>
                   <span className="mt-auto pt-2 text-primary text-sm flex items-center gap-1">
@@ -166,8 +205,8 @@ export const Quizzes = () => {
                   <div>
                     <p className="font-semibold">Create with AI</p>
                     <p className="text-muted-foreground text-xs mt-1">
-                      Paste your source material, run our prompt through any AI, and we'll
-                      turn the result into a ready-to-edit quiz.
+                      Paste your source material, run our prompt through any AI,
+                      and we'll turn the result into a ready-to-edit quiz.
                     </p>
                   </div>
                   <span className="mt-auto pt-2 text-primary text-sm flex items-center gap-1">
@@ -186,9 +225,13 @@ export const Quizzes = () => {
         <div className="flex-1 min-w-0">
           <Card className="p-6 bg-card border dark:border-foreground/30">
             {quizData.isError ? (
-              <p className="text-center text-red-500 py-8">Failed to load quizzes. Please try again later.</p>
+              <p className="text-center text-red-500 py-8">
+                Failed to load quizzes. Please try again later.
+              </p>
             ) : quizData.isLoading ? (
-              <div className="flex justify-center items-center py-16"><Spinner size="lg" /></div>
+              <div className="flex justify-center items-center py-16">
+                <Spinner size="lg" />
+              </div>
             ) : (
               <>
                 <DataTable data={quizzes} columns={quizColumns} />
@@ -218,7 +261,10 @@ export const Quizzes = () => {
 
       {/* Mobile drawer */}
       <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
-        <SheetContent side="right" className="w-[350px] sm:max-w-md overflow-y-auto">
+        <SheetContent
+          side="right"
+          className="w-[350px] sm:max-w-md overflow-y-auto"
+        >
           <SheetHeader className="mb-4">
             <SheetTitle>Filters</SheetTitle>
           </SheetHeader>

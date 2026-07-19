@@ -20,9 +20,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/form";
 import { GrFormNextLink } from "react-icons/gr";
-import {
-  QuizFiltersPanel,
-} from "@/pages/Dashboard/Pages/Quiz/components/quiz-filters-panel";
+import { QuizFiltersPanel } from "@/pages/Dashboard/Pages/Quiz/components/Quiz-Filter";
 import { Filter } from "lucide-react";
 import {
   Sheet,
@@ -136,7 +134,7 @@ export const MyQuizzes = () => {
                 </p>
               </DialogTitle>
             </DialogHeader>
-            <Input variant="quiz" placeholder="Quiz Title" />
+            <Input variant="minimal" placeholder="Quiz Title" />
             <section className="flex flex-col items-end mt-6">
               <Link to="/my-dashboard/quizzes/create" className="w-fit">
                 <LiftedButton className="w-fit">

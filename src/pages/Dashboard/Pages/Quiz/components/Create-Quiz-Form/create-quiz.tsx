@@ -27,7 +27,11 @@ import { useQuiz } from "./Quiz-questions-context";
 import { AnyQuestion } from "@/types/question-types";
 import { LiftedButton } from "@/common/LiftedButton";
 import { CategorySelect } from "../../../Question/Entities/Categories/Components/select-question-category";
-import { CreateQuizInput, createQuizInputSchema, useCreateQuiz } from "../../api/create-quiz";
+import {
+  CreateQuizInput,
+  createQuizInputSchema,
+  useCreateQuiz,
+} from "../../api/create-quiz";
 import { DifficultySelect } from "../../../Question/Entities/Difficulty/Components/select-question-difficulty";
 import { LanguageSelect } from "../../../Question/Entities/Language/components/select-question-language";
 import { Spinner, Switch } from "@/components/ui";
@@ -624,7 +628,7 @@ const CreateQuizForm = ({
                           Quiz Title <span className="text-destructive">*</span>
                         </Label>
                         <Input
-                          variant={errors.title ? "isIncorrect" : "settings"}
+                          variant={errors.title ? "isIncorrect" : "minimal"}
                           id="title"
                           placeholder="Enter quiz title"
                           className="mt-1"
@@ -641,7 +645,7 @@ const CreateQuizForm = ({
                           Description
                         </Label>
                         <Textarea
-                          variant="settings"
+                          variant="minimal"
                           id="description"
                           placeholder="Describe your quiz"
                           className="mt-1 min-h-[80px] resize-none"
@@ -652,17 +656,20 @@ const CreateQuizForm = ({
                     </div>
                     <Separator className="bg-primary/20" />
 
-                    <ImageUpload
+                    {/* <ImageUpload
                       onUpload={handleImageUpload}
                       onRemove={handleImageRemove}
                       initialImageUrl={editQuiz?.imageUrl ?? null}
-                    />
+                    /> */}
 
                     {/* Dropdowns */}
                     <div className="space-y-3">
+                      <h4 className="text-sm font-semibold text-primary flex items-center gap-1">
+                        Filters
+                      </h4>
                       <CategorySelect
                         categories={queryData.categories}
-                        fieldVariant="minimal"
+                        fieldVariant="form"
                         value={watch("categoryId")?.toString() || ""}
                         onChange={(selectedValue: string) =>
                           setValue("categoryId", parseInt(selectedValue, 10))
@@ -674,7 +681,7 @@ const CreateQuizForm = ({
 
                       <DifficultySelect
                         difficulties={queryData.difficulties}
-                        fieldVariant="minimal"
+                        fieldVariant="form"
                         value={watch("difficultyId")?.toString() || ""}
                         onChange={(selectedValue: string) =>
                           setValue("difficultyId", parseInt(selectedValue, 10))
@@ -686,7 +693,7 @@ const CreateQuizForm = ({
 
                       <LanguageSelect
                         languages={queryData.languages}
-                        fieldVariant="minimal"
+                        fieldVariant="form"
                         value={watch("languageId")?.toString() || ""}
                         includeAllOption={false}
                         onChange={(selectedValue: string) =>
@@ -702,13 +709,11 @@ const CreateQuizForm = ({
                     {/* Quiz Settings */}
                     <div className="space-y-4">
                       <h4 className="text-sm font-semibold text-primary flex items-center gap-1">
-                        <Clock className="h-4 w-4" />
-                        Quiz Settings
+                        Settings
                       </h4>
 
                       <div>
-                        <Label className="text-sm font-medium flex items-center gap-2 mb-2">
-                          <Eye className="h-3 w-3" />
+                        <Label className="text-xs font-medium flex items-center gap-2 mb-2">
                           Status
                         </Label>
                         <Select
@@ -721,28 +726,28 @@ const CreateQuizForm = ({
                           }
                         >
                           <SelectTrigger
-                            variant={errors.status ? "incorrect" : "minimal"}
+                            variant={errors.status ? "incorrect" : "form"}
                             className="w-full"
                           >
                             <SelectValue placeholder="Select status" />
                           </SelectTrigger>
                           <SelectContent
-                            variant={errors.status ? "incorrect" : "minimal"}
+                            variant={errors.status ? "incorrect" : "form"}
                           >
                             <SelectItem
-                              variant={errors.status ? "incorrect" : "minimal"}
+                              variant={errors.status ? "incorrect" : "form"}
                               value="Draft"
                             >
                               Draft — only you can see it
                             </SelectItem>
                             <SelectItem
-                              variant={errors.status ? "incorrect" : "minimal"}
+                              variant={errors.status ? "incorrect" : "form"}
                               value="Unlisted"
                             >
                               Unlisted — playable via share link
                             </SelectItem>
                             <SelectItem
-                              variant={errors.status ? "incorrect" : "minimal"}
+                              variant={errors.status ? "incorrect" : "form"}
                               value="Public"
                             >
                               Public — listed for everyone
@@ -772,7 +777,7 @@ const CreateQuizForm = ({
                           htmlFor="showFeedback"
                           className="text-sm font-medium flex items-center gap-2"
                         >
-                          💬 Instant Feedback
+                          Instant Feedback
                         </Label>
                         <Switch
                           id="showFeedback"
@@ -788,7 +793,6 @@ const CreateQuizForm = ({
                           htmlFor="shuffleQuestions"
                           className="text-sm font-medium flex items-center gap-2"
                         >
-                          <Shuffle className="h-3 w-3" />
                           Shuffle Questions
                         </Label>
                         <Switch

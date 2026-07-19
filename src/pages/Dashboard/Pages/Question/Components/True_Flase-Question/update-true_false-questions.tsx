@@ -15,7 +15,7 @@ import { useQuizForm } from "../../../Quiz/components/Create-Quiz-Form/use-quiz-
 import { VisibilitySelect } from "../../Entities/select-visibility";
 import { Check, Pen } from "lucide-react";
 import { TrueFalseQuestion } from "@/types/question-types";
-import { IconButtonWithTooltip } from "../Re-Usable-Components/delete-question";
+import { IconButtonWithTooltip } from "../Re-Usable-Components/icon-button-with-tooltip";
 import { Authorization } from "@/lib/authorization";
 
 interface UpdateTrueFalseQuestionFormProps {
@@ -115,7 +115,7 @@ export const UpdateTrueFalseQuestionForm: React.FC<
               <>
                 <Input
                   id="questionText"
-                  variant="quiz"
+                  variant="minimal"
                   className={`py-2 w-full ${
                     formState.errors["text"] ? "border-red-500" : ""
                   }`}

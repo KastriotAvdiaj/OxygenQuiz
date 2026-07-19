@@ -12,6 +12,8 @@ import {
   useFormValidation,
   ValidationErrorsDisplay,
 } from "@/hooks/use-questionForm";
+import { IconButtonWithTooltip } from "@/pages/Dashboard/Pages/Question/Components/Re-Usable-Components/icon-button-with-tooltip";
+import { LiftedButton } from "@/common/LiftedButton";
 
 interface MultipleChoiceFormCardProps {
   question: NewMultipleChoiceQuestion;
@@ -22,22 +24,15 @@ export const MultipleChoiceFormCard: React.FC<MultipleChoiceFormCardProps> = ({
 }) => {
   const [questionText, setQuestionText] = useState(question.text);
   const [imageUrl, setImageUrl] = useState(question.imageUrl || undefined);
-  const {
-    updateQuestion,
-    getQuestionErrors,
-    questionErrors,
-  } = useQuiz();
+  const { updateQuestion, getQuestionErrors, questionErrors } = useQuiz();
 
   // Use validation hook
-  const { hasErrors, getFieldError, getAnswerOptionError, getGeneralErrors } = useFormValidation(
-    question.id,
-    questionErrors,
-    getQuestionErrors
-  );
+  const { hasErrors, getFieldError, getAnswerOptionError, getGeneralErrors } =
+    useFormValidation(question.id, questionErrors, getQuestionErrors);
 
   const allowMultipleSelections = question.allowMultipleSelections;
   const [answerOptions, setAnswerOptions] = useState<NewAnswerOption[]>(
-    question.answerOptions
+    question.answerOptions,
   );
 
   const currentQuestionState = useMemo(
@@ -47,7 +42,7 @@ export const MultipleChoiceFormCard: React.FC<MultipleChoiceFormCardProps> = ({
       allowMultipleSelections,
       answerOptions,
     }),
-    [questionText, imageUrl, allowMultipleSelections, answerOptions]
+    [questionText, imageUrl, allowMultipleSelections, answerOptions],
   );
 
   const debouncedQuestionState = useDebounce(currentQuestionState, 300);
@@ -83,8 +78,8 @@ export const MultipleChoiceFormCard: React.FC<MultipleChoiceFormCardProps> = ({
   const handleAnswerTextChange = (index: number, text: string) => {
     setAnswerOptions(
       answerOptions.map((option, i) =>
-        i === index ? { ...option, text } : option
-      )
+        i === index ? { ...option, text } : option,
+      ),
     );
   };
 
@@ -98,7 +93,7 @@ export const MultipleChoiceFormCard: React.FC<MultipleChoiceFormCardProps> = ({
           return { ...option, isCorrect: false };
         }
         return option;
-      })
+      }),
     );
   };
 
@@ -143,8 +138,8 @@ export const MultipleChoiceFormCard: React.FC<MultipleChoiceFormCardProps> = ({
                     option.isCorrect
                       ? "border-green-500 bg-green-50 dark:bg-green-950/20"
                       : hasAnswerError
-                      ? "border-red-500 bg-red-50 dark:bg-red-950/20"
-                      : "border-border bg-background"
+                        ? "border-red-500 bg-red-50 dark:bg-red-950/20"
+                        : "border-border bg-background"
                   }`}
                 >
                   <div className="flex-1 space-y-1">
@@ -154,8 +149,8 @@ export const MultipleChoiceFormCard: React.FC<MultipleChoiceFormCardProps> = ({
                         hasAnswerError
                           ? "isIncorrect"
                           : option.isCorrect
-                          ? "isCorrect"
-                          : "quiz"
+                            ? "isCorrect"
+                            : "minimal"
                       }
                       value={option.text}
                       onChange={(e) =>
@@ -179,16 +174,17 @@ export const MultipleChoiceFormCard: React.FC<MultipleChoiceFormCardProps> = ({
                       {allowMultipleSelections ? "Correct" : "Answer"}
                     </Label>
                   </div>
-                  <Button
+                  <LiftedButton
                     type="button"
-                    variant="outline"
-                    size="icon"
+                    variant="icon"
+                    aria-label={`Remove answer option ${index + 1}`}
                     onClick={() => handleRemoveOption(index)}
                     disabled={answerOptions.length <= 2}
-                    className="h-9 w-9 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                    liftColor="#f87171" // red-400 — depth layers match the red face
+                    className="bg-red-400 text-white hover:bg-red-500"
                   >
                     <Trash2 className="h-4 w-4" />
-                  </Button>
+                  </LiftedButton>
                 </div>
               );
             })}

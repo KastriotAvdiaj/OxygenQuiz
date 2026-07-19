@@ -119,7 +119,7 @@ export const CreateTypeAnswerQuestionForm: React.FC<
             <>
               <Input
                 label="Question"
-                variant="quiz"
+                variant="minimal"
                 id="questionText"
                 className={`py-2 w-full ${
                   formState.errors["text"] ? "border-red-500" : ""

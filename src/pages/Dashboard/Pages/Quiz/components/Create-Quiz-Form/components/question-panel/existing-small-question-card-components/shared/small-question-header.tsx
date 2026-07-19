@@ -41,18 +41,18 @@ export const SmallQuestionHeader: React.FC<SmallQuestionHeaderProps> = ({
             #{questionNumber}
           </Badge>
         )}
-        <div
+        {/* <div
           className={cn(
             "flex items-center justify-center w-6 h-6 rounded-full font-bold text-xs",
             badgeColor
           )}
         >
           {icon}
-        </div>
-        <Badge variant="outline" className="h-5 px-2 gap-1">
+        </div> */}
+        {/* <Badge variant="outline" className="h-5 px-2 gap-1">
           {isPrivate ? <Lock size={10} /> : <Globe size={10} />}
           <span className="text-xs">{isPrivate ? "Private" : "Public"}</span>
-        </Badge>
+        </Badge> */}
         <Badge
           variant="secondary"
           className={cn("h-5 px-2 text-xs", badgeColor)}

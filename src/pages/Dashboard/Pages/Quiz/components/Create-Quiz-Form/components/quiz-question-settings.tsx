@@ -45,14 +45,16 @@ export const QuestionSettingsCard: React.FC<QuestionSettingsCardProps> = ({
   return (
     <div className="w-full h-full flex flex-col">
       <CardHeader className="pb-4 px-4 sm:px-6">
-        <CardTitle className="text-sm sm:text-base flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2 min-w-0 flex-1">
-            <Settings className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
-            <span className="truncate">
+        <CardTitle className="text-sm sm:text-base flex items-center justify-between gap-3 border-b border-border pb-2">
+          <div className="flex items-center gap-2 min-w-0 flex-1 ">
+            <span className="truncate text-primary">
               {question.text || `Question ${settings.orderInQuiz + 1}`}
             </span>
           </div>
-          <Badge variant="outline" className="text-xs whitespace-nowrap flex-shrink-0">
+          <Badge
+            variant="outline"
+            className="text-xs whitespace-nowrap flex-shrink-0"
+          >
             #{settings.orderInQuiz + 1}
           </Badge>
         </CardTitle>
@@ -61,14 +63,17 @@ export const QuestionSettingsCard: React.FC<QuestionSettingsCardProps> = ({
       <CardContent className="flex-1 space-y-5 px-4 sm:px-6 pb-6">
         {/* Point System */}
         <div className="space-y-2.5">
-          <Label className="text-xs sm:text-sm font-medium">Point System</Label>
+          <Label className="text-xs font-medium">Point System</Label>
           <Select
             value={settings.pointSystem}
             onValueChange={(value) =>
               updateQuestionSetting(question.id, "pointSystem", value)
             }
           >
-            <SelectTrigger variant="quiz" className="h-9 sm:h-10 text-xs sm:text-sm w-full">
+            <SelectTrigger
+              variant="form"
+              className="h-9 sm:h-10 text-xs w-full"
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -87,24 +92,28 @@ export const QuestionSettingsCard: React.FC<QuestionSettingsCardProps> = ({
 
         {/* Time Limit */}
         <div className="space-y-2.5">
-          <Label className="text-xs sm:text-sm font-medium">Time Limit</Label>
+          <Label className="text-xs font-medium">Time Limit</Label>
           <Select
             value={settings.timeLimitInSeconds.toString()}
             onValueChange={(value) =>
               updateQuestionSetting(
                 question.id,
                 "timeLimitInSeconds",
-                parseInt(value)
+                parseInt(value),
               )
             }
           >
-            <SelectTrigger variant="quiz" className="h-9 sm:h-10 text-xs sm:text-sm w-full">
+            <SelectTrigger
+              variant="form"
+              className="h-9 sm:h-10 text-xs w-full"
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               {TIME_LIMIT_OPTIONS.map((option) => (
                 <SelectItem
                   key={option.value}
+                  variant="form"
                   value={option.value.toString()}
                   className="text-xs sm:text-sm"
                 >
@@ -118,23 +127,23 @@ export const QuestionSettingsCard: React.FC<QuestionSettingsCardProps> = ({
         {/* Action Buttons */}
         {showCopyActions && (
           <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-3">
-            <Button
+            {/* <Button
               variant="outline"
               size="sm"
               onClick={() => resetQuestionSettings(question.id)}
-              className="h-9 text-xs sm:text-sm flex-1 w-full sm:w-auto rounded-sm"
+              className="h-9 text-xs flex-1 w-full sm:w-auto rounded-sm"
             >
-              <RotateCcw className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-2" />
+              <RotateCcw className="h-3.5 w-3.5" />
               Reset
-            </Button>
+            </Button> */}
 
-            {addedQuestions.length > 1 && (
+            {/* {addedQuestions.length > 1 && (
               <Select
                 onValueChange={(value) => handleCopyFrom(parseInt(value))}
               >
-                <SelectTrigger className="h-9 text-xs sm:text-sm flex-1 w-full sm:w-auto rounded-sm">
-                  <div className="flex items-center">
-                    <Copy className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-2" />
+                <SelectTrigger className="h-9 text-xs flex-1 w-full sm:w-auto rounded-sm">
+                  <div className="flex items-center gap-2">
+                    <Copy className="h-3.5 w-3.5" />
                     Copy From
                   </div>
                 </SelectTrigger>
@@ -155,7 +164,7 @@ export const QuestionSettingsCard: React.FC<QuestionSettingsCardProps> = ({
                     ))}
                 </SelectContent>
               </Select>
-            )}
+            )} */}
           </div>
         )}
       </CardContent>

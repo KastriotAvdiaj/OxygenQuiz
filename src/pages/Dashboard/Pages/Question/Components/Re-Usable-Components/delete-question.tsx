@@ -1,66 +1,17 @@
 // src/components/questions/DeleteQuestion.tsx
-import React from "react";
 import { Button } from "@/components/ui/button";
 import { ConfirmationDialog } from "@/components/ui/dialog";
 import { useNotifications } from "@/common/Notifications";
 import { useDeleteQuestion } from "../../api/delete-question";
-import { LiftedButton, type LiftedButtonProps } from "@/common/LiftedButton";
 import { Trash } from "lucide-react";
 import { AnyQuestion, QuestionType } from "@/types/question-types";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { cn } from "@/utils/cn";
 import { Authorization } from "@/lib/authorization";
+import { IconButtonWithTooltip } from "./icon-button-with-tooltip";
 
 interface DeleteUserProps {
   questionType: QuestionType;
   question: AnyQuestion;
 }
-
-// Extends LiftedButtonProps so every lift option (liftColor, outerClassName,
-// isPending, …) passes straight through to the underlying LiftedButton.
-export interface IconButtonWithTooltipProps
-  extends Omit<LiftedButtonProps, "children"> {
-  icon: React.ReactNode;
-  tooltip: string;
-  buttonText?: string;
-}
-
-export const IconButtonWithTooltip = React.forwardRef<
-  HTMLButtonElement,
-  IconButtonWithTooltipProps
->(
-  (
-    { icon, tooltip, variant = "icon", className, buttonText, ...props },
-    ref
-  ) => {
-    return (
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <LiftedButton
-              ref={ref}
-              variant={variant}
-              className={cn(className)}
-              {...props}>
-              {buttonText}
-              {icon}
-            </LiftedButton>
-          </TooltipTrigger>
-          <TooltipContent className="bg-background border-foreground/50">
-            <p>{tooltip}</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-    );
-  }
-);
-
-IconButtonWithTooltip.displayName = "IconButtonWithTooltip";
 
 export const DeleteQuestion = ({ questionType, question }: DeleteUserProps) => {
   const { addNotification } = useNotifications();

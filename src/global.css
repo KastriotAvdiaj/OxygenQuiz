@@ -360,6 +360,31 @@ body {
   opacity: 0;
 }
 
+/* Error state for the minimal field (used by the isIncorrect variant) */
+.minimal-input-error:before {
+  border-bottom: 1px solid hsl(var(--destructive) / 0.7);
+}
+
+.minimal-input-error:after {
+  border-bottom: 2px solid hsl(var(--destructive));
+  transform: scaleX(1);
+}
+
+.minimal-input-error:focus-within:before,
+.minimal-input-error:focus-within:after {
+  border-bottom-color: hsl(var(--destructive));
+}
+
+.minimal-input--error {
+  background-color: hsl(var(--destructive) / 0.1);
+}
+
+.minimal-input-error:focus-within .minimal-input,
+.minimal-input--error:focus,
+.minimal-input--error:active {
+  background-color: hsl(var(--destructive) / 0.18);
+}
+
 /* Quiz-specific utility classes */
 @layer components {
   .quiz-card {

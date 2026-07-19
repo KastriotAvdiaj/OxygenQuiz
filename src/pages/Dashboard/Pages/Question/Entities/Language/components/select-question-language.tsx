@@ -17,7 +17,7 @@ interface BaseLanguageSelectProps {
   clearErrors?: () => void;
   /** Base look when there's no error. "quiz" (default) is the pushable field; "minimal" is
    *  the quiet modern style used by settings panels. */
-  fieldVariant?: "quiz" | "minimal";
+  fieldVariant?: "quiz" | "minimal" | "form";
 }
 
 interface FormModeProps extends BaseLanguageSelectProps {
@@ -59,15 +59,12 @@ export const LanguageSelect: React.FC<LanguageSelectProps> = (props) => {
           value={value ? value.toString() : "all"}
           onValueChange={(selectedValue) => {
             onChange(
-              selectedValue === "all" ? undefined : Number(selectedValue)
+              selectedValue === "all" ? undefined : Number(selectedValue),
             );
             clearErrors?.();
           }}
         >
-          <SelectTrigger
-            variant={variant}
-            className="min-w-[200px]"
-          >
+          <SelectTrigger variant={variant} className="min-w-[200px]">
             <SelectValue
               className="text-foreground"
               placeholder="All Languages"
@@ -75,12 +72,14 @@ export const LanguageSelect: React.FC<LanguageSelectProps> = (props) => {
           </SelectTrigger>
           <SelectContent variant={variant} className="min-w-[200px]">
             {includeAllOption && (
-              <SelectItem variant={variant} value="all">All Languages</SelectItem>
+              <SelectItem variant={variant} value="all">
+                All Languages
+              </SelectItem>
             )}
             {languages.map((language) => (
-              <SelectItem 
-                key={language.id} 
-                variant={variant} 
+              <SelectItem
+                key={language.id}
+                variant={variant}
                 value={language.id.toString()}
               >
                 {language.language}
@@ -96,7 +95,7 @@ export const LanguageSelect: React.FC<LanguageSelectProps> = (props) => {
   // Form mode (default/existing behavior)
   const { value, onChange } = props as FormModeProps;
   const isValueValid = languages.some(
-    (language) => language.id.toString() === value
+    (language) => language.id.toString() === value,
   );
 
   return (
@@ -111,20 +110,19 @@ export const LanguageSelect: React.FC<LanguageSelectProps> = (props) => {
           clearErrors?.();
         }}
       >
-        <SelectTrigger
-          variant={variant}
-          className="min-w-[200px]"
-        >
+        <SelectTrigger variant={variant} className="min-w-[200px]">
           <SelectValue placeholder="Select language" />
         </SelectTrigger>
         <SelectContent variant={variant} className="min-w-[200px]">
           {includeAllOption && (
-            <SelectItem variant={variant} value="all">All Languages</SelectItem>
+            <SelectItem variant={variant} value="all">
+              All Languages
+            </SelectItem>
           )}
           {languages.map((language) => (
-            <SelectItem 
-              key={language.id} 
-              variant={variant} 
+            <SelectItem
+              key={language.id}
+              variant={variant}
               value={language.id.toString()}
             >
               {language.language}

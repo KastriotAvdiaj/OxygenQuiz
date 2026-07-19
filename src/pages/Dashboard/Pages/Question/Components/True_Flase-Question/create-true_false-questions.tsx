@@ -100,7 +100,7 @@ export const CreateTrueFalseQuestionForm: React.FC<
                 <div className="space-y-2">
                   <Input
                     id="text"
-                    variant="quiz"
+                    variant="minimal"
                     className={`py-2 w-full ${
                       formState.errors["text"] ? "border-red-500" : ""
                     }`}

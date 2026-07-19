@@ -4,19 +4,47 @@ import { UseFormRegisterReturn } from "react-hook-form";
 import { cn } from "@/utils/cn";
 
 import { FieldWrapper, FieldWrapperPassThroughProps } from "./field-wrapper";
-import { FIELD_MODERN, FIELD_PRESS, FIELD_SHELL, FIELD_THEMES } from "./field-variants";
+import {
+  FIELD_MODERN,
+  FIELD_PRESS,
+  FIELD_SHELL,
+  FIELD_THEMES,
+} from "./field-variants";
 
 export type TextareaProps = React.TextareaHTMLAttributes<HTMLTextAreaElement> &
   FieldWrapperPassThroughProps & {
     className?: string;
     registration?: Partial<UseFormRegisterReturn>;
-    variant?: "default" | "quiz" | "settings" | "isCorrect" | "isIncorrect";
+    variant?:
+      | "default"
+      | "quiz"
+      | "settings"
+      | "isCorrect"
+      | "isIncorrect"
+      | "minimal";
   };
+
 const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
   (
     { className, label, error, registration, variant = "default", ...props },
-    ref
+    ref,
   ) => {
+    // Special handling for minimal variant — mirrors Input's minimal pattern
+    if (variant === "minimal") {
+      return (
+        <FieldWrapper label={label} error={error}>
+          <div className="minimal-input-wrapper">
+            <textarea
+              className={cn("minimal-input", className)}
+              ref={ref}
+              {...props}
+              {...registration}
+            />
+          </div>
+        </FieldWrapper>
+      );
+    }
+
     return (
       <FieldWrapper label={label} error={error}>
         <textarea
@@ -28,12 +56,17 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
             variant === "settings" && cn(FIELD_MODERN, "min-h-[80px] resize-y"),
             // Pushable-field compositions shared with Input (field-variants.ts)
             variant === "quiz" &&
-              cn(FIELD_SHELL, FIELD_PRESS, FIELD_THEMES.primary, "min-h-[60px]"),
+              cn(
+                FIELD_SHELL,
+                FIELD_PRESS,
+                FIELD_THEMES.primary,
+                "min-h-[60px]",
+              ),
             variant === "isCorrect" &&
               cn(FIELD_SHELL, FIELD_PRESS, FIELD_THEMES.green, "min-h-[60px]"),
             variant === "isIncorrect" &&
               cn(FIELD_SHELL, FIELD_PRESS, FIELD_THEMES.red, "min-h-[60px]"),
-            className
+            className,
           )}
           ref={ref}
           {...props}
@@ -41,7 +74,7 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
         />
       </FieldWrapper>
     );
-  }
+  },
 );
 Textarea.displayName = "Textarea";
 

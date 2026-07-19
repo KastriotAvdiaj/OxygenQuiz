@@ -20,7 +20,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useMemo } from "react";
-import { IconButtonWithTooltip } from "../Question/Components/Re-Usable-Components/delete-question";
+import { IconButtonWithTooltip } from "../Question/Components/Re-Usable-Components/icon-button-with-tooltip";
 import { useCreateShareLink, buildShareUrl } from "./api/create-share-link";
 import { useNotifications } from "@/common/Notifications";
 

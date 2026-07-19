@@ -44,7 +44,7 @@ export const JoinForm = ({
               Room Code
             </label>
             <Input
-              variant="quiz"
+              variant="minimal"
               id="sessionId"
               placeholder="Enter room code"
               value={sessionId}

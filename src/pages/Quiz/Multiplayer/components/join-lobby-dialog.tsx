@@ -103,7 +103,7 @@ export const JoinLobbyDialog = ({ open, onOpenChange }: JoinLobbyDialogProps) =>
             <label className="text-sm font-medium">Room Code *</label>
             <Input
               type="text"
-              variant="quiz"
+              variant="minimal"
               placeholder="Enter 6-character code"
               value={roomCode}
               onChange={(e) => setRoomCode(e.target.value.toUpperCase())}

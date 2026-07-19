@@ -16,7 +16,6 @@ export type InputProps = React.InputHTMLAttributes<HTMLInputElement> &
     registration?: Partial<UseFormRegisterReturn>;
     variant?:
       | "default"
-      | "quiz"
       | "settings"
       | "isCorrect"
       | "isIncorrect"
@@ -26,9 +25,9 @@ export type InputProps = React.InputHTMLAttributes<HTMLInputElement> &
     questionType?: QuestionType;
   };
 
-// Pushable-field compositions (see field-variants.ts). "quiz" is the
-// interactive editor/answer field; "display" is its read-only twin;
-// isCorrect/isIncorrect are the answer-feedback states of the same field.
+// Pushable-field compositions (see field-variants.ts). "display" is the
+// read-only field; "isCorrect" is its answer-feedback state. "isIncorrect"
+// is rendered separately via the minimal branch below (minimal + error).
 const quizField = (theme: string) =>
   cn(FIELD_SHELL, FIELD_PRESS, theme, "tracking-wider h-12");
 const displayField = (theme: string) =>
@@ -36,7 +35,6 @@ const displayField = (theme: string) =>
 
 const variantStyles: Record<NonNullable<InputProps["variant"]>, string> = {
   default: "",
-  quiz: quizField(FIELD_THEMES.primary),
   settings: cn(FIELD_MODERN, "h-10"),
   fullColor: cn(
     FIELD_SHELL,
@@ -44,7 +42,8 @@ const variantStyles: Record<NonNullable<InputProps["variant"]>, string> = {
     "[--edge:var(--primary-edge)] h-12 bg-primary border-primary text-white font-semibold !placeholder-gray-300 focus-visible:ring-primary"
   ),
   isCorrect: quizField(FIELD_THEMES.green),
-  isIncorrect: quizField(FIELD_THEMES.red),
+  // Handled by the minimal branch in the component; kept for type completeness.
+  isIncorrect: "",
   display: displayField(FIELD_THEMES.primary),
   minimal: "minimal-input",
 };
@@ -64,13 +63,13 @@ const getVariantStyles = (
   questionType?: QuestionType
 ): string => {
   if (
-    (variant === "quiz" || variant === "display") &&
+    variant === "display" &&
     questionType &&
     questionType !== QuestionType.MultipleChoice
   ) {
     const theme = questionTypeThemes[questionType];
     if (theme) {
-      return variant === "quiz" ? quizField(theme) : displayField(theme);
+      return displayField(theme);
     }
   }
   return variantStyles[variant];
@@ -93,14 +92,25 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
     const baseClasses =
       "flex h-9 w-full rounded-md bg-background px-3 py-1 text-sm shadow-md border dark:border-foreground/40 transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
 
-    // Special handling for minimal variant
-    if (variant === "minimal") {
+    // Minimal underline field. "isIncorrect" reuses the same minimal styling
+    // but adds a destructive-colored underline/tint to signal a validation error.
+    if (variant === "minimal" || variant === "isIncorrect") {
+      const hasError = variant === "isIncorrect";
       return (
         <FieldWrapper label={label} error={error}>
-          <div className="minimal-input-wrapper">
+          <div
+            className={cn(
+              "minimal-input-wrapper",
+              hasError && "minimal-input-error"
+            )}
+          >
             <input
               type={type}
-              className={cn("minimal-input", className)}
+              className={cn(
+                "minimal-input",
+                hasError && "minimal-input--error",
+                className
+              )}
               ref={ref}
               {...props}
               {...registration}

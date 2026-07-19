@@ -1,6 +1,10 @@
 import { lazy, useMemo } from "react";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
-import { adminAuthLoader, permissionAuthLoader, userAuthLoader } from "../lib/Auth";
+import {
+  adminAuthLoader,
+  permissionAuthLoader,
+  userAuthLoader,
+} from "../lib/Auth";
 import {
   adminDashboardNavButtons,
   userDashboardNavButtons,
@@ -27,58 +31,56 @@ const HomeLayout = lazy(() => {
   }));
 });
 const AppRoot = lazy(() =>
-  import("../pages/AppRoot").then((module) => ({ default: module.AppRoot }))
+  import("../pages/AppRoot").then((module) => ({ default: module.AppRoot })),
 );
 const QuizSelection = lazy(() =>
   import("@/pages/Quiz/Quiz-Selection").then((module) => ({
     default: module.QuizSelection,
-  }))
+  })),
 );
 const GameModeSelection = lazy(() =>
   import("@/pages/Quiz/Game-Mode-Selection").then((module) => ({
     default: module.GameModeSelection,
-  }))
+  })),
 );
 const MultiplayerMenu = lazy(() =>
   import("@/pages/Quiz/Multiplayer/Multiplayer-Menu").then((module) => ({
     default: module.MultiplayerMenu,
-  }))
+  })),
 );
 const QuizPageRouteWrapper = lazy(() =>
-  import(
-    "@/pages/Quiz/Sessions/components/quiz-taking-process/quiz-page-route-wrapper"
-  ).then((module) => ({ default: module.QuizPageRouteWrapper }))
+  import("@/pages/Quiz/Sessions/components/quiz-taking-process/quiz-page-route-wrapper").then(
+    (module) => ({ default: module.QuizPageRouteWrapper }),
+  ),
 );
 const QuizResultsRouteWrapper = lazy(() =>
-  import(
-    "@/pages/Quiz/Sessions/components/quiz-results/quiz-results-route-wrapper"
-  ).then((module) => ({ default: module.QuizResultsRouteWrapper }))
+  import("@/pages/Quiz/Sessions/components/quiz-results/quiz-results-route-wrapper").then(
+    (module) => ({ default: module.QuizResultsRouteWrapper }),
+  ),
 );
 const GuestQuizResultsRouteWrapper = lazy(() =>
-  import(
-    "@/pages/Quiz/Sessions/components/quiz-results/guest-quiz-results-route-wrapper"
-  ).then((module) => ({ default: module.GuestQuizResultsRouteWrapper }))
+  import("@/pages/Quiz/Sessions/components/quiz-results/guest-quiz-results-route-wrapper").then(
+    (module) => ({ default: module.GuestQuizResultsRouteWrapper }),
+  ),
 );
 const QuizCreator = lazy(
   () =>
-    import(
-      "@/pages/Dashboard/Pages/Quiz/components/Create-Quiz-Form/create-quiz"
-    )
+    import("@/pages/Dashboard/Pages/Quiz/components/Create-Quiz-Form/create-quiz"),
 );
 const AiQuizWizard = lazy(() =>
-  import(
-    "@/pages/Dashboard/Pages/Quiz/components/AI-Quiz/ai-quiz-wizard"
-  ).then((module) => ({ default: module.AiQuizWizard }))
+  import("@/pages/Dashboard/Pages/Quiz/components/AI-Quiz/ai-quiz-wizard").then(
+    (module) => ({ default: module.AiQuizWizard }),
+  ),
 );
 const DashboardErrorElement = lazy(() =>
   import("@/pages/UtilityPages/Error/Dashboard-Error-Element").then(
-    (module) => ({ default: module.DashboardErrorElement })
-  )
+    (module) => ({ default: module.DashboardErrorElement }),
+  ),
 );
 const QuizQuestionProvider = lazy(() =>
-  import(
-    "@/pages/Dashboard/Pages/Quiz/components/Create-Quiz-Form/Quiz-questions-context"
-  ).then((module) => ({ default: module.QuizQuestionProvider }))
+  import("@/pages/Dashboard/Pages/Quiz/components/Create-Quiz-Form/Quiz-questions-context").then(
+    (module) => ({ default: module.QuizQuestionProvider }),
+  ),
 );
 
 enum HeaderBehavior {
@@ -88,27 +90,29 @@ enum HeaderBehavior {
 }
 // Lazy load components
 const Home = lazy(() =>
-  import("../pages/Home/Home").then((module) => ({ default: module.Home }))
+  import("../pages/Home/Home").then((module) => ({ default: module.Home })),
 );
 const AboutUs = lazy(() =>
   import("../pages/AboutUs/AboutUs").then((module) => ({
     default: module.AboutUs,
-  }))
+  })),
 );
 const Login = lazy(() => import("../pages/UserRelated/Login/Login"));
 const Signup = lazy(() => import("../pages/UserRelated/Signup/Signup"));
-const ConfirmEmail = lazy(() => import("@/pages/UserRelated/ConfirmEmail/ConfirmEmail"));
+const ConfirmEmail = lazy(
+  () => import("@/pages/UserRelated/ConfirmEmail/ConfirmEmail"),
+);
 const AccessDeniedPage = lazy(() =>
   import("../pages/UtilityPages/AccessDenied").then((module) => ({
     default: module.AccessDeniedPage,
-  }))
+  })),
 );
 // Public profile of another user. Route is scaffolded but not yet linked from
 // the UI (see UsersController.GetPublicProfile, also marked not-yet-used).
 const UserProfile = lazy(() =>
   import("../pages/UserRelated/Profile/UserProfile").then((module) => ({
     default: module.UserProfile,
-  }))
+  })),
 );
 const createAppRouter = (queryClient: QueryClient) =>
   createBrowserRouter([
@@ -118,7 +122,7 @@ const createAppRouter = (queryClient: QueryClient) =>
         <>
           <HomeLayout
             headerBehavior={HeaderBehavior.OVERLAY_SOLID}
-            // effect="squares"
+            // effect="prism"
             children={<Home />}
           />
         </>
@@ -128,11 +132,10 @@ const createAppRouter = (queryClient: QueryClient) =>
       path: "/about-us",
       element: (
         <>
-          <HomeLayout children={<AboutUs />} lightning={true} />
+          <HomeLayout children={<AboutUs />} />
         </>
       ),
     },
-
 
     {
       path: "/choose-mode",
@@ -281,22 +284,22 @@ const createAppRouter = (queryClient: QueryClient) =>
       errorElement: <DashboardErrorElement />,
     },
     {
-  path: "/dashboard/*",
-  element: (
-    <AppRoot
-      basePath="/dashboard"
-      navItems={adminDashboardNavButtons}
-      fullWidthPaths={[
-        // Prefix-matched by DashboardLayout, so this also covers .../create-quiz/ai.
-        "/dashboard/quizzes/create-quiz",
-        "/dashboard/quizzes/edit-quiz",
-      ]}
-    />
-  ),
-  id: "dashboardRoot",
-  loader: adminAuthLoader(queryClient),   // was userAuthLoader — admins only
-  errorElement: <DashboardErrorElement />,
-  children: [
+      path: "/dashboard/*",
+      element: (
+        <AppRoot
+          basePath="/dashboard"
+          navItems={adminDashboardNavButtons}
+          fullWidthPaths={[
+            // Prefix-matched by DashboardLayout, so this also covers .../create-quiz/ai.
+            "/dashboard/quizzes/create-quiz",
+            "/dashboard/quizzes/edit-quiz",
+          ]}
+        />
+      ),
+      id: "dashboardRoot",
+      loader: adminAuthLoader(queryClient), // was userAuthLoader — admins only
+      errorElement: <DashboardErrorElement />,
+      children: [
         {
           index: true,
           element: <Navigate to="/dashboard/questions" replace />,
@@ -304,45 +307,40 @@ const createAppRouter = (queryClient: QueryClient) =>
         {
           path: "application",
           lazy: async () => {
-            const { Application } = await import(
-              "../pages/Dashboard/Pages/Application/Application"
-            );
+            const { Application } =
+              await import("../pages/Dashboard/Pages/Application/Application");
             return { Component: Application };
           },
         },
         {
           path: "questions",
           lazy: async () => {
-            const { Questions } = await import(
-              "../pages/Dashboard/Pages/Question/Questions"
-            );
+            const { Questions } =
+              await import("../pages/Dashboard/Pages/Question/Questions");
             return { Component: Questions };
           },
         },
         {
           path: "categories",
           lazy: async () => {
-            const { CategoryView } = await import(
-              "../pages/Dashboard/Pages/Question/Entities/Categories/Components/category-view"
-            );
+            const { CategoryView } =
+              await import("../pages/Dashboard/Pages/Question/Entities/Categories/Components/category-view");
             return { Component: CategoryView };
           },
         },
         {
           path: "difficulties",
           lazy: async () => {
-            const { DifficultyView } = await import(
-              "../pages/Dashboard/Pages/Question/Entities/Difficulty/Components/difficulty-view"
-            );
+            const { DifficultyView } =
+              await import("../pages/Dashboard/Pages/Question/Entities/Difficulty/Components/difficulty-view");
             return { Component: DifficultyView };
           },
         },
         {
           path: "languages",
           lazy: async () => {
-            const { LanguagesView } = await import(
-              "../pages/Dashboard/Pages/Question/Entities/Language/components/language-view"
-            );
+            const { LanguagesView } =
+              await import("../pages/Dashboard/Pages/Question/Entities/Language/components/language-view");
             return { Component: LanguagesView };
           },
         },
@@ -364,9 +362,8 @@ const createAppRouter = (queryClient: QueryClient) =>
         {
           path: "quizzes",
           lazy: async () => {
-            const { Quizzes } = await import(
-              "../pages/Dashboard/Pages/Quiz/Quizzes"
-            );
+            const { Quizzes } =
+              await import("../pages/Dashboard/Pages/Quiz/Quizzes");
             return { Component: Quizzes };
           },
         },
@@ -389,18 +386,16 @@ const createAppRouter = (queryClient: QueryClient) =>
           // and mounts QuizQuestionProvider itself (seeded with the existing questions).
           path: "quizzes/edit-quiz/:quizId",
           lazy: async () => {
-            const { EditQuizRoute } = await import(
-              "../pages/Dashboard/Pages/Quiz/components/Create-Quiz-Form/edit-quiz"
-            );
+            const { EditQuizRoute } =
+              await import("../pages/Dashboard/Pages/Quiz/components/Create-Quiz-Form/edit-quiz");
             return { Component: EditQuizRoute };
           },
         },
         {
           path: "quiz/:quizId",
           lazy: async () => {
-            const { QuizRoute } = await import(
-              "../pages/Dashboard/Pages/Quiz/Quiz"
-            );
+            const { QuizRoute } =
+              await import("../pages/Dashboard/Pages/Quiz/Quiz");
             return { Component: QuizRoute };
           },
           loader: quizLoader(queryClient),
@@ -408,49 +403,48 @@ const createAppRouter = (queryClient: QueryClient) =>
         {
           path: "permissions",
           lazy: async () => {
-            const { Permissions } = await import(
-              "../pages/Dashboard/Pages/Permissions/Permissions"
-            );
+            const { Permissions } =
+              await import("../pages/Dashboard/Pages/Permissions/Permissions");
             return { Component: Permissions };
           },
         },
         {
           path: "invite-codes",
           lazy: async () => {
-            const { InviteCodes } = await import(
-              "../pages/Dashboard/Pages/InviteCodes/InviteCodes"
-            );
+            const { InviteCodes } =
+              await import("../pages/Dashboard/Pages/InviteCodes/InviteCodes");
             return { Component: InviteCodes };
           },
         },
         {
           path: "audit-logs",
           lazy: async () => {
-            const { AuditLog } = await import(
-              "../pages/Dashboard/Pages/AuditLog/AuditLog"
-            );
+            const { AuditLog } =
+              await import("../pages/Dashboard/Pages/AuditLog/AuditLog");
             return { Component: AuditLog };
           },
         },
-       {
-        path: "users",
-        lazy: async () => {
-          const { Users } = await import("../pages/Dashboard/Pages/User/Users");
-          return { Component: Users };
+        {
+          path: "users",
+          lazy: async () => {
+            const { Users } =
+              await import("../pages/Dashboard/Pages/User/Users");
+            return { Component: Users };
+          },
+          loader: async (args) => {
+            const auth = await permissionAuthLoader(queryClient, ["user:view"])(
+              args,
+            );
+            if (auth instanceof Response) return auth; // redirect — stop here
+            const { usersLoader } = await import("../loaders/users.loader");
+            return usersLoader(queryClient)(); // ← note the extra ()
+          },
         },
-        loader: async (args) => {
-          const auth = await permissionAuthLoader(queryClient, ["user:view"])(args);
-          if (auth instanceof Response) return auth; // redirect — stop here
-          const { usersLoader } = await import("../loaders/users.loader");
-          return usersLoader(queryClient)(); // ← note the extra ()
-        },
-      },
         {
           path: "*",
           lazy: async () => {
-            const { NotFoundRoute } = await import(
-              "../pages/UtilityPages/NotFound/Not-Found"
-            );
+            const { NotFoundRoute } =
+              await import("../pages/UtilityPages/NotFound/Not-Found");
             return { Component: NotFoundRoute };
           },
         },
@@ -476,36 +470,32 @@ const createAppRouter = (queryClient: QueryClient) =>
         {
           path: "profile",
           lazy: async () => {
-            const { MyProfile } = await import(
-              "../pages/UserDashboard/MyProfile"
-            );
+            const { MyProfile } =
+              await import("../pages/UserDashboard/MyProfile");
             return { Component: MyProfile };
           },
         },
         {
           path: "questions",
           lazy: async () => {
-            const { MyQuestions } = await import(
-              "../pages/UserDashboard/MyQuestions"
-            );
+            const { MyQuestions } =
+              await import("../pages/UserDashboard/MyQuestions");
             return { Component: MyQuestions };
           },
         },
         {
           path: "quizzes",
           lazy: async () => {
-            const { MyQuizzes } = await import(
-              "../pages/UserDashboard/MyQuizzes"
-            );
+            const { MyQuizzes } =
+              await import("../pages/UserDashboard/MyQuizzes");
             return { Component: MyQuizzes };
           },
         },
         {
           path: "reports",
           lazy: async () => {
-            const { MyReports } = await import(
-              "../pages/UserDashboard/MyReports"
-            );
+            const { MyReports } =
+              await import("../pages/UserDashboard/MyReports");
             return { Component: MyReports };
           },
         },
@@ -524,18 +514,16 @@ const createAppRouter = (queryClient: QueryClient) =>
         {
           path: "settings",
           lazy: async () => {
-            const { Settings } = await import(
-              "../pages/UserRelated/SettingsPage/Settings"
-            );
+            const { Settings } =
+              await import("../pages/UserRelated/SettingsPage/Settings");
             return { Component: Settings };
           },
         },
         {
           path: "*",
           lazy: async () => {
-            const { NotFoundRoute } = await import(
-              "../pages/UtilityPages/NotFound/Not-Found"
-            );
+            const { NotFoundRoute } =
+              await import("../pages/UtilityPages/NotFound/Not-Found");
             return { Component: NotFoundRoute };
           },
         },
@@ -544,9 +532,8 @@ const createAppRouter = (queryClient: QueryClient) =>
     {
       path: "my-profile",
       lazy: async () => {
-        const { ProfileWrapper } = await import(
-          "../pages/UserRelated/Profile/ProfileWrapper"
-        );
+        const { ProfileWrapper } =
+          await import("../pages/UserRelated/Profile/ProfileWrapper");
         return { Component: ProfileWrapper };
       },
     },
@@ -563,9 +550,8 @@ const createAppRouter = (queryClient: QueryClient) =>
     {
       path: "*",
       lazy: async () => {
-        const { NotFoundRoute } = await import(
-          "../pages/UtilityPages/NotFound/Not-Found"
-        );
+        const { NotFoundRoute } =
+          await import("../pages/UtilityPages/NotFound/Not-Found");
         return { Component: NotFoundRoute };
       },
     },

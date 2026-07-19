@@ -221,7 +221,7 @@ export const TypeTheAnswerFormCard: React.FC<TypeTheAnswerFormCardProps> = ({
                     return (
                       <div key={index} className="relative w-full">
                         <Input
-                          variant={acceptableAnswerError ? "isIncorrect" : "quiz"}
+                          variant={acceptableAnswerError ? "isIncorrect" : "minimal"}
                           placeholder={`Alternative answer ${index + 1}...`}
                           value={answer.value}
                           onChange={(e) =>
