@@ -518,3 +518,35 @@ body {
     opacity: 0.85;
   }
 }
+
+/* Scrollbar helpers used by scrollable panels (facet lists, dialogs, drawers).
+   `scrollbar-thin` = a slim, themed track that fades in on hover instead of the
+   heavy global 8px bar. `scrollbar-hide` = fully hidden but still scrollable. */
+@layer utilities {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 9999px;
+  }
+  .scrollbar-thin:hover::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.5);
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}

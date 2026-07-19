@@ -19,15 +19,18 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
     public class QuizService : IQuizService
     {
         private readonly IQuizRepository _quizzes;
+        private readonly IQuestionRepository _questions;
         private readonly ILogger<QuizService> _logger;
         private readonly IImageService _imageService;
 
         public QuizService(
             IQuizRepository quizzes,
+            IQuestionRepository questions,
             ILogger<QuizService> logger,
             IImageService imageService)
         {
             _quizzes = quizzes ?? throw new ArgumentNullException(nameof(quizzes));
+            _questions = questions ?? throw new ArgumentNullException(nameof(questions));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _imageService = imageService ?? throw new ArgumentNullException(nameof(imageService));
         }
@@ -229,6 +232,176 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                 // Roll back the entire transaction, then bubble up to higher-level handling.
                 await transaction.RollbackAsync();
                 throw;
+            }
+        }
+
+        public async Task<QuizDTO> CreateAiQuizAsync(Guid userId, AiQuizImportCM importCM)
+        {
+            using var transaction = await _quizzes.BeginTransactionAsync();
+
+            try
+            {
+                // Quiz-level references must exist (and no entity is ever created here).
+                var referencesExist = await _quizzes.ReferencedEntitiesExistAsync(
+                    importCM.CategoryId, importCM.LanguageId, importCM.DifficultyId, userId);
+                if (!referencesExist)
+                    throw new InvalidOperationException("Category, Language, Difficulty, or User does not exist.");
+
+                // Any existing questions being linked (picked from the bank during review) must exist.
+                var existingIds = importCM.Questions
+                    .Where(q => q.ExistingQuestionId is not null)
+                    .Select(q => q.ExistingQuestionId!.Value)
+                    .ToList();
+                if (existingIds.Count > 0 && !await _quizzes.AllQuestionsExistAsync(existingIds))
+                    throw new InvalidOperationException("One or more selected questions do not exist.");
+
+                // New questions inherit the quiz's category + language; only difficulty may vary.
+                // Validate every distinct new-question difficulty against existing rows so a bad id
+                // fails with a clear message rather than an opaque FK error mid-transaction.
+                var difficultyIds = importCM.Questions
+                    .Where(q => q.ExistingQuestionId is null)
+                    .Select(q => q.DifficultyId)
+                    .Distinct();
+                foreach (var difficultyId in difficultyIds)
+                {
+                    var ok = await _quizzes.ReferencedEntitiesExistAsync(
+                        importCM.CategoryId, importCM.LanguageId, difficultyId);
+                    if (!ok)
+                        throw new InvalidOperationException($"Question difficulty {difficultyId} does not exist.");
+                }
+
+                var quiz = new Models.Quiz.Quiz
+                {
+                    Title = importCM.Title,
+                    Description = importCM.Description,
+                    CategoryId = importCM.CategoryId,
+                    LanguageId = importCM.LanguageId,
+                    DifficultyId = importCM.DifficultyId,
+                    ShowFeedbackImmediately = importCM.ShowFeedbackImmediately,
+                    ShuffleQuestions = importCM.ShuffleQuestions,
+                    ImageUrl = importCM.ImageUrl,
+                    Status = QuizMappers.ParseStatus(importCM.Status),
+                    UserId = userId,
+                    CreatedAt = DateTime.UtcNow,
+                    Version = 1,
+                    // The overall quiz limit is the sum of the per-question limits, matching CreateQuizAsync.
+                    TimeLimitInSeconds = importCM.Questions.Sum(q => q.TimeLimitInSeconds),
+                };
+
+                await _quizzes.AddAsync(quiz);
+
+                var order = 1;
+                var quizQuestions = new List<QuizQuestion>();
+                foreach (var q in importCM.Questions)
+                {
+                    var quizQuestion = new QuizQuestion
+                    {
+                        Quiz = quiz,
+                        OrderInQuiz = order++,
+                        TimeLimitInSeconds = q.TimeLimitInSeconds,
+                        PointSystem = Enum.TryParse<PointSystem>(q.PointSystem, true, out var ps)
+                            ? ps : PointSystem.Standard,
+                        CreatedInVersion = 1,
+                    };
+
+                    if (q.ExistingQuestionId is int existingId)
+                    {
+                        // Link an existing question by id — nothing is created for it.
+                        quizQuestion.QuestionId = existingId;
+                    }
+                    else
+                    {
+                        // Build the question entity (Private, inheriting the quiz's category/language),
+                        // add it via its typed set so EF stamps the correct TPH type, then link it to
+                        // the quiz through the navigation property — EF assigns the FK on save.
+                        var question = BuildAiQuestionEntity(q, importCM, userId);
+                        await AddAiQuestionAsync(question);
+                        quizQuestion.Question = question;
+                    }
+
+                    quizQuestions.Add(quizQuestion);
+                }
+
+                await _quizzes.AddQuizQuestionsAsync(quizQuestions);
+                await _quizzes.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                if (!string.IsNullOrEmpty(importCM.ImageUrl))
+                    await _imageService.AssociateImageWithEntityAsync(importCM.ImageUrl, "Quizzes", quiz.Id);
+
+                return quiz.ToDto();
+            }
+            catch (Exception)
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Maps one inline AI-import question to a question entity. Category and Language are taken
+        /// from the quiz (never the question payload); visibility is always Private.
+        /// </summary>
+        private static QuestionBase BuildAiQuestionEntity(
+            AiImportQuestionCM q, AiQuizImportCM quiz, Guid userId)
+        {
+            if (string.IsNullOrWhiteSpace(q.Type))
+                throw new InvalidOperationException("A new question must have a type.");
+            if (string.IsNullOrWhiteSpace(q.Text))
+                throw new InvalidOperationException("A new question must have text.");
+
+            QuestionBase question = q.Type switch
+            {
+                nameof(QuestionType.MultipleChoice) => new MultipleChoiceQuestion
+                {
+                    AllowMultipleSelections = q.AllowMultipleSelections,
+                    AnswerOptions = (q.AnswerOptions ?? new List<DTOs.Question.AnswerOptionCM>())
+                        .Select(a => new QuizAPI.Models.AnswerOption { Text = a.Text, IsCorrect = a.IsCorrect })
+                        .ToList(),
+                },
+                nameof(QuestionType.TrueFalse) => new TrueFalseQuestion
+                {
+                    CorrectAnswer = q.CorrectAnswerBoolean ?? false,
+                },
+                nameof(QuestionType.TypeTheAnswer) => new TypeTheAnswerQuestion
+                {
+                    CorrectAnswer = q.CorrectAnswerText ?? string.Empty,
+                    IsCaseSensitive = q.IsCaseSensitive,
+                    AllowPartialMatch = q.AllowPartialMatch,
+                    AcceptableAnswers = q.AcceptableAnswers ?? new List<string>(),
+                },
+                _ => throw new InvalidOperationException($"Unknown question type '{q.Type}'."),
+            };
+
+            question.Text = q.Text!;
+            question.ImageUrl = q.ImageUrl;
+            question.DifficultyId = q.DifficultyId;
+            question.CategoryId = quiz.CategoryId;   // inherited
+            question.LanguageId = quiz.LanguageId;   // inherited
+            question.Visibility = QuestionVisibility.Private;
+            question.UserId = userId;
+            question.CreatedAt = DateTime.UtcNow;
+            question.Type = Enum.Parse<QuestionType>(q.Type!, true);
+
+            if (question is MultipleChoiceQuestion mc && !mc.AnswerOptions.Any(a => a.IsCorrect))
+                throw new InvalidOperationException("At least one answer option must be marked as correct.");
+
+            return question;
+        }
+
+        private async Task AddAiQuestionAsync(QuestionBase question)
+        {
+            switch (question)
+            {
+                case MultipleChoiceQuestion mc:
+                    await _questions.AddMultipleChoiceAsync(mc);
+                    break;
+                case TrueFalseQuestion tf:
+                    await _questions.AddTrueFalseAsync(tf);
+                    break;
+                case TypeTheAnswerQuestion tta:
+                    await _questions.AddTypeTheAnswerAsync(tta);
+                    break;
             }
         }
 

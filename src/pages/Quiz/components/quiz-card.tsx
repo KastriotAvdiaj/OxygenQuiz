@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, type CSSProperties } from "react";
 import { HelpCircle, Clock, ArrowRight } from "lucide-react";
 import type { QuizSummaryDTO } from "@/types/quiz-types";
 import { cn } from "@/utils/cn";
@@ -14,6 +14,17 @@ export function secondsToMinutes(seconds: number): string {
   return `${minutes > 0 ? minutes + "m " : ""}${remainingSeconds}s`;
 }
 
+/**
+ * A single quiz in the picker grid. Premium interactive card:
+ *  - the quiz's palette colour drives a pill "category badge" + the hover glow,
+ *    exposed to CSS as the `--accent` custom property so hover states can use it
+ *    without inline JS (Tailwind can't interpolate a runtime hex into a hover:
+ *    class).
+ *  - fully fluid: `h-full w-full`, no fixed pixel widths — the parent grid
+ *    (grid-cols-1 → 2xl:grid-cols-4) decides how many sit per row.
+ *  - clean sans body text (`font-app`); the playful display font is reserved
+ *    for the app's hero headings.
+ */
 export function QuizCard({ quiz, onClick }: QuizCardProps) {
   const colors = useMemo(() => {
     try {
@@ -25,7 +36,7 @@ export function QuizCard({ quiz, onClick }: QuizCardProps) {
     }
   }, [quiz.colorPaletteJson]);
 
-  const primaryColor = colors[0];
+  const accent = colors[0];
 
   const handleClick = useCallback(() => {
     onClick?.(quiz);
@@ -33,81 +44,89 @@ export function QuizCard({ quiz, onClick }: QuizCardProps) {
 
   const questionLabel = quiz.questionCount === 1 ? "question" : "questions";
 
+  // Expose the per-quiz accent to CSS so hover glow/border can reference it via
+  // arbitrary Tailwind values (`hover:shadow-[...var(--accent)]`).
+  const accentVars = { "--accent": accent } as CSSProperties;
+
   return (
-    // h-full: the picker grid stretches rows (auto-rows-fr), so every card in
-    // a row renders the same height regardless of its content length.
+    // h-full: the picker grid stretches rows (auto-rows-fr), so every card in a
+    // row renders the same height regardless of its content length.
     <div
-      className="group h-full w-full cursor-pointer"
+      className="group h-full w-full cursor-pointer font-app"
+      style={accentVars}
       onClick={handleClick}
     >
       <div
         className={cn(
           "relative flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card",
-          "transition-all duration-200 ease-out",
-          "hover:-translate-y-0.5 hover:border-foreground/20 hover:shadow-md"
+          "transition-all duration-300 ease-out",
+          "hover:-translate-y-1 hover:border-[var(--accent)]",
+          "hover:shadow-[0_10px_30px_-10px_var(--accent)]"
         )}
       >
-        {/* Colored identity rail — the quiz's primary palette color is the only
-            thing distinguishing one quiz from another, kept deliberate and small. */}
+        {/* Top accent hairline — a whisper of the palette colour along the top
+            edge, brightening on hover. */}
         <div
-          className="absolute left-0 top-0 bottom-0 w-[3px]"
-          style={{ backgroundColor: primaryColor }}
+          className="absolute inset-x-0 top-0 h-[3px] opacity-70 transition-opacity duration-300 group-hover:opacity-100"
+          style={{ backgroundColor: accent }}
         />
 
-        <div className="flex flex-1 flex-col p-4 pl-5 sm:p-5 sm:pl-6">
-          {/* Category */}
-          <p
-            className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide"
-            style={{ color: primaryColor }}
-          >
-            {quiz.category}
-          </p>
+        {/* p-5 flex column, contents pinned top & bottom (justify-between). */}
+        <div className="flex h-full flex-col justify-between p-5">
+          {/* Top: category badge (left) + author (right) */}
+          <div className="flex items-start justify-between gap-3">
+            <span
+              className="w-fit rounded-full px-2.5 py-1 text-xs font-semibold"
+              style={{
+                color: accent,
+                backgroundColor: `color-mix(in srgb, ${accent} 12%, transparent)`,
+              }}
+            >
+              {quiz.category}
+            </span>
+            <span className="shrink-0 truncate text-sm text-muted-foreground">
+              by {quiz.user}
+            </span>
+          </div>
 
-          {/* Title */}
-          <h3 className="font-quiz text-base font-semibold leading-snug text-foreground line-clamp-2">
-            {quiz.title}
-          </h3>
+          {/* Middle: crisp, bold title. The fuller description lives in the start
+              modal — keeping the card to title + badge makes the grid scan cleanly
+              and keeps card heights uniform. */}
+          <div className="mt-3 flex-1">
+            <h3 className="text-lg font-bold tracking-wide text-foreground line-clamp-2">
+              {quiz.title}
+            </h3>
+          </div>
 
-          {/* Description */}
-          {quiz.description && (
-            <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground line-clamp-2">
-              {quiz.description}
-            </p>
-          )}
-
-          {/* Spacer — absorbs the leftover height in stretched cards so the
-              meta row + footer stay pinned to the bottom edge */}
-          <div className="min-h-4 flex-1" aria-hidden />
-
-          {/* Meta info row */}
-          <div className="flex items-center gap-4 border-t border-border pt-3 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1.5">
+          {/* Bottom: compact icon-led stats over a hairline divider. Icons carry
+              the meaning (count / time) so the labels stay out — tighter and
+              cleaner for a small card. The "Play" affordance slides in on hover. */}
+          <div className="mt-4 flex items-center gap-3 border-t border-border/50 pt-3 text-xs text-muted-foreground">
+            <span
+              className="flex items-center gap-1 tabular-nums"
+              title={`${quiz.questionCount} ${questionLabel}`}
+            >
               <HelpCircle className="h-3.5 w-3.5" />
-              {quiz.questionCount} {questionLabel}
+              {quiz.questionCount}
             </span>
 
             {quiz.timeLimitInSeconds > 0 && (
-              <span className="flex items-center gap-1.5">
+              <span
+                className="flex items-center gap-1 tabular-nums"
+                title="Time limit"
+              >
                 <Clock className="h-3.5 w-3.5" />
                 {secondsToMinutes(quiz.timeLimitInSeconds)}
               </span>
             )}
 
-            <span className="ml-auto capitalize">{quiz.difficulty}</span>
-          </div>
-
-          {/* Footer — author + hover Play affordance */}
-          <div className="mt-3 flex items-center justify-between">
-            <span className="truncate text-xs text-muted-foreground">
-              by {quiz.user}
-            </span>
             <span
               className={cn(
-                "flex items-center gap-1 text-xs font-medium",
-                "-translate-x-1 opacity-0 transition-all duration-200",
+                "ml-auto flex items-center gap-1 font-semibold",
+                "translate-x-1 opacity-0 transition-all duration-300",
                 "group-hover:translate-x-0 group-hover:opacity-100"
               )}
-              style={{ color: primaryColor }}
+              style={{ color: accent }}
             >
               Play <ArrowRight className="h-3.5 w-3.5" />
             </span>

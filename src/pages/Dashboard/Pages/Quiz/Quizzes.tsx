@@ -20,9 +20,8 @@ import {
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
 } from "@/components/ui/sheet";
-import { Input } from "@/components/ui/form";
 import { GrFormNextLink } from "react-icons/gr";
-import { Filter } from "lucide-react";
+import { Filter, PencilLine, Sparkles } from "lucide-react";
 import { QuizFiltersPanel } from "./components/quiz-filters-panel";
 import { DataTransferControls } from "@/components/data-transfer/DataTransferControls";
 
@@ -126,19 +125,56 @@ export const Quizzes = () => {
             <DialogTrigger asChild>
               <LiftedButton>+ Create Quiz</LiftedButton>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="sm:max-w-2xl">
               <DialogHeader>
                 <DialogTitle>
-                  <p className="text-xl">Choose your quiz title</p>
-                  <p className="text-muted-foreground text-xs">(You can still change later)</p>
+                  <p className="text-xl">How do you want to build this quiz?</p>
+                  <p className="text-muted-foreground text-xs font-normal">
+                    You can edit everything afterwards either way.
+                  </p>
                 </DialogTitle>
               </DialogHeader>
-              <Input variant="quiz" placeholder="Quiz Title" />
-              <section className="flex flex-col items-end mt-6">
-                <Link to="/dashboard/quizzes/create-quiz" className="w-fit">
-                  <LiftedButton className="w-fit">Next <GrFormNextLink /></LiftedButton>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                {/* Manual */}
+                <Link
+                  to="/dashboard/quizzes/create-quiz"
+                  className="group rounded-xl border-2 border-primary/30 hover:border-primary bg-background p-5 flex flex-col gap-3 transition-colors"
+                >
+                  <PencilLine className="h-8 w-8 text-primary" />
+                  <div>
+                    <p className="font-semibold">Create manually</p>
+                    <p className="text-muted-foreground text-xs mt-1">
+                      Build the quiz yourself — pick existing questions from the bank or
+                      write new ones from scratch.
+                    </p>
+                  </div>
+                  <span className="mt-auto pt-2 text-primary text-sm flex items-center gap-1">
+                    Start <GrFormNextLink />
+                  </span>
                 </Link>
-              </section>
+
+                {/* AI */}
+                <Link
+                  to="/dashboard/quizzes/create-quiz/ai"
+                  className="group rounded-xl border-2 border-primary/30 hover:border-primary bg-background p-5 flex flex-col gap-3 transition-colors relative"
+                >
+                  <span className="absolute top-3 right-3 text-[10px] font-semibold uppercase tracking-wide bg-primary/15 text-primary rounded-full px-2 py-0.5">
+                    New
+                  </span>
+                  <Sparkles className="h-8 w-8 text-primary" />
+                  <div>
+                    <p className="font-semibold">Create with AI</p>
+                    <p className="text-muted-foreground text-xs mt-1">
+                      Paste your source material, run our prompt through any AI, and we'll
+                      turn the result into a ready-to-edit quiz.
+                    </p>
+                  </div>
+                  <span className="mt-auto pt-2 text-primary text-sm flex items-center gap-1">
+                    Start <GrFormNextLink />
+                  </span>
+                </Link>
+              </div>
             </DialogContent>
           </Dialog>
         </div>

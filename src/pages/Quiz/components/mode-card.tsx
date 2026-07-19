@@ -78,7 +78,7 @@ export function ModeCard({
       <button
         type="button"
         onClick={onSelect}
-        className={`group relative flex h-full w-full flex-col gap-4 rounded-2xl border-2 border-border bg-card p-6 text-left sm:p-8 shadow-[0_4px_0_0_var(--edge)] transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-1 hover:shadow-[0_7px_0_0_var(--edge)] active:translate-y-[2px] active:shadow-[0_2px_0_0_var(--edge)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-background ${colors.edge} ${colors.hoverBorder} ${colors.ring}`}
+        className={`group relative flex h-full w-full flex-col gap-4 rounded-2xl border-2 border-border bg-card p-6 text-left font-app sm:p-8 shadow-[0_4px_0_0_var(--edge)] transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-1 hover:shadow-[0_7px_0_0_var(--edge)] active:translate-y-[2px] active:shadow-[0_2px_0_0_var(--edge)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-background ${colors.edge} ${colors.hoverBorder} ${colors.ring}`}
       >
         {/* Icon chip — a miniature of the pushable button (inherits --edge) */}
         <span

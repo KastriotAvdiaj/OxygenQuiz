@@ -4,13 +4,13 @@ import { UseFormRegisterReturn } from "react-hook-form";
 import { cn } from "@/utils/cn";
 
 import { FieldWrapper, FieldWrapperPassThroughProps } from "./field-wrapper";
-import { FIELD_PRESS, FIELD_SHELL, FIELD_THEMES } from "./field-variants";
+import { FIELD_MODERN, FIELD_PRESS, FIELD_SHELL, FIELD_THEMES } from "./field-variants";
 
 export type TextareaProps = React.TextareaHTMLAttributes<HTMLTextAreaElement> &
   FieldWrapperPassThroughProps & {
     className?: string;
     registration?: Partial<UseFormRegisterReturn>;
-    variant?: "default" | "quiz" | "isCorrect" | "isIncorrect";
+    variant?: "default" | "quiz" | "settings" | "isCorrect" | "isIncorrect";
   };
 const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
   (
@@ -24,6 +24,8 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
             // Base styles (common to all variants)
             "flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 transition-colors",
             variant === "default" && ["min-h-[60px]"],
+            // Modern settings field (see field-variants.ts) — quiet, theme-aware.
+            variant === "settings" && cn(FIELD_MODERN, "min-h-[80px] resize-y"),
             // Pushable-field compositions shared with Input (field-variants.ts)
             variant === "quiz" &&
               cn(FIELD_SHELL, FIELD_PRESS, FIELD_THEMES.primary, "min-h-[60px]"),

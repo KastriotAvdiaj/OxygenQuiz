@@ -47,3 +47,23 @@ export const FIELD_THEMES = {
 } as const;
 
 export type FieldTheme = keyof typeof FIELD_THEMES;
+
+/**
+ * Modern "settings" field — the quiet, premium counterpart to the pushable quiz fields.
+ * For settings panels (title, description, etc.) where a big centered display-font control
+ * feels out of place. Theme-aware via tokens (foreground / border / primary / muted), so it
+ * reads correctly in light and dark with no per-theme class soup.
+ *
+ * Intent: clean sans-serif, normal weight, comfortable padding, a subtle neutral border by
+ * default, and the primary color appearing only on focus (border + soft ring). Pairs with the
+ * Select "minimal" variant, which already follows the same language.
+ */
+export const FIELD_MODERN =
+  "flex w-full rounded-md border border-border bg-background dark:bg-white/[0.04] " +
+  "px-3.5 py-2.5 font-sans text-[15px] font-normal leading-normal text-foreground shadow-sm " +
+  "placeholder:font-normal placeholder:text-muted-foreground " +
+  "outline-none transition-[color,background-color,border-color,box-shadow] duration-150 " +
+  "hover:border-foreground/25 " +
+  "focus:border-primary focus:ring-2 focus:ring-primary/30 focus:ring-offset-0 " +
+  "focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/30 " +
+  "disabled:cursor-not-allowed disabled:opacity-50";

@@ -15,6 +15,9 @@ interface BaseCategorySelectProps {
   includeAllOption?: boolean;
   error?: string;
   clearErrors?: () => void;
+  /** Base look when there's no error. "quiz" (default) is the pushable field; "minimal" is
+   *  the quiet modern style used by settings panels. */
+  fieldVariant?: "quiz" | "minimal";
 }
 
 interface FormModeProps extends BaseCategorySelectProps {
@@ -39,9 +42,10 @@ export const CategorySelect: React.FC<CategorySelectProps> = (props) => {
     error,
     clearErrors,
     mode = "form",
+    fieldVariant = "quiz",
   } = props;
 
-  const variant = error ? "incorrect" : "quiz";
+  const variant = error ? "incorrect" : fieldVariant;
 
   if (mode === "filter") {
     const { value, onChange } = props as FilterModeProps;
@@ -110,7 +114,7 @@ export const CategorySelect: React.FC<CategorySelectProps> = (props) => {
           <SelectValue
             className="text-foreground"
             placeholder={
-              includeAllOption ? "All Categories" : "--Select Category--"
+              includeAllOption ? "All Categories" : "Select category"
             }
           />
         </SelectTrigger>

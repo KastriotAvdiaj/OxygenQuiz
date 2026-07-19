@@ -102,10 +102,11 @@ export function QuizToolbar({
       {/* Single toolbar row — search capped on desktop, sort pinned right.
           Wraps gracefully: mobile gets search full-width with actions beneath. */}
       <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-        {/* Search — full width on mobile, capped on desktop so it doesn't dominate.
-            Minimal style (matches the settings page): hairline border, soft
-            shadow, primary only on the focus ring. */}
-        <div className="relative w-full lg:w-72 xl:w-80">
+        {/* Search — full width on mobile; on desktop it flex-grows to fill the
+            available room (capped by max-w-md) instead of a hardcoded width, so
+            the toolbar breathes on wide/ultra-wide screens and stacks cleanly on
+            mobile. Minimal style: hairline border, soft shadow, primary on focus. */}
+        <div className="relative w-full lg:flex-1 lg:max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
           <input
             type="text"

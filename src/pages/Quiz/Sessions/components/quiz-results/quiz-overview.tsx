@@ -1,9 +1,13 @@
 // src/components/quiz/QuizOverview.tsx
 
-import { Trophy, Target, Clock} from "lucide-react";
+import { Trophy, Target, Clock } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { QuizSession } from "../../../../../types/quiz-session-types";
-import { calculateQuizStats, formatDuration, getPerformanceLevel } from "./quiz-session-utils";
+import {
+  calculateQuizStats,
+  formatDuration,
+  getPerformanceLevel,
+} from "./quiz-session-utils";
 import { Badge } from "@/components/ui/badge";
 
 interface QuizOverviewProps {
@@ -24,16 +28,17 @@ export function QuizOverview({ session }: QuizOverviewProps) {
       <Card
         className="relative overflow-hidden bg-primary color-white"
         variant="lifted"
-        >
+      >
         <div className="absolute top-3 right-3">
           <Badge
             variant="outline"
-            className="bg-background/50 backdrop-blur-sm text-xs">
+            className="bg-background/50 backdrop-blur-sm text-xs"
+          >
             {session.category}
           </Badge>
         </div>
 
-        <CardContent className="pt-5 pb-5 sm:pt-6 sm:pb-6 text-center">
+        <CardContent className="pt-5 pb-5 sm:pt-6 sm:pb-6 text-center text-white">
           <div className="inline-flex items-center justify-center p-2 mb-2 rounded-full bg-primary/20">
             <Trophy className="h-6 w-6 sm:h-8 sm:w-8" />
           </div>
@@ -46,13 +51,14 @@ export function QuizOverview({ session }: QuizOverviewProps) {
             <span className="text-5xl sm:text-6xl font-black tracking-tighter leading-none">
               {stats.normalizedScore}
             </span>
-            <span className="text-xl sm:text-2xl font-medium">
-              / 100
-            </span>
+            <span className="text-xl sm:text-2xl font-medium">/ 100</span>
           </div>
 
-          <p className="mt-1.5 text-sm sm:text-base font-semibold tracking-wide" style={{ color: performance.color }}>
-            {performance.level}
+          <p
+            className="mt-1.5 text-sm sm:text-base font-semibold tracking-wide"
+            style={{ color: performance.color }}
+          >
+            {/* {performance.level} */}
           </p>
 
           <div className="mt-3 flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-xs sm:text-sm font-medium">
@@ -79,7 +85,9 @@ export function QuizOverview({ session }: QuizOverviewProps) {
               <p className="text-xs text-muted-foreground font-medium uppercase">
                 Raw Score
               </p>
-              <p className="text-base sm:text-lg font-bold">{stats.rawTotalScore} pts</p>
+              <p className="text-base sm:text-lg font-bold">
+                {stats.rawTotalScore} pts
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -93,7 +101,9 @@ export function QuizOverview({ session }: QuizOverviewProps) {
               <p className="text-xs text-muted-foreground font-medium uppercase">
                 Time Taken
               </p>
-              <p className="text-base sm:text-lg font-bold">{formatDuration(timeTaken)}</p>
+              <p className="text-base sm:text-lg font-bold">
+                {formatDuration(timeTaken)}
+              </p>
             </div>
           </CardContent>
         </Card>

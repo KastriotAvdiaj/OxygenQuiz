@@ -9,7 +9,7 @@ export const Home = () => {
           mainClassName="px-2 sm:px-2 md:px-3 bg-cyan-300 text-black font-header font-semibold italic overflow-hidden py-0.5 sm:py-1 md:py-2 justify-center rounded-lg"
           texts={["Thinking ", "Mind ", "Memory ", "Logic "]}
           staggerFrom={"last"}
-          animatePresenceMode="wait"
+          animatePresenceMode="popLayout"
           initial={{ y: "100%" }}
           animate={{ y: 0 }}
           exit={{ y: "-120%" }}

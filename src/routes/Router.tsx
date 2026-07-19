@@ -65,6 +65,11 @@ const QuizCreator = lazy(
       "@/pages/Dashboard/Pages/Quiz/components/Create-Quiz-Form/create-quiz"
     )
 );
+const AiQuizWizard = lazy(() =>
+  import(
+    "@/pages/Dashboard/Pages/Quiz/components/AI-Quiz/ai-quiz-wizard"
+  ).then((module) => ({ default: module.AiQuizWizard }))
+);
 const DashboardErrorElement = lazy(() =>
   import("@/pages/UtilityPages/Error/Dashboard-Error-Element").then(
     (module) => ({ default: module.DashboardErrorElement })
@@ -113,7 +118,7 @@ const createAppRouter = (queryClient: QueryClient) =>
         <>
           <HomeLayout
             headerBehavior={HeaderBehavior.OVERLAY_SOLID}
-            effect="squares"
+            // effect="squares"
             children={<Home />}
           />
         </>
@@ -282,6 +287,7 @@ const createAppRouter = (queryClient: QueryClient) =>
       basePath="/dashboard"
       navItems={adminDashboardNavButtons}
       fullWidthPaths={[
+        // Prefix-matched by DashboardLayout, so this also covers .../create-quiz/ai.
         "/dashboard/quizzes/create-quiz",
         "/dashboard/quizzes/edit-quiz",
       ]}
@@ -371,6 +377,12 @@ const createAppRouter = (queryClient: QueryClient) =>
               <QuizCreator />
             </QuizQuestionProvider>
           ),
+        },
+        {
+          // AI-assisted creation. The wizard mounts QuizQuestionProvider itself once the
+          // generated questions are parsed, so it can seed them as initialQuestions.
+          path: "quizzes/create-quiz/ai",
+          element: <AiQuizWizard />,
         },
         {
           // Edit mode of the same form — the wrapper loads the quiz + its questions
@@ -504,6 +516,10 @@ const createAppRouter = (queryClient: QueryClient) =>
               <QuizCreator />
             </QuizQuestionProvider>
           ),
+        },
+        {
+          path: "quizzes/create/ai",
+          element: <AiQuizWizard />,
         },
         {
           path: "settings",

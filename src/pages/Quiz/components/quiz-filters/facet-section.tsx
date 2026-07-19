@@ -1,11 +1,7 @@
 import { useMemo, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { ChevronDown, Search } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
 import { cn } from "@/utils/cn";
 
 export interface FacetOption {
@@ -60,8 +56,13 @@ export function FacetSection({
   }, [options, selectedIds, query]);
 
   return (
-    <Collapsible open={open} onOpenChange={setOpen}>
-      <CollapsibleTrigger className="flex w-full items-center justify-between gap-2 py-2.5 text-sm font-semibold text-foreground hover:text-primary transition-colors">
+    <div>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="flex w-full items-center justify-between gap-2 py-2.5 text-sm font-semibold text-foreground hover:text-primary transition-colors"
+      >
         <span className="flex items-center gap-2">
           {title}
           {selectedIds.length > 0 && (
@@ -76,10 +77,22 @@ export function FacetSection({
             open && "rotate-180"
           )}
         />
-      </CollapsibleTrigger>
+      </button>
 
-      <CollapsibleContent>
-        <div className="pb-3">
+      {/* Smooth height/opacity reveal. AnimatePresence + height:auto gives a
+          clean open/close without the layout jump a display toggle would cause;
+          overflow-hidden clips the content mid-animation. */}
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            key="content"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+            className="overflow-hidden"
+          >
+            <div className="pb-3">
           {searchable && (
             <div className="relative mb-2">
               <Search className="pointer-events-none absolute left-0 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/70" />
@@ -124,10 +137,12 @@ export function FacetSection({
                 {query ? "No matches" : "No options"}
               </p>
             )}
-          </div>
-        </div>
-      </CollapsibleContent>
-    </Collapsible>
+            </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }
 
@@ -141,11 +156,12 @@ interface FacetRowProps {
 function FacetRow({ facetTitle, option, checked, onToggle }: FacetRowProps) {
   const inputId = `facet-${facetTitle}-${option.id}`;
   return (
-    <div className="flex items-center gap-2.5 rounded-md px-1 py-1.5 hover:bg-muted/60 transition-colors">
+    <div className="flex items-center gap-3 rounded-md px-1.5 py-2 hover:bg-muted/60 transition-colors">
       <Checkbox
         id={inputId}
         checked={checked}
         onCheckedChange={() => onToggle(option.id)}
+        className="h-[18px] w-[18px] rounded-[5px] border-2"
       />
       <label
         htmlFor={inputId}

@@ -37,8 +37,8 @@ export const CreatedQuestionsPanel = ({}) => {
 
   return (
     <>
-      <Card className="w-full shadow-none border-2 border-primary/30 bg-background py-0">
-        <CardHeader className=" rounded-t border-primary/30 border-b p-4 bg-primary/10">
+      <Card className="w-full shadow-none border-2 border-primary/30 bg-background py-0 lg:h-full flex flex-col lg:overflow-hidden">
+        <CardHeader className="rounded-t border-primary/30 border-b p-3 bg-primary/10 flex-none">
           <CardTitle className="flex justify-between items-center text-sm ">
             <span>Quiz Questions ({addedQuestions.length})</span>
             <Popover modal={true} open={isOpen} onOpenChange={handleOpenChange}>
@@ -57,7 +57,7 @@ export const CreatedQuestionsPanel = ({}) => {
             </Popover>
           </CardTitle>
         </CardHeader>
-        <CardContent className="px-3 py-4 h-fit overflow-y-auto max-h-[calc(100vh-300px)]">
+        <CardContent className="px-3 py-3 flex-1 min-h-0 overflow-y-auto scrollbar-thin">
           {addedQuestions.length === 0 ? (
             <p className="text-center text-muted-foreground py-4">
               No questions added yet

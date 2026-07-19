@@ -62,7 +62,7 @@ export const MainErrorFallback: React.FC<FallbackProps> = ({
                 resetErrorBoundary();
                 window.location.reload();
               }}
-              liftColor="muted"
+              // liftColor="muted"
               className="w-full">
               <RefreshCcw className="mr-2 h-4 w-4" />
               Refresh Page

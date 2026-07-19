@@ -15,6 +15,9 @@ interface BaseLanguageSelectProps {
   includeAllOption?: boolean;
   error?: string;
   clearErrors?: () => void;
+  /** Base look when there's no error. "quiz" (default) is the pushable field; "minimal" is
+   *  the quiet modern style used by settings panels. */
+  fieldVariant?: "quiz" | "minimal";
 }
 
 interface FormModeProps extends BaseLanguageSelectProps {
@@ -39,9 +42,10 @@ export const LanguageSelect: React.FC<LanguageSelectProps> = (props) => {
     error,
     clearErrors,
     mode = "form",
+    fieldVariant = "quiz",
   } = props;
 
-  const variant = error ? "incorrect" : "quiz";
+  const variant = error ? "incorrect" : fieldVariant;
 
   if (mode === "filter") {
     const { value, onChange } = props as FilterModeProps;
@@ -111,7 +115,7 @@ export const LanguageSelect: React.FC<LanguageSelectProps> = (props) => {
           variant={variant}
           className="min-w-[200px]"
         >
-          <SelectValue placeholder="--Select Language--" />
+          <SelectValue placeholder="Select language" />
         </SelectTrigger>
         <SelectContent variant={variant} className="min-w-[200px]">
           {includeAllOption && (

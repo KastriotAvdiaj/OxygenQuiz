@@ -261,6 +261,41 @@ Auth-specific enhancements are tracked in [authentication.md](../auth/authentica
   bundle. Clearing them needs a deliberate major storybook/vitest upgrade, which
   is breaking — do it as its own task, not under time pressure.
 
+## AI quiz creation (2026-07-17 — see docs/quiz/ai-quiz-architecture.md)
+
+- ~~**P2 — Orphan questions if quiz-create fails (AI flow).**~~ **Fixed (2026-07-17).**
+  The AI import used to create each question with its own committed request, then create
+  the quiz separately — so a failure after the questions were created left Private,
+  quiz-less "orphan" rows. Added a transactional `POST /api/quiz/ai-import` that creates
+  the questions, the quiz, and the join rows in a **single** transaction (reusing the
+  `BeginTransactionAsync` pattern already in `CreateQuizAsync`), so a failure rolls back
+  everything. The wizard now calls this one endpoint instead of the per-question loop.
+  → `QuizService.CreateAiQuizAsync`, `DTOs/Quiz/AiQuizImportCM.cs`,
+  `QuizzesController` (`ai-import`), `src/pages/Dashboard/Pages/Quiz/api/create-ai-quiz.ts`
+- ~~**P3 — Manual flow silently orphaned questions on quiz-create failure.**~~
+  **Improved (2026-07-17).** The manual builder still creates questions first (this is
+  *intentional* — a user's hand-authored questions are worth keeping if the quiz save
+  fails, and can be reused). The only defect was that the outcome was silent. On failure
+  after questions were created, the user is now told their questions were saved to their
+  bank and can be reused, instead of a generic error.
+  → `src/pages/Dashboard/Pages/Quiz/components/Create-Quiz-Form/create-quiz.tsx`
+- **P3 — Adding a new question type is shotgun surgery.** A 4th question type touches
+  ~8 files (`types.ts`, `constants.ts`, the quiz context's `getValidationSchema`, three
+  create mutations, the display cards, plus the AI feature's `prompt.ts` + `parse-ai-output.ts`),
+  and mirror work on the backend (`QuestionDTOs.cs`, `EntityMappers.cs`, `QuestionService`,
+  DbSets). This is a *pre-existing* coupling the AI feature widened by two files. Not worth
+  fixing at the current type count, but the target shape is documented for when it is:
+  a per-type **registry** so a new type is one module. See
+  [`ai-quiz-architecture.md`](../quiz/ai-quiz-architecture.md) §12.
+- **P3 — Prompt logic will duplicate in C# at Phase 2.** `buildPrompt` is TS-only; the
+  planned server-side (hosted-API) generator would restate it. When Phase 2 lands, make the
+  backend the prompt authority (expose it via an endpoint the copy button also fetches) so
+  there is one copy. → `src/pages/Dashboard/Pages/Quiz/components/AI-Quiz/prompt.ts`
+- **P3 — AI parser restates some validation rules.** `parse-ai-output.ts` re-encodes a few
+  rules already in the `create*QuestionInputSchema` Zod schemas (kept separate on purpose —
+  builder vs API shapes differ, e.g. `acceptableAnswers`). Track as drift risk; unify only
+  where shapes align.
+
 ## Auth enhancements
 
 Detailed in [authentication.md](../auth/authentication.md) "Recommended improvements":

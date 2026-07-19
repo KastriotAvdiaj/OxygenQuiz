@@ -36,7 +36,7 @@ export interface RotatingTextProps
   initial?: boolean | Target | VariantLabels;
   animate?: boolean | VariantLabels | TargetAndTransition;
   exit?: Target | VariantLabels;
-  animatePresenceMode?: "sync" | "wait";
+  animatePresenceMode?: "sync" | "wait" | "popLayout";
   animatePresenceInitial?: boolean;
   rotationInterval?: number;
   staggerDuration?: number;
@@ -58,7 +58,7 @@ const RotatingText = forwardRef<RotatingTextRef, RotatingTextProps>(
       initial = { y: "100%", opacity: 0 },
       animate = { y: 0, opacity: 1 },
       exit = { y: "-120%", opacity: 0 },
-      animatePresenceMode = "wait",
+      animatePresenceMode = "popLayout",
       animatePresenceInitial = false,
       rotationInterval = 2000,
       staggerDuration = 0,

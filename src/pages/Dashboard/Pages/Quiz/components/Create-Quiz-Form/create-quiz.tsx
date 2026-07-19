@@ -1,14 +1,20 @@
 import { Form, Input, Label, Textarea } from "@/components/ui/form";
 import { Separator } from "@/components/ui/separator";
 import { useQuizForm } from "./use-quiz-form";
-import { Brain, PlusCircle, Clock, Eye, Shuffle, Folder, MessageSquareText } from "lucide-react";
+import {
+  Brain,
+  Clock,
+  Eye,
+  Shuffle,
+  Folder,
+  MessageSquareText,
+} from "lucide-react";
 import {
   Card,
   CardContent,
   CardFooter,
   CardHeader,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -21,7 +27,7 @@ import { useQuiz } from "./Quiz-questions-context";
 import { AnyQuestion } from "@/types/question-types";
 import { LiftedButton } from "@/common/LiftedButton";
 import { CategorySelect } from "../../../Question/Entities/Categories/Components/select-question-category";
-import { createQuizInputSchema, useCreateQuiz } from "../../api/create-quiz";
+import { CreateQuizInput, createQuizInputSchema, useCreateQuiz } from "../../api/create-quiz";
 import { DifficultySelect } from "../../../Question/Entities/Difficulty/Components/select-question-difficulty";
 import { LanguageSelect } from "../../../Question/Entities/Language/components/select-question-language";
 import { Spinner, Switch } from "@/components/ui";
@@ -53,6 +59,7 @@ import { useCreateTypeTheAnswerQuestion } from "../../../Question/api/Type_The_A
 import { CreatedQuestionsPanel } from "./components/question-panel/questions-panel";
 import ImageUpload from "@/utils/Image-Upload";
 import { useUpdateQuiz, isVersionConflictError } from "../../api/update-quiz";
+import { useCreateAiQuiz, AiImportQuestion } from "../../api/create-ai-quiz";
 import { Quiz } from "@/types/quiz-types";
 
 interface CreateQuizFormProps {
@@ -62,9 +69,25 @@ interface CreateQuizFormProps {
    * separately through QuizQuestionProvider's initialQuestions.
    */
   editQuiz?: Quiz;
+  /**
+   * Create mode: seed the quiz-level fields. Used by the AI wizard, which collects the
+   * title / category / language / difficulty / settings up front and then hands off to
+   * this form for review and submission. Ignored when `editQuiz` is set.
+   */
+  initialValues?: Partial<CreateQuizInput>;
+  /**
+   * AI review mode: submit through the atomic `/quiz/ai-import` endpoint (questions + quiz
+   * created in one transaction) instead of the per-question loop, so a failed save can't
+   * leave orphan questions. See docs/quiz/ai-quiz-architecture.md §7.
+   */
+  aiImportMode?: boolean;
 }
 
-const CreateQuizForm = ({ editQuiz }: CreateQuizFormProps = {}) => {
+const CreateQuizForm = ({
+  editQuiz,
+  initialValues,
+  aiImportMode = false,
+}: CreateQuizFormProps = {}) => {
   const isEditMode = editQuiz != null;
   const { queryData } = useQuizForm();
   const {
@@ -134,13 +157,13 @@ const CreateQuizForm = ({ editQuiz }: CreateQuizFormProps = {}) => {
     acceptableAnswers: DEFAULT_NEW_TYPE_ANSWER.acceptableAnswers.map(
       (answer) => ({
         ...answer,
-      })
+      }),
     ),
   });
 
   // Function to create a new question based on its type
   const createNewQuestion = async (
-    question: NewAnyQuestion
+    question: NewAnyQuestion,
   ): Promise<number> => {
     switch (question.type) {
       case QuestionType.MultipleChoice:
@@ -174,8 +197,25 @@ const CreateQuizForm = ({ editQuiz }: CreateQuizFormProps = {}) => {
         navigate(`${dashboardBase}/quizzes`);
       },
       onError: (error) => {
+        // Notification is raised by handleQuizSubmit, which knows whether questions were
+        // already created (and can tell the user they were saved rather than lost).
         console.error("Quiz creation error:", error);
-        // Single error notification point
+      },
+    },
+  });
+
+  const createAiQuizMutation = useCreateAiQuiz({
+    mutationConfig: {
+      onSuccess: () => {
+        addNotification({
+          type: "success",
+          title: "Success",
+          message: "Your quiz was created successfully!",
+        });
+        navigate(`${dashboardBase}/quizzes`);
+      },
+      onError: (error) => {
+        console.error("AI quiz import error:", error);
         addNotification({
           type: "error",
           title: "Error",
@@ -198,7 +238,7 @@ const CreateQuizForm = ({ editQuiz }: CreateQuizFormProps = {}) => {
         navigate(
           dashboardBase === "/my-dashboard"
             ? "/my-dashboard/quizzes"
-            : `/dashboard/quiz/${editQuiz?.id}`
+            : `/dashboard/quiz/${editQuiz?.id}`,
         );
       },
       onError: (error) => {
@@ -264,6 +304,81 @@ const CreateQuizForm = ({ editQuiz }: CreateQuizFormProps = {}) => {
         return;
       }
 
+      // AI review mode: create questions + quiz atomically through /quiz/ai-import so a
+      // failed save can't leave orphan questions. New questions travel inline; existing
+      // ones (added from the bank during review) travel as ids.
+      if (aiImportMode && !isEditMode) {
+        const importQuestions: AiImportQuestion[] = questionsWithSettings.map(
+          ({ question, settings }, index) => {
+            const base = {
+              difficultyId:
+                (question as NewAnyQuestion).difficultyId ??
+                values.difficultyId,
+              pointSystem: settings.pointSystem,
+              timeLimitInSeconds: settings.timeLimitInSeconds,
+              orderInQuiz: settings.orderInQuiz || index,
+            };
+
+            // Existing question picked from the bank during review.
+            if (question.id > 0) {
+              return { ...base, existingQuestionId: question.id };
+            }
+
+            const nq = question as NewAnyQuestion;
+            if (nq.type === QuestionType.MultipleChoice) {
+              return {
+                ...base,
+                type: QuestionType.MultipleChoice,
+                text: nq.text,
+                imageUrl: nq.imageUrl,
+                answerOptions: nq.answerOptions.map((o) => ({
+                  text: o.text,
+                  isCorrect: o.isCorrect,
+                })),
+                allowMultipleSelections: nq.allowMultipleSelections,
+              };
+            }
+            if (nq.type === QuestionType.TrueFalse) {
+              return {
+                ...base,
+                type: QuestionType.TrueFalse,
+                text: nq.text,
+                imageUrl: nq.imageUrl,
+                correctAnswerBoolean: nq.correctAnswer,
+              };
+            }
+            return {
+              ...base,
+              type: QuestionType.TypeTheAnswer,
+              text: nq.text,
+              imageUrl: nq.imageUrl,
+              correctAnswerText: nq.correctAnswer,
+              acceptableAnswers: nq.acceptableAnswers.map((a) => a.value),
+              isCaseSensitive: nq.isCaseSensitive,
+              allowPartialMatch: nq.allowPartialMatch,
+            };
+          },
+        );
+
+        await createAiQuizMutation.mutateAsync({
+          data: {
+            title: values.title,
+            description: values.description,
+            categoryId: values.categoryId,
+            languageId: values.languageId,
+            difficultyId: values.difficultyId,
+            status: values.status,
+            showFeedbackImmediately: values.showFeedbackImmediately,
+            shuffleQuestions: values.shuffleQuestions,
+            imageUrl: values.imageUrl,
+            questions: importQuestions,
+          },
+        });
+
+        resetAllValidationStates();
+        return;
+      }
+
       const processedQuestions = await Promise.all(
         questionsWithSettings.map(async ({ question, settings }, index) => {
           let questionId: number;
@@ -282,7 +397,7 @@ const CreateQuizForm = ({ editQuiz }: CreateQuizFormProps = {}) => {
             pointSystem: settings.pointSystem,
             orderInQuiz: settings.orderInQuiz || index,
           };
-        })
+        }),
       );
 
       if (isEditMode && editQuiz) {
@@ -298,13 +413,39 @@ const CreateQuizForm = ({ editQuiz }: CreateQuizFormProps = {}) => {
           },
         });
       } else {
-        // Create the quiz with all question IDs
-        await createQuizMutation.mutateAsync({
-          data: {
-            ...values,
-            questions: processedQuestions,
-          },
-        });
+        // Manual create is questions-first by design: the questions are created (above),
+        // then the quiz. If the quiz step fails, the questions the user authored are
+        // deliberately KEPT in their bank — they're real work worth reusing — so we tell
+        // the user that instead of a generic error. (The AI flow, which returns earlier,
+        // is atomic precisely because its questions are throwaway. See
+        // docs/quiz/ai-quiz-architecture.md §10a.)
+        const createdNewQuestions = questionsWithSettings.some(
+          ({ question }) => question.id < 0,
+        );
+        try {
+          await createQuizMutation.mutateAsync({
+            data: {
+              ...values,
+              questions: processedQuestions,
+            },
+          });
+        } catch (createError) {
+          if (createdNewQuestions) {
+            addNotification({
+              type: "warning",
+              title: "Quiz not created — your questions were saved",
+              message:
+                "We couldn't create the quiz, but the questions you just made were saved to your question bank. You can reuse them to build a quiz.",
+            });
+          } else {
+            addNotification({
+              type: "error",
+              title: "Error",
+              message: "Failed to create quiz. Please try again.",
+            });
+          }
+          return; // handled here; skip the generic outer handler
+        }
       }
 
       // NEW: Reset all validation states after successful submission
@@ -312,7 +453,11 @@ const CreateQuizForm = ({ editQuiz }: CreateQuizFormProps = {}) => {
     } catch (error) {
       console.error("Error in quiz save process:", error);
       // Single error notification point - only show if it's not already handled by mutation
-      if (!createQuizMutation.isError && !updateQuizMutation.isError) {
+      if (
+        !createQuizMutation.isError &&
+        !updateQuizMutation.isError &&
+        !createAiQuizMutation.isError
+      ) {
         addNotification({
           type: "error",
           title: "Error",
@@ -347,12 +492,13 @@ const CreateQuizForm = ({ editQuiz }: CreateQuizFormProps = {}) => {
   return (
     <Form
       id={isEditMode ? "edit-quiz" : "create-quiz"}
-      className="mt-0 w-full"
+      className="mt-0 w-full lg:h-full"
       onSubmit={handleQuizSubmit}
       schema={createQuizInputSchema}
       options={{
         mode: "onSubmit",
         // Edit mode: prefill every quiz-level field from the loaded quiz.
+        // Create mode: prefill from initialValues when a caller supplied them (AI wizard).
         defaultValues: editQuiz
           ? {
               title: editQuiz.title,
@@ -367,8 +513,11 @@ const CreateQuizForm = ({ editQuiz }: CreateQuizFormProps = {}) => {
               shuffleQuestions: editQuiz.shuffleQuestions,
               questions: [],
             }
-          : undefined,
-      }}>
+          : initialValues
+            ? { ...initialValues, questions: [] }
+            : undefined,
+      }}
+    >
       {({ register, formState, setValue, watch, clearErrors }) => {
         useEffect(() => {
           const questions = addedQuestions.map(
@@ -377,7 +526,7 @@ const CreateQuizForm = ({ editQuiz }: CreateQuizFormProps = {}) => {
               timeLimitInSeconds: 10,
               pointSystem: "Standard",
               orderInQuiz: index,
-            })
+            }),
           );
           setValue("questions", questions);
         }, [addedQuestions, setValue]);
@@ -386,6 +535,7 @@ const CreateQuizForm = ({ editQuiz }: CreateQuizFormProps = {}) => {
         const isSubmitting =
           createQuizMutation.isPending ||
           updateQuizMutation.isPending ||
+          createAiQuizMutation.isPending ||
           isCreatingQuestions;
 
         const [imageUrl, setImageUrl] = useState(editQuiz?.imageUrl ?? "");
@@ -406,16 +556,20 @@ const CreateQuizForm = ({ editQuiz }: CreateQuizFormProps = {}) => {
         };
 
         return (
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 p-4 items-start min-h-0">
+          <div className="mx-auto w-full max-w-[1600px] grid grid-cols-1 lg:grid-cols-5 gap-3 sm:gap-4 items-start lg:h-full lg:min-h-0 lg:overflow-hidden">
             {/* Quiz Details Sidebar */}
-            <Card className="md:text-xs lg:text-sm h-fit lg:col-span-1 bg-background border-2 border-primary/30">
-              <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <CardHeader className="w-full relative bg-primary/10 text-center border-b border-primary/30 px-2 py-4">
+            <Card className="md:text-xs lg:text-sm h-fit lg:h-full lg:col-span-1 bg-background border-2 border-primary/30 flex flex-col lg:overflow-hidden">
+              <Tabs
+                value={activeTab}
+                onValueChange={setActiveTab}
+                className="flex flex-1 flex-col min-h-0"
+              >
+                <CardHeader className="w-full relative bg-primary/10 text-center border-b border-primary/30 px-2 py-3 flex-none">
                   <TabsList className="w-full border-none bg-none shadow-none ">
                     <TabsTrigger value="quiz" className="rounded-xl">
-                      <p className="flex gap-2 px-4 items-center">
+                      <p className="flex gap-2 px-4 items-center text-[10px]">
                         <Folder
-                          className={`h-5 w-5 ${
+                          className={`h-3 w-3 ${
                             activeTab === "quiz" ? "text-white" : "text-primary"
                           }`}
                         />
@@ -423,9 +577,9 @@ const CreateQuizForm = ({ editQuiz }: CreateQuizFormProps = {}) => {
                       </p>
                     </TabsTrigger>
                     <TabsTrigger value="questions" className="rounded-xl">
-                      <p className="flex gap-2 px-4 items-center">
+                      <p className="flex gap-2 px-4 items-center text-[10px]">
                         <MessageSquareText
-                          className={`h-5 w-5 ${
+                          className={`h-3 w-3 ${
                             activeTab === "questions"
                               ? "text-white"
                               : "text-primary"
@@ -439,7 +593,8 @@ const CreateQuizForm = ({ editQuiz }: CreateQuizFormProps = {}) => {
 
                 <TabsContent
                   value="questions"
-                  className="flex items-center justify-center w-full">
+                  className="flex items-center justify-center w-full"
+                >
                   <section className="flex flex-col gap-4 p-4 w-full">
                     {addedQuestions.length === 0 ? (
                       <div className="text-muted-foreground text-center py-8">
@@ -454,20 +609,24 @@ const CreateQuizForm = ({ editQuiz }: CreateQuizFormProps = {}) => {
                   </section>
                 </TabsContent>
 
-                <TabsContent value="quiz">
-                  <CardContent className="bg-background space-y-4 max-h-[calc(100vh-300px)] overflow-y-auto">
+                <TabsContent
+                  value="quiz"
+                  className="flex-1 min-h-0 overflow-hidden mt-0"
+                >
+                  <CardContent className="bg-background space-y-4 h-full overflow-y-auto scrollbar-thin py-3">
                     {/* Basic Information */}
                     <div className="space-y-2">
                       <div>
                         <Label
                           htmlFor="title"
-                          className="text-sm font-medium flex items-center gap-1">
+                          className="text-sm font-medium flex items-center gap-1"
+                        >
                           Quiz Title <span className="text-destructive">*</span>
                         </Label>
                         <Input
-                          variant={errors.title ? "isIncorrect" : "quiz"}
+                          variant={errors.title ? "isIncorrect" : "settings"}
                           id="title"
-                          placeholder="Enter quiz title..."
+                          placeholder="Enter quiz title"
                           className="mt-1"
                           {...register("title")}
                           error={errors.title}
@@ -477,13 +636,14 @@ const CreateQuizForm = ({ editQuiz }: CreateQuizFormProps = {}) => {
                       <div>
                         <Label
                           htmlFor="description"
-                          className="text-sm font-medium">
+                          className="text-sm font-medium"
+                        >
                           Description
                         </Label>
                         <Textarea
-                          variant="quiz"
+                          variant="settings"
                           id="description"
-                          placeholder="Describe your quiz..."
+                          placeholder="Describe your quiz"
                           className="mt-1 min-h-[80px] resize-none"
                           {...register("description")}
                           error={errors.description}
@@ -502,6 +662,7 @@ const CreateQuizForm = ({ editQuiz }: CreateQuizFormProps = {}) => {
                     <div className="space-y-3">
                       <CategorySelect
                         categories={queryData.categories}
+                        fieldVariant="minimal"
                         value={watch("categoryId")?.toString() || ""}
                         onChange={(selectedValue: string) =>
                           setValue("categoryId", parseInt(selectedValue, 10))
@@ -513,6 +674,7 @@ const CreateQuizForm = ({ editQuiz }: CreateQuizFormProps = {}) => {
 
                       <DifficultySelect
                         difficulties={queryData.difficulties}
+                        fieldVariant="minimal"
                         value={watch("difficultyId")?.toString() || ""}
                         onChange={(selectedValue: string) =>
                           setValue("difficultyId", parseInt(selectedValue, 10))
@@ -524,6 +686,7 @@ const CreateQuizForm = ({ editQuiz }: CreateQuizFormProps = {}) => {
 
                       <LanguageSelect
                         languages={queryData.languages}
+                        fieldVariant="minimal"
                         value={watch("languageId")?.toString() || ""}
                         includeAllOption={false}
                         onChange={(selectedValue: string) =>
@@ -551,28 +714,37 @@ const CreateQuizForm = ({ editQuiz }: CreateQuizFormProps = {}) => {
                         <Select
                           value={watch("status") || "Draft"}
                           onValueChange={(value) =>
-                            setValue("status", value as "Draft" | "Unlisted" | "Public")
-                          }>
+                            setValue(
+                              "status",
+                              value as "Draft" | "Unlisted" | "Public",
+                            )
+                          }
+                        >
                           <SelectTrigger
-                            variant={`${errors.status ? "incorrect" : "quiz"}`}
-                            className="w-full">
-                            <SelectValue placeholder="Select status..." />
+                            variant={errors.status ? "incorrect" : "minimal"}
+                            className="w-full"
+                          >
+                            <SelectValue placeholder="Select status" />
                           </SelectTrigger>
                           <SelectContent
-                            variant={`${errors.status ? "incorrect" : "quiz"}`}>
+                            variant={errors.status ? "incorrect" : "minimal"}
+                          >
                             <SelectItem
-                              variant={`${errors.status ? "incorrect" : "quiz"}`}
-                              value="Draft">
+                              variant={errors.status ? "incorrect" : "minimal"}
+                              value="Draft"
+                            >
                               Draft — only you can see it
                             </SelectItem>
                             <SelectItem
-                              variant={`${errors.status ? "incorrect" : "quiz"}`}
-                              value="Unlisted">
+                              variant={errors.status ? "incorrect" : "minimal"}
+                              value="Unlisted"
+                            >
                               Unlisted — playable via share link
                             </SelectItem>
                             <SelectItem
-                              variant={`${errors.status ? "incorrect" : "quiz"}`}
-                              value="Public">
+                              variant={errors.status ? "incorrect" : "minimal"}
+                              value="Public"
+                            >
                               Public — listed for everyone
                             </SelectItem>
                           </SelectContent>
@@ -598,7 +770,8 @@ const CreateQuizForm = ({ editQuiz }: CreateQuizFormProps = {}) => {
                       <div className="flex items-center justify-between">
                         <Label
                           htmlFor="showFeedback"
-                          className="text-sm font-medium flex items-center gap-2">
+                          className="text-sm font-medium flex items-center gap-2"
+                        >
                           💬 Instant Feedback
                         </Label>
                         <Switch
@@ -613,7 +786,8 @@ const CreateQuizForm = ({ editQuiz }: CreateQuizFormProps = {}) => {
                       <div className="flex items-center justify-between">
                         <Label
                           htmlFor="shuffleQuestions"
-                          className="text-sm font-medium flex items-center gap-2">
+                          className="text-sm font-medium flex items-center gap-2"
+                        >
                           <Shuffle className="h-3 w-3" />
                           Shuffle Questions
                         </Label>
@@ -625,7 +799,6 @@ const CreateQuizForm = ({ editQuiz }: CreateQuizFormProps = {}) => {
                           }
                         />
                       </div>
-
                     </div>
                   </CardContent>
                 </TabsContent>
@@ -633,19 +806,21 @@ const CreateQuizForm = ({ editQuiz }: CreateQuizFormProps = {}) => {
             </Card>
 
             {/* Main Quiz Creator Area */}
-            <Card className="bg-background justify-center border-2 border-primary/30 rounded-xl shadow-lg flex flex-col items-center w-full lg:col-span-3">
-              <CardHeader className="w-full relative bg-primary/10 p-4 text-center border-b border-primary/30">
+            <Card className="bg-background border-2 border-primary/30 rounded-xl shadow-lg flex flex-col items-center w-full lg:col-span-3 lg:h-full lg:overflow-hidden">
+              <CardHeader className="w-full relative bg-primary/10 p-3 text-center border-b border-primary/30 flex-none">
                 <section className="flex justify-center gap-4 rounded-lg">
                   <SelectQuestionComponent />
                   <Dialog
                     open={isAddQuestionDialogOpen}
                     onOpenChange={(open) =>
                       open ? openAddQuestionDialog() : closeAddQuestionDialog()
-                    }>
+                    }
+                  >
                     <DialogTrigger asChild>
                       <LiftedButton
                         type="button"
-                        className="flex items-center gap-2">
+                        className="flex items-center gap-2"
+                      >
                         + Create New
                       </LiftedButton>
                     </DialogTrigger>
@@ -666,7 +841,8 @@ const CreateQuizForm = ({ editQuiz }: CreateQuizFormProps = {}) => {
                                 createNewMultipleChoiceQuestion(tempId);
                               addQuestionToQuiz(newQuestion);
                               closeAddQuestionDialog();
-                            }}>
+                            }}
+                          >
                             Multiple Choice
                           </LiftedButton>
                           <LiftedButton
@@ -678,7 +854,8 @@ const CreateQuizForm = ({ editQuiz }: CreateQuizFormProps = {}) => {
                                 createNewTrueFalseQuestion(tempId);
                               addQuestionToQuiz(newQuestion);
                               closeAddQuestionDialog();
-                            }}>
+                            }}
+                          >
                             True/False
                           </LiftedButton>
                           <LiftedButton
@@ -690,7 +867,8 @@ const CreateQuizForm = ({ editQuiz }: CreateQuizFormProps = {}) => {
                                 createNewTypeTheAnswerQuestion(tempId);
                               addQuestionToQuiz(newQuestion);
                               closeAddQuestionDialog();
-                            }}>
+                            }}
+                          >
                             Type The Answer
                           </LiftedButton>
                         </div>
@@ -700,7 +878,7 @@ const CreateQuizForm = ({ editQuiz }: CreateQuizFormProps = {}) => {
                 </section>
               </CardHeader>
 
-              <CardContent className="flex flex-col w-full p-4">
+              <CardContent className="flex flex-col w-full flex-1 min-h-0 overflow-y-auto p-3">
                 {displayQuestion !== null ? (
                   isAnyQuestion(displayQuestion) ? (
                     <ExistingQuestionCard
@@ -715,30 +893,15 @@ const CreateQuizForm = ({ editQuiz }: CreateQuizFormProps = {}) => {
                   ) : (
                     <div>Unknown question type</div>
                   )
-                ) : (
-                  <div className="flex flex-col items-center justify-center py-16 text-center text-muted-foreground border-2 border-dashed border-primary/20 rounded-lg w-full">
-                    <Brain className="h-16 w-16 mb-4 text-primary/50" />
-                    <p className="mb-4 text-lg">Your quiz is feeling empty!</p>
-                    <SelectQuestionComponent
-                      triggerButton={
-                        <Button
-                          variant="outline"
-                          type="button"
-                          className="group hover:bg-primary hover:text-primary-foreground transition-all duration-300">
-                          <PlusCircle className="mr-2 h-4 w-4 group-hover:rotate-90 transition-transform" />
-                          Add Your First Question
-                        </Button>
-                      }
-                    />
-                  </div>
-                )}
+                ) : null}
               </CardContent>
-              <CardFooter>
+              <CardFooter className="flex-none py-3">
                 <section className="w-full items-center flex justify-center">
                   <LiftedButton
                     type="submit"
                     disabled={isSubmitting}
-                    variant="default">
+                    variant="default"
+                  >
                     <div className="flex items-center justify-center">
                       <Spinner
                         size="sm"
@@ -750,8 +913,8 @@ const CreateQuizForm = ({ editQuiz }: CreateQuizFormProps = {}) => {
                         {isCreatingQuestions
                           ? "Creating Questions..."
                           : isEditMode
-                          ? "Save Changes"
-                          : "Finish"}
+                            ? "Save Changes"
+                            : "Finish"}
                       </span>
                     </div>
                   </LiftedButton>
@@ -759,7 +922,7 @@ const CreateQuizForm = ({ editQuiz }: CreateQuizFormProps = {}) => {
               </CardFooter>
             </Card>
 
-            <div className="lg:col-span-1">
+            <div className="lg:col-span-1 lg:h-full lg:min-h-0">
               <CreatedQuestionsPanel />
             </div>
           </div>

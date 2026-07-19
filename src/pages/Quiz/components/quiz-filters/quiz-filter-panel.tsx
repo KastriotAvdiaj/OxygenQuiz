@@ -23,6 +23,13 @@ interface QuizFilterPanelProps {
    * default and side-by-side where width allows; for the multiplayer dialog.
    */
   variant?: "sidebar" | "compact";
+  /**
+   * When true (desktop sidebar), the panel fills its parent's height and scrolls
+   * its facet list internally — the header stays pinned and the panel never grows
+   * past the viewport. Left false for the mobile drawer / compact dialog, which
+   * scroll as a whole.
+   */
+  fillHeight?: boolean;
   className?: string;
 }
 
@@ -41,6 +48,7 @@ export function QuizFilterPanel({
   onClearAll,
   activeCount,
   variant = "sidebar",
+  fillHeight = false,
   className,
 }: QuizFilterPanelProps) {
   const categoryOptions = useMemo<FacetOption[]>(
@@ -71,12 +79,19 @@ export function QuizFilterPanel({
   return (
     <div
       className={cn(
+        // Adapts to the viewport: full width inside the mobile drawer, natural
+        // width in the desktop sidebar column. Soft translucent surface so it
+        // reads as a distinct panel without fighting the page background.
         !compact &&
-          "rounded-xl border-2 border-border bg-background p-4 shadow-sm",
+          "w-full rounded-xl border border-border bg-card/50 p-5 shadow-sm backdrop-blur-sm lg:w-auto sm:p-6 font-app",
+        // Sidebar: hugs its content when short (collapsed), but never grows past
+        // the viewport — it caps at the page height and scrolls its body
+        // internally, so it can't spill onto the footer.
+        !compact && fillHeight && "flex max-h-[calc(100vh-7rem)] flex-col overflow-hidden",
         className
       )}
     >
-      <div className="mb-1 flex items-center justify-between">
+      <div className="mb-1 flex shrink-0 items-center justify-between">
         <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
           Filters
         </h3>
@@ -96,7 +111,10 @@ export function QuizFilterPanel({
         className={cn(
           compact
             ? "sm:grid sm:grid-cols-3 sm:gap-x-6 divide-y divide-border/60 sm:divide-y-0"
-            : "divide-y divide-border/60"
+            : "divide-y divide-border/60",
+          // In the full-height sidebar the whole facet column scrolls as one
+          // (single scrollbar), so individual facet lists aren't capped.
+          !compact && fillHeight && "-mr-2 flex-1 min-h-0 overflow-y-auto pr-2 scrollbar-thin"
         )}
       >
         {facets.map((facet) => (
@@ -106,8 +124,10 @@ export function QuizFilterPanel({
             options={facet.options}
             selectedIds={selections[facet.key]}
             onToggle={(id) => onToggle(facet.key, id)}
-            defaultOpen={!compact}
-            listMaxHeight={compact ? "max-h-36" : "max-h-52"}
+            // Collapsed by default — the panel opens tidy and the user expands
+            // only the facet they want.
+            defaultOpen={false}
+            listMaxHeight={compact ? "max-h-36" : fillHeight ? "" : "max-h-52"}
           />
         ))}
       </div>

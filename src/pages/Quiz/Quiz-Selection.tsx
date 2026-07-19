@@ -195,7 +195,10 @@ export function QuizSelection() {
     [navigate, close]
   );
 
-  const filterPanel = (
+  // fillHeight only for the desktop sidebar (it gets a page-height column that
+  // scrolls internally); the mobile drawer scrolls as a whole, so it renders the
+  // panel at natural height.
+  const renderFilterPanel = (fillHeight = false) => (
     <QuizFilterPanel
       categories={categories}
       difficulties={difficulties}
@@ -204,36 +207,42 @@ export function QuizSelection() {
       onToggle={toggle}
       onClearAll={clearFacets}
       activeCount={facetCount}
+      fillHeight={fillHeight}
     />
   );
 
   return (
-    <div className="relative text-foreground bg-cover bg-center tracking-wider h-full bg-muted">
+    // font-app: clean sans body text everywhere on the page (the layout defaults
+    // to the playful display font, which we reserve for hero headings).
+    // min-h-full (not h-full): the page fills at least one screen but is free to
+    // grow taller than the viewport when the sidebar/grid need it — a fixed
+    // h-full box would clip and let a tall filter panel spill onto the footer.
+    <div className="relative min-h-full font-app tracking-normal text-foreground bg-muted">
       {/* Wide-but-capped layout: the sidebar + grid want more room than the
           default `container` (1280–1536px), but full-bleed reads sparse on
           very large monitors — 1700px is the sweet spot. */}
       <div className="relative mx-auto w-full max-w-[1700px] px-4 sm:px-6 md:px-8 lg:px-10 py-4 sm:py-6 pb-8 sm:pb-12 md:pb-16">
-        {/* Compact header: back link + small title in one row. Keeps
-            orientation without spending a hero block on it. */}
-        <div className="mb-4 sm:mb-6 flex items-center gap-3">
+        {/* Low-profile "Back" chip — the page title was dropped in favour of a
+            cleaner, content-first header. */}
+        <div className="mb-5 sm:mb-6">
           <button
             onClick={() => navigate("/choose-mode")}
-            className="text-xs sm:text-sm font-medium text-muted-foreground hover:text-foreground flex items-center gap-1.5 transition-colors group"
+            className="group inline-flex items-center gap-1.5 rounded-lg border border-border bg-card/60 px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-foreground/20 hover:text-foreground"
           >
             <ArrowLeft className="h-3.5 w-3.5 transition-transform group-hover:-translate-x-0.5" />
             <span className="hidden sm:inline">Back to Mode Selection</span>
             <span className="sm:hidden">Back</span>
           </button>
-          <div className="h-4 w-px bg-border" aria-hidden />
-          <h2 className="text-base sm:text-lg font-bold tracking-tight">
-            Select a Quiz
-          </h2>
         </div>
 
         {/* Facet sidebar (desktop) + everything else on its right */}
         <div className="lg:flex lg:items-start lg:gap-6">
+          {/* Sticky sidebar: self-start so it hugs its content instead of
+              stretching to the row; the panel caps its own height and scrolls
+              internally, so it stays pinned in view and never spills onto the
+              footer. */}
           <aside className="hidden lg:block w-64 xl:w-72 shrink-0 sticky top-6 self-start">
-            {filterPanel}
+            {renderFilterPanel(true)}
           </aside>
 
           <div className="min-w-0 flex-1">
@@ -269,7 +278,7 @@ export function QuizSelection() {
                       <SheetHeader className="sr-only">
                         <SheetTitle>Filters</SheetTitle>
                       </SheetHeader>
-                      {filterPanel}
+                      {renderFilterPanel()}
                     </SheetContent>
                   </Sheet>
                 }

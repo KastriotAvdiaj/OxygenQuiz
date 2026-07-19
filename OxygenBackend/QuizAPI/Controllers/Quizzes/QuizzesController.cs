@@ -285,6 +285,46 @@ namespace QuizAPI.Controllers.Quizzes
         }
 
         /// <summary>
+        /// Create a quiz and all of its questions atomically (AI-assisted flow). The questions are
+        /// created Private and inherit the quiz's category/language. If anything fails, the whole
+        /// import rolls back — no orphan questions are left behind. See docs/quiz/ai-quiz-architecture.md.
+        /// </summary>
+        [HttpPost("ai-import")]
+        [Authorize]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> CreateAiQuiz([FromBody] AiQuizImportCM importCM)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ModelState);
+                }
+
+                var userId = GetCurrentUserId();
+                var createdQuiz = await _quizService.CreateAiQuizAsync(userId, importCM);
+
+                await _auditService.LogAsync(
+                    AuditActions.QuizCreated, "Quiz", createdQuiz.Id.ToString(),
+                    newValue: new { createdQuiz.Id, Source = "AiImport" });
+
+                return CreatedAtAction(nameof(GetQuizById), new { id = createdQuiz.Id }, createdQuiz);
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogWarning(ex, "Invalid operation during AI quiz import");
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error importing AI quiz");
+                return HandleCustomError("An error occurred while processing your request", false);
+            }
+        }
+
+        /// <summary>
         /// Update an existing quiz
         /// </summary>
         [HttpPut]

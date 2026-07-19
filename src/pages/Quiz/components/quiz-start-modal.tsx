@@ -58,13 +58,6 @@ export function QuizStartModal({
     [primaryColor]
   );
 
-  const gradientStyle = useMemo(() => {
-    if (quiz.gradient && colors.length > 1) {
-      return `linear-gradient(135deg, ${colors.join(", ")})`;
-    }
-    return primaryColor;
-  }, [colors, quiz.gradient, primaryColor]);
-
   const handleStartQuiz = () => {
     onStartQuiz(quiz.id);
     onClose();
@@ -82,13 +75,7 @@ export function QuizStartModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md mx-auto  border-foreground bg-card font-quiz p-0 overflow-hidden gap-0">
-        {/* Top accent strip — the category color, kept thin and deliberate. */}
-        <div
-          className="h-1.5 w-full"
-          style={{ background: gradientStyle }}
-        />
-
+      <DialogContent className="sm:max-w-md mx-auto border-border bg-card font-quiz p-0 overflow-hidden gap-0">
         <div className="p-5 sm:p-6 space-y-5">
           <DialogHeader className="space-y-3">
             <div className="flex items-center gap-2 flex-wrap">

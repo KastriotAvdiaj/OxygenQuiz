@@ -7,7 +7,7 @@ import {
   FieldWrapper,
   type FieldWrapperPassThroughProps,
 } from "./field-wrapper";
-import { FIELD_PRESS, FIELD_SHELL, FIELD_THEMES } from "./field-variants";
+import { FIELD_MODERN, FIELD_PRESS, FIELD_SHELL, FIELD_THEMES } from "./field-variants";
 import { QuestionType } from "@/types/question-types";
 
 export type InputProps = React.InputHTMLAttributes<HTMLInputElement> &
@@ -17,6 +17,7 @@ export type InputProps = React.InputHTMLAttributes<HTMLInputElement> &
     variant?:
       | "default"
       | "quiz"
+      | "settings"
       | "isCorrect"
       | "isIncorrect"
       | "display"
@@ -36,6 +37,7 @@ const displayField = (theme: string) =>
 const variantStyles: Record<NonNullable<InputProps["variant"]>, string> = {
   default: "",
   quiz: quizField(FIELD_THEMES.primary),
+  settings: cn(FIELD_MODERN, "h-10"),
   fullColor: cn(
     FIELD_SHELL,
     FIELD_PRESS,

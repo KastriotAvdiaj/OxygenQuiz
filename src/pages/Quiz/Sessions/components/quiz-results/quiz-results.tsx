@@ -81,7 +81,7 @@ export function QuizResults({
             onClick={handleRetryQuiz}
             className="flex items-center justify-center"
           >
-            <RotateCcw className="h-5 w-5 sm:h-6 sm:w-6" />
+            <RotateCcw className="h-5 w-5 sm:h-4 sm:w-4" />
             Try Again
           </LiftedButton>
 
@@ -90,7 +90,7 @@ export function QuizResults({
             // variant={"fancy"}
             className="flex items-center justify-center"
           >
-            <Home className="h-5 w-5 sm:h-6 sm:w-6" />
+            <Home className="h-5 w-5 sm:h-4 sm:w-4" />
             New Quiz
           </LiftedButton>
         </div>

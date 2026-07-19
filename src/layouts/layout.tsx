@@ -4,7 +4,7 @@ import Header from "@/common/Header";
 import { useTheme } from "@/components/ui";
 import { EmailVerificationBanner } from "@/common/EmailVerificationBanner";
 
-type EffectType = "squares" | "lightning" | "prismatic" | "none";
+type EffectType = "squares" | "lightning" | "none";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -67,7 +67,7 @@ export const HomeLayout = ({
       case "squares":
         return (
           <Squares
-            speed={0.5}
+            speed={1.5}
             squareSize={40}
             direction="diagonal"
             borderColor={colors.borderColor}

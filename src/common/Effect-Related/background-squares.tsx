@@ -1,5 +1,5 @@
 import { useTheme } from "@/components/ui";
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect } from "react";
 
 type CanvasStrokeStyle = string | CanvasGradient | CanvasPattern;
 
@@ -34,7 +34,14 @@ const Squares: React.FC<SquaresProps> = ({
   const numSquaresX = useRef<number>(0);
   const numSquaresY = useRef<number>(0);
   const gridOffset = useRef<GridOffset>({ x: 0, y: 0 });
-  const [hoveredSquare, setHoveredSquare] = useState<GridOffset | null>(null);
+  // Hover is tracked in a ref rather than state on purpose: pointer moves must
+  // NOT trigger React re-renders. The grid is redrawn every animation frame, so
+  // the loop simply reads the latest value here. Using state (as the original
+  // did) re-ran this whole effect on every mousemove — tearing down and
+  // rebuilding the rAF loop and reallocating the canvas each time — which is
+  // what caused the progressive stutter/lag after the page had been open a
+  // while.
+  const hoveredSquareRef = useRef<GridOffset | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -60,6 +67,8 @@ const Squares: React.FC<SquaresProps> = ({
 
       const startX = Math.floor(gridOffset.current.x / squareSize) * squareSize;
       const startY = Math.floor(gridOffset.current.y / squareSize) * squareSize;
+
+      const hoveredSquare = hoveredSquareRef.current;
 
       for (let x = startX; x < canvas.width + squareSize; x += squareSize) {
         for (let y = startY; y < canvas.height + squareSize; y += squareSize) {
@@ -95,30 +104,39 @@ const Squares: React.FC<SquaresProps> = ({
       ctx.fillRect(0, 0, canvas.width, canvas.height);
     };
 
-    const updateAnimation = () => {
-      const effectiveSpeed = Math.max(speed, 0.1);
+    // Time-based movement so the scroll speed is independent of the display's
+    // refresh rate. `delta` is normalized to a 60fps frame, and clamped so a
+    // background tab that pauses rAF doesn't produce one huge jump on resume.
+    let lastTime = performance.now();
+
+    const updateAnimation = (now: number) => {
+      const delta = Math.min((now - lastTime) / (1000 / 60), 3);
+      lastTime = now;
+
+      const step = Math.max(speed, 0.1) * delta;
+
       switch (direction) {
         case "right":
           gridOffset.current.x =
-            (gridOffset.current.x - effectiveSpeed + squareSize) % squareSize;
+            (gridOffset.current.x - step + squareSize) % squareSize;
           break;
         case "left":
           gridOffset.current.x =
-            (gridOffset.current.x + effectiveSpeed + squareSize) % squareSize;
+            (gridOffset.current.x + step + squareSize) % squareSize;
           break;
         case "up":
           gridOffset.current.y =
-            (gridOffset.current.y + effectiveSpeed + squareSize) % squareSize;
+            (gridOffset.current.y + step + squareSize) % squareSize;
           break;
         case "down":
           gridOffset.current.y =
-            (gridOffset.current.y - effectiveSpeed + squareSize) % squareSize;
+            (gridOffset.current.y - step + squareSize) % squareSize;
           break;
         case "diagonal":
           gridOffset.current.x =
-            (gridOffset.current.x - effectiveSpeed + squareSize) % squareSize;
+            (gridOffset.current.x - step + squareSize) % squareSize;
           gridOffset.current.y =
-            (gridOffset.current.y - effectiveSpeed + squareSize) % squareSize;
+            (gridOffset.current.y - step + squareSize) % squareSize;
           break;
         default:
           break;
@@ -128,7 +146,7 @@ const Squares: React.FC<SquaresProps> = ({
       requestRef.current = requestAnimationFrame(updateAnimation);
     };
 
-    // Track mouse hover
+    // Track mouse hover — updates a ref only, never React state.
     const handleMouseMove = (event: MouseEvent) => {
       const rect = canvas.getBoundingClientRect();
       const mouseX = event.clientX - rect.left;
@@ -144,11 +162,14 @@ const Squares: React.FC<SquaresProps> = ({
         (mouseY + gridOffset.current.y - startY) / squareSize
       );
 
-      setHoveredSquare({ x: hoveredSquareX, y: hoveredSquareY });
+      const prev = hoveredSquareRef.current;
+      if (!prev || prev.x !== hoveredSquareX || prev.y !== hoveredSquareY) {
+        hoveredSquareRef.current = { x: hoveredSquareX, y: hoveredSquareY };
+      }
     };
 
     const handleMouseLeave = () => {
-      setHoveredSquare(null);
+      hoveredSquareRef.current = null;
     };
 
     canvas.addEventListener("mousemove", handleMouseMove);
@@ -167,8 +188,9 @@ const Squares: React.FC<SquaresProps> = ({
     speed,
     borderColor,
     hoverFillColor,
-    hoveredSquare,
     squareSize,
+    startColor,
+    endColor,
   ]);
 
   return (

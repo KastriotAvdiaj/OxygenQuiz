@@ -66,6 +66,14 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
         Task<QuizDTO> CreateQuizAsync(Guid userId, QuizCM quizCM);
 
         /// <summary>
+        /// Create a quiz and all of its questions in a single transaction (AI-assisted flow).
+        /// Questions are created Private and inherit the quiz's category/language. If any step
+        /// fails the whole import rolls back, so no orphan questions can be left behind.
+        /// See docs/quiz/ai-quiz-architecture.md §7.
+        /// </summary>
+        Task<QuizDTO> CreateAiQuizAsync(Guid userId, AiQuizImportCM importCM);
+
+        /// <summary>
         /// Update an existing quiz
         /// </summary>
         /// <param name="userId">ID of the user updating the quiz</param>
