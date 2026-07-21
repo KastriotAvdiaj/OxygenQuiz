@@ -8,6 +8,10 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/form";
 import { QuestionCategory } from "@/types/question-types";
+import {
+  isUnspecifiedLookup,
+  useCanSelectUnspecifiedLookup,
+} from "../../lookup-visibility";
 
 interface BaseCategorySelectProps {
   label?: string;
@@ -45,7 +49,14 @@ export const CategorySelect: React.FC<CategorySelectProps> = (props) => {
     fieldVariant = "quiz",
   } = props;
 
-  const variant = error ? "incorrect" : fieldVariant;
+  const variant = error ? "form-error" : fieldVariant;
+
+  // The seeded "Unspecified" category is an internal default, not a user-facing choice —
+  // hide it from everyone except catalog admins. See lookup-visibility.ts.
+  const canSelectUnspecified = useCanSelectUnspecifiedLookup();
+  const selectableCategories = canSelectUnspecified
+    ? categories
+    : categories.filter((category) => !isUnspecifiedLookup(category.name));
 
   if (mode === "filter") {
     const { value, onChange } = props as FilterModeProps;
@@ -76,7 +87,7 @@ export const CategorySelect: React.FC<CategorySelectProps> = (props) => {
                 All Categories
               </SelectItem>
             )}
-            {categories.map((category) => (
+            {selectableCategories.map((category) => (
               <SelectItem
                 variant={variant}
                 key={category.id}
@@ -124,7 +135,7 @@ export const CategorySelect: React.FC<CategorySelectProps> = (props) => {
               All Categories
             </SelectItem>
           )}
-          {categories.map((category) => (
+          {selectableCategories.map((category) => (
             <SelectItem
               variant={variant}
               key={category.id}

@@ -2,6 +2,46 @@ import React from "react";
 import { cn } from "@/utils/cn";
 import { Loader2 } from "lucide-react";
 
+/**
+ * Semantic theme tokens accepted by `liftColor`. Each resolves to the matching
+ * `hsl(var(--token))` CSS variable (defined in src/global.css / tailwind.config.js), so a
+ * caller can write `liftColor="destructive"` instead of `hsl(var(--destructive))`.
+ */
+export const LIFT_COLOR_TOKENS = [
+  "primary",
+  "primary-foreground",
+  "secondary",
+  "secondary-foreground",
+  "muted",
+  "muted-foreground",
+  "accent",
+  "accent-foreground",
+  "destructive",
+  "destructive-foreground",
+  "foreground",
+  "foreground-lighter",
+  "background",
+  "border",
+  "ring",
+] as const;
+
+export type LiftColorToken = (typeof LIFT_COLOR_TOKENS)[number];
+
+/**
+ * Resolve a `liftColor` prop to a concrete CSS color:
+ * - a known theme token (e.g. "primary", "foreground") → `hsl(var(--token))`
+ * - any other string (hex, rgb(), hsl(), a raw `var(--x)`) → passed through unchanged
+ * - `undefined` → the theme primary
+ */
+const resolveLiftColor = (
+  liftColor?: LiftColorToken | (string & {}),
+): string => {
+  if (!liftColor) return "hsl(var(--primary))";
+  return (LIFT_COLOR_TOKENS as readonly string[]).includes(liftColor)
+    ? `hsl(var(--${liftColor}))`
+    : liftColor;
+};
+
 export interface LiftedButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   children: React.ReactNode;
@@ -11,12 +51,13 @@ export interface LiftedButtonProps
   backgroundColorForBorder?: string; // Applied to the edge layer
   isPending?: boolean;
   /**
-   * Base color for the 3D depth layers (edge gradient + drop shadow). Any CSS
-   * color, e.g. "hsl(var(--muted-foreground))" or "#7c3aed". Defaults to the
-   * theme primary — pass this when the front face isn't primary-colored so the
-   * button doesn't sit on a blue backdrop.
+   * Base color for the 3D depth layers (edge gradient + drop shadow). Accepts either a
+   * semantic theme token — "primary", "foreground", "destructive", … (see
+   * {@link LIFT_COLOR_TOKENS}) — or any raw CSS color, e.g. "#7c3aed" or
+   * "hsl(var(--muted-foreground))". Defaults to the theme primary; pass this when the front
+   * face isn't primary-colored so the button doesn't sit on a blue backdrop.
    */
-  liftColor?: string;
+  liftColor?: LiftColorToken | (string & {});
 }
 
 // 3D "pushable" button: shadow (blurred, drops on press), edge (darker
@@ -99,7 +140,7 @@ export const LiftedButton = React.forwardRef<
         disabled={isDisabled}
         style={
           {
-            "--lift-base": liftColor ?? "hsl(var(--primary))",
+            "--lift-base": resolveLiftColor(liftColor),
             ...style,
           } as React.CSSProperties
         }

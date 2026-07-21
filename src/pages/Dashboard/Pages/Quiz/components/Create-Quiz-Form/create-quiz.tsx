@@ -3,12 +3,18 @@ import { Separator } from "@/components/ui/separator";
 import { useQuizForm } from "./use-quiz-form";
 import {
   Brain,
-  Clock,
-  Eye,
-  Shuffle,
+  // Clock,
+  // Eye,
+  // Shuffle,
   Folder,
   MessageSquareText,
+  Plus,
 } from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Card,
   CardContent,
@@ -46,10 +52,10 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { useDisclosure } from "@/hooks/use-disclosure";
 import { NewAnyQuestion, QuizQuestion } from "./types";
+import { inheritQuizClassification } from "./inherit-quiz-classification";
 import {
   DEFAULT_NEW_MULTIPLE_CHOICE,
   DEFAULT_NEW_TRUE_FALSE,
@@ -61,7 +67,7 @@ import { useCreateMultipleChoiceQuestion } from "../../../Question/api/Multiple_
 import { useCreateTrueFalseQuestion } from "../../../Question/api/True_False-Question/create-true_false-question";
 import { useCreateTypeTheAnswerQuestion } from "../../../Question/api/Type_The_Answer-Question/create-type-the-answer-question";
 import { CreatedQuestionsPanel } from "./components/question-panel/questions-panel";
-import ImageUpload from "@/utils/Image-Upload";
+// import ImageUpload from "@/utils/Image-Upload";
 import { useUpdateQuiz, isVersionConflictError } from "../../api/update-quiz";
 import { useCreateAiQuiz, AiImportQuestion } from "../../api/create-ai-quiz";
 import { Quiz } from "@/types/quiz-types";
@@ -129,6 +135,10 @@ const CreateQuizForm = ({
   const createTypeTheAnswerMutation = useCreateTypeTheAnswerQuestion();
 
   const [isCreatingQuestions, setIsCreatingQuestions] = useState(false);
+  // Anchored "+ Add a question" menu (Browse pool / Create new).
+  const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
+  // Public-pool dialog visibility — owned here so it survives the menu closing.
+  const [isPoolOpen, setIsPoolOpen] = useState(false);
   // const [activeTab, setActiveTab] = useState("quiz");
 
   // Type guards
@@ -387,9 +397,13 @@ const CreateQuizForm = ({
         questionsWithSettings.map(async ({ question, settings }, index) => {
           let questionId: number;
 
-          // If question has negative ID, it's a new question that needs to be created
+          // If question has negative ID, it's a new question that needs to be created.
+          // New questions inherit the quiz's category and language (difficulty stays as-is,
+          // Unspecified by default) — see inherit-quiz-classification.ts.
           if (question.id < 0) {
-            questionId = await createNewQuestion(question as NewAnyQuestion);
+            questionId = await createNewQuestion(
+              inheritQuizClassification(question as NewAnyQuestion, values),
+            );
           } else {
             // Existing question, use its ID
             questionId = question.id;
@@ -536,28 +550,44 @@ const CreateQuizForm = ({
         }, [addedQuestions, setValue]);
 
         const { errors } = formState;
+
+        // Fields that live on the "Quiz" tab. When the user submits from the
+        // "Question" tab these can fail validation off-screen, so we surface the
+        // count on the Quiz tab trigger to point them back to the missing fields.
+        const quizTabErrorKeys = [
+          "title",
+          "description",
+          "categoryId",
+          "difficultyId",
+          "languageId",
+          "status",
+        ] as const;
+        const quizTabErrorCount = quizTabErrorKeys.filter(
+          (key) => errors[key],
+        ).length;
+
         const isSubmitting =
           createQuizMutation.isPending ||
           updateQuizMutation.isPending ||
           createAiQuizMutation.isPending ||
           isCreatingQuestions;
 
-        const [imageUrl, setImageUrl] = useState(editQuiz?.imageUrl ?? "");
+        // const [imageUrl, setImageUrl] = useState(editQuiz?.imageUrl ?? "");
 
-        useEffect(() => {
-          if (imageUrl) {
-            setValue("imageUrl", imageUrl);
-          }
-        }, [imageUrl, setValue]);
+        // useEffect(() => {
+        //   if (imageUrl) {
+        //     setValue("imageUrl", imageUrl);
+        //   }
+        // }, [imageUrl, setValue]);
 
-        const handleImageUpload = (url: string) => {
-          setImageUrl(url);
-          setValue("imageUrl", url);
-        };
-        const handleImageRemove = () => {
-          setImageUrl("");
-          setValue("imageUrl", "");
-        };
+        // const handleImageUpload = (url: string) => {
+        //   setImageUrl(url);
+        //   setValue("imageUrl", url);
+        // };
+        // const handleImageRemove = () => {
+        //   setImageUrl("");
+        //   setValue("imageUrl", "");
+        // };
 
         return (
           <div className="mx-auto w-full max-w-[1600px] grid grid-cols-1 lg:grid-cols-5 gap-3 sm:gap-4 items-start lg:h-full lg:min-h-0 lg:overflow-hidden">
@@ -570,26 +600,47 @@ const CreateQuizForm = ({
               >
                 <CardHeader className="w-full relative bg-primary/10 text-center border-b border-primary/30 px-2 py-3 flex-none">
                   <TabsList className="w-full border-none bg-none shadow-none ">
-                    <TabsTrigger value="quiz" className="rounded-xl">
-                      <p className="flex gap-2 px-4 items-center text-[10px]">
+                    <TabsTrigger
+                      value="quiz"
+                      className={`rounded-xl ${
+                        quizTabErrorCount > 0
+                          ? "ring-2 ring-red-500 ring-offset-1 ring-offset-background data-[state=active]:bg-red-500 data-[state=active]:text-white data-[state=inactive]:bg-red-500/10 data-[state=inactive]:text-red-500 data-[state=inactive]:hover:bg-red-500/15"
+                          : ""
+                      }`}
+                    >
+                      <p className="flex gap-2 px-4 items-center text-sm">
                         <Folder
-                          className={`h-3 w-3 ${
-                            activeTab === "quiz" ? "text-white" : "text-primary"
+                          className={`h-4 w-4 ${
+                            activeTab === "quiz"
+                              ? "text-white"
+                              : quizTabErrorCount > 0
+                                ? "text-red-500"
+                                : "text-primary"
                           }`}
                         />
-                        Quiz Details
+                        Quiz
+                        {quizTabErrorCount > 0 && (
+                          <span
+                            className="ml-0.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[11px] font-semibold text-white leading-none group-data-[state=active]:bg-white group-data-[state=active]:text-red-600"
+                            aria-label={`${quizTabErrorCount} field${
+                              quizTabErrorCount === 1 ? "" : "s"
+                            } need attention`}
+                          >
+                            {quizTabErrorCount}
+                          </span>
+                        )}
                       </p>
                     </TabsTrigger>
                     <TabsTrigger value="questions" className="rounded-xl">
-                      <p className="flex gap-2 px-4 items-center text-[10px]">
+                      <p className="flex gap-2 px-4 items-center text-sm">
                         <MessageSquareText
-                          className={`h-3 w-3 ${
+                          className={`h-4 w-4 ${
                             activeTab === "questions"
                               ? "text-white"
                               : "text-primary"
                           }`}
                         />
-                        Question Details
+                        Question
                       </p>
                     </TabsTrigger>
                   </TabsList>
@@ -726,28 +777,28 @@ const CreateQuizForm = ({
                           }
                         >
                           <SelectTrigger
-                            variant={errors.status ? "incorrect" : "form"}
+                            variant={errors.status ? "form-error" : "form"}
                             className="w-full"
                           >
                             <SelectValue placeholder="Select status" />
                           </SelectTrigger>
                           <SelectContent
-                            variant={errors.status ? "incorrect" : "form"}
+                            variant={errors.status ? "form-error" : "form"}
                           >
                             <SelectItem
-                              variant={errors.status ? "incorrect" : "form"}
+                              variant={errors.status ? "form-error" : "form"}
                               value="Draft"
                             >
                               Draft — only you can see it
                             </SelectItem>
                             <SelectItem
-                              variant={errors.status ? "incorrect" : "form"}
+                              variant={errors.status ? "form-error" : "form"}
                               value="Unlisted"
                             >
                               Unlisted — playable via share link
                             </SelectItem>
                             <SelectItem
-                              variant={errors.status ? "incorrect" : "form"}
+                              variant={errors.status ? "form-error" : "form"}
                               value="Public"
                             >
                               Public — listed for everyone
@@ -812,22 +863,78 @@ const CreateQuizForm = ({
             {/* Main Quiz Creator Area */}
             <Card className="bg-background border-2 border-primary/30 rounded-xl shadow-lg flex flex-col items-center w-full lg:col-span-3 lg:h-full lg:overflow-hidden">
               <CardHeader className="w-full relative bg-primary/10 p-3 text-center border-b border-primary/30 flex-none">
-                <section className="flex justify-center gap-4 rounded-lg">
-                  <SelectQuestionComponent />
+                <section className="flex justify-center rounded-lg">
+                  {/* Blurred backdrop while the add-question menu is open. */}
+                  {isAddMenuOpen && (
+                    <div className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm" />
+                  )}
+
+                  <Popover open={isAddMenuOpen} onOpenChange={setIsAddMenuOpen}>
+                    <PopoverTrigger asChild>
+                      <LiftedButton
+                        type="button"
+                        className="flex items-center gap-2"
+                      >
+                        <Plus className="h-4 w-4" />
+                        Add a question
+                      </LiftedButton>
+                    </PopoverTrigger>
+                    <PopoverContent
+                      align="center"
+                      sideOffset={10}
+                      className="z-50 w-64 p-3 flex flex-col gap-3 bg-background dark:border-foreground/20"
+                    >
+                      {/* Browse the public pool — opens the full pool dialog (rendered
+                          outside this menu so it survives the menu closing). */}
+                      <LiftedButton
+                        type="button"
+                        liftColor="muted"
+                        className="w-full justify-center bg-muted text-foreground border border-foreground/20"
+                        onClick={() => {
+                          setIsAddMenuOpen(false);
+                          setIsPoolOpen(true);
+                        }}
+                      >
+                        <Plus className="h-4 w-4" />
+                        Browse Public Pool
+                      </LiftedButton>
+
+                      {/* or */}
+                      <div className="flex items-center gap-3">
+                        <span className="h-px flex-1 bg-border" />
+                        <span className="text-xs font-medium text-muted-foreground">
+                          or
+                        </span>
+                        <span className="h-px flex-1 bg-border" />
+                      </div>
+
+                      {/* Create a brand-new question — opens the type chooser below. */}
+                      <LiftedButton
+                        type="button"
+                        className="w-full justify-center flex items-center gap-2"
+                        onClick={() => {
+                          setIsAddMenuOpen(false);
+                          openAddQuestionDialog();
+                        }}
+                      >
+                        <Plus className="h-4 w-4" />
+                        Create New
+                      </LiftedButton>
+                    </PopoverContent>
+                  </Popover>
+
+                  {/* Public-pool browser — controlled, lives outside the menu. */}
+                  <SelectQuestionComponent
+                    open={isPoolOpen}
+                    onOpenChange={setIsPoolOpen}
+                  />
+
                   <Dialog
                     open={isAddQuestionDialogOpen}
                     onOpenChange={(open) =>
                       open ? openAddQuestionDialog() : closeAddQuestionDialog()
                     }
                   >
-                    <DialogTrigger asChild>
-                      <LiftedButton
-                        type="button"
-                        className="flex items-center gap-2"
-                      >
-                        + Create New
-                      </LiftedButton>
-                    </DialogTrigger>
                     <DialogContent className="bg-background p-4 rounded-md w-fit pt-8 dark:border border-foreground/30 max-w-4xl">
                       <DialogHeader>
                         <DialogTitle className="flex items-center justify-center">

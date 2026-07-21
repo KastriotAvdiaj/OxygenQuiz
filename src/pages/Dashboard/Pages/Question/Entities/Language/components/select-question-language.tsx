@@ -8,6 +8,10 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/form";
 import { QuestionLanguage } from "@/types/question-types";
+import {
+  isUnspecifiedLookup,
+  useCanSelectUnspecifiedLookup,
+} from "../../lookup-visibility";
 
 interface BaseLanguageSelectProps {
   label?: string;
@@ -45,7 +49,14 @@ export const LanguageSelect: React.FC<LanguageSelectProps> = (props) => {
     fieldVariant = "quiz",
   } = props;
 
-  const variant = error ? "incorrect" : fieldVariant;
+  const variant = error ? "form-error" : fieldVariant;
+
+  // The seeded "Unspecified" language is an internal default, not a user-facing choice —
+  // hide it from everyone except catalog admins. See lookup-visibility.ts.
+  const canSelectUnspecified = useCanSelectUnspecifiedLookup();
+  const selectableLanguages = canSelectUnspecified
+    ? languages
+    : languages.filter((language) => !isUnspecifiedLookup(language.language));
 
   if (mode === "filter") {
     const { value, onChange } = props as FilterModeProps;
@@ -76,7 +87,7 @@ export const LanguageSelect: React.FC<LanguageSelectProps> = (props) => {
                 All Languages
               </SelectItem>
             )}
-            {languages.map((language) => (
+            {selectableLanguages.map((language) => (
               <SelectItem
                 key={language.id}
                 variant={variant}
@@ -119,7 +130,7 @@ export const LanguageSelect: React.FC<LanguageSelectProps> = (props) => {
               All Languages
             </SelectItem>
           )}
-          {languages.map((language) => (
+          {selectableLanguages.map((language) => (
             <SelectItem
               key={language.id}
               variant={variant}

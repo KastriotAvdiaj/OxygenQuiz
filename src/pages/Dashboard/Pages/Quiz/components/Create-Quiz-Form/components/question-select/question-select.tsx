@@ -19,14 +19,30 @@ interface SelectQuestionComponentProps {
   preSelectedQuestionIds?: number[];
   title?: string;
   excludeQuestionIds?: number[];
+  /**
+   * Controlled open state. When provided, the parent owns the dialog's visibility (and,
+   * unless a `triggerButton` is passed, the component renders no trigger of its own). This
+   * lets the dialog be opened from elsewhere — e.g. an item in a menu that closes itself.
+   */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 const SelectQuestionComponent: React.FC<SelectQuestionComponentProps> = ({
   maxSelections,
   title = "Select Questions from Pool",
   triggerButton,
+  open: openProp,
+  onOpenChange,
 }) => {
-  const { open, close, isOpen } = useDisclosure();
+  const disclosure = useDisclosure();
+  const isControlled = openProp !== undefined;
+  const isOpen = isControlled ? openProp : disclosure.isOpen;
+  const setOpen = (next: boolean) => {
+    if (isControlled) onOpenChange?.(next);
+    else if (next) disclosure.open();
+    else disclosure.close();
+  };
   const [searchTerm, setSearchTerm] = useState("");
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>([]);
@@ -80,19 +96,26 @@ const SelectQuestionComponent: React.FC<SelectQuestionComponentProps> = ({
     setCurrentPage(1);
   }, [debouncedSearchTerm, selectedCategoryIds, selectedDifficultyIds, selectedLanguageIds, activeTab]);
 
-  const handleOpen = () => { open(); setQuestionModalOpen(true); };
-  const handleClose = () => { close(); setQuestionModalOpen(false); };
+  const handleOpen = () => { setOpen(true); setQuestionModalOpen(true); };
+  const handleClose = () => { setOpen(false); setQuestionModalOpen(false); };
   const handleAddSelectedQuestions = () => { commitTempSelection(); handleClose(); };
   const handleCancel = () => { clearTempSelection(); handleClose(); };
 
   return (
     <>
       {triggerButton ? (
-        React.cloneElement(triggerButton, { onClick: handleOpen })
-      ) : (
-        <LiftedButton onClick={handleOpen} className="h-fit" type="button">
+        // Preserve any onClick the caller put on the trigger (e.g. closing a parent menu),
+        // then open the pool dialog.
+        React.cloneElement(triggerButton as React.ReactElement<any>, {
+          onClick: (e: React.MouseEvent) => {
+            triggerButton.props?.onClick?.(e);
+            handleOpen();
+          },
+        })
+      ) : isControlled ? null : (
+        <LiftedButton onClick={handleOpen} liftColor="muted" className="h-fit bg-muted text-foreground border border-foreground/20" type="button">
           <Plus className="h-4 w-4" />
-          Add Existing
+          Browse Public Pool
         </LiftedButton>
       )}
 

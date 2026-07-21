@@ -1,6 +1,6 @@
 import React from "react";
 import { CardContent } from "@/components/ui";
-import { CheckCircle } from "lucide-react"; // Added Info
+import { QuestionType } from "@/types/question-types";
 import { NewSmallQuestionCardProps } from "../../existing-small-question-card-components/shared/types";
 import { NewTrueFalseQuestion } from "../../../../types";
 import { truncateText } from "../../existing-small-question-card-components/small-true-false-card/small-true-false-question-card";
@@ -14,39 +14,22 @@ import { ErrorIndicator } from "../new-small-multiple-choice-card/new-small-mult
 export const NewSmallTrueFalseCard: React.FC<NewSmallQuestionCardProps> = ({
   question,
 }) => {
-  const { displayQuestion, getQuestionErrors } = useQuiz();
+  const { getQuestionErrors } = useQuiz();
   const newTfQuestion = question as NewTrueFalseQuestion;
   const truncatedText = truncateText(newTfQuestion.text, 50);
-  const isSelected = displayQuestion?.id === newTfQuestion.id;
   const hasErrors = getQuestionErrors(newTfQuestion.id).length > 0;
 
   return (
     <div className="relative">
       <SmallBaseQuestionCard
         question={question}
-        borderColor={hasErrors ? "border-red-500" : "border-primary"}
-        gradientColor={
-          hasErrors
-            ? "bg-gradient-to-r from-red-50 to-red-100 dark:from-red-950/20 dark:to-red-900/20"
-            : "bg-gradient-to-r from-background to-primary/30"
-        }
+        type={QuestionType.TrueFalse}
+        hasErrors={hasErrors}
       >
         <NewSmallQuestionHeader
-          icon={<CheckCircle size={12} />}
-          questionType="True/False"
-          badgeColor={
-            hasErrors
-              ? "bg-red-100 text-red-600"
-              : "bg-primary/10 text-primary"
-          }
+          type={QuestionType.TrueFalse}
           questionId={newTfQuestion.id}
-          className={
-            isSelected
-              ? hasErrors
-                ? "bg-gradient-to-r from-red-50 to-red-200/50 dark:from-red-950/20 dark:to-red-900/30"
-                : "bg-gradient-to-r from-background to-primary/30"
-              : undefined
-          }
+          hasErrors={hasErrors}
         />
 
         <CardContent className="p-3">

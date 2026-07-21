@@ -12,7 +12,6 @@ import {
   useFormValidation,
   ValidationErrorsDisplay,
 } from "@/hooks/use-questionForm";
-import { IconButtonWithTooltip } from "@/pages/Dashboard/Pages/Question/Components/Re-Usable-Components/icon-button-with-tooltip";
 import { LiftedButton } from "@/common/LiftedButton";
 
 interface MultipleChoiceFormCardProps {

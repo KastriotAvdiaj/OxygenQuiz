@@ -1,8 +1,6 @@
 import React from "react";
 import { CardContent } from "@/components/ui/card";
-import { CheckCircle } from "lucide-react";
-import { TrueFalseQuestion } from "@/types/question-types";
-import { useQuiz } from "../../../../Quiz-questions-context";
+import { TrueFalseQuestion, QuestionType } from "@/types/question-types";
 import { ExistingSmallQuestionCardProps } from "../shared/types";
 import { SmallBaseQuestionCard } from "../shared/small-base-question-card";
 import { SmallQuestionHeader } from "../shared/small-question-header";
@@ -16,29 +14,14 @@ export const truncateText = (text: string, length: number) =>
 export const ExistingSmallTrueFalseCard: React.FC<
   ExistingSmallQuestionCardProps
 > = ({ question }) => {
-  const { displayQuestion } = useQuiz();
   const tfQuestion = question as TrueFalseQuestion;
   const truncatedText = truncateText(tfQuestion.text, 50);
-  const isPrivate = tfQuestion.visibility === "private";
-  const isSelected = displayQuestion?.id === tfQuestion.id;
 
   return (
-    <SmallBaseQuestionCard
-      question={question}
-      borderColor="border-primary"
-      gradientColor="bg-gradient-to-r from-background to-primary/30"
-    >
+    <SmallBaseQuestionCard question={question} type={QuestionType.TrueFalse}>
       <SmallQuestionHeader
-        icon={<CheckCircle size={12} />}
-        isPrivate={isPrivate}
-        questionType="True/False"
-        badgeColor="bg-primary/10 text-primary"
+        type={QuestionType.TrueFalse}
         questionId={tfQuestion.id}
-        className={
-          isSelected
-            ? "bg-gradient-to-r from-background to-primary/30"
-            : undefined
-        }
       />
 
       <CardContent className="p-3">

@@ -1,6 +1,6 @@
 import React from "react";
 import { Input } from "@/components/ui/form";
-import { MultipleChoiceQuestion, QuestionType } from "@/types/question-types";
+import { MultipleChoiceQuestion } from "@/types/question-types";
 import {
   BaseQuestionCard,
   ExistingQuestionCardProps,
@@ -10,34 +10,10 @@ import { MultipleChoiceAnswers } from "./multiple-choice-answers";
 import { QuestionMetadata } from "../display-quiz-question-metadata";
 import { QuestionFooter } from "../display-quiz-question-card-footer";
 
-export const getQuestionTypeStyles = (type: QuestionType) => {
-  switch (type) {
-    case QuestionType.MultipleChoice:
-      return {
-        borderColor: "border-primary/80",
-        backgroundColor: "bg-primary/5",
-        previewBorderColor: "border-primary",
-      };
-    case QuestionType.TrueFalse:
-      return {
-        borderColor: "border-primary/80",
-        backgroundColor: "bg-primary/10",
-        previewBorderColor: "border-primary",
-      };
-    case QuestionType.TypeTheAnswer:
-      return {
-        borderColor: "border-orange-500/80",
-        backgroundColor: "bg-orange-200/10",
-        previewBorderColor: "border-orange-500",
-      };
-    default:
-      return {
-        borderColor: "border-primary/80",
-        backgroundColor: "bg-primary/5",
-        previewBorderColor: "border-primary",
-      };
-  }
-};
+// Type colors live in one place — see question-type-theme.ts. Imported for local use and
+// re-exported so the many cards that already import it from this module keep working.
+import { getQuestionTypeStyles } from "../../../question-type-theme";
+export { getQuestionTypeStyles };
 
 export const MultipleChoiceCard: React.FC<ExistingQuestionCardProps> = (
   props

@@ -137,7 +137,9 @@ These are the properties that make the feature safe. Every change should preserv
 1. **The AI never sees or emits entity IDs.** Categories and languages are not in the
    prompt at all; difficulty appears only as a closed list of names. (`prompt.ts`)
 2. **Category and language are always inherited from the quiz.** They are never read from
-   AI output, never `Unspecified`. (`parse-ai-output.ts` → `ParseContext`)
+   AI output, never `Unspecified`. (`parse-ai-output.ts` → `ParseContext`) The manual builder
+   applies the same rule to hand-authored questions — see
+   [quiz-question-classification.md](quiz-question-classification.md).
 3. **No quiz flow ever creates a category, language, or difficulty.** Difficulty names
    resolve to existing rows or fall back; unmatched never creates. (§4, §7)
 4. **AI questions are `Private`.** They don't pollute the shared question bank.

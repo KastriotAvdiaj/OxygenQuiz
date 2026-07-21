@@ -1,11 +1,12 @@
 import { CardContent } from "@/components/ui";
+import { QuestionType } from "@/types/question-types";
 import { NewMultipleChoiceQuestion } from "../../../../types";
 import { SmallBaseQuestionCard } from "../../existing-small-question-card-components/shared/small-base-question-card";
 import { NewSmallQuestionCardProps } from "../../existing-small-question-card-components/shared/types";
 import { truncateText } from "../../existing-small-question-card-components/small-true-false-card/small-true-false-question-card";
 import { QuestionBubble } from "../../shared/question-text-bubble";
 import { NewSmallQuestionHeader } from "../shared/new-small-question-header";
-import { List, Info } from "lucide-react";
+import { Info } from "lucide-react";
 import { useQuiz } from "../../../../Quiz-questions-context";
 import { NewMultipleChoiceOptions } from "./new-small-multiple-choice-question-options";
 
@@ -41,38 +42,23 @@ export const ErrorIndicator: React.FC<{
 export const NewSmallMultipleChoiceCard: React.FC<
   NewSmallQuestionCardProps
 > = ({ question }) => {
-  const { displayQuestion, getQuestionErrors } = useQuiz();
+  const { getQuestionErrors } = useQuiz();
 
   const newMcQuestion = question as NewMultipleChoiceQuestion;
   const truncatedText = truncateText(newMcQuestion.text, 50);
-  const isSelected = displayQuestion?.id === newMcQuestion.id;
   const hasErrors = getQuestionErrors(newMcQuestion.id).length > 0;
 
   return (
     <div className="relative">
       <SmallBaseQuestionCard
         question={question}
-        borderColor={hasErrors ? "border-red-500" : "border-primary/80"}
-        gradientColor={
-          hasErrors
-            ? "bg-gradient-to-r from-red-50 to-red-100 dark:from-red-950/20 dark:to-red-900/20"
-            : "bg-gradient-to-r from-background to-primary/20"
-        }
+        type={QuestionType.MultipleChoice}
+        hasErrors={hasErrors}
       >
         <NewSmallQuestionHeader
-          icon={<List size={12} />}
-          questionType="Multiple Choice"
-          badgeColor={
-            hasErrors ? "bg-red-100 text-red-600" : "bg-blue-100 text-blue-600"
-          }
+          type={QuestionType.MultipleChoice}
           questionId={newMcQuestion.id}
-          className={
-            isSelected
-              ? hasErrors
-                ? "bg-gradient-to-r from-red-50 to-red-200/50 dark:from-red-950/20 dark:to-red-900/30"
-                : "bg-gradient-to-r from-background to-primary/30"
-              : undefined
-          }
+          hasErrors={hasErrors}
         />
         <CardContent>
           <QuestionBubble text={truncatedText} />

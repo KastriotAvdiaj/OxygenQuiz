@@ -1,7 +1,6 @@
 // components/question-settings/QuestionSettingsCard.tsx
 import React from "react";
 import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -10,7 +9,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Copy, RotateCcw, Settings } from "lucide-react";
 import { useQuiz } from "../Quiz-questions-context";
 import { Label } from "@/components/ui/form";
 import {
@@ -31,16 +29,16 @@ export const QuestionSettingsCard: React.FC<QuestionSettingsCardProps> = ({
   const {
     updateQuestionSetting,
     getQuestionSettings,
-    copySettingsToQuestion,
-    resetQuestionSettings,
-    addedQuestions,
+    // copySettingsToQuestion,
+    // resetQuestionSettings,
+    // addedQuestions,
   } = useQuiz();
 
   const settings = getQuestionSettings(question.id);
 
-  const handleCopyFrom = (sourceQuestionId: number) => {
-    copySettingsToQuestion(sourceQuestionId, question.id);
-  };
+  // const handleCopyFrom = (sourceQuestionId: number) => {
+  //   copySettingsToQuestion(sourceQuestionId, question.id);
+  // };
 
   return (
     <div className="w-full h-full flex flex-col">

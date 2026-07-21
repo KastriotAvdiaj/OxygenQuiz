@@ -32,7 +32,7 @@ export const BaseQuestionCard: React.FC<BaseQuestionCardProps> = ({
 
   return (
     <Card
-      className={`font-header rounded-lg border ${borderColor} ${backgroundColor} border-dashed cursor-pointer transition-all duration-200 overflow-hidden shadow-md hover:shadow-lg dark:bg-muted/30`}
+      className={`font-header rounded-lg border border-l-[3px] ${borderColor} ${backgroundColor} cursor-pointer transition-all duration-200 overflow-hidden shadow-md hover:shadow-lg dark:bg-muted/30`}
       onClick={handleClick}
     >
       <CardHeader className="pb-4">

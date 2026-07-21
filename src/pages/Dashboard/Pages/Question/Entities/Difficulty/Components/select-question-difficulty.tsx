@@ -9,6 +9,10 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/form";
 import { QuestionDifficulty } from "@/types/question-types";
+import {
+  isUnspecifiedLookup,
+  useCanSelectUnspecifiedLookup,
+} from "../../lookup-visibility";
 
 interface BaseDifficultySelectProps {
   label?: string;
@@ -46,7 +50,14 @@ export const DifficultySelect: React.FC<DifficultySelectProps> = (props) => {
     fieldVariant = "quiz",
   } = props;
 
-  const variant = error ? "incorrect" : fieldVariant;
+  const variant = error ? "form-error" : fieldVariant;
+
+  // The seeded "Unspecified" difficulty is an internal default, not a user-facing choice —
+  // hide it from everyone except catalog admins. See lookup-visibility.ts.
+  const canSelectUnspecified = useCanSelectUnspecifiedLookup();
+  const selectableDifficulties = canSelectUnspecified
+    ? difficulties
+    : difficulties.filter((difficulty) => !isUnspecifiedLookup(difficulty.level));
 
   if (mode === "filter") {
     const { value, onChange } = props as FilterModeProps;
@@ -77,7 +88,7 @@ export const DifficultySelect: React.FC<DifficultySelectProps> = (props) => {
                 All Difficulties
               </SelectItem>
             )}
-            {difficulties.map((difficulty) => (
+            {selectableDifficulties.map((difficulty) => (
               <SelectItem
                 variant={variant}
                 key={difficulty.id}
@@ -120,7 +131,7 @@ export const DifficultySelect: React.FC<DifficultySelectProps> = (props) => {
               All Difficulties
             </SelectItem>
           )}
-          {difficulties.map((difficulty) => (
+          {selectableDifficulties.map((difficulty) => (
             <SelectItem
               variant={variant}
               key={difficulty.id}

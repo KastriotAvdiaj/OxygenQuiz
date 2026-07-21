@@ -1,64 +1,51 @@
 import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Lock, Globe, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { cn } from "@/utils/cn";
+import { QuestionType } from "@/types/question-types";
 import { useQuiz } from "../../../../Quiz-questions-context";
+import {
+  getQuestionTypeTheme,
+  questionErrorTheme,
+} from "../../../../question-type-theme";
 
 interface SmallQuestionHeaderProps {
-  icon: React.ReactNode;
-  isPrivate: boolean;
-  questionType: string;
-  badgeColor: string;
+  /** Question type — drives the icon, label and accent color via the shared theme. */
+  type: QuestionType;
   questionId: number;
-  className?: string;
+  /** New questions that fail validation render the label in the red error theme. */
+  hasErrors?: boolean;
 }
 
 export const SmallQuestionHeader: React.FC<SmallQuestionHeaderProps> = ({
-  icon,
-  isPrivate,
-  questionType,
-  badgeColor,
+  type,
   questionId,
-  className,
+  hasErrors = false,
 }) => {
   const { removeQuestionFromQuiz, addedQuestions } = useQuiz();
 
   const questionIndex = addedQuestions.findIndex((q) => q.id === questionId);
   const questionNumber = questionIndex !== -1 ? questionIndex + 1 : null;
 
-  const handleRemove = () => {
-    removeQuestionFromQuiz(questionId);
-  };
+  const theme = getQuestionTypeTheme(type);
+  const accentText = hasErrors ? questionErrorTheme.accentText : theme.accentText;
+  const Icon = theme.Icon;
 
   return (
-    <div
-      className={cn("px-4 py-2 flex justify-between items-center", className)}
-    >
+    <div className="px-4 py-2 flex justify-between items-center">
       <div className="flex items-center gap-2">
         {questionNumber && (
           <Badge variant="outline" className="h-5 px-2 text-xs font-semibold">
             #{questionNumber}
           </Badge>
         )}
-        {/* <div
-          className={cn(
-            "flex items-center justify-center w-6 h-6 rounded-full font-bold text-xs",
-            badgeColor
-          )}
+        <span
+          className={cn("flex items-center gap-1.5 text-xs font-medium", accentText)}
         >
-          {icon}
-        </div> */}
-        {/* <Badge variant="outline" className="h-5 px-2 gap-1">
-          {isPrivate ? <Lock size={10} /> : <Globe size={10} />}
-          <span className="text-xs">{isPrivate ? "Private" : "Public"}</span>
-        </Badge> */}
-        <Badge
-          variant="secondary"
-          className={cn("h-5 px-2 text-xs", badgeColor)}
-        >
-          {questionType}
-        </Badge>
+          <Icon size={13} aria-hidden="true" />
+          {theme.label}
+        </span>
       </div>
 
       <Button
@@ -66,7 +53,7 @@ export const SmallQuestionHeader: React.FC<SmallQuestionHeaderProps> = ({
         variant="ghost"
         size="icon"
         className="h-6 w-6 flex items-center justify-center rounded-full hover:bg-destructive/10 hover:text-red-500"
-        onClick={handleRemove}
+        onClick={() => removeQuestionFromQuiz(questionId)}
         title="Remove question"
       >
         <Trash2 size={14} />

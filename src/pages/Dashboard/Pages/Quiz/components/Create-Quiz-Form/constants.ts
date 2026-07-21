@@ -1,11 +1,16 @@
 import { QuestionType } from "@/types/question-types";
 import { NewMultipleChoiceQuestion, NewTrueFalseQuestion, NewTypeTheAnswerQuestion } from "./types";
 
+/**
+ * IDs of the seeded "Unspecified" lookups (see OxygenBackend DbSeeder). New questions start
+ * here as a safe default. At save time, category and language are overwritten with the quiz's
+ * values (see inherit-quiz-classification.ts); only difficulty is intended to stay Unspecified.
+ */
 export const UnspecifiedIds = {
-    categoryId:    1,   
-    difficultyId:  1,  
-    languageId:    1,  
-  } as const;   
+    categoryId:    1,
+    difficultyId:  1,
+    languageId:    1,
+  } as const;
 
   export const POINT_SYSTEM_OPTIONS = [
   { value: "Standard", label: "Standard " },

@@ -4,8 +4,8 @@ import { useQuiz } from "../../Quiz-questions-context";
 import { useDebounce } from "@/hooks/use-debounce";
 import { BaseQuestionFormCard } from "./display-base-quiz-question-card";
 import { Input, Label } from "@/components/ui/form";
-import { Button, Card, CardContent, Switch } from "@/components/ui";
-import { AlertCircle, CheckCircle2, Plus, Type, X } from "lucide-react";
+import { Button, Switch } from "@/components/ui";
+import { CheckCircle2, Plus, X } from "lucide-react";
 import { getQuestionTypeStyles } from "../existing-display-quiz-question-card/display-multiple-choice-question-card/display-muiltiple-choice-question-card";
 import { QuestionType } from "@/types/question-types";
 import {
@@ -109,10 +109,6 @@ export const TypeTheAnswerFormCard: React.FC<TypeTheAnswerFormCardProps> = ({
   const styles = getQuestionTypeStyles(question.type);
   const errorAwareStyles = getErrorAwareStyles(hasErrors, styles);
 
-  const filledAcceptableAnswers = acceptableAnswers.filter(
-    (answer) => answer.value.trim() !== ""
-  );
-
   // Get general validation errors that don't belong to specific fields
   const generalErrors = getGeneralErrors([
     "text",
@@ -136,93 +132,89 @@ export const TypeTheAnswerFormCard: React.FC<TypeTheAnswerFormCardProps> = ({
       questionTextError={getFieldError("text")}
     >
       <div className="space-y-6 p-4">
-        {/* Main Answer */}
-        <Card className="border-2 border-emerald-400 bg-emerald-50/50 dark:border-emerald-800 dark:bg-emerald-950/30 backdrop-blur-md">
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-3 mb-4">
-              <div className="p-2 bg-emerald-100 rounded-lg dark:bg-emerald-900">
-                <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-              </div>
-              <div>
-                <Label className="text-md font-semibold text-emerald-800 dark:text-emerald-200">
-                  Primary Correct Answer
-                </Label>
-              </div>
-            </div>
-            <div className="relative">
-              <Type className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-emerald-500" />
-              <Input
-                id="main-answer"
-                variant={getFieldError("correctAnswer") ? "isIncorrect" : "isCorrect"}
-                placeholder="Enter the primary correct answer..."
-                value={correctAnswer}
-                onChange={(e) => setCorrectAnswer(e.target.value)}
-                className="pl-12 h-12 text-md font-medium border-emerald-300 focus:border-emerald-500 dark:border-emerald-700"
-                error={getFieldError("correctAnswer")}
-              />
-            </div>
-          </CardContent>
-        </Card>
+        {/* Correct answer — the one essential field, kept plain and always visible. */}
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-1.5">
+            <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+            <Label className="text-sm font-semibold">Correct answer</Label>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            What a player has to type to get it right.
+          </p>
+          <Input
+            id="main-answer"
+            variant={getFieldError("correctAnswer") ? "isIncorrect" : "minimal"}
+            placeholder="e.g. Paris"
+            value={correctAnswer}
+            onChange={(e) => setCorrectAnswer(e.target.value)}
+            className="h-11 text-md font-medium"
+            error={getFieldError("correctAnswer")}
+          />
+        </div>
 
         <Accordion type="single" collapsible className="w-full">
           <AccordionItem value="details" className="border-b-0">
-            <AccordionTrigger className="py-2 text-sm font-medium flex justify-between hover:no-underline underline">
-              <span className="text-sm font-medium">Extra Details</span>
+            <AccordionTrigger className="py-2 text-sm font-medium hover:no-underline border-b border-border">
+              Answer options
             </AccordionTrigger>
-            <AccordionContent className="space-y-4 p-4">
-              <Card className="border-orange-400 rounded-md bg-orange-200/30 backdrop-blur-sm dark:backdrop-blur-xl dark:border-orange-800 dark:bg-orange-950/20">
-                <CardContent className="p-4  rounded-md">
-                  <div className="flex items-center space-x-2 mb-4 rounded-md">
-                    <AlertCircle className="h-5 w-5 text-orange-600 dark:text-orange-400" />
-                    <Label className="font-semibold text-orange-800 dark:text-orange-200">
-                      Answer Matching Rules
+            <AccordionContent className="space-y-5 pt-4">
+              {/* Matching rules — plain, explained rows instead of a nested colored card. */}
+              <div className="space-y-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="space-y-0.5">
+                    <Label className="text-sm font-medium">
+                      Ignore capitalization
                     </Label>
+                    <p className="text-xs text-muted-foreground">
+                      &ldquo;Paris&rdquo; and &ldquo;paris&rdquo; both count as
+                      correct.
+                    </p>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="flex items-center justify-between p-4 bg-background rounded-lg border border-orange-200 dark:border-orange-800">
-                      <div className="space-y-1">
-                        <Label className="font-medium">Case Sensitive</Label>
-                        <p className="text-xs text-muted-foreground">
-                          {"Require exact capitalization match"}
-                        </p>
-                      </div>
-                      <Switch
-                        checked={isCaseSensitive}
-                        onCheckedChange={setIsCaseSensitive}
-                      />
-                    </div>
-                    <div className="flex items-center justify-between p-4 bg-background rounded-lg border border-orange-200 dark:border-orange-800">
-                      <div className="space-y-1">
-                        <Label className="font-medium">Partial Match</Label>
-                        <p className="text-xs text-muted-foreground">
-                          Accept answers containing the correct text
-                        </p>
-                      </div>
-                      <Switch
-                        checked={allowPartialMatch}
-                        onCheckedChange={setAllowPartialMatch}
-                      />
-                    </div>
+                  <Switch
+                    checked={!isCaseSensitive}
+                    onCheckedChange={(checked) => setIsCaseSensitive(!checked)}
+                  />
+                </div>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="space-y-0.5">
+                    <Label className="text-sm font-medium">
+                      Accept partial answers
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Correct if the answer is contained in what they type —
+                      &ldquo;the Eiffel Tower&rdquo; matches &ldquo;Eiffel&rdquo;.
+                    </p>
                   </div>
-                </CardContent>
-              </Card>
-              {/* Acceptable Answers */}
-              <div
-                className={`space-y-3 w-full flex flex-col items-center gap-4 border p-4 rounded-md border-dashed ${errorAwareStyles.borderColor}`}
-              >
-                <Label className="text-sm font-medium">
-                  Additional Acceptable Answers (Optional)
-                </Label>
-                <div className="space-y-4">
+                  <Switch
+                    checked={allowPartialMatch}
+                    onCheckedChange={setAllowPartialMatch}
+                  />
+                </div>
+              </div>
+
+              {/* Other accepted answers */}
+              <div className="space-y-3 border-t border-border pt-4">
+                <div className="space-y-0.5">
+                  <Label className="text-sm font-medium">
+                    Other accepted answers
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Synonyms or spellings you&rsquo;ll also mark correct.
+                  </p>
+                </div>
+                <div className="space-y-2">
                   {acceptableAnswers.map((answer, index) => {
-                    const acceptableAnswerError = getFieldError(`acceptableAnswers.${index}.value`) || 
-                                                getFieldError(`acceptableAnswers[${index}].value`);
-                    
+                    const acceptableAnswerError =
+                      getFieldError(`acceptableAnswers.${index}.value`) ||
+                      getFieldError(`acceptableAnswers[${index}].value`);
+
                     return (
-                      <div key={index} className="relative w-full">
+                      <div key={index} className="flex items-center gap-2">
                         <Input
-                          variant={acceptableAnswerError ? "isIncorrect" : "minimal"}
-                          placeholder={`Alternative answer ${index + 1}...`}
+                          variant={
+                            acceptableAnswerError ? "isIncorrect" : "minimal"
+                          }
+                          placeholder={`Alternative answer ${index + 1}…`}
                           value={answer.value}
                           onChange={(e) =>
                             handleAcceptableAnswerChange(index, e.target.value)
@@ -232,57 +224,29 @@ export const TypeTheAnswerFormCard: React.FC<TypeTheAnswerFormCardProps> = ({
                         />
                         <Button
                           type="button"
-                          variant="outline"
+                          variant="ghost"
                           size="icon"
                           onClick={() => handleRemoveAcceptableAnswer(index)}
-                          className="absolute top-0 right-0 h-4 w-4 p-0 text-white bg-red-400 hover:bg-destructive hover:text-destructive-foreground rounded-md"
+                          className="h-8 w-8 flex-none text-muted-foreground hover:bg-destructive/10 hover:text-red-500"
+                          aria-label={`Remove alternative answer ${index + 1}`}
                         >
-                          <X className="h-2 w-2" />
+                          <X className="h-4 w-4" />
                         </Button>
                       </div>
                     );
                   })}
                 </div>
-                <div className="flex justify-center">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleAddAcceptableAnswer}
-                    disabled={acceptableAnswers.length >= 5}
-                    className={`border-dashed ${errorAwareStyles.backgroundColor} ${errorAwareStyles.borderColor} `}
-                  >
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Alternative Answer ({acceptableAnswers.length}/5)
-                  </Button>
-                </div>
-              </div>
-              <div className="flex flex-wrap gap-2 justify-center">
-                <div
-                  className={`px-3 py-1 rounded-full text-xs font-medium ${
-                    isCaseSensitive
-                      ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                      : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
-                  }`}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAddAcceptableAnswer}
+                  disabled={acceptableAnswers.length >= 5}
+                  className="gap-1.5"
                 >
-                  {isCaseSensitive ? "Case Sensitive" : "Case Insensitive"}
-                </div>
-                <div
-                  className={`px-3 py-1 rounded-full text-xs font-medium ${
-                    allowPartialMatch
-                      ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                      : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
-                  }`}
-                >
-                  {allowPartialMatch
-                    ? "Partial Match Allowed"
-                    : "Exact Match Required"}
-                </div>
-                {filledAcceptableAnswers.length > 0 && (
-                  <div className="px-3 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">
-                    {filledAcceptableAnswers.length} Alternative
-                    {filledAcceptableAnswers.length !== 1 ? "s" : ""}
-                  </div>
-                )}
+                  <Plus className="h-4 w-4" />
+                  Add answer · {acceptableAnswers.length} of 5
+                </Button>
               </div>
             </AccordionContent>
           </AccordionItem>

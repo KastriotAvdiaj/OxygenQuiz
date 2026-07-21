@@ -278,20 +278,6 @@ const UserImageUpload: React.FC<UserImageUploadProps> = ({
     onRemove?.();
   }, [clearPreview, onRemove]);
 
-  // Handle custom styling
-  const defaultDragActiveBorder = "border-blue-400";
-  const defaultDragActiveBg = "bg-blue-50 dark:bg-blue-900/20";
-  const defaultBorder = "border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500";
-  const defaultBg = "bg-muted";
-
-  const dropZoneBorder = dragActive 
-    ? (borderColor.includes('blue') ? borderColor : defaultDragActiveBorder)
-    : (borderColor === "border-green-200 dark:border-green-800" ? defaultBorder : borderColor);
-  
-  const dropZoneBg = dragActive 
-    ? (backgroundColor.includes('blue') ? backgroundColor : defaultDragActiveBg)
-    : (backgroundColor === "bg-green-50 dark:bg-green-900/20" ? defaultBg : backgroundColor);
-
   return (
     <div className={`w-full max-w-xs sm:max-w-sm mx-auto ${className}`}>
       {preview ? (
@@ -320,12 +306,17 @@ const UserImageUpload: React.FC<UserImageUploadProps> = ({
           </div>
         </div>
       ) : (
-        <div className="space-y-2.5">
+        // Compact, neutral control: an optional image shouldn't out-shout the question or
+        // answer, so it's a single slim row (still a full click + drag-and-drop target)
+        // rather than a large accent-colored dropzone.
+        <div className="space-y-1.5">
           <div
-            className={`
-              relative border-2 border-dashed ${dropZoneBorder} ${dropZoneBg} backdrop-blur-xl rounded-xl p-5 sm:p-6 text-center transition-all duration-200
-              ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
-            `}
+            title="JPG, PNG or GIF, up to 5MB"
+            className={`relative flex items-center justify-center gap-2 rounded-lg border border-dashed px-3 py-2 text-sm transition-colors duration-200 ${
+              dragActive
+                ? "border-primary/60 bg-primary/5 text-primary"
+                : "border-border text-muted-foreground hover:border-foreground/40 hover:text-foreground"
+            } ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
             onDragEnter={handleDrag}
             onDragLeave={handleDrag}
             onDragOver={handleDrag}
@@ -339,64 +330,32 @@ const UserImageUpload: React.FC<UserImageUploadProps> = ({
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
             />
 
-            <div className="flex flex-col items-center space-y-2.5">
-              {uploading ? (
-                <>
-                  <div className="p-2.5 bg-blue-100 dark:bg-blue-900/30 rounded-full">
-                    <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-blue-600 dark:text-blue-400">
-                      Uploading your image...
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      Please wait while we process your file
-                    </p>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div
-                    className={`p-2.5 rounded-full ${
-                      dragActive
-                        ? "bg-blue-100 dark:bg-blue-900/30"
-                        : "bg-gray-100 dark:bg-gray-800"
-                    }`}
-                  >
-                    {dragActive ? (
-                      <Upload className="w-6 h-6 text-blue-500" />
-                    ) : (
-                      <Image className="w-6 h-6 text-gray-400" />
-                    )}
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-0.5">
-                      {dragActive ? "Drop your image here" : "Choose an image"}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
-                      Drag & drop or click to browse
-                    </p>
-                    <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-0.5">
-                      JPG, PNG, GIF up to 5MB
-                    </p>
-                  </div>
-                </>
-              )}
-            </div>
+            {uploading ? (
+              <>
+                <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                <span>Uploading…</span>
+              </>
+            ) : (
+              <>
+                {dragActive ? (
+                  <Upload className="w-4 h-4" />
+                ) : (
+                  <Image className="w-4 h-4" />
+                )}
+                <span className="font-medium">
+                  {dragActive ? "Drop your image here" : "Add an image"}
+                </span>
+                <span className="text-xs text-muted-foreground">· optional</span>
+              </>
+            )}
           </div>
 
           {error && (
-            <div className="flex items-center gap-1.5 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+            <div className="flex items-center gap-1.5">
               <AlertCircle className="w-3.5 h-3.5 text-red-500 flex-shrink-0" />
               <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
             </div>
           )}
-
-          <div className="text-center">
-            <p className="text-[11px] text-gray-400 dark:text-gray-500">
-              Images help make your quiz more engaging and visual
-            </p>
-          </div>
         </div>
       )}
     </div>
