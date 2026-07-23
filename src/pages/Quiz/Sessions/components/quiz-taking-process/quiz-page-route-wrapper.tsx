@@ -33,7 +33,7 @@ export const QuizPageRouteWrapper = () => {
 
   if (isUserLoading || (!userId && isGuestStatusLoading)) {
     return (
-      <div className="flex justify-center items-center py-16">
+      <div className="flex flex-1 justify-center items-center py-16">
         <LoadingWave size="lg" />
       </div>
     );
@@ -79,7 +79,8 @@ const CantCheckGuestScreen = ({
   onRetry: () => void;
   loginTo: string;
 }) => (
-  <div className="flex h-screen w-full items-center justify-center px-4">
+  // flex-1, not h-screen: sized by the layout's viewport column (docs/RESPONSIVE.md).
+  <div className="flex flex-1 w-full items-center justify-center px-4">
     <div className="text-center space-y-6 max-w-md p-4">
       <AlertCircle className="h-16 w-16 mx-auto text-yellow-400" />
       <h2 className="text-2xl font-bold text-yellow-400">

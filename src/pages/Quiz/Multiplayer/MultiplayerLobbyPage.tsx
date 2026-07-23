@@ -70,7 +70,7 @@ export const MultiplayerLobbyPage = ({
 
   // Live match state (driven by server events). When a match is running we replace the lobby
   // UI with the game view; exiting returns to the lobby so players can play again.
-  const match = useMatch({ sessionId });
+  const match = useMatch({ sessionId, username });
   if (match.isActive) {
     return <MultiplayerGame username={username} match={match} onExit={match.reset} />;
   }

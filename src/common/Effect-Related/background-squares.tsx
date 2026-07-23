@@ -194,9 +194,13 @@ const Squares: React.FC<SquaresProps> = ({
   ]);
 
   return (
+    // h-full (not h-screen): the canvas sits inside the layout's scroll
+    // container, so 100% resolves to the real visible viewport there. h-screen
+    // (100vh) over-measured on mobile, where the URL bar makes 100vh taller
+    // than what's actually on screen (docs/RESPONSIVE.md).
     <canvas
       ref={canvasRef}
-      className="absolute top-0 left-0 z-0 w-full h-screen border-none block"
+      className="absolute top-0 left-0 z-0 w-full h-full border-none block"
     ></canvas>
   );
 };

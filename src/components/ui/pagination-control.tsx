@@ -105,9 +105,10 @@ export const PaginationControls = ({
         {/* First Page Button */}
         {showSkipButtons && (
           <Button
+            type="button"
             variant="secondary"
             size="icon"
-            className="h-10 w-10 hidden sm:flex disabled:opacity-30 border shadow-sm rounded-sm"
+            className="h-10 w-10 hidden sm:flex justify-center disabled:opacity-30 border shadow-sm rounded-lg"
             onClick={() => onPageChange(1)}
             disabled={currentPage === 1}
             aria-label="Go to first page"
@@ -118,9 +119,10 @@ export const PaginationControls = ({
 
         {/* Previous Page Button */}
         <Button
+          type="button"
           variant="secondary"
           size="icon"
-          className="h-10 w-10 disabled:opacity-30 border shadow-sm rounded-sm"
+          className="h-10 w-10 disabled:opacity-30 border shadow-sm rounded-lg"
           onClick={() => onPageChange(currentPage - 1)}
           disabled={!hasPreviousPage}
           aria-label="Go to previous page"
@@ -145,10 +147,11 @@ export const PaginationControls = ({
             return (
               <Button
                 key={pageNumber}
+                type="button"
                 variant={pageNumber === currentPage ? "default" : "outline"}
                 size="icon"
                 className={cn(
-                  "h-10 w-10 transition-all rounded-sm",
+                  "h-10 w-10 transition-all rounded-lg",
                   pageNumber === currentPage
                     ? "font-bold shadow-md text-white"
                     : "hover:bg-accent hover:text-accent-foreground",
@@ -164,9 +167,10 @@ export const PaginationControls = ({
 
         {/* Next Page Button */}
         <Button
+          type="button"
           variant="secondary"
           size="icon"
-          className="h-10 w-10 disabled:opacity-30 border shadow-sm rounded-sm"
+          className="h-10 w-10 disabled:opacity-30 border shadow-sm rounded-lg"
           onClick={() => onPageChange(currentPage + 1)}
           disabled={!hasNextPage}
           aria-label="Go to next page"
@@ -177,9 +181,10 @@ export const PaginationControls = ({
         {/* Last Page Button */}
         {showSkipButtons && (
           <Button
+            type="button"
             variant="secondary"
             size="icon"
-            className="h-10 w-10 hidden sm:flex disabled:opacity-30 border shadow-sm"
+            className="h-10 w-10 hidden sm:flex justify-center disabled:opacity-30 border shadow-sm rounded-lg"
             onClick={() => onPageChange(totalPages)}
             disabled={currentPage === totalPages}
             aria-label="Go to last page"

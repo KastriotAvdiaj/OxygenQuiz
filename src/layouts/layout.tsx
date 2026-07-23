@@ -3,6 +3,7 @@ import Prism from "@/common/Effect-Related/Prism";
 import Header from "@/common/Header";
 import { useTheme } from "@/components/ui";
 import { EmailVerificationBanner } from "@/common/EmailVerificationBanner";
+import { APP_SCROLL_CONTAINER_ID } from "@/lib/app-scroll";
 
 type EffectType = "squares" | "lightning" | "prism" | "none";
 
@@ -99,21 +100,35 @@ export const HomeLayout = ({
   return (
     <>
       <Header BackgroundColor={hasHeaderBackground} />
+      {/* THE app scroll container (see docs/RESPONSIVE.md — "Scrolling model").
+          html/body never scroll; this div does. `.app-shell-viewport` sizes it to
+          the *dynamic* viewport (100dvh) so nothing hides behind mobile browser
+          chrome, and adds safe-area side padding for notched devices. The id is
+          what src/lib/app-scroll.ts and the header's hide-on-scroll hook into. */}
       <div
-        className="bg-background font-quiz text-foreground overflow-y-auto"
+        id={APP_SCROLL_CONTAINER_ID}
+        className="app-shell-viewport relative bg-background font-quiz text-foreground"
         style={{
           paddingTop: shouldAddPadding ? "var(--header-height, 4rem)" : "0",
-          height: "100vh",
-          position: "relative",
         }}
       >
         {renderEffect()}
 
-        <div style={{ position: "relative", zIndex: 1, height: "100%" }}>
+        {/* Flex column that is AT LEAST one viewport tall but free to grow with
+            its content (`height: 100%` here used to pin it to exactly one screen,
+            which is what broke scrolling on pages taller than the viewport).
+            Pages that want to fill the remaining screen height (hero/centered
+            layouts) use `flex-1` on their root instead of h-screen/100vh — those
+            units over-measure on mobile and double-count the header padding. */}
+        <div className="relative z-[1] flex min-h-full flex-col">
           {/* Soft-gate nudge for unconfirmed users; self-hides otherwise. Skipped on overlay
               headers, where there's no normal-flow header to sit beneath. */}
           {!isOverlay && <EmailVerificationBanner />}
-          {shouldWrapContent ? <div>{children}</div> : children}
+          {shouldWrapContent ? (
+            <div className="flex min-w-0 flex-1 flex-col">{children}</div>
+          ) : (
+            children
+          )}
         </div>
       </div>
     </>

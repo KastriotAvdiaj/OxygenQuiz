@@ -27,8 +27,10 @@ import {
   QuizSession,
   CurrentQuestion,
   InstantFeedbackAnswerResult,
+  AnswerStatus,
 } from "@/types/quiz-session-types";
 import { useNotifications } from "@/common/Notifications";
+import { audio } from "@/lib/audio";
 
 interface UseQuizSessionParams {
   quizId: number;
@@ -396,6 +398,9 @@ export const useQuizSession = ({
   const handleAnswerSubmissionSuccess = useCallback(
     (answerResult: InstantFeedbackAnswerResult) => {
       const hasInstantFeedback = quizSession?.hasInstantFeedback ?? false;
+
+      // Audio feedback: ding for a correct answer, buzz for anything else.
+      audio.play(answerResult.status === AnswerStatus.Correct ? "correct" : "wrong");
 
       setCompletedAnswers((prev) => [...prev, answerResult]);
 

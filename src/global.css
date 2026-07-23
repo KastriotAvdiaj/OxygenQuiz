@@ -9,6 +9,10 @@
   --font-quiz: "DynaPuff";
 }
 
+/* App-shell scrolling model (see docs/RESPONSIVE.md):
+   the window NEVER scrolls — html/body are pinned and every route scrolls inside
+   the layout's `.app-shell-viewport` container instead. Code must therefore never
+   rely on window.scrollY / window.scrollTo; use src/lib/app-scroll.ts. */
 html, body {
   margin: 0;
   padding: 0;
@@ -17,6 +21,21 @@ html, body {
   font-family: var(--font-app), sans-serif;
   color: hsl(var(--foreground));
   background-color: hsl(var(--background))
+}
+
+/* The one true scroll container, rendered by the layouts.
+   100dvh (dynamic viewport height) tracks the *visible* viewport as mobile
+   browser chrome expands/collapses; plain 100vh is the "largest" viewport on
+   mobile, which hides the bottom of the page behind the URL bar. The vh line
+   stays first as a fallback for older browsers.
+   Safe-area padding keeps content clear of notches/home indicators now that
+   the viewport meta uses viewport-fit=cover. */
+.app-shell-viewport {
+  height: 100vh;
+  height: 100dvh;
+  overflow-y: auto;
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
 }
 
 @font-face {

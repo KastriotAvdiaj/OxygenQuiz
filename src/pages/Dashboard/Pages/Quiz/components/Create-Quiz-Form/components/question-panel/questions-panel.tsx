@@ -1,17 +1,7 @@
 // import React from "react";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { useDisclosure } from "@/hooks/use-disclosure";
-// import { ScrollArea } from "@/components/ui/scroll-area";
-import { PlusCircle } from "lucide-react";
 import { useQuiz } from "../../Quiz-questions-context";
-import { LiftedButton } from "@/common/LiftedButton";
-import SelectQuestionComponent from "../question-select/question-select";
 import { AnyQuestion } from "@/types/question-types";
 import { NewAnyQuestion } from "../../types";
 import { SmallQuestionCard } from "./small-question-card";
@@ -23,16 +13,7 @@ export function isAnyQuestion(
 }
 
 export const CreatedQuestionsPanel = ({}) => {
-  const { isOpen, open, close } = useDisclosure();
-
-  const handleOpenChange = () => {
-    if (!isOpen) {
-      open();
-    } else {
-      close();
-    }
-  };
-
+  const { isOpen, close } = useDisclosure();
   const { addedQuestions } = useQuiz();
 
   return (
@@ -41,20 +22,6 @@ export const CreatedQuestionsPanel = ({}) => {
         <CardHeader className="rounded-t border-primary/30 border-b p-3 bg-primary/10 flex-none">
           <CardTitle className="flex justify-between items-center text-sm ">
             <span>Quiz Questions ({addedQuestions.length})</span>
-            <Popover modal={true} open={isOpen} onOpenChange={handleOpenChange}>
-              <PopoverTrigger asChild onClick={open}>
-                <Button type="button" variant="ghost" size="sm">
-                  <PlusCircle size={16} />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent
-                side="left"
-                className="w-auto p-4 flex flex-col gap-2"
-              >
-                <SelectQuestionComponent />
-                <LiftedButton>+ Create New</LiftedButton>
-              </PopoverContent>
-            </Popover>
           </CardTitle>
         </CardHeader>
         <CardContent className="px-3 py-3 flex-1 min-h-0 overflow-y-auto scrollbar-thin">

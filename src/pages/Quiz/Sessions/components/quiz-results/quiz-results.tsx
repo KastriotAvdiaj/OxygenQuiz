@@ -1,10 +1,14 @@
 // src/components/quiz/QuizResults.tsx
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RotateCcw, Home, BarChart3, FileText } from "lucide-react";
-import { QuizSession } from "../../../../../types/quiz-session-types";
+import {
+  QuizSession,
+  AnswerStatus,
+} from "../../../../../types/quiz-session-types";
+import { audio } from "@/lib/audio";
 import { QuizOverview } from "./quiz-overview";
 import { QuestionReview } from "./question-review";
 import { LiftedButton } from "@/common/LiftedButton";
@@ -21,6 +25,18 @@ export function QuizResults({
 }: QuizResultsProps) {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
+
+  // Play a fanfare once when results appear: celebratory if the user got at least half
+  // right, a gentler sound otherwise.
+  useEffect(() => {
+    const correct = session.userAnswers.filter(
+      (a) => a.status === AnswerStatus.Correct
+    ).length;
+    const total = session.totalQuestions || session.userAnswers.length || 1;
+    audio.play(correct / total >= 0.5 ? "win" : "lose");
+    // Only on first mount for this session.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session.id]);
 
   const handleRetryQuiz = () => {
     if (onRetryQuiz) {
@@ -39,7 +55,9 @@ export function QuizResults({
   };
 
   return (
-    <div className="bg-background  ">
+    // flex-1: fill the layout's viewport column so short result pages don't
+    // leave a dead strip below (docs/RESPONSIVE.md).
+    <div className="flex-1 w-full bg-background">
       <div className="container mx-auto px-3 py-4 sm:px-4 sm:py-6 max-w-4xl">
         {/* Header */}
         <div className="mb-4 sm:mb-5 text-center">

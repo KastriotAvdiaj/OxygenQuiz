@@ -39,9 +39,10 @@ export function GuestQuizResultsRouteWrapper() {
 
   const goToSignup = () => navigate("/signup");
 
+  // flex-1, not h-screen: sized by the layout's viewport column (docs/RESPONSIVE.md).
   if (loading) {
     return (
-      <div className="flex h-screen w-full items-center justify-center">
+      <div className="flex flex-1 w-full items-center justify-center px-4">
         <LoadingWave size="lg" variant="quiz" />
       </div>
     );
@@ -49,7 +50,7 @@ export function GuestQuizResultsRouteWrapper() {
 
   if (error || !session) {
     return (
-      <div className="flex h-screen w-full items-center justify-center">
+      <div className="flex flex-1 w-full items-center justify-center px-4">
         <div className="text-center space-y-6 max-w-md">
           <AlertCircle className="h-16 w-16 text-red-400 mx-auto" />
           <h2 className="text-2xl font-bold text-red-400">Unable to Load Results</h2>

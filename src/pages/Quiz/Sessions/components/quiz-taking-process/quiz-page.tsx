@@ -150,9 +150,12 @@ export function QuizPage({ quizId, userId }: QuizPageProps) {
 
 // --- UI Components ---
 
+// All full-screen states below use `flex-1` instead of h-screen: they render
+// inside the layout's viewport-height column, where h-screen over-measures on
+// mobile and ignores the fixed-header padding (docs/RESPONSIVE.md).
 const LoadingScreen = ({ message }: { message: string }) => (
   <div
-    className="flex h-screen w-full items-center justify-center"
+    className="flex flex-1 w-full items-center justify-center px-4"
     style={{
       background: `
         radial-gradient(circle at 20% 80%,primary/15 0%, transparent 50%),
@@ -189,7 +192,7 @@ const ErrorScreen = ({
   icon?: "error" | "warning";
 }) => (
   <div
-    className="flex h-screen w-full items-center justify-center"
+    className="flex flex-1 w-full items-center justify-center px-4"
     style={{
       background: `
         radial-gradient(circle at 20% 80%, primary/15 0%, transparent 50%),
@@ -260,7 +263,7 @@ const ActiveSessionScreen = ({
 
   return (
     <div
-      className="flex h-screen w-full items-center justify-center px-4"
+      className="flex flex-1 w-full items-center justify-center px-4 py-6"
       style={{
         background: `
           radial-gradient(circle at 20% 80%, hsl(var(--primary) / 0.08) 0%, transparent 50%),

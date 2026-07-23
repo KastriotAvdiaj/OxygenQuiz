@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
+import { audio } from "@/lib/audio";
 
 type TimerSize = "sm" | "md" | "lg" | "xl";
 
@@ -83,6 +84,8 @@ export function QuizTimer({
           onTick?.(0);
           return 0;
         }
+        // Audible countdown for the final seconds.
+        if (next <= 5) audio.play("tick");
         onTick?.(next);
         return next;
       });

@@ -1004,7 +1004,20 @@ const CreateQuizForm = ({
                   ) : (
                     <div>Unknown question type</div>
                   )
-                ) : null}
+                ) : (
+                  <div className="flex flex-1 flex-col items-center justify-center px-6 py-16 text-center">
+                    <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full border border-dashed border-foreground/20 text-muted-foreground">
+                      <Plus className="h-5 w-5" />
+                    </div>
+                    <p className="text-sm font-medium text-foreground">
+                      No questions yet
+                    </p>
+                    <p className="mt-1 max-w-[16rem] text-xs text-muted-foreground">
+                      Use “Add a question” above to browse the pool or create a
+                      new one.
+                    </p>
+                  </div>
+                )}
               </CardContent>
               <CardFooter className="flex-none py-3">
                 <section className="w-full items-center flex justify-center">

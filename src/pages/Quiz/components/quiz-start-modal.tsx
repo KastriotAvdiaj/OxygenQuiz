@@ -75,8 +75,11 @@ export function QuizStartModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md mx-auto border-border bg-card font-quiz p-0 overflow-hidden gap-0">
-        <div className="p-5 sm:p-6 space-y-5">
+      {/* max-h + inner scroll: long titles/descriptions must not push the CTA
+          off small screens — the body scrolls instead (85dvh tracks the visible
+          mobile viewport; svh fallback n/a, vh fallback below). */}
+      <DialogContent className="sm:max-w-md mx-auto border-border bg-card font-quiz p-0 overflow-hidden gap-0 max-h-[85vh] supports-[height:1dvh]:max-h-[85dvh] flex flex-col">
+        <div className="p-5 sm:p-6 space-y-5 overflow-y-auto">
           <DialogHeader className="space-y-3">
             <div className="flex items-center gap-2 flex-wrap">
               <Badge

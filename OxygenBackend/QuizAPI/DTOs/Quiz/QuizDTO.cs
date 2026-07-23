@@ -55,6 +55,7 @@ namespace QuizAPI.DTOs.Quiz
         public DateTime CreatedAt { get; set; }
         public int QuestionCount { get; set; }
         public string User { get; set; } = string.Empty;
+        public string? UserProfileImageUrl { get; set; }
 
         public string? ColorPaletteJson { get; set; }
 

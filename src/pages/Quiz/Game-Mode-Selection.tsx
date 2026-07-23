@@ -12,7 +12,9 @@ export function GameModeSelection() {
   const navigate = useNavigate();
 
   return (
-    <div className="flex h-full flex-1 flex-col items-center justify-center text-foreground">
+    // flex-1 alone (no h-full): fills the layout's viewport column but may grow
+    // on short landscape screens instead of clipping (docs/RESPONSIVE.md).
+    <div className="flex flex-1 flex-col items-center justify-center px-4 py-6 text-foreground">
       <div className="w-full max-w-sm px-4 pb-16 sm:max-w-xl sm:pb-20 md:max-w-2xl md:pb-24 lg:max-w-3xl">
         <button
           onClick={() => navigate("/")}

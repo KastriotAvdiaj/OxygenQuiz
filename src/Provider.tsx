@@ -11,6 +11,7 @@ import { queryConfig } from "./lib/React-query";
 import { Notifications } from "./common/Notifications";
 import { SettingsApplier } from "./common/SettingsApplier";
 import { MultiplayerProvider } from "./context/multiplayer-context";
+import { AudioProvider } from "./lib/audio";
 
 type AppProviderProps = {
   children: React.ReactNode;
@@ -46,9 +47,11 @@ export const AppProvider = ({ children }: AppProviderProps) => {
                 )}
               >
                 <SettingsApplier />
-                <MultiplayerProvider>
-                  {children}
-                </MultiplayerProvider>
+                <AudioProvider>
+                  <MultiplayerProvider>
+                    {children}
+                  </MultiplayerProvider>
+                </AudioProvider>
               </AuthLoader>
             </ThemeProvider>
           </QueryClientProvider>

@@ -32,6 +32,8 @@ export type QuizSummaryDTO = {
   createdAt: string;
   questionCount: number;
   user: string;
+  /** Profile image URL of the quiz's creator. Absent if they have no avatar set. */
+  userProfileImageUrl?: string;
   /** Soft-delete timestamp. Only populated in admin (includeDeleted) reads; null/absent = live. */
   deletedAt?: string | null;
 };

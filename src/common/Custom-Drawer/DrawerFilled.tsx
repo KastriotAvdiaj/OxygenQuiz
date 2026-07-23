@@ -50,7 +50,9 @@ export const DrawerFilled = () => {
           </DrawerContent>
         </Drawer>
       ) : (
-        <div className="flex gap-4 items-center text-foreground">
+        // Tight on phones: smaller gap, no "or" — the two buttons speak for
+        // themselves and the header has no room to spare (docs/RESPONSIVE.md).
+        <div className="flex gap-2 sm:gap-4 items-center text-foreground">
           <NavLink to={"/login"}>
             <Button
               className=" text-white custom-button"
@@ -58,7 +60,7 @@ export const DrawerFilled = () => {
               Login
             </Button>
           </NavLink>
-          or
+          <span className="hidden sm:inline">or</span>
           <NavLink to={"/signup"}>
             <Button variant={"outline"}>Signup</Button>
           </NavLink>

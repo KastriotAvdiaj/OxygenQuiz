@@ -4,6 +4,7 @@ import { useMultiplayer } from "@/hooks/useMultiplayer";
 import { useNotifications } from "@/common/Notifications";
 import { useUser } from "@/lib/Auth";
 import { useNavigationGuard } from "./use-navigation-guard";
+import { audio } from "@/lib/audio";
 
 export interface SelectedQuiz {
   id: string;
@@ -119,6 +120,7 @@ export const useLobbyConnection = ({ mode = "join" }: UseLobbyConnectionOptions)
         });
 
         if (joinedUsername !== username) {
+          audio.play("join");
           addNotification({
             type: "success",
             title: `${joinedUsername} joined the lobby`,

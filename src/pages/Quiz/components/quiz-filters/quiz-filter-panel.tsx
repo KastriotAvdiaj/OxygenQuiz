@@ -87,7 +87,10 @@ export function QuizFilterPanel({
         // Sidebar: hugs its content when short (collapsed), but never grows past
         // the viewport — it caps at the page height and scrolls its body
         // internally, so it can't spill onto the footer.
-        !compact && fillHeight && "flex max-h-[calc(100vh-7rem)] flex-col overflow-hidden",
+        // dvh, not vh: cap against the *visible* viewport (mobile browser chrome
+        // makes 100vh over-measure); the vh class is the older-browser fallback.
+        !compact && fillHeight &&
+          "flex max-h-[calc(100vh-7rem)] supports-[height:100dvh]:max-h-[calc(100dvh-7rem)] flex-col overflow-hidden",
         className
       )}
     >

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useMultiplayer } from "@/hooks/useMultiplayer";
+import { audio } from "@/lib/audio";
 
 // Wire shapes mirror the server's match DTOs (SignalR serializes them camelCased).
 // See OxygenBackend/QuizAPI/Services/QuizSessionServices/MatchModels.cs.
@@ -51,14 +52,20 @@ export type MatchPhase = "idle" | "starting" | "question" | "reveal" | "ended";
 
 interface UseMatchOptions {
   sessionId: string;
+  /** Current player's username, used to pick correct/wrong and win/lose sounds for *this* player. */
+  username?: string;
 }
 
 /**
  * Subscribes to the server-driven match events on the shared SignalR connection and exposes the
  * current match state. The lobby page renders <MultiplayerGame> whenever `phase !== "idle"`.
  */
-export const useMatch = ({ sessionId }: UseMatchOptions) => {
+export const useMatch = ({ sessionId, username }: UseMatchOptions) => {
   const { connection, submitAnswer } = useMultiplayer();
+
+  // Keep the latest username in a ref so the SignalR handlers (bound once) always see it.
+  const usernameRef = useRef<string | undefined>(username);
+  usernameRef.current = username;
 
   const [phase, setPhase] = useState<MatchPhase>("idle");
   const [countdownSeconds, setCountdownSeconds] = useState(0);
@@ -81,6 +88,8 @@ export const useMatch = ({ sessionId }: UseMatchOptions) => {
       setCountdownSeconds(seconds);
       setMatchResult(null);
       setLastResult(null);
+      audio.play("start");
+      audio.playMusic("gameplay"); // background bed for the match
     });
 
     connection.on("QuestionStarted", (q: RoundQuestionView, deadline: string) => {
@@ -91,6 +100,7 @@ export const useMatch = ({ sessionId }: UseMatchOptions) => {
       setHasSubmitted(false);
       setLastResult(null);
       setPhase("question");
+      audio.play("whoosh"); // new question appears
     });
 
     connection.on("AnswerSubmitted", (who: string) => {
@@ -101,12 +111,18 @@ export const useMatch = ({ sessionId }: UseMatchOptions) => {
       setLastResult(result);
       setScoreboard(result.scoreboard ?? []);
       setPhase("reveal");
+      // Did *this* player get it right? Play the matching sound.
+      const me = result.players?.find((p) => p.username === usernameRef.current);
+      if (me) audio.play(me.isCorrect ? "correct" : "wrong");
     });
 
     connection.on("MatchEnded", (result: MatchResult) => {
       setMatchResult(result);
       setScoreboard(result.scoreboard ?? []);
       setPhase("ended");
+      audio.stopMusic();
+      const won = result.winnerUsername != null && result.winnerUsername === usernameRef.current;
+      audio.play(won ? "win" : "lose");
     });
 
     return () => {
@@ -124,6 +140,7 @@ export const useMatch = ({ sessionId }: UseMatchOptions) => {
     async (answer: string) => {
       if (hasSubmitted) return;
       setHasSubmitted(true);
+      audio.play("lock"); // your answer is locked in
       try {
         await submitAnswer(sessionId, answer);
       } catch (err) {

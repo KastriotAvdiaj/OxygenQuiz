@@ -33,7 +33,7 @@ AvatarImage.displayName = AvatarPrimitive.Image.displayName;
 const AvatarFallback = React.forwardRef<
   React.ElementRef<typeof AvatarPrimitive.Fallback>,
   React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Fallback>
->(({ className, ...props }, ref) => (
+>(({ className, children, ...props }, ref) => (
   <AvatarPrimitive.Fallback
     ref={ref}
     className={cn(
@@ -42,7 +42,8 @@ const AvatarFallback = React.forwardRef<
     )}
     {...props}
   >
-    <FaUser className="text-xl text-gray-500" />
+    {/* Custom content (e.g. initials) when provided; otherwise the default user icon. */}
+    {children ?? <FaUser className="text-xl text-gray-500" />}
   </AvatarPrimitive.Fallback>
 ));
 AvatarFallback.displayName = AvatarPrimitive.Fallback.displayName;

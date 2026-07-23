@@ -405,6 +405,7 @@ namespace QuizAPI.Mapping
                 // Live rows only — retired rows belong to past versions (docs/quiz/quiz-editing.md).
                 QuestionCount = q.QuizQuestions.Count(qq => qq.RemovedInVersion == null),
                 User = q.User == null ? string.Empty : q.User.Username,
+                UserProfileImageUrl = q.User == null ? null : q.User.ProfileImageUrl,
                 Status = q.Status.ToString(),
                 DeletedAt = q.DeletedAt
             };

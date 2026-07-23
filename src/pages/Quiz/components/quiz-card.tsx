@@ -2,6 +2,7 @@ import { useCallback, useMemo, type CSSProperties } from "react";
 import { HelpCircle, Clock, ArrowRight } from "lucide-react";
 import type { QuizSummaryDTO } from "@/types/quiz-types";
 import { cn } from "@/utils/cn";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface QuizCardProps {
   quiz: QuizSummaryDTO;
@@ -84,9 +85,23 @@ export function QuizCard({ quiz, onClick }: QuizCardProps) {
             >
               {quiz.category}
             </span>
-            <span className="shrink-0 truncate text-sm text-muted-foreground">
-              by {quiz.user}
-            </span>
+            {/* Creator avatar — reveals their name on hover. */}
+            <div className="group/author relative shrink-0">
+              <Avatar className="h-7 w-7 border border-border">
+                <AvatarImage
+                  src={quiz.userProfileImageUrl}
+                  alt={quiz.user}
+                  loading="lazy"
+                  decoding="async"
+                />
+                <AvatarFallback className="bg-muted text-[11px] font-semibold text-muted-foreground">
+                  {quiz.user?.charAt(0).toUpperCase() || "?"}
+                </AvatarFallback>
+              </Avatar>
+              <span className="pointer-events-none absolute right-0 top-full z-20 mt-1.5 whitespace-nowrap rounded-md border border-border bg-popover px-2 py-1 text-xs font-medium text-popover-foreground opacity-0 shadow-md transition-opacity duration-200 group-hover/author:opacity-100">
+                {quiz.user}
+              </span>
+            </div>
           </div>
 
           {/* Middle: crisp, bold title. The fuller description lives in the start

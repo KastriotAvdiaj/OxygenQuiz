@@ -64,9 +64,11 @@ export function GuestQuizPage({ quizId }: GuestQuizPageProps) {
     fetchNextQuestion(quizSession.id);
   };
 
+  // Full-screen states use flex-1, not h-screen — see docs/RESPONSIVE.md
+  // ("Filling the screen"): h-screen over-measures inside the app shell.
   if (isInitialLoading && !error) {
     return (
-      <div className="flex h-screen w-full items-center justify-center">
+      <div className="flex flex-1 w-full items-center justify-center px-4">
         <div className="quiz-card-elevated p-8 text-center space-y-4">
           <Loader2 className="h-12 w-12 animate-spin mx-auto text-quiz-primary" />
           <p className="quiz-text-primary text-xl font-medium">Preparing your quiz...</p>
@@ -77,7 +79,7 @@ export function GuestQuizPage({ quizId }: GuestQuizPageProps) {
 
   if (error || !quizSession) {
     return (
-      <div className="flex h-screen w-full items-center justify-center">
+      <div className="flex flex-1 w-full items-center justify-center px-4">
         <div className="text-center space-y-6 max-w-md p-4">
           <AlertCircle className="h-16 w-16 mx-auto text-red-400" />
           <h2 className="text-2xl font-bold text-red-400">Quiz Session Error</h2>

@@ -93,8 +93,11 @@ export function QuizInterface({
   };
 
   return (
+    // flex-1 (not min-h-screen): the layout already pads for the fixed header
+    // and sizes to the dynamic viewport; min-h-screen double-counted both and
+    // pushed the submit button below the fold on phones (docs/RESPONSIVE.md).
     <main
-      className="min-h-screen flex flex-col  "
+      className="flex flex-1 flex-col"
       style={{
         background: `
           radial-gradient(circle at 20% 80%, primary 08 0%, transparent 50%),

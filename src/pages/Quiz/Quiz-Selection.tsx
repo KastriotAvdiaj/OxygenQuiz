@@ -33,6 +33,7 @@ import {
   useQuizFilterState,
   type QuizFacetKey,
 } from "./components/quiz-filters";
+import { scrollAppToTop } from "@/lib/app-scroll";
 
 // Number of quiz cards shown per page.
 const PAGE_SIZE = 12;
@@ -214,10 +215,11 @@ export function QuizSelection() {
   return (
     // font-app: clean sans body text everywhere on the page (the layout defaults
     // to the playful display font, which we reserve for hero headings).
-    // min-h-full (not h-full): the page fills at least one screen but is free to
-    // grow taller than the viewport when the sidebar/grid need it — a fixed
-    // h-full box would clip and let a tall filter panel spill onto the footer.
-    <div className="relative min-h-full font-app tracking-normal text-foreground bg-muted">
+    // flex-1 (not min-h-full/h-full): the page is a flex child of the layout's
+    // min-h-full column (docs/RESPONSIVE.md), so flex-1 fills at least one
+    // screen while staying free to grow taller — percentage heights were what
+    // pinned this page to one viewport and broke scrolling on mobile.
+    <div className="relative flex-1 font-app tracking-normal text-foreground bg-muted">
       {/* Wide-but-capped layout: the sidebar + grid want more room than the
           default `container` (1280–1536px), but full-bleed reads sparse on
           very large monitors — 1700px is the sweet spot. */}
@@ -274,7 +276,9 @@ export function QuizSelection() {
                         )}
                       </button>
                     </SheetTrigger>
-                    <SheetContent side="left" className="w-80 overflow-y-auto p-4">
+                    {/* max-w-[85vw]: never wider than the phone — a fixed w-80
+                        overflowed 320–360px screens */}
+                    <SheetContent side="left" className="w-80 max-w-[85vw] overflow-y-auto p-4">
                       <SheetHeader className="sr-only">
                         <SheetTitle>Filters</SheetTitle>
                       </SheetHeader>
@@ -373,7 +377,9 @@ export function QuizSelection() {
               pagination={pagination}
               onPageChange={(newPage) => {
                 setPageNumber(newPage);
-                window.scrollTo(0, 0);
+                // The window never scrolls in this app — scroll the app-shell
+                // container instead (window.scrollTo here was a silent no-op).
+                scrollAppToTop();
               }}
             />
           </div>
