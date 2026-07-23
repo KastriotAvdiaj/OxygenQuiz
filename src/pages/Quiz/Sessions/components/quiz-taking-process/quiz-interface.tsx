@@ -106,10 +106,10 @@ export function QuizInterface({
         `,
       }}>
       {/* Main content area */}
-      <div className="flex-1 flex items-center justify-center px-3 py-4 sm:px-4 sm:py-6 md:py-8">
+      <div className="flex-1 flex items-center justify-center px-3 py-3 sm:px-4 sm:py-6 md:py-8">
         <div className="w-full max-w-3xl">
           {currentQuestion ? (
-            <div className="space-y-4 sm:space-y-6">
+            <div className="space-y-3 sm:space-y-6">
               <QuestionDisplay
                 question={currentQuestion}
                 onSubmit={onSubmitAnswer}
@@ -125,9 +125,11 @@ export function QuizInterface({
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.8, duration: 0.3 }}
                   className="flex flex-col items-center gap-4">
+                  {/* Normal button proportions — the old p-4/p-6 square padding
+                      made this a slab on phones (docs/RESPONSIVE.md) */}
                   <LiftedButton
                     onClick={handleNextQuestion}
-                    className="p-4 sm:p-6 text-lg sm:text-2xl tracking-wide font-semibold rounded-md transition-shadow duration-200 group bg-primary text-white">
+                    className="px-6 py-2.5 sm:px-8 sm:py-3 text-lg sm:text-xl tracking-wide font-semibold rounded-md transition-shadow duration-200 group bg-primary text-white">
                     <div className="flex items-center gap-2">
                       {isQuizComplete && (
                         <Trophy className="w-4 h-4" />

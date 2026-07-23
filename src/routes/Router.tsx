@@ -87,6 +87,8 @@ enum HeaderBehavior {
   DEFAULT = "default",
   OVERLAY_TRANSPARENT = "overlay-transparent",
   OVERLAY_SOLID = "overlay-solid",
+  /** No header at all — immersive routes like active quiz play (docs/RESPONSIVE.md). */
+  HIDDEN = "hidden",
 }
 // Lazy load components
 const Home = lazy(() =>
@@ -210,9 +212,12 @@ const createAppRouter = (queryClient: QueryClient) =>
       errorElement: <DashboardErrorElement />,
       element: (
         <>
+          {/* Header hidden during play: on phones it ate a full row of viewport
+              and pushed the submit button below the fold. Players leave via the
+              quiz's own back/finish actions. */}
           <HomeLayout
+            headerBehavior={HeaderBehavior.HIDDEN}
             children={<QuizPageRouteWrapper />}
-            headerBehavior={HeaderBehavior.DEFAULT}
           />
         </>
       ),

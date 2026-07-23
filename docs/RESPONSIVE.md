@@ -105,6 +105,23 @@ with `env(safe-area-inset-*)`. If you ever add a fixed bottom bar, pad it with
 | `quiz-filter-panel.tsx`, `quiz-start-modal.tsx` | vh caps → dvh pairs; modal body scrolls | Panels/dialogs taller than the visible viewport on phones |
 | `background-squares.tsx` | Canvas `h-screen` → `h-full` | Sized by the shell, correct on mobile |
 | `common/Header.tsx`, `HeaderComponent.tsx`, `DrawerFilled.tsx` | Grid `grid-cols-5` → flex row with absolutely-centered wordmark (hidden < sm); `h-14 sm:h-16`; safe-area padding; SoundToggle removed (sound lives in user settings — don't re-add); logged-out "or" hidden < sm | Fifth-width side zones wrapped the nav and collided with the wordmark on phones |
+| `layout.tsx`, `Router.tsx` | New `headerBehavior="hidden"` — `/quiz/:quizId/play` renders no header | Immersive play: on phones the header ate a full row and pushed Submit below the fold |
+| Gameplay components (`quiz-timer` md size, `question-card`, `question-display`, `quiz-interface`, `multiple-choice`, `true-or-false`, `quiz-submit-button`) | Compact base (phone) sizes: smaller timer, tighter padding/spacing (`space-y-3`, `p-2.5`, `py-3`), True/False side-by-side; `sm:` sizes unchanged | Goal: timer + question + options + Submit fit a ~660px phone viewport with no scrolling |
+
+## Backgrounded tabs & timers (mobile)
+
+Mobile browsers freeze JS timers (`setInterval`/`setTimeout`) when the user
+switches apps. Any gameplay countdown must therefore be **wall-clock based**:
+anchor a deadline timestamp and derive the remaining time from `Date.now()` on
+each tick and on `visibilitychange` — never decrement a counter per tick.
+`QuizTimer` is the reference implementation. The server is the authority
+either way: `SubmitAnswerService` grades from `CurrentQuestionStartTime`
+regardless of what the client displayed, and `resolveAndResume` catches up
+expired questions when a session is reopened after a full page reload.
+Related design fact: the quiz does not advance while nobody's device is
+polling — the next question's clock starts server-side when the question is
+*served*, so returning after a break legitimately shows a fresh timer on a
+freshly fetched question.
 
 ## Checklist for new pages/components
 

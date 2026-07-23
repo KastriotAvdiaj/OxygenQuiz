@@ -180,8 +180,9 @@ export function TrueOrFalseQuestion({
   };
 
   return (
-    <div className="space-y-4 sm:space-y-6">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 max-w-2xl mx-auto">
+    // Compact base spacing: phones must fit everything in one viewport (docs/RESPONSIVE.md).
+    <div className="space-y-3 sm:space-y-6">
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-6 max-w-2xl mx-auto">
         {/* True Option */}
         {trueOption && renderOption(trueOption, true, 0.1, -20)}
 

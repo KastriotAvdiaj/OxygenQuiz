@@ -9,7 +9,10 @@ type EffectType = "squares" | "lightning" | "prism" | "none";
 
 interface LayoutProps {
   children: React.ReactNode;
-  headerBehavior?: "default" | "overlay-transparent" | "overlay-solid";
+  /** "hidden": no header at all — immersive routes like active quiz play,
+      where every pixel of phone viewport belongs to the game
+      (docs/RESPONSIVE.md). */
+  headerBehavior?: "default" | "overlay-transparent" | "overlay-solid" | "hidden";
   contentPadding?: "auto" | "manual" | "none";
   effect?: EffectType;
 
@@ -55,11 +58,13 @@ export const HomeLayout = ({
       : "default");
 
   const isOverlay = finalHeaderBehavior.startsWith("overlay-");
+  const isHeaderHidden = finalHeaderBehavior === "hidden";
   const hasHeaderBackground =
     finalHeaderBehavior === "default" ||
     finalHeaderBehavior === "overlay-solid";
 
-  const shouldAddPadding = contentPadding === "auto" && !isOverlay;
+  const shouldAddPadding =
+    contentPadding === "auto" && !isOverlay && !isHeaderHidden;
   const shouldWrapContent = contentPadding === "auto" && isOverlay;
 
   // Render the selected effect
@@ -99,7 +104,7 @@ export const HomeLayout = ({
 
   return (
     <>
-      <Header BackgroundColor={hasHeaderBackground} />
+      {!isHeaderHidden && <Header BackgroundColor={hasHeaderBackground} />}
       {/* THE app scroll container (see docs/RESPONSIVE.md — "Scrolling model").
           html/body never scroll; this div does. `.app-shell-viewport` sizes it to
           the *dynamic* viewport (100dvh) so nothing hides behind mobile browser
@@ -123,7 +128,7 @@ export const HomeLayout = ({
         <div className="relative z-[1] flex min-h-full flex-col">
           {/* Soft-gate nudge for unconfirmed users; self-hides otherwise. Skipped on overlay
               headers, where there's no normal-flow header to sit beneath. */}
-          {!isOverlay && <EmailVerificationBanner />}
+          {!isOverlay && !isHeaderHidden && <EmailVerificationBanner />}
           {shouldWrapContent ? (
             <div className="flex min-w-0 flex-1 flex-col">{children}</div>
           ) : (

@@ -90,7 +90,9 @@ export function MultipleChoiceQuestion({
   const indicatorRadius = isMulti ? "rounded-md" : "rounded-full";
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    // Compact base spacing/padding: phones must fit question + options + submit
+    // in one viewport (docs/RESPONSIVE.md).
+    <div className="space-y-3 sm:space-y-6">
       {/* Selection-mode indicator — tells the user how many options to pick */}
       <div className="flex justify-center">
         <span
@@ -109,7 +111,7 @@ export function MultipleChoiceQuestion({
         </span>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-4">
         {question.options.map((option, index) => {
           const feedbackState = getFeedbackState(option.id);
           const isSelected = selectedIds.includes(option.id);
@@ -128,7 +130,7 @@ export function MultipleChoiceQuestion({
                 onClick={() => !isDisabled && handleOptionClick(option.id)}
                 disabled={isDisabled}
                 className={`
-                  w-full p-3 sm:p-4 rounded-xl border-2 transition-all duration-300
+                  w-full p-2.5 sm:p-4 rounded-xl border-2 transition-all duration-300
                   flex items-center gap-3 sm:gap-4 text-left group
                   ${isSelected && !answerResult ? "shadow-lg transform scale-[1.02]" : ""}
                   ${feedbackState === "correct" ? "border-green-500 bg-green-50 dark:bg-green-900/20" : ""}

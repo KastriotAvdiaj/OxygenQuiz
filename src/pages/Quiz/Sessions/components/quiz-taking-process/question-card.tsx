@@ -19,9 +19,11 @@ export function QuestionCard({ text, className = "" }: QuestionCardProps) {
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.3 }}
       className={`relative ${className}`}>
-      <div className="quiz-card-elevated p-4 sm:p-6 md:p-8 text-center relative overflow-hidden rounded-xl border-2 border-dashed border-primary bg-primary/20">
+      {/* Compact base sizes: on phones the whole question screen should fit one
+          viewport without scrolling (docs/RESPONSIVE.md). */}
+      <div className="quiz-card-elevated p-3 sm:p-6 md:p-8 text-center relative overflow-hidden rounded-xl border-2 border-dashed border-primary bg-primary/20">
         <div className="absolute inset-0 opacity-3" />
-        <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold leading-relaxed relative z-10 tracking-wider">
+        <h2 className="text-lg sm:text-2xl md:text-3xl lg:text-4xl font-bold leading-snug sm:leading-relaxed relative z-10 tracking-wider">
           {text}
         </h2>
       </div>

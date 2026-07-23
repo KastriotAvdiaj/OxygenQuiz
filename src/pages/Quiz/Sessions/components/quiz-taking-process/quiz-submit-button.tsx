@@ -51,7 +51,9 @@ export function QuizSubmitButton({
       <LiftedButton
         onClick={onSubmit}
         disabled={!canSubmit || isSubmitting}
-        className="px-6 py-4 sm:px-8 sm:py-6 text-lg sm:text-2xl font-semibold rounded-xl min-w-[160px] sm:min-w-[200px] bg-primary text-white"
+        // Normal CTA proportions on every size (the old sm:py-6 was a slab);
+        // matches the Next button in quiz-interface.tsx (docs/RESPONSIVE.md).
+        className="px-6 py-2.5 sm:px-8 sm:py-3 text-lg sm:text-xl font-semibold rounded-xl min-w-[160px] sm:min-w-[200px] bg-primary text-white"
       >
         {isSubmitting ? (
           <div className="flex items-center gap-2">

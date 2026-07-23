@@ -111,7 +111,7 @@ export function QuestionDisplay({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
-      className="space-y-4 sm:space-y-6">
+      className="space-y-3 sm:space-y-6">
       {/* Timer — freezes once the answer is submitted or timed out */}
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}

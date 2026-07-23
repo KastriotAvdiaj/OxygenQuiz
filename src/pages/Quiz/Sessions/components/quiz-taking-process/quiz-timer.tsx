@@ -35,10 +35,13 @@ const SIZE_CONFIG: Record<
     label: "text-[9px]",
     stroke: 6,
   },
+  // md is the in-game size (single- and multiplayer): compact on phones so the
+  // question + answers + submit fit one viewport, full-size from sm up
+  // (docs/RESPONSIVE.md).
   md: {
-    container: "h-24 w-24",
-    text: "text-2xl",
-    label: "text-[10px]",
+    container: "h-16 w-16 sm:h-24 sm:w-24",
+    text: "text-lg sm:text-2xl",
+    label: "text-[9px] sm:text-[10px]",
     stroke: 7,
   },
   lg: { container: "h-32 w-32", text: "text-4xl", label: "text-xs", stroke: 8 },
@@ -57,6 +60,10 @@ export function QuizTimer({
   const [timeLeft, setTimeLeft] = useState(initialTime);
   const timeUpCalledRef = useRef(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  // Wall-clock anchor: the timestamp at which time runs out. The displayed
+  // value is always derived from this, never from counting ticks.
+  const deadlineRef = useRef<number>(0);
+  const timeLeftRef = useRef(initialTime);
 
   const handleTimeUp = useCallback(() => {
     if (!timeUpCalledRef.current) {
@@ -68,36 +75,61 @@ export function QuizTimer({
   // Reset when question changes
   useEffect(() => {
     timeUpCalledRef.current = false;
+    timeLeftRef.current = initialTime;
     setTimeLeft(initialTime);
   }, [initialTime]);
 
-  // Countdown interval — stops when paused or timed out
+  // Wall-clock countdown — stops while paused or after time-up.
+  //
+  // Why wall-clock: mobile browsers freeze JS timers in backgrounded tabs, so
+  // the old decrementing interval silently *paused* whenever the player left
+  // the app mid-question — the display drifted ahead of the server, which keeps
+  // grading against CurrentQuestionStartTime (SubmitAnswerService.cs) the whole
+  // time. We anchor a deadline timestamp instead and recompute the remaining
+  // time from Date.now() on every tick and on visibilitychange, so time spent
+  // away counts and an expired question times out the moment the tab wakes.
   useEffect(() => {
     if (intervalRef.current) clearInterval(intervalRef.current);
     if (timeUpCalledRef.current || isPaused) return;
 
-    intervalRef.current = setInterval(() => {
-      setTimeLeft((prev) => {
-        const next = prev - 1;
-        if (next <= 0 && !timeUpCalledRef.current) {
-          setTimeout(() => handleTimeUp(), 0);
-          onTick?.(0);
-          return 0;
+    // (Re)anchor the deadline from the current remaining time.
+    deadlineRef.current = Date.now() + timeLeftRef.current * 1000;
+
+    const sync = () => {
+      const remaining = Math.max(
+        0,
+        Math.ceil((deadlineRef.current - Date.now()) / 1000)
+      );
+      if (remaining !== timeLeftRef.current) {
+        // Audible countdown for the final seconds — only on genuine 1s steps,
+        // so a catch-up jump after backgrounding doesn't fire a tick burst.
+        if (
+          remaining > 0 &&
+          remaining <= 5 &&
+          remaining === timeLeftRef.current - 1
+        ) {
+          audio.play("tick");
         }
-        // Audible countdown for the final seconds.
-        if (next <= 5) audio.play("tick");
-        onTick?.(next);
-        return next;
-      });
-    }, 1000);
+        timeLeftRef.current = remaining;
+        setTimeLeft(remaining);
+        onTick?.(remaining);
+      }
+      if (remaining <= 0) handleTimeUp();
+    };
+
+    // 250ms cadence: cheap, and the display recovers quickly after the browser
+    // throttles timers. visibilitychange resyncs instantly on wake.
+    intervalRef.current = setInterval(sync, 250);
+    document.addEventListener("visibilitychange", sync);
 
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
+      document.removeEventListener("visibilitychange", sync);
     };
-  }, [handleTimeUp, onTick, isPaused]);
+  }, [handleTimeUp, onTick, isPaused, initialTime]);
 
   // Arc calculation — based on total question time, not just remaining
   const percentage = total > 0 ? (timeLeft / total) * 100 : 0;
