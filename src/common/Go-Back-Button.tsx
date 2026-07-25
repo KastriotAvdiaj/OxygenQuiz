@@ -46,7 +46,9 @@ export const GoBackButton: React.FC<BackButtonProps> = ({
     <button
       type="button"
       className={cn(
-        "bg-muted shadow-md text-center w-48 rounded-xl h-9 font-sans relative text-foreground text-sm font-semibold group",
+        // w-32 on phones: the fixed w-48 pill spanned half a phone screen.
+        // The hover grow-to-184px animation only exists from sm up anyway.
+        "bg-muted shadow-md text-center w-32 sm:w-48 rounded-xl h-9 font-sans relative text-foreground text-sm font-semibold group",
         className
       )}
       onClick={goBack}

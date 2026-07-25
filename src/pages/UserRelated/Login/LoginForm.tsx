@@ -41,7 +41,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, isPending }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 w-full">
+    <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6 w-full">
       <div className="space-y-4">
         <InputField
           label="Email"
@@ -79,7 +79,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, isPending }) => {
         <Button
           onClick={handleSubmit}
           isPending={isPending}
-          className="text-xl shadow-lg w-full p-6 text-white"
+          className="text-base sm:text-xl shadow-lg w-full py-2.5 sm:py-4 text-white"
           disabled={isPending}
         >
           Sign In

@@ -55,14 +55,18 @@ export const DrawerFilled = () => {
         <div className="flex gap-2 sm:gap-4 items-center text-foreground">
           <NavLink to={"/login"}>
             <Button
-              className=" text-white custom-button"
+              className="text-white custom-button h-8 px-3 text-sm sm:h-10 sm:px-4 sm:text-base"
               variant={"default"}>
               Login
             </Button>
           </NavLink>
           <span className="hidden sm:inline">or</span>
           <NavLink to={"/signup"}>
-            <Button variant={"outline"}>Signup</Button>
+            <Button
+              className="h-8 px-3 text-sm sm:h-10 sm:px-4 sm:text-base"
+              variant={"outline"}>
+              Signup
+            </Button>
           </NavLink>
         </div>
       )}

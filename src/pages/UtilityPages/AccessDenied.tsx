@@ -5,7 +5,9 @@ import { LiftedButton } from "@/common/LiftedButton";
 
 export const AccessDeniedPage = () => {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4">
+    // app-shell-viewport: standalone route — provides its own scroll container
+    // sized to the real visible viewport (docs/RESPONSIVE.md)
+    <div className="app-shell-viewport flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md shadow-lg dark:bg-primary/10 border dark:border-muted">
         <CardHeader>
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full ">

@@ -88,7 +88,7 @@ const Header = ({ BackgroundColor }: HeaderProps) => {
     // sits outside the app shell's padded scroll container.
     <HeaderComponent
       ref={headerRef}
-      className={`fixed top-0 left-0 right-0 z-30 text-base sm:text-lg shadow-md border-b border-border h-14 sm:h-16 items-center gap-2 sm:gap-4 px-3 sm:px-4 transition-transform duration-400 ${
+      className={`fixed top-0 left-0 right-0 z-30 text-sm sm:text-lg shadow-md border-b border-border h-12 sm:h-16 items-center gap-2 sm:gap-4 px-3 sm:px-4 transition-transform duration-400 ${
         hidden ? "-translate-y-full" : "translate-y-0"
       } ${BackgroundColor ? "bg-background" : "bg-transparent"}`}
       style={{
@@ -97,7 +97,7 @@ const Header = ({ BackgroundColor }: HeaderProps) => {
       }}
     >
       <nav aria-label="Main">
-        <ul className="flex items-center gap-3 sm:gap-4 font-bold font-quiz whitespace-nowrap">
+        <ul className="flex items-center gap-2.5 sm:gap-4 font-bold font-quiz whitespace-nowrap">
           <NavLink
             to="/"
             className={({ isActive }) =>
@@ -136,7 +136,7 @@ const Header = ({ BackgroundColor }: HeaderProps) => {
         {currentUser && <NotificationBell />}
         {/* Sound is controlled from user settings — the header toggle was
             removed on purpose; don't re-add it. */}
-        <ModeToggle className="rounded-[2rem] px-2" />
+        <ModeToggle className="rounded-[2rem] h-8 px-1.5 sm:h-10 sm:px-2" />
         <div className="hidden sm:block">
           <Divider orientation="vertical" thickness="1px" length="24px" />
         </div>

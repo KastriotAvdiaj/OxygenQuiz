@@ -28,7 +28,9 @@ export const AppProvider = ({ children }: AppProviderProps) => {
   return (
     <React.Suspense
       fallback={
-        <div className="flex h-screen w-screen items-center justify-center bg-background">
+        // app-shell-viewport, not h-screen: sizes to the real visible viewport
+        // on mobile (docs/RESPONSIVE.md)
+        <div className="app-shell-viewport flex w-full items-center justify-center bg-background">
           <LoadingWave size="xl" />
         </div>
       }
@@ -41,7 +43,7 @@ export const AppProvider = ({ children }: AppProviderProps) => {
               <Notifications />
               <AuthLoader
                 renderLoading={() => (
-                  <div className="flex h-screen w-screen items-center justify-center bg-background">
+                  <div className="app-shell-viewport flex w-full items-center justify-center bg-background">
                     <LoadingWave size="xl" />
                   </div>
                 )}

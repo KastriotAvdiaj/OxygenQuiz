@@ -19,7 +19,7 @@ export const MainErrorFallback: React.FC<FallbackProps> = ({
 
   return (
     <div
-      className={`${getErrorFontClass()} flex min-h-screen w-full items-center justify-center bg-background p-4`}
+      className={`${getErrorFontClass()} app-shell-viewport flex w-full items-center justify-center bg-background p-4`}
       role="alert">
       <Card className="w-full max-w-md text-center border shadow-lg bg-background dark:border-muted dark:bg-primary/10">
         <CardHeader>

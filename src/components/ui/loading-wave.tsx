@@ -2,11 +2,13 @@ import { cn } from "@/utils/cn";
 
 // Font-size drives everything: the bounce height is expressed in `em` (see the
 // `loading-wave` keyframe in global.css), so picking a size scales the hop too.
+// Each size steps down on phones — a text-6xl "LOADING" spans the whole screen
+// at 360px (docs/RESPONSIVE.md).
 const sizes = {
   sm: "text-sm",
-  md: "text-xl",
-  lg: "text-4xl",
-  xl: "text-6xl",
+  md: "text-lg sm:text-xl",
+  lg: "text-2xl sm:text-4xl",
+  xl: "text-3xl sm:text-5xl md:text-6xl",
 };
 
 const variants = {

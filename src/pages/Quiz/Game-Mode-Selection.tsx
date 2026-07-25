@@ -15,7 +15,10 @@ export function GameModeSelection() {
     // flex-1 alone (no h-full): fills the layout's viewport column but may grow
     // on short landscape screens instead of clipping (docs/RESPONSIVE.md).
     <div className="flex flex-1 flex-col items-center justify-center px-4 py-6 text-foreground">
-      <div className="w-full max-w-sm px-4 pb-16 sm:max-w-xl sm:pb-20 md:max-w-2xl md:pb-24 lg:max-w-3xl">
+      {/* max-w-xs on phones: edge-to-edge cards read as page sections, not
+          tappable choices — a narrower centered column keeps them card-like
+          (docs/RESPONSIVE.md) */}
+      <div className="w-full max-w-xs px-4 pb-12 sm:max-w-xl sm:pb-20 md:max-w-2xl md:pb-24 lg:max-w-3xl">
         <button
           onClick={() => navigate("/")}
           className="mb-6 flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground sm:mb-8 group"

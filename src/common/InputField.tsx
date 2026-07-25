@@ -21,9 +21,11 @@ const InputField: React.FC<InputFieldProps> = ({
   ...props
 }) => (
   <div className="grid w-full gap-1.5">
-    <Label htmlFor={id} className="text-lg">
+    <Label htmlFor={id} className="text-sm sm:text-lg">
       {label}
     </Label>
+    {/* Compact on phones; text stays ≥16px so iOS doesn't zoom on focus
+        (docs/RESPONSIVE.md). Only used by the login/signup forms. */}
     <Input
       id={id}
       name={name}
@@ -32,7 +34,7 @@ const InputField: React.FC<InputFieldProps> = ({
       value={value}
       onChange={onChange}
       variant="minimal"
-      className="rounded shadow-md text-foreground bg-background py-5 md:py-6 text-base md:text-lg lg:text-xl h-auto max-h-none"
+      className="rounded shadow-md text-foreground bg-background py-2.5 sm:py-4 md:py-5 text-base md:text-lg h-auto max-h-none"
       {...props}
     />
   </div>

@@ -51,9 +51,16 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen w-full flex flex-col lg:flex-row bg-background font-quiz">
-      {/* Left Side - Background Image with Branding */}
-      <div className="relative lg:w-1/2 h-[30vh] lg:h-screen flex items-center justify-center overflow-hidden">
+    // Standalone route (no HomeLayout) — it must provide its own scroll
+    // container. app-shell-viewport = dynamic viewport height + overflow-y-auto
+    // + safe areas; without it html/body (overflow:hidden) made everything past
+    // one screen unreachable on phones (docs/RESPONSIVE.md).
+    <div className="app-shell-viewport w-full bg-background font-quiz">
+      <div className="flex min-h-full w-full flex-col lg:flex-row">
+      {/* Left Side - Background Image with Branding.
+          Hidden on phones so the form owns the screen without scrolling;
+          branding returns from sm up (docs/RESPONSIVE.md). */}
+      <div className="relative hidden sm:flex lg:w-1/2 sm:h-[30vh] lg:h-auto lg:self-stretch shrink-0 items-center justify-center overflow-hidden">
         {/* Background Image */}
         <div
           className="absolute inset-0 bg-cover bg-center"
@@ -64,32 +71,39 @@ const Login: React.FC = () => {
         <div className="absolute inset-0 bg-black/40" />
 
         {/* Content */}
-        <div className="relative z-10 text-center px-8 space-y-4">
+        <div className="relative z-10 text-center px-6 space-y-2.5 sm:space-y-4">
           <div className="transform hover:scale-105 transition-transform duration-300 flex justify-center font-header">
             <O2Button />
           </div>
-          <h1 className="text-3xl lg:text-5xl font-bold text-white tracking-tight">
+          <h1 className="text-2xl sm:text-3xl lg:text-5xl font-bold text-white tracking-tight">
             Welcome Back
           </h1>
-          <p className="text-lg lg:text-xl text-white/90 max-w-md mx-auto">
+          <p className="text-base sm:text-lg lg:text-xl text-white/90 max-w-md mx-auto">
             Sign in to continue your learning journey
           </p>
         </div>
       </div>
 
       {/* Right Side - Login Form */}
-      <div className="flex-1 lg:w-1/2 flex items-center justify-center p-6 lg:p-12 relative">
-        {/* Navigation Controls */}
-        <div className="absolute top-6 right-6 flex items-center gap-3">
+      <div className="flex-1 lg:w-1/2 flex flex-col lg:justify-center px-5 py-4 sm:p-6 lg:p-12 relative">
+        {/* Phone/tablet: controls in a static top row — an absolute overlay
+            would overlap the heading (see Signup). */}
+        <div className="mb-4 flex items-center justify-between lg:hidden">
+          <GoBackButton />
+          <ModeToggle text={false} />
+        </div>
+        {/* Desktop: floating controls */}
+        <div className="absolute top-6 right-6 hidden lg:flex items-center gap-3">
           <GoBackButton />
           <ModeToggle text={false} />
         </div>
 
-        {/* Form Container */}
-        <div className="w-full max-w-md space-y-8">
+        {/* Form Container — my-auto centers it in the space left after the
+            control row; tighter rhythm on phones (docs/RESPONSIVE.md) */}
+        <div className="w-full max-w-md space-y-5 sm:space-y-8 mx-auto my-auto">
           <div className="space-y-2">
-            <h2 className="text-3xl font-bold text-foreground">Sign In</h2>
-            <p className="text-muted-foreground">
+            <h2 className="text-xl sm:text-3xl font-bold text-foreground">Sign In</h2>
+            <p className="text-sm sm:text-base text-muted-foreground">
               Enter your credentials to access your account
             </p>
           </div>
@@ -130,6 +144,7 @@ const Login: React.FC = () => {
             </a>
           </p>
         </div>
+      </div>
       </div>
     </div>
   );

@@ -6,10 +6,11 @@ export const Home = () => {
     // 100vh over-measures on mobile and pushed the CTA under the browser chrome
     // (docs/RESPONSIVE.md).
     <div className="relative z-10 flex-1 w-full flex flex-col items-center justify-center text-foreground gap-5 px-4">
-      {/* Fluid type + flex-wrap: the headline row was a fixed text-6xl, which
-          overflowed narrow phones; now it scales with breakpoints and the
-          rotating word wraps below the static text when space runs out. */}
-      <div className="flex flex-wrap items-center justify-center gap-2 text-center text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-foreground">
+      {/* Fluid type. Stacked on phones ON PURPOSE: with flex-wrap the layout
+          jumped between one and two lines depending on the rotating word's
+          width ("Mind" fit, "Memory" wrapped) — a consistent two-line stack
+          beats an unstable one; inline again from sm up (docs/RESPONSIVE.md). */}
+      <div className="flex flex-col items-center justify-center gap-1.5 text-center text-3xl sm:flex-row sm:flex-wrap sm:gap-2 sm:text-4xl md:text-5xl lg:text-6xl text-foreground">
         <h1>Sharpen Your</h1>
         <RotatingText
           mainClassName="px-2 sm:px-2 md:px-3 bg-cyan-300 text-black font-header font-semibold italic overflow-hidden py-0.5 sm:py-1 md:py-2 justify-center rounded-lg"
