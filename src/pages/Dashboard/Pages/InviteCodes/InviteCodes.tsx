@@ -28,6 +28,7 @@ import {
 } from "./api/get-invite-codes";
 import { useGenerateInviteCodes } from "./api/generate-invite-codes";
 import { useRevokeInviteCode } from "./api/revoke-invite-code";
+import { LiftedButton } from "@/common/LiftedButton";
 
 // Derive a single human status from the DTO's timestamp fields.
 type Derived = { label: string; tone: string };
@@ -258,7 +259,7 @@ export const InviteCodes = () => {
       <Dialog
         open={dialogOpen}
         onOpenChange={(open) => (open ? setDialogOpen(true) : closeDialog())}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md bg-background">
           <DialogHeader>
             <DialogTitle>Generate invite codes</DialogTitle>
             <DialogDescription>
@@ -343,9 +344,9 @@ export const InviteCodes = () => {
                 <Button variant="outline" onClick={closeDialog}>
                   Cancel
                 </Button>
-                <Button onClick={submitGenerate} disabled={generate.isPending}>
+                <LiftedButton  onClick={submitGenerate} disabled={generate.isPending}>
                   {generate.isPending ? "Generating…" : "Generate"}
-                </Button>
+                </LiftedButton>
               </>
             )}
           </DialogFooter>

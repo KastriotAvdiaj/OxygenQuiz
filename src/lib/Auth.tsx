@@ -4,7 +4,12 @@ import { z } from "zod";
 import { api, apiService } from "./Api-client";
 import { setAccessToken, clearAccessToken } from "./token-store";
 import { AuthResponse, User } from "@/types/user-types";
-import { QueryClient } from "@tanstack/react-query";
+import {
+  QueryClient,
+  useMutation,
+  useQueryClient,
+} from "@tanstack/react-query";
+import type { ExternalProvider } from "./auth-config";
 
 export const getUser = async (): Promise<User | null> => {
   try {
@@ -58,7 +63,7 @@ export const registerInputSchema = z.object({
     .min(12, "Password must be at least 12 characters")
     .max(128, "Password must be at most 128 characters"),
   // Optional here: whether it's required depends on the backend Signup:RequireInviteCode flag,
-  // which the signup form reads via /Authentication/signup-config. The server enforces it on submit.
+  // which the signup flow reads via /Authentication/auth-config. The server enforces it on submit.
   inviteCode: z.string().max(64).optional(),
 });
 
@@ -116,6 +121,94 @@ const authConfig = {
 
 export const { useUser, useLogin, useLogout, useRegister, AuthLoader } =
   configureAuth(authConfig);
+
+// ---------------------------------------------------------------------------
+// External sign-in (Google / Microsoft) — see docs/auth/social-login-plan.md.
+// The provider's JS library hands us an ID token; the backend verifies it and
+// either starts a normal session (AuthResponse) or asks for signup completion
+// (ExternalSignupRequired, carrying a short-lived ticket).
+// ---------------------------------------------------------------------------
+
+/** external-login outcome when the verified identity matches no local account yet. */
+export type ExternalSignupRequired = {
+  requiresSignup: true;
+  signupTicket: string;
+  email?: string | null;
+  suggestedUsername?: string | null;
+};
+
+export type ExternalLoginInput = {
+  provider: ExternalProvider;
+  idToken: string;
+};
+
+export type ExternalSignupInput = {
+  signupTicket: string;
+  username: string;
+  /** Required while the backend Signup:RequireInviteCode flag is on. */
+  inviteCode?: string;
+};
+
+export const isExternalSignupRequired = (
+  response: AuthResponse | ExternalSignupRequired
+): response is ExternalSignupRequired =>
+  (response as ExternalSignupRequired).requiresSignup === true;
+
+// react-query-auth caches the user under this key (its default); our mutations below
+// must write to the same key so useUser picks the session up immediately.
+const USER_QUERY_KEY = ["authenticated-user"];
+
+/** Stores the access token and returns the user — the tail end shared by every login path. */
+const adoptSession = (response: AuthResponse): User => {
+  if (!response?.token) throw new Error("Authentication failed: Token not received");
+  if (!response.user) throw new Error("Authentication failed: User data not received");
+  setAccessToken(response.token);
+  return response.user;
+};
+
+/**
+ * Exchanges a provider ID token for a session. Resolves with the logged-in User, or with an
+ * ExternalSignupRequired payload when the account doesn't exist yet (the caller then routes to
+ * the signup-completion step — no session exists at that point).
+ * Errors are handled by the caller (skipErrorToast), matching the signup form's convention.
+ */
+export const useExternalLogin = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (
+      data: ExternalLoginInput
+    ): Promise<{ user: User } | { signupRequired: ExternalSignupRequired }> => {
+      const response: AuthResponse | ExternalSignupRequired = await apiService.post(
+        "Authentication/external-login",
+        data,
+        { skipErrorToast: true } as any
+      );
+      if (isExternalSignupRequired(response)) return { signupRequired: response };
+      return { user: adoptSession(response) };
+    },
+    onSuccess: (result) => {
+      if ("user" in result) queryClient.setQueryData(USER_QUERY_KEY, result.user);
+    },
+  });
+};
+
+/** Completes a first-time external signup (ticket + username + invite code) and logs in. */
+export const useExternalSignup = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: ExternalSignupInput): Promise<User> => {
+      const response: AuthResponse = await apiService.post(
+        "Authentication/external-signup",
+        data,
+        { skipErrorToast: true } as any
+      );
+      return adoptSession(response);
+    },
+    onSuccess: (user) => queryClient.setQueryData(USER_QUERY_KEY, user),
+  });
+};
 
 export const createAuthLoader =
   (

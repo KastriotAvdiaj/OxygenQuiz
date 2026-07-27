@@ -17,7 +17,11 @@ namespace QuizAPI.Models
         // AddEmailVerification migration so they aren't retroactively nagged.
         public bool EmailConfirmed { get; set; }
 
-        public string PasswordHash { get; set; } = string.Empty;
+        // Null for accounts created via an external provider (Google/Microsoft) that never set a
+        // password. LoginAsync treats a null/empty hash as "invalid credentials" — it must never
+        // reach BCrypt.Verify, which throws on a malformed stored hash.
+        // See docs/auth/social-login-plan.md §2.5.
+        public string? PasswordHash { get; set; }
 
         public DateTime DateRegistered { get; set; }
 

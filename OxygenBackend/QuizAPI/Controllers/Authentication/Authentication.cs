@@ -34,6 +34,67 @@ public class AuthenticationController(
     public IActionResult SignupConfig() =>
         Ok(new { requireInviteCode = _configuration.GetValue<bool>("Signup:RequireInviteCode") });
 
+    // GET: api/Authentication/auth-config
+    /// <summary>
+    /// Public auth configuration: the invite flag plus which external providers are enabled and
+    /// their client ids. Client ids are public by design (they ship in the provider JS anyway);
+    /// ids of disabled providers are withheld so the frontend can't accidentally render a
+    /// half-configured button. Supersedes signup-config, which is kept for compatibility.
+    /// </summary>
+    [HttpGet("auth-config")]
+    public IActionResult AuthConfig()
+    {
+        object Provider(string name) =>
+            _configuration.GetValue<bool>($"Authentication:{name}:Enabled")
+                ? new { enabled = true, clientId = _configuration[$"Authentication:{name}:ClientId"] }
+                : new { enabled = false, clientId = (string?)null };
+
+        return Ok(new
+        {
+            requireInviteCode = _configuration.GetValue<bool>("Signup:RequireInviteCode"),
+            providers = new { google = Provider("Google"), microsoft = Provider("Microsoft") },
+        });
+    }
+
+    // POST: api/Authentication/external-login
+    /// <summary>
+    /// Sign in with a Google/Microsoft ID token. Three outcomes: an existing (or auto-linked)
+    /// account → normal auth response + refresh cookie; no matching account → a signup-required
+    /// payload with a short-lived ticket (no cookie, no session); a bad token → 401. Anonymous
+    /// credential surface → same strict rate limit as login. See docs/auth/social-login-plan.md.
+    /// </summary>
+    [HttpPost("external-login")]
+    [AllowAnonymous]
+    [EnableRateLimiting(RateLimitingExtensions.AuthPolicy)]
+    public async Task<IActionResult> ExternalLogin([FromBody] ExternalLoginDTO dto, CancellationToken ct)
+    {
+        var outcome = await _authService.ExternalLoginAsync(dto, ct);
+
+        if (outcome.Auth is not null)
+        {
+            SetRefreshCookie(outcome.Auth.RawRefreshToken, outcome.Auth.RefreshTokenExpiresAt);
+            return Ok(outcome.Auth.Response);
+        }
+
+        return Ok(outcome.SignupRequired);
+    }
+
+    // POST: api/Authentication/external-signup
+    /// <summary>
+    /// Completes a first-time external signup: signup ticket + chosen username (+ invite code
+    /// while the gate is on). On success the account is created, the provider identity linked,
+    /// and the user logged in.
+    /// </summary>
+    [HttpPost("external-signup")]
+    [AllowAnonymous]
+    [EnableRateLimiting(RateLimitingExtensions.AuthPolicy)]
+    public async Task<IActionResult> ExternalSignup([FromBody] ExternalSignupDTO dto, CancellationToken ct)
+    {
+        var result = await _authService.ExternalSignupAsync(dto, ct);
+        SetRefreshCookie(result.RawRefreshToken, result.RefreshTokenExpiresAt);
+        return Ok(result.Response);
+    }
+
     // GET: api/Authentication/validate-invite-code?code=XXXX-XXXX-XX
     /// <summary>
     /// Advisory, non-consuming check that an invite code is currently redeemable, so the signup

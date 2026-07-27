@@ -97,6 +97,7 @@ builder.Services.AddScoped<IRoleRepository, RoleRepository>();
 builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 builder.Services.AddScoped<IEmailVerificationTokenRepository, EmailVerificationTokenRepository>();
 builder.Services.AddScoped<IInviteCodeRepository, InviteCodeRepository>();
+builder.Services.AddScoped<IExternalLoginRepository, ExternalLoginRepository>();
 builder.Services.AddScoped<IFileRepository, FileRepository>();
 builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
 builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
@@ -118,6 +119,22 @@ builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 // Invite-code signup gate (see docs/auth/invite-code-system-plan.md). Stateless CSPRNG helper → singleton.
 builder.Services.AddSingleton<QuizAPI.Services.Invitations.IInviteCodeGenerator, QuizAPI.Services.Invitations.InviteCodeGenerator>();
+// External sign-in verifiers (Google/Microsoft — see docs/auth/social-login-plan.md).
+// Singletons so each provider's OIDC metadata/JWKS cache is shared across requests.
+builder.Services.AddSingleton<QuizAPI.Services.AuthenticationService.External.IExternalIdentityVerifier,
+    QuizAPI.Services.AuthenticationService.External.GoogleIdentityVerifier>();
+builder.Services.AddSingleton<QuizAPI.Services.AuthenticationService.External.IExternalIdentityVerifier,
+    QuizAPI.Services.AuthenticationService.External.MicrosoftIdentityVerifier>();
+
+// Fail fast on a half-configured provider: enabled without a client id can only produce
+// confusing runtime 401s, so refuse to start instead — same convention as the Jwt:Key check.
+foreach (var provider in new[] { "Google", "Microsoft" })
+{
+    if (configuration.GetValue<bool>($"Authentication:{provider}:Enabled") &&
+        string.IsNullOrWhiteSpace(configuration[$"Authentication:{provider}:ClientId"]))
+        throw new InvalidOperationException(
+            $"Authentication:{provider}:Enabled is true but Authentication:{provider}:ClientId is not configured.");
+}
 // Email verification: dev logger sender today; swap for a real provider in prod (see docs/auth/email-verification.md).
 builder.Services.AddScoped<QuizAPI.Services.Email.IEmailSender, QuizAPI.Services.Email.LoggingEmailSender>();
 builder.Services.AddScoped<IQuizService, QuizService>();

@@ -265,9 +265,9 @@ export function QuizSelection() {
                     <SheetTrigger asChild>
                       <button
                         type="button"
-                        className="lg:hidden inline-flex items-center gap-1.5 h-9 px-3 rounded-xl border-2 border-primary/60 dark:border-primary/70 bg-background text-sm font-medium shadow-[0_2px_0_0_var(--primary-edge)] hover:border-primary/80 active:shadow-none active:translate-y-0.5 transition-all"
+                        className="lg:hidden inline-flex items-center gap-1.5 h-9 px-3 rounded-lg border border-border bg-background text-sm font-medium text-foreground shadow-sm hover:border-foreground/25 transition-colors"
                       >
-                        <ListFilter className="h-4 w-4 text-primary/70" />
+                        <ListFilter className="h-4 w-4 text-muted-foreground" />
                         Filters
                         {facetCount > 0 && (
                           <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[11px] font-bold text-white tabular-nums">
@@ -278,7 +278,7 @@ export function QuizSelection() {
                     </SheetTrigger>
                     {/* max-w-[85vw]: never wider than the phone — a fixed w-80
                         overflowed 320–360px screens */}
-                    <SheetContent side="left" className="w-80 max-w-[85vw] overflow-y-auto p-4">
+                    <SheetContent side="left" className="w-80 max-w-[85vw] overflow-y-auto px-4 pb-4 pt-12">
                       <SheetHeader className="sr-only">
                         <SheetTitle>Filters</SheetTitle>
                       </SheetHeader>

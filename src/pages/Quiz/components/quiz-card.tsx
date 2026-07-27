@@ -72,12 +72,12 @@ export function QuizCard({ quiz, onClick }: QuizCardProps) {
           style={{ backgroundColor: accent }}
         />
 
-        {/* p-5 flex column, contents pinned top & bottom (justify-between). */}
-        <div className="flex h-full flex-col justify-between p-5">
+        {/* p-4 flex column, contents pinned top & bottom (justify-between). */}
+        <div className="flex h-full flex-col justify-between p-4">
           {/* Top: category badge (left) + author (right) */}
-          <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start justify-between gap-2.5">
             <span
-              className="w-fit rounded-full px-2.5 py-1 text-xs font-semibold"
+              className="w-fit rounded-full px-2 py-0.5 text-[11px] font-semibold"
               style={{
                 color: accent,
                 backgroundColor: `color-mix(in srgb, ${accent} 12%, transparent)`,
@@ -87,7 +87,7 @@ export function QuizCard({ quiz, onClick }: QuizCardProps) {
             </span>
             {/* Creator avatar — reveals their name on hover. */}
             <div className="group/author relative shrink-0">
-              <Avatar className="h-7 w-7 border border-border">
+              <Avatar className="h-6 w-6 border border-border">
                 <AvatarImage
                   src={quiz.userProfileImageUrl}
                   alt={quiz.user}
@@ -107,8 +107,8 @@ export function QuizCard({ quiz, onClick }: QuizCardProps) {
           {/* Middle: crisp, bold title. The fuller description lives in the start
               modal — keeping the card to title + badge makes the grid scan cleanly
               and keeps card heights uniform. */}
-          <div className="mt-3 flex-1">
-            <h3 className="text-lg font-bold tracking-wide text-foreground line-clamp-2">
+          <div className="mt-2.5 flex-1">
+            <h3 className="text-sm font-bold tracking-wide text-foreground line-clamp-2">
               {quiz.title}
             </h3>
           </div>
@@ -116,7 +116,7 @@ export function QuizCard({ quiz, onClick }: QuizCardProps) {
           {/* Bottom: compact icon-led stats over a hairline divider. Icons carry
               the meaning (count / time) so the labels stay out — tighter and
               cleaner for a small card. The "Play" affordance slides in on hover. */}
-          <div className="mt-4 flex items-center gap-3 border-t border-border/50 pt-3 text-xs text-muted-foreground">
+          <div className="mt-3 flex items-center gap-3 border-t border-border/50 pt-2.5 text-xs text-muted-foreground">
             <span
               className="flex items-center gap-1 tabular-nums"
               title={`${quiz.questionCount} ${questionLabel}`}

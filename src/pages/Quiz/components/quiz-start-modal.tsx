@@ -78,9 +78,9 @@ export function QuizStartModal({
       {/* max-h + inner scroll: long titles/descriptions must not push the CTA
           off small screens — the body scrolls instead (85dvh tracks the visible
           mobile viewport; svh fallback n/a, vh fallback below). */}
-      <DialogContent className="sm:max-w-md mx-auto border-border bg-card font-quiz p-0 overflow-hidden gap-0 max-h-[85vh] supports-[height:1dvh]:max-h-[85dvh] flex flex-col">
-        <div className="p-5 sm:p-6 space-y-5 overflow-y-auto">
-          <DialogHeader className="space-y-3">
+      <DialogContent className="sm:max-w-sm mx-auto border-border bg-card font-quiz p-0 overflow-hidden gap-0 max-h-[85vh] supports-[height:1dvh]:max-h-[85dvh] flex flex-col">
+        <div className="p-4 sm:p-5 space-y-4 overflow-y-auto">
+          <DialogHeader className="space-y-2.5">
             <div className="flex items-center gap-2 flex-wrap">
               <Badge
                 variant="secondary"
@@ -101,7 +101,7 @@ export function QuizStartModal({
               </Badge>
             </div>
 
-            <DialogTitle className="text-xl sm:text-2xl font-bold leading-tight text-left pr-6 text-foreground tracking-wider">
+            <DialogTitle className="text-lg sm:text-xl font-bold leading-tight text-left pr-6 text-foreground tracking-wider">
               {quiz.title}
             </DialogTitle>
 
@@ -113,7 +113,7 @@ export function QuizStartModal({
           </DialogHeader>
 
           {/* Stats grid */}
-          <div className="rounded-lg border border-border p-3 sm:p-4 space-y-3">
+          <div className="rounded-lg border border-border p-3 space-y-2.5">
             <div className="grid grid-cols-2 gap-3">
               <div className="flex items-center gap-2 text-sm">
                 <div
@@ -169,7 +169,7 @@ export function QuizStartModal({
           <button
             type="button"
             onClick={handleStartQuiz}
-            className="flex h-11 w-full items-center justify-center gap-2 rounded-lg text-base font-bold font-quiz tracking-wider transition-all duration-200 hover:brightness-95 active:scale-[0.99]"
+            className="flex h-10 w-full items-center justify-center gap-2 rounded-lg text-sm sm:text-base font-bold font-quiz tracking-wider transition-all duration-200 hover:brightness-95 active:scale-[0.99]"
             style={{ backgroundColor: primaryColor, color: ctaTextColor }}
           >
             <Play className="h-4 w-4 fill-current" />

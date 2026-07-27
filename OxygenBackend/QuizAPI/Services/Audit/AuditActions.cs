@@ -17,6 +17,10 @@ namespace QuizAPI.Services.Audit
         // A user's role set was changed by an admin (from the Users page).
         public const string UserRolesChanged = "UserRolesChanged";
 
+        // External sign-in (Google/Microsoft — see docs/auth/social-login-plan.md).
+        // Logged when a provider identity is linked to a user, at auto-link or external signup.
+        public const string ExternalAccountLinked = "ExternalAccountLinked";
+
         // Invite codes (signup gate — see docs/auth/invite-code-system-plan.md)
         public const string InviteCodeRedeemed = "InviteCodeRedeemed";
         public const string InviteCodesGenerated = "InviteCodesGenerated";

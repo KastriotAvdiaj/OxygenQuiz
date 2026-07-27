@@ -32,6 +32,7 @@ public class AuthenticationServiceTests
     private readonly Mock<IEmailVerificationTokenRepository> _emailTokens = new();
     private readonly Mock<IInviteCodeRepository> _inviteCodes = new();
     private readonly IInviteCodeGenerator _inviteGenerator = new InviteCodeGenerator();
+    private readonly Mock<IExternalLoginRepository> _externalLogins = new();
     private readonly Mock<ITokenService> _tokens = new();
     private readonly Mock<IAuditService> _audit = new();
     private readonly Mock<INotificationService> _notifications = new();
@@ -57,7 +58,9 @@ public class AuthenticationServiceTests
 
     private AuthenticationService CreateSut(bool requireInviteCode = false) => new(
         _users.Object, _roles.Object, _refreshTokens.Object, _emailTokens.Object,
-        _inviteCodes.Object, _inviteGenerator, _tokens.Object, _audit.Object,
+        _inviteCodes.Object, _inviteGenerator, _externalLogins.Object,
+        Enumerable.Empty<QuizAPI.Services.AuthenticationService.External.IExternalIdentityVerifier>(),
+        _tokens.Object, _audit.Object,
         _notifications.Object, _email.Object, NewInMemoryContext(), Config(requireInviteCode));
 
     private static SignupDTO ValidSignup(string? inviteCode = null) => new()

@@ -1,8 +1,7 @@
 import React from "react";
 import { MailPlus } from "lucide-react";
 import OxygenBackground from "/assets/oxygenquiz2.jpg";
-import SignupForm from "./SignupComponents/SignupForm";
-import SocialButtons from "@/lib/SocialButtons/SocialButtons";
+import SignupFlow from "./SignupComponents/SignupFlow";
 import { ModeToggle } from "@/components/ui/mode-toggle";
 import { O2Button } from "@/common/O2Button";
 import { GoBackButton } from "@/common/Go-Back-Button";
@@ -66,46 +65,16 @@ const Signup: React.FC = () => {
         <div className="w-full max-w-md space-y-5 sm:space-y-8 mx-auto my-auto">
           <div className="space-y-2">
             <h2 className="text-xl sm:text-3xl font-bold text-foreground">Create Account</h2>
-            <p className="text-sm sm:text-base text-muted-foreground">
+            {/* <p className="text-sm sm:text-base text-muted-foreground">
               Fill in your details to get started
-            </p>
+            </p> */}
           </div>
 
-          {/* Invite-only notice */}
-          <div
-            role="note"
-            className="flex items-start gap-3 rounded-lg border border-primary/30 bg-primary/10 p-3 sm:p-4"
-          >
-            <MailPlus
-              className="mt-0.5 h-5 w-5 shrink-0 text-primary"
-              aria-hidden="true"
-            />
-            <p className="text-xs sm:text-sm text-foreground/80">
-              <span className="font-semibold text-foreground">
-                Oxygen Quiz is invite only right now.
-              </span>{" "}
-              You'll need a valid invite code to create an account while we finish
-              building. We'll be opening up to everyone soon.
-            </p>
-          </div>
-
-          {/* Signup Form */}
-          <SignupForm />
-
-          {/* Divider */}
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-border" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-3 text-muted-foreground font-medium">
-                Or continue with
-              </span>
-            </div>
-          </div>
-
-          {/* Social Buttons */}
-          <SocialButtons />
+          {/* The staged signup flow: invite gate first (while gated), then the choice of
+              signing up manually or with Google/Microsoft. The invite-only note and the
+              provider buttons live INSIDE the flow, on the stages where they belong —
+              nothing signup-related renders before the gate. */}
+          <SignupFlow />
 
           {/* Login Link */}
           <p className="text-center text-sm text-muted-foreground">

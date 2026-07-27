@@ -55,6 +55,8 @@ namespace QuizAPI.Data
 
         public DbSet<InviteCode> InviteCodes { get; set; }
 
+        public DbSet<ExternalLogin> ExternalLogins { get; set; }
+
         public DbSet<FileRecord> Files { get; set; }
 
         public DbSet<AuditLog> AuditLogs { get; set; }
@@ -185,6 +187,22 @@ namespace QuizAPI.Data
                 .WithMany()
                 .HasForeignKey(c => c.ConsumedByUserId)
                 .OnDelete(DeleteBehavior.SetNull);
+
+            // External identity links (Google/Microsoft): looked up by the provider's stable
+            // subject id, so that pair is the unique key. Cascade on user delete — a link is
+            // meaningless without its user. One user may link several providers (UserId index).
+            modelBuilder.Entity<ExternalLogin>()
+                .HasIndex(el => new { el.Provider, el.ProviderSubjectId })
+                .IsUnique();
+
+            modelBuilder.Entity<ExternalLogin>()
+                .HasIndex(el => el.UserId);
+
+            modelBuilder.Entity<ExternalLogin>()
+                .HasOne(el => el.User)
+                .WithMany()
+                .HasForeignKey(el => el.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             // Generic file records: index the polymorphic owner for fast lookups.
             modelBuilder.Entity<FileRecord>()

@@ -10,41 +10,37 @@ export interface StepFeedback {
 
 interface SignupStepsProps {
   step: number;
+  /**
+   * Steps consumed before this form (1 when the invite gate ran as "Step 1", else 0).
+   * Only affects numbering — the invite input itself lives in the gate, not here.
+   */
+  offset: number;
   formData: {
     username: string;
     email: string;
     password: string;
     confirmPassword: string;
-    inviteCode: string;
   };
-  /** When true, an invite-code step is prepended as the first step. */
-  requireInviteCode: boolean;
   handleChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleNext: () => void;
   handlePreviousStep: () => void;
+  /** Whether a Back control makes sense here (first step may back out to the method choice). */
+  canGoBack: boolean;
   /** Validation / availability feedback for the currently visible step. */
   feedback: StepFeedback;
 }
 
 const SignupSteps: React.FC<SignupStepsProps> = ({
   step,
+  offset,
   formData,
-  requireInviteCode,
   handleChange,
   handleNext,
   handlePreviousStep,
+  canGoBack,
   feedback,
 }) => {
-  const inviteStep = {
-    label: "Invite code",
-    name: "inviteCode",
-    type: "text",
-    placeholder: "e.g. K7QM-3FXP-9T",
-    value: formData.inviteCode,
-  };
-
   const steps = [
-    ...(requireInviteCode ? [inviteStep] : []),
     {
       label: "Username",
       name: "username",
@@ -75,15 +71,17 @@ const SignupSteps: React.FC<SignupStepsProps> = ({
     },
   ];
 
+  const index = step - offset - 1; // 0-based content step
+
   return (
     <Step
-      {...steps[step - 1]}
-      name={steps[step - 1].name}
+      {...steps[index]}
+      name={steps[index].name}
       onNext={handleNext}
-      onBack={step > 1 ? handlePreviousStep : undefined}
+      onBack={canGoBack ? handlePreviousStep : undefined}
       onChange={handleChange}
-      isLastStep={step === steps.length}
-      isFirstStep={step === 1}
+      isLastStep={index === steps.length - 1}
+      isFirstStep={!canGoBack}
       error={feedback.error}
       success={feedback.success}
       isChecking={feedback.isChecking}

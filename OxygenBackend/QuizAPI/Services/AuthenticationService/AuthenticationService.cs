@@ -9,6 +9,7 @@ using QuizAPI.Services.Audit;
 using QuizAPI.Services.Email;
 using QuizAPI.Services.Invitations;
 using QuizAPI.Controllers.Notifications.Services;
+using QuizAPI.Services.AuthenticationService.External;
 using Microsoft.Extensions.Configuration;
 
 namespace QuizAPI.Services.AuthenticationService;
@@ -20,6 +21,8 @@ public class AuthenticationService(
     IEmailVerificationTokenRepository emailVerificationTokenRepository,
     IInviteCodeRepository inviteCodeRepository,
     IInviteCodeGenerator inviteCodeGenerator,
+    IExternalLoginRepository externalLoginRepository,
+    IEnumerable<IExternalIdentityVerifier> externalIdentityVerifiers,
     ITokenService tokenService,
     IAuditService auditService,
     INotificationService notificationService,
@@ -35,6 +38,8 @@ public class AuthenticationService(
     private readonly IEmailVerificationTokenRepository _emailVerificationTokenRepository = emailVerificationTokenRepository;
     private readonly IInviteCodeRepository _inviteCodeRepository = inviteCodeRepository;
     private readonly IInviteCodeGenerator _inviteCodeGenerator = inviteCodeGenerator;
+    private readonly IExternalLoginRepository _externalLoginRepository = externalLoginRepository;
+    private readonly IEnumerable<IExternalIdentityVerifier> _externalIdentityVerifiers = externalIdentityVerifiers;
     private readonly ITokenService _tokenService = tokenService;
     private readonly IAuditService _auditService = auditService;
     private readonly INotificationService _notificationService = notificationService;
@@ -163,7 +168,14 @@ public class AuthenticationService(
     {
         var user = await _userRepository.GetByEmailAsync(dto.Email, tracked: true, ct);
 
-        if (user is null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
+        // A null/empty hash means the account was created via Google/Microsoft and has no
+        // password. It must fail BEFORE BCrypt.Verify (which throws on a malformed hash), and it
+        // fails with the same generic message as a wrong password — a distinct one would let
+        // anyone probe which emails are external-only accounts. The login page carries a static
+        // hint pointing such users at the provider buttons instead.
+        if (user is null ||
+            string.IsNullOrEmpty(user.PasswordHash) ||
+            !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
         {
             await _auditService.LogAsync(
                 AuditActions.LoginFailed, entity: "User", newValue: new { dto.Email }, ct: ct);
@@ -182,6 +194,243 @@ public class AuthenticationService(
 
         return await BuildAuthResultAsync(user, roleNames, ct);
     }
+
+    public async Task<ExternalLoginOutcome> ExternalLoginAsync(ExternalLoginDTO dto, CancellationToken ct = default)
+    {
+        var identity = await VerifyExternalTokenAsync(dto.Provider, dto.IdToken, ct);
+
+        // 1. Known identity → plain login. Lookup is by (provider, sub) — the provider's
+        //    permanent account id — never by email, which can change or be recycled.
+        var existingLink = await _externalLoginRepository.GetByProviderSubjectAsync(
+            identity.Provider, identity.SubjectId, ct);
+        if (existingLink is not null)
+        {
+            // Tracked load: LastLogin is updated and saved inside BuildAuthResultAsync's save.
+            var linkedUser = await _userRepository.GetByIdAsync(existingLink.UserId, tracked: true, ct)
+                ?? throw new UnauthorizedException("Invalid credentials.");
+
+            linkedUser.LastLogin = DateTime.UtcNow;
+            await _auditService.LogAsync(
+                AuditActions.UserLoggedIn, entity: "User", entityId: linkedUser.Id.ToString(),
+                newValue: new { identity.Provider }, userId: linkedUser.Id, ct: ct);
+
+            var linkedRoles = linkedUser.UserRoles.Select(ur => ur.Role.Name!).ToArray();
+            return ExternalLoginOutcome.LoggedIn(
+                await BuildAuthResultAsync(linkedUser, linkedRoles, ct));
+        }
+
+        // 2. First contact for this identity. If its email matches an existing account, link —
+        //    but only when the PROVIDER vouches for the email. An unverified claim here would be
+        //    an account-takeover vector: anyone can type someone else's address into a profile.
+        if (identity.Email is not null)
+        {
+            var emailOwner = await _userRepository.GetByEmailAsync(identity.Email, tracked: true, ct);
+            if (emailOwner is not null)
+            {
+                if (!identity.EmailVerified)
+                    throw new ConflictException(
+                        "An account with this email already exists. Log in with your password to use it.");
+
+                await _externalLoginRepository.AddAsync(new ExternalLogin
+                {
+                    UserId = emailOwner.Id,
+                    Provider = identity.Provider,
+                    ProviderSubjectId = identity.SubjectId,
+                    Email = identity.Email,
+                    CreatedAt = DateTime.UtcNow,
+                }, ct);
+
+                emailOwner.LastLogin = DateTime.UtcNow;
+                await _auditService.LogAsync(
+                    AuditActions.ExternalAccountLinked, entity: "User",
+                    entityId: emailOwner.Id.ToString(), newValue: new { identity.Provider },
+                    userId: emailOwner.Id, ct: ct);
+                await _auditService.LogAsync(
+                    AuditActions.UserLoggedIn, entity: "User", entityId: emailOwner.Id.ToString(),
+                    newValue: new { identity.Provider }, userId: emailOwner.Id, ct: ct);
+
+                var ownerRoles = emailOwner.UserRoles.Select(ur => ur.Role.Name!).ToArray();
+                // The new link row and LastLogin are saved by BuildAuthResultAsync (shared context).
+                return ExternalLoginOutcome.LoggedIn(
+                    await BuildAuthResultAsync(emailOwner, ownerRoles, ct));
+            }
+        }
+
+        // 3. Nobody home → the client must complete signup (username + invite code while gated).
+        //    The ticket pins the verified identity across that round-trip; no session yet.
+        return ExternalLoginOutcome.NeedsSignup(new ExternalSignupRequiredDTO
+        {
+            SignupTicket = _tokenService.GenerateExternalSignupTicket(identity),
+            Email = identity.Email,
+            SuggestedUsername = SuggestUsername(identity),
+        });
+    }
+
+    public async Task<AuthResult> ExternalSignupAsync(ExternalSignupDTO dto, CancellationToken ct = default)
+    {
+        var identity = _tokenService.ValidateExternalSignupTicket(dto.SignupTicket)
+            ?? throw new UnauthorizedException("Your signup session has expired. Please try again.");
+
+        var immutableName = dto.Username.ToLowerInvariant();
+
+        // Invite-code gate — identical contract to password signup (validate early, consume
+        // atomically inside the transaction below).
+        var requireInviteCode = _configuration.GetValue<bool>("Signup:RequireInviteCode");
+        string? inviteCodeHash = null;
+        if (requireInviteCode)
+        {
+            if (string.IsNullOrWhiteSpace(dto.InviteCode))
+                throw new AppValidationException("An invite code is required.");
+
+            inviteCodeHash = _inviteCodeGenerator.Hash(dto.InviteCode);
+            var redeemable = await _inviteCodeRepository.GetRedeemableByHashAsync(inviteCodeHash, ct);
+            if (redeemable is null)
+                throw new AppValidationException("Invalid or already-used invite code.");
+        }
+
+        // Races since the ticket was minted (10-minute window): the identity may have been
+        // linked by a double submit, or the email/username claimed by someone else.
+        if (await _externalLoginRepository.GetByProviderSubjectAsync(
+                identity.Provider, identity.SubjectId, ct) is not null)
+            throw new ConflictException(
+                "This external account is already connected to a user. Try signing in instead.");
+
+        if (identity.Email is null)
+            throw new AppValidationException(
+                "Your provider account did not share an email address. Please sign up with the form instead.");
+
+        if (await _userRepository.EmailExistsAsync(identity.Email, ct))
+            throw new ConflictException("Email is already in use.");
+
+        if (await _userRepository.UsernameExistsAsync(immutableName, ct))
+            throw new ConflictException("Username is already taken.");
+
+        var defaultRole = await _roleRepository.GetByNameAsync(DefaultRoleName, ct)
+            ?? throw new InvalidOperationException(
+                $"Default role '{DefaultRoleName}' is missing. Seed it before allowing signups.");
+
+        var user = new User
+        {
+            Id = Guid.NewGuid(),
+            Email = identity.Email,
+            Username = dto.Username,
+            ImmutableName = immutableName,
+            // Provider-verified email → nothing left to confirm; the verification flow is skipped
+            // entirely (one of the UX wins of external signup).
+            EmailConfirmed = identity.EmailVerified,
+            PasswordHash = null, // external-only account; LoginAsync guards against this
+            DateRegistered = DateTime.UtcNow,
+            LastLogin = DateTime.UtcNow,
+            IsDeleted = false,
+            ProfileImageUrl = string.Empty,
+            UserRoles = new List<UserRole>
+            {
+                new() { RoleId = defaultRole.Id, AssignedAt = DateTime.UtcNow }
+            }
+        };
+
+        // Same transactional shape as SignupAsync: user + identity link + consumed invite code
+        // commit together or not at all. Losing the invite race rolls everything back.
+        await using var transaction = await _dbContext.Database.BeginTransactionAsync(ct);
+
+        await _userRepository.AddAsync(user, ct);
+        await _externalLoginRepository.AddAsync(new ExternalLogin
+        {
+            UserId = user.Id,
+            Provider = identity.Provider,
+            ProviderSubjectId = identity.SubjectId,
+            Email = identity.Email,
+            CreatedAt = DateTime.UtcNow,
+        }, ct);
+        await _userRepository.SaveChangesAsync(ct);
+
+        if (requireInviteCode)
+        {
+            var rows = await _inviteCodeRepository.TryConsumeAsync(inviteCodeHash!, user.Id, ct);
+            if (rows != 1)
+            {
+                await transaction.RollbackAsync(ct);
+                throw new AppValidationException("Invalid or already-used invite code.");
+            }
+        }
+
+        await transaction.CommitAsync(ct);
+
+        // Post-commit side effects only — a rolled-back signup must leave no trace.
+        if (!identity.EmailVerified)
+            await IssueAndSendVerificationEmailAsync(user, ct);
+
+        await _notificationService.CreateAsync(
+            user.Id,
+            "welcome",
+            "Welcome to Oxygen Quiz!",
+            $"Hi {user.Username}, your account is ready. Jump in and start a quiz.",
+            ct);
+
+        await _auditService.LogAsync(
+            AuditActions.UserSignedUp, entity: "User", entityId: user.Id.ToString(),
+            newValue: new { identity.Provider }, userId: user.Id, ct: ct);
+        await _auditService.LogAsync(
+            AuditActions.ExternalAccountLinked, entity: "User", entityId: user.Id.ToString(),
+            newValue: new { identity.Provider }, userId: user.Id, ct: ct);
+
+        if (requireInviteCode)
+            await _auditService.LogAsync(
+                AuditActions.InviteCodeRedeemed, entity: "InviteCode", entityId: inviteCodeHash,
+                userId: user.Id, ct: ct);
+
+        // Reload with the full role/permission graph — same rationale as SignupAsync.
+        var created = await _userRepository.GetByIdAsync(user.Id, tracked: false, ct)
+            ?? throw new InvalidOperationException("User not found immediately after creation.");
+
+        var roleNames = created.UserRoles.Select(ur => ur.Role.Name!).ToArray();
+        return await BuildAuthResultAsync(created, roleNames, ct);
+    }
+
+    /// <summary>
+    /// Resolves the verifier for a provider (must exist AND be enabled in config) and validates
+    /// the ID token. A failed validation is audited like a failed password login.
+    /// </summary>
+    private async Task<ExternalIdentity> VerifyExternalTokenAsync(
+        string provider, string idToken, CancellationToken ct)
+    {
+        var normalized = provider.Trim().ToLowerInvariant();
+
+        var enabled = _configuration.GetValue<bool>($"Authentication:{Capitalize(normalized)}:Enabled");
+        var verifier = _externalIdentityVerifiers.FirstOrDefault(v => v.Provider == normalized);
+        if (verifier is null || !enabled)
+            throw new AppValidationException("Unknown or disabled sign-in provider.");
+
+        try
+        {
+            return await verifier.VerifyAsync(idToken, ct);
+        }
+        catch (UnauthorizedException)
+        {
+            await _auditService.LogAsync(
+                AuditActions.LoginFailed, entity: "User", newValue: new { Provider = normalized }, ct: ct);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// A friendly prefill for the username field, derived from the provider profile. Purely
+    /// advisory: the form live-checks availability and the server enforces uniqueness on submit.
+    /// </summary>
+    private static string? SuggestUsername(ExternalIdentity identity)
+    {
+        var source = !string.IsNullOrWhiteSpace(identity.DisplayName)
+            ? identity.DisplayName
+            : identity.Email?.Split('@')[0];
+        if (source is null) return null;
+
+        var cleaned = new string(source.Where(char.IsLetterOrDigit).ToArray());
+        if (cleaned.Length < 3) return null;
+        return cleaned.Length > 50 ? cleaned[..50] : cleaned;
+    }
+
+    private static string Capitalize(string value) =>
+        value.Length == 0 ? value : char.ToUpperInvariant(value[0]) + value[1..];
 
     public async Task<AuthResult> RefreshAsync(string rawRefreshToken, CancellationToken ct = default)
     {

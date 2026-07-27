@@ -16,6 +16,7 @@
     "chromatic": "npx chromatic --project-token=chpt_cf4e4fa48d1e026"
   },
   "dependencies": {
+    "@azure/msal-browser": "^4.13.0",
     "@gsap/react": "^2.1.1",
     "@hookform/resolvers": "^3.9.0",
     "@microsoft/signalr": "^10.0.0",
@@ -43,6 +44,7 @@
     "@tanstack/react-query-devtools": "^5.55.2",
     "@tanstack/react-table": "^8.20.5",
     "@tanstack/react-virtual": "^3.11.1",
+    "@react-oauth/google": "^0.12.2",
     "@testing-library/user-event": "^14.5.2",
     "axios": "^1.18.1",
     "class-variance-authority": "^0.7.1",

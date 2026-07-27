@@ -15,7 +15,10 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const fetchAvailability = (
   params: { username: string } | { email: string }
 ): Promise<AvailabilityResponse> =>
-  apiService.get("/Users/availability", { params });
+  // skipErrorToast: this is a background check whose failure is surfaced inline by the form
+  // (and deliberately never hard-blocks). Without it, a burst of failures — e.g. the rate
+  // limiter rejecting a run of checks with 429s — would fire one global error toast per call.
+  apiService.get("/Users/availability", { params, skipErrorToast: true } as any);
 
 /**
  * Debounced live check for whether a username is free.
@@ -87,7 +90,13 @@ const normalizeInviteCode = (raw: string) =>
   raw.replace(/[\s-]/g, "").toUpperCase();
 
 const fetchInviteValidity = (code: string): Promise<InviteCodeValidityResponse> =>
-  apiService.get("/Authentication/validate-invite-code", { params: { code } });
+  // skipErrorToast: same rationale as fetchAvailability — inline feedback, no global toast.
+  // This endpoint sits on the strict AuthPolicy rate limit (10/min/IP), so it's the most
+  // likely of the advisory calls to see a 429 during normal typing + dev hot-reloads.
+  apiService.get("/Authentication/validate-invite-code", {
+    params: { code },
+    skipErrorToast: true,
+  } as any);
 
 /**
  * Debounced, advisory check that an invite code is currently redeemable, so the signup form can

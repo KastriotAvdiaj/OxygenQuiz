@@ -9,47 +9,62 @@ import { useNotifications } from "@/common/Notifications";
 import {
   useUsernameAvailability,
   useEmailAvailability,
-  useInviteCodeValidity,
   MIN_USERNAME_LENGTH,
 } from "../api/check-availability";
-import { useSignupConfig } from "../api/signup-config";
 
-export const SignupForm: React.FC = () => {
+interface SignupFormProps {
+  /**
+   * The invite code collected (and advisory-validated) by the invite gate before this form is
+   * shown — see SignupFlow. When present, it's sent with the register payload and the step
+   * numbering continues from the gate (the gate was "Step 1", so the form starts at step 2).
+   * Absent when the invite gate is off (open signup): numbering starts at 1.
+   */
+  inviteCode?: string;
+  /**
+   * The server rejected the invite code at submit (spent in a race, revoked, expired since the
+   * advisory check). The flow returns the user to the invite gate to enter a new one.
+   */
+  onBadInviteCode?: () => void;
+  /** Back pressed on the first form step — return to the method-choice screen. */
+  onExit?: () => void;
+}
+
+export const SignupForm: React.FC<SignupFormProps> = ({
+  inviteCode,
+  onBadInviteCode,
+  onExit,
+}) => {
   const navigate = useNavigate();
   const { mutate: registerUser, isPending } = useRegister();
 
-  // Drives whether an invite-code step is prepended. When required, every content step
-  // shifts down by one (offset), so step numbering below is computed, not hard-coded.
-  const { requireInviteCode } = useSignupConfig();
-  const offset = requireInviteCode ? 1 : 0;
+  // With the gate on, the invite screen already consumed "Step 1", so the form's steps are
+  // numbered 2..5; open signup numbers them 1..4. Nothing here is hard-coded to either.
+  const offset = inviteCode !== undefined ? 1 : 0;
   const TOTAL_STEPS = 4 + offset;
+  const FIRST_STEP = 1 + offset;
 
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(FIRST_STEP);
   const [formData, setFormData] = useState({
     username: "",
     email: "",
     password: "",
     confirmPassword: "",
-    inviteCode: "",
   });
 
   // Live, debounced uniqueness checks. These hooks self-gate, so they only hit the
   // API once the value is plausibly valid, and they never throw (see throwOnError).
   const usernameAvail = useUsernameAvailability(formData.username);
   const emailAvail = useEmailAvailability(formData.email);
-  // Only meaningful when the invite step is present; harmless (disabled) otherwise.
-  const inviteValidity = useInviteCodeValidity(formData.inviteCode);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Codes are case- and dash-insensitive server-side; uppercase as the user types for clarity.
-    const value =
-      e.target.name === "inviteCode"
-        ? e.target.value.toUpperCase()
-        : e.target.value;
-    setFormData({ ...formData, [e.target.name]: value });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handlePreviousStep = () => setStep((prev) => Math.max(prev - 1, 1));
+  const handlePreviousStep = () => {
+    // Backing out of the first form step leaves the form (to the method choice), not step 0.
+    if (step === FIRST_STEP) onExit?.();
+    else setStep((prev) => prev - 1);
+  };
 
   const passwordValid = formData.password.length >= 12;
   const passwordsMatch =
@@ -58,28 +73,7 @@ export const SignupForm: React.FC = () => {
 
   // Compute the feedback + gate for whichever step is showing.
   const getFeedback = (): StepFeedback => {
-    // Invite-code step (only present when required) sits before the username step.
-    if (requireInviteCode && step === 1) {
-      const code = formData.inviteCode.trim();
-      if (code.length === 0) return { nextDisabled: true };
-      // Wait for the full-length code before judging it, so we don't flash "invalid" mid-type.
-      if (!inviteValidity.longEnough) return { nextDisabled: true };
-      if (inviteValidity.isChecking)
-        return { isChecking: true, nextDisabled: true };
-      if (inviteValidity.isInvalid)
-        return {
-          error: "This invite code isn't valid or has already been used",
-          nextDisabled: true,
-        };
-      if (inviteValidity.isValid)
-        return { success: "Invite code accepted", nextDisabled: false };
-      // Couldn't reach the check — don't hard-block; signup still validates and consumes the
-      // code atomically, and bounces back here (setStep(1)) if it's actually bad.
-      if (inviteValidity.isError) return { nextDisabled: false };
-      return { nextDisabled: true };
-    }
-
-    // Map the visible step back to the original content-step numbering (1 = username, …).
+    // Map the visible step back to the content-step numbering (1 = username, …).
     switch (step - offset) {
       case 1: {
         const name = formData.username.trim();
@@ -143,9 +137,7 @@ export const SignupForm: React.FC = () => {
         username: formData.username.trim(),
         password: formData.password,
         // Only send a code when the gate is on; in open mode the field doesn't exist.
-        ...(requireInviteCode
-          ? { inviteCode: formData.inviteCode.trim() }
-          : {}),
+        ...(inviteCode !== undefined ? { inviteCode: inviteCode.trim() } : {}),
       },
       {
         onSuccess: () => {
@@ -167,10 +159,12 @@ export const SignupForm: React.FC = () => {
             title: "Sign up failed",
             message,
           });
-          // If the server reports a duplicate (race between the live check and
-          // submit) or a bad invite code, bounce the user back to the field that needs fixing.
+          // If the server reports a duplicate (race between the live check and submit),
+          // bounce the user back to the field that needs fixing. A bad invite code goes
+          // all the way back to the invite gate — the code was collected there.
           const lower = String(message).toLowerCase();
-          if (lower.includes("invite") || lower.includes("code")) setStep(1);
+          if (lower.includes("invite") || lower.includes("code"))
+            onBadInviteCode?.();
           else if (lower.includes("email")) setStep(2 + offset);
           else if (lower.includes("username")) setStep(1 + offset);
         },
@@ -211,11 +205,12 @@ export const SignupForm: React.FC = () => {
       >
         <SignupSteps
           step={step}
+          offset={offset}
           formData={formData}
-          requireInviteCode={requireInviteCode}
           handleChange={handleChange}
           handleNext={advance}
           handlePreviousStep={handlePreviousStep}
+          canGoBack={step > FIRST_STEP || onExit !== undefined}
           feedback={feedback}
         />
       </form>

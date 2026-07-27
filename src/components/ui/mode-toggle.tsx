@@ -25,12 +25,12 @@ export function ModeToggle({ className, text }: ModeToggleProps) {
     >
       {isLightMode ? (
         <>
-          <Moon className="h-5 w-5" />
+          <Moon className="h-4 w-4 sm:h-5 sm:w-5" />
           {text && <span>Light Mode</span>}
         </>
       ) : (
         <>
-          <Sun className="h-5 w-5" />
+          <Sun className="h-4 w-4 sm:h-5 sm:w-5" />
           {text && <span>Dark Mode</span>}
         </>
       )}

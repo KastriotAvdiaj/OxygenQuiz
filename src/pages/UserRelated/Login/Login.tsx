@@ -4,6 +4,7 @@ import SocialButtons from "@/lib/SocialButtons/SocialButtons";
 import { ModeToggle } from "@/components/ui/mode-toggle";
 import LoginForm from "./LoginForm";
 import { useLogin } from "@/lib/Auth";
+import { useAuthConfig } from "@/lib/auth-config";
 import { GoBackButton } from "@/common/Go-Back-Button";
 import { useSearchParams } from "react-router-dom";
 import { O2Button } from "@/common/O2Button";
@@ -21,6 +22,19 @@ const Login: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { mutate: login, isPending, isError } = useLogin();
+  const { google, microsoft } = useAuthConfig();
+  const hasProviders = google.enabled || microsoft.enabled;
+
+  const afterLogin = () => {
+    useNotifications.getState().addNotification({
+      type: "success",
+      title: "Success",
+      message: "Logged in successfully!",
+    });
+    const redirectTo = searchParams.get("redirectTo");
+    if (redirectTo) navigate(redirectTo, { replace: true });
+    else navigate("/", { replace: true });
+  };
 
   const handleLogin = async (email: string, password: string) => {
     try {
@@ -118,20 +132,38 @@ const Login: React.FC = () => {
           {/* Form */}
           <LoginForm onLogin={handleLogin} isPending={isPending} />
 
-          {/* Divider */}
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-border" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-3 text-muted-foreground font-medium">
-                Or continue with
-              </span>
-            </div>
-          </div>
+          {/* External sign-in — rendered only when a provider is actually configured. */}
+          {hasProviders && (
+            <>
+              {/* Divider */}
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t border-border" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-3 text-muted-foreground font-medium">
+                    Or continue with
+                  </span>
+                </div>
+              </div>
 
-          {/* Social Buttons */}
-          <SocialButtons />
+              {/* Social Buttons. A provider identity with no account yet is sent to the
+                  signup flow carrying its ticket — it still passes the invite gate there,
+                  it just won't have to redo the provider popup. */}
+              <SocialButtons
+                onLoggedIn={afterLogin}
+                onNeedsSignup={(info) => {
+                  useNotifications.getState().addNotification({
+                    type: "info",
+                    title: "Almost there",
+                    message:
+                      "That account isn't registered yet — let's finish signing you up.",
+                  });
+                  navigate("/signup", { state: { external: info } });
+                }}
+              />
+            </>
+          )}
 
           {/* Sign Up Link */}
           <p className="text-center text-sm text-muted-foreground">
