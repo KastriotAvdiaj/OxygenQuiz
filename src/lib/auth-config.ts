@@ -18,7 +18,12 @@ type AuthConfig = {
 const fetchAuthConfig = (): Promise<AuthConfig> =>
   // skipErrorToast: config resolution failing (offline, rate-limited, old API) already has a
   // graceful fallback — conservative defaults below — so a global error toast is just noise.
-  apiService.get("/Authentication/auth-config", { skipErrorToast: true } as any);
+  // timeout: nothing may render behind this call, so it must always settle. Without it a
+  // hanging request leaves the signup page on its spinner indefinitely.
+  apiService.get("/Authentication/auth-config", {
+    skipErrorToast: true,
+    timeout: 8000,
+  } as any);
 
 const DISABLED: ProviderConfig = { enabled: false, clientId: null };
 
@@ -36,8 +41,16 @@ export const useAuthConfig = () => {
   const query = useQuery({
     queryKey: ["auth-config"],
     queryFn: fetchAuthConfig,
-    staleTime: 5 * 60_000,
+    // This is immutable per deployment, several components mount the hook, and a failure has a
+    // safe fallback — so it must be fetched AT MOST ONCE per page load. Every refetch trigger is
+    // off deliberately: a stale/errored entry that any remount could re-fetch turned a single
+    // 404 (frontend deployed ahead of the API) into a request storm against a dead endpoint.
+    staleTime: Infinity,
+    gcTime: Infinity,
     retry: false,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
     throwOnError: false,
   });
 
@@ -45,6 +58,7 @@ export const useAuthConfig = () => {
     requireInviteCode: query.data?.requireInviteCode === true,
     google: query.data?.providers?.google ?? DISABLED,
     microsoft: query.data?.providers?.microsoft ?? DISABLED,
+    /** True only while the single attempt is in flight; false forever after it settles. */
     isLoading: query.isLoading,
   };
 };

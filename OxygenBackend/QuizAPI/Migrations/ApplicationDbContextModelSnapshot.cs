@@ -59,7 +59,7 @@ namespace QuizAPI.Migrations
                         .IsUnique()
                         .HasFilter("\"RemovedInVersion\" IS NULL");
 
-                    b.ToTable("QuizQuestions");
+                    b.ToTable("QuizQuestions", (string)null);
                 });
 
             modelBuilder.Entity("QuizAPI.ManyToManyTables.RolePermission", b =>
@@ -77,7 +77,7 @@ namespace QuizAPI.Migrations
                     b.HasIndex("RoleId", "PermissionId")
                         .IsUnique();
 
-                    b.ToTable("RolePermissions");
+                    b.ToTable("RolePermissions", (string)null);
 
                     b.HasData(
                         new
@@ -314,7 +314,7 @@ namespace QuizAPI.Migrations
                     b.HasIndex("UserId", "RoleId")
                         .IsUnique();
 
-                    b.ToTable("UserRoles");
+                    b.ToTable("UserRoles", (string)null);
                 });
 
             modelBuilder.Entity("QuizAPI.Models.AnswerOption", b =>
@@ -339,7 +339,7 @@ namespace QuizAPI.Migrations
 
                     b.HasIndex("QuestionId");
 
-                    b.ToTable("AnswerOptions");
+                    b.ToTable("AnswerOptions", (string)null);
                 });
 
             modelBuilder.Entity("QuizAPI.Models.AuditLog", b =>
@@ -385,7 +385,7 @@ namespace QuizAPI.Migrations
 
                     b.HasIndex("Entity", "EntityId");
 
-                    b.ToTable("AuditLogs");
+                    b.ToTable("AuditLogs", (string)null);
                 });
 
             modelBuilder.Entity("QuizAPI.Models.EmailVerificationToken", b =>
@@ -418,7 +418,7 @@ namespace QuizAPI.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("EmailVerificationTokens");
+                    b.ToTable("EmailVerificationTokens", (string)null);
                 });
 
             modelBuilder.Entity("QuizAPI.Models.ExternalLogin", b =>
@@ -456,7 +456,7 @@ namespace QuizAPI.Migrations
                     b.HasIndex("Provider", "ProviderSubjectId")
                         .IsUnique();
 
-                    b.ToTable("ExternalLogins");
+                    b.ToTable("ExternalLogins", (string)null);
                 });
 
             modelBuilder.Entity("QuizAPI.Models.FileRecord", b =>
@@ -502,7 +502,7 @@ namespace QuizAPI.Migrations
 
                     b.HasIndex("Entity", "EntityId");
 
-                    b.ToTable("Files");
+                    b.ToTable("Files", (string)null);
                 });
 
             modelBuilder.Entity("QuizAPI.Models.ImageAsset", b =>
@@ -551,7 +551,7 @@ namespace QuizAPI.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("ImageAssets");
+                    b.ToTable("ImageAssets", (string)null);
                 });
 
             modelBuilder.Entity("QuizAPI.Models.InviteCode", b =>
@@ -593,7 +593,7 @@ namespace QuizAPI.Migrations
 
                     b.HasIndex("ConsumedByUserId");
 
-                    b.ToTable("InviteCodes");
+                    b.ToTable("InviteCodes", (string)null);
                 });
 
             modelBuilder.Entity("QuizAPI.Models.Notification", b =>
@@ -630,7 +630,7 @@ namespace QuizAPI.Migrations
 
                     b.HasIndex("UserId", "IsRead");
 
-                    b.ToTable("Notifications");
+                    b.ToTable("Notifications", (string)null);
                 });
 
             modelBuilder.Entity("QuizAPI.Models.Permission", b =>
@@ -654,7 +654,7 @@ namespace QuizAPI.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Permissions");
+                    b.ToTable("Permissions", (string)null);
 
                     b.HasData(
                         new
@@ -828,7 +828,7 @@ namespace QuizAPI.Migrations
 
                     b.HasIndex("UserId", "Visibility", "Id");
 
-                    b.ToTable("Questions");
+                    b.ToTable("Questions", (string)null);
 
                     b.HasDiscriminator<int>("Type");
 
@@ -863,7 +863,7 @@ namespace QuizAPI.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("QuestionCategories");
+                    b.ToTable("QuestionCategories", (string)null);
                 });
 
             modelBuilder.Entity("QuizAPI.Models.QuestionDifficulty", b =>
@@ -891,7 +891,7 @@ namespace QuizAPI.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("QuestionDifficulties");
+                    b.ToTable("QuestionDifficulties", (string)null);
                 });
 
             modelBuilder.Entity("QuizAPI.Models.QuestionLanguage", b =>
@@ -916,7 +916,7 @@ namespace QuizAPI.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("QuestionLanguages");
+                    b.ToTable("QuestionLanguages", (string)null);
                 });
 
             modelBuilder.Entity("QuizAPI.Models.Quiz.Quiz", b =>
@@ -991,7 +991,7 @@ namespace QuizAPI.Migrations
 
                     b.HasIndex("UserId", "Status", "Id");
 
-                    b.ToTable("Quizzes");
+                    b.ToTable("Quizzes", (string)null);
                 });
 
             modelBuilder.Entity("QuizAPI.Models.Quiz.QuizSession", b =>
@@ -1044,7 +1044,7 @@ namespace QuizAPI.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("QuizSessions");
+                    b.ToTable("QuizSessions", (string)null);
                 });
 
             modelBuilder.Entity("QuizAPI.Models.Quiz.UserAnswer", b =>
@@ -1087,7 +1087,7 @@ namespace QuizAPI.Migrations
 
                     b.HasIndex("SessionId");
 
-                    b.ToTable("UserAnswers");
+                    b.ToTable("UserAnswers", (string)null);
                 });
 
             modelBuilder.Entity("QuizAPI.Models.RefreshToken", b =>
@@ -1120,7 +1120,7 @@ namespace QuizAPI.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("RefreshTokens");
+                    b.ToTable("RefreshTokens", (string)null);
                 });
 
             modelBuilder.Entity("QuizAPI.Models.Role", b =>
@@ -1147,7 +1147,7 @@ namespace QuizAPI.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Roles");
+                    b.ToTable("Roles", (string)null);
 
                     b.HasData(
                         new
@@ -1201,7 +1201,7 @@ namespace QuizAPI.Migrations
                     b.HasIndex("QuestionId")
                         .IsUnique();
 
-                    b.ToTable("QuestionStatistics");
+                    b.ToTable("QuestionStatistics", (string)null);
                 });
 
             modelBuilder.Entity("QuizAPI.Models.User", b =>
@@ -1246,7 +1246,7 @@ namespace QuizAPI.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Users");
+                    b.ToTable("Users", (string)null);
                 });
 
             modelBuilder.Entity("QuizAPI.Models.UserSettings", b =>
@@ -1286,7 +1286,7 @@ namespace QuizAPI.Migrations
 
                     b.HasKey("UserId");
 
-                    b.ToTable("UserSettings");
+                    b.ToTable("UserSettings", (string)null);
                 });
 
             modelBuilder.Entity("QuizAPI.Models.MultipleChoiceQuestion", b =>
@@ -1327,7 +1327,7 @@ namespace QuizAPI.Migrations
                     b.Property<bool>("IsCaseSensitive")
                         .HasColumnType("boolean");
 
-                    b.ToTable("Questions", t =>
+                    b.ToTable("Questions", null, t =>
                         {
                             t.Property("CorrectAnswer")
                                 .HasColumnName("TypeTheAnswerQuestion_CorrectAnswer");

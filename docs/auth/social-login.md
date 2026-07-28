@@ -138,6 +138,18 @@ gate OFF:  method ──► manual (steps 1..4) | external
   `/signup` via router state — the user still passes the invite gate, but doesn't redo the
   popup.
 
+**`useAuthConfig` is fetched at most once per page load** — `staleTime`/`gcTime: Infinity`,
+`retry: false`, and every `refetchOn*` trigger off. This is deliberate, not tuning: the config
+is immutable per deployment, four components mount the hook, and a failure has a safe fallback,
+so there is no reason to ever ask twice. It is also a blast-radius guard — see *Troubleshooting:
+the signup page hangs*, where a single missing endpoint became a request storm. The call carries
+an 8s `timeout` for the same reason: nothing may render behind a request that never settles.
+
+**Nothing gates its render on this call except the brief first-load spinner.** `SignupFlow`
+derives its starting stage from the resolved config; it must never write state during render to
+bootstrap itself. Email/password signup has no dependency on `auth-config` and must stay
+reachable when the call fails.
+
 Supporting pieces: `src/lib/auth-config.ts` (`useAuthConfig`, replaces the deleted
 `signup-config.ts`), `src/lib/Auth.tsx` (`useExternalLogin` / `useExternalSignup` mutations —
 they adopt the session exactly like `loginFn` and write the react-query-auth user cache),
@@ -232,9 +244,10 @@ provider buttons simply don't render (the flow behaves exactly as before this fe
    - Wait >10 min on the username step → submit → "Signup session expired" → back to method
      choice.
    - Bad/spent invite code at submit → bounced to the invite gate.
-7. **Production deploy order:** DB migration → API → frontend. The old frontend against the
-   new API is fine (new endpoints unused); the new frontend against the old API is also fine
-   (auth-config 404s → buttons hidden).
+7. **Production deploy order:** DB migration → API → frontend — in that order, and the order is
+   load-bearing. The old frontend against the new API is fine (new endpoints unused). The new
+   frontend against the old API degrades to email/password signup with the provider buttons
+   hidden — but only since the fix below; it used to hang the signup page outright.
 
 ### Google-only launch?
 
@@ -256,6 +269,27 @@ to one already visible** (`Notifications-store.ts`), and all advisory calls are
 `skipErrorToast` (their failure is already shown inline, and they never hard-block). If a 429
 storm reappears, it's one toast, the limiter resets within a minute, and nothing is broken —
 the server-side checks remain authoritative.
+
+### Troubleshooting: the signup page hangs on its spinner (seen 2026-07-28)
+
+Symptom: in production, `/signup` showed only the spinner and the console filled with hundreds
+of `GET /api/Authentication/auth-config` 404s. `/login` was unaffected. Trigger was a deploy
+skew — frontend shipped ahead of the API — but that only exposed two real defects:
+
+1. **`SignupFlow` set state during render to bootstrap itself.** The branch that returned the
+   spinner also called `setStage(...)` once the config resolved, so the component re-rendered
+   to initialize its own state while a query result drove that same branch. `Login.tsx` reads
+   the identical hook and never broke, because it renders regardless — that contrast is the
+   diagnostic: the hook was fine, the gating wasn't. The starting stage is now *derived*
+   (`stage ?? (requireInviteCode ? "invite" : …)`); `stage` means only "the user has moved" and
+   is written exclusively from event handlers.
+2. **A non-critical config call gated the whole page.** Email/password signup does not depend
+   on `auth-config`, so a dead endpoint should never have been able to hide it.
+
+Hardened on both sides: the query can no longer fire more than once per page load (see §5), and
+the spinner is bounded by that single attempt plus an 8s timeout. **Lesson worth keeping:** a
+call whose failure has a designed fallback must not be allowed to retry, refetch, or block
+render — otherwise the fallback never runs. When in doubt, render the degraded page.
 
 ---
 

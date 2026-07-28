@@ -18,7 +18,7 @@ import { useNotifications } from "@/common/Notifications";
  * The invite gate ALWAYS comes first when the gate is on — no signup method (including the
  * provider buttons) is reachable before a valid code, so an external signup can't start
  * without an invite (docs/auth/social-login-plan.md §6). With the gate off, `method` is the
- * first screen. Each stage change re-mounts the stage wrapper (key={stage}), which plays the
+ * first screen. Each stage change re-mounts the stage wrapper (key={currentStage}), which plays the
  * slide-in animation the "next page" effect calls for.
  */
 type Stage = "invite" | "method" | "manual" | "external";
@@ -35,23 +35,26 @@ const SignupFlow: React.FC = () => {
   // ticket, so the user doesn't redo the popup — they still pass the invite gate first.
   const forwarded = (location.state as ForwardedExternal | null)?.external;
 
+  // null = "the user hasn't moved yet", NOT "unknown" — the starting stage is derived below
+  // rather than written by an effect, so no render ever needs to set state to bootstrap itself.
   const [stage, setStage] = useState<Stage | null>(null);
   const [inviteCode, setInviteCode] = useState<string | undefined>(undefined);
   const [external, setExternal] = useState<ExternalSignupInfo | undefined>(forwarded);
 
-  // Resolve the initial stage once the config arrives (isLoading flips exactly once; a brief
-  // spinner beats flashing the method screen and then swapping the gate in).
-  if (isLoading || stage === null) {
-    if (!isLoading && stage === null) {
-      if (requireInviteCode) setStage("invite");
-      else setStage(external ? "external" : "method");
-    }
+  // Only the first in-flight attempt holds rendering; a brief spinner beats flashing the method
+  // screen and then swapping the invite gate in. The config query never retries or refetches, so
+  // this is bounded — on failure it flips false and the flow falls through to its defaults
+  // (no invite required, no providers), which is exactly how signup should degrade.
+  if (isLoading) {
     return (
       <div className="flex justify-center py-16" aria-busy="true">
         <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
       </div>
     );
   }
+
+  const currentStage: Stage =
+    stage ?? (requireInviteCode ? "invite" : external ? "external" : "method");
 
   const loggedIn = () => {
     useNotifications.getState().addNotification({
@@ -67,7 +70,7 @@ const SignupFlow: React.FC = () => {
   const backToInvite = () => setStage("invite");
 
   const stageContent = (): React.ReactNode => {
-    switch (stage) {
+    switch (currentStage) {
       case "invite":
         return (
           <InviteGate
@@ -121,7 +124,7 @@ const SignupFlow: React.FC = () => {
   return (
     // Re-mounting on stage change plays the entrance animation — the next "page" slides up.
     <div
-      key={stage}
+      key={currentStage}
       className="animate-in fade-in slide-in-from-bottom-4 duration-300"
     >
       {stageContent()}
