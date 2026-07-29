@@ -1,5 +1,4 @@
 import { SegmentedControl } from "@/components/ui";
-import { Palette } from "lucide-react";
 import { ThemePreference, UserSettings } from "@/types/settings-types";
 import { Section, Row } from "./SharedPrimitives";
 
@@ -11,7 +10,7 @@ type AppearanceSectionProps = {
 
 export const AppearanceSection = ({ form, set, setTheme }: AppearanceSectionProps) => {
   return (
-    <Section icon={Palette} title="Appearance">
+    <Section>
       <Row
         title="Theme"
         control={

@@ -302,6 +302,13 @@ How to tell a cache issue from a real deploy problem:
   branch the CI build watches. Use one path per change.
 - **Need to undo a bad deploy fast.** Dashboard → Workers & Pages → `oxygenquiz` → Deployments →
   promote a previous version back to active. No rebuild needed.
+- **Deploy the API *before* the frontend when a change spans both.** The frontend is deployed from
+  your machine while the backend ships separately, so it's easy to push a bundle that calls
+  endpoints production doesn't have yet. The old-frontend/new-API direction is safe (new endpoints
+  simply go unused); the reverse is not. This bit us on 2026-07-28 — a new bundle calling
+  `/Authentication/auth-config` against an API that didn't have it yet hung the signup page and
+  fired ~1000 requests/second at the missing route. The frontend now degrades gracefully, but the
+  ordering rule stands: **DB migration → API → frontend.**
 
 ---
 

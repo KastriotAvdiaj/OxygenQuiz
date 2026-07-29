@@ -11,8 +11,6 @@ import {
   Tag,
   Signal,
   Languages,
-  CircleUser,
-  Settings,
 } from "lucide-react";
 
 export type DashboardNavItem = {
@@ -101,13 +99,10 @@ export const adminDashboardNavButtons: DashboardNavItem[] = [
 ];
 
 // Regular-user dashboard (/my-dashboard). No `roles` -> always visible.
+// Profile and Settings deliberately absent: they live in the account overlay now
+// (docs/development/account-overlay.md), reachable from the header drawer on any page. The
+// dashboard keeps only what is genuinely a workspace — your content and its reports.
 export const userDashboardNavButtons: DashboardNavItem[] = [
-  {
-    id: "profile",
-    label: "Profile",
-    icon: CircleUser,
-    group: "Overview",
-  },
   {
     id: "quizzes",
     label: "My Quizzes",
@@ -125,11 +120,5 @@ export const userDashboardNavButtons: DashboardNavItem[] = [
     label: "Reports",
     icon: LineChart,
     group: "Overview",
-  },
-  {
-    id: "settings",
-    label: "Settings",
-    icon: Settings,
-    group: "Account",
   },
 ];

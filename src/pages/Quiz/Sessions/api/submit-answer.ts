@@ -11,6 +11,12 @@ export const submitAnswerInputSchema = z.object({
   selectedOptionId: z.number().int().optional().nullable(),
   submittedAnswer: z.string().optional().nullable(),
   isTimedOut: z.boolean().optional().default(false),
+  /**
+   * Think time measured on the client with performance.now() (question rendered → answer
+   * submitted), in whole ms. The server validates it against its own clock and uses it for
+   * scoring only, so network latency doesn't eat the speed bonus. Omit when unknown.
+   */
+  clientElapsedMs: z.number().int().positive().optional(),
 });
 
 export type SubmitAnswerInput = z.infer<typeof submitAnswerInputSchema>;

@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Loader2, AlertCircle, RefreshCw, Play, RotateCcw, Clock, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -40,6 +41,14 @@ export function QuizPage({ quizId, userId }: QuizPageProps) {
   const showInstantFeedback = quizSession?.hasInstantFeedback ?? false;
   const canRetry = !isValidationError;
 
+  // Think-time measurement for latency-compensated scoring: stamp a monotonic clock the moment
+  // the question reaches the screen, report the delta with the answer. The server validates the
+  // value against its own window before trusting it (docs/quiz/quiz-grading.md).
+  const questionShownAtRef = useRef<number | null>(null);
+  useEffect(() => {
+    questionShownAtRef.current = currentQuestion ? performance.now() : null;
+  }, [currentQuestion]);
+
   // --- Event Handlers ---
   const handleSubmitAnswer = (
     selectedOptionId: number | null,
@@ -47,6 +56,10 @@ export function QuizPage({ quizId, userId }: QuizPageProps) {
     isTimedOut?: boolean
   ) => {
     if (!quizSession?.id || !currentQuestion || isSubmitting) return;
+
+    const shownAt = questionShownAtRef.current;
+    const clientElapsedMs =
+      shownAt !== null ? Math.max(1, Math.round(performance.now() - shownAt)) : undefined;
 
     submitAnswerMutation.mutate(
       {
@@ -56,6 +69,7 @@ export function QuizPage({ quizId, userId }: QuizPageProps) {
           selectedOptionId,
           submittedAnswer,
           isTimedOut: isTimedOut ?? false,
+          clientElapsedMs,
         },
       },
       {

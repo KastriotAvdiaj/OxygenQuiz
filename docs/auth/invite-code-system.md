@@ -212,25 +212,38 @@ Generation and revoke audits attribute to the **admin** (pulled from the request
 
 Signup is a multi-step flow under `src/pages/UserRelated/Signup/`.
 
-- **`api/signup-config.ts`** — `useSignupConfig()` calls the public
-  `GET /api/Authentication/signup-config` and returns `{ requireInviteCode }`. It defaults to *not*
-  required until the call resolves, so the form stays usable even if that anonymous call hiccups
-  (the server still enforces the real rule on submit).
+- **`src/lib/auth-config.ts`** — `useAuthConfig()` calls the public
+  `GET /api/Authentication/auth-config` and returns `{ requireInviteCode, google, microsoft,
+  isLoading }`. **Supersedes the deleted `api/signup-config.ts` / `useSignupConfig()`**, which
+  called `signup-config` and returned only `{ requireInviteCode }`; the flag now rides along with
+  the social-login config (see [social-login.md](./social-login.md)).
+
+  It **fails closed**: anything other than an explicit `false` from the server means "show the
+  gate". Earlier this defaulted to *not* required, on the reasoning that the server enforces the
+  real rule at submit — true, but it meant an unreachable config walked the user through the whole
+  form to a rejection. The server remains the authority either way. The call is also fetched at
+  most once per page load; social-login.md explains why that matters.
 - **`api/check-availability.ts`** — alongside the username/email availability hooks,
   `useInviteCodeValidity(code)` is a debounced check against
   `GET /api/Authentication/validate-invite-code`. It only fires once the code reaches its full
   normalized length (10 chars, matching `InviteCodeGenerator`), uses `throwOnError: false` so a
   background failure never hits an error boundary, and returns `{ isValid, isInvalid, isChecking,
   isError, longEnough }` — the same shape convention as the other two.
-- **`SignupForm.tsx`** — when `requireInviteCode` is true, an **invite-code step is prepended** and
-  every content step shifts down by one (`offset`). Step numbers are computed from `offset`, not
-  hard-coded. The code is uppercased as the user types, sent as `inviteCode` in the register
-  payload, and a bad-code error from the server bounces the user back to the invite step. The
-  invite step's **Continue button is gated on `useInviteCodeValidity`** (mirroring how the
-  username/email steps gate on their availability checks): it shows a spinner while checking, an
-  inline error for an invalid/used code, and "Invite code accepted" on success. If that advisory
-  call can't be reached it does *not* hard-block — the user can proceed and the authoritative
-  submit-time check still applies.
+- **`SignupComponents/InviteGate.tsx`** — the gate is now its **own stage ahead of the whole
+  flow**, not a step prepended inside `SignupForm`. It owns the entire first screen: the
+  invite-only note, one input, Continue. Nothing signup-related — including the Google/Microsoft
+  buttons — is reachable before a code, so an external signup can't start without one.
+  `SignupFlow.tsx` sequences the stages (`invite → method → manual | external`).
+
+  Continue is gated on `useInviteCodeValidity`, mirroring how the username/email steps gate on
+  their availability checks: a spinner while checking, an inline error for an invalid/used code,
+  "Invite code accepted" on success. That check is **advisory** — if it can't be reached it does
+  *not* hard-block, since the authoritative submit-time check still applies and a validated code
+  can still lose the consume race.
+- **`SignupForm.tsx`** — the email/password steps. It no longer contains an invite step; it
+  receives the gate's code as a prop, numbers itself `Step 2 of 5` when gated (`1 of 4` when
+  open), sends the code on submit, and bounces back to the gate via `onBadInviteCode` if the
+  server rejects it.
 - **`SignupSteps.tsx` / `SignupProgressDisplay.tsx`** — accept the prepended step / `offset`.
 - **`src/lib/Auth.tsx`** — `registerInputSchema` gained an optional `inviteCode`.
 

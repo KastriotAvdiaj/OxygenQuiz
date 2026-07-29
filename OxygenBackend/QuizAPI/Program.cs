@@ -115,6 +115,8 @@ builder.Services.AddScoped<IPermissionService, PermissionService>();
 // Core Entity Services
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<QuizAPI.Controllers.Users.Services.IAvatarService, QuizAPI.Controllers.Users.Services.AvatarService>();
+// Profile play-stats (read-only aggregation — see docs/quiz/user-stats-history.md).
+builder.Services.AddScoped<QuizAPI.Controllers.Users.Services.UserStatsService.IUserStatsService, QuizAPI.Controllers.Users.Services.UserStatsService.UserStatsService>();
 builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 // Invite-code signup gate (see docs/auth/invite-code-system-plan.md). Stateless CSPRNG helper → singleton.

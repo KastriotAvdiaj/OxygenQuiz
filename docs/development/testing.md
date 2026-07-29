@@ -82,6 +82,12 @@ interesting part, so we fake it with Moq (pattern C below).
 | `src/hooks/__tests__/use-disclosure.test.ts` | `useDisclosure` hook (pre-existing). |
 | `src/components/ui/dialog/__tests__/dialog.test.tsx` | Dialog component (pre-existing). |
 | `src/components/ui/dialog/confirmation-dialog/__tests__/confirmation-dialog.test.tsx` | Confirmation flow (pre-existing). |
+| `src/pages/UserRelated/Signup/__tests__/signup-auth-config-storm.test.tsx` | Signup when `auth-config` is unreachable: **exactly one** request (regression guard for the request storm — see [social-login.md](../auth/social-login.md)), and the flow **fails closed** to the invite gate rather than an open signup. |
+
+The signup-storm test is worth copying as a pattern: it mocks `@/lib/Api-client` to reject, then
+**counts calls over a time window** rather than asserting on rendered output. Render assertions
+can't see a retry loop — the DOM looks identical whether a failed request fired once or a
+thousand times. Any query whose failure has a designed fallback deserves this shape.
 
 ### Frontend — Storybook stories (`*.stories.tsx`)
 

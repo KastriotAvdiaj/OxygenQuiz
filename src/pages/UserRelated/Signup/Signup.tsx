@@ -17,9 +17,11 @@ const Signup: React.FC = () => {
           viewport, and a signup page shouldn't scroll — the form owns the
           screen; branding returns from sm up (docs/RESPONSIVE.md). */}
       <div className="relative hidden sm:flex lg:w-1/2 sm:h-[30vh] lg:h-auto lg:self-stretch shrink-0 items-center justify-center overflow-hidden">
-        {/* Background Image */}
+        {/* Background image — blurred so the branding reads cleanly over a busy photo.
+            scale-110 is required, not decorative: a blur samples past the element's edge and
+            would otherwise feather into transparency at the seams. The parent clips it. */}
         <div
-          className="absolute inset-0 bg-cover bg-center"
+          className="absolute inset-0 bg-cover bg-center blur-[6px] scale-110"
           style={{ backgroundImage: `url(${OxygenBackground})` }}
         />
 

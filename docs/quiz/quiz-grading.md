@@ -42,7 +42,7 @@ QuestionType, AllowMultipleSelections, Options[]
 ## Submitting an answer (`UserAnswerCM`)
 
 ```
-SessionId, QuizQuestionId, SelectedOptionId?, SubmittedAnswer?, IsTimedOut
+SessionId, QuizQuestionId, SelectedOptionId?, SubmittedAnswer?, IsTimedOut, ClientElapsedMs?
 ```
 
 How each type fills it:
@@ -54,6 +54,7 @@ How each type fills it:
 | TrueFalse | `SelectedOptionId` = `1` (True) or `2` (False) — synthetic ids from `TrueFalseOption`; the server converts the id to `SubmittedAnswer` `"True"`/`"False"` |
 | TypeTheAnswer | `SubmittedAnswer` = the typed text |
 | Timed out (client) | `IsTimedOut = true` |
+| Every type | `ClientElapsedMs` = think time the client measured with `performance.now()` (see [Latency-compensated timing](#latency-compensated-timing)) |
 
 > **Why the CSV for multi-select?** It reuses the existing `SubmittedAnswer` string channel, so
 > multi-select needed no new submit field and no schema migration. `UserAnswer` still stores one
@@ -63,9 +64,11 @@ How each type fills it:
 
 1. Validate the session exists, isn't completed, and that the submitted `QuizQuestionId` matches the
    session's current question.
-2. Compute `timeTaken = now − CurrentQuestionStartTime`. It's a **timeout** if
-   `timeTaken > TimeLimitInSeconds + GracePeriodSeconds` **or** the client set `IsTimedOut`.
-3. Stamp `SubmittedTime = now` and `QuestionStartTime = CurrentQuestionStartTime`.
+2. Compute `serverElapsed = now − CurrentQuestionStartTime`. It's a **timeout** if
+   `serverElapsed > TimeLimitInSeconds + GracePeriodSeconds` **or** the client set `IsTimedOut`.
+   The timeout decision always uses the raw server clock.
+3. Compute the **effective** elapsed for scoring (`QuizTiming.EffectiveElapsed`) and stamp
+   `SubmittedTime = QuestionStartTime + effectiveElapsed`, `QuestionStartTime = CurrentQuestionStartTime`.
 4. Then:
    - **Timed out** → status `TimedOut`, score `0`.
    - **Instant-feedback quiz** (`Quiz.ShowFeedbackImmediately`) → graded **synchronously** and the
@@ -91,8 +94,84 @@ Multi-select selections are parsed back out of `SubmittedAnswer` (the CSV) via
 Correct answers earn **speed-weighted** points — faster answers score higher, within the
 question's `TimeLimitInSeconds` and its `PointSystem` multiplier (`Standard`, `Double`,
 `Quadruple`). The formula lives in `Services/Scoring/QuizScoring.PointsForCorrectAnswer` and is
-shared by single-player and multiplayer so they stay in lockstep. Incorrect, timed-out, or
-no-`SubmittedTime` answers score `0`. Each graded answer adds to `QuizSession.TotalScore`.
+shared by single-player, multiplayer, and practice/test questions so they stay in lockstep.
+Incorrect, timed-out, or no-`SubmittedTime` answers score `0`. Each graded answer adds to
+`QuizSession.TotalScore`.
+
+```
+timeRemaining = max(0, timeLimit − elapsed)
+timeBonus     = (timeRemaining / timeLimit) × 0.5      // up to +50%
+points        = round(1000 × (1 + timeBonus) × multiplier)   // floor of 1
+```
+
+An instant correct answer is worth **1500**, one that uses the entire limit is worth **1000**.
+
+### Why the base is 1000, not 10
+
+The base used to be `10`, with `(int)` truncation *before* the multiplier. That gave the entire
+speed range **six possible values (10–15)**: on a 30s question, one point covered a **6-second**
+band, so answering in 1.2s and 5.9s scored identically — the speed bonus barely functioned as a
+tiebreaker. Two changes fix it:
+
+- **Scale up** — a 1000-point base gives ~100× the resolution. On a 30s question 0.1s is worth
+  ~1.7 points; on a 10s question, 5 points.
+- **Round once, at the end** — the multiplier is applied in `double` and rounded last, so `Double`
+  and `Quadruple` questions no longer inherit a pre-truncated value.
+
+Historical scores were recorded on the old scale. The
+`20260728120000_RescaleScoresToHighResolutionBase` migration multiplies existing
+`UserAnswer.Score` and `QuizSession.TotalScore` by 100 so past sessions stay directly comparable
+with new ones. **The migration and the formula change must deploy together.**
+
+### Latency-compensated timing
+
+The scoring resolution above is only meaningful if the elapsed time being measured is the player's
+*thinking*, not their connection.
+
+**The problem.** The server can only observe two server-side moments: when it served the question
+and when the answer arrived. That window contains a full round trip, so
+
+```
+serverElapsed ≈ trueThinkTime + RTT + renderTime
+```
+
+A player on 200ms ping loses ~0.4s of speed bonus on *every* question through no fault of their
+own — several times larger than the sub-second differences the scoring change now resolves.
+Increasing scoring precision without fixing this would have made ping *more* decisive, not less.
+
+**The fix.** The client measures its own think time with a **monotonic clock**
+(`performance.now()`, immune to wall-clock changes) from the moment the question renders to the
+moment the answer is submitted, and reports it as `ClientElapsedMs`. The server then validates it
+in `Services/Scoring/QuizTiming.EffectiveElapsed`:
+
+| Check | Rationale |
+|---|---|
+| `clientElapsed > 0` | rejects missing/garbage values |
+| `clientElapsed ≤ serverElapsed` | an honest client's window is strictly *inside* the server's — a larger claim is physically impossible |
+| `serverElapsed − clientElapsed ≤ MaxLatencyCreditSeconds` (default 2s) | the gap is round trip + render; anything beyond that is a tampered client or a broken measurement |
+
+Pass all three and the client's value is used for scoring; fail any and the server falls back to
+its own window — exactly the old behaviour. `QuizSessionOptions.MaxLatencyCreditSeconds` tunes the
+ceiling.
+
+**What a cheater gains.** At most the latency credit itself — the same few points an honest player
+on a bad connection legitimately gets back (≤ ~33 points on a 30s question). Claiming more than the
+server window is rejected outright. This is the standard trade-off for a quiz game: full anti-cheat
+(signed timestamps, attestation) costs far more than the exposure.
+
+**What the client can never do:** talk its way out of a timeout. `IsTimedOut` and the grace-period
+check run on the raw server clock, before and independently of any client-reported value.
+
+`SubmittedTime` is persisted as `QuestionStartTime + effectiveElapsed` rather than the raw arrival
+time, so the row is self-describing: instant grading, the Hangfire background grader, the results
+review, and the profile stats all read `SubmittedTime − QuestionStartTime` and get the same think
+time the answer was actually scored with.
+
+Both play paths measure it the same way — `quiz-page.tsx` / `guest-quiz-page.tsx` stamp a ref when
+the question renders; multiplayer's `use-match.ts` stamps it on the `QuestionStarted` event and
+passes the delta through `SubmitAnswer(sessionId, answer, clientElapsedMs)`.
+
+Older clients that omit `ClientElapsedMs` keep working — they simply score on the server window.
 
 ## Instant feedback result (`InstantFeedbackAnswerResultDto`)
 
@@ -131,6 +210,7 @@ populated for T/F, so the correct option was never highlighted on a wrong answer
 | Session loop, submit orchestration, timeouts | `Controllers/Quizzes/Services/QuizSessionServices/QuizSessionService.cs` |
 | Correctness + score, instant & background grading | `Controllers/Quizzes/Services/QuizSessionServices/AnswerGradingService/AnswerGradingService.cs` |
 | Speed-weighted scoring formula | `Services/Scoring/QuizScoring.cs` |
+| Latency compensation (which elapsed is scored) | `Services/Scoring/QuizTiming.cs` |
 | Abandonment detection / cleanup | `Controllers/Quizzes/Services/QuizSessionServices/AbandonmentService/SessionAbandonmentService.cs` |
 | DTOs (`CurrentQuestionDto`, `UserAnswerCM`, results) | `DTOs/Quiz/QuizSession-UserAnswerDTO.cs` |
 | Play UI (per question type) | `src/pages/Quiz/Sessions/components/quiz-taking-process/` |
@@ -139,4 +219,12 @@ populated for T/F, so the correct option was never highlighted on a wrong answer
 
 Live multiplayer (`Services/QuizSessionServices/MatchOrchestrator.cs`) runs its own match loop but
 builds the same `UserAnswer` shape and grades through the same `QuizScoring` helper, so correctness
-and scoring match single-player.
+and scoring match single-player. It applies the same latency compensation: `QuizHub.SubmitAnswer`
+stores the player's reported `ClientElapsedMs` on the `RoundAnswer`, and `BuildUserAnswer` runs it
+through `QuizTiming.EffectiveElapsed` at grading time. The round deadline stays on the server
+clock, so a client report can never resurrect a late answer.
+
+## Where scores are read back
+
+Completed sessions and their answers feed the profile history and player statistics —
+see [user-stats-history.md](user-stats-history.md).

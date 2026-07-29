@@ -7,6 +7,7 @@ using QuizAPI.DTOs.Quiz;
 using QuizAPI.Mapping;
 using QuizAPI.Models;
 using QuizAPI.Models.Quiz;
+using QuizAPI.Services.Scoring;
 
 namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.SubmitAnswerService
 {
@@ -116,22 +117,39 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.SubmitAnswerS
         {
             var questionStartTime = session.CurrentQuestionStartTime!.Value;
             var timeLimit = session.CurrentQuizQuestion!.TimeLimitInSeconds + _options.GracePeriodSeconds;
-            var timeTaken = DateTime.UtcNow - questionStartTime;
+            var serverElapsed = DateTime.UtcNow - questionStartTime;
+
             // A timeout is tripped by either the server-side clock OR the client's own timer flag
             // (the client may have expired before the request arrived). Dropping model.IsTimedOut —
             // as this service did originally — let late client submissions score as live answers.
-            var isTimedOut = timeTaken.TotalSeconds > timeLimit || model.IsTimedOut;
+            // NOTE: the timeout decision deliberately uses the raw SERVER window, never the
+            // client-reported elapsed — a client must not be able to talk its way out of a timeout.
+            var isTimedOut = serverElapsed.TotalSeconds > timeLimit || model.IsTimedOut;
 
-            _logger.LogInformation("Session {SessionId}: TimeTaken={TimeTakenSeconds}s, Limit={TimeLimitSeconds}s, TimedOut={TimedOut}",
-                session.Id, timeTaken.TotalSeconds, timeLimit, isTimedOut);
+            // For SCORING, prefer the client-measured think time (question rendered → answered)
+            // when it survives validation, so a player's ping doesn't eat their speed bonus.
+            // See Services/Scoring/QuizTiming for the trust model.
+            var effectiveElapsed = QuizTiming.EffectiveElapsed(
+                serverElapsed,
+                model.ClientElapsedMs,
+                TimeSpan.FromSeconds(_options.MaxLatencyCreditSeconds));
 
-            return new TimeContext(questionStartTime, timeTaken, isTimedOut);
+            _logger.LogInformation(
+                "Session {SessionId}: ServerElapsed={ServerElapsedSeconds}s, ClientElapsedMs={ClientElapsedMs}, EffectiveElapsed={EffectiveElapsedSeconds}s, Limit={TimeLimitSeconds}s, TimedOut={TimedOut}",
+                session.Id, serverElapsed.TotalSeconds, model.ClientElapsedMs, effectiveElapsed.TotalSeconds, timeLimit, isTimedOut);
+
+            return new TimeContext(questionStartTime, effectiveElapsed, serverElapsed, isTimedOut);
         }
 
         private UserAnswer CreateUserAnswer(UserAnswerCM model, QuizSession session, TimeContext timeContext)
         {
             var userAnswer = model.ToEntity();
-            userAnswer.SubmittedTime = DateTime.UtcNow;
+            // SubmittedTime is derived from the EFFECTIVE (latency-compensated) elapsed time, not
+            // the raw arrival clock, so the persisted row stays self-describing: every consumer —
+            // instant grading, the Hangfire background grader, stats (avg answer time), and the
+            // results review — reads the same SubmittedTime − QuestionStartTime and gets the think
+            // time the answer was actually scored with.
+            userAnswer.SubmittedTime = timeContext.StartTime + timeContext.TimeTaken;
             userAnswer.QuestionStartTime = timeContext.StartTime;
 
             _logger.LogInformation("Mapped UserAnswer before processing: {@UserAnswer}", userAnswer);
@@ -321,8 +339,12 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.SubmitAnswerS
         }
 
         /// <summary>
-        /// Value object encapsulating time-related calculations for answer submission
+        /// Value object encapsulating time-related calculations for answer submission.
+        /// <para><c>TimeTaken</c> is the EFFECTIVE elapsed time (client-measured think time when it
+        /// passed validation, otherwise the server window) — used for scoring and display.
+        /// <c>ServerElapsed</c> is the raw server-side window (question served → request arrived) —
+        /// the only clock the timeout decision trusts.</para>
         /// </summary>
-        private record TimeContext(DateTime StartTime, TimeSpan TimeTaken, bool IsTimedOut);
+        private record TimeContext(DateTime StartTime, TimeSpan TimeTaken, TimeSpan ServerElapsed, bool IsTimedOut);
     }
 }

@@ -107,6 +107,25 @@ Auth-specific enhancements are tracked in [authentication.md](../auth/authentica
   for the same concern will eventually disagree.
   *Fix:* consolidate on one allow-list/service.
   → `OxygenBackend/QuizAPI/Controllers/Image/ImageUploadController.cs`
+- **P3 — Speed-bonus latency credit is a fixed 2s a client can under-report into.**
+  Scoring trusts a client-reported think time (`ClientElapsedMs`) when it's within
+  `MaxLatencyCreditSeconds` of the server's own window — see
+  [quiz-grading.md](../quiz/quiz-grading.md#latency-compensated-timing). This is a
+  deliberate trade (it stops ping from deciding close matches, and the fallback on
+  any failed check is the server window, so a bad report can never *help*), but a
+  tampered client can still shave up to the full credit off its time: `2 × 500 /
+  timeLimit` points, i.e. ~33 pts on a 30s question but ~100 pts (10% of base) on a
+  10s one — the fixed credit is proportionally largest exactly where matches are
+  tightest. Changing the *client clock* does nothing (the value is a monotonic
+  `performance.now()` delta, never a timestamp), and timeouts/correctness are
+  untouched by it.
+  *Fix options, cheapest first:* (1) lower `MaxLatencyCreditSeconds` — config-only,
+  no redeploy; (2) scale it against the question, `min(2s, 10% of timeLimit)`;
+  (3) the principled one — cap the credit at the connection's *measured* RTT
+  (SignalR already tracks ping) instead of a constant. Consider (3) before any
+  competitive ladder or public leaderboard ships.
+  → `OxygenBackend/QuizAPI/Services/Scoring/QuizTiming.cs`,
+  `Controllers/Quizzes/Services/QuizSessionServices/QuizSessionOptions.cs`
 
 ## Code quality / cleanup
 

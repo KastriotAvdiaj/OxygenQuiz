@@ -12,15 +12,25 @@ import {
   Pencil,
   Activity,
   Lock,
+  Target,
+  Timer,
+  Flag,
+  CalendarClock,
 } from "lucide-react";
 import formatDate from "@/lib/date-format";
 import { Button } from "@/components/ui";
+import { QuizHistoryList } from "./components/QuizHistoryList";
+import type { UserQuizStats } from "@/types/quiz-session-types";
 
 /**
  * Presentational profile. Takes all its data as props so it can render either
- * the signed-in user's own profile (MyProfile container) or another user's
+ * another user's public profile (UserProfile container) or, historically, one's own
  * public profile (UserProfile container). `isOwnProfile` toggles the private
  * bits (email, last login, edit/settings actions).
+ *
+ * Play stats and history are private (the API only serves them to the owner or an admin), so
+ * they render only when `isOwnProfile` and a `userId` are supplied — a public profile keeps
+ * showing "—" for those cards. See docs/quiz/user-stats-history.md.
  */
 export type ProfileViewProps = {
   username: string;
@@ -32,6 +42,10 @@ export type ProfileViewProps = {
   questionsCount?: number | null; // null/undefined → "—"
   quizzesCount?: number | null;
   isOwnProfile?: boolean;
+  /** Signed-in user's id — enables the history list. Own profile only. */
+  userId?: string;
+  /** Aggregate play stats. Undefined while loading or on a public profile → "—". */
+  quizStats?: UserQuizStats | null;
 };
 
 type StatCardProps = {
@@ -63,6 +77,10 @@ const DetailRow = ({ label, value }: { label: string; value: string }) => (
 
 const stat = (n?: number | null) => (n === undefined || n === null ? "—" : n);
 
+/** Large point totals read better grouped: 12400 → "12,400". */
+const points = (n?: number | null) =>
+  n === undefined || n === null ? "—" : Math.round(n).toLocaleString();
+
 export const ProfileView = ({
   username,
   profileImageUrl,
@@ -73,6 +91,8 @@ export const ProfileView = ({
   questionsCount,
   quizzesCount,
   isOwnProfile = false,
+  userId,
+  quizStats,
 }: ProfileViewProps) => {
   const initials =
     typeof username === "string"
@@ -151,16 +171,66 @@ export const ProfileView = ({
         <StatCard
           icon={Gamepad2}
           label="Quizzes Played"
-          value="—"
-          hint="Coming soon"
+          value={stat(quizStats?.quizzesPlayed)}
+          hint={
+            quizStats
+              ? `${quizStats.distinctQuizzesPlayed} different ${
+                  quizStats.distinctQuizzesPlayed === 1 ? "quiz" : "quizzes"
+                }`
+              : isOwnProfile
+                ? "Completed sessions"
+                : "Private"
+          }
         />
         <StatCard
           icon={Trophy}
           label="Avg. Score"
-          value="—"
-          hint="Coming soon"
+          value={points(quizStats?.averageScore)}
+          hint={
+            quizStats
+              ? `Best ${points(quizStats.bestScore)}`
+              : isOwnProfile
+                ? "Per completed quiz"
+                : "Private"
+          }
         />
       </div>
+
+      {/* Answer-level stats — own profile only (the API doesn't expose these publicly) */}
+      {isOwnProfile && (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-6">
+          <StatCard
+            icon={Target}
+            label="Accuracy"
+            value={quizStats ? `${quizStats.accuracyPercent}%` : "—"}
+            hint={
+              quizStats
+                ? `${quizStats.totalCorrectAnswers} of ${quizStats.totalQuestionsAnswered} correct`
+                : "Across all answers"
+            }
+          />
+          <StatCard
+            icon={Timer}
+            label="Avg. Answer Time"
+            value={quizStats ? `${quizStats.averageAnswerTimeSeconds}s` : "—"}
+            hint="Per answered question"
+          />
+          <StatCard
+            icon={Flag}
+            label="Abandoned"
+            value={stat(quizStats?.quizzesAbandoned)}
+            hint="Sessions left unfinished"
+          />
+          <StatCard
+            icon={CalendarClock}
+            label="Last Played"
+            value={
+              quizStats?.lastPlayedAt ? formatDate(quizStats.lastPlayedAt) : "—"
+            }
+            hint={quizStats?.lastPlayedAt ? "Most recent session" : "No sessions yet"}
+          />
+        </div>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Details */}
@@ -185,7 +255,8 @@ export const ProfileView = ({
 
             {isOwnProfile && (
               <div className="pt-3 flex flex-col gap-2">
-                <Link to="/my-dashboard/settings">
+                {/* Pretty entry point that redirects into the account overlay. */}
+                <Link to="/settings/appearance">
                   <Button className="w-full text-white">
                     <SettingsIcon className="h-4 w-4" />
                     Settings
@@ -202,22 +273,26 @@ export const ProfileView = ({
           </CardContent>
         </Card>
 
-        {/* Recent activity placeholder */}
+        {/* Play history — private, so only rendered on your own profile */}
         <Card className="lg:col-span-2 border dark:border-foreground/30 bg-background">
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <Activity className="h-4 w-4" />
-              Recent activity
+              Quiz history
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-col items-center justify-center text-center py-10 text-muted-foreground">
-              <Activity className="h-8 w-8 mb-3 opacity-50" />
-              <p className="font-medium">No activity yet</p>
-              <p className="text-sm">
-                Recent quizzes and questions will appear here.
-              </p>
-            </div>
+            {isOwnProfile && userId ? (
+              <QuizHistoryList userId={userId} />
+            ) : (
+              <div className="flex flex-col items-center justify-center text-center py-10 text-muted-foreground">
+                <Lock className="h-8 w-8 mb-3 opacity-50" />
+                <p className="font-medium">History is private</p>
+                <p className="text-sm">
+                  Only the account owner can see their played quizzes.
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
 

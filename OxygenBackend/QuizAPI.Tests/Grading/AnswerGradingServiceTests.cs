@@ -71,7 +71,7 @@ public class AnswerGradingServiceTests
 
         Assert.True(result.IsCorrect);
         Assert.Equal(AnswerStatus.Correct, result.Status);
-        Assert.Equal(14, result.Score); // 2s of 10 => +40% bonus => (int)(10 * 1.4) = 14
+        Assert.Equal(1400, result.Score); // 2s of 10 => +40% bonus => round(1000 * 1.4) = 1400
     }
 
     [Fact]

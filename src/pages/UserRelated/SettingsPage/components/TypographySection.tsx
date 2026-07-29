@@ -7,7 +7,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui";
-import { Type } from "lucide-react";
 import { UserSettings } from "@/types/settings-types";
 import { FONT_OPTIONS, applyFont } from "@/lib/fonts";
 import { Section, Row } from "./SharedPrimitives";
@@ -62,7 +61,7 @@ export const TypographySection = ({
   };
 
   return (
-    <Section icon={Type} title="Typography">
+    <Section>
       <Row
         title="Same font everywhere"
         control={

@@ -21,7 +21,7 @@ import { getQuizSession } from "@/pages/Quiz/Sessions/api/get-quiz-session";
 import {
   resolveAndResume,
   abandonAndRestartSession,
-  getUserSessions,
+  findActiveSessionForQuiz,
 } from "@/pages/Quiz/Sessions/api/resume-quiz-session";
 import {
   QuizSession,
@@ -354,12 +354,9 @@ export const useQuizSession = ({
           useNotifications.getState().dismissNotification(latest.id);
         }
 
-        // Fetch the user's session summaries to find the active one for this quiz
+        // Find the in-progress session for this quiz so the resume/abandon screen can offer it
         try {
-          const summaries = await getUserSessions({ userId });
-          const activeSummary = summaries.find(
-            (s) => s.quizId === quizId && !s.isCompleted
-          );
+          const activeSummary = await findActiveSessionForQuiz({ userId, quizId });
 
           if (activeSummary) {
             // Fetch the full session DTO (with userAnswers, instant feedback flag, etc.)

@@ -1,5 +1,4 @@
 import { Switch } from "@/components/ui";
-import { Music } from "lucide-react";
 import { UserSettings } from "@/types/settings-types";
 import { Section, Row, VolumeSlider } from "./SharedPrimitives";
 
@@ -10,7 +9,7 @@ type AudioSectionProps = {
 
 export const AudioSection = ({ form, set }: AudioSectionProps) => {
   return (
-    <Section icon={Music} title="Audio">
+    <Section>
       <Row
         title="Background music"
         control={

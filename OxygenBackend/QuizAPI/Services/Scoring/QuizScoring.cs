@@ -11,10 +11,18 @@ namespace QuizAPI.Services.Scoring
     /// time limit you leave on the clock, the bigger the bonus (up to +50% for an instant answer) —
     /// then the question's <see cref="PointSystem"/> multiplier is applied. Wrong / unanswered = 0
     /// (the caller decides correctness; this only computes the value of a correct answer).
+    ///
+    /// Resolution: <see cref="BasePoints"/> is 1000 (not 10) and rounding happens once, at the very
+    /// end, so the speed bonus resolves sub-second differences. On a 30s question, answering 0.1s
+    /// faster is worth ~1.7 points; on a 10s question, 5 points. With the old base of 10 the entire
+    /// speed range collapsed into six integer buckets (10–15) — one bucket per 6 seconds on a 30s
+    /// limit — which made equally-fast competitive answers indistinguishable. Historical scores
+    /// recorded on the 10-point scale were rescaled ×100 by the
+    /// <c>RescaleScoresToHighResolutionBase</c> migration so old and new sessions stay comparable.
     /// </summary>
     public static class QuizScoring
     {
-        public const int BasePoints = 10;
+        public const int BasePoints = 1000;
         public const double MaxTimeBonusFactor = 0.5; // up to +50% for answering instantly
 
         /// <summary>
@@ -31,8 +39,10 @@ namespace QuizAPI.Services.Scoring
                 timeBonus = (timeRemainingSeconds / timeLimitSeconds) * MaxTimeBonusFactor;
             }
 
-            var pointsWithTimeBonus = (int)(BasePoints * (1 + timeBonus));
-            return Math.Max(1, pointsWithTimeBonus * MultiplierFor(pointSystem));
+            // Keep full double precision until the single, final rounding step — truncating the
+            // base-and-bonus part before applying the multiplier is what caused the old bucketing.
+            var rawPoints = BasePoints * (1 + timeBonus) * MultiplierFor(pointSystem);
+            return Math.Max(1, (int)Math.Round(rawPoints, MidpointRounding.AwayFromZero));
         }
 
         /// <summary>The score multiplier a question's point system applies.</summary>

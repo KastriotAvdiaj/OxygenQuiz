@@ -41,10 +41,12 @@ const SignupFlow: React.FC = () => {
   const [inviteCode, setInviteCode] = useState<string | undefined>(undefined);
   const [external, setExternal] = useState<ExternalSignupInfo | undefined>(forwarded);
 
-  // Only the first in-flight attempt holds rendering; a brief spinner beats flashing the method
-  // screen and then swapping the invite gate in. The config query never retries or refetches, so
-  // this is bounded — on failure it flips false and the flow falls through to its defaults
-  // (no invite required, no providers), which is exactly how signup should degrade.
+  // Only the first attempt holds rendering; a brief spinner beats flashing the method screen and
+  // then swapping the invite gate in. This is safe ONLY because `isLoading` is monotonic (see
+  // useAuthConfig): MethodChoice below reads the same query, so a flag that could flip back to
+  // true would unmount it mid-flight and oscillate. On failure this falls through to the
+  // conservative defaults — no invite required, no providers — which is how signup should
+  // degrade: email/password stays reachable when the config endpoint is gone.
   if (isLoading) {
     return (
       <div className="flex justify-center py-16" aria-busy="true">

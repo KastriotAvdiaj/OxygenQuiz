@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using QuizAPI.Controllers.Quizzes.Services.AnswerGradingServices;
 using QuizAPI.Controllers.Quizzes.Services.QuizSessionServices;
 using QuizAPI.DTOs.Quiz;
+using QuizAPI.Filtering;
 using QuizAPI.Services.CurrentUserService;
 
 namespace QuizAPI.Controllers;
@@ -146,11 +147,15 @@ public class QuizSessionsController : BaseApiController
     }
 
     /// <summary>
-    /// Gets a summary of all quiz sessions for a specific user.
+    /// Paginated summary of a user's quiz sessions, newest first (profile history —
+    /// see docs/quiz/user-stats-history.md). Page size is clamped server-side.
     /// </summary>
     [HttpGet("user/{userId:guid}")]
-    [ProducesResponseType(typeof(List<QuizSessionSummaryDto>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetUserSessions(Guid userId)
+    [ProducesResponseType(typeof(PagedResponse<QuizSessionSummaryDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetUserSessions(
+        Guid userId,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = QuizSessionService.DefaultHistoryPageSize)
     {
         var currentUserId = _currentUser.UserId;
         if (currentUserId is null) return Unauthorized();
@@ -159,7 +164,7 @@ public class QuizSessionsController : BaseApiController
         if (userId != currentUserId && !_currentUser.IsAdmin)
             return Forbid();
 
-        var result = await _quizSessionService.GetUserSessionsAsync(userId);
+        var result = await _quizSessionService.GetUserSessionsAsync(userId, page, pageSize);
         return HandleResult(result);
     }
 

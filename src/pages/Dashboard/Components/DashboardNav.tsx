@@ -56,7 +56,7 @@ const NavItem = ({
         "group relative flex w-full items-center rounded-lg py-2 text-sm outline-none transition-colors",
         "focus-visible:ring-1 focus-visible:ring-ring",
         isCollapsed ? "justify-center px-0" : "px-3",
-        !isActive && "hover:bg-muted/60"
+        !isActive && "hover:bg-muted/60",
       )}
     >
       {isActive && (
@@ -81,7 +81,7 @@ const NavItem = ({
           "relative z-10 h-[18px] w-[18px] shrink-0 transition-colors",
           isActive
             ? "text-primary"
-            : "text-muted-foreground group-hover:text-foreground"
+            : "text-muted-foreground group-hover:text-foreground",
         )}
       />
 
@@ -97,7 +97,7 @@ const NavItem = ({
               "relative z-10 ml-3 overflow-hidden whitespace-nowrap text-[13px] font-medium",
               isActive
                 ? "text-foreground"
-                : "text-muted-foreground group-hover:text-foreground"
+                : "text-muted-foreground group-hover:text-foreground",
             )}
           >
             {item.label}
@@ -112,7 +112,7 @@ const NavItem = ({
   return (
     <Tooltip>
       <TooltipTrigger asChild>{button}</TooltipTrigger>
-      <TooltipContent side="right" className="font-medium">
+      <TooltipContent side="right" className="font-medium bg-background">
         {item.label}
       </TooltipContent>
     </Tooltip>
@@ -132,7 +132,7 @@ export const DashboardNav: React.FC<DashboardNavProps> = ({
   // so a fully role-gated section never leaves an orphaned label behind.
   const groups = useMemo<NavGroup[]>(() => {
     const visible = navItems.filter((item) =>
-      checkAccess({ allowedRoles: (item.roles ?? []) as ROLES[] })
+      checkAccess({ allowedRoles: (item.roles ?? []) as ROLES[] }),
     );
 
     const order: string[] = [];
@@ -192,7 +192,7 @@ export const DashboardNav: React.FC<DashboardNavProps> = ({
             aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
             className={cn(
               "group flex w-full items-center rounded-lg py-2 text-sm text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground",
-              isCollapsed ? "justify-center px-0" : "px-3"
+              isCollapsed ? "justify-center px-0" : "px-3",
             )}
           >
             {isCollapsed ? (

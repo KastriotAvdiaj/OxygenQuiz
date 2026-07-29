@@ -10,11 +10,16 @@ using QuizAPI.ManyToManyTables;
 using QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.AbandonmentService;
 using QuizAPI.Controllers.Quizzes.Services.AnswerGradingServices;
 using QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.SubmitAnswerService;
+using QuizAPI.Filtering;
 
 namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
 {
     public class QuizSessionService : IQuizSessionService
     {
+        /// <summary>Page-size bounds for the history endpoint (mirrors <c>PaginationParams</c>).</summary>
+        public const int DefaultHistoryPageSize = 20;
+        public const int MaxHistoryPageSize = 50;
+
         private readonly ApplicationDbContext _context;
         private readonly ILogger<QuizSessionService> _logger;
         private readonly ISessionAbandonmentService _abandonmentService;
@@ -724,26 +729,32 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                 .FirstOrDefaultAsync();
         }
 
-        public async Task<Result<List<QuizSessionSummaryDto>>> GetUserSessionsAsync(Guid userId)
+        public async Task<Result<PagedResponse<QuizSessionSummaryDto>>> GetUserSessionsAsync(
+            Guid userId, int page = 1, int pageSize = DefaultHistoryPageSize)
         {
             try
             {
-                var sessions = await _context.QuizSessions
-                    .AsNoTracking()
-                    .Include(s => s.Quiz)
-                        .ThenInclude(q => q.QuizQuestions)
-                    .Include(s => s.UserAnswers)
-                    .Where(s => s.UserId == userId)
-                    .OrderByDescending(s => s.StartTime)
-                    .ToListAsync();
+                pageSize = Math.Clamp(pageSize, 1, MaxHistoryPageSize);
 
-                var sessionDtos = sessions.ToSummaryDtoList();
-                return Result<List<QuizSessionSummaryDto>>.Success(sessionDtos);
+                // Project straight to the summary DTO in SQL (QuizSessionMappers.ProjectSummary) so the
+                // question/answer counts are computed by the database. The previous implementation
+                // Include()d every question and answer of every quiz the user ever played just to
+                // count them in memory — the cost grew with total play history on each profile view.
+                // Guest sessions are excluded: they're transient and belong to the shared guest
+                // account, never to a real user's history.
+                var query = _context.QuizSessions
+                    .AsNoTracking()
+                    .Where(s => s.UserId == userId && !s.IsGuestSession)
+                    .OrderByDescending(s => s.StartTime)
+                    .Select(QuizSessionMappers.ProjectSummary);
+
+                var pagedSessions = await PagedResponse<QuizSessionSummaryDto>.CreateAsync(query, page, pageSize);
+                return Result<PagedResponse<QuizSessionSummaryDto>>.Success(pagedSessions);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error retrieving sessions for user {UserId}", userId);
-                return Result<List<QuizSessionSummaryDto>>.Failure("Failed to retrieve user sessions.");
+                return Result<PagedResponse<QuizSessionSummaryDto>>.Failure("Failed to retrieve user sessions.");
             }
         }
 

@@ -75,9 +75,11 @@ const Login: React.FC = () => {
           Hidden on phones so the form owns the screen without scrolling;
           branding returns from sm up (docs/RESPONSIVE.md). */}
       <div className="relative hidden sm:flex lg:w-1/2 sm:h-[30vh] lg:h-auto lg:self-stretch shrink-0 items-center justify-center overflow-hidden">
-        {/* Background Image */}
+        {/* Background image — blurred so the branding reads cleanly over a busy photo.
+            scale-110 is required, not decorative: a blur samples past the element's edge and
+            would otherwise feather into transparency at the seams. The parent clips it. */}
         <div
-          className="absolute inset-0 bg-cover bg-center"
+          className="absolute inset-0 bg-cover bg-center blur-[6px] scale-110"
           style={{ backgroundImage: `url(${OxygenBackground})` }}
         />
 
@@ -86,7 +88,8 @@ const Login: React.FC = () => {
 
         {/* Content */}
         <div className="relative z-10 text-center px-6 space-y-2.5 sm:space-y-4">
-          <div className="transform hover:scale-105 transition-transform duration-300 flex justify-center font-header">
+          {/* No font class here — O2Button pins its own (see O2Button.tsx). */}
+          <div className="transform hover:scale-105 transition-transform duration-300 flex justify-center">
             <O2Button />
           </div>
           <h1 className="text-2xl sm:text-3xl lg:text-5xl font-bold text-white tracking-tight">

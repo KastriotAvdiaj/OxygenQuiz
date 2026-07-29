@@ -138,6 +138,14 @@ gate OFF:  method ──► manual (steps 1..4) | external
   `/signup` via router state — the user still passes the invite gate, but doesn't redo the
   popup.
 
+**The two fallbacks point in opposite directions, deliberately.** When the config can't be read,
+providers default to *disabled* but the invite gate defaults to *required*. Hiding a button
+degrades gracefully; skipping a gate does not. The server is the authority either way
+(`Signup:RequireInviteCode` is enforced inside the signup transaction), so failing open on the
+gate never actually let anyone in — it just walked them through the whole form to a rejection at
+submit. Trade-off accepted: if the gate is turned off server-side *and* this call fails, users
+see a gate they can't pass. Revisit at public launch.
+
 **`useAuthConfig` is fetched at most once per page load** — `staleTime`/`gcTime: Infinity`,
 `retry: false`, and every `refetchOn*` trigger off. This is deliberate, not tuning: the config
 is immutable per deployment, four components mount the hook, and a failure has a safe fallback,
@@ -273,23 +281,45 @@ the server-side checks remain authoritative.
 ### Troubleshooting: the signup page hangs on its spinner (seen 2026-07-28)
 
 Symptom: in production, `/signup` showed only the spinner and the console filled with hundreds
-of `GET /api/Authentication/auth-config` 404s. `/login` was unaffected. Trigger was a deploy
-skew — frontend shipped ahead of the API — but that only exposed two real defects:
+of `GET /api/Authentication/auth-config` 404s (~1000/second under test). `/login` was
+unaffected. Trigger was a deploy skew — frontend shipped ahead of the API — but that only
+exposed the real defect.
 
-1. **`SignupFlow` set state during render to bootstrap itself.** The branch that returned the
-   spinner also called `setStage(...)` once the config resolved, so the component re-rendered
-   to initialize its own state while a query result drove that same branch. `Login.tsx` reads
-   the identical hook and never broke, because it renders regardless — that contrast is the
-   diagnostic: the hook was fine, the gating wasn't. The starting stage is now *derived*
-   (`stage ?? (requireInviteCode ? "invite" : …)`); `stage` means only "the user has moved" and
-   is written exclusively from event handlers.
-2. **A non-critical config call gated the whole page.** Email/password signup does not depend
-   on `auth-config`, so a dead endpoint should never have been able to hide it.
+**Root cause: a mount/unmount oscillation between two consumers of the same failed query.**
 
-Hardened on both sides: the query can no longer fire more than once per page load (see §5), and
-the spinner is bounded by that single attempt plus an 8s timeout. **Lesson worth keeping:** a
-call whose failure has a designed fallback must not be allowed to retry, refetch, or block
-render — otherwise the fallback never runs. When in doubt, render the degraded page.
+1. `SignupFlow` gates its render on `isLoading`, so while the config is in flight the spinner
+   shows and `MethodChoice` is not mounted.
+2. The request 404s. `isLoading` goes false, `SignupFlow` renders `MethodChoice`.
+3. `MethodChoice` calls `useAuthConfig` too. A **new observer mounting on a query that errored
+   and holds no data re-fetches** — `retry` and `refetchOnMount` do not cover that path;
+   `retryOnMount` is the option that does.
+4. That fetch flips `isLoading` back to true → `SignupFlow` unmounts `MethodChoice` → the
+   observer goes away → the fetch settles → `isLoading` false → remount → step 3. Forever.
+
+It needs *both* a parent gating on the flag and a descendant reading the same query, which is
+why `Login.tsx` (same hook, no gating) and `MethodChoice` in isolation were both fine.
+
+Fixed in two places, either of which breaks the cycle — kept both because they fail
+independently:
+
+- `retryOnMount: false` on the query, so a second observer can never re-arm a failed fetch.
+- `isLoading` is now derived from `isFetched`, which is **monotonic**. `isLoading` is not: it
+  can flip back to true and unmount a subtree that was already rendering.
+
+Regression test: `src/pages/UserRelated/Signup/__tests__/signup-auth-config-storm.test.tsx`
+asserts exactly one request and that the email path still renders. It fails loudly (hundreds of
+calls) against the old code.
+
+**Lessons worth keeping.** A flag that gates whether a subtree renders must be monotonic if
+anything in that subtree can feed back into it — otherwise render state and fetch state drive
+each other. And a call whose failure has a designed fallback must not be allowed to retry,
+refetch, or block render, or the fallback never runs. When in doubt, render the degraded page.
+
+**Note on the earlier fix attempt (same day):** `SignupFlow` also called `setStage(...)` during
+render to bootstrap its initial stage. That was a genuine anti-pattern and was replaced with a
+derived `currentStage`, but it was *not* the cause — the storm reproduced unchanged afterwards.
+Recorded here because the plausible-looking bug was the wrong one; the timeline (exponential
+request growth, and the `Login`/`MethodChoice` controls) is what actually identified it.
 
 ---
 
@@ -314,4 +344,6 @@ decorative, now real) · `Signup/{Signup.tsx,SignupComponents/{SignupForm,Signup
 `Login/Login.tsx` · `package.json`. **Deleted:** `Signup/api/signup-config.ts`.
 
 **Tests:** `QuizAPI.Tests/Auth/ExternalAuthenticationTests.cs` (+ updated
-`AuthenticationServiceTests.cs` constructor wiring).
+`AuthenticationServiceTests.cs` constructor wiring) ·
+`src/pages/UserRelated/Signup/__tests__/signup-auth-config-storm.test.tsx` (one request when
+`auth-config` is unreachable; fails closed to the invite gate).

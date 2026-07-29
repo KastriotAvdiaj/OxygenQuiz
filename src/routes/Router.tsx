@@ -13,8 +13,10 @@ import {
 import { QueryClient, useQueryClient } from "@tanstack/react-query";
 
 import { RedirectIfLoggedIn } from "../lib/Redirect";
+import { SettingsRedirect } from "@/pages/UserRelated/AccountOverlay/SettingsRedirect";
+import { RouteErrorElement } from "@/pages/UtilityPages/Error/Route-Error-Element";
 import "../global.css";
-import { Navigate } from "react-router-dom";
+import { Navigate, Outlet } from "react-router-dom";
 // import { HomeLayout } from "@/layouts/layout";
 // import QuizCreator from "@/pages/Dashboard/Pages/Quiz/components/Create-Quiz-Form/create-quiz";
 //import  {QuizSelection} from "@/pages/Quiz/Quiz-Selection";
@@ -118,6 +120,15 @@ const UserProfile = lazy(() =>
 );
 const createAppRouter = (queryClient: QueryClient) =>
   createBrowserRouter([
+    {
+      // Pathless root that exists solely to own `errorElement`. Every route below
+      // inherits it, so no route can ship without error handling and React Router's raw
+      // "Unexpected Application Error!" default can never reach a user. Routes with
+      // their own errorElement still win — this is the floor.
+      // See src/pages/UtilityPages/Error/Route-Error-Element.tsx.
+      element: <Outlet />,
+      errorElement: <RouteErrorElement />,
+      children: [
     {
       path: "/",
       element: (
@@ -469,16 +480,18 @@ const createAppRouter = (queryClient: QueryClient) =>
       ),
       children: [
         {
+          // Was /my-dashboard/profile — that path now redirects into the overlay, so
+          // pointing the index at it would bounce between the two forever.
           index: true,
-          element: <Navigate to="/my-dashboard/profile" replace />,
+          element: <Navigate to="/my-dashboard/quizzes" replace />,
         },
         {
+          // Retired: account details moved into the overlay (docs/development/account-overlay.md).
+          // Kept as a redirect so old links and bookmarks still land somewhere sensible.
+          // Targets /quizzes, not /my-dashboard: the index route redirects and would
+          // drop the ?settings= query, closing the overlay the instant it opened.
           path: "profile",
-          lazy: async () => {
-            const { MyProfile } =
-              await import("../pages/UserDashboard/MyProfile");
-            return { Component: MyProfile };
-          },
+          element: <SettingsRedirect section="account" to="/my-dashboard/quizzes" />,
         },
         {
           path: "questions",
@@ -517,12 +530,9 @@ const createAppRouter = (queryClient: QueryClient) =>
           element: <AiQuizWizard />,
         },
         {
+          // Retired alongside `profile` above — settings are overlay sections now.
           path: "settings",
-          lazy: async () => {
-            const { Settings } =
-              await import("../pages/UserRelated/SettingsPage/Settings");
-            return { Component: Settings };
-          },
+          element: <SettingsRedirect section="appearance" to="/my-dashboard/quizzes" />,
         },
         {
           path: "*",
@@ -535,12 +545,19 @@ const createAppRouter = (queryClient: QueryClient) =>
       ],
     },
     {
+      // Legacy standalone profile page — now the overlay's account section.
       path: "my-profile",
-      lazy: async () => {
-        const { ProfileWrapper } =
-          await import("../pages/UserRelated/Profile/ProfileWrapper");
-        return { Component: ProfileWrapper };
-      },
+      element: <SettingsRedirect section="account" />,
+    },
+    {
+      // Pretty entry points: /settings and /settings/:section open the overlay over the
+      // home page. The overlay itself is query-driven (see use-account-overlay.ts).
+      path: "settings",
+      element: <SettingsRedirect />,
+    },
+    {
+      path: "settings/:section",
+      element: <SettingsRedirect />,
     },
     {
       // Scaffolded public profile — not linked from anywhere in the UI yet.
@@ -559,6 +576,8 @@ const createAppRouter = (queryClient: QueryClient) =>
           await import("../pages/UtilityPages/NotFound/Not-Found");
         return { Component: NotFoundRoute };
       },
+    },
+      ],
     },
   ]);
 

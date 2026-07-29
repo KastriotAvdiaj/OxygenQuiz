@@ -8,7 +8,7 @@ interface MultiplayerContextType {
   isConnected: boolean;
   joinSession: (sessionId: string) => Promise<void>;
   leaveSession: (sessionId: string) => Promise<void>;
-  submitAnswer: (sessionId: string, answer: string) => Promise<void>;
+  submitAnswer: (sessionId: string, answer: string, clientElapsedMs?: number) => Promise<void>;
   createSession: (sessionId: string, lobbyName: string, maxPlayers: number) => Promise<void>;
   selectQuiz: (sessionId: string, quizId: string, quizTitle: string) => Promise<void>;
   startMatch: (sessionId: string) => Promise<void>;
@@ -88,10 +88,12 @@ export const MultiplayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
   }, []);
 
-  const submitAnswer = useCallback(async (sessionId: string, answer: string) => {
+  // clientElapsedMs: think time measured with performance.now() by the caller (use-match).
+  // The server validates it and uses it for scoring only, so ping doesn't decide close rounds.
+  const submitAnswer = useCallback(async (sessionId: string, answer: string, clientElapsedMs?: number) => {
       if (connectionRef.current && connectionRef.current.state === signalR.HubConnectionState.Connected) {
           try {
-              await connectionRef.current.invoke("SubmitAnswer", sessionId, answer);
+              await connectionRef.current.invoke("SubmitAnswer", sessionId, answer, clientElapsedMs ?? null);
           } catch (err) {
               console.error("Error submitting answer:", err);
               throw new Error("Failed to submit answer.");

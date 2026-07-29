@@ -4,6 +4,7 @@ import Header from "@/common/Header";
 import { useTheme } from "@/components/ui";
 import { EmailVerificationBanner } from "@/common/EmailVerificationBanner";
 import { APP_SCROLL_CONTAINER_ID } from "@/lib/app-scroll";
+import { AccountOverlay } from "@/pages/UserRelated/AccountOverlay/AccountOverlay";
 
 type EffectType = "squares" | "lightning" | "prism" | "none";
 
@@ -136,6 +137,11 @@ export const HomeLayout = ({
           )}
         </div>
       </div>
+
+      {/* Account/settings overlay. Mounted by the shell rather than routed, so opening
+          it (?settings=…) leaves the page underneath mounted and visible behind the
+          scrim — see use-account-overlay.ts. Renders nothing unless the param is set. */}
+      <AccountOverlay />
     </>
   );
 };

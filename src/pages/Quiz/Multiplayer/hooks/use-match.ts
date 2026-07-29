@@ -80,6 +80,10 @@ export const useMatch = ({ sessionId, username }: UseMatchOptions) => {
   // Keep the current question id in a ref so the submit guard doesn't need to re-bind handlers.
   const questionIdRef = useRef<number | null>(null);
 
+  // Monotonic timestamp of when the current question hit the screen. Reported with the answer so
+  // the server can score on true think time instead of think time + ping (docs/quiz/quiz-grading.md).
+  const questionShownAtRef = useRef<number | null>(null);
+
   useEffect(() => {
     if (!connection) return;
 
@@ -94,6 +98,7 @@ export const useMatch = ({ sessionId, username }: UseMatchOptions) => {
 
     connection.on("QuestionStarted", (q: RoundQuestionView, deadline: string) => {
       questionIdRef.current = q.questionId;
+      questionShownAtRef.current = performance.now();
       setQuestion(q);
       setDeadlineUtc(deadline);
       setAnswered([]);
@@ -141,8 +146,11 @@ export const useMatch = ({ sessionId, username }: UseMatchOptions) => {
       if (hasSubmitted) return;
       setHasSubmitted(true);
       audio.play("lock"); // your answer is locked in
+      const shownAt = questionShownAtRef.current;
+      const clientElapsedMs =
+        shownAt !== null ? Math.max(1, Math.round(performance.now() - shownAt)) : undefined;
       try {
-        await submitAnswer(sessionId, answer);
+        await submitAnswer(sessionId, answer, clientElapsedMs);
       } catch (err) {
         // Let the player retry if the send failed.
         setHasSubmitted(false);

@@ -11,33 +11,21 @@ export const SoonBadge = () => (
 );
 
 type SectionProps = {
-  icon: React.ElementType;
-  title: string;
-  description?: string;
   children: React.ReactNode;
 };
 
 /**
- * One settings group. Compact by design: icon and title share a slim
- * single-line header, rows are tight and divided by hairlines. Descriptions
- * are intentionally omitted — titles carry the meaning; pass one only when
- * a row would otherwise be ambiguous.
+ * One settings group: a plain card of hairline-divided rows.
+ *
+ * No header of its own. Each group is now a section of the account overlay
+ * (docs/development/account-overlay.md), which already names it in the pane header and
+ * highlights it in the sidebar — an in-card title repeated the same word twice on one
+ * screen. No primary-coloured bottom edge either: that treatment belongs to interactive
+ * controls (buttons, selects), and on a static container it read as an accent with no
+ * meaning behind it.
  */
-export const Section = ({ icon: Icon, title, description, children }: SectionProps) => (
-  <section className="h-fit rounded-xl border border-border bg-card shadow-[0_2px_0_0_var(--primary-edge)]">
-    <header className="flex items-center gap-2 border-b border-border px-4 py-2.5 sm:px-5">
-      <span className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-primary/10 text-primary">
-        <Icon className="h-3.5 w-3.5" />
-      </span>
-      <h2 className="min-w-0 truncate text-sm font-semibold leading-tight">
-        {title}
-      </h2>
-      {description && (
-        <p className="ml-auto truncate text-xs text-muted-foreground">
-          {description}
-        </p>
-      )}
-    </header>
+export const Section = ({ children }: SectionProps) => (
+  <section className="h-fit rounded-xl border border-border bg-card">
     <div className="divide-y divide-border/70 px-4 sm:px-5">{children}</div>
   </section>
 );

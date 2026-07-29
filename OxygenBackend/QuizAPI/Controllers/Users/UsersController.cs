@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QuizAPI.Controllers.Users.Services;
+using QuizAPI.Controllers.Users.Services.UserStatsService;
+using QuizAPI.DTOs.Quiz;
 using QuizAPI.DTOs.User;
 using QuizAPI.Filtering;
 using QuizAPI.Services.CurrentUserService;
@@ -16,15 +18,18 @@ namespace QuizAPI.Controllers.Users
         private readonly IUserService _userService;
         private readonly IAvatarService _avatarService;
         private readonly ICurrentUserService _currentUser;
+        private readonly IUserStatsService _userStatsService;
 
         public UsersController(
             IUserService userService,
             IAvatarService avatarService,
-            ICurrentUserService currentUser)
+            ICurrentUserService currentUser,
+            IUserStatsService userStatsService)
         {
             _userService = userService;
             _avatarService = avatarService;
             _currentUser = currentUser;
+            _userStatsService = userStatsService;
         }
 
         /// <summary>
@@ -92,6 +97,25 @@ namespace QuizAPI.Controllers.Users
                 DateRegistered = user.DateRegistered,
                 Roles = user.Roles,
             });
+        }
+
+        /// <summary>
+        /// Aggregate quiz-play statistics for the profile page (quizzes played, accuracy,
+        /// average/best score, average answer time). Own stats only — admins may view anyone's —
+        /// mirroring the visibility rule on <c>GET /api/QuizSessions/user/{userId}</c>.
+        /// See docs/quiz/user-stats-history.md.
+        /// </summary>
+        [HttpGet("{id:guid}/quiz-stats")]
+        [Authorize]
+        [ProducesResponseType(typeof(UserQuizStatsDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public async Task<IActionResult> GetQuizStats(Guid id, CancellationToken ct)
+        {
+            if (_currentUser.UserId is null) return Unauthorized();
+            if (id != _currentUser.UserId && !_currentUser.IsAdmin) return Forbid();
+
+            var result = await _userStatsService.GetUserQuizStatsAsync(id, ct);
+            return HandleResult(result);
         }
 
         [HttpGet("username/{username}")]

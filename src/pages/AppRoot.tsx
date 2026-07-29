@@ -5,6 +5,7 @@ import { Spinner } from "@/components/ui/Spinner";
 import { DashboardLayout } from "@/layouts/dashboard-layout";
 import { MainErrorFallback } from "./UtilityPages/Error/Main-Error-Boundary";
 import type { DashboardNavItem } from "./Dashboard/Components/dashboardNavConfig";
+import { AccountOverlay } from "./UserRelated/AccountOverlay/AccountOverlay";
 
 type AppRootProps = {
   basePath: string;
@@ -34,6 +35,10 @@ export const AppRoot = ({ basePath, navItems, fullWidthPaths }: AppRootProps) =>
           <Outlet />
         </ErrorBoundary>
       </Suspense>
+
+      {/* Same overlay as the public shell — the dashboard is a separate layout, so it
+          needs its own mount point for ?settings=… to work from here too. */}
+      <AccountOverlay />
     </DashboardLayout>
   );
 };

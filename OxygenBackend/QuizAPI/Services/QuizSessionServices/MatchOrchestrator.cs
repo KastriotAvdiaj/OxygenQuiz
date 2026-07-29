@@ -7,6 +7,7 @@ using QuizAPI.Models;
 using QuizAPI.Models.Quiz;
 using QuizAPI.Repositories.Interfaces;
 using QuizAPI.Services.Interfaces;
+using QuizAPI.Services.Scoring;
 
 namespace QuizAPI.Services.QuizSessionServices
 {
@@ -204,10 +205,16 @@ namespace QuizAPI.Services.QuizSessionServices
         // choice answers arrive as an option id; true/false and type-the-answer arrive as text.
         private static UserAnswer BuildUserAnswer(RoundQuestion round, RoundAnswer submission, DateTime startTime)
         {
+            // Score on the latency-compensated elapsed time, mirroring single player
+            // (SubmitAnswerService.CreateUserAnswer): prefer the player's own validated think-time
+            // measurement so ping doesn't decide close rounds; fall back to the server window.
+            var serverElapsed = submission.SubmittedUtc - startTime;
+            var effectiveElapsed = QuizTiming.EffectiveElapsed(serverElapsed, submission.ClientElapsedMs);
+
             var userAnswer = new UserAnswer
             {
                 QuestionStartTime = startTime,
-                SubmittedTime = submission.SubmittedUtc,
+                SubmittedTime = startTime + effectiveElapsed,
                 Status = AnswerStatus.Pending,
             };
 

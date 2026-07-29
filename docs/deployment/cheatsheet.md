@@ -24,6 +24,20 @@ docker compose -f docker-compose.prod.yml logs --tail 20 backend   # expect "Now
 docker compose -f docker-compose.prod.yml ps
 ```
 
+> **There is no manual database step — and that's deliberate, not an omission.** `Program.cs`
+> runs `await context.Database.MigrateAsync()` at startup, before the app serves traffic, so
+> step 3 applies every pending migration when the container boots. Never run `Update-Database`
+> against production.
+>
+> What *isn't* automatic: **creating** the migration. `Add-Migration <Name>` on your desktop,
+> then commit and push it — the server builds from the repo, so a migration that only exists on
+> your machine never reaches production. `Update-Database` locally only touches your dev DB.
+>
+> If a migration fails, startup throws and the API refuses to serve (fail-fast, by design) —
+> you'll see it in the step 4 logs as `Database migration/seeding failed`. Nothing backs the DB
+> up first, so take a dump before deploying anything destructive (drops, renames, narrowing
+> column types).
+
 ### Backend extras
 
 ```bash

@@ -17,10 +17,11 @@ export function secondsToMinutes(seconds: number): string {
 
 /**
  * A single quiz in the picker grid. Premium interactive card:
- *  - the quiz's palette colour drives a pill "category badge" + the hover glow,
- *    exposed to CSS as the `--accent` custom property so hover states can use it
- *    without inline JS (Tailwind can't interpolate a runtime hex into a hover:
- *    class).
+ *  - the quiz's palette colour drives a pill "category badge", the top hairline
+ *    and the hover border, exposed to CSS as the `--accent` custom property so
+ *    hover states can use it without inline JS (Tailwind can't interpolate a
+ *    runtime hex into a hover: class). Hover is lift + border only — the
+ *    accent-coloured drop shadow was removed as too heavy across a full grid.
  *  - fully fluid: `h-full w-full`, no fixed pixel widths — the parent grid
  *    (grid-cols-1 → 2xl:grid-cols-4) decides how many sit per row.
  *  - clean sans body text (`font-app`); the playful display font is reserved
@@ -45,8 +46,8 @@ export function QuizCard({ quiz, onClick }: QuizCardProps) {
 
   const questionLabel = quiz.questionCount === 1 ? "question" : "questions";
 
-  // Expose the per-quiz accent to CSS so hover glow/border can reference it via
-  // arbitrary Tailwind values (`hover:shadow-[...var(--accent)]`).
+  // Expose the per-quiz accent to CSS so the hover border can reference it via
+  // arbitrary Tailwind values (`hover:border-[var(--accent)]`).
   const accentVars = { "--accent": accent } as CSSProperties;
 
   return (
@@ -61,8 +62,7 @@ export function QuizCard({ quiz, onClick }: QuizCardProps) {
         className={cn(
           "relative flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card",
           "transition-all duration-300 ease-out",
-          "hover:-translate-y-1 hover:border-[var(--accent)]",
-          "hover:shadow-[0_10px_30px_-10px_var(--accent)]"
+          "hover:-translate-y-1 hover:border-[var(--accent)]"
         )}
       >
         {/* Top accent hairline — a whisper of the palette colour along the top

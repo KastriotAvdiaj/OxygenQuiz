@@ -1,6 +1,7 @@
 ﻿using QuizAPI.Common;
 using QuizAPI.Controllers.Quizzes.Services.AnswerGradingServices;
 using QuizAPI.DTOs.Quiz;
+using QuizAPI.Filtering;
 using QuizAPI.Models.Quiz;
 
 namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
@@ -28,7 +29,14 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
         /// </summary>
         Task<Guid?> GetSessionOwnerAsync(Guid sessionId);
 
-        Task<Result<List<QuizSessionSummaryDto>>> GetUserSessionsAsync(Guid userId);
+        /// <summary>
+        /// Paginated play history (newest first), projected to summaries in SQL and excluding
+        /// guest sessions. Powers the profile history list — see docs/quiz/user-stats-history.md.
+        /// </summary>
+        Task<Result<PagedResponse<QuizSessionSummaryDto>>> GetUserSessionsAsync(
+            Guid userId,
+            int page = 1,
+            int pageSize = QuizSessionService.DefaultHistoryPageSize);
         Task<Result<QuizSessionDto>> CompleteSessionAsync(Guid sessionId);
         Task<Result<int>> CleanupAbandonedSessionsAsync();
         Task<Result> DeleteSessionAsync(Guid sessionId);

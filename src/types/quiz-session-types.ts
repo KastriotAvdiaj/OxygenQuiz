@@ -130,6 +130,25 @@ export interface QuizSessionSummary {
 }
 
 /**
+ * Aggregate play statistics for a user's profile — mirrors the backend's UserQuizStatsDto.
+ * Guest sessions are excluded server-side; abandoned sessions count only toward
+ * `quizzesAbandoned`. See docs/quiz/user-stats-history.md.
+ */
+export interface UserQuizStats {
+  quizzesPlayed: number;
+  distinctQuizzesPlayed: number;
+  quizzesAbandoned: number;
+  totalQuestionsAnswered: number;
+  totalCorrectAnswers: number;
+  /** Correct / graded, in percent. */
+  accuracyPercent: number;
+  averageScore: number;
+  bestScore: number;
+  averageAnswerTimeSeconds: number;
+  lastPlayedAt: string | null;
+}
+
+/**
  * Returned by the resolve-and-resume endpoint after the backend
  * catches up on any timed-out questions.
  */

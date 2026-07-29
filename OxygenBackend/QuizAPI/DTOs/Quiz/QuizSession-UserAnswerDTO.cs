@@ -89,6 +89,16 @@ namespace QuizAPI.DTOs.Quiz
             /// to reliably determine timeouts regardless of network latency.
             /// </summary>
             public bool IsTimedOut { get; set; } = false;
+
+            /// <summary>
+            /// Client-measured think time in milliseconds: question rendered → answer submitted,
+            /// taken from a monotonic clock (<c>performance.now()</c>). Used only for SCORING —
+            /// after server-side validation against the server's own window (see
+            /// <c>Services/Scoring/QuizTiming</c>) — so a player's ping doesn't eat their speed
+            /// bonus. Timeout enforcement never trusts this value. Null (older clients) means
+            /// scoring falls back to the server-measured window.
+            /// </summary>
+            public long? ClientElapsedMs { get; set; }
         }
 
         // Data Transfer Objects

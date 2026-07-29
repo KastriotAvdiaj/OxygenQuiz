@@ -1,5 +1,6 @@
 import { apiService } from '@/lib/Api-client';
 import type { QuizSession, QuizState, QuizSessionSummary, ResumeResult } from '../../../../types/quiz-session-types';
+import { getUserSessions } from './get-user-sessions';
 
 /**
  * Resumes an existing quiz session that was interrupted but not completed.
@@ -55,12 +56,20 @@ export const abandonAndRestartSession = ({
 };
 
 /**
- * Fetches all sessions for a user. Used to find an active session for a specific quiz.
+ * Finds the user's in-progress session for a quiz, if any. Used by the resume/abandon flow when
+ * "you already have an active session" comes back from session creation.
+ *
+ * Reads the first page of the (newest-first, paginated) history — an active session is by
+ * definition the most recent one, so a single page is always enough. The history endpoint itself
+ * lives in ./get-user-sessions.
  */
-export const getUserSessions = ({
+export const findActiveSessionForQuiz = async ({
   userId,
+  quizId,
 }: {
   userId: string;
-}): Promise<QuizSessionSummary[]> => {
-  return apiService.get(`/quizsessions/user/${userId}`);
+  quizId: number;
+}): Promise<QuizSessionSummary | undefined> => {
+  const { items } = await getUserSessions({ userId, page: 1, pageSize: 20 });
+  return items.find((s) => s.quizId === quizId && !s.isCompleted);
 };

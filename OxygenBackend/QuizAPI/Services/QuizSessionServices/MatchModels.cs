@@ -81,5 +81,14 @@ namespace QuizAPI.Services.QuizSessionServices
     {
         public string Raw { get; init; } = string.Empty;   // option id (MC) or typed text (TF/TTA)
         public DateTime SubmittedUtc { get; init; }
+
+        /// <summary>
+        /// Client-measured think time in ms (question rendered → answer locked in), reported by the
+        /// client alongside the answer. Validated server-side at grading time
+        /// (<c>MatchOrchestrator.BuildUserAnswer</c> via <c>QuizTiming.EffectiveElapsed</c>) so a
+        /// player's ping doesn't eat their speed bonus; null (older clients) ⇒ score on the
+        /// server-measured window.
+        /// </summary>
+        public long? ClientElapsedMs { get; init; }
     }
 }

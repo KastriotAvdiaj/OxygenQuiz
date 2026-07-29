@@ -191,7 +191,10 @@ public class QuizHub : Hub<IQuizClient>
     // Records a player's answer for the current question. The server grades it later (when the
     // round closes) — nothing about correctness is sent back here. First submission of the round
     // wins; late or duplicate submissions are ignored.
-    public async Task SubmitAnswer(string sessionId, string answer)
+    // clientElapsedMs is the player's own think-time measurement (see RoundAnswer.ClientElapsedMs);
+    // it is stored raw here and validated at grading time. The deadline check above it stays on
+    // the SERVER clock — a client report can never resurrect a late answer.
+    public async Task SubmitAnswer(string sessionId, string answer, long? clientElapsedMs = null)
     {
         var username = GetUsername();
         var session = await _sessionManager.GetSessionAsync(sessionId);
@@ -201,7 +204,12 @@ public class QuizHub : Hub<IQuizClient>
         if (DateTime.UtcNow > session.QuestionDeadlineUtc)
             return; // too late
 
-        var record = new RoundAnswer { Raw = answer, SubmittedUtc = DateTime.UtcNow };
+        var record = new RoundAnswer
+        {
+            Raw = answer,
+            SubmittedUtc = DateTime.UtcNow,
+            ClientElapsedMs = clientElapsedMs,
+        };
         if (!session.CurrentRoundAnswers.TryAdd(username, record))
             return; // already answered this round
 

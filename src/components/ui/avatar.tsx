@@ -1,7 +1,8 @@
 import * as React from "react";
 import * as AvatarPrimitive from "@radix-ui/react-avatar";
 import { cn } from "@/utils/cn";
-import { FaUser } from "react-icons/fa"; // Import the icon
+// lucide (not react-icons): one outline icon family across the app — see DashboardNav.
+import { User } from "lucide-react";
 
 const Avatar = React.forwardRef<
   React.ElementRef<typeof AvatarPrimitive.Root>,
@@ -37,13 +38,16 @@ const AvatarFallback = React.forwardRef<
   <AvatarPrimitive.Fallback
     ref={ref}
     className={cn(
-      "flex h-full w-full items-center justify-center rounded-full bg-white",
+      // bg-muted (not bg-white): on a light surface a white circle is invisible, so an
+      // initial rendered without a picture looked like a bare floating letter. Theme
+      // tokens also keep the fallback readable in dark mode.
+      "flex h-full w-full items-center justify-center rounded-full bg-muted text-muted-foreground text-sm font-semibold uppercase leading-none",
       className
     )}
     {...props}
   >
     {/* Custom content (e.g. initials) when provided; otherwise the default user icon. */}
-    {children ?? <FaUser className="text-xl text-gray-500" />}
+    {children ?? <User className="h-1/2 w-1/2" strokeWidth={1.75} />}
   </AvatarPrimitive.Fallback>
 ));
 AvatarFallback.displayName = AvatarPrimitive.Fallback.displayName;

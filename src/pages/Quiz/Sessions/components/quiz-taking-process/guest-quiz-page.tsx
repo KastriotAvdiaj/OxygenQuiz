@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Loader2, AlertCircle, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -31,12 +32,22 @@ export function GuestQuizPage({ quizId }: GuestQuizPageProps) {
   const isSubmitting = submitAnswerMutation.isPending;
   const showInstantFeedback = quizSession?.hasInstantFeedback ?? false;
 
+  // Same latency-compensated think-time measurement as QuizPage (docs/quiz/quiz-grading.md).
+  const questionShownAtRef = useRef<number | null>(null);
+  useEffect(() => {
+    questionShownAtRef.current = currentQuestion ? performance.now() : null;
+  }, [currentQuestion]);
+
   const handleSubmitAnswer = (
     selectedOptionId: number | null,
     submittedAnswer?: string,
     isTimedOut?: boolean
   ) => {
     if (!quizSession?.id || !currentQuestion || isSubmitting) return;
+
+    const shownAt = questionShownAtRef.current;
+    const clientElapsedMs =
+      shownAt !== null ? Math.max(1, Math.round(performance.now() - shownAt)) : undefined;
 
     submitAnswerMutation.mutate(
       {
@@ -46,6 +57,7 @@ export function GuestQuizPage({ quizId }: GuestQuizPageProps) {
           selectedOptionId,
           submittedAnswer,
           isTimedOut: isTimedOut ?? false,
+          clientElapsedMs,
         },
       },
       { onSuccess: handleAnswerSubmissionSuccess }
