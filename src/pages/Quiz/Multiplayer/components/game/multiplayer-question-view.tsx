@@ -10,9 +10,13 @@ import { TypeTheAnswerQuestion } from "@/pages/Quiz/Sessions/components/quiz-tak
 import { MultipleChoiceQuestion } from "@/pages/Quiz/Sessions/components/quiz-taking-process/question-display-type-files/multiple-choice-question";
 import { QuestionMedia } from "@/common/QuestionMedia";
 import type { useMatch, RoundQuestionView } from "../../hooks/use-match";
+import type { Participant } from "../../hooks/use-lobby-connection";
+import { FloatingAvatarCluster, type AvatarClusterPlayer } from "./floating-avatar-cluster";
 
 interface MultiplayerQuestionViewProps {
   match: ReturnType<typeof useMatch>;
+  username: string;
+  participants: Participant[];
 }
 
 /**
@@ -27,9 +31,16 @@ interface MultiplayerQuestionViewProps {
  *  - feedback: multiplayer has no per-question instant feedback (results come in the separate reveal
  *    phase), so `instantFeedback` is always false here; correctness is shown by `RevealPanel`.
  */
-export function MultiplayerQuestionView({ match }: MultiplayerQuestionViewProps) {
+export function MultiplayerQuestionView({ match, username, participants }: MultiplayerQuestionViewProps) {
   const { question, deadlineUtc, hasSubmitted, answered } = match;
   const [timedOut, setTimedOut] = useState(false);
+
+  const clusterPlayers: AvatarClusterPlayer[] = participants.map((p) => ({
+    username: p.username,
+    profileImageUrl: p.profileImageUrl,
+    isCurrentUser: p.username === username,
+    state: answered.includes(p.username) ? "submitted" : "idle",
+  }));
 
   // Clear the local timed-out flag whenever a new question opens, so a previous question's
   // timeout doesn't carry over and disable the next one's inputs. (hasSubmitted is reset by
@@ -98,47 +109,55 @@ export function MultiplayerQuestionView({ match }: MultiplayerQuestionViewProps)
   };
 
   return (
-    <motion.div
-      key={question.questionId}
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, ease: "easeOut" }}
-      className="space-y-4 sm:space-y-6">
-      {/* Header: progress + circular timer, matching the singleplayer question layout */}
-      <div className="flex items-center justify-center">
-        <QuizTimer
-          initialTime={initialSeconds}
-          totalTime={question.timeLimitSeconds}
-          onTimeUp={() => setTimedOut(true)}
-          isPaused={hasSubmitted}
-          size="md"
-        />
+    <div className="relative">
+      {/* Multiplayer-only indicator: shows who's still in the match and who has locked in an
+          answer, without touching the singleplayer-shared layout below. */}
+      <div className="absolute -top-1 right-0 z-20 sm:top-0 sm:right-1">
+        <FloatingAvatarCluster players={clusterPlayers} size="sm" showToasts maxVisible={4} />
       </div>
 
-      <p className="text-center text-xs font-bold uppercase tracking-wider text-muted-foreground">
-        Question {question.index + 1} / {question.total}
-      </p>
+      <motion.div
+        key={question.questionId}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
+        className="space-y-4 pt-8 sm:space-y-6 sm:pt-10">
+        {/* Header: progress + circular timer, matching the singleplayer question layout */}
+        <div className="flex items-center justify-center">
+          <QuizTimer
+            initialTime={initialSeconds}
+            totalTime={question.timeLimitSeconds}
+            onTimeUp={() => setTimedOut(true)}
+            isPaused={hasSubmitted}
+            size="md"
+          />
+        </div>
 
-      <QuestionCard text={question.text} />
+        <p className="text-center text-xs font-bold uppercase tracking-wider text-muted-foreground">
+          Question {question.index + 1} / {question.total}
+        </p>
 
-      <QuestionMedia mediaUrl={currentQuestion.mediaUrl} mediaType={currentQuestion.mediaType} alt="Question image" />
+        <QuestionCard text={question.text} />
 
-      {hasSubmitted ? (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col items-center gap-3 py-6">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-emerald-600 dark:text-emerald-400 font-semibold text-center">
-            Locked in — waiting for the others…
-          </p>
-        </motion.div>
-      ) : (
-        <div className="relative z-10">{renderAnswerInput()}</div>
-      )}
+        <QuestionMedia mediaUrl={currentQuestion.mediaUrl} mediaType={currentQuestion.mediaType} alt="Question image" />
 
-      <p className="text-center text-xs text-muted-foreground">{answered.length} answered</p>
-    </motion.div>
+        {hasSubmitted ? (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-col items-center gap-3 py-6">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-emerald-600 dark:text-emerald-400 font-semibold text-center">
+              Locked in — waiting for the others…
+            </p>
+          </motion.div>
+        ) : (
+          <div className="relative z-10">{renderAnswerInput()}</div>
+        )}
+
+        <p className="text-center text-xs text-muted-foreground">{answered.length} answered</p>
+      </motion.div>
+    </div>
   );
 }
 

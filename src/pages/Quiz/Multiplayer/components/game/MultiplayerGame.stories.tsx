@@ -7,6 +7,7 @@ import type {
   ScoreboardEntry,
   RoundQuestionView,
 } from "../../hooks/use-match";
+import type { Participant } from "../../hooks/use-lobby-connection";
 
 /**
  * Multiplayer match view, storied without SignalR.
@@ -30,6 +31,23 @@ const scoreboard: ScoreboardEntry[] = [
   { username: "You", score: 1200, correct: 4 },
   { username: "Ada", score: 950, correct: 3 },
   { username: "Linus", score: 600, correct: 2 },
+];
+
+// Inline SVG so the "has a real avatar" path renders in the cluster with no network
+// dependency (a real account would supply an uploaded-image URL here instead).
+const demoAvatar =
+  "data:image/svg+xml," +
+  encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64"><rect width="64" height="64" fill="#f59e0b"/><circle cx="32" cy="24" r="12" fill="#fff"/><path d="M12 56c0-12 9-20 20-20s20 8 20 20" fill="#fff"/></svg>'
+  );
+
+// Feeds the new floating avatar cluster — usernames match `scoreboard` so every phase
+// (countdown, question, reveal, results) has a roster to render avatars from. "Ada" has an
+// avatar image to prove <FloatingAvatarCluster> renders real profile pictures, not just initials.
+const participants: Participant[] = [
+  { username: "You", isHost: true, isReady: true, profileImageUrl: null },
+  { username: "Ada", isHost: false, isReady: true, profileImageUrl: demoAvatar },
+  { username: "Linus", isHost: false, isReady: true, profileImageUrl: null },
 ];
 
 /**
@@ -85,6 +103,7 @@ const meta = {
   args: {
     username: "You",
     onExit: fn(),
+    participants,
     // Default keeps the story type-safe (match is required); every story overrides it.
     match: makeMatch({}),
   },

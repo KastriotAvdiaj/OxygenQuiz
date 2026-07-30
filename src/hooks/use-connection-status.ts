@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useMultiplayer } from "./useMultiplayer";
 
-type ConnectionStatus =
+export type ConnectionStatus =
   | { status: "connected" }
   | { status: "no-internet"; message: string }
   | { status: "server-down"; message: string };

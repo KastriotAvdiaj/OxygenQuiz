@@ -1,20 +1,11 @@
 import { useCallback } from "react";
-import { Card, CardContent } from "@/components/ui/card";
 import { useLobbyConnection } from "./hooks/use-lobby-connection";
-import { JoinForm } from "./components/lobby/join-form";
-import { LobbyInfoBar } from "./components/lobby/lobby-info-bar";
-import { ParticipantGrid } from "./components/lobby/participant-grid";
-import { LobbyActions } from "./components/lobby/lobby-actions";
-import { LobbyInfoBanner } from "./components/lobby/lobby-info-banner";
-import { QuizSelectionDialog } from "./components/lobby/quiz-selection-dialog";
-import { SelectedQuizDisplay } from "./components/lobby/selected-quiz-display";
-import { LeaveLobbyDialog } from "./components/lobby/leave-lobby-dialog";
 import { useDisclosure } from "@/hooks/use-disclosure";
-import { Button } from "@/components/ui/button";
-import { Pencil } from "lucide-react";
 import { useMatch } from "./hooks/use-match";
 import { MultiplayerGame } from "./components/game/MultiplayerGame";
+import { QuizSelectionDialog } from "./components/lobby/quiz-selection-dialog";
 import { LobbyChat } from "./components/lobby/lobby-chat";
+import { LobbyPageView } from "./LobbyPageView";
 
 interface MultiplayerLobbyPageProps {
   mode?: "create" | "join";
@@ -72,159 +63,59 @@ export const MultiplayerLobbyPage = ({
   // UI with the game view; exiting returns to the lobby so players can play again.
   const match = useMatch({ sessionId, username });
   if (match.isActive) {
-    return <MultiplayerGame username={username} match={match} onExit={match.reset} />;
+    return (
+      <MultiplayerGame
+        username={username}
+        match={match}
+        onExit={match.reset}
+        participants={participants}
+      />
+    );
   }
 
   return (
-    <div className="relative w-full min-h-full min-h-[calc(100vh-4rem)] text-foreground bg-cover bg-center font-header p-3 sm:p-4 md:p-6 lg:p-8 flex flex-col justify-center">
-      <div className="w-full max-w-7xl mx-auto flex flex-col lg:flex-row gap-4 lg:gap-6 items-stretch justify-center">
-        {/* Main Lobby Area (Left or Top) — soft card, one elevation level */}
-        <Card
-          hover={false}
-          className="w-full flex-1 max-w-2xl mx-auto border border-border bg-card shadow-sm"
-        >
-          {/* <LobbyHeader
-            mode={mode}
-            quizTitle={selectedQuiz?.title ?? "Multiplayer Lobby"}
-            hasJoined={hasJoined}
-          /> */}
-
-          <CardContent className="p-3 sm:p-4 md:p-6 transition-all duration-300">
-            {!hasJoined ? (
-              <JoinForm
-                mode={mode}
-                username={username}
-                sessionId={sessionId}
-                isConnected={isConnected}
-                isJoining={isJoining}
-                joinError={joinError}
-                onSessionIdChange={setSessionId}
-                onJoin={handleJoinSession}
-              />
-            ) : (
-              <div className="space-y-3 sm:space-y-4">
-                <LobbyInfoBar
-                  participantCount={participants.length}
-                  sessionId={sessionId}
-                  copied={copied}
-                  onCopyInvite={handleCopyInvite}
-                  onLeave={openManualLeave}
-                />
-
-                <ParticipantGrid
-                  participants={participants}
-                  currentUsername={username}
-                />
-
-                <LobbyActions
-                  isHost={isHost}
-                  isReady={isReady}
-                  canStartQuiz={canStartQuiz}
-                  allPlayersReady={allPlayersReady}
-                  participants={participants}
-                  hasSelectedQuiz={hasSelectedQuiz}
-                  onToggleReady={handleToggleReady}
-                  onStartQuiz={handleStartQuiz}
-                />
-
-                <LobbyInfoBanner
-                  isHost={isHost}
-                  participants={participants}
-                  hasSelectedQuiz={hasSelectedQuiz}
-                />
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Sidebar panels (Right or Bottom) - only show when joined */}
-        {hasJoined && (
-          <div className="w-full max-w-2xl lg:max-w-[360px] xl:max-w-[420px] mx-auto flex flex-col gap-4 lg:gap-6 shrink-0">
-            
-            {/* Quiz Selection Card */}
-            <Card hover={false} className="w-full border border-border bg-card shadow-sm">
-              <CardContent className="p-4 sm:p-5 flex flex-col gap-3">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Quiz
-                </h3>
-
-                {/* Quiz selection — host sees picker inside a dialog, everyone sees selected quiz */}
-                {isHost ? (
-                  <div className="space-y-3">
-                    <div className="relative group">
-                      <SelectedQuizDisplay
-                        selectedQuiz={selectedQuiz}
-                        isHost={isHost}
-                      />
-                      
-                      {/* Floating edit button over the selected quiz display */}
-                      <div className="absolute top-2 right-2 sm:top-3 sm:right-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          onClick={openQuizSelect}
-                          className="h-8 gap-1.5 shadow-sm border border-border/50 bg-background/95 backdrop-blur-sm"
-                        >
-                          <Pencil className="h-3.5 w-3.5" />
-                          <span className="text-xs">{hasSelectedQuiz ? "Change" : "Select"} Quiz</span>
-                        </Button>
-                      </div>
-                    </div>
-
-                    {/* For case when no quiz is selected yet, provide a prominent button */}
-                    {!hasSelectedQuiz && (
-                      <Button 
-                        onClick={openQuizSelect}
-                        variant="outline" 
-                        className="w-full h-12 border-dashed border-2 hover:border-primary/50 hover:bg-primary/5 transition-colors gap-2"
-                      >
-                        <Pencil className="h-4 w-4" />
-                        Browse & Select Quiz
-                      </Button>
-                    )}
-
-                    <QuizSelectionDialog
-                      isOpen={isQuizSelectOpen}
-                      onClose={closeQuizSelect}
-                      onSelectQuiz={handleSelectQuiz}
-                      selectedQuiz={selectedQuiz}
-                    />
-                  </div>
-                ) : (
-                  <SelectedQuizDisplay
-                    selectedQuiz={selectedQuiz}
-                    isHost={isHost}
-                  />
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Lobby chat (ephemeral) */}
-            <Card hover={false} className="w-full border border-border bg-card shadow-sm flex-1">
-              <CardContent className="p-4 sm:p-5 h-full">
-                <LobbyChat sessionId={sessionId} username={username} />
-              </CardContent>
-            </Card>
-
-          </div>
-        )}
-      </div>
-
-      {/* Navigation guard dialog (triggered by back-button / in-app navigation) */}
-      <LeaveLobbyDialog
-        isOpen={showLeaveDialog}
-        isHost={isHost}
-        onConfirm={confirmNavigation}
-        onCancel={cancelNavigation}
-      />
-
-      {/* Manual leave dialog (triggered by the Leave button) */}
-      <LeaveLobbyDialog
-        isOpen={isManualLeaveOpen}
-        isHost={isHost}
-        onConfirm={handleConfirmManualLeave}
-        onCancel={closeManualLeave}
-      />
-    </div>
+    <LobbyPageView
+      mode={mode}
+      username={username}
+      sessionId={sessionId}
+      hasJoined={hasJoined}
+      participants={participants}
+      copied={copied}
+      isJoining={isJoining}
+      joinError={joinError}
+      isConnected={isConnected}
+      isHost={isHost}
+      isReady={isReady}
+      allPlayersReady={allPlayersReady}
+      canStartQuiz={canStartQuiz}
+      hasSelectedQuiz={hasSelectedQuiz}
+      selectedQuiz={selectedQuiz}
+      onSessionIdChange={setSessionId}
+      onJoin={handleJoinSession}
+      onCopyInvite={handleCopyInvite}
+      onLeave={openManualLeave}
+      onToggleReady={handleToggleReady}
+      onStartQuiz={handleStartQuiz}
+      onOpenQuizSelect={openQuizSelect}
+      quizSelectionDialogSlot={
+        <QuizSelectionDialog
+          isOpen={isQuizSelectOpen}
+          onClose={closeQuizSelect}
+          onSelectQuiz={handleSelectQuiz}
+          selectedQuiz={selectedQuiz}
+        />
+      }
+      chatSlot={<LobbyChat sessionId={sessionId} username={username} />}
+      navGuardLeaveDialog={{
+        isOpen: showLeaveDialog,
+        onConfirm: confirmNavigation,
+        onCancel: cancelNavigation,
+      }}
+      manualLeaveDialog={{
+        isOpen: isManualLeaveOpen,
+        onConfirm: handleConfirmManualLeave,
+        onCancel: closeManualLeave,
+      }}
+    />
   );
 };
