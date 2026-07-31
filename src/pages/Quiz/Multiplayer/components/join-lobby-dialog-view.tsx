@@ -67,23 +67,22 @@ export const JoinLobbyDialogView = ({
           )}
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">Room Code *</label>
+            <label className="block text-center text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
+              Room Code
+            </label>
             <Input
               type="text"
               variant="minimal"
-              placeholder="Enter 6-character code"
+              placeholder="XXXXXX"
               value={roomCode}
               onChange={(e) => onRoomCodeChange(e.target.value.toUpperCase())}
-              className="h-12 text-xl tracking-widest text-center uppercase"
+              className="h-16 border-2 border-primary/30 text-center text-2xl font-extrabold tracking-[0.3em] uppercase transition-all focus-visible:border-primary"
               maxLength={6}
             />
           </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Joining as</label>
-            <div className="flex h-12 items-center rounded-md border-2 border-primary/20 bg-muted/40 px-3 text-base font-bold font-quiz">
-              {username || "…"}
-            </div>
+          <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
+            Joining as <span className="font-bold text-foreground">{username || "…"}</span>
           </div>
 
           {error && (

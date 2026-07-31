@@ -1,4 +1,5 @@
 import { Users } from "lucide-react";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { ParticipantCard } from "./participant-card";
 import type { Participant } from "../../hooks/use-lobby-connection";
 import { getAvatarColor } from "../../utils/avatar-colors";
@@ -6,39 +7,54 @@ import { getAvatarColor } from "../../utils/avatar-colors";
 interface ParticipantGridProps {
   participants: Participant[];
   currentUsername: string;
+  /** Lobby's configured player limit. 0/undefined = not known yet — no empty slots shown. */
+  maxPlayers?: number;
 }
+
+const EmptySlot = () => (
+  <div className="h-10 w-10 rounded-full border-2 border-dashed border-primary/20 lg:h-14 lg:w-14" />
+);
 
 export const ParticipantGrid = ({
   participants,
   currentUsername,
+  maxPlayers = 0,
 }: ParticipantGridProps) => {
+  const emptySlots = Math.max(0, maxPlayers - participants.length);
+
   return (
-    // Soft inset surface — no border, no pattern; the participant cards
-    // themselves provide the visual detail.
-    <div className="rounded-xl bg-muted/40 p-2.5 sm:p-3 md:p-4 transition-all duration-300">
+    // No surface of its own — the enclosing <LobbyPanel> body already provides the inset
+    // background, and stacking a second tint on top of it just muddies the colour.
+    //
+    // Centred wrap rather than a fixed column grid: a half-full lobby should sit in the middle
+    // of the panel on both axes, not hug the top-left corner of a 6-column grid.
+    <div className="flex h-full flex-wrap content-center items-center justify-center gap-2.5 lg:gap-4">
       {participants.length === 0 ? (
-        <div className="h-full min-h-[100px] sm:min-h-[120px] flex flex-col items-center justify-center text-muted-foreground space-y-2">
-          <Users className="w-8 h-8 sm:w-10 sm:h-10 opacity-40" />
-          <div className="text-center font-header px-4">
-            <p className="text-sm sm:text-base font-semibold">
+        <div className="flex flex-col items-center gap-2 px-4 text-center font-header text-muted-foreground">
+          <Users className="h-7 w-7 opacity-40 lg:h-9 lg:w-9" />
+          <div>
+            <p className="text-xs font-semibold lg:text-base">
               Waiting for players...
             </p>
-            <p className="text-xs sm:text-sm mt-0.5 opacity-70">
+            <p className="mt-0.5 text-[11px] opacity-70 lg:text-sm">
               Share the room code to get started
             </p>
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
-          {participants.map((participant, index) => (
+        <TooltipProvider>
+          {participants.map((participant) => (
             <ParticipantCard
-              key={index}
+              key={participant.username}
               participant={participant}
               isCurrentUser={participant.username === currentUsername}
               avatarColor={getAvatarColor(participant.username)}
             />
           ))}
-        </div>
+          {Array.from({ length: emptySlots }).map((_, index) => (
+            <EmptySlot key={`empty-${index}`} />
+          ))}
+        </TooltipProvider>
       )}
     </div>
   );

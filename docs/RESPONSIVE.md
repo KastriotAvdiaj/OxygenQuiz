@@ -76,6 +76,20 @@ with `env(safe-area-inset-*)`. If you ever add a fixed bottom bar, pad it with
 - **Sidebars → drawers:** desktop-only sidebars are `hidden lg:block`; on
   smaller screens the same panel renders inside a `Sheet` (see the quiz filter
   panel). Shared panel component, two shells — never two implementations.
+- **Exception: a shared child that owns live state.** The `hidden lg:block` /
+  `lg:hidden` trick renders *both* trees in the DOM (CSS just hides one), which
+  is fine for stateless panels but silently double-mounts a child that owns a
+  live subscription (SignalR, a real-time chat, an open network query) — each
+  hidden copy still runs its effects. When the child itself needs a different
+  wrapper per breakpoint (e.g. chat as an always-open `Card` on desktop vs. a
+  collapsible `Accordion` on mobile), branch with a JS `matchMedia` check
+  instead, so only one copy ever mounts.
+  *Better still, avoid needing the branch.* The multiplayer lobby used to do
+  exactly this (a `useIsCompactLayout` hook picking the chat wrapper); the
+  panel-board redesign gave chat one wrapper at every breakpoint and the hook
+  was deleted. A layout that doesn't change the live child's shell is simpler
+  than any correct way of switching it — reach for `matchMedia` only once
+  you've established the two shells really must differ.
 - **Drawers/dialogs on phones:** cap width with `max-w-[85vw]` and height with
   the dvh pair + inner `overflow-y-auto`, so content scrolls instead of pushing
   actions off-screen (`quiz-start-modal.tsx`).

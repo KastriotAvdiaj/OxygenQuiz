@@ -1,12 +1,10 @@
 import type { ReactNode } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Pencil } from "lucide-react";
 import { JoinForm } from "./components/lobby/join-form";
-import { LobbyInfoBar } from "./components/lobby/lobby-info-bar";
+import { LobbyPanel } from "./components/lobby/lobby-panel";
+import { RoomPanelBody } from "./components/lobby/room-panel-body";
 import { ParticipantGrid } from "./components/lobby/participant-grid";
 import { LobbyActions } from "./components/lobby/lobby-actions";
-import { LobbyInfoBanner } from "./components/lobby/lobby-info-banner";
 import { SelectedQuizDisplay } from "./components/lobby/selected-quiz-display";
 import { LeaveLobbyDialog } from "./components/lobby/leave-lobby-dialog";
 import type { Participant, SelectedQuiz } from "./hooks/use-lobby-connection";
@@ -23,6 +21,8 @@ export interface LobbyPageViewProps {
   sessionId: string;
   hasJoined: boolean;
   participants: Participant[];
+  /** Lobby's configured player limit, from the server. 0 = not known yet. */
+  maxPlayers: number;
   copied: boolean;
   isJoining: boolean;
   joinError: string | null;
@@ -45,7 +45,9 @@ export interface LobbyPageViewProps {
   /** The real page renders the hook-wired <QuizSelectionDialog>; stories render
    *  <QuizSelectionDialogView> with fixture data. Keeps this component free of live queries. */
   quizSelectionDialogSlot: ReactNode;
-  /** Same idea: the real page renders the hook-wired <LobbyChat>; stories render <LobbyChatView>. */
+  /** Same idea: the real page renders the hook-wired <LobbyChat>; stories render <LobbyChatView>.
+   *  Rendered exactly once — it owns a live SignalR subscription in production, so it must never
+   *  be duplicated across a mobile/desktop split. */
   chatSlot: ReactNode;
 
   navGuardLeaveDialog: LeaveDialogState;
@@ -58,6 +60,12 @@ export interface LobbyPageViewProps {
  * by props. Split out of MultiplayerLobbyPage (which owns the SignalR/session wiring via
  * useLobbyConnection) so the full page can be previewed in Storybook with no backend, the same
  * way MultiplayerGame previews the in-match phases.
+ *
+ * Layout is a fixed 2x2 board of <LobbyPanel>s — Players / Room on top, Chat / Game Settings
+ * below — which collapses to a single stacked column under `lg`. The panels are explicitly
+ * placed rather than auto-flowed so the DOM can order them for mobile (settings before chat,
+ * since the ready/start buttons matter more than scrollback on a small screen) without that
+ * order leaking into the desktop grid.
  */
 export const LobbyPageView = ({
   mode,
@@ -65,6 +73,7 @@ export const LobbyPageView = ({
   sessionId,
   hasJoined,
   participants,
+  maxPlayers,
   copied,
   isJoining,
   joinError,
@@ -87,117 +96,8 @@ export const LobbyPageView = ({
   navGuardLeaveDialog,
   manualLeaveDialog,
 }: LobbyPageViewProps) => {
-  return (
-    <div className="relative w-full min-h-full min-h-[calc(100vh-4rem)] text-foreground bg-cover bg-center font-header p-3 sm:p-4 md:p-6 lg:p-8 flex flex-col justify-center">
-      <div className="w-full max-w-7xl mx-auto flex flex-col lg:flex-row gap-4 lg:gap-6 items-stretch justify-center">
-        {/* Main Lobby Area (Left or Top) — soft card, one elevation level */}
-        <Card
-          hover={false}
-          className="w-full flex-1 max-w-2xl mx-auto border border-border bg-card shadow-sm"
-        >
-          <CardContent className="p-3 sm:p-4 md:p-6 transition-all duration-300 shadow-lg">
-            {!hasJoined ? (
-              <JoinForm
-                mode={mode}
-                username={username}
-                sessionId={sessionId}
-                isConnected={isConnected}
-                isJoining={isJoining}
-                joinError={joinError}
-                onSessionIdChange={onSessionIdChange}
-                onJoin={onJoin}
-              />
-            ) : (
-              <div className="space-y-3 sm:space-y-4">
-                <LobbyInfoBar
-                  participantCount={participants.length}
-                  sessionId={sessionId}
-                  copied={copied}
-                  onCopyInvite={onCopyInvite}
-                  onLeave={onLeave}
-                />
-
-                <ParticipantGrid participants={participants} currentUsername={username} />
-
-                <LobbyActions
-                  isHost={isHost}
-                  isReady={isReady}
-                  canStartQuiz={canStartQuiz}
-                  allPlayersReady={allPlayersReady}
-                  participants={participants}
-                  hasSelectedQuiz={hasSelectedQuiz}
-                  onToggleReady={onToggleReady}
-                  onStartQuiz={onStartQuiz}
-                />
-
-                <LobbyInfoBanner
-                  isHost={isHost}
-                  participants={participants}
-                  hasSelectedQuiz={hasSelectedQuiz}
-                />
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Sidebar panels (Right or Bottom) - only show when joined */}
-        {hasJoined && (
-          <div className="w-full max-w-2xl lg:max-w-[360px] xl:max-w-[420px] mx-auto flex flex-col gap-4 lg:gap-6 shrink-0">
-            {/* Quiz Selection Card */}
-            <Card hover={false} className="w-full border border-border bg-card shadow-sm">
-              <CardContent className="p-4 sm:p-5 flex flex-col gap-3">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Quiz
-                </h3>
-
-                {/* Quiz selection — host sees picker inside a dialog, everyone sees selected quiz */}
-                {isHost ? (
-                  <div className="space-y-3">
-                    <div className="relative group">
-                      <SelectedQuizDisplay selectedQuiz={selectedQuiz} isHost={isHost} />
-
-                      {/* Floating edit button over the selected quiz display */}
-                      <div className="absolute top-2 right-2 sm:top-3 sm:right-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          onClick={onOpenQuizSelect}
-                          className="h-8 gap-1.5 shadow-sm border border-border/50 bg-background/95 backdrop-blur-sm"
-                        >
-                          <Pencil className="h-3.5 w-3.5" />
-                          <span className="text-xs">{hasSelectedQuiz ? "Change" : "Select"} Quiz</span>
-                        </Button>
-                      </div>
-                    </div>
-
-                    {/* For case when no quiz is selected yet, provide a prominent button */}
-                    {!hasSelectedQuiz && (
-                      <Button
-                        onClick={onOpenQuizSelect}
-                        variant="outline"
-                        className="w-full h-12 border-dashed border-2 hover:border-primary/50 hover:bg-primary/5 transition-colors gap-2"
-                      >
-                        <Pencil className="h-4 w-4" />
-                        Browse & Select Quiz
-                      </Button>
-                    )}
-
-                    {quizSelectionDialogSlot}
-                  </div>
-                ) : (
-                  <SelectedQuizDisplay selectedQuiz={selectedQuiz} isHost={isHost} />
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Lobby chat (ephemeral) */}
-            <Card hover={false} className="w-full border border-border bg-card shadow-sm flex-1">
-              <CardContent className="p-4 sm:p-5 h-full">{chatSlot}</CardContent>
-            </Card>
-          </div>
-        )}
-      </div>
-
+  const leaveDialogs = (
+    <>
       {/* Navigation guard dialog (triggered by back-button / in-app navigation) */}
       <LeaveLobbyDialog
         isOpen={navGuardLeaveDialog.isOpen}
@@ -213,6 +113,119 @@ export const LobbyPageView = ({
         onConfirm={manualLeaveDialog.onConfirm}
         onCancel={manualLeaveDialog.onCancel}
       />
+    </>
+  );
+
+  // flex-1 (not min-h-[calc(100vh-4rem)]): fills the layout shell's dynamic-viewport column so
+  // justify-center genuinely centers within the real remaining height — a fixed calc'd
+  // min-height doesn't reliably fill a flex parent the same way (docs/RESPONSIVE.md).
+  //
+  // font-quiz cascades to the whole lobby so labels, buttons, names and chat share the display
+  // face. Two things opt out on purpose: the panel title bars (font-header — they're chrome, and
+  // font-quiz is a user setting that shouldn't restyle the furniture) and the room code
+  // (font-mono — 0 vs O has to be unambiguous for someone typing it in).
+  // bg-muted in light mode only: the panel bodies are --background there, so the page behind them
+  // has to step away from white for the panels to read as raised surfaces. Dark mode already has
+  // that separation (tinted panel bodies on the dark page) and keeps its inherited background.
+  const shellClassName =
+    "relative w-full flex-1 text-foreground bg-cover bg-center font-quiz " +
+    "bg-muted dark:bg-transparent " +
+    "p-3 sm:p-4 md:p-6 lg:p-8 flex flex-col justify-center";
+
+  if (!hasJoined) {
+    return (
+      <div className={shellClassName}>
+        <Card
+          hover={false}
+          className="mx-auto w-full max-w-xl border border-border bg-card shadow-sm"
+        >
+          <CardContent className="p-4 sm:p-6">
+            <JoinForm
+              mode={mode}
+              username={username}
+              sessionId={sessionId}
+              isConnected={isConnected}
+              isJoining={isJoining}
+              joinError={joinError}
+              onSessionIdChange={onSessionIdChange}
+              onJoin={onJoin}
+            />
+          </CardContent>
+        </Card>
+        {leaveDialogs}
+      </div>
+    );
+  }
+
+  return (
+    <div className={shellClassName}>
+      <div className="mx-auto grid w-full max-w-6xl grid-cols-1 gap-5 sm:gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,19rem)] lg:gap-7 xl:grid-cols-[minmax(0,1fr)_minmax(0,21rem)] xl:gap-8">
+        {/* ── Top left: the roster ─────────────────────────────────────────── */}
+        <LobbyPanel
+          title="Players"
+          className="lg:col-start-1 lg:row-start-1"
+          bodyClassName="min-h-[7rem] lg:min-h-[11rem]"
+        >
+          <ParticipantGrid
+            participants={participants}
+            currentUsername={username}
+            maxPlayers={maxPlayers}
+          />
+        </LobbyPanel>
+
+        {/* ── Top right: invite ────────────────────────────────────────────── */}
+        <LobbyPanel title="Room" className="lg:col-start-2 lg:row-start-1">
+          <RoomPanelBody
+            sessionId={sessionId}
+            participantCount={participants.length}
+            maxPlayers={maxPlayers}
+            copied={copied}
+            onCopyInvite={onCopyInvite}
+            onLeave={onLeave}
+          />
+        </LobbyPanel>
+
+        {/* ── Bottom right: quiz choice + ready/start ──────────────────────────
+            Ahead of chat in the DOM so the stacked mobile column puts the actions
+            within reach; `lg:` placement pins it back to the right column. */}
+        <LobbyPanel title="Quiz" className="lg:col-start-2 lg:row-start-2">
+          <div className="flex h-full flex-col gap-2.5 lg:gap-3">
+            {/* SelectedQuizDisplay owns its own "Change" affordance — it sits beside the
+                caption above the card, so there's no overlay to position from out here. */}
+            <SelectedQuizDisplay
+              selectedQuiz={selectedQuiz}
+              isHost={isHost}
+              onBrowse={isHost ? onOpenQuizSelect : undefined}
+            />
+
+            <div className="mt-auto">
+              <LobbyActions
+                isHost={isHost}
+                isReady={isReady}
+                canStartQuiz={canStartQuiz}
+                allPlayersReady={allPlayersReady}
+                participants={participants}
+                hasSelectedQuiz={hasSelectedQuiz}
+                onToggleReady={onToggleReady}
+                onStartQuiz={onStartQuiz}
+              />
+            </div>
+
+            {isHost && quizSelectionDialogSlot}
+          </div>
+        </LobbyPanel>
+
+        {/* ── Bottom left: chat ────────────────────────────────────────────── */}
+        <LobbyPanel
+          title="Chat"
+          className="lg:col-start-1 lg:row-start-2"
+          bodyClassName="p-0"
+        >
+          {chatSlot}
+        </LobbyPanel>
+      </div>
+
+      {leaveDialogs}
     </div>
   );
 };

@@ -13,7 +13,7 @@ public interface IQuizSessionManager
     
     // New methods for lobby redesign
     Task<MultiplayerSession> CreateSessionAsync(string sessionId, string lobbyName, int maxPlayers, string hostUsername, string connectionId, string? hostProfileImageUrl = null);
-    Task SetQuizAsync(string sessionId, string quizId);
+    Task SetQuizAsync(string sessionId, SelectedQuizView quiz);
     Task<MultiplayerSession?> GetSessionAsync(string sessionId);
 
     // Ephemeral lobby chat (in-memory, capped buffer).

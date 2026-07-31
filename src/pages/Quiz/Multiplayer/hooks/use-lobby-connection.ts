@@ -1,15 +1,14 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { useMultiplayer } from "@/hooks/useMultiplayer";
 import { useNotifications } from "@/common/Notifications";
 import { useUser } from "@/lib/Auth";
 import { useNavigationGuard } from "./use-navigation-guard";
 import { audio } from "@/lib/audio";
+import type { SelectedQuiz } from "@/types/quiz-types";
 
-export interface SelectedQuiz {
-  id: string;
-  title: string;
-}
+// Re-exported so the lobby's components can keep importing their models from one place.
+export type { SelectedQuiz };
 
 export interface Participant {
   username: string;
@@ -24,7 +23,6 @@ interface UseLobbyConnectionOptions {
 }
 
 export const useLobbyConnection = ({ mode = "join" }: UseLobbyConnectionOptions) => {
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const params = useParams<{ sessionId?: string }>();
   const { connection, isConnected, joinSession, leaveSession, selectQuiz } = useMultiplayer();
@@ -44,6 +42,9 @@ export const useLobbyConnection = ({ mode = "join" }: UseLobbyConnectionOptions)
   const [sessionId, setSessionId] = useState(codeFromUrl);
   const [hasJoined, setHasJoined] = useState(false);
   const [participants, setParticipants] = useState<Participant[]>([]);
+  // 0 = not yet known (before LobbySettingsChanged arrives) — callers should fall back to
+  // participants.length until then.
+  const [maxPlayers, setMaxPlayers] = useState(0);
   const [copied, setCopied] = useState(false);
   const [isJoining, setIsJoining] = useState(false);
   const [joinError, setJoinError] = useState<string | null>(null);
@@ -133,6 +134,12 @@ export const useLobbyConnection = ({ mode = "join" }: UseLobbyConnectionOptions)
       setParticipants(currentParticipants);
     });
 
+    // Sent once, right when this client connects (create or join) — the lobby's configured
+    // player-count limit, so the roster UI can render empty slots up to the real size.
+    connection.on("LobbySettingsChanged", (_lobbyName: string, max: number) => {
+      setMaxPlayers(max);
+    });
+
     connection.on("UserLeft", (leftUsername: string) => {
       setParticipants((prev) => prev.filter((p) => p.username !== leftUsername));
 
@@ -162,24 +169,20 @@ export const useLobbyConnection = ({ mode = "join" }: UseLobbyConnectionOptions)
       });
     });
 
-    connection.on("GameStarted", (startedQuizId: string) => {
-      navigate(`/quiz/${startedQuizId}/play`);
-    });
-
-    connection.on("QuizSelected", (quizId: string, quizTitle: string) => {
-      setSelectedQuiz({ id: quizId, title: quizTitle });
+    connection.on("QuizSelected", (quiz: SelectedQuiz) => {
+      setSelectedQuiz(quiz);
     });
 
     return () => {
       connection.off("UserJoined");
       connection.off("CurrentParticipants");
+      connection.off("LobbySettingsChanged");
       connection.off("UserLeft");
       connection.off("PlayerReadyChanged");
       connection.off("HostChanged");
-      connection.off("GameStarted");
       connection.off("QuizSelected");
     };
-  }, [connection, addNotification, navigate, username]);
+  }, [connection, addNotification, username]);
 
   const autoResumeAttempted = useRef(false);
 
@@ -304,12 +307,12 @@ export const useLobbyConnection = ({ mode = "join" }: UseLobbyConnectionOptions)
   }, [isReady, connection, sessionId, username, addNotification]);
 
   const handleSelectQuiz = useCallback(
-    async (quizId: string, quizTitle: string) => {
+    async (quiz: SelectedQuiz) => {
       try {
-        await selectQuiz(sessionId, quizId, quizTitle);
+        await selectQuiz(sessionId, quiz);
         addNotification({
           type: "success",
-          title: `Selected: ${quizTitle}`,
+          title: `Selected: ${quiz.title}`,
         });
       } catch (err) {
         console.error("SelectQuiz failed", err);
@@ -350,6 +353,7 @@ export const useLobbyConnection = ({ mode = "join" }: UseLobbyConnectionOptions)
     setSessionId,
     hasJoined,
     participants,
+    maxPlayers,
     copied,
     isJoining,
     joinError,

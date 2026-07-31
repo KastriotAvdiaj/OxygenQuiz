@@ -22,57 +22,50 @@ export const JoinForm = ({
   onSessionIdChange,
   onJoin,
 }: JoinFormProps) => {
-  return (
-    <div className="max-w-md mx-auto space-y-3 sm:space-y-8">
-      <div className="space-y-2.5 sm:space-y-3">
-        {/* <div className="space-y-1 sm:space-y-1.5">
-          <span className="text-xs sm:text-sm font-bold font-quiz tracking-wide">
-            Joining as
-          </span>
-          <div className="flex h-9 sm:h-10 md:h-11 items-center rounded-md border-2 border-primary/20 bg-muted/40 px-3 text-sm sm:text-base font-bold font-quiz tracking-wide">
-            {username || "…"}
-          </div>
-        </div> */}
+  const isJoinMode = mode === "join";
+  const disabled =
+    !isConnected || !username.trim() || !sessionId.trim() || isJoining;
 
-        {mode === "join" && (
-          <div className="space-y-1 sm:space-y-1.5">
-            <label
-              htmlFor="sessionId"
-              className="text-xs sm:text-sm font-bold font-quiz tracking-wide transition-all"
-            >
-              Room Code
-            </label>
-            <Input
-              variant="minimal"
-              id="sessionId"
-              placeholder="Enter room code"
-              value={sessionId}
-              onChange={(e) => onSessionIdChange(e.target.value.toUpperCase())}
-              onKeyDown={(e) => e.key === "Enter" && onJoin()}
-              disabled={!isConnected}
-              className="h-9 sm:h-10 md:h-11 text-sm sm:text-base tracking-wider border-2 border-primary/20 focus-visible:border-primary transition-all"
-            />
-          </div>
-        )}
-      </div>
+  return (
+    <div className="max-w-md mx-auto space-y-6 sm:space-y-8">
+      {isJoinMode && (
+        // The room code is the whole point of this screen — biggest, most focused element here.
+        <div className="space-y-2 sm:space-y-2.5">
+          <label
+            htmlFor="sessionId"
+            className="block text-center text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground sm:text-sm"
+          >
+            Room Code
+          </label>
+          <Input
+            variant="minimal"
+            id="sessionId"
+            placeholder="XXXXXX"
+            value={sessionId}
+            onChange={(e) => onSessionIdChange(e.target.value.toUpperCase())}
+            onKeyDown={(e) => e.key === "Enter" && onJoin()}
+            disabled={!isConnected}
+            maxLength={6}
+            className="h-16 border-2 font-quiz border-primary/30 text-center text-2xl tracking-[0.3em] transition-all focus-visible:border-primary sm:h-20 sm:text-4xl"
+          />
+        </div>
+      )}
 
       <Button
         onClick={onJoin}
-        disabled={
-          !isConnected || !username.trim() || !sessionId.trim() || isJoining
+        disabled={disabled}
+        size={isJoinMode ? "default" : "lg"}
+        className={
+          isJoinMode
+            ? "mx-auto block h-10 px-8 text-sm font-bold font-quiz tracking-wider text-white"
+            : "w-full h-10 sm:h-11 md:h-12 text-sm sm:text-base md:text-lg font-bold font-quiz tracking-wider shadow-lg hover:translate-y-[-2px] transition-all text-white"
         }
-        className="w-full h-10 sm:h-11 md:h-12 text-sm sm:text-base md:text-lg font-bold font-quiz tracking-wider shadow-lg hover:translate-y-[-2px] transition-all text-white"
-        size="lg"
       >
-        {isJoining
-          ? "Joining..."
-          : mode === "create"
-            ? "Create Lobby"
-            : "Join Lobby"}
+        {isJoining ? "Joining..." : isJoinMode ? "Join Lobby" : "Create Lobby"}
       </Button>
 
       {joinError && (
-        <p className="text-xs sm:text-sm text-destructive mt-2 font-quiz">
+        <p className="text-center text-xs sm:text-sm text-destructive font-quiz">
           {joinError}
         </p>
       )}

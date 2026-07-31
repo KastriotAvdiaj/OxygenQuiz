@@ -2,6 +2,7 @@ import React, { createContext, useEffect, useState, useCallback, useRef } from "
 import * as signalR from "@microsoft/signalr";
 import { getAccessToken } from "@/lib/token-store";
 import { useUser } from "@/lib/Auth";
+import type { SelectedQuiz } from "@/types/quiz-types";
 
 interface MultiplayerContextType {
   connection: signalR.HubConnection | null;
@@ -10,7 +11,7 @@ interface MultiplayerContextType {
   leaveSession: (sessionId: string) => Promise<void>;
   submitAnswer: (sessionId: string, answer: string, clientElapsedMs?: number) => Promise<void>;
   createSession: (sessionId: string, lobbyName: string, maxPlayers: number) => Promise<void>;
-  selectQuiz: (sessionId: string, quizId: string, quizTitle: string) => Promise<void>;
+  selectQuiz: (sessionId: string, quiz: SelectedQuiz) => Promise<void>;
   startMatch: (sessionId: string) => Promise<void>;
   sendLobbyMessage: (sessionId: string, text: string) => Promise<void>;
 }
@@ -114,10 +115,10 @@ export const MultiplayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
   }, []);
 
-  const selectQuiz = useCallback(async (sessionId: string, quizId: string, quizTitle: string) => {
+  const selectQuiz = useCallback(async (sessionId: string, quiz: SelectedQuiz) => {
     if (connectionRef.current && connectionRef.current.state === signalR.HubConnectionState.Connected) {
       try {
-        await connectionRef.current.invoke("SelectQuiz", sessionId, quizId, quizTitle);
+        await connectionRef.current.invoke("SelectQuiz", sessionId, quiz);
       } catch (err) {
         console.error("Error selecting quiz:", err);
         throw new Error("Failed to select quiz. Only the host can select a quiz.");

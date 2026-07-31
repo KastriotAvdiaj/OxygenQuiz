@@ -4,7 +4,7 @@ import { LobbyPageView } from "./LobbyPageView";
 import { QuizSelectionDialogView } from "./components/lobby/quiz-selection-dialog-view";
 import { LobbyChatView } from "./components/lobby/lobby-chat-view";
 import type { Participant } from "./hooks/use-lobby-connection";
-import type { QuizSummaryDTO } from "@/types/quiz-types";
+import type { QuizSummaryDTO, SelectedQuiz } from "@/types/quiz-types";
 import type { LobbyChatMessage } from "./hooks/use-lobby-chat";
 
 /**
@@ -40,6 +40,16 @@ const guestRoster: Participant[] = [
   { username: "Ada", isHost: true, isReady: true, profileImageUrl: demoAvatar },
   { username: "You", isHost: false, isReady: false, profileImageUrl: null },
 ];
+
+// The host's pick as it arrives over SignalR. Category/difficulty are display labels the
+// Game Settings panel renders as chips.
+const chemistryQuiz: SelectedQuiz = {
+  id: "1",
+  title: "Chemistry Basics",
+  category: "Science",
+  difficulty: "Medium",
+  questionCount: 12,
+};
 
 const quizzes: QuizSummaryDTO[] = [
   {
@@ -159,6 +169,7 @@ const meta = {
   args: {
     mode: "join",
     username: "You",
+    maxPlayers: 6,
     copied: false,
     isJoining: false,
     joinError: null,
@@ -221,7 +232,7 @@ export const HostQuizSelectedWaitingForReady: Story = {
     sessionId: "AB12CD",
     participants: mixedReady,
     hasSelectedQuiz: true,
-    selectedQuiz: { id: "1", title: "Chemistry Basics" },
+    selectedQuiz: chemistryQuiz,
     isReady: true,
   },
 };
@@ -232,7 +243,7 @@ export const HostCanStart: Story = {
     sessionId: "AB12CD",
     participants: allReady,
     hasSelectedQuiz: true,
-    selectedQuiz: { id: "1", title: "Chemistry Basics" },
+    selectedQuiz: chemistryQuiz,
     isReady: true,
     allPlayersReady: true,
     canStartQuiz: true,
@@ -257,7 +268,7 @@ export const GuestReadyWaitingForHost: Story = {
     sessionId: "AB12CD",
     participants: guestRoster,
     hasSelectedQuiz: true,
-    selectedQuiz: { id: "1", title: "Chemistry Basics" },
+    selectedQuiz: chemistryQuiz,
     isReady: true,
   },
 };
@@ -279,7 +290,7 @@ export const LeaveConfirmationOpen: Story = {
     sessionId: "AB12CD",
     participants: mixedReady,
     hasSelectedQuiz: true,
-    selectedQuiz: { id: "1", title: "Chemistry Basics" },
+    selectedQuiz: chemistryQuiz,
     manualLeaveDialog: { isOpen: true, onConfirm: fn(), onCancel: fn() },
   },
 };
@@ -291,7 +302,23 @@ export const WithChatConversation: Story = {
     sessionId: "AB12CD",
     participants: mixedReady,
     hasSelectedQuiz: true,
-    selectedQuiz: { id: "1", title: "Chemistry Basics" },
+    selectedQuiz: chemistryQuiz,
     chatSlot: populatedChat,
+  },
+};
+
+// ── A larger lobby (maxPlayers scaled up from the default 6 to 10) ─────────────
+export const ScaledUpToTenPlayers: Story = {
+  args: {
+    hasJoined: true,
+    sessionId: "AB12CD",
+    maxPlayers: 10,
+    participants: [
+      ...mixedReady,
+      { username: "Grace", isHost: false, isReady: true, profileImageUrl: null },
+      { username: "Turing", isHost: false, isReady: false, profileImageUrl: null },
+    ],
+    hasSelectedQuiz: true,
+    selectedQuiz: chemistryQuiz,
   },
 };

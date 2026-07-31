@@ -6,6 +6,7 @@ focused on what matters. When you spot a similar "should fix someday, not now"
 item, add it here instead of letting it float.
 
 **Priority key**
+
 - **P2** — address before / around a public production launch.
 - **P3** — cleanup / nice-to-have; do it when you're in the area.
 
@@ -105,23 +106,23 @@ Auth-specific enhancements are tracked in [authentication.md](../auth/authentica
   maintains its own separate format allow-list (still includes GIF) rather than
   sharing `FileService`'s. Not a vulnerability on its own, but two allow-lists
   for the same concern will eventually disagree.
-  *Fix:* consolidate on one allow-list/service.
+  _Fix:_ consolidate on one allow-list/service.
   → `OxygenBackend/QuizAPI/Controllers/Image/ImageUploadController.cs`
 - **P3 — Speed-bonus latency credit is a fixed 2s a client can under-report into.**
   Scoring trusts a client-reported think time (`ClientElapsedMs`) when it's within
   `MaxLatencyCreditSeconds` of the server's own window — see
   [quiz-grading.md](../quiz/quiz-grading.md#latency-compensated-timing). This is a
   deliberate trade (it stops ping from deciding close matches, and the fallback on
-  any failed check is the server window, so a bad report can never *help*), but a
+  any failed check is the server window, so a bad report can never _help_), but a
   tampered client can still shave up to the full credit off its time: `2 × 500 /
-  timeLimit` points, i.e. ~33 pts on a 30s question but ~100 pts (10% of base) on a
+timeLimit` points, i.e. ~33 pts on a 30s question but ~100 pts (10% of base) on a
   10s one — the fixed credit is proportionally largest exactly where matches are
-  tightest. Changing the *client clock* does nothing (the value is a monotonic
+  tightest. Changing the _client clock_ does nothing (the value is a monotonic
   `performance.now()` delta, never a timestamp), and timeouts/correctness are
   untouched by it.
-  *Fix options, cheapest first:* (1) lower `MaxLatencyCreditSeconds` — config-only,
+  _Fix options, cheapest first:_ (1) lower `MaxLatencyCreditSeconds` — config-only,
   no redeploy; (2) scale it against the question, `min(2s, 10% of timeLimit)`;
-  (3) the principled one — cap the credit at the connection's *measured* RTT
+  (3) the principled one — cap the credit at the connection's _measured_ RTT
   (SignalR already tracks ping) instead of a constant. Consider (3) before any
   competitive ladder or public leaderboard ships.
   → `OxygenBackend/QuizAPI/Services/Scoring/QuizTiming.cs`,
@@ -135,12 +136,21 @@ Auth-specific enhancements are tracked in [authentication.md](../auth/authentica
   unlike the singleplayer experience (`QuestionDisplay` + the per-type answer
   components, `QuizTimer`, `QuestionMedia`). They drift independently and a
   styling change to one silently skips the other.
-  *In progress (2026-06-22):* the multiplayer **question screen** now reuses the
+  _In progress (2026-06-22):_ the multiplayer **question screen** now reuses the
   singleplayer leaf components via an adapter
   (`MultiplayerQuestionView`) + a shared `QuestionCard`. Remaining divergence is
   the inherently multiplayer-only phases (pre-match countdown, between-question
   reveal/scoreboard, final results) — those have no singleplayer equivalent, so
   they stay multiplayer-specific; only their theming should be kept in line.
+  _Redesigned (2026-07-30):_ those multiplayer-only phases (countdown, reveal,
+  final results) got a full visual pass — borders removed, a shared
+  `FloatingAvatarCluster` component now shows live per-player state (idle /
+  submitted / correct / incorrect) across the countdown, question, and reveal
+  phases with submission toasts, and the results screen spotlights the winner's
+  avatar instead of a generic trophy. This is expected, intentional divergence
+  per the note above (multiplayer-only phases, theming-only alignment) — see
+  `src/pages/Quiz/Multiplayer/components/game/floating-avatar-cluster.tsx` and
+  the `MultiplayerGame.stories.tsx` Storybook coverage for the current spec.
   → `src/pages/Quiz/Multiplayer/components/game/`,
   `src/pages/Quiz/Sessions/components/quiz-taking-process/`
 - **P3 — Dead controller.** `AnswerOptionsController.cs` is entirely commented
@@ -153,9 +163,9 @@ Auth-specific enhancements are tracked in [authentication.md](../auth/authentica
   → `OxygenBackend/QuizAPI/Controllers/Quizzes/QuizzesController.cs`
 - **P3 — Create responses omit nested names.** `POST /api/Quiz` and
   `POST /api/QuestionCategories` return blank `category` / `language` / `user`
-  fields, because the service maps the just-created entity *before* EF loads its
+  fields, because the service maps the just-created entity _before_ EF loads its
   navigation properties. (The `GET` detail endpoints return them fully populated,
-  so it's cosmetic.) *Fix:* reload the entity with includes before mapping.
+  so it's cosmetic.) _Fix:_ reload the entity with includes before mapping.
   → `QuizService.CreateQuizAsync`, `QuestionCategoriesController.PostQuestionCategory`
 - **P3 — Quiz delete with sessions → 500.** Deleting a quiz that already has
   sessions/answers throws an FK error surfaced as a generic 500 instead of a
@@ -175,11 +185,11 @@ Auth-specific enhancements are tracked in [authentication.md](../auth/authentica
 - **P3 — `!` on EF navigations can crash after the FK is cleared.** When a
   tracked entity's foreign key is set to `null` and `SaveChanges` runs, EF
   relationship fixup also nulls the matching navigation property. So any
-  `session.CurrentQuizQuestion!.Question`-style read *after* the question is
+  `session.CurrentQuizQuestion!.Question`-style read _after_ the question is
   cleared NREs at runtime — the `!` only silences the compiler, it doesn't guard
   anything. One instance (in `BuildResultDto`, on Incorrect/TimedOut answers) is
   fixed by capturing the question before `ClearCurrentQuestion`, but the
-  null-forgiving pattern recurs across the quiz-session services. *Fix:* audit
+  null-forgiving pattern recurs across the quiz-session services. _Fix:_ audit
   for `!` on EF navigations that are dereferenced after a clear/`SaveChanges`,
   and capture the reference before mutating the FK (or null-check instead of `!`).
   → `OxygenBackend/QuizAPI/Controllers/Quizzes/Services/QuizSessionServices/` (esp.
@@ -192,7 +202,7 @@ Auth-specific enhancements are tracked in [authentication.md](../auth/authentica
   **importable starter files** only (`sample-data/reference-data/` — 24 categories, 6 difficulties,
   4 languages), brought in through the admin Data Import UI. A fresh instance therefore starts with
   an essentially empty set of these lookups until someone imports them. The `DbSeeder` seeds roles,
-  permissions, and a default admin, but deliberately **not** this catalogue data. *Options for later:*
+  permissions, and a default admin, but deliberately **not** this catalogue data. _Options for later:_
   grow the starter files, and/or promote a curated baseline (e.g. the core categories + the six
   difficulty levels) into `DbSeeder` so a brand-new deployment has a sensible catalogue with no manual
   import step. Keep the colour palettes (see `sample-data/reference-data/README.md`) if seeding
@@ -209,28 +219,28 @@ Auth-specific enhancements are tracked in [authentication.md](../auth/authentica
   private at publish time instead of rewriting shared git history.
 - **P3 — Tracked `.env` files.** `.env.production` / `.env.development` are
   tracked despite being listed in `.gitignore`. Only URLs today, but the pattern
-  risks leaking a future secret. *Fix:* `git rm --cached` them.
+  risks leaking a future secret. _Fix:_ `git rm --cached` them.
 - **P2 — Private keys committed to the (public) repo.** `certs/` is tracked and
   contains mkcert **local-dev** material, including private keys:
   `create-ca-key.pem` (the mkcert root CA key) and `create-cert-key.pem`. These
   only cover `localhost` dev HTTPS — **not** the Cloudflare Origin cert, which
-  lives only on the VPS at `/etc/ssl/cloudflare/` and is *not* in git. Limited
+  lives only on the VPS at `/etc/ssl/cloudflare/` and is _not_ in git. Limited
   blast radius (the CA is only trusted on the dev machine that installed it), but
-  a private key must not sit in a public repo. *Fix:* `git rm -r --cached certs/`,
+  a private key must not sit in a public repo. _Fix:_ `git rm -r --cached certs/`,
   add `certs/` to `.gitignore`; then **rotate the mkcert CA** (`mkcert -uninstall`
   → regenerate → recreate localhost certs) so the already-in-history key is
   worthless without a history rewrite. → `certs/`
 - **P3 — Build artifacts tracked again.** `bin/` and `publish/` trees are back
   under source control (e.g. `OxygenBackend/QuizAPI.Tests/bin/…`,
   `OxygenBackend/QuizAPI/publish/publish/…`), despite the earlier cleanup. No
-  secrets in them (config comes from env), but it's repo bloat. *Fix:* untrack and
+  secrets in them (config comes from env), but it's repo bloat. _Fix:_ untrack and
   gitignore `**/bin/`, `**/obj/`, `**/publish/`.
 - **P3 — CRLF/LF line-ending churn on some frontend files.** `src/lib/Api-client.ts`,
   `src/context/multiplayer-context.tsx`, and
   `src/features/notifications/components/use-notification-hub.ts` show whole-file
   diffs (hundreds of lines) even when only a couple of lines changed, because their
   line endings flip between CRLF and LF. Content is identical; the diffs are just
-  noise (and can hide the real change in review). *Fix:* add a `.gitattributes` with
+  noise (and can hide the real change in review). _Fix:_ add a `.gitattributes` with
   `* text=auto eol=lf`, then renormalize once (`git add --renormalize .`).
 
 ## Operations / deployment
@@ -243,7 +253,7 @@ Auth-specific enhancements are tracked in [authentication.md](../auth/authentica
   `https://localhost:7153` (→ `ERR_CONNECTION_REFUSED` / CORS) even though the committed code and
   `.env.production` were correct. The site stayed reachable the whole time because the **custom-domain
   binding** (added via the dashboard) serves the last good assets independently of the failing deploy
-  step. *Fix applied:* added `workers_dev: false` + `custom_domain` `routes` for `oxygenquiz.com` and
+  step. _Fix applied:_ added `workers_dev: false` + `custom_domain` `routes` for `oxygenquiz.com` and
   `www.oxygenquiz.com` to `wrangler.jsonc`, so `wrangler deploy` (and the Git build) now finish and
   promote the new version. → `wrangler.jsonc`
   - **Regressed then re-fixed (2026-07-05).** The `custom_domain` routes above worked for the first
@@ -252,11 +262,11 @@ Auth-specific enhancements are tracked in [authentication.md](../auth/authentica
     Conflict**, aborting with "Some triggers failed to deploy" / "No targets deployed" — so the old
     bundle kept serving again. Confirmed via `WRANGLER_LOG=debug` (the 409 is otherwise hidden behind a
     generic "a request failed"). It is **not** a permissions issue — it fails the same way with a
-    full-rights local login. *Fix:* stop wrangler from managing the domains — **removed the `routes`
+    full-rights local login. _Fix:_ stop wrangler from managing the domains — **removed the `routes`
     block** and set **`workers_dev: true`**. The domains stay attached in the **dashboard** (which serves
     the latest promoted deploy), and the workers.dev URL is the target that lets wrangler promote each
     new version. → `wrangler.jsonc`
-  - **Still worth doing:** pick **one** deploy path (Git-connected build *or* manual `wrangler`, not
+  - **Still worth doing:** pick **one** deploy path (Git-connected build _or_ manual `wrangler`, not
     both racing); always `npm run build` before deploying (the API URL is baked in at build time); after
     a deploy, confirm the newest version is **Active** under Workers & Pages → oxygenquiz → Deployments
     and hard-refresh (Ctrl+Shift+R).
@@ -264,21 +274,27 @@ Auth-specific enhancements are tracked in [authentication.md](../auth/authentica
   AWS hosts (`*.cloudfront.net`, `*.amplifyapp.com`) instead of
   `https://oxygenquiz.com`. Prod works because the compose file injects
   `Cors__AllowedOrigins` via env vars at runtime, but the committed file is
-  misleading. *Fix:* update it to the real domain (or delete the key and rely on
+  misleading. _Fix:_ update it to the real domain (or delete the key and rely on
   the env var). → `OxygenBackend/QuizAPI/appsettings.Production.json`
 - **P2 — EF migrations run at startup.** `context.Database.MigrateAsync()` runs
   on boot; with more than one instance starting together this races. Only matters
-  once you scale past a single instance. *Fix:* run migrations as a one-off step
+  once you scale past a single instance. _Fix:_ run migrations as a one-off step
   in the deploy pipeline. → `OxygenBackend/QuizAPI/Program.cs`
 - **P3 — Single-instance scaling ceiling.** Live match state lives in in-memory
   singletons (`InMemoryQuizSessionManager`, `MatchOrchestrator`), so the backend
   can't be horizontally scaled and a deploy/restart drops in-flight matches.
-  Acceptable at current scale. *Path when needed:* SignalR Redis backplane +
+  Acceptable at current scale. _Path when needed:_ SignalR Redis backplane +
   shared session store; move uploads to object storage.
 - **P3 — Frontend dev-dependency vulnerabilities.** The npm advisories are all in
   `devDependencies` (storybook / vitest tooling) and never ship in the production
   bundle. Clearing them needs a deliberate major storybook/vitest upgrade, which
   is breaking — do it as its own task, not under time pressure.
+
+## Multiplayer / Game State
+
+- **P3 — Lobby full error lacks specific UI feedback.** When an extra person tries to enter a quiz room after the max amount of people is reached, it doesn't specify the reason the app didn't allow them to join. _Related, not fixed (2026-07-30):_ the lobby now knows and displays the real capacity — but the join flow itself still just surfaces the backend's generic `HubException("This lobby is full.")` with no dedicated UI treatment for that failure mode.
+  → `OxygenBackend/QuizAPI/Services/QuizSessionServices/InMemoryQuizSessionManager.cs` (`AddParticipantAsync`), `src/pages/Quiz/Multiplayer/components/join-lobby-dialog.tsx`
+- **P2 — Host cannot start another match after the first one ends.** The app throws the error `"An unexpected error occurred invoking 'StartMatch' on the server. HubException: The match has already started."` after the first quiz game ends and the host tries to start another one from the same session.
 
 ## AI quiz creation (2026-07-17 — see docs/quiz/ai-quiz-architecture.md)
 
@@ -293,7 +309,7 @@ Auth-specific enhancements are tracked in [authentication.md](../auth/authentica
   `QuizzesController` (`ai-import`), `src/pages/Dashboard/Pages/Quiz/api/create-ai-quiz.ts`
 - ~~**P3 — Manual flow silently orphaned questions on quiz-create failure.**~~
   **Improved (2026-07-17).** The manual builder still creates questions first (this is
-  *intentional* — a user's hand-authored questions are worth keeping if the quiz save
+  _intentional_ — a user's hand-authored questions are worth keeping if the quiz save
   fails, and can be reused). The only defect was that the outcome was silent. On failure
   after questions were created, the user is now told their questions were saved to their
   bank and can be reused, instead of a generic error.
@@ -302,7 +318,7 @@ Auth-specific enhancements are tracked in [authentication.md](../auth/authentica
   ~8 files (`types.ts`, `constants.ts`, the quiz context's `getValidationSchema`, three
   create mutations, the display cards, plus the AI feature's `prompt.ts` + `parse-ai-output.ts`),
   and mirror work on the backend (`QuestionDTOs.cs`, `EntityMappers.cs`, `QuestionService`,
-  DbSets). This is a *pre-existing* coupling the AI feature widened by two files. Not worth
+  DbSets). This is a _pre-existing_ coupling the AI feature widened by two files. Not worth
   fixing at the current type count, but the target shape is documented for when it is:
   a per-type **registry** so a new type is one module. See
   [`ai-quiz-architecture.md`](../quiz/ai-quiz-architecture.md) §12.
@@ -320,17 +336,6 @@ Auth-specific enhancements are tracked in [authentication.md](../auth/authentica
 Detailed in [authentication.md](../auth/authentication.md) "Recommended improvements":
 refresh-token reuse detection, "log out everywhere", a stale-token cleanup job,
 and tightening `ClockSkew`. All **P3**.
-
-
-# Quiz full error
-
-When an extra person tries to enter a quiz room after the max amount of people it doesn't specify the reason
-the app didn't allow for them to join.
-
-# Start another quiz game
-
-The app throws this error "An unexpected error occurred invoking 'StartMatch' on the server. HubException: The match has already started."
-after the first quiz game ended and the host tries to start another one.
 
 ## Quiz editing (2026-07-02 — see docs/quiz/quiz-editing.md)
 
@@ -350,7 +355,7 @@ after the first quiz game ended and the host tries to start another one.
   column default (0) to 1. Migration applied cleanly, no errors.
   → `OxygenBackend/QuizAPI/Migrations/20260702170817_QuizEditingVersioning.cs`
 
-- **P3 — Question *content* is not versioned.** Session pinning freezes a quiz's
+- **P3 — Question _content_ is not versioned.** Session pinning freezes a quiz's
   question line-up, order, points and time limits — but `QuestionBase` rows (text,
   answer options, correct answers) are shared across quizzes and unversioned. Editing a
   question's content through the question editor still leaks into in-flight sessions

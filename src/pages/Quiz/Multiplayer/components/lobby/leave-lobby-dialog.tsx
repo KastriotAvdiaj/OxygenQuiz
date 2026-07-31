@@ -30,15 +30,12 @@ export const LeaveLobbyDialog = ({
         onInteractOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
-        {/* Destructive gradient header bar — matches quiz-selection-dialog pattern */}
-        <div className="h-2 w-full bg-gradient-to-r from-destructive via-destructive/30 to-destructive/30" />
-
         <div className="p-4 sm:p-6 space-y-4">
           <DialogHeader className="space-y-3">
             <div className="flex items-center gap-3">
-              <div className="flex-shrink-0 p-2.5 rounded-full bg-destructive/10 border border-destructive/20">
+              {/* <div className="flex-shrink-0 p-2.5 rounded-full bg-destructive/10 border border-destructive/20">
                 <AlertTriangle className="h-5 w-5 text-destructive" />
-              </div>
+              </div> */}
               <DialogTitle className="text-xl font-bold font-quiz tracking-wider text-foreground">
                 Leave Lobby?
               </DialogTitle>

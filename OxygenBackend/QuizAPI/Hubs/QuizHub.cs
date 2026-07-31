@@ -84,6 +84,20 @@ public class QuizHub : Hub<IQuizClient>
         var currentParticipants = await _sessionManager.GetParticipantsAsync(sessionId);
         await Clients.Caller.CurrentParticipants(currentParticipants);
 
+        // 5b. Send the lobby's configured max-player count so the client can render the
+        //     player grid at its real size (empty slots up to the limit).
+        var session = await _sessionManager.GetSessionAsync(sessionId);
+        if (session != null)
+        {
+            await Clients.Caller.LobbySettingsChanged(session.LobbyName, session.MaxPlayers);
+
+            // 5c. Replay the host's quiz pick if one was made before this player arrived —
+            //     QuizSelected is only broadcast at selection time, so without this a late
+            //     joiner sits on "waiting for the host to select a quiz" forever.
+            if (session.SelectedQuiz != null)
+                await Clients.Caller.QuizSelected(session.SelectedQuiz);
+        }
+
         // 6. Send recent lobby chat so the new user has some context.
         var recentMessages = await _sessionManager.GetRecentMessagesAsync(sessionId);
         await Clients.Caller.ChatHistory(recentMessages);
@@ -263,6 +277,7 @@ public class QuizHub : Hub<IQuizClient>
             
             // Send session info to creator
             await Clients.Caller.CurrentParticipants(session.Participants);
+            await Clients.Caller.LobbySettingsChanged(session.LobbyName, session.MaxPlayers);
         }
         catch (InvalidOperationException ex)
         {
@@ -271,7 +286,7 @@ public class QuizHub : Hub<IQuizClient>
         }
     }
 
-    public async Task SelectQuiz(string sessionId, string quizId, string quizTitle)
+    public async Task SelectQuiz(string sessionId, SelectedQuizView quiz)
     {
         // Verify caller is host
         var username = Context.Items["Username"] as string;
@@ -289,7 +304,7 @@ public class QuizHub : Hub<IQuizClient>
         // Validate the selection server-side — never trust the client-supplied quiz id. The host may
         // only host a Public quiz or one they own (see docs/quiz/quiz-visibility.md). This closes the gap
         // where a crafted call could host any quiz regardless of the "public only" picker UI.
-        if (!int.TryParse(quizId, out var parsedQuizId))
+        if (quiz is null || !int.TryParse(quiz.Id, out var parsedQuizId))
             throw new HubException("Invalid quiz.");
 
         var hostUserId = GetUserId();
@@ -300,16 +315,12 @@ public class QuizHub : Hub<IQuizClient>
                 throw new HubException("You can't host this quiz.");
         }
 
-        // Set quiz
-        await _sessionManager.SetQuizAsync(sessionId, quizId);
+        // Set quiz. The whole payload is stored, not just the id, so JoinSession can replay it
+        // to anyone who arrives after this point.
+        await _sessionManager.SetQuizAsync(sessionId, quiz);
 
-        // Broadcast to all participants
-        await Clients.Group(sessionId).QuizSelected(quizId, quizTitle);
-    }
-
-    public async Task StartQuiz(string sessionId, string quizId)
-    {
-        // Verify host? For now assume valid source.
-        await Clients.Group(sessionId).GameStarted(quizId);
+        // Broadcast to all participants. Only the id was authorized above; the title/category/
+        // difficulty ride along purely as display labels (see SelectedQuizView).
+        await Clients.Group(sessionId).QuizSelected(quiz);
     }
 }

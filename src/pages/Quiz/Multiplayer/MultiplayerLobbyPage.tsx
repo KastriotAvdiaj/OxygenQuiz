@@ -20,6 +20,7 @@ export const MultiplayerLobbyPage = ({
     setSessionId,
     hasJoined,
     participants,
+    maxPlayers,
     copied,
     isJoining,
     joinError,
@@ -80,6 +81,7 @@ export const MultiplayerLobbyPage = ({
       sessionId={sessionId}
       hasJoined={hasJoined}
       participants={participants}
+      maxPlayers={maxPlayers}
       copied={copied}
       isJoining={isJoining}
       joinError={joinError}

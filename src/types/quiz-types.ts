@@ -39,6 +39,32 @@ export type QuizSummaryDTO = {
 };
 
 /**
+ * A multiplayer host's quiz pick, as it travels over SignalR (server counterpart:
+ * SelectedQuizView). Only `id` is authorized server-side in QuizHub.SelectQuiz; the other
+ * fields are display labels echoed from the host's picker so guests can render the selection
+ * without each re-fetching the quiz.
+ *
+ * Lives here rather than in the lobby hook because both the transport layer
+ * (multiplayer-context) and the lobby UI need it.
+ */
+export type SelectedQuiz = {
+  id: string;
+  title: string;
+  category?: string | null;
+  difficulty?: string | null;
+  questionCount?: number | null;
+};
+
+/** Narrows a full quiz summary down to the fields the lobby broadcasts. */
+export const toSelectedQuiz = (quiz: QuizSummaryDTO): SelectedQuiz => ({
+  id: quiz.id.toString(),
+  title: quiz.title,
+  category: quiz.category,
+  difficulty: quiz.difficulty,
+  questionCount: quiz.questionCount,
+});
+
+/**
  * Represents a question's configuration within a specific quiz.
  * Named DTO because there's an existing QuizQuestion type for the "new" and existing questions in the questions panel.
  */

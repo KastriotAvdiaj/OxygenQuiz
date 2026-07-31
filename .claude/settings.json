@@ -1,4 +1,7 @@
 {
+  "worktree": {
+    "bgIsolation": "none"
+  },
   "hooks": {
     "PreToolUse": [
       {
@@ -6,7 +9,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "C:\\Users\\Pc\\.local\\bin\\graphify.EXE hook-guard search"
+            "command": "C:UsersPc.local\bingraphify.EXE hook-guard search"
           }
         ]
       },
@@ -15,7 +18,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "C:\\Users\\Pc\\.local\\bin\\graphify.EXE hook-guard read"
+            "command": "C:UsersPc.local\bingraphify.EXE hook-guard read"
           }
         ]
       }

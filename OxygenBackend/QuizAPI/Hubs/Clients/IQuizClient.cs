@@ -11,11 +11,10 @@ public interface IQuizClient
     // Provide full participant info
     Task CurrentParticipants(List<Participant> participants);
     Task PlayerReadyChanged(string username, bool isReady);
-    Task GameStarted(string quizId);
     Task HostChanged(string newHostUsername);
     
     // New events for lobby redesign
-    Task QuizSelected(string quizId, string quizTitle);
+    Task QuizSelected(SelectedQuizView quiz);
     Task LobbySettingsChanged(string lobbyName, int maxPlayers);
 
     // ── Live match events (server-driven; see MatchOrchestrator) ──

@@ -40,9 +40,9 @@ All configuration lives in `.storybook/`:
 
 | File | Responsibility |
 |------|----------------|
-| [`.storybook/main.ts`](../.storybook/main.ts) | Finds stories (`../src/**/*.stories.@(ts\|tsx)`), registers addons, uses the **react-vite** builder. The builder auto-merges our root `vite.config.ts`, so the `@/...` path alias works in stories with **no extra config**. |
-| [`.storybook/preview.tsx`](../.storybook/preview.tsx) | The part that makes stories look like the real app: imports `src/global.css`, applies the `dark`/`light` class on `<html>`, and adds a **theme toggle** to the toolbar. |
-| [`.storybook/preview-head.html`](../.storybook/preview-head.html) | Loads the same Google Fonts as `index.html` (Titillium Web, DynaPuff, …). |
+| [`.storybook/main.ts`](../../.storybook/main.ts) | Finds stories (`../src/**/*.stories.@(ts\|tsx)`), registers addons, uses the **react-vite** builder. The builder auto-merges our root `vite.config.ts`, so the `@/...` path alias works in stories with **no extra config**. |
+| [`.storybook/preview.tsx`](../../.storybook/preview.tsx) | The part that makes stories look like the real app: imports `src/global.css`, applies the `dark`/`light` class on `<html>`, and adds a **theme toggle** to the toolbar. |
+| [`.storybook/preview-head.html`](../../.storybook/preview-head.html) | Loads the same Google Fonts as `index.html` (Titillium Web, DynaPuff, …). |
 
 > **Why this matters:** Storybook renders inside its own iframe. Without `preview.tsx` importing
 > `global.css` and applying the theme class, every `hsl(var(--background))` and `font-header`
@@ -132,15 +132,57 @@ comes in through **props**; it is *not* directly storyable when it fetches its o
 
 Our quiz components are built the right way for this:
 
-- [`QuizInterface`](../src/pages/Quiz/Sessions/components/quiz-taking-process/quiz-interface.tsx)
+- [`QuizInterface`](../../src/pages/Quiz/Sessions/components/quiz-taking-process/quiz-interface.tsx)
   takes `currentQuestion` / `lastAnswerResult` as props — the session fetching lives in the route
   wrapper above it. So we story the whole quiz screen with hand-written fake data.
-- [`MultiplayerGame`](../src/pages/Quiz/Multiplayer/components/game/MultiplayerGame.tsx) takes a
+- [`MultiplayerGame`](../../src/pages/Quiz/Multiplayer/components/game/MultiplayerGame.tsx) takes a
   `match` object as a prop and renders off `match.phase`. The SignalR connection lives in the
   `useMatch` hook, **not** the component — so no server, no second player.
+- [`LobbyPageView`](../../src/pages/Quiz/Multiplayer/LobbyPageView.tsx) is the whole pre-match lobby
+  (room code, CTA, roster, quiz panel, chat) as one prop-driven component; `MultiplayerLobbyPage`
+  is the thin wrapper that calls `useLobbyConnection`/`useMatch` and renders it. See "Splitting a
+  hook-wired component" and "Slot props" below for how it handles the pieces that can't just be
+  props.
 
 > When you build new feature UI, keep fetching in hooks and rendering in prop-driven components.
 > That separation is what makes a page storyable (and easier to test) in the first place.
+
+#### Splitting a hook-wired component: the `*-view.tsx` twin
+
+Existing components aren't always built this way from the start. When a component you need to
+story calls live hooks directly (auth, SignalR, React Query) instead of taking props, split it
+into two files rather than trying to mock the hooks:
+
+- `component-name.tsx` — unchanged public export/props, but now just calls the real hooks and
+  renders `<ComponentNameView {...derivedProps} />`. This is what production imports; nothing
+  that already uses the component needs to change.
+- `component-name-view.tsx` — the actual markup, taking everything as props. This is what gets
+  storied.
+
+We did this for five components that each called live hooks directly (auth, SignalR, a real
+network ping, or React Query): `CreateLobbyDialog`, `JoinLobbyDialog`, `ConnectionStatusBadge`,
+`LobbyChat`, and `QuizSelectionDialog` → their `*-view.tsx` twins. Compare
+[`join-lobby-dialog.tsx`](../../src/pages/Quiz/Multiplayer/components/join-lobby-dialog.tsx) (owns
+`useUser`/`useConnectionStatus`/navigation) against
+[`join-lobby-dialog-view.tsx`](../../src/pages/Quiz/Multiplayer/components/join-lobby-dialog-view.tsx)
+(pure props, storied in `join-lobby-dialog-view.stories.tsx`).
+
+#### Slot props: when a child genuinely can't be prop-driven at the parent level
+
+Sometimes a *page* is prop-driven but a couple of its children legitimately own live state (a
+chat subscription, a live search) that doesn't belong hoisted up into the page's props — that
+would just move the "hook-wired component" problem one level up. `LobbyPageView` takes
+`chatSlot`/`quizSelectionDialogSlot` as `ReactNode` props instead: production passes the real
+`<LobbyChat>`/`<QuizSelectionDialog>` (hook-wired), stories pass `<LobbyChatView>`/
+`<QuizSelectionDialogView>` with fixture data. The page itself never imports the live hooks.
+
+**Gotcha:** if a responsive layout needs a live slot to appear in visually different wrappers at
+different breakpoints (e.g. chat as an always-open `Card` on desktop vs. a collapsible
+`Accordion` on mobile), don't render the slot twice in two CSS-hidden trees — that double-mounts
+whatever live subscription it owns. Pick the wrapper with a JS `matchMedia` check instead, so the
+slot only ever mounts once. The lobby did this until its panel-board redesign gave `chatSlot` one
+wrapper at all breakpoints; see `docs/RESPONSIVE.md` for the rule and why not needing the branch
+beats implementing it.
 
 ### 4. Mock complex props with a typed factory
 
@@ -169,7 +211,7 @@ Two details:
 - Typing the factory as `ReturnType<typeof useMatch>` means **adding a field to the hook makes
   this file fail to compile** until the mock is updated. Contract safety for free.
 
-See the full example: [`MultiplayerGame.stories.tsx`](../src/pages/Quiz/Multiplayer/components/game/MultiplayerGame.stories.tsx).
+See the full example: [`MultiplayerGame.stories.tsx`](../../src/pages/Quiz/Multiplayer/components/game/MultiplayerGame.stories.tsx).
 
 ### 5. Use `render` only when a story needs more than static args
 
@@ -216,9 +258,9 @@ Before you consider a story done:
 ## Troubleshooting
 
 **Components look unstyled / colors and fonts are wrong.**
-The iframe isn't loading global styles. Confirm [`.storybook/preview.tsx`](../.storybook/preview.tsx)
+The iframe isn't loading global styles. Confirm [`.storybook/preview.tsx`](../../.storybook/preview.tsx)
 imports `../src/global.css` and applies the theme class, and that
-[`.storybook/preview-head.html`](../.storybook/preview-head.html) has the font `<link>`s. This is
+[`.storybook/preview-head.html`](../../.storybook/preview-head.html) has the font `<link>`s. This is
 the single most common cause and the reason a previous setup was abandoned.
 
 **`Cannot find module '@/…'` in a story.**
@@ -239,6 +281,8 @@ The component awaits/chains the callback's return. Give the mock a real implemen
 
 Copy from these when writing new stories:
 
-- **Single component** — [`pagination-control.stories.tsx`](../src/components/ui/pagination-control.stories.tsx)
-- **Full page (prop-driven)** — [`quiz-interface.stories.tsx`](../src/pages/Quiz/Sessions/components/quiz-taking-process/quiz-interface.stories.tsx)
-- **Complex/real-time view via a mocked object** — [`MultiplayerGame.stories.tsx`](../src/pages/Quiz/Multiplayer/components/game/MultiplayerGame.stories.tsx)
+- **Single component** — [`pagination-control.stories.tsx`](../../src/components/ui/pagination-control.stories.tsx)
+- **Full page (prop-driven)** — [`quiz-interface.stories.tsx`](../../src/pages/Quiz/Sessions/components/quiz-taking-process/quiz-interface.stories.tsx)
+- **Complex/real-time view via a mocked object** — [`MultiplayerGame.stories.tsx`](../../src/pages/Quiz/Multiplayer/components/game/MultiplayerGame.stories.tsx)
+- **Whole page composed from multiple views + slot props** — [`LobbyPageView.stories.tsx`](../../src/pages/Quiz/Multiplayer/LobbyPageView.stories.tsx)
+- **`*-view.tsx` split off a hook-wired component** — [`join-lobby-dialog-view.stories.tsx`](../../src/pages/Quiz/Multiplayer/components/join-lobby-dialog-view.stories.tsx)

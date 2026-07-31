@@ -142,7 +142,7 @@ public class InMemoryQuizSessionManager : IQuizSessionManager
                 LobbyName = lobbyName,
                 MaxPlayers = maxPlayers,
                 HostUsername = hostUsername,
-                SelectedQuizId = null
+                SelectedQuiz = null
             };
 
             if (!_sessions.TryAdd(sessionId, session))
@@ -168,13 +168,13 @@ public class InMemoryQuizSessionManager : IQuizSessionManager
             return Task.FromResult(session);
         }
 
-        public Task SetQuizAsync(string sessionId, string quizId)
+        public Task SetQuizAsync(string sessionId, SelectedQuizView quiz)
         {
             if (_sessions.TryGetValue(sessionId, out var session))
             {
                 lock (session)
                 {
-                    session.SelectedQuizId = quizId;
+                    session.SelectedQuiz = quiz;
                 }
                 return Task.CompletedTask;
             }

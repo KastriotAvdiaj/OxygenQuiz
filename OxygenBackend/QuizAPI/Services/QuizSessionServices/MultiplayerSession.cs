@@ -9,7 +9,15 @@ namespace QuizAPI.Services.QuizSessionServices
         public string SessionId { get; set; } = string.Empty;
         public string LobbyName { get; set; } = "Quiz Lobby";
         public int MaxPlayers { get; set; } = 4;
-        public string? SelectedQuizId { get; set; } // Nullable - can be set later by host
+        /// <summary>
+        /// The host's current pick, or null until one is made. Held in full (not just the id) so
+        /// a player joining after the host chose can be replayed the same QuizSelected payload
+        /// everyone else already received.
+        /// </summary>
+        public SelectedQuizView? SelectedQuiz { get; set; }
+
+        /// <summary>Convenience accessor for the id alone — what the match loop needs.</summary>
+        public string? SelectedQuizId => SelectedQuiz?.Id;
         public string HostUsername { get; set; } = string.Empty;
         public List<Participant> Participants { get; set; } = new();
         public QuizState QuizState { get; set; } = QuizState.Lobby;
@@ -42,6 +50,21 @@ namespace QuizAPI.Services.QuizSessionServices
         public string ConnectionId { get; set; } = string.Empty;
         /// <summary>The account's avatar at join time; null when the user has none.</summary>
         public string? ProfileImageUrl { get; set; }
+    }
+
+    /// <summary>
+    /// The host's quiz pick, as broadcast to the lobby. Only <see cref="Id"/> is authoritative —
+    /// it's validated against <c>IQuizService.CanHostQuizAsync</c> in <c>QuizHub.SelectQuiz</c>
+    /// before anything is stored or sent. The remaining fields are display labels echoed from the
+    /// host's picker so guests can render the selection without each re-fetching the quiz.
+    /// </summary>
+    public sealed class SelectedQuizView
+    {
+        public string Id { get; init; } = string.Empty;
+        public string Title { get; init; } = string.Empty;
+        public string? Category { get; init; }
+        public string? Difficulty { get; init; }
+        public int? QuestionCount { get; init; }
     }
 
     public enum QuizState

@@ -2,8 +2,7 @@ import { useState, useCallback, useEffect } from "react";
 import { useSearchQuizzes } from "@/pages/Dashboard/Pages/Quiz/api/search-quizzes";
 import { type FilterQuery } from "@/lib/filtering";
 import { pagedResponseToPagination } from "@/lib/pagination-query";
-import type { QuizSummaryDTO } from "@/types/quiz-types";
-import type { SelectedQuiz } from "../../hooks/use-lobby-connection";
+import { toSelectedQuiz, type QuizSummaryDTO, type SelectedQuiz } from "@/types/quiz-types";
 import { SORT_RULES, DEFAULT_SORT } from "@/pages/Quiz/components/quiz-header";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useQuestionCategoryData } from "@/pages/Dashboard/Pages/Question/Entities/Categories/api/get-question-categories";
@@ -19,7 +18,7 @@ const PAGE_SIZE = 12;
 interface QuizSelectionDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onSelectQuiz: (quizId: string, quizTitle: string) => void;
+  onSelectQuiz: (quiz: SelectedQuiz) => void;
   selectedQuiz: SelectedQuiz | null;
 }
 
@@ -77,7 +76,7 @@ export const QuizSelectionDialog = ({
 
   const handleQuizSelect = useCallback(
     (quiz: QuizSummaryDTO) => {
-      onSelectQuiz(quiz.id.toString(), quiz.title);
+      onSelectQuiz(toSelectedQuiz(quiz));
       onClose();
     },
     [onSelectQuiz, onClose]
