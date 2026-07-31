@@ -60,7 +60,8 @@ export type FieldTheme = keyof typeof FIELD_THEMES;
  */
 export const FIELD_MODERN =
   "flex w-full rounded-md border border-border bg-background dark:bg-white/[0.04] " +
-  "px-3.5 py-2.5 font-sans text-[15px] font-normal leading-normal text-foreground shadow-sm " +
+  // text-base below sm so iOS doesn't zoom on focus; the intended 15px resumes at 640px.
+  "px-3.5 py-2.5 font-sans text-base sm:text-[15px] font-normal leading-normal text-foreground shadow-sm " +
   "placeholder:font-normal placeholder:text-muted-foreground " +
   "outline-none transition-[color,background-color,border-color,box-shadow] duration-150 " +
   "hover:border-foreground/25 " +

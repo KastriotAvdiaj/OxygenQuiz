@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useSettingsData } from "./api/get-settings";
 import { useUpdateSettings } from "./api/update-settings";
+import { useUser } from "@/lib/Auth";
 import { UserSettings } from "@/types/settings-types";
 import {
   normalizeFont,
@@ -18,7 +19,12 @@ import {
  * mean "unsaved changes in the section you happen to be looking at".
  */
 export const useSettingsForm = () => {
-  const { data, isLoading, isError } = useSettingsData();
+  // `GET /api/settings` is [Authorize]'d, and this hook runs wherever the account overlay is
+  // mounted — which is `layout.tsx`, i.e. every route including the public home page. The
+  // overlay's own `if (!user)` check happens *after* this call (hooks can't be conditional), so
+  // without this guard an anonymous visitor still fires the request and takes a 401.
+  const { data: user } = useUser();
+  const { data, isLoading, isError } = useSettingsData({ enabled: !!user });
   const updateSettings = useUpdateSettings();
 
   const [form, setForm] = useState<UserSettings | null>(null);

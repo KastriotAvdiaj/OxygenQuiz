@@ -90,15 +90,36 @@ with `env(safe-area-inset-*)`. If you ever add a fixed bottom bar, pad it with
   was deleted. A layout that doesn't change the live child's shell is simpler
   than any correct way of switching it — reach for `matchMedia` only once
   you've established the two shells really must differ.
-- **Drawers/dialogs on phones:** cap width with `max-w-[85vw]` and height with
-  the dvh pair + inner `overflow-y-auto`, so content scrolls instead of pushing
-  actions off-screen (`quiz-start-modal.tsx`).
+- **Drawers/dialogs on phones:** `DialogContent` now carries the phone sizing
+  itself — `w-[calc(100%-2rem)] sm:w-full` (a 1rem gutter each side),
+  `rounded-lg` at every width, and the dvh height cap with `overflow-y-auto`.
+  Individual dialogs no longer need to remember any of it; a dialog that wants
+  its own inner scroll region (`quiz-start-modal.tsx`) still works, because the
+  inner region scrolls first.
+  It was previously `w-full max-w-lg` with `sm:rounded-lg`, so **every** dialog
+  rendered as a full-bleed, square-cornered rectangle touching both edges of a
+  phone — it read as a broken page rather than an overlay. Sheets/drawers still
+  cap with `max-w-[85vw]`.
 - **Fluid type:** scale display text down on phones
   (`text-3xl sm:text-4xl md:text-5xl lg:text-6xl` on the Home hero) and let
   headline rows `flex-wrap` rather than overflow.
 - **Touch targets:** interactive controls ≥ 36px tall (`h-9`), prefer 40–44px
-  for primary actions on mobile. Inputs use ≥16px font (`text-base`/`text-lg`)
-  so iOS doesn't zoom on focus.
+  for primary actions on mobile.
+- **Inputs must be ≥16px on phones, and check where the size actually comes
+  from.** Below 16px, iOS Safari zooms the whole page when the field takes
+  focus, and it does not zoom back out — the page is left scrolled and
+  oversized. The shared fields handle this now: `Input`'s base classes and the
+  textarea use `text-base sm:text-sm`, `FIELD_MODERN` uses
+  `text-base sm:text-[15px]`, and `.minimal-input` is `font-size: 1rem`.
+
+  > **The trap:** this rule was already written here, and `InputField` already
+  > passed `text-base` — but the login/signup fields zoomed anyway for months.
+  > They use `variant="minimal"`, whose styling is the plain `.minimal-input`
+  > rule in `global.css`. That rule sits **outside Tailwind's layers**, so its
+  > `font-size: 0.875rem` beat the utility class silently, along with the
+  > `py-*`/`max-h-none` the same call site passed. A utility class is not proof
+  > of anything if a plain-CSS rule also targets the element — check the
+  > computed style, and put the fix where the losing declaration lives.
 - **Background effects** (`Squares`, `Prism`) are absolutely positioned inside
   the scroll container with `h-full` — one visible viewport, sized by the shell.
   Never `h-screen` (over-measures on mobile).
@@ -141,11 +162,23 @@ polling — the next question's clock starts server-side when the question is
 *served*, so returning after a break legitimately shows a fresh timer on a
 freshly fetched question.
 
+## What changed in the July 31 2026 pass
+
+| Where | Change | Why |
+| --- | --- | --- |
+| `global.css` `.minimal-input` | `font-size` 0.875rem → **1rem**; `max-height` 2.25rem → 2.75rem | 14px made iOS Safari zoom on every login/signup field focus. The `text-base` on the call site was being silently overridden (see the trap note above); the height cap had to rise or the larger text clipped |
+| `form/input.tsx`, `form/textarea.tsx`, `field-variants.ts` | `text-sm` → `text-base sm:text-sm`; `text-[15px]` → `text-base sm:text-[15px]` | Same zoom, every other field in the app. Phones get 16px, desktop keeps its denser size |
+| `ui/dialog/dialog.tsx` | `w-full` → `w-[calc(100%-2rem)] sm:w-full`; `sm:rounded-lg` → `rounded-lg`; added dvh height cap + `overflow-y-auto` | Dialogs were full-bleed square rectangles on phones |
+| `Login.tsx`, `Signup.tsx` | `px-5` → `px-6` on phones | Form ran almost edge to edge; now matches the dialog gutter |
+| `UtilityPages/Error/*`, `NotFound-Content` | `max-w-xs sm:max-w-md`, reduced type/padding below `sm` | Rendered in the display font at desktop sizing, the error card filled a phone screen and read as a broken page |
+
 ## Checklist for new pages/components
 
 1. Page root: `flex-1` (fills screen, can grow). No `h-screen`, no `100vh`, no
    `height: 100%`.
 2. Need to scroll programmatically? `src/lib/app-scroll.ts`.
 3. Fixed-size overlays: `max-w-[85vw]` + dvh height cap + inner scroll.
+   `Dialog` already handles its own phone gutter and height cap.
 4. Mobile-first Tailwind; verify at 360px, 390px, 768px, and desktop.
-5. Touch targets ≥ `h-9`; form inputs ≥ 16px font.
+5. Touch targets ≥ `h-9`; form inputs ≥ 16px font **on phones** — and confirm
+   in devtools' computed styles, not by reading the class list.

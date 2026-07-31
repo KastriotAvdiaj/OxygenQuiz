@@ -24,8 +24,11 @@ const InputField: React.FC<InputFieldProps> = ({
     <Label htmlFor={id} className="text-sm sm:text-lg">
       {label}
     </Label>
-    {/* Compact on phones; text stays ≥16px so iOS doesn't zoom on focus
-        (docs/RESPONSIVE.md). Only used by the login/signup forms. */}
+    {/* Only used by the login/signup forms.
+        NOTE: `variant="minimal"` renders through the plain `.minimal-input` rule in global.css,
+        which sits outside Tailwind's layers and therefore **overrides** the padding, max-height
+        and font-size below. The ≥16px that stops iOS zooming on focus is enforced there, not
+        here — these classes are effectively inert for this variant (docs/RESPONSIVE.md). */}
     <Input
       id={id}
       name={name}

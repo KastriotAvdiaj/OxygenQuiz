@@ -49,7 +49,8 @@ const Signup: React.FC = () => {
       </div>
 
       {/* Right Side - Signup Form */}
-      <div className="flex-1 lg:w-1/2 flex flex-col lg:justify-center px-5 py-4 sm:p-6 lg:p-12 relative">
+      {/* px-6 on phones — see the matching note in Login.tsx. */}
+      <div className="flex-1 lg:w-1/2 flex flex-col lg:justify-center px-6 py-4 sm:p-6 lg:p-12 relative">
         {/* Phone/tablet: controls in a static top row — the old absolute
             overlay sat on top of the "Create Account" heading. */}
         <div className="mb-4 flex items-center justify-between lg:hidden">

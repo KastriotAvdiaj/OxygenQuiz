@@ -343,7 +343,10 @@ body {
 .minimal-input {
   border-radius: 0.3125rem 0.3125rem 0 0;
   box-shadow: 0 2px 5px hsl(var(--muted) / 0.3);
-  max-height: 2.25rem;
+  /* Raised with the font size above: 16px text + 0.75rem padding needs ~2.7rem, and the old
+     2.25rem cap clipped it. Also lands the control at ~44px — the touch-target size
+     docs/RESPONSIVE.md asks for on primary actions. */
+  max-height: 2.75rem;
   background-color: hsl(var(--muted));
   /* Themed fields (--field-accent set by the question card) get a faint wash of their type
      color layered over the opaque muted fill. This is a background-IMAGE, not a
@@ -358,7 +361,12 @@ body {
   transition-duration: 200ms;
   transition-property: background-color;
   color: hsl(var(--foreground));
-  font-size: 0.875rem;
+  /* 16px minimum, and it must live HERE rather than as a Tailwind utility on the element.
+     This rule is plain CSS outside Tailwind's layers, so it beats any `text-base`/`text-lg`
+     class a caller passes — InputField passed `text-base` for exactly this reason and it was
+     silently losing to the old 0.875rem, which is why iOS Safari zoomed the page on focus.
+     Anything below 1rem here reintroduces that zoom on every login/signup/quiz answer field. */
+  font-size: 1rem;
   font-weight: 500;
   padding: 0.75rem;
   width: 100%;

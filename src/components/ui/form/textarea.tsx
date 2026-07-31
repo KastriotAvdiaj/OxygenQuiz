@@ -50,7 +50,8 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
         <textarea
           className={cn(
             // Base styles (common to all variants)
-            "flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 transition-colors",
+            // text-base below sm: iOS zooms on focus under 16px (docs/RESPONSIVE.md).
+            "flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-base sm:text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 transition-colors",
             variant === "default" && ["min-h-[60px]"],
             // Modern settings field (see field-variants.ts) — quiet, theme-aware.
             variant === "settings" && cn(FIELD_MODERN, "min-h-[80px] resize-y"),

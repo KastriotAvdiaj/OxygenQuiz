@@ -14,8 +14,13 @@ export const getSettingsQueryOptions = () =>
     queryFn: getSettings,
   });
 
+/**
+ * `enabled` is spelled out rather than left to `QueryConfig` because callers need it: this
+ * endpoint is [Authorize]'d, and the account overlay that consumes it is mounted app-wide, so it
+ * must not run for anonymous visitors. See `useSettingsForm`.
+ */
 export const useSettingsData = (
-  queryConfig?: QueryConfig<typeof getSettingsQueryOptions>
+  queryConfig?: QueryConfig<typeof getSettingsQueryOptions> & { enabled?: boolean }
 ) =>
   useQuery({
     ...getSettingsQueryOptions(),

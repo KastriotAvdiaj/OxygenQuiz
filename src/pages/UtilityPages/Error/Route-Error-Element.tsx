@@ -33,23 +33,27 @@ const isChunkLoadError = (error: unknown): boolean => {
   );
 };
 
+// Sizing mirrors MainErrorFallback so the two error screens feel like one family on a phone:
+// a compact card with room around it, not a full-bleed page. See that file for the reasoning.
 const StaleVersionNotice = () => (
   <div
-    className={`${getErrorFontClass()} app-shell-viewport flex w-full items-center justify-center bg-background p-4`}
+    className={`${getErrorFontClass()} app-shell-viewport flex w-full items-center justify-center bg-background p-6 sm:p-8`}
     role="alert"
   >
-    <Card className="w-full max-w-md border bg-background text-center shadow-lg dark:border-muted dark:bg-primary/10">
-      <CardHeader>
-        <CardTitle className="text-2xl font-bold">A new version is available</CardTitle>
+    <Card className="w-full max-w-xs border bg-background text-center shadow-lg sm:max-w-md dark:border-muted dark:bg-primary/10">
+      <CardHeader className="p-4 pb-2 sm:p-6 sm:pb-4">
+        <CardTitle className="text-lg font-bold leading-tight sm:text-2xl">
+          A new version is available
+        </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <p className="text-muted-foreground">
+      <CardContent className="space-y-3 p-4 pt-0 sm:space-y-4 sm:p-6 sm:pt-0">
+        <p className="text-xs leading-relaxed text-muted-foreground sm:text-sm">
           The app was updated while this tab was open. Reload to get the latest version —
           your progress is saved.
         </p>
-        <div className="mx-auto w-fit pt-2">
-          <LiftedButton onClick={() => window.location.reload()}>
-            <RefreshCcw className="mr-2 h-4 w-4" />
+        <div className="mx-auto w-fit pt-1 sm:pt-2">
+          <LiftedButton onClick={() => window.location.reload()} className="text-sm sm:text-base">
+            <RefreshCcw className="mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
             Reload
           </LiftedButton>
         </div>

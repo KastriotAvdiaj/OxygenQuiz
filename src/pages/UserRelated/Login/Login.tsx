@@ -102,7 +102,9 @@ const Login: React.FC = () => {
       </div>
 
       {/* Right Side - Login Form */}
-      <div className="flex-1 lg:w-1/2 flex flex-col lg:justify-center px-5 py-4 sm:p-6 lg:p-12 relative">
+      {/* px-6 on phones: px-5 left the form all but touching both edges, which reads as an
+          unstyled page rather than a form. Matches the 1rem gutter DialogContent now uses. */}
+      <div className="flex-1 lg:w-1/2 flex flex-col lg:justify-center px-6 py-4 sm:p-6 lg:p-12 relative">
         {/* Phone/tablet: controls in a static top row — an absolute overlay
             would overlap the heading (see Signup). */}
         <div className="mb-4 flex items-center justify-between lg:hidden">
