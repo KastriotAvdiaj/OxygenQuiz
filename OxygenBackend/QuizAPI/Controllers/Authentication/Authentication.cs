@@ -136,7 +136,17 @@ public class AuthenticationController(
     public async Task<IActionResult> Refresh(CancellationToken ct)
     {
         var raw = Request.Cookies[RefreshCookieName];
-        var result = await _authService.RefreshAsync(raw ?? string.Empty, ct);
+
+        // No cookie is the *normal* state for a signed-out visitor, not an error: the frontend
+        // calls this on load to see whether a session can be resumed. Answer 401 directly rather
+        // than letting the service throw — an exception here still ends as a 401, but only after
+        // ExceptionHandlerMiddleware logs a full stack trace, so routine anonymous traffic used to
+        // bury real failures in the container logs. A *present but invalid* token still throws:
+        // that one is worth seeing.
+        if (string.IsNullOrWhiteSpace(raw))
+            return Unauthorized(new { message = "Missing refresh token." });
+
+        var result = await _authService.RefreshAsync(raw, ct);
         SetRefreshCookie(result.RawRefreshToken, result.RefreshTokenExpiresAt);
         return Ok(result.Response);
     }

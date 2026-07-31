@@ -31,6 +31,19 @@ When any request returns `401`, the response interceptor in `Api-client.ts`:
 4. A single-flight `refreshPromise` means many concurrent 401s share one refresh call.
 5. If refresh fails (no/expired/revoked refresh token) → the access cookie is cleared and the error propagates, sending the user to `/login`.
 
+**Missing cookie vs. bad cookie are handled differently on purpose.** A signed-out visitor has no
+`refresh_token` at all, and the frontend still calls `/refresh` on load to find out whether a
+session can be resumed — so "no cookie" is a routine answer, not a fault. The controller checks for
+it and returns `401` directly. Only a cookie that is *present but invalid* (expired, revoked,
+unknown hash) reaches `RefreshAsync` and throws `UnauthorizedException`.
+
+Both end as a `401` to the client, so nothing about the auth flow changed. The reason it matters is
+logging: an exception is logged by `ExceptionHandlerMiddleware` at `fail` level with a full stack
+trace *before* `GlobalExceptionHandler` converts it. Every anonymous page load was producing ~30
+lines of stack trace in the container logs, which made real errors nearly impossible to spot when
+tailing `docker compose logs -f backend`. Keep this shape in mind elsewhere: **an expected,
+routine outcome should not be signalled with an exception on a hot path.**
+
 ### Logout
 `POST /Authentication/logout` revokes the stored refresh token (`RevokedAt = now`) and clears the cookie; the frontend removes `quiz_app_token` and redirects home.
 

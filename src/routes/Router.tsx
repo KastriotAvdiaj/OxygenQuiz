@@ -187,7 +187,7 @@ const createAppRouter = (queryClient: QueryClient) =>
       ),
     },
     // /multiplayer/create was removed 2026-07-14: the create-lobby dialog on the
-    // multiplayer menu replaced the full-page form (docs/quiz/multiplayer-analysis.md).
+    // multiplayer menu replaced the full-page form (docs/quiz/multiplayer.md).
     {
       path: "/multiplayer/join",
       loader: userAuthLoader(queryClient),

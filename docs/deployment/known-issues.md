@@ -294,7 +294,19 @@ timeLimit` points, i.e. ~33 pts on a 30s question but ~100 pts (10% of base) on 
 
 - **P3 — Lobby full error lacks specific UI feedback.** When an extra person tries to enter a quiz room after the max amount of people is reached, it doesn't specify the reason the app didn't allow them to join. _Related, not fixed (2026-07-30):_ the lobby now knows and displays the real capacity — but the join flow itself still just surfaces the backend's generic `HubException("This lobby is full.")` with no dedicated UI treatment for that failure mode.
   → `OxygenBackend/QuizAPI/Services/QuizSessionServices/InMemoryQuizSessionManager.cs` (`AddParticipantAsync`), `src/pages/Quiz/Multiplayer/components/join-lobby-dialog.tsx`
-- **P2 — Host cannot start another match after the first one ends.** The app throws the error `"An unexpected error occurred invoking 'StartMatch' on the server. HubException: The match has already started."` after the first quiz game ends and the host tries to start another one from the same session.
+- ~~**P2 — Host cannot start another match after the first one ends.**~~ **Fixed (2026-07-31).**
+  `MultiplayerSession.QuizState` only ever moved forward (`Lobby → … → QuizEnded`) and nothing put
+  it back, so `StartMatchAsync`'s `!= QuizState.Lobby` guard rejected every match after the first —
+  one game per lobby, forever. Added `IMatchOrchestrator.ResetToLobbyAsync`, which returns the
+  session to `Lobby` and drops the finished match's runtime state (questions, scores, round
+  answers) while keeping `SelectedQuiz` so a rematch is one click. It runs from `RunMatchAsync`'s
+  **`finally`**, so a match that crashes or is cancelled mid-question also releases the lobby
+  instead of stranding it in `QuestionActive`. The "already started" guard is now **loop liveness**
+  (`MatchCts != null`) rather than the phase enum — using a forward-only phase as a mutex was the
+  root mistake. Ready flags are cleared on reset (broadcast as `PlayerReadyChanged`) so a rematch
+  needs a fresh opt-in. No frontend change was needed. See
+  [`multiplayer.md`](../quiz/multiplayer.md#3-session-lifecycle).
+  → `OxygenBackend/QuizAPI/Services/QuizSessionServices/MatchOrchestrator.cs`, `IMatchOrchestrator.cs`
 
 ## AI quiz creation (2026-07-17 — see docs/quiz/ai-quiz-architecture.md)
 

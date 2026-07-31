@@ -47,8 +47,16 @@ namespace QuizAPI.Services.QuizSessionServices
             var session = await _sessions.GetSessionAsync(sessionId)
                 ?? throw new InvalidOperationException("Lobby not found.");
 
-            if (session.QuizState != QuizState.Lobby)
+            // A *running loop* is the real "already started" condition — not the QuizState. State
+            // alone would reject every match after the first: the loop leaves the session in
+            // QuizEnded (or wherever it crashed), and nothing used to put it back to Lobby.
+            if (session.MatchCts != null)
                 throw new InvalidOperationException("The match has already started.");
+
+            // Safety net for a session left dirty by a loop that died without running its cleanup.
+            // The normal path is already reset by RunMatchAsync's finally block.
+            if (session.QuizState != QuizState.Lobby)
+                await ResetToLobbyAsync(sessionId);
 
             if (string.IsNullOrEmpty(session.SelectedQuizId) || !int.TryParse(session.SelectedQuizId, out var quizId))
                 throw new InvalidOperationException("Pick a quiz before starting.");
@@ -78,6 +86,40 @@ namespace QuizAPI.Services.QuizSessionServices
             // Fire-and-forget the loop; it owns its own lifetime via the session's CTS.
             var token = session.MatchCts.Token;
             _ = Task.Run(() => RunMatchAsync(sessionId, token));
+        }
+
+        /// <inheritdoc />
+        public async Task ResetToLobbyAsync(string sessionId)
+        {
+            var session = await _sessions.GetSessionAsync(sessionId);
+            if (session == null)
+                return;
+
+            // Don't yank state out from under a live loop.
+            if (session.MatchCts != null)
+                return;
+
+            session.QuizState = QuizState.Lobby;
+            session.Questions = new List<RoundQuestion>();
+            session.CurrentQuestionIndex = 0;
+            session.QuestionStartTime = default;
+            session.QuestionDeadlineUtc = default;
+            session.CurrentRoundAnswers.Clear();
+            session.PlayerScores.Clear();
+            session.PlayerCorrect.Clear();
+            session.PlayerAnswers.Clear();
+
+            // Un-ready everyone: a rematch should need a fresh opt-in, not fire the instant the
+            // final scoreboard renders while someone is still reading it. Broadcast each change so
+            // the clients' rosters (which track ready state locally) don't drift from the server.
+            var participants = await _sessions.GetParticipantsAsync(sessionId);
+            foreach (var participant in participants.Where(p => p.IsReady))
+            {
+                await _sessions.SetPlayerReadyAsync(sessionId, participant.Username, false);
+                await _hub.Clients.Group(sessionId).PlayerReadyChanged(participant.Username, false);
+            }
+
+            _logger.LogInformation("Session {SessionId} returned to the lobby.", sessionId);
         }
 
         private async Task RunMatchAsync(string sessionId, CancellationToken ct)
@@ -135,6 +177,12 @@ namespace QuizAPI.Services.QuizSessionServices
                     session.MatchCts?.Dispose();
                     session.MatchCts = null;
                 }
+
+                // Hand the lobby back in a startable state. This lives in `finally`, after the CTS
+                // is cleared, so it runs for a crashed or cancelled match too — otherwise the
+                // session would sit in QuestionActive/QuizEnded and every later StartMatch would
+                // fail with "The match has already started."
+                await ResetToLobbyAsync(sessionId);
             }
         }
 

@@ -1,6 +1,10 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Crown, Check } from "lucide-react";
 import type { Participant } from "../../hooks/use-lobby-connection";
 
@@ -18,9 +22,15 @@ export const ParticipantCard = ({
   return (
     <div className="flex w-[4.5rem] flex-col items-center gap-1 lg:w-[5.5rem]">
       <div className="relative">
+        {/* Both states carry the same ring geometry so readying up changes only its colour, never
+            the avatar's size or position (same rule as the Ready button in lobby-actions.tsx).
+            Not-ready is a muted grey rather than transparent, so an empty slot and an un-readied
+            player stay visually distinct.
+            Alternatives if the grey reads too faint / too loud: ring-muted-foreground/25,
+            ring-border, or ring-primary/40 for the blue version. */}
         <Avatar
           className={`h-10 w-10 ring-2 ring-offset-2 ring-offset-background transition-colors lg:h-14 lg:w-14 ${
-            participant.isReady ? "ring-emerald-500" : "ring-transparent"
+            participant.isReady ? "ring-emerald-500" : "ring-muted-foreground/40"
           }`}
         >
           <AvatarImage
@@ -28,7 +38,9 @@ export const ParticipantCard = ({
             alt={`${participant.username}'s avatar`}
           />
           <AvatarFallback className={`${avatarColor} text-white font-bold`}>
-            {participant.username ? participant.username.charAt(0).toUpperCase() : "?"}
+            {participant.username
+              ? participant.username.charAt(0).toUpperCase()
+              : "?"}
           </AvatarFallback>
         </Avatar>
 
@@ -55,7 +67,10 @@ export const ParticipantCard = ({
           {participant.username}
         </p>
         {isCurrentUser && (
-          <Badge variant="secondary" className="mt-0.5 h-4 px-1.5 text-[9px] font-bold">
+          <Badge
+            variant="secondary"
+            className="mt-0.5 h-4 px-1.5 text-[9px] font-bold"
+          >
             YOU
           </Badge>
         )}

@@ -36,5 +36,12 @@ back to a fragile `sessionStorage` resume. Net effect: a typed code often failed
 invite link (which uses `?code=`) worked. Consolidating the join into the lobby page — reading the
 route param and auto-joining once connected — makes both paths identical.
 
-> Related: `src/pages/Quiz/Multiplayer/improvements.md` previously noted the duplicated join logic
-> between the dialog and the lobby's `JoinForm`; that duplication is now removed.
+## Related
+
+- [`multiplayer.md`](./multiplayer.md) — the feature reference this flow is one part of:
+  architecture, session lifecycle, and the full hub/event API. In particular, `JoinSession`'s
+  catch-up sends (roster, capacity, quiz pick, chat history) and the **late-joiner rule** are
+  documented there.
+
+> The since-deleted `src/pages/Quiz/Multiplayer/improvements.md` previously noted the duplicated
+> join logic between the dialog and the lobby's `JoinForm`; that duplication is now removed.

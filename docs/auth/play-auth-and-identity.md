@@ -131,8 +131,8 @@ After (A)+(B), the host is whoever created the lobby, named by their real userna
   scope here, but note it (could block or suffix).
 - **Require confirmed email to host?** Optional tie-in with
   [`email-verification.md`](email-verification.md) — gate *hosting* on `EmailConfirmed`.
-- **Hardcoded hub URL** (`https://localhost:7153` in `multiplayer-context.tsx`) should move to
-  an env var while we're in this file (tracked in `multiplayer-analysis.md`).
+- ~~**Hardcoded hub URL**~~ — **done.** `multiplayer-context.tsx` now derives the hub origin from
+  `VITE_API_URL` (stripping the `/api` suffix), so dev and prod resolve automatically.
 
 ## Files to touch
 
@@ -169,6 +169,6 @@ After (A)+(B), the host is whoever created the lobby, named by their real userna
 ## Related
 
 - [`authentication.md`](authentication.md) — `userAuthLoader`, `redirectTo`, the JWT claims.
-- [`multiplayer-analysis.md`](../quiz/multiplayer-analysis.md) — broader multiplayer overview (notes
-  "No security/authentication" as a known limitation; this doc is that plan).
+- [`multiplayer.md`](../quiz/multiplayer.md) — the multiplayer feature reference (architecture,
+  session lifecycle, hub/event API). This doc is the auth plan it points back to.
 - [`email-verification.md`](email-verification.md) — optional host gate.

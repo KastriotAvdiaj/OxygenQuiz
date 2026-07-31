@@ -224,6 +224,9 @@ stores the player's reported `ClientElapsedMs` on the `RoundAnswer`, and `BuildU
 through `QuizTiming.EffectiveElapsed` at grading time. The round deadline stays on the server
 clock, so a client report can never resurrect a late answer.
 
+For the match loop around this — lobby lifecycle, the round timing constants, and the hub/event
+API — see [multiplayer.md](multiplayer.md).
+
 ## Where scores are read back
 
 Completed sessions and their answers feed the profile history and player statistics —
