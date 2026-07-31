@@ -7,7 +7,6 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { AlertTriangle } from "lucide-react";
 
 interface LeaveLobbyDialogProps {
   isOpen: boolean;
