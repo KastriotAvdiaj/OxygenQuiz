@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Plus } from "lucide-react";
 import { QuestionType } from "@/types/question-types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -96,8 +96,25 @@ const SelectQuestionComponent: React.FC<SelectQuestionComponentProps> = ({
     setCurrentPage(1);
   }, [debouncedSearchTerm, selectedCategoryIds, selectedDifficultyIds, selectedLanguageIds, activeTab]);
 
-  const handleOpen = () => { setOpen(true); setQuestionModalOpen(true); };
-  const handleClose = () => { setOpen(false); setQuestionModalOpen(false); };
+  // The context's modal flag is what actually enables selection — CommonSelectQuestionCard
+  // disables every checkbox while it's false. It must track the dialog's real visibility, not
+  // the act of clicking a trigger: in controlled mode the parent owns `open` and flips it
+  // directly (the pool dialog is opened from a Popover menu item, which never calls
+  // handleOpen), so tying the flag to handleOpen alone left the dialog open with every
+  // question un-selectable.
+  const syncedOpen = useRef(isOpen);
+  useEffect(() => {
+    if (syncedOpen.current === isOpen) return;
+    syncedOpen.current = isOpen;
+    setQuestionModalOpen(isOpen);
+    // setQuestionModalOpen is re-created on every provider render, so depending on it here
+    // would re-run this effect forever. `isOpen` is the only real input.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
+
+  // Closing goes through the same effect, which is also what clears the temp selection.
+  const handleOpen = () => setOpen(true);
+  const handleClose = () => setOpen(false);
   const handleAddSelectedQuestions = () => { commitTempSelection(); handleClose(); };
   const handleCancel = () => { clearTempSelection(); handleClose(); };
 

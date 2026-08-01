@@ -153,6 +153,20 @@ timeLimit` points, i.e. ~33 pts on a 30s question but ~100 pts (10% of base) on 
   the `MultiplayerGame.stories.tsx` Storybook coverage for the current spec.
   → `src/pages/Quiz/Multiplayer/components/game/`,
   `src/pages/Quiz/Sessions/components/quiz-taking-process/`
+- ~~**P1 — Questions could not be selected from the public pool.**~~ **Fixed (2026-07-31).**
+  Every checkbox in the "Select Questions from Pool" dialog rendered disabled, so the manual quiz
+  builder could not reuse an existing question at all — only newly authored ones.
+  `CommonSelectQuestionCard` gates selection on the quiz context's `isQuestionModalOpen`
+  (`disabled={finalSelectionDisabled || !isQuestionModalOpen}`), and that flag was only ever set
+  by `SelectQuestionComponent`'s internal `handleOpen`. When the trigger moved into the "add
+  question" Popover, the dialog became **controlled** — `create-quiz.tsx` renders it with
+  `open={isPoolOpen}` and the menu item calls `setIsPoolOpen(true)` directly, which never reaches
+  `handleOpen`. In that path the component renders no trigger of its own, so the flag stayed
+  `false`: dialog open, everything un-selectable, `cursor-not-allowed` on every row.
+  Fixed by syncing the context flag to the dialog's actual visibility with an effect on `isOpen`,
+  rather than to the act of clicking a trigger, so the controlled and uncontrolled paths behave
+  identically.
+  → `src/pages/Dashboard/Pages/Quiz/components/Create-Quiz-Form/components/question-select/question-select.tsx`
 - **P3 — Dead controller.** `AnswerOptionsController.cs` is entirely commented
   out (no live route). Delete the file.
   → `OxygenBackend/QuizAPI/Controllers/Questions/AnswerOptionsController.cs`
