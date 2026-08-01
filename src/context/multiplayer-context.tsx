@@ -4,10 +4,42 @@ import { getAccessToken } from "@/lib/token-store";
 import { useUser } from "@/lib/Auth";
 import type { SelectedQuiz } from "@/types/quiz-types";
 
+/** Stable cause codes mirroring `JoinFailureReason` on the server. */
+export type JoinFailureReason = "not-found" | "full";
+
+/**
+ * Result of `CheckSession` — the pre-flight room-code lookup the join dialog runs before it
+ * navigates. Advisory: the lobby can fill between this call and the join, so `JoinSession` still
+ * re-checks. See docs/quiz/multiplayer-join.md.
+ */
+export interface SessionAvailability {
+  canJoin: boolean;
+  reason: JoinFailureReason | null;
+  message: string | null;
+  /** A match is already running. Informational — joining mid-match is allowed. */
+  inProgress: boolean;
+  lobbyName: string;
+  participantCount: number;
+  maxPlayers: number;
+}
+
+/**
+ * SignalR surfaces a server-side `HubException` as an Error whose message is the hub's own text,
+ * prefixed. Strip the prefix so the UI shows the sentence the server wrote; return the fallback for
+ * transport failures, which carry no useful message.
+ */
+const hubErrorMessage = (err: unknown, fallback: string): string => {
+  const raw = err instanceof Error ? err.message : "";
+  const cleaned = raw.replace(/^.*HubException:\s*/, "").trim();
+  if (!cleaned || /an unexpected error occurred/i.test(cleaned)) return fallback;
+  return cleaned;
+};
+
 interface MultiplayerContextType {
   connection: signalR.HubConnection | null;
   isConnected: boolean;
   joinSession: (sessionId: string) => Promise<void>;
+  checkSession: (sessionId: string) => Promise<SessionAvailability>;
   leaveSession: (sessionId: string) => Promise<void>;
   submitAnswer: (sessionId: string, answer: string, clientElapsedMs?: number) => Promise<void>;
   createSession: (sessionId: string, lobbyName: string, maxPlayers: number) => Promise<void>;
@@ -71,10 +103,28 @@ export const MultiplayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
          await connectionRef.current.invoke("JoinSession", sessionId);
       } catch (err) {
         console.error("Error joining session:", err);
-        throw new Error("Failed to join session. The room may not exist.");
+        // Relay the hub's own message. It used to be replaced with a hardcoded "The room may not
+        // exist.", which reported a *full* lobby as a missing one — the hub now throws HubException
+        // with the real cause (see QuizHub.JoinSession), so pass it through and only fall back when
+        // there's nothing usable.
+        throw new Error(hubErrorMessage(err, "Couldn't join that lobby. Please try again."));
       }
     } else {
       throw new Error("Not connected to server. Please refresh and try again.");
+    }
+  }, []);
+
+  const checkSession = useCallback(async (sessionId: string): Promise<SessionAvailability> => {
+    if (!connectionRef.current || connectionRef.current.state !== signalR.HubConnectionState.Connected) {
+      throw new Error("Not connected to server. Please refresh and try again.");
+    }
+    try {
+      return await connectionRef.current.invoke<SessionAvailability>("CheckSession", sessionId);
+    } catch (err) {
+      console.error("Error checking session:", err);
+      // A rejected code comes back as a normal result (canJoin: false), so a throw here is a
+      // transport or auth problem — not something about the code the user typed.
+      throw new Error(hubErrorMessage(err, "Couldn't reach the server. Please try again."));
     }
   }, []);
 
@@ -134,8 +184,10 @@ export const MultiplayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
         await connectionRef.current.invoke("StartMatch", sessionId);
       } catch (err) {
         console.error("Error starting match:", err);
-        // Surface the server's reason (e.g. "Need at least 2 players to start.").
-        throw new Error(err instanceof Error ? err.message : "Failed to start the match.");
+        // Surface the server's reason (e.g. "Need at least 2 players to start."). Raw err.message
+        // carries SignalR's "An unexpected error occurred invoking 'StartMatch'… HubException:"
+        // wrapper, so it goes through the same unwrap as joinSession.
+        throw new Error(hubErrorMessage(err, "Failed to start the match."));
       }
     } else {
       throw new Error("Not connected to server. Please refresh and try again.");
@@ -148,13 +200,13 @@ export const MultiplayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
         await connectionRef.current.invoke("SendLobbyMessage", sessionId, text);
       } catch (err) {
         console.error("Error sending chat message:", err);
-        throw new Error(err instanceof Error ? err.message : "Failed to send message.");
+        throw new Error(hubErrorMessage(err, "Failed to send message."));
       }
     }
   }, []);
 
   return (
-    <MultiplayerContext.Provider value={{ connection, isConnected, joinSession, leaveSession, submitAnswer, createSession, selectQuiz, startMatch, sendLobbyMessage }}>
+    <MultiplayerContext.Provider value={{ connection, isConnected, joinSession, checkSession, leaveSession, submitAnswer, createSession, selectQuiz, startMatch, sendLobbyMessage }}>
       {children}
     </MultiplayerContext.Provider>
   );

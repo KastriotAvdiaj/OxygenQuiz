@@ -18,6 +18,8 @@ export interface JoinLobbyDialogViewProps {
   roomCode: string;
   onRoomCodeChange: (value: string) => void;
   error: string | null;
+  /** True while the room code is being verified against the server, before navigating. */
+  isChecking?: boolean;
   connectionStatus: ConnectionStatus;
   onJoin: () => void;
   onCancel: () => void;
@@ -36,11 +38,12 @@ export const JoinLobbyDialogView = ({
   roomCode,
   onRoomCodeChange,
   error,
+  isChecking = false,
   connectionStatus,
   onJoin,
   onCancel,
 }: JoinLobbyDialogViewProps) => {
-  const canJoin = connectionStatus.status === "connected";
+  const canJoin = connectionStatus.status === "connected" && !isChecking;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -49,9 +52,9 @@ export const JoinLobbyDialogView = ({
           <DialogTitle className="text-2xl font-bold text-center tracking-wider">
             Join Quiz Lobby
           </DialogTitle>
-          <DialogDescription className="text-center">
+          {/* <DialogDescription className="text-center">
             Enter the room code to join
-          </DialogDescription>
+          </DialogDescription> */}
         </DialogHeader>
 
         <div className="py-4 space-y-4 font-quiz">
@@ -68,7 +71,7 @@ export const JoinLobbyDialogView = ({
 
           <div className="space-y-2">
             <label className="block text-center text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">
-              Room Code
+              Enter the room code to join
             </label>
             <Input
               type="text"
@@ -76,13 +79,18 @@ export const JoinLobbyDialogView = ({
               placeholder="XXXXXX"
               value={roomCode}
               onChange={(e) => onRoomCodeChange(e.target.value.toUpperCase())}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && canJoin && roomCode.trim()) onJoin();
+              }}
+              disabled={isChecking}
               className="h-16 border-2 border-primary/30 text-center text-2xl font-extrabold tracking-[0.3em] uppercase transition-all focus-visible:border-primary"
               maxLength={6}
             />
           </div>
 
           <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
-            Joining as <span className="font-bold text-foreground">{username || "…"}</span>
+            Joining as{" "}
+            <span className="font-bold text-foreground">{username || "…"}</span>
           </div>
 
           {error && (
@@ -105,9 +113,10 @@ export const JoinLobbyDialogView = ({
             type="button"
             onClick={onJoin}
             disabled={!canJoin || !roomCode.trim()}
+            isPending={isChecking}
             className="w-full sm:w-auto font-bold font-quiz text-white rounded-md"
           >
-            Join Lobby
+            {isChecking ? "Checking…" : "Join Lobby"}
           </LiftedButton>
         </DialogFooter>
       </DialogContent>

@@ -42,11 +42,15 @@ const TYPE_SPECS: Record<QuestionType, string> = {
     At least one option MUST have "isCorrect": true.`,
   [QuestionType.TrueFalse]: `  - "TrueFalse" also requires:
       "correctAnswer": boolean (true or false, not a string)`,
+  // "allowPartialMatch" is deliberately NOT requested. It is a grading rule, not a property of
+  // the question's content, and the model has no basis for choosing it — asked without guidance it
+  // set the flag arbitrarily, and since partial matching actually grades (2026-07-31) that
+  // silently made short answers guessable. The author turns it on during review if they want it.
+  // See docs/quiz/typed-answer-matching.md.
   [QuestionType.TypeTheAnswer]: `  - "TypeTheAnswer" also requires:
       "correctAnswer": string (the canonical answer, kept short — a word or short phrase)
       "acceptableAnswers": array of strings (other spellings/synonyms you would accept; may be empty)
-      "isCaseSensitive": boolean (almost always false)
-      "allowPartialMatch": boolean`,
+      "isCaseSensitive": boolean (almost always false)`,
 };
 
 export const buildPrompt = ({

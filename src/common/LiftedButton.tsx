@@ -134,6 +134,9 @@ export const LiftedButton = React.forwardRef<
           "focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary",
           // brightness-110 reads as a "shine" — keep it in light mode only
           !isDisabled && "cursor-pointer hover:brightness-110 dark:hover:brightness-100",
+          // Disabled keeps the exact resting appearance — only the interactions
+          // drop away. Dimming individual layers would let the darker edge and
+          // shadow bleed through the front face, which reads as a rendering bug.
           isDisabled && "cursor-not-allowed",
           outerClassName
         )}
@@ -157,8 +160,7 @@ export const LiftedButton = React.forwardRef<
             rounded,
             shadow.rest,
             `transition-transform [transition-duration:600ms] ${springOut}`,
-            !isDisabled && cn(shadow.hover, shadow.active, springHover, snapActive),
-            isDisabled && "opacity-50"
+            !isDisabled && cn(shadow.hover, shadow.active, springHover, snapActive)
           )}
         />
         {/* Edge */}
@@ -166,8 +168,7 @@ export const LiftedButton = React.forwardRef<
           className={cn(
             "absolute inset-0",
             rounded,
-            backgroundColorForBorder ? backgroundColorForBorder : edgeGradient,
-            isDisabled && "opacity-50"
+            backgroundColorForBorder ? backgroundColorForBorder : edgeGradient
           )}
         />
         {/* Front */}
@@ -179,7 +180,6 @@ export const LiftedButton = React.forwardRef<
             front.rest,
             `transition-transform [transition-duration:600ms] ${springOut}`,
             !isDisabled && cn(front.hover, front.active, springHover, snapActive),
-            isDisabled && "opacity-70",
             className
           )}
         >

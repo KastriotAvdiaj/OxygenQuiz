@@ -30,6 +30,15 @@ namespace QuizAPI.Repositories.Interfaces
         Task<Guid?> GetOwnerIdAsync(int id, CancellationToken ct = default);
         Task<bool> IsUsedInAnyQuizAsync(int id, CancellationToken ct = default);
 
+        /// <summary>
+        /// Display names of the referenced category and language; either is null when that id
+        /// doesn't exist. The service uses this to reject the seeded "Unspecified" rows **by name**
+        /// rather than by a hard-coded id, matching the frontend's `isUnspecifiedLookup` — row
+        /// ordering isn't guaranteed across environments. See docs/quiz/quiz-question-classification.md.
+        /// </summary>
+        Task<(string? Category, string? Language)> GetClassificationNamesAsync(
+            int categoryId, int languageId, CancellationToken ct = default);
+
         // ── Tracked reads for mutation ────────────────────────────────────────────
         // When ownerId is supplied the lookup is clamped to that owner (used to enforce
         // "you may only edit your own" without a separate query).

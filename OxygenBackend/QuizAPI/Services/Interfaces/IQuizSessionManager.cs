@@ -5,6 +5,8 @@ namespace QuizAPI.Services.Interfaces;
 public interface IQuizSessionManager
 {
     Task<Participant> AddParticipantAsync(string sessionId, string username, string connectionId, string? profileImageUrl = null);
+    /// <summary>Non-mutating pre-flight check for a room code, used by the join dialog.</summary>
+    Task<SessionAvailability> CheckSessionAsync(string sessionId, string username);
     Task RemoveParticipantAsync(string sessionId, string username);
     Task<List<Participant>> GetParticipantsAsync(string sessionId);
     Task SetPlayerReadyAsync(string sessionId, string username, bool isReady);
@@ -18,5 +20,12 @@ public interface IQuizSessionManager
 
     // Ephemeral lobby chat (in-memory, capped buffer).
     Task<LobbyChatMessage> AddChatMessageAsync(string sessionId, string username, string text, bool isSystem = false);
-    Task<IReadOnlyList<LobbyChatMessage>> GetRecentMessagesAsync(string sessionId);
+
+    /// <summary>
+    /// The chat catch-up for one participant: only messages sent at or after their
+    /// <see cref="Participant.FirstJoinedAt"/>. A new arrival gets nothing that was said before
+    /// they were in the room; a reconnecting participant gets back what they had. Returns empty
+    /// for an unknown session or a caller who isn't on the roster.
+    /// </summary>
+    Task<IReadOnlyList<LobbyChatMessage>> GetMessagesSinceJoinAsync(string sessionId, string username);
 }

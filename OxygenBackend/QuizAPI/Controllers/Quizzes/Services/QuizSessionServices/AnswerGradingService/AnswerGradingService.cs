@@ -6,6 +6,7 @@ using QuizAPI.DTOs.Quiz;
 using QuizAPI.ManyToManyTables;
 using QuizAPI.Models;
 using QuizAPI.Models.Quiz;
+using QuizAPI.Services.Grading;
 using QuizAPI.Services.Scoring;
 
 namespace QuizAPI.Controllers.Quizzes.Services.AnswerGradingServices
@@ -271,15 +272,9 @@ namespace QuizAPI.Controllers.Quizzes.Services.AnswerGradingServices
                     return tfq.CorrectAnswer == submittedBool;
 
                 case TypeTheAnswerQuestion taq:
-                    var comparison = taq.IsCaseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
-                    bool isExactMatch = string.Equals(taq.CorrectAnswer, answer.SubmittedAnswer, comparison);
-
-                    if (!isExactMatch && taq.AcceptableAnswers.Any())
-                    {
-                        return taq.AcceptableAnswers.Any(acceptable =>
-                            string.Equals(acceptable, answer.SubmittedAnswer, comparison));
-                    }
-                    return isExactMatch;
+                    // Shared with the question-preview grader so "test this question" can't disagree
+                    // with playing it. See TypeTheAnswerMatcher.
+                    return TypeTheAnswerMatcher.IsCorrect(taq, answer.SubmittedAnswer);
 
                 default:
                     _logger.LogWarning("Unknown question type: {QuestionType}", question.GetType().Name);

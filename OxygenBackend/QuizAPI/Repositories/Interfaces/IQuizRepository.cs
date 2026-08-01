@@ -49,6 +49,15 @@ namespace QuizAPI.Repositories.Interfaces
         Task<bool> ReferencedEntitiesExistAsync(
             int categoryId, int languageId, int difficultyId, Guid? userId = null, CancellationToken ct = default);
 
+        /// <summary>
+        /// Display names of the referenced category and language; null when the id doesn't exist.
+        /// The AI import uses this to refuse a quiz whose classification is the seeded
+        /// "Unspecified" row — its questions inherit those values, and a question may never be
+        /// stored as Unspecified (docs/quiz/quiz-question-classification.md).
+        /// </summary>
+        Task<(string? Category, string? Language)> GetClassificationNamesAsync(
+            int categoryId, int languageId, CancellationToken ct = default);
+
         /// <summary>True if every distinct id in <paramref name="questionIds"/> exists.</summary>
         Task<bool> AllQuestionsExistAsync(IReadOnlyCollection<int> questionIds, CancellationToken ct = default);
 

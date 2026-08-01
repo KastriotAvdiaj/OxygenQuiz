@@ -4,6 +4,12 @@ Status: Phase 0 + Phase 1 implemented. Phases 1.5 and 2 not started.
 Owner: Kastriot
 Last updated: 2026-07-17
 
+> **This is the original plan, kept as written.** Where the shipped code has since diverged,
+> [`ai-quiz-architecture.md`](./ai-quiz-architecture.md) is the current description. One divergence
+> worth knowing while reading §5 and §6.2 below: the prompt no longer requests
+> `allowPartialMatch` and the parser hard-codes it to `false` — grading rules are the author's, not
+> the model's (see [`typed-answer-matching.md`](./typed-answer-matching.md)).
+
 ---
 
 ## 1. Goal

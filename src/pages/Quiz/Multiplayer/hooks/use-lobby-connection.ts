@@ -250,9 +250,13 @@ export const useLobbyConnection = ({ mode = "join" }: UseLobbyConnectionOptions)
       const errorMessage = err instanceof Error ? err.message : "Failed to join lobby";
       setJoinError(errorMessage);
 
+      // One message, from the server, in both places. This used to pair a generic "check the room
+      // code" toast with a different inline message, so a full lobby was reported two ways and
+      // neither was the real reason.
       addNotification({
         type: "error",
-        title: "Failed to join lobby - Please check the room code and try again",
+        title: "Couldn't join the lobby",
+        message: errorMessage,
       });
     } finally {
       setIsJoining(false);

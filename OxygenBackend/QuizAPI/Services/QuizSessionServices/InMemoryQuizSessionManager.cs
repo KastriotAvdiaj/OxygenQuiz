@@ -14,11 +14,19 @@ public class InMemoryQuizSessionManager : IQuizSessionManager
         // persistent chat system lands, re-inject it here and call it in
         // AddChatMessageAsync. See docs/data/mongodb.md.
 
+        // Copy shared with CheckSessionAsync so the pre-flight check and the real join can never
+        // disagree about what they'd tell the player.
+        private const string NotFoundMessage =
+            "That room code doesn't exist. Check the code, or ask the host for a new invite.";
+        private const string FullMessage = "This lobby is full.";
+
         public Task<Participant> AddParticipantAsync(string sessionId, string username, string connectionId, string? profileImageUrl = null)
         {
             if (!_sessions.TryGetValue(sessionId, out var session))
             {
-                throw new InvalidOperationException($"Session {sessionId} not found. The lobby may not exist.");
+                // SessionJoinException (not InvalidOperationException) so QuizHub can relay the real
+                // reason to the client — see the type's docs.
+                throw new SessionJoinException(JoinFailureReason.NotFound, NotFoundMessage);
             }
 
             lock (session)
@@ -29,7 +37,7 @@ public class InMemoryQuizSessionManager : IQuizSessionManager
                     // Enforce max players
                     if (session.MaxPlayers > 0 && session.Participants.Count >= session.MaxPlayers)
                     {
-                        throw new InvalidOperationException("This lobby is full.");
+                        throw new SessionJoinException(JoinFailureReason.Full, FullMessage);
                     }
 
                     participant = new Participant
@@ -53,6 +61,47 @@ public class InMemoryQuizSessionManager : IQuizSessionManager
                 }
 
                 return Task.FromResult(participant);
+            }
+        }
+
+        /// <summary>
+        /// Pre-flight lookup for a room code. Mirrors the checks in
+        /// <see cref="AddParticipantAsync"/> without mutating anything, so the join dialog can
+        /// refuse a bad code while the user is still in the dialog instead of navigating them to a
+        /// lobby they can't enter. Not an enforcement point — the lobby can fill in the gap between
+        /// this call and the join, which is why the same checks stay in AddParticipantAsync.
+        /// </summary>
+        public Task<SessionAvailability> CheckSessionAsync(string sessionId, string username)
+        {
+            if (!_sessions.TryGetValue(sessionId, out var session))
+            {
+                return Task.FromResult(new SessionAvailability
+                {
+                    CanJoin = false,
+                    Reason = JoinFailureReason.NotFound,
+                    Message = NotFoundMessage,
+                });
+            }
+
+            lock (session)
+            {
+                // Someone already on the roster is rejoining (reconnect / reopened tab), so the
+                // capacity check doesn't apply to them — AddParticipantAsync takes the same branch.
+                var isRejoin = session.Participants.Any(p => p.Username == username);
+                var isFull = !isRejoin
+                    && session.MaxPlayers > 0
+                    && session.Participants.Count >= session.MaxPlayers;
+
+                return Task.FromResult(new SessionAvailability
+                {
+                    CanJoin = !isFull,
+                    Reason = isFull ? JoinFailureReason.Full : null,
+                    Message = isFull ? FullMessage : null,
+                    InProgress = session.QuizState != QuizState.Lobby,
+                    LobbyName = session.LobbyName,
+                    ParticipantCount = session.Participants.Count,
+                    MaxPlayers = session.MaxPlayers,
+                });
             }
         }
 
@@ -216,15 +265,29 @@ public class InMemoryQuizSessionManager : IQuizSessionManager
             return Task.FromResult(message);
         }
 
-        public Task<IReadOnlyList<LobbyChatMessage>> GetRecentMessagesAsync(string sessionId)
+        public Task<IReadOnlyList<LobbyChatMessage>> GetMessagesSinceJoinAsync(string sessionId, string username)
         {
-            if (_sessions.TryGetValue(sessionId, out var session))
+            IReadOnlyList<LobbyChatMessage> empty = new List<LobbyChatMessage>();
+
+            if (!_sessions.TryGetValue(sessionId, out var session))
+                return Task.FromResult(empty);
+
+            lock (session)
             {
-                lock (session)
-                {
-                    return Task.FromResult<IReadOnlyList<LobbyChatMessage>>(session.RecentMessages.ToList());
-                }
+                var participant = session.Participants.FirstOrDefault(p => p.Username == username);
+                // Not on the roster — nothing to catch up on. (JoinSession adds the participant
+                // before asking for this, so in practice only a stale caller lands here.)
+                if (participant is null)
+                    return Task.FromResult(empty);
+
+                // >= not > : a message sent in the same tick as the join belongs to the joiner's
+                // session. The boundary matters for the host, whose CreateSession stamp and first
+                // messages can share a timestamp.
+                var visible = session.RecentMessages
+                    .Where(m => m.SentUtc >= participant.FirstJoinedAt)
+                    .ToList();
+
+                return Task.FromResult<IReadOnlyList<LobbyChatMessage>>(visible);
             }
-            return Task.FromResult<IReadOnlyList<LobbyChatMessage>>(new List<LobbyChatMessage>());
         }
 }

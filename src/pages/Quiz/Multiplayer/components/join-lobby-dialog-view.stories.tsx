@@ -34,10 +34,25 @@ export const Filled: Story = {
   args: { roomCode: "AB12CD" },
 };
 
+/** The pre-flight check is in flight — the dialog stays put rather than navigating optimistically. */
+export const Checking: Story = {
+  args: { roomCode: "AB12CD", isChecking: true },
+};
+
+/** CheckSession rejected the code, so the correction happens here instead of on the lobby route. */
 export const RoomNotFound: Story = {
   args: {
     roomCode: "BADCOD",
-    error: "Room not found. Check the code and try again.",
+    error:
+      "That room code doesn't exist. Check the code, or ask the host for a new invite.",
+  },
+};
+
+/** The failure mode that used to be misreported as a missing room. */
+export const LobbyFull: Story = {
+  args: {
+    roomCode: "AB12CD",
+    error: "This lobby is full.",
   },
 };
 

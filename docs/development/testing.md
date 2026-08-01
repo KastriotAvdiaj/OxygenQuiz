@@ -66,7 +66,8 @@ interesting part, so we fake it with Moq (pattern C below).
 | File | Type | Covers |
 | --- | --- | --- |
 | `Scoring/QuizScoringTests.cs` | Pure unit | Speed bonus, point-system multipliers, the "never below 1" floor, edge cases (no limit, over-time, negative time). |
-| `Grading/AnswerGradingServiceTests.cs` | Service + InMemory DB | Right/wrong decisions for every question type (single & multi-select MCQ, true/false, type-the-answer with case sensitivity and acceptable alternatives), the timeout-to-zero override, and unknown-question handling. |
+| `Grading/AnswerGradingServiceTests.cs` | Service + InMemory DB | Right/wrong decisions for every question type (single & multi-select MCQ, true/false, type-the-answer with case sensitivity and acceptable alternatives), the timeout-to-zero override, and unknown-question handling. Typed answers now delegate to `TypeTheAnswerMatcher`, so the fine-grained cases live in the file below and these stay as integration coverage of the wiring. |
+| `Grading/TypeTheAnswerMatcherTests.cs` | Pure unit | What counts as a correct typed answer: normalisation (whitespace, accents, punctuation, leading articles), case sensitivity, acceptable alternatives, whole-word partial matching, and the guards that stop an empty submission matching everything. Covers both graders, since the live grader and the question preview share this matcher. See [`typed-answer-matching.md`](../quiz/typed-answer-matching.md). |
 | `Auth/AuthenticationServiceTests.cs` | Service + Moq | Duplicate email/username rejected, missing default role rejected, bad credentials rejected, invalid/empty verification tokens rejected, logout no-op. |
 | `Auth/NotACommonPasswordTests.cs` | Pure unit | Common/breached + single-repeated-char passwords rejected; strong passphrases pass. |
 | `TestSupport/TestCurrentUserService.cs` | Helper | Test double for `ICurrentUserService` (drives the DbContext query filters). |

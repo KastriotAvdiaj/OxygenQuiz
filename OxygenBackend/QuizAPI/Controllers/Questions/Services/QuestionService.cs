@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using QuizAPI.Controllers.Image.Services;
 using QuizAPI.Controllers.Questions.Services.AnswerOptions;
 using QuizAPI.DTOs.Question;
+using QuizAPI.Exceptions;
 using QuizAPI.Filtering;
 using QuizAPI.Mapping;
 using QuizAPI.Models;
@@ -29,6 +30,44 @@ namespace QuizAPI.Controllers.Questions.Services
             _questions = questions;
             _answerOptionService = answerOptionService;
             _imageService = imageService;
+        }
+
+        // ── Classification rules ──────────────────────────────────────────────────
+
+        /// <summary>
+        /// Name of the seeded system-default lookup rows. Mirrors UNSPECIFIED_LOOKUP_LABEL in
+        /// src/pages/Dashboard/Pages/Question/Entities/lookup-visibility.ts.
+        /// </summary>
+        private const string UnspecifiedLookupName = "Unspecified";
+
+        private static bool IsUnspecified(string name) =>
+            string.Equals(name.Trim(), UnspecifiedLookupName, StringComparison.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// Every question must carry a real category and language. "Unspecified" is an internal
+        /// default the app assigns automatically — it must never be what a question is *stored* as,
+        /// or the question bank fills with unfilterable, undiscoverable entries.
+        ///
+        /// Difficulty is deliberately exempt: it legitimately stays Unspecified until someone rates
+        /// the question. See docs/quiz/quiz-question-classification.md.
+        ///
+        /// Matched by name, not by id — the seeded rows aren't guaranteed to land on the same ids
+        /// in every environment, which is the same reason the frontend matches by label.
+        /// </summary>
+        private async Task ValidateClassificationAsync(
+            int categoryId, int languageId, CancellationToken ct = default)
+        {
+            var (category, language) = await _questions.GetClassificationNamesAsync(categoryId, languageId, ct);
+
+            if (category is null)
+                throw new AppValidationException("The selected category doesn't exist.");
+            if (language is null)
+                throw new AppValidationException("The selected language doesn't exist.");
+
+            if (IsUnspecified(category))
+                throw new AppValidationException("Pick a category for this question — \"Unspecified\" isn't allowed.");
+            if (IsUnspecified(language))
+                throw new AppValidationException("Pick a language for this question — \"Unspecified\" isn't allowed.");
         }
 
         // ── Reads ─────────────────────────────────────────────────────────────────
@@ -165,6 +204,8 @@ namespace QuizAPI.Controllers.Questions.Services
         // ── Creates ─────────────────────────────────────────────────────────────────
         public async Task<MultipleChoiceQuestionDTO> CreateMultipleChoiceQuestionAsync(MultipleChoiceQuestionCM questionCM, Guid userId)
         {
+            await ValidateClassificationAsync(questionCM.CategoryId, questionCM.LanguageId);
+
             var question = questionCM.ToEntity();
 
             foreach (var answerOption in question.AnswerOptions)
@@ -191,6 +232,8 @@ namespace QuizAPI.Controllers.Questions.Services
 
         public async Task<TrueFalseQuestionDTO> CreateTrueFalseQuestionAsync(TrueFalseQuestionCM questionCM, Guid userId)
         {
+            await ValidateClassificationAsync(questionCM.CategoryId, questionCM.LanguageId);
+
             var question = questionCM.ToEntity();
 
             question.UserId = userId;
@@ -211,6 +254,8 @@ namespace QuizAPI.Controllers.Questions.Services
 
         public async Task<TypeTheAnswerQuestionDTO> CreateTypeTheAnswerQuestionAsync(TypeTheAnswerQuestionCM questionCM, Guid userId)
         {
+            await ValidateClassificationAsync(questionCM.CategoryId, questionCM.LanguageId);
+
             var question = questionCM.ToEntity();
 
             question.UserId = userId;
@@ -235,9 +280,13 @@ namespace QuizAPI.Controllers.Questions.Services
         public async Task<MultipleChoiceQuestionDTO> UpdateMultipleChoiceQuestionAsync(
             MultipleChoiceQuestionUM questionUM, Guid userId, bool canUpdateAny)
         {
+            // Validated after the ownership lookup so a caller can't probe lookup ids through a
+            // question they aren't allowed to touch.
             var existingQuestion = await _questions.GetMultipleChoiceForUpdateAsync(
                 questionUM.Id, canUpdateAny ? null : userId);
             if (existingQuestion == null) return null;
+
+            await ValidateClassificationAsync(questionUM.CategoryId, questionUM.LanguageId);
 
             questionUM.ApplyTo(existingQuestion);
 
@@ -262,6 +311,8 @@ namespace QuizAPI.Controllers.Questions.Services
                 questionUM.Id, canUpdateAny ? null : userId);
             if (existingQuestion == null) return null;
 
+            await ValidateClassificationAsync(questionUM.CategoryId, questionUM.LanguageId);
+
             questionUM.ApplyTo(existingQuestion);
 
             if (Enum.TryParse(questionUM.Visibility, true, out QuestionVisibility visibility))
@@ -282,6 +333,8 @@ namespace QuizAPI.Controllers.Questions.Services
             var existingQuestion = await _questions.GetTypeTheAnswerForUpdateAsync(
                 questionUM.Id, canUpdateAny ? null : userId);
             if (existingQuestion == null) return null;
+
+            await ValidateClassificationAsync(questionUM.CategoryId, questionUM.LanguageId);
 
             questionUM.ApplyTo(existingQuestion);
 

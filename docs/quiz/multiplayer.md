@@ -235,11 +235,23 @@ report can never resurrect a late answer. See
 ### 4.5 Chat
 
 Ephemeral and in-memory only: a 50-message capped buffer per session
-(`InMemoryQuizSessionManager.MaxRecentMessages`), replayed to each joiner as `ChatHistory`. The
-client keeps the newest 200. Messages are trimmed and truncated to 500 chars server-side, the
-sender is taken from the connection context, and chat is rejected outside the `Lobby`/`Starting`
-phases. Nothing is persisted — the MongoDB archiver was removed
-(see [`mongodb.md`](../data/mongodb.md)).
+(`InMemoryQuizSessionManager.MaxRecentMessages`). The client keeps the newest 200. Messages are
+trimmed and truncated to 500 chars server-side, the sender is taken from the connection context,
+and chat is rejected outside the `Lobby`/`Starting` phases. Nothing is persisted — the MongoDB
+archiver was removed (see [`mongodb.md`](../data/mongodb.md)).
+
+**You only see chat from the moment you arrived.** `Participant.FirstJoinedAt` is stamped on the
+first join, and `GetMessagesSinceJoinAsync` filters the `ChatHistory` catch-up to messages sent at
+or after it. A new arrival cannot read what was said before they were in the room.
+
+The watermark is **not** re-stamped on rejoin, and that's the point: `AddParticipantAsync` is
+idempotent, so a refresh, a reconnect or the host's second join (`CreateSession` then the lobby
+page's auto-join — see §4.1) all find the existing participant and keep the original timestamp.
+Re-stamping would blank the chat someone had already read every time their tab reloaded.
+
+`LeaveSession` removes the participant record entirely, so leaving and coming back *does* reset the
+watermark — a deliberate leave is treated as arriving fresh. If you ever make leave a soft state,
+this changes with it.
 
 ---
 
@@ -252,7 +264,8 @@ Identity is **never** a parameter. Every method derives the username from the co
 | Method | Parameters | Auth | Notes |
 |---|---|---|---|
 | `CreateSession` | `sessionId, lobbyName, maxPlayers` | any authenticated | Caller becomes host. Throws if the code already exists. |
-| `JoinSession` | `sessionId` | any authenticated | Throws `"This lobby is full."` past `MaxPlayers`. Idempotent for an existing participant. |
+| `CheckSession` | `sessionId` | any authenticated | Returns `SessionAvailability` (`canJoin`, `reason`, `message`, `inProgress`, roster counts). Mutates nothing. Pre-flight for the join dialog — advisory, not the gate. |
+| `JoinSession` | `sessionId` | any authenticated | Converts `SessionJoinException` to `HubException` so the client sees the real cause (`not-found` / `full`). Idempotent for an existing participant; adds to the SignalR group only **after** the participant add succeeds. |
 | `LeaveSession` | `sessionId` | participant | Broadcasts `UserLeft`, plus `HostChanged` if the host left. |
 | `ToggleReady` | `sessionId, isReady` | participant | Sets the **caller's** own flag only. |
 | `SelectQuiz` | `sessionId, quiz` | **host** | `quiz` is a `SelectedQuizView`; only `Id` is authorized (`CanHostQuizAsync`). |
@@ -344,8 +357,12 @@ this is the feature-level summary.
   `mode === "create"` branches in `useLobbyConnection` (room-code generation, the create arm of
   auto-resume) are therefore unreachable — the create flow generates its code in
   `CreateLobbyDialog` instead. Candidate for removal.
-- **Lobby-full has no dedicated UI treatment** — the join surfaces the generic
-  `"This lobby is full."` from the hub.
+- ~~**Lobby-full has no dedicated UI treatment**~~ — *fixed 2026-07-31.* It was worse than
+  recorded: `AddParticipantAsync` threw `InvalidOperationException`, which SignalR does **not**
+  relay (only `HubException` is, with `EnableDetailedErrors` off), and the client then replaced
+  even that with a hardcoded `"The room may not exist."` — so a full lobby was reported as a
+  missing one. Now a `SessionJoinException` carrying a `JoinFailureReason`, rethrown as
+  `HubException`, and passed through verbatim by the client.
 - **No username uniqueness constraint** within a lobby beyond account identity, and no validation
   of room-code shape on input.
 - **No automated tests.** `QuizAPI.Tests` covers scoring, grading, auth, versioning and stats — the
@@ -381,6 +398,8 @@ cancellation mid-question — because both run through the same `finally`.
 
 | Date | Change |
 |---|---|
+| 2026-07-31 | **Chat is private to who was in the room.** `Participant.FirstJoinedAt` + `GetMessagesSinceJoinAsync` replace the unconditional `GetRecentMessagesAsync` replay, so a new joiner no longer receives chat sent before they arrived. Rejoins keep their history because the stamp isn't refreshed. |
+| 2026-07-31 | **Join failures are reported honestly.** Added `CheckSession` + `SessionAvailability` (dialog pre-flight), `SessionJoinException` → `HubException` so the cause survives to the client, and moved `Groups.AddToGroupAsync` after the participant add to stop failed joiners staying subscribed. A bad code no longer strands the player on the lobby route ([`multiplayer-join.md`](./multiplayer-join.md)). |
 | 2026-07-31 | **Rematch fixed.** Added `ResetToLobbyAsync`, run from the match loop's `finally`; the start guard became loop liveness (`MatchCts`) instead of `QuizState`; ready flags now clear on reset. Previously only one match could ever be played per lobby. |
 | 2026-07-31 | **Late joiners receive the host's quiz pick.** `MultiplayerSession` stores the full `SelectedQuizView` (with `SelectedQuizId` as a computed accessor), and `JoinSession` replays `QuizSelected` to the caller. |
 | 2026-07-31 | **Lobby panel-board layout.** 2×2 `LobbyPanel` grid replaced the previous redesign; dropped the sticky mobile CTA bar, the chat `Accordion`, `useIsCompactLayout`, `LobbyInfoBar` and `LobbyInfoBanner`. |

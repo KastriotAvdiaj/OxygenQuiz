@@ -150,6 +150,15 @@ These are the properties that make the feature safe. Every change should preserv
    builder and clicks submit themselves. (`ai-quiz-wizard.tsx` handoff)
 7. **Scoring fields are bounded.** `pointSystem ∈ {Standard,Double,Quadruple}`,
    `timeLimitInSeconds ∈ [5,300]`, clamped on import. (`resolveSettings`)
+8. **The model never sets a grading rule.** It supplies question *content*; how an answer is
+   judged is the author's call. Concretely, `allowPartialMatch` is not in the prompt and is
+   hard-coded `false` on import — a model that emits it anyway is ignored. It was previously
+   requested with no guidance, so the choice was arbitrary; once partial matching started
+   grading (2026-07-31) an unguided `true` on a short answer made the question guessable.
+   `isCaseSensitive` is the deliberate exception: it describes the content, the prompt gives it
+   a default, and getting it wrong makes a question harder rather than easier.
+   (`prompt.ts` `TYPE_SPECS`, `parse-ai-output.ts` TypeTheAnswer branch —
+   see [typed-answer-matching.md](typed-answer-matching.md))
 
 ---
 

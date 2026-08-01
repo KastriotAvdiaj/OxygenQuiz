@@ -50,6 +50,18 @@ namespace QuizAPI.Services.QuizSessionServices
         public string ConnectionId { get; set; } = string.Empty;
         /// <summary>The account's avatar at join time; null when the user has none.</summary>
         public string? ProfileImageUrl { get; set; }
+
+        /// <summary>
+        /// When this account first entered the lobby. The chat catch-up is filtered to messages
+        /// sent at or after this instant, so a new arrival never reads what was said before they
+        /// were in the room.
+        ///
+        /// Set **once**, on the first join, and deliberately left alone on rejoin — a refresh or a
+        /// reconnect is the same person continuing, and re-stamping it would blank the chat they'd
+        /// already read. Leaving the lobby drops the participant record entirely, so a genuine
+        /// leave-and-come-back does reset the watermark, which is the intent.
+        /// </summary>
+        public DateTime FirstJoinedAt { get; set; } = DateTime.UtcNow;
     }
 
     /// <summary>
@@ -75,5 +87,55 @@ namespace QuizAPI.Services.QuizSessionServices
         QuestionActive,
         QuestionEnded,
         QuizEnded
+    }
+
+    /// <summary>
+    /// Why a join was refused. Sent to the client as a stable string alongside the human-readable
+    /// message so the UI can style/branch on the cause instead of matching on copy.
+    /// </summary>
+    public static class JoinFailureReason
+    {
+        public const string NotFound = "not-found";
+        public const string Full = "full";
+    }
+
+    /// <summary>
+    /// A join refused for a reason the player can act on (bad code, full lobby) rather than a
+    /// server fault. <c>QuizHub.JoinSession</c> converts this to a <c>HubException</c>, which is
+    /// the only exception type SignalR relays verbatim to the client — a plain
+    /// <c>InvalidOperationException</c> would reach the browser as "An unexpected error occurred"
+    /// and the real cause would be lost.
+    /// </summary>
+    public sealed class SessionJoinException : Exception
+    {
+        /// <summary>One of <see cref="JoinFailureReason"/>.</summary>
+        public string Reason { get; }
+
+        public SessionJoinException(string reason, string message) : base(message) => Reason = reason;
+    }
+
+    /// <summary>
+    /// The result of a pre-flight lookup for a room code — what <c>QuizHub.CheckSession</c> returns
+    /// so the join dialog can reject a bad code *before* navigating the user to the lobby route.
+    /// The same conditions are re-checked inside <c>AddParticipantAsync</c>: this is a courtesy
+    /// check, never the enforcement point (a lobby can fill between the check and the join).
+    /// </summary>
+    public sealed class SessionAvailability
+    {
+        /// <summary>True when the caller may proceed to the lobby route.</summary>
+        public bool CanJoin { get; init; }
+        /// <summary>One of <see cref="JoinFailureReason"/>, or null when <see cref="CanJoin"/>.</summary>
+        public string? Reason { get; init; }
+        /// <summary>Human-readable explanation, null when <see cref="CanJoin"/>.</summary>
+        public string? Message { get; init; }
+        /// <summary>
+        /// True when a match is already running. Informational only — joining mid-match is
+        /// permitted (see the late-joiner rule in docs/quiz/multiplayer.md §2), so this never
+        /// clears <see cref="CanJoin"/>; the dialog just warns.
+        /// </summary>
+        public bool InProgress { get; init; }
+        public string LobbyName { get; init; } = string.Empty;
+        public int ParticipantCount { get; init; }
+        public int MaxPlayers { get; init; }
     }
 }

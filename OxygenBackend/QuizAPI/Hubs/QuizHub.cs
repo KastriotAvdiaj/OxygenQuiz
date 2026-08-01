@@ -61,16 +61,41 @@ public class QuizHub : Hub<IQuizClient>
             .FirstOrDefaultAsync();
     }
 
+    /// <summary>
+    /// Non-mutating "can I join this code?" lookup. The join dialog calls this before navigating so
+    /// a wrong code is rejected in place instead of dumping the player on the lobby route in a
+    /// failed state. Advisory only — <see cref="JoinSession"/> re-checks and is the real gate.
+    /// </summary>
+    public async Task<SessionAvailability> CheckSession(string sessionId)
+    {
+        var username = GetUsername();
+        return await _sessionManager.CheckSessionAsync(sessionId, username);
+    }
+
     public async Task JoinSession(string sessionId)
     {
         var username = GetUsername();
         var profileImageUrl = await GetProfileImageUrlAsync();
 
-        // 1. Add to SignalR Group
-        await Groups.AddToGroupAsync(Context.ConnectionId, sessionId);
+        // 1. Add to Session Manager (Persist State).
+        //    This runs BEFORE the group add on purpose: it's the step that can reject the join, and
+        //    a connection added to the group first would stay subscribed to that group's broadcasts
+        //    after the failure.
+        Participant participant;
+        try
+        {
+            participant = await _sessionManager.AddParticipantAsync(sessionId, username, Context.ConnectionId, profileImageUrl);
+        }
+        catch (SessionJoinException ex)
+        {
+            // HubException is the only exception SignalR relays verbatim (EnableDetailedErrors is
+            // off); anything else reaches the browser as "An unexpected error occurred" and the
+            // client can't tell "no such room" from "lobby full".
+            throw new HubException(ex.Message);
+        }
 
-        // 2. Add to Session Manager (Persist State)
-        var participant = await _sessionManager.AddParticipantAsync(sessionId, username, Context.ConnectionId, profileImageUrl);
+        // 2. Add to SignalR Group
+        await Groups.AddToGroupAsync(Context.ConnectionId, sessionId);
 
         // 3. Store in Context for OnDisconnected handling
         Context.Items["SessionId"] = sessionId;
@@ -98,9 +123,13 @@ public class QuizHub : Hub<IQuizClient>
                 await Clients.Caller.QuizSelected(session.SelectedQuiz);
         }
 
-        // 6. Send recent lobby chat so the new user has some context.
-        var recentMessages = await _sessionManager.GetRecentMessagesAsync(sessionId);
-        await Clients.Caller.ChatHistory(recentMessages);
+        // 6. Send the chat this caller is entitled to see — messages from their join onward only.
+        //    A new arrival must not be able to read what was said before they were in the room;
+        //    a reconnecting participant keeps theirs, because FirstJoinedAt survives the rejoin.
+        //    Runs after step 2 on purpose: the participant record has to exist for the watermark
+        //    to be found.
+        var visibleMessages = await _sessionManager.GetMessagesSinceJoinAsync(sessionId, username);
+        await Clients.Caller.ChatHistory(visibleMessages);
     }
 
     // Ephemeral lobby chat. Available only while the session is in the lobby (not mid-match).

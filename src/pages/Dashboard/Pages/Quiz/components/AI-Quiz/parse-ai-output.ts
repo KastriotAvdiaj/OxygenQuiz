@@ -18,6 +18,8 @@ import { AI_QUESTION_LIMITS } from "./prompt";
  *  - Category and language are ALWAYS inherited from the quiz. Never read from AI output.
  *  - Difficulty is resolved by strict, case-insensitive match against difficulties that
  *    already exist. Unmatched values fall back to the quiz difficulty. Nothing is created.
+ *  - `allowPartialMatch` is ALWAYS false. It's a grading rule the author owns, not content the
+ *    model can judge — see docs/quiz/typed-answer-matching.md.
  *  - Invalid questions are dropped with a reason rather than failing the whole import.
  */
 
@@ -46,7 +48,9 @@ const aiQuestionSchema = z
     // TypeTheAnswer
     acceptableAnswers: z.array(z.string()).optional(),
     isCaseSensitive: z.boolean().optional(),
-    allowPartialMatch: z.boolean().optional(),
+    // `allowPartialMatch` is intentionally absent: the prompt no longer asks for it and the parser
+    // never reads it. `.passthrough()` means a model that emits it anyway is not an error — the
+    // value is simply ignored. See the assignment in the TypeTheAnswer branch below.
   })
   .passthrough();
 
@@ -221,7 +225,11 @@ const buildQuestion = (
         type: QuestionType.TypeTheAnswer,
         correctAnswer: answer.trim(),
         isCaseSensitive: raw.isCaseSensitive ?? false,
-        allowPartialMatch: raw.allowPartialMatch ?? false,
+        // Always false, never taken from the model. Partial matching is a grading rule the author
+        // owns — the model has no basis for choosing it, and an unguided `true` on a short answer
+        // makes the question guessable by typing a sentence containing the word. The author can
+        // switch it on in the review step, where they can see the answer it applies to.
+        allowPartialMatch: false,
         acceptableAnswers: (raw.acceptableAnswers ?? [])
           .map((a) => a.trim())
           .filter(Boolean)

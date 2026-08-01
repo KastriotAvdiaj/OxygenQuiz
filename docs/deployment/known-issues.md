@@ -171,6 +171,17 @@ timeLimit` points, i.e. ~33 pts on a 30s question but ~100 pts (10% of base) on 
   sessions/answers throws an FK error surfaced as a generic 500 instead of a
   friendly 409 ("can't delete a quiz that has been played").
   → `QuizService.DeleteQuizAsync`
+- **P3 — Validation messages thrown as `InvalidOperationException` never reach the user.**
+  `GlobalExceptionHandler` maps only the `AppException` family to real status codes; everything
+  else falls through to **500 "An unexpected error occurred."** with the message deliberately
+  withheld. Several services throw `InvalidOperationException` for what are plainly user-facing
+  validation failures — e.g. `"At least one answer option must be marked as correct."`
+  (`QuestionService`) and the AI import's `"One or more selected questions do not exist."`
+  (`QuizService`) — so the user sees a generic 500 and the actual reason is only in the server log.
+  This is the same defect class as the multiplayer join errors fixed on 2026-07-31.
+  _Fix:_ audit those throw sites and use `AppValidationException` (→ 400) where the message is
+  meant for the caller. Found while adding the classification checks, which use the right type.
+  → `QuizAPI/Middleware/GlobalExceptionHandler.cs`, `QuestionService`, `QuizService`
 - **P3 — `GET /api/Roles` returns full `Role` entities.** The admin role picker
   (`change-user-role.tsx` → `useRoles`) only needs `{ id, name }`, but the endpoint
   serialises whole `Role` rows (incl. `ConcurrencyStamp` and empty nav collections).
@@ -292,8 +303,67 @@ timeLimit` points, i.e. ~33 pts on a 30s question but ~100 pts (10% of base) on 
 
 ## Multiplayer / Game State
 
-- **P3 — Lobby full error lacks specific UI feedback.** When an extra person tries to enter a quiz room after the max amount of people is reached, it doesn't specify the reason the app didn't allow them to join. _Related, not fixed (2026-07-30):_ the lobby now knows and displays the real capacity — but the join flow itself still just surfaces the backend's generic `HubException("This lobby is full.")` with no dedicated UI treatment for that failure mode.
-  → `OxygenBackend/QuizAPI/Services/QuizSessionServices/InMemoryQuizSessionManager.cs` (`AddParticipantAsync`), `src/pages/Quiz/Multiplayer/components/join-lobby-dialog.tsx`
+- ~~**P3 — New joiners could read chat from before they arrived.**~~ **Fixed (2026-07-31).**
+  `JoinSession` replayed the whole 50-message buffer to every caller. Now
+  `Participant.FirstJoinedAt` stamps the first join and `GetMessagesSinceJoinAsync` filters the
+  catch-up to messages at or after it. The stamp is deliberately not refreshed on rejoin, so a
+  refresh or reconnect keeps the history it already had.
+  → `QuizHub.JoinSession`, `InMemoryQuizSessionManager`,
+  [`multiplayer.md`](../quiz/multiplayer.md#45-chat)
+- ~~**P2 — "Accept partial answers" did nothing.**~~ **Fixed (2026-07-31).** The quiz builder
+  renders a switch promising "Correct if the answer is contained in what they type — 'the Eiffel
+  Tower' matches 'Eiffel'". `AllowPartialMatch` was persisted, round-tripped through the DTOs and
+  the CSV import, and **read by no grader at all** — the setting was inert, so authors were
+  configuring behaviour that never happened and players were marked wrong for answers the UI said
+  would be accepted. Also: neither grader trimmed, so `" Paris"` was graded wrong, and the matching
+  logic was duplicated between `AnswerGradingService` and `TestQuestionService`, meaning "test this
+  question" could disagree with playing it. All three fixed by extracting
+  `Services/Grading/TypeTheAnswerMatcher.cs` as the single source of truth, with unit tests.
+  _Second pass, same day:_ the first implementation used raw `string.Contains`, which matched the
+  builder's original wording but had no word boundaries — it accepted `"concatenate"` for `"cat"`,
+  `"Bart"` for `"art"` and `"13"` for `"3"`, making short answers guessable by typing a long enough
+  sentence. Replaced with **whole-word containment** (contiguous token run), and **normalisation**
+  was split out as an always-on step rather than something bundled into the toggle: accents,
+  punctuation, collapsed whitespace and a leading article are now forgiven on every typed answer,
+  no toggle. The builder's helper text was updated to match. Two limits are documented rather than
+  fixed: containment can't reject a negation (`"not Paris"` contains `"Paris"`), and space-less
+  scripts (CJK) fall back to substring because word boundaries don't apply.
+  → `Services/Grading/TypeTheAnswerMatcher.cs`, `QuizAPI.Tests/Grading/TypeTheAnswerMatcherTests.cs`,
+  `type-the-asnwer-question-form.tsx`,
+  [`typed-answer-matching.md`](../quiz/typed-answer-matching.md)
+- **P3 — No typo tolerance on typed answers.** `"parid"` for `"paris"` scores zero. Under a timer
+  this punishes motor error rather than ignorance. _Not implemented — needs a decision, since it
+  changes what counts as correct._ Proposal: Damerau-Levenshtein (models transpositions, which
+  plain Levenshtein misses) with a length-scaled budget (≤4 chars exact, 5–8 → 1, 9+ → 2), skipped
+  for numeric answers, mutually exclusive with `IsCaseSensitive` and `AllowPartialMatch`, and
+  **per-question opt-in defaulting to off** so no existing quiz changes behaviour. Full reasoning,
+  rejected alternatives (Soundex, trigram, Jaro-Winkler) and risks:
+  [`proposals/typed-answer-typo-tolerance.md`](../proposals/typed-answer-typo-tolerance.md).
+- **P3 — Multi-select is all-or-nothing; 2-of-3 scores zero.** A player who knows 2 of 3 correct
+  options scores the same as one who knows none. _Contemplation only, nothing decided._ The blocker
+  isn't the arithmetic — it's that `IsCorrect` is a `bool` from `DetermineCorrectnessAsync` through
+  `QuizScoring`, `UserAnswer`, `PlayerRoundResult` and both results UIs, plus the historical
+  comparability of existing stats. Schemes, costs and the open questions (does partial credit earn
+  the speed bonus? what does the results screen show? what counts as "correct" for stats?):
+  [`proposals/partial-credit.md`](../proposals/partial-credit.md).
+
+- ~~**P3 — Lobby full error lacks specific UI feedback.**~~ **Fixed (2026-07-31).** The earlier
+  note here was itself wrong: the join flow never surfaced `"This lobby is full."` at all.
+  `AddParticipantAsync` threw `InvalidOperationException`, and SignalR only relays `HubException`
+  when `EnableDetailedErrors` is off — so the browser got "An unexpected error occurred", and
+  `multiplayer-context.tsx` then discarded that too in favour of a hardcoded
+  `"Failed to join session. The room may not exist."`. **A full lobby was reported as a
+  nonexistent one.** Fixed end to end: `SessionJoinException` carries a `JoinFailureReason`
+  (`not-found` / `full`), `QuizHub.JoinSession` rethrows it as `HubException`, and the client
+  unwraps SignalR's prefix instead of overwriting the message.
+  _Same change:_ a mistyped code no longer strands the player on the lobby route. `CheckSession`
+  lets `JoinLobbyDialog` verify before navigating, and the lobby page's `JoinForm` fallback — which
+  a stale invite link still reaches — leads with the reason and a way back to the menu instead of
+  presenting a second, bare code form. `Groups.AddToGroupAsync` also moved after the participant
+  add, so a rejected joiner no longer stays subscribed to the group.
+  → `OxygenBackend/QuizAPI/Hubs/QuizHub.cs`, `.../InMemoryQuizSessionManager.cs`,
+  `src/context/multiplayer-context.tsx`, `src/pages/Quiz/Multiplayer/components/join-lobby-dialog.tsx`,
+  `.../components/lobby/join-form.tsx`, [`multiplayer-join.md`](../quiz/multiplayer-join.md)
 - ~~**P2 — Host cannot start another match after the first one ends.**~~ **Fixed (2026-07-31).**
   `MultiplayerSession.QuizState` only ever moved forward (`Lobby → … → QuizEnded`) and nothing put
   it back, so `StartMatchAsync`'s `!= QuizState.Lobby` guard rejected every match after the first —
@@ -326,6 +396,40 @@ timeLimit` points, i.e. ~33 pts on a 30s question but ~100 pts (10% of base) on 
   after questions were created, the user is now told their questions were saved to their
   bank and can be reused, instead of a generic error.
   → `src/pages/Dashboard/Pages/Quiz/components/Create-Quiz-Form/create-quiz.tsx`
+  _Revisited (2026-07-31):_ the message covers a failure of the **quiz** call only. A failure
+  inside the question loop itself is still silent — see the P2 immediately below.
+- **P2 — Partial failure inside the manual question loop leaves untracked orphans.**
+  `handleQuizSubmit` fires the new questions through `Promise.all`. That rejects on the **first**
+  rejection, but the other in-flight POSTs are not cancelled and keep committing — so a failure on
+  question 3 of 20 can leave anywhere from 0 to 19 orphan questions, with no record of which, no
+  cleanup, and a generic "Failed to create quiz" from the outer `catch`. The "your questions were
+  saved" message does **not** fire here, because that branch only runs when the quiz call fails.
+  Distinct from the intentional non-atomicity above: that one is a considered trade-off, this is
+  an unhandled case.
+  _Newly reachable:_ the "category/language can't be Unspecified" rule (2026-07-31) means a quiz
+  with an Unspecified category now fails **every** question POST at once, turning the most likely
+  mistake into a partial-failure storm.
+  _How to fix (cheap, frontend-only):_ swap `Promise.all` for `Promise.allSettled`; if any question
+  failed, stop **before** creating the quiz and report which ones rather than proceeding. Pair it
+  with a pre-flight check of the quiz's own category/language, which is knowable up front and is
+  now the likeliest cause of a mass failure.
+  → `src/pages/Dashboard/Pages/Quiz/components/Create-Quiz-Form/create-quiz.tsx` (`handleQuizSubmit`)
+- **P3 — Manual quiz create is N+1 requests across two transactions.** A 20-question quiz is 21
+  requests: 20 concurrent question POSTs to the shared per-type endpoints, then one quiz POST.
+  The two halves are in different transactions, which is what makes the orphan cases above
+  possible at all, and the request count scales with quiz size.
+  _How to fix:_ generalise the **existing** atomic AI path rather than inventing anything — the
+  transactional `POST /api/quiz/ai-import` already creates a quiz, its new questions and the join
+  rows in one transaction, and already handles the mixed "new questions inline, existing ones by
+  id" case the manual builder needs. Widen its contract (it isn't AI-specific), move
+  category/language inheritance into the service beside the check already there, and point
+  `handleQuizSubmit`'s non-AI branch at it. Requires deciding explicitly what happens to authored
+  questions on failure — atomic means rolled back, which contradicts today's "we saved your
+  questions" behaviour, so either accept that or make saving-to-bank a deliberate affordance.
+  Care needed around edit mode's versioning rules and image association.
+  Full write-up: [`proposals/quiz-creation-atomicity.md`](../proposals/quiz-creation-atomicity.md).
+  → `QuizService.CreateAiQuizAsync`, `QuizzesController` (`ai-import`),
+  `src/pages/Dashboard/Pages/Quiz/components/Create-Quiz-Form/create-quiz.tsx`
 - **P3 — Adding a new question type is shotgun surgery.** A 4th question type touches
   ~8 files (`types.ts`, `constants.ts`, the quiz context's `getValidationSchema`, three
   create mutations, the display cards, plus the AI feature's `prompt.ts` + `parse-ai-output.ts`),
@@ -334,6 +438,21 @@ timeLimit` points, i.e. ~33 pts on a 30s question but ~100 pts (10% of base) on 
   fixing at the current type count, but the target shape is documented for when it is:
   a per-type **registry** so a new type is one module. See
   [`ai-quiz-architecture.md`](../quiz/ai-quiz-architecture.md) §12.
+- ~~**P2 — The LLM chooses `allowPartialMatch`, with no guidance and no review prompt.**~~
+  **Fixed (2026-07-31).** `prompt.ts` asked the model for `"allowPartialMatch": boolean` on every
+  TypeTheAnswer question and `parse-ai-output.ts` passed it through unchanged. Unlike
+  `isCaseSensitive`, which the prompt annotates "almost always false", there was **no rule telling
+  the model when partial matching is appropriate** — so the choice was arbitrary. Harmless while the
+  flag was inert; once it started grading (same day), an unguided `true` on a short answer silently
+  produced a question a player could pass by typing a sentence containing the word, with nothing in
+  the review step drawing attention to it.
+  Fixed by removing the field from the prompt and hard-coding `allowPartialMatch: false` in the
+  parser. `.passthrough()` means a model that emits it anyway isn't an error — the value is ignored.
+  The author opts in during review, where they can see the answer it applies to. `isCaseSensitive`
+  is deliberately still model-chosen: it's a property of the content, the prompt gives it a default,
+  and getting it wrong makes a question *harder* to guess, not easier.
+  → `src/pages/Dashboard/Pages/Quiz/components/AI-Quiz/prompt.ts`, `parse-ai-output.ts`,
+  [`typed-answer-matching.md`](../quiz/typed-answer-matching.md)
 - **P3 — Prompt logic will duplicate in C# at Phase 2.** `buildPrompt` is TS-only; the
   planned server-side (hosted-API) generator would restate it. When Phase 2 lands, make the
   backend the prompt authority (expose it via an endpoint the copy button also fetches) so

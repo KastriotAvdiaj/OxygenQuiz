@@ -84,10 +84,20 @@ How each type fills it:
 | MultipleChoice (single) | the one chosen option is a correct option |
 | MultipleChoice (multi) | **all-or-nothing**: the chosen set exactly equals the correct set — every correct option and no incorrect ones (order-independent) |
 | TrueFalse | submitted `"True"`/`"False"` equals the question's `CorrectAnswer` |
-| TypeTheAnswer | the text equals `CorrectAnswer` or any of `AcceptableAnswers`, honoring the question's `IsCaseSensitive` flag |
+| TypeTheAnswer | delegated to `TypeTheAnswerMatcher.IsCorrect` — see [`typed-answer-matching.md`](./typed-answer-matching.md) |
 
 Multi-select selections are parsed back out of `SubmittedAnswer` (the CSV) via
 `ParseSelectedOptionIds`.
+
+Whether 2-of-3 on a multi-select should score at all is an open question — the trade-offs and the
+(substantial) cost of moving `IsCorrect` off a bool are worked through in
+[`proposals/partial-credit.md`](../proposals/partial-credit.md). Nothing is decided.
+
+**Typed answers are matched in one shared place.** `QuizAPI/Services/Grading/TypeTheAnswerMatcher.cs`
+handles trimming, case sensitivity, `AcceptableAnswers` and `AllowPartialMatch`, and is called by
+both this grader and the question-preview grader (`TestQuestionService`) so a preview can't disagree
+with real play. Before 2026-07-31 the two implemented it separately and **neither honoured
+`AllowPartialMatch`**, despite the builder offering it as a switch.
 
 ## Scoring
 
@@ -209,6 +219,7 @@ populated for T/F, so the correct option was never highlighted on a wrong answer
 | Endpoints (serve / submit / state / results) | `Controllers/Quizzes/QuizSessionsController.cs` |
 | Session loop, submit orchestration, timeouts | `Controllers/Quizzes/Services/QuizSessionServices/QuizSessionService.cs` |
 | Correctness + score, instant & background grading | `Controllers/Quizzes/Services/QuizSessionServices/AnswerGradingService/AnswerGradingService.cs` |
+| Typed-answer matching (shared with the preview grader) | `Services/Grading/TypeTheAnswerMatcher.cs` (+ `QuizAPI.Tests/Grading/`) |
 | Speed-weighted scoring formula | `Services/Scoring/QuizScoring.cs` |
 | Latency compensation (which elapsed is scored) | `Services/Scoring/QuizTiming.cs` |
 | Abandonment detection / cleanup | `Controllers/Quizzes/Services/QuizSessionServices/AbandonmentService/SessionAbandonmentService.cs` |

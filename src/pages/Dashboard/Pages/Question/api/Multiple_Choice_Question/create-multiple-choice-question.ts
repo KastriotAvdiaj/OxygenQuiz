@@ -8,12 +8,16 @@ import { myQuestionKeys, questionKeys } from "@/lib/query-keys";
 
 export const createMultipleChoiceQuestionInputSchema = z.object({
   text: z.string().min(1, "Question is required"),
+  // Difficulty is the only classification that may stay Unspecified — it's rated later.
+  // Category and language are required: a question stored as Unspecified is unfilterable and
+  // undiscoverable in the bank. The API enforces the same rule by name, so this is the fast
+  // feedback path, not the gate. See docs/quiz/quiz-question-classification.md.
   difficultyId: z
     .number()
     .int()
     .positive({ message: "Difficulty is required" }),
-  categoryId: z.number().int().positive({ message: "Category is required" }),
-  languageId: z.number().int().positive({ message: "Language is required" }),
+  categoryId: z.number().int().positive("Choose a category"),
+  languageId: z.number().int().positive("Choose a language"),
   imageUrl: z.string().optional(),
   answerOptions: answerOptionsSchema,
   allowMultipleSelections: z.boolean().default(false),

@@ -35,6 +35,15 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
             _imageService = imageService ?? throw new ArgumentNullException(nameof(imageService));
         }
 
+        /// <summary>
+        /// Name of the seeded system-default lookup rows. Kept in sync with
+        /// QuestionService.UnspecifiedLookupName and the frontend's UNSPECIFIED_LOOKUP_LABEL.
+        /// </summary>
+        private const string UnspecifiedLookupName = "Unspecified";
+
+        private static bool IsUnspecifiedLookup(string name) =>
+            string.Equals(name.Trim(), UnspecifiedLookupName, StringComparison.OrdinalIgnoreCase);
+
         // ── Reads ─────────────────────────────────────────────────────────────────
         public async Task<PagedList<QuizSummaryDTO>> GetAllQuizzesAsync(QuizFilterParams filterParams)
         {
@@ -254,6 +263,20 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                     .ToList();
                 if (existingIds.Count > 0 && !await _quizzes.AllQuestionsExistAsync(existingIds))
                     throw new InvalidOperationException("One or more selected questions do not exist.");
+
+                // The generated questions inherit the quiz's category + language, and a question may
+                // never be stored as the seeded "Unspecified" row — so refuse here rather than
+                // minting a whole quiz's worth of unclassifiable questions.
+                // Matched by name, like QuestionService.ValidateClassificationAsync and the
+                // frontend's isUnspecifiedLookup; seeded ids aren't stable across environments.
+                var (categoryName, languageName) = await _quizzes.GetClassificationNamesAsync(
+                    importCM.CategoryId, importCM.LanguageId);
+                if (categoryName is not null && IsUnspecifiedLookup(categoryName))
+                    throw new InvalidOperationException(
+                        "Pick a category for this quiz — its questions inherit it, and \"Unspecified\" isn't allowed on a question.");
+                if (languageName is not null && IsUnspecifiedLookup(languageName))
+                    throw new InvalidOperationException(
+                        "Pick a language for this quiz — its questions inherit it, and \"Unspecified\" isn't allowed on a question.");
 
                 // New questions inherit the quiz's category + language; only difficulty may vary.
                 // Validate every distinct new-question difficulty against existing rows so a bad id

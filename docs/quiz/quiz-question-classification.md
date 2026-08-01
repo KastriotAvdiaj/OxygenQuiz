@@ -14,6 +14,32 @@ A quiz and the questions created inside it share one classification:
   question's difficulty is set on its own later (or left Unspecified). The builder never forces
   a quiz-wide difficulty onto its questions.
 
+## No question may be stored as Unspecified
+
+**Category and language are required on every question, however it was created.** "Unspecified" is
+an internal default the app assigns while a question is being drafted — it must never be what a
+question is *persisted* as. A question filed under Unspecified is invisible to category and language
+filters, so it can't be found again in the bank; enough of them and the bank stops being usable.
+
+**Difficulty is exempt** and may stay Unspecified indefinitely: it genuinely isn't known until
+someone rates the question, and nothing depends on it being set.
+
+Enforced in two places, deliberately:
+
+| Layer | What it does |
+|---|---|
+| **API** (`QuestionService.ValidateClassificationAsync`) | The gate. Runs on all three create and all three update paths; throws `AppValidationException` → **400**. `QuizService`'s AI import runs the same check against the *quiz's* category/language, since its questions inherit them. |
+| **Client** (the three `create*QuestionInputSchema` zod schemas) | Fast feedback in the form. Category and language are required (`.positive()`, no default); difficulty still defaults to `UnspecifiedIds.difficultyId`. |
+
+The rule is matched **by name**, case-insensitively — not by id. The seeded rows aren't guaranteed
+to land on the same ids in every environment, which is the same reason
+`lookup-visibility.ts` matches by label on the frontend. Server-side the constant lives in
+`QuestionService.UnspecifiedLookupName` (and a twin in `QuizService`).
+
+> **Existing data is untouched.** The rule applies to writes from this point on; questions already
+> stored as Unspecified keep working and still play. They will, however, have to be given a real
+> category and language the next time someone edits them — the update path validates too.
+
 This mirrors the AI flow, whose invariant #2 already states "category and language are always
 inherited from the quiz, never `Unspecified`" — see
 [ai-quiz-architecture.md](ai-quiz-architecture.md). Manual and AI creation now classify their
@@ -23,7 +49,7 @@ questions the same way.
 
 | Flow | Mechanism |
 |------|-----------|
-| **Manual** | New (negative-id) questions are created one request at a time. At save time each is passed through `inheritQuizClassification(question, values)` (`src/pages/Dashboard/Pages/Quiz/components/Create-Quiz-Form/inherit-quiz-classification.ts`), which overwrites `categoryId`/`languageId` with the quiz's values and leaves `difficultyId` untouched. |
+| **Manual** | Each new (negative-id) question is its own POST to the shared per-type endpoint — the builder uses the *same* hooks and endpoints as the standalone question pages, fired concurrently via `Promise.all`, then one further call creates the quiz. At save time each question is passed through `inheritQuizClassification(question, values)` (`src/pages/Dashboard/Pages/Quiz/components/Create-Quiz-Form/inherit-quiz-classification.ts`), which overwrites `categoryId`/`languageId` with the quiz's values and leaves `difficultyId` untouched. Because the endpoint is shared, the *inheritance* rule lives entirely in this caller — the endpoint only enforces "not Unspecified". |
 | **AI** | Category and language live only at the quiz level of the `/quiz/ai-import` payload; each question carries just a `difficultyId`. The backend applies the quiz's category/language to every created question. |
 
 Inheritance is applied **at save time**, not when the question is added. The quiz is the single
@@ -50,3 +76,9 @@ The shared `CategorySelect`, `DifficultySelect` and `LanguageSelect` components 
 the "Unspecified" option from their dropdowns for everyone except catalog admins (who still need
 it to curate content). This applies in both the form and filter variants. Hiding the option is
 purely a selection concern — it never changes a value already stored on a question or quiz.
+
+> **Known rough edge.** `useCanSelectUnspecifiedLookup` still offers "Unspecified" to admins in the
+> *question* category/language dropdowns, but the API now rejects it there. An admin who picks it
+> gets a clear 400 rather than a disabled option. Filtering it out of the question forms for
+> everyone (while keeping it in the filter variants and for difficulty) would close the gap; it
+> wasn't done here because those selects are shared with the quiz form and the filter bars.

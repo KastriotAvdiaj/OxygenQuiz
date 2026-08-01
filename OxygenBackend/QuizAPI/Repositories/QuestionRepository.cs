@@ -57,6 +57,27 @@ namespace QuizAPI.Repositories
         public Task<bool> IsUsedInAnyQuizAsync(int id, CancellationToken ct = default) =>
             _context.QuizQuestions.AnyAsync(qq => qq.QuestionId == id, ct);
 
+        // IgnoreQueryFilters so a soft-deleted lookup still resolves to a name — the caller needs
+        // to distinguish "this row is Unspecified" from "this id doesn't exist", and a filtered-out
+        // row would silently read as the latter.
+        public async Task<(string? Category, string? Language)> GetClassificationNamesAsync(
+            int categoryId, int languageId, CancellationToken ct = default)
+        {
+            var category = await _context.QuestionCategories
+                .IgnoreQueryFilters()
+                .Where(c => c.Id == categoryId)
+                .Select(c => c.Name)
+                .FirstOrDefaultAsync(ct);
+
+            var language = await _context.QuestionLanguages
+                .IgnoreQueryFilters()
+                .Where(l => l.Id == languageId)
+                .Select(l => l.Language)
+                .FirstOrDefaultAsync(ct);
+
+            return (category, language);
+        }
+
         // ── Tracked reads for mutation ────────────────────────────────────────────
         public Task<MultipleChoiceQuestion?> GetMultipleChoiceForUpdateAsync(int id, Guid? ownerId, CancellationToken ct = default)
         {

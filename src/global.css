@@ -297,6 +297,18 @@ body {
   transform: translateY(-0.6em);
 }
 
+/* Disabled: keep the resting 3D look exactly as-is — no hover/active lift, no
+   pointer cursor. Fading the layers would let the darker edge show through the
+   front face. */
+.lift-button:disabled {
+  cursor: not-allowed;
+}
+
+.lift-button:disabled:hover > .button_top,
+.lift-button:disabled:active > .button_top {
+  transform: translateY(-0.2em);
+}
+
 .minimal-input-wrapper {
   position: relative;
   width: 100%;

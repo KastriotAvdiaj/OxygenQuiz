@@ -181,8 +181,9 @@ export const TypeTheAnswerFormCard: React.FC<TypeTheAnswerFormCardProps> = ({
                       Accept partial answers
                     </Label>
                     <p className="text-xs text-muted-foreground">
-                      Correct if the answer is contained in what they type —
-                      &ldquo;the Eiffel Tower&rdquo; matches &ldquo;Eiffel&rdquo;.
+                      Correct if the answer appears as a whole word in what they
+                      type — &ldquo;the Eiffel Tower&rdquo; matches
+                      &ldquo;Eiffel&rdquo;. Best avoided on very short answers.
                     </p>
                   </div>
                   <Switch
