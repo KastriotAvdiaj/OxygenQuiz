@@ -253,6 +253,34 @@ Re-stamping would blank the chat someone had already read every time their tab r
 watermark — a deliberate leave is treated as arriving fresh. If you ever make leave a soft state,
 this changes with it.
 
+### Chat on phones
+
+Under `lg` the chat panel is **dropped from the stacked column** and moves into a bottom drawer
+behind a floating button (`MobileChatDrawer`). Stacked, chat was the tallest card and sat between
+the player and the ready/start actions; while waiting you're watching the roster and the actions,
+and chat is the thing you dip into. The drawer caps at `70dvh` so a strip of lobby stays visible —
+you should still notice the host picking a quiz or the match starting.
+
+The message list sizes itself to its container in **both** shells (`flex-1 min-h-0`), so one
+`chatSlot` node serves the desktop panel and the drawer — the board's `1fr` row and the drawer's
+`70dvh` each give it a definite height to divide. It briefly had a `heightMode` prop for this;
+once the desktop board became viewport-height there was only one behaviour left and the prop went.
+
+The button carries an unread badge (`useChatUnread`), counting messages that arrived while the
+drawer was shut. **Own and system messages don't count** — a badge that fires on "Ana joined"
+trains people to ignore it. Counting is by list length rather than message identity: chat messages
+have no ids, `sentUtc` can collide, and the list is capped at `MAX_MESSAGES`, so the only thing
+that stays correct once trimming starts is "how many have I seen" plus a tail diff.
+
+> **The subscription had to move for this to be safe.** `useLobbyChat` now lives in
+> `MultiplayerLobbyPage`, not in `LobbyChat`. The desktop panel and the mobile drawer are both
+> mounted (CSS hides one), and the hook registers handlers on the *shared* connection whose
+> cleanup calls `connection.off("ChatHistory")` — which removes them globally. Two subscribed
+> copies would mean unmounting either one silently killed the other's messages. With the
+> subscription hoisted, the duplicated subtree is just a second view. If you ever push live state
+> back down into `LobbyChat`, one of the two renders has to go. See
+> [`RESPONSIVE.md`](../RESPONSIVE.md).
+
 ---
 
 ## 5. API reference
@@ -310,6 +338,24 @@ The lobby is a fixed 2×2 board of `LobbyPanel`s — **Players** / **Room** top 
 grid-placed (`lg:col-start-*` / `lg:row-start-*`) so the DOM can order Quiz before Chat for the
 mobile column without that order reaching desktop. `LobbyPanel` is the single structural unit:
 bordered box, solid title bar, inset body.
+
+- **The desktop board is viewport-height and must never scroll.** Above `lg` the shell takes an
+  explicit `h-[calc(100dvh-var(--header-height,4rem))]` and the grid is `h-full` with rows
+  `[auto, minmax(0,1fr)]`: the top row sizes to its content, the bottom row takes what's left.
+  Two things are load-bearing and both fail silently:
+  - The shell's height **cannot** be `h-full`. The layout's scroll container wraps its children in
+    `min-h-full`, and `min-height: 100%` doesn't make a height definite — so a percentage height
+    below it computes to `auto` and the board grows with the chat log. This is the bug that made
+    chat expand instead of scroll.
+  - Every link below needs `min-h-0`, or a grid/flex item's default `min-height: auto` floors it at
+    its content and defeats the `1fr`.
+
+  If you add a panel, or a fixed height inside one, check a short viewport (≈768px tall) before
+  assuming it still fits. Below `lg` the column stacks and scrolls normally.
+- **Chat is desktop-only in the board.** Under `lg` that panel is dropped and chat moves to a
+  bottom drawer behind a floating button — see §4.5. The panel is `hidden lg:flex`, *not*
+  `lg:block`: `LobbyPanel`'s root is a flex column, and overriding its display breaks the body's
+  `flex-1` so chat can no longer size to its row.
 
 - **Type zones:** `font-quiz` cascades from the page shell so labels, buttons, names and chat wear
   the user's display font. Two deliberate opt-outs — panel title bars (`font-header`: chrome
@@ -398,6 +444,8 @@ cancellation mid-question — because both run through the same `finally`.
 
 | Date | Change |
 |---|---|
+| 2026-08-02 | **The desktop board fits the viewport.** The shell takes an explicit `calc(100dvh - header)` height (a percentage `h-full` can't work — the layout's `min-h-full` wrapper leaves the height indefinite) and the 2×2 grid divides it with an `auto` top row and a `minmax(0,1fr)` bottom row. Chat's message list fills its share instead of forcing a hard-coded `lg:h-[17rem]`. The lobby had been overflowing the fold on laptop-height screens, and chat grew instead of scrolling. |
+| 2026-08-02 | **Chat moves to a drawer on phones.** Under `lg` the chat panel leaves the stacked column for a bottom drawer behind a floating button with an unread badge (`MobileChatDrawer`, `useChatUnread`). `useLobbyChat` was hoisted from `LobbyChat` to `MultiplayerLobbyPage` so the two shells can both mount without double-registering the shared connection's handlers. |
 | 2026-07-31 | **Chat is private to who was in the room.** `Participant.FirstJoinedAt` + `GetMessagesSinceJoinAsync` replace the unconditional `GetRecentMessagesAsync` replay, so a new joiner no longer receives chat sent before they arrived. Rejoins keep their history because the stamp isn't refreshed. |
 | 2026-07-31 | **Join failures are reported honestly.** Added `CheckSession` + `SessionAvailability` (dialog pre-flight), `SessionJoinException` → `HubException` so the cause survives to the client, and moved `Groups.AddToGroupAsync` after the participant add to stop failed joiners staying subscribed. A bad code no longer strands the player on the lobby route ([`multiplayer-join.md`](./multiplayer-join.md)). |
 | 2026-07-31 | **Rematch fixed.** Added `ResetToLobbyAsync`, run from the match loop's `finally`; the start guard became loop liveness (`MatchCts`) instead of `QuizState`; ready flags now clear on reset. Previously only one match could ever be played per lobby. |

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FallbackProps } from "react-error-boundary";
-import { AlertCircle, Check, ChevronDown, Copy, Home, RefreshCcw } from "lucide-react";
+import { Check, ChevronDown, Copy, Home, RefreshCcw } from "lucide-react";
 import { LiftedButton } from "@/common/LiftedButton";
 import { getErrorFontClass } from "../errorFontZone";
 
@@ -30,7 +30,8 @@ const detailsRequested = (): boolean => {
  * decided to throw. Normalise to something printable rather than rendering "[object Object]".
  */
 const describeError = (error: unknown): { message: string; stack?: string } => {
-  if (error instanceof Error) return { message: error.message, stack: error.stack };
+  if (error instanceof Error)
+    return { message: error.message, stack: error.stack };
   if (typeof error === "string") return { message: error };
 
   if (error && typeof error === "object") {
@@ -39,7 +40,10 @@ const describeError = (error: unknown): { message: string; stack?: string } => {
       statusText?: unknown;
       message?: unknown;
     };
-    const summary = [candidate.status, candidate.statusText ?? candidate.message]
+    const summary = [
+      candidate.status,
+      candidate.statusText ?? candidate.message,
+    ]
       .filter((part) => part !== undefined && part !== null && part !== "")
       .join(" ");
     if (summary) return { message: summary };
@@ -88,21 +92,20 @@ export const MainErrorFallback: React.FC<FallbackProps> = ({
   return (
     <div
       className={`${getErrorFontClass()} app-shell-viewport flex w-full items-center justify-center bg-background p-6 sm:p-8`}
-      role="alert">
+      role="alert"
+    >
       {/* max-w-xs on phones: the card should read as a card, not a full-bleed page. The step up
           to max-w-md only once there's room for it keeps the measure comfortable at both ends. */}
       <Card className="w-full max-w-xs sm:max-w-md text-center border shadow-lg bg-background dark:border-muted dark:bg-primary/10">
         <CardHeader className="p-4 pb-2 sm:p-6 sm:pb-4">
-          <div className="mx-auto flex items-center justify-center rounded-full bg-red-100 p-2 dark:bg-red-900">
-            <AlertCircle className="h-6 w-6 text-red-500 sm:h-8 sm:w-8 dark:text-red-400" />
-          </div>
           <CardTitle className="mt-3 text-lg font-bold leading-tight sm:mt-4 sm:text-2xl">
             Something went wrong
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3 p-4 pt-0 sm:space-y-4 sm:p-6 sm:pt-0">
           <p className="text-xs leading-relaxed text-muted-foreground sm:text-sm">
-            We're sorry — something unexpected happened. Reloading usually helps.
+            We're sorry — something unexpected happened. Reloading usually
+            helps.
           </p>
 
           {showDetailsAffordance && (
@@ -111,7 +114,8 @@ export const MainErrorFallback: React.FC<FallbackProps> = ({
                 type="button"
                 onClick={() => setShowDetails((prev) => !prev)}
                 aria-expanded={showDetails}
-                className="flex w-full items-center justify-between gap-2 rounded-md px-1 py-1.5 text-[11px] font-semibold text-muted-foreground transition-colors hover:text-foreground sm:text-xs">
+                className="flex w-full items-center justify-between gap-2 rounded-md px-1 py-1.5 text-[11px] font-semibold text-muted-foreground transition-colors hover:text-foreground sm:text-xs"
+              >
                 <span>{showDetails ? "Hide" : "Show"} error details</span>
                 <ChevronDown
                   className={`h-3.5 w-3.5 shrink-0 transition-transform ${showDetails ? "rotate-180" : ""}`}
@@ -137,7 +141,8 @@ export const MainErrorFallback: React.FC<FallbackProps> = ({
                   <button
                     type="button"
                     onClick={handleCopy}
-                    className="flex items-center gap-1.5 rounded-md px-1 py-1 text-[11px] font-semibold text-muted-foreground transition-colors hover:text-foreground">
+                    className="flex items-center gap-1.5 rounded-md px-1 py-1 text-[11px] font-semibold text-muted-foreground transition-colors hover:text-foreground"
+                  >
                     {copied ? (
                       <>
                         <Check className="h-3 w-3" /> Copied
@@ -159,7 +164,8 @@ export const MainErrorFallback: React.FC<FallbackProps> = ({
                 resetErrorBoundary();
                 window.location.reload();
               }}
-              className="w-full text-sm sm:text-base">
+              className="w-full text-sm sm:text-base"
+            >
               <RefreshCcw className="mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
               Refresh Page
             </LiftedButton>

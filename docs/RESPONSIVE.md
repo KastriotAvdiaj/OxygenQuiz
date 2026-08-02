@@ -90,6 +90,15 @@ with `env(safe-area-inset-*)`. If you ever add a fixed bottom bar, pad it with
   was deleted. A layout that doesn't change the live child's shell is simpler
   than any correct way of switching it — reach for `matchMedia` only once
   you've established the two shells really must differ.
+  **And when they must differ, hoist the live state instead of branching.**
+  The lobby now *does* need two shells (desktop chat panel vs. a mobile drawer),
+  and the answer wasn't to bring `useIsCompactLayout` back: `useLobbyChat` moved
+  up into `MultiplayerLobbyPage`, so the only thing rendered twice is a
+  stateless view. Moving the subscription up beats detecting the breakpoint —
+  it's less code, it can't desync from the CSS that actually decides which shell
+  is visible, and it degrades to "a duplicate DOM node" rather than "a dead
+  subscription" if someone later changes the layout. See the lobby chat section
+  in [`quiz/multiplayer.md`](quiz/multiplayer.md).
 - **Drawers/dialogs on phones:** `DialogContent` now carries the phone sizing
   itself — `w-[calc(100%-2rem)] sm:w-full` (a 1rem gutter each side),
   `rounded-lg` at every width, and the dvh height cap with `overflow-y-auto`.
@@ -123,6 +132,39 @@ with `env(safe-area-inset-*)`. If you ever add a fixed bottom bar, pad it with
 - **Background effects** (`Squares`, `Prism`) are absolutely positioned inside
   the scroll container with `h-full` — one visible viewport, sized by the shell.
   Never `h-screen` (over-measures on mobile).
+- **Building a "fits the viewport" screen takes two things, and both fail
+  silently.**
+
+  **1. `h-full` needs a *definite* ancestor height, and `min-h-full` is not
+  one.** A percentage height resolves against the nearest ancestor with a real
+  height. `.app-shell-viewport` is a genuine `100dvh` — but the layout wraps its
+  children in `min-h-full flex-col` (deliberately: pinning it to `height: 100%`
+  is what broke scrolling on tall pages, see the table below). `min-height: 100%`
+  leaves the height `auto`, so **every `h-full` below that point computes to
+  `auto`** and grows with content. No warning, no visual clue until something
+  long enough shows up.
+  A page that must cap at one screen therefore needs its own explicit height:
+  `lg:h-[calc(100dvh-var(--header-height,4rem))]` — matching the scroll
+  container's own `padding-top` — plus `lg:flex-none`, since an explicit height
+  and `flex-1` fight over the same axis.
+
+  **2. Then `min-h-0` at every level below it.** Grid and flex items default to
+  `min-height: auto`, which floors them at content height — so a
+  `minmax(0,1fr)` row or a `flex-1` child still grows instead of shrinking, and
+  the overflow lands on the *page* rather than the inner scroll region you
+  wanted. One missing link breaks the whole chain.
+
+  *Worked example:* the multiplayer lobby. Shell sets the dvh height; the board
+  is `lg:h-full` with rows `[auto, minmax(0,1fr)]`; the chat panel and its
+  message list are `min-h-0` / `flex-1 min-h-0` the whole way down. It used to
+  pin the message list to a hard-coded `lg:h-[17rem]` precisely *because* the
+  chain wasn't there — and that pushed the board past the fold on a laptop.
+  Fix the chain rather than guessing a pixel height.
+
+  Check at a short desktop viewport (≈768px tall). It's easy to build one of
+  these on a large monitor and never see the overflow. Known gap: an
+  `EmailVerificationBanner` above the content adds height the calc doesn't know
+  about, so an unconfirmed user can still get a small scroll.
 
 ## What changed in the July 2026 overhaul (and why)
 

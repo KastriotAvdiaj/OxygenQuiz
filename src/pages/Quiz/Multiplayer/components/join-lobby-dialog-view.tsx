@@ -3,7 +3,7 @@ import { WifiOff, ServerOff } from "lucide-react";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
+  // DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,

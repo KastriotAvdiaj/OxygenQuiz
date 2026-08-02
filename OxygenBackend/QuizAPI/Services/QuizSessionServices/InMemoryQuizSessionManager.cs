@@ -17,7 +17,7 @@ public class InMemoryQuizSessionManager : IQuizSessionManager
         // Copy shared with CheckSessionAsync so the pre-flight check and the real join can never
         // disagree about what they'd tell the player.
         private const string NotFoundMessage =
-            "That room code doesn't exist. Check the code, or ask the host for a new invite.";
+            "Room code doesn't exist. Check the code, or ask the host for a new invite.";
         private const string FullMessage = "This lobby is full.";
 
         public Task<Participant> AddParticipantAsync(string sessionId, string username, string connectionId, string? profileImageUrl = null)

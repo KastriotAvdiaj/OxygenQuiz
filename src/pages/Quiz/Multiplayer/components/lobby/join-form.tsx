@@ -1,5 +1,4 @@
 import { Link } from "react-router-dom";
-import { AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/form";
 
@@ -45,10 +44,9 @@ export const JoinForm = ({
     <div className="max-w-md mx-auto space-y-6 sm:space-y-8">
       {hasFailed && (
         <div className="space-y-3 text-center">
-          <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-destructive/15">
-            <AlertCircle className="h-6 w-6 text-destructive" />
-          </div>
-          <h1 className="text-xl font-bold sm:text-2xl">Couldn't join that lobby</h1>
+          <h1 className="text-xl font-bold sm:text-2xl">
+            Couldn't join that lobby
+          </h1>
           <p className="text-sm text-muted-foreground">{joinError}</p>
         </div>
       )}

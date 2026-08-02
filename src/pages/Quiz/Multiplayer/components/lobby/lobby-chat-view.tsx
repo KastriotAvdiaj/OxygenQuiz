@@ -41,14 +41,14 @@ export const LobbyChatView = ({
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
-      {/* Fixed height, not `flex-1`: none of this component's ancestors resolve to a definite
-          height, so `h-full` collapses to `auto` and a `flex-1` child inherits `min-height: auto`
-          — which floors it at its content size and lets the message list grow the page forever
-          instead of scrolling. A concrete height guarantees the viewport always overflows. */}
-      <ScrollArea
-        ref={scrollAreaRef}
-        className="h-48 max-h-[45vh] shrink-0 px-2.5 py-2 lg:h-[17rem] lg:px-3"
-      >
+      {/* `flex-1 min-h-0`, not a fixed height: both containers now give this a definite height to
+          divide up — the desktop board is a viewport-height grid with a `1fr` row, and the mobile
+          drawer is capped at 70dvh. `min-h-0` is load-bearing; without it the flex child's default
+          `min-height: auto` floors it at content size and the message list grows its container
+          instead of scrolling.
+          This used to be a hard-coded `lg:h-[17rem]` because no ancestor resolved to a definite
+          height, which is what pushed the desktop board past the fold on a laptop. */}
+      <ScrollArea ref={scrollAreaRef} className="min-h-0 flex-1 px-2.5 py-2 lg:px-3">
         <div className="space-y-1.5 pr-3">
           {messages.length === 0 ? (
             <p className="py-8 text-center font-quiz text-sm text-muted-foreground/70 lg:text-base">

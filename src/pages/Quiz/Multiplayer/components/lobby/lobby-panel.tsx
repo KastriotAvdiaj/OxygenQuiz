@@ -28,8 +28,10 @@ export const LobbyPanel = ({
   children,
 }: LobbyPanelProps) => (
   <section
+    // min-h-0 as well as min-w-0: as a grid item the default `min-height: auto` floors the panel
+    // at its content height, which defeats a `1fr` row and lets the board grow past the viewport.
     className={cn(
-      "flex min-w-0 flex-col overflow-hidden rounded-lg border border-border bg-card shadow-sm",
+      "flex min-h-0 min-w-0 flex-col overflow-hidden rounded-lg border border-border bg-card shadow-sm",
       className,
     )}
   >

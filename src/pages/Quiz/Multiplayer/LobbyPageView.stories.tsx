@@ -189,6 +189,9 @@ const meta = {
     onOpenQuizSelect: fn(),
     quizSelectionDialogSlot: closedQuizSelectionDialog,
     chatSlot: emptyChat,
+    chatUnreadCount: 0,
+    isChatOpen: false,
+    onChatOpenChange: fn(),
     navGuardLeaveDialog: noopLeaveDialog,
     manualLeaveDialog: noopLeaveDialog,
   },
@@ -304,6 +307,41 @@ export const WithChatConversation: Story = {
     hasSelectedQuiz: true,
     selectedQuiz: chemistryQuiz,
     chatSlot: populatedChat,
+  },
+};
+
+// ── Mobile: chat lives behind a floating button ────────────────────────────────
+// Under `lg` the chat panel drops out of the stacked column entirely. Use the viewport toolbar
+// (or Chromatic's mobile viewport) to see the button; at desktop widths it's hidden and the panel
+// is back.
+export const MobileChatUnread: Story = {
+  parameters: { viewport: { defaultViewport: "mobile1" } },
+  args: {
+    hasJoined: true,
+    sessionId: "AB12CD",
+    participants: mixedReady,
+    hasSelectedQuiz: true,
+    selectedQuiz: chemistryQuiz,
+    chatSlot: populatedChat,
+    chatUnreadCount: 3,
+  },
+};
+
+/** The badge caps its label rather than growing the button out of round. */
+export const MobileChatManyUnread: Story = {
+  parameters: { viewport: { defaultViewport: "mobile1" } },
+  args: {
+    ...MobileChatUnread.args,
+    chatUnreadCount: 27,
+  },
+};
+
+export const MobileChatOpen: Story = {
+  parameters: { viewport: { defaultViewport: "mobile1" } },
+  args: {
+    ...MobileChatUnread.args,
+    chatUnreadCount: 0,
+    isChatOpen: true,
   },
 };
 

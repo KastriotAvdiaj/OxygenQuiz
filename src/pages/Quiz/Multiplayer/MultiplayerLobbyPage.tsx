@@ -1,5 +1,7 @@
 import { useCallback } from "react";
 import { useLobbyConnection } from "./hooks/use-lobby-connection";
+import { useLobbyChat } from "./hooks/use-lobby-chat";
+import { useChatUnread } from "./hooks/use-chat-unread";
 import { useDisclosure } from "@/hooks/use-disclosure";
 import { useMatch } from "./hooks/use-match";
 import { MultiplayerGame } from "./components/game/MultiplayerGame";
@@ -55,6 +57,37 @@ export const MultiplayerLobbyPage = ({
     close: closeManualLeave,
   } = useDisclosure();
 
+  // Mobile chat drawer. Chat is an always-open panel on desktop, so this only drives the phone
+  // layout — but the unread count has to know about it either way.
+  const {
+    isOpen: isChatOpen,
+    open: openChat,
+    close: closeChat,
+  } = useDisclosure();
+
+  // The chat subscription lives HERE, not in the chat component. LobbyPageView renders the
+  // composer twice (desktop panel + mobile drawer) and useLobbyChat registers handlers on the
+  // shared SignalR connection whose cleanup removes them globally — two subscribed copies would
+  // mean unmounting either one silently killed the other. Hoisting it makes the duplicate render
+  // harmless. See docs/RESPONSIVE.md.
+  const { messages: chatMessages, send: sendChatMessage } = useLobbyChat(sessionId);
+
+  // Visibility here means "the drawer is open" and nothing more. On desktop chat is always on
+  // screen so the count is meaningless — but the button carrying the badge is `lg:hidden`, so a
+  // count nobody can see costs nothing. Deliberately no breakpoint check: the lobby used to carry
+  // a `useIsCompactLayout` hook for exactly this kind of question and it was deleted in the
+  // panel-board redesign (docs/RESPONSIVE.md). Not worth reintroducing to hide a hidden number.
+  const chatUnreadCount = useChatUnread({
+    messages: chatMessages,
+    username,
+    isVisible: isChatOpen,
+  });
+
+  const handleChatOpenChange = useCallback(
+    (open: boolean) => (open ? openChat() : closeChat()),
+    [openChat, closeChat],
+  );
+
   const handleConfirmManualLeave = useCallback(() => {
     closeManualLeave();
     handleLeaveSession();
@@ -107,7 +140,16 @@ export const MultiplayerLobbyPage = ({
           selectedQuiz={selectedQuiz}
         />
       }
-      chatSlot={<LobbyChat sessionId={sessionId} username={username} />}
+      chatSlot={
+        <LobbyChat
+          messages={chatMessages}
+          username={username}
+          onSend={sendChatMessage}
+        />
+      }
+      chatUnreadCount={chatUnreadCount}
+      isChatOpen={isChatOpen}
+      onChatOpenChange={handleChatOpenChange}
       navGuardLeaveDialog={{
         isOpen: showLeaveDialog,
         onConfirm: confirmNavigation,
