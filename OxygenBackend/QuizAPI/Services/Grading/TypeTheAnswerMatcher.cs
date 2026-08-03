@@ -90,9 +90,12 @@ namespace QuizAPI.Services.Grading
         ///
         /// **Scripts without spaces** (Chinese, Japanese, Thai …) normalise to a single token, and
         /// word-boundary matching would be meaningless there — for those, substring containment is
-        /// the correct behaviour, so a single-token expected answer falls back to it. That keeps
-        /// partial match working for those languages at the cost of the "cat"/"concatenate" problem
-        /// remaining *within* a token, which is unavoidable without per-language segmentation.
+        /// the correct behaviour, so an expected answer written in such a script falls back to it.
+        /// That keeps partial match working for those languages at the cost of the
+        /// "cat"/"concatenate" problem remaining *within* a token, which is unavoidable without
+        /// per-language segmentation. The fallback is gated on the script itself, not on the token
+        /// count: gating it on "both sides are one token" made it fire for every single-word
+        /// space-delimited answer too, which is exactly the case whole-word matching exists for.
         /// </summary>
         private static bool ContainsAsWords(string haystack, string expected)
         {
@@ -103,9 +106,10 @@ namespace QuizAPI.Services.Grading
 
             if (expectedTokens.Length == 0) return false;
 
-            // Space-less script (or a single word that is itself the whole answer): the token split
-            // tells us nothing, so fall back to substring within the single token.
-            if (expectedTokens.Length == 1 && haystackTokens.Length == 1)
+            // Space-less script: the token split tells us nothing, so fall back to substring.
+            if (expectedTokens.Length == 1
+                && haystackTokens.Length == 1
+                && IsSpacelessScript(expectedTokens[0]))
                 return haystackTokens[0].Contains(expectedTokens[0], StringComparison.Ordinal);
 
             if (expectedTokens.Length > haystackTokens.Length) return false;
@@ -124,6 +128,31 @@ namespace QuizAPI.Services.Grading
                     }
                 }
                 if (matched) return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// True when the token is written in a script that does not delimit words with spaces, so
+        /// splitting on spaces cannot recover word boundaries. Covers Han, kana, Thai, Lao, Khmer
+        /// and Myanmar. Korean is deliberately absent — Hangul is space-delimited.
+        ///
+        /// A single character is enough: a mixed token ("iPhone14の") still can't be segmented on
+        /// spaces, so substring is the only workable behaviour for it.
+        /// </summary>
+        private static bool IsSpacelessScript(string token)
+        {
+            foreach (var ch in token)
+            {
+                if (ch is (>= '぀' and <= 'ヿ')   // Hiragana + Katakana
+                    or (>= '㐀' and <= '䶿')      // CJK Unified Ideographs Extension A
+                    or (>= '一' and <= '鿿')      // CJK Unified Ideographs
+                    or (>= '豈' and <= '﫿')      // CJK Compatibility Ideographs
+                    or (>= '฀' and <= '໿')      // Thai + Lao
+                    or (>= 'ក' and <= '៿')      // Khmer
+                    or (>= 'က' and <= '႟'))     // Myanmar
+                    return true;
             }
 
             return false;

@@ -7,6 +7,7 @@ import { useMatch } from "./hooks/use-match";
 import { MultiplayerGame } from "./components/game/MultiplayerGame";
 import { QuizSelectionDialog } from "./components/lobby/quiz-selection-dialog";
 import { LobbyChat } from "./components/lobby/lobby-chat";
+import { LeaveLobbyDialog } from "./components/lobby/leave-lobby-dialog";
 import { LobbyPageView } from "./LobbyPageView";
 
 interface MultiplayerLobbyPageProps {
@@ -98,12 +99,30 @@ export const MultiplayerLobbyPage = ({
   const match = useMatch({ sessionId, username });
   if (match.isActive) {
     return (
-      <MultiplayerGame
-        username={username}
-        match={match}
-        onExit={match.reset}
-        participants={participants}
-      />
+      <>
+        <MultiplayerGame
+          username={username}
+          match={match}
+          onExit={match.reset}
+          participants={participants}
+        />
+
+        {/* The navigation blocker is armed by `useLobbyConnection` for as long as you're in the
+            session — including mid-match — but the dialog that explains it used to live only
+            inside <LobbyPageView>, on the other side of this early return. So during a match,
+            clicking a header link armed the blocker, rendered nothing, and left it stuck in
+            "blocked" with no way to proceed or reset. Every further click produced a fresh
+            blocker object and another render of this whole subtree, which is what froze the
+            question timer (see quiz-timer.tsx). A blocked navigation must always have a visible
+            way out: if you add another render branch to this page, it needs this dialog too. */}
+        <LeaveLobbyDialog
+          isOpen={showLeaveDialog}
+          isHost={isHost}
+          inMatch
+          onConfirm={confirmNavigation}
+          onCancel={cancelNavigation}
+        />
+      </>
     );
   }
 

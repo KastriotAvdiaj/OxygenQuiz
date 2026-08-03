@@ -84,11 +84,18 @@ interesting part, so we fake it with Moq (pattern C below).
 | `src/components/ui/dialog/__tests__/dialog.test.tsx` | Dialog component (pre-existing). |
 | `src/components/ui/dialog/confirmation-dialog/__tests__/confirmation-dialog.test.tsx` | Confirmation flow (pre-existing). |
 | `src/pages/UserRelated/Signup/__tests__/signup-auth-config-storm.test.tsx` | Signup when `auth-config` is unreachable: **exactly one** request (regression guard for the request storm — see [social-login.md](../auth/social-login.md)), and the flow **fails closed** to the invite gate rather than an open signup. |
+| `src/pages/Quiz/Sessions/.../__tests__/quiz-timer.test.tsx` | `QuizTimer` under re-render pressure: it keeps counting while a parent re-renders faster than its own interval with a fresh `onTimeUp` each time, fires `onTimeUp` exactly once, and neither gains nor loses time across a pause/resume. Fake timers drive `Date.now()`, which is what makes a deadline-anchored countdown testable. See [`quiz-timer.md`](../quiz/quiz-timer.md). |
 
 The signup-storm test is worth copying as a pattern: it mocks `@/lib/Api-client` to reject, then
 **counts calls over a time window** rather than asserting on rendered output. Render assertions
 can't see a retry loop — the DOM looks identical whether a failed request fired once or a
 thousand times. Any query whose failure has a designed fallback deserves this shape.
+
+The timer test is the same idea from the other end: the bug it guards against was invisible to
+every static assertion, because a frozen countdown renders perfectly valid markup. What exposes it
+is **re-rendering on a schedule and asserting the DOM changed anyway**. Any component driven by a
+`setInterval` or an animation frame is worth this shape — the failure mode is always "correct in
+isolation, broken by whatever the parent happens to do".
 
 ### Frontend — Storybook stories (`*.stories.tsx`)
 

@@ -129,6 +129,35 @@ with `env(safe-area-inset-*)`. If you ever add a fixed bottom bar, pad it with
   > `py-*`/`max-h-none` the same call site passed. A utility class is not proof
   > of anything if a plain-CSS rule also targets the element — check the
   > computed style, and put the fix where the losing declaration lives.
+
+  > **The second trap:** the sweep above fixed the *shared* fields — `Input`,
+  > `Textarea`, `FIELD_MODERN`, `.minimal-input`. A raw `<input>` written
+  > inline imports none of that, so it keeps whatever `text-*` its author
+  > typed. The lobby chat composer was a bare `<input className="… text-sm">`
+  > and went on zooming for another two days. Grep for `<input` as well as for
+  > the component when auditing this.
+- **A zoomed page looks like a layout bug.** Once iOS has zoomed in on a focused
+  field, the visual viewport is narrower than the layout viewport, so controls
+  at the right-hand end of a row sit off-screen and the page scrolls
+  horizontally. The reported symptom is "the send button is cut off"; the cause
+  is the font size on the input next to it. Check for the zoom before you go
+  looking for a flex/overflow mistake.
+- **Phone keyboards label their own action key** — via `enterKeyHint`
+  (`send`, `go`, `search`, `done`, `next`). Default is "return", which on a
+  single-line field reads as "make a new line" and hides the fact that Enter
+  submits. It is a label only: it changes nothing about what the key does, so
+  the `onKeyDown` handler still has to exist. Set it on any input whose Enter
+  key has a meaning.
+- **Dialogs and drawers steal focus on open.** Radix focuses the first
+  focusable descendant of `DialogContent`. If that's a text field, opening the
+  overlay raises the keyboard — which on a height-capped drawer covers most of
+  what the user opened it to read. Prevent it with
+  `onOpenAutoFocus={(e) => { e.preventDefault(); contentRef.current?.focus(); }}`.
+  Focus the content element rather than dropping focus entirely: Radix's
+  Content carries `tabIndex={-1}`, and keeping focus inside the layer is what
+  keeps the focus trap, Escape and screen-reader announcement working.
+  Overlays you open *in order to* type (a search sheet, say) should keep the
+  default.
 - **Background effects** (`Squares`, `Prism`) are absolutely positioned inside
   the scroll container with `h-full` — one visible viewport, sized by the shell.
   Never `h-screen` (over-measures on mobile).
@@ -199,6 +228,11 @@ each tick and on `visibilitychange` — never decrement a counter per tick.
 either way: `SubmitAnswerService` grades from `CurrentQuestionStartTime`
 regardless of what the client displayed, and `resolveAndResume` catches up
 expired questions when a session is reopened after a full page reload.
+`QuizTimer`'s full contract — anchoring rules, why its effect may only depend
+on primitives, and the two bugs that established both — is in
+[`quiz/quiz-timer.md`](quiz/quiz-timer.md). Read it before changing the
+component; it has been broken twice by parent re-renders rather than by
+anything in the timer itself.
 Related design fact: the quiz does not advance while nobody's device is
 polling — the next question's clock starts server-side when the question is
 *served*, so returning after a break legitimately shows a fresh timer on a
@@ -214,6 +248,17 @@ freshly fetched question.
 | `Login.tsx`, `Signup.tsx` | `px-5` → `px-6` on phones | Form ran almost edge to edge; now matches the dialog gutter |
 | `UtilityPages/Error/*`, `NotFound-Content` | `max-w-xs sm:max-w-md`, reduced type/padding below `sm` | Rendered in the display font at desktop sizing, the error card filled a phone screen and read as a broken page |
 
+## What changed in the Aug 2 2026 pass
+
+All three were the same screen — the multiplayer lobby's mobile chat drawer —
+and reported as three separate complaints.
+
+| Where | Change | Why |
+| --- | --- | --- |
+| `lobby-chat-view.tsx` | Composer input `text-sm` → `text-base lg:text-sm` | A bare inline `<input>`, so the July 31 sweep over the shared field components never touched it. At 14px iOS zoomed on focus, and the zoom — not a flex bug — is what pushed the send button off the right edge. `lg:` rather than the usual `sm:` because this composer's mobile shell is the drawer, which is `lg:hidden` |
+| `lobby-chat-view.tsx` | Added `enterKeyHint="send"`; send button `h-8 w-8` → `h-9 w-9 lg:h-8 lg:w-8` | The keyboard's return key read "return" on a single-line field, so the only discoverable way to send was a 32px icon — below the ≥36px touch-target rule |
+| `mobile-chat-drawer.tsx` | `onOpenAutoFocus` prevented, focus moved to the drawer content | Radix focused the chat input on open, so opening chat raised the keyboard over a 70dvh drawer. Opening chat is "see what was said", not "type" |
+
 ## Checklist for new pages/components
 
 1. Page root: `flex-1` (fills screen, can grow). No `h-screen`, no `100vh`, no
@@ -223,4 +268,9 @@ freshly fetched question.
    `Dialog` already handles its own phone gutter and height cap.
 4. Mobile-first Tailwind; verify at 360px, 390px, 768px, and desktop.
 5. Touch targets ≥ `h-9`; form inputs ≥ 16px font **on phones** — and confirm
-   in devtools' computed styles, not by reading the class list.
+   in devtools' computed styles, not by reading the class list. This applies to
+   raw `<input>`/`<textarea>` elements too, not just the shared field
+   components.
+6. Any input whose Enter key submits: set `enterKeyHint`.
+7. Any dialog/drawer that contains a text field: decide whether it should take
+   focus on open, and pass `onOpenAutoFocus` if not.

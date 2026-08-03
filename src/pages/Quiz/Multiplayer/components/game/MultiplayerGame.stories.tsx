@@ -61,6 +61,9 @@ const makeMatch = (overrides: Partial<Match>): Match => ({
   countdownSeconds: 3,
   question: null,
   deadlineUtc: null,
+  // Storybook has no server, so there's no clock to be offset from — the stories' deadlines are
+  // built from the browser's own `Date.now()` and are correct by construction.
+  clockSkewMs: 0,
   answered: [],
   hasSubmitted: false,
   lastResult: null,

@@ -44,7 +44,7 @@ All paths are under `src/pages/Quiz/Sessions/`.
 | `components/.../question-display-type-files/*.tsx` | The three **input components** (multiple-choice, true-or-false, type-the-answer). Each owns its own selection state and reports the answer via `onSubmit`. **Shared with multiplayer.** |
 | `components/.../quiz-submit-button.tsx` | The **single Submit button** used by all three input components (and both modes). Owns styling, the loading spinner, the visibility rule, and the disabled logic. |
 | `components/.../question-card.tsx` | The styled question-text card. Shared with the multiplayer match view. |
-| `components/.../feedback-display.tsx`, `quiz-timer.tsx` | Instant-feedback panel and the countdown timer. |
+| `components/.../feedback-display.tsx`, `quiz-timer.tsx` | Instant-feedback panel and the countdown timer. **Shared with multiplayer**, and it has its own contract — anchored deadline, primitive-only effect dependencies. Read [`quiz-timer.md`](./quiz-timer.md) before changing it. |
 | `api/submit-answer.ts` | `useSubmitAnswer` mutation → `POST /QuizSessions/answer`, then invalidates the current-state query. |
 | `api/get-current-state.ts`, `get-next-question.ts`, … | The rest of the session API surface. |
 

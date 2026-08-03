@@ -157,6 +157,22 @@ rematch needs a fresh opt-in from everyone, because `canStartQuiz` requires all-
   `HostUsername`; the hub broadcasts `HostChanged`.
 - **Empty lobby** — cancels `MatchCts` and removes the session from the dictionary.
 
+**Client-side, `useNavigationGuard(hasJoined)` blocks in-app navigation** (React Router's
+`useBlocker`, plus `beforeunload` for refresh and tab close) for as long as you're in the session —
+**including mid-match**, since `hasJoined` doesn't drop when a match starts.
+
+That has one hard requirement: *every* render branch of `MultiplayerLobbyPage` must render
+`<LeaveLobbyDialog>`. A blocked navigation with no dialog on screen is not a no-op — the blocker
+latches into `blocked` and nothing can call `proceed()` or `reset()`, so the click looks ignored and
+every further click re-renders the subtree. That is exactly how the mid-match branch shipped, and it
+froze the question timer as a side effect ([`quiz-timer.md`](./quiz-timer.md#what-went-wrong-2026-08-02)).
+The dialog is now rendered in both branches and takes an `inMatch` flag for the copy, because "you
+can rejoin later with the room code" is misleading while a round clock is running.
+
+Note that confirming only calls `blocker.proceed()` — it does **not** invoke `LeaveSession`. The
+server keeps you in the roster until the round's deadline passes or you disconnect. Logged as a P3
+in [`known-issues.md`](../deployment/known-issues.md#multiplayer--game-state).
+
 ---
 
 ## 4. Flows
@@ -220,6 +236,13 @@ Per `MatchOrchestrator`, with constants `CountdownSeconds = 3`, `InterQuestionPa
 6. After the last question: `QuizEnded`, then `MatchEnded` with the final scoreboard and winner.
 7. The `finally` disposes the CTS and calls `ResetToLobbyAsync`.
 
+**The deadline is an absolute server timestamp** (`QuestionStartTime.AddSeconds(limit)`), so the
+client cannot simply subtract its own `Date.now()` from it — the two clocks are not the same clock.
+`useMatch` reads the server's clock off the event (`deadline − limit` is what `UtcNow` was at send)
+and `multiplayer-question-view` corrects for the offset before deriving the seconds it shows. A
+drifted device clock used to open a 30s question at 32 or 34.
+See [`quiz-timer.md`](./quiz-timer.md#clock-skew-same-day).
+
 **Winner** = top of the board, unless the top two are exactly tied on both score *and* correct
 count, in which case there is no single winner (`WinnerUsername` is null and the UI shows a tie).
 
@@ -265,6 +288,18 @@ The message list sizes itself to its container in **both** shells (`flex-1 min-h
 `chatSlot` node serves the desktop panel and the drawer — the board's `1fr` row and the drawer's
 `70dvh` each give it a definite height to divide. It briefly had a `heightMode` prop for this;
 once the desktop board became viewport-height there was only one behaviour left and the prop went.
+
+**The drawer does not focus the composer on open.** Radix focuses the first focusable descendant of
+`DialogContent`, which here is the chat input — so opening chat raised the keyboard, and the
+keyboard covered most of a 70dvh drawer before you had read anything. `onOpenAutoFocus` is
+prevented and focus goes to the drawer content instead (`tabIndex={-1}`, so the focus trap, Escape
+and screen-reader announcement all still work). Opening chat is "what did I miss"; typing is one
+deliberate tap away.
+
+The composer input is `text-base lg:text-sm` and carries `enterKeyHint="send"`. Both are phone
+concerns: below 16px iOS zooms the page on focus and never zooms back out, which is what used to
+push the send button off the right edge, and the default "return" key label reads as "new line" on
+a single-line field. See [`RESPONSIVE.md`](../RESPONSIVE.md).
 
 The button carries an unread badge (`useChatUnread`), counting messages that arrived while the
 drawer was shut. **Own and system messages don't count** — a badge that fires on "Ana joined"
@@ -445,6 +480,9 @@ cancellation mid-question — because both run through the same `finally`.
 | Date | Change |
 |---|---|
 | 2026-08-02 | **The desktop board fits the viewport.** The shell takes an explicit `calc(100dvh - header)` height (a percentage `h-full` can't work — the layout's `min-h-full` wrapper leaves the height indefinite) and the 2×2 grid divides it with an `auto` top row and a `minmax(0,1fr)` bottom row. Chat's message list fills its share instead of forcing a hard-coded `lg:h-[17rem]`. The lobby had been overflowing the fold on laptop-height screens, and chat grew instead of scrolling. |
+| 2026-08-02 | **A blocked navigation mid-match now has a way out.** `useNavigationGuard` is armed for the whole session, but the dialog that resolves it lived only inside `<LobbyPageView>` — on the far side of `MultiplayerLobbyPage`'s early return for an active match. Clicking a header link during a match armed the blocker, showed nothing, and left it stuck in `blocked`; each further click produced a new blocker object and re-rendered the game subtree, which froze the question timer. `<LeaveLobbyDialog>` is now rendered in both branches, with match-specific copy. Full write-up: [`quiz-timer.md`](./quiz-timer.md). |
+| 2026-08-02 | **The question timer no longer restarts on re-render, and no longer trusts the device clock.** `QuizTimer` holds its callbacks in refs so its countdown effect depends on primitives only, and re-anchors its deadline exactly twice — new question, and resume from pause. Separately, `useMatch` now measures the server/client clock offset from each `QuestionStarted` and `multiplayer-question-view` corrects for it, so a phone with a drifted clock no longer opens a 30s question at 32 or 34. |
+| 2026-08-02 | **Mobile chat composer fixes.** The drawer no longer focuses the input on open (`onOpenAutoFocus` prevented), the input is `text-base lg:text-sm` so iOS stops zooming — the zoom was what pushed the send button off-screen — and `enterKeyHint="send"` relabels the keyboard's return key. Send button bumped to `h-9` on touch. |
 | 2026-08-02 | **Chat moves to a drawer on phones.** Under `lg` the chat panel leaves the stacked column for a bottom drawer behind a floating button with an unread badge (`MobileChatDrawer`, `useChatUnread`). `useLobbyChat` was hoisted from `LobbyChat` to `MultiplayerLobbyPage` so the two shells can both mount without double-registering the shared connection's handlers. |
 | 2026-07-31 | **Chat is private to who was in the room.** `Participant.FirstJoinedAt` + `GetMessagesSinceJoinAsync` replace the unconditional `GetRecentMessagesAsync` replay, so a new joiner no longer receives chat sent before they arrived. Rejoins keep their history because the stamp isn't refreshed. |
 | 2026-07-31 | **Join failures are reported honestly.** Added `CheckSession` + `SessionAvailability` (dialog pre-flight), `SessionJoinException` → `HubException` so the cause survives to the client, and moved `Groups.AddToGroupAsync` after the participant add to stop failed joiners staying subscribed. A bad code no longer strands the player on the lobby route ([`multiplayer-join.md`](./multiplayer-join.md)). |

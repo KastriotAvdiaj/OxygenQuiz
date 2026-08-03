@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
 import { QuestionType } from "@/types/question-types";
@@ -32,8 +32,14 @@ interface MultiplayerQuestionViewProps {
  *    phase), so `instantFeedback` is always false here; correctness is shown by `RevealPanel`.
  */
 export function MultiplayerQuestionView({ match, username, participants }: MultiplayerQuestionViewProps) {
-  const { question, deadlineUtc, hasSubmitted, answered } = match;
+  const { question, deadlineUtc, clockSkewMs, hasSubmitted, answered } = match;
   const [timedOut, setTimedOut] = useState(false);
+
+  // Stable identity so QuizTimer's countdown effect can't be restarted by a re-render of this
+  // component. QuizTimer holds its callbacks in refs and no longer depends on them, so this is
+  // belt-and-braces rather than load-bearing — but an inline arrow here is the exact shape of
+  // the bug that froze the timer, and it shouldn't be re-typed out of habit.
+  const handleTimeUp = useCallback(() => setTimedOut(true), []);
 
   const clusterPlayers: AvatarClusterPlayer[] = participants.map((p) => ({
     username: p.username,
@@ -51,13 +57,32 @@ export function MultiplayerQuestionView({ match, username, participants }: Multi
 
   // Seconds left when this question opened — computed once per question so QuizTimer (which counts
   // down internally from `initialTime`) isn't reset on every render. Honors the server deadline so
-  // a late joiner sees the correct remaining time.
+  // a late joiner or a reconnecting player sees the correct remaining time rather than a fresh one.
+  //
+  // Two guards, both learned the hard way:
+  //
+  //  - **`clockSkewMs`.** The deadline is the *server's* wall clock. Subtracting a client
+  //    `Date.now()` that disagrees with it by a few seconds is what made a 30s question open at
+  //    32 or 34. `useMatch` measures the offset from the same event and we correct for it, so the
+  //    number shown is a real duration rather than a difference between two unrelated clocks.
+  //  - **`Math.min(limit, …)`.** A cheap ceiling so no arithmetic here — a skew estimate taken
+  //    during a network hiccup, a malformed timestamp, a future change to how the deadline is
+  //    built — can ever show more time than the question is actually worth. It costs nothing and
+  //    it makes the failure mode "slightly short", which is the safe direction: the server's
+  //    deadline check is the authority, so a display that over-promises is the one that produces
+  //    an answer the player believes was in time and the server rejects.
   const initialSeconds = useMemo(() => {
     if (!question) return 0;
-    if (!deadlineUtc) return question.timeLimitSeconds;
-    return Math.max(0, Math.ceil((new Date(deadlineUtc).getTime() - Date.now()) / 1000));
+    const limit = question.timeLimitSeconds;
+    if (!deadlineUtc) return limit;
+
+    const deadlineMs = new Date(deadlineUtc).getTime();
+    if (!Number.isFinite(deadlineMs)) return limit;
+
+    const remaining = Math.ceil((deadlineMs - (Date.now() + clockSkewMs)) / 1000);
+    return Math.min(limit, Math.max(0, remaining));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [question?.questionId, deadlineUtc]);
+  }, [question?.questionId, deadlineUtc, clockSkewMs]);
 
   const currentQuestion = useMemo<CurrentQuestion | null>(
     () => (question ? toCurrentQuestion(question, initialSeconds) : null),
@@ -127,7 +152,7 @@ export function MultiplayerQuestionView({ match, username, participants }: Multi
           <QuizTimer
             initialTime={initialSeconds}
             totalTime={question.timeLimitSeconds}
-            onTimeUp={() => setTimedOut(true)}
+            onTimeUp={handleTimeUp}
             isPaused={hasSubmitted}
             size="md"
           />

@@ -79,10 +79,12 @@ everything the moment partial match is enabled.
 - **Negation passes.** `not Paris` contains `Paris`, and always will. This is inherent to accepting
   free text that *contains* the answer — no matching scheme fixes it. Worth knowing before enabling
   the toggle on a question where a negated answer is plausible.
-- **Scripts without spaces** (Chinese, Japanese, Thai) normalise to a single token, where word
-  boundaries are meaningless. Those fall back to substring containment, so the `cat`/`concatenate`
-  problem still exists *within* a token for them. Fixing it properly needs per-language
-  segmentation.
+- **Scripts without spaces** (Chinese, Japanese, Thai, Lao, Khmer, Myanmar) normalise to a single
+  token, where word boundaries are meaningless. Those fall back to substring containment, so the
+  `cat`/`concatenate` problem still exists *within* a token for them. Fixing it properly needs
+  per-language segmentation. The fallback is gated on **the script of the expected answer**, not on
+  the token count — see the 2026-08-02 note below for why that distinction matters. Korean is not
+  included: Hangul is space-delimited and gets normal whole-word matching.
 - **Short answers stay risky.** Even with whole-word matching, an answer of `cat` passes for anyone
   who types a sentence containing the word "cat". The builder's helper text now says so.
 
@@ -115,6 +117,22 @@ about proper capitalisation, say), the prompt gives it an explicit default, and 
 makes a question harder rather than easier to guess.
 
 ---
+
+## What changed (2026-08-02)
+
+The space-less-script fallback was firing far more often than intended. It was gated on
+`expectedTokens.Length == 1 && haystackTokens.Length == 1` — "both sides are a single token" — which
+is true of *any* one-word answer matched against a one-word submission, not just CJK. So a
+single-word expected answer silently reverted to raw substring containment, which is precisely the
+behaviour whole-word matching was introduced to remove: `concatenate` passed for `cat`, `money` for
+`one`, `13` for `3`. `Bart Simpson` for `art` was rejected correctly only because the *submission*
+happened to be two words — the guard never fired.
+
+The fallback is now gated on the expected answer actually being written in a space-less script
+(`IsSpacelessScript`: Han, kana, Thai, Lao, Khmer, Myanmar). Everything else falls through to the
+contiguous-token-run comparison, where a single expected token is just token equality. The behaviour
+documented above was always the intent; this is the code catching up to it. Caught by
+`PartialMatchOn_RejectsSubstringInsideAWord`, which was already asserting the correct behaviour.
 
 ## What changed (2026-07-31)
 

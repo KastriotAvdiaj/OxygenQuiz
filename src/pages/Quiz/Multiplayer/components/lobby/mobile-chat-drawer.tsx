@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
 import { MessageCircle } from "lucide-react";
 import {
   Drawer,
@@ -34,7 +34,10 @@ export const MobileChatDrawer = ({
   onOpenChange,
   unreadCount,
   children,
-}: MobileChatDrawerProps) => (
+}: MobileChatDrawerProps) => {
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  return (
   <>
     <button
       type="button"
@@ -74,7 +77,20 @@ export const MobileChatDrawer = ({
 
     <Drawer open={isOpen} onOpenChange={onOpenChange}>
       <DrawerContent
+        ref={contentRef}
         side="bottom"
+        // Radix focuses the first focusable descendant when a dialog opens, which here is the
+        // chat input — so opening chat raised the keyboard, and the keyboard ate most of a
+        // 70dvh drawer before you had read a single message. Opening chat is "let me see what
+        // was said", not "let me type"; typing is one deliberate tap away.
+        //
+        // Focus moves to the drawer itself rather than nowhere: Radix's Content carries
+        // tabIndex={-1}, so this keeps the focus trap anchored inside the layer, keeps Escape
+        // and Tab behaving, and keeps screen readers reading the drawer on open.
+        onOpenAutoFocus={(e) => {
+          e.preventDefault();
+          contentRef.current?.focus();
+        }}
         className={cn(
           "flex flex-col gap-0 rounded-t-2xl border-border bg-background p-0 lg:hidden",
           // Capped rather than full height: the strip of lobby left visible above is what tells
@@ -97,4 +113,5 @@ export const MobileChatDrawer = ({
       </DrawerContent>
     </Drawer>
   </>
-);
+  );
+};

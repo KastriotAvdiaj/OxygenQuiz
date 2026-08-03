@@ -317,6 +317,36 @@ timeLimit` points, i.e. ~33 pts on a 30s question but ~100 pts (10% of base) on 
 
 ## Multiplayer / Game State
 
+- ~~**P2 — Clicking a header link during a match froze the question timer.**~~ **Fixed
+  (2026-08-02).** Three faults in a line, none of which looks like a timer bug on its own.
+  `useNavigationGuard` is armed for the whole session, but `<LeaveLobbyDialog>` was rendered only
+  inside `<LobbyPageView>` — and `MultiplayerLobbyPage` early-returns `<MultiplayerGame>` before it.
+  So mid-match a blocked navigation showed **nothing** and left the blocker stuck in `blocked` with
+  no reachable `proceed()`/`reset()`. Each further click minted a new blocker object and re-rendered
+  the game subtree; `<QuizTimer onTimeUp={() => setTimedOut(true)}>` handed it a fresh callback
+  identity, which sat in the countdown effect's dependency list, so the effect tore down its
+  interval and **re-anchored the deadline to `now + <rounded display value>`** every time. Clicking
+  faster than the 250ms interval meant it never ticked at all, while the server ran the question out
+  and scored it unanswered. Fixed at all three layers — dialog rendered in both branches (with
+  match-specific copy), call site memoised, and the timer's effect reduced to primitive
+  dependencies with anchoring allowed only on a new question or a resume.
+  → `quiz-timer.tsx`, `MultiplayerLobbyPage.tsx`, `multiplayer-question-view.tsx`,
+  `leave-lobby-dialog.tsx`, [`quiz-timer.md`](../quiz/quiz-timer.md)
+- ~~**P3 — A 30s question could open at 32 or 34 seconds.**~~ **Fixed (2026-08-02).** The server
+  sends `QuestionDeadlineUtc` as an absolute timestamp and the client computed
+  `deadline − Date.now()` — a subtraction that only means anything if the two machines agree on the
+  time. A phone with a drifted clock read the difference as free seconds. `useMatch` now derives the
+  offset from the same event (`deadline − limit` *is* the server's clock at send), re-measured per
+  question so an NTP correction mid-match can't leave a stale value, and the remaining time is
+  clamped to the question's limit as a ceiling. Latency folds into the offset in the player's
+  favour, which is the safe direction — the server's own deadline check is the authority.
+  → `use-match.ts`, `multiplayer-question-view.tsx`, [`quiz-timer.md`](../quiz/quiz-timer.md)
+- **P3 — Navigating away mid-match doesn't leave the session.** The nav-guard dialog's confirm calls
+  `blocker.proceed()` and nothing else, so the player navigates away while the server still counts
+  them as a participant for the round. Today the round simply ends when the deadline passes and they
+  score zero, which is survivable; a `LeaveSession` on confirm would end the round as soon as the
+  remaining players have answered. Same gap existed before the dialog was reachable mid-match — it's
+  just visible now.
 - ~~**P3 — New joiners could read chat from before they arrived.**~~ **Fixed (2026-07-31).**
   `JoinSession` replayed the whole 50-message buffer to every caller. Now
   `Participant.FirstJoinedAt` stamps the first join and `GetMessagesSinceJoinAsync` filters the
@@ -342,6 +372,13 @@ timeLimit` points, i.e. ~33 pts on a 30s question but ~100 pts (10% of base) on 
   no toggle. The builder's helper text was updated to match. Two limits are documented rather than
   fixed: containment can't reject a negation (`"not Paris"` contains `"Paris"`), and space-less
   scripts (CJK) fall back to substring because word boundaries don't apply.
+  _Third pass (2026-08-02):_ that space-less-script fallback was gated on "both sides are a single
+  token", which is true of any one-word answer against a one-word submission — so single-word
+  expected answers quietly reverted to raw substring and the `"cat"`/`"concatenate"`, `"one"`/
+  `"money"` and `"3"`/`"13"` cases came straight back. `"art"`/`"Bart Simpson"` kept passing only
+  because that submission is two words, which is why the tests failed 3-of-4 rather than 4-of-4. The
+  fallback is now gated on the expected answer actually being written in a space-less script
+  (Han, kana, Thai, Lao, Khmer, Myanmar).
   → `Services/Grading/TypeTheAnswerMatcher.cs`, `QuizAPI.Tests/Grading/TypeTheAnswerMatcherTests.cs`,
   `type-the-asnwer-question-form.tsx`,
   [`typed-answer-matching.md`](../quiz/typed-answer-matching.md)

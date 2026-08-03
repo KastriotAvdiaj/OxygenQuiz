@@ -71,6 +71,22 @@ export const useMatch = ({ sessionId, username }: UseMatchOptions) => {
   const [countdownSeconds, setCountdownSeconds] = useState(0);
   const [question, setQuestion] = useState<RoundQuestionView | null>(null);
   const [deadlineUtc, setDeadlineUtc] = useState<string | null>(null);
+  /**
+   * Estimated `serverClock − clientClock`, in milliseconds, measured when a question opens.
+   *
+   * The server sends an absolute `deadlineUtc`, and a client that subtracts its own `Date.now()`
+   * from it is implicitly asserting that the two machines agree on the time. They frequently
+   * don't — a phone whose clock has drifted a few seconds turns a 30s question into a 33s one,
+   * which is exactly the symptom that sent us looking. The deadline is always `serverNow + limit`
+   * at the moment it is sent (MatchOrchestrator.RunMatchAsync), so the instant the event arrives
+   * we can read the server's clock off it and diff it against ours.
+   *
+   * Network latency lands in here too, and in the player's favour: a 100ms flight makes us think
+   * our clock is 100ms behind, so we grant 100ms extra. That is the right direction to be wrong
+   * in — the server's own deadline check (QuizHub.SubmitAnswer) is the authority either way, so a
+   * generous client display can never turn a late answer into a scored one.
+   */
+  const [clockSkewMs, setClockSkewMs] = useState(0);
   const [answered, setAnswered] = useState<string[]>([]);
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const [lastResult, setLastResult] = useState<QuestionResult | null>(null);
@@ -99,6 +115,15 @@ export const useMatch = ({ sessionId, username }: UseMatchOptions) => {
     connection.on("QuestionStarted", (q: RoundQuestionView, deadline: string) => {
       questionIdRef.current = q.questionId;
       questionShownAtRef.current = performance.now();
+
+      // Re-measure the clock offset every question rather than once per match: a device clock can
+      // be corrected by NTP mid-match, and a stale offset would be worse than none.
+      const deadlineMs = new Date(deadline).getTime();
+      const limitMs = q.timeLimitSeconds > 0 ? q.timeLimitSeconds * 1000 : 0;
+      setClockSkewMs(
+        Number.isFinite(deadlineMs) && limitMs > 0 ? deadlineMs - limitMs - Date.now() : 0
+      );
+
       setQuestion(q);
       setDeadlineUtc(deadline);
       setAnswered([]);
@@ -177,6 +202,7 @@ export const useMatch = ({ sessionId, username }: UseMatchOptions) => {
     countdownSeconds,
     question,
     deadlineUtc,
+    clockSkewMs,
     answered,
     hasSubmitted,
     lastResult,

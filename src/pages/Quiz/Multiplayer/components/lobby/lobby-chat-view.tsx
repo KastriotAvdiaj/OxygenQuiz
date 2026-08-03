@@ -100,12 +100,23 @@ export const LobbyChatView = ({
             }
           }}
           placeholder="Press enter to send a message"
-          className="min-w-0 flex-1 bg-transparent px-2 py-1.5 text-sm text-foreground outline-none placeholder:text-muted-foreground/70"
+          // `enterKeyHint` relabels the phone keyboard's return key as "Send". It is only a
+          // *label* — Enter already sends via onKeyDown above, with or without it. Without the
+          // hint the key reads "return", which reads as "new line" in a single-line field and
+          // leaves no obvious way to send other than aiming for the icon.
+          enterKeyHint="send"
+          // 16px on phones, denser on the desktop panel. Below 16px iOS Safari zooms the whole
+          // page when the field takes focus and never zooms back out — which is what pushed the
+          // send button off the right edge of the screen. `lg:` and not the usual `sm:` because
+          // this composer's mobile shell is the drawer, which is itself `lg:hidden`.
+          // See docs/RESPONSIVE.md.
+          className="min-w-0 flex-1 bg-transparent px-2 py-1.5 text-base text-foreground outline-none placeholder:text-muted-foreground/70 lg:text-sm"
         />
         <Button
           size="icon"
           variant="ghost"
-          className="h-8 w-8 shrink-0 rounded-md text-muted-foreground hover:text-primary"
+          // 36px on touch, 32px on the desktop panel where the pointer is precise.
+          className="h-9 w-9 shrink-0 rounded-md text-muted-foreground hover:text-primary lg:h-8 lg:w-8"
           onClick={onSubmit}
           disabled={sending || !draft.trim()}
           aria-label="Send message"

@@ -185,6 +185,31 @@ public class TypeTheAnswerMatcherTests
         Assert.True(TypeTheAnswerMatcher.IsCorrect(
             Question(correct: "cat", partial: true), "it is a cat"));
 
+    // ── Partial match: space-less scripts ─────────────────────────────────────
+    // Word-boundary matching is meaningless where the script doesn't delimit words, so these fall
+    // back to substring. The fallback must key off the *script*, not off "both sides are one
+    // token" — that condition is also true of every one-word English answer, which is how
+    // "concatenate" once passed for "cat".
+
+    [Theory]
+    [InlineData("猫", "黒猫が好きです")]      // Japanese
+    [InlineData("北京", "我住在北京")]        // Chinese
+    [InlineData("แมว", "ฉันมีแมว")]           // Thai
+    public void PartialMatchOn_SpacelessScript_FallsBackToSubstring(string correct, string submitted) =>
+        Assert.True(TypeTheAnswerMatcher.IsCorrect(
+            Question(correct: correct, partial: true), submitted));
+
+    /// Hangul is space-delimited, so Korean gets the same whole-word treatment as English rather
+    /// than the space-less fallback.
+    [Fact]
+    public void PartialMatchOn_Korean_UsesWholeWordMatching()
+    {
+        Assert.True(TypeTheAnswerMatcher.IsCorrect(
+            Question(correct: "고양이", partial: true), "검은 고양이 입니다"));
+        Assert.False(TypeTheAnswerMatcher.IsCorrect(
+            Question(correct: "고양이", partial: true), "검은고양이입니다"));
+    }
+
     // ── Empty input ───────────────────────────────────────────────────────────
     // Every string contains the empty string, so without an explicit guard an empty submission
     // would match everything once partial match is on.
