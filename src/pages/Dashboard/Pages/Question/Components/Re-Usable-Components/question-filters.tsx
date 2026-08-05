@@ -114,7 +114,6 @@ export const QuestionFilters = ({
           placeholder="Search questions..."
           onSearch={onSearchTermChange}
           initialValue={searchTerm}
-          className="!my-0"
         />
       </div>
 

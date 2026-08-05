@@ -105,7 +105,9 @@ export const MyQuestions = () => {
               Add Question +
             </LiftedButton>
           </DialogTrigger>
-          <DialogContent className="bg-background p-4 rounded-md w-fit pt-8 dark:border border-foreground/30">
+          {/* Same chooser as the admin Questions page — `sm:max-w-sm` rather than `w-fit`
+              for the same reason (see Questions.tsx). */}
+          <DialogContent className="bg-background p-4 rounded-md pt-8 sm:max-w-sm dark:border border-foreground/30">
             <DialogHeader>
               <DialogTitle className="flex items-center justify-center">
                 Choose the type of question

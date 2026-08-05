@@ -158,7 +158,6 @@ export const QuizFiltersPanel = (props: QuizFiltersPanelProps) => {
           placeholder="Search quizzes..."
           onSearch={onSearchTermChange}
           initialValue={searchTerm}
-          className="!my-0"
         />
       </div>
 

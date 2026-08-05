@@ -1,16 +1,16 @@
-# Graph Report - OxygenQuiz  (2026-07-23)
+# Graph Report - OxygenQuiz  (2026-08-05)
 
 ## Corpus Check
-- 913 files · ~1,523,040 words
+- 995 files · ~1,605,853 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 5513 nodes · 13096 edges · 482 communities (238 shown, 244 thin omitted)
-- Extraction: 96% EXTRACTED · 4% INFERRED · 0% AMBIGUOUS · INFERRED: 495 edges (avg confidence: 0.77)
+- 6205 nodes · 14666 edges · 554 communities (291 shown, 263 thin omitted)
+- Extraction: 96% EXTRACTED · 4% INFERRED · 0% AMBIGUOUS · INFERRED: 534 edges (avg confidence: 0.77)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `0a2c73c5`
+- Built from commit: `cd1fdf0b`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -166,7 +166,6 @@
 - Community 148
 - Community 149
 - Community 150
-- Community 151
 - Community 152
 - Community 153
 - Community 154
@@ -211,15 +210,34 @@
 - Community 193
 - Community 194
 - Community 195
+- known-issues.md
+- IQuestionRepository
 - Community 198
+- Multiplayer
+- LobbyPageView.stories.tsx
+- ExternalAuthenticationTests
+- .Generate
 - Community 203
 - Community 204
 - Community 205
 - Community 206
+- AnswerGradingServiceTests
 - Community 208
 - Community 209
 - Community 210
+- type-the-asnwer-question-form.tsx
+- .EffectiveElapsed
+- ExternalLogin
+- InviteCode
+- get-public-quizzes.ts
+- Implementation Plan — Google & Microsoft Sign-In (External Identity Providers)
+- QuizAPI.Services.Scoring
+- Responsive & Mobile Conventions
+- Google & Microsoft Sign-In (External Identity Providers)
+- Graphify knowledge graph
 - Community 221
+- create-question-difficulty.ts
+- floating-avatar-cluster.tsx
 - Community 224
 - Community 225
 - Community 226
@@ -227,6 +245,7 @@
 - Community 228
 - Community 229
 - Community 230
+- ApplicationDbContext
 - Community 232
 - Community 233
 - Community 234
@@ -246,6 +265,7 @@
 - Community 261
 - Community 262
 - TopNotification.stories.tsx
+- Proposal: partial credit for multi-select questions
 - Guest play — one free singleplayer quiz, no account required
 - Configuration & Settings — how OxygenQuiz reads its config
 - VPS Launch Checklist (Hetzner backend + Cloudflare Pages frontend)
@@ -256,19 +276,28 @@
 - Production Runbook — oxygenquiz.com on Hetzner
 - Image Upload Flow (ImageAsset pipeline)
 - Quiz Answer Submission & Grading
+- IInviteCodeGenerator
+- lobby-chat-view.tsx
+- QuizHistoryList.tsx
 - Generic File Storage (Files entity)
 - Getting Started — Required Software & Setup
+- ReportsController.cs
 - Deployment Runbook — quick commands
 - Audit Logging
 - Rate Limiting
+- Production Runbook — oxygenquiz.com on Hetzner
+- StatsPanel.tsx
 - OxygenQuiz — Session Handoff
+- Account & Settings Overlay
 - upload-file.ts
 - enter-databases.md
 - MongoDB — disabled (and how to bring it back)
 - Reference data (importable)
 - get-individual-question.ts
 - QuizEditingVersioning
+- Typed-answer matching
 - QuestionDifficultyDTO
+- Claude Code plugins
 - CLAUDE.md
 - Graphify Knowledge Graph
 - AuthenticationService
@@ -476,17 +505,56 @@
 - difficulties.json
 - languages.json
 - Reference Data (importable)
+- create-quiz-method-dialog.stories.tsx
+- quiz-timer.tsx
+- Dynamic Reports
+- NotACommonPasswordAttribute
+- mode-card.tsx
+- Import templates
+- Favicon
+- Quiz question classification
+- SettingsFilesAuditLogsRolePermission
+- AuditLogs_Notifications_RetireUpdatedAt
+- AddUserSettings
+- Fix_RolePermissions_ShadowFK
+- AddFontSetting
+- FixUserRoleRelationship
+- RemoveUniversitetiDrejtimi
+- AddQuizSoftDelete
+- AddQuestionAndFileMedia
+- AddEmailVerification
+- AddGuestQuizSessions
+- AddExternalLogins
+- RescaleScoresToHighResolutionBase
+- generate-favicon.py
+- 20251225173303_InitialCreate.Designer.cs
+- 20260606084508_Settings-Files-AuditLogs-RolePermission.Designer.cs
+- 20260606131927_AuditLogs_Notifications_RetireUpdatedAt.Designer.cs
+- 20260608210338_Fix_RolePermissions_ShadowFK.Designer.cs
+- 20260609193513_AddFontSetting.Designer.cs
+- 20260612120000_RemoveUniversitetiDrejtimi.Designer.cs
+- 20260615120000_AddQuizSoftDelete.Designer.cs
+- 20260618203133_AddQuestionAndFileMedia.Designer.cs
+- 20260620222311_AddEmailVerification.Designer.cs
+- 20260622193358_AddGuestQuizSessions.Designer.cs
+- 20260626191712_ReworkQuizVisibilityToStatus.Designer.cs
+- 20260628202215_AddInviteCodes.Designer.cs
+- 20260702170817_QuizEditingVersioning.Designer.cs
+- 20260726102121_AddExternalLogins.Designer.cs
+- 20260728120000_RescaleScoresToHighResolutionBase.Designer.cs
+- msal.ts
+- refreshAccessToken
 
 ## God Nodes (most connected - your core abstractions)
-1. `cn()` - 116 edges
-2. `QuizAPI.Models` - 89 edges
-3. `Button` - 83 edges
-4. `ApplicationDbContext` - 74 edges
-5. `useNotifications` - 68 edges
-6. `QuestionType` - 61 edges
-7. `QuizAPI.Data` - 54 edges
-8. `Result` - 48 edges
-9. `Card` - 46 edges
+1. `cn()` - 133 edges
+2. `QuizAPI.Models` - 95 edges
+3. `Button` - 86 edges
+4. `ApplicationDbContext` - 80 edges
+5. `useNotifications` - 71 edges
+6. `QuestionType` - 64 edges
+7. `QuizAPI.Data` - 60 edges
+8. `Result` - 50 edges
+9. `Card` - 47 edges
 10. `api` - 46 edges
 
 ## Surprising Connections (you probably didn't know these)
@@ -496,15 +564,15 @@
   deploy/docker-compose.prod.yml → docker-compose.yml
 - `Dev PostgreSQL Container` --semantically_similar_to--> `Full-Stack Docker Compose`  [INFERRED] [semantically similar]
   docker-compose.dev.yml → docker-compose.yml
-- `refreshAccessToken()` --references--> `axios`  [EXTRACTED]
-  src/lib/Api-client.ts → package.json
+- `useFormField()` --references--> `react`  [EXTRACTED]
+  src/components/ui/form/form.tsx → package.json
 - `ColorCard()` --references--> `react`  [EXTRACTED]
   src/common/ColouredCard.tsx → package.json
 
 ## Import Cycles
 - None detected.
 
-## Communities (482 total, 244 thin omitted)
+## Communities (554 total, 263 thin omitted)
 
 ### Community 0 - "UI Card & Text Components"
 Cohesion: 0.07
@@ -515,19 +583,19 @@ Cohesion: 0.21
 Nodes (11): createQuestionLanguage(), CreateQuestionLanguageInput, createQuestionLanguageInputSchema, useCreateQuestionLanguage(), UseCreateQuestionLanguageOptions, deleteQuestionLanguage(), DeleteQuestionLanguageDTO, useDeleteQuestionLanguage() (+3 more)
 
 ### Community 2 - "Form & Select UI Primitives"
-Cohesion: 0.04
-Nodes (100): react, BackButtonProps, LIFT_COLOR_TOKENS, LiftColorToken, LiftedButton, LiftedButtonProps, useNotifications, Button (+92 more)
+Cohesion: 0.07
+Nodes (60): FormDrawer(), Form(), Label, SelectContent, SelectContentProps, SelectItem, SelectItemProps, SelectLabel (+52 more)
 
 ### Community 3 - "Background & Drawer UI"
-Cohesion: 0.04
-Nodes (128): DataTransferControls(), DataTransferControlsProps, DataTable(), ConfirmationDialogProps, DialogContent, DialogDescription, DialogFooter(), DialogHeader() (+120 more)
+Cohesion: 0.07
+Nodes (70): DataTable(), LoadingWave(), PaginationControls(), SheetContent, SheetContentProps, SheetDescription, SheetHeader(), SheetOverlay (+62 more)
 
 ### Community 4 - "Button & Notification UI"
-Cohesion: 0.33
-Nodes (6): NotificationRow(), formatDate(), QuizProperties(), QuizPropertiesProps, QuizProperty, Quiz
+Cohesion: 0.05
+Nodes (61): BackButtonProps, LIFT_COLOR_TOKENS, LiftColorToken, LiftedButton, LiftedButtonProps, useNotifications, Button, ConfirmationDialog() (+53 more)
 
 ### Community 5 - "Avatar Service (backend)"
-Cohesion: 0.06
+Cohesion: 0.07
 Nodes (45): BaseApiController, CancellationToken, Guid, IFormFile, Task, IAvatarService, CancellationToken, Guid (+37 more)
 
 ### Community 6 - "REST Controller Base"
@@ -535,20 +603,20 @@ Cohesion: 0.06
 Nodes (41): ActionResult, Authorize, CancellationToken, Guid, HttpDelete, HttpGet, HttpPatch, HttpPost (+33 more)
 
 ### Community 7 - "DataTable & Sheet UI"
-Cohesion: 0.07
-Nodes (26): 10a. Per-flow persistence semantics (deliberate divergence), 11. Maintainability & known seams, 12. Making new question types cheap (a path, not a task), 13. Summary of guarantees, 1. What this feature is, in one paragraph, 2. Component map, 3. The data pipeline (happy path), 4. Trust boundaries and defense in depth (+18 more)
+Cohesion: 0.09
+Nodes (23): 10a. Per-flow persistence semantics (deliberate divergence), 11. Maintainability & known seams, 12. Making new question types cheap (a path, not a task), 13. Summary of guarantees, 1. What this feature is, in one paragraph, 2. Component map, 3. The data pipeline (happy path), 4. Trust boundaries and defense in depth (+15 more)
 
 ### Community 8 - "Pagination & Audit-Log Queries"
 Cohesion: 0.07
-Nodes (43): PaginationControlsProps, cleanQueryParams(), extractPaginationFromHeaders(), quizSelectionLoader(), AuditLogsResult, getAuditLogs(), GetAuditLogsParams, getAuditLogsQueryOptions() (+35 more)
+Nodes (48): cleanQueryParams(), extractPaginationFromHeaders(), AuditLogsResult, getAuditLogs(), GetAuditLogsParams, getAuditLogsQueryOptions(), useAuditLogsData(), getMultipleChoiceQuestions() (+40 more)
 
 ### Community 9 - "Auth & App Bootstrap (frontend)"
-Cohesion: 0.06
-Nodes (35): adminAuthLoader(), authConfig, createAuthLoader(), getUser(), LoginInput, loginInputSchema, logout(), permissionAuthLoader() (+27 more)
+Cohesion: 0.09
+Nodes (22): userAuthLoader, RedirectIfLoggedIn(), AboutUs, AccessDeniedPage, AiQuizWizard, AppRoot, ConfirmEmail, DashboardErrorElement (+14 more)
 
 ### Community 10 - "Invite Codes API"
-Cohesion: 0.05
-Nodes (41): QuizAPI.DTOs.Invitations, ActionResult, CancellationToken, HttpGet, HttpPost, IActionResult, IReadOnlyList, Task (+33 more)
+Cohesion: 0.22
+Nodes (7): Fact, IConfiguration, InlineData, Mock, Task, Theory, AuthenticationServiceTests
 
 ### Community 11 - "Questions API Controller"
 Cohesion: 0.13
@@ -556,15 +624,15 @@ Nodes (19): Authorize, CancellationToken, HttpDelete, HttpGet, HttpPost, HttpPut
 
 ### Community 13 - "Runtime Dependencies"
 Cohesion: 0.04
-Nodes (54): dependencies, axios, class-variance-authority, clsx, date-fns, framer-motion, gsap, @gsap/react (+46 more)
+Nodes (55): dependencies, @azure/msal-browser, class-variance-authority, clsx, date-fns, framer-motion, gsap, @gsap/react (+47 more)
 
 ### Community 14 - "Data Import/Export"
 Cohesion: 0.20
 Nodes (10): howler, AudioPrefsStore, useAudioStore, audio, AudioManager, AudioProvider(), MusicName, N (+2 more)
 
 ### Community 15 - "Answer Grading Service"
-Cohesion: 0.09
-Nodes (25): DateTime, Guid, Task, GradingResult, IAnswerGradingService, Task, ISubmitAnswerService, Guid (+17 more)
+Cohesion: 0.12
+Nodes (21): Task, ISubmitAnswerService, Guid, ILogger, QuizSessionOptions, Task, SubmitAnswerService, AnswerResultDto (+13 more)
 
 ### Community 16 - "Question Versioning & Scoring"
 Cohesion: 0.23
@@ -575,48 +643,48 @@ Cohesion: 0.15
 Nodes (13): CancellationToken, IQueryable, IReadOnlyList, Items, Task, Total, IAuditLogRepository, CancellationToken (+5 more)
 
 ### Community 18 - "Question Service & Image Assoc."
-Cohesion: 0.11
-Nodes (17): CancellationToken, ErrorMessage, Expression, Func, Guid, IsCustomMessage, List, Success (+9 more)
+Cohesion: 0.15
+Nodes (11): CancellationToken, Expression, Func, Guid, IQueryable, List, string, Task (+3 more)
 
 ### Community 19 - "Backend Namespaces / Tests"
-Cohesion: 0.08
-Nodes (19): QuizAPI.Tests.Editing, QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.UserAnswerService, QuizAPI.Common, QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.AbandonmentService, QuizAPI.Controllers, QuizAPI.Tests.Grading, QuizAPI.ManyToManyTables, QuizAPI.DTOs.Quiz (+11 more)
+Cohesion: 0.09
+Nodes (18): QuizAPI.Tests.Editing, QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.UserAnswerService, QuizAPI.Controllers.Quizzes.Services.QuizServices, QuizAPI.Common, QuizAPI.Controllers.Users.Services.UserStatsService, QuizAPI.Controllers.Quizzes, QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.AbandonmentService, QuizAPI.Mapping (+10 more)
 
 ### Community 20 - "Quiz Session Service"
-Cohesion: 0.16
-Nodes (9): List, IResult, Result, Guid, ILogger, List, Task, QuizSessionService (+1 more)
+Cohesion: 0.15
+Nodes (11): List, IResult, Result, Guid, ILogger, int, Task, QuizSessionService (+3 more)
 
 ### Community 21 - "Build Tooling / Dev Deps"
 Cohesion: 0.04
 Nodes (45): devDependencies, autoprefixer, baseline-browser-mapping, @chromatic-com/storybook, cross-env, esbuild, eslint, @eslint/js (+37 more)
 
 ### Community 22 - "Filtering & Pagination Framework"
-Cohesion: 0.04
-Nodes (44): API Reference, Architecture, Auto-Resume After Disconnect, Backend, Backend (ASP.NET Core), Backend Methods (QuizHub), Client Events (IQuizClient), Common Issues (+36 more)
+Cohesion: 0.29
+Nodes (7): Multiplayer lobby join flow, Related, Room codes, The bug this replaced, The two URL shapes (both supported), When the join fails, Who performs the join
 
 ### Community 23 - "Auth Controller & Rate Limiting"
-Cohesion: 0.13
-Nodes (20): AllowAnonymous, Authorize, CancellationToken, DateTime, EnableRateLimiting, HttpGet, HttpPost, IActionResult (+12 more)
+Cohesion: 0.20
+Nodes (14): AllowAnonymous, Authorize, CancellationToken, DateTime, EnableRateLimiting, HttpGet, HttpPost, IActionResult (+6 more)
 
 ### Community 24 - "User Service"
-Cohesion: 0.21
-Nodes (9): CancellationToken, Guid, HashSet, IEnumerable, IQueryable, IReadOnlyList, Task, UserService (+1 more)
+Cohesion: 0.14
+Nodes (15): CancellationToken, Guid, HashSet, IEnumerable, IQueryable, IReadOnlyList, Task, UserService (+7 more)
 
 ### Community 25 - "Question Models"
-Cohesion: 0.13
-Nodes (17): QuizAPI.Models.Statistics.Questions, DateTime, Guid, ICollection, List, QuestionBase, QuestionMediaType, QuestionVisibility (+9 more)
+Cohesion: 0.12
+Nodes (20): QuizAPI.Models.Statistics.Questions, DateTime, Guid, ICollection, List, MultipleChoiceQuestion, QuestionBase, QuestionMediaType (+12 more)
 
 ### Community 26 - "Audit & Repositories"
-Cohesion: 0.07
-Nodes (19): QuizAPI.DTOs.Files, QuizAPI.Services.AuthenticationService, QuizAPI.DTOs.Notification, QuizAPI.Controllers.Image.Services, QuizAPI.Services.Invitations, QuizAPI.Controllers.Files.Services, QuizAPI.DTOs.Audit, QuizAPI.Repositories (+11 more)
+Cohesion: 0.11
+Nodes (9): QuizAPI.Controllers.Image.Services, QuizAPI.DTOs.Audit, QuizAPI.Repositories, QuizAPI.Data, QuizAPI.Models, QuizAPI.Controllers.Audit, QuizAPI.Repositories.Interfaces, QuizAPI.Controllers.Roles (+1 more)
 
 ### Community 27 - "Filter UI Components"
-Cohesion: 0.08
-Nodes (45): ActiveFilterPill, ActiveFilterPills(), ActiveFilterPillsProps, DateRangeFilter(), DateRangeFilterProps, MultiSelect(), MultiSelectOption, MultiSelectProps (+37 more)
+Cohesion: 0.09
+Nodes (39): ActiveFilterPill, ActiveFilterPills(), ActiveFilterPillsProps, DateRangeFilter(), DateRangeFilterProps, MultiSelect(), MultiSelectOption, MultiSelectProps (+31 more)
 
 ### Community 28 - "Backend Service Namespaces"
-Cohesion: 0.07
-Nodes (18): QuizAPI.Filtering, QuizAPI.Controllers.Questions.TestQuestions.Services, QuizAPI.Controllers.Quizzes, QuizAPI.Extensions, QuizAPI.Tests.Discovery, QuizAPI.Tests.TestSupport, QuizAPI.Services.CurrentUserService, QuizAPI.Controllers.Questions.TestQuestions (+10 more)
+Cohesion: 0.10
+Nodes (12): QuizAPI.Filtering, QuizAPI.Controllers.Questions.Services, QuizAPI.Controllers.DataTransfer, QuizAPI.Extensions, QuizAPI.Services.CurrentUserService, QuizAPI.Controllers.Questions.Services.AnswerOptions, QuizAPI.DTOs.Shared, QuizAPI.DTOs.Question (+4 more)
 
 ### Community 29 - "Reports Service & Controller"
 Cohesion: 0.19
@@ -627,16 +695,16 @@ Cohesion: 0.20
 Nodes (13): FileContentResult, Authorize, CancellationToken, HttpGet, HttpPost, IActionResult, IFormFile, List (+5 more)
 
 ### Community 31 - "Community 31"
-Cohesion: 0.20
-Nodes (9): CancellationToken, Guid, List, Task, IQuizService, DateTime, QuizDTO, QuizSummaryDTO (+1 more)
+Cohesion: 0.24
+Nodes (7): CancellationToken, Guid, List, Task, IQuizService, QuizDTO, QuizQuestionDTO
 
 ### Community 32 - "Community 32"
 Cohesion: 0.11
-Nodes (18): DateTime, Guid, ICollection, QuestionCategory, QuestionDifficulty, QuestionLanguage, User, Quiz (+10 more)
+Nodes (19): DateTime, Guid, ICollection, QuestionCategory, QuestionDifficulty, QuestionLanguage, User, Quiz (+11 more)
 
 ### Community 33 - "Community 33"
-Cohesion: 0.14
-Nodes (18): getQuizQuestions(), getQuizQuestionsQueryOptions(), useQuizQuestionsData(), UseQuizQuestionsOptions, QuizQuestions(), QuizCard(), QuizCardProps, secondsToMinutes() (+10 more)
+Cohesion: 0.04
+Nodes (60): AiQuizWizard(), AiQuizWizardView(), AiWizardStep, ALL_AI_QUESTION_TYPES, QUESTION_TYPE_LABELS, ALL_INVALID_REPLY, categories, difficulties (+52 more)
 
 ### Community 34 - "Community 34"
 Cohesion: 0.11
@@ -644,59 +712,59 @@ Nodes (18): 10. Edge cases & failure modes, 11. Concrete file change list, 12. D
 
 ### Community 35 - "Community 35"
 Cohesion: 0.12
-Nodes (19): Guid, List, Task, IQuizSessionService, DateTime, Guid, List, TimeSpan (+11 more)
+Nodes (18): Guid, Task, IQuizSessionService, AnswerOptionForQuizPlaying, DateTime, Guid, List, TimeSpan (+10 more)
 
 ### Community 36 - "Community 36"
-Cohesion: 0.13
-Nodes (18): CancellationTokenSource, List, DateTime, RoundAnswer, CancellationToken, DateTime, IHubContext, ILogger (+10 more)
+Cohesion: 0.20
+Nodes (10): List, CancellationToken, DateTime, IHubContext, ILogger, int, IServiceScopeFactory, List (+2 more)
 
 ### Community 37 - "Community 37"
 Cohesion: 0.07
 Nodes (25): borderColors, icons, Notification(), NotificationProps, Error, Info, meta, Story (+17 more)
 
 ### Community 38 - "Community 38"
-Cohesion: 0.13
-Nodes (25): QuestionMedia(), UseQuizSessionReturn, MultiplayerQuestionView(), toCurrentQuestion(), FeedbackDisplay(), FeedbackDisplayProps, QuestionCard(), QuestionCardProps (+17 more)
+Cohesion: 0.09
+Nodes (35): QuestionMedia(), QuestionMediaProps, MultiplayerQuestionView(), toCurrentQuestion(), FeedbackDisplay(), FeedbackDisplayProps, QuestionCard(), QuestionCardProps (+27 more)
 
 ### Community 39 - "Community 39"
-Cohesion: 0.21
-Nodes (13): getPermissionMatrix(), getPermissionMatrixQueryOptions(), permissionMatrixQueryKey, usePermissionMatrix(), updateRolePermission(), UpdateRolePermissionInput, useUpdateRolePermission(), UseUpdateRolePermissionOptions (+5 more)
+Cohesion: 0.23
+Nodes (12): getPermissionMatrix(), getPermissionMatrixQueryOptions(), permissionMatrixQueryKey, usePermissionMatrix(), updateRolePermission(), UpdateRolePermissionInput, useUpdateRolePermission(), UseUpdateRolePermissionOptions (+4 more)
 
 ### Community 40 - "Community 40"
-Cohesion: 0.04
-Nodes (112): getErrorAwareStyles(), ImageHandlerProps, useFormValidation(), ValidationError, ValidationErrorsDisplay(), ValidationErrorsDisplayProps, DeleteUserProps, TypeTheAnswerQuestionListProps (+104 more)
+Cohesion: 0.09
+Nodes (37): MultipleChoiceQuestionCard(), MultipleChoiceQuestionCardProps, MultipleChoiceQuestionList(), MultipleChoiceQuestionListProps, UpdateMultipleChoiceQuestionFormProps, DeleteUserProps, BaseQuestionCard(), BaseQuestionCardProps (+29 more)
 
 ### Community 41 - "Community 41"
 Cohesion: 0.22
 Nodes (15): AllowAnonymous, Authorize, CancellationToken, Guid, HttpDelete, HttpGet, HttpPatch, HttpPost (+7 more)
 
 ### Community 42 - "Community 42"
-Cohesion: 0.10
-Nodes (25): handleLoaderError(), quizLoader(), usersLoader(), getQuiz(), getQuizQueryOptions(), useQuizData(), UseQuizOptions, createUser() (+17 more)
+Cohesion: 0.14
+Nodes (17): usersLoader(), createUser(), CreateUserInput, createUserInputSchema, useCreateUser(), UseCreateUserOptions, deleteUser(), DeleteUserDTO (+9 more)
 
 ### Community 43 - "Community 43"
 Cohesion: 0.10
 Nodes (22): QuizAPI.DTOs.Settings, QuizAPI.Services.SettingsService, QuizAPI.Controllers.Settings, CancellationToken, HttpGet, HttpPut, IActionResult, Task (+14 more)
 
 ### Community 44 - "Community 44"
-Cohesion: 0.17
-Nodes (12): DateTime, AuthResult, CancellationToken, Guid, Task, IRefreshTokenRepository, CancellationToken, Guid (+4 more)
+Cohesion: 0.11
+Nodes (16): CancellationToken, Guid, IConfiguration, IEnumerable, string, Task, AuthenticationService, string (+8 more)
 
 ### Community 45 - "Community 45"
 Cohesion: 0.07
 Nodes (29): commandName, environmentVariables, launchBrowser, launchUrl, publishAllPorts, useSSL, ASPNETCORE_ENVIRONMENT, ASPNETCORE_URLS (+21 more)
 
 ### Community 46 - "Community 46"
-Cohesion: 0.23
-Nodes (14): exportReport(), fetchQuestionAnalytics(), fetchQuizPerformance(), QuestionAnalyticsRow, QuizPerformanceRow, ReportCriteria, ReportExportFormat, ReportType (+6 more)
+Cohesion: 0.17
+Nodes (18): TabsContent, TabsList, TabsTrigger, QuestionReview(), exportReport(), fetchQuestionAnalytics(), fetchQuizPerformance(), QuestionAnalyticsRow (+10 more)
 
 ### Community 47 - "Community 47"
-Cohesion: 0.17
+Cohesion: 0.16
 Nodes (8): Exception, Guid, IServiceProvider, Task, QuizHub, IReadOnlyList, Task, IQuizSessionManager
 
 ### Community 48 - "Community 48"
-Cohesion: 0.13
-Nodes (18): EmailVerificationBanner(), getRoles(), getRolesQueryOptions(), useRoles(), UseRolesOptions, resendVerification(), useResendVerification(), verifyEmail() (+10 more)
+Cohesion: 0.08
+Nodes (28): AiImportAnswerOption, AiImportQuestion, AiQuizImportInput, createAiQuiz(), useCreateAiQuiz(), UseCreateAiQuizOptions, QuizProperties(), QuizPropertiesProps (+20 more)
 
 ### Community 49 - "Community 49"
 Cohesion: 0.17
@@ -711,16 +779,16 @@ Cohesion: 0.19
 Nodes (10): DateTime, Guid, AuditLog, CancellationToken, IQueryable, IReadOnlyList, Items, Task (+2 more)
 
 ### Community 52 - "Community 52"
-Cohesion: 0.09
-Nodes (33): DataTableProps, Table, TableBody, TableCaption, TableCell, TableFooter, TableHead, TableHeader (+25 more)
+Cohesion: 0.07
+Nodes (36): DataTableProps, columns, Default, Empty, NarrowViewport, QuizRow, quizzes, SingleRow (+28 more)
 
 ### Community 53 - "Community 53"
-Cohesion: 0.18
-Nodes (11): Dictionary, AuditLogFilterFields, CategoryFilterFields, QuestionFilterFields, QuizFilterFields, UserFilterFields, HashSet, IEnumerable (+3 more)
+Cohesion: 0.16
+Nodes (12): Dictionary, CategoryFilterFields, QuestionFilterFields, QuizFilterFields, UserFilterFields, IQueryable, LambdaExpression, HashSet (+4 more)
 
 ### Community 54 - "Community 54"
-Cohesion: 0.20
-Nodes (5): ModelBuilder, ModelBuilder, PermissionSeeder, ModelBuilder, RoleSeeder
+Cohesion: 0.08
+Nodes (14): QuizAPI.Controllers.Totals, QuizAPI.Services, ActionResult, HttpGet, TotalsController, ModelBuilder, DashboardService, Guid (+6 more)
 
 ### Community 55 - "Community 55"
 Cohesion: 0.16
@@ -731,36 +799,40 @@ Cohesion: 0.14
 Nodes (10): QuizAPI.Chat_System.Services, ConnectionService, ConcurrentDictionary, Guid, IEnumerable, Task, Guid, IEnumerable (+2 more)
 
 ### Community 57 - "Community 57"
-Cohesion: 0.11
-Nodes (25): Alert, AlertDescription, AlertTitle, alertVariants, Progress, RadioGroup, RadioGroupItem, testQuestion() (+17 more)
+Cohesion: 0.12
+Nodes (23): Alert, AlertDescription, AlertTitle, alertVariants, RadioGroup, RadioGroupItem, testQuestion(), TestQuestionInput (+15 more)
 
 ### Community 58 - "Community 58"
 Cohesion: 0.24
 Nodes (9): CancellationToken, HttpGet, IActionResult, Task, AuditLogsController, DateTime, Guid, AuditLogDTO (+1 more)
 
 ### Community 59 - "Community 59"
-Cohesion: 0.16
-Nodes (12): AutomaticRetry, IBackgroundJobClient, IsCorrect, DateTime, Guid, HashSet, ILogger, IServiceScopeFactory (+4 more)
+Cohesion: 0.11
+Nodes (17): AutomaticRetry, IBackgroundJobClient, IsCorrect, DateTime, Guid, HashSet, ILogger, IServiceScopeFactory (+9 more)
 
 ### Community 60 - "Community 60"
-Cohesion: 0.18
-Nodes (7): ConcurrentDictionary, int, IReadOnlyList, List, Task, InMemoryQuizSessionManager, Participant
+Cohesion: 0.11
+Nodes (18): CancellationTokenSource, ConcurrentDictionary, int, IReadOnlyList, List, string, Task, InMemoryQuizSessionManager (+10 more)
+
+### Community 61 - "Community 61"
+Cohesion: 0.10
+Nodes (19): QuizAPI.Services.AuthenticationService, QuizAPI.DTOs.Notification, QuizAPI.Services.Invitations, QuizAPI.Tests.Auth, QuizAPI.Controllers.Notifications.Services, QuizAPI.Tests.Users, QuizAPI.Controllers.Authentication, QuizAPI.DTOs.Authentication (+11 more)
 
 ### Community 62 - "Community 62"
-Cohesion: 0.16
-Nodes (14): ActionResult, Authorize, HttpDelete, HttpGet, HttpPost, HttpPut, IActionResult, IEnumerable (+6 more)
+Cohesion: 0.13
+Nodes (17): ActionResult, Authorize, HttpDelete, HttpGet, HttpPost, HttpPut, IActionResult, IEnumerable (+9 more)
 
 ### Community 63 - "Community 63"
-Cohesion: 0.12
-Nodes (17): CancellationToken, Guid, ILogger, IQueryable, List, Task, QuizService, QuizFilterParams (+9 more)
+Cohesion: 0.13
+Nodes (17): Guid, ILogger, List, string, Task, QuizService, QuizStatus, CancellationToken (+9 more)
 
 ### Community 64 - "Community 64"
-Cohesion: 0.22
-Nodes (12): AvailabilityResponse, fetchAvailability(), fetchInviteValidity(), InviteCodeValidityResponse, normalizeInviteCode(), useEmailAvailability(), useInviteCodeValidity(), useUsernameAvailability() (+4 more)
+Cohesion: 0.06
+Nodes (43): GoBackButton(), InputField(), InputFieldProps, O2Button(), StepsProps, ModeToggle(), ModeToggleProps, AuthConfig (+35 more)
 
 ### Community 65 - "Community 65"
-Cohesion: 0.17
-Nodes (12): CancellationToken, ErrorMessage, Guid, IsCustomMessage, List, Success, Task, IQuestionService (+4 more)
+Cohesion: 0.15
+Nodes (14): CancellationToken, ErrorMessage, Guid, IsCustomMessage, List, Success, Task, IQuestionService (+6 more)
 
 ### Community 66 - "Community 66"
 Cohesion: 0.17
@@ -771,56 +843,56 @@ Cohesion: 0.22
 Nodes (11): DateTime, Guid, ICollection, User, CancellationToken, Guid, IEnumerable, IQueryable (+3 more)
 
 ### Community 68 - "Community 68"
-Cohesion: 0.18
-Nodes (14): ProfileButtonProps, Avatar, AvatarFallback, AvatarImage, ALLOWED_AVATAR_ACCEPT, ALLOWED_AVATAR_TYPES, uploadAvatar(), useUploadAvatar() (+6 more)
+Cohesion: 0.06
+Nodes (46): DrawerHeaderContent(), ProfileButton, ProfileButtonProps, Avatar, AvatarFallback, AvatarImage, difficultyRank(), useQuizCardModel() (+38 more)
 
 ### Community 69 - "Community 69"
-Cohesion: 0.09
-Nodes (20): InputField(), InputFieldProps, Error(), ErrorProps, FIELD_THEMES, FieldTheme, FieldWrapper(), FieldWrapperPassThroughProps (+12 more)
+Cohesion: 0.04
+Nodes (68): ColorCard(), ColorCardProps, DrawerContent, DrawerContentProps, DrawerDescription, DrawerFooter(), DrawerHeader(), DrawerOverlay (+60 more)
 
 ### Community 70 - "Community 70"
-Cohesion: 0.18
-Nodes (16): useGuestQuizSession(), UseGuestQuizSessionParams, createGuestQuizSession(), finishGuestSession(), getGuestCanPlay(), getGuestNextQuestion(), getGuestSessionResults(), submitGuestAnswer() (+8 more)
+Cohesion: 0.17
+Nodes (18): useGuestQuizSession(), UseGuestQuizSessionParams, createGuestQuizSession(), finishGuestSession(), getGuestCanPlay(), getGuestNextQuestion(), getGuestSessionResults(), submitGuestAnswer() (+10 more)
 
 ### Community 71 - "Community 71"
 Cohesion: 0.21
 Nodes (6): Stream, Task, IImageService, ILogger, Task, ImageCleanUpService
 
 ### Community 72 - "Community 72"
-Cohesion: 0.24
-Nodes (5): ICollection, QuizQuestion, IEnumerable, List, QuizSessionMappers
+Cohesion: 0.27
+Nodes (4): Func, IEnumerable, List, QuizSessionMappers
 
 ### Community 73 - "Community 73"
-Cohesion: 0.30
-Nodes (5): O2Button(), ModeToggle(), ModeToggleProps, useThemeSetting(), SocialButtons()
+Cohesion: 0.08
+Nodes (32): hubErrorMessage(), JoinFailureReason, MultiplayerContext, MultiplayerContextType, MultiplayerProvider(), SessionAvailability, API_BASE, useNotificationHub() (+24 more)
 
 ### Community 74 - "Community 74"
 Cohesion: 0.15
 Nodes (15): ControllerBase, Task, ITestQuestionService, ILogger, Task, TestQuestionService, ActionResult, HttpPost (+7 more)
 
 ### Community 75 - "Community 75"
-Cohesion: 0.23
-Nodes (10): DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuShortcut(), DropdownMenuSubContent (+2 more)
+Cohesion: 0.06
+Nodes (46): react, ButtonProps, buttonVariants, FancyButtonColors, ConfirmationDialogProps, Danger, Info, meta (+38 more)
 
 ### Community 76 - "Community 76"
-Cohesion: 0.20
-Nodes (9): IQueryable, Guid, int, IQueryable, List, Task, PagedList, PaginationParams (+1 more)
+Cohesion: 0.14
+Nodes (15): HttpResponse, CancellationToken, IQueryable, DateTime, QuizSummaryDTO, HttpExtensions, Guid, int (+7 more)
 
 ### Community 77 - "Community 77"
 Cohesion: 0.09
 Nodes (22): BCrypt.Net-Next (4.0.3), Bogus (35.6.1), ClosedXML (0.105.0), CsvHelper (33.0.1), Hangfire.AspNetCore (1.8.21), Hangfire.PostgreSql (1.20.13), Microsoft.AspNetCore.Authentication.JwtBearer (8.0.20), Microsoft.AspNetCore.SignalR (1.2.0) (+14 more)
 
 ### Community 78 - "Community 78"
-Cohesion: 0.05
-Nodes (55): DbContext, DbSet, IHostEnvironment, ILogger, IWebHostEnvironment, Stream, Task, ImageService (+47 more)
+Cohesion: 0.13
+Nodes (18): ActionResult, Authorize, HttpDelete, HttpGet, HttpPost, HttpPut, IActionResult, IEnumerable (+10 more)
 
 ### Community 79 - "Community 79"
-Cohesion: 0.15
+Cohesion: 0.14
 Nodes (13): ActivityTimeout, Guid, List, Task, ISessionAbandonmentService, Guid, ILogger, List (+5 more)
 
 ### Community 80 - "Community 80"
-Cohesion: 0.16
-Nodes (14): ActionResult, Authorize, HttpDelete, HttpGet, HttpPost, HttpPut, IActionResult, IEnumerable (+6 more)
+Cohesion: 0.14
+Nodes (15): ActionResult, Authorize, HttpDelete, HttpGet, HttpPost, HttpPut, IActionResult, IEnumerable (+7 more)
 
 ### Community 81 - "Community 81"
 Cohesion: 0.12
@@ -828,30 +900,30 @@ Nodes (16): Guid, List, Task, IUserAnswerService, Guid, ILogger, List, Task (+8 
 
 ### Community 82 - "Community 82"
 Cohesion: 0.21
-Nodes (15): DateTime, Guid, List, AnswerOptionDTO, AnswerOptionForQuizPlaying, IndividualQuestionDTO, MultipleChoiceQuestionCM, MultipleChoiceQuestionUM (+7 more)
+Nodes (15): DateTime, Guid, List, AnswerOptionDTO, IndividualQuestionDTO, MultipleChoiceQuestionCM, MultipleChoiceQuestionUM, QuestionBaseCM (+7 more)
 
 ### Community 83 - "Community 83"
 Cohesion: 0.11
 Nodes (20): contentVersion, metadata, _dependencyType, description, _parameterType, parameters, resourceGroupLocation, resourceGroupName (+12 more)
 
 ### Community 84 - "Community 84"
-Cohesion: 0.32
-Nodes (6): CancellationToken, Guid, IEnumerable, IReadOnlyList, Task, IUserRepository
+Cohesion: 0.15
+Nodes (7): List, string, TypeTheAnswerMatcher, Fact, InlineData, Theory, TypeTheAnswerMatcherTests
 
 ### Community 85 - "Community 85"
-Cohesion: 0.13
+Cohesion: 0.14
 Nodes (11): QuizAPI.MongoDB.Models, IMongoCollection, DateTime, LobbyChatLog, ILogger, string, ILobbyChatArchiver, LobbyChatArchiver (+3 more)
 
 ### Community 86 - "Community 86"
-Cohesion: 0.26
-Nodes (9): ActionResult, CancellationToken, HttpDelete, HttpGet, HttpPost, IActionResult, string, Task (+1 more)
+Cohesion: 0.17
+Nodes (14): QuizAPI.DTOs.Permission, ActionResult, CancellationToken, HttpDelete, HttpGet, HttpPost, IActionResult, string (+6 more)
 
 ### Community 87 - "Community 87"
 Cohesion: 0.16
 Nodes (18): End, From, DateTime, List, AttemptsByDayPoint, QuizAnalyticsDto, QuizQuestionAnalyticsRow, ReportCriteria (+10 more)
 
 ### Community 88 - "Community 88"
-Cohesion: 0.17
+Cohesion: 0.18
 Nodes (5): DateTime, IReadOnlyList, List, Task, IQuizClient
 
 ### Community 89 - "Community 89"
@@ -863,20 +935,20 @@ Cohesion: 0.10
 Nodes (19): compilerOptions, allowImportingTsExtensions, isolatedModules, jsx, lib, module, moduleDetection, moduleResolution (+11 more)
 
 ### Community 91 - "Community 91"
-Cohesion: 0.12
-Nodes (14): QuizAPI.Services.QuizSessionServices, QuizAPI.Controllers.Quizzes.Services.QuizServices, QuizAPI.Hubs, QuizAPI.Controllers.Questions.Services, QuizAPI.Controllers.DataTransfer, QuizAPI.Services.Interfaces, QuizAPI.Hubs.Clients, QuizAPI.DTOs.User (+6 more)
+Cohesion: 0.18
+Nodes (8): QuizAPI.Services.QuizSessionServices, QuizAPI.Hubs, QuizAPI.Services.Interfaces, QuizAPI.Hubs.Clients, Hub, Task, INotificationClient, NotificationHub
 
 ### Community 92 - "Community 92"
 Cohesion: 0.13
 Nodes (17): QuizAPI.DTOs.DataTransfer, DateTime, Guid, List, CategoryExportRow, CategoryImportRow, DifficultyExportRow, DifficultyImportRow (+9 more)
 
 ### Community 93 - "Community 93"
-Cohesion: 0.17
-Nodes (10): FormControl, FormDescription, FormFieldContext, FormFieldContextValue, FormItem, FormItemContext, FormItemContextValue, FormLabel (+2 more)
+Cohesion: 0.08
+Nodes (36): CreateQuizInput, ParsedQuestion, NewQuizQuestionCardProps, MultipleChoiceFormCardProps, TrueFalseFormCardProps, TypeTheAnswerFormCardProps, NewMultipleChoiceOptions(), NewMultipleChoiceOptionsProps (+28 more)
 
 ### Community 94 - "Community 94"
-Cohesion: 0.21
-Nodes (9): ConstantExpression, MethodInfo, Expression, Func, IQueryable, IReadOnlyList, LambdaExpression, Type (+1 more)
+Cohesion: 0.32
+Nodes (7): ConstantExpression, MethodInfo, Expression, Func, IReadOnlyList, Type, FilterEngine
 
 ### Community 95 - "Community 95"
 Cohesion: 0.22
@@ -888,23 +960,23 @@ Nodes (11): CancellationToken, Guid, HashSet, IFormFile, ILogger, IReadOnlyList,
 
 ### Community 97 - "Community 97"
 Cohesion: 0.18
-Nodes (12): IEnumerable, List, Task, AnswerOptionService, IEnumerable, List, Task, IAnswerOptionService (+4 more)
+Nodes (11): IEnumerable, List, Task, AnswerOptionService, IEnumerable, List, Task, IAnswerOptionService (+3 more)
 
 ### Community 98 - "Community 98"
-Cohesion: 0.14
-Nodes (18): extractErrorMessage(), handleQuestionFetchError(), isActiveSessionError(), useQuizSession(), UseQuizSessionParams, createQuizSession(), CreateQuizSessionInput, createQuizSessionInputSchema (+10 more)
+Cohesion: 0.15
+Nodes (18): extractErrorMessage(), handleQuestionFetchError(), isActiveSessionError(), useQuizSession(), UseQuizSessionParams, apiService, createQuizSession(), CreateQuizSessionInput (+10 more)
 
 ### Community 99 - "Community 99"
-Cohesion: 0.10
-Nodes (23): DashboardLayout(), DashboardLayoutProps, canActOnResource(), hasPermission(), hasRole(), isSuperAdmin(), useAuthorization(), AppRootProps (+15 more)
+Cohesion: 0.12
+Nodes (17): DashboardLayout(), DashboardLayoutProps, AppRootProps, activePillTransition, DashboardNav(), DashboardNavProps, labelTransition, NavGroup (+9 more)
 
 ### Community 100 - "Community 100"
 Cohesion: 0.33
 Nodes (4): dashboardEndpoints, DashboardFetcherConfig, DashboardResource, RoleAwareEndpointMap
 
 ### Community 101 - "Community 101"
-Cohesion: 0.16
-Nodes (13): QuizAPI.Controllers.Files, ActionResult, CancellationToken, Guid, HttpDelete, HttpGet, HttpPost, IActionResult (+5 more)
+Cohesion: 0.18
+Nodes (12): ActionResult, CancellationToken, Guid, HttpDelete, HttpGet, HttpPost, IActionResult, IFormFile (+4 more)
 
 ### Community 102 - "Community 102"
 Cohesion: 0.33
@@ -912,35 +984,35 @@ Nodes (9): EnableRateLimiting, Guid, HttpGet, HttpPost, IActionResult, ProducesR
 
 ### Community 103 - "Community 103"
 Cohesion: 0.07
-Nodes (25): MultiplayerQuestionViewProps, MultiplayerGame(), MultiplayerGameProps, Countdown, Match, mcQuestion, QuestionAnswered, QuestionMultipleChoice (+17 more)
+Nodes (26): MultiplayerQuestionViewProps, MultiplayerGame(), MultiplayerGameProps, Countdown, Match, mcQuestion, participants, QuestionAnswered (+18 more)
 
 ### Community 104 - "Community 104"
 Cohesion: 0.12
 Nodes (16): aliases, components, utils, iconLibrary, registries, @react-bits, rsc, $schema (+8 more)
 
 ### Community 105 - "Community 105"
-Cohesion: 0.06
-Nodes (31): 1. TL;DR — when to reach for it, 2. What actually got built, 3. Everyday use, 4. What it's genuinely good at, 5. Where it falls short (be realistic), 6. How this project is wired to use it, 7. Rebuilding from scratch, Ask it a question (the part worth using) (+23 more)
+Cohesion: 0.11
+Nodes (19): 1. The stack, 2. What exists today, 3. How to run, 4. Conventions & patterns, 5. Adding a new test — step by step, 6. CI & the deploy gate, 7. Setup notes & known gaps, A. Backend pure logic (xUnit) (+11 more)
 
 ### Community 106 - "Community 106"
-Cohesion: 0.21
-Nodes (11): ActionResult, Authorize, CancellationToken, HttpDelete, HttpGet, HttpPost, HttpPut, IActionResult (+3 more)
+Cohesion: 0.10
+Nodes (22): ActionResult, Authorize, CancellationToken, HttpDelete, HttpGet, HttpPost, HttpPut, IActionResult (+14 more)
 
 ### Community 107 - "Community 107"
-Cohesion: 0.13
-Nodes (14): DateTime, List, QuestionCategoryCM, QuestionCategoryDTO, DateTime, QuestionLanguageCM, QuestionLanguageDTO, Expression (+6 more)
+Cohesion: 0.09
+Nodes (33): DataTransferControls(), DataTransferControlsProps, exportData(), ExportFormat, EXTENSION, importData(), ImportResult, TransferEntity (+25 more)
 
 ### Community 108 - "Community 108"
-Cohesion: 0.21
-Nodes (3): Quiz editing (2026-07-02 — see docs/quiz/quiz-editing.md), Quiz full error, Start another quiz game
+Cohesion: 0.13
+Nodes (5): How to execute into each database (postgres or mongodb) to verify the existance of data, MONGODB via CMD, MONGODB via Docker, POSTGRES via CMD, POSTGRES via Docker
 
 ### Community 109 - "Community 109"
 Cohesion: 0.21
 Nodes (8): IOrderedQueryable, IQueryable, string, QuizVarietyOrdering, Fact, InlineData, Theory, QuizVarietyOrderingTests
 
 ### Community 110 - "Community 110"
-Cohesion: 0.29
-Nodes (10): QuestionReviewProps, QuizOverview(), QuizOverviewProps, QuizResultsProps, calculateQuizStats(), formatDuration(), getPerformanceLevel(), PerformanceLevel (+2 more)
+Cohesion: 0.26
+Nodes (11): UseQuizSessionReturn, QuestionReviewProps, QuizOverview(), QuizOverviewProps, QuizResultsProps, calculateQuizStats(), formatDuration(), getPerformanceLevel() (+3 more)
 
 ### Community 111 - "Community 111"
 Cohesion: 0.08
@@ -951,32 +1023,32 @@ Cohesion: 0.12
 Nodes (15): compilerOptions, allowImportingTsExtensions, isolatedModules, lib, module, moduleDetection, moduleResolution, noEmit (+7 more)
 
 ### Community 113 - "Community 113"
-Cohesion: 0.26
+Cohesion: 0.23
 Nodes (9): CancellationToken, Guid, IFormFile, IReadOnlyList, Task, IFileService, DateTime, Guid (+1 more)
 
 ### Community 114 - "Community 114"
-Cohesion: 0.28
-Nodes (5): ICollection, QuizCM, QuizUM, QuizQuestionCM, QuizMappers
+Cohesion: 0.29
+Nodes (6): ICollection, QuizCM, QuizUM, QuizQuestionCM, Expression, QuizMappers
 
 ### Community 115 - "Community 115"
-Cohesion: 0.25
-Nodes (9): SettingsApplier(), applyFont(), FONT_OPTIONS, FONT_VARS, FontOption, FontZone, normalizeFont(), toCssValue() (+1 more)
+Cohesion: 0.16
+Nodes (19): SettingsApplier(), useThemeSetting(), applyFont(), FONT_OPTIONS, FONT_VARS, FontOption, FontZone, normalizeFont() (+11 more)
 
 ### Community 116 - "Community 116"
-Cohesion: 0.13
-Nodes (10): QuizAPI.Services.Reports, QuizAPI.Services.DataTransfer, QuizAPI.DTOs.Reports, QuizAPI.Controllers.Reports, IEnumerable, JsonSerializerOptions, DataExportService, ExportFile (+2 more)
+Cohesion: 0.22
+Nodes (6): QuizAPI.Services.DataTransfer, IEnumerable, JsonSerializerOptions, DataExportService, ExportFile, IDataExportService
 
 ### Community 117 - "Community 117"
-Cohesion: 0.03
-Nodes (39): QuizAPI.Tests.Users, QuizAPI.Services.Permissions, QuizAPI.Data, QuizAPI.Migrations, QuizAPI.Services, QuizAPI.Controllers.Permissions, ModelSnapshot, ModelBuilder (+31 more)
+Cohesion: 0.14
+Nodes (8): QuizAPI.Migrations, ModelSnapshot, ModelBuilder, AddUserSettings, ModelBuilder, FixUserRoleRelationship, ModelBuilder, ApplicationDbContextModelSnapshot
 
 ### Community 118 - "Community 118"
 Cohesion: 0.24
 Nodes (8): DateTime, Guid, FileRecord, CancellationToken, Guid, IReadOnlyList, Task, FileRepository
 
 ### Community 119 - "Community 119"
-Cohesion: 0.24
-Nodes (8): DateTime, expiresAt, IConfiguration, int, IReadOnlyCollection, rawToken, tokenHash, TokenService
+Cohesion: 0.13
+Nodes (12): DateTime, expiresAt, IConfiguration, int, IReadOnlyCollection, rawToken, string, tokenHash (+4 more)
 
 ### Community 120 - "Community 120"
 Cohesion: 0.11
@@ -991,8 +1063,8 @@ Cohesion: 0.21
 Nodes (11): getGradingStatus(), getQuizSession(), getSessionResults(), useGetGradingStatus(), UseGetGradingStatusOptions, useGetQuizSession(), UseGetQuizSessionOptions, useGetSessionResults() (+3 more)
 
 ### Community 123 - "Community 123"
-Cohesion: 0.15
-Nodes (20): getSettings(), getSettingsQueryOptions(), useSettingsData(), updateSettings(), useUpdateSettings(), UseUpdateSettingsOptions, AppearanceSection(), AppearanceSectionProps (+12 more)
+Cohesion: 0.22
+Nodes (11): PanelProps, AppearanceSection(), AppearanceSectionProps, AudioSection(), AudioSectionProps, Row(), RowProps, Section() (+3 more)
 
 ### Community 124 - "Community 124"
 Cohesion: 0.22
@@ -1003,24 +1075,24 @@ Cohesion: 0.33
 Nodes (5): JsonSerializerOptions, List, Stream, Type, DataImportService
 
 ### Community 126 - "Community 126"
-Cohesion: 0.22
+Cohesion: 0.21
 Nodes (10): CanvasStrokeStyle, GridOffset, Squares(), SquaresProps, Prism(), PrismProps, useTheme(), EffectType (+2 more)
 
 ### Community 127 - "Community 127"
-Cohesion: 0.15
-Nodes (11): LoadingWaveProps, sizes, AllSizes, CustomText, Default, Fast, Muted, Quiz (+3 more)
+Cohesion: 0.22
+Nodes (8): AllSizes, CustomText, Default, Fast, Muted, Quiz, Slow, Story
 
 ### Community 128 - "Community 128"
-Cohesion: 0.05
-Nodes (37): MultiplayerContext, MultiplayerContextType, MultiplayerProvider(), ConnectionStatus, useConnectionStatus(), useMultiplayer(), CARD_ACCENTS, CardAccent (+29 more)
+Cohesion: 0.10
+Nodes (22): JoinForm(), LeaveLobbyDialog(), LobbyActions(), LobbyActionsProps, LobbyPanel(), LobbyPanelProps, ParticipantCard(), ParticipantCardProps (+14 more)
 
 ### Community 129 - "Community 129"
 Cohesion: 0.22
 Nodes (6): List, Expression, Func, IReadOnlyList, FilterOperator, FilterRule
 
 ### Community 130 - "Community 130"
-Cohesion: 0.05
-Nodes (62): Textarea, myQuestionKeys, questionKeys, quizQuestionKeys, deleteQuestion(), DeleteQuestionApiDTO, useDeleteQuestion(), UseDeleteQuestionOptions (+54 more)
+Cohesion: 0.06
+Nodes (49): myQuestionKeys, questionKeys, quizQuestionKeys, MutationConfig, deleteQuestion(), DeleteQuestionApiDTO, useDeleteQuestion(), UseDeleteQuestionOptions (+41 more)
 
 ### Community 131 - "Community 131"
 Cohesion: 0.11
@@ -1035,28 +1107,28 @@ Cohesion: 0.26
 Nodes (10): BaseModel, chat(), ChatRequest, ChatResponse, ErrorResponse, generate_content(), health_check(), Health check endpoint (+2 more)
 
 ### Community 134 - "Community 134"
-Cohesion: 0.40
-Nodes (4): DateTime, Guid, FullUserDTO, UserBasicDTO
+Cohesion: 0.20
+Nodes (6): QuizAPI.DTOs.User, DateTime, Guid, FullUserDTO, Guid, ChatUserProjection
 
 ### Community 135 - "Community 135"
 Cohesion: 0.18
 Nodes (14): Caddy Reverse Proxy (TLS + SPA), Invite-Code Gated Signup, Production Docker Compose Stack, MongoDB Removal (Ephemeral Chat), Dev PostgreSQL Container, Full-Stack Docker Compose, Backend (.NET) Tests Job, CI Deploy Gate (+6 more)
 
 ### Community 136 - "Community 136"
-Cohesion: 0.40
-Nodes (8): IReadOnlyList, MatchResult, PlayerRoundResult, QuestionResult, RoundOption, RoundQuestion, RoundQuestionView, ScoreboardEntry
+Cohesion: 0.30
+Nodes (10): DateTime, IReadOnlyList, MatchResult, PlayerRoundResult, QuestionResult, RoundAnswer, RoundOption, RoundQuestion (+2 more)
 
 ### Community 137 - "Community 137"
-Cohesion: 0.27
-Nodes (7): DateTime, Guid, RefreshToken, CancellationToken, Guid, Task, RefreshTokenRepository
+Cohesion: 0.18
+Nodes (11): DateTime, Guid, RefreshToken, CancellationToken, Guid, Task, IRefreshTokenRepository, CancellationToken (+3 more)
 
 ### Community 138 - "Community 138"
-Cohesion: 0.04
-Nodes (77): ColorCard(), ColorCardProps, GoBackButton(), AccordionContent, AccordionItem, AccordionTrigger, Badge(), BadgeProps (+69 more)
+Cohesion: 0.10
+Nodes (33): AccordionContent, AccordionItem, AccordionTrigger, Card, CardContent, CardDescription, CardFooter, CardHeader (+25 more)
 
 ### Community 139 - "Community 139"
-Cohesion: 0.28
-Nodes (5): QuizAPI.Controllers.Totals, ActionResult, HttpGet, TotalsController, DashboardService
+Cohesion: 0.18
+Nodes (26): QuestionTabContentProps, BaseQuestionFormCardProps, SmallBaseQuestionCard(), SmallBaseQuestionCardProps, SmallQuestionFooter(), SmallQuestionFooterProps, SmallQuestionHeader(), SmallQuestionHeaderProps (+18 more)
 
 ### Community 140 - "Community 140"
 Cohesion: 0.15
@@ -1067,8 +1139,8 @@ Cohesion: 0.06
 Nodes (30): 1. Quiz Session Flow, 2. Component Hierarchy, 3. Component Specifications, Accessibility, AnswerFeedback, API Integration, Architecture, Components and Interfaces (+22 more)
 
 ### Community 144 - "Community 144"
-Cohesion: 0.04
-Nodes (25): Migration, MigrationBuilder, InitialCreate, MigrationBuilder, SettingsFilesAuditLogsRolePermission, MigrationBuilder, AuditLogs_Notifications_RetireUpdatedAt, MigrationBuilder (+17 more)
+Cohesion: 0.22
+Nodes (5): Migration, MigrationBuilder, InitialCreate, MigrationBuilder, ReworkQuizVisibilityToStatus
 
 ### Community 145 - "Community 145"
 Cohesion: 0.18
@@ -1079,36 +1151,28 @@ Cohesion: 0.39
 Nodes (7): base64(), makeTone(), renderSegments(), sample(), ToneSegment, toWavDataUri(), Wave
 
 ### Community 147 - "Community 147"
-Cohesion: 0.22
-Nodes (8): DrawerFilled(), Divider(), DividerProps, HeaderProps, HeaderComponent, HeaderComponentProps, HoverEffect(), HoverEffectProps
+Cohesion: 0.18
+Nodes (12): DrawerFilled(), Divider(), DividerProps, Header(), HeaderProps, HeaderComponent, HeaderComponentProps, HoverEffect() (+4 more)
 
 ### Community 148 - "Community 148"
 Cohesion: 0.18
 Nodes (10): initialState, Theme, ThemeProvider(), ThemeProviderContext, ThemeProviderProps, ThemeProviderState, App(), AppProvider() (+2 more)
 
 ### Community 149 - "Community 149"
-Cohesion: 0.05
-Nodes (56): api, ApiFnReturnType, MutationConfig, getIndividualQuestion(), getIndividualQuestionQueryOptions(), useIndividualQuestionData(), UseIndividualQuestionOptions, createQuestionCategory() (+48 more)
+Cohesion: 0.14
+Nodes (16): createQuestionCategory(), CreateQuestionCategoryInput, createQuestionCategoryInputSchema, useCreateQuestionCategory(), UseCreateQuestionCategoryOptions, deleteQuestionCategory(), DeleteQuestionCategoryDTO, useDeleteQuestionCategory() (+8 more)
 
 ### Community 150 - "Community 150"
 Cohesion: 0.33
 Nodes (5): CancellationToken, Guid, IReadOnlyList, Task, IFileRepository
-
-### Community 151 - "Community 151"
-Cohesion: 0.18
-Nodes (16): fetchMyQuestions(), getMyMultipleChoiceQuestions(), getMyMultipleChoiceQuestionsQueryOptions(), GetMyQuestionsParams, getMyQuestionsTotal(), getMyQuestionsTotalQueryOptions(), getMyTrueFalseQuestions(), getMyTrueFalseQuestionsQueryOptions() (+8 more)
-
-### Community 152 - "Community 152"
-Cohesion: 0.31
-Nodes (4): DataFormat, DataFormatExtensions, List, Stream
 
 ### Community 153 - "Community 153"
 Cohesion: 0.11
 Nodes (18): 10. The frontend — Cloudflare Worker, 11. Secrets & configuration, 12. Request lifecycle — following one API call, 13. Where the real build differs from the original plan, 14. At-a-glance summary, 1. The big picture in one paragraph, 2. The one constraint that shaped everything, 3. The domain — `oxygenquiz.com` (+10 more)
 
 ### Community 154 - "Community 154"
-Cohesion: 0.14
-Nodes (16): DashboardErrorElement(), MainErrorFallback(), TODO: Send to your error monitoring service (Sentry, LogRocket, etc.), apiError, MinimalError, RuntimeCrash, runtimeError, ServerConnectionFailure (+8 more)
+Cohesion: 0.13
+Nodes (21): DashboardErrorElement(), describeError(), detailsRequested(), MainErrorFallback(), TODO: Send to your error monitoring service (Sentry, LogRocket, etc.), apiError, MinimalError, RuntimeCrash (+13 more)
 
 ### Community 155 - "Community 155"
 Cohesion: 0.28
@@ -1119,8 +1183,8 @@ Cohesion: 0.12
 Nodes (17): 10. Tests, 11. Operational runbook (for the test), 12. File map, 13. Not implemented (optional, from the plan), 1. How it works at a glance, 2. The feature flag, 3. Data model, 4. Code generation & hashing (+9 more)
 
 ### Community 157 - "Community 157"
-Cohesion: 0.11
-Nodes (13): QuizAPI.Middleware, QuizAPI.Controllers.Authentication, IExceptionHandler, IServiceCollection, CancellationToken, Exception, HttpContext, ILogger (+5 more)
+Cohesion: 0.09
+Nodes (16): QuizAPI.Controllers, QuizAPI.Middleware, QuizAPI.Controllers.Quizzes.Services.QuizSessionServices, IExceptionHandler, IServiceCollection, string, QuizSessionOptions, CancellationToken (+8 more)
 
 ### Community 158 - "Community 158"
 Cohesion: 0.22
@@ -1131,8 +1195,8 @@ Cohesion: 0.22
 Nodes (7): Guid, IHttpContextAccessor, CurrentUserService, Guid, ICurrentUserService, Guid, TestCurrentUserService
 
 ### Community 160 - "Community 160"
-Cohesion: 0.12
-Nodes (12): QuizAPI.Tests.Auth, QuizAPI.DTOs.Authentication, AuthResponseDTO, HashSet, NotACommonPasswordAttribute, Fact, InlineData, Theory (+4 more)
+Cohesion: 0.44
+Nodes (4): Fact, InlineData, Theory, NotACommonPasswordTests
 
 ### Community 161 - "Community 161"
 Cohesion: 0.18
@@ -1148,11 +1212,11 @@ Nodes (8): compilerOptions, baseUrl, noUnusedLocals, noUnusedParameters, paths, 
 
 ### Community 164 - "Community 164"
 Cohesion: 0.11
-Nodes (16): Adding filtering to an entity (3 steps), Backend architecture (`QuizAPI.Filtering`), Decision: pagination lives in the body, Design goals, Filtering, Sorting & Pagination, Frontend architecture (`src/lib/filtering`), Migration path (remaining), Testing (+8 more)
+Nodes (17): Adding filtering to an entity (3 steps), Backend architecture (`QuizAPI.Filtering`), Decision: pagination lives in the body, Design goals, Filtering, Sorting & Pagination, Frontend architecture (`src/lib/filtering`), Frontend: one pager per list, and it's `PaginationControls`, Migration path (remaining) (+9 more)
 
 ### Community 167 - "Community 167"
-Cohesion: 0.43
-Nodes (7): Exception, AppException, AppValidationException, ConflictException, ForbiddenException, NotFoundException, UnauthorizedException
+Cohesion: 0.36
+Nodes (8): Exception, AppException, AppValidationException, ConflictException, ForbiddenException, NotFoundException, UnauthorizedException, SessionJoinException
 
 ### Community 168 - "Community 168"
 Cohesion: 0.08
@@ -1167,12 +1231,12 @@ Cohesion: 0.12
 Nodes (15): 1. The big picture, 2. Data model, 3. The storage pipeline (`FileService`), 4. Request flow, 5. Files changed (backend), 6. Database migration, 7. Frontend, 8. How to extend (+7 more)
 
 ### Community 171 - "Community 171"
-Cohesion: 0.19
-Nodes (12): DrawerHeaderContent(), DrawerLinks(), ProfileButton, DrawerContent, DrawerContentProps, DrawerDescription, DrawerFooter(), DrawerHeader() (+4 more)
+Cohesion: 0.13
+Nodes (23): DrawerLinks(), DrawerNavLink(), DrawerNavLinkProps, iconClasses(), labelClasses(), rowClasses(), AccountOverlay(), SectionButton() (+15 more)
 
 ### Community 172 - "Community 172"
-Cohesion: 0.29
-Nodes (6): JoinForm(), LeaveLobbyDialog(), LobbyInfoBar(), LobbyInfoBarProps, MultiplayerLobbyPage(), MultiplayerLobbyPageProps
+Cohesion: 0.07
+Nodes (29): Badge(), BadgeProps, badgeVariants, Checkbox, TrueFalseQuestionCardProps, TrueFalseQuestionListProps, UpdateTrueFalseQuestionFormProps, TypeTheAnswerQuestionListProps (+21 more)
 
 ### Community 174 - "Community 174"
 Cohesion: 0.29
@@ -1203,12 +1267,12 @@ Cohesion: 0.33
 Nodes (6): Portrait of the quiz-show host, a smiling man in a dark suit and tartan tie, cut out on a black background, Portrait of the same quiz-show host in a dark suit and plaid tie, cut out on a white background, Cartoon illustration of the quiz-show host in a suit standing before a game-show set with contestant podiums, a question-mark screen and an audience, History category thumbnail: photo of the Oxygen TV quiz studio with four numbered contestant podiums and the host at center, Photograph of the Oxygen TV quiz studio set with numbered podiums, circular OXYGEN floor logo and stage lighting, Aerial photograph of the Oxygen TV studio showing the host interviewing a guest in the center circle with a live audience and band
 
 ### Community 185 - "Community 185"
-Cohesion: 0.25
+Cohesion: 0.22
 Nodes (8): 1. Authorization rules, 2. API, 3. Backend implementation, 4. Frontend, 5. Tests, 6. File map, 7. Known limitations / follow-ups, Changing a User's Role
 
 ### Community 186 - "Community 186"
-Cohesion: 0.13
-Nodes (14): 1. Co-locate the file, 2. Use the CSF3 format with full typing, 3. Story the presentational component, not the data-fetching wrapper, 4. Mock complex props with a typed factory, 5. Use `render` only when a story needs more than static args, 6. Theme & providers, Canonical examples in this repo, How our setup works (+6 more)
+Cohesion: 0.11
+Nodes (18): 1. Co-locate the file, 2. Use the CSF3 format with full typing, 3. Story the presentational component, not the data-fetching wrapper, 4. Mock complex props with a typed factory, 5. Use `render` only when a story needs more than static args, 6. Theme & providers, Better than a mock: run the real pure function, Canonical examples in this repo (+10 more)
 
 ### Community 187 - "Community 187"
 Cohesion: 0.50
@@ -1227,12 +1291,48 @@ Cohesion: 0.40
 Nodes (3): int, string, TrueFalseOption
 
 ### Community 193 - "Community 193"
-Cohesion: 0.50
-Nodes (3): Guid, string, GuestAccount
+Cohesion: 0.16
+Nodes (16): CancellationToken, Guid, Task, IUserStatsService, CancellationToken, Guid, ILogger, Task (+8 more)
+
+### Community 194 - "Community 194"
+Cohesion: 0.11
+Nodes (21): ConnectionStatus, useConnectionStatus(), useMultiplayer(), CreateLobbyDialog(), CreateLobbyDialogProps, generateRoomCode(), CreateLobbyDialogView(), Creating (+13 more)
+
+### Community 195 - "Community 195"
+Cohesion: 0.14
+Nodes (13): AuthResponseDTO, DateTime, AuthResult, ExternalLoginDTO, ExternalLoginOutcome, ExternalSignupDTO, ExternalSignupRequiredDTO, LoginDTO (+5 more)
+
+### Community 196 - "known-issues.md"
+Cohesion: 0.16
+Nodes (4): Lifecycle, Open, Proposals, Why these are separate
+
+### Community 197 - "IQuestionRepository"
+Cohesion: 0.18
+Nodes (9): ErrorMessage, IsCustomMessage, Success, CancellationToken, Category, Guid, Language, Task (+1 more)
 
 ### Community 198 - "Community 198"
+Cohesion: 0.29
+Nodes (7): llmApi, llmChat(), LlmChatInput, llmChatInputSchema, LlmChatResponse, useLlmChat(), UseLlmChatOptions
+
+### Community 199 - "Multiplayer"
+Cohesion: 0.08
+Nodes (26): 1. Architecture, 2. State ownership, 3.1 A lobby outlives a match, 3.2 The rematch reset, 3.3 "Already started" means a live loop, not a phase, 3.4 Server-side vs client-side return to lobby, 3.5 Leaving and disconnecting, 3. Session lifecycle (+18 more)
+
+### Community 200 - "LobbyPageView.stories.tsx"
+Cohesion: 0.08
+Nodes (24): allReady, chemistryQuiz, conversation, GuestReadyWaitingForHost, guestRoster, GuestWaitingForHostToPickQuiz, HostAloneNoQuiz, HostCanStart (+16 more)
+
+### Community 201 - "ExternalAuthenticationTests"
+Cohesion: 0.29
+Nodes (4): Fact, Mock, Task, ExternalAuthenticationTests
+
+### Community 202 - ".Generate"
 Cohesion: 0.17
-Nodes (15): RFC-7807, authRequestInterceptor(), CUSTOM_ERROR_PATTERNS, isCustomErrorMessage(), llmApi, refreshAccessToken(), llmChat(), LlmChatInput (+7 more)
+Nodes (14): ActionResult, CancellationToken, HttpGet, HttpPost, IActionResult, IReadOnlyList, Task, InviteCodesController (+6 more)
+
+### Community 203 - "Community 203"
+Cohesion: 0.09
+Nodes (17): CancellationToken, ConfigurationManager, IConfiguration, string, Task, GoogleIdentityVerifier, CancellationToken, Task (+9 more)
 
 ### Community 205 - "Community 205"
 Cohesion: 0.40
@@ -1242,25 +1342,77 @@ Nodes (4): resourceId, type, dependencies, apis1
 Cohesion: 0.15
 Nodes (12): Architecture, AWS TLS Management, Backend (`OxygenBackend/QuizAPI/appsettings.*.json`), Deployment (AWS), FastAPI Microservice (`microservice/.env`), Frontend (`.env.development`, `.env.production`), Local Development Commands, OxygenQuiz (+4 more)
 
+### Community 207 - "AnswerGradingServiceTests"
+Cohesion: 0.34
+Nodes (6): Fact, InlineData, List, Task, Theory, AnswerGradingServiceTests
+
 ### Community 209 - "Community 209"
-Cohesion: 0.36
-Nodes (6): AdminImageUpload(), BaseImageUploadProps, ImageUploadProps, useImageUpload(), UserImageUpload(), UserImageUploadProps
+Cohesion: 0.38
+Nodes (7): Fact, Guid, int, IReadOnlyList, Mock, Task, UserServiceRoleTests
 
 ### Community 210 - "Community 210"
-Cohesion: 0.25
-Nodes (8): AI quiz creation (2026-07-17 — see docs/quiz/ai-quiz-architecture.md), Auth enhancements, Code quality / cleanup, Known Issues & Deferred Improvements, Operations / deployment, Repo hygiene, Security hardening (defense-in-depth — no known active exploit), Seed / reference data
+Cohesion: 0.20
+Nodes (10): AI quiz creation (2026-07-17 — see docs/quiz/ai-quiz-architecture.md), Auth enhancements, Code quality / cleanup, Known Issues & Deferred Improvements, Multiplayer / Game State, Operations / deployment, Quiz editing (2026-07-02 — see docs/quiz/quiz-editing.md), Repo hygiene (+2 more)
+
+### Community 211 - "type-the-asnwer-question-form.tsx"
+Cohesion: 0.27
+Nodes (11): getErrorAwareStyles(), ImageHandlerProps, useFormValidation(), ValidationError, ValidationErrorsDisplay(), ValidationErrorsDisplayProps, BaseQuestionFormCard(), NewQuestionCard() (+3 more)
+
+### Community 212 - ".EffectiveElapsed"
+Cohesion: 0.22
+Nodes (7): TimeSpan, QuizTiming, Fact, InlineData, Theory, TimeSpan, QuizTimingTests
+
+### Community 213 - "ExternalLogin"
+Cohesion: 0.22
+Nodes (9): DateTime, Guid, ExternalLogin, CancellationToken, Task, ExternalLoginRepository, CancellationToken, Task (+1 more)
+
+### Community 214 - "InviteCode"
+Cohesion: 0.23
+Nodes (9): DateTime, Guid, InviteCode, CancellationToken, Guid, IEnumerable, IReadOnlyList, Task (+1 more)
+
+### Community 215 - "get-public-quizzes.ts"
+Cohesion: 0.22
+Nodes (11): handleLoaderError(), quizLoader(), quizSelectionLoader(), getPublicQuizzes(), GetPublicQuizzesParams, getPublicQuizzesQueryOptions(), usePublicQuizzesData(), UsePublicQuizzesOptions (+3 more)
+
+### Community 216 - "Implementation Plan — Google & Microsoft Sign-In (External Identity Providers)"
+Cohesion: 0.13
+Nodes (15): 10. Explicitly out of scope (future work), 11. File map (planned), 1. The approach: backend ID-token verification (and why), 2. Design decisions (and why), 3. Data model, 4. Provider verification layer, 5.1 `POST /api/Authentication/external-login` — `[AllowAnonymous]`, `AuthPolicy`, 5.2 `POST /api/Authentication/external-signup` — `[AllowAnonymous]`, `AuthPolicy` (+7 more)
+
+### Community 217 - "QuizAPI.Services.Scoring"
+Cohesion: 0.15
+Nodes (6): QuizAPI.Controllers.Questions.TestQuestions.Services, QuizAPI.Services.Grading, QuizAPI.Tests.Grading, QuizAPI.Controllers.Questions.TestQuestions, QuizAPI.Tests.Scoring, QuizAPI.Services.Scoring
+
+### Community 218 - "Responsive & Mobile Conventions"
+Cohesion: 0.14
+Nodes (14): Backgrounded tabs & timers (mobile), Checklist for new pages/components, Filling the screen: `flex-1`, not `h-screen`, Layout patterns, Lists whose length is data, not design, Responsive & Mobile Conventions, Rows of buttons: reflow them, don't let flex squeeze them, Safe areas (notches, home indicators) (+6 more)
+
+### Community 219 - "Google & Microsoft Sign-In (External Identity Providers)"
+Cohesion: 0.15
+Nodes (13): 1. How it works at a glance, 2. Data model, 3. Token verification, 4. Endpoints, 5. Frontend — the invite-first signup flow, 6. Configuration & provider setup, 7. Tests, 8. Going live — remaining steps (+5 more)
+
+### Community 220 - "Graphify knowledge graph"
+Cohesion: 0.15
+Nodes (12): 1. TL;DR — when to reach for it, 2. What actually got built, 3. Everyday use, 4. What it's genuinely good at, 5. Where it falls short (be realistic), 6. How this project is wired to use it, 7. Rebuilding from scratch, Ask it a question (the part worth using) (+4 more)
 
 ### Community 221 - "Community 221"
-Cohesion: 0.30
-Nodes (12): AppNotification, invalidateAll(), notificationKeys, notificationsQueryOptions(), useDeleteNotification(), useMarkAllNotificationsRead(), useMarkNotificationRead(), useMyNotifications() (+4 more)
+Cohesion: 0.35
+Nodes (11): AppNotification, invalidateAll(), notificationKeys, notificationsQueryOptions(), useDeleteNotification(), useMarkAllNotificationsRead(), useMarkNotificationRead(), useMyNotifications() (+3 more)
+
+### Community 222 - "create-question-difficulty.ts"
+Cohesion: 0.21
+Nodes (11): createQuestionDifficulty(), CreateQuestionDifficultyInput, createQuestionDifficultyInputSchema, useCreateQuestionDifficulty(), UseCreateQuestionDifficultyOptions, deleteQuestionDifficulty(), DeleteQuestionDifficultyDTO, useDeleteQuestionDifficulty() (+3 more)
+
+### Community 223 - "floating-avatar-cluster.tsx"
+Cohesion: 0.19
+Nodes (11): AvatarCircle(), AvatarClusterPlayer, AvatarState, BADGE_BG, FloatingAvatarCluster(), FloatingAvatarClusterProps, GLOW, RING (+3 more)
 
 ### Community 224 - "Community 224"
 Cohesion: 0.50
 Nodes (3): type, dependencies, apis1
 
 ### Community 227 - "Community 227"
-Cohesion: 0.12
-Nodes (14): Import templates, Notes, Questions, Quizzes, Authorization summary, Discovery (lists, search, catalogue), Guests, How access is enforced (+6 more)
+Cohesion: 0.20
+Nodes (10): Authorization summary, Discovery (lists, search, catalogue), Guests, How access is enforced, Implementation status, Import / export, Quiz visibility & sharing, The three states (+2 more)
 
 ### Community 229 - "Community 229"
 Cohesion: 0.15
@@ -1269,6 +1421,10 @@ Nodes (13): (A) Gate the multiplayer routes — frontend, (B) Use the account us
 ### Community 230 - "Community 230"
 Cohesion: 0.15
 Nodes (12): Acceptance Criteria, Acceptance Criteria, Acceptance Criteria, Acceptance Criteria, Introduction, Note, Requirement 1: Quiz Interaction, Requirement 2: Progress Tracking (+4 more)
+
+### Community 231 - "ApplicationDbContext"
+Cohesion: 0.18
+Nodes (11): DbContext, DbSet, ApplicationDbContext, RolePermission, DateTime, Guid, UserRole, ICollection (+3 more)
 
 ### Community 232 - "Community 232"
 Cohesion: 0.67
@@ -1279,12 +1435,16 @@ Cohesion: 0.67
 Nodes (3): vite, O2 logo: 3D magnifying-glass forming the chemical symbol O2 with a superscript square, the OxygenQuiz app brand mark in teal, Vite logo: lightning-bolt mark in blue-to-purple and yellow gradient, the frontend build tool's default favicon
 
 ### Community 242 - "Community 242"
-Cohesion: 0.19
-Nodes (9): double, PointSystem, int, TimeSpan, QuizScoring, Fact, InlineData, Theory (+1 more)
+Cohesion: 0.29
+Nodes (3): TimeSpan, Fact, QuizScoringTests
 
 ### Community 269 - "TopNotification.stories.tsx"
-Cohesion: 0.13
-Nodes (14): QuestionMediaProps, AnsweredCorrectly, FinalQuestionComplete, FreshQuestion, LoadingNextQuestion, sampleQuestion, Story, QuizProgressProps (+6 more)
+Cohesion: 0.17
+Nodes (11): Deploy order, Error details: hidden from users, reachable on demand, Error Handling, Key files, Sizing, The bug that motivated this (worth understanding — it will recur), The default: queries throw — except on 401, The floor: one root `errorElement` (+3 more)
+
+### Community 270 - "Proposal: partial credit for multi-select questions"
+Cohesion: 0.17
+Nodes (12): 1. What happens today, 2. The case for and against, 3.1 Proportional, 3.2 Proportional with penalty, 3.3 Threshold, 3.4 All-or-nothing (status quo), 3. Schemes, 4. What each costs (+4 more)
 
 ### Community 271 - "Guest play — one free singleplayer quiz, no account required"
 Cohesion: 0.17
@@ -1299,32 +1459,44 @@ Cohesion: 0.17
 Nodes (12): 0. The MongoDB decision (do this first — it changes your compose file), 10. Right after launch, 1. DNS — point the domain at Cloudflare and the server, 2. Server baseline hardening, 3. Install Docker, 4. Provision data + TLS, 5. Reverse proxy (Nginx) in front of the backend, 6. Production compose (no Mongo) (+4 more)
 
 ### Community 274 - "Quiz editing & version pinning"
-Cohesion: 0.17
+Cohesion: 0.18
 Nodes (11): Data model, Frontend, Growth & cleanup, Migration (run on your machine — not yet generated), Quiz editing & version pinning, Session pinning (editor-vs-player), Tests, The design in one paragraph (+3 more)
 
 ### Community 275 - "IImageService"
-Cohesion: 0.53
-Nodes (5): QuizAPI.DTOs.Permission, List, PermissionDTO, PermissionMatrixDTO, RolePermissionsDTO
+Cohesion: 0.17
+Nodes (12): 1. What the manual flow does today, 2.1 It isn't atomic, and the code knows it, 2.2 Partial failure inside step 2 is unhandled, 2.3 Request count scales with quiz size, 2.4 Ordering is implicit, 2. What's wrong with it, 3. The flow you already built, 4. Proposal (+4 more)
 
 ### Community 276 - "InviteCodeRepository"
 Cohesion: 0.33
 Nodes (5): Backend extras, Backend (VPS, Docker), Deploy Cheat Sheet, Frontend (Cloudflare Workers — desktop only, no VPS), Quick reference
 
 ### Community 277 - "Implementation Plan — Invite-Code Signup Gate"
-Cohesion: 0.08
-Nodes (22): 10. Operational runbook, 1. Design decisions (and why), 2. Data model, 3. Repository, 4. Signup flow, 5. Code generation, 6. Disable guest play during the test (optional), 7. Frontend (+14 more)
+Cohesion: 0.18
+Nodes (11): 10. Operational runbook, 1. Design decisions (and why), 2. Data model, 3. Repository, 4. Signup flow, 5. Code generation, 6. Disable guest play during the test (optional), 7. Frontend (+3 more)
 
 ### Community 278 - "Production Runbook — oxygenquiz.com on Hetzner"
-Cohesion: 0.29
-Nodes (6): DateTime, expiresAt, IReadOnlyCollection, rawToken, tokenHash, ITokenService
+Cohesion: 0.30
+Nodes (8): IHostEnvironment, CancellationToken, Guid, IConfiguration, ILogger, int, Task, DbSeeder
 
 ### Community 279 - "Image Upload Flow (ImageAsset pipeline)"
 Cohesion: 0.17
 Nodes (11): 1. Upload — `POST /api/ImageUpload/question`, 2. Associate — `POST /api/ImageUpload/associate`, Cleanup job, Components, Endpoints, Image Upload Flow (ImageAsset pipeline), `ImageAsset` schema, Lifecycle (sequence) (+3 more)
 
 ### Community 280 - "Quiz Answer Submission & Grading"
-Cohesion: 0.10
-Nodes (18): Grading rules (`AnswerGradingService.DetermineCorrectnessAsync`), Instant feedback result (`InstantFeedbackAnswerResultDto`), Key files, Multiplayer, Quiz Answer Submission & Grading, Scoring, Submission flow (`SubmitAnswerAsync`), Submitting an answer (`UserAnswerCM`) (+10 more)
+Cohesion: 0.14
+Nodes (14): Grading rules (`AnswerGradingService.DetermineCorrectnessAsync`), Instant feedback result (`InstantFeedbackAnswerResultDto`), Key files, Latency-compensated timing, Multiplayer, Quiz Answer Submission & Grading, Scoring, Submission flow (`SubmitAnswerAsync`) (+6 more)
+
+### Community 281 - "IInviteCodeGenerator"
+Cohesion: 0.18
+Nodes (4): IInviteCodeGenerator, int, string, InviteCodeGenerator
+
+### Community 282 - "lobby-chat-view.tsx"
+Cohesion: 0.26
+Nodes (8): ScrollArea, ScrollBar, LobbyChat(), LobbyChatProps, LobbyChatView(), LobbyChatViewProps, UseChatUnreadOptions, LobbyChatMessage
+
+### Community 283 - "QuizHistoryList.tsx"
+Cohesion: 0.29
+Nodes (9): getUserSessions(), getUserSessionsQueryOptions(), useUserSessions(), MyQuizHistory(), formatDuration(), HistoryRow(), QuizHistoryList(), statusBadge() (+1 more)
 
 ### Community 284 - "Generic File Storage (Files entity)"
 Cohesion: 0.20
@@ -1333,6 +1505,10 @@ Nodes (9): Avatar change (implemented), Can both systems coexist? Yes., Endpoint
 ### Community 285 - "Getting Started — Required Software & Setup"
 Cohesion: 0.20
 Nodes (10): 1. Database, 2. Backend API, 3. Frontend, First login, Getting Started — Required Software & Setup, Option A — Docker Compose (quickest), Option B — Run locally (without Docker), Optional — AI / LLM chat microservice (+2 more)
+
+### Community 286 - "ReportsController.cs"
+Cohesion: 0.20
+Nodes (6): QuizAPI.Services.Reports, QuizAPI.DTOs.Reports, QuizAPI.Controllers.Reports, List, Stream, IDataImportService
 
 ### Community 287 - "Deployment Runbook — quick commands"
 Cohesion: 0.18
@@ -1346,17 +1522,29 @@ Nodes (8): Adding a new audited action, Audit Logging, How to read it, How to wr
 Cohesion: 0.22
 Nodes (9): Endpoint policies, Rate Limiting, Rejection behavior, Related, Testing it, Trusting the client IP, Tuning, What's configured (+1 more)
 
+### Community 290 - "Production Runbook — oxygenquiz.com on Hetzner"
+Cohesion: 0.18
+Nodes (11): Notes, Production Runbook — oxygenquiz.com on Hetzner, Step 0 — One required code change (forwarded headers), Step 1 — Cloudflare (DNS + TLS), Step 2 — Server prep (Docker + firewall), Step 3 — Copy config + secrets onto the server, Step 4 — Build the frontend and copy it up, Step 5 — Bring it up (+3 more)
+
+### Community 291 - "StatsPanel.tsx"
+Cohesion: 0.29
+Nodes (7): number(), StatsContent(), StatsPanel(), getUserQuizStats(), getUserQuizStatsQueryOptions(), useUserQuizStats(), UserQuizStats
+
 ### Community 292 - "OxygenQuiz — Session Handoff"
 Cohesion: 0.29
 Nodes (6): Conventions we settled on, OPEN LOOSE ENDS (do these / keep in mind), OxygenQuiz — Session Handoff, Possible next steps we discussed, Project, What was built this session
 
+### Community 293 - "Account & Settings Overlay"
+Cohesion: 0.20
+Nodes (10): Account & Settings Overlay, How it opens: a query param, not a path, Key files, Responsive behaviour, Sections, Settings state, Stats vs. history, What this replaced (+2 more)
+
 ### Community 294 - "upload-file.ts"
-Cohesion: 0.33
-Nodes (4): FileRecord, uploadFile(), UploadFileInput, useUploadFile()
+Cohesion: 0.09
+Nodes (23): RFC-7807, FileRecord, uploadFile(), UploadFileInput, useUploadFile(), api, CUSTOM_ERROR_PATTERNS, isCustomErrorMessage() (+15 more)
 
 ### Community 295 - "enter-databases.md"
-Cohesion: 0.33
-Nodes (5): How to execute into each database (postgres or mongodb) to verify the existance of data, MONGODB via CMD, MONGODB via Docker, POSTGRES via CMD, POSTGRES via Docker
+Cohesion: 0.20
+Nodes (10): 1. The case for, 2. Algorithm, 3. Threshold, 4. Interaction with existing settings, 5. Rollout, 6. Risks, 7. Sketch, Proposal: typo tolerance for typed answers (+2 more)
 
 ### Community 296 - "MongoDB — disabled (and how to bring it back)"
 Cohesion: 0.33
@@ -1367,32 +1555,108 @@ Cohesion: 0.33
 Nodes (5): About the category colour (the quiz-select UX), Field reference, Files, How to import, Reference data (importable)
 
 ### Community 298 - "get-individual-question.ts"
-Cohesion: 0.11
-Nodes (20): QueryConfig, getQuizAnalytics(), getQuizAnalyticsQueryOptions(), useQuizAnalytics(), UseQuizAnalyticsOptions, getTotalUsers(), getTotalUsersQueryOptions(), useTotalUsersData() (+12 more)
+Cohesion: 0.12
+Nodes (16): ApiFnReturnType, QueryConfig, getIndividualQuestion(), getIndividualQuestionQueryOptions(), useIndividualQuestionData(), UseIndividualQuestionOptions, getTotalUsers(), getTotalUsersQueryOptions() (+8 more)
+
+### Community 300 - "Typed-answer matching"
+Cohesion: 0.20
+Nodes (10): 1. Normalisation — always on, 2. Exact match, 3. Partial match — per-question toggle, Related, The known limits of partial match, The two things an author is choosing between, Typed-answer matching, What changed (2026-07-31) (+2 more)
 
 ### Community 301 - "QuestionDifficultyDTO"
-Cohesion: 0.50
-Nodes (3): DateTime, QuestionDifficultyCM, QuestionDifficultyDTO
+Cohesion: 0.20
+Nodes (10): Computed on read, not denormalised, Endpoints, Frontend, Key files, Quiz History & Player Stats, The history list query (and the N+1 it replaced), The index, `UserQuizStatsDto` (+2 more)
+
+### Community 302 - "Claude Code plugins"
+Cohesion: 0.22
+Nodes (8): Claude Code plugins, claude-mem, context-mode, frontend-design, How triggering works, skill-creator, superpowers, Using this on another device
+
+### Community 431 - "Derived State Pattern"
+Cohesion: 0.31
+Nodes (5): ILogger, IWebHostEnvironment, Stream, Task, ImageService
+
+### Community 432 - "Multiplayer Feature"
+Cohesion: 0.42
+Nodes (6): EmailVerificationBanner(), resendVerification(), useResendVerification(), verifyEmail(), ConfirmEmail(), User
+
+### Community 433 - "MultiplayerContext"
+Cohesion: 0.22
+Nodes (8): Checking, Empty, Filled, LobbyFull, NoInternet, RoomNotFound, ServerUnavailable, Story
+
+### Community 434 - "MultiplayerLobby Component"
+Cohesion: 0.32
+Nodes (4): QuizAPI.DTOs.Files, QuizAPI.Controllers.Files.Services, QuizAPI.Controllers.Files, QuizAPI.Controllers.Users.Services
+
+### Community 435 - "IQuizClient"
+Cohesion: 0.29
+Nodes (7): QuizAPI.DTOs.Invitations, DateTime, Guid, List, GeneratedInviteCodesDTO, GenerateInviteCodesDTO, InviteCodeStatusDTO
+
+### Community 436 - "QuizHub (SignalR Hub)"
+Cohesion: 0.25
+Nodes (8): Clock skew (same day), If you touch this, Related, Tests, The model, The question timer, The two rules that keep it working, What went wrong (2026-08-02)
+
+### Community 437 - "InMemoryQuizSessionManager"
+Cohesion: 0.29
+Nodes (6): double, PointSystem, int, QuizScoring, InlineData, Theory
+
+### Community 512 - "create-quiz-method-dialog.stories.tsx"
+Cohesion: 0.25
+Nodes (7): CreateQuizMethodDialog(), ClosedWithTrigger, Open, OpenForUserDashboard, OpenOnMobile, OpenWithoutNewBadge, Story
+
+### Community 513 - "quiz-timer.tsx"
+Cohesion: 0.29
+Nodes (4): QuizTimer(), QuizTimerProps, SIZE_CONFIG, TimerSize
+
+### Community 514 - "Dynamic Reports"
+Cohesion: 0.29
+Nodes (7): API (`api/reports`, `[Authorize]`, scoped to the current user), Criteria, Dynamic Reports, Extending, Files, On-screen filters (and export parity), Reports
+
+### Community 515 - "NotACommonPasswordAttribute"
+Cohesion: 0.29
+Nodes (5): HashSet, NotACommonPasswordAttribute, ValidationAttribute, ValidationContext, ValidationResult
+
+### Community 516 - "mode-card.tsx"
+Cohesion: 0.33
+Nodes (4): CARD_ACCENTS, CardAccent, ModeCard(), ModeCardProps
+
+### Community 517 - "Import templates"
+Cohesion: 0.40
+Nodes (4): Import templates, Notes, Questions, Quizzes
+
+### Community 518 - "Favicon"
+Cohesion: 0.40
+Nodes (4): Favicon, How the switch works, Regenerating `public/favicon.svg`, Scope / not included
+
+### Community 519 - "Quiz question classification"
+Cohesion: 0.40
+Nodes (5): Hiding the "Unspecified" lookup, No question may be stored as Unspecified, Quiz question classification, The rule, Where it happens
+
+### Community 533 - "generate-favicon.py"
+Cohesion: 0.70
+Nodes (4): build_svg(), fetch_font(), main(), TTFont
+
+### Community 549 - "msal.ts"
+Cohesion: 0.67
+Nodes (3): acquireMicrosoftIdToken(), getMsalInstance(), LOGIN_SCOPES
 
 ## Knowledge Gaps
-- **1427 isolated node(s):** `config`, `preview`, `QuizAPI.Tests.Discovery`, `QuizAPI.Tests.Editing`, `QuizAPI.Tests.Grading` (+1422 more)
+- **1662 isolated node(s):** `config`, `preview`, `QuizAPI.Tests.Discovery`, `QuizAPI.Tests.Editing`, `net8.0` (+1657 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **244 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **263 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `ApplicationDbContext` connect `Community 78` to `REST Controller Base`, `Community 137`, `Invite Codes API`, `Community 139`, `Answer Grading Service`, `Quiz Session Service`, `Question Models`, `Community 30`, `Community 159`, `Community 32`, `Community 43`, `Community 44`, `Community 51`, `Community 54`, `Community 59`, `Community 62`, `Community 67`, `Community 72`, `Community 74`, `Community 79`, `Community 80`, `Community 81`, `Community 86`, `Community 87`, `Community 89`, `Community 95`, `Community 97`, `Community 106`, `Community 107`, `Community 117`, `Community 118`?**
-  _High betweenness centrality (0.072) - this node is a cross-community bridge._
-- **Why does `DataTransferController` connect `Community 30` to `Community 159`, `Community 65`, `Avatar Service (backend)`, `Community 74`, `Community 78`, `Community 116`, `Community 91`, `Community 92`, `Community 31`?**
-  _High betweenness centrality (0.032) - this node is a cross-community bridge._
-- **Why does `QuizAPI.Data` connect `Community 117` to `Backend Namespaces / Tests`, `Audit & Repositories`, `Community 91`, `Backend Service Namespaces`?**
-  _High betweenness centrality (0.026) - this node is a cross-community bridge._
+- **Why does `ApplicationDbContext` connect `ApplicationDbContext` to `REST Controller Base`, `Community 137`, `Invite Codes API`, `Answer Grading Service`, `Quiz Session Service`, `Production Runbook — oxygenquiz.com on Hetzner`, `Question Models`, `Community 30`, `Community 159`, `Community 32`, `Community 43`, `Community 44`, `Derived State Pattern`, `Community 51`, `Community 54`, `Community 59`, `Community 62`, `Community 193`, `Community 67`, `ExternalAuthenticationTests`, `.Generate`, `Community 74`, `Community 78`, `Community 79`, `Community 80`, `Community 81`, `AnswerGradingServiceTests`, `Community 209`, `ExternalLogin`, `Community 86`, `InviteCode`, `Community 87`, `Community 89`, `Community 95`, `Community 97`, `Community 106`, `Community 118`?**
+  _High betweenness centrality (0.069) - this node is a cross-community bridge._
+- **Why does `QuizAPI.Data` connect `Audit & Repositories` to `Backend Namespaces / Tests`, `20251225173303_InitialCreate.Designer.cs`, `20260606084508_Settings-Files-AuditLogs-RolePermission.Designer.cs`, `20260606131927_AuditLogs_Notifications_RetireUpdatedAt.Designer.cs`, `20260608210338_Fix_RolePermissions_ShadowFK.Designer.cs`, `20260609193513_AddFontSetting.Designer.cs`, `20260612120000_RemoveUniversitetiDrejtimi.Designer.cs`, `20260615120000_AddQuizSoftDelete.Designer.cs`, `20260618203133_AddQuestionAndFileMedia.Designer.cs`, `20260620222311_AddEmailVerification.Designer.cs`, `Backend Service Namespaces`, `20260626191712_ReworkQuizVisibilityToStatus.Designer.cs`, `20260628202215_AddInviteCodes.Designer.cs`, `20260622193358_AddGuestQuizSessions.Designer.cs`, `20260702170817_QuizEditingVersioning.Designer.cs`, `20260726102121_AddExternalLogins.Designer.cs`, `20260728120000_RescaleScoresToHighResolutionBase.Designer.cs`, `ReportsController.cs`, `Community 54`, `Community 61`, `QuizAPI.Services.Scoring`, `Community 91`, `Community 117`?**
+  _High betweenness centrality (0.027) - this node is a cross-community bridge._
+- **Why does `QuizAPI.Models` connect `Audit & Repositories` to `Community 134`, `REST Controller Base`, `Community 137`, `Backend Namespaces / Tests`, `Question Models`, `Backend Service Namespaces`, `Community 35`, `Community 43`, `MultiplayerLobby Component`, `Community 51`, `Community 54`, `Community 61`, `Community 62`, `Community 192`, `Community 76`, `Community 80`, `Community 82`, `ExternalLogin`, `InviteCode`, `Community 89`, `QuizAPI.Services.Scoring`, `Community 91`, `Community 97`, `ApplicationDbContext`, `Community 118`?**
+  _High betweenness centrality (0.022) - this node is a cross-community bridge._
 - **What connects `config`, `preview`, `QuizAPI.Tests.Discovery` to the rest of the system?**
-  _1479 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _1713 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `UI Card & Text Components` be split into smaller, more focused modules?**
   _Cohesion score 0.06896551724137931 - nodes in this community are weakly interconnected._
 - **Should `Form & Select UI Primitives` be split into smaller, more focused modules?**
-  _Cohesion score 0.043324898397362165 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.07226890756302522 - nodes in this community are weakly interconnected._
 - **Should `Background & Drawer UI` be split into smaller, more focused modules?**
-  _Cohesion score 0.03717047979343061 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.07207920792079207 - nodes in this community are weakly interconnected._

@@ -159,13 +159,38 @@ into two files rather than trying to mock the hooks:
 - `component-name-view.tsx` — the actual markup, taking everything as props. This is what gets
   storied.
 
-We did this for five components that each called live hooks directly (auth, SignalR, a real
+We did this for six components that each called live hooks directly (auth, SignalR, a real
 network ping, or React Query): `CreateLobbyDialog`, `JoinLobbyDialog`, `ConnectionStatusBadge`,
-`LobbyChat`, and `QuizSelectionDialog` → their `*-view.tsx` twins. Compare
+`LobbyChat`, `QuizSelectionDialog`, and `AiQuizWizard` → their `*-view.tsx` twins. Compare
 [`join-lobby-dialog.tsx`](../../src/pages/Quiz/Multiplayer/components/join-lobby-dialog.tsx) (owns
 `useUser`/`useConnectionStatus`/navigation) against
 [`join-lobby-dialog-view.tsx`](../../src/pages/Quiz/Multiplayer/components/join-lobby-dialog-view.tsx)
 (pure props, storied in `join-lobby-dialog-view.stories.tsx`).
+
+`AiQuizWizard` is the fullest example of the split: the container owns three React Query
+lookups, `useLocation`, the clipboard write and the parse call, while
+[`ai-quiz-wizard-view.tsx`](../../src/pages/Dashboard/Pages/Quiz/components/AI-Quiz/ai-quiz-wizard-view.tsx)
+takes every field as a controlled prop. It's controlled rather than self-stateful on
+purpose: "step 2, source material past the length warning, three questions dropped by the
+parser" has to be expressible as **args**, and any state the view keeps privately is a state
+no story can set. Route prefixes are props too (`quizzesPath`, `manualCreatePath`) — the
+same wizard is mounted under `/dashboard` and `/my-dashboard`.
+
+#### Extracting a screen that's inline in a page
+
+Some UI has no component to story yet because it was written inline. The manual-vs-AI quiz
+chooser was ~55 lines of JSX inside `Quizzes.tsx`, a page wired to five queries — nothing
+about that dialog needed any of them. It became
+[`create-quiz-method-dialog.tsx`](../../src/pages/Dashboard/Pages/Quiz/components/create-quiz-method-dialog.tsx),
+prop-driven and storyable, and the page just renders it.
+
+Two things make an extracted overlay storyable:
+
+- **Accept controlled `open`/`onOpenChange`, pass them straight to Radix.** Radix treats
+  `open === undefined` as uncontrolled, so production keeps its trigger-driven behaviour
+  while stories pin the dialog open with `args: { open: true }` — no click simulation.
+- **Take routes/labels as props, not constants.** Hard-coded paths are what force a second
+  copy of the component for the next surface that needs it.
 
 #### Slot props: when a child genuinely can't be prop-driven at the parent level
 
@@ -213,6 +238,17 @@ Two details:
 
 See the full example: [`MultiplayerGame.stories.tsx`](../../src/pages/Quiz/Multiplayer/components/game/MultiplayerGame.stories.tsx).
 
+#### Better than a mock: run the real pure function
+
+When the prop *is* the output of a pure function we own, don't hand-write the object — call
+the function on a fixture input. `ai-quiz-wizard-view.stories.tsx` holds fixture LLM replies
+(prose-wrapped, wrong-shaped, partially invalid) and passes
+`parseResult: parseAiOutput(reply, ctx)`. The stories then render whatever the parser really
+returns, so a parser regression becomes a Chromatic diff instead of a story that keeps
+looking fine while production doesn't. Only reach for a factory when the value comes from
+something you can't run in the browser (a hook holding a SignalR connection, a network
+response).
+
 ### 5. Use `render` only when a story needs more than static args
 
 Plain `args` covers most stories. Reach for a `render` function when:
@@ -237,6 +273,29 @@ export const LiveQuestion: Story = {
 - If a component genuinely needs a React **context** provider (rare in our prop-driven
   components), wrap it with a `decorators: [(Story) => <SomeProvider><Story/></SomeProvider>]`
   on that story's `meta`.
+- **`MemoryRouter`** whenever anything in the tree renders a react-router `Link` — it throws
+  outside a router. See `Not-Found-Content.stories.tsx`, `create-quiz-method-dialog.stories.tsx`.
+- **`QueryClientProvider`** when a *leaf* still calls React Query even though the component
+  you're storying is prop-driven. The entity selects
+  (`CategorySelect`/`DifficultySelect`/`LanguageSelect`) call
+  `useCanSelectUnspecifiedLookup` → `useUser` to decide whether to offer the seeded
+  "Unspecified" lookup, so any story containing them needs a client:
+
+  ```tsx
+  decorators: [(Story) => (
+    <QueryClientProvider client={new QueryClient({
+      defaultOptions: { queries: { retry: false, enabled: false } },
+    })}>
+      <MemoryRouter><Story /></MemoryRouter>
+    </QueryClientProvider>
+  )],
+  ```
+
+  `retry: false` / `enabled: false` keep a doomed `/Authentication/me` call from retrying in
+  a loop; with no auth the user resolves to "not an admin", which only matters if a fixture
+  includes an "Unspecified" row. Prefer this local decorator over adding a global one — the
+  provider in a story file is a visible reminder that something down there isn't prop-driven
+  yet. See `ai-quiz-wizard-view.stories.tsx`.
 
 ---
 
@@ -250,8 +309,12 @@ Before you consider a story done:
 - [ ] **All callback props use `fn()`**.
 - [ ] There's **one story per meaningful state** (incl. empty/loading/error where relevant).
 - [ ] Right `layout` (`centered` for widgets, `fullscreen` for pages).
-- [ ] Complex object props use a **typed factory** (`Partial<RealType>` overrides).
-- [ ] `npm run build-storybook` passes (stories type-check).
+- [ ] Complex object props use a **typed factory** (`Partial<RealType>` overrides) — or, if
+      the value comes from a pure function we own, the **real function on a fixture input**.
+- [ ] Decorators for anything the tree needs: `MemoryRouter` for `Link`s,
+      `QueryClientProvider` if a leaf still calls React Query.
+- [ ] `npm run build-storybook` passes (stories type-check). `npx tsc -p tsconfig.app.json
+      --noEmit` covers the same types faster, since `include: ["src"]` picks up story files.
 
 ---
 
@@ -286,3 +349,5 @@ Copy from these when writing new stories:
 - **Complex/real-time view via a mocked object** — [`MultiplayerGame.stories.tsx`](../../src/pages/Quiz/Multiplayer/components/game/MultiplayerGame.stories.tsx)
 - **Whole page composed from multiple views + slot props** — [`LobbyPageView.stories.tsx`](../../src/pages/Quiz/Multiplayer/LobbyPageView.stories.tsx)
 - **`*-view.tsx` split off a hook-wired component** — [`join-lobby-dialog-view.stories.tsx`](../../src/pages/Quiz/Multiplayer/components/join-lobby-dialog-view.stories.tsx)
+- **Multi-step flow + failure catalogue, results produced by the real parser** — [`ai-quiz-wizard-view.stories.tsx`](../../src/pages/Dashboard/Pages/Quiz/components/AI-Quiz/ai-quiz-wizard-view.stories.tsx)
+- **Overlay extracted from a page, with controlled `open`** — [`create-quiz-method-dialog.stories.tsx`](../../src/pages/Dashboard/Pages/Quiz/components/create-quiz-method-dialog.stories.tsx)

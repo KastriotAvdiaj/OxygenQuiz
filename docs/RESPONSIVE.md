@@ -61,6 +61,82 @@ over-measures on mobile **and** double-counts the fixed header.
 Content-length pages (results, quiz catalogue) also use `flex-1` so their
 background fills short screens, and simply grow past one viewport when needed.
 
+## Rows of buttons: reflow them, don't let flex squeeze them
+
+A `flex` row of fixed-padding controls does **not** shrink gracefully. `flex-shrink`
+takes width out of the item's *content box* while its padding stays exactly where
+it was, so a button that no longer fits doesn't get smaller — it squeezes its label
+into a narrower box, which wraps mid-phrase. And because shrinking is proportional
+to each item's base width, the longest label loses the most: three buttons in a row
+end up three different widths with ragged text. It reads as a broken layout, which
+is what it is.
+
+Rule: **a row of controls whose combined width can exceed the container gets a
+reflow, not a shrink.** In practice:
+
+- **Use a grid, not a flex row**, when the items should look uniform:
+  `grid grid-cols-1 gap-3 sm:grid-cols-3`. Equal columns give one width for every
+  item, and stacking below the breakpoint is a layout change rather than a
+  deformation.
+- **Grid stretch sizes the item, not its inner face.** For a compound control like
+  `LiftedButton` (an outer `<button>` with an absolutely-positioned edge/shadow and a
+  `relative` front face), size the outer element *and* tell the face to fill it —
+  `outerClassName="w-full"` plus `className="h-full w-full"`. Skip the `h-full` and a
+  two-line label leaves one coloured face taller than its neighbours inside
+  equal-height cells.
+- **Shorten the text before shortening the box**: `text-sm` + `leading-tight` +
+  `text-center` buys a surprising amount of room in a three-across layout.
+- `flex-wrap` is fine when the items are *meant* to be different sizes (filter chips,
+  tags) — the facet type chips in the AI wizard wrap and should.
+
+The same failure with a different symptom: a dialog carrying `w-fit` around
+full-width children. `w-fit` resolves to the children's max-content width, which for
+`w-full` children is the shell's own `max-w-*` — so it silently does nothing except
+override the phone gutter `DialogContent` sets for every dialog. Set `sm:max-w-*`
+instead (`Questions.tsx`, `MyQuestions.tsx`).
+
+## Lists whose length is data, not design
+
+The rules above bound a component against the *viewport*. They say nothing about
+a component bounded by **how many rows the API returned** — and that is the other
+way a layout drifts out of shape. A facet list, a tag picker, a member list, a
+notification tray: each looks fine with the seed data and gets taller every time
+someone adds a row to a table.
+
+Rule: **any list rendered from a collection that can grow gets its own capped,
+scrollable region.** Not the page's scroll, not the panel's — its own.
+
+- **Cap with `max-height`, not `height`.** A fixed height makes a three-option
+  facet reserve six rows of dead space; a cap lets short lists hug their content
+  and long ones scroll, while neither can change the parent's footprint.
+- **Make the cap viewport-aware:** `min(rem, dvh)`, so it also shrinks on
+  landscape phones and ~700px laptops where a rem-only value still overflows.
+  Write the fallback pair — a `dvh` unit inside `min()` invalidates the whole
+  declaration on browsers that lack it, which silently *uncaps* the list:
+
+  ```
+  max-h-60 supports-[height:100dvh]:max-h-[min(15rem,38dvh)]
+  ```
+
+- **Define the cap once, as an exported constant, and use it in every variant.**
+  `FACET_LIST_MAX_HEIGHT` / `FACET_LIST_MAX_HEIGHT_COMPACT` in
+  `facet-section.tsx` are the reference. Per-call-site max-height strings are how
+  one variant ends up uncapped — the sidebar used to pass `""` on the theory that
+  the panel's outer scroll would handle it, so on that one screen the growth
+  problem was merely moved from the page to a 25-item scroll column.
+- **Nested scroll regions need `overscroll-contain`.** These lists sit inside a
+  panel that scrolls, inside a drawer that scrolls, inside the app scroll
+  container. Without containment, a flick past the last row chains outward and
+  moves the page behind the panel — on touch devices that reads as the app losing
+  the user's place.
+- **An outer viewport cap stays as the second line of defence**, for when several
+  capped regions are open at once. It should not be the primary mechanism: it
+  yields one long scrollbar over unrelated groups instead of a stable panel.
+- **Keep search/filter controls outside the scroll region.** The whole point of a
+  search box on a long list is that it stays reachable while you scroll it.
+- **Label the region** (`role="group"` + `aria-label`) so its checkboxes announce
+  as one named set rather than a loose run of controls.
+
 ## Safe areas (notches, home indicators)
 
 `index.html` sets `viewport-fit=cover`; `.app-shell-viewport` pads left/right
@@ -259,6 +335,28 @@ and reported as three separate complaints.
 | `lobby-chat-view.tsx` | Added `enterKeyHint="send"`; send button `h-8 w-8` → `h-9 w-9 lg:h-8 lg:w-8` | The keyboard's return key read "return" on a single-line field, so the only discoverable way to send was a 32px icon — below the ≥36px touch-target rule |
 | `mobile-chat-drawer.tsx` | `onOpenAutoFocus` prevented, focus moved to the drawer content | Radix focused the chat input on open, so opening chat raised the keyboard over a 70dvh drawer. Opening chat is "see what was said", not "type" |
 
+## What changed in the Aug 5 2026 pass
+
+Two threads. First, the `/choose-quiz` filter panel: the Category facet grows with
+the categories table, so an expanded facet got taller with every seeded row. Then a
+sweep of dashboard sizing inconsistencies — the shared search row, an over-wide
+dialog, a hand-rolled spinner.
+
+| Where | Change | Why |
+| --- | --- | --- |
+| `facet-section.tsx` | Exported `FACET_LIST_MAX_HEIGHT` / `…_COMPACT` (`max-h-60` + `min(15rem,38dvh)` pair) and made it the prop default | The cap was a per-call-site string, so each variant chose its own — and one chose none. A shared constant is the only version that can't drift |
+| `quiz-filter-panel.tsx` | Sidebar/drawer/compact all pass the shared cap; the full-height sidebar no longer passes `""` | Uncapping the facets there just relocated the growth from the page into a single 25-row scroll column. Panel height is now a function of the layout, never of the row count |
+| `facet-section.tsx`, `quiz-filter-panel.tsx` | Added `overscroll-contain` to both the facet lists and the sidebar's facet column | These scroll regions nest (list → panel → drawer → app container); a flick past the end chained outward and scrolled the page behind the panel |
+| `facet-section.tsx` | Facet search input `text-sm` → `text-base sm:text-sm`; added `role="group"` + `aria-label` to each list | Another bare inline `<input>` the July 31 sweep missed — 14px, so iOS zoomed on focus (see "the second trap" above) |
+| `lib/Search-Input.tsx` | Row is `flex w-full items-center gap-2`; field wrapper `relative min-w-0 flex-1`; button `shrink-0` | Two nested shrink-to-fit flex boxes meant the field sized to its content and left the panel row half empty — `.minimal-input`'s `width: 100%` was resolving against the shrink-wrapped parent, not the row. `min-w-0` is what lets a long placeholder shrink instead of pushing the button out |
+| `global.css`, `lib/Search-Input.tsx` | New `.minimal-input--compact` / `--has-clear` modifiers (padding `0.75rem` → `0.5rem 0.625rem`; `font-size` 14px **only from `sm` up**) | The default minimal field is a ~44px control — right for a login form, oversized next to the filter panel's Select triggers. **The third instance of the layer trap:** a `py-2 text-sm` at the call site loses to plain-CSS `.minimal-input`, so the modifier lives next to the rule it overrides. Phones keep 16px (iOS zoom); both steps stay ≥36px |
+| `lib/Search-Input.tsx` | `LiftedButton` → plain `Button size="icon"`; `onKeyPress` → `onKeyDown`; added `enterKeyHint="search"`, `aria-label` on both icon buttons; `className` finally forwarded | The lifted style's 4px edge reads as a primary page action and made the row look misaligned. `className` was in the props type but never destructured, so the `!my-0` five call sites passed had been doing nothing — the component's own `my-4` was the spacing all along |
+| `Question/Questions.tsx`, `UserDashboard/MyQuestions.tsx` | Question-type dialog `w-fit` → `sm:max-w-sm` | `w-fit` fought the shared phone gutter and resolved back to `max-w-lg` anyway (the children are full-width), so a three-button chooser rendered 512px wide |
+| `Create-Quiz-Form/create-quiz.tsx` | Question-type chooser `flex gap-4` → `grid grid-cols-1 gap-3 sm:grid-cols-3`; buttons get `outerClassName="w-full"` + `className="h-full w-full text-sm leading-tight"` | At ~500px the three buttons didn't scale down, they deformed: flex shrank their content boxes while the padding stayed, so labels wrapped mid-phrase at three different widths. Grid columns give one width for all three and stack below `sm`. See "Rows of buttons" above |
+| `Create-Quiz-Form/create-quiz.tsx` | Hand-rolled `animate-spin rounded-full border-b-2` → shared `<Spinner size="lg" />` | A 64px circle with one 2px arc reads as a rendering glitch, and matched no other loader in the app |
+| `ui/data-table.tsx` | Rows alternate `bg-primary/10` / `bg-muted` (was `bg-muted` / `bg-background/50`); header stays `bg-muted` | Borrows the Questions page's card tint so the quiz/user tables aren't pure greyscale. Tinting *every* row — two steps of the wash, the first attempt — was too much blue on pages whose only content is the table: spaced-out cards can carry a tint edge-to-edge rows can't |
+| `ui/data-table.tsx` | Removed `position: relative` from header cells (was applied to every column except the first) | In a `border-collapse: collapse` table a positioned cell paints its own background **over** the row's collapsed border, so the header divider was crisp under column 1 and washed out under the rest. Nothing in a header cell is absolutely positioned — the class was vestigial. **General rule: don't put `relative` on a `th`/`td` whose row draws a border, unless a child actually needs it** |
+
 ## Checklist for new pages/components
 
 1. Page root: `flex-1` (fills screen, can grow). No `h-screen`, no `100vh`, no
@@ -274,3 +372,10 @@ and reported as three separate complaints.
 6. Any input whose Enter key submits: set `enterKeyHint`.
 7. Any dialog/drawer that contains a text field: decide whether it should take
    focus on open, and pass `onOpenAutoFocus` if not.
+8. Rendering a list from a table that will grow? Cap it and scroll it in place
+   (`max-height` + `overflow-y-auto` + `overscroll-contain`), with the cap as a
+   shared constant. Test with ~3 rows *and* ~50, not just today's seed data.
+9. A row of two or more fixed-padding buttons? Give it a grid + a stacked
+   breakpoint, not `flex` and hope. Check it at 360px *and* at an awkward
+   in-between width like 500px — that's where flex shrink deforms rather than
+   wraps.

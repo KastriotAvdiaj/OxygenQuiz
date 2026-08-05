@@ -92,7 +92,6 @@ export const CategoryFilters = ({
           placeholder="Search categories..."
           onSearch={onSearchTermChange}
           initialValue={searchTerm}
-          className="!my-0"
         />
       </div>
 

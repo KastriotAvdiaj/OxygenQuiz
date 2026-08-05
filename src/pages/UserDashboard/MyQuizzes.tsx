@@ -5,6 +5,8 @@ import { quizColumns } from "@/pages/Dashboard/Pages/Quiz/components/Data-Table-
 import { useSearchQuizzes } from "@/pages/Dashboard/Pages/Quiz/api/search-quizzes";
 import { rule, type FilterQuery, type FilterRule } from "@/lib/filtering";
 import { useDebounce } from "@/hooks/use-debounce";
+import { PaginationControls } from "@/components/ui/pagination-control";
+import { pagedResponseToPagination } from "@/lib/pagination-query";
 
 
 import { useQuestionCategoryData } from "@/pages/Dashboard/Pages/Question/Entities/Categories/api/get-question-categories";
@@ -125,7 +127,7 @@ export const MyQuizzes = () => {
           <DialogTrigger asChild>
             <LiftedButton>+ Create Quiz</LiftedButton>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="bg-background">
             <DialogHeader>
               <DialogTitle>
                 <p className="text-xl">Choose your quiz title</p>
@@ -162,7 +164,22 @@ export const MyQuizzes = () => {
                 <LoadingWave size="md" />
               </div>
             ) : (
-              <DataTable data={quizzes} columns={quizColumns} />
+              <>
+                <DataTable data={quizzes} columns={quizColumns} />
+                {/* This page fetches one server page of 10 but had no pager of its own — the
+                    only paging control was DataTable's internal one, which never moved past
+                    the 10 rows already on screen, so quiz 11 onwards was unreachable. */}
+                <div className="mt-6">
+                  <PaginationControls
+                    pagination={
+                      quizData.data
+                        ? pagedResponseToPagination(quizData.data)
+                        : undefined
+                    }
+                    onPageChange={setPageNumber}
+                  />
+                </div>
+              </>
             )}
           </Card>
         </div>

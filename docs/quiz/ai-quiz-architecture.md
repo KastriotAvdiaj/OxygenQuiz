@@ -2,7 +2,7 @@
 
 Status: Phase 1 and the Phase 1.5 atomic import are implemented. Phase 2 (hosted API) not started.
 Companion to `docs/quiz/ai-quiz-creation-plan.md` (the *what/why*); this is the *how*.
-Last updated: 2026-07-17
+Last updated: 2026-08-05
 
 ---
 
@@ -27,8 +27,9 @@ that.
 ```mermaid
 flowchart TD
     subgraph Browser["Browser (React)"]
-        Modal["Create-Quiz chooser modal\n(Quizzes.tsx)"]
-        Wizard["AI wizard\n(ai-quiz-wizard.tsx)"]
+        Modal["Manual/AI chooser dialog\n(create-quiz-method-dialog.tsx)"]
+        Wizard["AI wizard container\n(ai-quiz-wizard.tsx)"]
+        View["AI wizard markup\n(ai-quiz-wizard-view.tsx)"]
         Prompt["Prompt builder\n(prompt.ts)"]
         Parser["Output parser\n(parse-ai-output.ts)"]
         Form["Quiz builder\n(create-quiz.tsx + QuizQuestionProvider)"]
@@ -39,33 +40,40 @@ flowchart TD
     end
 
     subgraph API[".NET API"]
-        QCreate["POST /questions/*\n(QuestionService)"]
-        ZCreate["POST /quiz\n(QuizService, transactional)"]
-        Import["POST /quiz/ai-import\n(planned — Phase 1.5)"]
+        Import["POST /quiz/ai-import\n(QuizService.CreateAiQuizAsync,\none transaction)"]
+        QCreate["POST /questions/*\n(QuestionService) — manual flow only"]
+        ZCreate["POST /quiz\n(QuizService) — manual flow only"]
     end
 
     Modal -->|"Create with AI"| Wizard
+    Wizard <-->|props| View
     Wizard --> Prompt
     Prompt -->|copied to clipboard| LLM
     LLM -->|pasted JSON| Wizard
     Wizard --> Parser
     Parser -->|validated questions| Form
-    Form -->|Phase 1: N calls then 1 call| QCreate
-    Form -->|Phase 1| ZCreate
-    Form -.->|Phase 1.5: 1 atomic call| Import
+    Form -->|aiImportMode: 1 atomic call| Import
+    Form -.->|manual mode: N calls then 1| QCreate
+    Form -.->|manual mode| ZCreate
 ```
 
-The dashed path is the hardening described in §7. Everything solid is implemented.
+The AI path (solid) goes through the single atomic endpoint of §7.3. The dashed calls are
+the **manual** builder's questions-first path, which is deliberately non-atomic — see §10a.
 
 ### Frontend files and their single responsibilities
 
 | File | Responsibility | Must NOT do |
 |---|---|---|
-| `Quizzes.tsx` | Offer the manual/AI fork | Any AI logic |
+| `create-quiz-method-dialog.tsx` | Offer the manual/AI fork; route-agnostic (paths are props) | Any AI logic; hard-code a dashboard prefix |
 | `AI-Quiz/prompt.ts` | Build the copy-only prompt string | Render prompt to screen; include entity IDs |
 | `AI-Quiz/parse-ai-output.ts` | Extract + validate + resolve AI JSON into builder types | Any network/DB call; create entities |
-| `AI-Quiz/ai-quiz-wizard.tsx` | Collect inputs, orchestrate steps, hand off to the builder | Re-implement question editing or submission |
-| `Create-Quiz-Form/*` (existing) | Edit questions, validate, submit | Know anything about AI |
+| `AI-Quiz/ai-quiz-wizard.tsx` | Container: queries, wizard state, clipboard, parse call, builder handoff | Hold markup — a visual state added here is one no story can reach |
+| `AI-Quiz/ai-quiz-wizard-view.tsx` | All wizard markup, driven by props (+ a `builderSlot`) | Call hooks / fetch / touch the clipboard |
+| `Create-Quiz-Form/*` (existing) | Edit questions, validate, submit | Know anything about AI beyond the `aiImportMode` flag |
+
+The container/view split exists so every state — both steps, each failure mode, the review
+handoff — is reachable from a story without a backend or an LLM. See §9 and
+[../development/storybook.md](../development/storybook.md).
 
 The wizard is deliberately thin: it **converges onto the existing builder** at the review
 step, so all editing, validation, and persistence logic has exactly one implementation.
@@ -121,8 +129,8 @@ assumption). The backend re-validates everything the client already checked:
   DifficultyId, userId)` and `AllQuestionsExistAsync(...)` and rolls back if either fails
   (`QuizService.cs:192–199`). So even if the client sent a bad entity id, the server
   refuses it.
-- The planned `ai-import` endpoint (§7) resolves difficulty **names** server-side against
-  existing rows only, so "no entity creation via the AI flow" is enforced where it
+- The `ai-import` endpoint (§7.3, implemented) resolves difficulty **names** server-side
+  against existing rows only, so "no entity creation via the AI flow" is enforced where it
   actually matters, not just in the UI.
 
 > **Invariant.** Client-side resolution is a convenience for preview quality. The server
@@ -260,7 +268,10 @@ AiQuizImportCM {
 }
 ```
 
-### 7.4 Interim mitigations (only if Phase 1 ships before 1.5)
+### 7.4 Interim mitigations (historical — superseded by 7.3)
+
+Kept for the reasoning, not as guidance: §7.3 shipped, so none of this is the current
+design. Only the first bullet still describes live behaviour.
 
 Not a substitute for §7.3, but they shrink the risk:
 
@@ -315,6 +326,25 @@ The pipeline's stage boundaries make it highly unit-testable without any network
   asserts **zero** question rows were committed (the orphan regression test).
 - **E2E** — modal fork routes correctly; a canned good reply produces a prefilled builder;
   a canned bad reply shows the error and creates nothing.
+
+### 9.1 Storybook: the failure catalogue, visually
+
+Every row of §6 that has a *screen* has a story in
+`AI-Quiz/ai-quiz-wizard-view.stories.tsx` (plus
+`create-quiz-method-dialog.stories.tsx` for the fork itself). Run `npm run storybook`.
+
+The stories are wired to the **real `parseAiOutput`** — each one holds a fixture LLM reply
+(prose-wrapped, wrong-shaped, partially invalid, invented difficulties…) and renders
+whatever the parser actually returns. Two consequences worth knowing:
+
+- A parser change that alters what gets dropped, clamped or fallen back on **shows up as a
+  visual diff in Chromatic**, not just as a unit-test failure. The stories are a second,
+  human-readable assertion over the same pipeline.
+- Hand-writing `ParseResult` objects in these stories would forfeit that, so don't. Add a
+  fixture reply instead and let the parser produce the result.
+
+The unit tests above are still the place for exhaustive table-driven cases; the stories
+cover the states a person needs to *look* at.
 
 ---
 

@@ -1,14 +1,23 @@
 # AI-Assisted Quiz Creation — Implementation Plan
 
-Status: Phase 0 + Phase 1 implemented. Phases 1.5 and 2 not started.
+Status: Phase 0, Phase 1 and Phase 1.5 implemented. Phase 2 (hosted API) not started.
 Owner: Kastriot
-Last updated: 2026-07-17
+Last updated: 2026-08-05
 
 > **This is the original plan, kept as written.** Where the shipped code has since diverged,
-> [`ai-quiz-architecture.md`](./ai-quiz-architecture.md) is the current description. One divergence
-> worth knowing while reading §5 and §6.2 below: the prompt no longer requests
-> `allowPartialMatch` and the parser hard-codes it to `false` — grading rules are the author's, not
-> the model's (see [`typed-answer-matching.md`](./typed-answer-matching.md)).
+> [`ai-quiz-architecture.md`](./ai-quiz-architecture.md) is the current description. Divergences
+> worth knowing while reading below:
+>
+> - **§5 / §6.2** — the prompt no longer requests `allowPartialMatch` and the parser hard-codes
+>   it to `false`; grading rules are the author's, not the model's (see
+>   [`typed-answer-matching.md`](./typed-answer-matching.md)).
+> - **§7.1 / §11** — Phase 1.5 shipped. `POST /api/quiz/ai-import` exists
+>   (`QuizService.CreateAiQuizAsync`, one transaction) and the wizard submits through it via
+>   `aiImportMode`, so the orphan window described below is closed.
+> - **§10 / §11** — the wizard is now a container (`ai-quiz-wizard.tsx`) plus prop-driven
+>   markup (`ai-quiz-wizard-view.tsx`), and the `Quizzes.tsx` chooser moved into
+>   `create-quiz-method-dialog.tsx`. Both are storied; see
+>   [`../development/storybook.md`](../development/storybook.md).
 
 ---
 

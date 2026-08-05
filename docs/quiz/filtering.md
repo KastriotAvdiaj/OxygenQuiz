@@ -39,6 +39,26 @@ generic `PagedResponse<T>`. The header approach was reasonable, but the body env
 better fit for a typed, reusable framework. Existing header-based endpoints keep working and
 migrate incrementally (see *Migration path*).
 
+### Frontend: one pager per list, and it's `PaginationControls`
+
+Paging happens on the server, so the client's job is to render the envelope, not to
+re-paginate it. The rule:
+
+- **`PaginationControls`** (`src/components/ui/pagination-control.tsx`) is the only pager.
+  Feed it `pagedResponseToPagination(response)`; it renders nothing at
+  `totalPages <= 1`, so a single-page list shows no chrome.
+- **`DataTable`** renders every row it is handed and owns no pagination state. It used to
+  also paginate internally (`getPaginationRowModel`, `pageSize: 10`, its own Page x of y
+  footer), which produced a permanent, dead "Page 1 of 1" beneath the real pager — and on
+  `Users.tsx`, whose server page is 20, quietly hid half of every page behind an inner
+  pager nobody knew existed. Removed 2026-08-05.
+- **A client-side pager is the wrong tool here regardless**: it can only page the rows
+  already fetched, so its page count describes the response, not the result set.
+
+If a new list needs paging, add the server query (`FilterQuery` + `PagedResponse`) and
+`PaginationControls` — don't reintroduce table-level paging. `Quizzes.tsx`, `Users.tsx` and
+`category-view.tsx` are the reference wiring.
+
 ## The wire format
 
 A filtered endpoint binds a single `FilterQuery` from the query string:

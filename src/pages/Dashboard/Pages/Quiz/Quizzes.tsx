@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { DataTable, Card, Spinner, Button } from "@/components/ui";
-import { Link } from "react-router-dom";
 import { quizColumns } from "./components/Data-Table-Columns/columns";
 import { useSearchQuizzes } from "./api/search-quizzes";
 import { rule, type FilterQuery, type FilterRule } from "@/lib/filtering";
@@ -12,24 +11,16 @@ import { useQuestionCategoryData } from "../Question/Entities/Categories/api/get
 import { useQuestionDifficultyData } from "../Question/Entities/Difficulty/api/get-question-difficulties";
 import { useQuestionLanguageData } from "../Question/Entities/Language/api/get-question-language";
 import { useUserData } from "../User/api/get-users";
-import { LiftedButton } from "@/common/LiftedButton";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { GrFormNextLink } from "react-icons/gr";
-import { Filter, PencilLine, Sparkles } from "lucide-react";
+import { Filter } from "lucide-react";
 import { QuizFiltersPanel } from "./components/Quiz-Filter";
-import { DataTransferControls } from "@/components/data-transfer/DataTransferControls";
+import { CreateQuizMethodDialog } from "./components/create-quiz-method-dialog";
+// import { DataTransferControls } from "@/components/data-transfer/DataTransferControls";
 
 export const Quizzes = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -145,7 +136,7 @@ export const Quizzes = () => {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Quiz Management</h1>
         <div className="flex items-center gap-2">
-          <DataTransferControls entity="quizzes" invalidateKey={["quizzes"]} />
+          {/* <DataTransferControls entity="quizzes" invalidateKey={["quizzes"]} /> */}
           <Button
             variant="outline"
             size="sm"
@@ -160,62 +151,12 @@ export const Quizzes = () => {
               </span>
             )}
           </Button>
-          <Dialog>
-            <DialogTrigger asChild>
-              <LiftedButton>+ Create Quiz</LiftedButton>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>
-                  <p className="text-xl">How do you want to build this quiz?</p>
-                  <p className="text-muted-foreground text-xs font-normal">
-                    You can edit everything afterwards either way.
-                  </p>
-                </DialogTitle>
-              </DialogHeader>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-                {/* Manual */}
-                <Link
-                  to="/dashboard/quizzes/create-quiz"
-                  className="group rounded-xl border-2 border-primary/30 hover:border-primary bg-background p-5 flex flex-col gap-3 transition-colors"
-                >
-                  <PencilLine className="h-8 w-8 text-primary" />
-                  <div>
-                    <p className="font-semibold">Create manually</p>
-                    <p className="text-muted-foreground text-xs mt-1">
-                      Build the quiz yourself — pick existing questions from the
-                      bank or write new ones from scratch.
-                    </p>
-                  </div>
-                  <span className="mt-auto pt-2 text-primary text-sm flex items-center gap-1">
-                    Start <GrFormNextLink />
-                  </span>
-                </Link>
-
-                {/* AI */}
-                <Link
-                  to="/dashboard/quizzes/create-quiz/ai"
-                  className="group rounded-xl border-2 border-primary/30 hover:border-primary bg-background p-5 flex flex-col gap-3 transition-colors relative"
-                >
-                  <span className="absolute top-3 right-3 text-[10px] font-semibold uppercase tracking-wide bg-primary/15 text-primary rounded-full px-2 py-0.5">
-                    New
-                  </span>
-                  <Sparkles className="h-8 w-8 text-primary" />
-                  <div>
-                    <p className="font-semibold">Create with AI</p>
-                    <p className="text-muted-foreground text-xs mt-1">
-                      Paste your source material, run our prompt through any AI,
-                      and we'll turn the result into a ready-to-edit quiz.
-                    </p>
-                  </div>
-                  <span className="mt-auto pt-2 text-primary text-sm flex items-center gap-1">
-                    Start <GrFormNextLink />
-                  </span>
-                </Link>
-              </div>
-            </DialogContent>
-          </Dialog>
+          {/* Manual-vs-AI fork. Lives in its own component (and its own story) rather
+              than inline here — see create-quiz-method-dialog.tsx. */}
+          <CreateQuizMethodDialog
+            manualPath="/dashboard/quizzes/create-quiz"
+            aiPath="/dashboard/quizzes/create-quiz/ai"
+          />
         </div>
       </div>
 

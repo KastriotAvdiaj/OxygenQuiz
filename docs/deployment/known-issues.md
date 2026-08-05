@@ -219,6 +219,38 @@ timeLimit` points, i.e. ~33 pts on a 30s question but ~100 pts (10% of base) on 
   and capture the reference before mutating the FK (or null-check instead of `!`).
   → `OxygenBackend/QuizAPI/Controllers/Quizzes/Services/QuizSessionServices/` (esp.
   `SubmitAnswerService`, `QuizSessionService`, `AbandonmentService`)
+- **P3 — Difficulty and language admin views have no paging at all.** Unlike the
+  categories view (which uses `useSearchQuestionCategories` + `PaginationControls`),
+  `difficulty-view.tsx` and `language-view.tsx` call `useQuestionDifficultyData({})` /
+  `useQuestionLanguageData({})` — endpoints that return the **entire** lookup table — and
+  render every row. Fine today (6 difficulties, 4 languages, and a fresh instance starts
+  with fewer; see *Seed / reference data* below) and it means nothing is hidden, but the
+  page grows without bound and there's no search or filter to narrow it.
+  Surfaced on 2026-08-05 when `DataTable`'s internal pager was removed: until then these
+  two views were silently capped at the first 10 rows by a client-side `pageSize: 10`,
+  which looked like paging but couldn't page a `<11`-row table and hid rows 11+ on a
+  bigger one. Removing it made the gap visible rather than creating it.
+  _Fix when either lookup grows:_ add `search-question-difficulties` /
+  `search-question-languages` endpoints mirroring the categories one (`FilterFieldSet` +
+  `PagedResponse`), then wire the views to `PaginationControls` exactly as
+  `category-view.tsx` does.
+  → `src/pages/Dashboard/Pages/Question/Entities/Difficulty/Components/difficulty-view.tsx`,
+  `src/pages/Dashboard/Pages/Question/Entities/Language/components/language-view.tsx`,
+  `src/pages/Dashboard/Pages/Question/Entities/Categories/Components/category-view.tsx`
+  (the pattern to copy)
+- **P3 — Dashboard pages call `window.scrollTo` on page change, which is a no-op.**
+  `Quizzes.tsx` and `Users.tsx` scroll to the top after a pagination click with
+  `window.scrollTo(0, 0)`. Nothing happens: `html`/`body` are pinned
+  (`overflow: hidden`, see [`RESPONSIVE.md`](../RESPONSIVE.md)) and inside the dashboard
+  the scrolling element is `<main class="flex-1 overflow-y-auto">` in
+  `dashboard-layout.tsx` — not the window, and not the app-shell container that
+  `scrollAppToTop()` targets either. So paging to page 5 leaves you halfway down the
+  table. _Fix:_ a small dashboard-scroll helper alongside `src/lib/app-scroll.ts` (a ref
+  on the layout's `main`, or an id + `getElementById`), then use it in both handlers —
+  and delete the dead `window.scrollTo` calls rather than leaving them to look correct.
+  → `src/pages/Dashboard/Pages/Quiz/Quizzes.tsx`,
+  `src/pages/Dashboard/Pages/User/Users.tsx`, `src/layouts/dashboard-layout.tsx`,
+  `src/lib/app-scroll.ts`
 
 ## Seed / reference data
 

@@ -9,6 +9,29 @@ export interface FacetOption {
   label: string;
 }
 
+/**
+ * Height cap for a facet's option list — the reason the panel's size is a
+ * function of the *layout*, not of how many rows the API returns. Categories
+ * are seeded data and grow over time; without a cap an expanded facet pushes
+ * the panel past the viewport and drags the whole page's scroll with it.
+ *
+ * A cap (`max-height`) rather than a fixed height: Difficulty has three options
+ * and should not reserve six rows of dead space. Long facets get a scrollbar,
+ * short ones hug their content, and neither can change the panel's footprint.
+ *
+ * `min(rem, dvh)` so the cap also shrinks on short viewports (landscape phones,
+ * ~700px laptops) where a rem-only value would still overflow. dvh, not vh, per
+ * docs/RESPONSIVE.md — with the plain-rem first line as the older-browser
+ * fallback, since an unsupported unit inside `min()` invalidates the whole
+ * declaration and would silently restore the uncapped behaviour.
+ */
+export const FACET_LIST_MAX_HEIGHT =
+  "max-h-60 supports-[height:100dvh]:max-h-[min(15rem,38dvh)]";
+
+/** Tighter cap for side-by-side layouts (the multiplayer dialog's 3-up grid). */
+export const FACET_LIST_MAX_HEIGHT_COMPACT =
+  "max-h-36 supports-[height:100dvh]:max-h-[min(9rem,26dvh)]";
+
 interface FacetSectionProps {
   title: string;
   options: FacetOption[];
@@ -18,7 +41,11 @@ interface FacetSectionProps {
   defaultOpen?: boolean;
   /** The in-facet search box appears once the list grows beyond this many options. */
   searchThreshold?: number;
-  /** Tailwind max-height class for the scrollable option list. */
+  /**
+   * Tailwind max-height class(es) for the scrollable option list. Defaults to
+   * `FACET_LIST_MAX_HEIGHT`; pass a tighter cap for dense layouts. Never pass
+   * an empty string — that uncaps the list (see the constant's note).
+   */
   listMaxHeight?: string;
 }
 
@@ -35,7 +62,7 @@ export function FacetSection({
   onToggle,
   defaultOpen = true,
   searchThreshold = 8,
-  listMaxHeight = "max-h-52",
+  listMaxHeight = FACET_LIST_MAX_HEIGHT,
 }: FacetSectionProps) {
   const [open, setOpen] = useState(defaultOpen);
   const [query, setQuery] = useState("");
@@ -103,13 +130,26 @@ export function FacetSection({
                 placeholder="Search…"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                className="w-full border-b border-border bg-transparent py-1.5 pl-6 pr-1 text-sm placeholder:text-muted-foreground/70 focus:border-primary focus:outline-none transition-colors"
+                // text-base below sm: a raw <input> imports none of the shared
+                // field styling, and anything under 16px makes iOS Safari zoom
+                // the page on focus and never zoom back (docs/RESPONSIVE.md).
+                className="w-full border-b border-border bg-transparent py-1.5 pl-6 pr-1 text-base sm:text-sm placeholder:text-muted-foreground/70 focus:border-primary focus:outline-none transition-colors"
               />
             </div>
           )}
 
+          {/* The scroll region. overscroll-contain: this list sits inside the
+              panel's own scroll area (and, on mobile, inside the drawer), so
+              without it a flick past the last category chains into the parent
+              and moves the page the user was reading. role=group + label so the
+              checkboxes announce as one named set. */}
           <div
-            className={cn("space-y-0.5 overflow-y-auto scrollbar-thin pr-1", listMaxHeight)}
+            role="group"
+            aria-label={title}
+            className={cn(
+              "space-y-0.5 overflow-y-auto overscroll-contain scrollbar-thin pr-1",
+              listMaxHeight
+            )}
           >
             {pinned.map((option) => (
               <FacetRow

@@ -3,7 +3,7 @@ import { Spinner } from "@/components/ui/Spinner";
 import { Button } from "@/components/ui";
 import { columns } from "./Components/columns";
 import { DataTable } from "@/components/ui/data-table";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
   Sheet,
   SheetContent,
@@ -86,12 +86,13 @@ export const Users = () => {
     <div className="space-y-4 p-6">
 
       {/* Content + Sidebar layout */}
+        <h1 className="text-2xl font-bold">Users Dashboard</h1>
+
       <div className="flex gap-6 items-start">
         {/* Table card */}
         <div className="flex-1 min-w-0">
-          <Card className="p-5 bg-background border-none shadow-none rounded-sm">
+          <Card className="p-5 bg-card border dark:border-foreground/30 rounded-md">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-2xl font-bold">Users Dashboard</CardTitle>
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
@@ -109,7 +110,8 @@ export const Users = () => {
               </div>
             </CardHeader>
             <CardContent>
-              <UserControls onRefresh={() => usersQuery.refetch()} exportQuery={query} />
+              {/* <UserControls onRefresh={() => usersQuery.refetch()} exportQuery={query} />  THIS IS THE OLD ONE, WE DECIDED TO REMOVE REFRESH, EXPORT AND IMPORT*/}
+              <UserControls />
               {usersQuery.isError ? (
                 <p className="text-center text-red-500 py-8">
                   Failed to load users. Please try again later.

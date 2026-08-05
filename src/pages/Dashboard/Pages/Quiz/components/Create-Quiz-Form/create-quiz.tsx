@@ -492,7 +492,10 @@ const CreateQuizForm = ({
   if (queryData.isLoading) {
     return (
       <div className="w-full h-64 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary"></div>
+        {/* The shared Spinner, not a hand-rolled `rounded-full border-b-2` div: that one
+            rendered as a 64px circle with a single 2px arc, which reads as a rendering
+            glitch rather than a loader, and matched nothing else in the app. */}
+        <Spinner size="lg" />
       </div>
     );
   }
@@ -935,54 +938,65 @@ const CreateQuizForm = ({
                       open ? openAddQuestionDialog() : closeAddQuestionDialog()
                     }
                   >
-                    <DialogContent className="bg-background p-4 rounded-md w-fit pt-8 dark:border border-foreground/30 max-w-4xl">
+                    <DialogContent className="bg-background p-4 rounded-md pt-8 dark:border border-foreground/30 ">
                       <DialogHeader>
                         <DialogTitle className="flex items-center justify-center">
                           Choose the type of question
                         </DialogTitle>
                       </DialogHeader>
-                      <div className="flex flex-col gap-4 mt-4">
-                        <div className="flex gap-4">
-                          <LiftedButton
-                            type="button"
-                            className="flex items-center gap-2"
-                            onClick={() => {
-                              const tempId = -Date.now();
-                              const newQuestion =
-                                createNewMultipleChoiceQuestion(tempId);
-                              addQuestionToQuiz(newQuestion);
-                              closeAddQuestionDialog();
-                            }}
-                          >
-                            Multiple Choice
-                          </LiftedButton>
-                          <LiftedButton
-                            type="button"
-                            className="flex items-center gap-2"
-                            onClick={() => {
-                              const tempId = -Date.now();
-                              const newQuestion =
-                                createNewTrueFalseQuestion(tempId);
-                              addQuestionToQuiz(newQuestion);
-                              closeAddQuestionDialog();
-                            }}
-                          >
-                            True/False
-                          </LiftedButton>
-                          <LiftedButton
-                            type="button"
-                            className="flex items-center gap-2"
-                            onClick={() => {
-                              const tempId = -Date.now();
-                              const newQuestion =
-                                createNewTypeTheAnswerQuestion(tempId);
-                              addQuestionToQuiz(newQuestion);
-                              closeAddQuestionDialog();
-                            }}
-                          >
-                            Type The Answer
-                          </LiftedButton>
-                        </div>
+                      {/* A grid, not a flex row. Flex shrinks an item's *content box* while
+                          its padding stays put, so three fixed-padding buttons in a narrow
+                          dialog didn't get smaller — they squeezed their labels into wrapping
+                          mid-phrase, at three different widths (shrink is proportional to
+                          base width). Equal grid columns give one width for all three and
+                          stack them below `sm`, where three across can't fit legibly.
+                          `outerClassName` sizes the button element; `className` is the front
+                          face, and it needs h-full/w-full to fill a stretched grid cell —
+                          otherwise a two-line label makes one blue face taller than the
+                          others. See docs/RESPONSIVE.md. */}
+                      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                        <LiftedButton
+                          type="button"
+                          outerClassName="w-full"
+                          className="h-full w-full text-center text-sm leading-tight"
+                          onClick={() => {
+                            const tempId = -Date.now();
+                            const newQuestion =
+                              createNewMultipleChoiceQuestion(tempId);
+                            addQuestionToQuiz(newQuestion);
+                            closeAddQuestionDialog();
+                          }}
+                        >
+                          Multiple Choice
+                        </LiftedButton>
+                        <LiftedButton
+                          type="button"
+                          outerClassName="w-full"
+                          className="h-full w-full text-center text-sm leading-tight"
+                          onClick={() => {
+                            const tempId = -Date.now();
+                            const newQuestion =
+                              createNewTrueFalseQuestion(tempId);
+                            addQuestionToQuiz(newQuestion);
+                            closeAddQuestionDialog();
+                          }}
+                        >
+                          True/False
+                        </LiftedButton>
+                        <LiftedButton
+                          type="button"
+                          outerClassName="w-full"
+                          className="h-full w-full text-center text-sm leading-tight"
+                          onClick={() => {
+                            const tempId = -Date.now();
+                            const newQuestion =
+                              createNewTypeTheAnswerQuestion(tempId);
+                            addQuestionToQuiz(newQuestion);
+                            closeAddQuestionDialog();
+                          }}
+                        >
+                          Type The Answer
+                        </LiftedButton>
                       </div>
                     </DialogContent>
                   </Dialog>

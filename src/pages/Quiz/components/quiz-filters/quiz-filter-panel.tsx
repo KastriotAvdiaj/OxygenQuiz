@@ -6,7 +6,12 @@ import type {
   QuestionLanguage,
 } from "@/types/question-types";
 import { cn } from "@/utils/cn";
-import { FacetSection, type FacetOption } from "./facet-section";
+import {
+  FacetSection,
+  FACET_LIST_MAX_HEIGHT,
+  FACET_LIST_MAX_HEIGHT_COMPACT,
+  type FacetOption,
+} from "./facet-section";
 import type { QuizFacetKey, QuizFilterSelections } from "./use-quiz-filter-state";
 
 interface QuizFilterPanelProps {
@@ -38,6 +43,13 @@ interface QuizFilterPanelProps {
  * (category / difficulty / language), each searchable when long, with selected
  * options pinned on top. Selections are OR within a facet, AND across facets
  * (each facet serializes to one `in` rule).
+ *
+ * Size contract: the panel's height is bounded by the layout, never by the data.
+ * Every facet list caps itself and scrolls internally (`FACET_LIST_MAX_HEIGHT`),
+ * so seeding another twenty categories changes what's inside a facet, not the
+ * footprint of the panel or the length of the page. The outer dvh cap below is
+ * the second line of defence, for when all three facets are open at once on a
+ * short viewport.
  */
 export function QuizFilterPanel({
   categories,
@@ -115,9 +127,15 @@ export function QuizFilterPanel({
           compact
             ? "sm:grid sm:grid-cols-3 sm:gap-x-6 divide-y divide-border/60 sm:divide-y-0"
             : "divide-y divide-border/60",
-          // In the full-height sidebar the whole facet column scrolls as one
-          // (single scrollbar), so individual facet lists aren't capped.
-          !compact && fillHeight && "-mr-2 flex-1 min-h-0 overflow-y-auto pr-2 scrollbar-thin"
+          // Full-height sidebar: the facet column takes the leftover height and
+          // scrolls the *headers* when several facets are open at once. Each
+          // facet list already caps itself, so this outer scrollbar is a fallback
+          // rather than the primary mechanism — min-h-0 is what lets it shrink
+          // (docs/RESPONSIVE.md), and overscroll-contain stops a flick here from
+          // scrolling the page behind it.
+          !compact &&
+            fillHeight &&
+            "-mr-2 flex-1 min-h-0 overflow-y-auto overscroll-contain pr-2 scrollbar-thin"
         )}
       >
         {facets.map((facet) => (
@@ -130,7 +148,12 @@ export function QuizFilterPanel({
             // Collapsed by default — the panel opens tidy and the user expands
             // only the facet they want.
             defaultOpen={false}
-            listMaxHeight={compact ? "max-h-36" : fillHeight ? "" : "max-h-52"}
+            // Same cap in the sidebar, the mobile drawer and the compact dialog —
+            // one behaviour to reason about, and no variant where a long facet is
+            // allowed to grow without bound.
+            listMaxHeight={
+              compact ? FACET_LIST_MAX_HEIGHT_COMPACT : FACET_LIST_MAX_HEIGHT
+            }
           />
         ))}
       </div>

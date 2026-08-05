@@ -106,7 +106,6 @@ export const UserFilters = ({
           placeholder="Search users by name or email..."
           onSearch={onSearchTermChange}
           initialValue={searchTerm}
-          className="!my-0"
         />
       </div>
 

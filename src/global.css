@@ -410,6 +410,33 @@ body {
   opacity: 0;
 }
 
+/* Compact modifier for dense panels — the dashboard filter cards, where the default
+   0.75rem padding makes a ~44px control that dwarfs the Select triggers next to it.
+   It lives HERE, next to the rule it overrides, for the reason spelled out above
+   `.minimal-input`: that rule is plain CSS outside Tailwind's layers, so a `py-*` /
+   `text-sm` utility passed at the call site loses to it silently. Same trap, same fix.
+   The phone step keeps font-size at the inherited 1rem: anything smaller and iOS Safari
+   zooms the page on focus and never zooms back (docs/RESPONSIVE.md). Only from `sm` up,
+   where that behaviour doesn't apply, does the text shrink to 14px. Both steps stay at or
+   above the 36px touch target (40px / 37px).
+   The placeholder inherits font-size, so it scales down with the field automatically. */
+.minimal-input--compact {
+  padding: 0.5rem 0.625rem;
+}
+
+@media (min-width: 640px) {
+  .minimal-input--compact {
+    font-size: 0.875rem;
+  }
+}
+
+/* Room for an overlaid clear button. Declared after the compact rule so it wins the
+   padding-right at equal specificity — and as plain CSS, because a `pr-9` utility would
+   lose to the paddings above for the same layer reason. */
+.minimal-input--has-clear {
+  padding-right: 2.25rem;
+}
+
 /* Error state for the minimal field (used by the isIncorrect variant) */
 .minimal-input-error:before {
   border-bottom: 1px solid hsl(var(--destructive) / 0.7);

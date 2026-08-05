@@ -104,7 +104,6 @@ export const AuditLogFilters = ({
           placeholder="Search by action…"
           onSearch={onSearchTermChange}
           initialValue={searchTerm}
-          className="!my-0"
         />
       </div>
 

@@ -25,8 +25,8 @@ import { QuestionFilters } from "./Components/Re-Usable-Components/question-filt
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { QuestionTabContent } from "./Components/QuestionsTabContent";
 import { QuestionType } from "@/types/question-types";
-import { Authorization, ROLES } from "@/lib/authorization";
-import { DataTransferControls } from "@/components/data-transfer/DataTransferControls";
+// import { Authorization, ROLES } from "@/lib/authorization";
+// import { DataTransferControls } from "@/components/data-transfer/DataTransferControls";
 
 export const Questions = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -158,7 +158,12 @@ export const Questions = () => {
                     Add Question +
                   </LiftedButton>
                 </DialogTrigger>
-              <DialogContent className="bg-background p-4 rounded-md w-fit pt-8 dark:border border-foreground/30">
+              {/* sm:max-w-sm, not the shared max-w-lg: three stacked buttons in a 512px
+                  shell read as a half-empty panel. `w-fit` used to be here and did nothing
+                  useful — the buttons inside are full-width, so fit-content just resolved
+                  back to the max-width while also fighting the phone gutter DialogContent
+                  applies for every dialog (docs/RESPONSIVE.md). */}
+              <DialogContent className="bg-background p-4 rounded-md pt-8 sm:max-w-sm dark:border border-foreground/30">
                 <DialogHeader>
                   <DialogTitle className="flex items-center justify-center">
                     Choose the type of question
@@ -186,9 +191,9 @@ export const Questions = () => {
                 </div>
               </DialogContent>
               </Dialog>
-            <Authorization allowedRoles={[ROLES.Admin, ROLES.SuperAdmin]}>
+            {/* <Authorization allowedRoles={[ROLES.Admin, ROLES.SuperAdmin]}>
             <DataTransferControls entity="questions" invalidateKey={["questions"]} />
-          </Authorization>
+          </Authorization> */}
         </div>
               <Tabs
                 value={activeTab}
