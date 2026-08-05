@@ -10,7 +10,7 @@ import type {
   QuestionLanguage,
 } from "@/types/question-types";
 import type { Pagination } from "@/types/common-types";
-import { secondsToMinutes } from "@/pages/Quiz/components/quiz-card";
+import { secondsToMinutes } from "@/pages/Quiz/components/quiz-duration";
 import type { SelectedQuiz } from "../../hooks/use-lobby-connection";
 import { cn } from "@/utils/cn";
 import {

@@ -134,20 +134,44 @@ Page size is clamped server-side (`QuizSessionService.MaxHistoryPageSize`); a cl
 ## Frontend
 
 ```
-src/pages/Quiz/Sessions/api/get-user-sessions.ts        history (canonical home for this call)
-src/pages/UserRelated/Profile/api/get-user-quiz-stats.ts stats
+src/pages/Quiz/Sessions/api/get-user-sessions.ts         history (canonical home for this call)
+src/pages/UserRelated/Profile/api/get-user-quiz-stats.ts  stats
 src/pages/UserRelated/Profile/components/QuizHistoryList.tsx
-src/pages/UserRelated/Profile/ProfileView.tsx           presentational, props only
-src/pages/UserRelated/Profile/MyProfile.tsx             container: fetches, passes down
+src/pages/UserRelated/Profile/ProfileView.tsx             presentational, props only
 ```
+
+### Where it renders
+
+Three surfaces, deliberately split by how each is used:
+
+| Surface | Shows | Fetches |
+|---|---|---|
+| `AccountOverlay/panels/StatsPanel.tsx` (`?settings=stats`) | stats only, plus a link to the history page | `useUserQuizStats` |
+| `UserDashboard/MyQuizHistory.tsx` (`/my-dashboard/history`) | full paginated history | `QuizHistoryList` → `useUserSessions` |
+| `Profile/ProfileView.tsx` (`/users/:userId`) | both, owner only | props from `UserProfile` |
+
+Stats and history used to sit together in the overlay. They were split because the overlay is
+something you open over your current page and dismiss, while history is a list you scroll,
+paginate and click into — and every click navigates away and closes the overlay anyway. The
+panel's link is a plain `<Link>`; navigating to a path without `?settings=` closes the overlay
+by itself (see [account-overlay.md](../development/account-overlay.md)).
+
+`Profile/MyProfile.tsx` — the old self-profile container this section used to name — is a
+retired stub. Its job moved into the overlay panels.
 
 Conventions this follows:
 
-- **Container fetches, view renders.** `ProfileView` takes `quizStats` and `userId` as props and
-  stays presentational, so it still serves both the private and public profile from one component.
-  `MyProfile` (the self container) is the only place that calls the owner-only endpoints.
-- **Privacy mirrors the API.** Stats and history render only when `isOwnProfile`. A public profile
-  shows "—" and a "History is private" panel rather than firing a request that would 403.
+- **One list implementation, three shells.** `QuizHistoryList` owns its own paging, loading,
+  empty and error states, so each surface just mounts it with a `userId`.
+- **`ProfileView` stays presentational.** It takes `quizStats` and `userId` as props and serves
+  both the private and public profile from one component; `UserProfile` is its only container.
+- **Privacy mirrors the API.** On `ProfileView`, stats and history render only when
+  `isOwnProfile` — a public profile shows "—" and a "History is private" panel rather than
+  firing a request that would 403. The overlay panel and the dashboard page are behind auth
+  loaders and always read the signed-in user's own id.
+- **Stats degrade, they don't throw.** `getUserQuizStatsQueryOptions` sets
+  `throwOnError: false`, so a missing or failing endpoint renders a message instead of taking
+  the overlay down with it. Callers must treat `data` as possibly-undefined.
 - **One query key per resource+page** (`["user-sessions", userId, page, pageSize]`) with
   `placeholderData: keepPreviousData`, so paging doesn't collapse the list into a spinner.
 - History rows link to the existing `/quiz/results/{sessionId}` page — the per-question review

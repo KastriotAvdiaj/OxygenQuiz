@@ -337,6 +337,17 @@ const createAppRouter = (queryClient: QueryClient) =>
           },
         },
         {
+          // Placeholder while the reporting screen is finished. The real UI is still in
+          // the tree (UserDashboard/MyReports.tsx) — swap the import back when it's ready.
+          // See docs/quiz/reports.md.
+          path: "reports",
+          lazy: async () => {
+            const { ReportsComingSoon } =
+              await import("../pages/Dashboard/Pages/Reports/ReportsComingSoon");
+            return { Component: ReportsComingSoon };
+          },
+        },
+        {
           path: "categories",
           lazy: async () => {
             const { CategoryView } =
@@ -510,12 +521,19 @@ const createAppRouter = (queryClient: QueryClient) =>
           },
         },
         {
-          path: "reports",
+          path: "history",
           lazy: async () => {
-            const { MyReports } =
-              await import("../pages/UserDashboard/MyReports");
-            return { Component: MyReports };
+            const { MyQuizHistory } =
+              await import("../pages/UserDashboard/MyQuizHistory");
+            return { Component: MyQuizHistory };
           },
+        },
+        {
+          // Reports left the player dashboard — it's an operator concern and it isn't
+          // finished (docs/quiz/reports.md). Redirected rather than 404'd so existing
+          // links and bookmarks land somewhere real.
+          path: "reports",
+          element: <Navigate to="/my-dashboard/quizzes" replace />,
         },
         {
           path: "quizzes/create",

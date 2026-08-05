@@ -33,15 +33,7 @@ export function QuizResultsRouteWrapper({}) {
   // Loading state
   if (loading) {
     return (
-      <div
-        className="flex overflow-y-auto w-full items-center justify-center"
-        style={{
-          background: `
-            radial-gradient(circle at 20% 80%, #2540d9/15 0%, transparent 50%),
-            radial-gradient(circle at 80% 20%, primary/15 0%, transparent 50%),
-            hsl(var(--background))
-          `,
-        }}>
+      <div className="flex overflow-y-auto w-full items-center justify-center bg-background">
         <div className="quiz-card-elevated p-8 text-center space-y-4">
           <LoadingWave size="lg" variant="quiz" />
           <div className="w-32 h-2 bg-quiz-border-subtle rounded-full mx-auto overflow-hidden">
@@ -58,15 +50,7 @@ export function QuizResultsRouteWrapper({}) {
   // Error state
   if (error || !session) {
     return (
-      <div
-        className="flex w-full items-center justify-center"
-        style={{
-          background: `
-            radial-gradient(circle at 20% 80%, #2540d9/15 0%, transparent 50%),
-            radial-gradient(circle at 80% 20%, primary/15 0%, transparent 50%),
-            hsl(var(--background))
-          `,
-        }}>
+      <div className="flex w-full items-center justify-center bg-background">
         <div className="text-center space-y-6 max-w-md">
           <AlertCircle className="h-16 w-16 text-red-400 mx-auto" />
           <h2 className="text-2xl font-bold text-red-400">

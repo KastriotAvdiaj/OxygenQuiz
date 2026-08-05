@@ -6,6 +6,10 @@ import type {
   InstantFeedbackAnswerResult,
 } from "../../../../../../types/quiz-session-types";
 import { QuizSubmitButton } from "../quiz-submit-button";
+import {
+  ANSWER_SELECTED_BACKGROUND,
+  ANSWER_SELECTED_BORDER,
+} from "../answer-colors";
 
 interface MultipleChoiceQuestionProps {
   question: CurrentQuestion;
@@ -149,7 +153,7 @@ export function MultipleChoiceQuestion({
                       : feedbackState === "incorrect"
                         ? "#ef4444"
                         : isSelected
-                          ? "#2540d9"
+                          ? ANSWER_SELECTED_BORDER
                           : undefined,
                   backgroundColor:
                     feedbackState === "correct"
@@ -157,7 +161,7 @@ export function MultipleChoiceQuestion({
                       : feedbackState === "incorrect"
                         ? "#ef444415"
                         : isSelected
-                          ? "#2540d915"
+                          ? ANSWER_SELECTED_BACKGROUND
                           : undefined,
                 }}
               >
@@ -174,15 +178,17 @@ export function MultipleChoiceQuestion({
                         : feedbackState === "incorrect"
                           ? "#ef4444"
                           : isSelected
-                            ? "#2540d9"
+                            ? ANSWER_SELECTED_BORDER
                             : "#d1d5db",
+                    // The indicator fills solid on selection — the icon inside is white,
+                    // so this one takes the opaque token, not the faint wash.
                     backgroundColor:
                       feedbackState === "correct"
                         ? "#10b981"
                         : feedbackState === "incorrect"
                           ? "#ef4444"
                           : isSelected
-                            ? "#2540d9"
+                            ? ANSWER_SELECTED_BORDER
                             : "transparent",
                   }}
                 >

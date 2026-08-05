@@ -5,6 +5,13 @@
     <!-- viewport-fit=cover: lets the app extend under notches/rounded corners; the
          app shell pads content back in with env(safe-area-inset-*) (docs/RESPONSIVE.md) -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <!-- Favicon. The href is a Vite HTML env replacement resolved at build/serve time from
+         .env.<mode>, so dev and production get different icons and you can tell the two
+         running apps apart in the tab strip:
+           production  -> /favicon.svg  (the O₂ brand mark)
+           development -> /vite.svg     (deliberately generic)
+         See docs/development/favicon.md. -->
+    <link rel="icon" type="image/svg+xml" href="%VITE_FAVICON%" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link

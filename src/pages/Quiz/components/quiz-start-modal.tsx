@@ -9,23 +9,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { HelpCircle, Clock, User, Calendar, Play } from "lucide-react";
 import type { QuizSummaryDTO } from "@/types/quiz-types";
-import { secondsToMinutes } from "./quiz-card";
-
-/**
- * Pick black or white text for a given background color so the CTA label stays
- * readable across every category palette (WCAG relative luminance).
- */
-function readableTextColor(hex: string): string {
-  const c = hex.replace("#", "");
-  if (c.length !== 6) return "#ffffff";
-  const toLinear = (v: number) =>
-    v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
-  const r = toLinear(parseInt(c.slice(0, 2), 16) / 255);
-  const g = toLinear(parseInt(c.slice(2, 4), 16) / 255);
-  const b = toLinear(parseInt(c.slice(4, 6), 16) / 255);
-  const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-  return luminance > 0.5 ? "#0a0a0a" : "#ffffff";
-}
+import { secondsToMinutes } from "./quiz-duration";
+import { parseQuizPalette, readableTextColor } from "./quiz-palette";
 
 // Single-player only — multiplayer hosting starts inside the lobby, never from
 // this modal (the old mode="multiplayer" branch was unreachable).
@@ -42,15 +27,10 @@ export function QuizStartModal({
   onClose,
   onStartQuiz,
 }: QuizStartModalProps) {
-  const colors = useMemo(() => {
-    try {
-      return quiz.colorPaletteJson
-        ? (JSON.parse(quiz.colorPaletteJson) as string[])
-        : ["#6366f1", "#3b82f6", "#06b6d4"];
-    } catch {
-      return ["#6366f1", "#3b82f6", "#06b6d4"];
-    }
-  }, [quiz.colorPaletteJson]);
+  const colors = useMemo(
+    () => parseQuizPalette(quiz.colorPaletteJson),
+    [quiz.colorPaletteJson]
+  );
 
   const primaryColor = colors[0];
   const ctaTextColor = useMemo(

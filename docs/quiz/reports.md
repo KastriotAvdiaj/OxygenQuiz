@@ -1,5 +1,16 @@
 # Dynamic Reports
 
+> **Status: not shipped.** The reporting screen is unfinished, so it is not reachable by users.
+> `/dashboard/reports` renders a coming-soon placeholder
+> (`src/pages/Dashboard/Pages/Reports/ReportsComingSoon.tsx`) and the entry was removed from the
+> player dashboard, where reporting didn't belong anyway — it's an operator concern.
+>
+> **Nothing was deleted.** The UI (`src/pages/UserDashboard/MyReports.tsx`), its API client
+> (`src/pages/UserDashboard/api/reports.ts`), the backend endpoints, `ReportService` and the
+> export framework are all intact, and the rest of this document still describes them accurately.
+> To ship it, point the `reports` route in `src/routes/Router.tsx` at `MyReports` instead of the
+> placeholder. `/my-dashboard/reports` redirects to `/my-dashboard/quizzes` so old links resolve.
+
 Criteria-driven reports over the signed-in user's **own** content (the quizzes and questions they
 created). Each report can be previewed on screen and **exported** to CSV / Excel / JSON, reusing
 the existing export framework (`IDataExportService`).

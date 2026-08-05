@@ -168,15 +168,7 @@ export function QuizPage({ quizId, userId }: QuizPageProps) {
 // inside the layout's viewport-height column, where h-screen over-measures on
 // mobile and ignores the fixed-header padding (docs/RESPONSIVE.md).
 const LoadingScreen = ({ message }: { message: string }) => (
-  <div
-    className="flex flex-1 w-full items-center justify-center px-4"
-    style={{
-      background: `
-        radial-gradient(circle at 20% 80%,primary/15 0%, transparent 50%),
-        radial-gradient(circle at 80% 20%, primary/30 0%, transparent 50%),
-        hsl(var(--background))
-      `,
-    }}>
+  <div className="flex flex-1 w-full items-center justify-center px-4 bg-background">
     <div className="quiz-card-elevated p-8 text-center space-y-4">
       <Loader2 className="h-12 w-12 animate-spin mx-auto text-quiz-primary" />
       <p className="quiz-text-primary text-xl font-medium">{message}</p>
@@ -205,15 +197,7 @@ const ErrorScreen = ({
   canRetry: boolean;
   icon?: "error" | "warning";
 }) => (
-  <div
-    className="flex flex-1 w-full items-center justify-center px-4"
-    style={{
-      background: `
-        radial-gradient(circle at 20% 80%, primary/15 0%, transparent 50%),
-        radial-gradient(circle at 80% 20%, primary/30 0%, transparent 50%),
-        hsl(var(--background))
-      `,
-    }}>
+  <div className="flex flex-1 w-full items-center justify-center px-4 bg-background">
     <div className="text-center space-y-6 max-w-md p-4">
       <AlertCircle
         className={`h-16 w-16 mx-auto ${

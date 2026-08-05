@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/form";
 import { CheckCircle, XCircle } from "lucide-react";
 import type { InstantFeedbackAnswerResult } from "../../../../../../types/quiz-session-types";
 import { QuizSubmitButton } from "../quiz-submit-button";
+import { ANSWER_SELECTED_BORDER } from "../answer-colors";
 
 export interface TypeTheAnswerQuestionProps {
   onSubmit: (selectedOptionId: number | null, submittedAnswer?: string) => void;
@@ -83,7 +84,7 @@ export function TypeTheAnswerQuestion({
                     ? "#10b981"
                     : "#ef4444"
                   : answer.trim()
-                  ? "#2540d9"
+                  ? ANSWER_SELECTED_BORDER
                   : undefined,
               backgroundColor:
                 instantFeedback && answerResult

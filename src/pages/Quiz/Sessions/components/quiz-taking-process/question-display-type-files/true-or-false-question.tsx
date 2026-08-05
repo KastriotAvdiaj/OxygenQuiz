@@ -6,6 +6,10 @@ import type {
   InstantFeedbackAnswerResult,
 } from "../../../../../../types/quiz-session-types";
 import { QuizSubmitButton } from "../quiz-submit-button";
+import {
+  ANSWER_SELECTED_BACKGROUND,
+  ANSWER_SELECTED_BORDER,
+} from "../answer-colors";
 
 interface TrueOrFalseQuestionProps {
   question: CurrentQuestion;
@@ -130,7 +134,7 @@ export function TrueOrFalseQuestion({
                 : feedback === "incorrect"
                   ? "#ef4444"
                   : isSelected
-                    ? "hsl(var(--primary))"
+                    ? ANSWER_SELECTED_BORDER
                     : undefined,
             backgroundColor:
               feedback === "correct"
@@ -138,7 +142,7 @@ export function TrueOrFalseQuestion({
                 : feedback === "incorrect"
                   ? "#ef444415"
                   : isSelected
-                    ? "hsl(var(--primary) / 0.1)"
+                    ? ANSWER_SELECTED_BACKGROUND
                     : undefined,
             borderWidth: "3px",
           }}
@@ -151,7 +155,7 @@ export function TrueOrFalseQuestion({
                   feedback === "correct"
                     ? "#10b981"
                     : isSelected
-                      ? "hsl(var(--primary))"
+                      ? ANSWER_SELECTED_BORDER
                       : defaultColor,
               }}
             >

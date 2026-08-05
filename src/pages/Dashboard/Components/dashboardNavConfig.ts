@@ -48,6 +48,16 @@ export const adminDashboardNavButtons: DashboardNavItem[] = [
     group: "Overview",
   },
   {
+    // Placeholder. The reports UI is built (MyReports.tsx) but unfinished, so the route
+    // renders a coming-soon page rather than shipping a half-done feature — see
+    // docs/quiz/reports.md.
+    id: "reports",
+    label: "Reports",
+    icon: LineChart,
+    roles: ["Admin", "SuperAdmin"],
+    group: "Overview",
+  },
+  {
     id: "users",
     label: "Users",
     icon: Users,
@@ -101,7 +111,11 @@ export const adminDashboardNavButtons: DashboardNavItem[] = [
 // Regular-user dashboard (/my-dashboard). No `roles` -> always visible.
 // Profile and Settings deliberately absent: they live in the account overlay now
 // (docs/development/account-overlay.md), reachable from the header drawer on any page. The
-// dashboard keeps only what is genuinely a workspace — your content and its reports.
+// dashboard keeps only what is genuinely a workspace — your content, and your play history.
+//
+// Reports used to sit here. It was unfinished and not something a player needs, so it was
+// pulled from this nav; the page now lives behind a coming-soon placeholder on the admin
+// dashboard. See docs/quiz/reports.md.
 export const userDashboardNavButtons: DashboardNavItem[] = [
   {
     id: "quizzes",
@@ -116,9 +130,10 @@ export const userDashboardNavButtons: DashboardNavItem[] = [
     group: "Overview",
   },
   {
-    id: "reports",
-    label: "Reports",
-    icon: LineChart,
+    // The full list behind the Quiz Stats panel's "View quiz history" button.
+    id: "history",
+    label: "Quiz History",
+    icon: History,
     group: "Overview",
   },
 ];

@@ -189,10 +189,7 @@ export function QuizInterface({
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4 }}
-              className="quiz-card-elevated p-8 text-center space-y-6 rounded-xl"
-              style={{
-                background: `linear-gradient(135deg, primary/3, primary/5)`,
-              }}>
+              className="quiz-card-elevated p-8 text-center space-y-6 rounded-xl">
               <div className="w-12 h-12 rounded-full mx-auto flex items-center justify-center mb-4 bg-primary">
                 <Loader2 className="h-6 w-6 animate-spin text-white" />
               </div>

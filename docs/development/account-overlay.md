@@ -118,7 +118,7 @@ Redirects target a *concrete* page, never `/my-dashboard` itself: that path has 
 redirect which would drop the query string and close the overlay the instant it opened.
 
 The dashboard's own nav lost its Profile and Settings entries — it keeps only genuine
-workspace pages (My Quizzes, My Questions, Reports) — and the index route now lands on
+workspace pages (My Quizzes, My Questions, Quiz History) — and the index route now lands on
 `/my-dashboard/quizzes` instead of the retired profile page.
 
 These files are dead and can be deleted (left as stubs only because the tooling that made
@@ -148,5 +148,21 @@ profile at `/users/:userId`.
 | Mount points | `src/layouts/layout.tsx`, `src/pages/AppRoot.tsx` |
 | Entry point | `src/common/Custom-Drawer/drawer.links.tsx` |
 
-Stats and history inside the overlay reuse the hooks and components documented in
-[user-stats-history.md](../quiz/user-stats-history.md).
+## Stats vs. history
+
+The **Quiz Stats** panel holds aggregate numbers only — headline tiles plus a breakdown
+list — and ends with a link to `/my-dashboard/history`.
+
+The history list used to sit inside the panel, under the stats. It moved out because the
+two have different shapes of use: the overlay is something you open over your current page,
+read, and dismiss, whereas history is a paginated list you scroll and click into, and each
+click navigates away and closes the overlay anyway. Same reasoning that kept the dashboard
+a workspace and account details an overlay.
+
+The link is a plain `<Link>` to a different path. Because the overlay is driven by
+`?settings=`, navigating to a path without that param closes it — no explicit `close()`
+call, and the unsaved-changes `useBlocker` still fires because it's a normal navigation.
+
+Both the panel and the page reuse the hooks and components documented in
+[user-stats-history.md](../quiz/user-stats-history.md); `QuizHistoryList` has one
+implementation and two shells.
