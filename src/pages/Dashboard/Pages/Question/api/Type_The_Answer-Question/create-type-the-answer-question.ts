@@ -5,6 +5,10 @@ import { MutationConfig } from "@/lib/React-query";
 import { UnspecifiedIds } from "../../../Quiz/components/Create-Quiz-Form/constants";
 import { TypeTheAnswerQuestion } from "@/types/question-types";
 import { myQuestionKeys, questionKeys } from "@/lib/query-keys";
+import {
+  MAX_ACCEPTABLE_ANSWERS,
+  MAX_ACCEPTABLE_ANSWERS_MESSAGE,
+} from "./constants";
 
 export const createTypeTheAnswerQuestionInputSchema = z.object({
   text: z.string().min(1, "Question is required"),
@@ -33,6 +37,7 @@ export const createTypeTheAnswerQuestionInputSchema = z.object({
           .min(1, "Additional acceptable answer cannot be empty"),
       })
     )
+    .max(MAX_ACCEPTABLE_ANSWERS, MAX_ACCEPTABLE_ANSWERS_MESSAGE)
     .default([]),
 });
 

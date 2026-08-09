@@ -183,7 +183,7 @@ export const CreateMultipleChoiceForm: React.FC<
 
               {/* Modified image upload implementation */}
               <ImageUpload
-                variant="admin"
+                // variant="admin"
                 onUpload={handleImageUpload}
                 onRemove={handleImageRemove}
               />
@@ -258,6 +258,7 @@ export const CreateMultipleChoiceForm: React.FC<
                       <LiftedButton
                         variant="icon"
                         className="rounded-xl bg-red-500"
+                        backgroundColorForBorder="bg-red-700"
                         onClick={() => remove(index)}
                         disabled={fields.length <= 2}
                       >

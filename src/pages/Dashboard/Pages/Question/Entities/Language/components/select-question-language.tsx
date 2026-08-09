@@ -46,7 +46,7 @@ export const LanguageSelect: React.FC<LanguageSelectProps> = (props) => {
     error,
     clearErrors,
     mode = "form",
-    fieldVariant = "quiz",
+    fieldVariant = "minimal",
   } = props;
 
   const variant = error ? "form-error" : fieldVariant;

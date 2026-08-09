@@ -1,3 +1,9 @@
+## Commit messages
+
+Keep them short. A subject line plus a few lines of body — enough to say what
+broke and what changed, not a write-up. Detailed reasoning belongs in `docs/`
+and in code comments, not in the commit.
+
 ## graphify
 
 This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.

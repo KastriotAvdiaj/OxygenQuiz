@@ -68,6 +68,23 @@ apart — changing a hue is a one-line edit here and every card updates together
 The card element supplies the widths (`border border-l-[3px]`); the theme supplies only
 colors. Error on a new question also shows the existing floating `ErrorIndicator` badge.
 
+## The image preview inherits the type hue — or falls back to `primary`
+
+`ImageUpload` (`src/utils/Image-Upload.tsx`) takes `borderColor` / `backgroundColor` as class
+strings. Inside the quiz builder, `display-base-quiz-question-card.tsx` passes the question type's
+`cardBorder` and `surface`, so an uploaded image is framed in that type's hue like everything else
+on the card.
+
+The **standalone** question forms (the dashboard's Question page) don't pass either prop, so the
+component's own defaults are what shows — and those defaults are `border-primary/30` /
+`bg-primary/[0.04]`, the same shape the Multiple Choice theme uses. They used to be green, which
+broke the rule at the top of this file twice over: green isn't a type hue, and a completed upload
+isn't a *state* worth shouting about. Sitting next to the blue Submit button, it read as a second
+competing accent. The success check badge is `bg-primary` for the same reason.
+
+If you add a caller that frames an upload, pass the type hue when you have one and leave the
+defaults alone when you don't.
+
 ## Adding a new question type
 
 1. Add the value to the `QuestionType` enum (`src/types/question-types.ts`).

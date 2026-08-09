@@ -13,6 +13,7 @@ import {
   createTypeTheAnswerQuestionInputSchema,
   useCreateTypeTheAnswerQuestion,
 } from "../../api/Type_The_Answer-Question/create-type-the-answer-question";
+import { MAX_ACCEPTABLE_ANSWERS } from "../../api/Type_The_Answer-Question/constants";
 import {
   Switch,
   Tooltip,
@@ -101,6 +102,8 @@ export const CreateTypeAnswerQuestionForm: React.FC<
             name: "acceptableAnswers",
           });
 
+          const addAnswerDisabled = fields.length >= MAX_ACCEPTABLE_ANSWERS;
+
           useEffect(() => {
             if (imageUrl) {
               setValue("imageUrl", imageUrl);
@@ -152,18 +155,29 @@ export const CreateTypeAnswerQuestionForm: React.FC<
               <div className="space-y-4 mt-4">
                 <div className="flex items-center justify-between">
                   <Label className="block text-sm font-medium text-foreground">
-                    Acceptable Answers
+                    Acceptable Answers{" "}
+                    <span className="text-xs font-normal text-muted-foreground">
+                      ({fields.length}/{MAX_ACCEPTABLE_ANSWERS})
+                    </span>
                   </Label>
                   <div className="flex space-x-2">
                     <LiftedButton
                       type="button"
                       className="text-[12px]"
-                      onClick={() => append({ value: "" })}
+                      disabled={addAnswerDisabled}
+                      onClick={() =>
+                        !addAnswerDisabled && append({ value: "" })
+                      }
                     >
                       + Add Answer
                     </LiftedButton>
                   </div>
                 </div>
+                {addAnswerDisabled && (
+                  <p className="text-xs text-muted-foreground">
+                    That's the maximum. Remove one to add a different answer.
+                  </p>
+                )}
                 <div className="space-y-3">
                   {fields.map((field, index) => (
                     <div

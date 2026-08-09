@@ -70,6 +70,20 @@ namespace QuizAPI.Controllers.Questions.Services
                 throw new AppValidationException("Pick a language for this question — \"Unspecified\" isn't allowed.");
         }
 
+        // Cleans the alternative answers and enforces the cap. Cleaning runs first so a blank row
+        // the author never filled in, or a duplicate of the correct answer, doesn't count against
+        // their budget — only the answers we'd actually store do.
+        private static List<string> NormalizeAcceptableAnswers(
+            IEnumerable<string?>? answers, string? correctAnswer, bool isCaseSensitive)
+        {
+            var normalized = AcceptableAnswerRules.Normalize(answers, correctAnswer, isCaseSensitive);
+
+            if (AcceptableAnswerRules.ExceedsCap(normalized))
+                throw new AppValidationException(AcceptableAnswerRules.TooManyMessage);
+
+            return normalized;
+        }
+
         // ── Reads ─────────────────────────────────────────────────────────────────
         public async Task<List<QuestionBaseDTO>> GetAllQuestionsAsync(string visibility = null)
         {
@@ -258,6 +272,9 @@ namespace QuizAPI.Controllers.Questions.Services
 
             var question = questionCM.ToEntity();
 
+            question.AcceptableAnswers = NormalizeAcceptableAnswers(
+                question.AcceptableAnswers, question.CorrectAnswer, question.IsCaseSensitive);
+
             question.UserId = userId;
             question.CreatedAt = DateTime.UtcNow;
             question.Type = QuestionType.TypeTheAnswer;
@@ -337,6 +354,11 @@ namespace QuizAPI.Controllers.Questions.Services
             await ValidateClassificationAsync(questionUM.CategoryId, questionUM.LanguageId);
 
             questionUM.ApplyTo(existingQuestion);
+
+            existingQuestion.AcceptableAnswers = NormalizeAcceptableAnswers(
+                existingQuestion.AcceptableAnswers,
+                existingQuestion.CorrectAnswer,
+                existingQuestion.IsCaseSensitive);
 
             if (Enum.TryParse(questionUM.Visibility, true, out QuestionVisibility visibility))
                 existingQuestion.Visibility = visibility;

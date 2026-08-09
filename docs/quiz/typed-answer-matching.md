@@ -53,6 +53,43 @@ The normalised submission against the normalised `CorrectAnswer`, then each `Acc
 entry. Blank alternatives are dropped — authors leave empty rows behind in the builder, and an empty
 alternative would match everything once partial match is on.
 
+### What can be stored in `AcceptableAnswers`
+
+The list is capped at **4** alternatives and cleaned before it's stored. Rules live in
+`QuizAPI/Models/Questions/AcceptableAnswerRules.cs`; tests in
+`QuizAPI.Tests/Questions/AcceptableAnswerRulesTests.cs`.
+
+| Rule | Why |
+|---|---|
+| At most **4** entries | Matches the multiple-choice option cap. The list is one JSON column and the grader walks it on every submission, so "unlimited" is unbounded row growth for no authoring benefit. |
+| Trimmed, blanks dropped | Empty rows are what the builder leaves behind, and an empty alternative matches everything once partial match is on (§2). |
+| Duplicates dropped | Two identical alternatives grade identically; the second is noise. |
+| Anything equal to `CorrectAnswer` dropped | Already matched in the first comparison. |
+
+**Duplicate detection follows the question's own `IsCaseSensitive` flag.** A case-insensitive
+question collapses `york` and `York` into one entry; a case-sensitive one keeps both, because it
+genuinely distinguishes them at grading time and collapsing would silently delete a valid
+alternative.
+
+Cleaning runs **before** the count check, so a blank row or a duplicate of the correct answer never
+costs the author one of their four.
+
+### Where the cap is enforced
+
+| Route | Over the cap → |
+|---|---|
+| Standalone question form / quiz builder | Client blocks the "+ Add Answer" button at 4; the API returns **400** (`AppValidationException`) if a request gets through anyway. |
+| CSV import (`DataTransferController`) | The row is **skipped** and the reason appears in the import's per-row error list. |
+| **AI import** | **Truncated to the first 4**, not rejected. The model wrote the list, not the author — failing a whole quiz import over one extra synonym is the worse outcome. |
+
+The client constant (`MAX_ACCEPTABLE_ANSWERS` in
+`src/pages/Dashboard/Pages/Question/api/Type_The_Answer-Question/constants.ts`) and
+`AcceptableAnswerRules.MaxCount` must stay in sync. The API is the gate; the client is the fast
+feedback.
+
+> A question created before the cap existed can still hold more than four. Its update form shows
+> the validation error until the author removes the extras — nothing rewrites stored data.
+
 ## 3. Partial match — per-question toggle
 
 **Whole-word containment**: the expected answer must appear as a complete word, or a contiguous run
@@ -117,6 +154,14 @@ about proper capitalisation, say), the prompt gives it an explicit default, and 
 makes a question harder rather than easier to guess.
 
 ---
+
+## What changed (2026-08-09)
+
+`AcceptableAnswers` had no limit anywhere — not in the two zod schemas, not on the builder's
+"+ Add Answer" button, not in the API. An author could add rows until they got bored, and every one
+of them was walked by the grader on every submission. Now capped at 4 and normalised on write (see
+[§2](#what-can-be-stored-in-acceptableanswers)). The quiz builder's inline form had its own
+hardcoded cap of 5; it now reads the same constant as everything else.
 
 ## What changed (2026-08-02)
 

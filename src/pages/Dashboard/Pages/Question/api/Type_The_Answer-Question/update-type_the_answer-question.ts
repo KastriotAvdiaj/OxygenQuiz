@@ -8,6 +8,10 @@ import {
   questionKeys,
   quizQuestionKeys,
 } from "@/lib/query-keys";
+import {
+  MAX_ACCEPTABLE_ANSWERS,
+  MAX_ACCEPTABLE_ANSWERS_MESSAGE,
+} from "./constants";
 
 export const updateTypeTheAnswerQuestionInputSchema = z.object({
   id: z.number().int().optional(),
@@ -30,6 +34,7 @@ export const updateTypeTheAnswerQuestionInputSchema = z.object({
           .min(1, "Additional acceptable answer cannot be empty"),
       })
     )
+    .max(MAX_ACCEPTABLE_ANSWERS, MAX_ACCEPTABLE_ANSWERS_MESSAGE)
     .default([]),
 
   isCaseSensitive: z.boolean().default(false),

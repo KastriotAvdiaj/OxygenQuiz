@@ -220,8 +220,12 @@ const UserImageUpload: React.FC<UserImageUploadProps> = ({
   className = "",
   endpoint = "ImageUpload/question",
   initialImageUrl = null,
-  borderColor = "border-green-200 dark:border-green-800",
-  backgroundColor = "bg-green-50 dark:bg-green-900/20",
+  // The quiz builder passes its question-type hue (see question-type-color-schema.md); every
+  // other form falls back to these. They're the theme's own accent, not a stray green — a
+  // successful upload isn't a state worth its own color, and green next to the blue Submit
+  // button read as a second, competing accent.
+  borderColor = "border-primary/30",
+  backgroundColor = "bg-primary/[0.04]",
 }) => {
   const {
     uploading,
@@ -284,12 +288,15 @@ const UserImageUpload: React.FC<UserImageUploadProps> = ({
         <div className="space-y-3">
           <div className="relative group">
             <div className={`rounded-xl overflow-hidden border-2 ${borderColor} ${backgroundColor} p-1.5`}>
+              {/* `contain`, not `cover`: the author is checking they picked the right image,
+                  and a cropped preview hides exactly what they'd want to catch — a subject
+                  cut off at the edge. A letterboxed, smaller image is the honest one. */}
               <img
                 src={preview}
                 alt="Quiz image preview"
-                className="w-full h-36 sm:h-40 object-cover rounded-lg"
+                className="w-full h-auto max-h-36 sm:max-h-40 object-contain rounded-lg mx-auto"
               />
-              <div className="absolute top-2.5 right-2.5 bg-green-500 rounded-full p-1">
+              <div className="absolute top-2.5 right-2.5 bg-primary rounded-full p-1">
                 <CheckCircle className="w-3.5 h-3.5 text-white" />
               </div>
             </div>

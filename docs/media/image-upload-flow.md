@@ -75,6 +75,11 @@ is created with `IsUsed = false`, and the response is:
 
 The client stores that URL on the form (and shows a preview).
 
+The preview is `object-contain` inside a fixed max height, deliberately: the author is checking
+they picked the right file, and a cropped (`object-cover`) thumbnail hides the one thing they'd
+want to catch — a subject cut off at the edge. A letterboxed, smaller image is the honest one.
+Its frame color follows `docs/quiz/question-type-color-schema.md`.
+
 ### 2. Associate — `POST /api/ImageUpload/associate`
 
 Called **after** the owning entity has been saved and has an `int` id.

@@ -47,7 +47,7 @@ export const DifficultySelect: React.FC<DifficultySelectProps> = (props) => {
     error,
     clearErrors,
     mode = "form",
-    fieldVariant = "quiz",
+    fieldVariant = "minimal",
   } = props;
 
   const variant = error ? "form-error" : fieldVariant;
@@ -57,7 +57,9 @@ export const DifficultySelect: React.FC<DifficultySelectProps> = (props) => {
   const canSelectUnspecified = useCanSelectUnspecifiedLookup();
   const selectableDifficulties = canSelectUnspecified
     ? difficulties
-    : difficulties.filter((difficulty) => !isUnspecifiedLookup(difficulty.level));
+    : difficulties.filter(
+        (difficulty) => !isUnspecifiedLookup(difficulty.level),
+      );
 
   if (mode === "filter") {
     const { value, onChange } = props as FilterModeProps;

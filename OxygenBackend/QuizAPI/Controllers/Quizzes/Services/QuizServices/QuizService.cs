@@ -391,7 +391,9 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                     CorrectAnswer = q.CorrectAnswerText ?? string.Empty,
                     IsCaseSensitive = q.IsCaseSensitive,
                     AllowPartialMatch = q.AllowPartialMatch,
-                    AcceptableAnswers = q.AcceptableAnswers ?? new List<string>(),
+                    // Truncated rather than rejected: the model, not the author, wrote this list.
+                    AcceptableAnswers = AcceptableAnswerRules.NormalizeAndTruncate(
+                        q.AcceptableAnswers, q.CorrectAnswerText, q.IsCaseSensitive),
                 },
                 _ => throw new InvalidOperationException($"Unknown question type '{q.Type}'."),
             };

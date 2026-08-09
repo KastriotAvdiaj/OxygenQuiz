@@ -8,6 +8,7 @@ import { Button, Switch } from "@/components/ui";
 import { CheckCircle2, Plus, X } from "lucide-react";
 import { getQuestionTypeStyles } from "../existing-display-quiz-question-card/display-multiple-choice-question-card/display-muiltiple-choice-question-card";
 import { QuestionType } from "@/types/question-types";
+import { MAX_ACCEPTABLE_ANSWERS } from "@/pages/Dashboard/Pages/Question/api/Type_The_Answer-Question/constants";
 import {
   Accordion,
   AccordionContent,
@@ -83,7 +84,7 @@ export const TypeTheAnswerFormCard: React.FC<TypeTheAnswerFormCardProps> = ({
   }, [debouncedQuestionState, question.id, updateQuestion]);
 
   const handleAddAcceptableAnswer = () => {
-    if (acceptableAnswers.length < 5) {
+    if (acceptableAnswers.length < MAX_ACCEPTABLE_ANSWERS) {
       setAcceptableAnswers([...acceptableAnswers, { value: "" }]);
     }
   };
@@ -242,11 +243,11 @@ export const TypeTheAnswerFormCard: React.FC<TypeTheAnswerFormCardProps> = ({
                   variant="outline"
                   size="sm"
                   onClick={handleAddAcceptableAnswer}
-                  disabled={acceptableAnswers.length >= 5}
+                  disabled={acceptableAnswers.length >= MAX_ACCEPTABLE_ANSWERS}
                   className="gap-1.5"
                 >
                   <Plus className="h-4 w-4" />
-                  Add answer · {acceptableAnswers.length} of 5
+                  Add answer · {acceptableAnswers.length} of {MAX_ACCEPTABLE_ANSWERS}
                 </Button>
               </div>
             </AccordionContent>
