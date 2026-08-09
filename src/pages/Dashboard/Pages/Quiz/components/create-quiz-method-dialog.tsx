@@ -1,7 +1,5 @@
 import type { ReactNode } from "react";
-import { Link } from "react-router-dom";
-import { PencilLine, Sparkles } from "lucide-react";
-import { GrFormNextLink } from "react-icons/gr";
+import { useNavigate } from "react-router-dom";
 
 import { LiftedButton } from "@/common/LiftedButton";
 import {
@@ -29,8 +27,6 @@ export interface CreateQuizMethodDialogProps {
    */
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
-  /** Shows the "New" pill on the AI card. Drop it once the feature stops being news. */
-  highlightAi?: boolean;
 }
 
 /**
@@ -49,73 +45,57 @@ export const CreateQuizMethodDialog = ({
   trigger,
   open,
   onOpenChange,
-  highlightAi = true,
-}: CreateQuizMethodDialogProps) => (
-  <Dialog open={open} onOpenChange={onOpenChange}>
-    <DialogTrigger asChild>
-      {trigger ?? <LiftedButton>+ Create Quiz</LiftedButton>}
-    </DialogTrigger>
-    <DialogContent className="sm:max-w-2xl">
-      <DialogHeader>
-        <DialogTitle>
-          <p className="text-xl">How do you want to build this quiz?</p>
-          <p className="text-muted-foreground text-xs font-normal">
-            You can edit everything afterwards either way.
-          </p>
-        </DialogTitle>
-      </DialogHeader>
+}: CreateQuizMethodDialogProps) => {
+  const navigate = useNavigate();
 
-      {/* One column on phones — two 5-unit-padded cards side by side don't fit a 360px
-          screen without the copy becoming unreadable. */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-        <MethodCard
-          to={manualPath}
-          icon={<PencilLine className="h-8 w-8 text-primary" />}
-          title="Create manually"
-          description="Build the quiz yourself — pick existing questions from the bank or write new ones from scratch."
-        />
-        <MethodCard
-          to={aiPath}
-          icon={<Sparkles className="h-8 w-8 text-primary" />}
-          title="Create with AI"
-          description="Paste your source material, run our prompt through any AI, and we'll turn the result into a ready-to-edit quiz."
-          badge={highlightAi ? "New" : undefined}
-        />
-      </div>
-    </DialogContent>
-  </Dialog>
-);
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogTrigger asChild>
+        {trigger ?? <LiftedButton>+ Create Quiz</LiftedButton>}
+      </DialogTrigger>
+      {/* Two short buttons need far less room than the paragraph-bearing cards this
+          replaced; DialogContent owns the phone gutter itself (see docs/RESPONSIVE.md). */}
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="text-xl">
+            How do you want to build this quiz?
+          </DialogTitle>
+        </DialogHeader>
 
-interface MethodCardProps {
-  to: string;
-  icon: ReactNode;
-  title: string;
-  description: string;
-  badge?: string;
-}
+        {/* Grid, not a flex row: equal columns give both buttons one width, and stacking
+            below `sm` is a layout change rather than a squeezed, mid-phrase-wrapping
+            deformation. See "Rows of buttons" in docs/RESPONSIVE.md.
 
-/** One choice card. Both options render through this so they can't drift apart visually. */
-const MethodCard = ({ to, icon, title, description, badge }: MethodCardProps) => (
-  <Link
-    to={to}
-    className="group relative rounded-xl border-2 border-primary/30 hover:border-primary bg-background p-5 flex flex-col gap-3 transition-colors"
-  >
-    {badge && (
-      <span className="absolute top-3 right-3 text-[10px] font-semibold uppercase tracking-wide bg-primary/15 text-primary rounded-full px-2 py-0.5">
-        {badge}
-      </span>
-    )}
-    {icon}
-    <div>
-      <p className="font-semibold">{title}</p>
-      <p className="text-muted-foreground text-xs mt-1">{description}</p>
-    </div>
-    {/* mt-auto pins the CTA to the bottom so both cards' CTAs align even when one
-        description wraps to more lines than the other. */}
-    <span className="mt-auto pt-2 text-primary text-sm flex items-center gap-1">
-      Start <GrFormNextLink />
-    </span>
-  </Link>
-);
+            `outerClassName="w-full"` sizes the outer button to the grid cell and
+            `h-full w-full` makes the front face fill it, so a label that wraps on one
+            button can't leave the other's coloured face short in an equal-height row. */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
+          {/* Green marks the hand-authored path so the two options are distinguishable at
+              a glance. `liftColor` recolors the edge and drop shadow to match: leave it
+              out and a green face sits on the theme-primary blue depth layers. Both read
+              from the same `--quiz-success` token, so dark mode tracks automatically. */}
+          <LiftedButton
+            type="button"
+            onClick={() => navigate(manualPath)}
+            outerClassName="w-full"
+            liftColor="hsl(var(--quiz-success))"
+            className="h-full w-full bg-quiz-success px-4 py-2.5 text-sm font-semibold leading-tight text-center"
+          >
+            Create manually
+          </LiftedButton>
+
+          <LiftedButton
+            type="button"
+            onClick={() => navigate(aiPath)}
+            outerClassName="w-full"
+            className="h-full w-full px-4 py-2.5 text-sm font-semibold leading-tight text-center"
+          >
+            Create with AI
+          </LiftedButton>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
 
 export default CreateQuizMethodDialog;

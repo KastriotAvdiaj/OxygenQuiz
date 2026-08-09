@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Card, Spinner, Button } from "@/components/ui";
-import { RefreshCw, Plus, Copy, Check, Ban, Ticket } from "lucide-react";
+import { Plus, Copy, Check, Ban, Ticket } from "lucide-react";
 import {
   Table,
   TableHeader,
@@ -16,16 +16,14 @@ import {
   DialogHeader,
   DialogFooter,
   DialogTitle,
-  DialogDescription,
+  // DialogDescription,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/form/input";
 import { Label } from "@/components/ui/form/label";
+import { DatePicker } from "@/components/ui/date-picker";
 import { useNotifications } from "@/common/Notifications";
 import formatDate from "@/lib/date-format";
-import {
-  useInviteCodes,
-  type InviteCodeStatus,
-} from "./api/get-invite-codes";
+import { useInviteCodes, type InviteCodeStatus } from "./api/get-invite-codes";
 import { useGenerateInviteCodes } from "./api/generate-invite-codes";
 import { useRevokeInviteCode } from "./api/revoke-invite-code";
 import { LiftedButton } from "@/common/LiftedButton";
@@ -45,7 +43,7 @@ const deriveStatus = (c: InviteCodeStatus): Derived => {
 
 export const InviteCodes = () => {
   const { addNotification } = useNotifications();
-  const { data, isLoading, isError, refetch, isFetching } = useInviteCodes();
+  const { data, isLoading, isError } = useInviteCodes();
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [count, setCount] = useState(10);
@@ -139,21 +137,13 @@ export const InviteCodes = () => {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            onClick={() => refetch()}
-            disabled={isFetching}
-            className="shrink-0 px-3 py-2 text-sm">
-            <RefreshCw
-              className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`}
-            />
-            Refresh
-          </Button>
-          <Button
+          <LiftedButton
             onClick={() => setDialogOpen(true)}
-            className="flex items-center gap-2">
+            className="flex items-center gap-2 text-sm"
+          >
             <Plus className="h-4 w-4" />
             Generate codes
-          </Button>
+          </LiftedButton>
         </div>
       </div>
 
@@ -239,7 +229,8 @@ export const InviteCodes = () => {
                           size="sm"
                           className="text-red-500 hover:text-red-600"
                           disabled={revoke.isPending}
-                          onClick={() => revoke.mutate(c.id)}>
+                          onClick={() => revoke.mutate(c.id)}
+                        >
                           <Ban className="h-4 w-4 mr-1" />
                           Revoke
                         </Button>
@@ -258,14 +249,15 @@ export const InviteCodes = () => {
       {/* ── Generate dialog ── */}
       <Dialog
         open={dialogOpen}
-        onOpenChange={(open) => (open ? setDialogOpen(true) : closeDialog())}>
+        onOpenChange={(open) => (open ? setDialogOpen(true) : closeDialog())}
+      >
         <DialogContent className="sm:max-w-md bg-background">
           <DialogHeader>
             <DialogTitle>Generate invite codes</DialogTitle>
-            <DialogDescription>
+            {/* <DialogDescription>
               A batch of single-use codes. The plaintext is shown once here —
               copy it before closing, it can't be re-read later.
-            </DialogDescription>
+            </DialogDescription> */}
           </DialogHeader>
 
           {freshCodes ? (
@@ -278,7 +270,8 @@ export const InviteCodes = () => {
                   variant="outline"
                   size="sm"
                   onClick={copyFresh}
-                  className="flex items-center gap-1.5">
+                  className="flex items-center gap-1.5"
+                >
                   {copied ? (
                     <Check className="h-4 w-4 text-green-600" />
                   ) : (
@@ -306,6 +299,7 @@ export const InviteCodes = () => {
                 <Input
                   id="count"
                   type="number"
+                  variant="minimal"
                   min={1}
                   max={200}
                   value={count}
@@ -313,21 +307,30 @@ export const InviteCodes = () => {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="label">Label (optional)</Label>
+                <Label htmlFor="label" className="text-muted-foreground">
+                  Label (optional)
+                </Label>
                 <Input
                   id="label"
+                  variant="minimal"
                   placeholder='e.g. "beta testers" or "batch 1"'
                   value={label}
                   onChange={(e) => setLabel(e.target.value)}
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="expiresAt">Expires (optional)</Label>
-                <Input
+                <Label htmlFor="expiresAt" className="text-muted-foreground">
+                  Expires (optional)
+                </Label>
+                {/* minDate=today: an invite code that expired before it was issued is
+                    nonsense. The calendar portals out of the dialog by default — see
+                    DatePicker for why that beats rendering it in place. */}
+                <DatePicker
                   id="expiresAt"
-                  type="date"
                   value={expiresAt}
-                  onChange={(e) => setExpiresAt(e.target.value)}
+                  onChange={setExpiresAt}
+                  placeholder="No expiry"
+                  minDate={new Date()}
                 />
                 <p className="text-xs text-muted-foreground">
                   Leave blank for codes that never expire.
@@ -344,7 +347,10 @@ export const InviteCodes = () => {
                 <Button variant="outline" onClick={closeDialog}>
                   Cancel
                 </Button>
-                <LiftedButton  onClick={submitGenerate} disabled={generate.isPending}>
+                <LiftedButton
+                  onClick={submitGenerate}
+                  disabled={generate.isPending}
+                >
                   {generate.isPending ? "Generating…" : "Generate"}
                 </LiftedButton>
               </>

@@ -151,7 +151,7 @@ export const PaginationControls = ({
                 variant={pageNumber === currentPage ? "default" : "outline"}
                 size="icon"
                 className={cn(
-                  "h-10 w-10 transition-all rounded-lg",
+                  "h-10 w-10 transition-all rounded-lg border border-gray-300 dark:border-gray-800 shadow-sm",
                   pageNumber === currentPage
                     ? "font-bold shadow-md text-white"
                     : "hover:bg-accent hover:text-accent-foreground",

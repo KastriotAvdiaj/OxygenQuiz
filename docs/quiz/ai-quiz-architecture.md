@@ -1,8 +1,10 @@
 # AI-Assisted Quiz Creation — Architecture
 
-Status: Phase 1 and the Phase 1.5 atomic import are implemented. Phase 2 (hosted API) not started.
+Status: Phase 1 and the Phase 1.5 atomic import are implemented. Phase 2 (hosted API) not started
+— it is now planned in detail in [`ai-quiz-generation-plan.md`](./ai-quiz-generation-plan.md),
+which supersedes the sketch in §8 below.
 Companion to `docs/quiz/ai-quiz-creation-plan.md` (the *what/why*); this is the *how*.
-Last updated: 2026-08-05
+Last updated: 2026-08-09
 
 ---
 

@@ -282,36 +282,38 @@ export const CreateMultipleChoiceForm: React.FC<
                   + Add Answer Option
                 </LiftedButton>
               </div>
-              <CategorySelect
-                categories={categories}
-                value={watch("categoryId")?.toString() || ""}
-                onChange={(selectedValue: string) =>
-                  setValue("categoryId", parseInt(selectedValue, 10))
-                }
-                includeAllOption={false}
-                error={formState.errors["categoryId"]?.message}
-                clearErrors={() => clearErrors("categoryId")}
-              />
-              <DifficultySelect
-                difficulties={difficulties}
-                value={watch("difficultyId")?.toString() || ""}
-                onChange={(selectedValue: string) =>
-                  setValue("difficultyId", parseInt(selectedValue, 10))
-                }
-                includeAllOption={false}
-                error={formState.errors["difficultyId"]?.message}
-                clearErrors={() => clearErrors("difficultyId")}
-              />
-              <LanguageSelect
-                languages={languages}
-                value={watch("languageId")?.toString() || ""}
-                includeAllOption={false}
-                onChange={(selectedValue: string) =>
-                  setValue("languageId", parseInt(selectedValue, 10))
-                }
-                error={formState.errors["languageId"]?.message}
-                clearErrors={() => clearErrors("languageId")}
-              />
+              <section className="grid grid-cols-2 gap-4 border-t pt-4 dark:border-foreground/30">
+                <CategorySelect
+                  categories={categories}
+                  value={watch("categoryId")?.toString() || ""}
+                  onChange={(selectedValue: string) =>
+                    setValue("categoryId", parseInt(selectedValue, 10))
+                  }
+                  includeAllOption={false}
+                  error={formState.errors["categoryId"]?.message}
+                  clearErrors={() => clearErrors("categoryId")}
+                />
+                <DifficultySelect
+                  difficulties={difficulties}
+                  value={watch("difficultyId")?.toString() || ""}
+                  onChange={(selectedValue: string) =>
+                    setValue("difficultyId", parseInt(selectedValue, 10))
+                  }
+                  includeAllOption={false}
+                  error={formState.errors["difficultyId"]?.message}
+                  clearErrors={() => clearErrors("difficultyId")}
+                />
+                <LanguageSelect
+                  languages={languages}
+                  value={watch("languageId")?.toString() || ""}
+                  includeAllOption={false}
+                  onChange={(selectedValue: string) =>
+                    setValue("languageId", parseInt(selectedValue, 10))
+                  }
+                  error={formState.errors["languageId"]?.message}
+                  clearErrors={() => clearErrors("languageId")}
+                />
+              </section>
             </>
           );
         }}

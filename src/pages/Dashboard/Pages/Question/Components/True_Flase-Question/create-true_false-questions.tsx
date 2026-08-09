@@ -14,7 +14,11 @@ import {
 } from "../../api/True_False-Question/create-true_false-question";
 import { LiftedButton } from "@/common/LiftedButton";
 import ImageUpload from "@/utils/Image-Upload";
-import { QuestionCategory, QuestionDifficulty, QuestionLanguage } from "@/types/question-types";
+import {
+  QuestionCategory,
+  QuestionDifficulty,
+  QuestionLanguage,
+} from "@/types/question-types";
 
 interface CreateTrueFalseQuestionFormProps {
   categories: QuestionCategory[];
@@ -171,8 +175,9 @@ export const CreateTrueFalseQuestionForm: React.FC<
                     </p>
                   )}
                 </div>
-                <Separator className="bg-gray-500" />
+              </div>
 
+              <section className="grid grid-cols-2 gap-4 border-t pt-4 dark:border-foreground/30">
                 <CategorySelect
                   // label="Category"
                   categories={categories}
@@ -184,29 +189,29 @@ export const CreateTrueFalseQuestionForm: React.FC<
                   error={formState.errors["categoryId"]?.message}
                   clearErrors={() => clearErrors("categoryId")}
                 />
-              </div>
-              <DifficultySelect
-                // label="Difficulty"
-                difficulties={difficulties}
-                value={watch("difficultyId")?.toString() || ""}
-                onChange={(selectedValue: string) =>
-                  setValue("difficultyId", parseInt(selectedValue, 10))
-                }
-                includeAllOption={false}
-                error={formState.errors["difficultyId"]?.message}
-                clearErrors={() => clearErrors("difficultyId")}
-              />
-              <LanguageSelect
-                // label="Language"
-                languages={languages}
-                value={watch("languageId")?.toString() || ""}
-                includeAllOption={false}
-                onChange={(selectedValue: string) =>
-                  setValue("languageId", parseInt(selectedValue, 10))
-                }
-                error={formState.errors["languageId"]?.message}
-                clearErrors={() => clearErrors("languageId")}
-              />
+                <DifficultySelect
+                  // label="Difficulty"
+                  difficulties={difficulties}
+                  value={watch("difficultyId")?.toString() || ""}
+                  onChange={(selectedValue: string) =>
+                    setValue("difficultyId", parseInt(selectedValue, 10))
+                  }
+                  includeAllOption={false}
+                  error={formState.errors["difficultyId"]?.message}
+                  clearErrors={() => clearErrors("difficultyId")}
+                />
+                <LanguageSelect
+                  // label="Language"
+                  languages={languages}
+                  value={watch("languageId")?.toString() || ""}
+                  includeAllOption={false}
+                  onChange={(selectedValue: string) =>
+                    setValue("languageId", parseInt(selectedValue, 10))
+                  }
+                  error={formState.errors["languageId"]?.message}
+                  clearErrors={() => clearErrors("languageId")}
+                />
+              </section>
             </>
           );
         }}

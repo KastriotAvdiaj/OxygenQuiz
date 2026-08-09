@@ -7,10 +7,14 @@ import { CreateQuizMethodDialog } from "./create-quiz-method-dialog";
  * The fork users hit when they click "+ Create Quiz": build it by hand, or generate it
  * from source material with an AI.
  *
- * MemoryRouter decorator: the two cards are react-router `Link`s, which throw outside a
- * router. Same pattern as Not-Found-Content.stories.tsx. Clicking a card in a story
- * navigates the in-memory history, so nothing appears to happen — that's expected; the
- * `to` targets are visible in the Controls panel.
+ * MemoryRouter decorator: both options navigate with `useNavigate`, which throws outside a
+ * router. Same pattern as Not-Found-Content.stories.tsx. Clicking one in a story navigates
+ * the in-memory history, so nothing appears to happen — that's expected; the `to` targets
+ * are visible in the Controls panel.
+ *
+ * The manual option is green and the AI one theme-primary; `liftColor` keeps each button's
+ * edge and shadow in its own hue. Check both themes — the greens come from
+ * `--quiz-success`, which has a separate dark-mode value.
  */
 const meta = {
   title: "Dashboard/Quiz/CreateQuizMethodDialog",
@@ -57,13 +61,8 @@ export const OpenForUserDashboard: Story = {
   },
 };
 
-/** Once AI creation isn't news any more, drop `highlightAi` and the pill goes away. */
-export const OpenWithoutNewBadge: Story = {
-  args: { open: true, highlightAi: false },
-};
-
 /**
- * Phone width: the two cards stack (`grid-cols-1 sm:grid-cols-2`) and the dialog keeps a
+ * Phone width: the two options stack (`grid-cols-1 sm:grid-cols-2`) and the dialog keeps a
  * 1rem gutter each side — the shared DialogContent owns that now, see docs/RESPONSIVE.md.
  */
 export const OpenOnMobile: Story = {

@@ -13,10 +13,17 @@ const PopoverContent = React.forwardRef<
   React.ElementRef<typeof PopoverPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Content> & {
     /**
-     * Render the content in a Portal to <body> (default). Set to false when the
-     * Popover lives inside a modal Radix Dialog: the modal locks the body with
-     * `pointer-events: none`, which would make portalled content unclickable.
-     * Rendering in-place keeps it inside the dialog's interactive subtree.
+     * Render the content in a Portal to <body> (default).
+     *
+     * Setting this to false inside a modal Radix Dialog does dodge the body's
+     * `pointer-events: none` lock — but it also traps the content inside
+     * `DialogContent`, which is height-capped and `overflow-y-auto`, so anything
+     * taller than the remaining space is clipped and makes the dialog scroll.
+     *
+     * For tall content (a calendar, a long list) prefer keeping the portal and
+     * adding `pointer-events-auto` to the content instead: it re-enables clicks on
+     * that layer alone and the popover floats free of the dialog's scroll area.
+     * `date-picker.tsx` is the worked example.
      */
     portalled?: boolean;
   }

@@ -53,7 +53,22 @@ body {
 }
 
 @layer base {
+  /* Tell the browser which palette its own controls should use. Without this, native UI —
+     date pickers, scrollbars, autofill, <select> popups — renders light on a dark app,
+     which is what made the invite-code expiry field open a white calendar over a black
+     dialog. The theme provider puts `light`/`dark` on <html>, so keying off those classes
+     keeps native chrome in step with the toggle. `accent-color` tints the parts a browser
+     lets us reach (the selected day, checkboxes, range thumbs) with the theme primary. */
+  .light {
+    color-scheme: light;
+  }
+
+  .dark {
+    color-scheme: dark;
+  }
+
   :root {
+    accent-color: hsl(var(--primary));
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
     --foreground-lighter: 222.2 60% 20%;

@@ -1,8 +1,10 @@
 # AI-Assisted Quiz Creation — Implementation Plan
 
-Status: Phase 0, Phase 1 and Phase 1.5 implemented. Phase 2 (hosted API) not started.
+Status: Phase 0, Phase 1 and Phase 1.5 implemented. Phase 2 (hosted API) not started —
+see [`ai-quiz-generation-plan.md`](./ai-quiz-generation-plan.md) for its full plan, which
+supersedes the Phase 2 paragraphs in §9 and §11 below.
 Owner: Kastriot
-Last updated: 2026-08-05
+Last updated: 2026-08-09
 
 > **This is the original plan, kept as written.** Where the shipped code has since diverged,
 > [`ai-quiz-architecture.md`](./ai-quiz-architecture.md) is the current description. Divergences
