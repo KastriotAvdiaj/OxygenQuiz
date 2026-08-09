@@ -23,6 +23,14 @@ namespace QuizAPI.Middleware
         /// <summary>Per-IP limit for anonymous guest-session creation (abuse surface).</summary>
         public const string GuestPolicy = "guest";
 
+        /// <summary>
+        /// AI generation. Costs real money per call and holds a connection for tens of seconds,
+        /// so this is tighter than anything else here. It is the burst guard only — the ceiling
+        /// on sustained use is the per-user daily quota, which a per-IP limiter cannot express
+        /// (see docs/quiz/ai-quiz-generation-plan.md §9.1).
+        /// </summary>
+        public const string AiPolicy = "ai";
+
         public static IServiceCollection AddOxygenRateLimiting(this IServiceCollection services)
         {
             services.AddRateLimiter(options =>
@@ -70,6 +78,19 @@ namespace QuizAPI.Middleware
                         factory: _ => new FixedWindowRateLimiterOptions
                         {
                             PermitLimit = 20,
+                            Window = TimeSpan.FromMinutes(1),
+                            QueueLimit = 0,
+                        }));
+
+                // AI generation. Deliberately small: a legitimate user generates a quiz, reviews
+                // it for minutes, and generates again — nobody honest needs six in a minute. The
+                // GET quota probe shares this policy, which is why it isn't 2.
+                options.AddPolicy(AiPolicy, httpContext =>
+                    RateLimitPartition.GetFixedWindowLimiter(
+                        partitionKey: ClientIp(httpContext),
+                        factory: _ => new FixedWindowRateLimiterOptions
+                        {
+                            PermitLimit = 6,
                             Window = TimeSpan.FromMinutes(1),
                             QueueLimit = 0,
                         }));

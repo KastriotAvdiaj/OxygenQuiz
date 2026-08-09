@@ -65,6 +65,9 @@ namespace QuizAPI.Data
 
         public DbSet<UserSettings> UserSettings { get; set; }
 
+        /// <summary>AI generation quota + cost ledger. See docs/quiz/ai-quiz-generation-flow.md §4.</summary>
+        public DbSet<Models.Ai.AiGenerationUsage> AiGenerationUsages { get; set; }
+
 
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options, ICurrentUserService current) : base(options)
         {
@@ -239,6 +242,16 @@ namespace QuizAPI.Data
                 .HasIndex(a => a.UserId);
             modelBuilder.Entity<AuditLog>()
                 .HasIndex(a => a.CreatedAt);
+
+            // AI generation usage. The composite index matches the only hot query — "how many
+            // slots has this user spent since the window opened" — which runs on every
+            // generation request, inside a per-user lock, so it must not be a scan.
+            // Like AuditLog, no FK to User: cost history should outlive the account.
+            modelBuilder.Entity<Models.Ai.AiGenerationUsage>()
+                .HasIndex(u => new { u.UserId, u.CreatedAt });
+            // Serves the rolling 30-day spend cap.
+            modelBuilder.Entity<Models.Ai.AiGenerationUsage>()
+                .HasIndex(u => u.CreatedAt);
 
             // Notifications: one user -> many, cascade on user delete, fast "my unread" lookups.
             modelBuilder.Entity<Notification>()

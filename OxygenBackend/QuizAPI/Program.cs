@@ -5,6 +5,7 @@ using Hangfire.PostgreSql;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 // MongoDB is intentionally not wired into DI. It backed write-only lobby-chat
 // archival, which has been disabled so multiplayer chat is fully ephemeral. The
@@ -182,6 +183,59 @@ builder.Services.AddSingleton<QuizAPI.Services.DataTransfer.IDataImportService, 
 
 // Dynamic reports (quiz performance, question analytics) — scoped, reads the DbContext.
 builder.Services.AddScoped<QuizAPI.Services.Reports.IReportService, QuizAPI.Services.Reports.ReportService>();
+
+// --- In-app AI quiz generation (docs/quiz/ai-quiz-generation-plan.md) ---
+builder.Services.Configure<QuizAPI.Services.Ai.AiOptions>(
+    configuration.GetSection(QuizAPI.Services.Ai.AiOptions.SectionName));
+
+var useFakeAiProvider = string.Equals(
+    configuration[$"{QuizAPI.Services.Ai.AiOptions.SectionName}:Provider"],
+    "Fake", StringComparison.OrdinalIgnoreCase);
+
+// The fake provider invents questions out of nothing. Serving those to real users would be
+// worse than the feature being switched off, so a misconfigured deploy is refused rather than
+// warned about.
+if (useFakeAiProvider && environment.IsProduction())
+    throw new InvalidOperationException(
+        "Ai:Provider is \"Fake\", which is a development-only stub and must never run in Production.");
+
+// Fail fast on a half-configured real provider: enabled with no key can only produce runtime
+// 502s, which look like an outage rather than a config mistake. Same convention as the Jwt:Key
+// and external-auth checks above. The fake provider needs no key, hence the exemption.
+if (configuration.GetValue<bool>($"{QuizAPI.Services.Ai.AiOptions.SectionName}:Enabled") &&
+    !useFakeAiProvider &&
+    string.IsNullOrWhiteSpace(configuration[$"{QuizAPI.Services.Ai.AiOptions.SectionName}:ApiKey"]))
+    throw new InvalidOperationException(
+        "Ai:Enabled is true but Ai:ApiKey is not configured. Supply it via the Ai__ApiKey environment variable or user-secrets, or set Ai:Provider to \"Fake\" for development.");
+
+// Stateless prompt construction → singleton.
+builder.Services.AddSingleton<QuizAPI.Services.Ai.AiPromptBuilder>();
+
+if (useFakeAiProvider)
+{
+    // Everything downstream of the provider still runs for real — quota, budget, audit, error
+    // mapping — so this exercises the feature rather than mocking it. See the trigger words in
+    // FakeQuizAiProvider for reaching each failure path on demand.
+    builder.Services.AddScoped<QuizAPI.Services.Ai.IQuizAiProvider, QuizAPI.Services.Ai.FakeQuizAiProvider>();
+}
+else
+{
+    // Typed client so the handler (and its connection pool) is reused; the per-call deadline is
+    // enforced inside the provider with a linked token, so the client's own timeout is left generous.
+    builder.Services.AddHttpClient<QuizAPI.Services.Ai.IQuizAiProvider, QuizAPI.Services.Ai.DeepSeekQuizAiProvider>((sp, client) =>
+    {
+        var aiOptions = sp.GetRequiredService<IOptions<QuizAPI.Services.Ai.AiOptions>>().Value;
+        // Trailing slash matters: without it the relative "chat/completions" would replace the
+        // last path segment of BaseAddress rather than append to it.
+        client.BaseAddress = new Uri(aiOptions.BaseUrl.TrimEnd('/') + "/");
+        client.Timeout = Timeout.InfiniteTimeSpan;
+    });
+}
+builder.Services.AddScoped<IAiGenerationUsageRepository, AiGenerationUsageRepository>();
+builder.Services.AddScoped<QuizAPI.Services.Ai.IAiQuotaPolicy, QuizAPI.Services.Ai.ConfigAiQuotaPolicy>();
+builder.Services.AddScoped<QuizAPI.Services.Ai.IAiQuotaService, QuizAPI.Services.Ai.AiQuotaService>();
+builder.Services.AddScoped<QuizAPI.Services.Ai.IAiGenerationService, QuizAPI.Services.Ai.AiGenerationService>();
+builder.Services.AddScoped<QuizAPI.Services.Ai.AiReservationSweeper>();
 
 builder.Services.AddHttpContextAccessor();
 
@@ -387,6 +441,14 @@ using (var scope = app.Services.CreateScope())
         "image-cleanup-daily",
         service => service.RunCleanupAsync(),
         Cron.Daily(2) // 2 AM every day
+    );
+
+    // Frees quota slots held by generations that never finished (crash, dropped connection).
+    // Runs often because the cost of a stuck reservation is a user who can't generate.
+    recurringJobs.AddOrUpdate<QuizAPI.Services.Ai.AiReservationSweeper>(
+        "ai-reservation-sweep",
+        service => service.RunAsync(),
+        "*/5 * * * *" // every 5 minutes
     );
 }
 
