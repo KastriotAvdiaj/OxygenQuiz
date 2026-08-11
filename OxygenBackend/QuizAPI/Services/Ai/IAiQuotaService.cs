@@ -37,9 +37,14 @@ namespace QuizAPI.Services.Ai
 
     /// <param name="Succeeded">False when the daily cap is already spent.</param>
     /// <param name="ReservationId">The usage row to commit or release. Empty when not reserved.</param>
-    /// <param name="Remaining">Slots left after this reservation.</param>
+    /// <param name="Limit">The user's daily allowance, or null for unlimited (staff).</param>
+    /// <param name="Remaining">Slots left after this reservation, or null when unlimited.</param>
     /// <param name="ResetsAtUtc">When the daily window rolls over.</param>
-    public sealed record AiQuotaReservation(bool Succeeded, Guid ReservationId, int Limit, int Remaining, DateTime ResetsAtUtc);
+    public sealed record AiQuotaReservation(
+        bool Succeeded, Guid ReservationId, int? Limit, int? Remaining, DateTime ResetsAtUtc);
 
-    public sealed record AiQuotaStatus(int Limit, int Used, int Remaining, DateTime ResetsAtUtc);
+    /// <param name="Limit">Daily allowance, or null for unlimited.</param>
+    /// <param name="Used">Slots spent in the current window. Counted even when unlimited.</param>
+    /// <param name="Remaining">Slots left, or null when unlimited.</param>
+    public sealed record AiQuotaStatus(int? Limit, int Used, int? Remaining, DateTime ResetsAtUtc);
 }

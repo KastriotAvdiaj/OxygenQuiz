@@ -28,12 +28,20 @@ wired up in `Program.cs` (`AddOxygenRateLimiting()` + `app.UseRateLimiter()`).
 | **Global** (safety net) | 100 requests | 10 s sliding, per IP | Everything **except** the SignalR hubs |
 | **`auth`** policy | 10 requests | 1 min fixed, per IP | `login`, `signup`, `refresh`, `verify-email`, `resend-verification` |
 | **`guest`** policy | 20 requests | 1 min fixed, per IP | `POST /api/guest-quiz-sessions` (guest session creation) |
+| **`ai`** policy | 6 requests | 1 min fixed, **per user** | `POST /api/quiz/ai-generate` only |
 
 - The **global** limiter is deliberately generous — normal play (loading questions, submitting
   answers) must never trip it. It only catches a single source hammering the API.
 - The **SignalR hubs** (`/quizHub`, `/notificationHub`) are exempt: rate-limiting a long-lived
   WebSocket connection is meaningless and would break multiplayer.
 - Limits **reject immediately** (`QueueLimit = 0`) rather than queueing requests.
+- The **`ai`** policy is the one exception to per-IP partitioning — see
+  ["Partitioning by user"](#partitioning-by-user) below. It is also the only limit that guards
+  something that costs real money, though the hard ceiling there is the per-user daily quota in
+  [`ai-quiz-generation-flow.md`](../quiz/ai-quiz-generation-flow.md) §4, not this window.
+  Deliberately attached to `ai-generate` **alone**: the sibling `ai-prompt` and `ai-quota` calls
+  are free, run on page load and on every copy, and are what we point users at when generation
+  fails — throttling them with the same budget would throttle the fallback too.
 
 ### Endpoint policies
 
@@ -62,9 +70,29 @@ When a limit is exceeded the client gets:
 The frontend's Axios error handling already understands `isCustomMessage`, so a 429 surfaces as a
 clean user-facing notification rather than a generic error.
 
+## Partitioning by user
+
+The **`ai`** policy partitions on the authenticated user id (`user:<guid>`), falling back to
+`ip:<addr>` for anonymous callers. Everything else partitions on IP.
+
+**Why.** A school, library or office sits behind one public address (NAT), so thirty laptops look
+like a single client and share one bucket. For AI generation — plausibly most used in exactly
+those places — that means the seventh person to press the button in a minute is told to slow down
+for something they didn't do.
+
+**Why it's safe here and nowhere else.** `ai-generate` is `[Authorize]`, so the id comes from a
+signed token and a caller can't mint fresh partitions by lying. On an anonymous endpoint the IP is
+the only key that can't be forged, which is why **`auth` and `guest` must stay on IP** — moving
+them would hand an attacker unlimited login attempts for the price of a new anonymous identity.
+
+Keys are prefixed (`user:` / `ip:`) so a user id can never collide with an IP string. The policy
+reads the principal after `UseAuthentication`, which the middleware ordering in `Program.cs`
+already guarantees.
+
 ## Trusting the client IP
 
-Limits are partitioned by the **real client IP**, resolved in this order (`ClientIp` in the extension):
+The IP-partitioned limits use the **real client IP**, resolved in this order (`ClientIp` in the
+extension):
 
 1. `CF-Connecting-IP` — Cloudflare's header carrying the true visitor IP.
 2. first hop of `X-Forwarded-For` — generic proxy fallback.

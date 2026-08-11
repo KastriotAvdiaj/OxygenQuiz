@@ -93,8 +93,7 @@ worst case is a wrong-but-real category on a Draft quiz that a human is looking 
 | HTTP | `Controllers/Quizzes/AiQuizController.cs` | DTO mapping and code → status. No logic. |
 | API client | `Quiz/api/generate-ai-quiz.ts` | The three calls, plus `AiGenerateError` — normalises the server's code out of the axios error. |
 | Wizard container | `AI-Quiz/ai-quiz-wizard.tsx` | State, the generate call, resolving suggested names → ids, the builder handoff. |
-| Wizard view | `AI-Quiz/ai-quiz-wizard-view.tsx` | **Composition only.** The three screens (§3b) and which component renders in each. |
-| View pieces | `AI-Quiz/components/*.tsx` | One block each: `generation-input`, `advanced-options`, `quota-note`, `generate-error-panel`, `copy-paste-fallback`, `confirm-details-card`, `import-summary`, `question-type-chips`. |
+| Wizard view | `AI-Quiz/ai-quiz-wizard-view.tsx` | All markup, prop-driven. One box, Advanced, error panels, copy-paste fallback. |
 | Limits | `AI-Quiz/prompt.ts` | Numbers only. The prompt text lives in C# (slice 2.1). |
 
 ---
@@ -174,13 +173,6 @@ The wizard is a container (`ai-quiz-wizard.tsx`, all state and calls) plus a pro
 (`ai-quiz-wizard-view.tsx`, all markup). Every state below is reachable from a Storybook story
 with no server — that split is why, and it's the convention described in
 [storybook.md](../development/storybook.md).
-
-**The view is composition, not markup.** It grew to 900 lines during slice 2.1 and was split:
-each substantial block is now its own file under `AI-Quiz/components/`, and the view holds the
-three-screen branch plus the wiring. Props stay flat rather than grouped into objects — the
-container owns all the state and the view owns none, so a story sets up any screen with plain
-args, and grouping would trade that for a shorter signature. If you're changing one part of the
-wizard, open the component, not the view.
 
 ```mermaid
 stateDiagram-v2
@@ -262,30 +254,6 @@ seconds long, and a double-clicked button lands squarely inside it.
 `AcquireUserQuotaLockAsync` takes a Postgres transaction-scoped advisory lock keyed on the user
 id, so the count-and-insert is serialised per user. Contention is per-user, so it costs nothing
 in practice. On non-Postgres providers it is a no-op (see §9).
-
-### 4a. Staff have no daily cap
-
-`ConfigAiQuotaPolicy` returns `null` for anyone holding **Admin** or **SuperAdmin** — the same
-Admin-or-SuperAdmin notion `ICurrentUserService.IsAdmin` uses, rather than a third definition of
-"staff". Roles are read from the user's stored roles, not the request principal, so the answer
-doesn't depend on who happens to be calling.
-
-Be precise about what "unlimited" exempts, because getting this wrong is how a bill happens:
-
-| Still applies to staff | Exempt |
-|---|---|
-| Rolling daily and monthly **budget caps** | The daily generation count |
-| `max_tokens` per call | |
-| The 6/min rate limit | |
-| A usage row per attempt, priced and audited | |
-
-The budget caps are the thing standing between a runaway loop and the card, so exempting anyone
-from *those* would defeat their purpose. An admin who scripts a thousand generations trips the
-$2 daily budget and gets `FeatureDisabled` like everyone else. Usage rows are still written, so
-staff generations appear in the cost ledger and in `AuditActions.AiQuizGenerated`.
-
-The UI says "No daily limit on your account — N used today" rather than rendering a counter that
-never moves.
 
 ### The window
 
@@ -371,7 +339,7 @@ copy-paste mode will call once slice 2.1 retires the duplicate in `prompt.ts`.
 ### `GET /api/quiz/ai-quota`
 
 `{ "enabled": true, "limit": 5, "used": 1, "remaining": 4, "resetsAt": "..." }` — so the UI can
-show "1 of 2 left today" and hide the Generate button when the feature is off, rather than offering a
+show "4 of 5 left" and hide the Generate button when the feature is off, rather than offering a
 button that is guaranteed to fail.
 
 ---
@@ -431,7 +399,7 @@ Ordered from "cheapest to bypass by a bug in our code" to "cannot be bypassed by
 |---|---|---|---|
 | 1 | `MaxOutputTokens` = 8000 | One call to ~$0.0023 instead of ~$0.11 | `max_tokens` on the request |
 | 2 | `MaxSourceChars` = 40,000 | Input to ~10K tokens (~$0.0014) per call | `AiGenerationService.Normalise` |
-| 3 | `DefaultDailyQuota` = 2 | One user to 2 generations/day — stated in the UI. **Staff exempt** (§4a) | `AiQuotaService` |
+| 3 | `DefaultDailyQuota` = 5 | One user to ~5 generations/day | `AiQuotaService` |
 | 4 | `DailyBudgetUsd` = 2 | Everyone, to ~$2/day — bounds the *rate* of loss | `IsOverBudgetAsync` |
 | 5 | `MonthlyBudgetUsd` = 25 | Everyone, to ~$25/30 days — bounds *total* loss | `IsOverBudgetAsync` |
 

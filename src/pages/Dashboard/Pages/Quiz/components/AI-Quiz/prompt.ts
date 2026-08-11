@@ -1,104 +1,32 @@
-import { QuestionType } from "@/types/question-types";
-
 /**
- * Builds the prompt the user copies into an external LLM (ChatGPT / Claude / Gemini).
+ * Client-side limits for the AI quiz flow.
  *
- * Design rules (see docs/quiz/ai-quiz-creation-plan.md §5):
- *  - The prompt NEVER contains entity IDs. Categories and languages are not mentioned at
- *    all — generated questions inherit those from the quiz the user already configured.
- *  - The only entity vocabulary passed in is the difficulty NAMES, which are a small
- *    fixed set. They are resolved back to IDs on import by strict name match.
- *  - The model is asked for strict JSON so `parse-ai-output.ts` can validate it.
+ * **The prompt text is no longer built here.** It lives in `AiPromptBuilder.cs` and is
+ * fetched via `POST /api/quiz/ai-prompt` (see `api/generate-ai-quiz.ts`), so in-app
+ * generation and the copy-paste fallback are guaranteed to send the same instructions.
+ * `buildPrompt` used to live in this file and was deleted when that endpoint landed —
+ * two hand-maintained copies of a tuned prompt drift silently, and the drift is invisible
+ * because both copies keep working. See docs/quiz/ai-quiz-generation-plan.md §5.1.
  *
- * The prompt text is intentionally never displayed in the UI — it is copy-only.
+ * What remains is the numbers the UI needs in order to clamp inputs before sending them.
+ * They are mirrored by `AiOptions` on the server, which is the actual gate — these exist
+ * for fast feedback, not enforcement.
  */
-
 export const AI_QUESTION_LIMITS = {
   minQuestions: 1,
   maxQuestions: 30,
   minTimeLimit: 5,
   maxTimeLimit: 300,
-  /** Soft cap — most LLM context windows start truncating well before this. */
+  /**
+   * Soft cap for the copy-paste path — most LLM context windows start truncating well
+   * before this. In-app generation truncates server-side at `Ai:MaxSourceChars` instead.
+   */
   sourceWarningLength: 12000,
+  /**
+   * Ceiling for in-app generation, mirroring `Ai:MaxQuestionsPerGeneration`. Lower than
+   * `maxQuestions` on purpose: one call asking for 30 degrades in quality and risks the
+   * proxy timeout, while the copy-paste path has neither problem because the user's own
+   * model handles it. See docs/quiz/ai-quiz-generation-plan.md §6.4.
+   */
+  maxGeneratedQuestions: 15,
 } as const;
-
-export interface BuildPromptOptions {
-  /** The raw source material the quiz should be based on. */
-  sourceData: string;
-  /** How many questions to generate. */
-  questionCount: number;
-  /** Which question types the model may use. At least one. */
-  allowedTypes: QuestionType[];
-  /** Names (not IDs) of the difficulties that exist in the DB. */
-  difficultyNames: string[];
-  /** Optional free-text steer, e.g. "focus on dates" or "exam style". */
-  extraInstructions?: string;
-}
-
-const TYPE_SPECS: Record<QuestionType, string> = {
-  [QuestionType.MultipleChoice]: `  - "MultipleChoice" also requires:
-      "answerOptions": array of 2 to 4 objects, each { "text": string, "isCorrect": boolean }
-      "allowMultipleSelections": boolean (true only if more than one option is correct)
-    At least one option MUST have "isCorrect": true.`,
-  [QuestionType.TrueFalse]: `  - "TrueFalse" also requires:
-      "correctAnswer": boolean (true or false, not a string)`,
-  // "allowPartialMatch" is deliberately NOT requested. It is a grading rule, not a property of
-  // the question's content, and the model has no basis for choosing it — asked without guidance it
-  // set the flag arbitrarily, and since partial matching actually grades (2026-07-31) that
-  // silently made short answers guessable. The author turns it on during review if they want it.
-  // See docs/quiz/typed-answer-matching.md.
-  [QuestionType.TypeTheAnswer]: `  - "TypeTheAnswer" also requires:
-      "correctAnswer": string (the canonical answer, kept short — a word or short phrase)
-      "acceptableAnswers": array of strings (other spellings/synonyms you would accept; may be empty)
-      "isCaseSensitive": boolean (almost always false)`,
-};
-
-export const buildPrompt = ({
-  sourceData,
-  questionCount,
-  allowedTypes,
-  difficultyNames,
-  extraInstructions,
-}: BuildPromptOptions): string => {
-  const typeList = allowedTypes.map((t) => `"${t}"`).join(" | ");
-  const difficultyList = difficultyNames.map((d) => `"${d}"`).join(" | ");
-  const typeSpecs = allowedTypes.map((t) => TYPE_SPECS[t]).join("\n");
-
-  return `You are a quiz-generation engine. Read the SOURCE MATERIAL at the end of this message and produce EXACTLY ${questionCount} quiz question(s) based ONLY on it.
-
-OUTPUT RULES — follow these precisely:
-
-1. Respond with a SINGLE JSON object and NOTHING else. No explanation, no commentary, no markdown code fences.
-
-2. The object must have exactly this shape:
-
-{
-  "questions": [
-    {
-      "type": ${typeList},
-      "text": string,
-      "difficulty": ${difficultyList},
-      "pointSystem": "Standard" | "Double" | "Quadruple",
-      "timeLimitInSeconds": integer between ${AI_QUESTION_LIMITS.minTimeLimit} and ${AI_QUESTION_LIMITS.maxTimeLimit}
-    }
-  ]
-}
-
-3. Depending on "type", each question needs these ADDITIONAL fields:
-${typeSpecs}
-
-4. "difficulty" MUST be exactly one of: ${difficultyList}. Do not invent difficulty names, do not translate them, do not use any other value.
-
-5. Do NOT output a category or a language for any question. Those are handled outside this prompt. Any category/language fields you add will be ignored.
-
-6. Scale "pointSystem" and "timeLimitInSeconds" with how hard the question is, so the quiz ramps up: easier recall questions should be "Standard" with a short time limit, while harder reasoning or synthesis questions should be "Double" or "Quadruple" with more time.
-
-7. Write every question in the SAME LANGUAGE as the source material.
-
-8. Base every question strictly on the source material. Do not invent facts that are not present in it. Make sure the answer you mark as correct is actually correct according to the source.
-${extraInstructions?.trim() ? `\n9. Additional instructions from the user: ${extraInstructions.trim()}\n` : ""}
-SOURCE MATERIAL:
-"""
-${sourceData.trim()}
-"""`;
-};

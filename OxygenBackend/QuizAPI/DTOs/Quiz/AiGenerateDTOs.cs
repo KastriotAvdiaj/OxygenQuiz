@@ -118,7 +118,9 @@ namespace QuizAPI.DTOs.Quiz
         /// <summary>Suggested language NAME, guaranteed the same way.</summary>
         public string? SuggestedLanguage { get; set; }
 
-        public int QuotaRemaining { get; set; }
+        /// <summary>Generations left today after this one, or <c>null</c> when unlimited.</summary>
+        public int? QuotaRemaining { get; set; }
+
         public int InputTokens { get; set; }
         public int OutputTokens { get; set; }
     }
@@ -142,9 +144,16 @@ namespace QuizAPI.DTOs.Quiz
     public class AiQuotaResponse
     {
         public bool Enabled { get; set; }
-        public int Limit { get; set; }
+
+        /// <summary>Daily allowance, or <c>null</c> for unlimited (staff). The UI branches on this.</summary>
+        public int? Limit { get; set; }
+
+        /// <summary>Slots spent today. Counted even when unlimited, so cost stays attributable.</summary>
         public int Used { get; set; }
-        public int Remaining { get; set; }
+
+        /// <summary>Slots left, or <c>null</c> when unlimited.</summary>
+        public int? Remaining { get; set; }
+
         public DateTime ResetsAt { get; set; }
     }
 }

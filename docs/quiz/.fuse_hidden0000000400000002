@@ -93,8 +93,7 @@ worst case is a wrong-but-real category on a Draft quiz that a human is looking 
 | HTTP | `Controllers/Quizzes/AiQuizController.cs` | DTO mapping and code → status. No logic. |
 | API client | `Quiz/api/generate-ai-quiz.ts` | The three calls, plus `AiGenerateError` — normalises the server's code out of the axios error. |
 | Wizard container | `AI-Quiz/ai-quiz-wizard.tsx` | State, the generate call, resolving suggested names → ids, the builder handoff. |
-| Wizard view | `AI-Quiz/ai-quiz-wizard-view.tsx` | **Composition only.** The three screens (§3b) and which component renders in each. |
-| View pieces | `AI-Quiz/components/*.tsx` | One block each: `generation-input`, `advanced-options`, `quota-note`, `generate-error-panel`, `copy-paste-fallback`, `confirm-details-card`, `import-summary`, `question-type-chips`. |
+| Wizard view | `AI-Quiz/ai-quiz-wizard-view.tsx` | All markup, prop-driven. One box, Advanced, error panels, copy-paste fallback. |
 | Limits | `AI-Quiz/prompt.ts` | Numbers only. The prompt text lives in C# (slice 2.1). |
 
 ---
@@ -174,13 +173,6 @@ The wizard is a container (`ai-quiz-wizard.tsx`, all state and calls) plus a pro
 (`ai-quiz-wizard-view.tsx`, all markup). Every state below is reachable from a Storybook story
 with no server — that split is why, and it's the convention described in
 [storybook.md](../development/storybook.md).
-
-**The view is composition, not markup.** It grew to 900 lines during slice 2.1 and was split:
-each substantial block is now its own file under `AI-Quiz/components/`, and the view holds the
-three-screen branch plus the wiring. Props stay flat rather than grouped into objects — the
-container owns all the state and the view owns none, so a story sets up any screen with plain
-args, and grouping would trade that for a shorter signature. If you're changing one part of the
-wizard, open the component, not the view.
 
 ```mermaid
 stateDiagram-v2
@@ -371,7 +363,7 @@ copy-paste mode will call once slice 2.1 retires the duplicate in `prompt.ts`.
 ### `GET /api/quiz/ai-quota`
 
 `{ "enabled": true, "limit": 5, "used": 1, "remaining": 4, "resetsAt": "..." }` — so the UI can
-show "1 of 2 left today" and hide the Generate button when the feature is off, rather than offering a
+show "4 of 5 left" and hide the Generate button when the feature is off, rather than offering a
 button that is guaranteed to fail.
 
 ---

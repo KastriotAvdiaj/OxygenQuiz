@@ -1,4 +1,6 @@
 using System.Globalization;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
 
@@ -82,12 +84,13 @@ namespace QuizAPI.Middleware
                             QueueLimit = 0,
                         }));
 
-                // AI generation. Deliberately small: a legitimate user generates a quiz, reviews
-                // it for minutes, and generates again — nobody honest needs six in a minute. The
-                // GET quota probe shares this policy, which is why it isn't 2.
+                // AI generation. Partitioned by USER, not IP — see UserOrIp below for why.
+                // Deliberately small: a legitimate user generates a quiz, reviews it for
+                // minutes, and generates again. Nobody honest needs six in a minute. The real
+                // ceiling is the per-user daily quota; this only stops a burst.
                 options.AddPolicy(AiPolicy, httpContext =>
                     RateLimitPartition.GetFixedWindowLimiter(
-                        partitionKey: ClientIp(httpContext),
+                        partitionKey: UserOrIp(httpContext),
                         factory: _ => new FixedWindowRateLimiterOptions
                         {
                             PermitLimit = 6,
@@ -115,6 +118,35 @@ namespace QuizAPI.Middleware
             });
 
             return services;
+        }
+
+        /// <summary>
+        /// Partitions by authenticated user id, falling back to IP for anonymous callers.
+        ///
+        /// <para>Partitioning an authenticated endpoint by IP punishes shared connections: a
+        /// school, library or office sits behind one public address (NAT), so thirty students
+        /// on thirty laptops look like a single client and share one bucket. For AI generation
+        /// — plausibly most used in exactly those places — that means the seventh person to
+        /// press the button in a minute is told to slow down for something they didn't do.</para>
+        ///
+        /// <para>Safe here specifically because the endpoint is <c>[Authorize]</c>: a caller
+        /// can't mint fresh partitions by lying, since the id comes from a signed token. Don't
+        /// copy this to an anonymous endpoint, where the IP is the only thing that can't be
+        /// forged — which is why <c>auth</c> and <c>guest</c> stay on <see cref="ClientIp"/>.</para>
+        ///
+        /// <para>Keys are prefixed so a user id can never collide with an IP string.</para>
+        ///
+        /// <para>This runs after <c>UseAuthentication</c> (see the ordering in Program.cs), so
+        /// the principal is populated by the time the limiter reads it.</para>
+        /// </summary>
+        private static string UserOrIp(HttpContext context)
+        {
+            var userId = context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                         ?? context.User?.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
+
+            return string.IsNullOrWhiteSpace(userId)
+                ? $"ip:{ClientIp(context)}"
+                : $"user:{userId}";
         }
 
         /// <summary>

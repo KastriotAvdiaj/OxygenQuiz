@@ -92,9 +92,10 @@ namespace QuizAPI.Services.Ai
             var reservation = await _quota.TryReserveAsync(userId, normalised, HashRequest(normalised), ct);
             if (!reservation.Succeeded)
             {
+                // Only reachable with a real limit — an unlimited policy never fails to reserve.
                 return AiGenerationOutcome.Fail(
                     AiErrorCodes.QuotaExceeded,
-                    $"You've used all {reservation.Limit} AI generations for today. You can still copy the prompt into your own AI, or try again tomorrow.",
+                    $"You've used today's {reservation.Limit} AI quizzes. You can still copy the prompt into your own AI, or try again tomorrow.",
                     reservation.ResetsAtUtc);
             }
 

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { fn } from "@storybook/test";
+import { fn, userEvent, within } from "@storybook/test";
 import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
@@ -10,6 +10,7 @@ import type {
   QuestionLanguage,
 } from "@/types/question-types";
 
+import { AiGenerateError } from "../../api/generate-ai-quiz";
 import { AiQuizWizardView } from "./ai-quiz-wizard-view";
 import { parseAiOutput, type ParseResult } from "./parse-ai-output";
 import { AI_QUESTION_LIMITS } from "./prompt";
@@ -18,9 +19,11 @@ import { AI_QUESTION_LIMITS } from "./prompt";
  * The AI quiz wizard, end to end, with no backend and no LLM.
  *
  * `AiQuizWizardView` is presentational (the container `ai-quiz-wizard.tsx` owns the
- * queries, clipboard and parse call), so every state below is reachable from plain args —
- * including the failure modes catalogued in docs/quiz/ai-quiz-architecture.md §6, which
- * are otherwise awkward to reproduce because they need a *specific* bad LLM reply.
+ * queries, the generate call, the clipboard and the parse), so every state below is
+ * reachable from plain args — including the generation failures catalogued in
+ * docs/quiz/ai-quiz-generation-flow.md §5 and the parse failures in
+ * docs/quiz/ai-quiz-architecture.md §6, both of which are otherwise awkward to reproduce
+ * because they need a *specific* bad reply or a provider outage.
  *
  * The parse-result stories call the **real `parseAiOutput`** on fixture replies rather
  * than hand-writing a `ParseResult`. A hand-written result would keep rendering happily
@@ -53,7 +56,7 @@ const SOURCE_MATERIAL = `The water cycle describes the continuous movement of wa
 surface of the Earth. Water evaporates from oceans and lakes, condenses into clouds,
 falls as precipitation, and returns to the sea through rivers and groundwater.`;
 
-/** Same parse context the container builds from step 1's choices. */
+/** Same parse context the container derives from the suggestions plus any user overrides. */
 const parseContext = {
   categoryId: 1,
   languageId: 1,
@@ -61,12 +64,14 @@ const parseContext = {
   difficulties,
 };
 
-const parse = (rawReply: string): ParseResult =>
-  parseAiOutput(rawReply, parseContext);
+const parse = (rawReply: string): ParseResult => parseAiOutput(rawReply, parseContext);
 
 // ── Fixture LLM replies ────────────────────────────────────────────────────────────────
 
 const GOOD_REPLY = JSON.stringify({
+  title: "The Water Cycle",
+  category: "Science",
+  language: "English",
   questions: [
     {
       type: QuestionType.MultipleChoice,
@@ -112,7 +117,7 @@ ${GOOD_REPLY}
 
 Let me know if you'd like more questions!`;
 
-/** Two usable questions, two the parser must drop for different reasons. */
+/** Two usable questions, three the parser must drop for different reasons. */
 const PARTIALLY_INVALID_REPLY = JSON.stringify({
   questions: [
     {
@@ -222,6 +227,15 @@ const BuilderStandIn = ({ result }: { result: ParseResult }) => (
   </div>
 );
 
+/** Matches `Ai:DefaultDailyQuota` — two a day, and the wizard says so before you spend one. */
+const quotaAvailable = {
+  enabled: true,
+  limit: 2,
+  used: 0,
+  remaining: 2,
+  resetsAt: "2026-08-10T00:00:00Z",
+};
+
 // ── Meta ───────────────────────────────────────────────────────────────────────────────
 
 /**
@@ -263,13 +277,14 @@ const meta = {
     hasEntityError: false,
     quizzesPath: "/dashboard/quizzes",
     manualCreatePath: "/dashboard/quizzes/create-quiz",
-    step: 1,
+    mode: "Topic",
+    topic: "",
+    sourceData: "",
     title: "",
     description: "",
     categoryId: null,
     languageId: null,
     difficultyId: null,
-    sourceData: "",
     questionCount: 10,
     allowedTypes: [
       QuestionType.MultipleChoice,
@@ -277,19 +292,29 @@ const meta = {
       QuestionType.TypeTheAnswer,
     ],
     extraInstructions: "",
+    isGenerating: false,
+    generateError: null,
+    quota: quotaAvailable,
+    needsConfirmation: false,
+    suggestedCategoryName: null,
+    suggestedLanguageName: null,
     copied: false,
+    isCopying: false,
     aiResponse: "",
     parseResult: null,
-    onStepChange: fn(),
+    onModeChange: fn(),
+    onTopicChange: fn(),
+    onSourceDataChange: fn(),
     onTitleChange: fn(),
     onDescriptionChange: fn(),
     onCategoryIdChange: fn(),
     onLanguageIdChange: fn(),
     onDifficultyIdChange: fn(),
-    onSourceDataChange: fn(),
     onQuestionCountChange: fn(),
     onToggleType: fn(),
     onExtraInstructionsChange: fn(),
+    onGenerate: fn(),
+    onStartOver: fn(),
     onCopyPrompt: fn(),
     onAiResponseChange: fn(),
     onImport: fn(),
@@ -299,89 +324,203 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-// ── Step 1: quiz details ───────────────────────────────────────────────────────────────
+// ── The one box ────────────────────────────────────────────────────────────────────────
 
-/** Where the wizard opens. "Next" is disabled until title + all three lookups are set. */
-export const Step1Empty: Story = {};
+/** Where the wizard opens: a topic, a Generate button, everything else folded away. */
+export const Empty: Story = {};
 
-/** A title alone isn't enough — the gate needs category, language and difficulty too. */
-export const Step1TitleOnly: Story = {
-  args: { title: "The Water Cycle" },
+/** Generate lights up as soon as there's a topic — no other field is required. */
+export const TopicEntered: Story = {
+  args: { topic: "The French Revolution" },
 };
 
-export const Step1Complete: Story = {
+/** The user opened Advanced and overrode things the AI would otherwise have chosen. */
+export const AdvancedOverridden: Story = {
   args: {
-    title: "The Water Cycle",
-    description: "A short quiz on evaporation, condensation and precipitation.",
-    categoryId: 1,
+    topic: "The French Revolution",
+    title: "Revolution: the short version",
+    categoryId: 2,
     languageId: 1,
-    difficultyId: 2,
+    difficultyId: 3,
+    questionCount: AI_QUESTION_LIMITS.maxGeneratedQuestions,
+    extraInstructions: "Focus on dates, exam style.",
   },
 };
 
-// ── Step 2: generate & import ──────────────────────────────────────────────────────────
-
-const step1Values = {
-  step: 2 as const,
-  title: "The Water Cycle",
-  description: "A short quiz on evaporation, condensation and precipitation.",
-  categoryId: 1,
-  languageId: 1,
-  difficultyId: 2,
+/** Deselecting every type blocks generation — the prompt needs at least one. */
+export const NoTypesSelected: Story = {
+  args: { topic: "The French Revolution", allowedTypes: [] },
 };
 
-/** Nothing pasted yet: "Copy prompt" is disabled and says why. */
-export const Step2Empty: Story = {
-  args: { ...step1Values },
+export const Generating: Story = {
+  args: { topic: "The French Revolution", isGenerating: true },
 };
 
-export const Step2Ready: Story = {
-  args: { ...step1Values, sourceData: SOURCE_MATERIAL },
-};
-
-/** Confirmation state after a successful clipboard write; the container resets it on a timer. */
-export const Step2PromptCopied: Story = {
-  args: { ...step1Values, sourceData: SOURCE_MATERIAL, copied: true },
-};
-
-/** Deselecting every type also blocks generation — the prompt needs at least one. */
-export const Step2NoTypesSelected: Story = {
-  args: { ...step1Values, sourceData: SOURCE_MATERIAL, allowedTypes: [] },
-};
-
-export const Step2SingleTypeSelected: Story = {
-  args: {
-    ...step1Values,
-    sourceData: SOURCE_MATERIAL,
-    allowedTypes: [QuestionType.MultipleChoice],
+/**
+ * Generate stays clickable on an empty form — pressing it explains what's missing instead of
+ * greying out and leaving the user to guess.
+ *
+ * A `play` function rather than an arg, because the "has the user tried yet?" flag is local
+ * to the view: it's transient feedback, and lifting it to the container so a story could set
+ * it would put a validation blush in the wizard's state.
+ */
+export const ValidationOnEmptyTopic: Story = {
+  args: { topic: "" },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: /generate/i }));
   },
 };
 
-/** Past the soft cap most context windows truncate at — an amber warning, not a block. */
-export const Step2SourceTooLong: Story = {
+/** Same, for the other mode: source material needs more than a stray sentence. */
+export const ValidationOnShortSource: Story = {
+  args: { mode: "Source", sourceData: "Too short." },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: /generate/i }));
+  },
+};
+
+// ── Source mode ────────────────────────────────────────────────────────────────────────
+
+export const SourceModeEmpty: Story = {
+  args: { mode: "Source" },
+};
+
+export const SourceModeReady: Story = {
+  args: { mode: "Source", sourceData: SOURCE_MATERIAL },
+};
+
+/** Past the soft cap — an amber warning, not a block; the server truncates. */
+export const SourceModeTooLong: Story = {
   args: {
-    ...step1Values,
+    mode: "Source",
     sourceData: SOURCE_MATERIAL.repeat(
-      Math.ceil(AI_QUESTION_LIMITS.sourceWarningLength / SOURCE_MATERIAL.length) + 1
+      Math.ceil(AI_QUESTION_LIMITS.sourceWarningLength / SOURCE_MATERIAL.length) + 1,
     ),
-    extraInstructions: "Focus on the vocabulary, exam style.",
   },
 };
 
-export const Step2AtMaxQuestionCount: Story = {
+// ── Generation failures (docs/quiz/ai-quiz-generation-flow.md §5) ──────────────────────
+// Each code is a different offer: retry, wait, verify, or fall back to copy-paste.
+
+/** Transient. The panel says the allowance wasn't touched, because it wasn't. */
+export const ErrorProviderUnavailable: Story = {
   args: {
-    ...step1Values,
-    sourceData: SOURCE_MATERIAL,
-    questionCount: AI_QUESTION_LIMITS.maxQuestions,
+    topic: "The French Revolution",
+    generateError: new AiGenerateError(
+      "ProviderUnavailable",
+      "The quiz generator is unavailable right now. Please try again in a moment.",
+    ),
   },
 };
 
-// ── Import failures (docs/quiz/ai-quiz-architecture.md §6) ─────────────────────────────
+export const ErrorProviderTimeout: Story = {
+  args: {
+    topic: "The French Revolution",
+    generateError: new AiGenerateError(
+      "ProviderTimeout",
+      "The quiz generator took too long to respond. Please try again.",
+    ),
+  },
+};
+
+/** Two unreadable replies in a row. Copy-paste is offered as the way through. */
+export const ErrorModelOutputInvalid: Story = {
+  args: {
+    topic: "The French Revolution",
+    generateError: new AiGenerateError(
+      "ModelOutputInvalid",
+      "The AI's reply couldn't be read. Try again, or copy the prompt into your own AI instead.",
+    ),
+  },
+};
+
+/** Staff (Admin / SuperAdmin) have no daily cap — but still show up in the cost ledger. */
+export const QuotaUnlimitedForStaff: Story = {
+  args: {
+    topic: "The French Revolution",
+    quota: { enabled: true, limit: null, used: 7, remaining: null, resetsAt: "2026-08-10T00:00:00Z" },
+  },
+};
+
+/** One left: called out in amber, because running out mid-thought is the bad surprise. */
+export const QuotaLastOne: Story = {
+  args: {
+    topic: "The French Revolution",
+    quota: { ...quotaAvailable, used: 1, remaining: 1 },
+  },
+};
+
+/** Terminal for today: the Generate button is replaced by the copy-paste path. */
+export const ErrorQuotaExceeded: Story = {
+  args: {
+    topic: "The French Revolution",
+    quota: { ...quotaAvailable, used: 2, remaining: 0 },
+    generateError: new AiGenerateError(
+      "QuotaExceeded",
+      "You've used all 2 AI generations for today. You can still copy the prompt into your own AI, or try again tomorrow.",
+      "2026-08-10T00:00:00Z",
+    ),
+  },
+};
+
+export const ErrorEmailNotVerified: Story = {
+  args: {
+    topic: "The French Revolution",
+    generateError: new AiGenerateError(
+      "EmailNotVerified",
+      "Verify your email address to generate quizzes with AI.",
+    ),
+  },
+};
+
+/** The kill switch, or a blown budget. Copy-paste opens automatically. */
+export const FeatureDisabled: Story = {
+  args: {
+    topic: "The French Revolution",
+    quota: { ...quotaAvailable, enabled: false },
+  },
+};
+
+// ── Confirming what the AI couldn't match ──────────────────────────────────────────────
+
+/**
+ * The questions are fine; the model named a category we don't have. Rather than throw the
+ * generation away, ask for the one missing field.
+ */
+export const NeedsCategoryConfirmation: Story = {
+  args: {
+    topic: "The French Revolution",
+    needsConfirmation: true,
+    suggestedCategoryName: "European History",
+    languageId: 1,
+  },
+};
+
+export const NeedsCategoryAndLanguageConfirmation: Story = {
+  args: {
+    topic: "Historia e Shqipërisë",
+    needsConfirmation: true,
+    suggestedCategoryName: "European History",
+    suggestedLanguageName: "Shqip",
+  },
+};
+
+// ── Copy-paste fallback ────────────────────────────────────────────────────────────────
+
+export const FallbackPromptCopied: Story = {
+  args: { topic: "The French Revolution", copied: true },
+};
+
+export const FallbackPreparingPrompt: Story = {
+  args: { topic: "The French Revolution", isCopying: true },
+};
 
 /** The model answered conversationally instead of emitting JSON. */
 export const ImportErrorNoJson: Story = {
   args: {
-    ...step1Values,
+    mode: "Source",
     sourceData: SOURCE_MATERIAL,
     aiResponse: NO_JSON_REPLY,
     parseResult: parse(NO_JSON_REPLY),
@@ -391,7 +530,7 @@ export const ImportErrorNoJson: Story = {
 /** Valid JSON, wrong schema — usually someone's own prompt rather than ours. */
 export const ImportErrorWrongShape: Story = {
   args: {
-    ...step1Values,
+    mode: "Source",
     sourceData: SOURCE_MATERIAL,
     aiResponse: WRONG_SHAPE_REPLY,
     parseResult: parse(WRONG_SHAPE_REPLY),
@@ -401,7 +540,7 @@ export const ImportErrorWrongShape: Story = {
 /** Right shape, but not one question survived validation: the batch is rejected whole. */
 export const ImportErrorAllInvalid: Story = {
   args: {
-    ...step1Values,
+    mode: "Source",
     sourceData: SOURCE_MATERIAL,
     aiResponse: ALL_INVALID_REPLY,
     parseResult: parse(ALL_INVALID_REPLY),
@@ -415,21 +554,29 @@ const fencedResult = parse(FENCED_REPLY);
 const partialResult = parse(PARTIALLY_INVALID_REPLY);
 const fallbackResult = parse(UNKNOWN_DIFFICULTY_REPLY);
 
-/** The happy path: three questions imported, builder takes over. */
+/** The happy path. Topic mode, so the banner carries the fact-check nudge. */
 export const ReviewHandoff: Story = {
   args: {
-    ...step1Values,
-    sourceData: SOURCE_MATERIAL,
-    aiResponse: GOOD_REPLY,
+    topic: "The Water Cycle",
     parseResult: goodResult,
     builderSlot: <BuilderStandIn result={goodResult} />,
   },
 };
 
-/** Same questions, but the reply arrived wrapped in prose and code fences. */
+/** Same questions from source material — no fact-check nudge, because there's a source. */
+export const ReviewHandoffFromSource: Story = {
+  args: {
+    mode: "Source",
+    sourceData: SOURCE_MATERIAL,
+    parseResult: goodResult,
+    builderSlot: <BuilderStandIn result={goodResult} />,
+  },
+};
+
+/** The reply arrived wrapped in prose and code fences. */
 export const ReviewHandoffFromFencedReply: Story = {
   args: {
-    ...step1Values,
+    mode: "Source",
     sourceData: SOURCE_MATERIAL,
     aiResponse: FENCED_REPLY,
     parseResult: fencedResult,
@@ -443,9 +590,7 @@ export const ReviewHandoffFromFencedReply: Story = {
  */
 export const ReviewHandoffWithDroppedQuestions: Story = {
   args: {
-    ...step1Values,
-    sourceData: SOURCE_MATERIAL,
-    aiResponse: PARTIALLY_INVALID_REPLY,
+    topic: "The Water Cycle",
     parseResult: partialResult,
     builderSlot: <BuilderStandIn result={partialResult} />,
   },
@@ -457,9 +602,7 @@ export const ReviewHandoffWithDroppedQuestions: Story = {
  */
 export const ReviewHandoffWithDifficultyFallbacks: Story = {
   args: {
-    ...step1Values,
-    sourceData: SOURCE_MATERIAL,
-    aiResponse: UNKNOWN_DIFFICULTY_REPLY,
+    topic: "The Water Cycle",
     parseResult: fallbackResult,
     builderSlot: <BuilderStandIn result={fallbackResult} />,
   },
@@ -477,13 +620,13 @@ export const EntityLoadError: Story = {
 
 // ── Responsive checks (docs/RESPONSIVE.md: verify at 360/390px) ────────────────────────
 
-export const Step1OnMobile: Story = {
+export const OnMobile: Story = {
   parameters: { viewport: { defaultViewport: "mobile1" } },
-  args: { ...Step1Complete.args },
+  args: { topic: "The French Revolution" },
 };
 
-/** The options row collapses to one column below `sm`; the type chips wrap. */
-export const Step2OnMobile: Story = {
+/** Advanced open on a phone: the options row collapses to one column, chips wrap. */
+export const AdvancedOnMobile: Story = {
   parameters: { viewport: { defaultViewport: "mobile1" } },
-  args: { ...step1Values, sourceData: SOURCE_MATERIAL },
+  args: { ...AdvancedOverridden.args },
 };

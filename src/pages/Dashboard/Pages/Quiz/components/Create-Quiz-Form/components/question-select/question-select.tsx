@@ -6,12 +6,22 @@ import { Button } from "@/components/ui";
 import { LiftedButton } from "@/common/LiftedButton";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useQuestionCategoryData } from "../../../../../Question/Entities/Categories/api/get-question-categories";
+import { CategorySelect } from "../../../../../Question/Entities/Categories/Components/select-question-category";
 import { useQuestionDifficultyData } from "../../../../../Question/Entities/Difficulty/api/get-question-difficulties";
+import { DifficultySelect } from "../../../../../Question/Entities/Difficulty/Components/select-question-difficulty";
 import { useQuestionLanguageData } from "../../../../../Question/Entities/Language/api/get-question-language";
+import { LanguageSelect } from "../../../../../Question/Entities/Language/components/select-question-language";
 import { QuestionTabContent } from "../../../../../Question/Components/QuestionsTabContent";
 import { cn } from "@/utils/cn";
 import { useQuiz } from "../../Quiz-questions-context";
 import { useDisclosure } from "@/hooks/use-disclosure";
+
+/** Quiet column heading for the filter strip — muted, not the shared selects' form label. */
+const FilterLabel: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+    {children}
+  </span>
+);
 
 interface SelectQuestionComponentProps {
   triggerButton?: React.ReactElement;
@@ -167,9 +177,21 @@ const SelectQuestionComponent: React.FC<SelectQuestionComponentProps> = ({
               </div>
             </div>
 
-            {/* ── Inline filter toolbar ── */}
+            {/* ── Inline filter toolbar ──
+                The three dropdowns use the shared entity selects. The native `<select>`s they
+                replaced weren't only inconsistent: they mapped straight over the raw lookup
+                arrays and so bypassed `useCanSelectUnspecifiedLookup`, listing the seeded
+                "Unspecified" rows as filter options for every user (see lookup-visibility.ts).
+                The search box stays local — see the note on it below. */}
             <div className="px-6 py-3 border-b dark:border-foreground/10 bg-muted/30 shrink-0 flex flex-col gap-2">
-              {/* Search */}
+              {/* Search — a plain input rather than the shared `Input`.
+                  The `minimal` variant at its default size is a ~44px underlined field and
+                  dwarfs this row. There *is* a compact form of it — `.minimal-input--compact`
+                  in global.css, used by `lib/Search-Input.tsx` — but that component pairs the
+                  field with an explicit search button because the dashboard panels run
+                  server-side queries on submit. Here the term is debounced and filters as you
+                  type, so there's nothing to submit. Worth revisiting if the compact modifier
+                  is ever exposed without the button. */}
               <div className="relative flex items-center gap-2">
                 <div className="relative flex-1">
                   <svg className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"
@@ -201,37 +223,41 @@ const SelectQuestionComponent: React.FC<SelectQuestionComponentProps> = ({
                 )}
               </div>
 
-              {/* 3-column filter dropdowns */}
+              {/* 3-column filter dropdowns. `mode="filter"` is the variant built for exactly
+                  this: undefined means "all", so there's no sentinel value to translate.
+
+                  Labels are rendered here rather than through each select's `label` prop.
+                  The shared components hardcode `text-sm font-medium text-foreground`, which
+                  reads as a form field; in a dense filter strip these are quiet column
+                  headings. Keeping the override local avoids adding a `labelClassName`
+                  escape hatch to three shared components for one caller's taste. */}
               <div className="grid grid-cols-3 gap-2">
                 <div className="flex flex-col gap-0.5">
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">Category</label>
-                  <select
-                    value={selectedCategoryIds[0] ?? ""}
-                    onChange={(e) => setSelectedCategoryIds(e.target.value ? [Number(e.target.value)] : [])}
-                    className="h-7 w-full rounded-md border border-foreground/20 bg-background px-2 text-xs focus:border-primary/60 focus:outline-none focus:ring-2 focus:ring-primary/20 dark:border-foreground/30 dark:bg-background">
-                    <option value="">All categories</option>
-                    {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
+                  <FilterLabel>Category</FilterLabel>
+                  <CategorySelect
+                    mode="filter"
+                    categories={categories}
+                    value={selectedCategoryIds[0]}
+                    onChange={(id) => setSelectedCategoryIds(id ? [id] : [])}
+                  />
                 </div>
                 <div className="flex flex-col gap-0.5">
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">Difficulty</label>
-                  <select
-                    value={selectedDifficultyIds[0] ?? ""}
-                    onChange={(e) => setSelectedDifficultyIds(e.target.value ? [Number(e.target.value)] : [])}
-                    className="h-7 w-full rounded-md border border-foreground/20 bg-background px-2 text-xs focus:border-primary/60 focus:outline-none focus:ring-2 focus:ring-primary/20 dark:border-foreground/30 dark:bg-background">
-                    <option value="">All difficulties</option>
-                    {difficulties.map((d) => <option key={d.id} value={d.id}>{d.level}</option>)}
-                  </select>
+                  <FilterLabel>Difficulty</FilterLabel>
+                  <DifficultySelect
+                    mode="filter"
+                    difficulties={difficulties}
+                    value={selectedDifficultyIds[0]}
+                    onChange={(id) => setSelectedDifficultyIds(id ? [id] : [])}
+                  />
                 </div>
                 <div className="flex flex-col gap-0.5">
-                  <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">Language</label>
-                  <select
-                    value={selectedLanguageIds[0] ?? ""}
-                    onChange={(e) => setSelectedLanguageIds(e.target.value ? [Number(e.target.value)] : [])}
-                    className="h-7 w-full rounded-md border border-foreground/20 bg-background px-2 text-xs focus:border-primary/60 focus:outline-none focus:ring-2 focus:ring-primary/20 dark:border-foreground/30 dark:bg-background">
-                    <option value="">All languages</option>
-                    {languages.map((l) => <option key={l.id} value={l.id}>{l.language}</option>)}
-                  </select>
+                  <FilterLabel>Language</FilterLabel>
+                  <LanguageSelect
+                    mode="filter"
+                    languages={languages}
+                    value={selectedLanguageIds[0]}
+                    onChange={(id) => setSelectedLanguageIds(id ? [id] : [])}
+                  />
                 </div>
               </div>
             </div>

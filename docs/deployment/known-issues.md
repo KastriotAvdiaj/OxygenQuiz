@@ -559,12 +559,11 @@ production until it's switched on.**
   `QuizAPI.Models` even though the file sits under `Models/Questions/` — the namespace does
   not follow the folder there, unlike `Models/Quiz/`.
   → `OxygenBackend/QuizAPI/Models/Ai/AiGenerationUsage.cs`, `Services/Ai/AiPromptBuilder.cs`
-- **P2 — Prompt now exists in two languages.** `AiPromptBuilder.cs` (C#) and `prompt.ts`
-  are duplicates, and nothing enforces that they agree. Accepted only because slice 2.1
-  deletes the TS one and points the copy button at `POST /api/quiz/ai-prompt`. **If 2.1
-  slips this becomes the likeliest source of a subtle bug in the whole feature** — a prompt
-  improvement that silently applies to generated quizzes but not copy-pasted ones. _Fix:_
-  ship 2.1 next, before streaming or file upload.
+- ~~**P2 — Prompt now exists in two languages.**~~ **Fixed (2026-08-09).** Slice 2.1 shipped
+  with the frontend rather than after it: `buildPrompt` is gone from `prompt.ts` and the copy
+  button fetches `POST /api/quiz/ai-prompt`, so `AiPromptBuilder.cs` is the only prompt in the
+  codebase and the two paths cannot diverge. `prompt.ts` keeps only the numeric limits the UI
+  clamps against.
   → `OxygenBackend/QuizAPI/Services/Ai/AiPromptBuilder.cs`,
   `src/pages/Dashboard/Pages/Quiz/components/AI-Quiz/prompt.ts`
 - **P2 — Quota concurrency can't be proven by the current test project.** `TryReserveAsync`
@@ -576,12 +575,14 @@ production until it's switched on.**
   Postgres (Testcontainers, or a dedicated test database) before trusting the cap.
   → `OxygenBackend/QuizAPI/Repositories/AiGenerationUsageRepository.cs`,
   `Services/Ai/AiQuotaService.cs`
-- **P2 — Rate limiting partitions by IP; quota partitions by user.** The `ai` policy is
-  6 requests/min per **IP**, so a classroom, library or office behind one NAT shares it —
-  plausibly the exact audience this feature is meant to attract, and they'd see 429s that
-  look like the app being broken. _Fix:_ partition the `ai` policy on the authenticated
-  user id (falling back to IP for anonymous callers, which can't reach these endpoints
-  anyway). → `OxygenBackend/QuizAPI/Middleware/RateLimitingExtensions.cs`
+- ~~**P2 — Rate limiting partitions by IP; quota partitions by user.**~~ **Fixed (2026-08-09).**
+  The `ai` policy now partitions on the authenticated user id (prefixed `user:`), falling back
+  to `ip:` for anonymous callers, so a classroom, library or office behind one NAT no longer
+  shares the 6/min burst window. This is only safe because the endpoint is `[Authorize]` — the
+  id comes from a signed token, so a caller can't mint fresh partitions. **Don't copy the
+  pattern to `auth` or `guest`:** on an anonymous endpoint the IP is the only unforgeable key,
+  which is why those two stay as they are.
+  → `OxygenBackend/QuizAPI/Middleware/RateLimitingExtensions.cs`
 - **P3 — A committed generation whose response never arrives is still charged.** If the
   connection drops after `CommitAsync` but before the browser has the payload, the user
   spent a slot on a quiz they never saw, and a retry costs another. _Fix:_ response caching
@@ -602,11 +603,12 @@ production until it's switched on.**
   visible and failing with a 503 instead of hidden. _Fix:_ have the endpoint consult
   `IsOverBudgetAsync`, or have the client hide the button after its first `FeatureDisabled`.
   → `OxygenBackend/QuizAPI/Controllers/Quizzes/AiQuizController.cs`
-- **P3 — `POST /ai-prompt` shares the `ai` rate-limit policy with generation.** Copying a
-  prompt is free, encouraged, and the fallback we point users at when generation fails —
-  but it eats the same 6/min budget. Becomes a real problem in 2.1, when the copy button
-  starts calling it. _Fix:_ give it the global limiter or its own looser policy.
-  → `Controllers/Quizzes/AiQuizController.cs`, `Middleware/RateLimitingExtensions.cs`
+- ~~**P3 — `POST /ai-prompt` shares the `ai` rate-limit policy with generation.**~~
+  **Fixed (2026-08-09).** It became real as soon as the frontend landed — the wizard calls
+  `ai-quota` on mount and `ai-prompt` on every copy, so a page load plus two copies would
+  have spent half of generation's 6/min budget, throttling the fallback along with the thing
+  it's a fallback for. The policy now sits on the `ai-generate` action, not the controller.
+  → `Controllers/Quizzes/AiQuizController.cs`
 - **P3 — `QuestionsReturned` counts array elements, not usable questions.** The browser
   parser may drop several of them, so the quality metric on every usage row is optimistic.
   _Fix:_ have the client report back what survived parsing, or treat the number as an upper

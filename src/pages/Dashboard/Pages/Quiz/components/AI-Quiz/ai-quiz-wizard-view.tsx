@@ -1,51 +1,38 @@
-import { useState, type ReactNode } from "react";
-import { Link } from "react-router-dom";
-import {
-  Sparkles,
-  Copy,
-  Check,
-  ArrowLeft,
-  ArrowRight,
-  AlertTriangle,
-  Brain,
-} from "lucide-react";
+import { useRef, useState, type ReactNode } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { ArrowLeft, Brain, Sparkles } from "lucide-react";
 
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Input, Label, Textarea } from "@/components/ui/form";
 import { Separator } from "@/components/ui/separator";
 import { Spinner } from "@/components/ui";
-import { LiftedButton } from "@/common/LiftedButton";
-import {
+import type {
+  QuestionCategory,
+  QuestionDifficulty,
+  QuestionLanguage,
   QuestionType,
-  type QuestionCategory,
-  type QuestionDifficulty,
-  type QuestionLanguage,
 } from "@/types/question-types";
 
-import { CategorySelect } from "../../../Question/Entities/Categories/Components/select-question-category";
-import { DifficultySelect } from "../../../Question/Entities/Difficulty/Components/select-question-difficulty";
-import { LanguageSelect } from "../../../Question/Entities/Language/components/select-question-language";
-
-import { AI_QUESTION_LIMITS } from "./prompt";
+import type {
+  AiGenerateError,
+  AiGenerationMode,
+  AiQuotaStatus,
+} from "../../api/generate-ai-quiz";
 import type { ParseResult } from "./parse-ai-output";
 
-const QUESTION_TYPE_LABELS: Record<QuestionType, string> = {
-  [QuestionType.MultipleChoice]: "Multiple Choice",
-  [QuestionType.TrueFalse]: "True / False",
-  [QuestionType.TypeTheAnswer]: "Type The Answer",
-};
+import { AdvancedOptions } from "./components/advanced-options";
+import { ConfirmDetailsCard } from "./components/confirm-details-card";
+import { CopyPasteFallback } from "./components/copy-paste-fallback";
+import { GenerateErrorPanel } from "./components/generate-error-panel";
+import {
+  GenerationInput,
+  GenerationModeTabs,
+} from "./components/generation-input";
+import { ImportSummary } from "./components/import-summary";
+import { QuotaNote } from "./components/quota-note";
+import { WizardButton } from "./components/wizard-button";
 
-/**
- * The types the wizard offers, in display order. Also the container's initial selection
- * (everything on), so the order the chips render in is the order the prompt lists.
- */
-export const ALL_AI_QUESTION_TYPES = [
-  QuestionType.MultipleChoice,
-  QuestionType.TrueFalse,
-  QuestionType.TypeTheAnswer,
-] as const;
-
-export type AiWizardStep = 1 | 2;
+export { ALL_AI_QUESTION_TYPES } from "./components/question-type-chips";
+export { ImportSummary } from "./components/import-summary";
 
 export interface AiQuizWizardViewProps {
   // ── Entity lookups (fetched by the container) ────────────────────────────────
@@ -61,9 +48,15 @@ export interface AiQuizWizardViewProps {
   quizzesPath: string;
   manualCreatePath: string;
 
-  // ── Step 1: quiz-level fields ────────────────────────────────────────────────
-  step: AiWizardStep;
-  onStepChange: (step: AiWizardStep) => void;
+  // ── The one box ──────────────────────────────────────────────────────────────
+  mode: AiGenerationMode;
+  onModeChange: (mode: AiGenerationMode) => void;
+  topic: string;
+  onTopicChange: (value: string) => void;
+  sourceData: string;
+  onSourceDataChange: (value: string) => void;
+
+  // ── Advanced. All optional: null category/language means "let the AI suggest". ─
   title: string;
   onTitleChange: (value: string) => void;
   description: string;
@@ -74,10 +67,6 @@ export interface AiQuizWizardViewProps {
   onLanguageIdChange: (id: number) => void;
   difficultyId: number | null;
   onDifficultyIdChange: (id: number) => void;
-
-  // ── Step 2: source material + generation options ─────────────────────────────
-  sourceData: string;
-  onSourceDataChange: (value: string) => void;
   questionCount: number;
   onQuestionCountChange: (value: number) => void;
   allowedTypes: QuestionType[];
@@ -85,17 +74,28 @@ export interface AiQuizWizardViewProps {
   extraInstructions: string;
   onExtraInstructionsChange: (value: string) => void;
 
-  // ── Copy the prompt. The view never builds or holds the prompt text; the container
-  //    assembles it and writes it to the clipboard. ─────────────────────────────
-  onCopyPrompt: () => void;
-  /** Flips the button to its "Copied" confirmation; the container resets it on a timer. */
-  copied: boolean;
+  // ── Generation ───────────────────────────────────────────────────────────────
+  onGenerate: () => void;
+  isGenerating: boolean;
+  /** Held (not just toasted) because it decides what the panel offers next. */
+  generateError: AiGenerateError | null;
+  /** null while loading or when the endpoint isn't reachable. */
+  quota: AiQuotaStatus | null;
 
-  // ── Paste + import ───────────────────────────────────────────────────────────
+  /** Questions arrived, but a category or language still needs picking before review. */
+  needsConfirmation: boolean;
+  suggestedCategoryName: string | null;
+  suggestedLanguageName: string | null;
+  onStartOver: () => void;
+
+  // ── Copy-paste fallback ──────────────────────────────────────────────────────
+  onCopyPrompt: () => void;
+  copied: boolean;
+  isCopying: boolean;
   aiResponse: string;
   onAiResponseChange: (value: string) => void;
   onImport: () => void;
-  /** null before the first attempt. `ok` switches the view to the review handoff. */
+  /** null before any attempt. `ok` switches the view to the review handoff. */
   parseResult: ParseResult | null;
 
   /**
@@ -108,17 +108,19 @@ export interface AiQuizWizardViewProps {
 }
 
 /**
- * The AI quiz wizard's markup, driven entirely by props.
+ * The AI quiz wizard's markup. Composition only — every substantial block lives in
+ * `./components/`, so this file stays a readable table of contents rather than a wall of
+ * JSX you have to scroll to navigate.
  *
- * Two steps, then a handoff: (1) quiz-level fields the human owns, (2) source material +
- * options, copy the generated prompt out to any LLM and paste the reply back. On a
- * successful parse the view stops being a wizard and renders the normal quiz builder
- * (`builderSlot`) under a summary of what came through — nothing is ever saved without
- * that review step. Architecture: docs/quiz/ai-quiz-architecture.md.
+ * **Three mutually exclusive screens**, in the order they're checked:
+ *   1. Lookups still loading, or failed.
+ *   2. Questions parsed → the real builder takes over (`builderSlot`).
+ *   3. Otherwise: the one box, or the confirm-details card when a suggestion didn't resolve.
  *
- * `AiQuizWizard` is the container that owns the queries, the clipboard write, the parse
- * call and notifications; keep this file free of hooks beyond local presentation state so
- * every state stays reachable from a story.
+ * Props stay flat rather than grouped into objects. The container owns all the state, this
+ * file owns none, and a story sets a screen by passing plain args — grouping would buy a
+ * shorter signature at the cost of the thing that makes every state reachable from
+ * Storybook. Keep this file free of hooks beyond navigation.
  */
 export const AiQuizWizardView = ({
   categories,
@@ -128,8 +130,12 @@ export const AiQuizWizardView = ({
   hasEntityError,
   quizzesPath,
   manualCreatePath,
-  step,
-  onStepChange,
+  mode,
+  onModeChange,
+  topic,
+  onTopicChange,
+  sourceData,
+  onSourceDataChange,
   title,
   onTitleChange,
   description,
@@ -140,33 +146,91 @@ export const AiQuizWizardView = ({
   onLanguageIdChange,
   difficultyId,
   onDifficultyIdChange,
-  sourceData,
-  onSourceDataChange,
   questionCount,
   onQuestionCountChange,
   allowedTypes,
   onToggleType,
   extraInstructions,
   onExtraInstructionsChange,
+  onGenerate,
+  isGenerating,
+  generateError,
+  quota,
+  needsConfirmation,
+  suggestedCategoryName,
+  suggestedLanguageName,
+  onStartOver,
   onCopyPrompt,
   copied,
+  isCopying,
   aiResponse,
   onAiResponseChange,
   onImport,
   parseResult,
   builderSlot,
 }: AiQuizWizardViewProps) => {
-  // Gating rules live here because they're purely a function of the props on screen —
-  // the same values that decide whether a control looks enabled.
-  const step1Complete =
-    title.trim().length > 0 &&
-    categoryId !== null &&
-    languageId !== null &&
-    difficultyId !== null;
+  const navigate = useNavigate();
 
-  const canGenerate = sourceData.trim().length > 0 && allowedTypes.length > 0;
+  /** Enough to build a prompt from — the same bar for generating and for copying one. */
+  const hasInput =
+    mode === "Topic" ? topic.trim().length > 0 : sourceData.trim().length >= 40;
 
-  // ── Loading / error states for the entity lookups
+  /**
+   * Why the Generate button isn't ready, or null when it is. Derived rather than stored, so
+   * the message disappears the moment the user fixes the problem — no clearing logic, and no
+   * chance of it lingering next to input it no longer describes.
+   */
+  const validationMessage = !hasInput
+    ? mode === "Topic"
+      ? "Tell the AI what the quiz should be about."
+      : "Paste a bit more material — a couple of sentences at least."
+    : allowedTypes.length === 0
+      ? "Pick at least one question type under Advanced."
+      : null;
+
+  /**
+   * The button stays enabled while the form is incomplete.
+   *
+   * A disabled button with a not-allowed cursor tells someone they can't proceed but never
+   * why, and they have to guess which field is at fault. Letting the click through and
+   * answering it is more work for us and less for them. `isGenerating` is different — that's
+   * a request in flight, not a mistake to explain, and a second click would spend another
+   * generation.
+   */
+  const [showValidation, setShowValidation] = useState(false);
+  const inputRegion = useRef<HTMLDivElement>(null);
+
+  /**
+   * Wraps any action that needs a filled-in topic. Generate and Copy prompt build the very
+   * same request, so they fail for the same reasons and should explain themselves the same
+   * way — one guard keeps that from drifting into two behaviours.
+   */
+  const runWhenValid = (action: () => void) => () => {
+    if (validationMessage) {
+      setShowValidation(true);
+      // Focus whichever field is mounted. One ref on the region beats threading a ref
+      // through GenerationInput to two different element types for a single focus call.
+      inputRegion.current
+        ?.querySelector<HTMLElement>("input, textarea")
+        ?.focus();
+      return;
+    }
+
+    setShowValidation(false);
+    action();
+  };
+
+  /**
+   * Generation is unavailable rather than merely having failed, so there's no point
+   * offering the button. The fallback opens itself in this state.
+   */
+  const generationBlocked =
+    quota?.enabled === false ||
+    generateError?.code === "FeatureDisabled" ||
+    generateError?.code === "EmailNotVerified" ||
+    generateError?.code === "QuotaExceeded";
+
+  // ── Screen 1: lookup query states
   if (isLoadingEntities) {
     return (
       <div className="w-full h-64 flex items-center justify-center">
@@ -185,391 +249,161 @@ export const AiQuizWizardView = ({
     );
   }
 
-  // ── Handoff: parsing succeeded, so drop the user into the real quiz builder with
-  // everything prefilled. They get inline editing, validation and the normal submit path.
+  // ── Screen 2: parsing succeeded, so drop the user into the real quiz builder with
+  // everything prefilled. They get inline editing, validation and the normal submit path,
+  // and nothing is saved until they act.
   if (parseResult?.ok) {
     return (
       <div className="flex flex-col gap-3 lg:h-full lg:min-h-0">
-        <ImportSummary result={parseResult} />
+        <ImportSummary
+          result={parseResult}
+          isFromTopic={mode === "Topic"}
+          onStartOver={onStartOver}
+        />
         <div className="flex-1 min-h-0">{builderSlot}</div>
       </div>
     );
   }
 
+  // ── Screen 3: the wizard itself
   return (
-    <div className="mx-auto w-full max-w-3xl py-6 px-4">
-      {/* Header */}
-      <div className="mb-6">
-        <Link
-          to={quizzesPath}
-          className="text-muted-foreground hover:text-foreground text-sm flex items-center gap-1 mb-3"
-        >
-          <ArrowLeft className="h-4 w-4" /> Back to quizzes
-        </Link>
+    <div className="mx-auto w-full max-w-2xl py-6 px-4">
+      <header className="mb-6">
+        <div className="mb-5 sm:mb-6">
+          <button
+            onClick={() => navigate(quizzesPath)}
+            className="group inline-flex items-center gap-1.5 rounded-lg border border-border bg-card/60 px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-foreground/20 hover:text-foreground"
+          >
+            <ArrowLeft className="h-3.5 w-3.5 transition-transform group-hover:-translate-x-0.5" />
+            Back
+          </button>
+        </div>
         <h1 className="text-2xl font-bold flex items-center gap-2">
-          <Sparkles className="h-6 w-6 text-primary" />
           Create a quiz with AI
         </h1>
         <p className="text-muted-foreground text-sm mt-1">
-          You'll set up the quiz, copy a prompt into any AI, then paste its answer back
-          here. Nothing is saved until you review it.
+          Say what it's about and we'll draft it. You review everything before
+          it saves.
         </p>
-      </div>
+      </header>
 
-      {/* Step indicator */}
-      <div className="flex items-center gap-2 mb-6">
-        <StepPill index={1} label="Quiz details" active={step === 1} done={step > 1} />
-        <div className="h-px flex-1 bg-border" />
-        <StepPill index={2} label="Generate & import" active={step === 2} done={false} />
-      </div>
-
-      {step === 1 && (
+      {/* Questions arrived but we can't place them yet. Shown *instead of* the topic box, so
+          the user finishes the one thing standing between them and the review step rather
+          than being invited to generate again. */}
+      {needsConfirmation ? (
+        <ConfirmDetailsCard
+          categories={categories}
+          languages={languages}
+          categoryId={categoryId}
+          onCategoryIdChange={onCategoryIdChange}
+          languageId={languageId}
+          onLanguageIdChange={onLanguageIdChange}
+          suggestedCategoryName={suggestedCategoryName}
+          suggestedLanguageName={suggestedLanguageName}
+          onStartOver={onStartOver}
+        />
+      ) : (
         <Card className="bg-background border-2 border-primary/30">
-          <CardHeader className="bg-primary/10 border-b border-primary/30 py-3">
-            <p className="font-semibold">Quiz details</p>
-            <p className="text-muted-foreground text-xs">
-              Your questions will inherit this category and language.
-            </p>
+          {/* Header strip carrying the mode tabs, matching the quiz-details panel in
+              create-quiz.tsx. The tabs head the panel rather than sitting inside it. */}
+          <CardHeader className="w-full bg-primary/10 border-b border-primary/30 px-2 py-3">
+            <GenerationModeTabs mode={mode} onModeChange={onModeChange} />
           </CardHeader>
-          <CardContent className="space-y-4 pt-4">
-            <div>
-              <Label htmlFor="ai-title" className="text-sm font-medium">
-                Quiz Title <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="ai-title"
-                variant="settings"
-                className="mt-1"
-                placeholder="Enter quiz title"
-                value={title}
-                onChange={(e) => onTitleChange(e.target.value)}
+
+          <CardContent className="space-y-4 pt-5">
+            <div ref={inputRegion}>
+              <GenerationInput
+                mode={mode}
+                topic={topic}
+                onTopicChange={onTopicChange}
+                sourceData={sourceData}
+                onSourceDataChange={onSourceDataChange}
+                disabled={isGenerating}
+                error={
+                  showValidation ? (validationMessage ?? undefined) : undefined
+                }
               />
             </div>
 
-            <div>
-              <Label htmlFor="ai-description" className="text-sm font-medium">
-                Description
-              </Label>
-              <Textarea
-                id="ai-description"
-                variant="settings"
-                className="mt-1 min-h-[70px] resize-none"
-                placeholder="Describe your quiz"
-                value={description}
-                onChange={(e) => onDescriptionChange(e.target.value)}
-              />
-            </div>
+            <AdvancedOptions
+              categories={categories}
+              difficulties={difficulties}
+              languages={languages}
+              title={title}
+              onTitleChange={onTitleChange}
+              description={description}
+              onDescriptionChange={onDescriptionChange}
+              categoryId={categoryId}
+              onCategoryIdChange={onCategoryIdChange}
+              languageId={languageId}
+              onLanguageIdChange={onLanguageIdChange}
+              difficultyId={difficultyId}
+              onDifficultyIdChange={onDifficultyIdChange}
+              questionCount={questionCount}
+              onQuestionCountChange={onQuestionCountChange}
+              allowedTypes={allowedTypes}
+              onToggleType={onToggleType}
+              extraInstructions={extraInstructions}
+              onExtraInstructionsChange={onExtraInstructionsChange}
+            />
+
+            {generateError && <GenerateErrorPanel error={generateError} />}
+
+            {!generationBlocked && (
+              <div className="flex items-center justify-between gap-4 pt-1">
+                <QuotaNote quota={quota} />
+                <WizardButton
+                  type="button"
+                  disabled={isGenerating}
+                  onClick={runWhenValid(onGenerate)}
+                >
+                  <span className="flex items-center gap-2">
+                    {isGenerating ? (
+                      <>
+                        <Spinner size="sm" /> Writing questions…
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="h-4 w-4" /> Generate
+                      </>
+                    )}
+                  </span>
+                </WizardButton>
+              </div>
+            )}
+
+            {/* No progress bar until slice 2.2 streams one, so the least we can do is say
+                how long "a while" is and that leaving kills it. */}
+            {isGenerating && (
+              <p className="text-muted-foreground text-xs text-center">
+                This usually takes 10–30 seconds. Keep this tab open.
+              </p>
+            )}
 
             <Separator className="bg-primary/20" />
 
-            <div className="space-y-3">
-              <CategorySelect
-                categories={categories}
-                fieldVariant="minimal"
-                value={categoryId?.toString() ?? ""}
-                onChange={(v: string) => onCategoryIdChange(parseInt(v, 10))}
-                includeAllOption={false}
-              />
-              <LanguageSelect
-                languages={languages}
-                fieldVariant="minimal"
-                value={languageId?.toString() ?? ""}
-                onChange={(v: string) => onLanguageIdChange(parseInt(v, 10))}
-                includeAllOption={false}
-              />
-              <DifficultySelect
-                difficulties={difficulties}
-                fieldVariant="minimal"
-                value={difficultyId?.toString() ?? ""}
-                onChange={(v: string) => onDifficultyIdChange(parseInt(v, 10))}
-                includeAllOption={false}
-              />
-              <p className="text-muted-foreground text-xs">
-                The AI will pick a difficulty per question from your existing list. This
-                one is the quiz's overall rating and the fallback for anything it gets
-                wrong.
-              </p>
-            </div>
+            <CopyPasteFallback
+              forced={generationBlocked}
+              onCopyPrompt={runWhenValid(onCopyPrompt)}
+              copied={copied}
+              isCopying={isCopying}
+              aiResponse={aiResponse}
+              onAiResponseChange={onAiResponseChange}
+              onImport={onImport}
+              parseResult={parseResult}
+            />
 
-            <div className="flex justify-between items-center pt-2">
+            <div className="">
               <Link
                 to={manualCreatePath}
                 className="text-muted-foreground hover:text-foreground text-sm"
               >
                 Create manually instead
               </Link>
-              <LiftedButton
-                type="button"
-                disabled={!step1Complete}
-                onClick={() => onStepChange(2)}
-              >
-                <span className="flex items-center gap-1">
-                  Next <ArrowRight className="h-4 w-4" />
-                </span>
-              </LiftedButton>
             </div>
           </CardContent>
         </Card>
       )}
-
-      {step === 2 && (
-        <Card className="bg-background border-2 border-primary/30">
-          <CardHeader className="bg-primary/10 border-b border-primary/30 py-3">
-            <p className="font-semibold">Generate & import</p>
-            <p className="text-muted-foreground text-xs">
-              Paste your material, copy the prompt, then bring the AI's answer back.
-            </p>
-          </CardHeader>
-          <CardContent className="space-y-5 pt-4">
-            {/* Source material */}
-            <div>
-              <Label htmlFor="ai-source" className="text-sm font-medium">
-                Your material <span className="text-destructive">*</span>
-              </Label>
-              <p className="text-muted-foreground text-xs mb-1">
-                Notes, an article, a transcript — whatever the quiz should be based on.
-              </p>
-              <Textarea
-                id="ai-source"
-                variant="settings"
-                className="mt-1 min-h-[180px]"
-                placeholder="Paste the text your quiz should be based on..."
-                value={sourceData}
-                onChange={(e) => onSourceDataChange(e.target.value)}
-              />
-              {sourceData.length > AI_QUESTION_LIMITS.sourceWarningLength && (
-                <p className="text-amber-600 dark:text-amber-500 text-xs mt-1 flex items-center gap-1">
-                  <AlertTriangle className="h-3 w-3" />
-                  That's very long — most AIs will only read part of it. Consider
-                  trimming.
-                </p>
-              )}
-            </div>
-
-            {/* Options */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="ai-count" className="text-sm font-medium">
-                  Number of questions
-                </Label>
-                <Input
-                  id="ai-count"
-                  type="number"
-                  variant="settings"
-                  className="mt-1"
-                  min={AI_QUESTION_LIMITS.minQuestions}
-                  max={AI_QUESTION_LIMITS.maxQuestions}
-                  value={questionCount}
-                  onChange={(e) => {
-                    const n = parseInt(e.target.value, 10);
-                    if (Number.isNaN(n)) return;
-                    onQuestionCountChange(n);
-                  }}
-                />
-              </div>
-
-              <div>
-                <Label className="text-sm font-medium">Question types</Label>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {ALL_AI_QUESTION_TYPES.map((type) => {
-                    const active = allowedTypes.includes(type);
-                    return (
-                      <button
-                        key={type}
-                        type="button"
-                        aria-pressed={active}
-                        onClick={() => onToggleType(type)}
-                        className={`text-xs rounded-full px-3 py-1 border-2 transition-colors ${
-                          active
-                            ? "border-primary bg-primary/15 text-primary font-medium"
-                            : "border-border text-muted-foreground hover:border-primary/50"
-                        }`}
-                      >
-                        {QUESTION_TYPE_LABELS[type]}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="ai-extra" className="text-sm font-medium">
-                Extra instructions <span className="text-muted-foreground">(optional)</span>
-              </Label>
-              <Input
-                id="ai-extra"
-                variant="settings"
-                className="mt-1"
-                placeholder="e.g. focus on dates, keep it exam-style..."
-                value={extraInstructions}
-                onChange={(e) => onExtraInstructionsChange(e.target.value)}
-              />
-            </div>
-
-            <Separator className="bg-primary/20" />
-
-            {/* Copy prompt */}
-            <div className="rounded-lg border-2 border-dashed border-primary/40 p-4">
-              <p className="font-medium text-sm mb-1">1. Copy the prompt</p>
-              <p className="text-muted-foreground text-xs mb-3">
-                We'll build a prompt from your material and settings. Paste it into
-                ChatGPT, Claude, Gemini — whichever you use.
-              </p>
-              <LiftedButton type="button" disabled={!canGenerate} onClick={onCopyPrompt}>
-                <span className="flex items-center gap-2">
-                  {copied ? (
-                    <>
-                      <Check className="h-4 w-4" /> Copied
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="h-4 w-4" /> Copy prompt
-                    </>
-                  )}
-                </span>
-              </LiftedButton>
-              {!canGenerate && (
-                <p className="text-muted-foreground text-xs mt-2">
-                  Add your material and pick at least one question type first.
-                </p>
-              )}
-            </div>
-
-            {/* Paste response */}
-            <div>
-              <p className="font-medium text-sm mb-1">2. Paste the AI's reply</p>
-              <p className="text-muted-foreground text-xs mb-2">
-                Copy the whole response back here. We'll check it before anything is
-                saved.
-              </p>
-              <Textarea
-                variant="settings"
-                className="min-h-[160px] font-mono text-xs"
-                placeholder='{ "questions": [ ... ] }'
-                value={aiResponse}
-                onChange={(e) => onAiResponseChange(e.target.value)}
-              />
-              {parseResult && !parseResult.ok && (
-                <div className="mt-2 rounded-md border border-destructive/40 bg-destructive/10 p-3">
-                  <p className="text-destructive text-sm flex items-start gap-2">
-                    <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
-                    {parseResult.error}
-                  </p>
-                  {parseResult.dropped.length > 0 && (
-                    <ul className="text-destructive/90 text-xs mt-2 space-y-1 pl-6 list-disc">
-                      {parseResult.dropped.slice(0, 5).map((d) => (
-                        <li key={d.index}>
-                          Question {d.index}: {d.reason}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <div className="flex justify-between items-center pt-2">
-              <button
-                type="button"
-                onClick={() => onStepChange(1)}
-                className="text-muted-foreground hover:text-foreground text-sm flex items-center gap-1"
-              >
-                <ArrowLeft className="h-4 w-4" /> Back
-              </button>
-              <LiftedButton
-                type="button"
-                disabled={aiResponse.trim().length === 0}
-                onClick={onImport}
-              >
-                <span className="flex items-center gap-1">
-                  Review questions <ArrowRight className="h-4 w-4" />
-                </span>
-              </LiftedButton>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-    </div>
-  );
-};
-
-const StepPill = ({
-  index,
-  label,
-  active,
-  done,
-}: {
-  index: number;
-  label: string;
-  active: boolean;
-  done: boolean;
-}) => (
-  <div
-    className={`flex items-center gap-2 text-sm ${
-      active ? "text-primary font-medium" : "text-muted-foreground"
-    }`}
-  >
-    <span
-      className={`h-6 w-6 rounded-full flex items-center justify-center text-xs border-2 ${
-        active || done
-          ? "border-primary bg-primary/15 text-primary"
-          : "border-border"
-      }`}
-    >
-      {done ? <Check className="h-3 w-3" /> : index}
-    </span>
-    {label}
-  </div>
-);
-
-/**
- * Banner shown above the prefilled builder summarising what came through — including the
- * questions that were dropped. Silently importing 8 of 10 questions is the failure mode
- * this exists to prevent (docs/quiz/ai-quiz-architecture.md §6).
- */
-export const ImportSummary = ({ result }: { result: ParseResult }) => {
-  const [dismissed, setDismissed] = useState(false);
-  if (dismissed) return null;
-
-  const hasNotices =
-    result.dropped.length > 0 || result.difficultyFallbacks.length > 0;
-
-  return (
-    <div className="mx-auto w-full max-w-[1600px] rounded-lg border-2 border-primary/30 bg-primary/5 px-4 py-3">
-      <div className="flex items-start justify-between gap-4">
-        <div className="text-sm">
-          <p className="font-medium flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-primary" />
-            Imported {result.questions.length} question
-            {result.questions.length === 1 ? "" : "s"} — review and edit before saving.
-          </p>
-          {hasNotices && (
-            <ul className="text-muted-foreground text-xs mt-2 space-y-1 list-disc pl-5">
-              {result.dropped.map((d) => (
-                <li key={d.index}>
-                  Skipped question {d.index} ({d.text.slice(0, 60)}
-                  {d.text.length > 60 ? "…" : ""}): {d.reason}
-                </li>
-              ))}
-              {result.difficultyFallbacks.length > 0 && (
-                <li>
-                  {result.difficultyFallbacks.length} question
-                  {result.difficultyFallbacks.length === 1 ? "" : "s"} had an
-                  unrecognised difficulty and fell back to the quiz's difficulty.
-                </li>
-              )}
-            </ul>
-          )}
-        </div>
-        <button
-          type="button"
-          onClick={() => setDismissed(true)}
-          className="text-muted-foreground hover:text-foreground text-xs shrink-0"
-        >
-          Dismiss
-        </button>
-      </div>
     </div>
   );
 };

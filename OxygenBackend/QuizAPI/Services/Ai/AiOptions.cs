@@ -45,8 +45,13 @@ namespace QuizAPI.Services.Ai
 
         // ── Quota and spend ──
 
-        /// <summary>Generations per user per UTC day, for users without an override.</summary>
-        public int DefaultDailyQuota { get; set; } = 5;
+        /// <summary>
+        /// Generations per user per UTC day. Low on purpose while the feature is new: it is the
+        /// tightest of the spend ceilings and the easiest to raise once real usage is visible in
+        /// <c>AiGenerationUsages</c>. The number is shown in the UI, so changing it changes what
+        /// users are promised — raise it deliberately, not by accident.
+        /// </summary>
+        public int DefaultDailyQuota { get; set; } = 2;
 
         /// <summary>
         /// Rolling 30-day spend ceiling. Once exceeded the feature behaves as disabled until

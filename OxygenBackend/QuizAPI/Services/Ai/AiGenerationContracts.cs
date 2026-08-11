@@ -140,7 +140,10 @@ namespace QuizAPI.Services.Ai
 
         public AiTokenUsage Usage { get; init; } = AiTokenUsage.Zero;
 
-        /// <summary>Remaining generations today, after this one. Null when not applicable.</summary>
+        /// <summary>
+        /// Remaining generations today, after this one. Null when the user has no daily cap
+        /// (staff — see docs/quiz/ai-quiz-generation-flow.md §4a) or when not applicable.
+        /// </summary>
         public int? QuotaRemaining { get; init; }
 
         // ── Quiz-level suggestions ──
@@ -165,7 +168,7 @@ namespace QuizAPI.Services.Ai
         public static AiGenerationOutcome Ok(
             string payloadJson,
             AiTokenUsage usage,
-            int quotaRemaining,
+            int? quotaRemaining,
             string? suggestedTitle = null,
             string? suggestedCategory = null,
             string? suggestedLanguage = null) =>

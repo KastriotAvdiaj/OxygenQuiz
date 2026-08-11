@@ -42,10 +42,14 @@ namespace QuizAPI.Services.Ai
 
             // Everything from here to COMMIT is serialised per user. Counting and inserting
             // outside one lock is the check-then-act race this whole method exists to close.
+            //
+            // Unlimited users still take the lock and still get a row: the row is how spend is
+            // attributed, and the budget caps that actually protect the bill are computed from
+            // it. Only the count check is skipped.
             await _usages.AcquireUserQuotaLockAsync(userId, ct);
 
             var used = await _usages.CountSlotsUsedSinceAsync(userId, windowStart, ct);
-            if (used >= limit)
+            if (limit is not null && used >= limit)
             {
                 await transaction.RollbackAsync(ct);
                 return new AiQuotaReservation(false, Guid.Empty, limit, 0, windowEnd);
@@ -68,7 +72,8 @@ namespace QuizAPI.Services.Ai
             await _usages.SaveChangesAsync(ct);
             await transaction.CommitAsync(ct);
 
-            return new AiQuotaReservation(true, reservation.Id, limit, limit - used - 1, windowEnd);
+            return new AiQuotaReservation(
+                true, reservation.Id, limit, limit is null ? null : limit - used - 1, windowEnd);
         }
 
         public async Task CommitAsync(
@@ -116,7 +121,11 @@ namespace QuizAPI.Services.Ai
             var windowStart = WindowStart();
             var used = await _usages.CountSlotsUsedSinceAsync(userId, windowStart, ct);
 
-            return new AiQuotaStatus(limit, used, Math.Max(0, limit - used), windowStart.AddDays(1));
+            return new AiQuotaStatus(
+                limit,
+                used,
+                limit is null ? null : Math.Max(0, limit.Value - used),
+                windowStart.AddDays(1));
         }
 
         /// <summary>

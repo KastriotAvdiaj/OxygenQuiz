@@ -22,7 +22,6 @@ namespace QuizAPI.Controllers.Quizzes
     [ApiController]
     [Route("api/quiz")]
     [Authorize]
-    [EnableRateLimiting(RateLimitingExtensions.AiPolicy)]
     public class AiQuizController : BaseApiController
     {
         private readonly IAiGenerationService _generation;
@@ -51,6 +50,11 @@ namespace QuizAPI.Controllers.Quizzes
         /// still goes through <c>POST /api/quiz/ai-import</c>, unchanged.
         /// </summary>
         [HttpPost("ai-generate")]
+        // Only this action is throttled. ai-prompt and ai-quota are free, are called on page
+        // load and on every copy, and are what we point people at when generation fails —
+        // putting them on the same 6/min budget would throttle the fallback along with the
+        // thing it's a fallback for.
+        [EnableRateLimiting(RateLimitingExtensions.AiPolicy)]
         [ProducesResponseType(typeof(AiGenerateResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(AiGenerateErrorResponse), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(AiGenerateErrorResponse), StatusCodes.Status403Forbidden)]
@@ -97,7 +101,7 @@ namespace QuizAPI.Controllers.Quizzes
                 SuggestedTitle = outcome.SuggestedTitle,
                 SuggestedCategory = outcome.SuggestedCategory,
                 SuggestedLanguage = outcome.SuggestedLanguage,
-                QuotaRemaining = outcome.QuotaRemaining ?? 0,
+                QuotaRemaining = outcome.QuotaRemaining,
                 InputTokens = outcome.Usage.InputTokens,
                 OutputTokens = outcome.Usage.OutputTokens,
             });
