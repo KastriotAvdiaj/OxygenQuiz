@@ -230,7 +230,6 @@ const meta = {
     difficulties,
     languages,
     isLoadingEntities: false,
-    hasEntityError: false,
     quizzesPath: "/dashboard/quizzes",
     manualCreatePath: "/dashboard/quizzes/create-quiz",
     ownAiPath: "/dashboard/quizzes/create-quiz/ai/own",
@@ -534,13 +533,11 @@ export const ReviewHandoffWithDifficultyFallbacks: Story = {
 };
 
 // ── Lookup query states ────────────────────────────────────────────────────────────────
+// Only loading. A lookup *failure* throws to the route's error element, so there is no
+// in-view state to story — see docs/development/error-handling.md.
 
 export const LoadingEntities: Story = {
   args: { isLoadingEntities: true },
-};
-
-export const EntityLoadError: Story = {
-  args: { hasEntityError: true },
 };
 
 // ── Responsive checks (docs/RESPONSIVE.md: verify at 360/390px) ────────────────────────

@@ -257,6 +257,13 @@ shared interceptor keeps only the message. The view switches on the code to deci
 retry for the transient ones (and it says the daily allowance wasn't touched, because it wasn't),
 a reset time for quota, and a promoted copy-paste path when generation is unavailable at all.
 
+**The quota lookup may never take the page down.** `GET /quiz/ai-quota` is called on mount
+for one line of text. `useAiQuota` therefore sets `throwOnError: false` — without it a failing
+quota endpoint replaces the whole wizard with the generic error boundary, and takes the
+copy-your-own-prompt path down with it even though that path needs neither the quota nor the
+provider. `quota: null` is a supported state everywhere downstream. This shipped wrong once;
+see the note in [../development/error-handling.md](../development/error-handling.md).
+
 **When generation is unavailable, the button stays put and goes disabled.** It used to be
 hidden, which left the card with no primary action at all — and worse in the one case that
 raises no error: the kill switch reports `quota.enabled === false`, `QuotaNote` early-returns

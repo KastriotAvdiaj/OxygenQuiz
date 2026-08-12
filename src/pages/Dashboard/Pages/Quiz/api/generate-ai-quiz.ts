@@ -185,16 +185,26 @@ export const getAiQuota = (): Promise<AiQuotaStatus> =>
   apiService.get<AiQuotaStatus>("/quiz/ai-quota");
 
 /**
- * Drives "3 of 5 left today" and, when `enabled` is false, hides the Generate button
- * entirely rather than offering one that is guaranteed to fail.
+ * Drives "3 of 5 left today" and, when `enabled` is false, disables the Generate button
+ * rather than offering one that is guaranteed to fail.
  *
  * `retry: false` because the failure that matters here is 401/403 — retrying it three
  * times just delays the fallback UI.
+ *
+ * <b>`throwOnError: false` is load-bearing.</b> The global default in `lib/React-query.ts`
+ * throws every non-401 query error into the nearest error boundary, and this query had not
+ * opted out — so a 400 from `/quiz/ai-quota` in production replaced the entire AI page with
+ * "Something went wrong". Quota is decoration: every consumer already treats `null` as
+ * "unknown" (`QuotaNote` renders nothing, the wizard leaves Generate enabled), so the page is
+ * completely usable without it, including the copy-your-own-prompt path — which is precisely
+ * the path a user needs when the AI service is having a bad day. See
+ * docs/development/error-handling.md, "When to opt out".
  */
 export const useAiQuota = () =>
   useQuery({
     queryKey: ["ai-quota"],
     queryFn: getAiQuota,
     retry: false,
+    throwOnError: false,
     staleTime: 30_000,
   });

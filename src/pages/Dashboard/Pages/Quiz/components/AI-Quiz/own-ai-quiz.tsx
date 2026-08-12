@@ -85,7 +85,6 @@ export const OwnAiQuiz = () => {
       difficulties={draft.difficulties}
       languages={draft.languages}
       isLoadingEntities={draft.isLoadingEntities}
-      hasEntityError={draft.hasEntityError}
       generatePath={draft.paths.generate}
       manualCreatePath={draft.paths.manualCreate}
       topic={draft.topic}

@@ -51,10 +51,41 @@ queryOptions({
 
 Current opt-outs, all for the same reason: `get-user-quiz-stats`, `get-user-sessions`,
 `check-availability` (signup hints), `email-verification` (resend), `auth-config` (a
-logged-out 401 is a normal state, not an error).
+logged-out 401 is a normal state, not an error), `ai-quota`.
+
+> **`ai-quota` is the one that got away, and it reached production.** The AI wizard calls
+> `GET /quiz/ai-quota` on mount purely to render "2 of 2 left today". It had `retry: false`
+> but no `throwOnError: false`, so when that endpoint started answering **400** in production
+> the whole page became "Something went wrong" — including the copy-your-own-prompt path,
+> which needs neither the quota nor the AI service and was the one thing still working.
+>
+> The tell is worth remembering: the query's own consumers were already written for absence
+> (`quota: AiQuotaStatus | null`, "null while loading or when the endpoint isn't reachable"),
+> which is the signature of supplementary data. **If a prop type says the data may be missing,
+> the query must not throw** — otherwise the handling you wrote is unreachable and a boundary
+> decides instead.
 
 Keep throwing for data the screen is *about* — a quiz page with no quiz has nothing to
 render.
+
+### The corollary: don't write an in-page card for something that throws
+
+If a query throws, the boundary replaces your component *before* it renders. Any
+`if (somethingFailed) return <ErrorCard/>` downstream of that query is unreachable — and
+unreachable error handling is worse than none, because the next person reads it and believes
+the case is covered. A Storybook story for it is worse still: a picture of a state production
+cannot produce.
+
+Both AI views carried exactly that ("Oops! Brain freeze!", plus an `EntityLoadError` story)
+for the category/language/difficulty lookups. Those three keep throwing on purpose — you
+cannot pick a category from a list that never loaded, and `buildInput` sends those very names
+to the model as the vocabulary it may choose from, so a page without them can't do its job.
+The card and the story are gone; the route's `DashboardErrorElement` is the handling.
+
+So: **pick one per query.** Either it is supplementary → opt out *and* render the absence, or
+it is essential → let it throw and let the route's error element be the whole story. Writing
+both is how you end up with a page that looks defensive and isn't. The same dead branch still
+exists in `Create-Quiz-Form/create-quiz.tsx` and `edit-quiz.tsx` if you want to sweep it.
 
 ## Mutations: the global toast, and opting out of it
 

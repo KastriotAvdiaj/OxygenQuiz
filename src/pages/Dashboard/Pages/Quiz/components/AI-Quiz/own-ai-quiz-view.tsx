@@ -4,7 +4,6 @@ import {
   AlertTriangle,
   ArrowLeft,
   ArrowRight,
-  Brain,
   Check,
   Copy,
 } from "lucide-react";
@@ -35,8 +34,6 @@ export interface OwnAiQuizViewProps {
   difficulties: QuestionDifficulty[];
   languages: QuestionLanguage[];
   isLoadingEntities: boolean;
-  /** True when any lookup query failed; swaps the whole view for the error card. */
-  hasEntityError: boolean;
 
   // ── Navigation targets. Props, not `useLocation`, because both dashboards mount
   //    this page under different prefixes. ───────────────────────────────────────
@@ -107,7 +104,6 @@ export const OwnAiQuizView = ({
   difficulties,
   languages,
   isLoadingEntities,
-  hasEntityError,
   generatePath,
   manualCreatePath,
   topic,
@@ -190,21 +186,11 @@ export const OwnAiQuizView = ({
     onImport();
   };
 
-  // ── Screen 1: lookup query states
+  // ── Screen 1: still fetching the lookups
   if (isLoadingEntities) {
     return (
       <div className="w-full h-64 flex items-center justify-center">
         <Spinner size="lg" />
-      </div>
-    );
-  }
-
-  if (hasEntityError) {
-    return (
-      <div className="w-full p-8 text-center text-destructive">
-        <Brain className="mx-auto h-16 w-16 mb-4 opacity-70" />
-        <h3 className="text-xl font-bold">Oops! Brain freeze!</h3>
-        <p>Error loading quiz data. Please try again.</p>
       </div>
     );
   }

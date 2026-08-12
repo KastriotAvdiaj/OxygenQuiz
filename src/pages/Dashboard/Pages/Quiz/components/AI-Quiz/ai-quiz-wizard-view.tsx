@@ -1,6 +1,6 @@
 import { useRef, useState, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Brain, Sparkles } from "lucide-react";
+import { ArrowLeft, Sparkles } from "lucide-react";
 
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -42,8 +42,6 @@ export interface AiQuizWizardViewProps {
   difficulties: QuestionDifficulty[];
   languages: QuestionLanguage[];
   isLoadingEntities: boolean;
-  /** True when any lookup query failed; swaps the whole view for the error card. */
-  hasEntityError: boolean;
 
   // ── Navigation targets. Props, not `useLocation`, because both dashboards mount
   //    this wizard under different prefixes. ────────────────────────────────────
@@ -114,9 +112,13 @@ export interface AiQuizWizardViewProps {
  * docs/quiz/ai-quiz-two-paths.md before changing either.
  *
  * **Three mutually exclusive screens**, in the order they're checked:
- *   1. Lookups still loading, or failed.
+ *   1. Lookups still loading.
  *   2. Questions parsed → the real builder takes over (`builderSlot`).
  *   3. Otherwise: the one box, or the confirm-details card when a suggestion didn't resolve.
+ *
+ * There is no fourth for "the lookups failed": those queries throw, so the route's
+ * `DashboardErrorElement` has already replaced this component by then. An in-page card for it
+ * lived here for a while and could never render — see docs/development/error-handling.md.
  *
  * Props stay flat rather than grouped into objects. The container owns all the state, this
  * file owns none, and a story sets a screen by passing plain args — grouping would buy a
@@ -128,7 +130,6 @@ export const AiQuizWizardView = ({
   difficulties,
   languages,
   isLoadingEntities,
-  hasEntityError,
   quizzesPath,
   manualCreatePath,
   ownAiPath,
@@ -227,21 +228,11 @@ export const AiQuizWizardView = ({
     generateError?.code === "EmailNotVerified" ||
     generateError?.code === "QuotaExceeded";
 
-  // ── Screen 1: lookup query states
+  // ── Screen 1: still fetching the lookups
   if (isLoadingEntities) {
     return (
       <div className="w-full h-64 flex items-center justify-center">
         <Spinner size="lg" />
-      </div>
-    );
-  }
-
-  if (hasEntityError) {
-    return (
-      <div className="w-full p-8 text-center text-destructive">
-        <Brain className="mx-auto h-16 w-16 mb-4 opacity-70" />
-        <h3 className="text-xl font-bold">Oops! Brain freeze!</h3>
-        <p>Error loading quiz data. Please try again.</p>
       </div>
     );
   }

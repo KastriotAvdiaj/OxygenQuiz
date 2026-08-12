@@ -263,8 +263,15 @@ export const useAiQuizDraft = () => {
     categories,
     difficulties,
     languages,
+    /**
+     * No `hasEntityError` companion to this. The three lookups are what these pages are
+     * made of — you can't pick a category the list never loaded, and `buildInput` sends
+     * those very names as the vocabulary the model may choose from — so they keep the
+     * global `throwOnError` and a failure lands on the route's `DashboardErrorElement`.
+     * Both views used to carry an in-page error card for this; it was unreachable, because
+     * the throw happens before the view renders. See docs/development/error-handling.md.
+     */
     isLoadingEntities: queryData.isLoading,
-    hasEntityError: Boolean(queryData.error),
 
     // Where the other screens live
     paths,
