@@ -1,0 +1,45 @@
+import { Info } from "lucide-react";
+
+import type {
+  AiGenerateError,
+  AiQuotaStatus,
+} from "../../../api/generate-ai-quiz";
+
+export interface GenerationUnavailableNoteProps {
+  quota: AiQuotaStatus | null;
+  /** When set, `GenerateErrorPanel` is already on screen saying why. */
+  error: AiGenerateError | null;
+}
+
+/**
+ * Why the Generate button isn't there.
+ *
+ * <b>The bug this fixes.</b> The wizard hides Generate whenever generation is unavailable,
+ * which is right — a button that can only fail is worse than no button. But three of the four
+ * causes arrive as an `AiGenerateError`, and the fourth doesn't: the server-side kill switch
+ * reports `quota.enabled === false` with no error at all. `QuotaNote` also renders nothing in
+ * that state (it early-returns on `!enabled`), so the whole row vanished and the wizard sat
+ * there offering a topic box, an Advanced drawer and no way to generate anything. Nothing was
+ * broken; nothing said so either, which is the worse failure.
+ *
+ * So: this covers exactly the silent case and renders nothing when the error panel is already
+ * speaking — two components explaining one situation is how they drift apart.
+ */
+export const GenerationUnavailableNote = ({
+  quota,
+  error,
+}: GenerationUnavailableNoteProps) => {
+  if (error) return null;
+  if (quota?.enabled !== false) return null;
+
+  return (
+    <div className="flex items-start gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2.5 text-xs text-muted-foreground">
+      <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+      <p>
+        Generating in the app is switched off at the moment — nothing you did.
+        You can still build this quiz with your own AI below; the prompt is the
+        same one we'd send.
+      </p>
+    </div>
+  );
+};

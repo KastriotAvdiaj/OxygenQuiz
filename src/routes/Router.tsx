@@ -74,6 +74,11 @@ const AiQuizWizard = lazy(() =>
     (module) => ({ default: module.AiQuizWizard }),
   ),
 );
+const OwnAiQuiz = lazy(() =>
+  import("@/pages/Dashboard/Pages/Quiz/components/AI-Quiz/own-ai-quiz").then(
+    (module) => ({ default: module.OwnAiQuiz }),
+  ),
+);
 const DashboardErrorElement = lazy(() =>
   import("@/pages/UtilityPages/Error/Dashboard-Error-Element").then(
     (module) => ({ default: module.DashboardErrorElement }),
@@ -409,6 +414,13 @@ const createAppRouter = (queryClient: QueryClient) =>
           element: <AiQuizWizard />,
         },
         {
+          // The same feature with the model swapped for the user's own: copy a prompt out,
+          // paste the reply back. A sibling route rather than a panel inside the wizard —
+          // docs/quiz/ai-quiz-two-paths.md. Mounts its own provider the same way.
+          path: "quizzes/create-quiz/ai/own",
+          element: <OwnAiQuiz />,
+        },
+        {
           // Edit mode of the same form — the wrapper loads the quiz + its questions
           // and mounts QuizQuestionProvider itself (seeded with the existing questions).
           path: "quizzes/edit-quiz/:quizId",
@@ -546,6 +558,10 @@ const createAppRouter = (queryClient: QueryClient) =>
         {
           path: "quizzes/create/ai",
           element: <AiQuizWizard />,
+        },
+        {
+          path: "quizzes/create/ai/own",
+          element: <OwnAiQuiz />,
         },
         {
           // Retired alongside `profile` above — settings are overlay sections now.

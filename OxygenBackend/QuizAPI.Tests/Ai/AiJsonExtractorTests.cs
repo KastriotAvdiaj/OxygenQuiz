@@ -93,8 +93,11 @@ public class AiJsonExtractorTests
     }
 
     [Fact]
-    public void QuizLevelSuggestions_AreExtracted()
+    public void QuizLevelFields_AreForwardedUntouched()
     {
+        // The model's title/category/language are NOT interpreted here — they're carried
+        // through inside the payload for the browser to read, which is what keeps a generated
+        // reply and a pasted one identical. See docs/quiz/ai-quiz-generation-flow.md §3b.
         var raw = """
         {"title":"The French Revolution","category":"History","language":"English",
          "questions":[{"type":"TrueFalse","text":"a"}]}
@@ -102,39 +105,10 @@ public class AiJsonExtractorTests
 
         var result = AiJsonExtractor.TryExtract(raw);
 
-        Assert.Equal("The French Revolution", result!.Title);
-        Assert.Equal("History", result.Category);
-        Assert.Equal("English", result.Language);
-    }
-
-    [Fact]
-    public void MissingSuggestions_AreNullNotAnError()
-    {
-        // They're suggestions. A model that omits them should still produce a usable quiz —
-        // the fields just stay blank for the user to fill in.
-        var result = AiJsonExtractor.TryExtract(Valid);
-
         Assert.NotNull(result);
-        Assert.Null(result!.Title);
-        Assert.Null(result.Category);
-        Assert.Null(result.Language);
-    }
-
-    [Theory]
-    [InlineData("null")]
-    [InlineData("\"\"")]
-    [InlineData("\"   \"")]
-    [InlineData("123")]
-    [InlineData("[\"History\"]")]
-    public void MalformedSuggestions_CollapseToNull(string categoryJson)
-    {
-        // JSON null, blank, and wrong-typed all mean the same thing to us: no suggestion.
-        var raw = $$"""{"category":{{categoryJson}},"questions":[{"text":"a"}]}""";
-
-        var result = AiJsonExtractor.TryExtract(raw);
-
-        Assert.NotNull(result);
-        Assert.Null(result!.Category);
+        Assert.Contains("\"category\"", result!.Json);
+        Assert.Contains("History", result.Json);
+        Assert.Contains("\"title\"", result.Json);
     }
 
     [Fact]

@@ -35,25 +35,22 @@ export const useGuestQuizSession = ({ quizId }: UseGuestQuizSessionParams) => {
   const hasInitialized = useRef(false);
 
   const fetchNextQuestion = useCallback(
-    (sessionId: string) => {
+    async (sessionId: string) => {
       setLastAnswerResult(null);
       setCurrentQuestion(null);
       setError(null);
 
-      getNextQuestionMutation.mutate(
-        { sessionId },
-        {
-          onSuccess: (questionData) => setCurrentQuestion(questionData),
-          onError: (err: any) => {
-            const message = extractErrorMessage(err);
-            if (message.includes("completed") || message.includes("No more questions")) {
-              navigate(`/quiz/results-guest/${sessionId}`);
-              return;
-            }
-            setError(`Failed to load next question: ${message}`);
-          },
+      try {
+        const questionData = await getNextQuestionMutation.mutateAsync({ sessionId });
+        setCurrentQuestion(questionData);
+      } catch (err: any) {
+        const message = extractErrorMessage(err);
+        if (message.includes("completed") || message.includes("No more questions")) {
+          navigate(`/quiz/results-guest/${sessionId}`);
+          return;
         }
-      );
+        setError(`Failed to load next question: ${message}`);
+      }
     },
     [getNextQuestionMutation, navigate]
   );
@@ -71,18 +68,23 @@ export const useGuestQuizSession = ({ quizId }: UseGuestQuizSessionParams) => {
 
     hasInitialized.current = true;
 
-    createSessionMutation.mutate(
-      { quizId },
-      {
-        onSuccess: (sessionData) => {
-          setQuizSession(sessionData);
-          fetchNextQuestion(sessionData.id);
-        },
-        onError: (err: any) => {
-          setError(extractErrorMessage(err, "Failed to start guest quiz session"));
-        },
+    // `mutateAsync`, not `mutate` + callbacks, and this is load-bearing rather than style
+    // (same reason `useQuizSession` awaits its mutation). React Query only fires the
+    // callbacks passed to `mutate` if the observer still has listeners when the request
+    // settles — and StrictMode's mount → unmount → remount detaches it mid-flight. The
+    // session then gets created on the server while nothing in React ever hears about it,
+    // stranding the page on "Preparing your quiz..." with no error to show. A promise
+    // doesn't care who is subscribed. See docs/auth/guest-play.md
+    // § "Why this hook awaits its mutations".
+    (async () => {
+      try {
+        const sessionData = await createSessionMutation.mutateAsync({ quizId });
+        setQuizSession(sessionData);
+        await fetchNextQuestion(sessionData.id);
+      } catch (err: any) {
+        setError(extractErrorMessage(err, "Failed to start guest quiz session"));
       }
-    );
+    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [quizId]);
 

@@ -1,0 +1,139 @@
+import * as React from "react";
+import { Drawer as DrawerPrimitive } from "vaul";
+
+import { cn } from "@/utils/cn";
+
+/**
+ * shadcn/ui's `Drawer` — the **vaul** one: a sheet that hugs the bottom edge, carries a grab
+ * handle, and can be flicked away with a drag.
+ *
+ * <b>Why the `Bottom` prefix.</b> This project already has a `Drawer` in `ui/drawer.tsx`, and
+ * it is not this component: it is shadcn's *Sheet* (Radix Dialog, one variant per edge, no
+ * drag). Both names are load-bearing — the sheet is used by `FormDrawer` and the whole
+ * dashboard — so the new one is `BottomDrawer` rather than a rename that would touch every
+ * editor in the app. Reach for this when you want the phone-native "sheet you can throw
+ * away"; reach for `ui/drawer.tsx` when you want a side panel.
+ *
+ * <b>`shouldScaleBackground` defaults to `false`.</b> vaul's background-scaling effect
+ * transforms `body`, and it expects the page to be laid out the way `[vaul-drawer-wrapper]`
+ * assumes. This app pins `html`/`body` with `overflow: hidden` and scrolls inside
+ * `.app-shell-viewport` instead (docs/RESPONSIVE.md), so the effect lands on the wrong
+ * element and squeezes a fixed header. Pass it explicitly if a future layout can take it.
+ */
+const BottomDrawer = ({
+  shouldScaleBackground = false,
+  ...props
+}: React.ComponentProps<typeof DrawerPrimitive.Root>) => (
+  <DrawerPrimitive.Root
+    shouldScaleBackground={shouldScaleBackground}
+    {...props}
+  />
+);
+BottomDrawer.displayName = "BottomDrawer";
+
+const BottomDrawerTrigger = DrawerPrimitive.Trigger;
+const BottomDrawerPortal = DrawerPrimitive.Portal;
+const BottomDrawerClose = DrawerPrimitive.Close;
+
+const BottomDrawerOverlay = React.forwardRef<
+  React.ElementRef<typeof DrawerPrimitive.Overlay>,
+  React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Overlay>
+>(({ className, ...props }, ref) => (
+  <DrawerPrimitive.Overlay
+    ref={ref}
+    className={cn("fixed inset-0 z-50 bg-black/80", className)}
+    {...props}
+  />
+));
+BottomDrawerOverlay.displayName = DrawerPrimitive.Overlay.displayName;
+
+const BottomDrawerContent = React.forwardRef<
+  React.ElementRef<typeof DrawerPrimitive.Content>,
+  React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Content>
+>(({ className, children, ...props }, ref) => (
+  <BottomDrawerPortal>
+    <BottomDrawerOverlay />
+    <DrawerPrimitive.Content
+      ref={ref}
+      className={cn(
+        "fixed inset-x-0 bottom-0 z-50 flex h-auto flex-col rounded-t-2xl border bg-background",
+        // Centred rather than full-bleed: on a wide monitor an edge-to-edge sheet reads as a
+        // second page, not as something sitting on top of this one. `mx-auto` inside
+        // `inset-x-0` does the centring; phones just get the full width.
+        "mx-auto w-full sm:max-w-lg",
+        // dvh with the vh fallback, so the sheet can't run under the browser chrome
+        // (docs/RESPONSIVE.md). Height is content-driven up to the cap.
+        "max-h-[85vh] supports-[height:100dvh]:max-h-[85dvh]",
+        // Clears the iOS home indicator / Android gesture bar.
+        "pb-[env(safe-area-inset-bottom)]",
+        className
+      )}
+      {...props}
+    >
+      {/* The grab handle. vaul makes the whole sheet draggable, but the handle is the part
+          that *says* so — without it people look for a close button and never try the flick. */}
+      <div className="mx-auto mt-2.5 h-1 w-10 shrink-0 rounded-full bg-muted-foreground/30" />
+      {children}
+    </DrawerPrimitive.Content>
+  </BottomDrawerPortal>
+));
+BottomDrawerContent.displayName = "BottomDrawerContent";
+
+const BottomDrawerHeader = ({
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement>) => (
+  <div
+    className={cn("flex flex-col space-y-1 px-4 py-3 text-left", className)}
+    {...props}
+  />
+);
+BottomDrawerHeader.displayName = "BottomDrawerHeader";
+
+const BottomDrawerFooter = ({
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement>) => (
+  <div
+    className={cn("mt-auto flex flex-col gap-2 px-4 py-3", className)}
+    {...props}
+  />
+);
+BottomDrawerFooter.displayName = "BottomDrawerFooter";
+
+const BottomDrawerTitle = React.forwardRef<
+  React.ElementRef<typeof DrawerPrimitive.Title>,
+  React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Title>
+>(({ className, ...props }, ref) => (
+  <DrawerPrimitive.Title
+    ref={ref}
+    className={cn("text-lg font-semibold text-foreground", className)}
+    {...props}
+  />
+));
+BottomDrawerTitle.displayName = DrawerPrimitive.Title.displayName;
+
+const BottomDrawerDescription = React.forwardRef<
+  React.ElementRef<typeof DrawerPrimitive.Description>,
+  React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Description>
+>(({ className, ...props }, ref) => (
+  <DrawerPrimitive.Description
+    ref={ref}
+    className={cn("text-sm text-muted-foreground", className)}
+    {...props}
+  />
+));
+BottomDrawerDescription.displayName = DrawerPrimitive.Description.displayName;
+
+export {
+  BottomDrawer,
+  BottomDrawerClose,
+  BottomDrawerContent,
+  BottomDrawerDescription,
+  BottomDrawerFooter,
+  BottomDrawerHeader,
+  BottomDrawerOverlay,
+  BottomDrawerPortal,
+  BottomDrawerTitle,
+  BottomDrawerTrigger,
+};

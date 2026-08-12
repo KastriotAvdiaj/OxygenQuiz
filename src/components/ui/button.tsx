@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Slot } from "@radix-ui/react-slot";
+import { Slot, Slottable } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/utils/cn";
 import { Spinner } from "./Spinner";
@@ -88,8 +88,6 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     },
     ref
   ) => {
-    const Comp = asChild ? Slot : "button";
-
     const fancyStyle =
       variant === "fancy" && fancyColors
         ? ({
@@ -102,8 +100,33 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           } as React.CSSProperties)
         : style;
 
+    // `asChild` hands rendering to a Radix Slot, which merges into exactly ONE element
+    // child. The layout <span> below would be a second child and Slot throws on sight
+    // ("Expected a single React element child or `Slottable`"), so the child element has
+    // to own the content itself: `Slottable` marks it as the one to merge into, and the
+    // decorations become its children. Nesting Slottable inside the span does not work —
+    // Slot only looks at its direct children.
+    if (asChild) {
+      return (
+        <Slot
+          className={cn(buttonVariants({ variant, size, active, className }))}
+          ref={ref}
+          style={fancyStyle}
+          {...props}
+        >
+          {isPending && (
+            <div className="absolute flex items-center justify-center inset-0 z-20">
+              <Spinner size="sm" variant="light" />
+            </div>
+          )}
+          {icon && <span className="mr-2">{icon}</span>}
+          <Slottable>{children}</Slottable>
+        </Slot>
+      );
+    }
+
     return (
-      <Comp
+      <button
         className={cn(buttonVariants({ variant, size, active, className }))}
         ref={ref}
         disabled={isPending || props.disabled}
@@ -137,7 +160,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
             {children}
           </span>
         )}
-      </Comp>
+      </button>
     );
   }
 );

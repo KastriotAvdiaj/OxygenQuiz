@@ -124,16 +124,7 @@ namespace QuizAPI.Services.Ai
                         payload.QuestionCount, normalised.QuestionCount, userId);
                 }
 
-                return AiGenerationOutcome.Ok(
-                    payload.Json,
-                    usage,
-                    reservation.Remaining,
-                    suggestedTitle: Truncate(payload.Title, AiPromptBuilder.MaxTitleLength),
-                    // Strict resolution against the names we supplied — the same rule difficulties
-                    // have always followed. A model that invents "General Knowledge" when we never
-                    // offered it gets nothing, and the user picks for themselves.
-                    suggestedCategory: MatchSupplied(payload.Category, normalised.CategoryNames),
-                    suggestedLanguage: MatchSupplied(payload.Language, normalised.LanguageNames));
+                return AiGenerationOutcome.Ok(payload.Json, usage, reservation.Remaining);
             }
             catch (AiProviderException ex)
             {
@@ -276,16 +267,5 @@ namespace QuizAPI.Services.Ai
         private static string? Truncate(string? value, int max) =>
             value is null ? null : value.Length <= max ? value : value[..max];
 
-        /// <summary>
-        /// Returns the supplied name the model's answer matches, or null. Case-insensitive, and
-        /// it returns <b>our</b> spelling rather than the model's so the browser can match it
-        /// against the entity list by name without worrying about casing drift.
-        /// </summary>
-        private static string? MatchSupplied(string? candidate, IReadOnlyList<string> supplied)
-        {
-            if (string.IsNullOrWhiteSpace(candidate)) return null;
-
-            return supplied.FirstOrDefault(s => string.Equals(s, candidate.Trim(), StringComparison.OrdinalIgnoreCase));
-        }
     }
 }

@@ -4,16 +4,18 @@ import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import { QuestionType } from "@/types/question-types";
-import type {
-  QuestionCategory,
-  QuestionDifficulty,
-  QuestionLanguage,
-} from "@/types/question-types";
 
 import { AiGenerateError } from "../../api/generate-ai-quiz";
+import {
+  SOURCE_MATERIAL,
+  categories,
+  difficulties,
+  languages,
+  parse,
+} from "./__fixtures__/ai-quiz.fixtures";
 import { AiQuizWizardView } from "./ai-quiz-wizard-view";
-import { parseAiOutput, type ParseResult } from "./parse-ai-output";
-import { AI_QUESTION_LIMITS } from "./prompt";
+import type { ParseResult } from "./parse-ai-output";
+import { AI_QUESTION_LIMITS, DEFAULT_QUESTION_COUNT } from "./prompt";
 
 /**
  * The AI quiz wizard, end to end, with no backend and no LLM.
@@ -32,39 +34,9 @@ import { AI_QUESTION_LIMITS } from "./prompt";
  */
 
 // ── Fixtures ───────────────────────────────────────────────────────────────────────────
-// Typed against the real lookup types, so a field added to them breaks this file rather
-// than silently rendering a half-populated dropdown.
-
-const categories: QuestionCategory[] = [
-  { id: 1, name: "Science", createdAt: "", colorPaletteJson: "", gradient: false, username: "admin" },
-  { id: 2, name: "History", createdAt: "", colorPaletteJson: "", gradient: false, username: "admin" },
-  { id: 3, name: "Geography", createdAt: "", colorPaletteJson: "", gradient: false, username: "admin" },
-];
-
-const difficulties: QuestionDifficulty[] = [
-  { id: 1, level: "Easy", weight: 1, createdAt: "", username: "admin" },
-  { id: 2, level: "Medium", weight: 2, createdAt: "", username: "admin" },
-  { id: 3, level: "Hard", weight: 3, createdAt: "", username: "admin" },
-];
-
-const languages: QuestionLanguage[] = [
-  { id: 1, language: "English", createdAt: "", username: "admin" },
-  { id: 2, language: "Albanian", createdAt: "", username: "admin" },
-];
-
-const SOURCE_MATERIAL = `The water cycle describes the continuous movement of water on, above and below the
-surface of the Earth. Water evaporates from oceans and lakes, condenses into clouds,
-falls as precipitation, and returns to the sea through rivers and groundwater.`;
-
-/** Same parse context the container derives from the suggestions plus any user overrides. */
-const parseContext = {
-  categoryId: 1,
-  languageId: 1,
-  quizDifficultyId: 2,
-  difficulties,
-};
-
-const parse = (rawReply: string): ParseResult => parseAiOutput(rawReply, parseContext);
+// Lookups, the source-material sample and the `parse` helper are shared with the own-AI
+// page's stories (`__fixtures__/ai-quiz.fixtures.ts`), because both paths render the same
+// entities and the same parser. What stays here are the replies only this path shows.
 
 // ── Fixture LLM replies ────────────────────────────────────────────────────────────────
 
@@ -188,22 +160,6 @@ const UNKNOWN_DIFFICULTY_REPLY = JSON.stringify({
   ],
 });
 
-const NO_JSON_REPLY =
-  "I'd be happy to help you build a quiz! Could you tell me a bit more about the " +
-  "audience and how difficult you'd like the questions to be?";
-
-const WRONG_SHAPE_REPLY = JSON.stringify({
-  quiz: { title: "The Water Cycle", items: [{ q: "What is evaporation?" }] },
-});
-
-const ALL_INVALID_REPLY = JSON.stringify({
-  questions: [
-    { type: QuestionType.MultipleChoice, text: "No options at all", difficulty: "Easy" },
-    { type: QuestionType.TrueFalse, text: "Not a boolean", difficulty: "Easy", correctAnswer: "maybe" },
-    { type: QuestionType.TypeTheAnswer, text: "Empty answer", difficulty: "Easy", correctAnswer: "  " },
-  ],
-});
-
 /**
  * Stand-in for the real prefilled builder, which owns mutations and its own context
  * provider (that's why it's a slot prop, not part of the view). Listing what the parser
@@ -277,6 +233,7 @@ const meta = {
     hasEntityError: false,
     quizzesPath: "/dashboard/quizzes",
     manualCreatePath: "/dashboard/quizzes/create-quiz",
+    ownAiPath: "/dashboard/quizzes/create-quiz/ai/own",
     mode: "Topic",
     topic: "",
     sourceData: "",
@@ -285,12 +242,9 @@ const meta = {
     categoryId: null,
     languageId: null,
     difficultyId: null,
-    questionCount: 10,
-    allowedTypes: [
-      QuestionType.MultipleChoice,
-      QuestionType.TrueFalse,
-      QuestionType.TypeTheAnswer,
-    ],
+    questionCount: DEFAULT_QUESTION_COUNT,
+    // Mirrors the container's initial state: multiple choice only.
+    allowedTypes: [QuestionType.MultipleChoice],
     extraInstructions: "",
     isGenerating: false,
     generateError: null,
@@ -298,9 +252,6 @@ const meta = {
     needsConfirmation: false,
     suggestedCategoryName: null,
     suggestedLanguageName: null,
-    copied: false,
-    isCopying: false,
-    aiResponse: "",
     parseResult: null,
     onModeChange: fn(),
     onTopicChange: fn(),
@@ -315,9 +266,6 @@ const meta = {
     onExtraInstructionsChange: fn(),
     onGenerate: fn(),
     onStartOver: fn(),
-    onCopyPrompt: fn(),
-    onAiResponseChange: fn(),
-    onImport: fn(),
   },
 } satisfies Meta<typeof AiQuizWizardView>;
 
@@ -334,7 +282,10 @@ export const TopicEntered: Story = {
   args: { topic: "The French Revolution" },
 };
 
-/** The user opened Advanced and overrode things the AI would otherwise have chosen. */
+/**
+ * Overrides set, drawer closed. The trigger carries a count because an overlay hides its
+ * contents by definition — otherwise a run with five overrides looks like a default one.
+ */
 export const AdvancedOverridden: Story = {
   args: {
     topic: "The French Revolution",
@@ -343,7 +294,18 @@ export const AdvancedOverridden: Story = {
     languageId: 1,
     difficultyId: 3,
     questionCount: AI_QUESTION_LIMITS.maxGeneratedQuestions,
+    // Two of the three types, so the drawer story shows a ticked row next to an unticked one.
+    allowedTypes: [QuestionType.MultipleChoice, QuestionType.TrueFalse],
     extraInstructions: "Focus on dates, exam style.",
+  },
+};
+
+/** The drawer itself. Open state is local to `AdvancedOptions`, so the story clicks it open. */
+export const AdvancedDrawerOpen: Story = {
+  args: { ...AdvancedOverridden.args },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: /advanced/i }));
   },
 };
 
@@ -452,7 +414,7 @@ export const QuotaLastOne: Story = {
   },
 };
 
-/** Terminal for today: the Generate button is replaced by the copy-paste path. */
+/** Terminal for today: the error panel explains it and the copy-paste path is promoted. */
 export const ErrorQuotaExceeded: Story = {
   args: {
     topic: "The French Revolution",
@@ -475,7 +437,11 @@ export const ErrorEmailNotVerified: Story = {
   },
 };
 
-/** The kill switch, or a blown budget. Copy-paste opens automatically. */
+/**
+ * The kill switch, or a blown budget. No Generate button — and, since this state raises no
+ * error and `QuotaNote` stays silent on it, the note explaining why plus a promoted
+ * "Use your own AI instead" button are the whole content of that row.
+ */
 export const FeatureDisabled: Story = {
   args: {
     topic: "The French Revolution",
@@ -504,46 +470,6 @@ export const NeedsCategoryAndLanguageConfirmation: Story = {
     needsConfirmation: true,
     suggestedCategoryName: "European History",
     suggestedLanguageName: "Shqip",
-  },
-};
-
-// ── Copy-paste fallback ────────────────────────────────────────────────────────────────
-
-export const FallbackPromptCopied: Story = {
-  args: { topic: "The French Revolution", copied: true },
-};
-
-export const FallbackPreparingPrompt: Story = {
-  args: { topic: "The French Revolution", isCopying: true },
-};
-
-/** The model answered conversationally instead of emitting JSON. */
-export const ImportErrorNoJson: Story = {
-  args: {
-    mode: "Source",
-    sourceData: SOURCE_MATERIAL,
-    aiResponse: NO_JSON_REPLY,
-    parseResult: parse(NO_JSON_REPLY),
-  },
-};
-
-/** Valid JSON, wrong schema — usually someone's own prompt rather than ours. */
-export const ImportErrorWrongShape: Story = {
-  args: {
-    mode: "Source",
-    sourceData: SOURCE_MATERIAL,
-    aiResponse: WRONG_SHAPE_REPLY,
-    parseResult: parse(WRONG_SHAPE_REPLY),
-  },
-};
-
-/** Right shape, but not one question survived validation: the batch is rejected whole. */
-export const ImportErrorAllInvalid: Story = {
-  args: {
-    mode: "Source",
-    sourceData: SOURCE_MATERIAL,
-    aiResponse: ALL_INVALID_REPLY,
-    parseResult: parse(ALL_INVALID_REPLY),
   },
 };
 
@@ -578,7 +504,6 @@ export const ReviewHandoffFromFencedReply: Story = {
   args: {
     mode: "Source",
     sourceData: SOURCE_MATERIAL,
-    aiResponse: FENCED_REPLY,
     parseResult: fencedResult,
     builderSlot: <BuilderStandIn result={fencedResult} />,
   },
@@ -625,8 +550,17 @@ export const OnMobile: Story = {
   args: { topic: "The French Revolution" },
 };
 
-/** Advanced open on a phone: the options row collapses to one column, chips wrap. */
-export const AdvancedOnMobile: Story = {
+/**
+ * The Advanced drawer on a phone. Checks the things docs/RESPONSIVE.md warns about: the 85vw
+ * cap (not an edge-to-edge panel), the dvh height cap with the body scrolling under a pinned
+ * header and footer, and that opening it does *not* raise the keyboard by focusing the title
+ * field.
+ */
+export const AdvancedDrawerOnMobile: Story = {
   parameters: { viewport: { defaultViewport: "mobile1" } },
   args: { ...AdvancedOverridden.args },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: /advanced/i }));
+  },
 };

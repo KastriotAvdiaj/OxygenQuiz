@@ -1,3 +1,5 @@
+import { forwardRef } from "react";
+
 import { LiftedButton, type LiftedButtonProps } from "@/common/LiftedButton";
 import { cn } from "@/utils/cn";
 
@@ -14,10 +16,18 @@ import { cn } from "@/utils/cn";
  *
  * A component rather than a copy-pasted class string because the wizard's buttons live in
  * two files — the sizing is one decision and should have one home.
+ *
+ * <b>Forwards its ref</b> so Radix `asChild` triggers (`DrawerTrigger`, `DrawerClose`) can
+ * render it. Without that they warn and quietly drop the composition, which is how you end
+ * up hand-wiring `onClick={() => setOpen(false)}` next to a primitive that already does it.
  */
-export const WizardButton = ({ className, ...props }: LiftedButtonProps) => (
-  <LiftedButton
-    {...props}
-    className={cn("px-3 py-2 text-sm sm:py-1.5", className)}
-  />
+export const WizardButton = forwardRef<HTMLButtonElement, LiftedButtonProps>(
+  ({ className, ...props }, ref) => (
+    <LiftedButton
+      ref={ref}
+      {...props}
+      className={cn("px-3 py-2 text-sm sm:py-1.5", className)}
+    />
+  )
 );
+WizardButton.displayName = "WizardButton";

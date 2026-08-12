@@ -78,7 +78,7 @@ const registerWithEmailAndPassword = (
   // second, generic "Error" notification on top of it.
   return apiService.post("Authentication/signup", data, {
     skipErrorToast: true,
-  } as any);
+  });
 };
 
 // Configure auth with react-query-auth
@@ -182,7 +182,7 @@ export const useExternalLogin = () => {
       const response: AuthResponse | ExternalSignupRequired = await apiService.post(
         "Authentication/external-login",
         data,
-        { skipErrorToast: true } as any
+        { skipErrorToast: true }
       );
       if (isExternalSignupRequired(response)) return { signupRequired: response };
       return { user: adoptSession(response) };
@@ -202,7 +202,7 @@ export const useExternalSignup = () => {
       const response: AuthResponse = await apiService.post(
         "Authentication/external-signup",
         data,
-        { skipErrorToast: true } as any
+        { skipErrorToast: true }
       );
       return adoptSession(response);
     },

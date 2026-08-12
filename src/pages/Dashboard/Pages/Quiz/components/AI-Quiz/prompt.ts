@@ -30,3 +30,12 @@ export const AI_QUESTION_LIMITS = {
    */
   maxGeneratedQuestions: 15,
 } as const;
+
+/**
+ * What the Advanced drawer's counter starts at.
+ *
+ * Five, not ten. The wizard's promise is that you review every question before it saves, and
+ * ten is where that review starts feeling like work — a first run should end in a quiz, not in
+ * abandoning a half-checked draft. Adding more is two taps on the stepper.
+ */
+export const DEFAULT_QUESTION_COUNT = 5;

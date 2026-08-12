@@ -1,4 +1,4 @@
-import { api } from "@/lib/Api-client";
+import { apiService } from "@/lib/Api-client";
 import { MutationConfig } from "@/lib/React-query";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { AxiosError } from "axios";
@@ -52,13 +52,16 @@ export interface AiGenerateInput {
 }
 
 export interface AiGenerateResult {
-  /** `{"questions":[...]}` as a string. Feed it straight to `parseAiOutput`. */
+  /**
+   * The model's JSON object as a string — `questions`, plus the quiz-level `title`,
+   * `category` and `language` it chose.
+   *
+   * Those three are deliberately not lifted into fields of their own. Read them with
+   * `extractQuizSuggestions` from `parse-ai-output.ts`, which is also where a *pasted* reply
+   * is read — one code path, so the two can't diverge. They used to be separate response
+   * fields and copy-paste silently missed out; see docs/quiz/ai-quiz-generation-flow.md §3b.
+   */
   payload: string;
-  /** Suggested title. Free text. */
-  suggestedTitle?: string | null;
-  /** A name guaranteed to be one we sent, or null. Resolve it against the loaded list. */
-  suggestedCategory?: string | null;
-  suggestedLanguage?: string | null;
   /** Left today after this one. `null` for staff, who have no daily cap. */
   quotaRemaining: number | null;
   inputTokens: number;
@@ -123,15 +126,19 @@ const toAiGenerateError = (error: unknown): AiGenerateError => {
 };
 
 /**
- * The two type arguments are both the payload type, not a typo: the shared response
- * interceptor already unwraps `response.data`, so axios's `R` (normally `AxiosResponse<T>`)
- * is really just `T` here. Elsewhere in the codebase that's inferred from the declared
- * return type — but a trailing `.catch` breaks that contextual inference, so it has to be
- * spelled out.
+ * `apiService`, not the raw `api` instance: only the former unwraps `response.data`. The
+ * `api` success interceptor returns the whole `AxiosResponse`, so `api.post(...)` typed as
+ * `Promise<T>` compiles and then hands every caller an object whose fields are all
+ * `undefined`. See the warning on the `api` export in `src/lib/Api-client.ts`.
  */
 export const generateAiQuiz = (data: AiGenerateInput): Promise<AiGenerateResult> =>
-  api
-    .post<AiGenerateResult, AiGenerateResult>("/quiz/ai-generate", data)
+  apiService
+    .post<AiGenerateResult>("/quiz/ai-generate", data, {
+      // The wizard renders its own error panel, which says what to do next per code —
+      // retry, wait for the reset, verify your email, use copy-paste. The interceptor's
+      // generic "Error" toast on top of that is noise. See docs/development/error-handling.md.
+      skipErrorToast: true,
+    })
     .catch((error) => {
       throw toAiGenerateError(error);
     });
@@ -164,13 +171,18 @@ export const useGenerateAiQuiz = ({
  * drift from the one the generator actually uses (plan §5.1).
  */
 export const getAiPrompt = (data: AiGenerateInput): Promise<{ prompt: string }> =>
-  api
-    .post<{ prompt: string }, { prompt: string }>("/quiz/ai-prompt", data)
+  apiService
+    .post<{ prompt: string }>("/quiz/ai-prompt", data, {
+      // Unlike generation there's no inline panel for this one, so the container raises a
+      // toast itself — the interceptor's would be the duplicate.
+      skipErrorToast: true,
+    })
     .catch((error) => {
       throw toAiGenerateError(error);
     });
 
-export const getAiQuota = (): Promise<AiQuotaStatus> => api.get("/quiz/ai-quota");
+export const getAiQuota = (): Promise<AiQuotaStatus> =>
+  apiService.get<AiQuotaStatus>("/quiz/ai-quota");
 
 /**
  * Drives "3 of 5 left today" and, when `enabled` is false, hides the Generate button

@@ -21,7 +21,6 @@ import type { ParseResult } from "./parse-ai-output";
 
 import { AdvancedOptions } from "./components/advanced-options";
 import { ConfirmDetailsCard } from "./components/confirm-details-card";
-import { CopyPasteFallback } from "./components/copy-paste-fallback";
 import { GenerateErrorPanel } from "./components/generate-error-panel";
 import {
   GenerationInput,
@@ -31,7 +30,10 @@ import { ImportSummary } from "./components/import-summary";
 import { QuotaNote } from "./components/quota-note";
 import { WizardButton } from "./components/wizard-button";
 
-export { ALL_AI_QUESTION_TYPES } from "./components/question-type-chips";
+export {
+  ALL_AI_QUESTION_TYPES,
+  DEFAULT_AI_QUESTION_TYPES,
+} from "./components/question-type-options";
 export { ImportSummary } from "./components/import-summary";
 
 export interface AiQuizWizardViewProps {
@@ -47,6 +49,8 @@ export interface AiQuizWizardViewProps {
   //    this wizard under different prefixes. ────────────────────────────────────
   quizzesPath: string;
   manualCreatePath: string;
+  /** The bring-your-own-AI page. A sibling route, not a panel — see docs/quiz/ai-quiz-two-paths.md. */
+  ownAiPath: string;
 
   // ── The one box ──────────────────────────────────────────────────────────────
   mode: AiGenerationMode;
@@ -88,14 +92,7 @@ export interface AiQuizWizardViewProps {
   suggestedLanguageName: string | null;
   onStartOver: () => void;
 
-  // ── Copy-paste fallback ──────────────────────────────────────────────────────
-  onCopyPrompt: () => void;
-  copied: boolean;
-  isCopying: boolean;
-  aiResponse: string;
-  onAiResponseChange: (value: string) => void;
-  onImport: () => void;
-  /** null before any attempt. `ok` switches the view to the review handoff. */
+  /** null until the model answers. `ok` switches the view to the review handoff. */
   parseResult: ParseResult | null;
 
   /**
@@ -108,9 +105,13 @@ export interface AiQuizWizardViewProps {
 }
 
 /**
- * The AI quiz wizard's markup. Composition only — every substantial block lives in
- * `./components/`, so this file stays a readable table of contents rather than a wall of
- * JSX you have to scroll to navigate.
+ * The AI quiz wizard's markup — the **generate-for-me** path. Composition only: every
+ * substantial block lives in `./components/`, so this file stays a readable table of contents
+ * rather than a wall of JSX you have to scroll to navigate.
+ *
+ * Its twin is `own-ai-quiz-view.tsx`, the bring-your-own-AI page. They share every component
+ * on this screen and differ in one step — a Generate button here, copy/paste there. See
+ * docs/quiz/ai-quiz-two-paths.md before changing either.
  *
  * **Three mutually exclusive screens**, in the order they're checked:
  *   1. Lookups still loading, or failed.
@@ -130,6 +131,7 @@ export const AiQuizWizardView = ({
   hasEntityError,
   quizzesPath,
   manualCreatePath,
+  ownAiPath,
   mode,
   onModeChange,
   topic,
@@ -160,12 +162,6 @@ export const AiQuizWizardView = ({
   suggestedCategoryName,
   suggestedLanguageName,
   onStartOver,
-  onCopyPrompt,
-  copied,
-  isCopying,
-  aiResponse,
-  onAiResponseChange,
-  onImport,
   parseResult,
   builderSlot,
 }: AiQuizWizardViewProps) => {
@@ -201,9 +197,10 @@ export const AiQuizWizardView = ({
   const inputRegion = useRef<HTMLDivElement>(null);
 
   /**
-   * Wraps any action that needs a filled-in topic. Generate and Copy prompt build the very
-   * same request, so they fail for the same reasons and should explain themselves the same
-   * way — one guard keeps that from drifting into two behaviours.
+   * Wraps any action that needs a filled-in topic. Only Generate, now that Copy prompt lives
+   * on its own page — but the two build the same request and must fail the same way, so the
+   * guard stays a named wrapper rather than being inlined into the click handler. The
+   * own-AI page has the twin of this; keep them in step.
    */
   const runWhenValid = (action: () => void) => () => {
     if (validationMessage) {
@@ -349,28 +346,37 @@ export const AiQuizWizardView = ({
 
             {generateError && <GenerateErrorPanel error={generateError} />}
 
-            {!generationBlocked && (
-              <div className="flex items-center justify-between gap-4 pt-1">
-                <QuotaNote quota={quota} />
-                <WizardButton
-                  type="button"
-                  disabled={isGenerating}
-                  onClick={runWhenValid(onGenerate)}
-                >
-                  <span className="flex items-center gap-2">
-                    {isGenerating ? (
-                      <>
-                        <Spinner size="sm" /> Writing questions…
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="h-4 w-4" /> Generate
-                      </>
-                    )}
-                  </span>
-                </WizardButton>
-              </div>
-            )}
+            {/* The row always renders. Generate goes *disabled* rather than missing when
+                generation is unavailable (kill switch, quota spent, unverified email): a
+                button that could only fail shouldn't be pressable, but removing it left the
+                card with no visible primary action and nothing to explain the gap. The link
+                below is the way through, and `title` carries the reason for a pointer user —
+                the error panel above says it in full whenever the cause raised one. */}
+            <div className="flex items-center justify-between gap-4 pt-1">
+              <QuotaNote quota={quota} />
+              <WizardButton
+                type="button"
+                disabled={isGenerating || generationBlocked}
+                title={
+                  generationBlocked
+                    ? "Generating in the app isn't available right now — use your own AI below."
+                    : undefined
+                }
+                onClick={runWhenValid(onGenerate)}
+              >
+                <span className="flex items-center gap-2">
+                  {isGenerating ? (
+                    <>
+                      <Spinner size="sm" /> Writing questions…
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-4 w-4" /> Generate
+                    </>
+                  )}
+                </span>
+              </WizardButton>
+            </div>
 
             {/* No progress bar until slice 2.2 streams one, so the least we can do is say
                 how long "a while" is and that leaving kills it. */}
@@ -382,18 +388,16 @@ export const AiQuizWizardView = ({
 
             <Separator className="bg-primary/20" />
 
-            <CopyPasteFallback
-              forced={generationBlocked}
-              onCopyPrompt={runWhenValid(onCopyPrompt)}
-              copied={copied}
-              isCopying={isCopying}
-              aiResponse={aiResponse}
-              onAiResponseChange={onAiResponseChange}
-              onImport={onImport}
-              parseResult={parseResult}
-            />
-
-            <div className="">
+            {/* The two ways out, both quiet. Copy-paste used to live here as a disclosure
+                that expanded to twice the height of the card; it is a page of its own now
+                (docs/quiz/ai-quiz-two-paths.md), and what's left is a link to it. */}
+            <div className="flex flex-col gap-1.5">
+              <Link
+                to={ownAiPath}
+                className="text-muted-foreground hover:text-foreground text-sm"
+              >
+                Use your own AI instead (free)
+              </Link>
               <Link
                 to={manualCreatePath}
                 className="text-muted-foreground hover:text-foreground text-sm"

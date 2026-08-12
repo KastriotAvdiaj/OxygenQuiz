@@ -100,23 +100,11 @@ namespace QuizAPI.DTOs.Quiz
         /// <summary>The <c>{ "questions": [...] }</c> object, serialised as JSON.</summary>
         public string Payload { get; set; } = string.Empty;
 
-        // ── Quiz-level suggestions, for pre-filling the review step ──
-        // Deliberately separate fields rather than something the client digs out of Payload:
-        // Payload belongs to parse-ai-output.ts, and handing it a second job would mean editing
-        // the one file this whole design exists to leave alone.
-
-        /// <summary>Suggested quiz title. Free text; null if the model didn't give one.</summary>
-        public string? SuggestedTitle { get; set; }
-
-        /// <summary>
-        /// Suggested category NAME, guaranteed to be one of the <c>CategoryNames</c> the caller
-        /// sent, or null. The client resolves it to an id against the list it already has —
-        /// no id ever crosses this boundary.
-        /// </summary>
-        public string? SuggestedCategory { get; set; }
-
-        /// <summary>Suggested language NAME, guaranteed the same way.</summary>
-        public string? SuggestedLanguage { get; set; }
+        // No suggestion fields here. The model's title / category / language stay inside
+        // Payload and the browser reads them with `extractQuizSuggestions`, because that is the
+        // one place a generated reply and a pasted one both pass through. Lifting them out
+        // server-side enriched only the generated path — see the note in
+        // docs/quiz/ai-quiz-generation-flow.md §3b.
 
         /// <summary>Generations left today after this one, or <c>null</c> when unlimited.</summary>
         public int? QuotaRemaining { get; set; }

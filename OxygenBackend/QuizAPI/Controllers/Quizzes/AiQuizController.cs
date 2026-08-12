@@ -98,9 +98,6 @@ namespace QuizAPI.Controllers.Quizzes
             return Ok(new AiGenerateResponse
             {
                 Payload = outcome.PayloadJson!,
-                SuggestedTitle = outcome.SuggestedTitle,
-                SuggestedCategory = outcome.SuggestedCategory,
-                SuggestedLanguage = outcome.SuggestedLanguage,
                 QuotaRemaining = outcome.QuotaRemaining,
                 InputTokens = outcome.Usage.InputTokens,
                 OutputTokens = outcome.Usage.OutputTokens,

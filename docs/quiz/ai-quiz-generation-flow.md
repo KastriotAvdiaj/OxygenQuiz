@@ -52,7 +52,16 @@ lands **pre-filled in the review step**, where the human confirms or changes it:
 | Title | Model suggests it. Free text — nothing to resolve. |
 | Category | Model picks from the category **names** we send. Unmatched → blank. |
 | Language | Model picks from the language **names** we send, normally matching the language the topic was typed in, and writes the questions in it. |
-| Difficulty, count, types | Defaults, behind an "Advanced" disclosure. |
+| Difficulty, count, types | Defaults, behind an "Advanced" drawer. |
+
+Advanced is an overlay rather than an inline accordion: expanding it in place tripled the height
+of the wizard's one screen and pushed Generate out of view. It is a right-hand `Drawer` rather
+than a centred dialog, matching every other settings surface in the dashboard (`FormDrawer`,
+the question and quiz editors); one shell at every width, capped at `85vw` on phones, so there
+is no breakpoint branch mounting the fields twice. Its trigger shows how many
+overrides are set, because an overlay hides its contents and a run carrying five of them
+otherwise looks identical to a default one. Fields write straight through — no draft state to
+apply or cancel, since everything is confirmed again at review.
 
 This changes a rule the original design stated flatly — *"Do NOT output a category or a language"*
 — so it is worth being precise about what moved and what did not.
@@ -94,7 +103,9 @@ worst case is a wrong-but-real category on a Draft quiz that a human is looking 
 | API client | `Quiz/api/generate-ai-quiz.ts` | The three calls, plus `AiGenerateError` — normalises the server's code out of the axios error. |
 | Wizard container | `AI-Quiz/ai-quiz-wizard.tsx` | State, the generate call, resolving suggested names → ids, the builder handoff. |
 | Wizard view | `AI-Quiz/ai-quiz-wizard-view.tsx` | **Composition only.** The three screens (§3b) and which component renders in each. |
-| View pieces | `AI-Quiz/components/*.tsx` | One block each: `generation-input`, `advanced-options`, `quota-note`, `generate-error-panel`, `copy-paste-fallback`, `confirm-details-card`, `import-summary`, `question-type-chips`. |
+| Shared draft | `AI-Quiz/use-ai-quiz-draft.tsx` | Everything both AI paths share: lookups, request state, reply → parse → builder handoff. |
+| Own-AI path | `AI-Quiz/own-ai-quiz.tsx` + `own-ai-quiz-view.tsx` | Copy the prompt out, paste the reply back. Its own route — [`ai-quiz-two-paths.md`](./ai-quiz-two-paths.md). |
+| View pieces | `AI-Quiz/components/*.tsx` | One block each: `generation-input`, `advanced-options`, `quota-note`, `generate-error-panel`, `confirm-details-card`, `import-summary`, `question-type-options`, `question-count-stepper`. |
 | Limits | `AI-Quiz/prompt.ts` | Numbers only. The prompt text lives in C# (slice 2.1). |
 
 ---
@@ -198,9 +209,11 @@ stateDiagram-v2
     Pasting --> Pasting: reply doesn't parse
 ```
 
-**Resolving suggestions.** The server returns category and language as *names*. The container
-matches them case-insensitively against the lists React Query already loaded, and a user's
-explicit pick always wins:
+**Resolving suggestions.** The model returns title, category and language as *names*, inside
+the payload. `extractQuizSuggestions` in `parse-ai-output.ts` reads them — **for both paths**,
+from the payload itself, not from a server response field. The container then matches the names
+case-insensitively against the lists React Query already loaded, and a user's explicit pick
+always wins:
 
 ```
 effectiveCategoryId = userPick ?? resolve(suggestedCategoryName)
@@ -220,15 +233,52 @@ good — the view shows an "Almost there" card asking only for the missing field
 AI suggested and why it didn't match. Throwing away a valid generation over an unmatched name
 would be the wrong trade.
 
-**Both paths converge.** Generation and copy-paste produce the same `ParseResult`, feed the same
-`builderSlot`, and save through the same endpoint. Nothing downstream of `parseAiOutput` can tell
-which one produced the questions.
+**Both paths converge — and *where* they converge is load-bearing.** They meet at a single
+`payload: string | null`, before any resolution happens. From there suggestions, ids, parsing
+and the builder handoff are one code path, so nothing downstream can tell which produced the
+questions.
+
+> **This was got wrong once, and the failure is worth remembering.** The suggestions were
+> originally extracted **server-side** and returned as separate response fields
+> (`suggestedTitle`, `suggestedCategory`, `suggestedLanguage`), specifically so that
+> `parse-ai-output.ts` wouldn't have to change. But a pasted reply never goes through the
+> server, so it never got enriched — and the wizard demanded a category, language and
+> difficulty by hand for a reply that plainly contained all three. Generation and copy-paste
+> had stopped producing the same thing.
+>
+> The lesson isn't "don't put logic on the server". It's that **"don't touch this file" is a
+> means, not an end.** Protecting `parse-ai-output.ts` was only ever worth doing because it
+> kept the two paths identical; when keeping it untouched is what makes them differ, the rule
+> has eaten its own purpose. Reading the envelope in the parser — where both paths already go —
+> is the fix, and it deletes the server-side plumbing rather than adding to it.
 
 **Errors.** `AiGenerateError` normalises the server's code out of the axios error, because the
 shared interceptor keeps only the message. The view switches on the code to decide what to offer:
 retry for the transient ones (and it says the daily allowance wasn't touched, because it wasn't),
-a reset time for quota, and the copy-paste path opened automatically when generation is
-unavailable at all.
+a reset time for quota, and a promoted copy-paste path when generation is unavailable at all.
+
+**When generation is unavailable, the button stays put and goes disabled.** It used to be
+hidden, which left the card with no primary action at all — and worse in the one case that
+raises no error: the kill switch reports `quota.enabled === false`, `QuotaNote` early-returns
+on `!enabled`, so the whole row vanished and the wizard offered no way forward and no reason.
+Disabled keeps the shape of the screen, the error panel above still carries the server's
+message for the three causes that have one, and a `title` covers the fourth for pointer users.
+The way through is the own-AI link, which sits in the same place in every state. The copy-paste
+path is a page of its own in the
+router now (`own-ai-quiz.tsx`), reached by that link. It was an inline disclosure, then a
+drawer, and both were the same mistake: a second flow hidden inside the first. See
+[`ai-quiz-two-paths.md`](./ai-quiz-two-paths.md).
+
+The generate request sets **`skipErrorToast`** so the interceptor's generic toast doesn't stack
+on top of that panel, and the container stores the error rather than raising a toast of its own.
+Getting this wrong is easy and it shipped wrong once — one failure briefly produced two toasts
+*and* the panel. See "Mutations: the global toast, and opting out of it" in
+[error-handling.md](../development/error-handling.md).
+
+**Validation before the request.** Generate and Copy prompt stay clickable on an incomplete
+form; pressing either marks the offending field invalid, focuses it, and says what's missing.
+A disabled button with a not-allowed cursor says "no" without saying why. The message is derived
+from current state, not stored, so it clears itself as soon as the field is filled.
 
 ---
 
@@ -335,12 +385,9 @@ and no change to it will help, so telling the client "bad request" sends it into
   "extraInstructions": null
 }
 
-// 200
+// 200 — the model's object, forwarded whole
 {
-  "payload": "{\"questions\":[...]}",    // raw model JSON, for parse-ai-output.ts
-  "suggestedTitle": "The French Revolution",
-  "suggestedCategory": "History",        // guaranteed ∈ categoryNames, or null
-  "suggestedLanguage": "English",        // guaranteed ∈ languageNames, or null
+  "payload": "{\"title\":\"...\",\"category\":\"History\",\"language\":\"English\",\"questions\":[...]}",
   "quotaRemaining": 4,
   "inputTokens": 612,
   "outputTokens": 1488
@@ -355,9 +402,10 @@ the browser resolves them against rows that already exist. That is what makes "t
 never create a category, language, or difficulty" true by construction rather than by review —
 and it is why the suggestions in §1a are safe to accept from a model.
 
-`suggestedCategory` and `suggestedLanguage` are validated server-side to be members of the lists
-the caller sent, so the client can resolve them by name without re-checking. `suggestedTitle` is
-free text and is only length-capped.
+The server does **not** pull the model's `title` / `category` / `language` into response fields
+of their own. They stay in `payload`, and the browser reads them with `extractQuizSuggestions` —
+the same call a pasted reply goes through. Validation is the resolution itself: a name that
+doesn't match a loaded entity yields null and the user picks.
 
 `payload` is a **string**, not an object, and that is on purpose: it is untrusted text that
 happens to parse, and the only thing qualified to judge it is `parse-ai-output.ts`. Deserialising

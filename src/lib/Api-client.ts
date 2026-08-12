@@ -1,6 +1,27 @@
-import Axios, { InternalAxiosRequestConfig, AxiosResponse } from "axios";
+import Axios, {
+  InternalAxiosRequestConfig,
+  AxiosRequestConfig,
+  AxiosResponse,
+} from "axios";
 import { getAccessToken, setAccessToken, clearAccessToken } from "./token-store";
 import { useNotifications } from "@/common/Notifications";
+
+declare module "axios" {
+  /**
+   * Per-request opt-out of the global error toast, for callers that surface the failure
+   * themselves — an inline field error, a panel beside the button, a form that bounces the
+   * user back to the bad step. See "Opting out of the global toast" in
+   * docs/development/error-handling.md.
+   *
+   * Declared here, beside the interceptor that reads it, so the flag is a typed part of the
+   * request config. It used to be an undeclared key that every call site passed through an
+   * `as any` cast — which meant a typo silently produced a duplicate toast instead of a
+   * compile error.
+   */
+  export interface AxiosRequestConfig {
+    skipErrorToast?: boolean;
+  }
+}
 
 const CUSTOM_ERROR_PATTERNS = [
   "not found or you're not authorized",
@@ -50,6 +71,19 @@ llmApi.interceptors.response.use(
   }
 );
 
+/**
+ * The configured axios instance: base URL, bearer token, silent 401 refresh, error toast.
+ *
+ * **It resolves to the full `AxiosResponse`, not the body.** Unlike `llmApi` above, the
+ * success interceptor returns `response` untouched — so read `.data`, or use
+ * {@link apiService}, which does it for you. Prefer `apiService` in feature code; reach for
+ * `api` only when you need headers or the raw response.
+ *
+ * Worth stating loudly because the mistake is silent: `api.post(url, body)` annotated
+ * `Promise<Thing>` compiles happily (axios infers `R` from the expected return type) and
+ * then hands the caller an AxiosResponse whose `.title`, `.id`, `.prompt` are all
+ * `undefined`. No error, no warning — just a page rendering "undefined".
+ */
 export const api = Axios.create({
   // Base URL comes from the Vite env files (already includes the /api suffix):
   //   .env.development → https://localhost:7153/api
@@ -142,13 +176,11 @@ api.interceptors.response.use(
         });
       }
 
-      // Some callers surface their own field-specific error (e.g. the signup form,
-      // which shows the exact reason and bounces the user back to the bad step).
-      // They set `skipErrorToast` on the request so we don't also fire a duplicate
-      // generic toast for the same failure.
-      const skipErrorToast = (error.config as any)?.skipErrorToast;
-
-      if (!skipErrorToast) {
+      // Some callers surface their own field-specific error (e.g. the signup form, which
+      // shows the exact reason and bounces the user back to the bad step; or the AI wizard's
+      // error panel, which offers a different next step per failure code). They set
+      // `skipErrorToast` on the request so we don't also fire a duplicate generic toast.
+      if (!error.config?.skipErrorToast) {
         useNotifications.getState().addNotification({
           type: "error",
           title: "Error",
@@ -163,22 +195,22 @@ api.interceptors.response.use(
 
 export const apiService = {
   // Basic data-only methods (for backward compatibility)
-  async get<T = any>(url: string, config = {}): Promise<T> {
+  async get<T = any>(url: string, config: AxiosRequestConfig = {}): Promise<T> {
     const response = await api.get<T>(url, config);
     return response.data;
   },
 
-  async post<T = any>(url: string, data?: any, config = {}): Promise<T> {
+  async post<T = any>(url: string, data?: any, config: AxiosRequestConfig = {}): Promise<T> {
     const response = await api.post<T>(url, data, config);
     return response.data;
   },
 
-  async put<T = any>(url: string, data?: any, config = {}): Promise<T> {
+  async put<T = any>(url: string, data?: any, config: AxiosRequestConfig = {}): Promise<T> {
     const response = await api.put<T>(url, data, config);
     return response.data;
   },
 
-  async delete<T = any>(url: string, config = {}): Promise<T> {
+  async delete<T = any>(url: string, config: AxiosRequestConfig = {}): Promise<T> {
     const response = await api.delete<T>(url, config);
     return response.data;
   },
@@ -186,7 +218,7 @@ export const apiService = {
   // Full response methods (when you need headers or other response data)
   async getWithMeta<T = any>(
     url: string,
-    config = {}
+    config: AxiosRequestConfig = {}
   ): Promise<AxiosResponse<T>> {
     return api.get<T>(url, config);
   },
@@ -194,7 +226,7 @@ export const apiService = {
   async postWithMeta<T = any>(
     url: string,
     data?: any,
-    config = {}
+    config: AxiosRequestConfig = {}
   ): Promise<AxiosResponse<T>> {
     return api.post<T>(url, data, config);
   },
@@ -202,14 +234,14 @@ export const apiService = {
   async putWithMeta<T = any>(
     url: string,
     data?: any,
-    config = {}
+    config: AxiosRequestConfig = {}
   ): Promise<AxiosResponse<T>> {
     return api.put<T>(url, data, config);
   },
 
   async deleteWithMeta<T = any>(
     url: string,
-    config = {}
+    config: AxiosRequestConfig = {}
   ): Promise<AxiosResponse<T>> {
     return api.delete<T>(url, config);
   },

@@ -84,6 +84,8 @@ interesting part, so we fake it with Moq (pattern C below).
 | `src/components/ui/dialog/__tests__/dialog.test.tsx` | Dialog component (pre-existing). |
 | `src/components/ui/dialog/confirmation-dialog/__tests__/confirmation-dialog.test.tsx` | Confirmation flow (pre-existing). |
 | `src/pages/UserRelated/Signup/__tests__/signup-auth-config-storm.test.tsx` | Signup when `auth-config` is unreachable: **exactly one** request (regression guard for the request storm — see [social-login.md](../auth/social-login.md)), and the flow **fails closed** to the invite gate rather than an open signup. |
+| `src/hooks/__tests__/use-guest-quiz-session.test.tsx` | Guest session startup **rendered inside `StrictMode`**: the hook leaves its loading state with a question, surfaces a failed creation as an error, and creates exactly one session per mount. Guards the hang where a mutation resolved into a detached observer and the page waited forever — see [guest-play.md](../auth/guest-play.md) § "Why this hook awaits its mutations". |
+| `src/components/ui/__tests__/button.test.tsx` | `Button` renders normally, and as its child element under `asChild` (Radix `Slot` accepts one element child — the layout `<span>` used to make two and throw). The only `asChild` callers are error screens, so this breaks exactly when it's needed. |
 | `src/pages/Quiz/Sessions/.../__tests__/quiz-timer.test.tsx` | `QuizTimer` under re-render pressure: it keeps counting while a parent re-renders faster than its own interval with a fresh `onTimeUp` each time, fires `onTimeUp` exactly once, and neither gains nor loses time across a pause/resume. Fake timers drive `Date.now()`, which is what makes a deadline-anchored countdown testable. See [`quiz-timer.md`](../quiz/quiz-timer.md). |
 
 The signup-storm test is worth copying as a pattern: it mocks `@/lib/Api-client` to reject, then
@@ -96,6 +98,12 @@ every static assertion, because a frozen countdown renders perfectly valid marku
 is **re-rendering on a schedule and asserting the DOM changed anyway**. Any component driven by a
 `setInterval` or an animation frame is worth this shape — the failure mode is always "correct in
 isolation, broken by whatever the parent happens to do".
+
+The guest-session test is a third variant: **the wrapper is the test.** It renders the hook inside
+`<React.StrictMode>` because the bug it guards only exists during StrictMode's mount → unmount →
+remount, and it passes against the broken code without that wrapper. Any hook that starts a request
+from a mount effect deserves this shape — the app runs under StrictMode, so a test that doesn't is
+testing a component the app never renders.
 
 ### Frontend — Storybook stories (`*.stories.tsx`)
 

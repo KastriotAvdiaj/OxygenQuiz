@@ -552,6 +552,19 @@ The live register with full reasoning is
 index. **The feature is off by default (`Ai:Enabled=false`), so none of these can bite
 production until it's switched on.**
 
+- **P1 — An AI-generated quiz can be unplayable: `next-question` 500s.** Quiz 32
+  ("Game of Thrones 101", the first quiz generated through this feature) returns **500**
+  from `GET /{sessionId}/next-question` on its *first* question, for guests and therefore
+  presumably for everyone. Every other public quiz (25–31) serves its first question fine,
+  so this is data written by the generation path, not the play path. Narrowed to *after*
+  the `ExecuteUpdateAsync` — the session row does get `CurrentQuizQuestionId` set — so the
+  throw is in the `FirstAsync(Include(Question))` / `ToCurrentQuestionDto` block. The row
+  data (TPH discriminator, `AcceptableAnswers` JSON, FK columns) looks structurally sound
+  on inspection, so the next step is the actual exception: the API log line
+  `Error getting next question for session {SessionId}` carries it. The generic catch there
+  swallows the type, which is a large part of why this is hard to pin down — consider
+  logging it as structured data or rethrowing typed.
+  → `OxygenBackend/QuizAPI/Controllers/Quizzes/Services/QuizSessionServices/QuizSessionService.cs:178-197`
 - ~~**P2 — EF migration for `AiGenerationUsages` is not generated.**~~ **Fixed (2026-08-09).**
   `dotnet ef migrations add AddAiGenerationUsage` — it applies on boot. The first attempt
   failed to build on an unrelated mistake worth remembering: `AiPromptBuilder.cs` imported

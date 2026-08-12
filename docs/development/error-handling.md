@@ -56,6 +56,49 @@ logged-out 401 is a normal state, not an error).
 Keep throwing for data the screen is *about* — a quiz page with no quiz has nothing to
 render.
 
+## Mutations: the global toast, and opting out of it
+
+Query failures throw into a boundary. **Mutation** failures don't — they surface as a toast,
+fired centrally by the response interceptor in `src/lib/Api-client.ts`. Nothing needs to opt
+*in*: any non-2xx that isn't a 401 or 404 produces one.
+
+That default is right for "the delete failed" and wrong whenever the caller shows the failure
+itself. Two surfaces for one error is noise; three is a bug report. Set `skipErrorToast` on the
+request config when the caller renders its own:
+
+```ts
+api.post("/quiz/ai-generate", data, { skipErrorToast: true });
+```
+
+The flag is a typed part of `AxiosRequestConfig` (declaration-merged in `Api-client.ts`), so a
+typo is a compile error rather than a silent duplicate toast. It was previously an undeclared
+key that every call site smuggled through an `as any` cast; the casts are gone, and
+`apiService`'s `config` parameter is typed rather than `{}`, so the flag is checked there too.
+
+> **`apiService`, not `api`.** The raw instance's success interceptor returns the whole
+> `AxiosResponse` — only `apiService` unwraps `.data`. `api.post(url, body)` annotated
+> `Promise<Thing>` compiles (axios infers its response type from the expected return type) and
+> then hands you an object whose every field is `undefined`. It fails silently, at render, as
+> the word "undefined" on the page. Reach for `api` only when you want headers.
+
+Current opt-outs and why:
+
+| Caller | Surfaces the error as |
+|---|---|
+| `check-availability` (signup) | Inline field hint under the username/email |
+| `Auth.tsx` login / external sign-in | The form's own message, on the step that failed |
+| `auth-config` | Nothing — a failed config fetch falls back to defaults |
+| `quiz/ai-generate` | The wizard's error panel, which offers a different next step per code |
+| `quiz/ai-prompt` | A toast the container raises itself, with copy specific to copying |
+
+**The rule of thumb:** if the failure has a natural home on screen — beside the field, beside
+the button — put it there and skip the toast. Reach for the toast when the failure has nowhere
+to live, or when the user has already navigated away from the thing that failed.
+
+Note the third surface that's easy to forget: a caller can also add its own
+`addNotification` in a React Query `onError`. Combined with the interceptor that's two toasts
+for one failure, which is exactly what the AI wizard shipped with before this was written down.
+
 ## The floor: one root `errorElement`
 
 `Router.tsx` wraps every route in a **pathless root route** whose only job is to own
@@ -149,6 +192,7 @@ throwing.
 | Concern | File |
 |---|---|
 | Global query behaviour | `src/lib/React-query.ts` |
+| Mutation error toast + `skipErrorToast` | `src/lib/Api-client.ts` |
 | Root route error element | `src/pages/UtilityPages/Error/Route-Error-Element.tsx` |
 | Friendly crash card | `src/pages/UtilityPages/Error/Main-Error-Boundary.tsx` |
 | Dashboard-specific overrides | `src/pages/UtilityPages/Error/Dashboard-Error-Element.tsx` |

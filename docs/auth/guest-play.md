@@ -106,10 +106,89 @@ reimplemented.
 | Piece | File | Purpose |
 |---|---|---|
 | Guest API client | `src/pages/Quiz/Sessions/api/guest-quiz-session.ts` | Talks to `/guest-quiz-sessions/*`. Kept separate from the real session API client (mirrors the backend split). |
-| `useGuestQuizSession` | `src/hooks/use-guest-quiz-session.ts` | Deliberately simpler than `useQuizSession` — no resume/abandon state machine, since a guest only has one session. Every path out of its loading state ends in either a session or a surfaced error (create-session / next-question requests are time-bounded at 20s, and an invalid quiz id errors immediately), so it can never leave the page stuck on "Preparing your quiz…". |
+| `useGuestQuizSession` | `src/hooks/use-guest-quiz-session.ts` | Deliberately simpler than `useQuizSession` — no resume/abandon state machine, since a guest only has one session. Every path out of its loading state ends in either a session or a surfaced error (create-session / next-question requests are time-bounded at 20s, and an invalid quiz id errors immediately). It **awaits** its mutations rather than passing callbacks to `mutate` — see "Why this hook awaits its mutations" below; that is what actually makes the previous sentence true. |
 | `GuestQuizPage` | `src/pages/Quiz/Sessions/components/quiz-taking-process/guest-quiz-page.tsx` | Reuses the same `QuizInterface` component the real flow uses — question rendering, timers, and feedback UI are shared. |
 | `QuizPageRouteWrapper` (modified) | `src/pages/Quiz/Sessions/components/quiz-taking-process/quiz-page-route-wrapper.tsx` | The single entry point for `/quiz/:quizId/play`. Branches three ways — see "Routing" below. |
 | `GuestQuizResultsRouteWrapper` | `src/pages/Quiz/Sessions/components/quiz-results/guest-quiz-results-route-wrapper.tsx` | Public results page at `/quiz/results-guest/:sessionId`. Calls `/finish` as soon as results load. |
+
+### Why this hook awaits its mutations
+
+> Added 2026-08-11, after guest play silently stopped working in development.
+
+**The symptom.** Every quiz, opened signed-out, sat on "Preparing your quiz…" forever. No
+error, no toast, no redirect to login — just a spinner. Meanwhile the backend was happily
+creating a guest session for each attempt (`POST /guest-quiz-sessions` → **201**), so the
+server logs looked healthy and the database filled with orphan sessions.
+
+**The cause.** The hook used to start the session like this:
+
+```ts
+createSessionMutation.mutate({ quizId }, { onSuccess, onError });   // ← the bug
+```
+
+React Query only invokes the callbacks you pass to `mutate` **if the observer still has
+listeners when the request settles** (`MutationObserver.#notify` guards on
+`this.hasListeners()`; `onUnsubscribe` detaches the observer from the in-flight mutation and
+nothing re-attaches it). React 18 `StrictMode` — which the app runs under, see
+`src/main.tsx` — deliberately mounts, tears effects down, and mounts again. The mutation was
+fired from a mount effect, so it was in flight across exactly that teardown.
+
+The result is the worst shape a bug can take: the request **succeeds**, and nothing in React
+ever hears about it. `onSuccess` never runs, so `quizSession` stays `null`, so the page never
+leaves its loading branch. `onError` is dropped by the same rule, which is why a *failing*
+request was equally silent — there was no error state to render, because the error was never
+delivered either.
+
+The fix is to await instead, which is what `useQuizSession` already did:
+
+```ts
+const sessionData = await createSessionMutation.mutateAsync({ quizId });   // ← resolves regardless
+```
+
+A promise doesn't care who is subscribed.
+
+**Why only guests hit this.** The authenticated flow has always used `mutateAsync` +
+`try/catch` (`initializeQuizSession` in `src/hooks/use-quiz-session.ts`). Logged-in play was
+therefore fine on the same page, under the same StrictMode, on the same day — which is
+exactly what made this so confusing to chase: "the quiz page is broken" was false, and
+"guest play is broken" looked impossible given the 201s in the log.
+
+**The rule for this codebase:** *a mutation fired from an effect must be awaited.*
+`mutate(vars, { onSuccess })` is only safe from an event handler, where the component is
+mounted and staying that way. If you find yourself starting a request during mount, use
+`mutateAsync` in a `try/catch` — the ref guard that prevents a double-fire also guarantees
+nothing will retry for you if the callbacks are dropped.
+
+This is also why the old wording of the table above ("it can never leave the page stuck")
+was wrong: the 20s timeouts bound how long a *request* can take, not how long the UI waits
+for a result that will never be delivered. A timeout can't save you from a resolved promise
+nobody is listening to.
+
+Regression coverage: `src/hooks/__tests__/use-guest-quiz-session.test.tsx` renders the hook
+**inside `StrictMode`** — without that wrapper the test passes against the broken code, so
+the wrapper is the test.
+
+### Why the error screens don't use a plain `<Button asChild>`
+
+The same investigation surfaced a second bug hiding behind the first. When the guest flow
+*did* finally surface an error, the error screen itself crashed into the app's error
+boundary ("Something went wrong") with:
+
+```
+Slot failed to slot onto its children. Expected a single React element child or `Slottable`.
+```
+
+`<Button asChild>` renders through a Radix `Slot`, which merges into exactly one element
+child — but `Button` wraps its children in a layout `<span>` *and* renders a conditional
+spinner node, so `Slot` saw two children and threw. `Button` now handles `asChild` with
+`Slottable` (`src/components/ui/button.tsx`), so the child element owns the content and the
+decorations become its children.
+
+Worth knowing because of how it hid: the only two `<Button asChild>` call sites in the whole
+frontend are the guest-play error screens (`guest-quiz-page.tsx` and
+`CantCheckGuestScreen`). A crash there is invisible until something has *already* gone
+wrong — an error path that only breaks when it's needed. Covered by
+`src/components/ui/__tests__/button.test.tsx`.
 
 ### Routing
 

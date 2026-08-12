@@ -146,41 +146,22 @@ namespace QuizAPI.Services.Ai
         /// </summary>
         public int? QuotaRemaining { get; init; }
 
-        // ── Quiz-level suggestions ──
-        // Returned as separate fields rather than left inside PayloadJson so the browser's
-        // parse-ai-output.ts keeps its existing contract: it still receives an object whose only
-        // interesting key is "questions", and stays untouched. The wizard reads these three off
-        // the response and resolves the two names against the entity lists it already has
-        // loaded — the same names-not-ids resolution difficulties have always used.
-
-        /// <summary>A title for the quiz. Free text, so nothing to resolve. Null if absent.</summary>
-        public string? SuggestedTitle { get; init; }
-
-        /// <summary>
-        /// A category NAME, already checked to be one we sent. Null when the model didn't pick,
-        /// picked something that doesn't exist, or wasn't asked.
-        /// </summary>
-        public string? SuggestedCategory { get; init; }
-
-        /// <summary>A language NAME, checked the same way.</summary>
-        public string? SuggestedLanguage { get; init; }
+        // The model's quiz-level title / category / language are NOT pulled out here. They ride
+        // inside PayloadJson and the browser reads them with `extractQuizSuggestions`, because
+        // that is the one place both the generated and the pasted reply pass through. Doing it
+        // server-side enriched only the generated one, which is the bug described in
+        // docs/quiz/ai-quiz-generation-flow.md §3b.
 
         public static AiGenerationOutcome Ok(
             string payloadJson,
             AiTokenUsage usage,
-            int? quotaRemaining,
-            string? suggestedTitle = null,
-            string? suggestedCategory = null,
-            string? suggestedLanguage = null) =>
+            int? quotaRemaining) =>
             new()
             {
                 Success = true,
                 PayloadJson = payloadJson,
                 Usage = usage,
                 QuotaRemaining = quotaRemaining,
-                SuggestedTitle = suggestedTitle,
-                SuggestedCategory = suggestedCategory,
-                SuggestedLanguage = suggestedLanguage,
             };
 
         public static AiGenerationOutcome Fail(string code, string message, DateTime? retryAfterUtc = null) =>

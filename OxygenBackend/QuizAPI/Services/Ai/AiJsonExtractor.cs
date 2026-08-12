@@ -76,44 +76,19 @@ namespace QuizAPI.Services.Ai
                 if (count == 0) return null;
 
                 // Re-serialise from the parsed document so what we hand on is compact, valid JSON
-                // with any surrounding prose gone — the client should never see the model's chatter.
-                return new AiExtractedPayload(
-                    document.RootElement.GetRawText(),
-                    count,
-                    ReadString(document.RootElement, "title"),
-                    ReadString(document.RootElement, "category"),
-                    ReadString(document.RootElement, "language"));
+                // with any surrounding prose gone — the client should never see the model's
+                // chatter. The object is forwarded whole, including the model's title / category
+                // / language, which the browser reads for itself (plan §5.2).
+                return new AiExtractedPayload(document.RootElement.GetRawText(), count);
             }
             catch (JsonException)
             {
                 return null;
             }
         }
-
-        /// <summary>
-        /// Reads an optional top-level string. Absent, null, wrong-typed and empty all collapse
-        /// to null — these are suggestions, and a missing one just means the field stays blank
-        /// for the user to fill. None of them is worth failing a generation over.
-        /// </summary>
-        private static string? ReadString(JsonElement root, string propertyName)
-        {
-            if (!root.TryGetProperty(propertyName, out var value)) return null;
-            if (value.ValueKind != JsonValueKind.String) return null;
-
-            var text = value.GetString()?.Trim();
-            return string.IsNullOrEmpty(text) ? null : text;
-        }
     }
 
-    /// <param name="Json">The extracted object. Always contains "questions"; may carry the suggestions too.</param>
-    /// <param name="QuestionCount">Elements in the questions array. Always ≥ 1.</param>
-    /// <param name="Title">Suggested quiz title, or null. Free text — nothing to resolve.</param>
-    /// <param name="Category">Suggested category NAME, unvalidated at this layer.</param>
-    /// <param name="Language">Suggested language NAME, unvalidated at this layer.</param>
-    public sealed record AiExtractedPayload(
-        string Json,
-        int QuestionCount,
-        string? Title = null,
-        string? Category = null,
-        string? Language = null);
+    /// <param name="Json">The extracted object. Always contains a non-empty "questions" array.</param>
+    /// <param name="QuestionCount">Elements in that array. Always ≥ 1.</param>
+    public sealed record AiExtractedPayload(string Json, int QuestionCount);
 }

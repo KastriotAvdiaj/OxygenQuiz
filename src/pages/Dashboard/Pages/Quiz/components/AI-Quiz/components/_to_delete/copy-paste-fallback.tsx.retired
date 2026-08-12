@@ -1,18 +1,33 @@
 import { useRef, useState } from "react";
-import { AlertTriangle, ArrowRight, Check, ChevronDown, Copy } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowRight,
+  Check,
+  Copy,
+  Sparkles,
+} from "lucide-react";
 
-import { Textarea } from "@/components/ui/form";
 import { Spinner } from "@/components/ui";
+import {
+  BottomDrawer,
+  BottomDrawerContent,
+  BottomDrawerDescription,
+  BottomDrawerFooter,
+  BottomDrawerHeader,
+  BottomDrawerTitle,
+  BottomDrawerTrigger,
+} from "@/components/ui/bottom-drawer";
+import { Textarea } from "@/components/ui/form";
 import { cn } from "@/utils/cn";
-import { WizardButton } from "./wizard-button";
 
 import type { ParseResult } from "../parse-ai-output";
+import { WizardButton } from "./wizard-button";
 
 export interface CopyPasteFallbackProps {
   /**
-   * Generation isn't available at all (kill switch, quota spent, unverified email). The
-   * section opens itself and the wording changes from "or" to "instead" — when this is the
-   * only path forward, hiding it behind a disclosure is user-hostile.
+   * Generation isn't available at all (kill switch, quota spent, unverified email). Promotes
+   * the trigger from a quiet link to the panel's primary button, and swaps "or" for
+   * "instead" — when this is the only path forward it shouldn't look like an aside.
    */
   forced: boolean;
   /**
@@ -36,6 +51,22 @@ export interface CopyPasteFallbackProps {
  * the daily allowance is gone, and some people would rather spend their own subscription
  * than our budget. The prompt comes from `POST /api/quiz/ai-prompt`, so it is the *same*
  * prompt in-app generation sends — there is only one in the codebase (plan §5.1).
+ *
+ * <b>A drawer, not an inline disclosure.</b> Expanded in place this was two headed steps, a
+ * 140px code textarea and an error list — taller than the wizard it hangs off, so opening it
+ * pushed Generate off the screen and the page you were reading rearranged itself under your
+ * thumb. It is also a *detour*: you leave for another app and come back with a blob to paste.
+ * That belongs on its own surface.
+ *
+ * `BottomDrawer` (vaul) rather than the Radix sheet in `ui/drawer.tsx`: a sheet centred in the
+ * viewport is a dialog whatever the file is called. This rises from the bottom edge, keeps a
+ * grab handle, and can be flicked away — the wizard stays visible above it, so it reads as
+ * somewhere you stepped into and can step back out of.
+ *
+ * <b>It never opens itself</b>, not even when `forced`. The inline version did, on the
+ * reasoning that a blocked user needs the only working path — but a modal that appears
+ * unbidden on load is the same reasoning applied to a surface that takes the whole screen.
+ * Forced makes the trigger loud instead, which is one tap and no ambush.
  */
 export const CopyPasteFallback = ({
   forced,
@@ -48,6 +79,7 @@ export const CopyPasteFallback = ({
   parseResult,
 }: CopyPasteFallbackProps) => {
   const [open, setOpen] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   // Same rule as the Generate button: the action stays clickable and explains itself, rather
   // than greying out and leaving the user to work out which box is empty.
@@ -63,28 +95,64 @@ export const CopyPasteFallback = ({
     }
 
     setShowPasteError(false);
+    // Deliberately no close: a parse failure renders inside this drawer, and a success
+    // unmounts the whole wizard screen anyway.
     onImport();
   };
 
   return (
-    <div>
-      <button
-        type="button"
-        onClick={() => setOpen((current) => !current)}
-        aria-expanded={open || forced}
-        className="w-full flex items-center justify-between text-sm text-muted-foreground hover:text-foreground"
-      >
-        <span>{forced ? "Use your own AI instead" : "Or use your own AI (free)"}</span>
-        <ChevronDown
-          className={`h-4 w-4 transition-transform ${open || forced ? "rotate-180" : ""}`}
-        />
-      </button>
+    <BottomDrawer open={open} onOpenChange={setOpen}>
+      <BottomDrawerTrigger asChild>
+        {forced ? (
+          <WizardButton type="button" className="w-full" outerClassName="w-full">
+            <span className="flex items-center justify-center gap-2">
+              <Sparkles className="h-4 w-4" />
+              Use your own AI instead
+            </span>
+          </WizardButton>
+        ) : (
+          <button
+            type="button"
+            className="flex min-h-9 w-full items-center justify-between gap-3 text-sm text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <span>Or use your own AI (free)</span>
+            <ArrowRight className="h-4 w-4 shrink-0" />
+          </button>
+        )}
+      </BottomDrawerTrigger>
 
-      {(open || forced) && (
-        <div className="mt-3 space-y-4">
+      <BottomDrawerContent
+        ref={contentRef}
+        // Comes up past the middle of the screen rather than sizing to its content. Two steps
+        // and a code box that only reached a third of the way up read as a notification you
+        // had to squint at; the point of the sheet is that it becomes the thing you're doing.
+        // A floor, not a height — `max-h-[85dvh]` on the component still caps it.
+        className="min-h-[70vh] supports-[height:100dvh]:min-h-[70dvh]"
+        // The reply textarea is the first focusable thing in here, and focusing it on open
+        // raises the phone keyboard over the instructions the user came to read. Focus the
+        // content instead of nothing, so the focus trap and Escape still work
+        // (docs/RESPONSIVE.md).
+        onOpenAutoFocus={(event) => {
+          event.preventDefault();
+          contentRef.current?.focus();
+        }}
+      >
+        <BottomDrawerHeader className="border-b border-border">
+          <BottomDrawerTitle>Use your own AI</BottomDrawerTitle>
+          <BottomDrawerDescription>
+            Copy the prompt into ChatGPT, Claude or Gemini, then paste the reply
+            back here. It's the same prompt we'd send ourselves.
+          </BottomDrawerDescription>
+        </BottomDrawerHeader>
+
+        {/* min-h-0 so this scrolls instead of pushing the footer past the viewport;
+            overscroll-contain so a flick past the end doesn't scroll the page behind. A flex
+            column, so the height the sheet gained goes to the paste box below rather than
+            pooling as dead space under it. */}
+        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto overscroll-contain px-4 py-4">
           <div className="rounded-lg border-2 border-dashed border-primary/40 p-4">
-            <p className="font-medium text-sm mb-1">1. Copy the prompt</p>
-            <p className="text-muted-foreground text-xs mb-3">
+            <p className="mb-1 text-sm font-medium">1. Copy the prompt</p>
+            <p className="mb-3 text-xs text-muted-foreground">
               Paste it into ChatGPT, Claude, Gemini — whichever you use.
             </p>
             <WizardButton
@@ -110,16 +178,18 @@ export const CopyPasteFallback = ({
             </WizardButton>
           </div>
 
-          <div>
-            <p className="font-medium text-sm mb-1">2. Paste the AI's reply</p>
+          <div className="flex min-h-0 flex-1 flex-col">
+            <p className="mb-1 text-sm font-medium">2. Paste the AI's reply</p>
             <Textarea
               ref={replyRef}
               variant="settings"
               className={cn(
-                "min-h-[140px] font-mono text-xs",
+                // flex-1 over the floor: the box grows into whatever the sheet has spare,
+                // which is the one part of this panel that benefits from more room.
+                "min-h-[140px] flex-1 font-mono text-xs",
                 showPasteError &&
                   pasteMissing &&
-                  "border-destructive focus-visible:ring-destructive/40",
+                  "border-destructive focus-visible:ring-destructive/40"
               )}
               placeholder='{ "questions": [ ... ] }'
               value={aiResponse}
@@ -135,7 +205,7 @@ export const CopyPasteFallback = ({
               <p
                 id="ai-paste-error"
                 role="alert"
-                className="text-destructive text-xs mt-1.5 flex items-center gap-1"
+                className="mt-1.5 flex items-center gap-1 text-xs text-destructive"
               >
                 <AlertTriangle className="h-3 w-3 shrink-0" />
                 Paste the AI's reply here first.
@@ -144,12 +214,12 @@ export const CopyPasteFallback = ({
 
             {parseResult && !parseResult.ok && (
               <div className="mt-2 rounded-md border border-destructive/40 bg-destructive/10 p-3">
-                <p className="text-destructive text-sm flex items-start gap-2">
-                  <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+                <p className="flex items-start gap-2 text-sm text-destructive">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
                   {parseResult.error}
                 </p>
                 {parseResult.dropped.length > 0 && (
-                  <ul className="text-destructive/90 text-xs mt-2 space-y-1 pl-6 list-disc">
+                  <ul className="mt-2 list-disc space-y-1 pl-6 text-xs text-destructive/90">
                     {/* Capped at five: a reply where everything failed produces one reason per
                         question, and a wall of them buries the actual problem. */}
                     {parseResult.dropped.slice(0, 5).map((d) => (
@@ -161,17 +231,19 @@ export const CopyPasteFallback = ({
                 )}
               </div>
             )}
-
-            <div className="flex justify-end pt-3">
-              <WizardButton type="button" onClick={handleImportClick}>
-                <span className="flex items-center gap-1">
-                  Review questions <ArrowRight className="h-4 w-4" />
-                </span>
-              </WizardButton>
-            </div>
           </div>
         </div>
-      )}
-    </div>
+
+        {/* Pinned: "Review questions" is what this drawer is for, and scrolling a 140px
+            textarea shouldn't be able to push it out of reach. */}
+        <BottomDrawerFooter className="border-t border-border sm:flex-row sm:justify-end">
+          <WizardButton type="button" onClick={handleImportClick}>
+            <span className="flex items-center justify-center gap-1">
+              Review questions <ArrowRight className="h-4 w-4" />
+            </span>
+          </WizardButton>
+        </BottomDrawerFooter>
+      </BottomDrawerContent>
+    </BottomDrawer>
   );
 };
