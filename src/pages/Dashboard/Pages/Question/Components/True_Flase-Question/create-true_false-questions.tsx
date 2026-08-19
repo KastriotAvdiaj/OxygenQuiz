@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Form, FormDrawer, Input, Label } from "@/components/ui/form";
 import { useNotifications } from "@/common/Notifications";
 
-import { Separator } from "@/components/ui/separator";
 import { CategorySelect } from "../../Entities/Categories/Components/select-question-category";
 import { DifficultySelect } from "../../Entities/Difficulty/Components/select-question-difficulty";
 import { LanguageSelect } from "../../Entities/Language/components/select-question-language";

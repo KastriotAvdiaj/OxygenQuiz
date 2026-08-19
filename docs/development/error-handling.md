@@ -51,10 +51,84 @@ queryOptions({
 
 Current opt-outs, all for the same reason: `get-user-quiz-stats`, `get-user-sessions`,
 `check-availability` (signup hints), `email-verification` (resend), `auth-config` (a
-logged-out 401 is a normal state, not an error).
+logged-out 401 is a normal state, not an error), `ai-quota`.
+
+> **`ai-quota` is the one that got away, and it reached production.** The AI wizard calls
+> `GET /quiz/ai-quota` on mount purely to render "2 of 2 left today". It had `retry: false`
+> but no `throwOnError: false`, so when that endpoint started answering **400** in production
+> the whole page became "Something went wrong" — including the copy-your-own-prompt path,
+> which needs neither the quota nor the AI service and was the one thing still working.
+>
+> The tell is worth remembering: the query's own consumers were already written for absence
+> (`quota: AiQuotaStatus | null`, "null while loading or when the endpoint isn't reachable"),
+> which is the signature of supplementary data. **If a prop type says the data may be missing,
+> the query must not throw** — otherwise the handling you wrote is unreachable and a boundary
+> decides instead.
 
 Keep throwing for data the screen is *about* — a quiz page with no quiz has nothing to
 render.
+
+### The corollary: don't write an in-page card for something that throws
+
+If a query throws, the boundary replaces your component *before* it renders. Any
+`if (somethingFailed) return <ErrorCard/>` downstream of that query is unreachable — and
+unreachable error handling is worse than none, because the next person reads it and believes
+the case is covered. A Storybook story for it is worse still: a picture of a state production
+cannot produce.
+
+Both AI views carried exactly that ("Oops! Brain freeze!", plus an `EntityLoadError` story)
+for the category/language/difficulty lookups. Those three keep throwing on purpose — you
+cannot pick a category from a list that never loaded, and `buildInput` sends those very names
+to the model as the vocabulary it may choose from, so a page without them can't do its job.
+The card and the story are gone; the route's `DashboardErrorElement` is the handling.
+
+So: **pick one per query.** Either it is supplementary → opt out *and* render the absence, or
+it is essential → let it throw and let the route's error element be the whole story. Writing
+both is how you end up with a page that looks defensive and isn't. The same dead branch still
+exists in `Create-Quiz-Form/create-quiz.tsx` and `edit-quiz.tsx` if you want to sweep it.
+
+## Mutations: the global toast, and opting out of it
+
+Query failures throw into a boundary. **Mutation** failures don't — they surface as a toast,
+fired centrally by the response interceptor in `src/lib/Api-client.ts`. Nothing needs to opt
+*in*: any non-2xx that isn't a 401 or 404 produces one.
+
+That default is right for "the delete failed" and wrong whenever the caller shows the failure
+itself. Two surfaces for one error is noise; three is a bug report. Set `skipErrorToast` on the
+request config when the caller renders its own:
+
+```ts
+api.post("/quiz/ai-generate", data, { skipErrorToast: true });
+```
+
+The flag is a typed part of `AxiosRequestConfig` (declaration-merged in `Api-client.ts`), so a
+typo is a compile error rather than a silent duplicate toast. It was previously an undeclared
+key that every call site smuggled through an `as any` cast; the casts are gone, and
+`apiService`'s `config` parameter is typed rather than `{}`, so the flag is checked there too.
+
+> **`apiService`, not `api`.** The raw instance's success interceptor returns the whole
+> `AxiosResponse` — only `apiService` unwraps `.data`. `api.post(url, body)` annotated
+> `Promise<Thing>` compiles (axios infers its response type from the expected return type) and
+> then hands you an object whose every field is `undefined`. It fails silently, at render, as
+> the word "undefined" on the page. Reach for `api` only when you want headers.
+
+Current opt-outs and why:
+
+| Caller | Surfaces the error as |
+|---|---|
+| `check-availability` (signup) | Inline field hint under the username/email |
+| `Auth.tsx` login / external sign-in | The form's own message, on the step that failed |
+| `auth-config` | Nothing — a failed config fetch falls back to defaults |
+| `quiz/ai-generate` | The wizard's error panel, which offers a different next step per code |
+| `quiz/ai-prompt` | A toast the container raises itself, with copy specific to copying |
+
+**The rule of thumb:** if the failure has a natural home on screen — beside the field, beside
+the button — put it there and skip the toast. Reach for the toast when the failure has nowhere
+to live, or when the user has already navigated away from the thing that failed.
+
+Note the third surface that's easy to forget: a caller can also add its own
+`addNotification` in a React Query `onError`. Combined with the interceptor that's two toasts
+for one failure, which is exactly what the AI wizard shipped with before this was written down.
 
 ## The floor: one root `errorElement`
 
@@ -149,6 +223,7 @@ throwing.
 | Concern | File |
 |---|---|
 | Global query behaviour | `src/lib/React-query.ts` |
+| Mutation error toast + `skipErrorToast` | `src/lib/Api-client.ts` |
 | Root route error element | `src/pages/UtilityPages/Error/Route-Error-Element.tsx` |
 | Friendly crash card | `src/pages/UtilityPages/Error/Main-Error-Boundary.tsx` |
 | Dashboard-specific overrides | `src/pages/UtilityPages/Error/Dashboard-Error-Element.tsx` |

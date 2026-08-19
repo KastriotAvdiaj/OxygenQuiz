@@ -18,7 +18,7 @@ const fetchAvailability = (
   // skipErrorToast: this is a background check whose failure is surfaced inline by the form
   // (and deliberately never hard-blocks). Without it, a burst of failures — e.g. the rate
   // limiter rejecting a run of checks with 429s — would fire one global error toast per call.
-  apiService.get("/Users/availability", { params, skipErrorToast: true } as any);
+  apiService.get("/Users/availability", { params, skipErrorToast: true });
 
 /**
  * Debounced live check for whether a username is free.
@@ -96,7 +96,7 @@ const fetchInviteValidity = (code: string): Promise<InviteCodeValidityResponse> 
   apiService.get("/Authentication/validate-invite-code", {
     params: { code },
     skipErrorToast: true,
-  } as any);
+  });
 
 /**
  * Debounced, advisory check that an invite code is currently redeemable, so the signup form can

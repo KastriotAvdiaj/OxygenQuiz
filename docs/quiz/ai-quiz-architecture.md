@@ -30,7 +30,9 @@ that.
 flowchart TD
     subgraph Browser["Browser (React)"]
         Modal["Manual/AI chooser dialog\n(create-quiz-method-dialog.tsx)"]
-        Wizard["AI wizard container\n(ai-quiz-wizard.tsx)"]
+        Wizard["Generate path\n(ai-quiz-wizard.tsx)"]
+        Own["Own-AI path\n(own-ai-quiz.tsx)"]
+        Draft["Shared draft\n(use-ai-quiz-draft.tsx)"]
         View["AI wizard markup\n(ai-quiz-wizard-view.tsx)"]
         Prompt["Prompt builder\n(prompt.ts)"]
         Parser["Output parser\n(parse-ai-output.ts)"]
@@ -49,10 +51,13 @@ flowchart TD
 
     Modal -->|"Create with AI"| Wizard
     Wizard <-->|props| View
-    Wizard --> Prompt
+    Wizard -->|"quiet link / promoted button"| Own
+    Wizard --> Draft
+    Own --> Draft
+    Own --> Prompt
     Prompt -->|copied to clipboard| LLM
-    LLM -->|pasted JSON| Wizard
-    Wizard --> Parser
+    LLM -->|pasted JSON| Own
+    Draft --> Parser
     Parser -->|validated questions| Form
     Form -->|aiImportMode: 1 atomic call| Import
     Form -.->|manual mode: N calls then 1| QCreate
@@ -69,13 +74,20 @@ the **manual** builder's questions-first path, which is deliberately non-atomic 
 | `create-quiz-method-dialog.tsx` | Offer the manual/AI fork; route-agnostic (paths are props) | Any AI logic; hard-code a dashboard prefix |
 | `AI-Quiz/prompt.ts` | Build the copy-only prompt string | Render prompt to screen; include entity IDs |
 | `AI-Quiz/parse-ai-output.ts` | Extract + validate + resolve AI JSON into builder types | Any network/DB call; create entities |
-| `AI-Quiz/ai-quiz-wizard.tsx` | Container: queries, wizard state, clipboard, parse call, builder handoff | Hold markup — a visual state added here is one no story can reach |
+| `AI-Quiz/use-ai-quiz-draft.tsx` | The half both AI paths share: queries, request state, reply → parse → prefilled `builderSlot` | Know which path is rendering it; own a generate call or a clipboard |
+| `AI-Quiz/ai-quiz-wizard.tsx` | Container for the **generate-for-me** path: the mutation and the quota, nothing else | Hold markup — a visual state added here is one no story can reach |
 | `AI-Quiz/ai-quiz-wizard-view.tsx` | All wizard markup, driven by props (+ a `builderSlot`) | Call hooks / fetch / touch the clipboard |
+| `AI-Quiz/own-ai-quiz.tsx` + `own-ai-quiz-view.tsx` | Container + markup for the **use-your-own-AI** path (its own route): prompt to clipboard, reply pasted back | Re-implement anything in the shared hook; build a second prompt |
 | `Create-Quiz-Form/*` (existing) | Edit questions, validate, submit | Know anything about AI beyond the `aiImportMode` flag |
 
 The container/view split exists so every state — both steps, each failure mode, the review
 handoff — is reachable from a story without a backend or an LLM. See §9 and
 [../development/storybook.md](../development/storybook.md).
+
+**Two paths, one pipeline.** Since Phase 2 there are two ways in: we run the model, or the
+user runs their own and pastes the reply. They are sibling routes sharing everything except
+that one step — how they divide up, and what must never diverge between them, is
+[`ai-quiz-two-paths.md`](./ai-quiz-two-paths.md).
 
 The wizard is deliberately thin: it **converges onto the existing builder** at the review
 step, so all editing, validation, and persistence logic has exactly one implementation.
@@ -332,8 +344,11 @@ The pipeline's stage boundaries make it highly unit-testable without any network
 ### 9.1 Storybook: the failure catalogue, visually
 
 Every row of §6 that has a *screen* has a story in
-`AI-Quiz/ai-quiz-wizard-view.stories.tsx` (plus
-`create-quiz-method-dialog.stories.tsx` for the fork itself). Run `npm run storybook`.
+`AI-Quiz/ai-quiz-wizard-view.stories.tsx` and `AI-Quiz/own-ai-quiz-view.stories.tsx` — one
+per path (plus `create-quiz-method-dialog.stories.tsx` for the fork itself). The lookups, the
+sample source material, the `parse` helper and the replies that fail are shared between them
+in `AI-Quiz/__fixtures__/ai-quiz.fixtures.ts`; a second copy would be two versions of "the
+reply that isn't JSON" that quietly stop matching. Run `npm run storybook`.
 
 The stories are wired to the **real `parseAiOutput`** — each one holds a fixture LLM reply
 (prose-wrapped, wrong-shaped, partially invalid, invented difficulties…) and renders

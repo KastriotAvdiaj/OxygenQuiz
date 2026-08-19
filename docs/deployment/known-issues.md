@@ -536,14 +536,118 @@ timeLimit` points, i.e. ~33 pts on a 30s question but ~100 pts (10% of base) on 
   and getting it wrong makes a question *harder* to guess, not easier.
   → `src/pages/Dashboard/Pages/Quiz/components/AI-Quiz/prompt.ts`, `parse-ai-output.ts`,
   [`typed-answer-matching.md`](../quiz/typed-answer-matching.md)
-- **P3 — Prompt logic will duplicate in C# at Phase 2.** `buildPrompt` is TS-only; the
-  planned server-side (hosted-API) generator would restate it. When Phase 2 lands, make the
-  backend the prompt authority (expose it via an endpoint the copy button also fetches) so
-  there is one copy. → `src/pages/Dashboard/Pages/Quiz/components/AI-Quiz/prompt.ts`
+- ~~**P3 — Prompt logic will duplicate in C# at Phase 2.**~~ **Now real — tracked below.**
+  It happened: `AiPromptBuilder.cs` landed alongside `prompt.ts` in slice 2.0. See
+  "Prompt now exists in two languages" under *AI quiz generation* below.
 - **P3 — AI parser restates some validation rules.** `parse-ai-output.ts` re-encodes a few
   rules already in the `create*QuestionInputSchema` Zod schemas (kept separate on purpose —
   builder vs API shapes differ, e.g. `acceptableAnswers`). Track as drift risk; unify only
   where shapes align.
+
+## AI quiz generation — Phase 2 (2026-08-09 — see docs/quiz/ai-quiz-generation-flow.md)
+
+Found while building slice 2.0 (topic + source-text generation via DeepSeek, server-side).
+The live register with full reasoning is
+[`ai-quiz-generation-flow.md`](../quiz/ai-quiz-generation-flow.md) §9 — this section is the
+index. **The feature is off by default (`Ai:Enabled=false`), so none of these can bite
+production until it's switched on.**
+
+- **P1 — An AI-generated quiz can be unplayable: `next-question` 500s.** Quiz 32
+  ("Game of Thrones 101", the first quiz generated through this feature) returns **500**
+  from `GET /{sessionId}/next-question` on its *first* question, for guests and therefore
+  presumably for everyone. Every other public quiz (25–31) serves its first question fine,
+  so this is data written by the generation path, not the play path. Narrowed to *after*
+  the `ExecuteUpdateAsync` — the session row does get `CurrentQuizQuestionId` set — so the
+  throw is in the `FirstAsync(Include(Question))` / `ToCurrentQuestionDto` block. The row
+  data (TPH discriminator, `AcceptableAnswers` JSON, FK columns) looks structurally sound
+  on inspection, so the next step is the actual exception: the API log line
+  `Error getting next question for session {SessionId}` carries it. The generic catch there
+  swallows the type, which is a large part of why this is hard to pin down — consider
+  logging it as structured data or rethrowing typed.
+  → `OxygenBackend/QuizAPI/Controllers/Quizzes/Services/QuizSessionServices/QuizSessionService.cs:178-197`
+- ~~**P2 — EF migration for `AiGenerationUsages` is not generated.**~~ **Fixed (2026-08-09).**
+  `dotnet ef migrations add AddAiGenerationUsage` — it applies on boot. The first attempt
+  failed to build on an unrelated mistake worth remembering: `AiPromptBuilder.cs` imported
+  `QuizAPI.Models.Questions`, which doesn't exist. `QuestionType` is declared in plain
+  `QuizAPI.Models` even though the file sits under `Models/Questions/` — the namespace does
+  not follow the folder there, unlike `Models/Quiz/`.
+  → `OxygenBackend/QuizAPI/Models/Ai/AiGenerationUsage.cs`, `Services/Ai/AiPromptBuilder.cs`
+- ~~**P2 — Prompt now exists in two languages.**~~ **Fixed (2026-08-09).** Slice 2.1 shipped
+  with the frontend rather than after it: `buildPrompt` is gone from `prompt.ts` and the copy
+  button fetches `POST /api/quiz/ai-prompt`, so `AiPromptBuilder.cs` is the only prompt in the
+  codebase and the two paths cannot diverge. `prompt.ts` keeps only the numeric limits the UI
+  clamps against.
+  → `OxygenBackend/QuizAPI/Services/Ai/AiPromptBuilder.cs`,
+  `src/pages/Dashboard/Pages/Quiz/components/AI-Quiz/prompt.ts`
+- **P2 — Quota concurrency can't be proven by the current test project.** `TryReserveAsync`
+  closes a real check-then-act race with a Postgres transaction-scoped advisory lock
+  (`pg_advisory_xact_lock`), which is a **no-op on every other provider**. `QuizAPI.Tests`
+  uses EF InMemory — no transactions, no advisory locks — so a concurrency test written
+  there would go green while proving nothing, which is worse than having no test. _Fix:_
+  run "ten parallel reserves against a cap of five commit exactly five" against a real
+  Postgres (Testcontainers, or a dedicated test database) before trusting the cap.
+  → `OxygenBackend/QuizAPI/Repositories/AiGenerationUsageRepository.cs`,
+  `Services/Ai/AiQuotaService.cs`
+- ~~**P2 — Rate limiting partitions by IP; quota partitions by user.**~~ **Fixed (2026-08-09).**
+  The `ai` policy now partitions on the authenticated user id (prefixed `user:`), falling back
+  to `ip:` for anonymous callers, so a classroom, library or office behind one NAT no longer
+  shares the 6/min burst window. This is only safe because the endpoint is `[Authorize]` — the
+  id comes from a signed token, so a caller can't mint fresh partitions. **Don't copy the
+  pattern to `auth` or `guest`:** on an anonymous endpoint the IP is the only unforgeable key,
+  which is why those two stay as they are.
+  → `OxygenBackend/QuizAPI/Middleware/RateLimitingExtensions.cs`
+- **P3 — A committed generation whose response never arrives is still charged.** If the
+  connection drops after `CommitAsync` but before the browser has the payload, the user
+  spent a slot on a quiz they never saw, and a retry costs another. _Fix:_ response caching
+  keyed on the `RequestHash` already stored on the usage row (plan §9.5) makes the retry
+  free and idempotent. → `Services/Ai/AiGenerationService.cs`, `AiQuotaService.CommitAsync`
+- **P3 — `SaveChangesAsync` inside the quota transaction flushes the whole change tracker.**
+  Safe today: generation runs in its own request scope and touches nothing else. It stops
+  being safe the moment generation is called from inside a larger unit of work, and it
+  would fail quietly — by committing someone else's half-finished writes. _Fix when it
+  matters:_ revisit before moving generation into another service.
+  → `OxygenBackend/QuizAPI/Services/Ai/AiQuotaService.cs`
+- **P3 — Quota window is the UTC day.** A user in UTC+13 sees their daily allowance reset
+  mid-afternoon. Deliberate: a client-supplied timezone is a quota reset the client can ask
+  for. _Fix if anyone complains:_ a rolling 24-hour window, not a client offset.
+  → `AiQuotaService.WindowStart`
+- ~~**P3 — `GET /api/quiz/ai-quota` reports the kill switch but not the spend cap.**~~
+  **Fixed (2026-08-13).** `enabled` now means "would a generation be attempted at all": the
+  endpoint calls `IAiGenerationService.IsAvailableAsync`, which is
+  `Ai:Enabled && !IsOverBudgetAsync`. The server-side option beat the client-side one because
+  hiding the button only after the first `FeatureDisabled` makes every user pay a click to
+  discover the outage, and forgets on reload. The frontend needed no change — `generationBlocked`
+  in the wizard already keyed off `quota.enabled === false`. Worth knowing when you next touch
+  the gates: `IsAvailableAsync` must stay exactly the conditions that make `GenerateAsync`
+  return `FeatureDisabled`, so both of those gates now carry a comment pointing at it.
+  → `OxygenBackend/QuizAPI/Controllers/Quizzes/AiQuizController.cs`,
+  `Services/Ai/AiGenerationService.cs`
+- ~~**P3 — `POST /ai-prompt` shares the `ai` rate-limit policy with generation.**~~
+  **Fixed (2026-08-09).** It became real as soon as the frontend landed — the wizard calls
+  `ai-quota` on mount and `ai-prompt` on every copy, so a page load plus two copies would
+  have spent half of generation's 6/min budget, throttling the fallback along with the thing
+  it's a fallback for. The policy now sits on the `ai-generate` action, not the controller.
+  → `Controllers/Quizzes/AiQuizController.cs`
+- **P3 — `QuestionsReturned` counts array elements, not usable questions.** The browser
+  parser may drop several of them, so the quality metric on every usage row is optimistic.
+  _Fix:_ have the client report back what survived parsing, or treat the number as an upper
+  bound and don't tune the prompt on it. → `Models/Ai/AiGenerationUsage.cs`
+- **P3 — One retry costs two provider calls but only one quota slot.** Deliberate — the user
+  shouldn't pay for the model failing to follow instructions — but a bad-output streak
+  roughly doubles cost per successful quiz. `EstimatedCostUsd` sums both attempts, so the
+  budget cap still sees the truth. Watch the ratio of `Released`-with-`ModelOutputInvalid`
+  rows to `Succeeded` ones. → `AiGenerationService.CallWithOneRetryAsync`
+- **P3 — Cost estimates ignore DeepSeek's announced peak-hours multiplier.**
+  `EstimatedCostUsd` prices at the flat cache-miss rate, which makes it an upper bound *today*.
+  DeepSeek has announced a **2× multiplier during 09:00–12:00 and 14:00–18:00 Beijing time**
+  with no effective date. If that lands, our estimate becomes an under-estimate by 2× and both
+  budget caps quietly allow double what they say. _Fix when it takes effect:_ apply the
+  multiplier by UTC hour in `EstimateCost`, or simply halve the configured caps.
+  → `OxygenBackend/QuizAPI/Services/Ai/AiQuotaService.EstimateCost`
+- **P3 — No streaming: the client waits blind for 10–40s.** Why `MaxQuestionsPerGeneration`
+  is capped at 15 — a bigger request risks Cloudflare's 100s proxy timeout with no progress
+  shown. Planned as slice 2.2 (NDJSON + real per-question progress); until it ships, leave
+  the cap alone. → docs/quiz/ai-quiz-generation-plan.md §6.2
 
 ## Auth enhancements
 

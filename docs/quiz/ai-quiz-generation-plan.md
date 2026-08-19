@@ -1,6 +1,18 @@
 # In-App AI Quiz Generation (Phase 2) — Plan
 
-Status: **planned, not started.** Nothing in this document is implemented yet.
+Status: **slices 2.0 and 2.1 built** on `feat/ai-quiz-generation`; 2.2 (streaming) and 2.3 (file
+upload) not started. See §12 for the phasing.
+
+> **Read [`ai-quiz-generation-flow.md`](ai-quiz-generation-flow.md) first if you want to know how
+> it behaves today.** This document is the reasoning that got us there and is kept close to
+> as-written; where the two disagree, the flow doc is right. Divergences worth knowing:
+>
+> - **§4 / §6.2** — the endpoint returns plain JSON, not an NDJSON stream. Streaming is 2.2.
+> - **§4 / §7.1** — no file upload yet. "Source mode" means pasted text.
+> - **§7.3** — the category suggestion shipped in v1, not v1.1, and grew to include the title
+>   and language. The invariant it bends is spelled out in the flow doc §1a.
+> - **§9.4** — the daily quota shipped as **2**, and Admin/SuperAdmin have no daily cap.
+
 Companion to [`ai-quiz-creation-plan.md`](ai-quiz-creation-plan.md) (Phase 0–1.5, the copy-paste
 flow) and [`ai-quiz-architecture.md`](ai-quiz-architecture.md) (how the shipped parts work).
 Last updated: 2026-08-09
@@ -47,7 +59,9 @@ and for people who would rather spend their own ChatGPT subscription than our bu
 
 ### Still open
 
-- Whether topic mode should let the model **suggest** a category (§7.3) in v1 or v1.1.
+- ~~Whether topic mode should let the model suggest a category (§7.3) in v1 or v1.1.~~
+  **Decided: v1**, and widened to the title and language too — the form-first wizard was the
+  thing making the feature feel like admin work. Flow doc §1a.
 - Batched generation for large question counts (§6.4) — designed here, deferred by default.
 - Paid plan mechanics (§9.4) — the quota seam anticipates it; the billing does not exist.
 
@@ -240,7 +254,7 @@ Event stream:
 Terminal frame is exactly one of `done` or `error`:
 
 ```jsonc
-{"phase":"error","code":"QuotaExceeded","message":"You've used all 5 generations for today.","retryAfter":"2026-08-10T00:00:00Z"}
+{"phase":"error","code":"QuotaExceeded","message":"You've used today's 2 AI quizzes.","retryAfter":"2026-08-10T00:00:00Z"}
 ```
 
 **Progress is real, not theatre.** The provider streams token deltas; the service tracks brace
@@ -427,14 +441,18 @@ Do not build billing. Build the seam:
 ```csharp
 public interface IAiQuotaPolicy
 {
-    Task<int> GetDailyLimitAsync(Guid userId);
+    Task<int?> GetDailyLimitAsync(Guid userId, CancellationToken ct = default);
 }
 ```
 
-v1 implementation returns `Ai:DefaultDailyQuota` (suggest **5**) for verified users, with an
-optional per-user override column for people you want to hand more to. A paid plan later is a
-second implementation reading a subscription — no caller changes, no schema churn in the usage
-table. Roles are the wrong mechanism here: quota is a commercial property, not a permission.
+v1 returns `Ai:DefaultDailyQuota` — shipped as **2**, and shown in the UI, so raising it changes
+a promise rather than just a cap. A paid plan later is a second implementation reading a
+subscription: no caller changes, no schema churn in the usage table.
+
+`null` means no daily cap, which **Admin and SuperAdmin** get. That is a deliberate exception to
+"roles are the wrong mechanism here" — staff aren't on a pricing tier, they're the people who
+need to test the thing. It exempts the daily *count* only: budget caps, `max_tokens`, the rate
+limit and the usage ledger all still apply, because those are what protect the bill.
 
 ### 9.5 Caching
 
@@ -511,7 +529,7 @@ returned.*
 wizard's paste box gains a dropzone.
 
 **2.4 — Polish.** Category suggestion (§7.3), response caching (§9.5), topic-mode fact-check
-notice (§8), usage display ("3 of 5 generations left today").
+notice (§8), usage display ("1 of 2 left today").
 
 **2.5+ — Deferred.** Batching (§6.4), paid plans (§9.4), grounding for topic mode.
 
@@ -602,7 +620,7 @@ Delete it in 2.0 and drop those rows from the setup table.
   "ApiKey": "",                           // env: Ai__ApiKey — never in appsettings
   "Temperature": 0.3,
   "TimeoutSeconds": 90,
-  "DefaultDailyQuota": 5,
+  "DefaultDailyQuota": 2,
   "MonthlyTokenBudgetUsd": 25,
   "MaxQuestionsPerGeneration": 15,
   "MaxFiles": 3,

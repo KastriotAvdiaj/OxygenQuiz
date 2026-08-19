@@ -40,3 +40,7 @@ dist-ssr
 
 *storybook.log
 storybook-static
+
+# FUSE leftovers: a mounted filesystem renames a file to .fuse_hiddenXXXX instead of
+# unlinking it while a process still has it open. Artefacts of the mount, never source.
+.fuse_hidden*

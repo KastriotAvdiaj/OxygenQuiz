@@ -23,7 +23,7 @@ const fetchAuthConfig = (): Promise<AuthConfig> =>
   apiService.get("/Authentication/auth-config", {
     skipErrorToast: true,
     timeout: 8000,
-  } as any);
+  });
 
 const DISABLED: ProviderConfig = { enabled: false, clientId: null };
 

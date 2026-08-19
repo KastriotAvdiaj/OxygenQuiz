@@ -602,7 +602,7 @@ const CreateQuizForm = ({
                 className="flex flex-1 flex-col min-h-0"
               >
                 <CardHeader className="w-full relative bg-primary/10 text-center border-b border-primary/30 px-2 py-3 flex-none">
-                  <TabsList className="w-full border-none bg-none shadow-none ">
+                  <TabsList className="w-full border-none bg-none shadow-none rounded-md">
                     <TabsTrigger
                       value="quiz"
                       className={`rounded-xl ${

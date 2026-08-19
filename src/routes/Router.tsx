@@ -74,6 +74,11 @@ const AiQuizWizard = lazy(() =>
     (module) => ({ default: module.AiQuizWizard }),
   ),
 );
+const OwnAiQuiz = lazy(() =>
+  import("@/pages/Dashboard/Pages/Quiz/components/AI-Quiz/own-ai-quiz").then(
+    (module) => ({ default: module.OwnAiQuiz }),
+  ),
+);
 const DashboardErrorElement = lazy(() =>
   import("@/pages/UtilityPages/Error/Dashboard-Error-Element").then(
     (module) => ({ default: module.DashboardErrorElement }),
@@ -403,10 +408,31 @@ const createAppRouter = (queryClient: QueryClient) =>
           ),
         },
         {
-          // AI-assisted creation. The wizard mounts QuizQuestionProvider itself once the
-          // generated questions are parsed, so it can seed them as initialQuestions.
+          // Bare `/ai` is no longer a screen — the generation mode lives in the URL now, so
+          // the wizard never has to render a tab strip to ask for it. Kept as a redirect
+          // because it is the path every existing link, bookmark and story used.
           path: "quizzes/create-quiz/ai",
+          element: (
+            <Navigate to="/dashboard/quizzes/create-quiz/ai/topic" replace />
+          ),
+        },
+        {
+          // AI-assisted creation, topic mode. The wizard mounts QuizQuestionProvider itself
+          // once the generated questions are parsed, so it can seed them as initialQuestions.
+          //
+          // Its sibling `ai/material` is deliberately not registered yet: `useAiQuizDraft`
+          // already reads Source mode off that segment, but the mode users asked for is file
+          // upload (slice 2.3), so the chooser shows it as "Soon" rather than routing here.
+          // See AI_MATERIAL_MODE_ENABLED in create-quiz-method-dialog.tsx.
+          path: "quizzes/create-quiz/ai/topic",
           element: <AiQuizWizard />,
+        },
+        {
+          // The same feature with the model swapped for the user's own: copy a prompt out,
+          // paste the reply back. A sibling route rather than a panel inside the wizard —
+          // docs/quiz/ai-quiz-two-paths.md. Mounts its own provider the same way.
+          path: "quizzes/create-quiz/ai/own",
+          element: <OwnAiQuiz />,
         },
         {
           // Edit mode of the same form — the wrapper loads the quiz + its questions
@@ -544,8 +570,17 @@ const createAppRouter = (queryClient: QueryClient) =>
           ),
         },
         {
+          // Same redirect as the admin dashboard — see the note there.
           path: "quizzes/create/ai",
+          element: <Navigate to="/my-dashboard/quizzes/create/ai/topic" replace />,
+        },
+        {
+          path: "quizzes/create/ai/topic",
           element: <AiQuizWizard />,
+        },
+        {
+          path: "quizzes/create/ai/own",
+          element: <OwnAiQuiz />,
         },
         {
           // Retired alongside `profile` above — settings are overlay sections now.

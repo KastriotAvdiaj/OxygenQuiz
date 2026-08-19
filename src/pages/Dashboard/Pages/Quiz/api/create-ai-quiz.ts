@@ -1,4 +1,4 @@
-import { api } from "@/lib/Api-client";
+import { apiService } from "@/lib/Api-client";
 import { MutationConfig } from "@/lib/React-query";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { QuizSummaryDTO } from "@/types/quiz-types";
@@ -56,7 +56,11 @@ export const createAiQuiz = ({
 }: {
   data: AiQuizImportInput;
 }): Promise<QuizSummaryDTO> => {
-  return api.post("/quiz/ai-import", data);
+  // `apiService`, not `api`: the raw instance doesn't unwrap `response.data`, so this used to
+  // resolve to an AxiosResponse while claiming to be a QuizSummaryDTO. Latent rather than
+  // broken — nothing reads the created quiz today — but the next caller that does would get
+  // `undefined` for every field. See the warning on the `api` export in lib/Api-client.ts.
+  return apiService.post<QuizSummaryDTO>("/quiz/ai-import", data);
 };
 
 type UseCreateAiQuizOptions = {

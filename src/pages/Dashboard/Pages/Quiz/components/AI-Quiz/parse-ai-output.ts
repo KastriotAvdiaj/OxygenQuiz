@@ -123,6 +123,64 @@ export const extractJson = (raw: string): unknown | null => {
   return null;
 };
 
+/**
+ * The quiz-level fields the model returns alongside `questions`, as raw strings.
+ *
+ * Names, never ids — the caller resolves them against the lists it already has, exactly as
+ * difficulty names have always been resolved. An unmatched name yields null and the user
+ * picks; nothing is ever created.
+ */
+export interface AiQuizSuggestions {
+  title: string | null;
+  category: string | null;
+  language: string | null;
+  /**
+   * Whether the payload contains a non-empty `questions` array. Lets the caller tell "the
+   * model didn't name a category" apart from "this isn't a quiz reply at all", which need
+   * very different responses: ask for the category, versus report a bad paste.
+   */
+  hasQuestions: boolean;
+}
+
+const EMPTY_SUGGESTIONS: AiQuizSuggestions = {
+  title: null,
+  category: null,
+  language: null,
+  hasQuestions: false,
+};
+
+const readOptionalString = (value: unknown): string | null => {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+};
+
+/**
+ * Reads the envelope around the questions: title, category, language.
+ *
+ * Separate from `parseAiOutput` because of ordering — these three are what *determine* the
+ * category and language ids, and `parseAiOutput` needs those ids as input. So the caller
+ * reads the envelope, resolves the ids (its own choice wins over the model's), and only then
+ * parses the questions.
+ *
+ * Deliberately total: every field is optional and anything unusable becomes null. A reply
+ * missing them is still a perfectly good set of questions.
+ */
+export const extractQuizSuggestions = (raw: string): AiQuizSuggestions => {
+  const json = extractJson(raw);
+  if (json === null || typeof json !== "object") return EMPTY_SUGGESTIONS;
+
+  const payload = json as Record<string, unknown>;
+
+  return {
+    title: readOptionalString(payload.title),
+    category: readOptionalString(payload.category),
+    language: readOptionalString(payload.language),
+    hasQuestions:
+      Array.isArray(payload.questions) && payload.questions.length > 0,
+  };
+};
+
 const resolveDifficultyId = (
   name: string | null | undefined,
   difficulties: QuestionDifficulty[],

@@ -1,0 +1,292 @@
+using System.Security.Cryptography;
+using System.Text;
+using Microsoft.Extensions.Options;
+using QuizAPI.Exceptions;
+using QuizAPI.Repositories.Interfaces;
+
+namespace QuizAPI.Services.Ai
+{
+    /// <summary>
+    /// The order of operations here is the feature's whole safety story, so it is worth stating
+    /// plainly (and it is drawn out in docs/quiz/ai-quiz-generation-flow.md §3):
+    ///
+    ///   1. Gates first — a disabled feature or a blown budget must cost nothing, not even a DB write.
+    ///   2. Reserve <b>before</b> calling the provider, never after. Reserving after means N
+    ///      concurrent requests all reach the provider before any of them is counted.
+    ///   3. Release on every failure the user can see. A generation that produced nothing is not
+    ///      something to charge a slot for.
+    ///   4. Commit only once we hold usable JSON.
+    ///
+    /// Expected failures come back as <see cref="AiGenerationOutcome"/> values rather than
+    /// exceptions — they are outcomes of a request that worked. Exceptions are reserved for bugs.
+    /// </summary>
+    public sealed class AiGenerationService : IAiGenerationService
+    {
+        private readonly IQuizAiProvider _provider;
+        private readonly IAiQuotaService _quota;
+        private readonly IUserRepository _users;
+        private readonly AiPromptBuilder _promptBuilder;
+        private readonly AiOptions _options;
+        private readonly ILogger<AiGenerationService> _logger;
+
+        /// <summary>
+        /// Appended verbatim to the prompt on the one retry after unparseable output. Kept short:
+        /// the failure is nearly always chattiness, not misunderstanding.
+        /// </summary>
+        private const string StrictRetrySuffix =
+            "\n\nIMPORTANT: your previous reply could not be read. Reply with the raw json object ONLY — "
+            + "no prose before or after it, no markdown code fences, nothing else.";
+
+        public AiGenerationService(
+            IQuizAiProvider provider,
+            IAiQuotaService quota,
+            IUserRepository users,
+            AiPromptBuilder promptBuilder,
+            IOptions<AiOptions> options,
+            ILogger<AiGenerationService> logger)
+        {
+            _provider = provider;
+            _quota = quota;
+            _users = users;
+            _promptBuilder = promptBuilder;
+            _options = options.Value;
+            _logger = logger;
+        }
+
+        public string BuildPrompt(AiGenerationRequest request) => _promptBuilder.Build(Normalise(request));
+
+        public Task<AiQuotaStatus> GetQuotaStatusAsync(Guid userId, CancellationToken ct = default) =>
+            _quota.GetStatusAsync(userId, ct);
+
+        /// <summary>
+        /// The two conditions below are exactly the two that make <see cref="GenerateAsync"/>
+        /// return <c>FeatureDisabled</c>, which is the whole point of this method: the quota
+        /// endpoint used to report <c>Ai:Enabled</c> alone, so a blown budget left the Generate
+        /// button visible and failing with a 503 naming no cause the user could act on.
+        ///
+        /// They stay as one expression here rather than a shared helper because
+        /// <see cref="GenerateAsync"/> needs them <em>separately</em>: in that order, with
+        /// different messages, and with the free one before the user lookup. A third condition
+        /// added there has to be added here — both gates carry a comment saying so.
+        ///
+        /// Cost: with the kill switch off this runs no query at all. Otherwise it is the same
+        /// one-or-two aggregates <see cref="GenerateAsync"/> already runs per call, and this
+        /// endpoint is hit once per wizard mount.
+        /// </summary>
+        public async Task<bool> IsAvailableAsync(CancellationToken ct = default) =>
+            _options.Enabled && !await _quota.IsOverBudgetAsync(ct);
+
+        public async Task<AiGenerationOutcome> GenerateAsync(
+            Guid userId, AiGenerationRequest request, CancellationToken ct = default)
+        {
+            // ── 1. Gates. Cheapest checks first; none of them touch the provider or the quota table.
+            // The two FeatureDisabled gates below are mirrored by IsAvailableAsync, which is what
+            // GET /ai-quota answers with — add a third and add it there too.
+            if (!_options.Enabled)
+                return AiGenerationOutcome.Fail(
+                    AiErrorCodes.FeatureDisabled,
+                    "AI generation is turned off right now. You can still create a quiz by copying the prompt into your own AI.");
+
+            var user = await _users.GetByIdAsync(userId, tracked: false, ct);
+            if (user is null)
+                throw new NotFoundException("User not found.");
+
+            // Email verification is the throttle we already own: signup is cheap, a verified
+            // inbox is less so. Unverified users keep the free copy-paste path.
+            if (!user.EmailConfirmed)
+                return AiGenerationOutcome.Fail(
+                    AiErrorCodes.EmailNotVerified,
+                    "Verify your email address to generate quizzes with AI.");
+
+            // Mirrored by IsAvailableAsync — see the note there.
+            if (await _quota.IsOverBudgetAsync(ct))
+                return AiGenerationOutcome.Fail(
+                    AiErrorCodes.FeatureDisabled,
+                    "AI generation is temporarily unavailable. You can still create a quiz by copying the prompt into your own AI.");
+
+            var normalised = Normalise(request);
+
+            var contentError = ValidateContent(normalised);
+            if (contentError is not null) return contentError;
+
+            // ── 2. Reserve before spending anything.
+            var reservation = await _quota.TryReserveAsync(userId, normalised, HashRequest(normalised), ct);
+            if (!reservation.Succeeded)
+            {
+                // Only reachable with a real limit — an unlimited policy never fails to reserve.
+                return AiGenerationOutcome.Fail(
+                    AiErrorCodes.QuotaExceeded,
+                    $"You've used today's {reservation.Limit} AI quizzes. You can still copy the prompt into your own AI, or try again tomorrow.",
+                    reservation.ResetsAtUtc);
+            }
+
+            var prompt = _promptBuilder.Build(normalised);
+
+            try
+            {
+                var (payload, usage) = await CallWithOneRetryAsync(prompt, ct);
+
+                if (payload is null)
+                {
+                    await _quota.ReleaseAsync(reservation.ReservationId, AiErrorCodes.ModelOutputInvalid, CancellationToken.None);
+                    return AiGenerationOutcome.Fail(
+                        AiErrorCodes.ModelOutputInvalid,
+                        "The AI's reply couldn't be read. Try again, or copy the prompt into your own AI instead.");
+                }
+
+                await _quota.CommitAsync(reservation.ReservationId, _provider.Model, usage, payload.QuestionCount, CancellationToken.None);
+
+                if (payload.QuestionCount < normalised.QuestionCount)
+                {
+                    // Not an error: fewer good questions beats padding. Logged because a persistent
+                    // shortfall is a prompt or model problem worth noticing.
+                    _logger.LogInformation(
+                        "AI returned {Returned} of {Requested} requested questions for user {UserId}.",
+                        payload.QuestionCount, normalised.QuestionCount, userId);
+                }
+
+                return AiGenerationOutcome.Ok(payload.Json, usage, reservation.Remaining);
+            }
+            catch (AiProviderException ex)
+            {
+                // CancellationToken.None on purpose: if the caller's token is what aborted us, we
+                // still have to give the slot back, and a cancelled token would skip the write.
+                await _quota.ReleaseAsync(reservation.ReservationId, ex.ErrorCode, CancellationToken.None);
+                return AiGenerationOutcome.Fail(ex.ErrorCode, ex.Message);
+            }
+            catch (OperationCanceledException)
+            {
+                // The user navigated away or closed the tab. Give the slot back and stay quiet.
+                await _quota.ReleaseAsync(reservation.ReservationId, "Cancelled", CancellationToken.None);
+                throw;
+            }
+            catch (Exception ex)
+            {
+                // A real bug. Release anyway — the user got nothing — then let it surface as a 500.
+                await _quota.ReleaseAsync(reservation.ReservationId, "Unexpected", CancellationToken.None);
+                _logger.LogError(ex, "Unexpected failure generating a quiz for user {UserId}.", userId);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// One call, and one retry if the reply held no usable JSON object. Token usage is summed
+        /// across attempts: the first call cost real money whether or not we could read it.
+        /// </summary>
+        private async Task<(AiExtractedPayload? Payload, AiTokenUsage Usage)> CallWithOneRetryAsync(
+            string prompt, CancellationToken ct)
+        {
+            var first = await _provider.CompleteJsonAsync(prompt, ct);
+            var payload = AiJsonExtractor.TryExtract(first.Content);
+            if (payload is not null) return (payload, first.Usage);
+
+            _logger.LogWarning("AI reply contained no usable JSON object; retrying once with a stricter instruction.");
+
+            var second = await _provider.CompleteJsonAsync(prompt + StrictRetrySuffix, ct);
+            var retryPayload = AiJsonExtractor.TryExtract(second.Content);
+
+            var combined = new AiTokenUsage(
+                first.Usage.InputTokens + second.Usage.InputTokens,
+                first.Usage.OutputTokens + second.Usage.OutputTokens);
+
+            return (retryPayload, combined);
+        }
+
+        /// <summary>
+        /// Clamps everything the client sent to what the server is willing to act on. The DTO's
+        /// data annotations reject the obviously invalid; this handles the merely excessive, so a
+        /// slightly-too-long paste is trimmed rather than rejected.
+        /// </summary>
+        private AiGenerationRequest Normalise(AiGenerationRequest request)
+        {
+            var allowedTypes = request.AllowedTypes
+                .Where(t => AiPromptBuilder.SupportedTypes.Contains(t))
+                .Distinct(StringComparer.Ordinal)
+                .ToList();
+
+            return request with
+            {
+                Topic = Truncate(request.Topic?.Trim(), _options.MaxTopicChars),
+                SourceText = Truncate(request.SourceText?.Trim(), _options.MaxSourceChars),
+                ExtraInstructions = Truncate(request.ExtraInstructions?.Trim(), _options.MaxExtraInstructionChars),
+                LanguageName = string.IsNullOrWhiteSpace(request.LanguageName) ? null : request.LanguageName.Trim(),
+                QuestionCount = Math.Clamp(request.QuestionCount, 1, Math.Max(1, _options.MaxQuestionsPerGeneration)),
+                AllowedTypes = allowedTypes,
+                DifficultyNames = CleanNames(request.DifficultyNames),
+                LanguageNames = CleanNames(request.LanguageNames),
+                CategoryNames = CleanNames(request.CategoryNames),
+            };
+        }
+
+        /// <summary>Trims, drops blanks and de-duplicates a caller-supplied name list.</summary>
+        private static List<string> CleanNames(IReadOnlyList<string> names) =>
+            names.Where(n => !string.IsNullOrWhiteSpace(n))
+                 .Select(n => n.Trim())
+                 .Distinct(StringComparer.OrdinalIgnoreCase)
+                 .ToList();
+
+        /// <summary>
+        /// Semantic checks that need the normalised request. Returned as outcomes rather than
+        /// thrown so the client gets a code it can switch on, like every other failure here.
+        /// </summary>
+        private static AiGenerationOutcome? ValidateContent(AiGenerationRequest r)
+        {
+            // Shape problems. Note AllowedTypes is checked AFTER normalisation, so this also
+            // catches a client that sent only types we don't support — the DTO's MinLength(1)
+            // can't see that.
+            if (r.AllowedTypes.Count == 0)
+                return AiGenerationOutcome.Fail(AiErrorCodes.InvalidRequest, "Pick at least one question type.");
+
+            if (r.DifficultyNames.Count == 0)
+                return AiGenerationOutcome.Fail(AiErrorCodes.InvalidRequest, "No difficulty levels were supplied.");
+
+            // Either the user named a language, or we gave the model a list to choose from.
+            // Neither means the questions would be written in whatever the model felt like and
+            // we'd have nothing to resolve the answer against.
+            if (string.IsNullOrWhiteSpace(r.LanguageName) && r.LanguageNames.Count == 0)
+                return AiGenerationOutcome.Fail(AiErrorCodes.InvalidRequest, "No languages were supplied to choose from.");
+
+            return r.Mode switch
+            {
+                AiGenerationMode.Topic when string.IsNullOrWhiteSpace(r.Topic) =>
+                    AiGenerationOutcome.Fail(AiErrorCodes.EmptySource, "Tell the AI what the quiz should be about."),
+
+                // 40 characters is not a threshold with a theory behind it — it is "shorter than
+                // any real study material", and generating from a stray sentence wastes a slot.
+                AiGenerationMode.Source when (r.SourceText?.Trim().Length ?? 0) < 40 =>
+                    AiGenerationOutcome.Fail(AiErrorCodes.EmptySource, "Add some source material for the AI to work from."),
+
+                _ => null
+            };
+        }
+
+        /// <summary>
+        /// Fingerprints everything that affects the reply. Stored today for debugging and the
+        /// budget trail; it becomes the response-cache key when caching lands (plan §9.5), which
+        /// is why the options are in the hash and not just the text.
+        /// </summary>
+        private static string HashRequest(AiGenerationRequest r)
+        {
+            // Unit Separator: it cannot occur in any of the parts, so ("ab","c") and ("a","bc")
+            // hash differently. An empty separator would let them collide.
+            var material = string.Join(
+                '\u001F',
+                r.Mode,
+                r.Topic ?? string.Empty,
+                r.SourceText ?? string.Empty,
+                r.LanguageName ?? string.Empty,
+                string.Join(',', r.LanguageNames),
+                string.Join(',', r.CategoryNames),
+                string.Join(',', r.DifficultyNames),
+                r.QuestionCount,
+                string.Join(',', r.AllowedTypes),
+                r.ExtraInstructions ?? string.Empty);
+
+            return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(material))).ToLowerInvariant();
+        }
+
+        private static string? Truncate(string? value, int max) =>
+            value is null ? null : value.Length <= max ? value : value[..max];
+
+    }
+}

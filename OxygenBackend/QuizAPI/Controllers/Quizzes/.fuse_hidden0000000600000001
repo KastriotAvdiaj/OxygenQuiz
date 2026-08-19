@@ -1,0 +1,196 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.Options;
+using QuizAPI.DTOs.Quiz;
+using QuizAPI.Middleware;
+using QuizAPI.Services.Ai;
+using QuizAPI.Services.Audit;
+using QuizAPI.Services.CurrentUserService;
+
+namespace QuizAPI.Controllers.Quizzes
+{
+    /// <summary>
+    /// In-app AI quiz generation (docs/quiz/ai-quiz-generation-plan.md). Shares the
+    /// <c>/api/quiz</c> prefix with <see cref="QuizController"/> but lives in its own file:
+    /// generation has a different shape from CRUD (a provider, a quota, a spend cap) and folding
+    /// it into an already-long controller buys nothing.
+    ///
+    /// This controller holds no business logic. It maps a DTO to the service contract and a
+    /// failure code to an HTTP status — nothing else belongs here.
+    /// </summary>
+    [ApiController]
+    [Route("api/quiz")]
+    [Authorize]
+    [EnableRateLimiting(RateLimitingExtensions.AiPolicy)]
+    public class AiQuizController : BaseApiController
+    {
+        private readonly IAiGenerationService _generation;
+        private readonly ICurrentUserService _currentUser;
+        private readonly IAuditService _audit;
+        private readonly AiOptions _options;
+        private readonly ILogger<AiQuizController> _logger;
+
+        public AiQuizController(
+            IAiGenerationService generation,
+            ICurrentUserService currentUser,
+            IAuditService audit,
+            IOptions<AiOptions> options,
+            ILogger<AiQuizController> logger)
+        {
+            _generation = generation ?? throw new ArgumentNullException(nameof(generation));
+            _currentUser = currentUser ?? throw new ArgumentNullException(nameof(currentUser));
+            _audit = audit ?? throw new ArgumentNullException(nameof(audit));
+            _options = options.Value;
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        }
+
+        /// <summary>
+        /// Generate quiz questions with the hosted model. Returns the model's JSON for the
+        /// browser to validate and review — this endpoint never creates anything. Persistence
+        /// still goes through <c>POST /api/quiz/ai-import</c>, unchanged.
+        /// </summary>
+        [HttpPost("ai-generate")]
+        [ProducesResponseType(typeof(AiGenerateResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(AiGenerateErrorResponse), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(AiGenerateErrorResponse), StatusCodes.Status403Forbidden)]
+        [ProducesResponseType(typeof(AiGenerateErrorResponse), StatusCodes.Status429TooManyRequests)]
+        [ProducesResponseType(typeof(AiGenerateErrorResponse), StatusCodes.Status502BadGateway)]
+        [ProducesResponseType(typeof(AiGenerateErrorResponse), StatusCodes.Status503ServiceUnavailable)]
+        public async Task<IActionResult> Generate([FromBody] AiGenerateCM request, CancellationToken ct)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            var userId = _currentUser.UserId;
+            if (userId is null) return Unauthorized();
+
+            var serviceRequest = request.ToServiceRequest();
+            if (serviceRequest is null)
+                return BadRequest(new AiGenerateErrorResponse
+                {
+                    Code = AiErrorCodes.EmptySource,
+                    Message = $"'{request.Mode}' is not a valid generation mode.",
+                });
+
+            var outcome = await _generation.GenerateAsync(userId.Value, serviceRequest, ct);
+
+            if (!outcome.Success) return MapFailure(outcome);
+
+            // After the fact, like every other audit call — an audit write must never be the
+            // reason a successful operation reports failure.
+            await _audit.LogAsync(
+                AuditActions.AiQuizGenerated,
+                entity: "Quiz",
+                entityId: null,
+                newValue: new
+                {
+                    Mode = serviceRequest.Mode.ToString(),
+                    serviceRequest.QuestionCount,
+                    outcome.Usage.InputTokens,
+                    outcome.Usage.OutputTokens,
+                },
+                ct: ct);
+
+            return Ok(new AiGenerateResponse
+            {
+                Payload = outcome.PayloadJson!,
+                QuotaRemaining = outcome.QuotaRemaining ?? 0,
+                InputTokens = outcome.Usage.InputTokens,
+                OutputTokens = outcome.Usage.OutputTokens,
+            });
+        }
+
+        /// <summary>
+        /// The prompt the generator would send, for the user to paste into their own LLM. Free:
+        /// no quota, no provider call. Exists so copy-paste and in-app generation share one
+        /// prompt (plan §5.1) — see the note in <see cref="AiPromptBuilder"/> about the duplicate
+        /// that still lives in prompt.ts until slice 2.1.
+        /// </summary>
+        [HttpPost("ai-prompt")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public IActionResult GetPrompt([FromBody] AiGenerateCM request)
+        {
+            if (!ModelState.IsValid) return BadRequest(ModelState);
+
+            var serviceRequest = request.ToServiceRequest();
+            if (serviceRequest is null)
+                return BadRequest(new AiGenerateErrorResponse
+                {
+                    Code = AiErrorCodes.EmptySource,
+                    Message = $"'{request.Mode}' is not a valid generation mode.",
+                });
+
+            return Ok(new { prompt = _generation.BuildPrompt(serviceRequest) });
+        }
+
+        /// <summary>
+        /// Today's remaining generations, so the UI can show "3 of 5 left" and hide the Generate
+        /// button when the feature is off instead of offering a button that always fails.
+        /// </summary>
+        [HttpGet("ai-quota")]
+        [ProducesResponseType(typeof(AiQuotaResponse), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetQuota(CancellationToken ct)
+        {
+            var userId = _currentUser.UserId;
+            if (userId is null) return Unauthorized();
+
+            var status = await _generation.GetQuotaStatusAsync(userId.Value, ct);
+
+            return Ok(new AiQuotaResponse
+            {
+                Enabled = _options.Enabled,
+                Limit = status.Limit,
+                Used = status.Used,
+                Remaining = status.Remaining,
+                ResetsAt = status.ResetsAtUtc,
+            });
+        }
+
+        /// <summary>
+        /// The one place a failure code becomes a status code. Kept as an explicit switch rather
+        /// than a convention so adding a code is a compile-time prompt to decide what it means
+        /// over HTTP.
+        /// </summary>
+        private IActionResult MapFailure(AiGenerationOutcome outcome)
+        {
+            var body = new AiGenerateErrorResponse
+            {
+                Code = outcome.ErrorCode ?? "Unknown",
+                Message = outcome.Message ?? "Quiz generation failed.",
+                RetryAfter = outcome.RetryAfterUtc,
+            };
+
+            switch (outcome.ErrorCode)
+            {
+                case AiErrorCodes.QuotaExceeded:
+                    if (outcome.RetryAfterUtc is { } resetsAt)
+                    {
+                        var seconds = (int)Math.Max(1, (resetsAt - DateTime.UtcNow).TotalSeconds);
+                        Response.Headers.RetryAfter = seconds.ToString();
+                    }
+                    return StatusCode(StatusCodes.Status429TooManyRequests, body);
+
+                case AiErrorCodes.EmailNotVerified:
+                    return StatusCode(StatusCodes.Status403Forbidden, body);
+
+                case AiErrorCodes.FeatureDisabled:
+                    return StatusCode(StatusCodes.Status503ServiceUnavailable, body);
+
+                // Upstream is at fault, not the caller — a 400 here would send the client into a
+                // "fix your request" loop over a problem no request change can fix.
+                case AiErrorCodes.ProviderUnavailable:
+                case AiErrorCodes.ProviderTimeout:
+                case AiErrorCodes.ModelOutputInvalid:
+                    _logger.LogWarning("AI generation failed upstream: {Code}", outcome.ErrorCode);
+                    return StatusCode(StatusCodes.Status502BadGateway, body);
+
+                case AiErrorCodes.EmptySource:
+                case AiErrorCodes.SourceTooLarge:
+                case AiErrorCodes.UnreadableSource:
+                default:
+                    return BadRequest(body);
+            }
+        }
+    }
+}

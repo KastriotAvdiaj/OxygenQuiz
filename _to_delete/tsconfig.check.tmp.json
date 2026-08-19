@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.app.json",
+  "include": [
+    "src/pages/Dashboard/Pages/Quiz/components/AI-Quiz/**/*",
+    "src/pages/Dashboard/Pages/Quiz/components/create-quiz-method-dialog.tsx",
+    "src/pages/Dashboard/Pages/Quiz/components/create-quiz-method-dialog.stories.tsx",
+    "src/vite-env.d.ts"
+  ]
+}
