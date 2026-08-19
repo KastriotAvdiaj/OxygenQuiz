@@ -611,11 +611,17 @@ production until it's switched on.**
   mid-afternoon. Deliberate: a client-supplied timezone is a quota reset the client can ask
   for. _Fix if anyone complains:_ a rolling 24-hour window, not a client offset.
   → `AiQuotaService.WindowStart`
-- **P3 — `GET /api/quiz/ai-quota` reports the kill switch but not the spend cap.** `enabled`
-  reflects `Ai:Enabled` only, so a blown `Ai:MonthlyBudgetUsd` leaves the Generate button
-  visible and failing with a 503 instead of hidden. _Fix:_ have the endpoint consult
-  `IsOverBudgetAsync`, or have the client hide the button after its first `FeatureDisabled`.
-  → `OxygenBackend/QuizAPI/Controllers/Quizzes/AiQuizController.cs`
+- ~~**P3 — `GET /api/quiz/ai-quota` reports the kill switch but not the spend cap.**~~
+  **Fixed (2026-08-13).** `enabled` now means "would a generation be attempted at all": the
+  endpoint calls `IAiGenerationService.IsAvailableAsync`, which is
+  `Ai:Enabled && !IsOverBudgetAsync`. The server-side option beat the client-side one because
+  hiding the button only after the first `FeatureDisabled` makes every user pay a click to
+  discover the outage, and forgets on reload. The frontend needed no change — `generationBlocked`
+  in the wizard already keyed off `quota.enabled === false`. Worth knowing when you next touch
+  the gates: `IsAvailableAsync` must stay exactly the conditions that make `GenerateAsync`
+  return `FeatureDisabled`, so both of those gates now carry a comment pointing at it.
+  → `OxygenBackend/QuizAPI/Controllers/Quizzes/AiQuizController.cs`,
+  `Services/Ai/AiGenerationService.cs`
 - ~~**P3 — `POST /ai-prompt` shares the `ai` rate-limit policy with generation.**~~
   **Fixed (2026-08-09).** It became real as soon as the frontend landed — the wizard calls
   `ai-quota` on mount and `ai-prompt` on every copy, so a page load plus two copies would

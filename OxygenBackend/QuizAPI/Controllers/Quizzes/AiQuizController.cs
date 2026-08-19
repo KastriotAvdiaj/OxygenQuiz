@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
-using Microsoft.Extensions.Options;
 using QuizAPI.DTOs.Quiz;
 using QuizAPI.Middleware;
 using QuizAPI.Services.Ai;
@@ -27,20 +26,17 @@ namespace QuizAPI.Controllers.Quizzes
         private readonly IAiGenerationService _generation;
         private readonly ICurrentUserService _currentUser;
         private readonly IAuditService _audit;
-        private readonly AiOptions _options;
         private readonly ILogger<AiQuizController> _logger;
 
         public AiQuizController(
             IAiGenerationService generation,
             ICurrentUserService currentUser,
             IAuditService audit,
-            IOptions<AiOptions> options,
             ILogger<AiQuizController> logger)
         {
             _generation = generation ?? throw new ArgumentNullException(nameof(generation));
             _currentUser = currentUser ?? throw new ArgumentNullException(nameof(currentUser));
             _audit = audit ?? throw new ArgumentNullException(nameof(audit));
-            _options = options.Value;
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -129,8 +125,14 @@ namespace QuizAPI.Controllers.Quizzes
         }
 
         /// <summary>
-        /// Today's remaining generations, so the UI can show "3 of 5 left" and hide the Generate
-        /// button when the feature is off instead of offering a button that always fails.
+        /// Today's remaining generations, so the UI can show "3 of 5 left" and stop offering the
+        /// Generate button when it could only fail.
+        ///
+        /// <c>enabled</c> answers "would a generation be attempted at all" — kill switch
+        /// <em>and</em> spend caps — not "is <c>Ai:Enabled</c> set". Reporting only the flag was
+        /// the bug: a blown budget left the button live and every press returned a 503 the user
+        /// could do nothing about. One boolean rather than a reason code on purpose: the client
+        /// shows the same thing either way, and the copy-paste path is the answer to both.
         /// </summary>
         [HttpGet("ai-quota")]
         [ProducesResponseType(typeof(AiQuotaResponse), StatusCodes.Status200OK)]
@@ -143,7 +145,7 @@ namespace QuizAPI.Controllers.Quizzes
 
             return Ok(new AiQuotaResponse
             {
-                Enabled = _options.Enabled,
+                Enabled = await _generation.IsAvailableAsync(ct),
                 Limit = status.Limit,
                 Used = status.Used,
                 Remaining = status.Remaining,

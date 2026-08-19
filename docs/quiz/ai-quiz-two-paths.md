@@ -3,7 +3,7 @@
 How "generate it for me" and "use your own AI" relate, why they are two routes rather than
 one screen with a disclosure, and what has to stay identical between them.
 
-Last updated: 2026-08-12. Companion to
+Last updated: 2026-08-13. Companion to
 [`ai-quiz-architecture.md`](./ai-quiz-architecture.md) (the *how* of the whole feature) and
 [`ai-quiz-generation-flow.md`](./ai-quiz-generation-flow.md) (the in-app generation contract).
 
@@ -13,14 +13,14 @@ Last updated: 2026-08-12. Companion to
 
 | | **Generate for me** | **Use your own AI** |
 |---|---|---|
-| Route (admin) | `/dashboard/quizzes/create-quiz/ai` | `/dashboard/quizzes/create-quiz/ai/own` |
-| Route (user) | `/my-dashboard/quizzes/create/ai` | `/my-dashboard/quizzes/create/ai/own` |
+| Route (admin) | `/dashboard/quizzes/create-quiz/ai/topic` | `/dashboard/quizzes/create-quiz/ai/own` |
+| Route (user) | `/my-dashboard/quizzes/create/ai/topic` | `/my-dashboard/quizzes/create/ai/own` |
 | Container | `ai-quiz-wizard.tsx` | `own-ai-quiz.tsx` |
 | View | `ai-quiz-wizard-view.tsx` | `own-ai-quiz-view.tsx` |
 | Who runs the model | We do, on our budget | The user's ChatGPT / Claude / Gemini |
 | Costs | A daily generation from their quota | Nothing |
 | The middle step | One Generate button | Copy prompt → leave → paste reply |
-| Input | Topic **or** source material | Topic only (see below) |
+| Input | Topic **or** source material — one per route | Topic only (see below) |
 | Owns | The generate mutation, quota, `AiGenerateError` | The clipboard, the pasted reply |
 
 Everything else — the entity lookups, "what should this quiz be about?", the Advanced drawer,
@@ -47,12 +47,60 @@ The practical wins: the browser Back button means something, the state is scoped
 attempt rather than lingering behind a collapsed disclosure, and neither screen has to render
 the other's controls.
 
-**How the user gets there.** One quiet grey link at the bottom of the wizard, directly above
-"Create manually instead" — the two ways out of the generate path, both understated. There is
-deliberately no second, louder entrance: when in-app generation is unavailable (kill switch,
-quota spent, unverified email) the Generate button goes **disabled** rather than disappearing,
-and this link stays exactly where it always is. Two buttons to the same page, one of them
-promoted only sometimes, made the card look like it was offering two different things.
+**How the user gets there.** One quiet link at the foot of the wizard card. Not a card in the
+method dialog (§2a): that dialog asks *what should the AI work from*, and "someone else's
+model" is not an answer to that question — it is the same job with the engine swapped, which
+only becomes interesting once you are already looking at the form. It used to sit here
+alongside "Create manually instead"; that second link left with the mode tabs, because
+choosing between manual and AI is the dialog's job and repeating it here is what made the card
+read as a menu.
+
+The link changes weight rather than appearing and disappearing. When in-app generation is
+unavailable (kill switch, quota spent, unverified email) the Generate button goes **disabled**
+rather than vanishing, and this link takes the primary colour with a line above it saying why —
+because in that state it is the only way forward from the page. The rest of the time it stays
+grey, so it reads as a footnote rather than a competing offer.
+
+## 2a. The chooser, and why the wizard stopped asking
+
+Every "which way?" decision now happens in `create-quiz-method-dialog.tsx`, before anything is
+typed, in two steps inside one overlay:
+
+1. **How do you want to build this quiz?** — Manually / With AI.
+2. **What should the AI work from?** — From a topic / From my material.
+
+Two cards per step, so the dialog doesn't change shape between them. "Use your own AI" is
+deliberately not a third card — see §2 for why it belongs at the foot of the wizard instead.
+
+Step 2 replaces the mode tabs that used to head the wizard's card. The reason is arithmetic:
+that card carried the tabs, the Advanced trigger, "Use your own AI instead" and "Create
+manually instead" — **four navigational controls wrapped around a single text box**. The form
+was about 15% of the screen it sat on and the rest was a menu. Choosing a route and describing
+a quiz are two different jobs; they now happen on two different surfaces.
+
+**The cards are `ModeCard` at `size="compact"`** — the same component the player-facing
+game-mode hub renders (`Game-Mode-Selection.tsx`). Picking how to make a quiz and picking how
+to play one are the same kind of decision and should not look like two different products;
+reusing the component rather than restyling a copy is what keeps that true after the next
+change to either surface. The variant added for this (`size`, `disabled`) lives in
+`mode-card.tsx`, not here.
+
+**Two dialog steps rather than a second dialog or a chooser page.** The user already has this
+overlay open, so swapping its body is a cheaper transition than closing it to load a route for
+one binary decision — and by §6's own test, topic-vs-material changes *what we ask the model
+for*, not who runs it, so it does not earn a page. The cost is that browser Back doesn't undo
+step 2; the arrow beside the dialog title is what pays it.
+
+**The mode still travels in the URL** (`/ai/topic`, `/ai/material`), read off the pathname by
+`useAiQuizDraft`. That is what guarantees the tabs cannot come back: there is no mode state for
+the wizard to toggle, only a route it was loaded at. `/ai` redirects to `/ai/topic`, so
+existing links, bookmarks and the own-AI page's "back to generating" control keep working.
+
+**`/ai/material` is not registered yet.** The server has accepted pasted `sourceText` since
+slice 2.0, but the mode people actually asked for is *upload a file* (slice 2.3), so the dialog
+renders that card disabled — "Coming soon" in its foot row, no lift, no arrow — rather than
+routing to a paste box. The flag is `AI_MATERIAL_MODE_ENABLED` in the dialog, and its doc
+comment lists what else has to change when it flips — the route, and nothing else.
 
 ## 3. What must stay the same, and what enforces it
 
@@ -66,11 +114,13 @@ promoted only sometimes, made the card look like it was offering two different t
   `builderSlot` with `aiImportMode` — happens in one place and cannot diverge.
 - **One set of Advanced options.** `advanced-options.tsx` is rendered by both views with the
   same props.
-- **Except the mode tabs, which only the generate path has.** "From my material" means *we*
+- **Except source mode, which only the generate path has.** "From my material" means *we*
   put the material in the request and truncate it server-side at `Ai:MaxSourceChars`. Through
   someone else's chat window we can't: the user pastes their notes there themselves, at
-  whatever length that tool accepts. Offering the tab on the own-AI page would promise a
-  handoff we don't perform, so that page is topic-only and its `mode` never leaves `"Topic"`.
+  whatever length that tool accepts. Offering it for the own-AI page would promise a handoff
+  we don't perform, so that page is topic-only and its `mode` never leaves `"Topic"` — and the
+  own-AI page is linked from the wizard's foot rather than offered as a source in the chooser.
+  (This was a tab strip on the generate path until Aug 2026. It is a route now; see §2a.)
 - **The same validation bar.** "Enough to build a prompt from" is `topic.trim()` non-empty, or
   40+ characters of source material, plus at least one question type. Each view has its own
   copy of that guard because each wraps a different button — if you change one, change both.
@@ -88,8 +138,11 @@ param, a "keep what I typed" affordance), not an accident of shared state.
 ## 5. Where things live
 
 ```
+components/
+  create-quiz-method-dialog.tsx ← the chooser: both steps, and the material flag
+                                  (renders pages/Quiz/components/mode-card.tsx, compact)
 AI-Quiz/
-  use-ai-quiz-draft.tsx        ← everything both paths share
+  use-ai-quiz-draft.tsx        ← everything both paths share (incl. mode ← route)
   ai-quiz-wizard.tsx           ← generate: mutation + quota
   ai-quiz-wizard-view.tsx      ← generate: markup
   own-ai-quiz.tsx              ← own AI: clipboard + pasted reply

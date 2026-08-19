@@ -50,7 +50,7 @@ const meta = {
     difficulties,
     languages,
     isLoadingEntities: false,
-    generatePath: "/dashboard/quizzes/create-quiz/ai",
+    generatePath: "/dashboard/quizzes/create-quiz/ai/topic",
     manualCreatePath: "/dashboard/quizzes/create-quiz",
     topic: "",
     title: "",
@@ -63,6 +63,7 @@ const meta = {
     extraInstructions: "",
     copied: false,
     isCopying: false,
+    promptToCopyByHand: null,
     aiResponse: "",
     parseResult: null,
     needsConfirmation: false,
@@ -123,6 +124,21 @@ export const ValidationOnEmptyPaste: Story = {
     await userEvent.click(
       canvas.getByRole("button", { name: /review questions/i }),
     );
+  },
+};
+
+/**
+ * The clipboard refused the write — a slow server eats the click's transient activation, and
+ * Safari is stricter than Chrome about it. The prompt is already in hand, so it goes on screen
+ * rather than into an apology.
+ */
+export const ClipboardBlocked: Story = {
+  args: {
+    topic: "The French Revolution",
+    promptToCopyByHand:
+      'You are writing a quiz about "The French Revolution".\n\nReturn JSON of the shape ' +
+      '{ "title": string, "category": string, "language": string, "questions": [...] } and ' +
+      "nothing else.",
   },
 };
 

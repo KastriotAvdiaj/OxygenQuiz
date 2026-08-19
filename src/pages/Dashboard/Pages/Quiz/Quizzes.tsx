@@ -151,11 +151,13 @@ export const Quizzes = () => {
               </span>
             )}
           </Button>
-          {/* Manual-vs-AI fork. Lives in its own component (and its own story) rather
-              than inline here — see create-quiz-method-dialog.tsx. */}
+          {/* Every "which way?" decision for quiz creation, in one place: manual vs AI,
+              then what the AI works from. Lives in its own component (and its own story)
+              rather than inline here — see create-quiz-method-dialog.tsx. */}
           <CreateQuizMethodDialog
             manualPath="/dashboard/quizzes/create-quiz"
-            aiPath="/dashboard/quizzes/create-quiz/ai"
+            aiTopicPath="/dashboard/quizzes/create-quiz/ai/topic"
+            aiMaterialPath="/dashboard/quizzes/create-quiz/ai/material"
           />
         </div>
       </div>

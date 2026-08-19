@@ -58,10 +58,30 @@ namespace QuizAPI.Services.Ai
         public Task<AiQuotaStatus> GetQuotaStatusAsync(Guid userId, CancellationToken ct = default) =>
             _quota.GetStatusAsync(userId, ct);
 
+        /// <summary>
+        /// The two conditions below are exactly the two that make <see cref="GenerateAsync"/>
+        /// return <c>FeatureDisabled</c>, which is the whole point of this method: the quota
+        /// endpoint used to report <c>Ai:Enabled</c> alone, so a blown budget left the Generate
+        /// button visible and failing with a 503 naming no cause the user could act on.
+        ///
+        /// They stay as one expression here rather than a shared helper because
+        /// <see cref="GenerateAsync"/> needs them <em>separately</em>: in that order, with
+        /// different messages, and with the free one before the user lookup. A third condition
+        /// added there has to be added here — both gates carry a comment saying so.
+        ///
+        /// Cost: with the kill switch off this runs no query at all. Otherwise it is the same
+        /// one-or-two aggregates <see cref="GenerateAsync"/> already runs per call, and this
+        /// endpoint is hit once per wizard mount.
+        /// </summary>
+        public async Task<bool> IsAvailableAsync(CancellationToken ct = default) =>
+            _options.Enabled && !await _quota.IsOverBudgetAsync(ct);
+
         public async Task<AiGenerationOutcome> GenerateAsync(
             Guid userId, AiGenerationRequest request, CancellationToken ct = default)
         {
             // ── 1. Gates. Cheapest checks first; none of them touch the provider or the quota table.
+            // The two FeatureDisabled gates below are mirrored by IsAvailableAsync, which is what
+            // GET /ai-quota answers with — add a third and add it there too.
             if (!_options.Enabled)
                 return AiGenerationOutcome.Fail(
                     AiErrorCodes.FeatureDisabled,
@@ -78,6 +98,7 @@ namespace QuizAPI.Services.Ai
                     AiErrorCodes.EmailNotVerified,
                     "Verify your email address to generate quizzes with AI.");
 
+            // Mirrored by IsAvailableAsync — see the note there.
             if (await _quota.IsOverBudgetAsync(ct))
                 return AiGenerationOutcome.Fail(
                     AiErrorCodes.FeatureDisabled,

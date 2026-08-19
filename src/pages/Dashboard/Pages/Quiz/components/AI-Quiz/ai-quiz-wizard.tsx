@@ -68,10 +68,8 @@ export const AiQuizWizard = () => {
       languages={draft.languages}
       isLoadingEntities={draft.isLoadingEntities}
       quizzesPath={draft.paths.quizzes}
-      manualCreatePath={draft.paths.manualCreate}
       ownAiPath={draft.paths.ownAi}
       mode={draft.mode}
-      onModeChange={draft.setMode}
       topic={draft.topic}
       onTopicChange={draft.setTopic}
       sourceData={draft.sourceData}

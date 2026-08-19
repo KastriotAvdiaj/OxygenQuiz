@@ -131,6 +131,12 @@ namespace QuizAPI.DTOs.Quiz
 
     public class AiQuotaResponse
     {
+        /// <summary>
+        /// Whether a generation would be attempted at all: the <c>Ai:Enabled</c> kill switch
+        /// <em>and</em> the daily/30-day spend caps. False means every generate call would
+        /// return <c>FeatureDisabled</c>, so the client disables the button and points at the
+        /// copy-paste path instead of letting someone press it into a 503.
+        /// </summary>
         public bool Enabled { get; set; }
 
         /// <summary>Daily allowance, or <c>null</c> for unlimited (staff). The UI branches on this.</summary>

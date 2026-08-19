@@ -197,8 +197,8 @@ const quotaAvailable = {
 /**
  * Two decorators, both required:
  *
- * - **MemoryRouter** — the header's "Back to quizzes" and "Create manually instead" are
- *   react-router `Link`s and throw outside a router.
+ * - **MemoryRouter** — the header's Back control and the blocked-state "use your own AI"
+ *   link navigate with react-router and throw outside a router.
  * - **QueryClientProvider** — the view itself is hook-free, but the three entity selects
  *   consult `useCanSelectUnspecifiedLookup` → `useUser` (React Query) to decide whether to
  *   offer the seeded "Unspecified" lookup. Without a client they throw. The fixtures
@@ -231,7 +231,6 @@ const meta = {
     languages,
     isLoadingEntities: false,
     quizzesPath: "/dashboard/quizzes",
-    manualCreatePath: "/dashboard/quizzes/create-quiz",
     ownAiPath: "/dashboard/quizzes/create-quiz/ai/own",
     mode: "Topic",
     topic: "",
@@ -252,7 +251,6 @@ const meta = {
     suggestedCategoryName: null,
     suggestedLanguageName: null,
     parseResult: null,
-    onModeChange: fn(),
     onTopicChange: fn(),
     onSourceDataChange: fn(),
     onTitleChange: fn(),
@@ -343,6 +341,11 @@ export const ValidationOnShortSource: Story = {
 };
 
 // ── Source mode ────────────────────────────────────────────────────────────────────────
+//
+// `/ai/material` is not a registered route yet — the method dialog shows that option as
+// "Soon" (AI_MATERIAL_MODE_ENABLED in create-quiz-method-dialog.tsx). These stories stay:
+// the view renders whichever field its `mode` asks for, and they are the only place the
+// material screen can be reviewed until slice 2.3 registers the route.
 
 export const SourceModeEmpty: Story = {
   args: { mode: "Source" },

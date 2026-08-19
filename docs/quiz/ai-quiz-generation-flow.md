@@ -257,6 +257,26 @@ shared interceptor keeps only the message. The view switches on the code to deci
 retry for the transient ones (and it says the daily allowance wasn't touched, because it wasn't),
 a reset time for quota, and a promoted copy-paste path when generation is unavailable at all.
 
+**Every AI request carries its own timeout, and they are all different.** The axios instance
+sets none, and a browser XHR with `timeout: 0` waits for a response forever — so a server that
+accepts the connection and never answers leaves a spinner with no error and no way to retry.
+That shipped: "Copy prompt" on the own-AI page sat at "Preparing…" indefinitely in production.
+`AI_TIMEOUTS_MS` in `api/generate-ai-quiz.ts` sets prompt 15s (server-side string building),
+generate 120s (must exceed `Ai:TimeoutSeconds`, or we abandon a call the user already paid a
+quota slot for) and quota 10s (decoration). A single global default would have to be the
+largest of the three, which is the same as having none for the two fast calls. Axios reports a
+timeout as `ECONNABORTED`, which `toAiGenerateError` turns into "took too long" rather than
+"couldn't reach" — different advice for the user.
+
+**Copying the prompt can fail after it arrives, and that is not the same failure.** The write
+happens after an awaited request, and clipboard access needs the click that triggered it to
+still be recent (Chrome ~5s of transient activation; Safari stricter; `navigator.clipboard` is
+absent entirely outside a secure context). A slow server spends that budget before `writeText`
+runs. So the own-AI container splits the two: no prompt → a toast, because there is nothing to
+show; prompt but no clipboard → render it in a read-only field that selects itself on focus.
+Copying the prompt is the whole point of that page, so "your browser blocked it" cannot be the
+end of the road when we are already holding the text.
+
 **The quota lookup may never take the page down.** `GET /quiz/ai-quota` is called on mount
 for one line of text. `useAiQuota` therefore sets `throwOnError: false` — without it a failing
 quota endpoint replaces the whole wizard with the generic error boundary, and takes the
@@ -426,8 +446,12 @@ copy-paste mode will call once slice 2.1 retires the duplicate in `prompt.ts`.
 ### `GET /api/quiz/ai-quota`
 
 `{ "enabled": true, "limit": 5, "used": 1, "remaining": 4, "resetsAt": "..." }` — so the UI can
-show "1 of 2 left today" and hide the Generate button when the feature is off, rather than offering a
-button that is guaranteed to fail.
+show "1 of 2 left today" and stop offering the Generate button when it could only fail.
+
+`enabled` is **not** `Ai:Enabled`. It is "would a generation be attempted at all": the kill switch
+*and* the daily/30-day spend caps, i.e. exactly the conditions behind `FeatureDisabled`. One
+boolean rather than a reason code, because the client does the same thing either way — disable the
+button, point at copy-paste — and that path is the answer to both causes. See §9 item 11.
 
 ---
 
@@ -596,10 +620,19 @@ so a page load plus two copies would have spent half of generation's 6/min budge
 the fallback along with the thing it's a fallback for. The policy now sits on the `ai-generate`
 action alone rather than on the controller.
 
-**11. `GET /ai-quota` reports the kill switch but not the spend cap.** `enabled` reflects
-`Ai:Enabled` only, so a budget overrun leaves the Generate button visible and failing with a 503
-rather than hidden. Either have the endpoint consult `IsOverBudgetAsync` too, or have the client
-hide the button after its first `FeatureDisabled`.
+~~**11. `GET /ai-quota` reports the kill switch but not the spend cap.**~~ **Fixed
+(2026-08-13).** `enabled` now answers "would a generation be attempted at all" — the endpoint
+calls `IAiGenerationService.IsAvailableAsync`, which is `Ai:Enabled && !IsOverBudgetAsync`. Of the
+two options this register offered, the server-side one won: having the client hide the button
+after its first `FeatureDisabled` would have meant every user discovering the outage by spending
+a click on it, and a page reload forgetting.
+
+The interesting part is the drift it creates. `IsAvailableAsync` has to stay exactly the set of
+conditions that make `GenerateAsync` return `FeatureDisabled`, and they can't be one shared helper
+— `GenerateAsync` needs them separately, in order, with different messages, and with the free one
+before the user lookup. So both gates carry a comment pointing at `IsAvailableAsync`, and a third
+condition means touching both. The controller lost its `AiOptions` injection in the process, which
+makes its "holds no business logic" claim true for the first time.
 
 **12. No streaming, so the client waits blind.** At the current 15-question cap a call runs well
 inside Cloudflare's 100s proxy timeout, but the user sees nothing until it finishes. That is what

@@ -34,23 +34,51 @@ export const OwnAiQuiz = () => {
   const [isCopying, setIsCopying] = useState(false);
   const [aiResponse, setAiResponse] = useState("");
 
+  /**
+   * The prompt, shown on screen because the clipboard refused it.
+   *
+   * <b>Why this exists.</b> The write happens *after* an awaited request, and a clipboard
+   * write is only allowed while the click that triggered it is still "recent" — Chrome gives
+   * roughly five seconds of transient activation, Safari is stricter still, and a slow server
+   * spends that budget before we ever reach `writeText`. Also `navigator.clipboard` is simply
+   * undefined outside a secure context. Copying the prompt is the entire purpose of this page,
+   * so "your browser blocked it" cannot be the end of the road: we already have the text, so
+   * put it on screen and let the user select it.
+   */
+  const [promptToCopyByHand, setPromptToCopyByHand] = useState<string | null>(
+    null,
+  );
+
   /** Fetches the prompt from the server — the same one generation would send — and copies it. */
   const handleCopyPrompt = async () => {
     setIsCopying(true);
+    setPromptToCopyByHand(null);
+
+    let prompt: string;
     try {
-      const { prompt } = await getAiPrompt(draft.buildInput());
-      await navigator.clipboard.writeText(prompt);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2500);
+      ({ prompt } = await getAiPrompt(draft.buildInput()));
     } catch (error) {
+      // Couldn't get the text at all. A toast, because there is nothing to show instead.
       addNotification({
         type: "error",
-        title: "Couldn't copy",
+        title: "Couldn't build the prompt",
         message:
           error instanceof AiGenerateError
             ? error.message
-            : "Your browser blocked clipboard access. Try again, or use a different browser.",
+            : "Something went wrong building the prompt. Try again.",
       });
+      setIsCopying(false);
+      return;
+    }
+
+    // Two failures, two outcomes: above we have nothing to offer, here we have the prompt and
+    // only the clipboard failed — which is recoverable without another round trip.
+    try {
+      await navigator.clipboard.writeText(prompt);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch {
+      setPromptToCopyByHand(prompt);
     } finally {
       setIsCopying(false);
     }
@@ -107,6 +135,7 @@ export const OwnAiQuiz = () => {
       onExtraInstructionsChange={draft.setExtraInstructions}
       onCopyPrompt={handleCopyPrompt}
       copied={copied}
+      promptToCopyByHand={promptToCopyByHand}
       isCopying={isCopying}
       aiResponse={aiResponse}
       onAiResponseChange={handleAiResponseChange}

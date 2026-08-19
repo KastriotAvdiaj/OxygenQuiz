@@ -408,9 +408,23 @@ const createAppRouter = (queryClient: QueryClient) =>
           ),
         },
         {
-          // AI-assisted creation. The wizard mounts QuizQuestionProvider itself once the
-          // generated questions are parsed, so it can seed them as initialQuestions.
+          // Bare `/ai` is no longer a screen — the generation mode lives in the URL now, so
+          // the wizard never has to render a tab strip to ask for it. Kept as a redirect
+          // because it is the path every existing link, bookmark and story used.
           path: "quizzes/create-quiz/ai",
+          element: (
+            <Navigate to="/dashboard/quizzes/create-quiz/ai/topic" replace />
+          ),
+        },
+        {
+          // AI-assisted creation, topic mode. The wizard mounts QuizQuestionProvider itself
+          // once the generated questions are parsed, so it can seed them as initialQuestions.
+          //
+          // Its sibling `ai/material` is deliberately not registered yet: `useAiQuizDraft`
+          // already reads Source mode off that segment, but the mode users asked for is file
+          // upload (slice 2.3), so the chooser shows it as "Soon" rather than routing here.
+          // See AI_MATERIAL_MODE_ENABLED in create-quiz-method-dialog.tsx.
+          path: "quizzes/create-quiz/ai/topic",
           element: <AiQuizWizard />,
         },
         {
@@ -556,7 +570,12 @@ const createAppRouter = (queryClient: QueryClient) =>
           ),
         },
         {
+          // Same redirect as the admin dashboard — see the note there.
           path: "quizzes/create/ai",
+          element: <Navigate to="/my-dashboard/quizzes/create/ai/topic" replace />,
+        },
+        {
+          path: "quizzes/create/ai/topic",
           element: <AiQuizWizard />,
         },
         {

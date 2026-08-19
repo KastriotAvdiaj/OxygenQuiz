@@ -52,12 +52,21 @@ export const useAiQuizDraft = () => {
   const paths = {
     quizzes: `${dashboardBase}/quizzes`,
     manualCreate: createBase,
-    generate: `${createBase}/ai`,
+    generate: `${createBase}/ai/topic`,
+    material: `${createBase}/ai/material`,
     ownAi: `${createBase}/ai/own`,
   };
 
-  // ── What the user is creating from
-  const [mode, setMode] = useState<AiGenerationMode>("Topic");
+  // ── What the user is creating from.
+  //
+  // Read off the route, not held in state. The choice is made once in the create-quiz method
+  // dialog and travels in the URL, which is what lets the wizard drop the tab strip it used
+  // to ask with — see docs/quiz/ai-quiz-two-paths.md §3. `/ai/material` is not a registered
+  // route yet (the chooser shows that option as "Soon"), so today this always resolves to
+  // Topic; when slice 2.3 registers it, nothing here needs to change.
+  const mode: AiGenerationMode = location.pathname.endsWith("/ai/material")
+    ? "Source"
+    : "Topic";
   const [topic, setTopic] = useState("");
   const [sourceData, setSourceData] = useState("");
 
@@ -278,7 +287,6 @@ export const useAiQuizDraft = () => {
 
     // The one box
     mode,
-    setMode,
     topic,
     setTopic,
     sourceData,

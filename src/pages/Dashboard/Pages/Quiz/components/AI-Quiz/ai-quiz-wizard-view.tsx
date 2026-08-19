@@ -2,9 +2,10 @@ import { useRef, useState, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Sparkles } from "lucide-react";
 
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Spinner } from "@/components/ui";
+import { cn } from "@/utils/cn";
 import type {
   QuestionCategory,
   QuestionDifficulty,
@@ -22,10 +23,7 @@ import type { ParseResult } from "./parse-ai-output";
 import { AdvancedOptions } from "./components/advanced-options";
 import { ConfirmDetailsCard } from "./components/confirm-details-card";
 import { GenerateErrorPanel } from "./components/generate-error-panel";
-import {
-  GenerationInput,
-  GenerationModeTabs,
-} from "./components/generation-input";
+import { GenerationInput } from "./components/generation-input";
 import { ImportSummary } from "./components/import-summary";
 import { QuotaNote } from "./components/quota-note";
 import { WizardButton } from "./components/wizard-button";
@@ -46,13 +44,20 @@ export interface AiQuizWizardViewProps {
   // ── Navigation targets. Props, not `useLocation`, because both dashboards mount
   //    this wizard under different prefixes. ────────────────────────────────────
   quizzesPath: string;
-  manualCreatePath: string;
-  /** The bring-your-own-AI page. A sibling route, not a panel — see docs/quiz/ai-quiz-two-paths.md. */
+  /**
+   * The bring-your-own-AI page. A sibling route, not a panel — see
+   * docs/quiz/ai-quiz-two-paths.md. Linked from the foot of this card: it isn't one of the
+   * two things the method dialog asks you to choose between, it's the same job done with
+   * someone else's model, and that only becomes interesting once you're already here.
+   */
   ownAiPath: string;
 
   // ── The one box ──────────────────────────────────────────────────────────────
+  /**
+   * Which field to render. Comes from the route (`/ai/topic`, `/ai/material`), chosen in the
+   * method dialog before the user got here — this screen never asks.
+   */
   mode: AiGenerationMode;
-  onModeChange: (mode: AiGenerationMode) => void;
   topic: string;
   onTopicChange: (value: string) => void;
   sourceData: string;
@@ -131,10 +136,8 @@ export const AiQuizWizardView = ({
   languages,
   isLoadingEntities,
   quizzesPath,
-  manualCreatePath,
   ownAiPath,
   mode,
-  onModeChange,
   topic,
   onTopicChange,
   sourceData,
@@ -269,9 +272,13 @@ export const AiQuizWizardView = ({
         <h1 className="text-2xl font-bold flex items-center gap-2">
           Create a quiz with AI
         </h1>
+        {/* The mode is no longer named by a selected tab, so the subtitle carries it. It is
+            also the only confirmation the user gets that the option they picked in the
+            dialog is the one that loaded. */}
         <p className="text-muted-foreground text-sm mt-1">
-          Say what it's about and we'll draft it. You review everything before
-          it saves.
+          {mode === "Topic"
+            ? "Say what it's about and we'll draft it. You review everything before it saves."
+            : "Paste your material and we'll draft questions from it. You review everything before it saves."}
         </p>
       </header>
 
@@ -291,14 +298,11 @@ export const AiQuizWizardView = ({
           onStartOver={onStartOver}
         />
       ) : (
+        // No CardHeader: it existed to hold the mode tabs, and the tinted strip left behind
+        // after they moved to the method dialog was a band of colour heading nothing. What
+        // the card holds now is the whole of it — one field, one drawer, one button.
         <Card className="bg-background border-2 border-primary/30">
-          {/* Header strip carrying the mode tabs, matching the quiz-details panel in
-              create-quiz.tsx. The tabs head the panel rather than sitting inside it. */}
-          <CardHeader className="w-full bg-primary/10 border-b border-primary/30 px-2 py-3">
-            <GenerationModeTabs mode={mode} onModeChange={onModeChange} />
-          </CardHeader>
-
-          <CardContent className="space-y-4 pt-5">
+          <CardContent className="space-y-4 pt-6">
             <div ref={inputRegion}>
               <GenerationInput
                 mode={mode}
@@ -379,23 +383,32 @@ export const AiQuizWizardView = ({
 
             <Separator className="bg-primary/20" />
 
-            {/* The two ways out, both quiet. Copy-paste used to live here as a disclosure
-                that expanded to twice the height of the card; it is a page of its own now
-                (docs/quiz/ai-quiz-two-paths.md), and what's left is a link to it. */}
-            <div className="flex flex-col gap-1.5">
-              <Link
-                to={ownAiPath}
-                className="text-muted-foreground hover:text-foreground text-sm"
-              >
-                Use your own AI instead (free)
-              </Link>
-              <Link
-                to={manualCreatePath}
-                className="text-muted-foreground hover:text-foreground text-sm"
-              >
-                Create manually instead
-              </Link>
-            </div>
+            {/* One way out, not three. "Create manually instead" left with the mode tabs —
+                that decision belongs to the method dialog, and repeating it here is what made
+                this card read as a menu. This one stays because it isn't the same question:
+                it's this exact job with someone else's model, and it only becomes interesting
+                once you're already looking at the form.
+
+                It also has to stay for a hard reason. When the button above is disabled (kill
+                switch, quota spent, unverified email) there is otherwise no way forward from
+                this page except Back — so in that state the link stops being quiet and takes
+                the primary colour, with a line above it saying why. */}
+            {generationBlocked && (
+              <p className="text-muted-foreground text-xs">
+                Generating in the app isn't available right now.
+              </p>
+            )}
+            <Link
+              to={ownAiPath}
+              className={cn(
+                "text-sm",
+                generationBlocked
+                  ? "text-primary font-medium hover:underline"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              Use your own AI instead (free)
+            </Link>
           </CardContent>
         </Card>
       )}

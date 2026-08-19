@@ -1,50 +1,10 @@
-import { AlertTriangle, FileText, Wand2 } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 
 import { Input, Label, Textarea } from "@/components/ui/form";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/utils/cn";
 
 import type { AiGenerationMode } from "../../../api/generate-ai-quiz";
 import { AI_QUESTION_LIMITS } from "../prompt";
-
-/**
- * Where the quiz comes from. Rendered in the card's header strip rather than alongside the
- * fields, matching the quiz-details panel in `create-quiz.tsx` — the tabs are a heading for
- * the panel, not another control inside it.
- *
- * Full width with `flex-1` triggers, so the two options split the strip evenly instead of
- * huddling at the left edge.
- */
-export const GenerationModeTabs = ({
-  mode,
-  onModeChange,
-}: {
-  mode: AiGenerationMode;
-  onModeChange: (mode: AiGenerationMode) => void;
-}) => (
-  <Tabs
-    value={mode}
-    onValueChange={(value) => onModeChange(value as AiGenerationMode)}
-    className="w-full"
-  >
-    {/* The header already provides the tinted background, so the list drops its own track
-        border and shadow — same treatment as the manual builder's panel. */}
-    <TabsList className="w-full border-none shadow-none rounded-md">
-      <TabsTrigger value="Topic" className="flex-1 rounded-xl">
-        <span className="flex gap-2 px-2 items-center justify-center text-sm">
-          <Wand2 className="h-4 w-4" />
-          From a topic
-        </span>
-      </TabsTrigger>
-      <TabsTrigger value="Source" className="flex-1 rounded-xl">
-        <span className="flex gap-2 px-2 items-center justify-center text-sm">
-          <FileText className="h-4 w-4" />
-          From my material
-        </span>
-      </TabsTrigger>
-    </TabsList>
-  </Tabs>
-);
 
 /** One id for both branches — only ever one field is mounted, so they can't collide. */
 const FieldError = ({ error }: { error?: string }) =>
@@ -76,11 +36,14 @@ export interface GenerationInputProps {
 }
 
 /**
- * The one box: pick where the quiz comes from, then say what it's about.
+ * The one box: say what the quiz is about.
  *
- * Topic and source are two shapes of the same question, so they share a control rather than
- * living on separate wizard steps — the old two-step form was the thing that made this
- * feature feel like admin work.
+ * `mode` picks which of the two fields is mounted, and it comes from the route — the choice
+ * is made in the create-quiz method dialog before this screen loads. It used to be a
+ * `GenerationModeTabs` strip welded to the top of the wizard card; that component lived here
+ * and was deleted with the strip. Topic and source are still two shapes of one question, so
+ * they still share this control rather than becoming two components — see
+ * docs/quiz/ai-quiz-two-paths.md §3.
  */
 export const GenerationInput = ({
   mode,

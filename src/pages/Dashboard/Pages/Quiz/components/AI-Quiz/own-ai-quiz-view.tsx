@@ -75,6 +75,12 @@ export interface OwnAiQuizViewProps {
   onCopyPrompt: () => void;
   copied: boolean;
   isCopying: boolean;
+  /**
+   * Set when the prompt arrived but the clipboard refused it (see the container). Rendered
+   * for the user to select by hand — never null-checked away, because at that point it is
+   * the only copy of the thing they came here for.
+   */
+  promptToCopyByHand: string | null;
   aiResponse: string;
   onAiResponseChange: (value: string) => void;
   onImport: () => void;
@@ -127,6 +133,7 @@ export const OwnAiQuizView = ({
   onCopyPrompt,
   copied,
   isCopying,
+  promptToCopyByHand,
   aiResponse,
   onAiResponseChange,
   onImport,
@@ -313,6 +320,25 @@ export const OwnAiQuizView = ({
                   )}
                 </span>
               </WizardButton>
+
+              {promptToCopyByHand && (
+                <div className="mt-3">
+                  <p className="mb-1.5 flex items-start gap-1.5 text-xs text-amber-600 dark:text-amber-500">
+                    <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
+                    Your browser wouldn't let us reach the clipboard. Here's the
+                    prompt — select it and copy it yourself.
+                  </p>
+                  <Textarea
+                    readOnly
+                    variant="settings"
+                    // Select-all on focus so "click, Ctrl+C" still works in two actions.
+                    onFocus={(e) => e.currentTarget.select()}
+                    className="min-h-[120px] font-mono text-xs"
+                    value={promptToCopyByHand}
+                    aria-label="The prompt, to copy manually"
+                  />
+                </div>
+              )}
             </div>
 
             <div>
