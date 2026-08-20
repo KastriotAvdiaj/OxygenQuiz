@@ -51,12 +51,30 @@ export const CategorySelect: React.FC<CategorySelectProps> = (props) => {
 
   const variant = error ? "form-error" : fieldVariant;
 
-  // The seeded "Unspecified" category is an internal default, not a user-facing choice —
-  // hide it from everyone except catalog admins. See lookup-visibility.ts.
+  // The seeded "Unspecified" category is an internal default, not a user-facing choice.
+  // See lookup-visibility.ts, and docs/quiz/quiz-question-classification.md for the rules.
   const canSelectUnspecified = useCanSelectUnspecifiedLookup();
-  const selectableCategories = canSelectUnspecified
+
+  // Filter mode: unchanged. Filtering *by* Unspecified is real curation work — it's how an
+  // admin finds the rows that need classifying — so admins keep the option here.
+  const filterableCategories = canSelectUnspecified
     ? categories
     : categories.filter((category) => !isUnspecifiedLookup(category.name));
+
+  // Form mode: nobody may *assign* it, admins included. The API rejects an Unspecified category
+  // on every question create/update path, and it blocks publishing a quiz, so offering it is
+  // offering a dead end — which is exactly the rough edge quiz-question-classification.md flagged
+  // ("An admin who picks it gets a clear 400 rather than a disabled option").
+  //
+  // The exception is a value already stored. Filtering the option out while the control still
+  // holds that id would leave Radix with nothing to match and render an **empty trigger** —
+  // the same failure the per-question time-limit select had. Keeping it means the field always
+  // shows what the row is actually set to, and the user can pick something real.
+  const assignableCategories = categories.filter(
+    (category) =>
+      !isUnspecifiedLookup(category.name) ||
+      category.id.toString() === String(props.value ?? ""),
+  );
 
   if (mode === "filter") {
     const { value, onChange } = props as FilterModeProps;
@@ -87,7 +105,7 @@ export const CategorySelect: React.FC<CategorySelectProps> = (props) => {
                 All Categories
               </SelectItem>
             )}
-            {selectableCategories.map((category) => (
+            {filterableCategories.map((category) => (
               <SelectItem
                 variant={variant}
                 key={category.id}
@@ -135,7 +153,7 @@ export const CategorySelect: React.FC<CategorySelectProps> = (props) => {
               All Categories
             </SelectItem>
           )}
-          {selectableCategories.map((category) => (
+          {assignableCategories.map((category) => (
             <SelectItem
               variant={variant}
               key={category.id}

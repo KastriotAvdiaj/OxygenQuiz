@@ -103,14 +103,32 @@ namespace QuizAPI.Data
                 (_current.UserId != null && q.UserId == _current.UserId)
                 );
 
+            // Rule 4 is the one to read carefully. It used to open with `_current.UserId != null &&`
+            // wrapping BOTH halves of the OR, which meant an anonymous caller failed the clause
+            // before it ever reached `Status == Public` — and "this question lives in a public
+            // quiz" needs no signed-in user at all.
+            //
+            // The effect: a guest opening a Public quiz whose questions are Private matched none
+            // of the four rules, so EF filtered the question out. The QuizQuestion join row has no
+            // filter of its own, so `FirstAsync(...Include(qq => qq.Question))` in
+            // QuizSessionService still returned a row — with `Question` null, because query
+            // filters apply to included navigations too — and `ToCurrentQuestionDto` then threw a
+            // NullReferenceException on `qq.Question.Text`, surfacing as a 500 from
+            // `GET /{sessionId}/next-question`.
+            //
+            // That is not a niche case: both the AI import (QuizService.BuildAiQuestionEntity) and
+            // the manual builder (DEFAULT_NEW_* in the frontend's constants.ts) create questions
+            // Private, so *every* public quiz built from newly-authored questions was unplayable
+            // while logged out. It read as an AI bug only because AI quizzes were the first ones
+            // anyone opened in a signed-out tab. See docs/quiz/quiz-visibility.md.
             modelBuilder.Entity<QuestionBase>().HasQueryFilter(q =>
                 _current.IsAdmin ||                                 // 1. Admin can see everything.
                 q.UserId == _current.UserId ||                      // 2. You can see questions you own.
-                q.Visibility != QuestionVisibility.Private ||               // 3. You can see any public question.
-                q.QuizQuestions.Any(qq =>                           // 4. OR the question is in a quiz you can see.
-                    _current.UserId != null &&
-                    (qq.Quiz.UserId == _current.UserId || qq.Quiz.Status == QuizStatus.Public)
-                )
+                q.Visibility != QuestionVisibility.Private ||       // 3. You can see any public question.
+                q.QuizQuestions.Any(qq =>                           // 4. OR it's in a quiz you can see —
+                    qq.Quiz.Status == QuizStatus.Public ||          //    public to everyone, guests included,
+                    (_current.UserId != null &&                     //    or yours, which does need an account.
+                     qq.Quiz.UserId == _current.UserId))
         );
 
             //GLOBAL QUERY FILTERS

@@ -24,6 +24,13 @@ filters, so it can't be found again in the bank; enough of them and the bank sto
 **Difficulty is exempt** and may stay Unspecified indefinitely: it genuinely isn't known until
 someone rates the question, and nothing depends on it being set.
 
+> **A quiz is governed by a second, separate rule.** Everything in this section is about
+> *questions*. A quiz may hold Unspecified in any of its three lookups — but only while it is
+> Draft or Unlisted; publishing requires all three to be real, difficulty included. See
+> [quiz-visibility.md](quiz-visibility.md) § "Publishing requires a full classification". The
+> two rules have different reasons (bank findability vs. catalogue findability) and different
+> scopes, which is why they're enforced in different places.
+
 Enforced in two places, deliberately:
 
 | Layer | What it does |
@@ -77,8 +84,25 @@ the "Unspecified" option from their dropdowns for everyone except catalog admins
 it to curate content). This applies in both the form and filter variants. Hiding the option is
 purely a selection concern — it never changes a value already stored on a question or quiz.
 
-> **Known rough edge.** `useCanSelectUnspecifiedLookup` still offers "Unspecified" to admins in the
-> *question* category/language dropdowns, but the API now rejects it there. An admin who picks it
-> gets a clear 400 rather than a disabled option. Filtering it out of the question forms for
-> everyone (while keeping it in the filter variants and for difficulty) would close the gap; it
-> wasn't done here because those selects are shared with the quiz form and the filter bars.
+### Selecting it: closed (was a known rough edge)
+
+`useCanSelectUnspecifiedLookup` used to offer "Unspecified" to admins in the **form** dropdowns
+too, while the API rejected it — an admin who picked it got a 400 instead of a disabled option.
+That gap is closed. `CategorySelect` and `LanguageSelect` now keep two lists:
+
+| Mode | Offers "Unspecified"? |
+|---|---|
+| `filter` | Admins only, as before. Filtering *by* Unspecified is how you find the rows that still need classifying. |
+| `form` | **Nobody** — admins included. The API rejects it on every question path and it blocks publishing a quiz, so offering it is offering a dead end. |
+
+`DifficultySelect` is unchanged in both modes: an Unspecified difficulty is legal on a question
+and is the default a new one starts from, so it has to remain assignable. (It does block
+publishing the *quiz* — see [quiz-visibility.md](quiz-visibility.md) — but that's a property of
+the quiz, not a reason to remove the option.)
+
+> **The one exception, and why it exists.** Form mode keeps "Unspecified" in the list when it is
+> **already the field's value**. A Radix `Select` whose `value` matches no `SelectItem` renders
+> its placeholder — often nothing at all — so filtering the option out of a control still holding
+> that id produces a blank trigger over a value that is silently still set. That exact failure
+> shipped once already on the per-question time-limit dropdown. The rule generalises: **never
+> remove the option a control is currently displaying.**

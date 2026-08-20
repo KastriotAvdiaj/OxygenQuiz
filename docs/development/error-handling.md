@@ -126,9 +126,121 @@ Current opt-outs and why:
 the button — put it there and skip the toast. Reach for the toast when the failure has nowhere
 to live, or when the user has already navigated away from the thing that failed.
 
-Note the third surface that's easy to forget: a caller can also add its own
-`addNotification` in a React Query `onError`. Combined with the interceptor that's two toasts
-for one failure, which is exactly what the AI wizard shipped with before this was written down.
+### What the toast *says*
+
+Whether a toast fires and what it contains are two different mechanisms. The section above is
+the first. This is the second, and it was undocumented for over a year.
+
+#### The allowlist that used to eat it
+
+`Api-client.ts` held `CUSTOM_ERROR_PATTERNS`: seven hard-coded substrings (`"already exists"`,
+`"not authorized"`, …). A message matching one was shown; **everything else was replaced with
+"An unexpected error occurred. Please try again."** It shipped 2025-06-20 and was never
+revisited.
+
+The intent was right — don't paste an EF exception or a stack trace into a toast. The
+implementation inverted the safe default. It is a denylist problem solved with an allowlist, so
+every message anyone wrote from then on was untrusted unless they also remembered to edit a
+constant on the other side of the wire. The failure is silent, and it compounds: by the time it
+was found, `QuestionService`'s carefully worded *"Pick a category for this question —
+'Unspecified' isn't allowed."* and `QuizService`'s *"Pick a category for this quiz…"* were both
+unreachable by users, and an AI-import 400 took a code read to diagnose.
+
+There was a second copy of the same idea on the backend. `BaseApiController.HandleFailure`
+computes `isCustomMessage` by matching the message against *its own* pattern list — ten
+entries, where the frontend had seven. Two allowlists, already drifted, neither documented.
+
+#### What replaced it: classify by who wrote the message
+
+The only question that matters for display is **did a person write this string for a person?**
+`parseApiError` answers it from the response alone, and sorts every failure into one of three
+kinds:
+
+| Kind | Meaning | Shown |
+|---|---|---|
+| `authored` | A developer wrote this for a user | The message, verbatim |
+| `generated` | A framework produced it from types and field names | "Some of the details weren't accepted…" |
+| `opaque` | A 5xx — may be an EF exception or a stack trace | "An unexpected error occurred…" |
+
+Two signals decide the kind, and **neither requires anything from the code that threw**:
+
+**The status code.** A 4xx is by definition the class of error that is *about the caller* — the
+server computed a specific reason and the point of sending it is for a human to read it. A 5xx
+is the server falling over. So 5xx is `opaque` unless explicitly flagged otherwise.
+
+**The presence of an `errors` dictionary**, which separates the two `ProblemDetails` shapes.
+`GlobalExceptionHandler` constructs a plain `ProblemDetails` — no `errors`. ASP.NET's model
+binder constructs a `ValidationProblemDetails` — always `errors`. That is structural, not
+conventional: neither side has to declare anything, and it can't drift.
+
+This matters because a model-binding 400 is not a user-facing message. It looks like:
+
+```
+The JSON value could not be converted to System.Int32. Path: $.questions[0].difficultyId
+```
+
+C# DTO property names, in a toast. And by the time model binding rejects a request, the zod
+schema that should have caught it client-side didn't — so it is a **contract bug wearing a
+user's error message**, not something the user can act on. `generated` errors get a fixed line
+and the real text goes to the console.
+
+`isCustomMessage: true` is still honoured as an explicit override, and is the one way a 5xx can
+still be shown. It is never *required*, so the `HandleFailure` contract keeps working without
+every other endpoint adopting it.
+
+Every failure is logged with its `kind`, because "why was I shown the generic line?" is the
+question that costs the most time.
+
+#### Four error shapes, one reader
+
+| Shape | Produced by | Kind |
+|---|---|---|
+| `{ message, isCustomMessage }` | `BaseApiController.HandleFailure` / `HandleCustomError` | `isCustomMessage` decides |
+| `ProblemDetails { title }` | `GlobalExceptionHandler` — every `AppException` | authored (4xx) |
+| A bare JSON string | `BadRequest(ex.Message)` in the older controllers | authored (4xx) |
+| `ValidationProblemDetails { errors }` | `[ApiController]` model binding | generated |
+
+The bare string is the one that caused real damage: the old reader only looked at object
+properties, so `data?.detail || data?.title || data?.message` was `undefined` three times over
+and fell through to axios's own `"Request failed with status code 400"`.
+
+> **Order matters in the reader.** `ValidationProblemDetails` also carries a `title` — "One or
+> more validation errors occurred." — so checking titles before `errors` would misfile every
+> model-binding 400 as `authored`. `errors` is tested first.
+
+#### Two designs deliberately not taken
+
+**A per-message boolean set at the throw site** (`showToUser: true`). This is the obvious
+answer and it is what `isCustomMessage` already is. It fails for two reasons. It is **opt-in**,
+so a message without the flag silently degrades to the generic line and nothing about that is
+visible in code review, in a test, or in types — which is exactly how the allowlist survived a
+year. And it puts a *presentation* decision in a domain service: `QuestionService` should not be
+reasoning about toasts. Classifying by the shape the framework produced cannot be forgotten,
+because nobody has to remember it.
+
+**A frontend copy table keyed off backend error codes.** This is genuinely better — the client
+owns tone, i18n and, most importantly, *the next step* — but only where there is a different
+next step to offer. It already exists where it earns its cost: `AiGenerateError` carries
+`code: "FeatureDisabled" | "EmailNotVerified" | "QuotaExceeded" | "Unknown"`, and
+`GenerateErrorPanel` renders a different action per code (which is why that request sets
+`skipErrorToast`). Extend that pattern deliberately, one error at a time, when there is an
+action attached. For the long tail, a parallel copy table is a second source of truth that goes
+stale, and showing the server's own sentence is better than inventing a worse one.
+
+**The rule:** reach for a code + custom UI when the user needs a *different button*. Otherwise
+let the message through and make sure it was written to be read.
+
+> **Prefer `GlobalExceptionHandler` for new failures.** Throw an `AppValidationException` (or
+> `NotFoundException` / `ConflictException` / `ForbiddenException`) and let it bubble. You get
+> the right status code and a readable body for free. `BadRequest(ex.Message)` is the legacy
+> path — it works now that the reader handles strings, but it hard-codes the status at the call
+> site and carries no type.
+>
+> **A controller `catch (Exception)` will swallow that.** `QuizzesController` catches broadly
+> and funnels into `HandleCustomError`, which returns **500** for any message outside its own
+> pattern list — turning a precise 400 into an opaque server error. Its catches are therefore
+> written `catch (Exception ex) when (ex is not AppException)`. Any controller that catches
+> broadly needs the same filter, or its typed exceptions never reach the handler.
 
 ## The floor: one root `errorElement`
 
@@ -224,6 +336,10 @@ throwing.
 |---|---|
 | Global query behaviour | `src/lib/React-query.ts` |
 | Mutation error toast + `skipErrorToast` | `src/lib/Api-client.ts` |
+| Error classification (`parseApiError`, `displayMessageFor`) | `src/lib/Api-client.ts` |
+| Typed exceptions → status + `ProblemDetails` | `OxygenBackend/QuizAPI/Middleware/GlobalExceptionHandler.cs` |
+| The `AppException` family | `OxygenBackend/QuizAPI/Exeptions/AppExceptions.cs` |
+| Legacy `{ message, isCustomMessage }` shape | `OxygenBackend/QuizAPI/Controllers/BaseApiController.cs` |
 | Root route error element | `src/pages/UtilityPages/Error/Route-Error-Element.tsx` |
 | Friendly crash card | `src/pages/UtilityPages/Error/Main-Error-Boundary.tsx` |
 | Dashboard-specific overrides | `src/pages/UtilityPages/Error/Dashboard-Error-Element.tsx` |

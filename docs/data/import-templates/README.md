@@ -55,6 +55,6 @@ The richest list. Fill only the columns relevant to each row's `Type`:
 | `Description` | optional |
 | `CategoryId`, `LanguageId`, `DifficultyId` | integer IDs that **must already exist** (export those lists to find them) |
 | `Status` | `Draft`, `Unlisted`, or `Public` — the quiz's access state (see [quiz-visibility.md](../../quiz/quiz-visibility.md)). Defaults to `Draft`; anything unrecognised also becomes `Draft` so a quiz is never accidentally published. Legacy `Private` / `Friends` values map to `Unlisted`. |
-| `TimeLimitInSeconds` | optional integer (recomputed from the questions on import) |
+| `TimeLimitInSeconds` | optional integer — the **quiz total**, recomputed as the sum of its questions' limits on import. Note the per-question limits themselves are not importable: attached questions currently come in at `0` seconds each, so the total lands at `0` too. Set them in the editor afterwards. |
 | `ShuffleQuestions`, `ShowFeedbackImmediately` | true/false |
 | `QuestionIds` | optional pipe-separated IDs of **existing** questions, in order: `12\|15\|18`. Blank imports the quiz as a draft you finish in the editor; any id that doesn't exist skips the whole row. |

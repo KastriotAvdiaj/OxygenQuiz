@@ -51,12 +51,24 @@ export const LanguageSelect: React.FC<LanguageSelectProps> = (props) => {
 
   const variant = error ? "form-error" : fieldVariant;
 
-  // The seeded "Unspecified" language is an internal default, not a user-facing choice —
-  // hide it from everyone except catalog admins. See lookup-visibility.ts.
+  // The seeded "Unspecified" language is an internal default, not a user-facing choice.
+  // Mirrors select-question-category.tsx exactly — keep the two in step.
   const canSelectUnspecified = useCanSelectUnspecifiedLookup();
-  const selectableLanguages = canSelectUnspecified
+
+  // Filter mode: unchanged. Admins keep it, because filtering by Unspecified is how you find
+  // the rows that still need classifying.
+  const filterableLanguages = canSelectUnspecified
     ? languages
     : languages.filter((language) => !isUnspecifiedLookup(language.language));
+
+  // Form mode: nobody may assign it, admins included — the API rejects it on a question and it
+  // blocks publishing a quiz. A value already stored stays in the list so the trigger can never
+  // render blank (see the twin comment in select-question-category.tsx).
+  const assignableLanguages = languages.filter(
+    (language) =>
+      !isUnspecifiedLookup(language.language) ||
+      language.id.toString() === String(props.value ?? ""),
+  );
 
   if (mode === "filter") {
     const { value, onChange } = props as FilterModeProps;
@@ -87,7 +99,7 @@ export const LanguageSelect: React.FC<LanguageSelectProps> = (props) => {
                 All Languages
               </SelectItem>
             )}
-            {selectableLanguages.map((language) => (
+            {filterableLanguages.map((language) => (
               <SelectItem
                 key={language.id}
                 variant={variant}
@@ -130,7 +142,7 @@ export const LanguageSelect: React.FC<LanguageSelectProps> = (props) => {
               All Languages
             </SelectItem>
           )}
-          {selectableLanguages.map((language) => (
+          {assignableLanguages.map((language) => (
             <SelectItem
               key={language.id}
               variant={variant}

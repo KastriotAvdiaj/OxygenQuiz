@@ -19,6 +19,22 @@ const FieldError = ({ error }: { error?: string }) =>
     </p>
   ) : null;
 
+/**
+ * The one field that has to be filled in, marked as such.
+ *
+ * An eyebrow above the question rather than a chip beside it. A chip sat on the baseline of a
+ * `text-xl` heading and read as a badge — decoration attached to the words — where this reads
+ * as what it is: the label for the group underneath. It pairs with the "Optional" eyebrow over
+ * the details form, so the two halves of the card are marked the same way and the contrast
+ * between them is the whole point. Muted rather than `destructive`: nothing has gone wrong
+ * yet, and a red mark on an untouched field is a validation style, not a hint.
+ */
+const RequiredEyebrow = () => (
+  <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+    Required
+  </p>
+);
+
 export interface GenerationInputProps {
   mode: AiGenerationMode;
   topic: string;
@@ -44,6 +60,10 @@ export interface GenerationInputProps {
  * and was deleted with the strip. Topic and source are still two shapes of one question, so
  * they still share this control rather than becoming two components — see
  * docs/quiz/ai-quiz-two-paths.md §3.
+ *
+ * Both branches wear the same heading size. They are the same question in two shapes, and
+ * with the details form now visible underneath, a `text-sm` label on one of them would sink
+ * the lead question to the weight of "Quiz title".
  */
 export const GenerationInput = ({
   mode,
@@ -57,7 +77,8 @@ export const GenerationInput = ({
   <>
     {mode === "Topic" ? (
       <div>
-        <Label htmlFor="ai-topic" className="text-sm font-medium">
+        <RequiredEyebrow />
+        <Label htmlFor="ai-topic" className="mt-0.5 block text-xl font-medium">
           What should this quiz be about?
         </Label>
         <Input
@@ -71,17 +92,12 @@ export const GenerationInput = ({
           aria-invalid={Boolean(error)}
           aria-describedby={error ? "ai-input-error" : undefined}
         />
-        {/* Topic mode has no source to ground it, so the model is recalling facts. Saying so
-            here — not only in the review banner — sets the expectation before they commit. */}
-        {/* <p className="text-muted-foreground text-xs mt-1.5">
-          Written from the AI's own knowledge, so check the facts when you
-          review.
-        </p> */}
         <FieldError error={error} />
       </div>
     ) : (
       <div>
-        <Label htmlFor="ai-source" className="text-sm font-medium">
+        <RequiredEyebrow />
+        <Label htmlFor="ai-source" className="mt-0.5 block text-xl font-medium">
           Your material
         </Label>
         <Textarea

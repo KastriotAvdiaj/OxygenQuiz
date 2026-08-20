@@ -36,6 +36,32 @@ export const QuestionSettingsCard: React.FC<QuestionSettingsCardProps> = ({
 
   const settings = getQuestionSettings(question.id);
 
+  /**
+   * The time-limit options, plus the current value if it isn't one of them.
+   *
+   * A Radix `Select` whose `value` matches no `SelectItem` renders its placeholder — and with
+   * a bare `<SelectValue />` that is nothing at all. The trigger goes blank while the state
+   * quietly still holds the value, so the author sees an empty dropdown, has no idea what the
+   * question is set to, and saves it unchanged.
+   *
+   * The AI path is fixed upstream now (the prompt asks for one of `TIME_LIMIT_OPTIONS` and
+   * `parse-ai-output.ts` snaps anything else), but that only protects values arriving through
+   * *that* door. `AiQuizImportCM` accepts `[Range(0, 2000)]` and the manual create schema the
+   * same, so the data-transfer importer, a direct API call, or a quiz saved before the snap
+   * existed can all put an off-list number in front of this control. Showing it as its own
+   * option costs one array entry and makes a blank trigger unreachable.
+   */
+  const timeLimitOptions: { value: number; label: string }[] = React.useMemo(() => {
+    const current = settings.timeLimitInSeconds;
+    if (TIME_LIMIT_OPTIONS.some((option) => option.value === current)) {
+      return [...TIME_LIMIT_OPTIONS];
+    }
+    return [
+      ...TIME_LIMIT_OPTIONS,
+      { value: current, label: `${current} seconds` },
+    ].sort((a, b) => a.value - b.value);
+  }, [settings.timeLimitInSeconds]);
+
   // const handleCopyFrom = (sourceQuestionId: number) => {
   //   copySettingsToQuestion(sourceQuestionId, question.id);
   // };
@@ -105,10 +131,13 @@ export const QuestionSettingsCard: React.FC<QuestionSettingsCardProps> = ({
               variant="form"
               className="h-9 sm:h-10 text-xs w-full"
             >
-              <SelectValue />
+              {/* Belt and braces: `timeLimitOptions` guarantees a match, so this should never
+                  show. If it ever does, "Select time limit" is a legible failure — an empty
+                  trigger is not. */}
+              <SelectValue placeholder="Select time limit" />
             </SelectTrigger>
             <SelectContent>
-              {TIME_LIMIT_OPTIONS.map((option) => (
+              {timeLimitOptions.map((option) => (
                 <SelectItem
                   key={option.value}
                   variant="form"

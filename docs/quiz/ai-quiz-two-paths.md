@@ -23,7 +23,7 @@ Last updated: 2026-08-13. Companion to
 | Input | Topic **or** source material — one per route | Topic only (see below) |
 | Owns | The generate mutation, quota, `AiGenerateError` | The clipboard, the pasted reply |
 
-Everything else — the entity lookups, "what should this quiz be about?", the Advanced drawer,
+Everything else — the entity lookups, "what should this quiz be about?", the details form,
 resolving the model's category/language names into ids, the parser, the confirm-details card,
 the review handoff into the prefilled builder — is **the same code**, and lives in
 `use-ai-quiz-draft.tsx`.
@@ -112,8 +112,8 @@ comment lists what else has to change when it flips — the route, and nothing e
 - **One parser, one handoff.** Both set `payload` on the hook; everything after that —
   `extractQuizSuggestions`, name→id resolution, `parseAiOutput`, `needsConfirmation`, the
   `builderSlot` with `aiImportMode` — happens in one place and cannot diverge.
-- **One set of Advanced options.** `advanced-options.tsx` is rendered by both views with the
-  same props.
+- **One set of optional details.** `advanced-options.tsx` is rendered by both views with the
+  same props. It is an always-visible form, not a drawer — see generation flow §1a.
 - **Except source mode, which only the generate path has.** "From my material" means *we*
   put the material in the request and truncate it server-side at `Ai:MaxSourceChars`. Through
   someone else's chat window we can't: the user pastes their notes there themselves, at
@@ -164,4 +164,4 @@ mode inside one of these. The test is the one this document is named for: does t
 change **who runs the model or how the reply arrives**? Then it is a path — give it a route,
 put its own step in its own container, and let `use-ai-quiz-draft` handle the rest. Does it
 only change **what we ask the model for**? Then it is an option on the existing request, and
-it belongs in the Advanced drawer.
+it belongs in the details form (`advanced-options.tsx`).

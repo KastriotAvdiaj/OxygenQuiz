@@ -23,20 +23,131 @@ declare module "axios" {
   }
 }
 
-const CUSTOM_ERROR_PATTERNS = [
-  "not found or you're not authorized",
-  "used in a quiz and cannot be deleted",
-  "already exists",
-  "cannot be deleted",
-  "not authorized",
-  "insufficient permissions",
-  "already have an active session",
-];
+/** Generic copy for a failure the user is not meant to read the details of. */
+const GENERIC_ERROR = "An unexpected error occurred. Please try again.";
 
-function isCustomErrorMessage(message: string): boolean {
-  return CUSTOM_ERROR_PATTERNS.some((pattern) =>
-    message.toLowerCase().includes(pattern.toLowerCase())
-  );
+/**
+ * Copy for a 4xx whose body is machine-generated field validation. Deliberately vague about
+ * *which* field: by the time model binding rejects a request, the field names in the body are
+ * C# DTO property names, and the client-side zod schema that should have caught it first
+ * didn't. That's a contract bug, not something the user can act on.
+ */
+const FIELD_ERROR = "Some of the details weren't accepted. Please check the form and try again.";
+
+/**
+ * What the API answered with, classified by **who wrote the message**.
+ *
+ * That is the only question that matters for display, and — importantly — it is answerable
+ * from the response alone, with no cooperation from the call site that threw.
+ *
+ *  - `authored`  — a person wrote this string for a person. Show it verbatim.
+ *  - `generated` — a framework produced it from types and field names. Never show it.
+ *  - `opaque`    — a 5xx, where the message may be an EF exception or a stack trace.
+ */
+type ErrorKind = "authored" | "generated" | "opaque";
+
+interface ParsedApiError {
+  kind: ErrorKind;
+  /** The best message found in the body. Logged always; displayed only when `authored`. */
+  message: string;
+}
+
+/**
+ * Reads an error response into `{ kind, message }`.
+ *
+ * <b>The backend speaks four dialects</b>, and this has to read all of them:
+ *
+ * | Body | Written by | Kind |
+ * |---|---|---|
+ * | `{ message, isCustomMessage }` | `BaseApiController.HandleFailure` / `HandleCustomError` | `isCustomMessage` decides |
+ * | `ProblemDetails { title }` | `GlobalExceptionHandler` — every `AppException` | authored |
+ * | A bare JSON string | `BadRequest(ex.Message)` in the older controllers | authored |
+ * | `ValidationProblemDetails { errors }` | `[ApiController]` model binding | generated |
+ *
+ * <b>The bare string is what made the AI-import 400 undiagnosable.</b> The previous reader was
+ * `data?.detail || data?.title || data?.message`, which is `undefined` three times over on a
+ * string body, so it fell through to axios's own "Request failed with status code 400". The
+ * server had written "Pick a category for this quiz — …" and nobody ever saw it.
+ *
+ * <b>The `errors` key is the discriminator</b> between the two `ProblemDetails` shapes, and it
+ * is reliable because it is structural rather than conventional: `GlobalExceptionHandler`
+ * constructs a plain `ProblemDetails` (no `errors`), while ASP.NET's model binder constructs a
+ * `ValidationProblemDetails` (always `errors`). Neither has to remember to declare anything.
+ * See docs/development/error-handling.md for why this beats a per-message flag.
+ */
+function parseApiError(status: number | undefined, data: unknown): ParsedApiError {
+  const isServerFault = status !== undefined && status >= 500;
+
+  // ── Dialect 3: a bare string body. Only `BadRequest(ex.Message)` produces this, and only
+  //    ever with a hand-written message.
+  if (typeof data === "string" && data.trim()) {
+    return {
+      kind: isServerFault ? "opaque" : "authored",
+      message: data.trim(),
+    };
+  }
+
+  if (!data || typeof data !== "object") {
+    return { kind: isServerFault ? "opaque" : "authored", message: "" };
+  }
+
+  const body = data as Record<string, unknown>;
+
+  // ── Dialect 4: ValidationProblemDetails. Checked FIRST — it also carries a `title`
+  //    ("One or more validation errors occurred."), so reading titles first would misfile it
+  //    as authored. The first field reason is kept for the log, not for display.
+  const errors = body.errors;
+  if (errors && typeof errors === "object") {
+    const first = Object.values(errors as Record<string, unknown>)
+      .flatMap((v) => (Array.isArray(v) ? v : [v]))
+      .find((v): v is string => typeof v === "string" && v.trim().length > 0);
+
+    return {
+      kind: "generated",
+      message: first?.trim() || readString(body, "title") || "",
+    };
+  }
+
+  // ── Dialects 1 and 2.
+  const message =
+    readString(body, "detail") ||
+    readString(body, "title") ||
+    readString(body, "message") ||
+    "";
+
+  // `isCustomMessage: true` is an explicit backend override — the one case where a 5xx may
+  // still be shown. It is honoured, but never *required*: the `HandleFailure` contract keeps
+  // working without every other endpoint having to adopt it.
+  if (body.isCustomMessage === true) return { kind: "authored", message };
+
+  return { kind: isServerFault ? "opaque" : "authored", message };
+}
+
+/** First non-blank string property, or "" — keeps `parseApiError` readable. */
+function readString(body: Record<string, unknown>, key: string): string {
+  const value = body[key];
+  return typeof value === "string" && value.trim() ? value.trim() : "";
+}
+
+/**
+ * The copy to put in the toast.
+ *
+ * <b>Why kind and not a per-message flag.</b> The obvious alternative is a boolean set at each
+ * throw site ("show this one to the user"). The codebase already has that — `isCustomMessage` —
+ * and it is precisely what failed: it was opt-in, so a message without it silently became
+ * "An unexpected error occurred", and nothing about that failure is visible in code review.
+ * Classifying by the *shape the framework produced* needs no cooperation and cannot be
+ * forgotten. Full reasoning in docs/development/error-handling.md.
+ */
+function displayMessageFor(parsed: ParsedApiError, fallback: string): string {
+  switch (parsed.kind) {
+    case "authored":
+      return parsed.message || fallback;
+    case "generated":
+      return FIELD_ERROR;
+    case "opaque":
+      return GENERIC_ERROR;
+  }
 }
 
 function authRequestInterceptor(config: InternalAxiosRequestConfig) {
@@ -122,10 +233,11 @@ api.interceptors.response.use(
   },
   async (error) => {
     const status = error.response?.status;
-    // ProblemDetails (RFC 7807): the message lives in detail/title, not `message`.
     const data = error.response?.data;
-    const message =
-      data?.detail || data?.title || data?.message || error.message;
+    const parsed = parseApiError(status, data);
+    // `error.message` is axios's own ("Request failed with status code 400") — a last resort
+    // for a 4xx that answered with an empty body.
+    const message = parsed.message || error.message;
 
     // If it's a 404, just reject the promise without a notification.
     // The loader's error handler will take care of the UI.
@@ -160,21 +272,20 @@ api.interceptors.response.use(
       console.log("Unauthorized:", error);
       clearAccessToken();
     } else {
-      const isCustomMessage =
-        error.response?.data?.isCustomMessage || isCustomErrorMessage(message);
+      const displayMessage = displayMessageFor(parsed, error.message);
 
-      let displayMessage = message;
-
-      if (!isCustomMessage) {
-        displayMessage = "An unexpected error occurred. Please try again.";
-
-        console.error("System error:", {
-          status,
-          message,
-          url: error.config?.url,
-          method: error.config?.method,
-        });
-      }
+      // Log every failure, including the ones we showed verbatim. On an `opaque` or
+      // `generated` error this is the only place the real message survives; on an `authored`
+      // one it saves opening the Network tab to see what the user was just told. `kind` is
+      // included because "why was I shown the generic line?" is the question this answers.
+      console.error("API error:", {
+        status,
+        kind: parsed.kind,
+        message,
+        shown: displayMessage,
+        url: error.config?.url,
+        method: error.config?.method,
+      });
 
       // Some callers surface their own field-specific error (e.g. the signup form, which
       // shows the exact reason and bounces the user back to the bad step; or the AI wizard's

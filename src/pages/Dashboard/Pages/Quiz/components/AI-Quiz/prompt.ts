@@ -32,7 +32,7 @@ export const AI_QUESTION_LIMITS = {
 } as const;
 
 /**
- * What the Advanced drawer's counter starts at.
+ * What the details form's question-count stepper starts at.
  *
  * Five, not ten. The wizard's promise is that you review every question before it saves, and
  * ten is where that review starts feeling like work — a first run should end in a quiz, not in

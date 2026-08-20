@@ -70,7 +70,8 @@ interesting part, so we fake it with Moq (pattern C below).
 | `Grading/TypeTheAnswerMatcherTests.cs` | Pure unit | What counts as a correct typed answer: normalisation (whitespace, accents, punctuation, leading articles), case sensitivity, acceptable alternatives, whole-word partial matching, and the guards that stop an empty submission matching everything. Covers both graders, since the live grader and the question preview share this matcher. See [`typed-answer-matching.md`](../quiz/typed-answer-matching.md). |
 | `Auth/AuthenticationServiceTests.cs` | Service + Moq | Duplicate email/username rejected, missing default role rejected, bad credentials rejected, invalid/empty verification tokens rejected, logout no-op. |
 | `Auth/NotACommonPasswordTests.cs` | Pure unit | Common/breached + single-repeated-char passwords rejected; strong passphrases pass. |
-| `TestSupport/TestCurrentUserService.cs` | Helper | Test double for `ICurrentUserService` (drives the DbContext query filters). |
+| `Visibility/QuestionVisibilityFilterTests.cs` | Filter + InMemory DB | Who may load a question: the guest-vs-owner-vs-stranger matrix over the `QuestionBase` global query filter, including the regression that made every public quiz built from newly-authored (`Private`) questions 500 for anonymous visitors, and the inverse guard that a Private question in a **Draft** quiz stays hidden. Asserts on the `Include`d navigation, not just the join row — the row always loaded; it was `Question` that came back null. See [`quiz-visibility.md`](../quiz/quiz-visibility.md). |
+| `TestSupport/TestCurrentUserService.cs` | Helper | Test double for `ICurrentUserService` (drives the DbContext query filters). Its `IsAdmin` defaults to **true**, which short-circuits every filter to "see everything" — so a visibility test must set `IsAdmin = false` explicitly or it proves nothing. |
 
 ### Frontend — unit tests (`src/**/__tests__`)
 

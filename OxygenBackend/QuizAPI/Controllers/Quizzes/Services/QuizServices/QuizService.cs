@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using QuizAPI.Controllers.Image.Services;
 using QuizAPI.DTOs.Quiz;
+using QuizAPI.Exceptions;
 using QuizAPI.Filtering;
 using QuizAPI.Mapping;
 using QuizAPI.ManyToManyTables;
@@ -43,6 +44,56 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
 
         private static bool IsUnspecifiedLookup(string name) =>
             string.Equals(name.Trim(), UnspecifiedLookupName, StringComparison.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// The publication gate: a quiz may not be <c>Public</c> while any of its category,
+        /// language or difficulty is the seeded "Unspecified" row.
+        ///
+        /// <para><b>Why a gate and not a ban.</b> Unspecified is a drafting state. Forbidding it
+        /// outright would block the legitimate case — parking a half-built quiz, or importing one
+        /// you intend to classify later — while allowing it everywhere lets an unclassifiable quiz
+        /// into the catalogue. Tying it to <c>Public</c> puts the rule exactly where the harm is.
+        /// Draft and Unlisted stay open, so nothing the user is still working on is blocked.</para>
+        ///
+        /// <para><b>Why difficulty counts here</b>, when a *question* may stay Unspecified forever.
+        /// A question's difficulty is metadata for finding it in the bank and nothing reads it at
+        /// play time. A quiz's difficulty is a discovery facet: the catalogue's default "variety"
+        /// sort interleaves by category and the filter panel facets on all three
+        /// (docs/quiz/quiz-discovery.md, docs/quiz/filtering.md). A public quiz filed under
+        /// Unspecified either can't be found by any real facet, or surfaces an internal placeholder
+        /// as something end users can browse. Both are bad; neither applies to a draft.</para>
+        ///
+        /// <para>Enforced on every path that can set a status: create, AI import, update, and the
+        /// status-only PATCH. The client greys the option out first — this is the gate.</para>
+        /// </summary>
+        private async Task EnsurePublishableAsync(
+            int categoryId, int languageId, int difficultyId, QuizStatus status,
+            CancellationToken ct = default)
+        {
+            if (status != QuizStatus.Public) return;
+
+            var (category, language, difficulty) = await _quizzes.GetClassificationNamesAsync(
+                categoryId, languageId, difficultyId, ct);
+
+            var missing = new List<string>();
+            if (category is not null && IsUnspecifiedLookup(category)) missing.Add("category");
+            if (language is not null && IsUnspecifiedLookup(language)) missing.Add("language");
+            if (difficulty is not null && IsUnspecifiedLookup(difficulty)) missing.Add("difficulty");
+
+            if (missing.Count == 0) return;
+
+            var fields = missing.Count switch
+            {
+                1 => missing[0],
+                2 => $"{missing[0]} and {missing[1]}",
+                _ => $"{missing[0]}, {missing[1]} and {missing[2]}",
+            };
+
+            throw new AppValidationException(
+                $"Set a real {fields} before making this quiz public — \"Unspecified\" is an "
+                + "internal placeholder, so nobody would find the quiz in the catalogue. "
+                + "Save it as Draft or Unlisted instead.");
+        }
 
         // ── Reads ─────────────────────────────────────────────────────────────────
         public async Task<PagedList<QuizSummaryDTO>> GetAllQuizzesAsync(QuizFilterParams filterParams)
@@ -206,6 +257,10 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                 if (!referencesExist)
                     throw new InvalidOperationException("Category, Language, Difficulty, or User does not exist.");
 
+                await EnsurePublishableAsync(
+                    quizCM.CategoryId, quizCM.LanguageId, quizCM.DifficultyId,
+                    QuizMappers.ParseStatus(quizCM.Status));
+
                 var questionIds = quizCM.Questions.Select(q => q.QuestionId).ToList();
                 if (!await _quizzes.AllQuestionsExistAsync(questionIds))
                     throw new InvalidOperationException("One or more questions do not exist.");
@@ -269,14 +324,21 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                 // minting a whole quiz's worth of unclassifiable questions.
                 // Matched by name, like QuestionService.ValidateClassificationAsync and the
                 // frontend's isUnspecifiedLookup; seeded ids aren't stable across environments.
-                var (categoryName, languageName) = await _quizzes.GetClassificationNamesAsync(
-                    importCM.CategoryId, importCM.LanguageId);
+                var (categoryName, languageName, _) = await _quizzes.GetClassificationNamesAsync(
+                    importCM.CategoryId, importCM.LanguageId, importCM.DifficultyId);
                 if (categoryName is not null && IsUnspecifiedLookup(categoryName))
                     throw new InvalidOperationException(
                         "Pick a category for this quiz — its questions inherit it, and \"Unspecified\" isn't allowed on a question.");
                 if (languageName is not null && IsUnspecifiedLookup(languageName))
                     throw new InvalidOperationException(
                         "Pick a language for this quiz — its questions inherit it, and \"Unspecified\" isn't allowed on a question.");
+
+                // Separate rule from the two above: those protect the *questions* this import
+                // creates, this one protects the catalogue. A quiz can clear both guards above and
+                // still be unpublishable on difficulty alone.
+                await EnsurePublishableAsync(
+                    importCM.CategoryId, importCM.LanguageId, importCM.DifficultyId,
+                    QuizMappers.ParseStatus(importCM.Status));
 
                 // New questions inherit the quiz's category + language; only difficulty may vary.
                 // Validate every distinct new-question difficulty against existing rows so a bad id
@@ -456,6 +518,10 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                 if (!referencesExist)
                     throw new InvalidOperationException("One or more required entities do not exist");
 
+                await EnsurePublishableAsync(
+                    quizUM.CategoryId, quizUM.LanguageId, quizUM.DifficultyId,
+                    QuizMappers.ParseStatus(quizUM.Status));
+
                 var questionIds = quizUM.Questions.Select(q => q.QuestionId).ToList();
                 if (!await _quizzes.AllQuestionsExistAsync(questionIds))
                     throw new InvalidOperationException("One or more questions do not exist");
@@ -513,6 +579,12 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                         userId, quizId, quiz.UserId);
                     return null;
                 }
+
+                // The status-only path still goes through the gate: it is the one way to publish
+                // without touching the classification, so skipping it here would leave a door open
+                // that the create/update paths close.
+                await EnsurePublishableAsync(
+                    quiz.CategoryId, quiz.LanguageId, quiz.DifficultyId, status);
 
                 quiz.Status = status;
                 quiz.Version += 1;

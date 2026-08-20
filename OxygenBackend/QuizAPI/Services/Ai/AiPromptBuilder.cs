@@ -39,6 +39,24 @@ namespace QuizAPI.Services.Ai
         public const int MaxTitleLength = 80;
 
         /// <summary>
+        /// The only per-question time limits the app can render.
+        ///
+        /// <para>Mirrors <c>TIME_LIMIT_OPTIONS</c> in the frontend's
+        /// <c>Create-Quiz-Form/constants.ts</c>, and is sent to the model as an enum for the same
+        /// reason category, language, difficulty and point system are: the client has a fixed
+        /// dropdown for it, so a value outside this set has nowhere to render. Asking for "an
+        /// integer between 5 and 300" instead — which this did — meant a fully obedient model
+        /// could answer 22 and leave the author staring at an empty select that was silently
+        /// holding 22.</para>
+        ///
+        /// <para><see cref="MinTimeLimit"/> and <see cref="MaxTimeLimit"/> remain the outer bounds
+        /// for anything that arrives by another door (data transfer, direct API); this is the
+        /// narrower set we actually ask for.</para>
+        /// </summary>
+        public static readonly int[] AllowedTimeLimits =
+            { 5, 10, 15, 20, 30, 45, 60, 90, 120 };
+
+        /// <summary>
         /// Per-type field requirements, keyed by the exact string the model must emit.
         ///
         /// <c>allowPartialMatch</c> is deliberately absent: it is a grading rule the quiz author
@@ -151,6 +169,8 @@ namespace QuizAPI.Services.Ai
 
             rules.Add("Do NOT put a category or a language on an individual question. Those are quiz-level fields only, and any you add to a question will be ignored.");
 
+            rules.Add($"\"timeLimitInSeconds\" MUST be exactly one of these numbers: {string.Join(", ", AllowedTimeLimits)}. Do not use any other number, and do not write it as a string.");
+
             rules.Add("Scale \"pointSystem\" and \"timeLimitInSeconds\" with how hard the question is, so the quiz ramps up: easier recall questions should be \"Standard\" with a short time limit, while harder reasoning or synthesis questions should be \"Double\" or \"Quadruple\" with more time.");
 
             // Language instruction, when the user already made the choice for us.
@@ -191,7 +211,7 @@ namespace QuizAPI.Services.Ai
             sb.AppendLine("      \"text\": string,");
             sb.AppendLine($"      \"difficulty\": {difficultyList},");
             sb.AppendLine($"      \"pointSystem\": {pointSystems},");
-            sb.AppendLine($"      \"timeLimitInSeconds\": integer between {MinTimeLimit} and {MaxTimeLimit}");
+            sb.AppendLine($"      \"timeLimitInSeconds\": {string.Join(" | ", AllowedTimeLimits)}");
             sb.AppendLine("    }");
             sb.AppendLine("  ]");
             sb.Append('}');

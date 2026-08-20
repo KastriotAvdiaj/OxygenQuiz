@@ -1,19 +1,4 @@
-import { useRef, useState } from "react";
-import { SlidersHorizontal } from "lucide-react";
-
-import {
-  Drawer,
-  DrawerClose,
-  DrawerContent,
-  DrawerDescription,
-  DrawerFooter,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
-} from "@/components/ui/drawer";
 import { Input, Label, Textarea } from "@/components/ui/form";
-import { Separator } from "@/components/ui/separator";
-import { cn } from "@/utils/cn";
 import type {
   QuestionCategory,
   QuestionDifficulty,
@@ -26,7 +11,6 @@ import { DifficultySelect } from "../../../../Question/Entities/Difficulty/Compo
 import { LanguageSelect } from "../../../../Question/Entities/Language/components/select-question-language";
 import { QuestionCountStepper } from "./question-count-stepper";
 import { QuestionTypeOptions } from "./question-type-options";
-import { WizardButton } from "./wizard-button";
 
 export interface AdvancedOptionsProps {
   categories: QuestionCategory[];
@@ -53,28 +37,30 @@ export interface AdvancedOptionsProps {
 }
 
 /**
- * Everything the AI would otherwise decide, behind a side drawer.
+ * Everything the AI would otherwise decide, in plain sight under the topic box.
  *
- * It was an inline accordion first, which meant the wizard's one screen could triple in height
- * mid-thought and push the Generate button out of view. Then a dialog, which fixed that but
- * made this the one settings surface in the dashboard that opens as a centred modal — every
- * other one (`FormDrawer`, the question/quiz editors) is a right-hand drawer. Same behaviour,
- * the shell the rest of the app already uses.
+ * <b>No drawer.</b> It was an accordion, then a centred dialog, then a right-hand drawer —
+ * three shells for the same six fields, each one hiding them behind a click. Hiding cost more
+ * than it saved: an overlay conceals its own contents by definition, so the trigger had to
+ * grow a "3 set" badge to say what was behind it, and a user who never opened it had no idea
+ * the knobs existed. Showing the fields deletes the badge, the open state, the focus
+ * management and the story that had to click the thing open.
  *
- * <b>One shell at every width.</b> No `matchMedia` branch to a bottom drawer on phones: the
- * fields here are controlled by the container, and switching wrappers by breakpoint either
- * mounts two copies of them (duplicate `id`s, duplicate labels) or costs a JS media query that
- * can drift from the CSS. A right drawer capped at `85vw` is already the phone layout —
- * docs/RESPONSIVE.md, "Sidebars → drawers".
+ * <b>Two columns, one screen.</b> Stacked in one column this is a long scroll and the Generate
+ * button falls off the fold, which is the problem the drawer was introduced to solve. A
+ * `md:grid-cols-2` split — what the quiz *is* on the left, what the AI should *make* on the
+ * right — keeps the whole form roughly one viewport tall, and collapses to a single column
+ * below `md` where side-by-side fields don't fit (docs/RESPONSIVE.md).
  *
- * <b>No draft state.</b> Fields write straight through to the container as you edit, and the
- * footer button only closes. An Apply/Cancel pair would need a shadow copy of six values plus
- * reconciliation, to protect a decision the user can change in two clicks and confirms again
- * at review either way.
+ * <b>Everything here is optional.</b> The topic above is the one thing worth filling in; each
+ * field below falls back to the model's judgement, and the section header says so once rather
+ * than every placeholder repeating it. Anything the user does set stops being a suggestion:
+ * the container drops that vocabulary from the request, so the model can't overrule a choice
+ * the human already made. See docs/quiz/ai-quiz-generation-flow.md §1a.
  *
- * Anything set here stops being a suggestion: the container drops that vocabulary from the
- * request, so the model can't overrule a choice the human already made. See
- * docs/quiz/ai-quiz-generation-flow.md §1a.
+ * <b>No draft state.</b> Fields write straight through to the container as you edit. With
+ * nothing to open and nothing to close there is no Apply/Cancel to reconcile — the form is
+ * simply the form.
  */
 export const AdvancedOptions = ({
   categories,
@@ -96,205 +82,131 @@ export const AdvancedOptions = ({
   onToggleType,
   extraInstructions,
   onExtraInstructionsChange,
-}: AdvancedOptionsProps) => {
-  const [open, setOpen] = useState(false);
-  const contentRef = useRef<HTMLDivElement>(null);
+}: AdvancedOptionsProps) => (
+  <section
+    aria-label="Quiz details"
+    className="space-y-4 border-t border-border pt-5"
+  >
+    {/* One statement of optionality for the whole block, so no field has to carry
+        "(optional)" in its own label. The eyebrow is the twin of the "Required" one over the
+        topic box — same size, same weight, same colour — because the contrast between the two
+        halves of the card only reads if they are marked the same way. */}
+    <div>
+      <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+        Optional
+      </p>
+      {/* Wraps to two lines on a narrow phone rather than squeezing the heading. */}
+      <div className="mt-0.5 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+        <h2 className="text-xl font-medium text-foreground">Details</h2>
+        <p className="text-xs text-muted-foreground">
+          Leave anything blank and the AI decides it.
+        </p>
+      </div>
+    </div>
 
-  /**
-   * How many of the AI's decisions the user has taken over. Shown on the trigger because an
-   * overlay hides its contents by definition — without it there's no way to tell a default
-   * run from one carrying five overrides you set a minute ago and forgot.
-   */
-  const overrideCount = [
-    title.trim(),
-    description.trim(),
-    categoryId,
-    languageId,
-    difficultyId,
-    extraInstructions.trim(),
-  ].filter(Boolean).length;
-
-  return (
-    <Drawer open={open} onOpenChange={setOpen}>
-      {/* asChild rather than an onClick: Radix then owns aria-expanded/aria-controls and
-          returns focus to this button on close, which a hand-rolled trigger doesn't. */}
-      <DrawerTrigger asChild>
-        <button
-          type="button"
-          className="flex min-h-9 w-full items-center justify-between gap-3 rounded-lg border border-border px-3 py-2 text-sm text-muted-foreground transition-colors hover:border-foreground/20 hover:text-foreground"
-        >
-          <span className="flex items-center gap-2">
-            <SlidersHorizontal className="h-4 w-4 shrink-0" />
-            Advanced
-          </span>
-          {overrideCount > 0 ? (
-            <span className="shrink-0 rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-              {overrideCount} set
-            </span>
-          ) : (
-            // Hidden below sm: at 360px this pushes the label into a wrap.
-            <span className="hidden text-xs sm:inline">The AI decides</span>
-          )}
-        </button>
-      </DrawerTrigger>
-
-      <DrawerContent
-        ref={contentRef}
-        side="right"
-        // Radix focuses the first focusable descendant, which here is the title field — on a
-        // phone that raises the keyboard over the panel the user opened to read. Focus the
-        // content instead of nothing, so the focus trap and Escape still work.
-        onOpenAutoFocus={(event) => {
-          event.preventDefault();
-          contentRef.current?.focus();
-        }}
-        className={cn(
-          // Header / scrolling body / footer, so the Done button can't be scrolled away.
-          // p-0 replaces the variant's p-2: each band pads itself.
-          "flex flex-col gap-0 p-0",
-          "border-l bg-background dark:border-foreground/40",
-          // The variant's `w-fit` resolves to the widest child, which for full-width children
-          // is the container itself — an edge-to-edge panel on a phone. Cap it explicitly
-          // (docs/RESPONSIVE.md: sheets/drawers cap at 85vw) and widen from sm up.
-          "w-[85vw] max-w-[85vw] sm:w-full sm:max-w-md",
-          // `inset-y-0` is measured against the *large* viewport on mobile, so the footer can
-          // sit behind the browser chrome. Cap the height in dvh, with the vh fallback pair.
-          "max-h-[100vh] supports-[height:100dvh]:max-h-[100dvh]"
-        )}
-      >
-        <DrawerHeader className="space-y-1 border-b border-border px-4 py-3 pr-12 text-left">
-          <DrawerTitle>Advanced</DrawerTitle>
-          <DrawerDescription>
-            Leave anything blank and the AI fills it in — you'll confirm
-            everything in the next step.
-          </DrawerDescription>
-        </DrawerHeader>
-
-        {/* The scroll region. min-h-0 so it actually shrinks inside the flex column instead of
-            pushing the footer out; overscroll-contain so a flick past the end doesn't scroll
-            the wizard behind the drawer (docs/RESPONSIVE.md, nested scroll regions). */}
-        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-4 py-4">
-          <div>
-            <Label htmlFor="ai-title" className="text-sm font-medium">
-              Quiz title
-            </Label>
-            <Input
-              id="ai-title"
-              variant="minimal"
-              className="mt-1"
-              placeholder="The AI will suggest one"
-              value={title}
-              onChange={(e) => onTitleChange(e.target.value)}
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="ai-description" className="text-sm font-medium">
-              Description
-            </Label>
-            <Textarea
-              id="ai-description"
-              variant="minimal"
-              className="mt-1 min-h-[60px] resize-none"
-              placeholder="Optional"
-              value={description}
-              onChange={(e) => onDescriptionChange(e.target.value)}
-            />
-          </div>
-
-          <Separator className="bg-primary/20" />
-
-          {/* The three lookups the quiz is filed under. Labelled as a set rather than left as
-              a bare run of dropdowns: each select already names itself, but nothing said what
-              the three of them together were for. "Classification" over "Quiz details" —
-              the title and description above are quiz details too. */}
-          <div className="space-y-3">
-            <span className="block text-sm font-medium text-foreground">
-              Classification
-            </span>
-            <CategorySelect
-              categories={categories}
-              fieldVariant="minimal"
-              value={categoryId?.toString() ?? ""}
-              onChange={(v: string) => onCategoryIdChange(parseInt(v, 10))}
-              includeAllOption={false}
-            />
-            <LanguageSelect
-              languages={languages}
-              fieldVariant="minimal"
-              value={languageId?.toString() ?? ""}
-              onChange={(v: string) => onLanguageIdChange(parseInt(v, 10))}
-              includeAllOption={false}
-            />
-            <DifficultySelect
-              difficulties={difficulties}
-              fieldVariant="minimal"
-              value={difficultyId?.toString() ?? ""}
-              onChange={(v: string) => onDifficultyIdChange(parseInt(v, 10))}
-              includeAllOption={false}
-            />
-          </div>
-
-          <Separator className="bg-primary/20" />
-
-          {/* One control per band from here down, each behind its own rule. These three used
-              to run together — and a stepper, a set of tick rows and a text field stacked with
-              nothing between them read as one long form rather than three separate decisions.
-              (The count/types pair was also `sm:grid-cols-2`, which read the *viewport*: inside
-              a 28rem drawer the panel width no longer tracks the breakpoint.) */}
-          <div>
-            {/* A heading, not a `<Label>`: the control below is a group of buttons, so there
-                is no single field for a label element to point at. Each group carries its
-                own accessible name. */}
-            <span className="block text-sm font-medium text-foreground">
-              Number of questions
-            </span>
-            <QuestionCountStepper
-              value={questionCount}
-              onChange={onQuestionCountChange}
-            />
-          </div>
-
-          <Separator className="bg-primary/20" />
-
-          <div>
-            <span className="block text-sm font-medium text-foreground">
-              Question types
-            </span>
-            <QuestionTypeOptions
-              selected={allowedTypes}
-              onToggle={onToggleType}
-            />
-          </div>
-
-          <Separator className="bg-primary/20" />
-
-          <div>
-            <Label htmlFor="ai-extra" className="text-sm font-medium">
-              Extra instructions{" "}
-              <span className="text-muted-foreground">(optional)</span>
-            </Label>
-            {/* minimal, like the title and description above: `settings` is the denser
-                dashboard field and looked like a different kind of control mid-panel. */}
-            <Input
-              id="ai-extra"
-              variant="minimal"
-              className="mt-1"
-              placeholder="e.g. focus on dates, keep it exam-style..."
-              value={extraInstructions}
-              onChange={(e) => onExtraInstructionsChange(e.target.value)}
-            />
-          </div>
+    <div className="grid gap-y-5 md:grid-cols-2">
+      {/* ── Left: what the quiz is ─────────────────────────────────────────────── */}
+      <div className="space-y-4 md:pr-6">
+        <div>
+          <Label htmlFor="ai-title" className="text-sm font-medium">
+            Quiz title
+          </Label>
+          <Input
+            id="ai-title"
+            variant="minimal"
+            className="mt-1"
+            placeholder="The AI will suggest one"
+            value={title}
+            onChange={(e) => onTitleChange(e.target.value)}
+          />
         </div>
 
-        {/* Pinned outside the scroll region. env(safe-area-inset-bottom) clears the iOS home
-            indicator, the same way the lobby's floating chat button does. */}
-        <DrawerFooter className="border-t border-border px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:justify-end">
-          <DrawerClose asChild>
-            <WizardButton type="button">Done</WizardButton>
-          </DrawerClose>
-        </DrawerFooter>
-      </DrawerContent>
-    </Drawer>
-  );
-};
+        <div>
+          <Label htmlFor="ai-description" className="text-sm font-medium">
+            Description
+          </Label>
+          <Textarea
+            id="ai-description"
+            variant="minimal"
+            className="mt-1 min-h-[60px] resize-none"
+            placeholder="The AI will write one"
+            value={description}
+            onChange={(e) => onDescriptionChange(e.target.value)}
+          />
+        </div>
+
+        {/* The three lookups the quiz is filed under. Labelled as a set rather than left as
+            a bare run of dropdowns: each select already names itself, but nothing said what
+            the three of them together were for. "Classification" over "Quiz details" —
+            the title and description above are quiz details too. */}
+        <div className="space-y-3">
+          <span className="block text-sm font-medium text-foreground">
+            Classification
+          </span>
+          <CategorySelect
+            categories={categories}
+            fieldVariant="minimal"
+            value={categoryId?.toString() ?? ""}
+            onChange={(v: string) => onCategoryIdChange(parseInt(v, 10))}
+            includeAllOption={false}
+          />
+          <LanguageSelect
+            languages={languages}
+            fieldVariant="minimal"
+            value={languageId?.toString() ?? ""}
+            onChange={(v: string) => onLanguageIdChange(parseInt(v, 10))}
+            includeAllOption={false}
+          />
+          <DifficultySelect
+            difficulties={difficulties}
+            fieldVariant="minimal"
+            value={difficultyId?.toString() ?? ""}
+            onChange={(v: string) => onDifficultyIdChange(parseInt(v, 10))}
+            includeAllOption={false}
+          />
+        </div>
+      </div>
+
+      {/* ── Right: what the AI should make ──────────────────────────────────────
+          The rule is the column boundary, so it only exists once there are two columns —
+          below md the sections simply follow one another. */}
+      <div className="space-y-4 md:border-l md:border-border md:pl-6">
+        <div>
+          {/* A heading, not a `<Label>`: the control below is a group of buttons, so there
+              is no single field for a label element to point at. Each group carries its
+              own accessible name. */}
+          <span className="block text-sm font-medium text-foreground">
+            Number of questions
+          </span>
+          <QuestionCountStepper
+            value={questionCount}
+            onChange={onQuestionCountChange}
+          />
+        </div>
+
+        <div>
+          <span className="block text-sm font-medium text-foreground">
+            Question types
+          </span>
+          <QuestionTypeOptions selected={allowedTypes} onToggle={onToggleType} />
+        </div>
+
+        <div>
+          <Label htmlFor="ai-extra" className="text-sm font-medium">
+            Extra instructions
+          </Label>
+          {/* minimal, like the title and description opposite: `settings` is the denser
+              dashboard field and looked like a different kind of control mid-form. */}
+          <Input
+            id="ai-extra"
+            variant="minimal"
+            className="mt-1"
+            placeholder="e.g. focus on dates, keep it exam-style..."
+            value={extraInstructions}
+            onChange={(e) => onExtraInstructionsChange(e.target.value)}
+          />
+        </div>
+      </div>
+    </div>
+  </section>
+);

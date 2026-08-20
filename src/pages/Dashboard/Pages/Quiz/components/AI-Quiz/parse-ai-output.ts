@@ -9,6 +9,7 @@ import {
   QuestionSettings,
   DEFAULT_QUESTION_SETTINGS,
 } from "../Create-Quiz-Form/types";
+import { snapToTimeLimit } from "../Create-Quiz-Form/constants";
 import { AI_QUESTION_LIMITS } from "./prompt";
 
 /**
@@ -202,6 +203,15 @@ const resolveSettings = (
     (p) => p.toLowerCase() === (pointSystem ?? "").trim().toLowerCase()
   );
 
+  // Snap, don't clamp. Clamping only bounded the value — 22 seconds came through as 22,
+  // which is legal everywhere except the one place it has to render: the fixed
+  // `TIME_LIMIT_OPTIONS` dropdown in `quiz-question-settings.tsx`, which matched no item and
+  // went blank while still holding 22. The prompt now asks for one of the allowed numbers
+  // (`AiPromptBuilder.AllowedTimeLimits`), so this is the backstop for a model that ignores
+  // it, for an older reply pasted into the own-AI page, and for the day the two lists drift.
+  //
+  // Bounds first, then snap: a nonsense 9000 becomes 300 and then 120, rather than snapping
+  // straight to 120 from a number that should have been rejected as out of range.
   let seconds = DEFAULT_QUESTION_SETTINGS.timeLimitInSeconds;
   if (typeof timeLimit === "number" && Number.isFinite(timeLimit)) {
     seconds = Math.round(timeLimit);
@@ -209,6 +219,7 @@ const resolveSettings = (
       AI_QUESTION_LIMITS.maxTimeLimit,
       Math.max(AI_QUESTION_LIMITS.minTimeLimit, seconds)
     );
+    seconds = snapToTimeLimit(seconds);
   }
 
   return {

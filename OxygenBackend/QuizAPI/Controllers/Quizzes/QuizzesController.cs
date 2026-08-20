@@ -4,6 +4,10 @@ using Microsoft.EntityFrameworkCore;
 using QuizAPI.Extensions;
 using QuizAPI.Controllers.Quizzes.Services.QuizServices;
 using QuizAPI.DTOs.Quiz;
+// AppException & friends: the catches below deliberately let these through to
+// GlobalExceptionHandler, which maps each to its own status code and a ProblemDetails
+// body. Swallowing one into HandleCustomError turns a precise 400 into an opaque 500.
+using QuizAPI.Exceptions;
 using QuizAPI.Models;
 using QuizAPI.Models.Quiz;
 using QuizAPI.Services.CurrentUserService;
@@ -56,7 +60,7 @@ namespace QuizAPI.Controllers.Quizzes
                 );
                 return Ok(pagedQuizzes.Items);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not AppException)
             {
                 _logger.LogError(ex, "Error retrieving all quizzes");
                 return HandleCustomError("An error occurred while processing your request", false);
@@ -84,7 +88,7 @@ namespace QuizAPI.Controllers.Quizzes
                 );
                 return Ok(pagedQuizzes.Items);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not AppException)
             {
                 _logger.LogError(ex, "Error retrieving public quizzes");
                 return HandleCustomError("An error occurred while processing your request", false);
@@ -114,7 +118,7 @@ namespace QuizAPI.Controllers.Quizzes
                 );
                 return Ok(pagedQuizzes.Items);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not AppException)
             {
                 _logger.LogError(ex, "Error retrieving user's quizzes");
                 return HandleCustomError("An error occurred while processing your request", false);
@@ -196,7 +200,7 @@ namespace QuizAPI.Controllers.Quizzes
 
                 return Ok(quiz);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not AppException)
             {
                 _logger.LogError(ex, "Error retrieving quiz {QuizId}", id);
                 return HandleCustomError("An error occurred while processing your request", false);
@@ -239,7 +243,7 @@ namespace QuizAPI.Controllers.Quizzes
                 var questions = await _quizService.GetQuizQuestionsAsync(id);
                 return Ok(questions ?? new List<QuizQuestionDTO>());
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not AppException)
             {
                 _logger.LogError(ex, "Error retrieving questions for quiz {QuizId}", id);
                 return HandleCustomError("An error occurred while processing your request", false);
@@ -277,7 +281,7 @@ namespace QuizAPI.Controllers.Quizzes
                 _logger.LogWarning(ex, "Invalid operation during quiz creation");
                 return BadRequest(ex.Message);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not AppException)
             {
                 _logger.LogError(ex, "Error creating quiz");
                 return HandleCustomError("An error occurred while processing your request", false);
@@ -317,7 +321,7 @@ namespace QuizAPI.Controllers.Quizzes
                 _logger.LogWarning(ex, "Invalid operation during AI quiz import");
                 return BadRequest(ex.Message);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not AppException)
             {
                 _logger.LogError(ex, "Error importing AI quiz");
                 return HandleCustomError("An error occurred while processing your request", false);
@@ -364,7 +368,7 @@ namespace QuizAPI.Controllers.Quizzes
                 _logger.LogWarning(ex, "Invalid operation during quiz update");
                 return BadRequest(ex.Message);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not AppException)
             {
                 _logger.LogError(ex, "Error updating quiz {QuizId}", quizUM.Id);
                 return HandleCustomError("An error occurred while processing your request", false);
@@ -397,7 +401,7 @@ namespace QuizAPI.Controllers.Quizzes
 
                 return Ok(quiz);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not AppException)
             {
                 _logger.LogError(ex, "Error setting status for quiz {QuizId}", id);
                 return HandleCustomError("An error occurred while processing your request", false);
@@ -427,7 +431,7 @@ namespace QuizAPI.Controllers.Quizzes
 
                 return Ok(new ShareLinkResponse { ShareToken = token });
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not AppException)
             {
                 _logger.LogError(ex, "Error generating share link for quiz {QuizId}", id);
                 return HandleCustomError("An error occurred while processing your request", false);
@@ -450,7 +454,7 @@ namespace QuizAPI.Controllers.Quizzes
                 var quiz = await _quizService.GetQuizByShareTokenAsync(token);
                 return quiz == null ? NotFound() : Ok(quiz);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not AppException)
             {
                 _logger.LogError(ex, "Error retrieving shared quiz");
                 return HandleCustomError("An error occurred while processing your request", false);
@@ -479,7 +483,7 @@ namespace QuizAPI.Controllers.Quizzes
 
                 return NoContent();
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not AppException)
             {
                 _logger.LogError(ex, "Error deleting quiz {QuizId}", id);
                 return HandleCustomError("An error occurred while processing your request", false);

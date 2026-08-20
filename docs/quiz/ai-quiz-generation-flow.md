@@ -52,16 +52,21 @@ lands **pre-filled in the review step**, where the human confirms or changes it:
 | Title | Model suggests it. Free text — nothing to resolve. |
 | Category | Model picks from the category **names** we send. Unmatched → blank. |
 | Language | Model picks from the language **names** we send, normally matching the language the topic was typed in, and writes the questions in it. |
-| Difficulty, count, types | Defaults, behind an "Advanced" drawer. |
+| Difficulty, count, types | Defaults, shown in the details form under the topic box. |
 
-Advanced is an overlay rather than an inline accordion: expanding it in place tripled the height
-of the wizard's one screen and pushed Generate out of view. It is a right-hand `Drawer` rather
-than a centred dialog, matching every other settings surface in the dashboard (`FormDrawer`,
-the question and quiz editors); one shell at every width, capped at `85vw` on phones, so there
-is no breakpoint branch mounting the fields twice. Its trigger shows how many
-overrides are set, because an overlay hides its contents and a run carrying five of them
-otherwise looks identical to a default one. Fields write straight through — no draft state to
-apply or cancel, since everything is confirmed again at review.
+The details form is **visible, not hidden**. It has been an inline accordion, a centred dialog
+and a right-hand drawer, and every version traded one problem for another: the accordion
+tripled the height of the wizard's one screen and pushed Generate out of view, and the overlays
+fixed that by concealing their own contents — which is why the trigger had to grow a "3 set"
+badge, and why a user who never opened it never learned the knobs existed.
+
+What resolves it is layout, not disclosure. The fields sit in a `md:grid-cols-2` grid — what the
+quiz *is* on the left (title, description, classification), what the AI should *make* on the
+right (count, types, extra instructions) — which keeps the whole card roughly one viewport tall
+with Generate still on screen, and collapses to a single column below `md`. Only the topic
+carries a "Recommended" mark; the section header states once that everything under it is
+optional, so no field repeats "(optional)" in its own label. Fields write straight through —
+no draft state to apply or cancel, since everything is confirmed again at review.
 
 This changes a rule the original design stated flatly — *"Do NOT output a category or a language"*
 — so it is worth being precise about what moved and what did not.
@@ -195,7 +200,7 @@ wizard, open the component, not the view.
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Idle: topic box, Advanced folded away
+    [*] --> Idle: topic box, details form in view
     Idle --> Generating: Generate
     Generating --> Failed: error code
     Failed --> Idle: fix / retry / fall back to copy-paste
@@ -633,6 +638,21 @@ conditions that make `GenerateAsync` return `FeatureDisabled`, and they can't be
 before the user lookup. So both gates carry a comment pointing at `IsAvailableAsync`, and a third
 condition means touching both. The controller lost its `AiOptions` injection in the process, which
 makes its "holds no business logic" claim true for the first time.
+
+**13. ~~AI-generated quizzes are unplayable (`next-question` 500s).~~ Done (2026-08-19) — and it
+was never an AI bug.** Filed as the register's only P1 on the reasonable-looking evidence that the
+first quiz generated through this feature 500'd while quizzes 25–31 didn't. It was a guest-only
+failure in the `QuestionBase` global query filter: rule 4 required a signed-in user before it would
+consider "this question is in a Public quiz", and questions authored inside a quiz are `Private`.
+Every public quiz built from new questions was affected, manual ones included, and `Ai:Enabled=false`
+never protected it. Full account in [quiz-visibility.md](quiz-visibility.md), "Questions inside a
+quiz you may play".
+
+The lesson is about diagnosis, not the filter. The bug was attributed to the *newest* thing in the
+stack rather than the thing the failing and working cases actually differed by, and the one clue
+that would have redirected it immediately — "it works when I'm logged in" — wasn't in the report.
+When a bug reproduces on new data, check what's different about the *caller* before concluding it's
+the data.
 
 **12. No streaming, so the client waits blind.** At the current 15-question cap a call runs well
 inside Cloudflare's 100s proxy timeout, but the user sees nothing until it finishes. That is what

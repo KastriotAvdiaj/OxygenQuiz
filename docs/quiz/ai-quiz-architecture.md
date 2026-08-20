@@ -165,13 +165,19 @@ These are the properties that make the feature safe. Every change should preserv
 3. **No quiz flow ever creates a category, language, or difficulty.** Difficulty names
    resolve to existing rows or fall back; unmatched never creates. (§4, §7)
 4. **AI questions are `Private`.** They don't pollute the shared question bank.
-   (`buildQuestion` sets `visibility: "Private"`)
+   (`buildQuestion` sets `visibility: "Private"`) The manual builder does the same, so this is
+   not an AI-specific property. It means a generated quiz is only playable because of rule 4 of
+   the `QuestionBase` query filter ("the question is in a quiz you can see") — a rule that was
+   broken for anonymous callers until 2026-08-19 and made every such quiz 500 for guests. See
+   [quiz-visibility.md](quiz-visibility.md), "Questions inside a quiz you may play".
 5. **Bad AI data degrades, it does not crash.** Invalid questions are dropped with a
    visible reason; the import proceeds with the rest. (`ParseResult.dropped`)
 6. **AI output is never persisted without human review.** The user always lands in the
    builder and clicks submit themselves. (`ai-quiz-wizard.tsx` handoff)
 7. **Scoring fields are bounded.** `pointSystem ∈ {Standard,Double,Quadruple}`,
-   `timeLimitInSeconds ∈ [5,300]`, clamped on import. (`resolveSettings`)
+   `timeLimitInSeconds` bounded to `[5,300]` and then **snapped to the nearest**
+   `TIME_LIMIT_OPTIONS` entry, because the builder renders it as a fixed dropdown and an
+   off-list value has no `SelectItem` to match. (`resolveSettings`)
 8. **The model never sets a grading rule.** It supplies question *content*; how an answer is
    judged is the author's call. Concretely, `allowPartialMatch` is not in the prompt and is
    hard-coded `false` on import — a model that emits it anyway is ignored. It was previously

@@ -7,6 +7,7 @@ import {
   // Eye,
   // Shuffle,
   Folder,
+  Info,
   MessageSquareText,
   Plus,
 } from "lucide-react";
@@ -56,6 +57,7 @@ import {
 import { useDisclosure } from "@/hooks/use-disclosure";
 import { NewAnyQuestion, QuizQuestion } from "./types";
 import { inheritQuizClassification } from "./inherit-quiz-classification";
+import { isUnspecifiedLookup } from "../../../Question/Entities/lookup-visibility";
 import {
   DEFAULT_NEW_MULTIPLE_CHOICE,
   DEFAULT_NEW_TRUE_FALSE,
@@ -552,6 +554,49 @@ const CreateQuizForm = ({
           setValue("questions", questions);
         }, [addedQuestions, setValue]);
 
+        /**
+         * Which of the quiz's three lookups are still the seeded "Unspecified" row.
+         *
+         * Drives the publication gate: a quiz may be Draft or Unlisted while unclassified, but
+         * not Public. Unspecified is invisible to the catalogue's category/difficulty/language
+         * facets and to the default "variety" sort, so a public quiz filed under it either can't
+         * be found at all or advertises an internal placeholder as a browsable category
+         * (docs/quiz/quiz-discovery.md, docs/quiz/filtering.md).
+         *
+         * Derived from the watched ids rather than stored, so it updates the moment a dropdown
+         * changes. `QuizService.EnsurePublishableAsync` is the real gate — this is the affordance
+         * that stops the user reaching it.
+         */
+        const unspecifiedFields = [
+          isUnspecifiedLookup(
+            queryData.categories.find((c) => c.id === watch("categoryId"))?.name,
+          )
+            ? "category"
+            : null,
+          isUnspecifiedLookup(
+            queryData.languages.find((l) => l.id === watch("languageId"))
+              ?.language,
+          )
+            ? "language"
+            : null,
+          isUnspecifiedLookup(
+            queryData.difficulties.find((d) => d.id === watch("difficultyId"))
+              ?.level,
+          )
+            ? "difficulty"
+            : null,
+        ].filter((field): field is string => field !== null);
+
+        const canPublish = unspecifiedFields.length === 0;
+        const status = watch("status");
+
+        // Setting a lookup back to Unspecified while Public is selected would otherwise submit a
+        // status the server is about to reject. Fall back to Draft, matching `ParseStatus`'s rule
+        // that a quiz is never accidentally published — the note under the field explains it.
+        useEffect(() => {
+          if (!canPublish && status === "Public") setValue("status", "Draft");
+        }, [canPublish, status, setValue]);
+
         const { errors } = formState;
 
         // Fields that live on the "Quiz" tab. When the user submits from the
@@ -800,14 +845,37 @@ const CreateQuizForm = ({
                             >
                               Unlisted — playable via share link
                             </SelectItem>
+                            {/* Radix's own `data-[disabled]` styling (opacity + no pointer
+                                events) already lives in SelectItem's base class, so disabling is
+                                the whole change. The option stays *visible* rather than being
+                                removed: a missing row reads as a feature that doesn't exist,
+                                where a greyed one plus the note below reads as a condition the
+                                user can satisfy. */}
                             <SelectItem
                               variant={errors.status ? "form-error" : "form"}
                               value="Public"
+                              disabled={!canPublish}
                             >
                               Public — listed for everyone
+                              {!canPublish && " (needs a full classification)"}
                             </SelectItem>
                           </SelectContent>
                         </Select>
+                        {!canPublish && (
+                          <p className="text-muted-foreground mt-1.5 flex items-start gap-1.5 text-xs">
+                            <Info className="mt-0.5 h-3 w-3 shrink-0" />
+                            <span>
+                              Set a real{" "}
+                              <span className="text-foreground font-medium">
+                                {unspecifiedFields.length === 3
+                                  ? `${unspecifiedFields[0]}, ${unspecifiedFields[1]} and ${unspecifiedFields[2]}`
+                                  : unspecifiedFields.join(" and ")}
+                              </span>{" "}
+                              above to publish this quiz. Draft and Unlisted work
+                              either way.
+                            </span>
+                          </p>
+                        )}
                         {errors.status && (
                           <p className="text-sm text-red-500 mt-1">
                             {errors.status.message

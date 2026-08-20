@@ -550,21 +550,38 @@ Found while building slice 2.0 (topic + source-text generation via DeepSeek, ser
 The live register with full reasoning is
 [`ai-quiz-generation-flow.md`](../quiz/ai-quiz-generation-flow.md) §9 — this section is the
 index. **The feature is off by default (`Ai:Enabled=false`), so none of these can bite
-production until it's switched on.**
+production until it's switched on** — with one historical exception, the former P1 below, which
+turned out not to be an AI issue at all and was therefore never covered by that kill switch.
+Worth remembering as a reasoning failure: "the feature is off" only protects you from bugs that
+are actually *in* the feature.
 
-- **P1 — An AI-generated quiz can be unplayable: `next-question` 500s.** Quiz 32
-  ("Game of Thrones 101", the first quiz generated through this feature) returns **500**
-  from `GET /{sessionId}/next-question` on its *first* question, for guests and therefore
-  presumably for everyone. Every other public quiz (25–31) serves its first question fine,
-  so this is data written by the generation path, not the play path. Narrowed to *after*
-  the `ExecuteUpdateAsync` — the session row does get `CurrentQuizQuestionId` set — so the
-  throw is in the `FirstAsync(Include(Question))` / `ToCurrentQuestionDto` block. The row
-  data (TPH discriminator, `AcceptableAnswers` JSON, FK columns) looks structurally sound
-  on inspection, so the next step is the actual exception: the API log line
-  `Error getting next question for session {SessionId}` carries it. The generic catch there
-  swallows the type, which is a large part of why this is hard to pin down — consider
-  logging it as structured data or rethrowing typed.
-  → `OxygenBackend/QuizAPI/Controllers/Quizzes/Services/QuizSessionServices/QuizSessionService.cs:178-197`
+- ~~**P1 — An AI-generated quiz can be unplayable: `next-question` 500s.**~~ **Fixed
+  (2026-08-19), and it was misdiagnosed here — it was never an AI bug.** Moved to
+  [`quiz/quiz-visibility.md`](../quiz/quiz-visibility.md), "Questions inside a quiz you may
+  play", which is now its permanent home.
+
+  The entry said the 500 hit "guests and therefore presumably for everyone". That presumption
+  was the whole error: the quiz played fine signed in, and **only** broke for anonymous
+  visitors. Rule 4 of the `QuestionBase` global query filter — "the question is in a quiz you
+  can see" — opened with `_current.UserId != null &&` wrapping *both* halves of its OR, so a
+  guest failed the clause before `Status == Public` was ever evaluated. Questions authored in a
+  quiz are `Private` (both the AI import and the manual builder), so rule 3 didn't save it
+  either, and the question was filtered out.
+
+  The earlier narrowing was right about *where* and wrong about *why*: the `QuizQuestion` join
+  row has no filter, so `FirstAsync(Include(Question))` returned a row with `Question` null —
+  query filters apply to included navigations — and `ToCurrentQuestionDto` threw a
+  `NullReferenceException` on `qq.Question.Text`. Quizzes 25–31 worked because their questions
+  aren't `Private`.
+
+  **Scope was underestimated too.** This was never limited to AI quizzes or to `Ai:Enabled` —
+  *every* public quiz built from newly-authored questions, manual included, was unplayable
+  logged out. Two follow-ups landed with the fix: that catch now logs the exception type as
+  structured data (the flat message is most of why this cost weeks), and
+  `QuizAPI.Tests/Visibility/QuestionVisibilityFilterTests.cs` covers the guest case plus the
+  inverse, that a Private question in a Draft quiz stays hidden.
+  → `OxygenBackend/QuizAPI/Data/ApplicationDbContext.cs` (the `QuestionBase` filter),
+  `Controllers/Quizzes/Services/QuizSessionServices/QuizSessionService.cs`
 - ~~**P2 — EF migration for `AiGenerationUsages` is not generated.**~~ **Fixed (2026-08-09).**
   `dotnet ef migrations add AddAiGenerationUsage` — it applies on boot. The first attempt
   failed to build on an unrelated mistake worth remembering: `AiPromptBuilder.cs` imported

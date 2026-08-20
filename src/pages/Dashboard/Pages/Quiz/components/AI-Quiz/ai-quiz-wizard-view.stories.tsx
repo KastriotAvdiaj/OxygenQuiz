@@ -280,8 +280,9 @@ export const TopicEntered: Story = {
 };
 
 /**
- * Overrides set, drawer closed. The trigger carries a count because an overlay hides its
- * contents by definition — otherwise a run with five overrides looks like a default one.
+ * Every optional field filled in. There is no drawer to open any more — the details form is
+ * part of the screen — so this story is just the filled state of the page, and the old
+ * `AdvancedDrawerOpen` twin that clicked the trigger went with the drawer.
  */
 export const AdvancedOverridden: Story = {
   args: {
@@ -291,18 +292,9 @@ export const AdvancedOverridden: Story = {
     languageId: 1,
     difficultyId: 3,
     questionCount: AI_QUESTION_LIMITS.maxGeneratedQuestions,
-    // Two of the three types, so the drawer story shows a ticked row next to an unticked one.
+    // Two of the three types, so a ticked row sits next to an unticked one.
     allowedTypes: [QuestionType.MultipleChoice, QuestionType.TrueFalse],
     extraInstructions: "Focus on dates, exam style.",
-  },
-};
-
-/** The drawer itself. Open state is local to `AdvancedOptions`, so the story clicks it open. */
-export const AdvancedDrawerOpen: Story = {
-  args: { ...AdvancedOverridden.args },
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    await userEvent.click(canvas.getByRole("button", { name: /advanced/i }));
   },
 };
 
@@ -551,16 +543,12 @@ export const OnMobile: Story = {
 };
 
 /**
- * The Advanced drawer on a phone. Checks the things docs/RESPONSIVE.md warns about: the 85vw
- * cap (not an edge-to-edge panel), the dvh height cap with the body scrolling under a pinned
- * header and footer, and that opening it does *not* raise the keyboard by focusing the title
- * field.
+ * The whole form on a phone. This is where the two-column details grid has to collapse: below
+ * `md` the "what the quiz is" and "what the AI makes" columns stack, the dividing rule
+ * disappears with them, and nothing should sit side by side or overflow at 360px
+ * (docs/RESPONSIVE.md).
  */
-export const AdvancedDrawerOnMobile: Story = {
+export const DetailsOnMobile: Story = {
   parameters: { viewport: { defaultViewport: "mobile1" } },
   args: { ...AdvancedOverridden.args },
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    await userEvent.click(canvas.getByRole("button", { name: /advanced/i }));
-  },
 };

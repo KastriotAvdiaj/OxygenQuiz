@@ -185,7 +185,7 @@ export const AiQuizWizardView = ({
       ? "Tell the AI what the quiz should be about."
       : "Paste a bit more material — a couple of sentences at least."
     : allowedTypes.length === 0
-      ? "Pick at least one question type under Advanced."
+      ? "Pick at least one question type below."
       : null;
 
   /**
@@ -258,7 +258,7 @@ export const AiQuizWizardView = ({
 
   // ── Screen 3: the wizard itself
   return (
-    <div className="mx-auto w-full max-w-2xl py-6 px-4">
+    <div className="mx-auto w-full max-w-3xl py-6 px-4">
       <header className="mb-6">
         <div className="mb-5 sm:mb-6">
           <button
@@ -275,11 +275,11 @@ export const AiQuizWizardView = ({
         {/* The mode is no longer named by a selected tab, so the subtitle carries it. It is
             also the only confirmation the user gets that the option they picked in the
             dialog is the one that loaded. */}
-        <p className="text-muted-foreground text-sm mt-1">
+        {/* <p className="text-muted-foreground text-sm mt-1">
           {mode === "Topic"
             ? "Say what it's about and we'll draft it. You review everything before it saves."
             : "Paste your material and we'll draft questions from it. You review everything before it saves."}
-        </p>
+        </p> */}
       </header>
 
       {/* Questions arrived but we can't place them yet. Shown *instead of* the topic box, so
@@ -300,9 +300,11 @@ export const AiQuizWizardView = ({
       ) : (
         // No CardHeader: it existed to hold the mode tabs, and the tinted strip left behind
         // after they moved to the method dialog was a band of colour heading nothing. What
-        // the card holds now is the whole of it — one field, one drawer, one button.
+        // the card holds now is the whole of it — the question, the details that answer it,
+        // and the button. Nothing on this screen is hidden behind a click any more: the
+        // Advanced drawer became the visible `AdvancedOptions` form below.
         <Card className="bg-background border-2 border-primary/30">
-          <CardContent className="space-y-4 pt-6">
+          <CardContent className="space-y-5 pt-6">
             <div ref={inputRegion}>
               <GenerationInput
                 mode={mode}

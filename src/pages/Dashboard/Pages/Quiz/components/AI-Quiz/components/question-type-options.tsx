@@ -38,7 +38,7 @@ export interface QuestionTypeOptionsProps {
  * wizard enforces when Generate is pressed rather than by blocking the last deselection.
  *
  * Stacked rows with a tick circle rather than the pill chips this used to be. Chips wrapped to
- * two ragged lines inside the Advanced drawer and read as tags — decoration you scan — when
+ * two ragged lines inside the narrow details column and read as tags — decoration you scan — when
  * they are in fact three checkboxes. A row per type, each with a target the full width of the
  * panel and a circle that fills in, says "pick some of these" without a legend.
  *

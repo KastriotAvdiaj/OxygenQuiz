@@ -70,7 +70,7 @@ That gives us the final model:
 | Quiz `categoryId` / `languageId` / `difficultyId` | Human, existing dropdowns | None — already IDs |
 | Question `categoryId` / `languageId` | **Inherited from the quiz** | None |
 | Question `difficultyId` | **AI, from the fixed difficulty table (by name)** | Strict name→ID match |
-| Question `pointSystem` / `timeLimitInSeconds` | **AI** | None — enum + int, not FKs |
+| Question `pointSystem` / `timeLimitInSeconds` | **AI, both from a fixed list of values** | Snap to the nearest allowed value; not FKs |
 
 The catalog-size problem disappears entirely: the AI is never shown categories or
 languages, in any form. The only vocabulary it receives is the difficulty table, which is
@@ -129,9 +129,23 @@ finding questions in the bank, not a gameplay input.
 
 So the AI also assigns `pointSystem` and `timeLimitInSeconds` per question, letting a
 generated quiz genuinely ramp: quick Standard recall questions early, Quadruple synthesis
-questions with more time at the end. These are a string enum and a bounded integer, not
-foreign keys — a bad value fails a trivial range check rather than corrupting a relation.
-This is where per-question variation actually reaches the player.
+questions with more time at the end. Neither is a foreign key, so a bad value can't corrupt
+a relation. This is where per-question variation actually reaches the player.
+
+**Both are closed sets, not free values.** `pointSystem` always was. `timeLimitInSeconds`
+was originally specified as "a bounded integer", and that was the bug: the builder renders
+it as a fixed dropdown over `TIME_LIMIT_OPTIONS`, so a model that obeyed the range and
+answered `22` produced a legal value with no `SelectItem` to match. Radix then rendered the
+trigger blank while the form quietly still held 22 — the author saw an empty control, had no
+way to know what the question was set to, and saved it unchanged.
+
+The fix is the pattern this document already applies to difficulty: **give the model the
+vocabulary, and snap anything else to it.** `AiPromptBuilder.AllowedTimeLimits` is sent as an
+enum (`5 | 10 | 15 | 20 | 30 | 45 | 60 | 90 | 120`) rather than a range, and
+`resolveSettings` in `parse-ai-output.ts` bounds then snaps to the nearest entry. The
+dropdown also injects an unrecognised value as its own option, because the prompt and parser
+only guard the AI door — data transfer and direct API calls can still write any value in
+`[0, 2000]`.
 
 ---
 
@@ -234,7 +248,7 @@ Output rules — follow precisely:
         "text": string,                       // the question
         "difficulty": one of {DIFFICULTY_NAMES},
         "pointSystem": "Standard" | "Double" | "Quadruple",
-        "timeLimitInSeconds": integer between 5 and 300,
+        "timeLimitInSeconds": 5 | 10 | 15 | 20 | 30 | 45 | 60 | 90 | 120,
         // MultipleChoice:
         "answerOptions": [ { "text": string, "isCorrect": boolean }, ... 2 to 4 ],
         "allowMultipleSelections": boolean,
@@ -251,6 +265,7 @@ Output rules — follow precisely:
 - Allowed question types: {ALLOWED_TYPES}.
 - For "difficulty" you MUST pick from exactly this list: {DIFFICULTY_NAMES}.
   Do NOT invent difficulty names. Do NOT output categories or languages at all.
+- "timeLimitInSeconds" MUST be exactly one of: 5, 10, 15, 20, 30, 45, 60, 90, 120.
 - Scale "pointSystem" and "timeLimitInSeconds" with the question's difficulty, so harder
   questions are worth more and allow more time.
 - Each MultipleChoice question needs 2–4 options and at least one isCorrect:true.
@@ -290,7 +305,10 @@ import — a partial, correct quiz is better than an all-or-nothing failure.
   list (`queryData.difficulties`). Match → that `difficultyId`. No match → quiz-level
   `difficultyId`, and flag it.
 - `pointSystem` → must be one of `Standard` / `Double` / `Quadruple`, else `Standard`.
-- `timeLimitInSeconds` → clamp to 5–300, else the `DEFAULT_QUESTION_SETTINGS` value (10).
+- `timeLimitInSeconds` → bound to 5–300, then snap to the nearest `TIME_LIMIT_OPTIONS`
+  entry; missing or non-numeric falls back to the `DEFAULT_QUESTION_SETTINGS` value (10).
+  The prompt asks for one of those values outright — the snap is the backstop, since the
+  per-question dropdown renders blank on anything it can't match.
 
 **Category and language are always the quiz-level IDs. Never from AI, never Unspecified.**
 

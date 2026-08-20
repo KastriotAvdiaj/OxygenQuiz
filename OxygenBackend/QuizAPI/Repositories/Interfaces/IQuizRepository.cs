@@ -50,13 +50,17 @@ namespace QuizAPI.Repositories.Interfaces
             int categoryId, int languageId, int difficultyId, Guid? userId = null, CancellationToken ct = default);
 
         /// <summary>
-        /// Display names of the referenced category and language; null when the id doesn't exist.
-        /// The AI import uses this to refuse a quiz whose classification is the seeded
-        /// "Unspecified" row — its questions inherit those values, and a question may never be
-        /// stored as Unspecified (docs/quiz/quiz-question-classification.md).
+        /// Display names of the referenced category, language and difficulty; null for any id that
+        /// doesn't exist.
+        ///
+        /// <para>Two rules read this. The AI import refuses a quiz whose category or language is
+        /// the seeded "Unspecified" row, because its questions inherit those values and a question
+        /// may never be stored as Unspecified. The publication gate refuses <c>Public</c> on any
+        /// quiz where any of the three is Unspecified — difficulty included, which is why this
+        /// returns it. See docs/quiz/quiz-question-classification.md and quiz-visibility.md.</para>
         /// </summary>
-        Task<(string? Category, string? Language)> GetClassificationNamesAsync(
-            int categoryId, int languageId, CancellationToken ct = default);
+        Task<(string? Category, string? Language, string? Difficulty)> GetClassificationNamesAsync(
+            int categoryId, int languageId, int difficultyId, CancellationToken ct = default);
 
         /// <summary>True if every distinct id in <paramref name="questionIds"/> exists.</summary>
         Task<bool> AllQuestionsExistAsync(IReadOnlyCollection<int> questionIds, CancellationToken ct = default);

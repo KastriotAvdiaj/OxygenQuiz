@@ -193,7 +193,16 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error getting next question for session {SessionId}", sessionId);
+                // Log the exception TYPE as structured data, not just the message. The flat
+                // version of this line cost days on the "AI quizzes are unplayable for guests"
+                // bug: the real fault was a NullReferenceException from a query-filtered
+                // navigation (see the QuestionBase filter in ApplicationDbContext), and the log
+                // said only "Error getting next question". A NullReferenceException here almost
+                // always means `Question` came back null because the caller can't see it — check
+                // visibility before you check the data.
+                _logger.LogError(ex,
+                    "Error getting next question for session {SessionId} ({ExceptionType}): {ExceptionMessage}",
+                    sessionId, ex.GetType().Name, ex.Message);
                 return Result<CurrentQuestionDto>.Failure("An error occurred while fetching the next question.");
             }
         }

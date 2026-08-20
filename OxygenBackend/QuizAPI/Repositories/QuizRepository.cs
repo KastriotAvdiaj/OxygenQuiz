@@ -103,8 +103,8 @@ namespace QuizAPI.Repositories
 
         // IgnoreQueryFilters so a soft-deleted lookup still resolves to a name — the caller needs to
         // tell "this row is Unspecified" apart from "this id doesn't exist".
-        public async Task<(string? Category, string? Language)> GetClassificationNamesAsync(
-            int categoryId, int languageId, CancellationToken ct = default)
+        public async Task<(string? Category, string? Language, string? Difficulty)> GetClassificationNamesAsync(
+            int categoryId, int languageId, int difficultyId, CancellationToken ct = default)
         {
             var category = await _context.QuestionCategories
                 .IgnoreQueryFilters()
@@ -118,7 +118,13 @@ namespace QuizAPI.Repositories
                 .Select(l => l.Language)
                 .FirstOrDefaultAsync(ct);
 
-            return (category, language);
+            var difficulty = await _context.QuestionDifficulties
+                .IgnoreQueryFilters()
+                .Where(d => d.ID == difficultyId)
+                .Select(d => d.Level)
+                .FirstOrDefaultAsync(ct);
+
+            return (category, language, difficulty);
         }
 
         public async Task<bool> AllQuestionsExistAsync(IReadOnlyCollection<int> questionIds, CancellationToken ct = default)
