@@ -55,6 +55,9 @@ namespace QuizAPI.Services.Ai
 
         public string BuildPrompt(AiGenerationRequest request) => _promptBuilder.Build(Normalise(request));
 
+        /// <inheritdoc />
+        public string ModelId => _provider.Model;
+
         public Task<AiQuotaStatus> GetQuotaStatusAsync(Guid userId, CancellationToken ct = default) =>
             _quota.GetStatusAsync(userId, ct);
 

@@ -49,6 +49,46 @@ is actually visible.
   `max-h-[calc(100vh-7rem)] supports-[height:100dvh]:max-h-[calc(100dvh-7rem)]`
   (see `quiz-filter-panel.tsx`, `quiz-start-modal.tsx`).
 
+## Short viewports: the `short:` variant
+
+Every other breakpoint in this app is about **width**. `short:` is about **height**, and it
+exists because the two failures are genuinely different: a phone is narrow *and* short, but a
+laptop is wide and short. A 1440×800 screen passes every `md:`/`lg:` test — the two-column
+layouts fit, nothing deforms — and the form still runs past the fold, because width breakpoints
+have nothing to say about vertical space.
+
+```js
+// tailwind.config.js
+screens: { short: { raw: '(max-height: 860px)' } }
+```
+
+Reach for it on a screen that is **meant** to be answerable in one view — a form, a wizard step,
+a confirmation — where the alternative is the primary button sitting below the fold. Do not reach
+for it on content-length pages: results, catalogues and anything whose height is a function of
+how much data came back are supposed to scroll, and compressing them just makes a long page
+denser.
+
+Rules for using it:
+
+- **Spacing and type only.** `short:py-3`, `short:space-y-3`, `short:text-lg`, a smaller
+  `min-h-[…]` on a textarea. It is a density step, not a different layout.
+- **Never hide content.** `short:hidden` moves the problem: the user now can't see a field
+  instead of having to scroll to it, which is worse. If something genuinely doesn't belong on a
+  short screen, it probably doesn't belong on a tall one either.
+- **Never shrink a touch target below the floor.** 44px → 40px is fine (the doc asks 40–44px for
+  primary controls); 44px → 32px is not.
+- **It composes with the width variants, and it wins**, because the custom screen is appended
+  after Tailwind's defaults — so `sm:mb-6 short:mb-3` gives 3 on a wide-but-short laptop. Write
+  the width step first and let `short:` override it.
+- **Check that the page still breathes at 1440×900 and taller.** The base sizes are the ones
+  most people see; `short:` is the exception, not a licence to design tight everywhere.
+
+Worked example: the AI quiz wizard (`ai-quiz-wizard-view.tsx` and its `components/`). One card
+holding the topic box, a two-column details form and the Generate button — designed to be filled
+in without scrolling, and about 120px too tall to manage it on an 800px laptop. Roughly a dozen
+`short:` steps (page padding, header margins, card gaps, the three question-type rows, the
+description textarea) close the gap without changing the layout at any width.
+
 ## Filling the screen: `flex-1`, not `h-screen`
 
 Pages that want "at least one full screen" (hero/centered layouts: Home, mode
@@ -293,6 +333,24 @@ with `env(safe-area-inset-*)`. If you ever add a fixed bottom bar, pad it with
 | `Login.tsx`, `Signup.tsx` (+ forms, `InputField`, `O2Button`, `SocialButtons`) | Wrapped in `.app-shell-viewport` (they render standalone, outside HomeLayout, and previously had NO scroll container — unreachable content on phones); hero hidden < sm (form owns the phone screen, no scrolling); controls in a static top row < lg (the absolute overlay overlapped the heading); compact inputs/note/spacing, fluid type | Standalone routes must provide their own scroll container — add `.app-shell-viewport` to any new one. Auth/utility pages aim for zero scrolling on phones |
 | `Provider.tsx` loaders, `UtilityPages/*` (AccessDenied, NotFound, MainErrorFallback) | `h-screen`/`min-h-screen` → `.app-shell-viewport` centered card | Same standalone-route rule; loaders/error cards center in the real visible viewport |
 | Shared components' size maps (`loading-wave` sizes, `Go-Back-Button` width, `ModeToggle`/auth buttons in header, Home hero stack) | Every fixed size gets a phone step (e.g. LoadingWave xl `text-3xl sm:text-5xl md:text-6xl`; GoBack `w-32 sm:w-48`; header `h-12 sm:h-16` with `h-8` controls); Home hero stacks `flex-col` below sm so the rotating word doesn't toggle between 1 and 2 lines | Rule: "responsive" means components genuinely shrink at phone widths — scrollability alone is not a fix. Size maps/variants must include base (phone) steps, not one fixed desktop size |
+
+## What changed in the Aug 22 2026 pass
+
+The AI generation wizard: a single card that is supposed to be answerable in one view, and
+wasn't on a laptop. Reported as "I have to scroll on my laptop screen" — no width was involved,
+which is what prompted the height variant.
+
+| Where | Change | Why |
+| --- | --- | --- |
+| `tailwind.config.js` | New `short` screen: `{ raw: '(max-height: 860px)' }` | Width breakpoints can't express "wide but short". A 1440×800 laptop passed every `md:`/`lg:` check and still pushed Generate below the fold. See "Short viewports" above |
+| `ai-quiz-wizard-view.tsx` | `short:` steps on page padding (`py-6`→`py-3`), header margins, `h1` size, and the card's `space-y`/`pt` | The chrome around the form was ~60px of the overflow on its own |
+| `advanced-options.tsx` | `short:` steps on the section spacing, the `Details` heading, the grid `gap-y`, both column stacks, the Classification group, and the description textarea's `min-h` | The two-column form is the tallest element on the screen; its own gaps are where its height comes from |
+| `question-type-options.tsx` | Rows `min-h-11`→`short:min-h-10`, `py-2.5`→`short:py-2`, tighter gaps | Three stacked 44px rows are the single biggest block in the right column. 40px stays inside the 40–44px band for primary controls — the floor is what matters, not the maximum |
+| `question-count-stepper.tsx`, `generation-input.tsx` | `short:` padding step; lead question `text-xl`→`short:text-lg`; source textarea `min-h-[180px]`→`short:min-h-[132px]` | Small individually; the fix is cumulative by design — no single element was wrong |
+
+Deliberately **not** done: hiding fields, collapsing the details form back behind a drawer, or
+giving the card its own inner scroll. All three trade "scroll the page a little" for "can't see
+the form at all", which is the trade the visible-form redesign was undoing in the first place.
 
 ## Backgrounded tabs & timers (mobile)
 

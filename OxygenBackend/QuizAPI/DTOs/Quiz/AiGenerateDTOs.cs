@@ -149,5 +149,15 @@ namespace QuizAPI.DTOs.Quiz
         public int? Remaining { get; set; }
 
         public DateTime ResetsAt { get; set; }
+
+        /// <summary>
+        /// The model that would run this generation, e.g. <c>deepseek-v4-flash</c>. Shown in the
+        /// wizard so the user can see what wrote their questions, and so a change of vendor is
+        /// visible in the product rather than only in <c>appsettings</c>.
+        ///
+        /// <para><c>null</c> when generation is unavailable — naming a model we are not about to
+        /// call would be a claim, not information. The client treats null as "say nothing".</para>
+        /// </summary>
+        public string? Model { get; set; }
     }
 }

@@ -85,7 +85,7 @@ export const AdvancedOptions = ({
 }: AdvancedOptionsProps) => (
   <section
     aria-label="Quiz details"
-    className="space-y-4 border-t border-border pt-5"
+    className="space-y-4 border-t border-border pt-5 short:space-y-3 short:pt-4"
   >
     {/* One statement of optionality for the whole block, so no field has to carry
         "(optional)" in its own label. The eyebrow is the twin of the "Required" one over the
@@ -97,16 +97,16 @@ export const AdvancedOptions = ({
       </p>
       {/* Wraps to two lines on a narrow phone rather than squeezing the heading. */}
       <div className="mt-0.5 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-        <h2 className="text-xl font-medium text-foreground">Details</h2>
+        <h2 className="text-xl font-medium text-foreground short:text-lg">Details</h2>
         <p className="text-xs text-muted-foreground">
           Leave anything blank and the AI decides it.
         </p>
       </div>
     </div>
 
-    <div className="grid gap-y-5 md:grid-cols-2">
+    <div className="grid gap-y-5 md:grid-cols-2 short:gap-y-4">
       {/* ── Left: what the quiz is ─────────────────────────────────────────────── */}
-      <div className="space-y-4 md:pr-6">
+      <div className="space-y-4 md:pr-6 short:space-y-3">
         <div>
           <Label htmlFor="ai-title" className="text-sm font-medium">
             Quiz title
@@ -128,7 +128,7 @@ export const AdvancedOptions = ({
           <Textarea
             id="ai-description"
             variant="minimal"
-            className="mt-1 min-h-[60px] resize-none"
+            className="mt-1 min-h-[60px] resize-none short:min-h-[48px]"
             placeholder="The AI will write one"
             value={description}
             onChange={(e) => onDescriptionChange(e.target.value)}
@@ -139,7 +139,7 @@ export const AdvancedOptions = ({
             a bare run of dropdowns: each select already names itself, but nothing said what
             the three of them together were for. "Classification" over "Quiz details" —
             the title and description above are quiz details too. */}
-        <div className="space-y-3">
+        <div className="space-y-3 short:space-y-2">
           <span className="block text-sm font-medium text-foreground">
             Classification
           </span>
@@ -170,7 +170,7 @@ export const AdvancedOptions = ({
       {/* ── Right: what the AI should make ──────────────────────────────────────
           The rule is the column boundary, so it only exists once there are two columns —
           below md the sections simply follow one another. */}
-      <div className="space-y-4 md:border-l md:border-border md:pl-6">
+      <div className="space-y-4 md:border-l md:border-border md:pl-6 short:space-y-3">
         <div>
           {/* A heading, not a `<Label>`: the control below is a group of buttons, so there
               is no single field for a label element to point at. Each group carries its

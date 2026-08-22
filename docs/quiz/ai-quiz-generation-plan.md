@@ -46,7 +46,7 @@ and for people who would rather spend their own ChatGPT subscription than our bu
 
 | # | Decision | Rationale |
 |---|---|---|
-| 1 | **Provider: DeepSeek V4-Flash**, called server-side, behind `IQuizAiProvider` | ~$0.0008 per quiz (§3). OpenAI-compatible wire format, so swapping to Gemini/Claude later is a config change plus one adapter class. |
+| 1 | **Provider: DeepSeek V4-Flash**, called server-side, behind `IQuizAiProvider` | ~$0.0008 per quiz (§3). OpenAI-compatible wire format, so swapping vendor later is a config change plus one adapter class. *(2026-08-22: it turned out to be a config change and no adapter — the adapter was generic all along and is now named `OpenAiCompatibleQuizAiProvider`. See the flow doc §2a.)* |
 | 2 | **The API key never reaches the browser** | Non-negotiable. A key in a Vite bundle is a public key. |
 | 3 | **Files are extracted server-side and never persisted** | Source material is transient. We keep a hash and a character count, not the document. |
 | 4 | **File types v1: PDF, DOCX, TXT, MD** | Covers essentially all study material. No OCR — a scanned PDF gets a clear "no text found" error, not a silent empty quiz. |
@@ -68,6 +68,14 @@ and for people who would rather spend their own ChatGPT subscription than our bu
 ---
 
 ## 3. Cost model — the number that justifies the whole design
+
+> **Superseded 2026-08-22 — the arithmetic below is sound, the inputs are not.** DeepSeek
+> re-priced on 2026-08-16: V4-Flash is now **$0.22 / $0.66 per 1M off-peak** and **$0.44 / $1.32
+> at peak** (01:00–04:00 and 06:00–10:00 UTC), and the 5M free-token grant for new accounts is
+> gone — the API is prepaid with no standing free tier. Real cost per quiz is therefore
+> ~$0.0011 off-peak rather than ~$0.0008, which changes no decision in this document but does
+> change the config: see the flow doc §7 and §9.14. Left as written because it records what we
+> believed when the design was chosen.
 
 DeepSeek V4-Flash first-party pricing, August 2026: **$0.14 / 1M input tokens** (cache miss),
 **$0.0028 / 1M** (cache hit), **$0.28 / 1M output tokens**. Context window 1M, OpenAI-compatible
@@ -144,7 +152,7 @@ that is the point of the seam described in
 | File | Responsibility | Must NOT do |
 |---|---|---|
 | `Services/Ai/IQuizAiProvider.cs` | Provider-agnostic contract: prompt in, token stream out | Know about quizzes, quotas, or HTTP requests from our clients |
-| `Services/Ai/DeepSeekQuizAiProvider.cs` | DeepSeek wire format, retries, token accounting | Build prompts; decide policy |
+| `Services/Ai/OpenAiCompatibleQuizAiProvider.cs` | The OpenAI ChatCompletions wire format, retries, token accounting. *(Shipped as `DeepSeekQuizAiProvider.cs`; renamed 2026-08-22 — the vendor is `Ai:BaseUrl`, not the class name.)* | Build prompts; decide policy; name a vendor |
 | `Services/Ai/AiPromptBuilder.cs` | Build the topic-mode and source-mode prompts | Call anything; contain entity IDs |
 | `Services/Ai/IAiQuotaService.cs` + impl | Reserve / commit / release a generation slot | Talk to the provider |
 | `Services/Ai/SourceExtraction/*` | Bytes → plain text, per file type, with hard caps | Persist files; call the provider |
@@ -512,7 +520,7 @@ The stage boundaries make almost all of this testable without a network.
 
 Each slice is independently shippable and independently valuable.
 
-**2.0 — Topic mode, no files, no streaming.** `IQuizAiProvider` + DeepSeek adapter,
+**2.0 — Topic mode, no files, no streaming.** `IQuizAiProvider` + the OpenAI-compatible adapter,
 `AiPromptBuilder` (both modes; source mode unused for now), `POST /quiz/ai-generate` returning
 plain JSON, quota table + reserve/commit, feature flag, spend cap, `ai` rate-limit policy.
 Frontend: a "Generate" button in step 2 with a spinner. *Proves the entire pipeline with the
@@ -543,7 +551,7 @@ A reasonable stopping point is 2.3. Everything after that is improvement, not ca
 
 ```
 Services/Ai/IQuizAiProvider.cs
-Services/Ai/DeepSeekQuizAiProvider.cs
+Services/Ai/OpenAiCompatibleQuizAiProvider.cs
 Services/Ai/AiPromptBuilder.cs
 Services/Ai/AiGenerationService.cs           + IAiGenerationService.cs
 Services/Ai/IAiQuotaService.cs               + AiQuotaService.cs
@@ -562,7 +570,7 @@ Migrations/<stamp>_AddAiGenerationUsage.cs
 **Modified — backend**
 
 ```
-Program.cs                       DI, AddHttpClient<DeepSeekQuizAiProvider>, options binding,
+Program.cs                       DI, AddHttpClient<OpenAiCompatibleQuizAiProvider>, options binding,
                                  hosted sweeper, startup guard (Ai:Enabled with a blank key fails
                                  fast, matching the Authentication provider convention)
 Middleware/RateLimitingExtensions.cs   new AiPolicy constant + policy
@@ -614,7 +622,7 @@ Delete it in 2.0 and drop those rows from the setup table.
 ```jsonc
 "Ai": {
   "Enabled": false,                       // per-environment; blank key + Enabled=true fails startup
-  "Provider": "DeepSeek",
+  "Provider": "OpenAiCompatible",         // shipped as "DeepSeek"; the vendor is BaseUrl + Model
   "BaseUrl": "https://api.deepseek.com",
   "Model": "deepseek-v4-flash",
   "ApiKey": "",                           // env: Ai__ApiKey — never in appsettings

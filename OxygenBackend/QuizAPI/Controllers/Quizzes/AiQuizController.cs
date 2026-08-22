@@ -133,6 +133,11 @@ namespace QuizAPI.Controllers.Quizzes
         /// the bug: a blown budget left the button live and every press returned a 503 the user
         /// could do nothing about. One boolean rather than a reason code on purpose: the client
         /// shows the same thing either way, and the copy-paste path is the answer to both.
+        ///
+        /// <para>Also carries the active model id, which is why this endpoint — not a second one —
+        /// is where the wizard learns what will write its questions: it is already called once on
+        /// mount, is free, and is the one place that knows whether a generation would happen at
+        /// all.</para>
         /// </summary>
         [HttpGet("ai-quota")]
         [ProducesResponseType(typeof(AiQuotaResponse), StatusCodes.Status200OK)]
@@ -142,14 +147,17 @@ namespace QuizAPI.Controllers.Quizzes
             if (userId is null) return Unauthorized();
 
             var status = await _generation.GetQuotaStatusAsync(userId.Value, ct);
+            var enabled = await _generation.IsAvailableAsync(ct);
 
             return Ok(new AiQuotaResponse
             {
-                Enabled = await _generation.IsAvailableAsync(ct),
+                Enabled = enabled,
                 Limit = status.Limit,
                 Used = status.Used,
                 Remaining = status.Remaining,
                 ResetsAt = status.ResetsAtUtc,
+                // Only when a generation would actually be attempted: see the DTO.
+                Model = enabled ? _generation.ModelId : null,
             });
         }
 

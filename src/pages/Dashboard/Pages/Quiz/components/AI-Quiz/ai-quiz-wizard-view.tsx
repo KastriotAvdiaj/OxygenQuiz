@@ -258,9 +258,12 @@ export const AiQuizWizardView = ({
 
   // ── Screen 3: the wizard itself
   return (
-    <div className="mx-auto w-full max-w-3xl py-6 px-4">
-      <header className="mb-6">
-        <div className="mb-5 sm:mb-6">
+    // `short:` steps throughout this screen: the whole form is meant to be answerable without
+    // scrolling, and on a ~800px-tall laptop it wasn't. Spacing and type only — nothing is
+    // hidden and no target shrinks below the 36px floor (docs/RESPONSIVE.md, "Short viewports").
+    <div className="mx-auto w-full max-w-3xl py-6 px-4 short:py-3">
+      <header className="mb-6 short:mb-4">
+        <div className="mb-5 sm:mb-6 short:mb-3">
           <button
             onClick={() => navigate(quizzesPath)}
             className="group inline-flex items-center gap-1.5 rounded-lg border border-border bg-card/60 px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-foreground/20 hover:text-foreground"
@@ -269,7 +272,7 @@ export const AiQuizWizardView = ({
             Back
           </button>
         </div>
-        <h1 className="text-2xl font-bold flex items-center gap-2">
+        <h1 className="text-2xl font-bold flex items-center gap-2 short:text-xl">
           Create a quiz with AI
         </h1>
         {/* The mode is no longer named by a selected tab, so the subtitle carries it. It is
@@ -304,7 +307,7 @@ export const AiQuizWizardView = ({
         // and the button. Nothing on this screen is hidden behind a click any more: the
         // Advanced drawer became the visible `AdvancedOptions` form below.
         <Card className="bg-background border-2 border-primary/30">
-          <CardContent className="space-y-5 pt-6">
+          <CardContent className="space-y-5 pt-6 short:space-y-3.5 short:pt-4">
             <div ref={inputRegion}>
               <GenerationInput
                 mode={mode}

@@ -190,6 +190,7 @@ const quotaAvailable = {
   used: 0,
   remaining: 2,
   resetsAt: "2026-08-10T00:00:00Z",
+  model: "deepseek-v4-flash",
 };
 
 // ── Meta ───────────────────────────────────────────────────────────────────────────────
@@ -396,7 +397,14 @@ export const ErrorModelOutputInvalid: Story = {
 export const QuotaUnlimitedForStaff: Story = {
   args: {
     topic: "The French Revolution",
-    quota: { enabled: true, limit: null, used: 7, remaining: null, resetsAt: "2026-08-10T00:00:00Z" },
+    quota: {
+      enabled: true,
+      limit: null,
+      used: 7,
+      remaining: null,
+      resetsAt: "2026-08-10T00:00:00Z",
+      model: "deepseek-v4-flash",
+    },
   },
 };
 

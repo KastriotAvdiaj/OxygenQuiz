@@ -2,9 +2,10 @@ namespace QuizAPI.Services.Ai
 {
     /// <summary>
     /// A hosted LLM that turns a prompt into a JSON string. Deliberately knows nothing about
-    /// quizzes, quotas, users, or HTTP requests from our own clients — that keeps swapping
-    /// DeepSeek for Gemini or Claude to a single new class plus a config change, and makes the
-    /// whole orchestration testable against a fake.
+    /// quizzes, quotas, users, or HTTP requests from our own clients — that keeps swapping one
+    /// vendor for another to a config change (or, for a vendor that doesn't speak the OpenAI
+    /// ChatCompletions format, a single new class), and makes the whole orchestration testable
+    /// against a fake.
     ///
     /// Implementations throw <see cref="AiProviderException"/> for upstream failures the
     /// orchestrator should surface as a user-facing code. Anything else escaping is a bug.

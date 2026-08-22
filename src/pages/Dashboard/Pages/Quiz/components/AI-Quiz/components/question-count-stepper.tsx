@@ -45,7 +45,7 @@ export const QuestionCountStepper = ({
   };
 
   return (
-    <div className="mt-2 flex items-center justify-between gap-3 rounded-lg border border-border bg-card/40 px-3 py-2">
+    <div className="mt-2 flex items-center justify-between gap-3 rounded-lg border border-border bg-card/40 px-3 py-2 short:mt-1.5 short:py-1.5">
       {/* aria-live: pressing − / + changes text elsewhere in the row, which a screen reader
           would otherwise never hear. The buttons' own labels stay static. */}
       <p aria-live="polite" className="flex items-baseline gap-1.5">

@@ -53,7 +53,7 @@ export const QuestionTypeOptions = ({
   <div
     role="group"
     aria-label="Question types the AI may use"
-    className="mt-2 grid grid-cols-1 gap-2"
+    className="mt-2 grid grid-cols-1 gap-2 short:mt-1.5 short:gap-1.5"
   >
     {ALL_AI_QUESTION_TYPES.map((type) => {
       const active = selected.includes(type);
@@ -67,7 +67,10 @@ export const QuestionTypeOptions = ({
           className={cn(
             // min-h-11 (44px): docs/RESPONSIVE.md asks ≥36px for anything tappable and
             // 40–44px for the ones that matter. These are the panel's main choice.
+            // short: 44px → 40px, still inside the 40–44px band the doc asks for on primary
+            // controls, and three rows of them is where this column's height actually goes.
             "flex min-h-11 w-full items-center justify-between gap-3 rounded-lg border-2 px-3 py-2.5",
+            "short:min-h-10 short:py-2",
             "text-left text-sm leading-tight transition-colors",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background",
             active

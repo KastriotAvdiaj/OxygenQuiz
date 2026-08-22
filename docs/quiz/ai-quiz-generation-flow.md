@@ -8,10 +8,10 @@ Update this file in the same commit as the behaviour it describes. A gap that ge
 out of §9; a gap discovered while implementing gets added to it, even if it isn't fixed yet —
 especially then.
 
-Status: **slices 2.0 and 2.1, branch `feat/ai-quiz-generation`.** Topic and source-*text* modes,
+Status: **slices 2.0 and 2.1, merged to `main`.** Topic and source-*text* modes,
 the one-box wizard, quota, spend caps, kill switch, and a single server-owned prompt shared with
 copy-paste. **Not yet: streaming progress (2.2) and file upload (2.3)** — "source" today means
-pasted text, not a PDF. Last updated: 2026-08-09
+pasted text, not a PDF. Last updated: 2026-08-22
 
 ---
 
@@ -97,7 +97,7 @@ worst case is a wrong-but-real category on a Draft quiz that a human is looking 
 | Config | `Services/Ai/AiOptions.cs` | Every tunable. Bound from the `"Ai"` section. |
 | Contracts | `Services/Ai/AiGenerationContracts.cs` | Modes, statuses, the closed error-code set, request/outcome records. |
 | Prompt | `Services/Ai/AiPromptBuilder.cs` | The prompt text, both modes. No IDs, ever. |
-| Provider | `Services/Ai/IQuizAiProvider.cs`, `DeepSeekQuizAiProvider.cs` | Prompt in, raw reply out. Retries transport failures. Knows nothing about quizzes. |
+| Provider | `Services/Ai/IQuizAiProvider.cs`, `OpenAiCompatibleQuizAiProvider.cs` | Prompt in, raw reply out. Retries transport failures. Knows nothing about quizzes — or about which vendor answers (§2a). |
 | Fake provider | `Services/Ai/FakeQuizAiProvider.cs` | Canned replies, no network, no cost. `Ai:Provider="Fake"`. Everything downstream still runs for real. |
 | JSON | `Services/Ai/AiJsonExtractor.cs` | "Is there a usable JSON object in this reply?" and nothing more. |
 | Quota | `Services/Ai/IAiQuotaService.cs`, `AiQuotaService.cs`, `IAiQuotaPolicy.cs` | Reserve → commit / release. Daily cap. Spend cap. |
@@ -115,6 +115,84 @@ worst case is a wrong-but-real category on a Draft quiz that a human is looking 
 
 ---
 
+## 2a. The vendor is configuration, not code
+
+`OpenAiCompatibleQuizAiProvider` was `DeepSeekQuizAiProvider` until 2026-08-22. The rename is not
+cosmetic: the class never contained anything DeepSeek-specific, and the name kept suggesting that
+changing vendor meant changing code.
+
+**What "OpenAI-compatible" means here.** It names a wire format, not a company, and nothing in
+this feature talks to OpenAI or needs an OpenAI account. When OpenAI published
+`POST /chat/completions` — a body of `model`, `messages`, `temperature`, `max_tokens`,
+`response_format`, answering with `choices[0].message.content` and a `usage` block — that shape
+became the industry default. DeepSeek speaks it. Alibaba's Qwen exposes an endpoint literally
+called `compatible-mode` that speaks it. So do Mistral, Groq and most local runners.
+
+**So the vendor lives in four config values**, and swapping vendor touches no C#:
+
+| Setting | What it selects |
+|---|---|
+| `Ai:Provider` | **How**, not who: `"OpenAiCompatible"` (a real HTTP call) or `"Fake"` (the offline stub). |
+| `Ai:BaseUrl` | Who. `https://api.deepseek.com`, or a Qwen `compatible-mode/v1` URL. |
+| `Ai:Model` | Which model there. Recorded on every usage row and shown in the wizard. |
+| `Ai:InputCostPerMillionUsd` / `Ai:OutputCostPerMillionUsd` | What it costs. **Change these in the same edit** — see §9.13. |
+
+Two things follow from that split, and both were bugs waiting to happen before it:
+
+- **A typo in `Ai:Provider` used to mean "make real paid calls."** Anything that wasn't `"Fake"`
+  fell through to the HTTP provider. It now throws at startup unless the value is one it
+  recognises. The legacy vendor names `"DeepSeek"` and `"Qwen"` still boot, with a warning, so an
+  existing `.env` survives the rename; delete that branch once no environment sets one.
+- **Nobody could see which model wrote a quiz.** `GET /quiz/ai-quota` now returns the active
+  model id and the wizard prints "Questions are written by *model*" under the allowance line.
+  It is null whenever generation is unavailable — naming a model we are not about to call is a
+  claim, not information — and the fake provider honestly reports `fake-provider`.
+
+**The boundary of "config only"** is the request body. `ChatRequest` carries the standard fields
+and nothing else, so a vendor needing an extra one (a non-thinking-mode toggle, say) needs a line
+of C#. Before pointing `Ai:BaseUrl` somewhere new, check three things with a raw curl: that
+`response_format: json_object` is accepted, that the reply lands in `choices[0].message.content`,
+and that `usage` reports `prompt_tokens`/`completion_tokens` — **the cost ledger silently records
+zero if that last block is missing or named differently**, and a ledger of zeroes disables both
+budget caps without erroring.
+
+---
+
+## 2b. Vendor quirks the abstraction does not hide
+
+Swapping vendor is a config change (above). Swapping vendor *without surprises* is not — these are
+the differences that reached us as bugs rather than as documentation.
+
+**`max_tokens` is reserved against the rate limit, not measured after the fact.** This is the one
+that cost an afternoon. Groq's free tier allows 8,000 tokens per minute; `Ai:MaxOutputTokens` was
+8,000; the prompt was ~886 tokens. The request was refused **before generation started** — 8,886
+requested against an 8,000 ceiling — and it would have been refused every time, forever, because a
+single call was over the whole per-minute budget on its own. Waiting does not help; only lowering
+the ceiling does. **Rule: `MaxOutputTokens` + prompt must fit under the vendor's TPM limit.** 4,000
+covers a 15-question quiz.
+
+**Rate limits do not agree on a status code.** OpenAI and DeepSeek answer 429. Groq answers **413
+Payload Too Large** with `code: "rate_limit_exceeded"`. Status alone therefore can't classify the
+failure, and `IsUpstreamRateLimit` reads the body — which we already had in hand for the log. It is
+deliberately *not* retryable: our retry is one attempt two seconds later, and no per-minute budget
+refills in two seconds. The user gets a message naming the actual remedy ("wait a minute, or ask
+for fewer questions") rather than the generic outage line.
+
+**Reasoning models spend output tokens before writing anything.** `openai/gpt-oss-120b` and its
+kind emit internal reasoning first, billed as output and counted against TPM. A `max_tokens` that
+looks generous for the answer can be consumed entirely by reasoning, and the vendor then reports
+`json_validate_failed` with an empty `failed_generation` — which reads like a prompt problem and
+isn't one.
+
+**Free tiers are rate-limited in two dimensions, and the day limit is the tighter one.** Groq's
+free tier is ~30 requests/minute but ~250/day. Our own `ai` policy (6/min per user) is stricter on
+the minute and says nothing about the day, so a busy afternoon hits *their* ceiling first, and it
+arrives as a generation failure rather than as our own 429.
+
+**Prices are ours to keep current, and nothing validates them.** See §9.14.
+
+---
+
 ## 3. One request, end to end
 
 ```mermaid
@@ -125,8 +203,8 @@ sequenceDiagram
     participant Svc as AiGenerationService
     participant Q as AiQuotaService
     participant DB as AiGenerationUsages
-    participant P as DeepSeekQuizAiProvider
-    participant DS as api.deepseek.com
+    participant P as OpenAiCompatibleQuizAiProvider
+    participant DS as Ai:BaseUrl
 
     C->>Ctl: POST /api/quiz/ai-generate
     Note over Ctl: [Authorize] + "ai" rate-limit policy
@@ -176,7 +254,7 @@ sequenceDiagram
 
 1. **Gates before writes.** A disabled feature or a blown budget costs nothing, not even a row.
 2. **Reserve before calling the provider.** Reserving *after* would let N concurrent requests all
-   reach DeepSeek before any of them is counted — the cap would be advisory at best.
+   reach the vendor before any of them is counted — the cap would be advisory at best.
 3. **Release on every visible failure.** A generation that produced nothing must not cost a slot.
    Every release passes `CancellationToken.None` on purpose: if the caller's token is what killed
    us, a cancelled token would skip the write and strand the reservation.
@@ -390,6 +468,7 @@ The code set is closed. Adding one means touching all four columns of this table
 | `SourceTooLarge` | *Unused in 2.0* — oversized input is truncated, not rejected | 400 | — | — |
 | `UnreadableSource` | *Unused in 2.0* — arrives with file extraction in 2.3 | 400 | — | — |
 | `ProviderUnavailable` | 429/5xx/transport after one retry | 502 | released | "Unavailable right now, try again in a moment." |
+| `ProviderUnavailable` | Upstream **rate limit** — 429, or Groq's 413 + `rate_limit_exceeded` | 502 | released | "Over its rate limit. Wait a minute and try again, or ask for fewer questions." Same code, different message: the client's options are identical, the user's remedy is not (§2b). |
 | `ProviderTimeout` | Over `Ai:TimeoutSeconds`, twice | 502 | released | "Took too long — try again." |
 | `ModelOutputInvalid` | No JSON object after one stricter retry | 502 | released | "Couldn't read the reply" + offer the copy-paste path. |
 
@@ -450,13 +529,22 @@ copy-paste mode will call once slice 2.1 retires the duplicate in `prompt.ts`.
 
 ### `GET /api/quiz/ai-quota`
 
-`{ "enabled": true, "limit": 5, "used": 1, "remaining": 4, "resetsAt": "..." }` — so the UI can
-show "1 of 2 left today" and stop offering the Generate button when it could only fail.
+`{ "enabled": true, "limit": 5, "used": 1, "remaining": 4, "resetsAt": "...", "model": "deepseek-v4-flash" }`
+— so the UI can show "1 of 2 left today", name what will write the questions, and stop offering
+the Generate button when it could only fail.
 
 `enabled` is **not** `Ai:Enabled`. It is "would a generation be attempted at all": the kill switch
 *and* the daily/30-day spend caps, i.e. exactly the conditions behind `FeatureDisabled`. One
 boolean rather than a reason code, because the client does the same thing either way — disable the
 button, point at copy-paste — and that path is the answer to both causes. See §9 item 11.
+
+`model` is the id the provider reports, **null whenever `enabled` is false** — a model named but
+not called is a claim, not information, and the fake provider answers `fake-provider` rather than
+letting a stub borrow a real model's name. This endpoint carries it because it is already fetched
+once on mount, costs nothing, and is the only place that knows whether a generation would happen
+at all; a second endpoint for one string would be two round trips to say less. Nothing in the
+client branches on the value — it is display-only, and which vendor we use stays a server
+decision.
 
 ---
 
@@ -491,21 +579,44 @@ Put a trigger word in `topic` to force a specific failure:
 Check the quota actually moved: `GET /api/quiz/ai-quota` before and after. A released failure
 must leave `used` unchanged — that is the single most important behaviour to confirm by hand.
 
-**With a real key**, when you're ready to spend:
+**With a real key and no money** — the middle option, and the one to reach for when the fake's
+canned questions stop being enough. Several vendors run free tiers with no card, and because the
+provider is vendor-neutral (§2a) using one is four settings. Verified working 2026-08-22:
 
 ```bash
-dotnet user-secrets set "Ai:Provider" "DeepSeek"
-dotnet user-secrets set "Ai:ApiKey" "sk-..."
+dotnet user-secrets set "Ai:BaseUrl" "https://api.groq.com/openai/v1"   # Groq, free tier, no card
+dotnet user-secrets set "Ai:Model" "openai/gpt-oss-120b"                # ids change — check their console
+dotnet user-secrets set "Ai:ApiKey" "gsk_..."
+dotnet user-secrets set "Ai:MaxOutputTokens" "4000"                     # MUST fit under the TPM limit — §2b
+dotnet user-secrets set "Ai:InputCostPerMillionUsd" "0"                 # free tier: record zero, don't invent spend
+dotnet user-secrets set "Ai:OutputCostPerMillionUsd" "0"
 ```
 
-Startup fails deliberately if `Ai:Enabled` is true with a blank key and a non-fake provider.
+Two things to understand before relying on it. `MaxOutputTokens` at the default 8,000 **cannot
+work** on a free tier with an 8,000 tokens-per-minute ceiling — the vendor reserves it up front, so
+every request is refused before generation starts (§2b). And pricing the calls at zero is honest
+but it disarms `DailyBudgetUsd`/`MonthlyBudgetUsd`, which are enforced against estimated spend: on
+a free tier the daily quota and the rate limiter are the only guards left. Never carry those zeros
+to a paid vendor.
+
+**With a real key and a balance**, when you're ready to spend:
+
+```bash
+dotnet user-secrets set "Ai:Provider" "OpenAiCompatible"
+dotnet user-secrets set "Ai:ApiKey" "sk-..."
+# BaseUrl and Model come from appsettings.json — override them here to use another vendor.
+```
 
 Startup **fails deliberately** if `Ai:Enabled` is true with a blank key — a half-configured
-deploy that returns 502s looks exactly like a provider outage, and that is a bad hour to spend.
+deploy that returns 502s looks exactly like a vendor outage, and that is a bad hour to spend. It
+also fails on an unrecognised `Ai:Provider`, so a typo can no longer mean "make real paid calls".
 
-DeepSeek gives new accounts 5M free tokens, which is several thousand test generations. Set
-`Ai:MonthlyBudgetUsd` low (1–2) while developing so a runaway loop trips the cap instead of the
-card.
+**There is no free tier to lean on.** This document claimed until 2026-08-22 that DeepSeek gives
+new accounts 5M free tokens; that ended, and the API is prepaid pay-as-you-go with no standing
+allowance. Top up a small balance — see the note on the real backstop below — and set
+`Ai:MonthlyBudgetUsd` low (1–2) while developing so a runaway loop trips our cap rather than
+eating the credit. (Alibaba's Qwen does still give new Singapore-region accounts 1M free tokens
+per model for 90 days, which is ~475 generations on one model. An onboarding trial, not a plan.)
 
 ### Spend protection — five layers, and which one you actually trust
 
@@ -513,8 +624,8 @@ Ordered from "cheapest to bypass by a bug in our code" to "cannot be bypassed by
 
 | # | Layer | Bounds | Where |
 |---|---|---|---|
-| 1 | `MaxOutputTokens` = 8000 | One call to ~$0.0023 instead of ~$0.11 | `max_tokens` on the request |
-| 2 | `MaxSourceChars` = 40,000 | Input to ~10K tokens (~$0.0014) per call | `AiGenerationService.Normalise` |
+| 1 | `MaxOutputTokens` = 8000 | One call to ~$0.005 instead of ~$0.25 | `max_tokens` on the request |
+| 2 | `MaxSourceChars` = 40,000 | Input to ~10K tokens (~$0.0022) per call | `AiGenerationService.Normalise` |
 | 3 | `DefaultDailyQuota` = 2 | One user to 2 generations/day — stated in the UI. **Staff exempt** (§4a) | `AiQuotaService` |
 | 4 | `DailyBudgetUsd` = 2 | Everyone, to ~$2/day — bounds the *rate* of loss | `IsOverBudgetAsync` |
 | 5 | `MonthlyBudgetUsd` = 25 | Everyone, to ~$25/30 days — bounds *total* loss | `IsOverBudgetAsync` |
@@ -523,16 +634,31 @@ Layers 4 and 5 are checked **before** each reservation, against *estimated* spen
 cache-miss rate — so our number runs ahead of the real bill, not behind it. Overshoot past a cap
 is at most one generation, i.e. fractions of a cent.
 
+**The estimate is only as good as two config numbers, and they go stale in silence.**
+`InputCostPerMillionUsd` / `OutputCostPerMillionUsd` are ours to keep current; nothing checks them
+against the vendor. Set them too low and every row under-reports, which loosens layers 4 and 5 by
+exactly the same factor — the caps still fire, just later and at more money than they say. They
+were $0.14 / $0.28 until 2026-08-22, roughly 2× under the DeepSeek rates that took effect on
+Aug 16; §9.13 has the detail. Re-check them on any vendor or model change.
+
 **None of these is the real backstop.** They are all our own code, and our own code is exactly
 what would be broken in the scenario you're insuring against. The actual guarantee is that
-**DeepSeek bills against a prepaid balance** — usage is deducted from credits you topped up, so
-an account holding $10 cannot produce a $500 bill no matter what this application does. Keep the
-balance small and top it up deliberately; that is the only cap that survives a bug in the
-software enforcing the other caps. Set a spend alert in the DeepSeek console as well, so you
-learn about a runaway from an email rather than from a 503.
+**DeepSeek bills against a prepaid balance with no auto-recharge** — usage is deducted from
+credits you topped up, so an account holding $10 cannot produce a $500 bill no matter what this
+application does. There is no spend-limit setting in their console to configure; the balance
+*is* the limit, which is the stronger version of the same thing. Keep it small and top it up
+deliberately: that is the only cap that survives a bug in the software enforcing the other caps.
 
-For scale: at the measured ~$0.0008 per quiz, $10 of credit is roughly **12,000 generated
-quizzes**. Running out is not the failure mode to plan around.
+Running out degrades correctly, and this is worth knowing before it happens at 2am: DeepSeek
+answers **HTTP 402**, which `IsRetryable` treats as non-transient, so it becomes
+`ProviderUnavailable` → 502, **the quota slot is released**, and the user gets the copy-paste
+fallback. The feature stops; nobody is charged; nothing is stranded. The only rough edge is that
+the message says "try again in a moment", which won't help — the real signal is the 402 in the
+API log. `GET https://api.deepseek.com/user/balance` with the key reports `is_available` and
+`total_balance` if you want to watch it.
+
+For scale: at ~$0.0011 per quiz off-peak (~$0.0022 at peak), $10 of credit is roughly
+**4,500–9,000 generated quizzes**. Running out is not the failure mode to plan around.
 
 To watch what it costs:
 
@@ -657,3 +783,26 @@ the data.
 **12. No streaming, so the client waits blind.** At the current 15-question cap a call runs well
 inside Cloudflare's 100s proxy timeout, but the user sees nothing until it finishes. That is what
 slice 2.2 is for; until then, keep the cap where it is.
+
+**14. The cost model is flat; DeepSeek's pricing is not.** `EstimateCost` multiplies tokens by one
+rate per direction, which was true of every vendor when it was written. Since **2026-08-16**
+DeepSeek doubles both rates during **01:00–04:00 and 06:00–10:00 UTC**, so a peak-hour generation
+is recorded at half what it cost. The constants were also two versions stale — $0.14/$0.28 against
+actual off-peak rates of $0.22/$0.66 — and were corrected on 2026-08-22, so the estimate is now
+right off-peak and 2× low at peak.
+
+This is not only a reporting error: `DailyBudgetUsd` and `MonthlyBudgetUsd` are enforced against
+the estimate, so an under-estimate loosens both caps by the same factor. Seven of twenty-four
+hours are peak, so the realistic exposure is well under 2×, but it is not zero. Two ways out when
+it matters: branch on the UTC hour in `EstimateCost` (correct, and the only option that keeps the
+ledger honest), or halve both caps and accept over-tight limits off-peak. A flat-rate vendor —
+Qwen prices the same around the clock — makes the whole question disappear, which is a real
+argument for one beyond the sticker price.
+
+**15. The wizard shows the model in use *now*, not the one that wrote a given quiz.** The usage
+row records the model per attempt (`AiGenerationUsage.Model`), but nothing links a saved quiz back
+to it: `ai-import` creates a quiz like any other, and the generation that produced it is a
+separate row with no id in common. So after a model change, "which one wrote this?" is answerable
+for the *ledger* but not for a *quiz*. Closing it means a column on `Quiz` and a migration, which
+was deliberately out of scope for the rename; do it if the answer ever matters for a support
+question rather than curiosity.

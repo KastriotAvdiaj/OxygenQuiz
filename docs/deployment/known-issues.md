@@ -654,13 +654,40 @@ are actually *in* the feature.
   roughly doubles cost per successful quiz. `EstimatedCostUsd` sums both attempts, so the
   budget cap still sees the truth. Watch the ratio of `Released`-with-`ModelOutputInvalid`
   rows to `Succeeded` ones. → `AiGenerationService.CallWithOneRetryAsync`
-- **P3 — Cost estimates ignore DeepSeek's announced peak-hours multiplier.**
-  `EstimatedCostUsd` prices at the flat cache-miss rate, which makes it an upper bound *today*.
-  DeepSeek has announced a **2× multiplier during 09:00–12:00 and 14:00–18:00 Beijing time**
-  with no effective date. If that lands, our estimate becomes an under-estimate by 2× and both
-  budget caps quietly allow double what they say. _Fix when it takes effect:_ apply the
-  multiplier by UTC hour in `EstimateCost`, or simply halve the configured caps.
-  → `OxygenBackend/QuizAPI/Services/Ai/AiQuotaService.EstimateCost`
+- **P2 — Cost estimates are flat; DeepSeek's pricing stopped being.** *(Was P3 "announced
+  multiplier"; it took effect on **2026-08-16**, so this is no longer hypothetical.)* V4-Flash is
+  now **$0.22 / $0.66 per 1M off-peak** and **double that during 01:00–04:00 and 06:00–10:00
+  UTC**. Two things were wrong and one is fixed: the configured constants were $0.14 / $0.28,
+  two versions stale, **corrected 2026-08-22**; the flat model still can't express peak hours, so
+  a peak generation is recorded at half its cost. That matters beyond reporting — `DailyBudgetUsd`
+  and `MonthlyBudgetUsd` are enforced against the estimate, so an under-estimate loosens both caps
+  by the same factor. Seven of twenty-four hours are peak, so realistic exposure is well under 2×.
+  _Fix:_ branch on the UTC hour in `EstimateCost`, or halve both caps and accept them being tight
+  off-peak. A flat-rate vendor removes the question entirely. Full reasoning in
+  [`ai-quiz-generation-flow.md`](../quiz/ai-quiz-generation-flow.md) §9.14.
+  → `OxygenBackend/QuizAPI/Services/Ai/AiQuotaService.EstimateCost`,
+  `Services/Ai/AiOptions.cs`, `appsettings.json`
+
+- **P3 — `MaxOutputTokens` can exceed a free tier's whole per-minute allowance.** Vendors reserve
+  `max_tokens` against the rate limit before generating, so an 8,000 setting plus a ~900-token
+  prompt is refused outright on Groq's free 8,000 TPM ceiling — permanently, since one request is
+  over budget on its own. Hit on 2026-08-22 and diagnosed from the 413 body. Handled rather than
+  fixed: the provider now classifies an upstream rate limit (429, **or Groq's 413 +
+  `rate_limit_exceeded`**) and returns advice the user can act on instead of the generic outage
+  line. _The setting itself is per-vendor and can only be got right at config time_ — the rule is
+  in `AiOptions.MaxOutputTokens` and
+  [`ai-quiz-generation-flow.md`](../quiz/ai-quiz-generation-flow.md) §2b.
+  → `OxygenBackend/QuizAPI/Services/Ai/OpenAiCompatibleQuizAiProvider.cs`,
+  `Services/Ai/AiOptions.cs`
+
+- **P3 — A quiz doesn't record which model wrote it.** The usage row carries the model
+  (`AiGenerationUsage.Model`) and the wizard now names the model *currently* configured, but a
+  saved quiz has no link back to the generation that produced it — `ai-import` creates it like any
+  other quiz. So after a model or vendor change, "which one wrote this quiz?" is unanswerable.
+  _Fix if it ever matters for support rather than curiosity:_ a column on `Quiz` plus a migration.
+  Deliberately out of scope for the 2026-08-22 provider rename.
+  → `OxygenBackend/QuizAPI/Models/Ai/AiGenerationUsage.cs`,
+  `Controllers/Quizzes/Services/QuizServices/QuizService.cs`
 - **P3 — No streaming: the client waits blind for 10–40s.** Why `MaxQuestionsPerGeneration`
   is capped at 15 — a bigger request risks Cloudflare's 100s proxy timeout with no progress
   shown. Planned as slice 2.2 (NDJSON + real per-question progress); until it ships, leave

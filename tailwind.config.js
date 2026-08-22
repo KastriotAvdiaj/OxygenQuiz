@@ -10,6 +10,15 @@ module.exports = {
   prefix: "",
   theme: {
   	extend: {
+  		// Height-based variant. Every other breakpoint here is about WIDTH; this one is the
+  		// answer to "it fits, but only if you scroll" on a laptop — a 1440x800 screen is wide
+  		// enough for the two-column layouts and still short enough that a form runs past the
+  		// fold. Use it for spacing and type steps only (`short:py-3`, `short:text-lg`), never
+  		// to hide content or to shrink a touch target below the 36px floor.
+  		// See docs/RESPONSIVE.md, "Short viewports".
+  		screens: {
+  			short: { raw: '(max-height: 860px)' },
+  		},
   		fontFamily: {
   			header: [
   				'Titillium Web',

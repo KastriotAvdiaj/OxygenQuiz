@@ -78,7 +78,7 @@ export const GenerationInput = ({
     {mode === "Topic" ? (
       <div>
         <RequiredEyebrow />
-        <Label htmlFor="ai-topic" className="mt-0.5 block text-xl font-medium">
+        <Label htmlFor="ai-topic" className="mt-0.5 block text-xl font-medium short:text-lg">
           What should this quiz be about?
         </Label>
         <Input
@@ -97,14 +97,14 @@ export const GenerationInput = ({
     ) : (
       <div>
         <RequiredEyebrow />
-        <Label htmlFor="ai-source" className="mt-0.5 block text-xl font-medium">
+        <Label htmlFor="ai-source" className="mt-0.5 block text-xl font-medium short:text-lg">
           Your material
         </Label>
         <Textarea
           id="ai-source"
           variant="settings"
           className={cn(
-            "mt-1 min-h-[180px]",
+            "mt-1 min-h-[180px] short:min-h-[132px]",
             error && "border-destructive focus-visible:ring-destructive/40",
           )}
           placeholder="Paste notes, an article, a transcript..."

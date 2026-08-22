@@ -89,6 +89,15 @@ export interface AiQuotaStatus {
   used: number;
   remaining: number | null;
   resetsAt: string;
+  /**
+   * The model that would write the questions, e.g. `deepseek-v4-flash`.
+   *
+   * `null` whenever `enabled` is false — the server won't name a model it isn't about to call,
+   * and the UI says nothing rather than naming one. Treat it as display-only: which vendor we
+   * use is a server decision (`Ai:BaseUrl` + `Ai:Model`), and nothing in the client branches on
+   * this value.
+   */
+  model: string | null;
 }
 
 /**

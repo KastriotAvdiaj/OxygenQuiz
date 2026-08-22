@@ -8,24 +8,45 @@ using Microsoft.Extensions.Options;
 namespace QuizAPI.Services.Ai
 {
     /// <summary>
-    /// DeepSeek adapter. The API speaks the OpenAI ChatCompletions wire format, so this class is
-    /// close to a generic OpenAI-compatible client — which is the point: pointing
-    /// <c>Ai:BaseUrl</c> and <c>Ai:Model</c> at another OpenAI-compatible vendor should work
-    /// without a code change.
+    /// A client for any vendor that speaks the <b>OpenAI ChatCompletions wire format</b> — the
+    /// de-facto standard shape for this call: <c>POST {BaseUrl}/chat/completions</c> carrying
+    /// <c>model</c>, <c>messages</c>, <c>temperature</c>, <c>max_tokens</c> and
+    /// <c>response_format</c>, answering with <c>choices[0].message.content</c> and a
+    /// <c>usage</c> block. Nothing here talks to OpenAI and no OpenAI account is involved — the
+    /// format carries their name only because they published it first.
     ///
-    /// Two provider-specific details worth knowing:
-    ///  - JSON mode is <c>response_format: { "type": "json_object" }</c> and it <b>requires the
-    ///    word "json" to appear in the prompt</b>. <see cref="AiPromptBuilder"/> guarantees that;
-    ///    this class asserts it rather than letting the provider 400 mysteriously.
-    ///  - JSON mode guarantees syntactic validity, not our schema. DeepSeek does not support
-    ///    OpenAI's strict <c>json_schema</c> on the stable endpoint, so semantic validation stays
-    ///    where it already lives (plan §5.2).
+    /// <para><b>Which vendor and which model is configuration, not code:</b>
+    /// <c>Ai:BaseUrl</c>, <c>Ai:Model</c>, <c>Ai:ApiKey</c>, and the two cost-per-million
+    /// values that price the result. This class was <c>DeepSeekQuizAiProvider</c> until
+    /// 2026-08-22; it was renamed because the name implied a coupling that never existed, and a
+    /// vendor name in a class name is a lie the moment <c>Ai:BaseUrl</c> points elsewhere.
+    /// Known compatible: DeepSeek (<c>https://api.deepseek.com</c>) and Alibaba's Qwen
+    /// "compatible-mode" endpoint. The vendor actually in use is recorded on every usage row
+    /// (<c>AiGenerationUsage.Model</c>), named in every log line below, and shown in the wizard
+    /// via <c>GET /quiz/ai-quota</c> — so "which model made this" is answerable from the data,
+    /// not from whatever a class is called.</para>
+    ///
+    /// <para>Two details of the format worth knowing, both true of DeepSeek and Qwen alike:
+    /// JSON mode is <c>response_format: { "type": "json_object" }</c> and it <b>requires the
+    /// word "json" to appear in the prompt</b> — <see cref="AiPromptBuilder"/> guarantees that,
+    /// and this class asserts it rather than letting the vendor 400 mysteriously; and JSON mode
+    /// guarantees syntactic validity, not our schema. Neither vendor supports OpenAI's strict
+    /// <c>json_schema</c> on the stable endpoint, so semantic validation stays where it already
+    /// lives (plan §5.2).</para>
+    ///
+    /// <para><b>Before pointing this at a new vendor</b>, check three things with a raw curl:
+    /// that <c>response_format: json_object</c> is accepted; that the reply arrives in
+    /// <c>choices[0].message.content</c>; and that <c>usage</c> reports
+    /// <c>prompt_tokens</c> / <c>completion_tokens</c> — the cost ledger records zero,
+    /// silently, if that block is missing or named differently. A vendor needing an extra body
+    /// field (a non-thinking-mode toggle, say) needs a line in <c>ChatRequest</c>, and that is
+    /// the real boundary of "config only".</para>
     /// </summary>
-    public sealed class DeepSeekQuizAiProvider : IQuizAiProvider
+    public sealed class OpenAiCompatibleQuizAiProvider : IQuizAiProvider
     {
         private readonly HttpClient _http;
         private readonly AiOptions _options;
-        private readonly ILogger<DeepSeekQuizAiProvider> _logger;
+        private readonly ILogger<OpenAiCompatibleQuizAiProvider> _logger;
 
         /// <summary>One retry only. A second failure is a real outage, and the user is waiting.</summary>
         private const int MaxAttempts = 2;
@@ -33,10 +54,10 @@ namespace QuizAPI.Services.Ai
 
         private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.Web);
 
-        public DeepSeekQuizAiProvider(
+        public OpenAiCompatibleQuizAiProvider(
             HttpClient http,
             IOptions<AiOptions> options,
-            ILogger<DeepSeekQuizAiProvider> logger)
+            ILogger<OpenAiCompatibleQuizAiProvider> logger)
         {
             _http = http;
             _options = options.Value;
@@ -54,7 +75,7 @@ namespace QuizAPI.Services.Ai
             // with an opaque 400. See the JSON-mode note in the class summary.
             if (!prompt.Contains("json", StringComparison.OrdinalIgnoreCase))
                 throw new InvalidOperationException(
-                    "DeepSeek JSON mode requires the word \"json\" in the prompt, and this prompt does not contain it.");
+                    "JSON mode requires the word \"json\" in the prompt, and this prompt does not contain it.");
 
             var body = new ChatRequest
             {
@@ -92,11 +113,28 @@ namespace QuizAPI.Services.Ai
                     {
                         var detail = await SafeReadAsync(response, timeoutCts.Token);
 
+                        // Checked before the retry decision: a rate limit is neither an outage nor
+                        // something a two-second retry fixes, and it needs different advice.
+                        if (IsUpstreamRateLimit(response.StatusCode, detail))
+                        {
+                            _logger.LogError(
+                                "AI provider {Model} refused the request as over its rate limit ({Status}). If the " +
+                                "message says a single request exceeds the limit, the cause is Ai:MaxOutputTokens " +
+                                "({MaxOutputTokens}) at or above the vendor's per-minute token allowance — vendors " +
+                                "reserve max_tokens up front, so the call can never fit and waiting will not help. " +
+                                "{Detail}",
+                                _options.Model, (int)response.StatusCode, _options.MaxOutputTokens, detail);
+
+                            throw new AiProviderException(
+                                AiErrorCodes.ProviderUnavailable,
+                                "The quiz generator is over its rate limit. Wait a minute and try again, or ask for fewer questions.");
+                        }
+
                         if (IsRetryable(response.StatusCode) && attempt < MaxAttempts)
                         {
                             _logger.LogWarning(
-                                "DeepSeek returned {Status} on attempt {Attempt}; retrying. {Detail}",
-                                (int)response.StatusCode, attempt, detail);
+                                "AI provider {Model} returned {Status} on attempt {Attempt}; retrying. {Detail}",
+                                _options.Model, (int)response.StatusCode, attempt, detail);
                             await Task.Delay(RetryDelay, ct);
                             continue;
                         }
@@ -104,8 +142,8 @@ namespace QuizAPI.Services.Ai
                         // Log the upstream detail; never hand it to the user — it can echo the
                         // prompt back, and the prompt can contain their source material.
                         _logger.LogError(
-                            "DeepSeek call failed with {Status} after {Attempt} attempt(s). {Detail}",
-                            (int)response.StatusCode, attempt, detail);
+                            "AI provider {Model} at {BaseUrl} failed with {Status} after {Attempt} attempt(s). {Detail}",
+                            _options.Model, _options.BaseUrl, (int)response.StatusCode, attempt, detail);
 
                         throw new AiProviderException(
                             AiErrorCodes.ProviderUnavailable,
@@ -119,7 +157,9 @@ namespace QuizAPI.Services.Ai
                     {
                         // A 200 with no content is not retryable in any useful sense — the request
                         // was accepted and the model simply said nothing.
-                        _logger.LogError("DeepSeek returned a success status with an empty completion.");
+                        _logger.LogError(
+                            "AI provider {Model} returned a success status with an empty completion.",
+                            _options.Model);
                         throw new AiProviderException(
                             AiErrorCodes.ModelOutputInvalid,
                             "The quiz generator returned an empty reply.");
@@ -136,8 +176,9 @@ namespace QuizAPI.Services.Ai
                     // Our budget expired, not the caller's — the distinction the linked token buys us.
                     if (attempt < MaxAttempts)
                     {
-                        _logger.LogWarning("DeepSeek timed out after {Seconds}s on attempt {Attempt}; retrying.",
-                            _options.TimeoutSeconds, attempt);
+                        _logger.LogWarning(
+                            "AI provider {Model} timed out after {Seconds}s on attempt {Attempt}; retrying.",
+                            _options.Model, _options.TimeoutSeconds, attempt);
                         continue;
                     }
 
@@ -149,7 +190,9 @@ namespace QuizAPI.Services.Ai
                 {
                     if (attempt < MaxAttempts)
                     {
-                        _logger.LogWarning(ex, "DeepSeek transport error on attempt {Attempt}; retrying.", attempt);
+                        _logger.LogWarning(ex,
+                            "AI provider {Model} transport error on attempt {Attempt}; retrying.",
+                            _options.Model, attempt);
                         await Task.Delay(RetryDelay, ct);
                         continue;
                     }
@@ -173,9 +216,37 @@ namespace QuizAPI.Services.Ai
         /// <summary>
         /// 429 and 5xx are transient. 400/401/403 are our fault (bad request, bad or revoked key)
         /// and retrying them just burns the user's time and doubles the log noise.
+        ///
+        /// <para>Rate limits are handled before this is consulted — see
+        /// <see cref="IsUpstreamRateLimit"/>.</para>
         /// </summary>
         private static bool IsRetryable(HttpStatusCode status) =>
             status == HttpStatusCode.TooManyRequests || (int)status >= 500;
+
+        /// <summary>
+        /// <b>Vendors disagree about which status code a rate limit is.</b> OpenAI and DeepSeek
+        /// answer 429; Groq answers <b>413 Payload Too Large</b> with <c>code:
+        /// "rate_limit_exceeded"</c> when a request exceeds the tokens-per-minute allowance. So the
+        /// status alone can't classify it, and the body has to be read — which we already do, for
+        /// the log.
+        ///
+        /// <para><b>Why this is not simply added to <see cref="IsRetryable"/>:</b> our retry is one
+        /// attempt, two seconds later, with the user watching. A per-minute token budget does not
+        /// refill in two seconds, and in the case that actually bit us it never refills at all — a
+        /// single request asking for 8,886 tokens against an 8,000/minute ceiling is over the limit
+        /// on its own, forever, because vendors reserve <c>max_tokens</c> up front whether the model
+        /// uses them or not. Retrying that burns two seconds of someone's attention to fail
+        /// identically. The honest answer is to say what happened and let them decide.</para>
+        ///
+        /// <para>The error code stays <c>ProviderUnavailable</c> rather than gaining a
+        /// <c>ProviderRateLimited</c> sibling: the client does the same thing either way — show the
+        /// message, offer retry, keep the copy-paste path — and the closed code set is a contract
+        /// across four files (see AiGenerationContracts). A distinct message carries the difference
+        /// the user can act on; a distinct code would only carry it to code that ignores it.</para>
+        /// </summary>
+        private static bool IsUpstreamRateLimit(HttpStatusCode status, string detail) =>
+            status == HttpStatusCode.RequestEntityTooLarge &&
+            detail.Contains("rate_limit_exceeded", StringComparison.OrdinalIgnoreCase);
 
         private static async Task<string> SafeReadAsync(HttpResponseMessage response, CancellationToken ct)
         {
@@ -191,7 +262,9 @@ namespace QuizAPI.Services.Ai
         }
 
         // ── Wire types. Kept private: nothing outside this adapter should shape itself around
-        // one provider's payload. Property names are snake_case on the wire, hence the attributes.
+        // one vendor's payload. Property names are snake_case on the wire, hence the attributes.
+        // These are the standard ChatCompletions fields and nothing else: a vendor-specific field
+        // added here is the moment this class stops being generic, so add one deliberately.
 
         private sealed class ChatRequest
         {

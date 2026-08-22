@@ -9,7 +9,7 @@ namespace QuizAPI.Services.Ai
     /// only way to enable AI generation without an API key — see Program.cs.
     ///
     /// <para><b>Why this exists.</b> Because it implements <see cref="IQuizAiProvider"/>, and the
-    /// provider is the only thing in the feature that talks to DeepSeek, everything else runs for
+    /// provider is the only thing in the feature that leaves the building, everything else runs for
     /// real against it: the quota reserve/commit, the usage rows, the budget check, the audit
     /// entry, the error-code mapping, and — once the frontend lands — the browser parser, the
     /// review builder and the atomic import. So this is not a mock of the feature; it is the

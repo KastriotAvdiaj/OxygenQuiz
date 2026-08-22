@@ -49,7 +49,8 @@ public class AiPromptBuilderTests
     [Fact]
     public void ContainsTheWordJson_SoTheProvidersJsonModeAccepts()
     {
-        // DeepSeek rejects response_format=json_object unless the prompt mentions json. The
+        // Vendors reject response_format=json_object unless the prompt mentions json (true of
+        // DeepSeek and Qwen alike). The
         // provider asserts this too; this test catches it at the source instead of at runtime.
         Assert.Contains("json", Builder.Build(InferredRequest()), StringComparison.OrdinalIgnoreCase);
         Assert.Contains("json", Builder.Build(SourceRequest()), StringComparison.OrdinalIgnoreCase);

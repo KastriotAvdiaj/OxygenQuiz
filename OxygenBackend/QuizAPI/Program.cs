@@ -188,9 +188,31 @@ builder.Services.AddScoped<QuizAPI.Services.Reports.IReportService, QuizAPI.Serv
 builder.Services.Configure<QuizAPI.Services.Ai.AiOptions>(
     configuration.GetSection(QuizAPI.Services.Ai.AiOptions.SectionName));
 
-var useFakeAiProvider = string.Equals(
-    configuration[$"{QuizAPI.Services.Ai.AiOptions.SectionName}:Provider"],
-    "Fake", StringComparison.OrdinalIgnoreCase);
+// Two providers exist, and the choice is about *how we get a completion*, not about which
+// vendor: "Fake" is the offline stub, "OpenAiCompatible" is a real HTTP call to whatever
+// Ai:BaseUrl points at. The vendor lives in Ai:BaseUrl + Ai:Model, never here — the class was
+// called DeepSeekQuizAiProvider until 2026-08-22 and the name kept implying otherwise.
+// Unset means the AiOptions default, not a configuration error — an appsettings.json without
+// an Ai section must still boot.
+var aiProviderName = configuration[$"{QuizAPI.Services.Ai.AiOptions.SectionName}:Provider"];
+if (string.IsNullOrWhiteSpace(aiProviderName)) aiProviderName = "OpenAiCompatible";
+
+var useFakeAiProvider = string.Equals(aiProviderName, "Fake", StringComparison.OrdinalIgnoreCase);
+
+// Legacy vendor names still boot — an existing .env or user-secrets holding "DeepSeek" must not
+// take the API down over a rename — but they are called out, because a vendor name here reads as
+// if it selected the vendor, and it never did.
+var isLegacyVendorProviderName =
+    string.Equals(aiProviderName, "DeepSeek", StringComparison.OrdinalIgnoreCase) ||
+    string.Equals(aiProviderName, "Qwen", StringComparison.OrdinalIgnoreCase);
+
+// Anything else is a typo, and the old code silently treated a typo as "make real paid calls".
+// Fail instead: a misspelled provider is exactly when you least want the billable default.
+if (!useFakeAiProvider &&
+    !isLegacyVendorProviderName &&
+    !string.Equals(aiProviderName, "OpenAiCompatible", StringComparison.OrdinalIgnoreCase))
+    throw new InvalidOperationException(
+        $"Ai:Provider is \"{aiProviderName}\", which is not a provider. Use \"OpenAiCompatible\" for a real vendor (set the vendor with Ai:BaseUrl and Ai:Model) or \"Fake\" for development.");
 
 // The fake provider invents questions out of nothing. Serving those to real users would be
 // worse than the feature being switched off, so a misconfigured deploy is refused rather than
@@ -222,7 +244,7 @@ else
 {
     // Typed client so the handler (and its connection pool) is reused; the per-call deadline is
     // enforced inside the provider with a linked token, so the client's own timeout is left generous.
-    builder.Services.AddHttpClient<QuizAPI.Services.Ai.IQuizAiProvider, QuizAPI.Services.Ai.DeepSeekQuizAiProvider>((sp, client) =>
+    builder.Services.AddHttpClient<QuizAPI.Services.Ai.IQuizAiProvider, QuizAPI.Services.Ai.OpenAiCompatibleQuizAiProvider>((sp, client) =>
     {
         var aiOptions = sp.GetRequiredService<IOptions<QuizAPI.Services.Ai.AiOptions>>().Value;
         // Trailing slash matters: without it the relative "chat/completions" would replace the
@@ -293,6 +315,19 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
+
+// Deprecation notice for a vendor name in Ai:Provider. A warning rather than a throw: an
+// existing .env or user-secrets holding "DeepSeek" predates the rename, and taking the API down
+// over it would be a worse outcome than the confusion it causes. Deleting the legacy branch is
+// safe once no environment sets one — check .env on the VPS before you do.
+if (isLegacyVendorProviderName)
+    app.Logger.LogWarning(
+        "Ai:Provider is \"{Provider}\", which names a vendor. The provider is chosen by transport, " +
+        "not by vendor: set Ai:Provider to \"OpenAiCompatible\" and choose the vendor with " +
+        "Ai:BaseUrl + Ai:Model (currently {BaseUrl} / {Model}). The legacy value still works.",
+        aiProviderName,
+        configuration[$"{QuizAPI.Services.Ai.AiOptions.SectionName}:BaseUrl"],
+        configuration[$"{QuizAPI.Services.Ai.AiOptions.SectionName}:Model"]);
 
 // --- Forwarded headers (behind Nginx + Cloudflare) ---
 // The app sits behind a reverse proxy (Nginx) and Cloudflare, so the original request scheme/IP

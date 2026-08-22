@@ -17,7 +17,7 @@ namespace QuizAPI.Services.Ai
     ///   <item>Individual <b>questions</b> never carry a category or language — they inherit the
     ///     quiz's. The model may suggest the <b>quiz's</b> category and language when asked, and
     ///     a human confirms both before anything is saved. See the note below.</item>
-    ///   <item>The word "json" appears deliberately: DeepSeek's JSON mode refuses the request
+    ///   <item>The word "json" appears deliberately: JSON mode refuses the request
     ///     without it.</item>
     /// </list>
     ///
