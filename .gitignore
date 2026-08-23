@@ -44,3 +44,13 @@ storybook-static
 # FUSE leftovers: a mounted filesystem renames a file to .fuse_hiddenXXXX instead of
 # unlinking it while a process still has it open. Artefacts of the mount, never source.
 .fuse_hidden*
+
+# Claude Code.
+# settings.json and skills/ are shared with the repo on purpose. Everything else
+# under .claude/ is per-machine state and must not be committed.
+.claude/settings.local.json
+.claude/scheduled_tasks.lock
+.claude/worktrees/
+
+# Scratch archives kept on disk but not in the repo.
+_to_delete/

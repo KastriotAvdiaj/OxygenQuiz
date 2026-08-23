@@ -1,0 +1,26 @@
+# Line endings.
+#
+# Without this file, a file saved by a Windows editor comes back as a whole-file
+# diff (every line removed and re-added) because only the CR changed. `text=auto`
+# tells git to store LF in the repository and check out whatever is native.
+* text=auto
+
+# Shell scripts must be LF even on a Windows checkout, or they will not run.
+*.sh text eol=lf
+
+# Windows scripts must be CRLF.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Binary — never convert, never diff as text.
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.webp binary
+*.woff binary
+*.woff2 binary
+*.pdf  binary
+*.zip  binary
+*.tgz  binary
