@@ -1,4 +1,5 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Decorator, Meta, StoryObj } from "@storybook/react";
+import { MemoryRouter } from "react-router-dom";
 import { fn } from "@storybook/test";
 import { LobbyPageView } from "./LobbyPageView";
 import { QuizSelectionDialogView } from "./components/lobby/quiz-selection-dialog-view";
@@ -163,6 +164,15 @@ const populatedChat = (
 const noopLeaveDialog = { isOpen: false, onConfirm: fn(), onCancel: fn() };
 
 const meta = {
+  // Every story needs this, not just the ones that navigate: the `JoinFailed` state renders a
+  // router-dependent node and threw `Cannot destructure property 'basename'` the moment these
+  // stories first actually ran — which was when `.storybook/vitest.setup.ts` was created and the
+  // `storybook` vitest project could collect for the first time.
+  decorators: [((Story) => (
+    <MemoryRouter>
+      <Story />
+    </MemoryRouter>
+  )) as Decorator],
   title: "Quiz/Multiplayer/LobbyPageView",
   component: LobbyPageView,
   parameters: { layout: "fullscreen" },
