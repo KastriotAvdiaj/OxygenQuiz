@@ -4,6 +4,21 @@ Keep them short. A subject line plus a few lines of body — enough to say what
 broke and what changed, not a write-up. Detailed reasoning belongs in `docs/`
 and in code comments, not in the commit.
 
+## Documenting changes
+
+**A structural change is not finished until it is written down** — same change, not a
+follow-up. Where it goes, narrowest first: `docs/adr/` for a decision that is hard to
+reverse, surprising without context, and a real trade-off (append-only; supersede, never
+edit); `docs/<area>/*.md` for how something behaves today;
+`docs/deployment/known-issues.md` for something real, found, and deliberately deferred; a
+doc comment for reasoning that only makes sense beside the code.
+
+Not for renames, typos, or anything a reader gets from the diff. Plan docs (`*-plan.md`)
+are transient: fold what is still true into the feature doc and delete the plan.
+
+Full version, including the two failure modes this project has actually hit:
+[`docs/development/documenting-changes.md`](docs/development/documenting-changes.md).
+
 ## Frontend conventions (React + TypeScript)
 
 ### Effects and state
@@ -47,8 +62,17 @@ and in code comments, not in the commit.
 
 ## Backend conventions (C#)
 
-- **Services never touch `DbContext`.** Query through the repository interfaces so the data
-  access stays in one layer and services stay unit-testable.
+- **Nothing outside a repository touches `DbContext`** — services *or* controllers. Query
+  through the repository interfaces so data access stays in one layer and callers stay
+  unit-testable.
+- **A service is warranted when it has its own reason to change** — a rule that is neither the
+  HTTP shape (controller) nor the query (repository). For CRUD over a lookup table there is no
+  such rule, and a service that only forwards costs a file, an interface, a DI registration and
+  a mock in every test. Controller → repository is correct there; add the service the day a rule
+  appears. See `docs/entities/lookup-entities.md`.
+- **A lookup's public DTO carries no creator/owner metadata.** These DTOs get embedded in
+  question and quiz payloads that are readable anonymously. Put it on an `XAdminDTO : XDTO` and
+  serve that from a role-gated endpoint only.
 - **Throw typed exceptions for domain rules** — `AppValidationException`, `NotFoundException`,
   `ConflictException`, `ForbiddenException`. `GlobalExceptionHandler` maps each to its status
   code, so a rule expressed this way returns a correct response from every endpoint that

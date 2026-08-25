@@ -735,3 +735,93 @@ and tightening `ClockSkew`. All **P3**.
   ("Feature not implemented") even though `PATCH /api/quiz/{id}/status` exists and the
   edit form can change status. Wire it to the endpoint when in the area.
   → `src/pages/Dashboard/Pages/Quiz/Quiz.tsx`
+
+---
+
+## Responsive / layout shell (2026-08-23 — see docs/RESPONSIVE.md)
+
+Found while measuring why the AI quiz wizard overflows a 730px-tall laptop viewport.
+The wizard itself follows `RESPONSIVE.md` closely; **the dashboard shell it renders
+inside follows none of it**, because `layouts/dashboard-layout.tsx` predates the July
+2026 overhaul and was never audited against it. Two of the four defects were fixed in
+the wizard pass (header sizing, `main` padding); these two were deliberately deferred
+because they touch every dashboard route and need their own testing.
+
+- **P2 — `scrollAppToTop()` / `getAppScrollContainer()` are dead on every dashboard
+  route.** `DashboardLayout` scrolls inside `<main className="flex-1 overflow-y-auto">`
+  and never sets `APP_SCROLL_CONTAINER_ID`, so `document.getElementById(...)` returns
+  `null` and both helpers silently no-op. This is the same class of bug the July 2026
+  overhaul fixed in `HomeLayout` (the header's hide-on-scroll listener was bound to
+  `window` and never fired) — reintroduced in the shell that overhaul didn't cover.
+  Anything that wants to scroll a dashboard page to the top today does nothing.
+  → `src/layouts/dashboard-layout.tsx`, `src/lib/app-scroll.ts`
+
+- **P3 — `DashboardLayout` uses `h-screen` and no `.app-shell-viewport`.** Both
+  branches (full-width and with-nav) root on `text-foreground h-screen flex flex-col`.
+  `RESPONSIVE.md` checklist item 1 forbids `h-screen` outright: it resolves against the
+  *largest* viewport on mobile, so the bottom of a dashboard page can sit behind browser
+  chrome. The shell also skips `100dvh`, the safe-area side padding, and the
+  `--header-height` padding contract that `HomeLayout` provides.
+  → `src/layouts/dashboard-layout.tsx`
+
+**Fix them together, not with a feature.** Moving the dashboard onto
+`.app-shell-viewport` changes which element scrolls on every dashboard page, so it wants
+its own change and its own pass over the dashboard routes — shipping it inside a form
+redesign means a scroll regression could have come from either.
+
+---
+
+## Category colour palettes (2026-08-23)
+
+- **P3 — `Category.gradient` is stored, editable and filterable, but never rendered.**
+  The flag round-trips through `create-question-category` / `update-question-category`, and
+  `category-filters.tsx` offers a tri-state **Gradient: Yes / No / Any** filter over it. The
+  only component that reads it and paints something different is `common/ColouredCard.tsx`
+  (`gradient && colors.length > 1` → a `linear-gradient`), and **`ColouredCard` has no call
+  sites anywhere in `src/`.**
+
+  So this is worse than an unused column: an admin can filter the category list by a
+  distinction that has no visual effect, and can toggle a switch that changes nothing. Either
+  the quiz card should honour it, or the flag, its filter and its form control should go
+  together.
+
+  Decide before building on it — the AI palette proposer (an **admin, create-category-form**
+  feature; nothing to do with AI quiz generation) deliberately leaves `gradient` alone and lets
+  the form's default stand, precisely because nobody can currently say what it should mean.
+  → `src/common/ColouredCard.tsx`, `src/pages/Dashboard/Pages/Question/Entities/Categories/Components/category-filters.tsx`
+
+---
+
+## Documentation debt (2026-08-23)
+
+- **P3 — Four `*-plan.md` files are load-bearing reference docs and shouldn't be.**
+  A plan describes intentions and becomes wrong the moment the work lands, so
+  [`../development/documenting-changes.md`](../development/documenting-changes.md) says to fold
+  what is still true into the feature doc and delete the plan. These four can't simply be
+  deleted: **36 source comments cite them by section number**, so removing them turns three
+  dozen live references into dead links.
+
+  | Plan | Citations in `src/` + `OxygenBackend/` | Where its content belongs |
+  |---|---|---|
+  | `auth/social-login-plan.md` | 18 | `auth/social-login.md` |
+  | `quiz/ai-quiz-generation-plan.md` | 8 | `quiz/ai-quiz-generation-flow.md` |
+  | `auth/invite-code-system-plan.md` | 6 | `auth/invite-code-system.md` |
+  | `quiz/ai-quiz-creation-plan.md` | 4 | `quiz/ai-quiz-architecture.md` |
+
+  Each is its own piece of work, and the order above is worst-first by citation count — but
+  `ai-quiz-generation-plan.md` is the easiest place to start, because its companion feature doc
+  already exists and covers the same ground.
+
+  **The work per plan:** move each cited section into the feature doc, keep or map its section
+  number, update every citation, then retire the plan to `_to_delete/`. Do not delete first and
+  fix references after — a comment pointing at a section that no longer exists is worse than one
+  pointing at a document that shouldn't.
+
+  **Not harmful today.** The plans are accurate and the links resolve; this is tidiness plus the
+  cost of two documents describing one feature and slowly disagreeing. Worth doing when you are
+  next in one of these areas anyway.
+  → `docs/auth/`, `docs/quiz/`
+
+- **P3 — `Documentation.md` was retired to `_to_delete/`** (2026-08-23). A root-level, tutorial-style
+  per-file explainer that had drifted; nothing referenced it. If any of it was worth keeping it
+  needs rescuing from there before that folder is emptied.
