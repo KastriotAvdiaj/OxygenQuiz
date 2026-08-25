@@ -19,7 +19,7 @@ Last updated: 2026-08-13. Companion to
 | View | `ai-quiz-wizard-view.tsx` | `own-ai-quiz-view.tsx` |
 | Who runs the model | We do, on our budget | The user's ChatGPT / Claude / Gemini |
 | Costs | A daily generation from their quota | Nothing |
-| The middle step | One Generate button | Copy prompt → leave → paste reply |
+| The middle step | One Generate button | Copy prompt → leave → paste reply, as three numbered steps |
 | Input | Topic **or** source material — one per route | Topic only (see below) |
 | Owns | The generate mutation, quota, `AiGenerateError` | The clipboard, the pasted reply |
 
@@ -113,7 +113,17 @@ comment lists what else has to change when it flips — the route, and nothing e
   `extractQuizSuggestions`, name→id resolution, `parseAiOutput`, `needsConfirmation`, the
   `builderSlot` with `aiImportMode` — happens in one place and cannot diverge.
 - **One set of optional details.** `advanced-options.tsx` is rendered by both views with the
-  same props. It is an always-visible form, not a drawer — see generation flow §1a.
+  same props. It is an always-visible form, not a drawer — see generation flow §1a, and
+  [`../adr/0001-ai-generation-options-stay-visible.md`](../adr/0001-ai-generation-options-stay-visible.md)
+  for why that is now a recorded decision rather than a preference.
+- **Only the own-AI page is numbered.** Its steps are ordered, dependent, and one of them
+  happens in another application — which is the same property §6 uses to decide what earns a
+  route. The generate path is a single action, so numbering it would invent a sequence that
+  isn't there. The markers are `components/step-marker.tsx`, deliberately in-place section
+  headings rather than `common/Steps.tsx`: all three steps stay on screen at once, so a
+  progress bar would be a second account of where you are. Note the numbering starts at
+  *describing the quiz* — "Copy the prompt" used to be labelled `1.`, which said that filling
+  in the topic wasn't a step and made the first numbered thing a button you can't yet use.
 - **Except source mode, which only the generate path has.** "From my material" means *we*
   put the material in the request and truncate it server-side at `Ai:MaxSourceChars`. Through
   someone else's chat window we can't: the user pastes their notes there themselves, at

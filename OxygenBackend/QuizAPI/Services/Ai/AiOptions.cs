@@ -51,8 +51,15 @@ namespace QuizAPI.Services.Ai
         public string BaseUrl { get; set; } = "https://api.deepseek.com";
 
         /// <summary>
-        /// Model id, recorded on every usage row and shown in the wizard, so "which model made
-        /// this quiz" is answerable from the data.
+        /// Model id, recorded on every usage row, so "which model made this quiz" is answerable
+        /// from the data.
+        ///
+        /// <para>It is deliberately <b>not</b> shown in the wizard any more. It used to render as
+        /// "Questions are written by {Model}" under the quota line, but this is a raw provider
+        /// slug (<c>openai/gpt-oss-120b</c>) — an internal identifier, not user-facing copy — and
+        /// on the form it answers a question about a generation that has not happened yet.
+        /// "Which model made this quiz" is a question about a saved quiz, and the usage row is
+        /// where it is answered. See the note in <c>components/quota-note.tsx</c>.</para>
         ///
         /// <para>NOTE: <c>deepseek-chat</c> / <c>deepseek-reasoner</c> were retired 2026-07-24 in
         /// favour of the V4 names. Re-check against api-docs.deepseek.com before changing.</para>

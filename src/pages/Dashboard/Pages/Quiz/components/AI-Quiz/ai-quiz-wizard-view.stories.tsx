@@ -1,5 +1,5 @@
-import type { Meta, StoryObj } from "@storybook/react";
-import { fn, userEvent, within } from "@storybook/test";
+import type { Decorator, Meta, StoryObj } from "@storybook/react";
+import { expect, fn, userEvent, within } from "@storybook/test";
 import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
@@ -559,4 +559,98 @@ export const OnMobile: Story = {
 export const DetailsOnMobile: Story = {
   parameters: { viewport: { defaultViewport: "mobile1" } },
   args: { ...AdvancedOverridden.args },
+};
+
+// ── The fold ───────────────────────────────────────────────────────────────────────────
+
+/**
+ * The viewport this screen is *designed* to fit: a 15" 1920×1080 laptop at 125% scaling,
+ * which is 1525×730 CSS pixels. Not an arbitrary choice — it is the machine the "I have to
+ * scroll" report came from, and 730px is under the `short:` threshold (860px), so the
+ * density steps are live while this measures.
+ */
+const FOCUS_MODE_VIEWPORT = { width: 1525, height: 730 };
+
+/**
+ * How much clear space must sit below Generate. The target is not "it fits" — a screen that
+ * fits by 1px is one `EmailVerificationBanner`, one `GenerateErrorPanel` or one
+ * user-selected display font away from hiding its primary action again. See
+ * docs/adr/0002-quiz-creation-routes-hide-the-dashboard-header.md.
+ */
+const REQUIRED_HEADROOM_PX = 60;
+
+/**
+ * Reproduces focus mode's geometry: `DashboardLayout`'s scrolling `<main>` with no header
+ * above it, so it owns the whole viewport height. Kept in step with
+ * `layouts/dashboard-layout.tsx` by hand — if that padding changes, change it here.
+ */
+const FocusModeShell: Decorator = (Story) => (
+  <div
+    data-testid="focus-mode-main"
+    className="overflow-y-auto bg-muted p-4 sm:p-6 lg:p-8 short:p-4"
+    style={{ height: FOCUS_MODE_VIEWPORT.height }}
+  >
+    <Story />
+  </div>
+);
+
+/**
+ * **The regression guard for the whole density pass.**
+ *
+ * The wizard used to overflow this viewport by 174px, with the Generate button in those
+ * 174px — the primary action of the screen, below the fold, on an ordinary laptop. Getting
+ * it back cost a header, a padding step and a moved link, and none of that is visible in a
+ * diff: the next person adds a field, the page grows, nothing errors, and the button
+ * quietly goes under again.
+ *
+ * So the fit is asserted rather than eyeballed. Chromatic covers whether it still *looks*
+ * right; this covers whether it is still *reachable*, which is the part that can regress
+ * silently.
+ *
+ * Requires Playwright's browsers — `npx playwright install` — since it needs a real layout.
+ */
+export const FitsTheFold: Story = {
+  decorators: [FocusModeShell],
+  args: {
+    topic: "",
+    quota: quotaAvailable,
+  },
+  play: async ({ canvasElement }) => {
+    // `short:` is a height media query, so the assertion is only meaningful at the real
+    // viewport. Guarded: this import only resolves under the vitest browser runner, and
+    // the story must still open in the Storybook UI, where it simply renders.
+    const runner: { page?: { viewport?: (w: number, h: number) => Promise<void> } } | null =
+      await import("@vitest/browser/context").catch(() => null);
+    await runner?.page?.viewport?.(
+      FOCUS_MODE_VIEWPORT.width,
+      FOCUS_MODE_VIEWPORT.height,
+    );
+
+    const main = canvasElement.querySelector<HTMLElement>(
+      '[data-testid="focus-mode-main"]',
+    );
+    if (!main) throw new Error("focus-mode shell missing");
+    main.scrollTop = 0;
+
+    const generate = within(canvasElement).getByRole("button", {
+      name: /generate/i,
+    });
+
+    const headroom = Math.round(
+      main.getBoundingClientRect().bottom - generate.getBoundingClientRect().bottom,
+    );
+
+    // Printed on success too: this number is how you tell "we just scraped in" from
+    // "there is room to spare", and the difference decides whether the next change needs
+    // to buy space before it can spend any.
+    // eslint-disable-next-line no-console
+    console.log(`[FitsTheFold] ${headroom}px below Generate at 1525x730`);
+
+    await expect(
+      headroom,
+      `Generate must sit at least ${REQUIRED_HEADROOM_PX}px above the fold at ` +
+        `${FOCUS_MODE_VIEWPORT.width}x${FOCUS_MODE_VIEWPORT.height}; measured ${headroom}px. ` +
+        `See docs/adr/0002-quiz-creation-routes-hide-the-dashboard-header.md.`,
+    ).toBeGreaterThanOrEqual(REQUIRED_HEADROOM_PX);
+  },
 };

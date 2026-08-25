@@ -85,7 +85,7 @@ export const AdvancedOptions = ({
 }: AdvancedOptionsProps) => (
   <section
     aria-label="Quiz details"
-    className="space-y-4 border-t border-border pt-5 short:space-y-3 short:pt-4"
+    className="space-y-4 border-t border-border pt-5 short:space-y-3 short:pt-3"
   >
     {/* One statement of optionality for the whole block, so no field has to carry
         "(optional)" in its own label. The eyebrow is the twin of the "Required" one over the
@@ -97,7 +97,7 @@ export const AdvancedOptions = ({
       </p>
       {/* Wraps to two lines on a narrow phone rather than squeezing the heading. */}
       <div className="mt-0.5 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-        <h2 className="text-xl font-medium text-foreground short:text-lg">Details</h2>
+        <h2 className="text-xl font-medium text-foreground short:text-base">Details</h2>
         <p className="text-xs text-muted-foreground">
           Leave anything blank and the AI decides it.
         </p>

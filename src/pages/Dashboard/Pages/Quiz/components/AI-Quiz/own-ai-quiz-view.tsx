@@ -26,6 +26,8 @@ import { AdvancedOptions } from "./components/advanced-options";
 import { ConfirmDetailsCard } from "./components/confirm-details-card";
 import { GenerationInput } from "./components/generation-input";
 import { ImportSummary } from "./components/import-summary";
+import { InfoHint } from "./components/info-hint";
+import { StepMarker } from "./components/step-marker";
 import { WizardButton } from "./components/wizard-button";
 
 export interface OwnAiQuizViewProps {
@@ -101,8 +103,10 @@ export interface OwnAiQuizViewProps {
  * "Use your own AI", as a page.
  *
  * Same three screens as the wizard (`ai-quiz-wizard-view.tsx`), same components, same
- * handoff — the difference is the middle step: two numbered actions with a trip through
- * ChatGPT between them, instead of one Generate button. Composition only; no hooks beyond
+ * handoff — the difference is the middle step: **three numbered steps** with a trip through
+ * ChatGPT between them, instead of one Generate button. Describing the quiz is step 1; it
+ * used to be an unnumbered preamble above a button labelled "1.", which is the only place in
+ * either path where a user can genuinely lose their place. See `components/step-marker.tsx`. Composition only; no hooks beyond
  * navigation and the two bits of "has the user tried yet?" feedback below.
  */
 export const OwnAiQuizView = ({
@@ -216,9 +220,9 @@ export const OwnAiQuizView = ({
 
   // ── Screen 3: the page itself
   return (
-    <div className="mx-auto w-full max-w-2xl py-6 px-4">
-      <header className="mb-6">
-        <div className="mb-5 sm:mb-6">
+    <div className="mx-auto w-full max-w-2xl py-6 px-4 short:py-0">
+      <header className="mb-6 short:mb-2">
+        <div className="mb-5 sm:mb-6 short:mb-1.5">
           <button
             onClick={() => navigate(generatePath)}
             className="group inline-flex items-center gap-1.5 rounded-lg border border-border bg-card/60 px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-foreground/20 hover:text-foreground"
@@ -227,14 +231,26 @@ export const OwnAiQuizView = ({
             Back
           </button>
         </div>
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          Use your own AI
-        </h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          Free, and it works even when ours is busy. Say what the quiz is about,
-          copy the prompt into ChatGPT, Claude or Gemini, then paste the reply
-          back here.
-        </p>
+        {/* The subtitle that used to sit here explained the flow in prose — and then the
+            three numbered steps below explained it again, better, in the order you do it.
+            What was left over was "why this page exists" and "are you giving me a worse
+            prompt because I'm not paying", which are both worth answering and neither of
+            which needs to be on screen while you work. They moved into the ⓘ. */}
+        <div className="flex items-center gap-1">
+          <h1 className="text-2xl font-bold flex items-center gap-2 short:text-lg">
+            Use your own AI
+          </h1>
+          <InfoHint label="About using your own AI">
+            <p>
+              Free, and it works even when ours is busy — you run the prompt in
+              ChatGPT, Claude or Gemini instead of us running it for you.
+            </p>
+            <p className="mt-2">
+              It's the exact prompt we'd send ourselves. Nothing is held back for
+              the paid path.
+            </p>
+          </InfoHint>
+        </div>
       </header>
 
       {needsConfirmation ? (
@@ -252,9 +268,15 @@ export const OwnAiQuizView = ({
       ) : (
         // No header strip: the wizard's is the mode tabs, and there is only one mode here.
         <Card className="bg-background border-2 border-primary/30">
-          <CardContent className="space-y-4 pt-5">
+          <CardContent className="space-y-4 pt-5 short:space-y-3 short:pt-3">
             {/* The same question the wizard asks, because the prompt is built from the same
-                request — this page just can't inherit the answer. */}
+                request — this page just can't inherit the answer. It carries a step number
+                here and not there: see `step-marker.tsx`. */}
+            <StepMarker
+              step={1}
+              title="Describe the quiz"
+              done={topic.trim().length > 0}
+            />
             <div ref={inputRegion}>
               <GenerationInput
                 mode="Topic"
@@ -266,6 +288,10 @@ export const OwnAiQuizView = ({
                 error={
                   showValidation ? (validationMessage ?? undefined) : undefined
                 }
+                // "Copy prompt" is this page's first action, and `handleCopyClick`
+                // carries the same validation guard the wizard's Generate does — keep
+                // the two in step (docs/quiz/ai-quiz-two-paths.md §3).
+                onSubmit={handleCopyClick}
               />
             </div>
 
@@ -294,11 +320,9 @@ export const OwnAiQuizView = ({
             <Separator className="bg-primary/20" />
 
             <div className="rounded-lg border-2 border-dashed border-primary/40 p-4">
-              <p className="mb-1 text-sm font-medium">1. Copy the prompt</p>
-              <p className="mb-3 text-xs text-muted-foreground">
-                It's the exact prompt we'd send ourselves — nothing is held back
-                for the paid path.
-              </p>
+              <div className="mb-3">
+                <StepMarker step={2} title="Copy the prompt" done={copied} />
+              </div>
               <WizardButton
                 type="button"
                 disabled={isCopying}
@@ -342,7 +366,15 @@ export const OwnAiQuizView = ({
             </div>
 
             <div>
-              <p className="mb-1 text-sm font-medium">2. Paste the AI's reply</p>
+              <div className="mb-1">
+                <StepMarker
+                  step={3}
+                  title="Paste the AI's reply"
+                  // `pasteMissing` is already derived above for the validation message —
+                  // reuse it rather than computing "is there text in the box" twice.
+                  done={!pasteMissing}
+                />
+              </div>
               <Textarea
                 ref={replyRef}
                 variant="settings"

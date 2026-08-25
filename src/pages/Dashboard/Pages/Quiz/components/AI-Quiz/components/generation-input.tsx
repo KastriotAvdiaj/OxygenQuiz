@@ -49,6 +49,17 @@ export interface GenerationInputProps {
    * saying nothing.
    */
   error?: string;
+  /**
+   * The screen's primary action, run when Enter is pressed in the **topic** field.
+   *
+   * Pass the same guarded handler the primary button uses, not the raw action — Enter and
+   * the button must fail identically, or Enter becomes a way to skip validation.
+   *
+   * Only the topic branch wires this up. In Source mode the control is a textarea, where
+   * Enter legitimately means "new line"; hijacking it there would stop people formatting
+   * the material they are pasting.
+   */
+  onSubmit?: () => void;
 }
 
 /**
@@ -73,6 +84,7 @@ export const GenerationInput = ({
   onSourceDataChange,
   disabled,
   error,
+  onSubmit,
 }: GenerationInputProps) => (
   <>
     {mode === "Topic" ? (
@@ -88,6 +100,19 @@ export const GenerationInput = ({
           placeholder="Type your topic here..."
           value={topic}
           onChange={(e) => onTopicChange(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key !== "Enter" || !onSubmit) return;
+            // There is no <form> on this screen, so nothing submits on its own.
+            // preventDefault anyway: a stray implicit submission from a future wrapper
+            // would reload the page and lose everything typed.
+            e.preventDefault();
+            onSubmit();
+          }}
+          // Phone keyboards label their own action key, and the default is "return" —
+          // which on a single-line field reads as "make a new line" and hides the fact
+          // that Enter does anything at all (docs/RESPONSIVE.md). It is a label only:
+          // the handler above is what actually does the work.
+          enterKeyHint="go"
           disabled={disabled}
           aria-invalid={Boolean(error)}
           aria-describedby={error ? "ai-input-error" : undefined}

@@ -7,9 +7,15 @@ follow. Written during the July 2026 mobile overhaul of the player flow.
 ## The scrolling model (read this first)
 
 **The window never scrolls.** `html`/`body` are pinned (`overflow: hidden` in
-`src/global.css`) and every route scrolls inside a single container rendered by
-the layout (`src/layouts/layout.tsx`), styled by the `.app-shell-viewport`
-class and identified by `APP_SCROLL_CONTAINER_ID` (`src/lib/app-scroll.ts`).
+`src/global.css`) and every route under `HomeLayout` scrolls inside a single
+container it renders (`src/layouts/layout.tsx`), styled by the
+`.app-shell-viewport` class and identified by `APP_SCROLL_CONTAINER_ID`
+(`src/lib/app-scroll.ts`).
+
+> **Dashboard routes do not currently do this.** `DashboardLayout` is a second
+> shell that predates this document and scrolls inside its own `<main>` without
+> the id — so `scrollAppToTop()` is a no-op there. See "The shells" below; the
+> fix is logged in [`deployment/known-issues.md`](deployment/known-issues.md).
 
 Structure (simplified):
 
@@ -35,6 +41,54 @@ Consequences:
   the bug that made `/choose-quiz` unscrollable on phones. The old layout
   wrapper was `height: 100%` (one viewport, no more); pages taller than one
   screen overflowed a fixed box instead of growing the scroll area.
+
+## The shells
+
+Every rule in this document is addressed to page authors, and for a long time
+nobody applied any of them to the two **layouts** those pages render inside.
+That is how the AI wizard ended up with a dozen `short:` density steps sitting
+in a shell with none — the form was optimised and the ~168px of chrome around
+it was not. **The checklist at the end applies to layouts too.**
+
+There are two, and they are not interchangeable:
+
+| | `HomeLayout` (`layouts/layout.tsx`) | `DashboardLayout` (`layouts/dashboard-layout.tsx`) |
+|---|---|---|
+| Used by | public site, quiz play, auth | `/dashboard/*`, `/my-dashboard/*` |
+| Scroll container | `.app-shell-viewport` + `APP_SCROLL_CONTAINER_ID` | its own `<main class="flex-1 overflow-y-auto">`, **no id** |
+| Height | `100dvh` (with a `100vh` fallback) | `h-screen` ❌ |
+| Safe areas | `env(safe-area-inset-*)` | none ❌ |
+| Header control | `headerBehavior` (incl. `"hidden"`) | `fullWidthPaths` / `focusPaths` |
+| `scrollAppToTop()` | works | **no-op** ❌ |
+
+The ❌ rows are known defects, not design choices — they ship separately because
+moving the dashboard onto `.app-shell-viewport` changes which element scrolls on
+every dashboard page.
+
+### Focus mode
+
+`DashboardLayout` has two levels of stripping-back:
+
+- **`fullWidthPaths`** — hide the nav rail. The quiz creator and editor.
+- **`focusPaths`** — hide the nav rail *and* the header. The AI creation routes.
+
+The header is 77px, and on a 730px laptop viewport those 77px were the
+difference between the Generate button being on screen and being under the fold.
+
+**A route may only enter focus mode if it has its own in-page way back.**
+Removing the header removes Back, Home, the theme toggle and the account button
+at once; a page with no escape of its own is left with the browser's Back button.
+This is why the manual creator and the edit form are *not* in `focusPaths` even
+though they share the full-width branch — neither has a Back control.
+See [`adr/0002-quiz-creation-routes-hide-the-dashboard-header.md`](adr/0002-quiz-creation-routes-hide-the-dashboard-header.md).
+
+### Chrome gets density steps too
+
+`main`'s padding carries `short:p-4`. Before that it had width steps only
+(`p-4 sm:p-6 lg:p-8`), so a wide-but-short laptop paid the full 64px vertical —
+and no amount of `short:` work inside a page could reach it. **When a screen
+doesn't fit, measure the chrome before you cut the content.** On this one the
+chrome was more than half the deficit.
 
 ## Viewport units: dvh, never vh
 
@@ -415,10 +469,38 @@ dialog, a hand-rolled spinner.
 | `ui/data-table.tsx` | Rows alternate `bg-primary/10` / `bg-muted` (was `bg-muted` / `bg-background/50`); header stays `bg-muted` | Borrows the Questions page's card tint so the quiz/user tables aren't pure greyscale. Tinting *every* row — two steps of the wash, the first attempt — was too much blue on pages whose only content is the table: spaced-out cards can carry a tint edge-to-edge rows can't |
 | `ui/data-table.tsx` | Removed `position: relative` from header cells (was applied to every column except the first) | In a `border-collapse: collapse` table a positioned cell paints its own background **over** the row's collapsed border, so the header divider was crisp under column 1 and washed out under the rest. Nothing in a header cell is absolutely positioned — the class was vestigial. **General rule: don't put `relative` on a `th`/`td` whose row draws a border, unless a child actually needs it** |
 
+## What changed in the Aug 23 2026 pass
+
+The same screen as Aug 22, measured rather than estimated. On a 1525×730 viewport
+`main.scrollHeight - main.clientHeight` was **174px**, and the Generate button was in
+them. The Aug 22 pass had already spent its `short:` steps on the form; this one went
+after the shell, which had never been looked at.
+
+| Where | Change | Why |
+| --- | --- | --- |
+| `dashboard-layout.tsx` | New `focusPaths`: no nav rail **and** no header | The header is 77px of a 730px viewport and its content is a wordmark plus three buttons. Gated on the route having its own Back control — see "Focus mode" above |
+| `dashboard-layout.tsx` | `main` padding `p-4 sm:p-6 lg:p-8` → `+ short:p-4` | Width steps only, so a wide-but-short laptop paid 64px vertical and nothing inside the page could reach it |
+| `ai-quiz-wizard-view.tsx`, `own-ai-quiz-view.tsx` | Page padding `short:py-0`; the own-AI page got its first `short:` step at all | `main` already provides the gutter. The own-AI page had been missed entirely by the Aug 22 pass |
+| `ai-quiz-wizard-view.tsx` | The `Separator` + own-AI link move into the Generate row; button gets `shrink-0`, the text cell `min-w-0` | ~40px to separate a footnote from the thing it footnotes. The `min-w-0`/`shrink-0` pair is the "Rows of buttons" rule — a long quota line was free to squeeze the button's label |
+| `quota-note.tsx` | The model note ("Questions are written by …") removed | `quota.model` is a raw provider slug, and "which model made this quiz" is a question about a *saved quiz*, not about a form you are still filling in |
+| `generation-input.tsx` | Topic field gets `enterKeyHint="go"` and an Enter handler | Enter did nothing and the phone keyboard said "return". Wired to the same guarded action as the button, so Enter can't skip validation. Deliberately **not** on the Source textarea, where Enter means "new line" |
+| `ai-quiz-wizard-view.stories.tsx` | New `FitsTheFold` story: asserts ≥60px below Generate at 1525×730 | The fit is a number that can regress silently. Chromatic covers whether it looks right; this covers whether it is reachable |
+| `.storybook/vitest.setup.ts` | Created | `vitest.workspace.ts` had referenced it since the test addon was added; the `storybook` project could never have run without it |
+| `ai-quiz-wizard-view.tsx`, `advanced-options.tsx`, `own-ai-quiz-view.tsx` | A second round of `short:` steps: heading block margins, `h1` `text-xl`→`text-lg`, card `space-y`/`pt`, the `Details` heading `text-lg`→`text-base` | The shell work left Generate **30px** above the fold against a 60px requirement — measured by `FitsTheFold`, not estimated. The last 30 came from label furniture. The lead question was left at full size deliberately: it is the one required field and its weight is what says so |
+| `own-ai-quiz-view.tsx`, `components/step-marker.tsx` | The three steps are numbered in place, starting at "Describe the quiz" | Not a responsive change, but it landed here: "Copy the prompt" was labelled `1.`, which made the first numbered thing on the page a button you can't usefully press yet. In-place markers rather than `common/Steps.tsx` — all three steps are on screen at once, and a top bar would have cost ~50px on a page with the same fold problem |
+
+Deliberately **not** done, again: hiding fields or collapsing the details form. That is
+now a recorded decision rather than a preference —
+[`adr/0001-ai-generation-options-stay-visible.md`](adr/0001-ai-generation-options-stay-visible.md).
+
 ## Checklist for new pages/components
 
+0. **This list applies to layouts, not just pages.** A shell that ignores it
+   makes every page inside it wrong, and no amount of work inside the page can
+   reach the chrome around it. See "The shells".
 1. Page root: `flex-1` (fills screen, can grow). No `h-screen`, no `100vh`, no
-   `height: 100%`.
+   `height: 100%`. (`flex-1` does nothing under `DashboardLayout`, whose `main`
+   is not a flex container — it is `HomeLayout` that needs it.)
 2. Need to scroll programmatically? `src/lib/app-scroll.ts`.
 3. Fixed-size overlays: `max-w-[85vw]` + dvh height cap + inner scroll.
    `Dialog` already handles its own phone gutter and height cap.
@@ -436,4 +518,9 @@ dialog, a hand-rolled spinner.
 9. A row of two or more fixed-padding buttons? Give it a grid + a stacked
    breakpoint, not `flex` and hope. Check it at 360px *and* at an awkward
    in-between width like 500px — that's where flex shrink deforms rather than
-   wraps.
+   wraps. A text-plus-button row needs `min-w-0` on the text and `shrink-0` on
+   the button for the same reason.
+10. A screen that must fit one viewport? Assert it, don't eyeball it. `FitsTheFold`
+   in `ai-quiz-wizard-view.stories.tsx` is the reference: a story pinned to the
+   target viewport with a play function measuring the primary action's headroom.
+   Height is the one property that regresses without producing an error.

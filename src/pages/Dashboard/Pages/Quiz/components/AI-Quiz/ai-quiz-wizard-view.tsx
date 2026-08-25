@@ -3,7 +3,6 @@ import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Sparkles } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { Spinner } from "@/components/ui";
 import { cn } from "@/utils/cn";
 import type {
@@ -261,9 +260,19 @@ export const AiQuizWizardView = ({
     // `short:` steps throughout this screen: the whole form is meant to be answerable without
     // scrolling, and on a ~800px-tall laptop it wasn't. Spacing and type only — nothing is
     // hidden and no target shrinks below the 36px floor (docs/RESPONSIVE.md, "Short viewports").
-    <div className="mx-auto w-full max-w-3xl py-6 px-4 short:py-3">
-      <header className="mb-6 short:mb-4">
-        <div className="mb-5 sm:mb-6 short:mb-3">
+    //
+    // These were tightened a second time in the Aug 23 pass. The shell gave back 77px (the
+    // header) plus a padding step, which left the Generate button 30px above the fold against
+    // a 60px requirement — so the last 30 came from the chrome around the form: the heading
+    // block, the card's internal rhythm, and the `Details` heading. The lead question
+    // ("What should this quiz be about?") was deliberately left alone: it is the one required
+    // thing on the screen and its weight is what says so.
+    //
+    // `FitsTheFold` in the stories file is what holds this. If you need space here, take it
+    // from spacing and type — ADR 0001 rules out taking it from the fields.
+    <div className="mx-auto w-full max-w-3xl py-6 px-4 short:py-0">
+      <header className="mb-6 short:mb-2">
+        <div className="mb-5 sm:mb-6 short:mb-1.5">
           <button
             onClick={() => navigate(quizzesPath)}
             className="group inline-flex items-center gap-1.5 rounded-lg border border-border bg-card/60 px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-foreground/20 hover:text-foreground"
@@ -272,7 +281,7 @@ export const AiQuizWizardView = ({
             Back
           </button>
         </div>
-        <h1 className="text-2xl font-bold flex items-center gap-2 short:text-xl">
+        <h1 className="text-2xl font-bold flex items-center gap-2 short:text-lg">
           Create a quiz with AI
         </h1>
         {/* The mode is no longer named by a selected tab, so the subtitle carries it. It is
@@ -307,7 +316,7 @@ export const AiQuizWizardView = ({
         // and the button. Nothing on this screen is hidden behind a click any more: the
         // Advanced drawer became the visible `AdvancedOptions` form below.
         <Card className="bg-background border-2 border-primary/30">
-          <CardContent className="space-y-5 pt-6 short:space-y-3.5 short:pt-4">
+          <CardContent className="space-y-5 pt-6 short:space-y-3 short:pt-3">
             <div ref={inputRegion}>
               <GenerationInput
                 mode={mode}
@@ -319,6 +328,8 @@ export const AiQuizWizardView = ({
                 error={
                   showValidation ? (validationMessage ?? undefined) : undefined
                 }
+                // The same wrapper the button uses, so Enter cannot skip validation.
+                onSubmit={runWhenValid(onGenerate)}
               />
             </div>
 
@@ -352,10 +363,54 @@ export const AiQuizWizardView = ({
                 card with no visible primary action and nothing to explain the gap. The link
                 below is the way through, and `title` carries the reason for a pointer user —
                 the error panel above says it in full whenever the cause raised one. */}
-            <div className="flex items-center justify-between gap-4 pt-1">
-              <QuotaNote quota={quota} />
+            {/* Left cell carries every quiet line about *whether* you can generate —
+                the allowance, the model, why the button is dead, and the way around it.
+                They used to be stacked down the card with a `Separator` between; that
+                cost ~40px of a screen whose primary action was already below the fold,
+                to separate a footnote from the thing it footnotes.
+
+                `min-w-0` on the cell and `shrink-0` on the button: flex shrink takes
+                width out of an item's *content* box while its padding stays, so without
+                these a long quota line squeezes the button's label instead of wrapping
+                its own text (docs/RESPONSIVE.md, "Rows of buttons"). */}
+            <div className="flex items-end justify-between gap-4 pt-1">
+              <div className="min-w-0 space-y-1">
+                <QuotaNote quota={quota} />
+
+                {/* One way out, not three. "Create manually instead" left with the mode
+                    tabs — that decision belongs to the method dialog, and repeating it
+                    here is what made this card read as a menu. This one stays because it
+                    isn't the same question: it's this exact job with someone else's
+                    model, and it only becomes interesting once you're already looking at
+                    the form.
+
+                    It also has to stay for a hard reason. When the button beside it is
+                    disabled (kill switch, quota spent, unverified email) there is
+                    otherwise no way forward from this page except Back — so in that state
+                    the link stops being quiet and takes the primary colour, with a line
+                    above it saying why. Moving it into this row changed where it sits,
+                    not that behaviour: see docs/quiz/ai-quiz-two-paths.md §2. */}
+                {generationBlocked && (
+                  <p className="text-muted-foreground text-xs">
+                    Generating in the app isn't available right now.
+                  </p>
+                )}
+                <Link
+                  to={ownAiPath}
+                  className={cn(
+                    "block text-sm",
+                    generationBlocked
+                      ? "text-primary font-medium hover:underline"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  Use your own AI instead (free)
+                </Link>
+              </div>
+
               <WizardButton
                 type="button"
+                className="shrink-0"
                 disabled={isGenerating || generationBlocked}
                 title={
                   generationBlocked
@@ -386,34 +441,6 @@ export const AiQuizWizardView = ({
               </p>
             )}
 
-            <Separator className="bg-primary/20" />
-
-            {/* One way out, not three. "Create manually instead" left with the mode tabs —
-                that decision belongs to the method dialog, and repeating it here is what made
-                this card read as a menu. This one stays because it isn't the same question:
-                it's this exact job with someone else's model, and it only becomes interesting
-                once you're already looking at the form.
-
-                It also has to stay for a hard reason. When the button above is disabled (kill
-                switch, quota spent, unverified email) there is otherwise no way forward from
-                this page except Back — so in that state the link stops being quiet and takes
-                the primary colour, with a line above it saying why. */}
-            {generationBlocked && (
-              <p className="text-muted-foreground text-xs">
-                Generating in the app isn't available right now.
-              </p>
-            )}
-            <Link
-              to={ownAiPath}
-              className={cn(
-                "text-sm",
-                generationBlocked
-                  ? "text-primary font-medium hover:underline"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              Use your own AI instead (free)
-            </Link>
           </CardContent>
         </Card>
       )}
