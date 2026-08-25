@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useUser } from "@/lib/Auth";
 import { useTheme } from "@/components/ui";
-import { applyFont } from "@/lib/fonts";
+import { applyFont, DEFAULT_APP_FONT, DEFAULT_QUIZ_FONT } from "@/lib/fonts";
 import { useSettingsData } from "@/pages/UserRelated/SettingsPage/api/get-settings";
 
 // Drop a real audio file here (public/audio/background-music.mp3).
@@ -31,13 +31,25 @@ export const SettingsApplier = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [settings?.theme]);
 
-  // Apply the saved fonts to their CSS variables (app + quiz zones).
+  // Apply the fonts to their CSS variables (app + quiz zones).
+  //
+  // Unconditional, including when there is no saved preference — that is the whole
+  // point. This used to read `if (settings?.appFont)`, so "no preference" meant "don't
+  // touch the variable" and `DEFAULT_APP_FONT` was never actually applied: it only fed
+  // the Settings <Select>. Which is how it came to say "Baloo 2" while `:root` said
+  // "Noto Sans" without anyone noticing, and how saving that page could silently change
+  // a user's font to one they never picked.
+  //
+  // Applying the constant makes it the single authority for "the default app font", and
+  // demotes `:root` in global.css to what it should be — a first-paint fallback for the
+  // moment before this runs. `src/lib/__tests__/font-defaults.test.ts` asserts the two
+  // still agree, because two declarations of one fact don't stay equal on their own.
   useEffect(() => {
-    if (settings?.appFont) applyFont("app", settings.appFont);
+    applyFont("app", settings?.appFont ?? DEFAULT_APP_FONT);
   }, [settings?.appFont]);
 
   useEffect(() => {
-    if (settings?.quizFont) applyFont("quiz", settings.quizFont);
+    applyFont("quiz", settings?.quizFont ?? DEFAULT_QUIZ_FONT);
   }, [settings?.quizFont]);
 
   // Apply music preference: volume, then play or pause.

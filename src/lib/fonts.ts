@@ -16,7 +16,16 @@ export const FONT_OPTIONS: FontOption[] = [
   { label: "Barriecito", value: "Barriecito" },
 ];
 
-export const DEFAULT_APP_FONT = "Baloo 2";
+// The defaults applied when a user has no saved preference — and therefore what a
+// logged-out visitor sees. These MUST match the `:root` declarations in global.css,
+// which paint the same fonts before this module runs; `__tests__/font-defaults.test.ts`
+// fails the build if they drift.
+//
+// The app font is deliberately a plain, readable face rather than one of the display
+// options below it. Those are a voice the user can choose, not a default we impose on
+// someone who hasn't chosen anything — a display face costs real vertical space in the
+// dashboard's forms (docs/adr/0002-quiz-creation-routes-hide-the-dashboard-header.md).
+export const DEFAULT_APP_FONT = "Noto Sans";
 export const DEFAULT_QUIZ_FONT = "DynaPuff";
 
 // Coalesce an unknown/empty stored value (e.g. an old row backfilled with "")
