@@ -104,6 +104,9 @@ builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
 builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
 builder.Services.AddScoped<IQuestionRepository, QuestionRepository>();
 builder.Services.AddScoped<IQuizRepository, QuizRepository>();
+builder.Services.AddScoped<IQuestionCategoryRepository, QuestionCategoryRepository>();
+builder.Services.AddScoped<IQuestionDifficultyRepository, QuestionDifficultyRepository>();
+builder.Services.AddScoped<IQuestionLanguageRepository, QuestionLanguageRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
 
 // Exception Handling services

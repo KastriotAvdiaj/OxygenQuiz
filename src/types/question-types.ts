@@ -11,14 +11,16 @@ export type DifficultyDTO = {
   id: number;
   level: string;
   weight: number;
-  username: string;
+  /** Admin-only — see the note on `QuestionCategory.username`. */
+  username?: string;
   createdAt:string;
 };
 
 export type LanguageDTO = {
   id: number;
   language: string;
-  username: string;
+  /** Admin-only — see the note on `QuestionCategory.username`. */
+  username?: string;
   createdAt:string;
 };
 
@@ -43,16 +45,26 @@ export type QuestionMediaType = "None" | "Image" | "Audio" | "Video";
 export type QuestionCategory = {
   id: number;
   createdAt: string;
-  colorPaletteJson :string;
+  colorPaletteJson: string;
   gradient: boolean;
-  username: string;
   name: string;
+  /**
+   * Who created the row. **Only present on the admin search response**
+   * (`GET /api/questioncategories/search`, role-gated) — the public list, the single-category
+   * read and the categories embedded in question and quiz payloads all omit it, because who
+   * created a lookup row is admin metadata and those responses are readable anonymously.
+   *
+   * Optional for that reason: if you are rendering this outside the dashboard's category
+   * table, it is undefined and that is correct, not a bug to work around.
+   */
+  username?: string;
 };
 
 export type QuestionDifficulty = {
   id: number;
   level: string;
-  username: string;
+  /** Admin-only — see the note on `QuestionCategory.username`. */
+  username?: string;
   weight: number;
   createdAt: string;
 };
@@ -60,7 +72,8 @@ export type QuestionDifficulty = {
 export type QuestionLanguage = {
   id: number;
   language: string;
-  username: string;
+  /** Admin-only — see the note on `QuestionCategory.username`. */
+  username?: string;
   createdAt: string;
 };
 

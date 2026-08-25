@@ -1,159 +1,143 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using QuizAPI.Data;
 using QuizAPI.DTOs.Question;
+using QuizAPI.Exceptions;
 using QuizAPI.Filtering;
 using QuizAPI.Mapping;
-using QuizAPI.Models;
+using QuizAPI.Repositories.Interfaces;
 using QuizAPI.Services.CurrentUserService;
 
 namespace QuizAPI.Controllers.Questions
 {
+    /// <summary>
+    /// CRUD for question categories.
+    ///
+    /// <para><b>No service layer, deliberately.</b> Every action here is one HTTP shape plus one
+    /// data access, with no rule in between that could change independently of either — so a
+    /// service would be a class whose methods forward a single call and return. The rule that
+    /// matters is that nothing outside a repository touches <c>DbContext</c>, and a controller
+    /// calling a repository satisfies it. A service arrives when a real rule does; the AI
+    /// palette proposer is the first one queued (docs/entities/category-palettes.md).</para>
+    ///
+    /// <para><b>Reads are anonymous on purpose.</b> Guests browse and play quizzes, and that
+    /// needs category names — gating these would break guest play (docs/auth/guest-play.md).
+    /// What changed is what they return: <see cref="QuestionCategoryDTO"/> no longer carries
+    /// the creator's username. <c>GET /search</c> does, and is therefore role-gated.</para>
+    /// </summary>
     [Route("api/[controller]")]
     [ApiController]
     public class QuestionCategoriesController : ControllerBase
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IQuestionCategoryRepository _categories;
         private readonly ICurrentUserService _currentUserService;
 
-        public QuestionCategoriesController(ApplicationDbContext context, ICurrentUserService currentUserService)
+        public QuestionCategoriesController(
+            IQuestionCategoryRepository categories, ICurrentUserService currentUserService)
         {
-            _context = context;
+            _categories = categories;
             _currentUserService = currentUserService;
         }
 
-        // GET: api/QuestionCategories
+        /// <summary>
+        /// Every category. Anonymous — this feeds the quiz filters, the create-quiz form and the
+        /// vocabulary sent to the AI generator.
+        /// </summary>
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<QuestionCategoryDTO>>> GetQuestionCategories()
-        {
-            var questionCategories = await _context.QuestionCategories
-                .Select(qc => new QuestionCategoryDTO
-                {
-                    Id = qc.Id,
-                    Name = qc.Name,
-                    Username = qc.User.Username, 
-                    ColorPaletteJson = qc.ColorPaletteJson,
-                    CreatedAt = qc.CreatedAt
-                })
-                .ToListAsync();
+        public async Task<ActionResult<IEnumerable<QuestionCategoryDTO>>> GetQuestionCategories(
+            CancellationToken ct) => Ok(await _categories.GetAllAsync(ct));
 
-            return Ok(questionCategories);
-        }
-
-        // Filtered + paginated categories (shared filtering framework — see docs/quiz/filtering.md).
-        // Example: GET /api/questioncategories/search?search=geo&sort=name:asc
+        /// <summary>
+        /// Filtered + paginated, for the admin dashboard's table
+        /// (shared filtering framework — see docs/quiz/filtering.md).
+        /// Example: <c>GET /api/questioncategories/search?search=geo&amp;sort=name:asc</c>
+        ///
+        /// <para><b>Role-gated</b>, unlike the other reads, because this is the one projection
+        /// that includes who created each row. It is called from exactly one place — the
+        /// dashboard's category table.</para>
+        /// </summary>
         [HttpGet("search")]
+        [Authorize(Roles = "SuperAdmin, Admin")]
         public async Task<IActionResult> Search([FromQuery] FilterQuery query, CancellationToken ct)
-        {
-            var source = FilterEngine.Apply(
-                _context.QuestionCategories.AsNoTracking(), query, CategoryFilterFields.Fields);
+            => Ok(await _categories.SearchAsync(query, ct));
 
-            var projected = source.Select(qc => new QuestionCategoryDTO
-            {
-                Id = qc.Id,
-                Name = qc.Name,
-                Username = qc.User.Username,
-                ColorPaletteJson = qc.ColorPaletteJson,
-                CreatedAt = qc.CreatedAt,
-                Gradient = qc.Gradient,
-            });
-
-            var result = await PagedResponse<QuestionCategoryDTO>.CreateAsync(
-                projected, query.Page, query.PageSize, ct);
-            return Ok(result);
-        }
-
-        // GET: api/QuestionCategories/5
-        // Returns a single universal category. No ownership check is needed.
+        /// <summary>
+        /// One category. Categories are universal, so there is no ownership check.
+        ///
+        /// <para>Returns a DTO. It used to return the raw entity, which serialised
+        /// <c>UserId</c> and whatever navigation properties EF had loaded — the same leak the
+        /// username split closes, by a different route.</para>
+        /// </summary>
         [HttpGet("{id}")]
-        public async Task<ActionResult<QuestionCategory>> GetQuestionCategory(int id)
+        public async Task<ActionResult<QuestionCategoryDTO>> GetQuestionCategory(
+            int id, CancellationToken ct)
         {
-            var questionCategory = await _context.QuestionCategories.FindAsync(id);
+            var category = await _categories.GetByIdAsync(id, ct);
 
-            if (questionCategory == null)
-            {
-                return NotFound();
-            }
+            if (category is null) throw new NotFoundException("Category not found.");
 
-            return questionCategory;
+            return Ok(category);
         }
 
-        // PUT: api/QuestionCategories/5
-        // Updates a universal category. Only an admin should be able to do this.
+        /// <summary>Update a universal category. Admins only.</summary>
         [HttpPut("{id}")]
         [Authorize(Roles = "SuperAdmin, Admin")]
-        public async Task<IActionResult> PutQuestionCategory(int id, QuestionCategoryCM questionCategory)
+        public async Task<IActionResult> PutQuestionCategory(
+            int id, QuestionCategoryCM questionCategory, CancellationToken ct)
         {
-            if (!_currentUserService.IsAdmin)
-            {
-                return Forbid(); 
-            }
+            var category = await _categories.GetTrackedByIdAsync(id, ct);
 
-            var category = await _context.QuestionCategories.FindAsync(id);
+            if (category is null) throw new NotFoundException("Category not found.");
 
-            if (category == null)
-            {
-                return NotFound(new { message = "Category not found." });
-            }
+            if (await _categories.NameExistsAsync(questionCategory.Name, excludeId: id, ct))
+                throw new ConflictException($"A category called \"{questionCategory.Name.Trim()}\" already exists.");
 
             questionCategory.ApplyTo(category);
-            await _context.SaveChangesAsync();
+            await _categories.SaveChangesAsync(ct);
+
             return NoContent();
         }
 
-        // POST: api/QuestionCategories
+        /// <summary>Create a universal category. Admins only.</summary>
         [HttpPost]
         [Authorize(Roles = "SuperAdmin, Admin")]
-
-        public async Task<ActionResult<QuestionCategoryDTO>> PostQuestionCategory(QuestionCategoryCM questionCategory)
+        public async Task<ActionResult<QuestionCategoryDTO>> PostQuestionCategory(
+            QuestionCategoryCM questionCategory, CancellationToken ct)
         {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
+            // [ApiController] already short-circuits an invalid model into a 400 ProblemDetails
+            // before the action runs, so an explicit ModelState check here is unreachable.
 
-            var userId = _currentUserService.UserId;
+            var userId = _currentUserService.UserId
+                // Still worth guarding: the token can be valid and missing the claim, which is a
+                // different failure from "not signed in" and used to return a bare 401 body.
+                ?? throw new UnauthorizedException("User ID not found in token.");
 
-            if (userId == null)
-            {
-                // This safeguard is still useful in case the token is valid but missing the claim.
-                return Unauthorized(new { message = "User ID not found in token." });
-            }
+            if (await _categories.NameExistsAsync(questionCategory.Name, excludeId: null, ct))
+                throw new ConflictException($"A category called \"{questionCategory.Name.Trim()}\" already exists.");
 
             var category = questionCategory.ToEntity();
-            category.UserId = userId.Value;
+            category.UserId = userId;
             category.CreatedAt = DateTime.UtcNow;
 
-            _context.QuestionCategories.Add(category);
-            await _context.SaveChangesAsync();
+            await _categories.AddAsync(category, ct);
+            await _categories.SaveChangesAsync(ct);
 
-            var dto = category.ToDto();
-            return CreatedAtAction(nameof(GetQuestionCategory), new { id = category.Id }, dto);
+            return CreatedAtAction(
+                nameof(GetQuestionCategory), new { id = category.Id }, category.ToDto());
         }
 
-        // DELETE: api/QuestionCategories/5
+        /// <summary>Delete a category. SuperAdmin only.</summary>
         [HttpDelete("{id}")]
         [Authorize(Roles = "SuperAdmin")]
-        public async Task<IActionResult> DeleteQuestionCategory(int id)
+        public async Task<IActionResult> DeleteQuestionCategory(int id, CancellationToken ct)
         {
-            // REFACTOR: 7. Use the service for a consistent authorization check.
-            if (!_currentUserService.IsAdmin)
-            {
-                return Forbid();
-            }
+            var category = await _categories.GetTrackedByIdAsync(id, ct);
 
-            var questionCategory = await _context.QuestionCategories.FindAsync(id);
-            if (questionCategory == null)
-            {
-                return NotFound();
-            }
+            if (category is null) throw new NotFoundException("Category not found.");
 
-            _context.QuestionCategories.Remove(questionCategory);
-            await _context.SaveChangesAsync();
+            _categories.Remove(category);
+            await _categories.SaveChangesAsync(ct);
 
             return NoContent();
         }
-
     }
 }

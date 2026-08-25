@@ -3,11 +3,13 @@ import { DataTable, Spinner } from "@/components/ui";
 import { Card } from "@/components/ui";
 import CreateQuestionDifficultyForm from "./create-question-difficulty";
 import { difficultyColumns } from "./columns";
-import { useQuestionDifficultyData } from "../api/get-question-difficulties";
+import { useQuestionDifficultyAdminData } from "../api/get-question-difficulties-admin";
 import { DataTransferControls } from "@/components/data-transfer/DataTransferControls";
 
 export const DifficultyView = () => {
-  const questionDifficultiesQuery = useQuestionDifficultyData({});
+  // The admin list: this table has a Created-by column, which the public list no longer
+  // carries. See get-question-difficulties-admin.ts.
+  const questionDifficultiesQuery = useQuestionDifficultyAdminData({});
 
   if (questionDifficultiesQuery.isLoading) return <Spinner size="lg" />;
   if (questionDifficultiesQuery.isError)

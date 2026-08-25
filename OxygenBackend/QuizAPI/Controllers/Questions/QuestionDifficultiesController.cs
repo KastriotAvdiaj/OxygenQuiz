@@ -1,148 +1,130 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using QuizAPI.Data;
 using QuizAPI.DTOs.Question;
+using QuizAPI.Exceptions;
+using QuizAPI.Mapping;
 using QuizAPI.Models;
+using QuizAPI.Repositories.Interfaces;
 using QuizAPI.Services.CurrentUserService;
-
 
 namespace QuizAPI.Controllers.Questions
 {
+    /// <summary>
+    /// CRUD for question difficulties. Same shape as
+    /// <see cref="QuestionCategoriesController"/> — read that one first; the reasoning for the
+    /// missing service layer and the public/admin read split lives there.
+    /// </summary>
     [Route("api/[controller]")]
     [ApiController]
     public class QuestionDifficultiesController : ControllerBase
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IQuestionDifficultyRepository _difficulties;
         private readonly ICurrentUserService _currentUserService;
 
-        public QuestionDifficultiesController(ApplicationDbContext context, ICurrentUserService currentUserService)
+        public QuestionDifficultiesController(
+            IQuestionDifficultyRepository difficulties, ICurrentUserService currentUserService)
         {
-            _context = context;
+            _difficulties = difficulties;
             _currentUserService = currentUserService;
         }
 
-        // GET: api/QuestionDifficulties
+        /// <summary>Every difficulty. Anonymous — guests need these to browse and play.</summary>
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<QuestionDifficultyDTO>>> GetQuestionDifficulties()
-        {
-            var questionDifficulties = await _context.QuestionDifficulties
-                .Select(qd => new QuestionDifficultyDTO
-                {
-                    ID = qd.ID,
-                    Level = qd.Level,
-                    Weight = qd.Weight,
-                    CreatedAt = qd.CreatedAt,
-                    Username = qd.User.Username
-                })
-                .ToListAsync();
-            return Ok(questionDifficulties);
-        }
+        public async Task<ActionResult<IEnumerable<QuestionDifficultyDTO>>> GetQuestionDifficulties(
+            CancellationToken ct) => Ok(await _difficulties.GetAllAsync(ct));
 
-        // GET: api/QuestionDifficulties/5
+        /// <summary>
+        /// The same list plus who created each row, for the dashboard's difficulties table.
+        ///
+        /// <para>A separate endpoint rather than a field on the public list: the creator is admin
+        /// metadata, and the public list is embedded in anonymous responses. Unlike categories
+        /// there is no filter/paging framework wired up here yet, so this is a plain list rather
+        /// than a <c>/search</c>.</para>
+        /// </summary>
+        [HttpGet("admin")]
+        [Authorize(Roles = "SuperAdmin, Admin")]
+        public async Task<ActionResult<IEnumerable<QuestionDifficultyAdminDTO>>> GetForAdmin(
+            CancellationToken ct) => Ok(await _difficulties.GetAllForAdminAsync(ct));
+
         [HttpGet("{id}")]
-        public async Task<ActionResult<QuestionDifficulty>> GetQuestionDifficulty(int id)
+        public async Task<ActionResult<QuestionDifficultyDTO>> GetQuestionDifficulty(
+            int id, CancellationToken ct)
         {
-            var questionDifficulty = await _context.QuestionDifficulties.FindAsync(id);
+            var difficulty = await _difficulties.GetByIdAsync(id, ct);
 
-            if (questionDifficulty == null)
-            {
-                return NotFound();
-            }
+            if (difficulty is null) throw new NotFoundException("Difficulty not found.");
 
-            return questionDifficulty;
+            return Ok(difficulty);
         }
 
-        // PUT: api/QuestionDifficulties/5
+        /// <summary>
+        /// Update a difficulty. Admins only.
+        ///
+        /// <para><b>Takes a <see cref="QuestionDifficultyCM"/>, not the entity.</b> This action
+        /// used to accept a <c>QuestionDifficulty</c> and mark it <c>EntityState.Modified</c>,
+        /// which let a caller set <c>UserId</c> and <c>CreatedAt</c> — every column on the row
+        /// was writable from the request body. The create model exposes exactly the two fields
+        /// that are meant to be editable.</para>
+        /// </summary>
         [HttpPut("{id}")]
         [Authorize(Roles = "SuperAdmin, Admin")]
-        public async Task<IActionResult> PutQuestionDifficulty(int id, QuestionDifficulty questionDifficulty)
+        public async Task<IActionResult> PutQuestionDifficulty(
+            int id, QuestionDifficultyCM model, CancellationToken ct)
         {
-            if (!_currentUserService.IsAdmin)
-            {
-                return Forbid();
-            }
+            var difficulty = await _difficulties.GetTrackedByIdAsync(id, ct);
 
-            if (id != questionDifficulty.ID)
-            {
-                return BadRequest();
-            }
+            if (difficulty is null) throw new NotFoundException("Difficulty not found.");
 
-            _context.Entry(questionDifficulty).State = EntityState.Modified;
+            if (await _difficulties.LevelExistsAsync(model.Level, excludeId: id, ct))
+                throw new ConflictException($"A difficulty called \"{model.Level.Trim()}\" already exists.");
 
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!QuestionDifficultyExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
+            difficulty.Level = model.Level;
+            difficulty.Weight = model.Weight;
+
+            await _difficulties.SaveChangesAsync(ct);
 
             return NoContent();
         }
 
-        // POST: api/QuestionDifficulties
+        /// <summary>Create a difficulty. Admins only. Returns the DTO, not the entity.</summary>
         [HttpPost]
         [Authorize(Roles = "SuperAdmin, Admin")]
-        public async Task<ActionResult<QuestionDifficulty>> PostQuestionDifficulty(QuestionDifficultyCM questionDifficulty)
+        public async Task<ActionResult<QuestionDifficultyDTO>> PostQuestionDifficulty(
+            QuestionDifficultyCM model, CancellationToken ct)
         {
-            var userId = _currentUserService.UserId;
+            var userId = _currentUserService.UserId
+                ?? throw new UnauthorizedException("User ID not found in token.");
 
-            if (userId == null)
-            {
-                return Unauthorized(new { message = "User ID not found in token." });
-            }
+            if (await _difficulties.LevelExistsAsync(model.Level, excludeId: null, ct))
+                throw new ConflictException($"A difficulty called \"{model.Level.Trim()}\" already exists.");
 
-            var qDifficulty = new QuestionDifficulty
+            var difficulty = new QuestionDifficulty
             {
-                Level = questionDifficulty.Level,
-                Weight = questionDifficulty.Weight,
+                Level = model.Level,
+                Weight = model.Weight,
                 CreatedAt = DateTime.UtcNow,
-                UserId = userId.Value // Use .Value because the service returns a nullable Guid
+                UserId = userId,
             };
 
-            _context.QuestionDifficulties.Add(qDifficulty);
-            await _context.SaveChangesAsync();
+            await _difficulties.AddAsync(difficulty, ct);
+            await _difficulties.SaveChangesAsync(ct);
 
-            // Return a DTO or use CreatedAtAction for better REST compliance
-            return Ok(qDifficulty);
+            return CreatedAtAction(
+                nameof(GetQuestionDifficulty), new { id = difficulty.ID }, difficulty.ToDto());
         }
 
-        // DELETE: api/QuestionDifficulties/5
         [HttpDelete("{id}")]
         [Authorize(Roles = "SuperAdmin")]
-
-        public async Task<IActionResult> DeleteQuestionDifficulty(int id)
+        public async Task<IActionResult> DeleteQuestionDifficulty(int id, CancellationToken ct)
         {
-            if (!_currentUserService.IsAdmin)
-            {
-                return Forbid();
-            }
+            var difficulty = await _difficulties.GetTrackedByIdAsync(id, ct);
 
-            var questionDifficulty = await _context.QuestionDifficulties.FindAsync(id);
-            if (questionDifficulty == null)
-            {
-                return NotFound();
-            }
+            if (difficulty is null) throw new NotFoundException("Difficulty not found.");
 
-            _context.QuestionDifficulties.Remove(questionDifficulty);
-            await _context.SaveChangesAsync();
+            _difficulties.Remove(difficulty);
+            await _difficulties.SaveChangesAsync(ct);
 
             return NoContent();
-        }
-
-        private bool QuestionDifficultyExists(int id)
-        {
-            return (_context.QuestionDifficulties?.Any(e => e.ID == id)).GetValueOrDefault();
         }
     }
 }

@@ -1,151 +1,131 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using QuizAPI.Data;
 using QuizAPI.DTOs.Question;
+using QuizAPI.Exceptions;
+using QuizAPI.Mapping;
 using QuizAPI.Models;
+using QuizAPI.Repositories.Interfaces;
 using QuizAPI.Services.CurrentUserService;
-using System.Security.Claims;
 
 namespace QuizAPI.Controllers.Questions
 {
+    /// <summary>
+    /// CRUD for question languages. Same shape as <see cref="QuestionCategoriesController"/>.
+    ///
+    /// <para><b>Create is now admin-gated.</b> It previously carried no <c>[Authorize]</c>
+    /// attribute at all, and the class carries none either — so the only thing standing between
+    /// an ordinary signed-in user and a new row in this lookup table was the null check on
+    /// <c>UserId</c>. Categories and difficulties have always required an admin to create;
+    /// languages did not, and nothing about languages makes them safer to seed. A lookup table
+    /// any authenticated user can append to is one the AI generator will happily be handed as
+    /// vocabulary.</para>
+    /// </summary>
     [Route("api/[controller]")]
     [ApiController]
     public class QuestionLanguagesController : ControllerBase
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IQuestionLanguageRepository _languages;
         private readonly ICurrentUserService _currentUserService;
 
-
-        public QuestionLanguagesController(ApplicationDbContext context, ICurrentUserService userService)
+        public QuestionLanguagesController(
+            IQuestionLanguageRepository languages, ICurrentUserService currentUserService)
         {
-            _currentUserService = userService;
-            _context = context;
+            _languages = languages;
+            _currentUserService = currentUserService;
         }
 
-        // GET: api/QuestionLanguages
+        /// <summary>Every language. Anonymous — guests need these to browse and play.</summary>
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<QuestionLanguage>>> GetQuestionLanguages()
-        {
-          if (_context.QuestionLanguages == null)
-          {
-              return NotFound();
-          }
+        public async Task<ActionResult<IEnumerable<QuestionLanguageDTO>>> GetQuestionLanguages(
+            CancellationToken ct) => Ok(await _languages.GetAllAsync(ct));
 
-            var qLanguages = await _context.QuestionLanguages.Select(ql => new QuestionLanguageDTO
-            {
-                ID = ql.Id,
-                Language = ql.Language,
-                CreatedAt = ql.CreatedAt,
-                Username = ql.User.Username
-            }).ToListAsync();
+        /// <summary>The same list plus who created each row, for the dashboard's table.</summary>
+        [HttpGet("admin")]
+        [Authorize(Roles = "SuperAdmin, Admin")]
+        public async Task<ActionResult<IEnumerable<QuestionLanguageAdminDTO>>> GetForAdmin(
+            CancellationToken ct) => Ok(await _languages.GetAllForAdminAsync(ct));
 
-            return Ok(qLanguages);
-        }
-
-        // GET: api/QuestionLanguages/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<QuestionLanguage>> GetQuestionLanguage(int id)
+        public async Task<ActionResult<QuestionLanguageDTO>> GetQuestionLanguage(
+            int id, CancellationToken ct)
         {
-          if (_context.QuestionLanguages == null)
-          {
-              return NotFound();
-          }
-            var questionLanguage = await _context.QuestionLanguages.FindAsync(id);
+            var language = await _languages.GetByIdAsync(id, ct);
 
-            if (questionLanguage == null)
-            {
-                return NotFound();
-            }
+            if (language is null) throw new NotFoundException("Language not found.");
 
-            return questionLanguage;
+            return Ok(language);
         }
 
-        // PUT: api/QuestionLanguages/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [Authorize(Roles = "SuperAdmin")]
+        /// <summary>
+        /// Update a language. SuperAdmin only.
+        ///
+        /// <para>Takes a <see cref="QuestionLanguageCM"/> rather than the entity — see the note
+        /// on <see cref="QuestionDifficultiesController.PutQuestionDifficulty"/>; this action had
+        /// the same over-posting hole, and the scaffolded link to Microsoft's warning about it
+        /// was sitting directly above the code that ignored it.</para>
+        /// </summary>
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutQuestionLanguage(int id, QuestionLanguage questionLanguage)
+        [Authorize(Roles = "SuperAdmin")]
+        public async Task<IActionResult> PutQuestionLanguage(
+            int id, QuestionLanguageCM model, CancellationToken ct)
         {
-            if (id != questionLanguage.Id)
-            {
-                return BadRequest();
-            }
+            var language = await _languages.GetTrackedByIdAsync(id, ct);
 
-            _context.Entry(questionLanguage).State = EntityState.Modified;
+            if (language is null) throw new NotFoundException("Language not found.");
 
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!QuestionLanguageExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
+            if (await _languages.LanguageExistsAsync(model.Language, excludeId: id, ct))
+                throw new ConflictException($"A language called \"{model.Language.Trim()}\" already exists.");
+
+            language.Language = model.Language;
+
+            await _languages.SaveChangesAsync(ct);
 
             return NoContent();
         }
 
+        /// <summary>
+        /// Create a language. Admins only — see the class note.
+        ///
+        /// <para>Returns the created DTO. It used to return the request model, so the caller
+        /// never learned the new row's id.</para>
+        /// </summary>
         [HttpPost]
-        public async Task<ActionResult<QuestionLanguage>> PostQuestionLanguage(QuestionLanguageCM questionLanguage)
+        [Authorize(Roles = "SuperAdmin, Admin")]
+        public async Task<ActionResult<QuestionLanguageDTO>> PostQuestionLanguage(
+            QuestionLanguageCM model, CancellationToken ct)
         {
-          if (_context.QuestionLanguages == null)
-          {
-              return Problem("Entity set 'ApplicationDbContext.QuestionLanguages'  is null.");
-          }
+            var userId = _currentUserService.UserId
+                ?? throw new UnauthorizedException("User ID not found in token.");
 
-            var userId = _currentUserService.UserId;
+            if (await _languages.LanguageExistsAsync(model.Language, excludeId: null, ct))
+                throw new ConflictException($"A language called \"{model.Language.Trim()}\" already exists.");
 
-            if (userId == null)
+            var language = new QuestionLanguage
             {
-                return Unauthorized(new { message = "User ID not found in token." });
-            }
-
-            var qLanguage = new QuestionLanguage
-            {
-                Language = questionLanguage.Language,
-                UserId = userId.Value,
-                CreatedAt = DateTime.UtcNow
+                Language = model.Language,
+                UserId = userId,
+                CreatedAt = DateTime.UtcNow,
             };
 
-            _context.QuestionLanguages.Add(qLanguage);
-            await _context.SaveChangesAsync();
+            await _languages.AddAsync(language, ct);
+            await _languages.SaveChangesAsync(ct);
 
-            return Ok(questionLanguage);
+            return CreatedAtAction(
+                nameof(GetQuestionLanguage), new { id = language.Id }, language.ToDto());
         }
 
-        // DELETE: api/QuestionLanguages/5
-        [Authorize(Roles = "SuperAdmin")]
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteQuestionLanguage(int id)
+        [Authorize(Roles = "SuperAdmin")]
+        public async Task<IActionResult> DeleteQuestionLanguage(int id, CancellationToken ct)
         {
-            if (_context.QuestionLanguages == null)
-            {
-                return NotFound();
-            }
-            var questionLanguage = await _context.QuestionLanguages.FindAsync(id);
-            if (questionLanguage == null)
-            {
-                return NotFound();
-            }
+            var language = await _languages.GetTrackedByIdAsync(id, ct);
 
-            _context.QuestionLanguages.Remove(questionLanguage);
-            await _context.SaveChangesAsync();
+            if (language is null) throw new NotFoundException("Language not found.");
+
+            _languages.Remove(language);
+            await _languages.SaveChangesAsync(ct);
 
             return NoContent();
-        }
-
-        private bool QuestionLanguageExists(int id)
-        {
-            return (_context.QuestionLanguages?.Any(e => e.Id == id)).GetValueOrDefault();
         }
     }
 }

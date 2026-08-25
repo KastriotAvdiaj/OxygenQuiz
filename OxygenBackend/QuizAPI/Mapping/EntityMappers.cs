@@ -27,6 +27,21 @@ namespace QuizAPI.Mapping
             {
                 Id = c.Id,
                 Name = c.Name,
+                ColorPaletteJson = c.ColorPaletteJson,
+                CreatedAt = c.CreatedAt,
+                Gradient = c.Gradient
+            };
+
+        /// <summary>
+        /// The admin projection: the public shape plus the creator's username. Kept beside
+        /// <c>ProjectCategory</c> so the difference between "what everyone sees" and "what an
+        /// admin sees" is one visible line rather than a field somebody has to remember to omit.
+        /// </summary>
+        public static readonly Expression<Func<QuestionCategory, QuestionCategoryAdminDTO>> ProjectCategoryAdmin =
+            c => new QuestionCategoryAdminDTO
+            {
+                Id = c.Id,
+                Name = c.Name,
                 Username = c.User == null ? null : c.User.Username,
                 ColorPaletteJson = c.ColorPaletteJson,
                 CreatedAt = c.CreatedAt,
@@ -38,12 +53,31 @@ namespace QuizAPI.Mapping
             {
                 ID = l.Id,
                 Language = l.Language,
-                Username = l.User == null ? null : l.User.Username,
                 CreatedAt = l.CreatedAt
             };
 
         public static readonly Expression<Func<QuestionDifficulty, QuestionDifficultyDTO>> ProjectDifficulty =
             d => new QuestionDifficultyDTO
+            {
+                ID = d.ID,
+                Level = d.Level,
+                Weight = d.Weight,
+                CreatedAt = d.CreatedAt
+            };
+
+        /// <summary>Admin projections — the public shape plus the creator. Role-gated reads only.</summary>
+        public static readonly Expression<Func<QuestionLanguage, QuestionLanguageAdminDTO>> ProjectLanguageAdmin =
+            l => new QuestionLanguageAdminDTO
+            {
+                ID = l.Id,
+                Language = l.Language,
+                Username = l.User == null ? null : l.User.Username,
+                CreatedAt = l.CreatedAt
+            };
+
+        /// <inheritdoc cref="ProjectLanguageAdmin"/>
+        public static readonly Expression<Func<QuestionDifficulty, QuestionDifficultyAdminDTO>> ProjectDifficultyAdmin =
+            d => new QuestionDifficultyAdminDTO
             {
                 ID = d.ID,
                 Level = d.Level,
@@ -104,14 +138,12 @@ namespace QuizAPI.Mapping
                     ID = q.Difficulty.ID,
                     Level = q.Difficulty.Level,
                     Weight = q.Difficulty.Weight,
-                    Username = q.Difficulty.User == null ? null : q.Difficulty.User.Username,
                     CreatedAt = q.Difficulty.CreatedAt
                 },
                 Category = q.Category == null ? null : new QuestionCategoryDTO
                 {
                     Id = q.Category.Id,
                     Name = q.Category.Name,
-                    Username = q.Category.User == null ? null : q.Category.User.Username,
                     ColorPaletteJson = q.Category.ColorPaletteJson,
                     CreatedAt = q.Category.CreatedAt,
                     Gradient = q.Category.Gradient
@@ -120,7 +152,6 @@ namespace QuizAPI.Mapping
                 {
                     ID = q.Language.Id,
                     Language = q.Language.Language,
-                    Username = q.Language.User == null ? null : q.Language.User.Username,
                     CreatedAt = q.Language.CreatedAt
                 },
                 User = q.User == null ? null : new UserBasicDTO
@@ -151,14 +182,12 @@ namespace QuizAPI.Mapping
                     ID = q.Difficulty.ID,
                     Level = q.Difficulty.Level,
                     Weight = q.Difficulty.Weight,
-                    Username = q.Difficulty.User == null ? null : q.Difficulty.User.Username,
                     CreatedAt = q.Difficulty.CreatedAt
                 },
                 Category = q.Category == null ? null : new QuestionCategoryDTO
                 {
                     Id = q.Category.Id,
                     Name = q.Category.Name,
-                    Username = q.Category.User == null ? null : q.Category.User.Username,
                     ColorPaletteJson = q.Category.ColorPaletteJson,
                     CreatedAt = q.Category.CreatedAt,
                     Gradient = q.Category.Gradient
@@ -167,7 +196,6 @@ namespace QuizAPI.Mapping
                 {
                     ID = q.Language.Id,
                     Language = q.Language.Language,
-                    Username = q.Language.User == null ? null : q.Language.User.Username,
                     CreatedAt = q.Language.CreatedAt
                 },
                 User = q.User == null ? null : new UserBasicDTO
@@ -202,14 +230,12 @@ namespace QuizAPI.Mapping
                     ID = q.Difficulty.ID,
                     Level = q.Difficulty.Level,
                     Weight = q.Difficulty.Weight,
-                    Username = q.Difficulty.User == null ? null : q.Difficulty.User.Username,
                     CreatedAt = q.Difficulty.CreatedAt
                 },
                 Category = q.Category == null ? null : new QuestionCategoryDTO
                 {
                     Id = q.Category.Id,
                     Name = q.Category.Name,
-                    Username = q.Category.User == null ? null : q.Category.User.Username,
                     ColorPaletteJson = q.Category.ColorPaletteJson,
                     CreatedAt = q.Category.CreatedAt,
                     Gradient = q.Category.Gradient
@@ -218,7 +244,6 @@ namespace QuizAPI.Mapping
                 {
                     ID = q.Language.Id,
                     Language = q.Language.Language,
-                    Username = q.Language.User == null ? null : q.Language.User.Username,
                     CreatedAt = q.Language.CreatedAt
                 },
                 User = q.User == null ? null : new UserBasicDTO
@@ -250,14 +275,12 @@ namespace QuizAPI.Mapping
                     ID = q.Difficulty.ID,
                     Level = q.Difficulty.Level,
                     Weight = q.Difficulty.Weight,
-                    Username = q.Difficulty.User == null ? null : q.Difficulty.User.Username,
                     CreatedAt = q.Difficulty.CreatedAt
                 },
                 Category = q.Category == null ? null : new QuestionCategoryDTO
                 {
                     Id = q.Category.Id,
                     Name = q.Category.Name,
-                    Username = q.Category.User == null ? null : q.Category.User.Username,
                     ColorPaletteJson = q.Category.ColorPaletteJson,
                     CreatedAt = q.Category.CreatedAt,
                     Gradient = q.Category.Gradient
@@ -266,7 +289,6 @@ namespace QuizAPI.Mapping
                 {
                     ID = q.Language.Id,
                     Language = q.Language.Language,
-                    Username = q.Language.User == null ? null : q.Language.User.Username,
                     CreatedAt = q.Language.CreatedAt
                 },
                 User = q.User == null ? null : new UserBasicDTO
@@ -437,7 +459,6 @@ namespace QuizAPI.Mapping
                 {
                     Id = q.Category.Id,
                     Name = q.Category.Name,
-                    Username = q.Category.User == null ? null : q.Category.User.Username,
                     ColorPaletteJson = q.Category.ColorPaletteJson,
                     CreatedAt = q.Category.CreatedAt,
                     Gradient = q.Category.Gradient
@@ -446,7 +467,6 @@ namespace QuizAPI.Mapping
                 {
                     ID = q.Language.Id,
                     Language = q.Language.Language,
-                    Username = q.Language.User == null ? null : q.Language.User.Username,
                     CreatedAt = q.Language.CreatedAt
                 },
                 Difficulty = q.Difficulty == null ? new QuestionDifficultyDTO() : new QuestionDifficultyDTO
@@ -454,7 +474,6 @@ namespace QuizAPI.Mapping
                     ID = q.Difficulty.ID,
                     Level = q.Difficulty.Level,
                     Weight = q.Difficulty.Weight,
-                    Username = q.Difficulty.User == null ? null : q.Difficulty.User.Username,
                     CreatedAt = q.Difficulty.CreatedAt
                 }
             };

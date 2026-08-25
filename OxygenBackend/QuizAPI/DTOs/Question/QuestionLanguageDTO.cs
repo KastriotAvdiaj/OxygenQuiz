@@ -6,8 +6,16 @@
 
         public string Language { get; set; }
 
-        public string Username { get; set; }
         public DateTime CreatedAt { get; set; }
+    }
+
+    /// <summary>
+    /// The language as the admin dashboard sees it. Role-gated; see
+    /// <see cref="QuestionCategoryAdminDTO"/>.
+    /// </summary>
+    public class QuestionLanguageAdminDTO : QuestionLanguageDTO
+    {
+        public string? Username { get; set; }
     }
 
     public class QuestionLanguageCM
