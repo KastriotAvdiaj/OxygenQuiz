@@ -11,13 +11,19 @@ type AppRootProps = {
   basePath: string;
   navItems: DashboardNavItem[];
   fullWidthPaths?: string[];
+  /** Routes that render with no header at all — see DashboardLayout's `focusPaths`. */
+  focusPaths?: string[];
 };
 
-export const AppRoot = ({ basePath, navItems, fullWidthPaths }: AppRootProps) => {
+export const AppRoot = ({ basePath, navItems, fullWidthPaths, focusPaths }: AppRootProps) => {
   const location = useLocation();
 
   return (
-    <DashboardLayout basePath={basePath} navItems={navItems} fullWidthPaths={fullWidthPaths}>
+    <DashboardLayout
+      basePath={basePath}
+      navItems={navItems}
+      fullWidthPaths={fullWidthPaths}
+      focusPaths={focusPaths}>
       <Suspense
         fallback={
           <div className="flex h-screen w-screen items-center justify-center">

@@ -315,6 +315,11 @@ const createAppRouter = (queryClient: QueryClient) =>
             "/dashboard/quizzes/create-quiz",
             "/dashboard/quizzes/edit-quiz",
           ]}
+          // No header at all — the AI wizard needs those 77px for its Generate button
+          // (ADR 0002). Only the AI routes qualify: focus mode removes Back/Home/account,
+          // so a route needs its own in-page Back, and the manual creator and the edit
+          // form don't have one.
+          focusPaths={["/dashboard/quizzes/create-quiz/ai"]}
         />
       ),
       id: "dashboardRoot",
@@ -513,6 +518,8 @@ const createAppRouter = (queryClient: QueryClient) =>
           basePath="/my-dashboard"
           navItems={userDashboardNavButtons}
           fullWidthPaths={["/my-dashboard/quizzes/create"]}
+          // See the admin tree above — same rule, same reason (ADR 0002).
+          focusPaths={["/my-dashboard/quizzes/create/ai"]}
         />
       ),
       children: [
