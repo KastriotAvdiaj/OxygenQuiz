@@ -5,6 +5,7 @@ using QuizAPI.Exceptions;
 using QuizAPI.Filtering;
 using QuizAPI.Mapping;
 using QuizAPI.Repositories.Interfaces;
+using QuizAPI.Services.Ai.CategoryPalette;
 using QuizAPI.Services.CurrentUserService;
 
 namespace QuizAPI.Controllers.Questions
@@ -30,12 +31,16 @@ namespace QuizAPI.Controllers.Questions
     {
         private readonly IQuestionCategoryRepository _categories;
         private readonly ICurrentUserService _currentUserService;
+        private readonly ICategoryPaletteService _palettes;
 
         public QuestionCategoriesController(
-            IQuestionCategoryRepository categories, ICurrentUserService currentUserService)
+            IQuestionCategoryRepository categories,
+            ICurrentUserService currentUserService,
+            ICategoryPaletteService palettes)
         {
             _categories = categories;
             _currentUserService = currentUserService;
+            _palettes = palettes;
         }
 
         /// <summary>
@@ -126,6 +131,30 @@ namespace QuizAPI.Controllers.Questions
         }
 
         /// <summary>Delete a category. SuperAdmin only.</summary>
+        /// <summary>
+        /// Propose colour palettes for a category name. Admins only — creating categories already
+        /// is, and this spends real money.
+        ///
+        /// <para><b>Proposes; never writes.</b> Three candidates come back and the admin picks one,
+        /// edits it, or ignores all three and uses the picker. Nothing here touches a row — see
+        /// docs/adr/0003-the-model-proposes-the-code-decides.md and
+        /// docs/entities/category-palettes.md.</para>
+        ///
+        /// <para>No quota decrement (categories are created rarely, by staff) but the call is
+        /// still capped by <c>Ai:DailyBudgetUsd</c> / <c>Ai:MonthlyBudgetUsd</c> and leaves a row
+        /// in the same ledger. Unmetered is not unbounded.</para>
+        /// </summary>
+        [HttpPost("ai-palette")]
+        [Authorize(Roles = "SuperAdmin, Admin")]
+        public async Task<ActionResult<CategoryPaletteResult>> ProposePalette(
+            CategoryPaletteRequest request, CancellationToken ct)
+        {
+            var userId = _currentUserService.UserId
+                ?? throw new UnauthorizedException("User ID not found in token.");
+
+            return Ok(await _palettes.ProposeAsync(request, userId, ct));
+        }
+
         [HttpDelete("{id}")]
         [Authorize(Roles = "SuperAdmin")]
         public async Task<IActionResult> DeleteQuestionCategory(int id, CancellationToken ct)

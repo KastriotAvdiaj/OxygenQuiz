@@ -19,7 +19,15 @@ namespace QuizAPI.Services.Ai
         /// Sends <paramref name="prompt"/> and returns the raw reply. The reply is NOT parsed or
         /// trusted here: the caller extracts JSON from it, and the browser validates it.
         /// </summary>
-        Task<AiProviderResult> CompleteJsonAsync(string prompt, CancellationToken ct);
+        /// <param name="maxOutputTokens">
+        /// Per-call ceiling, or null for <c>Ai:MaxOutputTokens</c>. Exists because the global
+        /// value is sized for a 15-question quiz (8000) and every caller was paying for that
+        /// headroom — vendors reserve <c>max_tokens</c> up front. A palette proposal is a few
+        /// dozen tokens, and asking for 8000 of room to return them is how an admin-only,
+        /// unmetered feature quietly competes with quiz generation for the same budget.
+        /// </param>
+        Task<AiProviderResult> CompleteJsonAsync(
+            string prompt, int? maxOutputTokens, CancellationToken ct);
     }
 
     /// <param name="Content">The model's raw reply text.</param>

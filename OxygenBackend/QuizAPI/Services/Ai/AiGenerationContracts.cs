@@ -7,7 +7,23 @@ namespace QuizAPI.Services.Ai
         Topic = 0,
 
         /// <summary>Generated from user-supplied material (pasted text today; files in 2.3).</summary>
-        Source = 1
+        Source = 1,
+
+        /// <summary>
+        /// Not a quiz at all: an admin asked for colour palettes for a new category
+        /// (docs/entities/category-palettes.md).
+        ///
+        /// <para>It shares this table because the <b>budget caps read from it</b>. A model call
+        /// that spends money without leaving a row here is money the daily and monthly caps
+        /// cannot see, which is how a cosmetic feature takes quiz generation down with it. The
+        /// quiz-shaped columns — <c>Topic</c>, <c>SourceChars</c>, <c>QuestionsRequested</c>,
+        /// <c>QuestionsReturned</c> — are left at their defaults on these rows, and nothing
+        /// should read them without filtering on <c>Mode</c> first.</para>
+        ///
+        /// <para>Palette rows never occupy a quota slot: they are admin-only and go straight to
+        /// <see cref="AiGenerationStatus.Succeeded"/> or are released.</para>
+        /// </summary>
+        PaletteProposal = 2
     }
 
     /// <summary>Lifecycle of a quota reservation. See docs/quiz/ai-quiz-generation-flow.md §4.</summary>

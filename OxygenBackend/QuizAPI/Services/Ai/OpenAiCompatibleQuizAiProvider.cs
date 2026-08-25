@@ -66,7 +66,8 @@ namespace QuizAPI.Services.Ai
 
         public string Model => _options.Model;
 
-        public async Task<AiProviderResult> CompleteJsonAsync(string prompt, CancellationToken ct)
+        public async Task<AiProviderResult> CompleteJsonAsync(
+            string prompt, int? maxOutputTokens, CancellationToken ct)
         {
             if (string.IsNullOrWhiteSpace(_options.ApiKey))
                 throw new AiProviderException(AiErrorCodes.FeatureDisabled, "The AI provider is not configured.");
@@ -86,7 +87,7 @@ namespace QuizAPI.Services.Ai
                 // a limit; if we don't set one, that limit is the model's 384K ceiling and a
                 // single call costs ~250× what it should. Truncated output fails JSON extraction
                 // and releases the user's quota slot, which is the correct outcome.
-                MaxTokens = _options.MaxOutputTokens,
+                MaxTokens = maxOutputTokens ?? _options.MaxOutputTokens,
                 ResponseFormat = new ResponseFormat("json_object"),
                 Messages = new[] { new ChatMessage("user", prompt) }
             };

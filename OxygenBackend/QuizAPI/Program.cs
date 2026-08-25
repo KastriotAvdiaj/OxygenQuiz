@@ -24,6 +24,7 @@ using QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.UserAnswerService
 using QuizAPI.Data;
 using QuizAPI.Middleware;
 using QuizAPI.Repositories;
+using QuizAPI.Services.Ai.CategoryPalette;
 using QuizAPI.Repositories.Interfaces;
 using QuizAPI.Services;
 using QuizAPI.Services.AuthenticationService;
@@ -107,6 +108,7 @@ builder.Services.AddScoped<IQuizRepository, QuizRepository>();
 builder.Services.AddScoped<IQuestionCategoryRepository, QuestionCategoryRepository>();
 builder.Services.AddScoped<IQuestionDifficultyRepository, QuestionDifficultyRepository>();
 builder.Services.AddScoped<IQuestionLanguageRepository, QuestionLanguageRepository>();
+builder.Services.AddScoped<ICategoryPaletteService, CategoryPaletteService>();
 builder.Services.AddScoped<IUserService, UserService>();
 
 // Exception Handling services

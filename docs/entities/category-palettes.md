@@ -1,0 +1,105 @@
+# Category colour palettes
+
+Where a quiz's colours come from, who chooses them, and how the AI proposer fits in.
+
+Companion to [`lookup-entities.md`](./lookup-entities.md) (the three lookup tables) and
+[`../adr/0003-the-model-proposes-the-code-decides.md`](../adr/0003-the-model-proposes-the-code-decides.md)
+(why the AI is allowed to do so little).
+
+---
+
+## 1. A quiz has no colours of its own
+
+```
+Category.ColorPaletteJson  →  every quiz in that category  →  QuizCard, start modal, lobby picker
+```
+
+`CreateQuizInput` has no palette field. Everything that paints itself with a quiz's colour goes
+through `parseQuizPalette` in `src/pages/Quiz/components/quiz-palette.ts`, which falls back to
+`DEFAULT_QUIZ_PALETTE` (`#6366f1 / #3b82f6 / #06b6d4`) on a missing or malformed value.
+
+A palette is **2–5 hex colours** plus a `gradient` boolean, edited in `color-palette-input.tsx`
+with a live `QuizCard` preview.
+
+> `gradient` is stored, editable and filterable but **never rendered** — the only component that
+> reads it has no call sites. See [`../deployment/known-issues.md`](../deployment/known-issues.md).
+> The proposer leaves it alone for that reason.
+
+## 2. What the palette is for
+
+Telling categories apart in a list. A user learns "my Geography quizzes are the teal ones", and
+where a subject has an obvious colour association the palette may as well use it.
+
+Both halves of that matter, and they pull in different directions — which is what decides the
+split of work below. "What colour is Astronomy" is a language question. "Are these two too close
+to tell apart" is arithmetic.
+
+## 3. The split
+
+| Job | Who does it |
+|---|---|
+| Suggest colours from the category name | The model |
+| Is this valid `#rrggbb`? | `PaletteColor.TryParseHex` |
+| Can label text be read on the dominant colour? | `PaletteColor.BestTextContrast` ≥ 4.5 (WCAG AA) |
+| Does this collide with an existing category? | `PaletteColor.Distance` (redmean) < 70 |
+| Keep it, tweak it, or ignore it | The admin |
+
+The model is told **the category name and nothing else** — not the other categories, not their
+palettes. The prompt is therefore a constant size no matter how big the table gets, which is what
+makes an unmetered endpoint safe.
+
+## 4. The flow
+
+```
+POST /api/questioncategories/ai-palette   { "categoryName": "Astronomy" }
+  ↓  admin role check (controller)
+  ↓  Ai:Enabled kill switch
+  ↓  daily + monthly USD budget check      ← before the call, not after
+  ↓  CategoryPalettePromptBuilder          ← max 300 output tokens
+  ↓  IQuizAiProvider.CompleteJsonAsync
+  ↓  ParseStrict                           ← rejects; never falls back
+  ↓  AnnotateAsync                         ← names any category it clashes with
+  ↓  one AiGenerationUsage row (success or failure)
+  → { candidates: [ { colors, clashesWith }, … ], model }
+```
+
+**Nothing in that path writes a category.** Three candidates come back; the admin picks one and
+saves it through the normal create/update endpoints, or ignores all three and uses the picker.
+
+## 5. Why three candidates and no regenerate button
+
+A regenerate button forces three questions nobody has a good answer to: how different is
+different, do we pass exclusions or raise the temperature, and what stops someone pressing it
+fifty times. Returning three at once dissolves all of them — the admin compares side by side,
+"another one" is a local click, and there is no second model call to cap.
+
+## 6. Failure is loud
+
+If no candidate survives validation the request fails with a message telling the admin to try
+again or pick by hand. It does **not** return the default palette.
+
+This is deliberately the opposite of `parseQuizPalette`'s behaviour, and the difference is the
+rule worth remembering: **tolerant when reading what is already stored, strict when accepting
+something new.** A stored row that is unreadable must not break a quiz card. A proposal that is
+unreadable must not look like a decision someone made.
+
+## 7. Cost
+
+No quota decrement — only admins create categories, and spending a user's daily quiz allowance on
+a colour would be a surprise. But *unmetered is not unbounded*:
+
+- 300 output tokens, versus the generator's 8000. Vendors reserve `max_tokens` up front, so this
+  is a real difference rather than a nominal one.
+- The daily and monthly USD caps are checked **before** the call.
+- The `Ai:Enabled` kill switch applies.
+- Every call writes an `AiGenerationUsage` row with `Mode = PaletteProposal`, so its spend is
+  visible to the caps above. Quiz-shaped columns on those rows stay at their defaults; filter on
+  `Mode` before reading them.
+
+## 8. Testing it without an API key
+
+Set `Ai:Provider` to `"Fake"`. `FakeQuizAiProvider` answers palette prompts with three usable
+palettes **and one deliberately unusable one** (two colours, a near-white dominant), so the
+validator's drop path is exercised on every run rather than only when a real model misbehaves.
+Putting `fail-palette` in the category name returns prose instead of JSON, which exercises the
+reject path. `Program.cs` refuses the fake provider in Production.

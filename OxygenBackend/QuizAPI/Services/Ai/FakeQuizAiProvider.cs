@@ -56,8 +56,30 @@ namespace QuizAPI.Services.Ai
 
         public string Model => "fake-provider";
 
-        public async Task<AiProviderResult> CompleteJsonAsync(string prompt, CancellationToken ct)
+        public async Task<AiProviderResult> CompleteJsonAsync(
+            string prompt, int? maxOutputTokens, CancellationToken ct)
         {
+            // Palette proposals share this provider but not the question pipeline, so they are
+            // answered before the question scenarios are consulted. Same delay, same shape as a
+            // real reply — including a deliberately unusable candidate, so the strict validator
+            // is exercised on every run rather than only when a real model misbehaves.
+            if (prompt.Contains("colour palettes for quiz categories", StringComparison.Ordinal))
+            {
+                await Task.Delay(NormalDelay, ct);
+
+                if (prompt.Contains("fail-palette", StringComparison.OrdinalIgnoreCase))
+                    return Reply("I'd be glad to help you pick some colours!");
+
+                return Reply("""
+                    {"palettes":[
+                      ["#0f766e","#14b8a6","#5eead4"],
+                      ["#7c3aed","#a78bfa","#ddd6fe"],
+                      ["#b45309","#f59e0b","#fde68a"],
+                      ["#ffffff","#fefefe"]
+                    ]}
+                    """);
+            }
+
             var trigger = FindTrigger(prompt);
             _logger.LogInformation("FakeQuizAiProvider responding with scenario '{Scenario}'.", trigger ?? "success");
 

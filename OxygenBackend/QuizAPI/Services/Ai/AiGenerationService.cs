@@ -179,13 +179,13 @@ namespace QuizAPI.Services.Ai
         private async Task<(AiExtractedPayload? Payload, AiTokenUsage Usage)> CallWithOneRetryAsync(
             string prompt, CancellationToken ct)
         {
-            var first = await _provider.CompleteJsonAsync(prompt, ct);
+            var first = await _provider.CompleteJsonAsync(prompt, maxOutputTokens: null, ct);
             var payload = AiJsonExtractor.TryExtract(first.Content);
             if (payload is not null) return (payload, first.Usage);
 
             _logger.LogWarning("AI reply contained no usable JSON object; retrying once with a stricter instruction.");
 
-            var second = await _provider.CompleteJsonAsync(prompt + StrictRetrySuffix, ct);
+            var second = await _provider.CompleteJsonAsync(prompt + StrictRetrySuffix, maxOutputTokens: null, ct);
             var retryPayload = AiJsonExtractor.TryExtract(second.Content);
 
             var combined = new AiTokenUsage(

@@ -9,6 +9,7 @@ import {
   CreateQuestionCategoryInput,
 } from "../api/create-question-categories";
 import { ColorPaletteInput } from "./color-palette-input";
+import { PaletteSuggestions } from "./palette-suggestions";
 
 export const CreateQuestionCategoryForm = () => {
   const { addNotification } = useNotifications();
@@ -104,6 +105,15 @@ export const CreateQuestionCategoryForm = () => {
                 isGradient={isGradient}
                 onGradientChange={setIsGradient}
                 category={categoryName}
+              />
+
+              {/* Under the picker, not instead of it. Applying a suggestion writes straight into
+                  the picker's state, so the admin edits it exactly as if they had chosen the
+                  colours themselves — and nothing is saved until they submit the form.
+                  See docs/adr/0003-the-model-proposes-the-code-decides.md. */}
+              <PaletteSuggestions
+                categoryName={categoryName ?? ""}
+                onApply={setPalette}
               />
             </div>
           );
