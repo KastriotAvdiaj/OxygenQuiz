@@ -1,6 +1,6 @@
 import { queryOptions, useQuery } from "@tanstack/react-query";
 import { apiService } from "@/lib/Api-client";
-import { QueryConfig } from "@/lib/React-query";
+import { LOOKUP_STALE_TIME, QueryConfig } from "@/lib/React-query";
 import { QuestionLanguage } from "@/types/question-types";
 
 export const getQuestionLanguages = (): Promise<QuestionLanguage[]> => {
@@ -11,6 +11,8 @@ export const getQuestionLanguageQueryOptions = () => {
   return queryOptions({
     queryKey: ["getQuestionLanguages"],
     queryFn: () => getQuestionLanguages(),
+    // A lookup table, not live data — see LOOKUP_STALE_TIME.
+    staleTime: LOOKUP_STALE_TIME,
   });
 };
 

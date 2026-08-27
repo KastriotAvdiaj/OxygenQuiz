@@ -43,6 +43,32 @@ the dashboard's own tables it is `undefined`, and that is correct rather than a 
 around. The admin tables read from their own query key (`["getQuestionDifficulties", "admin"]`)
 so a public response cannot overwrite their cache and blank the column.
 
+## 2b. On the client they are cached for an hour, not a minute
+
+Every page with a filter panel loads all three lists on mount — the public quiz browser
+(`Quiz-Selection.tsx`) included, so guests fetch them too. That is unavoidable rather than
+careless: `/quiz/search` filters by **id** and the UI shows **names**, so something has to hold
+the mapping, and it has to be there before the dropdown opens or a deep link with a filter
+already applied cannot render its own pills.
+
+The app-wide `staleTime` is one minute, which is right for quizzes and sessions and wrong for
+three tables an admin edits maybe monthly. All three query-options factories therefore set
+`staleTime: LOOKUP_STALE_TIME` (one hour, defined in `src/lib/React-query.ts`).
+
+**Freshness comes from invalidation, not expiry**, which is why the long window is safe: every
+create, update and delete invalidates its list key, and the paged search keys share the same
+root (`["questionCategories", "search", …]`), so one `invalidateQueries` evicts both. An admin
+renaming a category sees it immediately. The hour only suppresses refetches that were never
+going to return anything different.
+
+Not `Infinity`, deliberately — that would also outlive a row edited in another tab or by
+another admin until a mutation happened in *this* tab. An hour bounds that without giving up
+the benefit.
+
+> This is a client-side cache only. The server still hits the database on every request; there
+> is no `IMemoryCache` on these endpoints, unlike `PermissionService`. Worth adding if the
+> lookup endpoints ever show up in server load — see §7.
+
 ## 3. Nothing outside a repository touches `DbContext`
 
 All three controllers used to inject `ApplicationDbContext` and query it directly — a step past
@@ -102,3 +128,12 @@ return the request model, so the caller never learned the new row's id.
   [`../deployment/known-issues.md`](../deployment/known-issues.md).
 - Difficulties and languages have no `FilterEngine` field definitions, so their admin reads are
   plain lists rather than `/search`. Fine at this size; give them one when the tables grow.
+- **No server-side cache on the list endpoints.** Each request is a full unpaginated table read
+  (`AsNoTracking`, projected to the public DTO), and the client-side hour in §2b is the only
+  thing keeping the volume down. An `IMemoryCache` entry per table, evicted on write, is the
+  obvious next step — `PermissionService` already does exactly this shape — but there is no
+  measured load to justify it yet.
+- **Every list endpoint returns the whole table.** Around a few hundred rows a `<select>` stops
+  being a usable control long before the payload matters, so the fix at that point is a
+  type-ahead against the paged `/questioncategories/search` (which exists and is already wrapped
+  by `useSearchQuestionCategories`), not a bigger dropdown.
