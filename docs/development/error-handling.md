@@ -121,6 +121,7 @@ Current opt-outs and why:
 | `auth-config` | Nothing — a failed config fetch falls back to defaults |
 | `quiz/ai-generate` | The wizard's error panel, which offers a different next step per code |
 | `quiz/ai-prompt` | A toast the container raises itself, with copy specific to copying |
+| `questioncategories/ai-palette` | A line under the "Suggest colours" button, in the server's own wording |
 
 **The rule of thumb:** if the failure has a natural home on screen — beside the field, beside
 the button — put it there and skip the toast. Reach for the toast when the failure has nowhere

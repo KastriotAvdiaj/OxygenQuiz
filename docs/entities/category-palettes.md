@@ -55,7 +55,7 @@ POST /api/questioncategories/ai-palette   { "categoryName": "Astronomy" }
   ↓  admin role check (controller)
   ↓  Ai:Enabled kill switch
   ↓  daily + monthly USD budget check      ← before the call, not after
-  ↓  CategoryPalettePromptBuilder          ← max 300 output tokens
+  ↓  CategoryPalettePromptBuilder          ← max 1500 output tokens
   ↓  IQuizAiProvider.CompleteJsonAsync
   ↓  ParseStrict                           ← rejects; never falls back
   ↓  AnnotateAsync                         ← names any category it clashes with
@@ -65,6 +65,24 @@ POST /api/questioncategories/ai-palette   { "categoryName": "Astronomy" }
 
 **Nothing in that path writes a category.** Three candidates come back; the admin picks one and
 saves it through the normal create/update endpoints, or ignores all three and uses the picker.
+
+### Where the button lives
+
+Inside `color-palette-input.tsx`, directly above the `#1 / #2 / #3` swatch rows — the state it
+writes to. It is not wired up by the forms: both the create and the update drawer render the
+picker, so both get the proposer, and neither has to remember to pass it anything. It replaced
+the "AI Color Assistant" collapsible that used to sit in the same spot (copy a prompt out to
+ChatGPT, paste hex codes back).
+
+Applying a candidate calls the picker's own apply handler, which sets the colours **and** the
+colour-count select the rows are sized by. Writing only the colours would leave a five-colour
+suggestion showing three rows while the form submitted five — the count is user-visible state,
+so the click that changes it updates it.
+
+**The button is `aria-disabled`, never `disabled`.** With an empty name it looks and reads as
+disabled and its click no-ops, but it stays focusable and hoverable so the `title` tooltip
+("Type a category name first") can actually fire. A `disabled` button emits no mouse events, so
+the tooltip would never appear and the control could not explain its own state.
 
 ## 5. Why three candidates and no regenerate button
 
@@ -78,6 +96,18 @@ fifty times. Returning three at once dissolves all of them — the admin compare
 If no candidate survives validation the request fails with a message telling the admin to try
 again or pick by hand. It does **not** return the default palette.
 
+The three failures call for three different next steps, so the client shows the server's own
+wording rather than one line of its own: *"The AI's answer wasn't usable"* (try again),
+*"Today's AI budget is spent"* (pick by hand today), *"AI features are turned off"* (pick by
+hand, full stop). They arrive as `AppValidationException` → `ProblemDetails.Title`, and
+`paletteErrorMessage` in `api/propose-category-palette.ts` reads them the way the interceptor
+does. A 5xx is not shown — that message may be an EF exception — and a network failure falls
+back to a generic line.
+
+It appears beside the button, not as a toast: the request sets `skipErrorToast`, because the
+failure has a natural home on screen. See
+[`../development/error-handling.md`](../development/error-handling.md).
+
 This is deliberately the opposite of `parseQuizPalette`'s behaviour, and the difference is the
 rule worth remembering: **tolerant when reading what is already stored, strict when accepting
 something new.** A stored row that is unreadable must not break a quiz card. A proposal that is
@@ -88,8 +118,17 @@ unreadable must not look like a decision someone made.
 No quota decrement — only admins create categories, and spending a user's daily quiz allowance on
 a colour would be a surprise. But *unmetered is not unbounded*:
 
-- 300 output tokens, versus the generator's 8000. Vendors reserve `max_tokens` up front, so this
-  is a real difference rather than a nominal one.
+- 1500 output tokens, versus the generator's 8000. Vendors reserve `max_tokens` up front, so this
+  is a real difference rather than a nominal one. At Groq's gpt-oss-120b rates the worst possible
+  single call is about $0.0009.
+- **It was 300, and 300 is a hang on a reasoning model.** The answer itself is ~60 tokens of
+  JSON, so 300 looked generous. But a reasoning model spends its thinking *before* the first
+  content token and that thinking counts against `max_tokens` — `openai/gpt-oss-120b` on Groq
+  used the whole 300 thinking, returned an empty content channel, and JSON mode rejected the
+  empty string as a 400 `json_validate_failed` with `"failed_generation": ""`. Nothing in that
+  error mentions thinking or ceilings. The ceiling is now headroom for the thinking, not for the
+  answer, and `Ai:ReasoningEffort` keeps the thinking short — the two go together. A
+  non-reasoning model needs neither and will emit its 60 tokens and stop.
 - The daily and monthly USD caps are checked **before** the call.
 - The `Ai:Enabled` kill switch applies.
 - Every call writes an `AiGenerationUsage` row with `Mode = PaletteProposal`, so its spend is

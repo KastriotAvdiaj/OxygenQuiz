@@ -4,6 +4,7 @@ import { Spinner } from "@/components/ui";
 import { cn } from "@/utils/cn";
 
 import {
+  paletteErrorMessage,
   useProposeCategoryPalette,
   type PaletteCandidate,
 } from "../api/propose-category-palette";
@@ -11,7 +12,7 @@ import {
 export interface PaletteSuggestionsProps {
   /** Whatever is currently typed in the name field — the only thing the AI is given. */
   categoryName: string;
-  /** Applies a candidate to the picker above. The admin can still edit it afterwards. */
+  /** Applies a candidate to the picker around it. The admin can still edit it afterwards. */
   onApply: (colors: string[]) => void;
 }
 
@@ -28,7 +29,10 @@ const Swatch = ({ candidate }: { candidate: PaletteCandidate }) => (
 /**
  * "Suggest colours" plus the three candidates it returns.
  *
- * <b>Nothing here saves.</b> Applying a candidate fills the picker above; the admin still
+ * Rendered inside `color-palette-input.tsx`, directly above the swatch rows it writes to, so
+ * both category forms get it from the picker rather than each wiring it up themselves.
+ *
+ * <b>Nothing here saves.</b> Applying a candidate fills the swatch rows below; the admin still
  * presses the form's own submit. See docs/adr/0003-the-model-proposes-the-code-decides.md.
  *
  * <b>Clashes are shown, not hidden.</b> A candidate too close to an existing category is
@@ -42,24 +46,33 @@ export const PaletteSuggestions = ({
 }: PaletteSuggestionsProps) => {
   const propose = useProposeCategoryPalette();
   const trimmedName = categoryName.trim();
+  const blocked = !trimmedName || propose.isPending;
 
   return (
     <section aria-label="Suggested palettes" className="space-y-2 border-t border-border pt-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm font-medium">Not sure what colours to use?</p>
+        <p className="text-xs text-muted-foreground">Not sure what colours to use?</p>
 
-        {/* Stays enabled with an empty name and explains itself on press, like the AI wizard's
-            Generate button — a disabled control says you can't proceed but never why. */}
+        {/* `aria-disabled`, deliberately, NOT the `disabled` attribute — please don't "fix"
+            this back. A truly disabled button emits no mouse events, so the `title` tooltip
+            never appears: the admin gets a greyed-out control that cannot say why it is
+            greyed out, on the one screen where the reason ("type a name") is the whole
+            instruction. This stays focusable and hoverable so the tooltip fires, reads as
+            disabled to assistive tech, looks muted, and no-ops the click instead. */}
         <button
           type="button"
-          onClick={() => trimmedName && propose.mutate(trimmedName)}
-          disabled={propose.isPending}
+          onClick={() => {
+            if (blocked) return;
+            propose.mutate(trimmedName);
+          }}
+          aria-disabled={blocked}
           title={trimmedName ? undefined : "Type a category name first"}
           className={cn(
             "inline-flex min-h-9 items-center gap-2 rounded-lg border border-border px-3 py-1.5",
             "text-sm transition-colors hover:border-primary hover:bg-primary/10",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
-            "disabled:pointer-events-none disabled:opacity-50"
+            "aria-disabled:cursor-not-allowed aria-disabled:opacity-50",
+            "aria-disabled:hover:border-border aria-disabled:hover:bg-transparent"
           )}
         >
           {propose.isPending ? (
@@ -74,21 +87,28 @@ export const PaletteSuggestions = ({
         </button>
       </div>
 
-      {!trimmedName && (
-        <p className="text-xs text-muted-foreground">
-          Type the category name first — it's the only thing the AI gets to work from.
-        </p>
-      )}
+      {/* `w-0 min-w-full` — the width of this form must not depend on how long the server's
+          sentence is. `DrawerContent side="right"` is `w-fit`, so the panel takes its width
+          from its widest content, and an unwrapped error line stretched the whole drawer
+          sideways: it jumped wider when the error appeared and back when it cleared. Zero
+          intrinsic width keeps this line out of that measurement, and `min-w-full` then paints
+          it across whatever width the rest of the form settled on, where it wraps.
 
+          The same treatment is on the candidate list below, for the same reason — the clash
+          note carries a category name, so its length is data too. The short, fixed header row
+          above is what the section is allowed to be as wide as. */}
       {propose.isError && (
-        <p role="alert" className="flex items-center gap-1 text-xs text-destructive">
-          <AlertTriangle className="h-3 w-3 shrink-0" />
-          Couldn't get suggestions. Pick colours by hand, or try again.
+        <p
+          role="alert"
+          className="flex w-0 min-w-full items-start gap-1 text-xs text-destructive"
+        >
+          <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
+          <span className="min-w-0">{paletteErrorMessage(propose.error)}</span>
         </p>
       )}
 
       {propose.data && (
-        <ul className="space-y-1.5">
+        <ul className="w-0 min-w-full space-y-1.5">
           {propose.data.candidates.map((candidate) => (
             <li key={candidate.colors.join()}>
               <button
