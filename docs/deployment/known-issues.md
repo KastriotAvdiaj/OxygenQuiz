@@ -668,6 +668,19 @@ are actually *in* the feature.
   → `OxygenBackend/QuizAPI/Services/Ai/AiQuotaService.EstimateCost`,
   `Services/Ai/AiOptions.cs`, `appsettings.json`
 
+- **P2 — The cost constants can belong to a different vendor than `Ai:BaseUrl`, and nothing
+  notices.** Not hypothetical: development ran against Groq (`openai/gpt-oss-120b`) for days
+  while `InputCostPerMillionUsd` / `OutputCostPerMillionUsd` still held DeepSeek's
+  $0.22 / $0.66, because `BaseUrl` and `Model` had been overridden in user-secrets and the two
+  cost values had not. Every `AiGenerationUsages` row in that window is priced wrong, and since
+  `DailyBudgetUsd` and `MonthlyBudgetUsd` are enforced against the estimate, both caps were off
+  by the same factor. Found 2026-08-26; the dev values are now Groq's $0.15 / $0.60 and the
+  whole vendor block lives together in `appsettings.Development.json` rather than half in
+  user-secrets. That is a convention, not a mechanism — the next override puts it right back.
+  _Fix:_ a startup check pairing the `BaseUrl` host against the configured rates, or a single
+  `Ai:Vendor` value that supplies BaseUrl, Model, rates and `ReasoningEffort` as one unit.
+  → `Services/Ai/AiOptions.cs`, `appsettings.Development.json`, `Program.cs`
+
 - **P3 — `MaxOutputTokens` can exceed a free tier's whole per-minute allowance.** Vendors reserve
   `max_tokens` against the rate limit before generating, so an 8,000 setting plus a ~900-token
   prompt is refused outright on Groq's free 8,000 TPM ceiling — permanently, since one request is

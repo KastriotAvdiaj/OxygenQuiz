@@ -9,11 +9,24 @@ namespace QuizAPI.Services.Ai.CategoryPalette
     {
         /// <summary>
         /// Small enough that a runaway reply is impossible rather than merely unlikely. Three
-        /// palettes of five hex strings is about 60 tokens of JSON; 300 leaves room for the
-        /// model to be slightly verbose and none for it to write an essay. The quiz generator's
-        /// 8000 would have let a confused model burn the daily budget on colour names.
+        /// palettes of five hex strings is about 60 tokens of JSON. The quiz generator's 8000
+        /// would have let a confused model burn the daily budget on colour names.
+        ///
+        /// <para><b>Why this is 1500 and not the 60 the answer needs.</b> It was 300, and on a
+        /// <i>reasoning</i> model that is a hang, not a tight budget. Reasoning tokens are spent
+        /// before the first content token and they count against <c>max_tokens</c>, so
+        /// <c>openai/gpt-oss-120b</c> on Groq consumed the whole 300 thinking, returned an empty
+        /// content channel, and JSON mode rejected the empty string: HTTP 400
+        /// <c>json_validate_failed</c> with <c>"failed_generation": ""</c>. Nothing in that
+        /// message points at the ceiling, which is why it is spelled out here.
+        ///
+        /// <para>1500 is headroom for the thinking, not for the answer — pair it with
+        /// <c>Ai:ReasoningEffort = "low"</c> so the thinking stays short. It is still under a
+        /// fifth of the generator's ceiling, and at Groq gpt-oss-120b rates the worst possible
+        /// single call is about $0.0009. A non-reasoning model does not need any of this and
+        /// will emit its ~60 tokens and stop.</para></para>
         /// </summary>
-        public const int MaxOutputTokens = 300;
+        public const int MaxOutputTokens = 1500;
 
         /// <summary>
         /// The model is told the category name and <b>nothing else</b> — not the existing

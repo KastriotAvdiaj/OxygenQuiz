@@ -88,6 +88,12 @@ namespace QuizAPI.Services.Ai
                 // single call costs ~250× what it should. Truncated output fails JSON extraction
                 // and releases the user's quota slot, which is the correct outcome.
                 MaxTokens = maxOutputTokens ?? _options.MaxOutputTokens,
+                // Null unless configured, and null is not serialised — see the property. On a
+                // reasoning model this is what keeps the thinking inside MaxTokens rather than
+                // consuming it and returning an empty completion.
+                ReasoningEffort = string.IsNullOrWhiteSpace(_options.ReasoningEffort)
+                    ? null
+                    : _options.ReasoningEffort.Trim(),
                 ResponseFormat = new ResponseFormat("json_object"),
                 Messages = new[] { new ChatMessage("user", prompt) }
             };
@@ -274,6 +280,18 @@ namespace QuizAPI.Services.Ai
             [JsonPropertyName("temperature")] public double Temperature { get; init; }
             [JsonPropertyName("stream")] public bool Stream { get; init; }
             [JsonPropertyName("max_tokens")] public int MaxTokens { get; init; }
+
+            /// <summary>
+            /// Added deliberately, per the note above. It earns its place because it is the only
+            /// way to keep a reasoning model's thinking inside <c>max_tokens</c>, and the failure
+            /// it prevents — an empty completion rejected as invalid JSON — is unreadable from
+            /// the error alone. <c>WhenWritingNull</c> is load-bearing: unset, the field is absent
+            /// from the payload entirely, so a vendor that does not accept it never sees it.
+            /// </summary>
+            [JsonPropertyName("reasoning_effort")]
+            [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+            public string? ReasoningEffort { get; init; }
+
             [JsonPropertyName("response_format")] public ResponseFormat? ResponseFormat { get; init; }
         }
 

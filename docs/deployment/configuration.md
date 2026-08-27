@@ -115,6 +115,7 @@ A quick map of the settings that matter, and which layer supplies them in prod:
 | `Ai:ApiKey` | env var (`Ai__ApiKey`) | The fourth real secret, once AI generation is switched on. `Ai__Enabled=true` with this blank fails startup. |
 | `Ai:Enabled`, `Ai:BaseUrl`, `Ai:Model` | env vars, else `appsettings.json` | Off by default. `Ai:Provider` picks the transport (`OpenAiCompatible` / `Fake`); the vendor is `BaseUrl` + `Model`. |
 | `Ai:InputCostPerMillionUsd` / `Ai:OutputCostPerMillionUsd` | `appsettings.json` | Ours to keep current — nothing checks them against the vendor, and the budget caps are enforced against them. |
+| `Ai:ReasoningEffort` | env var, else `appsettings.json` | Unset unless `Ai:Model` is a reasoning model, and unset means the field is never sent. Belongs to the same edit as `BaseUrl`, `Model` and the two cost values. |
 
 ---
 

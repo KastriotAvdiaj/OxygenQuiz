@@ -44,9 +44,10 @@ namespace QuizAPI.Services.Ai
         ///   <item><description>Qwen (Alibaba Model Studio, Singapore): the workspace-scoped
         ///     <c>compatible-mode/v1</c> URL from the console</description></item>
         /// </list>
-        /// Changing this means changing <see cref="Model"/> and both cost-per-million values in
-        /// the same edit — a vendor swap that leaves the old prices behind silently mis-prices
-        /// every row in the ledger.
+        /// Changing this means changing <see cref="Model"/>, both cost-per-million values and
+        /// <see cref="ReasoningEffort"/> in the same edit — a vendor swap that leaves the old
+        /// prices behind silently mis-prices every row in the ledger, and one that leaves the old
+        /// effort setting behind sends a field the new model may refuse.
         /// </summary>
         public string BaseUrl { get; set; } = "https://api.deepseek.com";
 
@@ -72,6 +73,36 @@ namespace QuizAPI.Services.Ai
         public double Temperature { get; set; } = 0.3;
 
         public int TimeoutSeconds { get; set; } = 90;
+
+        /// <summary>
+        /// How much a <i>reasoning</i> model is allowed to think before it answers. Sent as
+        /// <c>reasoning_effort</c>, and <b>only when set</b> — leave it null and the field never
+        /// appears on the wire, so a vendor that has never heard of it is unaffected.
+        ///
+        /// <para><b>Why this exists.</b> Reasoning tokens are spent before the first content
+        /// token and they count against <c>max_tokens</c>. A model that thinks for longer than
+        /// its ceiling returns an <i>empty</i> completion, which under
+        /// <c>response_format: json_object</c> the vendor rejects as invalid JSON — a 400 that
+        /// says nothing about thinking or ceilings. That is a hang dressed as a parse error, and
+        /// the palette proposer hit it first because it is the call with the tightest budget.
+        /// See <see cref="CategoryPalette.CategoryPalettePromptBuilder.MaxOutputTokens"/>.</para>
+        ///
+        /// <para><b>Accepted values are the model's, not ours</b>, so nothing validates this at
+        /// startup: Groq's gpt-oss models take <c>"low"</c> / <c>"medium"</c> / <c>"high"</c>,
+        /// Qwen 3.6 27B takes <c>"none"</c> / <c>"default"</c>, and a non-reasoning model takes
+        /// none of them. A wrong value fails as a 400 from the vendor on the first call, which
+        /// is visible immediately and cheap. Set it in the same edit as <see cref="Model"/>.</para>
+        ///
+        /// <para><b>It applies to every call, quiz generation included</b> — it is a property of
+        /// the configured model, not of one feature. That is a deliberate simplification and it
+        /// has a cost: <c>"low"</c> was chosen for the palette proposer, which needs almost no
+        /// thinking, and the generator inherits it even though its 8000-token ceiling could
+        /// afford more. If generated quizzes get worse after this is set, that is the first
+        /// thing to suspect, and the fix is a per-call override on
+        /// <see cref="IQuizAiProvider.CompleteJsonAsync"/> beside the existing token
+        /// ceiling.</para>
+        /// </summary>
+        public string? ReasoningEffort { get; set; }
 
         // ── Quota and spend ──
 

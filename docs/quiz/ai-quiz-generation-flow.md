@@ -128,7 +128,7 @@ this feature talks to OpenAI or needs an OpenAI account. When OpenAI published
 became the industry default. DeepSeek speaks it. Alibaba's Qwen exposes an endpoint literally
 called `compatible-mode` that speaks it. So do Mistral, Groq and most local runners.
 
-**So the vendor lives in four config values**, and swapping vendor touches no C#:
+**So the vendor lives in five config values**, and swapping vendor touches no C#:
 
 | Setting | What it selects |
 |---|---|
@@ -136,6 +136,7 @@ called `compatible-mode` that speaks it. So do Mistral, Groq and most local runn
 | `Ai:BaseUrl` | Who. `https://api.deepseek.com`, or a Qwen `compatible-mode/v1` URL. |
 | `Ai:Model` | Which model there. Recorded on every usage row and shown in the wizard. |
 | `Ai:InputCostPerMillionUsd` / `Ai:OutputCostPerMillionUsd` | What it costs. **Change these in the same edit** — see §9.13. |
+| `Ai:ReasoningEffort` | How long a *reasoning* model may think. Unset for everything else, and unset means the field is never sent. See §2b. |
 
 Two things follow from that split, and both were bugs waiting to happen before it:
 
@@ -149,8 +150,10 @@ Two things follow from that split, and both were bugs waiting to happen before i
   claim, not information — and the fake provider honestly reports `fake-provider`.
 
 **The boundary of "config only"** is the request body. `ChatRequest` carries the standard fields
-and nothing else, so a vendor needing an extra one (a non-thinking-mode toggle, say) needs a line
-of C#. Before pointing `Ai:BaseUrl` somewhere new, check three things with a raw curl: that
+and nothing else, so a vendor needing an extra one needs a line of C#. `reasoning_effort` is the
+one field that has since crossed that line — added deliberately, and serialised only when
+`Ai:ReasoningEffort` is set, so a vendor that does not accept it never receives it. The bar for
+the next one is the same: it is not enough that a vendor offers it. Before pointing `Ai:BaseUrl` somewhere new, check three things with a raw curl: that
 `response_format: json_object` is accepted, that the reply lands in `choices[0].message.content`,
 and that `usage` reports `prompt_tokens`/`completion_tokens` — **the cost ledger silently records
 zero if that last block is missing or named differently**, and a ledger of zeroes disables both
@@ -170,6 +173,25 @@ requested against an 8,000 ceiling — and it would have been refused every time
 single call was over the whole per-minute budget on its own. Waiting does not help; only lowering
 the ceiling does. **Rule: `MaxOutputTokens` + prompt must fit under the vendor's TPM limit.** 4,000
 covers a 15-question quiz.
+
+**A reasoning model's thinking is spent inside `max_tokens`, before any answer.** Reasoning
+tokens are billed as output and counted against the ceiling, and they come first — so a ceiling
+that fits the answer but not the thinking produces an *empty* completion rather than a truncated
+one. Under `response_format: json_object` the vendor then rejects the empty string, and what
+reaches the log is a 400 `json_validate_failed` with `"failed_generation": ""` — a parse error
+for a problem that is nothing to do with parsing. Hit on 2026-08-26 with `openai/gpt-oss-120b`
+on Groq and a 300-token palette ceiling. Two settings fix it together: enough headroom in the
+ceiling, and `Ai:ReasoningEffort` to keep the thinking short (`"low"`/`"medium"`/`"high"` for
+gpt-oss, `"none"`/`"default"` for Qwen 3.6 27B). **Rule: before pointing `Ai:Model` at a
+reasoning model, check every per-call ceiling, not just `Ai:MaxOutputTokens`** — the tightest one
+fails first, and here that was the palette proposer at 300.
+
+`Ai:ReasoningEffort` is one value for the whole app, because it describes the configured model
+rather than a feature. The trade-off is real and worth stating: `"low"` was chosen for the
+palette proposer, which barely needs to think, and quiz generation inherits it. If generated
+quizzes get noticeably worse after a reasoning model is configured, suspect this before the
+prompt. The fix is a per-call override on `CompleteJsonAsync`, beside the token ceiling that is
+already per-call for the same reason.
 
 **Rate limits do not agree on a status code.** OpenAI and DeepSeek answer 429. Groq answers **413
 Payload Too Large** with `code: "rate_limit_exceeded"`. Status alone therefore can't classify the
