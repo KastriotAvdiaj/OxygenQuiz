@@ -79,7 +79,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, isPending }) => {
         <Button
           onClick={handleSubmit}
           isPending={isPending}
-          className="text-base sm:text-xl shadow-lg w-full py-2.5 sm:py-4 text-white"
+          className="text-base sm:text-xl shadow-lg w-full py-6 xs:py-4 text-white"
           disabled={isPending}
         >
           Sign In

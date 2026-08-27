@@ -137,7 +137,7 @@ export const LiftedButton = React.forwardRef<
           // Disabled keeps the exact resting appearance — only the interactions
           // drop away. Dimming individual layers would let the darker edge and
           // shadow bleed through the front face, which reads as a rendering bug.
-          isDisabled && "cursor-not-allowed",
+          isDisabled && "cursor-normal",
           outerClassName
         )}
         disabled={isDisabled}

@@ -28,7 +28,7 @@ export const DeleteQuestionCategory = ({ id }: DeleteCategoryProps) => {
       title="WARNING"
       body="Many Questions may be affected. This action cannot be undone."
       triggerButton={
-        <LiftedButton variant="icon" className="rounded-xl bg-red-400">
+        <LiftedButton variant="icon" className="rounded-xl bg-red-400" backgroundColorForBorder="bg-red-500">
           <Trash2 size={16} />
         </LiftedButton>
       }

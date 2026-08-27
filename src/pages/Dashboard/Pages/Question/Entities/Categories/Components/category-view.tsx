@@ -10,7 +10,7 @@ import { pagedResponseToPagination } from "@/lib/pagination-query";
 import { rule, type FilterQuery, type FilterRule } from "@/lib/filtering";
 import { useDebounce } from "@/hooks/use-debounce";
 import type { TriState } from "@/components/ui/tri-state-select";
-import { DataTransferControls } from "@/components/data-transfer/DataTransferControls";
+// import { DataTransferControls } from "@/components/data-transfer/DataTransferControls";
 
 export const CategoryView = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -60,7 +60,7 @@ export const CategoryView = () => {
           <Card className="flex flex-col gap-4 p-8 bg-background border border-border">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
               <CreateQuestionCategoryForm />
-              <DataTransferControls entity="categories" invalidateKey={["questionCategories"]} />
+              {/* <DataTransferControls entity="categories" invalidateKey={["questionCategories"]} /> */}
             </div>
 
             {categoriesQuery.isError ? (
