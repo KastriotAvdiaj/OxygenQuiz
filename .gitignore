@@ -31,8 +31,12 @@ dist-ssr
 # /OxygenBackend/QuizAPI/Program.cs
 # /OxygenBackend/QuizAPI/appsettings.json doesn't cotnain sensitive info
 # /OxygenBackend/QuizAPI/appsettings.Developement.json this was spelt wrong and doesn't cotnain sensitive info
-/OxygenBackend/QuizAPI/obj
-/OxygenBackend/QuizAPI/bin
+# Build output, for every project in the solution rather than one. These used to be anchored
+# to /OxygenBackend/QuizAPI/, so QuizAPI.Tests — added later — had its bin/ and obj/ tracked,
+# and every `dotnet build` produced 33 modified files to scroll past. Unanchored and
+# case-tolerant is the standard .NET pattern; a project added tomorrow is covered by default.
+[Bb]in/
+[Oo]bj/
 /OxygenBackend/QuizAPI/.vs
 /OxygenBackend/QuizAPI/app.zip
 /OxygenBackend/QuizAPI/publish
@@ -40,6 +44,9 @@ dist-ssr
 
 *storybook.log
 storybook-static
+
+# TypeScript incremental build state. Machine-specific, rewritten by every `tsc -b`.
+*.tsbuildinfo
 
 # FUSE leftovers: a mounted filesystem renames a file to .fuse_hiddenXXXX instead of
 # unlinking it while a process still has it open. Artefacts of the mount, never source.
