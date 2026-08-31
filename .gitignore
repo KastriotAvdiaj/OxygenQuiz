@@ -64,3 +64,10 @@ storybook-static
 
 # Scratch archives kept on disk but not in the repo.
 _to_delete/
+
+# Local mkcert dev certificates (vite.config.ts uses mkcert()). Regenerated on demand, and
+# two of these are PRIVATE KEYS — create-ca-key.pem is a CA your machine trusts once mkcert
+# has installed it, so anyone holding it can mint certificates your browser accepts. They
+# were tracked until 2026-08-31; they remain in history, so regenerate with
+# `mkcert -uninstall && mkcert -install` if that matters to you.
+certs/
