@@ -229,11 +229,33 @@ if (useFakeAiProvider && environment.IsProduction())
 // Fail fast on a half-configured real provider: enabled with no key can only produce runtime
 // 502s, which look like an outage rather than a config mistake. Same convention as the Jwt:Key
 // and external-auth checks above. The fake provider needs no key, hence the exemption.
+//
+// Development is exempt, and that is not a softening of the rule — it is the rule applied to a
+// different situation. `appsettings.Development.json` is COMMITTED, so its Ai:Enabled=true plus
+// OpenAiCompatible is the default inherited by every fresh clone and by the backend container in
+// docker-compose.yml, neither of which has user-secrets to supply a key. Throwing there does not
+// catch a misconfigured deploy, it stops the app booting for people who never opted into AI at
+// all. So in Development fall back to the stub and say so; in Production still refuse, because
+// there the reasoning above holds exactly.
+//
+// The consequence to know: adding Ai__ApiKey to user-secrets is the ONLY step needed to test
+// against the real vendor. Nothing else toggles — the vendor block in appsettings.Development.json
+// is already the real one. Remove the key and you are back on the stub.
 if (configuration.GetValue<bool>($"{QuizAPI.Services.Ai.AiOptions.SectionName}:Enabled") &&
     !useFakeAiProvider &&
     string.IsNullOrWhiteSpace(configuration[$"{QuizAPI.Services.Ai.AiOptions.SectionName}:ApiKey"]))
-    throw new InvalidOperationException(
-        "Ai:Enabled is true but Ai:ApiKey is not configured. Supply it via the Ai__ApiKey environment variable or user-secrets, or set Ai:Provider to \"Fake\" for development.");
+{
+    if (environment.IsDevelopment())
+    {
+        useFakeAiProvider = true;
+        Console.WriteLine(
+            "[AI] Ai:Enabled is true but no Ai:ApiKey is configured — falling back to the Fake " +
+            "provider. To call the real vendor: dotnet user-secrets set \"Ai:ApiKey\" \"<key>\"");
+    }
+    else
+        throw new InvalidOperationException(
+            "Ai:Enabled is true but Ai:ApiKey is not configured. Supply it via the Ai__ApiKey environment variable or user-secrets, or set Ai:Provider to \"Fake\" for development.");
+}
 
 // Stateless prompt construction → singleton.
 builder.Services.AddSingleton<QuizAPI.Services.Ai.AiPromptBuilder>();
@@ -267,8 +289,17 @@ builder.Services.AddScoped<QuizAPI.Services.Ai.AiReservationSweeper>();
 builder.Services.AddHttpContextAccessor();
 
 // --- JWT Authentication ---
-var jwtKey = configuration["Jwt:Key"]
-    ?? throw new InvalidOperationException("Jwt:Key is not configured.");
+// `??` caught null and nothing else, so `Jwt__Key=` (empty) or `Jwt__Key=" "` sailed straight
+// past this guard — an env var set to an empty string is a PRESENT value. Empty happens to fail
+// later inside SymmetricSecurityKey as an opaque IDX10703; whitespace does not fail at all, and
+// booted the API signing every token with a one-byte secret. The length floor is the half that
+// actually buys something: HMAC-SHA256 keys shorter than the 256-bit hash are weaker for no
+// gain, and a short key is the realistic mistake, not a missing one.
+var jwtKey = configuration["Jwt:Key"];
+if (string.IsNullOrWhiteSpace(jwtKey) || Encoding.UTF8.GetByteCount(jwtKey) < 32)
+    throw new InvalidOperationException(
+        "Jwt:Key is not configured, or is shorter than the 32 bytes HMAC-SHA256 requires. " +
+        "Generate one with: openssl rand -base64 48");
 var key = Encoding.UTF8.GetBytes(jwtKey);
 
 builder.Services.AddAuthentication(options =>
