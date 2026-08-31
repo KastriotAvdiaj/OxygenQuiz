@@ -1,0 +1,43 @@
+services:
+  backend:
+    build:
+      context: ./OxygenBackend/QuizAPI
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5000:8080"          # localhost-only; Nginx will reach it later
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - uploads:/app/wwwroot/uploads
+      - dpkeys:/app/keys    # persist uploaded files across rebuilds
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__PostgresConnection=Host=postgres;Port=5432;Database=OxygenQuiz;Username=postgres;Password=${POSTGRES_PASSWORD}
+      - Jwt__Key=${JWT_KEY}
+      - Jwt__Issuer=https://api.oxygenquiz.com
+      - Jwt__Audience=https://oxygenquiz.com
+      - Seed__AdminPassword=${ADMIN_PASSWORD}
+      - AllowedHosts=api.oxygenquiz.com
+      - Cors__AllowedOrigins__0=https://oxygenquiz.com
+      - Cors__AllowedOrigins__1=https://www.oxygenquiz.com
+      # - Security__EnforceProductionConfig=true   # turn ON after domain+TLS are wired and tested
+  postgres:
+    image: postgres:15
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: OxygenQuiz
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+volumes:
+  postgres-data:
+  uploads:
+  dpkeys:
