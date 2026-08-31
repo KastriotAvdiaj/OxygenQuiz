@@ -1,0 +1,15 @@
+{
+  // .NET's JSON config reader parses these files with CommentHandling = Skip and
+  // AllowTrailingCommas = true, so the comments in appsettings*.json are valid at runtime —
+  // it is only the editor that objects, because VS Code opens *.json in strict `json` mode
+  // where a `//` is an error. Re-associating them with `jsonc` (JSON with Comments) is what
+  // silences the squiggles; nothing about how the app reads the file changes.
+  //
+  // This is committed, not a per-machine setting, because the comments in those files carry
+  // load-bearing operational notes (which vendor's rates apply, what must live in
+  // user-secrets) and every clone should be able to read them without a local fix.
+  // See .gitignore — .vscode/* is ignored except for this file.
+  "files.associations": {
+    "appsettings*.json": "jsonc"
+  }
+}

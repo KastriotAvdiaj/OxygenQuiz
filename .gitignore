@@ -15,6 +15,9 @@ dist-ssr
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
+# Shared workspace settings. Currently the jsonc association that stops the editor flagging
+# the comments in appsettings*.json — a fix that is worthless if each machine has to redo it.
+!.vscode/settings.json
 .idea
 .DS_Store
 *.suo
