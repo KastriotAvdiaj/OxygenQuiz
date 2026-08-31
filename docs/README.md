@@ -11,6 +11,14 @@ The project has four parts:
   ephemeral; see [`mongodb.md`](data/mongodb.md).)*
 - **AI microservice** — optional Python/FastAPI + Ollama service in `microservice/` (LLM chat only).
 
+> **Looking for production, not local setup?** This file covers running OxygenQuiz on your own
+> machine. For how it is deployed, start at
+> [`deployment/production-topology.md`](deployment/production-topology.md) — it describes the stack
+> that actually runs and is the authority whenever the deployment docs disagree (several do).
+> Then: [`deployment/cheatsheet.md`](deployment/cheatsheet.md) for day-to-day commands,
+> [`deployment/configuration.md`](deployment/configuration.md) for how config is layered, and
+> [`deployment/known-issues.md`](deployment/known-issues.md) for the deferred-fix backlog.
+
 ---
 
 ## Required software

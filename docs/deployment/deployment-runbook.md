@@ -1,8 +1,14 @@
 # Deployment Runbook — quick commands
 
-> Copy-paste reference to reconnect to the server and drive the deployment. For *where we are* and
-> *what's next*, see [`deployment-progress.md`](deployment-progress.md).
+> Copy-paste reference to reconnect to the server and drive the deployment.
 > Server: `deploy@89.167.23.147` · domain `oxygenquiz.com`.
+>
+> **Which stack these commands assume:** design A — nginx as a host package terminating TLS,
+> backend + Postgres in Docker from the **root** `docker-compose.prod.yml`, SPA on Cloudflare
+> Workers. See [`production-topology.md`](production-topology.md), the authority when the
+> deployment docs disagree. Nothing here drives the Caddy stack under `deploy/`, which has never
+> been deployed. For the shortest version of the same commands see
+> [`cheatsheet.md`](cheatsheet.md); `deployment-progress.md` is a July log, not current state.
 
 ---
 

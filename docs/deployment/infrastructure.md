@@ -6,8 +6,14 @@
 > commands, see [`deployment-runbook.md`](deployment-runbook.md); for the original strategy and the
 > options we weighed, see [`deployment.md`](deployment.md).
 >
-> Last updated: 2026-07-04. Status: **backend live** at `https://api.oxygenquiz.com`; frontend
-> deployment (custom domain on the Worker) is the remaining step.
+> Last reviewed: 2026-08-31. Status: **both tiers live** — API at `https://api.oxygenquiz.com`,
+> SPA at `https://oxygenquiz.com` on Cloudflare Workers. The 2026-07-04 note about the Worker's
+> custom domain being "the remaining step" is done.
+>
+> This file describes **design A, the stack that actually runs**, and agrees with
+> [`production-topology.md`](production-topology.md) — which is the authority whenever the
+> deployment docs disagree, and several of them do. Anything you read here about `deploy/`,
+> Caddy, or a container serving the SPA is design B and has never been deployed.
 
 ---
 

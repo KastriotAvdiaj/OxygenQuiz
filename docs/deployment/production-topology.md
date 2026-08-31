@@ -65,13 +65,24 @@ Everything else the backend reads must be written as an explicit `- Key__Sub=val
 compose file. **Adding a variable to `.env.prod` alone does nothing** unless something in the
 compose file references it.
 
-### The known weak point
+### What is tracked, and what is not
 
-`~/OxygenQuiz/docker-compose.prod.yml` and `.env.prod` are **untracked** — they exist only on
-that VPS. The file defining production is not in version control, not reviewed, and not backed
-up beyond the box. Rebuild the server and it is gone; read the repo and you will find a stack
-that is not running. Commit the compose file (secrets stay in `.env.prod`) before doing anything
-else with it.
+As of `64f399e8` (2026-08-31) the live compose file **is in version control**, at the repo root as
+`docker-compose.prod.yml`, byte-identical to the server's copy, alongside
+`deploy/nginx/api.oxygenquiz.com.conf`. The path on the server did not change, so the deploy
+command is unchanged. Earlier revisions of this file said the compose file was untracked and told
+you to commit it — that was true when it was written and is the change that has since landed.
+
+`~/OxygenQuiz/.env.prod` remains untracked **on purpose** — it holds the secrets. It exists only
+on the VPS, so it is the one file a rebuild would lose. Keep a copy somewhere safe outside the box.
+
+The two copies can still drift: nothing enforces that the server's compose file matches the
+committed one. Edit the tracked file, commit, `git pull` on the server, and re-run the deploy
+command — rather than editing the server's copy in place. To check they agree:
+
+```bash
+ssh deploy@89.167.23.147 'cd ~/OxygenQuiz && git status --short docker-compose.prod.yml && git log --oneline -1'
+```
 
 ---
 
@@ -92,9 +103,14 @@ nothing reads it; `cp .env.example .env` configures nothing today.
 
 | Document | Describes |
 |---|---|
-| **This file** | A — live |
-| `configuration.md` | A — live (`.env.prod`, `--env-file`) |
-| `cheatsheet.md` | A — live |
+| **This file** | A — live. The authority when these disagree. |
+| `configuration.md` | A — live (`.env.prod`, `--env-file`). Backend config layers only; says nothing about frontend or infra config. |
+| `cheatsheet.md` | A — live. The shortest path for a routine deploy. |
+| `infrastructure.md` | A — live. The "why it's built this way" map. |
+| `deployment-runbook.md` | A — live. Copy-paste server commands. |
+| `deployment.md` | A — pre-launch *reasoning*, not the deployed state. Kept for the choices behind the design. |
+| `deployment-progress.md` | A — a **log that stops at 2026-07-04**. History, not current state. |
+| `vps-launch-checklist.md` | A — **historical**. Says Cloudflare *Pages*; the SPA is on *Workers*. Its DNS/TLS/hardening sequence is still sound. |
 | `production-runbook.md` | **B — unadopted.** Its "Caddy + backend + Postgres on one VPS, frontend served by Caddy" topology is design B. |
 | `deploy/.env.example` | **B — unadopted.** A useful *catalogue* of settings, but the file it tells you to create is not read by the live stack. |
 
@@ -114,7 +130,59 @@ nothing reads it; `cp .env.example .env` configures nothing today.
    ```
    The second command is the better check: it proves the value reached the app *and* that nginx
    and CORS are passing it through to where the SPA reads it.
-5. Commit the compose-file change.
+5. Commit the compose-file change. The compose file is tracked (see above), so the durable
+   sequence is: edit it here → commit → `git pull` on the server → re-run the deploy command.
+
+### Worked example: turning the AI features on
+
+`Ai:Enabled` is a **single switch for both AI features** — AI quiz generation and the
+category-palette proposer share one `Ai` section, one provider, one key and one budget. There is
+no second flag for the palette helper.
+
+Production loads `appsettings.json` and `appsettings.Production.json` only; the vendor block in
+`appsettings.Development.json` (Groq) is **not** read in production, so production inherits the
+DeepSeek block from `appsettings.json`. Enabling AI without overriding that block means you are
+calling DeepSeek and must supply a DeepSeek key.
+
+1. `~/OxygenQuiz/.env.prod` — add the secrets:
+
+   ```
+   AI_API_KEY=<vendor key>
+   GOOGLE_CLIENT_ID=<the OAuth Web application client id>
+   ```
+
+2. Root `docker-compose.prod.yml`, backend `environment:` block — add the referencing lines.
+   Without these the names in `.env.prod` reach nothing:
+
+   ```yaml
+       - Ai__Enabled=true
+       - Ai__ApiKey=${AI_API_KEY}
+       - Authentication__Google__Enabled=true
+       - Authentication__Google__ClientId=${GOOGLE_CLIENT_ID}
+   ```
+
+   Staying on DeepSeek needs nothing further. Using a **different vendor** means overriding the
+   whole block together — `Ai__BaseUrl`, `Ai__Model`, both cost-per-million rates, and
+   `Ai__ReasoningEffort` if the model is a reasoning model. Half a vendor swap mis-prices every
+   row in `AiGenerationUsages`, and the budget caps are enforced against that estimate.
+
+3. Deploy and verify:
+
+   ```bash
+   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
+   docker compose -f docker-compose.prod.yml exec backend printenv | grep -E 'Ai__|Authentication__'
+   curl -s https://api.oxygenquiz.com/api/Authentication/auth-config
+   ```
+
+   `GET /api/quiz/ai-quota` (authenticated) is the end-to-end check for AI: its `enabled` field
+   answers "would a generation actually be attempted" — kill switch *and* spend caps — and it
+   reports the active model id, which is how you confirm which vendor you are really on.
+
+**Startup guards to know before you deploy.** `Program.cs` refuses to start if `Ai:Enabled` is
+true with a blank `Ai:ApiKey` in Production, and refuses `Ai:Provider=Fake` in Production
+outright. Likewise an enabled auth provider with a blank `ClientId` fails startup. A typo in
+`Ai:Provider` is also fatal, deliberately: the old behaviour treated a typo as "make real paid
+calls".
 
 ## Migrating to design B, if you ever do
 

@@ -9,6 +9,12 @@
 > login works (`admin@example.com`). Frontend API-URL bug, custom domains, and the Worker deploy config
 > are all fixed (§14). Next up: full smoke test + security cleanup before calling it launched.**
 >
+> **▶ 2026-08-31 — this log stops at 2026-07-04 and is kept as history, not as current state.**
+> Since then: the production compose file and nginx site were committed (`64f399e8`), the
+> `Jwt:Key` guard was hardened (`6276fc9e`), and the deployment docs were reconciled against the
+> live server. For what runs today, read [`production-topology.md`](production-topology.md) — it
+> is the authority when the deployment docs disagree. The "current step" below is a July snapshot.
+>
 > **▶ Resuming? See "Current step — smoke test + production hardening" below.** Architecture reference:
 > [`infrastructure.md`](infrastructure.md); config model: [`configuration.md`](configuration.md);
 > outstanding fixes: [`known-issues.md`](known-issues.md).

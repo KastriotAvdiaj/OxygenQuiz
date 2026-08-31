@@ -2,14 +2,16 @@
 
 ## Project Overview
 
-OxygenQuiz is a full-stack quiz authoring and delivery platform composed of a Vite-powered React frontend, an ASP.NET Core Web API, and an experimental FastAPI microservice for LLM-powered assistance. The React client delivers the administrative and learner experience, while the .NET API handles authentication, quiz management, and persistence. A FastAPI service (`microservice/main.py`) is included for future natural-language features, but it is **not currently wired into the application** because it still needs additional work to proxy requests to an LLM provider securely.【F:src/lib/Api-client.ts†L33-L74】【F:microservice/main.py†L1-L118】
+OxygenQuiz is a full-stack quiz authoring and delivery platform composed of a Vite-powered React frontend and an ASP.NET Core Web API. The React client delivers the administrative and learner experience, while the .NET API handles authentication, quiz management, persistence, and the in-app AI features.
+
+AI generation lives **in the backend**, not in a separate service: the `Ai` configuration section drives both AI quiz generation and the category-palette proposer through one OpenAI-compatible HTTP provider. See [`docs/quiz/ai-quiz-architecture.md`](docs/quiz/ai-quiz-architecture.md) and [`docs/entities/category-palettes.md`](docs/entities/category-palettes.md). The FastAPI service in `microservice/` predates that work, is **not wired into the application**, and is not deployed.
 
 ## Architecture
 
 - **Frontend** – `src/` contains a React 18 + TypeScript application built with Vite and Tailwind. Axios clients centralize outbound HTTP traffic to the API and LLM endpoints.【F:src/lib/Api-client.ts†L1-L104】
 - **Backend** – `OxygenBackend/QuizAPI` is a .NET 8 Web API project with Entity Framework Core, Hangfire background jobs, and JWT authentication helpers.【F:OxygenBackend/QuizAPI/QuizAPI.csproj†L1-L35】【F:OxygenBackend/QuizAPI/Services/AuthenticationService/AuthenticationService.cs†L13-L121】
-- **Microservice** – `microservice/main.py` exposes a FastAPI app that fronts an Ollama runtime. The service exports `/chat` and `/generate` endpoints but is not invoked by the frontend or backend yet.【F:microservice/main.py†L1-L118】
-- **Containerization** – Dockerfiles exist for the frontend (`Dockerfile`) and backend (`OxygenBackend/Dockerfile`) to support containerized development and deployment workflows.【F:Dockerfile†L1-L24】【F:OxygenBackend/Dockerfile†L1-L26】
+- **Microservice** – `microservice/main.py` exposes a FastAPI app that fronts an Ollama runtime. It is **dormant**: nothing in the frontend or backend calls it, it is not built by any compose file, and it is not deployed. The AI features that shipped instead are in the backend's `Services/Ai` tree.【F:microservice/main.py†L1-L118】
+- **Containerization** – The backend image is built from `OxygenBackend/QuizAPI/Dockerfile`; that is the one every compose file references and the one production runs. The root `Dockerfile` builds a frontend image that the live stack does not use — the SPA is deployed to Cloudflare Workers, not served from a container. See [`docs/deployment/production-topology.md`](docs/deployment/production-topology.md).
 
 A high-level request flow is:
 
@@ -26,7 +28,7 @@ Install the following tools before working with the project:
 | Node.js 18+ & npm       | Required for the Vite dev server and build pipeline defined in `package.json`.【F:package.json†L1-L70】                                 | Install via nvm, Volta, or your package manager. |
 | .NET SDK 8.0            | Builds and runs `OxygenBackend/QuizAPI` (`net8.0` target).【F:OxygenBackend/QuizAPI/QuizAPI.csproj†L3-L23】                             | Use `dotnet --list-sdks` to confirm.             |
 | Python 3.11+ & pip      | Runs the FastAPI microservice and Ollama client imports.【F:microservice/main.py†L1-L118】                                              | Create a virtual environment for local work.     |
-| Docker & Docker Compose | Builds the frontend and backend containers defined by the repo Dockerfiles.【F:Dockerfile†L1-L24】【F:OxygenBackend/Dockerfile†L1-L26】 | Required for ECS/Fargate deployments.            |
+| Docker & Docker Compose | Builds and runs the local stack (`docker-compose.yml`) and the production backend image (`OxygenBackend/QuizAPI/Dockerfile`). | Required for production deploys.                 |
 | mkcert (optional)       | Generates trusted local HTTPS certificates used by the Vite dev script.【F:vite.config.ts†L1-L18】【F:package.json†L7-L15】             | Install only if you need HTTPS locally.          |
 
 ## Quick Start
@@ -133,22 +135,26 @@ All production secrets should be created as encrypted parameters or secrets, tag
 - `npm run build && npm run preview` – Produces a static build (`dist/`) and serves it locally for smoke tests before deployment.【F:package.json†L7-L15】
 - `dotnet publish OxygenBackend/QuizAPI/QuizAPI.csproj -c Release` – Builds a Release artifact for deployment to IIS, Kestrel, or container images.【F:OxygenBackend/QuizAPI/QuizAPI.csproj†L3-L24】
 - Frontend Docker image: `docker build -f Dockerfile -t oxygenquiz-frontend .` – Multi-stage build that compiles the Vite app and serves it via nginx.【F:Dockerfile†L1-L24】
-- Backend Docker image: `docker build -f OxygenBackend/Dockerfile -t oxygenquiz-backend .` – Restores, publishes, and packages the ASP.NET API into an ASP.NET runtime image.【F:OxygenBackend/Dockerfile†L1-L26】
+- Backend Docker image: `docker build -f OxygenBackend/QuizAPI/Dockerfile -t oxygenquiz-backend OxygenBackend/QuizAPI` – Restores, publishes, and packages the ASP.NET API into an ASP.NET runtime image. In production this is built by the root `docker-compose.prod.yml` rather than by hand.
 
-## Deployment (AWS)
+## Deployment
 
-The recommended target environment is AWS Fargate on ECS with supporting managed services. For the React client we standardize on **Option A** (static hosting via S3 + CloudFront) to minimize operational overhead while still enabling global TLS termination through ACM-managed certificates:
+OxygenQuiz runs on a **Hetzner VPS + Cloudflare Workers** split, not on AWS. The authoritative
+description — verified against the live server — is
+[`docs/deployment/production-topology.md`](docs/deployment/production-topology.md). In short:
 
-1. **Frontend** – Build the static bundle with `npm run build`, upload the generated `dist/` directory to an S3 bucket, and serve it behind an Amazon CloudFront distribution. CloudFront terminates TLS using an AWS Certificate Manager (ACM) certificate mapped to the desired domains.【F:package.json†L7-L15】
-2. **Backend API** – Package the .NET API into a container image, push to Amazon ECR, and run it on ECS Fargate with an Application Load Balancer (ALB). Attach an ACM certificate to the ALB listener for TLS termination before forwarding HTTP traffic to the containers. Configure RDS for **PostgreSQL** (used by both EF Core and Hangfire) and provision MongoDB (e.g. MongoDB Atlas) for chat features.【F:OxygenBackend/Dockerfile†L1-L26】【F:OxygenBackend/QuizAPI/QuizAPI.csproj†L14-L24】
-3. **FastAPI Microservice** – Containerize with a lightweight Python base image and deploy to ECS alongside the backend once the LLM integration is complete. Until then, keep it disabled in production environments.【F:microservice/main.py†L1-L118】
-4. **Secrets & Configuration** – Store sensitive configuration (JWT keys, database credentials, API keys) in AWS Secrets Manager. Non-secret configuration (API base URLs, feature flags) should be stored in Systems Manager Parameter Store and injected via ECS task definitions or environment files.
+| Piece | Where it runs |
+|---|---|
+| Frontend SPA | **Cloudflare Workers** (`npm run build` + `wrangler deploy`) |
+| API + PostgreSQL | **Hetzner VPS**, in Docker, via the root `docker-compose.prod.yml` |
+| TLS / reverse proxy | **nginx**, a host system package on the VPS, proxying to `127.0.0.1:5000` |
+| Secrets | `~/OxygenQuiz/.env.prod` on the VPS, referenced by `${...}` interpolation |
 
-Infrastructure as Code (IaC) scripts (Terraform or AWS CDK) will live under `infrastructure/` when available. Update this section with direct links once those scripts are committed.
+Day-to-day commands are in [`docs/deployment/cheatsheet.md`](docs/deployment/cheatsheet.md); the
+configuration model is in [`docs/deployment/configuration.md`](docs/deployment/configuration.md).
 
-### AWS TLS Management
-
-- **Certificates** – Request and renew public certificates in AWS Certificate Manager (ACM) for each environment (e.g., `app.example.com`, `admin.example.com`). Attach the ACM certificate to the CloudFront distribution that serves the React static site and to the ALB that fronts the backend API.
-- **Edge termination** – CloudFront handles HTTPS for end users and forwards plain HTTP requests to the S3 origin that contains the built `dist/` assets. The origin should block public access, relying on the CloudFront Origin Access Control.
-- **Service-to-service traffic** – The backend ECS service receives HTTP (port 80) traffic from the ALB target group, matching the container port exposed by the image (`EXPOSE 80` in the Dockerfile).【F:Dockerfile†L1-L24】
-- **Internal trust boundaries** – Because TLS terminates at CloudFront and the ALB, containers do not need mkcert-provided certificates. Keep mkcert tooling exclusively for local development via `npm run dev`.
+> **Earlier revisions of this file described an AWS Fargate/ECS + S3/CloudFront target with ACM
+> certificates.** That plan was never adopted and nothing in the repo implements it. It was removed
+> rather than left standing, because a deployment section describing infrastructure that does not
+> exist is worse than none. The `deploy/` directory holds a second, also-unadopted Caddy design —
+> `production-topology.md` explains that one too.

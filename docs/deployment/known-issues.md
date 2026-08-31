@@ -90,8 +90,24 @@ Auth-specific enhancements are tracked in [authentication.md](../auth/authentica
   implying the admin password. Reset both to empty strings. **Follow-up: change the
   seeded admin password** if it is still `admin` (that pair was publicly visible
   until this deployed). → `src/pages/UserRelated/Login/LoginForm.tsx`
-- **P3 — `AllowedHosts: "*"`.** Set to the real host name(s) in production to
-  blunt host-header attacks. → `OxygenBackend/QuizAPI/appsettings.json`
+- **P2 — Dev values live in the always-loaded base config, with no Production
+  overlay.** `appsettings.json` sets `Jwt:Issuer` to `https://localhost:8000`,
+  `Jwt:Audience` to `https://localhost:5173` and `AllowedHosts` to `"*"`.
+  `appsettings.Production.json` overrides **only** `Cors`, so in production the
+  correct values come from the compose `environment:` block alone, and `Program.cs`
+  merely *warns* rather than refusing to start. One dropped or mistyped env var and
+  the production API silently issues localhost-scoped tokens — which fail
+  validation in confusing ways rather than failing loudly at boot.
+  _Fix:_ move the real values into `appsettings.Production.json` so the compose file
+  is a belt-and-braces override rather than the only source, and/or promote the
+  `Program.cs` warning to a hard failure in Production (same convention as the
+  `Jwt:Key` and enabled-provider-without-client-id guards).
+  → `OxygenBackend/QuizAPI/appsettings.json:8-12`,
+  `OxygenBackend/QuizAPI/appsettings.Production.json`,
+  `OxygenBackend/QuizAPI/Program.cs`
+- ~~**P3 — `AllowedHosts: "*"`.**~~ Superseded by the P2 entry directly above, which
+  covers `AllowedHosts` along with the two `Jwt` values that have the same problem.
+  → `OxygenBackend/QuizAPI/appsettings.json`
 - **P3 — Broad CORS.** The policy uses `AllowAnyHeader` + `AllowAnyMethod` with
   credentials. It's origin-restricted, so low risk, but tighten the header/method
   surface if practical. → `OxygenBackend/QuizAPI/Program.cs`

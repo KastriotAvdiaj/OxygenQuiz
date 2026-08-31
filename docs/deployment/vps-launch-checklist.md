@@ -4,6 +4,14 @@
 > concrete, ordered "do this" for the split you chose:
 > **frontend on Cloudflare Pages, backend + SignalR on the Hetzner CX23 VPS, Cloudflare in front of both.**
 > Server: `ubuntu-4gb-hel1-1` · `89.167.23.147` · Ubuntu, 2 vCPU / 4 GB / 40 GB.
+>
+> **Status: historical.** This checklist was written before launch and the launch has happened.
+> Two things it says are no longer true of the live stack: the frontend is on **Cloudflare
+> Workers**, not Pages, and the compose file that defines production is the **root**
+> `docker-compose.prod.yml`, now tracked in git. Read
+> [`production-topology.md`](production-topology.md) for what runs — it is the authority when the
+> deployment docs disagree. Kept because the DNS, TLS and server-hardening steps are still the
+> right sequence if the box is ever rebuilt.
 
 ---
 
