@@ -87,8 +87,12 @@ verification.
 
 ## 4. Endpoints
 
-All on `Controllers/Authentication/Authentication.cs`, anonymous + `AuthPolicy` rate limit
-(they are credential surfaces):
+All on `Controllers/Authentication/Authentication.cs`. The credential-taking endpoints carry
+`AuthPolicy` (10/min). **`auth-config` and `signup-config` do not** — they have no
+`[EnableRateLimiting]` attribute and are covered only by the global limiter (100 req / 10s), and
+they are anonymous by default rather than by `[AllowAnonymous]` (there is no fallback
+authorization policy). That matters: see the request-storm post-mortem in §8 — a config endpoint
+under the *global* limiter is what absorbed ~1000 req/s.
 
 | Endpoint | Body → Result |
 |---|---|
@@ -124,8 +128,9 @@ gate OFF:  method ──► manual (steps 1..4) | external
   `useInviteCodeValidity` check (unreachable check never hard-blocks; the server stays the
   authority). Provider buttons do **not** exist on this screen.
 - **`MethodChoice.tsx`** — after a valid code: "Continue with email" or the provider buttons
-  (`SocialButtons`), plus "Use a different invite code". Renders providers only when enabled in
-  `auth-config`.
+  (`SocialButtons`). Renders providers only when enabled in `auth-config`. **The "Use a different
+  invite code" control is currently commented out** in the component, so there is no way back to
+  the gate from this screen; `SignupFlow` still passes an `onBack` prop that nothing consumes.
 - **`SignupForm.tsx`** — the existing multi-step form, minus its old invite step. It receives
   the gate's code as a prop, numbers itself `Step 2 of 5` when gated (`1 of 4` open), sends the
   code on submit, and bounces to the gate via `onBadInviteCode` if the server rejects it.
@@ -193,7 +198,9 @@ provider is enabled without a client id. Frontend buttons appear/disappear autom
   with the frontend origins as redirect URIs → *Token configuration*: add optional claims
   **`email`** and **`xms_edov`** to the ID token.
 
-To apply the schema change: `dotnet ef database update` (migration `AddExternalLogins`).
+The schema change needs no manual step: `Program.cs` calls `Database.MigrateAsync()` on every
+boot, in every environment, so `AddExternalLogins` applies itself when the new API starts. (Run
+`dotnet ef database update` locally only if you want the schema before running the app.)
 After pulling these changes, also run `graphify update .` to refresh the code graph.
 
 ---
@@ -228,12 +235,16 @@ provider buttons simply don't render (the flow behaves exactly as before this fe
 
 1. **`npm install`** — pulls `@react-oauth/google` and `@azure/msal-browser`. ✅ if the dev
    server already starts clean.
-2. **`dotnet ef database update`** — applies `AddExternalLogins` (new table + nullable
-   `PasswordHash`). Run against each environment's database before deploying the new API.
+2. **No migration step.** `AddExternalLogins` (new table + nullable `PasswordHash`) is applied
+   automatically at API startup — see above. There is no dotnet SDK on the production host and no
+   migration step in the compose stack, so there is nothing to run there.
 3. **Google Cloud Console** (≈10 min): OAuth consent screen (External, app name + logo) →
    Credentials → *Create OAuth client ID* → type **Web application** → add `https://localhost:5173`
-   and the production frontend origin to **Authorized JavaScript origins** (no redirect URI
-   needed). Copy the client id into config and enable:
+   and **both** production frontend origins to **Authorized JavaScript origins** — `https://oxygenquiz.com`
+   *and* `https://www.oxygenquiz.com`, because nothing redirects between them, so registering only
+   the apex breaks every `www` visitor (no redirect URI needed; leave that list empty). Check the
+   consent screen is **Published** — while it is in "Testing" only explicitly added test users can
+   sign in, which presents as "works for me, fails for everyone". Copy the client id into config and enable:
    - dev: `appsettings.Development.json` → `"Authentication": { "Google": { "Enabled": true, "ClientId": "…" } }`
    - prod: `Authentication__Google__Enabled=true`, `Authentication__Google__ClientId=…`
 4. **Microsoft Entra** (optional — see below): App registration → account type **Personal
@@ -252,8 +263,9 @@ provider buttons simply don't render (the flow behaves exactly as before this fe
    - Wait >10 min on the username step → submit → "Signup session expired" → back to method
      choice.
    - Bad/spent invite code at submit → bounced to the invite gate.
-7. **Production deploy order:** DB migration → API → frontend — in that order, and the order is
-   load-bearing. The old frontend against the new API is fine (new endpoints unused). The new
+7. **Production deploy order:** API → frontend. (Earlier revisions of this doc put a DB
+   migration first; there is no such step — the API migrates itself at startup.) The order that
+   remains is load-bearing. The old frontend against the new API is fine (new endpoints unused). The new
    frontend against the old API degrades to email/password signup with the provider buttons
    hidden — but only since the fix below; it used to hang the signup page outright.
 
@@ -322,6 +334,89 @@ Recorded here because the plausible-looking bug was the wrong one; the timeline 
 request growth, and the `Login`/`MethodChoice` controls) is what actually identified it.
 
 ---
+
+## 8a. Why the Google button is ours, with GIS's laid over it
+
+`SocialButtons` does not show Google's rendered button. It shows one of ours and puts the real
+GIS button on top at `opacity: 0` to take the click. That looks like someone being clever, so
+here is the reasoning, and the four attempts it took to get here.
+
+**GIS's button cannot be styled, only chosen from.** `theme` accepts `outline`, `filled_blue`
+and `filled_black` — that is the entire visual API. No border, radius or padding is
+overridable, because Google renders the button, not us.
+
+**And it paints white around itself.** The button is served from `accounts.google.com` in an
+iframe sized 320x44, with an opaque white fill across the whole thing and the real 300x40
+button centered inside. Every node in our chain (the `GoogleLogin` container, GIS's `S9gUrf-…`
+wrapper, the iframe element itself) computes to `rgba(0,0,0,0)` — the white is *inside* the
+iframe, and no stylesheet of ours reaches it. On a light page it is invisible. On our dark
+background it is the whole problem, and it disguises itself as three unrelated bugs:
+
+| `theme` | What you see | What it actually is |
+| --- | --- | --- |
+| `filled_black` | a bright ring around a dark button | white spill around `#202124` |
+| `filled_blue` | a white frame | the same spill, now obvious |
+| `outline` | one solid white slab, seemingly borderless | white button + white spill, no visible seam |
+
+**Clipping the spill away is not a fix, and this is the important part.** `overflow: hidden` on
+the `GoogleLogin` container (which the library pins to `height: 40`) does crop the white — but
+only while that container lands on whole device pixels. On the signup page it landed at
+`top: 552.2374877929688`, i.e. **690.297** device pixels at dPR 1.25, and one row of white
+survived the clip as a white line across the top of the button. Login was clean at the same
+moment for no better reason than that its layout rounded the other way. The boundary is
+accumulated from ancestor heights we neither set nor control, and it moves with content, zoom
+and DPI. A clip here is not a fix that regressed; it is a coin flip that came up heads on the
+page we happened to test.
+
+Two dead ends recorded so they are not retried. A 1px transparent border to overcrop
+(`box-sizing: border-box` + `overflow` clipping to the padding box) *shrinks the wrong box* —
+`GoogleLogin` sets `height: 40px` as an inline style, so the border eats two pixels off the
+button rather than the white. And there is no CSS way to snap an element to the device-pixel
+grid, so "just align it" has no implementation.
+
+**Hence the overlay.** Our button themes, sizes and hovers with the rest of the form; GIS's
+sits invisibly on top and is still the thing that is clicked, still initialized by GIS, still
+returning a real ID token through `onSuccess`. The auth flow is untouched — only the pixels
+are ours. `opacity: 0` is load-bearing: a `display: none` / `visibility: hidden` GIS button
+does not render or fire.
+
+**The invisible button is scaled up, and that is load-bearing.** GIS sizes its button to its
+own content and treats `width` as a request — the generic "Continue with Google" renders
+narrower than the personalized "Continue as \<name\>". Wherever the real button falls short of
+ours, the pointer sits on our empty overlay instead: the click does nothing, `group-hover`
+never fires, and there is no pointer cursor, because the cursor over a cross-origin iframe is
+set by Google's document and cannot be supplied from outside it. Since nobody sees the GIS
+button, distorting it is free and hit testing follows transforms, so it is scaled 3x from the
+centre to guarantee it covers our whole 300x40 surface at any label width. Do not trim that
+figure to fit — a tight value is another measurement of pixels we do not control.
+
+What it costs, so none of it gets rediscovered as a bug:
+
+- **The label is always generic.** GIS's personalized "Continue as \<name\>" lives inside the
+  iframe we are covering. Clicking still goes straight through to that account.
+- **The white square behind the G is gone with it** — that square is Google's own branding for
+  filled buttons (36x36, inset 2px) and was never removable while their button was visible.
+- **Branding terms.** Google expects their rendered button shown as-is. This pattern is widely
+  used but is a grey area. The sanctioned alternative is the auth-code flow: a fully custom
+  button, no iframe, but the backend must exchange the code with a client secret instead of
+  verifying an ID token (`GoogleIdentityVerifier` today does the latter).
+- **The visual layer is `aria-hidden` and untabbable on purpose.** GIS's button is the real
+  control and keeps its own accessible name and focus behaviour; `opacity: 0` leaves it in the
+  accessibility tree. Making the visual layer focusable would give one action two tab stops.
+
+**Theme switching still repaints the hidden button** if `theme` is made conditional — it sits
+in `GoogleLogin`'s effect deps, so changing it re-runs `id.initialize()` + `id.renderButton()`.
+There is now no reason to: nothing renders it. It is pinned to `outline`.
+
+**Diagnosing a recurrence.** Screenshots mislead here — a white button inside a white box shows
+no seam at all, which is what made `outline` look borderless. Measure instead:
+
+```js
+const c = document.querySelector('.group.relative iframe')?.closest('div');
+const r = c.getBoundingClientRect();
+console.log({ top: r.top, devicePx: r.top * devicePixelRatio,
+              onGrid: (r.top * devicePixelRatio) % 1 === 0 });
+```
 
 ## 9. File map
 

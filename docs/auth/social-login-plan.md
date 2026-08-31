@@ -151,10 +151,13 @@ settings, sessions all work unchanged because external users are ordinary `User`
 - `IExternalIdentityVerifier`: `string Provider { get; }` +
   `Task<ExternalIdentity> VerifyAsync(string idToken, CancellationToken ct)` — throws
   `UnauthorizedException` on any validation failure.
-- **`GoogleIdentityVerifier`** — uses the official `Google.Apis.Auth` package:
-  `GoogleJsonWebSignature.ValidateAsync(idToken, settings with Audience = ClientId)`. The library
-  handles JWKS fetching/caching, issuer (`accounts.google.com` / `https://accounts.google.com`),
-  expiry, and signature. Maps `Payload.Subject/Email/EmailVerified/Name`.
+- **`GoogleIdentityVerifier`** — ⚠️ **as-built, this does NOT use `Google.Apis.Auth`.** The plan
+  called for `GoogleJsonWebSignature.ValidateAsync`; the implementation uses the same
+  `Microsoft.IdentityModel` OIDC stack as the Microsoft verifier (a `ConfigurationManager<
+  OpenIdConnectConfiguration>` over Google's discovery document, then `JwtSecurityTokenHandler`
+  with `ValidAudience = ClientId`), which is what the header of this file already says. The
+  package is not in `QuizAPI.csproj`. Behaviour is equivalent: JWKS fetch/cache, issuer, expiry
+  and signature are all validated, and the same subject/email/verified/name claims are mapped.
 - **`MicrosoftIdentityVerifier`** — uses `Microsoft.IdentityModel.Protocols.OpenIdConnect`: a
   cached `ConfigurationManager<OpenIdConnectConfiguration>` over
   `https://login.microsoftonline.com/{tenant}/v2.0/.well-known/openid-configuration` supplies the
