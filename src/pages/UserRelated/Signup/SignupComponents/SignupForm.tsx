@@ -181,7 +181,7 @@ export const SignupForm: React.FC<SignupFormProps> = ({
 
   return (
     <>
-      <section className="flex flex-col justify-center gap-4 mb-6 sm:gap-6 sm:mb-8">
+      <section className="flex flex-col justify-center gap-4 mb-5 sm:gap-5 sm:mb-6">
         <Label className="self-center text-xs font-bold uppercase tracking-widest text-muted-foreground/60">
           Step {step} of {TOTAL_STEPS}
         </Label>
@@ -197,7 +197,7 @@ export const SignupForm: React.FC<SignupFormProps> = ({
       />
 
       <form
-        className="space-y-4 sm:space-y-6 text-base sm:text-lg min-h-[210px] sm:min-h-[250px] flex flex-col justify-center"
+        className="space-y-4 sm:space-y-5 text-base min-h-[210px] sm:min-h-[250px] flex flex-col justify-center"
         onSubmit={(e) => {
           e.preventDefault();
           advance();

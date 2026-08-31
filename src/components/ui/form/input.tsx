@@ -87,11 +87,15 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
     },
     ref
   ) => {
-    // `text-base sm:text-sm`: iOS Safari zooms the whole page when a focused input's font is
-    // under 16px, so phones get 16px and desktop keeps the denser 14px. Applies to every plain
-    // Input in the app — don't collapse it back to a bare `text-sm` (docs/RESPONSIVE.md).
+    // `text-[16px] sm:text-sm`: iOS Safari zooms the whole page when a focused input's font is
+    // under 16px, so phones get a hard 16px and desktop keeps the denser `text-sm`. The phone
+    // half is an arbitrary px value on purpose: it used to be `text-base`, which the density
+    // knob in global.css (root at 93.75%) silently turned into 15px — the floor is imposed by
+    // iOS in absolute pixels, so it must not be expressed in a unit that knob can move.
+    // Applies to every plain Input in the app; don't collapse it to a bare `text-sm`
+    // (docs/RESPONSIVE.md).
     const baseClasses =
-      "flex h-9 w-full rounded-md bg-background px-3 py-1 text-base sm:text-sm shadow-md border dark:border-foreground/40 transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
+      "flex h-9 w-full rounded-md bg-background px-3 py-1 text-[16px] sm:text-sm shadow-md border dark:border-foreground/40 transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
 
     // Minimal underline field. "isIncorrect" and "isCorrect" reuse the same
     // minimal styling but add a destructive-colored (red) or success-colored

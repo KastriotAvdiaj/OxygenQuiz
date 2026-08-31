@@ -9,6 +9,37 @@
   --font-quiz: "DynaPuff";
 }
 
+/* ---------------------------------------------------------------------------
+   THE DENSITY KNOB. One number, and it governs the size of the entire app.
+
+   Tailwind's scales are rem-based — spacing (`p-4` = 1rem), type (`text-base`
+   = 1rem), heights (`h-10` = 2.5rem), `max-w-*`, and our own `--radius` — so
+   the root font-size is the single lever that compacts all of them together
+   and in proportion. At 93.75% of a 16px default: base type 16 → 15px, `h-10`
+   40 → 37.5px, `max-w-md` 448 → 420px, `gap-8` 32 → 30px. The app had drifted
+   large — auth forms filling a laptop column edge to edge — and the honest fix
+   was a global density step, not a hunt through 344 components.
+
+   A PERCENTAGE, never `font-size: 15px`. A px root throws away the font size
+   the user set in their browser, which is the one accessibility preference a
+   web app must not override; a percentage scales *their* default instead of
+   replacing it, so someone running 20px still gets 18.75px here.
+
+   Two things do NOT follow this knob, and both are deliberate:
+     - Anything sized in `px` (arbitrary values like `min-h-[210px]`, and the
+       px in plain CSS below). If a component must scale with density, it has
+       to be expressed in rem.
+     - Form input text on phones, which is pinned to 16px further down. Below
+       16px iOS Safari zooms the page on focus and never zooms back, so the
+       floor wins over the knob — see `.minimal-input` and docs/RESPONSIVE.md.
+
+   Turning this back to 100% restores the previous sizing exactly; there is no
+   other change to revert.
+   --------------------------------------------------------------------------- */
+html {
+  font-size: 93.75%;
+}
+
 /* App-shell scrolling model (see docs/RESPONSIVE.md):
    the window NEVER scrolls — html/body are pinned and every route scrolls inside
    the layout's `.app-shell-viewport` container instead. Code must therefore never
@@ -370,10 +401,12 @@ body {
 .minimal-input {
   border-radius: 0.3125rem 0.3125rem 0 0;
   box-shadow: 0 2px 5px hsl(var(--muted) / 0.3);
-  /* Raised with the font size above: 16px text + 0.75rem padding needs ~2.7rem, and the old
-     2.25rem cap clipped it. Also lands the control at ~44px — the touch-target size
-     docs/RESPONSIVE.md asks for on primary actions. */
-  max-height: 2.75rem;
+  /* Sized to hold the tallest case, which is now the PHONE: its font-size is pinned to 16px
+     (below) while this cap and the padding both shrink with the density knob. At 2.75rem the
+     two no longer met — 16px text plus 0.75rem padding overflowed a 41px cap and clipped the
+     descenders. 3rem clears it and still lands at/above the 40px touch target
+     docs/RESPONSIVE.md asks for. */
+  max-height: 3rem;
   background-color: hsl(var(--muted));
   /* Themed fields (--field-accent set by the question card) get a faint wash of their type
      color layered over the opaque muted fill. This is a background-IMAGE, not a
@@ -392,8 +425,14 @@ body {
      This rule is plain CSS outside Tailwind's layers, so it beats any `text-base`/`text-lg`
      class a caller passes — InputField passed `text-base` for exactly this reason and it was
      silently losing to the old 0.875rem, which is why iOS Safari zoomed the page on focus.
-     Anything below 1rem here reintroduces that zoom on every login/signup/quiz answer field. */
-  font-size: 1rem;
+     Anything below 16px here reintroduces that zoom on every login/signup/quiz answer field.
+
+     PX, NOT REM, AND THAT IS THE WHOLE POINT. This said `1rem` until the density knob at the
+     top of this file took the root to 93.75% — at which moment `1rem` quietly became 15px and
+     this rule started causing the exact zoom it was written to prevent. The floor is an
+     absolute 16px imposed by iOS, so it has to be expressed in a unit the knob cannot move.
+     The density step is applied from `sm` up instead, where focus-zoom does not happen. */
+  font-size: 16px;
   font-weight: 500;
   padding: 0.75rem;
   width: 100%;
@@ -401,6 +440,14 @@ body {
   border-bottom: none;
   border-right: none;
   border-top: 1px solid transparent;
+}
+
+/* The density step for the field text, applied only from `sm` up — see the font-size note
+   in `.minimal-input`. Phones keep the hard 16px floor; everything wider follows the knob. */
+@media (min-width: 640px) {
+  .minimal-input {
+    font-size: 1rem;
+  }
 }
 
 .minimal-input::placeholder {

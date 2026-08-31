@@ -12,11 +12,15 @@ const Signup: React.FC = () => {
     // see Login.tsx / docs/RESPONSIVE.md for the full rationale.
     <div className="app-shell-viewport w-full bg-background font-quiz">
       <div className="flex min-h-full w-full flex-col lg:flex-row">
-      {/* Left Side - Background Image with Branding.
-          Hidden on phones: a hero band + form + note can't fit one phone
-          viewport, and a signup page shouldn't scroll — the form owns the
-          screen; branding returns from sm up (docs/RESPONSIVE.md). */}
-      <div className="relative hidden sm:flex lg:w-1/2 sm:h-[30vh] lg:h-auto lg:self-stretch shrink-0 items-center justify-center overflow-hidden">
+      {/* Left Side - Background Image with Branding. SIDE-BY-SIDE ONLY (lg+).
+          Below lg the parent is flex-col, so this panel does not sit beside the
+          form — it stacks ON TOP of it as a band, pushing the form down and
+          costing vertical space the form actually needs. Branding that has to
+          shove the form off-screen to introduce it is not earning its place, so
+          it is dropped entirely rather than shrunk: no hero, form owns the
+          screen, no scrolling. It returns only where there is a second column to
+          put it in (docs/RESPONSIVE.md). */}
+      <div className="relative hidden lg:flex lg:w-1/2 lg:h-auto lg:self-stretch shrink-0 items-center justify-center overflow-hidden">
         {/* Background image — blurred so the branding reads cleanly over a busy photo.
             scale-110 is required, not decorative: a blur samples past the element's edge and
             would otherwise feather into transparency at the seams. The parent clips it. */}
@@ -65,7 +69,7 @@ const Signup: React.FC = () => {
 
         {/* Form Container — my-auto centers it in the space left after the
             control row; tighter rhythm on phones (docs/RESPONSIVE.md) */}
-        <div className="w-full max-w-md space-y-5 sm:space-y-8 mx-auto my-auto">
+        <div className="w-full max-w-md space-y-5 sm:space-y-6 mx-auto my-auto">
           <div className="space-y-2">
             <h2 className="text-xl sm:text-3xl font-bold text-foreground">Create Account</h2>
             {/* <p className="text-sm sm:text-base text-muted-foreground">

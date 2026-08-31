@@ -103,6 +103,76 @@ is actually visible.
   `max-h-[calc(100vh-7rem)] supports-[height:100dvh]:max-h-[calc(100dvh-7rem)]`
   (see `quiz-filter-panel.tsx`, `quiz-start-modal.tsx`).
 
+## Density: the root font-size knob
+
+The size of the whole app hangs off one declaration in `global.css`:
+
+```css
+html { font-size: 93.75%; }   /* 16px default → 15px base */
+```
+
+Tailwind's scales are rem-based — spacing (`p-4` = 1rem), type (`text-base` = 1rem), heights
+(`h-10` = 2.5rem), `max-w-*` — and so is our `--radius`. So the root font-size is the only lever
+that compacts all of them together *and in proportion*. `h-10` 40 → 37.5px, `max-w-md`
+448 → 420px, `gap-8` 32 → 30px. Reach for this before touching component sizes: the app reading
+as too large is a density problem, and density has one control, not 344.
+
+**A percentage, never `font-size: 15px`.** A px root discards the font size the user set in
+their browser — the one accessibility preference a web app must not override. A percentage
+scales *their* default, so a reader on 20px still gets 18.75px.
+
+**Two kinds of thing do not follow it, and both bite:**
+
+- **Anything sized in `px`** — arbitrary values like `min-h-[210px]`, and plain CSS. These stay
+  put while everything around them shrinks, so a hand-tuned px cap that used to fit its content
+  will start clipping it. `.minimal-input`'s `max-height` did exactly this and had to be raised.
+  If a value must scale with density, express it in rem.
+- **The 16px input floor**, which must survive the knob and therefore has to be written in a
+  unit the knob cannot move. This is the trap: `.minimal-input` said `font-size: 1rem` and the
+  shared `Input` said `text-base`, both of which *were* 16px and silently became 15px the moment
+  the root moved — reintroducing the iOS focus-zoom those very lines existed to prevent. Both
+  are now literal `16px` / `text-[16px]` on phones, with the density step applied from `sm` up
+  where focus-zoom does not happen. **Any new input needs the same treatment.**
+
+## Width scales layout and display type — not control density
+
+Three different things get called "responsive" and only two of them belong to width breakpoints.
+
+**Scale with width — this is what `sm:`/`md:`/`lg:` are for:**
+
+- Layout: columns, gutters, `max-w-*`, page padding, whether the auth hero sits beside the form
+  or stacks on top of it, whether a button row is a grid or a stack.
+- Display type: a hero headline is doing a compositional job and should fill the space it is
+  given. `text-3xl sm:text-4xl md:text-5xl lg:text-6xl` on the Home hero is correct — see
+  "Fluid type" under Layout patterns.
+
+**Do not scale with width — the density of an interactive control:** its padding, its height,
+and the size of the text inside it. A field is the same control doing the same job with the same
+finger or cursor hitting it whether the window is 900px or 1900px wide; a wider monitor is not a
+reason for a taller input. The same goes for body copy inside a form, which is being read at the
+same distance either way.
+
+So `md:w-1/2` on a form column: yes. `md:py-5` on the field inside it: no.
+
+Where density *should* vary is with **vertical** space, and that has its own variant — `short:`
+(below). Height is the axis under real pressure on a laptop, and it is the one width breakpoints
+say nothing about.
+
+The auth pages were the worked example of getting this backwards. `py-2.5 sm:py-4 md:py-5` on a
+field, `text-sm sm:text-lg` on its label, `text-base sm:text-lg` on form body copy,
+`space-y-5 sm:space-y-8` on the page — four independent ramps, each defensible alone, compounding
+into a form that filled a laptop column edge to edge while passing every breakpoint test.
+
+Two traps found while unpicking it, both worth checking before you trust any size class:
+
+- The Sign In button was `py-6 xs:py-4`, and **`xs` is not a breakpoint in
+  `tailwind.config.js`** — so that step had never applied and the button carried 24px of padding
+  at every width. An undefined variant fails silently; Tailwind just doesn't emit the rule.
+- Several of those ramps sat on `<Input variant="minimal">`, whose plain-CSS rule in
+  `global.css` overrides padding, height and font-size outright. They were inert, and reading
+  them off the element is how the field's height got misdiagnosed. If you are explaining a
+  component's size from its class list, first confirm those classes are the ones in effect.
+
 ## Short viewports: the `short:` variant
 
 Every other breakpoint in this app is about **width**. `short:` is about **height**, and it
@@ -384,7 +454,7 @@ with `env(safe-area-inset-*)`. If you ever add a fixed bottom bar, pad it with
 | `layout.tsx`, `Router.tsx` | New `headerBehavior="hidden"` — `/quiz/:quizId/play` renders no header | Immersive play: on phones the header ate a full row and pushed Submit below the fold |
 | Gameplay components (`quiz-timer` md size, `question-card`, `question-display`, `quiz-interface`, `multiple-choice`, `true-or-false`, `quiz-submit-button`) | Compact base (phone) sizes: smaller timer, tighter padding/spacing (`space-y-3`, `p-2.5`, `py-3`), True/False side-by-side; `sm:` sizes unchanged | Goal: timer + question + options + Submit fit a ~660px phone viewport with no scrolling |
 | `Game-Mode-Selection.tsx`, `mode-card.tsx` | Phone column capped at `max-w-xs`; cards compact (`p-4`, smaller chip/title) | Edge-to-edge full-height cards read as page sections, not tappable choices |
-| `Login.tsx`, `Signup.tsx` (+ forms, `InputField`, `O2Button`, `SocialButtons`) | Wrapped in `.app-shell-viewport` (they render standalone, outside HomeLayout, and previously had NO scroll container — unreachable content on phones); hero hidden < sm (form owns the phone screen, no scrolling); controls in a static top row < lg (the absolute overlay overlapped the heading); compact inputs/note/spacing, fluid type | Standalone routes must provide their own scroll container — add `.app-shell-viewport` to any new one. Auth/utility pages aim for zero scrolling on phones |
+| `Login.tsx`, `Signup.tsx` (+ forms, `InputField`, `O2Button`, `SocialButtons`) | Wrapped in `.app-shell-viewport` (they render standalone, outside HomeLayout, and previously had NO scroll container — unreachable content on phones); hero hidden < lg (see below); controls in a static top row < lg (the absolute overlay overlapped the heading); compact inputs/note/spacing, fluid type | Standalone routes must provide their own scroll container — add `.app-shell-viewport` to any new one. Auth/utility pages aim for zero scrolling on phones |
 | `Provider.tsx` loaders, `UtilityPages/*` (AccessDenied, NotFound, MainErrorFallback) | `h-screen`/`min-h-screen` → `.app-shell-viewport` centered card | Same standalone-route rule; loaders/error cards center in the real visible viewport |
 | Shared components' size maps (`loading-wave` sizes, `Go-Back-Button` width, `ModeToggle`/auth buttons in header, Home hero stack) | Every fixed size gets a phone step (e.g. LoadingWave xl `text-3xl sm:text-5xl md:text-6xl`; GoBack `w-32 sm:w-48`; header `h-12 sm:h-16` with `h-8` controls); Home hero stacks `flex-col` below sm so the rotating word doesn't toggle between 1 and 2 lines | Rule: "responsive" means components genuinely shrink at phone widths — scrollability alone is not a fix. Size maps/variants must include base (phone) steps, not one fixed desktop size |
 
@@ -434,6 +504,7 @@ freshly fetched question.
 | `form/input.tsx`, `form/textarea.tsx`, `field-variants.ts` | `text-sm` → `text-base sm:text-sm`; `text-[15px]` → `text-base sm:text-[15px]` | Same zoom, every other field in the app. Phones get 16px, desktop keeps its denser size |
 | `ui/dialog/dialog.tsx` | `w-full` → `w-[calc(100%-2rem)] sm:w-full`; `sm:rounded-lg` → `rounded-lg`; added dvh height cap + `overflow-y-auto` | Dialogs were full-bleed square rectangles on phones |
 | `Login.tsx`, `Signup.tsx` | `px-5` → `px-6` on phones | Form ran almost edge to edge; now matches the dialog gutter |
+| `Login.tsx`, `Signup.tsx` | Branding hero `hidden sm:flex` + `sm:h-[30vh]` → `hidden lg:flex` | The panel only sits *beside* the form at lg. Below that the parent is `flex-col`, so it stacked on top as a 30vh band, pushing the form down and eating the vertical space the form needed — worst on short landscape tablets. Branding that has to shove the form off-screen to introduce itself is not earning its place, so it is dropped rather than shrunk. Both auth pages now have exactly one breakpoint: < lg is a single centered form, lg+ is the two-column layout — the same lg the control row already switched on |
 | `UtilityPages/Error/*`, `NotFound-Content` | `max-w-xs sm:max-w-md`, reduced type/padding below `sm` | Rendered in the display font at desktop sizing, the error card filled a phone screen and read as a broken page |
 
 ## What changed in the Aug 2 2026 pass
@@ -505,22 +576,26 @@ now a recorded decision rather than a preference —
 3. Fixed-size overlays: `max-w-[85vw]` + dvh height cap + inner scroll.
    `Dialog` already handles its own phone gutter and height cap.
 4. Mobile-first Tailwind; verify at 360px, 390px, 768px, and desktop.
-5. Touch targets ≥ `h-9`; form inputs ≥ 16px font **on phones** — and confirm
+5. Scaling something with `sm:`/`md:`? Layout and display type, yes. The
+   padding/height/text of a control, no — that is density, and it belongs to the
+   root font-size knob (whole app) or `short:` (vertical pressure). Any
+   hard-coded `px` opts that value out of the knob; make sure that is intended.
+6. Touch targets ≥ `h-9`; form inputs ≥ 16px font **on phones** — and confirm
    in devtools' computed styles, not by reading the class list. This applies to
    raw `<input>`/`<textarea>` elements too, not just the shared field
    components.
-6. Any input whose Enter key submits: set `enterKeyHint`.
-7. Any dialog/drawer that contains a text field: decide whether it should take
+7. Any input whose Enter key submits: set `enterKeyHint`.
+8. Any dialog/drawer that contains a text field: decide whether it should take
    focus on open, and pass `onOpenAutoFocus` if not.
-8. Rendering a list from a table that will grow? Cap it and scroll it in place
+9. Rendering a list from a table that will grow? Cap it and scroll it in place
    (`max-height` + `overflow-y-auto` + `overscroll-contain`), with the cap as a
    shared constant. Test with ~3 rows *and* ~50, not just today's seed data.
-9. A row of two or more fixed-padding buttons? Give it a grid + a stacked
+10. A row of two or more fixed-padding buttons? Give it a grid + a stacked
    breakpoint, not `flex` and hope. Check it at 360px *and* at an awkward
    in-between width like 500px — that's where flex shrink deforms rather than
    wraps. A text-plus-button row needs `min-w-0` on the text and `shrink-0` on
    the button for the same reason.
-10. A screen that must fit one viewport? Assert it, don't eyeball it. `FitsTheFold`
+11. A screen that must fit one viewport? Assert it, don't eyeball it. `FitsTheFold`
    in `ai-quiz-wizard-view.stories.tsx` is the reference: a story pinned to the
    target viewport with a play function measuring the primary action's headroom.
    Height is the one property that regresses without producing an error.

@@ -1,7 +1,7 @@
 import React from "react";
-import { ArrowLeft, Mail } from "lucide-react";
+import { Mail } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+// import { Button } from "@/components/ui/button";
 import { LiftedButton } from "@/common/LiftedButton";
 import SocialButtons from "@/lib/SocialButtons/SocialButtons";
 import { useAuthConfig } from "@/lib/auth-config";
@@ -14,7 +14,7 @@ interface MethodChoiceProps {
   onChooseManual: () => void;
   onLoggedIn: () => void;
   onNeedsSignup: (
-    info: ExternalSignupRequired & { provider: ExternalProvider }
+    info: ExternalSignupRequired & { provider: ExternalProvider },
   ) => void;
 }
 
@@ -29,7 +29,7 @@ interface MethodChoiceProps {
  * code stays unspent — the gate only guards account creation).
  */
 const MethodChoice: React.FC<MethodChoiceProps> = ({
-  onBack,
+  // onBack,
   onChooseManual,
   onLoggedIn,
   onNeedsSignup,
@@ -39,7 +39,7 @@ const MethodChoice: React.FC<MethodChoiceProps> = ({
 
   return (
     <div className="flex flex-col min-h-[210px] sm:min-h-[250px]">
-      <p className="text-sm sm:text-base text-muted-foreground mb-5 sm:mb-8">
+      <p className="text-sm sm:text-base text-muted-foreground mb-4 sm:mb-6">
         How would you like to create your account?
       </p>
 
@@ -67,21 +67,24 @@ const MethodChoice: React.FC<MethodChoiceProps> = ({
             </div>
           </div>
 
-          <SocialButtons onLoggedIn={onLoggedIn} onNeedsSignup={onNeedsSignup} />
+          <SocialButtons
+            onLoggedIn={onLoggedIn}
+            onNeedsSignup={onNeedsSignup}
+          />
         </>
       )}
 
-      {onBack && (
+      {/* {onBack && (
         <Button
           type="button"
-          variant="ghost"
-          className="mt-6 self-start text-muted-foreground"
+          variant="outline"
+          className="mt-6 self-start text-muted-foreground p-2 border-none shadow-none text-xs hover:bg-background hover:text-foreground"
           onClick={onBack}
         >
-          <ArrowLeft />
+          <ArrowLeft className="w-4 h-4" />
           Use a different invite code
         </Button>
-      )}
+      )} */}
     </div>
   );
 };

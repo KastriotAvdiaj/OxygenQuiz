@@ -79,7 +79,11 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, isPending }) => {
         <Button
           onClick={handleSubmit}
           isPending={isPending}
-          className="text-base sm:text-xl shadow-lg w-full py-6 xs:py-4 text-white"
+          // `py-3 text-base`, flat. This was `py-6 xs:py-4 text-base sm:text-xl` — and
+          // `xs` is not a breakpoint in tailwind.config.js, so the `xs:py-4` step never
+          // applied and this was 24px of padding at every width. Controls do not grow
+          // with the viewport (docs/RESPONSIVE.md).
+          className="text-base shadow-lg w-full py-3 text-white"
           disabled={isPending}
         >
           Sign In
