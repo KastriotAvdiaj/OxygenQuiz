@@ -1,7 +1,13 @@
 # Deployment & Go-Live Runbook
 
-> **Status: pre-launch reference (written 2026-06-22).**
-> This is the single place to look for "where does X live in production and how do I ship it."
+> **Status: pre-launch reference (written 2026-06-22) — planning, not the deployed state.**
+> For what is *actually running now* (nginx on the host, backend + Postgres in Docker, frontend on
+> Cloudflare Workers, config in the root compose file + `.env.prod`), read
+> [`production-topology.md`](production-topology.md) first. It is the authority whenever the
+> deployment docs disagree, and they do: `production-runbook.md` and `deploy/` describe a Caddy-based
+> stack that was never adopted.
+>
+> This doc remains the reasoning behind the choices — "where does X live in production and how do I ship it""
 > Security items that block launch are tracked in [`known-issues.md`](known-issues.md);
 > auth specifics are in [`authentication.md`](../auth/authentication.md). Local-dev setup is in
 > [`README.md`](../README.md) — this doc is strictly about **production**.

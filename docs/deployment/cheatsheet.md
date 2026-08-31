@@ -1,6 +1,9 @@
 # Deploy Cheat Sheet
 
-> One-page copy-paste reference. Details: [`deployment-runbook.md`](deployment-runbook.md).
+> One-page copy-paste reference for the **live** stack (design A: nginx on the host, backend +
+> Postgres in Docker, frontend on Cloudflare Workers). What runs and why:
+> [`production-topology.md`](production-topology.md). Note `production-runbook.md` documents a
+> different, unadopted stack — don't mix the two.
 
 ## Backend (VPS, Docker)
 

@@ -397,7 +397,7 @@ Four independent layers. Any one of them failing does not open the tap.
 | Layer | Mechanism | Catches |
 |---|---|---|
 | Feature flag | `Ai:Enabled=false` → endpoint 503s, UI falls back to copy-paste | Provider outage, budget emergency |
-| Global spend cap | Rolling 30-day token spend vs `Ai:MonthlyTokenBudget`; over budget behaves as disabled | Everything at once |
+| Global spend cap | Rolling 30-day spend vs `Ai:MonthlyBudgetUsd` (shipped name; plan said `MonthlyTokenBudget`), and a daily cap vs `Ai:DailyBudgetUsd`; over budget behaves as disabled | Everything at once |
 | Per-user daily quota | `IAiQuotaService`, §9.2 | The steady drip that a rate limiter misses |
 | Rate limit + concurrency | New `ai` policy on the existing limiter; **1 in-flight generation per user** | Burst abuse; connection exhaustion from a streaming endpoint |
 
@@ -619,6 +619,18 @@ Delete it in 2.0 and drop those rows from the setup table.
 
 ## 14. Configuration
 
+> ⚠️ **Do not copy this block — it is the plan's proposal, not what shipped.** Several key names
+> here were never implemented (`Ai:MonthlyTokenBudget` shipped as **`Ai:MonthlyBudgetUsd`**;
+> `Ai:MaxFiles`, `Ai:MaxFileBytes`, `Ai:MaxPdfPages`, `Ai:MaxDocxUncompressed` and `Ai:CacheHours`
+> do not exist — file upload is unshipped slice 2.3), and it omits keys that do:
+> `DailyBudgetUsd`, `MaxOutputTokens`, `ReasoningEffort`, `ReservationTimeoutMinutes`,
+> `MaxTopicChars`, `MaxExtraInstructionChars`, and **both** `InputCostPerMillionUsd` /
+> `OutputCostPerMillionUsd` — the two the budget caps are actually enforced against.
+> The as-built list is `Services/Ai/AiOptions.cs`, documented in
+> [`ai-quiz-generation-flow.md`](ai-quiz-generation-flow.md) §2. For production delivery see
+> [`../deployment/production-topology.md`](../deployment/production-topology.md).
+
+
 ```jsonc
 "Ai": {
   "Enabled": false,                       // per-environment; blank key + Enabled=true fails startup
@@ -629,7 +641,7 @@ Delete it in 2.0 and drop those rows from the setup table.
   "Temperature": 0.3,
   "TimeoutSeconds": 90,
   "DefaultDailyQuota": 2,
-  "MonthlyTokenBudgetUsd": 25,
+  "MonthlyBudgetUsd": 25,          // shipped name; the plan wrote MonthlyTokenBudgetUsd
   "MaxQuestionsPerGeneration": 15,
   "MaxFiles": 3,
   "MaxFileBytes": 10485760,

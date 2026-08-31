@@ -3,9 +3,16 @@
 Concrete, ordered steps to deploy OxygenQuiz to the Hetzner VPS behind Cloudflare.
 Config files live in [`/deploy`](../deploy). Server IP: **89.167.23.147**. Domain: **oxygenquiz.com**.
 
-Topology: one VPS runs **Caddy + backend + Postgres**; the **frontend** is built locally and
-served as static files by Caddy. **Cloudflare** sits in front (DNS, TLS, DDoS). Postgres lives on
-the box with a nightly backup.
+> ⚠️ **This runbook describes design B, which has never been deployed.** The live production
+> stack is nginx (host package) + backend + Postgres, with the frontend on Cloudflare Workers —
+> see [`production-topology.md`](production-topology.md), which is the authority when the
+> deployment docs disagree. Steps below that mention Caddy, `deploy/.env` or
+> `cp .env.example .env` configure nothing on the running server. Kept because it is the
+> reference for adopting design B, and its DNS/TLS/backup steps are still sound.
+
+Topology (design B, unadopted): one VPS runs **Caddy + backend + Postgres**; the **frontend** is
+built locally and served as static files by Caddy. **Cloudflare** sits in front (DNS, TLS, DDoS).
+Postgres lives on the box with a nightly backup.
 
 > Do these in order. Several steps wait on DNS propagation, so kick off **Step 1** first, then do
 > Steps 2–3 while it propagates.

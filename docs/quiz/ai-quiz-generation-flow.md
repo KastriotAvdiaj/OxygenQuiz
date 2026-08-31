@@ -134,8 +134,8 @@ called `compatible-mode` that speaks it. So do Mistral, Groq and most local runn
 |---|---|
 | `Ai:Provider` | **How**, not who: `"OpenAiCompatible"` (a real HTTP call) or `"Fake"` (the offline stub). |
 | `Ai:BaseUrl` | Who. `https://api.deepseek.com`, or a Qwen `compatible-mode/v1` URL. |
-| `Ai:Model` | Which model there. Recorded on every usage row and shown in the wizard. |
-| `Ai:InputCostPerMillionUsd` / `Ai:OutputCostPerMillionUsd` | What it costs. **Change these in the same edit** — see §9.13. |
+| `Ai:Model` | Which model there. Recorded on every usage row. **Not** shown in the wizard — the model note was removed (see `quota-note.tsx`); the `ai-quota` endpoint still returns it, nothing renders it. |
+| `Ai:InputCostPerMillionUsd` / `Ai:OutputCostPerMillionUsd` | What it costs. **Change these in the same edit** — see §9.14. |
 | `Ai:ReasoningEffort` | How long a *reasoning* model may think. Unset for everything else, and unset means the field is never sent. See §2b. |
 
 Two things follow from that split, and both were bugs waiting to happen before it:
@@ -144,10 +144,11 @@ Two things follow from that split, and both were bugs waiting to happen before i
   fell through to the HTTP provider. It now throws at startup unless the value is one it
   recognises. The legacy vendor names `"DeepSeek"` and `"Qwen"` still boot, with a warning, so an
   existing `.env` survives the rename; delete that branch once no environment sets one.
-- **Nobody could see which model wrote a quiz.** `GET /quiz/ai-quota` now returns the active
-  model id and the wizard prints "Questions are written by *model*" under the allowance line.
-  It is null whenever generation is unavailable — naming a model we are not about to call is a
-  claim, not information — and the fake provider honestly reports `fake-provider`.
+- **Nobody could see which model wrote a quiz.** `GET /quiz/ai-quota` returns the active model
+  id, null whenever generation is unavailable (naming a model we are not about to call is a
+  claim, not information), and the fake provider honestly reports `fake-provider`. ⚠️ **The
+  wizard no longer prints it.** The "Questions are written by *model*" line was removed —
+  `quota-note.tsx` says so explicitly — so the endpoint field currently has no consumer.
 
 **The boundary of "config only"** is the request body. `ChatRequest` carries the standard fields
 and nothing else, so a vendor needing an extra one needs a line of C#. `reasoning_effort` is the
@@ -482,7 +483,7 @@ The code set is closed. Adding one means touching all four columns of this table
 
 | Code | When | HTTP | Quota | What the user should see |
 |---|---|---|---|---|
-| `FeatureDisabled` | `Ai:Enabled=false`, or 30-day spend over `Ai:MonthlyBudgetUsd`, or no API key | 503 | untouched | "AI generation is off right now — you can still copy the prompt into your own AI." |
+| `FeatureDisabled` | `Ai:Enabled=false`, or **daily** spend over `Ai:DailyBudgetUsd` (checked first), or 30-day spend over `Ai:MonthlyBudgetUsd`, or no API key | 503 | untouched | "AI generation is off right now — you can still copy the prompt into your own AI." |
 | `EmailNotVerified` | `user.EmailConfirmed == false` | 403 | untouched | A prompt to verify, with a resend link. |
 | `QuotaExceeded` | Daily cap spent | 429 + `Retry-After` | untouched | "All N used for today", the reset time, and the copy-paste fallback. |
 | `InvalidRequest` | Unknown mode, no question types, no difficulties, no language | 400 | untouched | Inline field error. Mostly unreachable — the client validates first. |
@@ -551,8 +552,8 @@ copy-paste mode will call once slice 2.1 retires the duplicate in `prompt.ts`.
 
 ### `GET /api/quiz/ai-quota`
 
-`{ "enabled": true, "limit": 5, "used": 1, "remaining": 4, "resetsAt": "...", "model": "deepseek-v4-flash" }`
-— so the UI can show "1 of 2 left today", name what will write the questions, and stop offering
+`{ "enabled": true, "limit": 2, "used": 1, "remaining": 1, "resetsAt": "...", "model": "deepseek-v4-flash" }`
+— so the UI can show "1 of 2 left today" (`Ai:DefaultDailyQuota` ships as 2), name what will write the questions, and stop offering
 the Generate button when it could only fail.
 
 `enabled` is **not** `Ai:Enabled`. It is "would a generation be attempted at all": the kill switch
@@ -605,13 +606,17 @@ must leave `used` unchanged — that is the single most important behaviour to c
 canned questions stop being enough. Several vendors run free tiers with no card, and because the
 provider is vendor-neutral (§2a) using one is four settings. Verified working 2026-08-22:
 
+⚠️ **Only `Ai:ApiKey` belongs in user-secrets.** `appsettings.Development.json` now carries the
+whole vendor block (BaseUrl, Model, the two cost values, ReasoningEffort) and says so in its own
+comment: user-secrets sit in a *higher* configuration layer, so a stale `Ai:BaseUrl` or `Ai:Model`
+left there silently wins over the file and you debug a vendor you thought you had switched away
+from. Set the key, and edit the file for everything else:
+
 ```bash
-dotnet user-secrets set "Ai:BaseUrl" "https://api.groq.com/openai/v1"   # Groq, free tier, no card
-dotnet user-secrets set "Ai:Model" "openai/gpt-oss-120b"                # ids change — check their console
 dotnet user-secrets set "Ai:ApiKey" "gsk_..."
-dotnet user-secrets set "Ai:MaxOutputTokens" "4000"                     # MUST fit under the TPM limit — §2b
-dotnet user-secrets set "Ai:InputCostPerMillionUsd" "0"                 # free tier: record zero, don't invent spend
-dotnet user-secrets set "Ai:OutputCostPerMillionUsd" "0"
+# everything else -> appsettings.Development.json (BaseUrl, Model, the two cost values,
+# ReasoningEffort, and MaxOutputTokens, which MUST fit under the vendor's TPM limit — §2b)
+dotnet user-secrets list        # confirm no stale Ai:BaseUrl / Ai:Model is shadowing the file
 ```
 
 Two things to understand before relying on it. `MaxOutputTokens` at the default 8,000 **cannot
@@ -661,7 +666,7 @@ is at most one generation, i.e. fractions of a cent.
 against the vendor. Set them too low and every row under-reports, which loosens layers 4 and 5 by
 exactly the same factor — the caps still fire, just later and at more money than they say. They
 were $0.14 / $0.28 until 2026-08-22, roughly 2× under the DeepSeek rates that took effect on
-Aug 16; §9.13 has the detail. Re-check them on any vendor or model change.
+Aug 16; §9.14 has the detail. Re-check them on any vendor or model change.
 
 **None of these is the real backstop.** They are all our own code, and our own code is exactly
 what would be broken in the scenario you're insuring against. The actual guarantee is that
@@ -821,7 +826,8 @@ ledger honest), or halve both caps and accept over-tight limits off-peak. A flat
 Qwen prices the same around the clock — makes the whole question disappear, which is a real
 argument for one beyond the sticker price.
 
-**15. The wizard shows the model in use *now*, not the one that wrote a given quiz.** The usage
+**15. Nothing links a saved quiz to the model that wrote it.** (This item used to open "the
+wizard shows the model in use *now*" — it no longer shows one at all; the gap below is unchanged.) The usage
 row records the model per attempt (`AiGenerationUsage.Model`), but nothing links a saved quiz back
 to it: `ai-import` creates a quiz like any other, and the generation that produced it is a
 separate row with no id in common. So after a model change, "which one wrote this?" is answerable

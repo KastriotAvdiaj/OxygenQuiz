@@ -63,7 +63,9 @@ Concretely:
    and no need to define how different "different" is.
 6. **Unmetered, not unbounded.** No quota decrement — only admins create categories, and charging
    a user's daily quiz allowance for a colour would be a nasty surprise. But the call is capped
-   at 300 output tokens, checked against `Ai:DailyBudgetUsd` / `Ai:MonthlyBudgetUsd` *before* it
+   at 1500 output tokens (`CategoryPalettePromptBuilder.MaxOutputTokens`; this ADR and its Context
+   section were written against an earlier 300-token ceiling — see `docs/entities/category-palettes.md`
+   for why it was raised), checked against `Ai:DailyBudgetUsd` / `Ai:MonthlyBudgetUsd` *before* it
    is made, obeys the `Ai:Enabled` kill switch, and writes a row to `AiGenerationUsage` whichever
    way it ends.
 

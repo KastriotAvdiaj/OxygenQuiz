@@ -60,7 +60,10 @@ server is concerned. (Our compose sets `ASPNETCORE_ENVIRONMENT=Production`, so o
 ### 4. Environment variables — the top layer (this is what production actually uses)
 Environment variables override everything above them. In production, this is where the *real* values
 come from: the compose file passes them in, and secrets are loaded from `~/OxygenQuiz/.env.prod` via
-`--env-file`. So the effective production config is:
+`--env-file`. Note precisely what that flag does — it supplies `${...}` **interpolation inside the
+compose file only**, it does not inject variables into the container. A name that appears in
+`.env.prod` but is never referenced by a `- Key__Sub=${NAME}` line in the compose file never
+reaches the app. See [`production-topology.md`](production-topology.md). So the effective production config is:
 
 ```
 appsettings.json  +  appsettings.Production.json  +  environment variables (incl. .env.prod)
@@ -112,9 +115,10 @@ A quick map of the settings that matter, and which layer supplies them in prod:
 | `AllowedHosts` | env var | Base file says `"*"`; prod pins the real host. |
 | `Seed:AdminUsername` | code default `"admin"` (unless env set) | — |
 | `Seed:AdminEmail` | **code default `"admin@example.com"`** (unless `Seed__AdminEmail` set) | ⚠️ the login trap — see §6. |
+| `Authentication:Google:Enabled` / `:ClientId` | env vars (`Authentication__Google__Enabled`, `…__ClientId`) | Required for Google sign-in. **No client secret exists** — the app runs the GIS ID-token flow. `Enabled=true` with a blank `ClientId` fails startup; `Enabled=false` is silent, so omitting these ships social login switched off with no error. |
 | `Ai:ApiKey` | env var (`Ai__ApiKey`) | The fourth real secret, once AI generation is switched on. `Ai__Enabled=true` with this blank fails startup. |
 | `Ai:Enabled`, `Ai:BaseUrl`, `Ai:Model` | env vars, else `appsettings.json` | Off by default. `Ai:Provider` picks the transport (`OpenAiCompatible` / `Fake`); the vendor is `BaseUrl` + `Model`. |
-| `Ai:InputCostPerMillionUsd` / `Ai:OutputCostPerMillionUsd` | `appsettings.json` | Ours to keep current — nothing checks them against the vendor, and the budget caps are enforced against them. |
+| `Ai:InputCostPerMillionUsd` / `Ai:OutputCostPerMillionUsd` | env vars, else `appsettings.json` | Ours to keep current — nothing checks them against the vendor, and the budget caps are enforced against them. |
 | `Ai:ReasoningEffort` | env var, else `appsettings.json` | Unset unless `Ai:Model` is a reasoning model, and unset means the field is never sent. Belongs to the same edit as `BaseUrl`, `Model` and the two cost values. |
 
 ---
@@ -149,8 +153,10 @@ docker compose -f docker-compose.prod.yml exec backend printenv ASPNETCORE_ENVIR
 with the dev email returned 401. (And the admin is seeded **once**: changing `ADMIN_PASSWORD` later
 doesn't touch an existing account — you'd have to reset the `PasswordHash` or delete-and-reseed.)
 
-**B. Stale values in `appsettings.Production.json` look scary but are inert.** It still lists old AWS
-CORS origins. Because the compose injects `Cors__AllowedOrigins__*` env vars, those override the file at
+**B. Stale values in `appsettings.Production.json` look scary but are inert.** (Historical: it
+used to list old AWS CORS origins; it now lists the correct `oxygenquiz.com` /
+`www.oxygenquiz.com` pair, so the trap described here no longer exists. The reasoning is kept
+because the override mechanism is still worth understanding.) Because the compose injects `Cors__AllowedOrigins__*` env vars, those override the file at
 runtime — so prod CORS is actually correct despite the misleading file. (Still worth fixing the file so
 it doesn't mislead; tracked in [`known-issues.md`](known-issues.md).)
 
