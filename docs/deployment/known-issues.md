@@ -111,13 +111,30 @@ Auth-specific enhancements are tracked in [authentication.md](../auth/authentica
 - **P3 — Broad CORS.** The policy uses `AllowAnyHeader` + `AllowAnyMethod` with
   credentials. It's origin-restricted, so low risk, but tighten the header/method
   surface if practical. → `OxygenBackend/QuizAPI/Program.cs`
-- **P3 — Question search endpoints are fully public.** `GET /api/questions/search`
-  and the type-specific search variants (multiple-choice, true/false,
-  type-the-answer) have no `[Authorize]`, exposing question content/metadata
-  to anonymous callers. Confirm this is intentional (public quiz browsing) —
-  if any question content is meant to stay private to its owner, this needs
-  an auth/ownership filter to match.
-  → `OxygenBackend/QuizAPI/Controllers/Questions/QuestionsController.cs`
+- **P1 — Question search endpoints are public *and return the answers*.**
+  *(Was P3 "exposing question content/metadata"; raised 2026-09-01 after
+  confirming what the payload actually contains.)* `GET /api/questions/search`
+  and the type-specific variants have no `[Authorize]` — only their `mine/`
+  twins do, and there is no class-level attribute. `SearchMultipleChoice`
+  projects through `QuestionMappers.ProjectMultipleChoice`, whose
+  `AnswerOptionDTO` carries **`IsCorrect`**. So an anonymous caller can read
+  the correct answer for every global multiple-choice question, and
+  `TrueFalseQuestionDTO` / `TypeTheAnswerQuestionDTO` expose
+  `CorrectAnswer` the same way.
+  This is not a browsing-privacy question, it is the scoring model: it makes
+  every quiz score meaningless for anyone willing to open devtools, and it
+  defeats
+  [`../adr/0006-answer-order-is-shuffled-at-serve-time.md`](../adr/0006-answer-order-is-shuffled-at-serve-time.md)
+  entirely — shuffling the options is pointless while the answer key is a
+  GET away.
+  _Fix:_ the authoring DTOs and the browsing DTOs need to stop being the same
+  type. Either require auth and filter to owner/admin on these routes, or
+  project a variant without `IsCorrect` / `CorrectAnswer` for callers who are
+  not the question's owner. Note the dashboard's question bank genuinely needs
+  the flags, so a blanket removal will break it.
+  → `OxygenBackend/QuizAPI/Controllers/Questions/QuestionsController.cs`,
+  `Mapping/EntityMappers.cs` (`ProjectMultipleChoice`),
+  `DTOs/Question/QuestionDTOs.cs` (`AnswerOptionDTO.IsCorrect`)
 - **P3 — Image upload allow-list drifted from `FileService`'s.** `ImageUploadController`
   maintains its own separate format allow-list (still includes GIF) rather than
   sharing `FileService`'s. Not a vulnerability on its own, but two allow-lists
