@@ -53,6 +53,8 @@ namespace QuizAPI.Data
 
         public DbSet<EmailVerificationToken> EmailVerificationTokens { get; set; }
 
+        public DbSet<PasswordResetToken> PasswordResetTokens { get; set; }
+
         public DbSet<InviteCode> InviteCodes { get; set; }
 
         public DbSet<ExternalLogin> ExternalLogins { get; set; }
@@ -194,6 +196,19 @@ namespace QuizAPI.Data
                 .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<EmailVerificationToken>()
+                .HasIndex(t => t.TokenHash)
+                .IsUnique();
+
+            // Password reset tokens: same shape as verification tokens, and a separate table on
+            // purpose — see PasswordResetToken for why one table with a "purpose" column would be
+            // a worse failure mode.
+            modelBuilder.Entity<PasswordResetToken>()
+                .HasOne(t => t.User)
+                .WithMany()
+                .HasForeignKey(t => t.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<PasswordResetToken>()
                 .HasIndex(t => t.TokenHash)
                 .IsUnique();
 

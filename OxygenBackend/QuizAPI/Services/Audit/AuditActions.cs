@@ -12,6 +12,13 @@ namespace QuizAPI.Services.Audit
         public const string LoginFailed = "LoginFailed";
         public const string UserSignedUp = "UserSignedUp";
         public const string UserEmailConfirmed = "UserEmailConfirmed";
+
+        /// <summary>A reset link was issued. Logged even though the request endpoint always
+        /// returns 200, so a burst of these against one account is visible after the fact.</summary>
+        public const string PasswordResetRequested = "PasswordResetRequested";
+
+        /// <summary>A reset link was redeemed and the password changed.</summary>
+        public const string PasswordReset = "PasswordReset";
         public const string UserCreated = "UserCreated";
         public const string UserDeleted = "UserDeleted";
         // A user's role set was changed by an admin (from the Users page).

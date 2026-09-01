@@ -31,7 +31,7 @@ no built-in `EmailConfirmed` / `RequireConfirmedEmail` to lean on.
 **Goal:** prove the person signing up can receive mail at the address they gave, and
 record that fact (`EmailConfirmed`).
 
-**Non-goals:** password reset (separate feature, but will reuse the same email sender),
+**Non-goals:** password reset — now built, see [`password-reset.md`](password-reset.md), and it reuses this feature's email sender and token pattern,
 changing the auth/token scheme, magic-link login.
 
 ## The approach: double opt-in confirmation link

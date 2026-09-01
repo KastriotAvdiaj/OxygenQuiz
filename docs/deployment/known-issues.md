@@ -108,6 +108,26 @@ Auth-specific enhancements are tracked in [authentication.md](../auth/authentica
 - ~~**P3 — `AllowedHosts: "*"`.**~~ Superseded by the P2 entry directly above, which
   covers `AllowedHosts` along with the two `Jwt` values that have the same problem.
   → `OxygenBackend/QuizAPI/appsettings.json`
+- **P2 — No email provider is configured, so no transactional email is ever sent.**
+  `IEmailSender` has exactly one implementation, `LoggingEmailSender`, which writes the
+  message to the log and returns — and that is what production runs. Two features
+  depend on it and both are therefore inert in production rather than broken in any
+  visible way:
+  **email verification** (a new signup's confirmation link goes to the backend
+  container's stdout, so nobody can ever confirm an address that wasn't
+  provider-verified) and **password reset**
+  ([`../auth/password-reset.md`](../auth/password-reset.md)), where a locked-out user
+  has no route back into their account at all.
+  Neither logs an error; both look like they worked. `email-verification.md` has said
+  "swap for a real provider in prod" since it was written and this was never tracked
+  anywhere, which is why it is here now.
+  _Fix:_ a Resend or Postmark implementation over `HttpClient`, registered in place of
+  the logger but falling back to it when no key is set (the `Ai` resolver is the pattern
+  — [`../adr/0004-ai-misconfiguration-disables-the-feature.md`](../adr/0004-ai-misconfiguration-disables-the-feature.md)),
+  plus SPF/DKIM on `oxygenquiz.com` and the key in `.env.prod`. Also set
+  `App:FrontendBaseUrl` in production — links currently fall back to the first CORS
+  origin, which happens to be right rather than being meant.
+  → `OxygenBackend/QuizAPI/Services/Email/`, `Program.cs`, `.env.prod`
 - **P3 — Broad CORS.** The policy uses `AllowAnyHeader` + `AllowAnyMethod` with
   credentials. It's origin-restricted, so low risk, but tighten the header/method
   surface if practical. → `OxygenBackend/QuizAPI/Program.cs`

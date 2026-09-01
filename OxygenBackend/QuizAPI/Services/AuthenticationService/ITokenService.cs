@@ -22,6 +22,12 @@ namespace QuizAPI.Services.AuthenticationService
         /// </summary>
         (string rawToken, string tokenHash, DateTime expiresAt) GenerateEmailVerificationToken();
 
+        /// <summary>
+        /// Creates a one-time password-reset token. Same strength and storage as the verification
+        /// token, shorter lifetime — this one grants account access, not just proof of an address.
+        /// </summary>
+        (string rawToken, string tokenHash, DateTime expiresAt) GeneratePasswordResetToken();
+
         /// <summary>SHA-256 hash of a raw token, used to look up the stored row.</summary>
         string HashToken(string rawToken);
 

@@ -19,6 +19,7 @@ public class AuthenticationService(
     IRoleRepository roleRepository,
     IRefreshTokenRepository refreshTokenRepository,
     IEmailVerificationTokenRepository emailVerificationTokenRepository,
+    IPasswordResetTokenRepository passwordResetTokenRepository,
     IInviteCodeRepository inviteCodeRepository,
     IInviteCodeGenerator inviteCodeGenerator,
     IExternalLoginRepository externalLoginRepository,
@@ -36,6 +37,7 @@ public class AuthenticationService(
     private readonly IRoleRepository _roleRepository = roleRepository;
     private readonly IRefreshTokenRepository _refreshTokenRepository = refreshTokenRepository;
     private readonly IEmailVerificationTokenRepository _emailVerificationTokenRepository = emailVerificationTokenRepository;
+    private readonly IPasswordResetTokenRepository _passwordResetTokenRepository = passwordResetTokenRepository;
     private readonly IInviteCodeRepository _inviteCodeRepository = inviteCodeRepository;
     private readonly IInviteCodeGenerator _inviteCodeGenerator = inviteCodeGenerator;
     private readonly IExternalLoginRepository _externalLoginRepository = externalLoginRepository;
@@ -534,6 +536,110 @@ public class AuthenticationService(
 
     // Supersedes any outstanding token for the user, issues a fresh single-use token (hash stored,
     // raw value emailed), and sends the confirmation link. Shared by signup and resend.
+    /// <summary>
+    /// Issues a reset link, or quietly does nothing.
+    ///
+    /// <para><b>This method never reports failure, and that is the feature.</b> The endpoint
+    /// answers 200 whether or not the address belongs to an account, because any other behaviour —
+    /// a 404, a different message, even a measurably faster response — turns the form into an
+    /// oracle for "does this person have an account here". The caller therefore cannot distinguish
+    /// success from a typo, which is the accepted cost.</para>
+    ///
+    /// <para><b>Accounts with no password are included on purpose.</b> A Google-only user has
+    /// <c>PasswordHash</c> null, and this lets them set one. Control of the inbox is the same
+    /// evidence a reset normally rests on, and refusing would strand anyone who lost access to
+    /// their Google account with no route back in. They end up with both sign-in methods; neither
+    /// displaces the other. See docs/auth/password-reset.md.</para>
+    /// </summary>
+    public async Task RequestPasswordResetAsync(string email, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(email)) return;
+
+        var user = await _userRepository.GetByEmailAsync(email.Trim(), tracked: false, ct);
+        if (user is null) return;
+
+        // Supersede any earlier link. Someone who clicks "forgot password" three times should not
+        // leave three working keys to their account sitting in an inbox.
+        await _passwordResetTokenRepository.InvalidateActiveForUserAsync(user.Id, ct);
+
+        var (raw, hash, expiresAt) = _tokenService.GeneratePasswordResetToken();
+        await _passwordResetTokenRepository.AddAsync(new PasswordResetToken
+        {
+            Id = Guid.NewGuid(),
+            UserId = user.Id,
+            TokenHash = hash,
+            ExpiresAt = expiresAt,
+            CreatedAt = DateTime.UtcNow
+        }, ct);
+        await _passwordResetTokenRepository.SaveChangesAsync(ct);
+
+        var link = $"{FrontendBaseUrl()}/reset-password?token={Uri.EscapeDataString(raw)}";
+        var html =
+            $"<p>Hi {user.Username},</p>" +
+            "<p>Someone asked to reset the password on your Oxygen Quiz account. If it was you:</p>" +
+            $"<p><a href=\"{link}\">Choose a new password</a></p>" +
+            "<p>This link expires in 1 hour and can only be used once. If it wasn't you, ignore " +
+            "this email — your password has not changed.</p>";
+
+        await _emailSender.SendAsync(user.Email, "Reset your Oxygen Quiz password", html, ct);
+
+        // Logged even though the endpoint is silent, so a burst against one account is visible
+        // afterwards even though the requester was told nothing.
+        await _auditService.LogAsync(
+            AuditActions.PasswordResetRequested, entity: "User", entityId: user.Id.ToString(),
+            userId: user.Id, ct: ct);
+    }
+
+    /// <summary>
+    /// Redeems a reset link and sets the new password.
+    /// </summary>
+    /// <remarks>
+    /// Three things happen besides the password change, and each is load-bearing:
+    /// <list type="bullet">
+    ///   <item><description><b>The token is consumed.</b> Single use — a link that stays valid
+    ///     after it has worked is a link that still works when the email is later forwarded,
+    ///     backed up or breached.</description></item>
+    ///   <item><description><b>Every refresh token is revoked.</b> The likeliest reason for a
+    ///     reset is that someone else has the old password. Leaving their sessions alive would
+    ///     mean the reset locked out the owner and nobody else.</description></item>
+    ///   <item><description><b>The email is marked confirmed.</b> Redeeming the link is proof of
+    ///     inbox control, which is exactly what the verification flow asks for — so an unconfirmed
+    ///     account that resets its password should not then be nagged to prove the same
+    ///     thing.</description></item>
+    /// </list>
+    /// The failure message is identical for a malformed, unknown, expired and already-used token,
+    /// so a caller cannot use it to learn which tokens once existed.
+    /// </remarks>
+    public async Task ResetPasswordAsync(string rawToken, string newPassword, CancellationToken ct = default)
+    {
+        // 400 (not 401) on failure, like VerifyEmailAsync: this is an anonymous endpoint and a 401
+        // would trip the frontend's silent-refresh interceptor.
+        if (string.IsNullOrWhiteSpace(rawToken))
+            throw new AppValidationException("Invalid or expired reset link.");
+
+        var hash = _tokenService.HashToken(rawToken);
+        var stored = await _passwordResetTokenRepository.GetActiveByHashAsync(hash, ct)
+            ?? throw new AppValidationException("Invalid or expired reset link.");
+
+        stored.ConsumedAt = DateTime.UtcNow;
+
+        var user = await _userRepository.GetByIdAsync(stored.UserId, tracked: true, ct)
+            ?? throw new AppValidationException("Invalid or expired reset link.");
+
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
+        user.EmailConfirmed = true;
+
+        await _refreshTokenRepository.RevokeAllForUserAsync(user.Id, ct);
+
+        // The consumed token, the user changes and the revoked sessions are all tracked on the
+        // same DbContext, so one save persists the lot — either it all lands or none of it does.
+        await _userRepository.SaveChangesAsync(ct);
+
+        await _auditService.LogAsync(
+            AuditActions.PasswordReset, entity: "User", entityId: user.Id.ToString(),
+            userId: user.Id, ct: ct);
+    }
+
     private async Task IssueAndSendVerificationEmailAsync(User user, CancellationToken ct)
     {
         await _emailVerificationTokenRepository.InvalidateActiveForUserAsync(user.Id, ct);

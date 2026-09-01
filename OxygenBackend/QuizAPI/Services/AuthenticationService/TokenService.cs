@@ -15,6 +15,7 @@ namespace QuizAPI.Services.AuthenticationService
         private const int RefreshTokenBytes = 32;     // 256-bit token
         private const int RefreshTokenDays = 7;       // session lifetime
         private const int EmailVerificationTokenHours = 24; // confirmation-link lifetime
+        private const int PasswordResetTokenHours = 1;      // reset-link lifetime; see below
         private const int ExternalSignupTicketMinutes = 10; // external signup completion window
 
         // A ticket is a JWT signed with our key but addressed to THIS audience, not Jwt:Audience.
@@ -74,6 +75,20 @@ namespace QuizAPI.Services.AuthenticationService
             var rawToken = Base64UrlEncode(bytes);
             var tokenHash = HashToken(rawToken);
             var expiresAt = DateTime.UtcNow.AddHours(EmailVerificationTokenHours);
+            return (rawToken, tokenHash, expiresAt);
+        }
+
+        /// <summary>
+        /// One hour, not the verification token's twenty-four. A verification link only proves an
+        /// address; this one hands over the account, so it should stay live for about as long as
+        /// it takes to go and read your mail, and no longer.
+        /// </summary>
+        public (string rawToken, string tokenHash, DateTime expiresAt) GeneratePasswordResetToken()
+        {
+            var bytes = RandomNumberGenerator.GetBytes(RefreshTokenBytes); // 256-bit, same strength
+            var rawToken = Base64UrlEncode(bytes);
+            var tokenHash = HashToken(rawToken);
+            var expiresAt = DateTime.UtcNow.AddHours(PasswordResetTokenHours);
             return (rawToken, tokenHash, expiresAt);
         }
 

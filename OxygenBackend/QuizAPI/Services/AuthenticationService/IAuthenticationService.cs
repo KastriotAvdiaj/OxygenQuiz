@@ -44,5 +44,18 @@ namespace QuizAPI.Services.AuthenticationService
 
         /// <summary>Re-issues and re-sends a verification email for the user. No-op if already confirmed.</summary>
         Task ResendVerificationAsync(Guid userId, CancellationToken ct = default);
+
+        /// <summary>
+        /// Emails a reset link if the address belongs to an account. Silent either way — the
+        /// caller must not be able to tell, or the form becomes an account-enumeration oracle.
+        /// </summary>
+        Task RequestPasswordResetAsync(string email, CancellationToken ct = default);
+
+        /// <summary>
+        /// Redeems a reset link: sets the password, consumes the token, revokes every session and
+        /// confirms the email. Throws <c>AppValidationException</c> with one message for every
+        /// kind of bad token.
+        /// </summary>
+        Task ResetPasswordAsync(string rawToken, string newPassword, CancellationToken ct = default);
     }
 }

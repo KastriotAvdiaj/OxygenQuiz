@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Link } from "react-router-dom";
 import InputField from "@/common/InputField";
 import { Button } from "@/components/ui";
 
@@ -65,12 +66,12 @@ const LoginForm: React.FC<LoginFormProps> = ({ onLogin, isPending }) => {
             required
           />
           <div className="flex justify-end">
-            <a
-              href="#"
+            <Link
+              to="/forgot-password"
               className="text-xs text-muted-foreground hover:text-primary transition-colors"
             >
               Forgot password?
-            </a>
+            </Link>
           </div>
         </div>
       </div>

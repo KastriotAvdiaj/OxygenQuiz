@@ -111,6 +111,12 @@ const Signup = lazy(() => import("../pages/UserRelated/Signup/Signup"));
 const ConfirmEmail = lazy(
   () => import("@/pages/UserRelated/ConfirmEmail/ConfirmEmail"),
 );
+const ForgotPassword = lazy(
+  () => import("@/pages/UserRelated/PasswordReset/ForgotPassword"),
+);
+const ResetPassword = lazy(
+  () => import("@/pages/UserRelated/PasswordReset/ResetPassword"),
+);
 const AccessDeniedPage = lazy(() =>
   import("../pages/UtilityPages/AccessDenied").then((module) => ({
     default: module.AccessDeniedPage,
@@ -281,6 +287,25 @@ const createAppRouter = (queryClient: QueryClient) =>
     {
       path: "/signup",
       element: <RedirectIfLoggedIn component={<Signup />} />,
+    },
+    {
+      // Public: opened from the inbox by someone who cannot sign in. Both password-reset routes
+      // are anonymous for the same reason the confirm-email one is — requiring a session would
+      // defeat the entire feature.
+      path: "/forgot-password",
+      element: (
+        <HomeLayout headerBehavior={HeaderBehavior.DEFAULT}>
+          <ForgotPassword />
+        </HomeLayout>
+      ),
+    },
+    {
+      path: "/reset-password",
+      element: (
+        <HomeLayout headerBehavior={HeaderBehavior.DEFAULT}>
+          <ResetPassword />
+        </HomeLayout>
+      ),
     },
     {
       // Public: the email-confirmation link is opened from the inbox, possibly while logged out.

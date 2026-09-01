@@ -182,6 +182,31 @@ public class AuthenticationController(
         return Ok();
     }
 
+    /// <summary>
+    /// Start a password reset. <b>Always 200</b>, whether or not the address belongs to an
+    /// account — anything else (a 404, a different message, a measurably different response time)
+    /// turns this into a way to ask "does this person have an account here".
+    /// </summary>
+    [HttpPost("forgot-password")]
+    [EnableRateLimiting(RateLimitingExtensions.AuthPolicy)] // triggers emails — limit abuse
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDTO dto, CancellationToken ct)
+    {
+        await _authService.RequestPasswordResetAsync(dto.Email, ct);
+        return Ok();
+    }
+
+    /// <summary>
+    /// Redeem a reset link. Anonymous by necessity — the whole point is that the caller cannot
+    /// log in. Rate limited because it is a token-guessing surface, like verify-email.
+    /// </summary>
+    [HttpPost("reset-password")]
+    [EnableRateLimiting(RateLimitingExtensions.AuthPolicy)] // token guessing surface
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDTO dto, CancellationToken ct)
+    {
+        await _authService.ResetPasswordAsync(dto.Token, dto.NewPassword, ct);
+        return Ok();
+    }
+
     [HttpGet("me")]
     [Authorize]
     public async Task<IActionResult> GetCurrentUser(CancellationToken ct)
