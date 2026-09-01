@@ -20,6 +20,12 @@ export type ConfirmationDialogProps = {
   title: string;
   body?: string;
   cancelButtonText?: string;
+  /**
+   * Omit for no icon. It used to default to "danger", which quietly put a red alert on every
+   * dialog that did not opt out — including ones asking something entirely routine, where a
+   * warning icon overstates the stakes and trains people to ignore it where it matters. Every
+   * caller passes this explicitly, so nothing depended on the default.
+   */
   icon?: "danger" | "info";
   isDone?: boolean;
   /**
@@ -37,7 +43,7 @@ export const ConfirmationDialog = ({
   title,
   body = "",
   cancelButtonText = "Cancel",
-  icon = "danger",
+  icon,
   isDone = false,
   isOpen: controlledOpen,
   onOpenChange,
@@ -66,10 +72,9 @@ export const ConfirmationDialog = ({
   return (
     <Dialog open={isOpen} onOpenChange={setOpen}>
     {triggerButton && <DialogTrigger asChild>{triggerButton}</DialogTrigger>}
-    <DialogContent className="sm:max-w-[425px]">
+    <DialogContent className="sm:max-w-[425px] bg-background text-foreground">
       <DialogHeader className="flex">
         <DialogTitle className="flex items-center gap-2">
-          {' '}
           {icon === 'danger' && (
             <CircleAlert className="size-6 text-red-600" aria-hidden="true" />
           )}

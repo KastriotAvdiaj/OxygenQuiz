@@ -31,3 +31,18 @@ export const Info: Story = {
     triggerButton: <Button>Open</Button>,
   },
 };
+
+/**
+ * No `icon` — the default. Omitting it used to fall back to the red `danger` glyph, which put a
+ * warning on dialogs asking something entirely routine. An alert that appears everywhere stops
+ * reading as an alert, so the icon is now opt-in.
+ */
+export const NoIcon: Story = {
+  args: {
+    title: 'Leave this quiz?',
+    body: 'Your progress is saved. You can pick up where you left off.',
+    cancelButtonText: 'Keep playing',
+    confirmButton: <Button variant="destructive">Leave quiz</Button>,
+    triggerButton: <Button>Open</Button>,
+  },
+};

@@ -32,7 +32,8 @@ export interface QuizLeaveButtonProps {
  */
 export const QuizLeaveButton = ({ onLeave, disabled = false }: QuizLeaveButtonProps) => (
   <ConfirmationDialog
-    icon="info"
+    // No icon on purpose: leaving is reversible and the session is kept, so an alert glyph would
+    // dress up a routine choice as a warning.
     title="Leave this quiz?"
     body={
       "Your progress is saved. When you come back to this quiz you can pick up where you left " +
