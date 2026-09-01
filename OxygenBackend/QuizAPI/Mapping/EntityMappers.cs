@@ -1,5 +1,6 @@
 using System.Linq.Expressions;
 using Newtonsoft.Json;
+using QuizAPI.Common;
 using QuizAPI.DTOs.Question;
 using QuizAPI.DTOs.Quiz;
 using QuizAPI.DTOs.User;
@@ -670,13 +671,33 @@ namespace QuizAPI.Mapping
             sessions.Select(_summary).ToList();
 
         // QuizQuestion → CurrentQuestionDto (live play). TimeRemainingInSeconds is set by the service.
-        public static CurrentQuestionDto ToCurrentQuestionDto(this QuizQuestion qq)
+        /// <param name="sessionId">
+        /// Seeds the answer-option shuffle. Options used to be served in insertion order, which is
+        /// the order the author (usually a model) wrote them in — and models write the correct
+        /// answer first, so 68% of stored questions had it at position 1 and a player could score
+        /// by always pressing the top button. Nothing between generation and display reordered
+        /// anything.
+        ///
+        /// <para>Shuffling here rather than at import fixes every question already in the
+        /// database, not just the next one. This method is called on every state poll and every
+        /// resume, so the order must be a function of the session rather than of the moment: see
+        /// <see cref="DeterministicShuffle"/> for why that rules out both Random and
+        /// string.GetHashCode.</para>
+        /// </param>
+        public static CurrentQuestionDto ToCurrentQuestionDto(this QuizQuestion qq, Guid sessionId)
         {
             List<AnswerOptionForQuizPlaying> options = qq.Question switch
             {
-                MultipleChoiceQuestion mcq => mcq.AnswerOptions
-                    .Select(a => new AnswerOptionForQuizPlaying { ID = a.Id, Text = a.Text })
-                    .ToList(),
+                // Per question, not per session: two questions in one session must not share a
+                // permutation, or the second one's order is guessable from the first.
+                MultipleChoiceQuestion mcq => DeterministicShuffle.By(
+                    mcq.AnswerOptions.Select(a => new AnswerOptionForQuizPlaying { ID = a.Id, Text = a.Text }),
+                    $"{sessionId}:{qq.Id}",
+                    o => o.ID),
+                // Deliberately NOT shuffled. True/False is a two-item scale, not a list of
+                // candidates: "True" reading second is disorienting rather than fair, and there is
+                // no positional advantage to remove — a coin-flip guess is right half the time
+                // whichever way round they sit.
                 TrueFalseQuestion => new List<AnswerOptionForQuizPlaying>
                 {
                     new() { ID = TrueFalseOption.TrueId, Text = TrueFalseOption.TrueText },

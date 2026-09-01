@@ -74,6 +74,32 @@ Timeouts: `QuestionDisplay.handleTimeUp` submits `onSubmit(null, undefined, true
 
 ---
 
+## 3a. Option order is decided at serve time
+
+Answer options are **not** shown in the order they are stored. `EntityMappers.ToCurrentQuestionDto`
+(single-player) and `MatchOrchestrator.LoadRoundQuestionsAsync` (multiplayer) both run them through
+`DeterministicShuffle` before they reach the client.
+
+This exists because stored order is authoring order, and authoring order is biased: measured
+2026-09-01, **67.9% of stored questions had the correct answer first**, because that is how models
+write them and nothing in the pipeline had an opinion about order. Full reasoning in
+[`../adr/0006-answer-order-is-shuffled-at-serve-time.md`](../adr/0006-answer-order-is-shuffled-at-serve-time.md).
+
+Three things to know before touching this:
+
+- **The order is seeded, not random.** Single-player is seeded by session + quiz-question id, because
+  this DTO is rebuilt on every poll, resume and reconnect — a plain `Random` would slide the options
+  around while the player was reading them. Multiplayer seeds once per match so every player sees the
+  same board. Do not "simplify" either to `Random` or to a `string.GetHashCode()` seed; both are
+  covered by a pinned test that explains why.
+- **Positions mean nothing; ids mean everything.** Submission is by `SelectedOptionId`, never by
+  index. Any new client code that reasons about "the second option" is a bug waiting for the next
+  reshuffle.
+- **True/False is exempt** and stays True-then-False.
+
+`Quiz.ShuffleQuestions` is applied at the same two seams, seeded the same way. It had been dead
+since the initial migration — a column, a DTO field and a visible checkbox that no code ever read.
+
 ## 4. Why there is ONE submit button now (and why there used to be three)
 
 Each question-type component used to render its **own** copy of the Submit button — same styling, same

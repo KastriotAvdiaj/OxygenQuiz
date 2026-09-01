@@ -97,7 +97,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                 if (session.CurrentQuizQuestionId != null && session.CurrentQuestionStartTime.HasValue)
                 {
                     stateDto.Status = LiveQuizStatus.InProgress;
-                    var activeQuestionDto = session.CurrentQuizQuestion?.ToCurrentQuestionDto();
+                    var activeQuestionDto = session.CurrentQuizQuestion?.ToCurrentQuestionDto(sessionId);
 
                     var timeTaken = DateTime.UtcNow - session.CurrentQuestionStartTime.Value;
                     var timeRemaining = activeQuestionDto.TimeLimitInSeconds - (int)timeTaken.TotalSeconds;
@@ -146,11 +146,22 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                 var answeredQuestionIds = session.UserAnswers.Select(ua => ua.QuizQuestionId).ToHashSet();
                 // Only rows visible to the session's pinned quiz version: an edit made after this
                 // session started must not add, remove or reconfigure the player's questions.
-                var nextQuizQuestion = session.Quiz.QuizQuestions
+                var remaining = session.Quiz.QuizQuestions
                     .Where(qq => qq.IsVisibleToVersion(session.QuizVersion))
-                    .Where(qq => !answeredQuestionIds.Contains(qq.Id))
-                    .OrderBy(qq => qq.OrderInQuiz)
-                    .FirstOrDefault();
+                    .Where(qq => !answeredQuestionIds.Contains(qq.Id));
+
+                // Quiz.ShuffleQuestions had been a column, a DTO field, a mapped property and a
+                // checkbox in the create-quiz form since the initial migration, and nothing had
+                // ever read it — ticking it did nothing at all. It reorders here.
+                //
+                // Seeded by session, so the permutation is the same on every call: this method
+                // re-derives the sequence each time rather than storing it, and a player who
+                // refreshes between questions must not get a reshuffled remainder (which could
+                // hand them the same question twice, or skip one entirely, depending on what was
+                // already answered).
+                var nextQuizQuestion = session.Quiz.ShuffleQuestions
+                    ? DeterministicShuffle.By(remaining, session.Id.ToString(), qq => qq.Id).FirstOrDefault()
+                    : remaining.OrderBy(qq => qq.OrderInQuiz).FirstOrDefault();
 
                 if (nextQuizQuestion == null)
                 {
@@ -186,7 +197,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                         .LoadAsync();
                 }
 
-                var questionDto = fullQuestionForMapping.ToCurrentQuestionDto();
+                var questionDto = fullQuestionForMapping.ToCurrentQuestionDto(sessionId);
                 questionDto.TimeRemainingInSeconds = questionDto.TimeLimitInSeconds;
 
                 return Result<CurrentQuestionDto>.Success(questionDto);
@@ -625,7 +636,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
             QuizSession session, Guid sessionId, QuizQuestion question, int answeredCount, double elapsed)
         {
             await LoadQuestionDetails(question);
-            var questionDto = question.ToCurrentQuestionDto();
+            var questionDto = question.ToCurrentQuestionDto(sessionId);
             questionDto.TimeRemainingInSeconds = Math.Max(0, question.TimeLimitInSeconds - (int)elapsed);
 
             var sessionDto = await GetSessionDtoAsync(sessionId);
@@ -651,7 +662,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
             await _context.SaveChangesAsync();
 
             await LoadQuestionDetails(question);
-            var questionDto = question.ToCurrentQuestionDto();
+            var questionDto = question.ToCurrentQuestionDto(sessionId);
             questionDto.TimeRemainingInSeconds = timeRemaining;
 
             var sessionDto = await GetSessionDtoAsync(sessionId);

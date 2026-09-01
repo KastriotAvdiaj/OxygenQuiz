@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.SignalR;
+using QuizAPI.Common;
 using QuizAPI.Controllers.Quizzes.Services.AnswerGradingServices;
 using QuizAPI.Hubs;
 using QuizAPI.Hubs.Clients;
@@ -66,7 +67,14 @@ namespace QuizAPI.Services.QuizSessionServices
                 throw new InvalidOperationException("Need at least 2 players to start.");
 
             // Load the quiz's questions once, as server-side round questions.
-            session.Questions = await LoadRoundQuestionsAsync(quizId);
+            //
+            // One fresh seed per match. Unlike single-player — where the DTO is rebuilt on every
+            // poll and the order therefore has to be re-derivable — this list is materialised once
+            // and held in memory for the whole match, so the shuffle happens exactly once. Every
+            // player in the match is served from this one list and so sees the same board (they
+            // are talking to each other; "it's the third one" has to mean the same thing to all of
+            // them), and the next match in the same lobby gets a different seed and a new order.
+            session.Questions = await LoadRoundQuestionsAsync(quizId, Guid.NewGuid().ToString());
             if (session.Questions.Count == 0)
                 throw new InvalidOperationException("This quiz has no questions.");
 
@@ -279,7 +287,7 @@ namespace QuizAPI.Services.QuizSessionServices
             return userAnswer;
         }
 
-        private async Task<List<RoundQuestion>> LoadRoundQuestionsAsync(int quizId)
+        private async Task<List<RoundQuestion>> LoadRoundQuestionsAsync(int quizId, string matchSeed)
         {
             using var scope = _scopeFactory.CreateScope();
             var quizzes = scope.ServiceProvider.GetRequiredService<IQuizRepository>();
@@ -289,6 +297,12 @@ namespace QuizAPI.Services.QuizSessionServices
             // Unlisted quiz's questions here.
             var quizQuestions = await quizzes.GetQuizQuestionsAsync(quizId, ignoreFilters: true);
 
+            // Quiz.ShuffleQuestions is read here for the first time since the column was added.
+            // Unfiltered for the same reason as above: no current user in this scope.
+            var quiz = await quizzes.GetByIdUnfilteredAsync(quizId);
+            if (quiz?.ShuffleQuestions == true)
+                quizQuestions = DeterministicShuffle.By(quizQuestions, matchSeed, qq => qq.Id);
+
             return quizQuestions.Select(qq => new RoundQuestion
             {
                 QuizQuestionId = qq.Id,
@@ -297,8 +311,14 @@ namespace QuizAPI.Services.QuizSessionServices
                 Text = qq.Question.Text,
                 ImageUrl = qq.Question.ImageUrl,
                 TimeLimitSeconds = qq.TimeLimitInSeconds,
+                // Options were served in stored order, which is authoring order, which for a
+                // model-written question is correct-answer-first — 68% of them, measured. Seeded
+                // per question so two questions in a match do not share a permutation.
                 Options = qq.Question is MultipleChoiceQuestion mc
-                    ? mc.AnswerOptions.Select(o => new RoundOption { Id = o.Id, Text = o.Text }).ToList()
+                    ? DeterministicShuffle.By(
+                        mc.AnswerOptions.Select(o => new RoundOption { Id = o.Id, Text = o.Text }),
+                        $"{matchSeed}:{qq.Id}",
+                        o => o.Id)
                     : new List<RoundOption>(),
                 AllowMultipleSelections = qq.Question is MultipleChoiceQuestion { AllowMultipleSelections: true },
             }).ToList();
