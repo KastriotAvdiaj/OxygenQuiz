@@ -116,10 +116,23 @@ A quick map of the settings that matter, and which layer supplies them in prod:
 | `Seed:AdminUsername` | code default `"admin"` (unless env set) | — |
 | `Seed:AdminEmail` | **code default `"admin@example.com"`** (unless `Seed__AdminEmail` set) | ⚠️ the login trap — see §6. |
 | `Authentication:Google:Enabled` / `:ClientId` | env vars (`Authentication__Google__Enabled`, `…__ClientId`) | Required for Google sign-in. **No client secret exists** — the app runs the GIS ID-token flow. `Enabled=true` with a blank `ClientId` fails startup; `Enabled=false` is silent, so omitting these ships social login switched off with no error. |
-| `Ai:ApiKey` | env var (`Ai__ApiKey`) | The fourth real secret, once AI generation is switched on. `Ai__Enabled=true` with this blank fails startup. |
-| `Ai:Enabled`, `Ai:BaseUrl`, `Ai:Model` | env vars, else `appsettings.json` | Off by default. `Ai:Provider` picks the transport (`OpenAiCompatible` / `Fake`); the vendor is `BaseUrl` + `Model`. |
-| `Ai:InputCostPerMillionUsd` / `Ai:OutputCostPerMillionUsd` | env vars, else `appsettings.json` | Ours to keep current — nothing checks them against the vendor, and the budget caps are enforced against them. |
-| `Ai:ReasoningEffort` | env var, else `appsettings.json` | Unset unless `Ai:Model` is a reasoning model, and unset means the field is never sent. Belongs to the same edit as `BaseUrl`, `Model` and the two cost values. |
+| `Ai:ApiKey` | env var (`Ai__ApiKey`) | The fourth real secret, once AI generation is switched on. Blank with `Ai__Enabled=true` **switches the AI features off** — it does not fail startup; see the note below the table. |
+| `Ai:Enabled` | env var (`Ai__Enabled`), else `appsettings.json` | Off by default. One switch for **both** AI features — quiz generation and the category-palette proposer. |
+| `Ai:Vendor` | `appsettings.json`, or `Ai__Vendor` to differ per environment | Names an entry in `Ai:Vendors`. **The only value you change to swap vendor.** Currently `groq` everywhere. An unknown name switches AI off rather than guessing. |
+| `Ai:Vendors:<name>:*` | `appsettings.json` | The catalogue: `BaseUrl`, `Model`, `ReasoningEffort`, and both cost-per-million rates, as one unit. They are one decision, and grouping them is what stops half a vendor swap being possible. Entries not selected by `Ai:Vendor` are inert. |
+| `Ai:BaseUrl`, `Ai:Model`, `Ai:ReasoningEffort`, the two cost rates | **resolved** from the selected `Ai:Vendors` entry | Outputs, not inputs. Setting them directly still works and warns at startup — it is the deprecated form. Costs stay ours to keep current: nothing checks them against the vendor, and both budget caps are enforced against them, which is why a rate of zero is now refused. |
+
+> **The AI settings do not fail startup, and the auth settings do.** That difference is deliberate.
+> An unusable `Ai` section switches the AI features off, logs the reason at `Error`, and lets the
+> rest of the API start — AI is one optional feature and nothing else depends on it, so refusing to
+> boot would trade a small outage for a total one. `Authentication:Google:Enabled=true` with a blank
+> `ClientId` still refuses to start. Reasoning in
+> [`../adr/0004-ai-misconfiguration-disables-the-feature.md`](../adr/0004-ai-misconfiguration-disables-the-feature.md).
+>
+> The practical consequence: **after an AI config change, a working site is not proof it took.**
+> Check the boot log — `docker compose -f docker-compose.prod.yml logs backend | grep '\[AI\]'`.
+> `[AI] Ready — vendor "groq", model … at …` is the line you want; the switched-off line names the
+> key to fix.
 
 ---
 

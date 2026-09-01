@@ -160,7 +160,8 @@ Two things follow from that split, and both were bugs waiting to happen before i
 and nothing else, so a vendor needing an extra one needs a line of C#. `reasoning_effort` is the
 one field that has since crossed that line — added deliberately, and serialised only when
 `Ai:ReasoningEffort` is set, so a vendor that does not accept it never receives it. The bar for
-the next one is the same: it is not enough that a vendor offers it. Before pointing `Ai:BaseUrl` somewhere new, check three things with a raw curl: that
+the next one is the same: it is not enough that a vendor offers it. Before adding an
+`Ai:Vendors` entry for a new endpoint, check three things with a raw curl: that
 `response_format: json_object` is accepted, that the reply lands in `choices[0].message.content`,
 and that `usage` reports `prompt_tokens`/`completion_tokens` — **the cost ledger silently records
 zero if that last block is missing or named differently**, and a ledger of zeroes disables both
@@ -189,9 +190,14 @@ reaches the log is a 400 `json_validate_failed` with `"failed_generation": ""` �
 for a problem that is nothing to do with parsing. Hit on 2026-08-26 with `openai/gpt-oss-120b`
 on Groq and a 300-token palette ceiling. Two settings fix it together: enough headroom in the
 ceiling, and `Ai:ReasoningEffort` to keep the thinking short (`"low"`/`"medium"`/`"high"` for
-gpt-oss, `"none"`/`"default"` for Qwen 3.6 27B). **Rule: before pointing `Ai:Model` at a
-reasoning model, check every per-call ceiling, not just `Ai:MaxOutputTokens`** — the tightest one
-fails first, and here that was the palette proposer at 300.
+gpt-oss, `"none"`/`"default"` for Qwen 3.6 27B). **Rule: before selecting an `Ai:Vendors` entry
+whose model is a reasoning model, check every per-call ceiling, not just `Ai:MaxOutputTokens`** —
+the tightest one fails first, and here that was the palette proposer at 300.
+
+`ReasoningEffort` lives *inside* the vendor entry for exactly this reason: it is a property of the
+model, so selecting a vendor and forgetting its effort setting was a way to get empty completions
+with no error worth reading. It cannot be forgotten separately any more. `Ai:MaxOutputTokens`
+stays a top-level key — it is our spending decision, not the vendor's.
 
 `Ai:ReasoningEffort` is one value for the whole app, because it describes the configured model
 rather than a feature. The trade-off is real and worth stating: `"low"` was chosen for the
@@ -558,7 +564,7 @@ copy-paste mode will call once slice 2.1 retires the duplicate in `prompt.ts`.
 
 ### `GET /api/quiz/ai-quota`
 
-`{ "enabled": true, "limit": 2, "used": 1, "remaining": 1, "resetsAt": "...", "model": "deepseek-v4-flash" }`
+`{ "enabled": true, "limit": 2, "used": 1, "remaining": 1, "resetsAt": "...", "model": "openai/gpt-oss-120b" }`
 — so the UI can show "1 of 2 left today" (`Ai:DefaultDailyQuota` ships as 2), name what will write the questions, and stop offering
 the Generate button when it could only fail.
 
@@ -638,13 +644,25 @@ to a paid vendor.
 
 ```bash
 dotnet user-secrets set "Ai:Provider" "OpenAiCompatible"
-dotnet user-secrets set "Ai:ApiKey" "sk-..."
-# BaseUrl and Model come from appsettings.json — override them here to use another vendor.
+dotnet user-secrets set "Ai:ApiKey" "gsk_..."
+# The vendor comes from the Ai:Vendors catalogue in appsettings.json. To use another one, add an
+# entry there and select it with Ai:Vendor — not by overriding BaseUrl/Model here, which sets
+# half a vendor and leaves the old prices in the ledger.
 ```
 
-Startup **fails deliberately** if `Ai:Enabled` is true with a blank key — a half-configured
-deploy that returns 502s looks exactly like a vendor outage, and that is a bad hour to spend. It
-also fails on an unrecognised `Ai:Provider`, so a typo can no longer mean "make real paid calls".
+A blank key with `Ai:Enabled` true **switches the AI features off** rather than failing startup —
+in Development it quietly falls back to the Fake stub instead, because
+`appsettings.Development.json` is committed with `Ai:Enabled: true` and every fresh clone inherits
+it with no user-secrets. Elsewhere it disables the feature and logs why.
+
+This used to be a deliberate startup throw, on the reasoning that a half-configured deploy
+returning 502s looks exactly like a vendor outage. That reasoning survives; what changed is the
+verdict on what to do about it. AI is one optional feature and nothing else in OxygenQuiz depends
+on it, so taking the whole site down to make the point traded a small outage for a total one — see
+[`../adr/0004-ai-misconfiguration-disables-the-feature.md`](../adr/0004-ai-misconfiguration-disables-the-feature.md).
+The mistake is still unmissable, just in the boot log and the UI rather than in a crash. An
+unrecognised `Ai:Provider` behaves the same way, so a typo still cannot mean "make real paid
+calls" — it means "no calls".
 
 **There is no free tier to lean on.** This document claimed until 2026-08-22 that DeepSeek gives
 new accounts 5M free tokens; that ended, and the API is prepaid pay-as-you-go with no standing

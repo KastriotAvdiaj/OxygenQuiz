@@ -670,8 +670,13 @@ are actually *in* the feature.
   roughly doubles cost per successful quiz. `EstimatedCostUsd` sums both attempts, so the
   budget cap still sees the truth. Watch the ratio of `Released`-with-`ModelOutputInvalid`
   rows to `Succeeded` ones. → `AiGenerationService.CallWithOneRetryAsync`
-- **P2 — Cost estimates are flat; DeepSeek's pricing stopped being.** *(Was P3 "announced
-  multiplier"; it took effect on **2026-08-16**, so this is no longer hypothetical.)* V4-Flash is
+- **P3 — Cost estimates are flat; DeepSeek's pricing stopped being.** *(Was P3 "announced
+  multiplier", raised to P2 when it took effect on **2026-08-16**, lowered back to P3 on
+  **2026-08-31**: the configured vendor is now Groq, whose rates are flat, so this describes a
+  vendor nothing selects. It is dormant, not fixed — selecting `deepseek` from the `Ai:Vendors`
+  catalogue brings it straight back, which is exactly the trap a catalogue entry makes easy to
+  fall into. Read this before selecting it. The entry's own last suggestion — "a flat-rate vendor
+  removes the question entirely" — is what happened.)* V4-Flash is
   now **$0.22 / $0.66 per 1M off-peak** and **double that during 01:00–04:00 and 06:00–10:00
   UTC**. Two things were wrong and one is fixed: the configured constants were $0.14 / $0.28,
   two versions stale, **corrected 2026-08-22**; the flat model still can't express peak hours, so
@@ -684,8 +689,14 @@ are actually *in* the feature.
   → `OxygenBackend/QuizAPI/Services/Ai/AiQuotaService.EstimateCost`,
   `Services/Ai/AiOptions.cs`, `appsettings.json`
 
-- **P2 — The cost constants can belong to a different vendor than `Ai:BaseUrl`, and nothing
-  notices.** Not hypothetical: development ran against Groq (`openai/gpt-oss-120b`) for days
+- ~~**P2 — The cost constants can belong to a different vendor than `Ai:BaseUrl`, and nothing
+  notices.**~~ **Fixed (2026-08-31)** — by the second option below, the one this entry proposed.
+  The five values are now one named `Ai:Vendors` entry selected by a single `Ai:Vendor`, so they
+  cannot be set apart; a zero cost rate is refused at startup rather than defaulted; and the
+  duplicate vendor block left `appsettings.Development.json` entirely, so the convention no longer
+  has to hold. Overriding the flat keys individually still works for back-compatibility and warns.
+  See [`../adr/0004-ai-misconfiguration-disables-the-feature.md`](../adr/0004-ai-misconfiguration-disables-the-feature.md).
+  The original report follows. Not hypothetical: development ran against Groq (`openai/gpt-oss-120b`) for days
   while `InputCostPerMillionUsd` / `OutputCostPerMillionUsd` still held DeepSeek's
   $0.22 / $0.66, because `BaseUrl` and `Model` had been overridden in user-secrets and the two
   cost values had not. Every `AiGenerationUsages` row in that window is priced wrong, and since
