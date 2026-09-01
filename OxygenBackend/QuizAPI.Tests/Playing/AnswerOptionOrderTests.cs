@@ -51,29 +51,44 @@ public class AnswerOptionOrderTests
 
     /// <summary>
     /// <b>The regression test for the reported bug.</b> Feed in the worst case — correct option
-    /// always stored first — and check that across many players it lands everywhere.
+    /// always stored first — and check that across many players it lands in all four places about
+    /// equally often.
     ///
-    /// The bound is deliberately loose. This asserts "the bias is gone", not "the hash is uniform":
-    /// a tight bound on a fixed hash function would be a test of FNV rather than of us, and would
-    /// go red for a reason nobody cares about. 67.9% was the symptom; anything near 25% is a fix.
+    /// <para><b>Every position is checked, not just the first.</b> An earlier version asserted only
+    /// that first place was between 15% and 35%, and it very nearly passed a genuinely broken
+    /// shuffle: the FNV-1a hash without a finalizer produced 15/34/34/15, which scraped the lower
+    /// bound at 14.2% and would have looked like a fix. "Not first" is not the property that
+    /// matters — the correct answer sitting in the middle two slots 69% of the time is the same
+    /// exploit wearing a different position. The property is *uniform*.</para>
+    ///
+    /// <para>4,000 trials puts the ±0.04 band about 5.8 standard deviations from 25%, so this does
+    /// not flake, while still failing enormously on the 15/34/34/15 shape. Session ids come from a
+    /// seeded generator so a failure is reproducible rather than a coin toss.</para>
     /// </summary>
     [Fact]
-    public void The_correct_answer_does_not_stay_in_first_place()
+    public void The_correct_answer_lands_in_every_position_about_equally()
     {
-        const int trials = 600;
+        const int trials = 4_000;
+        var sessions = new Random(20260901);
         var counts = new int[5];
 
         for (var i = 0; i < trials; i++)
-            counts[CorrectPosition(CorrectFirst(), Guid.NewGuid())]++;
+        {
+            var bytes = new byte[16];
+            sessions.NextBytes(bytes);
+            counts[CorrectPosition(CorrectFirst(), new Guid(bytes))]++;
+        }
 
-        var firstPlaceRate = counts[1] / (double)trials;
+        var rates = Enumerable.Range(1, 4).Select(p => counts[p] / (double)trials).ToArray();
+        var distribution = string.Join(" / ", rates.Select(r => r.ToString("P1")));
 
-        Assert.InRange(firstPlaceRate, 0.15, 0.35);
-
-        // Every position must actually be reachable. A shuffle that only ever swapped the first two
-        // would pass a rate check and still be broken.
         for (var position = 1; position <= 4; position++)
-            Assert.True(counts[position] > 0, $"No trial put the correct answer at position {position}.");
+        {
+            Assert.True(rates[position - 1] is >= 0.21 and <= 0.29,
+                $"Position {position} got {rates[position - 1]:P1}, expected ~25%. " +
+                $"Full distribution: {distribution}. A lopsided shuffle is not a fair one — see " +
+                "DeterministicShuffle.Mix on why the hash needs its finalizer.");
+        }
     }
 
     /// <summary>
@@ -167,6 +182,6 @@ public class AnswerOptionOrderTests
     {
         var ordered = DeterministicShuffle.By(new[] { 10, 20, 30, 40 }, "stability-probe", i => i);
 
-        Assert.Equal(new[] { 30, 40, 10, 20 }, ordered);
+        Assert.Equal(new[] { 20, 30, 40, 10 }, ordered);
     }
 }

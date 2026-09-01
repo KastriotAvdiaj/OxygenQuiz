@@ -61,9 +61,17 @@ Two implementations were specifically rejected, and both are the obvious simplif
   test, then reorder every in-flight question the moment the API restarted — a bug that appears
   only in production, only during a deploy, only to whoever was mid-quiz.
 
-`DeterministicShuffle` instead orders by an FNV-1a hash of (seed, option id): fixed by
-specification, stable across processes and versions, and independent of the input order, so it
-cannot accidentally preserve an already-biased arrangement.
+`DeterministicShuffle` instead orders by an FNV-1a hash of (seed, option id), **followed by a
+splitmix64 finalizer**: fixed by specification, stable across processes and versions, and
+independent of the input order, so it cannot accidentally preserve an already-biased arrangement.
+
+The finalizer was not in the first version, and leaving it out was a real bug rather than a missing
+nicety. FNV-1a ends with one XOR-and-multiply per byte, which leaves its high bits only weakly
+dependent on the bytes fed in last — and sorting compares the whole 64-bit value, so the high bits
+decide the order. With four option ids the permutation came out **15 / 34 / 34 / 15**: the lowest
+id was pushed into the middle two positions, on every id shape tested (adjacent, spread out, three
+options). Against correct-answer-first authoring that would have parked the right answer in the
+middle two slots about 69% of the time — the same exploit, one position over.
 
 ## Consequences
 
@@ -71,6 +79,13 @@ cannot accidentally preserve an already-biased arrangement.
   and compared against `correctIds`; nothing indexes into the options array. Had the client
   submitted positions, this change would have silently mis-graded every answer — worth checking
   first in any codebase where you are about to reorder something.
+- **"Not first" was the wrong property to assert, and nearly shipped a broken fix.** The first
+  version of the regression test checked only that first place fell between 15% and 35%. The
+  unfinalized hash produced 14.2% — it failed by a hair, and a slightly looser bound would have
+  passed a shuffle that was merely biased in a different direction. The test now checks all four
+  positions against 25% ± 4 over 4,000 trials. Worth generalising: when replacing a biased
+  distribution, assert the shape of the whole distribution, not the absence of the one symptom you
+  happened to notice.
 - **A pinned test guards the algorithm.** `The_permutation_is_pinned_to_a_stable_hash` asserts a
   hardcoded expected order. It is a test of an implementation detail on purpose: the two rejected
   implementations above would pass every behavioural test in the file while breaking the guarantee

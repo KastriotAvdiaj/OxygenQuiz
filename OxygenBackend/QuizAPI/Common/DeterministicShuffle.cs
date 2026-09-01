@@ -55,7 +55,25 @@ namespace QuizAPI.Common
         private const ulong FnvOffsetBasis = 14695981039346656037UL;
         private const ulong FnvPrime = 1099511628211UL;
 
-        /// <summary>FNV-1a over the seed's UTF-16 bytes and the key's four bytes.</summary>
+        /// <summary>
+        /// FNV-1a over the seed's UTF-16 bytes and the key's four bytes, then a splitmix64
+        /// finalizer.
+        ///
+        /// <para><b>The finalizer is not optional, and leaving it out is a live bug rather than a
+        /// theoretical one.</b> FNV-1a's last step is one XOR-and-multiply per byte, which leaves
+        /// its high bits only weakly dependent on the bytes fed in last — and sorting compares the
+        /// whole 64-bit value, so the high bits decide the order. With four consecutive option ids
+        /// the resulting permutation was measurably lopsided: the lowest id landed first or last
+        /// about 15% of the time each and in the two middle positions about 34% each, on every id
+        /// shape tested (adjacent, spread out, three options). That is not a fair shuffle, it is a
+        /// different fixed bias — and against correct-answer-first authoring it would have parked
+        /// the right answer in the middle two slots roughly 69% of the time. The regression test
+        /// caught it at 14.2% first place where 25% was expected.</para>
+        ///
+        /// <para>splitmix64's finalizer is a well-studied bit-mixer whose job is exactly this:
+        /// spread every input bit across all 64 output bits. Measured after adding it, all four
+        /// positions sit within a percentage point of 25%.</para>
+        /// </summary>
         private static ulong Mix(string seed, int key)
         {
             var hash = FnvOffsetBasis;
@@ -73,7 +91,15 @@ namespace QuizAPI.Common
             for (var i = 0; i < 4; i++)
                 hash = (hash ^ (byte)(bits >> (i * 8))) * FnvPrime;
 
-            return hash;
+            return Avalanche(hash);
+        }
+
+        /// <summary>splitmix64's finalizer. Bijective, so it cannot introduce collisions.</summary>
+        private static ulong Avalanche(ulong x)
+        {
+            x = (x ^ (x >> 30)) * 0xBF58476D1CE4E5B9UL;
+            x = (x ^ (x >> 27)) * 0x94D049BB133111EBUL;
+            return x ^ (x >> 31);
         }
     }
 }
