@@ -21,9 +21,9 @@ namespace QuizAPI.Services.Ai
         /// </summary>
         /// <param name="maxOutputTokens">
         /// Per-call ceiling, or null for <c>Ai:MaxOutputTokens</c>. Exists because the global
-        /// value is sized for a 15-question quiz (8000) and every caller was paying for that
+        /// value is sized for a 15-question quiz (4000) and every caller was paying for that
         /// headroom — vendors reserve <c>max_tokens</c> up front. A palette proposal is a few
-        /// dozen tokens, and asking for 8000 of room to return them is how an admin-only,
+        /// dozen tokens, and asking for 4000 of room to return them is how an admin-only,
         /// unmetered feature quietly competes with quiz generation for the same budget.
         /// </param>
         Task<AiProviderResult> CompleteJsonAsync(

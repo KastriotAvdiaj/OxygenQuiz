@@ -9,7 +9,7 @@ namespace QuizAPI.Services.Ai.CategoryPalette
     {
         /// <summary>
         /// Small enough that a runaway reply is impossible rather than merely unlikely. Three
-        /// palettes of five hex strings is about 60 tokens of JSON. The quiz generator's 8000
+        /// palettes of five hex strings is about 60 tokens of JSON. The quiz generator's 4000
         /// would have let a confused model burn the daily budget on colour names.
         ///
         /// <para><b>Why this is 1500 and not the 60 the answer needs.</b> It was 300, and on a

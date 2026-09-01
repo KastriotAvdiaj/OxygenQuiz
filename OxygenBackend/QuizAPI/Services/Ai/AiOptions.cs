@@ -112,7 +112,7 @@ namespace QuizAPI.Services.Ai
         /// <para><b>It applies to every call, quiz generation included</b> — it is a property of
         /// the configured model, not of one feature. That is a deliberate simplification and it
         /// has a cost: <c>"low"</c> was chosen for the palette proposer, which needs almost no
-        /// thinking, and the generator inherits it even though its 8000-token ceiling could
+        /// thinking, and the generator inherits it even though its 4000-token ceiling could
         /// afford more. If generated quizzes get worse after this is set, that is the first
         /// thing to suspect, and the fix is a per-call override on
         /// <see cref="IQuizAiProvider.CompleteJsonAsync"/> beside the existing token
@@ -147,11 +147,8 @@ namespace QuizAPI.Services.Ai
         /// <summary>
         /// Hard ceiling on output tokens per call, passed to the provider as <c>max_tokens</c>.
         ///
-        /// This is the one that matters for a runaway: V4-Flash will emit up to 384K output
-        /// tokens if asked, and a model stuck in a repetition loop will happily do exactly that
-        /// — roughly $0.25 for a single call that should cost about $0.001, before the retry
-        /// doubles it. 8,000 is generous headroom over the ~4,000 a 15-question quiz needs, and
-        /// caps the worst single call at about half a cent (at the off-peak rates below).
+        /// This is the one that matters for a runaway: a model stuck in a repetition loop will
+        /// emit as many tokens as it is allowed to, so this caps what a single bad call can cost.
         ///
         /// <para><b>It also has to fit under the vendor's per-minute token allowance, and that is
         /// not obvious.</b> Vendors reserve <c>max_tokens</c> against the rate limit up front,
@@ -159,10 +156,18 @@ namespace QuizAPI.Services.Ai
         /// ceiling, an 8,000 setting plus a ~900-token prompt is refused *before generation starts*
         /// and no amount of waiting helps. That is a real failure we hit on Groq's free tier
         /// (2026-08-22), reported as 413 <c>rate_limit_exceeded</c>. Rule of thumb: this value plus
-        /// your prompt must be under the vendor's TPM limit. 4,000 covers a 15-question quiz and
-        /// leaves room under an 8,000 ceiling.</para>
+        /// your prompt must be under the vendor's TPM limit.</para>
+        ///
+        /// <para><b>Why 4,000 and not the 8,000 this shipped with.</b> 4,000 covers a
+        /// 15-question quiz, and 15 is <see cref="MaxQuestionsPerGeneration"/> — the largest the
+        /// app will ever ask for — so the lower ceiling costs nothing at any quiz size, and it
+        /// leaves room under an 8,000 TPM tier where the old default could not work at all. The
+        /// old value survived only because development overrode it in user-secrets, which
+        /// production has no equivalent of: the default was wrong everywhere it was actually
+        /// used. Revisit this if <see cref="MaxQuestionsPerGeneration"/> rises, or if a vendor
+        /// entry is selected whose tier allows less.</para>
         /// </summary>
-        public int MaxOutputTokens { get; set; } = 8_000;
+        public int MaxOutputTokens { get; set; } = 4_000;
 
         /// <summary>
         /// Prices used to estimate cost at commit time. Stored per-row so a later price change

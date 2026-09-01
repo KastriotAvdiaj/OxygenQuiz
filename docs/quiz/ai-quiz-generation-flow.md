@@ -633,9 +633,12 @@ dotnet user-secrets set "Ai:ApiKey" "gsk_..."
 dotnet user-secrets list        # confirm no stale Ai:BaseUrl / Ai:Model is shadowing the catalogue
 ```
 
-Two things to understand before relying on it. `MaxOutputTokens` at the default 8,000 **cannot
-work** on a free tier with an 8,000 tokens-per-minute ceiling — the vendor reserves it up front, so
-every request is refused before generation starts (§2b). And pricing the calls at zero is honest
+Two things to understand before relying on it. `MaxOutputTokens` **is now 4,000 by default**
+precisely so this works on an 8,000 tokens-per-minute free tier — the vendor reserves the ceiling
+up front, so the old 8,000 default meant every request was refused before generation started
+(§2b). If you override it, keep it plus your prompt under the tier's TPM limit, and put the value
+in `appsettings.json` rather than user-secrets: a non-secret hidden in the secrets layer is how
+development ran fine on 4,000 for a week while the committed default stayed broken. And pricing the calls at zero is honest
 but it disarms `DailyBudgetUsd`/`MonthlyBudgetUsd`, which are enforced against estimated spend: on
 a free tier the daily quota and the rate limiter are the only guards left. Never carry those zeros
 to a paid vendor.
@@ -677,7 +680,7 @@ Ordered from "cheapest to bypass by a bug in our code" to "cannot be bypassed by
 
 | # | Layer | Bounds | Where |
 |---|---|---|---|
-| 1 | `MaxOutputTokens` = 8000 | One call to ~$0.005 instead of ~$0.25 | `max_tokens` on the request |
+| 1 | `MaxOutputTokens` = 4000 | One call to ~$0.0024 at Groq's output rate, instead of whatever a repetition loop would run to | `max_tokens` on the request |
 | 2 | `MaxSourceChars` = 40,000 | Input to ~10K tokens (~$0.0022) per call | `AiGenerationService.Normalise` |
 | 3 | `DefaultDailyQuota` = 2 | One user to 2 generations/day — stated in the UI. **Staff exempt** (§4a) | `AiQuotaService` |
 | 4 | `DailyBudgetUsd` = 2 | Everyone, to ~$2/day — bounds the *rate* of loss | `IsOverBudgetAsync` |

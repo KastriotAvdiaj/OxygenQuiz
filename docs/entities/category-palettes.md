@@ -132,7 +132,7 @@ unreadable must not look like a decision someone made.
 No quota decrement — only admins create categories, and spending a user's daily quiz allowance on
 a colour would be a surprise. But *unmetered is not unbounded*:
 
-- 1500 output tokens, versus the generator's 8000. Vendors reserve `max_tokens` up front, so this
+- 1500 output tokens, versus the generator's 4000. Vendors reserve `max_tokens` up front, so this
   is a real difference rather than a nominal one. At Groq's gpt-oss-120b rates the worst possible
   single call is about $0.0009.
 - **It was 300, and 300 is a hang on a reasoning model.** The answer itself is ~60 tokens of

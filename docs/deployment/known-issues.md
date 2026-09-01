@@ -717,6 +717,13 @@ are actually *in* the feature.
   line. _The setting itself is per-vendor and can only be got right at config time_ — the rule is
   in `AiOptions.MaxOutputTokens` and
   [`ai-quiz-generation-flow.md`](../quiz/ai-quiz-generation-flow.md) §2b.
+  **Update 2026-08-31:** the default is now **4,000**, which fits an 8,000 TPM tier and still
+  covers a 15-question quiz — the app's own maximum — so the shipped configuration no longer
+  trips this. It stayed at 8,000 for so long because development overrode it in **user-secrets**,
+  so the only environment anyone exercised was the one environment the default did not reach;
+  production would have hit it on the first generation. Worth remembering as its own lesson: a
+  non-secret in the secrets layer hides a broken default rather than fixing it. The underlying
+  point stands — a vendor entry with a tighter TPM needs this lowered again, and nothing checks.
   → `OxygenBackend/QuizAPI/Services/Ai/OpenAiCompatibleQuizAiProvider.cs`,
   `Services/Ai/AiOptions.cs`
 
