@@ -23,6 +23,7 @@ import { AdvancedOptions } from "./components/advanced-options";
 import { ConfirmDetailsCard } from "./components/confirm-details-card";
 import { GenerateErrorPanel } from "./components/generate-error-panel";
 import { GenerationInput } from "./components/generation-input";
+import { ImportNotices } from "./components/import-notices";
 import { ImportSummary } from "./components/import-summary";
 import { QuotaNote } from "./components/quota-note";
 import { WizardButton } from "./components/wizard-button";
@@ -31,6 +32,7 @@ export {
   ALL_AI_QUESTION_TYPES,
   DEFAULT_AI_QUESTION_TYPES,
 } from "./components/question-type-options";
+export { ImportNotices } from "./components/import-notices";
 export { ImportSummary } from "./components/import-summary";
 
 export interface AiQuizWizardViewProps {
@@ -245,6 +247,10 @@ export const AiQuizWizardView = ({
   if (parseResult?.ok) {
     return (
       <div className="flex flex-col gap-3 lg:h-full lg:min-h-0">
+        {/* Exceptions first: the count in ImportSummary already reflects what survived, so
+            "four were skipped" is the thing that needs reading, and it is the one banner here
+            the user cannot have switched off. */}
+        <ImportNotices result={parseResult} />
         <ImportSummary
           result={parseResult}
           isFromTopic={mode === "Topic"}

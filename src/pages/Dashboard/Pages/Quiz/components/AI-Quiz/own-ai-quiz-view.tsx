@@ -25,6 +25,7 @@ import type { ParseResult } from "./parse-ai-output";
 import { AdvancedOptions } from "./components/advanced-options";
 import { ConfirmDetailsCard } from "./components/confirm-details-card";
 import { GenerationInput } from "./components/generation-input";
+import { ImportNotices } from "./components/import-notices";
 import { ImportSummary } from "./components/import-summary";
 import { InfoHint } from "./components/info-hint";
 import { StepMarker } from "./components/step-marker";
@@ -211,6 +212,7 @@ export const OwnAiQuizView = ({
   if (parseResult?.ok) {
     return (
       <div className="flex flex-col gap-3 lg:h-full lg:min-h-0">
+        <ImportNotices result={parseResult} />
         {/* Always topic-based here, so the fact-check nudge always applies. */}
         <ImportSummary result={parseResult} isFromTopic onStartOver={onStartOver} />
         <div className="flex-1 min-h-0">{builderSlot}</div>

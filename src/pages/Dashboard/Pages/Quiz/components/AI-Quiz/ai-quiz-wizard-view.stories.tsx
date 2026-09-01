@@ -214,6 +214,18 @@ const meta = {
   parameters: { layout: "fullscreen" },
   decorators: [
     (Story) => {
+      // `ImportSummary` reads a "don't show again" flag from localStorage on mount, so without
+      // this a developer who dismissed the notice once would see every review-handoff story
+      // below render its collapsed row instead of the banner — a story silently showing a
+      // different state than its name claims. Storybook usually gets its own origin and so its
+      // own storage, but "usually" is not what a fixture should rest on.
+      try {
+        localStorage.removeItem("oxygenquiz:ai-import-notice:v1");
+      } catch {
+        // Storage unavailable: the component falls back to showing the notice, which is the
+        // state these stories want anyway.
+      }
+
       const queryClient = new QueryClient({
         defaultOptions: { queries: { retry: false, enabled: false } },
       });
@@ -520,6 +532,33 @@ export const ReviewHandoffWithDroppedQuestions: Story = {
     topic: "The Water Cycle",
     parseResult: partialResult,
     builderSlot: <BuilderStandIn result={partialResult} />,
+  },
+};
+
+/**
+ * The notice permanently dismissed. `Start over` survives as a slim row, which is the point:
+ * a preference about a *notice* must not remove an *action*, and this is the only place that
+ * control lives. The Sparkles button brings the notice back for this import, so the choice is
+ * reversible without going near browser settings.
+ *
+ * Note what is NOT suppressed — compare `ReviewHandoffWithDroppedQuestions`, whose report comes
+ * from `ImportNotices` and has no dismiss at all.
+ */
+export const ReviewHandoffWithNoticeDismissed: Story = {
+  decorators: [
+    (Story) => {
+      try {
+        localStorage.setItem("oxygenquiz:ai-import-notice:v1", "1");
+      } catch {
+        // Nothing to assert against if storage is blocked; the story renders the banner instead.
+      }
+      return <Story />;
+    },
+  ],
+  args: {
+    topic: "The Water Cycle",
+    parseResult: goodResult,
+    builderSlot: <BuilderStandIn result={goodResult} />,
   },
 };
 

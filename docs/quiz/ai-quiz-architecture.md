@@ -192,13 +192,21 @@ These are the properties that make the feature safe. Every change should preserv
 
 ## 6. Failure-mode catalogue
 
+> **The two rows below that say "reported by `ImportNotices`" depend on a UI component that
+> cannot be dismissed, and that is load-bearing.** The report used to share a banner with the
+> routine "Drafted 7 questions" line; when that line gained a "don't show again", the report was
+> split out rather than inheriting it — otherwise a user tired of the status message would have
+> silently opted out of being told that four of their ten questions never made it. See
+> [`../adr/0005-the-import-report-is-not-a-notice-you-can-turn-off.md`](../adr/0005-the-import-report-is-not-a-notice-you-can-turn-off.md).
+
+
 | Failure | Where caught | Behaviour |
 |---|---|---|
 | Reply has prose/markdown around JSON | `extractJson` | Fences stripped, object located; parses anyway |
 | Reply is not JSON at all | `extractJson` → null | Friendly "couldn't find JSON" error, user re-pastes |
 | JSON valid but wrong shape | `aiPayloadSchema` | "doesn't match expected format" error |
-| One question malformed (no correct option, etc.) | `buildQuestion` | That question dropped w/ reason; others kept |
-| Difficulty name not recognised | `resolveDifficultyId` | Falls back to quiz difficulty; flagged in summary |
+| One question malformed (no correct option, etc.) | `buildQuestion` | That question dropped w/ reason; others kept. Reported by `ImportNotices` |
+| Difficulty name not recognised | `resolveDifficultyId` | Falls back to quiz difficulty; reported by `ImportNotices` |
 | `pointSystem` / time out of range | `resolveSettings` | Clamped to defaults/bounds |
 | All questions invalid | `parseAiOutput` | Whole import rejected with guidance |
 | Clipboard blocked by browser | `handleCopyPrompt` | Error notification, no state change |

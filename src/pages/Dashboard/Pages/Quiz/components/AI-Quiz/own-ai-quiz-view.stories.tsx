@@ -33,6 +33,15 @@ const meta = {
   parameters: { layout: "fullscreen" },
   decorators: [
     (Story) => {
+      // `ImportSummary` reads its "don't show again" flag from localStorage on mount — clear it
+      // so these stories always render the state their names claim. Same reasoning as the
+      // wizard's stories.
+      try {
+        localStorage.removeItem("oxygenquiz:ai-import-notice:v1");
+      } catch {
+        // Storage blocked: the component shows the notice, which is what these stories want.
+      }
+
       const queryClient = new QueryClient({
         defaultOptions: { queries: { retry: false, enabled: false } },
       });
