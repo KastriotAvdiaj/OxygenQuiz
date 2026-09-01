@@ -37,23 +37,42 @@ namespace QuizAPI.Services.Ai
         public string Provider { get; set; } = "OpenAiCompatible";
 
         /// <summary>
-        /// The vendor. Anything speaking the OpenAI ChatCompletions format works — see
-        /// <see cref="OpenAiCompatibleQuizAiProvider"/> for the three things to check first.
-        /// <list type="bullet">
-        ///   <item><description>DeepSeek: <c>https://api.deepseek.com</c></description></item>
-        ///   <item><description>Qwen (Alibaba Model Studio, Singapore): the workspace-scoped
-        ///     <c>compatible-mode/v1</c> URL from the console</description></item>
-        /// </list>
-        /// Changing this means changing <see cref="Model"/>, both cost-per-million values and
-        /// <see cref="ReasoningEffort"/> in the same edit — a vendor swap that leaves the old
-        /// prices behind silently mis-prices every row in the ledger, and one that leaves the old
-        /// effort setting behind sends a field the new model may refuse.
+        /// Which entry of <see cref="Vendors"/> to use — the <b>only</b> thing an environment
+        /// overrides to change who writes the questions.
+        ///
+        /// <para>Blank falls back to reading the flat <see cref="BaseUrl"/> / <see cref="Model"/> /
+        /// cost keys directly, which still works and is warned about at startup. That form is what
+        /// this property exists to retire: five values that must move together, with nothing
+        /// enforcing it and one of them failing silently when it doesn't.</para>
         /// </summary>
-        public string BaseUrl { get; set; } = "https://api.deepseek.com";
+        public string Vendor { get; set; } = string.Empty;
 
         /// <summary>
-        /// Model id, recorded on every usage row, so "which model made this quiz" is answerable
-        /// from the data.
+        /// Named vendor configurations. Case-insensitive, so <c>Ai__Vendor=GROQ</c> matches
+        /// <c>"groq"</c>.
+        ///
+        /// <para>An entry costs nothing until <see cref="Vendor"/> selects it, which is what makes
+        /// this a better home for a vendor you cannot currently use than a default was: a catalogue
+        /// entry documents the option, a default silently becomes the thing you are running.</para>
+        /// </summary>
+        public Dictionary<string, AiVendorOptions> Vendors { get; } =
+            new(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// Root URL of the resolved vendor. <b>Output, not input</b> — copied from the selected
+        /// <see cref="Vendors"/> entry by <see cref="AiConfigurationResolver"/> before anything
+        /// reads it. Set it directly only on the deprecated flat path.
+        ///
+        /// <para>No default. It used to be <c>https://api.deepseek.com</c>, which made DeepSeek the
+        /// vendor any environment fell back to without choosing it — including environments that
+        /// cannot obtain a DeepSeek key at all. A blank here now means "no vendor selected", which
+        /// switches the feature off loudly instead of pointing it somewhere nobody picked.</para>
+        /// </summary>
+        public string BaseUrl { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Model id of the resolved vendor, recorded on every usage row so "which model made this
+        /// quiz" is answerable from the data. <b>Output, not input</b> — see <see cref="BaseUrl"/>.
         ///
         /// <para>It is deliberately <b>not</b> shown in the wizard any more. It used to render as
         /// "Questions are written by {Model}" under the quota line, but this is a raw provider
@@ -61,11 +80,8 @@ namespace QuizAPI.Services.Ai
         /// on the form it answers a question about a generation that has not happened yet.
         /// "Which model made this quiz" is a question about a saved quiz, and the usage row is
         /// where it is answered. See the note in <c>components/quota-note.tsx</c>.</para>
-        ///
-        /// <para>NOTE: <c>deepseek-chat</c> / <c>deepseek-reasoner</c> were retired 2026-07-24 in
-        /// favour of the V4 names. Re-check against api-docs.deepseek.com before changing.</para>
         /// </summary>
-        public string Model { get; set; } = "deepseek-v4-flash";
+        public string Model { get; set; } = string.Empty;
 
         public string ApiKey { get; set; } = string.Empty;
 
@@ -162,8 +178,15 @@ namespace QuizAPI.Services.Ai
         /// doubles both during 01:00–04:00 and 06:00–10:00 UTC, which this flat model does not
         /// represent — see the open gap in docs/quiz/ai-quiz-generation-flow.md §9.</para>
         /// </summary>
-        public decimal InputCostPerMillionUsd { get; set; } = 0.22m;
-        public decimal OutputCostPerMillionUsd { get; set; } = 0.66m;
+        /// <remarks>
+        /// <b>Output, not input</b> — resolved from the selected <see cref="Vendors"/> entry.
+        /// Zero is refused at startup rather than defaulted: it is not "free", it is "unpriced",
+        /// and both budget caps are enforced against this number.
+        /// </remarks>
+        public decimal InputCostPerMillionUsd { get; set; }
+
+        /// <remarks><b>Output, not input.</b> Zero is refused — see above.</remarks>
+        public decimal OutputCostPerMillionUsd { get; set; }
 
         /// <summary>
         /// A reservation older than this is assumed abandoned (crashed request, closed tab) and

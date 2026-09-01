@@ -190,95 +190,60 @@ builder.Services.AddSingleton<QuizAPI.Services.DataTransfer.IDataImportService, 
 builder.Services.AddScoped<QuizAPI.Services.Reports.IReportService, QuizAPI.Services.Reports.ReportService>();
 
 // --- In-app AI quiz generation (docs/quiz/ai-quiz-generation-plan.md) ---
-builder.Services.Configure<QuizAPI.Services.Ai.AiOptions>(
-    configuration.GetSection(QuizAPI.Services.Ai.AiOptions.SectionName));
-
-// Two providers exist, and the choice is about *how we get a completion*, not about which
-// vendor: "Fake" is the offline stub, "OpenAiCompatible" is a real HTTP call to whatever
-// Ai:BaseUrl points at. The vendor lives in Ai:BaseUrl + Ai:Model, never here — the class was
-// called DeepSeekQuizAiProvider until 2026-08-22 and the name kept implying otherwise.
-// Unset means the AiOptions default, not a configuration error — an appsettings.json without
-// an Ai section must still boot.
-var aiProviderName = configuration[$"{QuizAPI.Services.Ai.AiOptions.SectionName}:Provider"];
-if (string.IsNullOrWhiteSpace(aiProviderName)) aiProviderName = "OpenAiCompatible";
-
-var useFakeAiProvider = string.Equals(aiProviderName, "Fake", StringComparison.OrdinalIgnoreCase);
-
-// Legacy vendor names still boot — an existing .env or user-secrets holding "DeepSeek" must not
-// take the API down over a rename — but they are called out, because a vendor name here reads as
-// if it selected the vendor, and it never did.
-var isLegacyVendorProviderName =
-    string.Equals(aiProviderName, "DeepSeek", StringComparison.OrdinalIgnoreCase) ||
-    string.Equals(aiProviderName, "Qwen", StringComparison.OrdinalIgnoreCase);
-
-// Anything else is a typo, and the old code silently treated a typo as "make real paid calls".
-// Fail instead: a misspelled provider is exactly when you least want the billable default.
-if (!useFakeAiProvider &&
-    !isLegacyVendorProviderName &&
-    !string.Equals(aiProviderName, "OpenAiCompatible", StringComparison.OrdinalIgnoreCase))
-    throw new InvalidOperationException(
-        $"Ai:Provider is \"{aiProviderName}\", which is not a provider. Use \"OpenAiCompatible\" for a real vendor (set the vendor with Ai:BaseUrl and Ai:Model) or \"Fake\" for development.");
-
-// The fake provider invents questions out of nothing. Serving those to real users would be
-// worse than the feature being switched off, so a misconfigured deploy is refused rather than
-// warned about.
-if (useFakeAiProvider && environment.IsProduction())
-    throw new InvalidOperationException(
-        "Ai:Provider is \"Fake\", which is a development-only stub and must never run in Production.");
-
-// Fail fast on a half-configured real provider: enabled with no key can only produce runtime
-// 502s, which look like an outage rather than a config mistake. Same convention as the Jwt:Key
-// and external-auth checks above. The fake provider needs no key, hence the exemption.
+// Bind the section, resolve the vendor, and decide whether AI can work at all — once, eagerly,
+// so the answer is a value the rest of startup can branch on and log.
 //
-// Development is exempt, and that is not a softening of the rule — it is the rule applied to a
-// different situation. `appsettings.Development.json` is COMMITTED, so its Ai:Enabled=true plus
-// OpenAiCompatible is the default inherited by every fresh clone and by the backend container in
-// docker-compose.yml, neither of which has user-secrets to supply a key. Throwing there does not
-// catch a misconfigured deploy, it stops the app booting for people who never opted into AI at
-// all. So in Development fall back to the stub and say so; in Production still refuse, because
-// there the reasoning above holds exactly.
-//
-// The consequence to know: adding Ai__ApiKey to user-secrets is the ONLY step needed to test
-// against the real vendor. Nothing else toggles — the vendor block in appsettings.Development.json
-// is already the real one. Remove the key and you are back on the stub.
-if (configuration.GetValue<bool>($"{QuizAPI.Services.Ai.AiOptions.SectionName}:Enabled") &&
-    !useFakeAiProvider &&
-    string.IsNullOrWhiteSpace(configuration[$"{QuizAPI.Services.Ai.AiOptions.SectionName}:ApiKey"]))
-{
-    if (environment.IsDevelopment())
-    {
-        useFakeAiProvider = true;
-        Console.WriteLine(
-            "[AI] Ai:Enabled is true but no Ai:ApiKey is configured — falling back to the Fake " +
-            "provider. To call the real vendor: dotnet user-secrets set \"Ai:ApiKey\" \"<key>\"");
-    }
-    else
-        throw new InvalidOperationException(
-            "Ai:Enabled is true but Ai:ApiKey is not configured. Supply it via the Ai__ApiKey environment variable or user-secrets, or set Ai:Provider to \"Fake\" for development.");
-}
+// A broken AI configuration switches the feature OFF; it does not stop the application. AI
+// generation is one optional feature and nothing else in OxygenQuiz depends on it, so refusing to
+// boot would trade a small outage for a total one — at the worst moment, since a bad AI value is
+// most likely introduced during a production config edit. The resolver forces Ai:Enabled to false,
+// which is the flag the generation service, the palette service and GET /ai-quota already gate on,
+// so the whole app degrades through machinery that already exists. Reasoning in
+// AiConfigurationResolver; decision in docs/adr/0004-ai-misconfiguration-disables-the-feature.md.
+var aiOptions =
+    configuration.GetSection(QuizAPI.Services.Ai.AiOptions.SectionName).Get<QuizAPI.Services.Ai.AiOptions>()
+    ?? new QuizAPI.Services.Ai.AiOptions();
 
-// Stateless prompt construction → singleton.
+var aiConfig = QuizAPI.Services.Ai.AiConfigurationResolver.Apply(
+    aiOptions, environment.IsProduction(), environment.IsDevelopment());
+
+// The resolved instance IS the registration — deliberately not Configure(section), which would
+// re-bind raw values behind the resolver's back and hand consumers an Ai:Enabled that had not been
+// checked. Nothing reloads AI config at runtime, so one snapshot is the whole truth.
+builder.Services.AddSingleton<IOptions<QuizAPI.Services.Ai.AiOptions>>(Options.Create(aiOptions));
+
+// The reason a bare `Enabled == false` cannot carry, for the UI to show.
+builder.Services.AddSingleton(aiConfig.Availability);
+
+// Stateless prompt construction -> singleton.
 builder.Services.AddSingleton<QuizAPI.Services.Ai.AiPromptBuilder>();
 
-if (useFakeAiProvider)
+if (aiConfig.UseFakeProvider)
 {
     // Everything downstream of the provider still runs for real — quota, budget, audit, error
     // mapping — so this exercises the feature rather than mocking it. See the trigger words in
     // FakeQuizAiProvider for reaching each failure path on demand.
     builder.Services.AddScoped<QuizAPI.Services.Ai.IQuizAiProvider, QuizAPI.Services.Ai.FakeQuizAiProvider>();
 }
-else
+else if (aiConfig.IsAvailable)
 {
     // Typed client so the handler (and its connection pool) is reused; the per-call deadline is
     // enforced inside the provider with a linked token, so the client's own timeout is left generous.
     builder.Services.AddHttpClient<QuizAPI.Services.Ai.IQuizAiProvider, QuizAPI.Services.Ai.OpenAiCompatibleQuizAiProvider>((sp, client) =>
     {
-        var aiOptions = sp.GetRequiredService<IOptions<QuizAPI.Services.Ai.AiOptions>>().Value;
+        var resolved = sp.GetRequiredService<IOptions<QuizAPI.Services.Ai.AiOptions>>().Value;
         // Trailing slash matters: without it the relative "chat/completions" would replace the
         // last path segment of BaseAddress rather than append to it.
-        client.BaseAddress = new Uri(aiOptions.BaseUrl.TrimEnd('/') + "/");
+        client.BaseAddress = new Uri(resolved.BaseUrl.TrimEnd('/') + "/");
         client.Timeout = Timeout.InfiniteTimeSpan;
     });
+}
+else
+{
+    // Unreachable while the gates hold, and registered precisely so that if one ever doesn't, the
+    // failure is an AiProviderException the pipeline understands rather than a UriFormatException
+    // from inside the HTTP client factory.
+    builder.Services.AddScoped<QuizAPI.Services.Ai.IQuizAiProvider, QuizAPI.Services.Ai.UnavailableQuizAiProvider>();
 }
 builder.Services.AddScoped<IAiGenerationUsageRepository, AiGenerationUsageRepository>();
 builder.Services.AddScoped<QuizAPI.Services.Ai.IAiQuotaPolicy, QuizAPI.Services.Ai.ConfigAiQuotaPolicy>();
@@ -352,18 +317,25 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// Deprecation notice for a vendor name in Ai:Provider. A warning rather than a throw: an
-// existing .env or user-secrets holding "DeepSeek" predates the rename, and taking the API down
-// over it would be a worse outcome than the confusion it causes. Deleting the legacy branch is
-// safe once no environment sets one — check .env on the VPS before you do.
-if (isLegacyVendorProviderName)
-    app.Logger.LogWarning(
-        "Ai:Provider is \"{Provider}\", which names a vendor. The provider is chosen by transport, " +
-        "not by vendor: set Ai:Provider to \"OpenAiCompatible\" and choose the vendor with " +
-        "Ai:BaseUrl + Ai:Model (currently {BaseUrl} / {Model}). The legacy value still works.",
-        aiProviderName,
-        configuration[$"{QuizAPI.Services.Ai.AiOptions.SectionName}:BaseUrl"],
-        configuration[$"{QuizAPI.Services.Ai.AiOptions.SectionName}:Model"]);
+// Everything the AI configuration has to say, said once, at the only moment anyone reads startup
+// logs. Warnings are things that work but should not stay; the error is the reason the feature is
+// off. Info on the happy path names the vendor actually in use, so "which model is production on"
+// is answerable from the logs rather than by reading three config files.
+foreach (var aiWarning in aiConfig.Warnings)
+    app.Logger.LogWarning("[AI] {Warning}", aiWarning);
+
+if (aiConfig.Error is not null)
+    app.Logger.LogError(
+        "[AI] The AI features are switched off because the configuration is not usable: {Reason}",
+        aiConfig.Error);
+else if (aiConfig.Availability.Status == QuizAPI.Services.Ai.AiConfigStatus.Ready)
+    app.Logger.LogInformation(
+        "[AI] Ready — vendor \"{Vendor}\", model {Model} at {BaseUrl}.",
+        string.IsNullOrWhiteSpace(aiOptions.Vendor) ? "(flat keys)" : aiOptions.Vendor,
+        aiOptions.Model,
+        aiOptions.BaseUrl);
+else if (aiConfig.Availability.Status == QuizAPI.Services.Ai.AiConfigStatus.FakeStub)
+    app.Logger.LogWarning("[AI] Running the Fake provider. Generated questions are canned stubs.");
 
 // --- Forwarded headers (behind Nginx + Cloudflare) ---
 // The app sits behind a reverse proxy (Nginx) and Cloudflare, so the original request scheme/IP

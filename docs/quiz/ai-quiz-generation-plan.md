@@ -629,6 +629,15 @@ Delete it in 2.0 and drop those rows from the setup table.
 > The as-built list is `Services/Ai/AiOptions.cs`, documented in
 > [`ai-quiz-generation-flow.md`](ai-quiz-generation-flow.md) §2. For production delivery see
 > [`../deployment/production-topology.md`](../deployment/production-topology.md).
+>
+> **Two further divergences since 2026-08-31.** The flat `BaseUrl` / `Model` / `ReasoningEffort` /
+> cost keys below are no longer where a vendor is configured: they are *resolved* from an
+> `Ai:Vendors` catalogue entry selected by `Ai:Vendor`, so the five values that must move together
+> cannot be set apart. And `Enabled=true` with a blank key no longer "fails startup" — it switches
+> the AI features off and lets the rest of the API start, with the reason logged and surfaced to
+> the UI. See [`../adr/0004-ai-misconfiguration-disables-the-feature.md`](../adr/0004-ai-misconfiguration-disables-the-feature.md).
+> DeepSeek, named throughout the sections above, is no longer the configured vendor — it remains in
+> the catalogue as an unselected example. The pricing research that named it is still sound history.
 
 
 ```jsonc

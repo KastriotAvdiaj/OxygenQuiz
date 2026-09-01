@@ -26,4 +26,23 @@ namespace QuizAPI.Services.Ai.CategoryPalette
     /// <see cref="AiErrorCodes.ModelOutputInvalid"/>, never as a silent fallback palette.
     /// </summary>
     public sealed class PaletteProposalException(string message) : Exception(message);
+
+    /// <summary>
+    /// Answer to "should the Suggest colours button be offered at all".
+    ///
+    /// <para>Two fields rather than one because a disabled control that cannot say why it is
+    /// disabled is the thing this endpoint exists to avoid — the same reasoning the button's own
+    /// aria-disabled comment already carries.</para>
+    /// </summary>
+    public sealed class CategoryPaletteAvailabilityDTO
+    {
+        /// <summary>True when the AI is configured and switched on.</summary>
+        public bool Available { get; init; }
+
+        /// <summary>
+        /// User-facing reason, or null when available. Never names a configuration key: this
+        /// reaches a browser, and the detail lives in the server log.
+        /// </summary>
+        public string? Reason { get; init; }
+    }
 }

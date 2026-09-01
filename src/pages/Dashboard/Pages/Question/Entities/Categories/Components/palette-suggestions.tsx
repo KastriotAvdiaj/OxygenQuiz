@@ -5,6 +5,7 @@ import { cn } from "@/utils/cn";
 
 import {
   paletteErrorMessage,
+  usePaletteAvailability,
   useProposeCategoryPalette,
   type PaletteCandidate,
 } from "../api/propose-category-palette";
@@ -45,8 +46,26 @@ export const PaletteSuggestions = ({
   onApply,
 }: PaletteSuggestionsProps) => {
   const propose = useProposeCategoryPalette();
+  const availability = usePaletteAvailability();
   const trimmedName = categoryName.trim();
-  const blocked = !trimmedName || propose.isPending;
+
+  /**
+   * Why the button can't be pressed, or undefined when it can. One value rather than two booleans
+   * because the tooltip and the disabled state must never disagree — the reason IS the condition.
+   *
+   * Availability is checked before the name, because "there is no AI on this server" is not
+   * fixable by typing and telling the admin to type first would be a lie. `undefined` data means
+   * the check hasn't answered (or failed, which it is allowed to do silently): unknown counts as
+   * available, so a network blip degrades to a button that fails informatively rather than one
+   * greyed out for no stated reason.
+   */
+  const disabledReason = availability.data?.available === false
+    ? availability.data.reason ?? "AI features are unavailable right now."
+    : !trimmedName
+      ? "Type a category name first"
+      : undefined;
+
+  const blocked = disabledReason !== undefined || propose.isPending;
 
   return (
     <section aria-label="Suggested palettes" className="space-y-2 border-t border-border pt-4">
@@ -66,7 +85,7 @@ export const PaletteSuggestions = ({
             propose.mutate(trimmedName);
           }}
           aria-disabled={blocked}
-          title={trimmedName ? undefined : "Type a category name first"}
+          title={disabledReason}
           className={cn(
             "inline-flex min-h-9 items-center gap-2 rounded-lg border border-border px-3 py-1.5",
             "text-sm transition-colors hover:border-primary hover:bg-primary/10",

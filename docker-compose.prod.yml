@@ -22,6 +22,11 @@ services:
       - AllowedHosts=api.oxygenquiz.com
       - Cors__AllowedOrigins__0=https://oxygenquiz.com
       - Cors__AllowedOrigins__1=https://www.oxygenquiz.com
+      #  AI and Google OAuth settings
+      - Ai__Enabled=true
+      - Ai__ApiKey=${AI_API_KEY}
+      - Authentication__Google__Enabled=true
+      - Authentication__Google__ClientId=${GOOGLE_CLIENT_ID}
       # - Security__EnforceProductionConfig=true   # turn ON after domain+TLS are wired and tested
   postgres:
     image: postgres:15

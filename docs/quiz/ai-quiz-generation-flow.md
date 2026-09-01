@@ -128,12 +128,15 @@ this feature talks to OpenAI or needs an OpenAI account. When OpenAI published
 became the industry default. DeepSeek speaks it. Alibaba's Qwen exposes an endpoint literally
 called `compatible-mode` that speaks it. So do Mistral, Groq and most local runners.
 
-**So the vendor lives in five config values**, and swapping vendor touches no C#:
+**So the vendor lives in five config values**, and swapping vendor touches no C#. Since
+2026-08-31 those five live together as one **named catalogue entry** under `Ai:Vendors`, and an
+environment selects one with a single value:
 
 | Setting | What it selects |
 |---|---|
 | `Ai:Provider` | **How**, not who: `"OpenAiCompatible"` (a real HTTP call) or `"Fake"` (the offline stub). |
-| `Ai:BaseUrl` | Who. `https://api.deepseek.com`, or a Qwen `compatible-mode/v1` URL. |
+| `Ai:Vendor` | **Who** — the name of an `Ai:Vendors` entry, and the only thing an environment overrides to swap vendor. Unknown name → AI switches off rather than guessing. |
+| `Ai:BaseUrl` | Resolved from the selected entry. Setting it directly still works, with a deprecation warning. |
 | `Ai:Model` | Which model there. Recorded on every usage row. **Not** shown in the wizard — the model note was removed (see `quota-note.tsx`); the `ai-quota` endpoint still returns it, nothing renders it. |
 | `Ai:InputCostPerMillionUsd` / `Ai:OutputCostPerMillionUsd` | What it costs. **Change these in the same edit** — see §9.14. |
 | `Ai:ReasoningEffort` | How long a *reasoning* model may think. Unset for everything else, and unset means the field is never sent. See §2b. |
@@ -141,8 +144,11 @@ called `compatible-mode` that speaks it. So do Mistral, Groq and most local runn
 Two things follow from that split, and both were bugs waiting to happen before it:
 
 - **A typo in `Ai:Provider` used to mean "make real paid calls."** Anything that wasn't `"Fake"`
-  fell through to the HTTP provider. It now throws at startup unless the value is one it
-  recognises. The legacy vendor names `"DeepSeek"` and `"Qwen"` still boot, with a warning, so an
+  fell through to the HTTP provider. It now switches the AI features off unless the value is one
+  it recognises — it used to throw at startup, until that was reconsidered in
+  [`../adr/0004-ai-misconfiguration-disables-the-feature.md`](../adr/0004-ai-misconfiguration-disables-the-feature.md):
+  AI is optional and nothing else in the app needs it, so a typo takes the feature down rather than
+  the site. The legacy vendor names `"DeepSeek"` and `"Qwen"` still boot, with a warning, so an
   existing `.env` survives the rename; delete that branch once no environment sets one.
 - **Nobody could see which model wrote a quiz.** `GET /quiz/ai-quota` returns the active model
   id, null whenever generation is unavailable (naming a model we are not about to call is a
@@ -606,17 +612,19 @@ must leave `used` unchanged — that is the single most important behaviour to c
 canned questions stop being enough. Several vendors run free tiers with no card, and because the
 provider is vendor-neutral (§2a) using one is four settings. Verified working 2026-08-22:
 
-⚠️ **Only `Ai:ApiKey` belongs in user-secrets.** `appsettings.Development.json` now carries the
-whole vendor block (BaseUrl, Model, the two cost values, ReasoningEffort) and says so in its own
-comment: user-secrets sit in a *higher* configuration layer, so a stale `Ai:BaseUrl` or `Ai:Model`
-left there silently wins over the file and you debug a vendor you thought you had switched away
-from. Set the key, and edit the file for everything else:
+⚠️ **Only `Ai:ApiKey` belongs in user-secrets.** The vendor block lives in the `Ai:Vendors`
+catalogue in **`appsettings.json`** — not in `appsettings.Development.json`, which carried a
+duplicate copy until 2026-08-31 and is now just `Ai:Enabled`. Development and production therefore
+run the same vendor by construction rather than by two files agreeing, which is how a swap used to
+leave half the old vendor behind. User-secrets sit in a *higher* configuration layer, so a stale
+`Ai:BaseUrl` or `Ai:Model` left there silently wins and you debug a vendor you thought you had
+switched away from. Set the key, and edit the catalogue for everything else:
 
 ```bash
 dotnet user-secrets set "Ai:ApiKey" "gsk_..."
-# everything else -> appsettings.Development.json (BaseUrl, Model, the two cost values,
-# ReasoningEffort, and MaxOutputTokens, which MUST fit under the vendor's TPM limit — §2b)
-dotnet user-secrets list        # confirm no stale Ai:BaseUrl / Ai:Model is shadowing the file
+# a new vendor -> a new Ai:Vendors entry in appsettings.json, selected with Ai:Vendor.
+# MaxOutputTokens stays a top-level Ai key and MUST fit under the vendor's TPM limit (§2b).
+dotnet user-secrets list        # confirm no stale Ai:BaseUrl / Ai:Model is shadowing the catalogue
 ```
 
 Two things to understand before relying on it. `MaxOutputTokens` at the default 8,000 **cannot

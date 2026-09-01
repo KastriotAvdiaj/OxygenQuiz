@@ -136,18 +136,17 @@ nothing reads it; `cp .env.example .env` configures nothing today.
 ### Worked example: turning the AI features on
 
 `Ai:Enabled` is a **single switch for both AI features** — AI quiz generation and the
-category-palette proposer share one `Ai` section, one provider, one key and one budget. There is
-no second flag for the palette helper.
+category-palette proposer share one `Ai` section, one vendor, one key and one budget. There is no
+second flag for the palette helper.
 
-Production loads `appsettings.json` and `appsettings.Production.json` only; the vendor block in
-`appsettings.Development.json` (Groq) is **not** read in production, so production inherits the
-DeepSeek block from `appsettings.json`. Enabling AI without overriding that block means you are
-calling DeepSeek and must supply a DeepSeek key.
+**The vendor is not something production sets.** It lives in the `Ai:Vendors` catalogue in
+`appsettings.json` and is selected by `Ai:Vendor`, so development and production run the same
+vendor by construction. Production supplies only what is secret or environment-specific:
 
 1. `~/OxygenQuiz/.env.prod` — add the secrets:
 
    ```
-   AI_API_KEY=<vendor key>
+   AI_API_KEY=<your vendor key>
    GOOGLE_CLIENT_ID=<the OAuth Web application client id>
    ```
 
@@ -161,10 +160,11 @@ calling DeepSeek and must supply a DeepSeek key.
        - Authentication__Google__ClientId=${GOOGLE_CLIENT_ID}
    ```
 
-   Staying on DeepSeek needs nothing further. Using a **different vendor** means overriding the
-   whole block together — `Ai__BaseUrl`, `Ai__Model`, both cost-per-million rates, and
-   `Ai__ReasoningEffort` if the model is a reasoning model. Half a vendor swap mis-prices every
-   row in `AiGenerationUsages`, and the budget caps are enforced against that estimate.
+   That is the whole change. To run a **different** vendor in production than in development, add
+   `- Ai__Vendor=deepseek` — one value, naming a catalogue entry. Overriding `Ai__BaseUrl` /
+   `Ai__Model` / the cost rates individually still works and is warned about at startup; it is the
+   form the catalogue exists to retire, because the five values must move together and setting some
+   of them mis-prices the ledger silently.
 
 3. Deploy and verify:
 
@@ -175,14 +175,21 @@ calling DeepSeek and must supply a DeepSeek key.
    ```
 
    `GET /api/quiz/ai-quota` (authenticated) is the end-to-end check for AI: its `enabled` field
-   answers "would a generation actually be attempted" — kill switch *and* spend caps — and it
-   reports the active model id, which is how you confirm which vendor you are really on.
+   answers "would a generation actually be attempted" — configuration, kill switch *and* spend caps
+   — and it reports the active model id, which is how you confirm which vendor you are really on.
 
-**Startup guards to know before you deploy.** `Program.cs` refuses to start if `Ai:Enabled` is
-true with a blank `Ai:ApiKey` in Production, and refuses `Ai:Provider=Fake` in Production
-outright. Likewise an enabled auth provider with a blank `ClientId` fails startup. A typo in
-`Ai:Provider` is also fatal, deliberately: the old behaviour treated a typo as "make real paid
-calls".
+**A broken AI configuration does not stop the API.** Since `0004`, an unusable `Ai` section
+switches the AI features off, logs the reason at `Error` on boot, and lets everything else start.
+So after a config change, *check the logs* — a working site is no longer proof the AI settings took:
+
+```bash
+docker compose -f docker-compose.prod.yml logs backend | grep '\[AI\]'
+```
+
+`[AI] Ready — vendor "groq", model … at …` is what you want. `[AI] The AI features are switched
+off because …` names the key to fix. The auth-provider guards still fail startup outright — an
+enabled provider with a blank `ClientId` will not boot — so the two behave differently on purpose;
+`docs/adr/0004-ai-misconfiguration-disables-the-feature.md` explains which failures earn which.
 
 ## Migrating to design B, if you ever do
 

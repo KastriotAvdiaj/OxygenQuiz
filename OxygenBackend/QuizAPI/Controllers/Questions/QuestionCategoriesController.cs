@@ -155,6 +155,36 @@ namespace QuizAPI.Controllers.Questions
             return Ok(await _palettes.ProposeAsync(request, userId, ct));
         }
 
+        /// <summary>
+        /// Whether the palette proposer is configured to answer, so the "Suggest colours" button
+        /// can be disabled with a reason instead of inviting a click that cannot work.
+        ///
+        /// <para><b>Answers about configuration, not about budget.</b> A server with AI switched
+        /// off is a standing fact and belongs in a tooltip; a spent daily budget is temporary and
+        /// would make this response stale the moment it was cached, so that one stays an inline
+        /// message on the failed click. The two need different surfaces because they call for
+        /// different next steps — "pick colours by hand, full stop" versus "pick colours by hand
+        /// today".</para>
+        ///
+        /// <para>Same role gate as the proposer itself: this reveals nothing an admin cannot
+        /// already learn by pressing the button, and nothing at all to anyone else.</para>
+        /// </summary>
+        [HttpGet("ai-palette/availability")]
+        [Authorize(Roles = "SuperAdmin, Admin")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public ActionResult<CategoryPaletteAvailabilityDTO> GetPaletteAvailability()
+        {
+            var availability = _palettes.Availability;
+
+            return Ok(new CategoryPaletteAvailabilityDTO
+            {
+                Available = availability.IsAvailable,
+                // Empty when available: there is nothing to explain, and a client that renders
+                // whatever is here must not print "" as a tooltip.
+                Reason = availability.IsAvailable ? null : availability.UserMessage,
+            });
+        }
+
         [HttpDelete("{id}")]
         [Authorize(Roles = "SuperAdmin")]
         public async Task<IActionResult> DeleteQuestionCategory(int id, CancellationToken ct)

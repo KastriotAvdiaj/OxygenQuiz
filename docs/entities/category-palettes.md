@@ -108,6 +108,20 @@ It appears beside the button, not as a toast: the request sets `skipErrorToast`,
 failure has a natural home on screen. See
 [`../development/error-handling.md`](../development/error-handling.md).
 
+**One of those three is not a failure at all, and is now caught earlier.** "AI features are turned
+off" is a standing fact about the server, not something the admin did — so
+`GET /api/questioncategories/ai-palette/availability` is called when the picker mounts, and the
+button renders disabled with that reason in its tooltip instead of inviting a click that cannot
+work. It follows the `aria-disabled`-not-`disabled` rule the button already used for "type a name
+first", and for the same reason: a greyed-out control that cannot say why is worse than none.
+
+The budget failure deliberately does **not** move there. It changes under the admin's feet, so a
+cached "unavailable" would be wrong within the hour; it stays an inline message on the click. The
+split is worth keeping in mind when adding a fourth failure: *standing facts disable the control,
+transient ones answer on use.* The endpoint reports configuration only, and an availability check
+that fails or has not answered counts as available — a network blip must not grey out a working
+button.
+
 This is deliberately the opposite of `parseQuizPalette`'s behaviour, and the difference is the
 rule worth remembering: **tolerant when reading what is already stored, strict when accepting
 something new.** A stored row that is unreadable must not break a quiz card. A proposal that is
@@ -130,7 +144,11 @@ a colour would be a surprise. But *unmetered is not unbounded*:
   answer, and `Ai:ReasoningEffort` keeps the thinking short — the two go together. A
   non-reasoning model needs neither and will emit its 60 tokens and stop.
 - The daily and monthly USD caps are checked **before** the call.
-- The `Ai:Enabled` kill switch applies.
+- The `Ai:Enabled` kill switch applies — and since
+  [`../adr/0004-ai-misconfiguration-disables-the-feature.md`](../adr/0004-ai-misconfiguration-disables-the-feature.md)
+  it also carries "the AI configuration is not usable", because `AiConfigurationResolver` forces
+  the flag false rather than stopping the app. Nothing here changed to accommodate that, which was
+  the point of closing the existing gate instead of adding a new one.
 - Every call writes an `AiGenerationUsage` row with `Mode = PaletteProposal`, so its spend is
   visible to the caps above. Quiz-shaped columns on those rows stay at their defaults; filter on
   `Mode` before reading them.

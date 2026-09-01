@@ -1,4 +1,4 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import type { AxiosError } from "axios";
 
 import { apiService } from "@/lib/Api-client";
@@ -80,6 +80,41 @@ export const paletteErrorMessage = (error: unknown): string => {
 
   return authored?.trim() ?? PALETTE_ERROR_FALLBACK;
 };
+
+/** Whether the server can answer at all, and why not when it can't. */
+export type PaletteAvailability = {
+  available: boolean;
+  /** User-facing sentence, or null when available. Never names a config key. */
+  reason: string | null;
+};
+
+export const getPaletteAvailability = (): Promise<PaletteAvailability> =>
+  apiService.get("/questioncategories/ai-palette/availability");
+
+/**
+ * Drives whether "Suggest colours" is offered at all.
+ *
+ * **Configuration, not budget.** The server answers "is the AI switched on and configured here",
+ * which is a standing fact worth a disabled button and a tooltip. A spent daily budget is not:
+ * it changes under the admin's feet, so a cached `false` would be wrong within the hour. That one
+ * stays an inline message on the failed click, which `paletteErrorMessage` already renders in the
+ * server's own words.
+ *
+ * `throwOnError: false` is load-bearing, for the same reason `useAiQuota` sets it: the global
+ * default in `lib/React-query.ts` throws query errors into the nearest error boundary, and a
+ * decorative availability check must never replace the category form with "Something went wrong".
+ * `undefined` means unknown, and unknown is treated as available — the button then fails
+ * informatively on click instead of being greyed out by a network blip.
+ */
+export const usePaletteAvailability = () =>
+  useQuery({
+    queryKey: ["ai-palette-availability"],
+    queryFn: getPaletteAvailability,
+    retry: false,
+    throwOnError: false,
+    // Configuration does not change while an admin fills in a form; it changes on deploy.
+    staleTime: 5 * 60_000,
+  });
 
 type Options = {
   mutationConfig?: MutationConfig<typeof proposeCategoryPalette>;

@@ -13,6 +13,7 @@ namespace QuizAPI.Services.Ai.CategoryPalette
         private readonly IQuestionCategoryRepository _categories;
         private readonly IAiGenerationUsageRepository _usages;
         private readonly AiOptions _options;
+        private readonly AiAvailability _availability;
         private readonly ILogger<CategoryPaletteService> _logger;
 
         public CategoryPaletteService(
@@ -20,20 +21,39 @@ namespace QuizAPI.Services.Ai.CategoryPalette
             IQuestionCategoryRepository categories,
             IAiGenerationUsageRepository usages,
             IOptions<AiOptions> options,
+            AiAvailability availability,
             ILogger<CategoryPaletteService> logger)
         {
             _provider = provider;
             _categories = categories;
             _usages = usages;
             _options = options.Value;
+            _availability = availability;
             _logger = logger;
         }
+
+        /// <summary>
+        /// Whether the button should be offered at all. <b>Configuration only</b> — deliberately
+        /// not the budget.
+        ///
+        /// <para>The two failures want different surfaces. "AI is off on this server" is a standing
+        /// fact, so the button is disabled up front with the reason in its tooltip rather than
+        /// inviting a click that cannot work. "Today's budget is spent" is temporary and changes
+        /// under the admin's feet, so a disabled button would go stale; it stays clickable and
+        /// answers inline, in the server's own words, which is what
+        /// <c>paletteErrorMessage</c> on the client already renders.</para>
+        /// </summary>
+        public AiAvailability Availability => _availability;
 
         public async Task<CategoryPaletteResult> ProposeAsync(
             CategoryPaletteRequest request, Guid userId, CancellationToken ct)
         {
+            // _options.Enabled is the single gate: AiConfigurationResolver has already forced it
+            // false if the vendor configuration cannot produce a working call, so a broken config
+            // and a deliberate switch-off arrive here identically — with different wording, which
+            // is the only part the admin can act on differently.
             if (!_options.Enabled)
-                throw new AppValidationException("AI features are turned off right now.");
+                throw new AppValidationException(_availability.UserMessage);
 
             if (string.IsNullOrWhiteSpace(request.CategoryName))
                 throw new AppValidationException("Type the category name first — that is all the AI gets to work from.");
