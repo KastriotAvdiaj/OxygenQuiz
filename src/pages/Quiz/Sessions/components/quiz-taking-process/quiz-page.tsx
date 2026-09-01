@@ -92,9 +92,12 @@ export function QuizPage({ quizId, userId }: QuizPageProps) {
 
   const handleNextQuestion = () => {
     if (quizSession?.id) {
-      // If the last answer marked the quiz as complete, go straight to results
+      // If the last answer marked the quiz as complete, go straight to results.
+      // replace: the play entry is spent — going Back from results used to land on /play, where
+      // a fresh session is created on mount, so a player checking the quiz list found themselves
+      // one question into a new attempt.
       if (lastAnswerResult?.isQuizComplete) {
-        navigate(`/quiz/results/${quizSession.id}`);
+        navigate(`/quiz/results/${quizSession.id}`, { replace: true });
         return;
       }
       setCurrentQuestionNumber((prev) => prev + 1);
@@ -158,6 +161,7 @@ export function QuizPage({ quizId, userId }: QuizPageProps) {
       quizTitle={quizSession.quizTitle}
       category={quizSession.category}
       completedAnswers={completedAnswers}
+      onLeave={handleGoBack}
     />
   );
 }

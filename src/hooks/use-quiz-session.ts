@@ -103,7 +103,9 @@ const handleQuestionFetchError = (
     errorMessage.includes("completed") ||
     errorMessage.includes("No more questions")
   ) {
-    navigate(`/quiz/results/${sessionId}`);
+    // replace: see the note on the other results navigations in this file. The play entry is
+    // spent once the session behind it is complete.
+    navigate(`/quiz/results/${sessionId}`, { replace: true });
     return "";
   }
 
@@ -260,7 +262,10 @@ export const useQuizSession = ({
 
       if (result.isQuizComplete) {
         // All remaining questions timed out while the user was away
-        navigate(`/quiz/results/${result.session.id}`);
+        // replace: finishing is a one-way door. Pushing results on top of /play left the play
+        // route one Back press away, where useQuizSession starts a NEW session on mount — so
+        // "go back to look at the quiz list" silently began another attempt.
+        navigate(`/quiz/results/${result.session.id}`, { replace: true });
         return;
       }
 
@@ -406,7 +411,10 @@ export const useQuizSession = ({
         // button (or auto-advance) will navigate to results after the user sees it.
         setLastAnswerResult(answerResult);
       } else if (answerResult.isQuizComplete) {
-        navigate(`/quiz/results/${quizSession!.id}`);
+        // replace: finishing is a one-way door. Pushing results on top of /play left the play
+        // route one Back press away, where useQuizSession starts a NEW session on mount — so
+        // "go back to look at the quiz list" silently began another attempt.
+        navigate(`/quiz/results/${quizSession!.id}`, { replace: true });
       } else {
         setCurrentQuestionNumber((prev) => prev + 1);
         fetchNextQuestion(quizSession!.id);

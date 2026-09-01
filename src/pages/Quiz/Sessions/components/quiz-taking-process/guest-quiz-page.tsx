@@ -69,7 +69,7 @@ export function GuestQuizPage({ quizId }: GuestQuizPageProps) {
   const handleNextQuestion = () => {
     if (!quizSession?.id) return;
     if (lastAnswerResult?.isQuizComplete) {
-      navigate(`/quiz/results-guest/${quizSession.id}`);
+      navigate(`/quiz/results-guest/${quizSession.id}`, { replace: true });
       return;
     }
     setCurrentQuestionNumber((prev) => prev + 1);
@@ -132,6 +132,7 @@ export function GuestQuizPage({ quizId }: GuestQuizPageProps) {
       quizTitle={quizSession.quizTitle}
       category={quizSession.category}
       completedAnswers={completedAnswers}
+      onLeave={handleGoBack}
     />
   );
 }

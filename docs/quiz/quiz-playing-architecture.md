@@ -138,6 +138,26 @@ Edit **only** `quiz-submit-button.tsx`. All types and both modes update at once.
 
 ---
 
+## 4a. Leaving, and why finishing replaces history
+
+The play route hides the site header (it ate a row of viewport on phones and pushed the submit
+button below the fold), so the quiz has to provide its own exits. There are two.
+
+**`QuizLeaveButton`** sits at the top of `QuizInterface` and confirms before it goes. Leaving does
+**not** abandon the session — no API call — so the player comes back to the existing "Session In
+Progress" screen and can resume or start fresh. That is why the dialog says progress is saved
+rather than warning about losing it; if leaving should ever abandon instead, the call and the
+wording have to change together.
+
+**Finishing navigates with `replace: true`**, in all seven places the play flow reaches a results
+route. This is not a tidiness preference. `useQuizSession` creates a new session on mount, so while
+the play entry stayed in history, one Back press from the results page silently began another
+attempt — a player checking the quiz list found themselves a question into a quiz they had not
+chosen to start. Replacing means Back from results goes to wherever they were before playing.
+
+Anything new that sends a player from `/quiz/:quizId/play` to a results route must replace too. A
+plain `navigate()` there reopens the hole.
+
 ## 5. Known rough edges (good first cleanups)
 
 These are pre-existing and safe to tidy when you're in the area:

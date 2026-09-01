@@ -89,6 +89,15 @@ Holds `muted`, `musicVolume`, `sfxVolume` and their setters, wrapped in the `per
 (localStorage key `oxygen-audio-prefs`). Every setter also calls the matching method on the singleton.
 `sync()` pushes all persisted values into the singleton once on load.
 
+> **The singleton's own field defaults are not a way to change behaviour.** `AudioManager` declares
+> `muted`, `sfxVolume` and `musicVolume` with initial values, but `AudioProvider` calls `sync()` in
+> its mount effect, which immediately overwrites all three with the store's values — the persisted
+> ones from `localStorage` under `oxygen-audio-prefs`, or the store's defaults on a first visit.
+> Editing `private muted = true` in `AudioManager.ts` therefore silences nothing: the field is
+> overwritten before any sound plays. Change the default in **`audio-store.ts`** (and note that a
+> persisted preference still wins over it for anyone who has used the app before), or call
+> `setMuted` through the store.
+
 ### `useAudio.ts` — the hook
 Returns `{ play, playMusic, stopMusic, unlock, muted, musicVolume, sfxVolume, setMuted, toggleMuted,
 setMusicVolume, setSfxVolume }`. Use in components. In non-component callbacks, import `audio`

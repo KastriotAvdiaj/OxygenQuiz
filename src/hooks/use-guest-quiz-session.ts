@@ -46,7 +46,7 @@ export const useGuestQuizSession = ({ quizId }: UseGuestQuizSessionParams) => {
       } catch (err: any) {
         const message = extractErrorMessage(err);
         if (message.includes("completed") || message.includes("No more questions")) {
-          navigate(`/quiz/results-guest/${sessionId}`);
+          navigate(`/quiz/results-guest/${sessionId}`, { replace: true });
           return;
         }
         setError(`Failed to load next question: ${message}`);
@@ -96,7 +96,7 @@ export const useGuestQuizSession = ({ quizId }: UseGuestQuizSessionParams) => {
       if (hasInstantFeedback) {
         setLastAnswerResult(answerResult);
       } else if (answerResult.isQuizComplete) {
-        navigate(`/quiz/results-guest/${quizSession!.id}`);
+        navigate(`/quiz/results-guest/${quizSession!.id}`, { replace: true });
       } else {
         setCurrentQuestionNumber((prev) => prev + 1);
         fetchNextQuestion(quizSession!.id);

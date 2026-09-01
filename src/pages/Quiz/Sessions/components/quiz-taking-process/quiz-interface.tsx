@@ -8,6 +8,7 @@ import { Loader2, ArrowRight, Trophy } from "lucide-react";
 import { useEffect, useRef } from "react";
 import * as React from "react";
 import { LiftedButton } from "@/common/LiftedButton";
+import { QuizLeaveButton } from "./quiz-leave-button";
 
 interface QuizInterfaceProps {
   sessionId: string;
@@ -31,6 +32,11 @@ interface QuizInterfaceProps {
   currentSessionScore?: number;
   // NEW: Array to track all completed answers for progress display
   completedAnswers?: InstantFeedbackAnswerResult[];
+  /**
+   * Leave the quiz. Omit to render no exit control — but note the play route hides the site
+   * header, so a screen without this has no way out except finishing or the browser's back button.
+   */
+  onLeave?: () => void;
 }
 
 export function QuizInterface({
@@ -40,6 +46,7 @@ export function QuizInterface({
   onNextQuestion,
   onSubmitAnswer,
   showInstantFeedback = false,
+  onLeave,
 }: QuizInterfaceProps) {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [autoAdvanceCounter, setAutoAdvanceCounter] = React.useState(3);
@@ -105,6 +112,14 @@ export function QuizInterface({
           hsl(var(--background))
         `,
       }}>
+      {/* The only exit from a started quiz besides finishing it — the route hides the site
+          header during play. Disabled mid-submission so leaving cannot race a grade. */}
+      {onLeave && (
+        <div className="flex justify-start px-3 pt-3 sm:px-4">
+          <QuizLeaveButton onLeave={onLeave} disabled={isSubmitting} />
+        </div>
+      )}
+
       {/* Main content area */}
       <div className="flex-1 flex items-center justify-center px-3 py-3 sm:px-4 sm:py-6 md:py-8">
         <div className="w-full max-w-3xl">

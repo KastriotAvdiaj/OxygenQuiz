@@ -53,6 +53,9 @@ const meta = {
     isSubmitting: false,
     onNextQuestion: fn(),
     onSubmitAnswer: fn(),
+    // Production always passes this, so the stories do too — without it the Leave button
+    // does not render and every story below would be missing the quiz's only exit.
+    onLeave: fn(),
   },
 } satisfies Meta<typeof QuizInterface>;
 
