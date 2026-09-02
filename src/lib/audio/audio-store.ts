@@ -32,7 +32,7 @@ interface AudioPrefsStore {
 export const useAudioStore = create<AudioPrefsStore>()(
   persist(
     (set, get) => ({
-      muted: false,
+      muted: true,
       musicVolume: 0.4,
       sfxVolume: 0.8,
 

@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { CheckCircle2 } from "lucide-react";
+import { Check, CheckCircle2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { useAuthConfig } from "@/lib/auth-config";
-import { useResetPassword } from "./api/password-reset";
+import { resetErrorMessage, useResetPassword } from "./api/password-reset";
 
 /**
  * `/reset-password?token=…` — redeem the link and choose a new password.
@@ -62,10 +62,7 @@ export const ResetPassword = () => {
         <p className="text-muted-foreground">
           You&apos;ve been signed out everywhere else. Sign in with your new password.
         </p>
-        {/* replace: the URL behind this one carries the token. It is spent and useless, but
-            leaving it in history means Back returns to a dead reset form, and it keeps a
-            credential-shaped string in the address bar's history for no reason. */}
-        <Button className="w-full" onClick={() => navigate("/login", { replace: true })}>
+        <Button className="w-full" onClick={() => navigate("/login")}>
           Go to sign in
         </Button>
       </Shell>
@@ -74,11 +71,8 @@ export const ResetPassword = () => {
 
   return (
     <Shell align="left">
-      <div className="space-y-2 text-center">
+      <div className="text-center">
         <h1 className="text-2xl font-bold">Choose a new password</h1>
-        <p className="text-muted-foreground">
-          At least {minPasswordLength} characters, and not one of the common ones.
-        </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -88,6 +82,7 @@ export const ResetPassword = () => {
           </label>
           <input
             id="new-password"
+            placeholder="Enter your new password"
             type="password"
             required
             autoComplete="new-password"
@@ -96,11 +91,14 @@ export const ResetPassword = () => {
             onChange={(e) => setPassword(e.target.value)}
             className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           />
-          {tooShort && (
-            <p className="text-xs text-muted-foreground">
-              {minPasswordLength - password.length} more character
-              {minPasswordLength - password.length === 1 ? "" : "s"} to go.
-            </p>
+          {/* A row of chips rather than a sentence: the rules are short, and the user needs to
+              see WHICH one is outstanding at a glance, not read a paragraph. It appears from the
+              first keystroke, so an untouched form stays clean. */}
+          {password.length > 0 && (
+            <ul className="flex flex-wrap gap-x-3 gap-y-1 pt-0.5 text-xs">
+              <Requirement met={!tooShort}>{minPasswordLength}+ characters</Requirement>
+              <Requirement met={confirm.length > 0 && !mismatch}>Both match</Requirement>
+            </ul>
           )}
         </div>
 
@@ -110,6 +108,7 @@ export const ResetPassword = () => {
           </label>
           <input
             id="confirm-password"
+            placeholder="Re-enter your new password"
             type="password"
             required
             autoComplete="new-password"
@@ -117,16 +116,15 @@ export const ResetPassword = () => {
             onChange={(e) => setConfirm(e.target.value)}
             className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           />
-          {mismatch && <p className="text-xs text-destructive">These don&apos;t match.</p>}
+          {/* The mismatch state lives in the chip row above, so it isn't said twice. */}
         </div>
 
+        {/* The server's own sentence, not a guess at three possible causes. This is the only
+            channel for the common-password rule, which cannot be checked in the browser. */}
         {reset.isError && (
-          <div role="alert" className="space-y-1 text-sm text-destructive">
-            <p>
-              That link didn&apos;t work. It may have expired, already been used, or the password
-              may have been rejected as too common.
-            </p>
-          </div>
+          <p role="alert" className="text-sm text-destructive">
+            {resetErrorMessage(reset.error)}
+          </p>
         )}
 
         <Button type="submit" disabled={!canSubmit} className="w-full">
@@ -138,6 +136,19 @@ export const ResetPassword = () => {
     </Shell>
   );
 };
+
+/**
+ * One requirement. Muted until satisfied, then ticked — deliberately never red: an unmet rule on
+ * a password someone is still typing is not an error, and colouring it like one makes the form
+ * feel hostile three characters in.
+ */
+const Requirement = ({ met, children }: { met: boolean; children: React.ReactNode }) => (
+  <li className={met ? "flex items-center gap-1 text-primary" : "flex items-center gap-1 text-muted-foreground"}>
+    <Check className={met ? "h-3 w-3" : "h-3 w-3 opacity-30"} aria-hidden="true" />
+    {children}
+    <span className="sr-only">{met ? " — met" : " — not yet met"}</span>
+  </li>
+);
 
 const Shell = ({
   children,

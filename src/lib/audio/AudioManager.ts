@@ -21,7 +21,7 @@ class AudioManager {
   private sfx = new Map<SoundName, Howl>();
   private music = new Map<MusicName, Howl>();
   private currentMusic: MusicName | null = null;
-  private muted = false;
+  private muted = true;
   private sfxVolume = 0.8;
   private musicVolume = 0.4;
   private initialized = false;

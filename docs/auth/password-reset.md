@@ -112,6 +112,28 @@ form and a zod schema — with nothing keeping them in step. The client falls ba
 is missing: guessing short would let a form accept a password the server then rejects, which reads
 as a broken form rather than a policy.
 
+### What the form tells the user
+
+There are **no character-class rules** — no "one number, one capital". That is deliberate and is
+the other half of the NIST recommendation above: composition rules push people toward predictable
+substitutions (`Password1!`) while a blocklist catches the passwords that are actually breached.
+So there are only two things to display, and both are shown as a small row of ticked chips under
+the password field rather than a paragraph over it:
+
+- **`N+ characters`** — from `minPasswordLength`, live.
+- **`Both match`** — live.
+
+They appear from the first keystroke, so an untouched form stays clean, and neither ever turns red:
+an unmet rule on a password someone is still typing is not an error.
+
+**The common-password rule cannot be shown live.** The blocklist is server-side (it has to be — a
+client-side copy is a downloadable list of the passwords we reject), so it can only be reported
+after submit. That is why `resetErrorMessage` exists: it pulls the field-specific sentence out of
+the `ValidationProblemDetails` the DTO attributes produce, rather than the useless generic title,
+so the user reads "Password must be at least 8 characters." or the common-password refusal in the
+server's own words. Without it the form has to guess at the reason, which it did at first and which
+is how you end up telling someone their link expired when their password was simply on the list.
+
 ## 5a. Signing in afterwards goes home, not back
 
 `Login`'s success handler used `navigate(-1)` when no `?redirectTo=` was present. After a reset
