@@ -78,7 +78,15 @@ Auth-specific enhancements are tracked in [authentication.md](../auth/authentica
   composition rules, per current NIST guidance. The embedded list is a small,
   self-contained subset; it can be swapped for the full "Have I Been Pwned"
   Pwned Passwords dataset (local copy or k-anonymity range API) if stronger
-  coverage is wanted later. The frontend signup schema mirrors the new 12-char
+  coverage is wanted later.
+  **Follow-up done (2026-09-02):** the range API is now called on signup and on
+  password reset (`PwnedPasswordsChecker`), screening against ~850M breached
+  passwords. The 78-entry local list stays — it is what remains when the network
+  check fails open, so it is load-bearing rather than superseded. The minimum
+  length moved the other way, from 12 to a configurable 8, which is the NIST
+  floor and is only defensible *because* the screening got stronger; the two
+  changes belong together. Reasoning in
+  [`../auth/password-policy.md`](../auth/password-policy.md). The frontend signup schema mirrors the new 12-char
   minimum.
   → `OxygenBackend/QuizAPI/DTOs/Authentication/SignupDTO.cs`,
   `OxygenBackend/QuizAPI/DTOs/Authentication/NotACommonPasswordAttribute.cs`,

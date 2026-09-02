@@ -103,7 +103,9 @@ hard-coded 12, which could not be relaxed for development without also relaxing 
 
 Eight is not a downgrade dressed up. NIST SP 800-63B puts the minimum for user-chosen secrets at 8
 and recommends screening against a breached/common list *instead of* composition rules — which is
-exactly this pairing, since `NotACommonPassword` still applies and is the half doing the real work.
+exactly this pairing: `NotACommonPassword` still applies, and since 2026-09-02 so does a Have I
+Been Pwned corpus check. The full reasoning, including why there are no capital/digit/symbol rules
+and why the corpus check fails open, is in [`password-policy.md`](password-policy.md).
 
 The client does **not** keep its own copy. `GET /Authentication/auth-config` reports
 `minPasswordLength`, `useAuthConfig()` exposes it, and the signup form, the reset form and the
@@ -126,9 +128,9 @@ the password field rather than a paragraph over it:
 They appear from the first keystroke, so an untouched form stays clean, and neither ever turns red:
 an unmet rule on a password someone is still typing is not an error.
 
-**The common-password rule cannot be shown live.** The blocklist is server-side (it has to be — a
-client-side copy is a downloadable list of the passwords we reject), so it can only be reported
-after submit. That is why `resetErrorMessage` exists: it pulls the field-specific sentence out of
+**Neither screening layer can be shown live.** Both are server-side and have to be — a client-side
+blocklist is a downloadable list of the passwords we reject, and the corpus check is a network call
+— so they can only be reported after submit. That is why `resetErrorMessage` exists: it pulls the field-specific sentence out of
 the `ValidationProblemDetails` the DTO attributes produce, rather than the useless generic title,
 so the user reads "Password must be at least 8 characters." or the common-password refusal in the
 server's own words. Without it the form has to guess at the reason, which it did at first and which

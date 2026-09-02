@@ -8,6 +8,7 @@ using QuizAPI.Repositories.Interfaces;
 using QuizAPI.Services.Audit;
 using QuizAPI.Services.Email;
 using QuizAPI.Services.Invitations;
+using QuizAPI.Services.Password;
 using QuizAPI.Controllers.Notifications.Services;
 using QuizAPI.Services.AuthenticationService.External;
 using Microsoft.Extensions.Configuration;
@@ -28,6 +29,7 @@ public class AuthenticationService(
     IAuditService auditService,
     INotificationService notificationService,
     IEmailSender emailSender,
+    IBreachedPasswordChecker breachedPasswordChecker,
     ApplicationDbContext dbContext,
     IConfiguration configuration) : IAuthenticationService
 {
@@ -46,6 +48,7 @@ public class AuthenticationService(
     private readonly IAuditService _auditService = auditService;
     private readonly INotificationService _notificationService = notificationService;
     private readonly IEmailSender _emailSender = emailSender;
+    private readonly IBreachedPasswordChecker _breachedPasswordChecker = breachedPasswordChecker;
     private readonly ApplicationDbContext _dbContext = dbContext;
     private readonly IConfiguration _configuration = configuration;
 
@@ -69,6 +72,11 @@ public class AuthenticationService(
             if (redeemable is null)
                 throw new AppValidationException("Invalid or already-used invite code.");
         }
+
+        // Breached-password screening. After the invite gate and before the uniqueness queries
+        // that follow, so a request that was going to be rejected for a cheaper reason never pays
+        // for a network round trip. Fails open — see IBreachedPasswordChecker.
+        await GuardAgainstBreachedPasswordAsync(dto.Password, ct);
 
         if (await _userRepository.EmailExistsAsync(dto.Email, ct))
             throw new ConflictException("Email is already in use.");
@@ -626,6 +634,10 @@ public class AuthenticationService(
         var user = await _userRepository.GetByIdAsync(stored.UserId, tracked: true, ct)
             ?? throw new AppValidationException("Invalid or expired reset link.");
 
+        // Screened here too, not only at signup: a reset is the other way a password gets onto an
+        // account, and a policy that only guards the front door is not a policy.
+        await GuardAgainstBreachedPasswordAsync(newPassword, ct);
+
         user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
         user.EmailConfirmed = true;
 
@@ -638,6 +650,23 @@ public class AuthenticationService(
         await _auditService.LogAsync(
             AuditActions.PasswordReset, entity: "User", entityId: user.Id.ToString(),
             userId: user.Id, ct: ct);
+    }
+
+    /// <summary>
+    /// Rejects a password that appears in the breached corpus.
+    ///
+    /// <para>The message names the reason without naming the source. "This password has appeared
+    /// in a data breach" is what the user needs to act on; telling them we asked a third party
+    /// invites the reasonable-but-wrong worry that we sent their password somewhere. We did not —
+    /// see <see cref="PwnedPasswordsChecker"/> — but a signup form is the wrong place to explain
+    /// k-anonymity.</para>
+    /// </summary>
+    private async Task GuardAgainstBreachedPasswordAsync(string password, CancellationToken ct)
+    {
+        if (await _breachedPasswordChecker.IsBreachedAsync(password, ct))
+            throw new AppValidationException(
+                "This password has appeared in a known data breach, so it is one attackers try " +
+                "first. Please choose a different one.");
     }
 
     private async Task IssueAndSendVerificationEmailAsync(User user, CancellationToken ct)

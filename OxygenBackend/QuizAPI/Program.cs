@@ -99,6 +99,29 @@ builder.Services.AddScoped<IRoleRepository, RoleRepository>();
 builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 builder.Services.AddScoped<IEmailVerificationTokenRepository, EmailVerificationTokenRepository>();
 builder.Services.AddScoped<IPasswordResetTokenRepository, PasswordResetTokenRepository>();
+
+// Breached-password screening (docs/auth/password-policy.md). Enabled by default; the switch
+// exists for environments with no outbound network, where every signup would otherwise wait out
+// the timeout before failing open. The local NotACommonPassword list runs either way, so turning
+// this off weakens the policy rather than removing it.
+if (configuration.GetValue("Auth:BreachedPasswordCheck:Enabled", true))
+{
+    builder.Services.AddHttpClient<QuizAPI.Services.Password.IBreachedPasswordChecker,
+                                   QuizAPI.Services.Password.PwnedPasswordsChecker>(client =>
+    {
+        client.BaseAddress = new Uri("https://api.pwnedpasswords.com/");
+        // Short and deliberate: this sits in the middle of a signup, and the check failing open is
+        // a far better outcome than a user watching a spinner because a third party is slow.
+        client.Timeout = TimeSpan.FromSeconds(
+            configuration.GetValue("Auth:BreachedPasswordCheck:TimeoutSeconds", 3));
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("OxygenQuiz-PasswordCheck");
+    });
+}
+else
+{
+    builder.Services.AddSingleton<QuizAPI.Services.Password.IBreachedPasswordChecker,
+                                  QuizAPI.Services.Password.NullBreachedPasswordChecker>();
+}
 builder.Services.AddScoped<IInviteCodeRepository, InviteCodeRepository>();
 builder.Services.AddScoped<IExternalLoginRepository, ExternalLoginRepository>();
 builder.Services.AddScoped<IFileRepository, FileRepository>();
