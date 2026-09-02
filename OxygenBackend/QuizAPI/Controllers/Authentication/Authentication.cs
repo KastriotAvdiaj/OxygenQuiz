@@ -53,6 +53,9 @@ public class AuthenticationController(
         {
             requireInviteCode = _configuration.GetValue<bool>("Signup:RequireInviteCode"),
             providers = new { google = Provider("Google"), microsoft = Provider("Microsoft") },
+            // So the client's "at least N characters" hint cannot drift from what the server
+            // actually enforces — it used to be a 12 hand-copied into three files.
+            minPasswordLength = MinPasswordLengthAttribute.Resolve(_configuration),
         });
     }
 

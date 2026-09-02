@@ -51,7 +51,16 @@ const Login: React.FC = () => {
             if (redirectTo) {
               navigate(redirectTo, { replace: true });
             } else {
-              navigate(-1);
+              // Home, not navigate(-1).
+              //
+              // "Go back where you were" is wrong precisely when the previous page exists
+              // BECAUSE you could not sign in. Signing in after a password reset sent the user
+              // straight back to /reset-password?token=… — the page they had just finished with,
+              // now holding a spent token — and the same trap applies to /forgot-password and
+              // /signup. Somewhere worth returning to already says so explicitly via
+              // ?redirectTo=, which the guest-play and quiz routes use; anything else goes home.
+              // This also matches afterLogin() above, which always did.
+              navigate("/", { replace: true });
             }
           },
           onError: (error: unknown) => {

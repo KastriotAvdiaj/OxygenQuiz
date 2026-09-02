@@ -92,10 +92,38 @@ for another one.
 
 ## 5. Password rules
 
-`ResetPasswordDTO` carries the same `[MinLength(12)]` and `[NotACommonPassword]` attributes as
-`SignupDTO`, deliberately the same attributes rather than a copy. A reset path with a weaker policy
-than signup is a way to get a short password onto an account that was not allowed one at creation.
-The client's `MIN_PASSWORD_LENGTH` mirrors it and is kept in step by hand.
+`ResetPasswordDTO` carries the same `[MinPasswordLength]` and `[NotACommonPassword]` attributes as
+`SignupDTO` — deliberately the same attributes rather than a copy, because a reset path with a
+weaker policy than signup is a way to get a short password onto an account that was not allowed one
+at creation.
+
+**The length is configuration**, `Auth:MinPasswordLength`: **8** in `appsettings.json`, **4** in
+`appsettings.Development.json` so a throwaway test account does not need a passphrase. It was a
+hard-coded 12, which could not be relaxed for development without also relaxing production.
+
+Eight is not a downgrade dressed up. NIST SP 800-63B puts the minimum for user-chosen secrets at 8
+and recommends screening against a breached/common list *instead of* composition rules — which is
+exactly this pairing, since `NotACommonPassword` still applies and is the half doing the real work.
+
+The client does **not** keep its own copy. `GET /Authentication/auth-config` reports
+`minPasswordLength`, `useAuthConfig()` exposes it, and the signup form, the reset form and the
+hints all read it from there. Before that the number existed in four places — two DTOs, a signup
+form and a zod schema — with nothing keeping them in step. The client falls back to 8 if the field
+is missing: guessing short would let a form accept a password the server then rejects, which reads
+as a broken form rather than a policy.
+
+## 5a. Signing in afterwards goes home, not back
+
+`Login`'s success handler used `navigate(-1)` when no `?redirectTo=` was present. After a reset
+that sent the user straight back to `/reset-password?token=…` — the page they had just finished
+with, now holding a spent token — which looked exactly like the reset had failed and was reported
+as a bug.
+
+"Go back where you were" is wrong precisely when the previous page exists *because* you could not
+sign in, so it now goes to `/` instead, matching `afterLogin()` which always did. Anywhere worth
+returning to says so explicitly with `?redirectTo=`, which the guest-play and quiz routes already
+use. The reset page also navigates to `/login` with `replace: true`, so the token URL does not stay
+in history at all.
 
 ## 6. Running it locally
 

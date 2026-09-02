@@ -4,7 +4,6 @@ import { MailCheck } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { useRequestPasswordReset } from "./api/password-reset";
-
 /**
  * `/forgot-password` — ask for a reset link.
  *
@@ -27,7 +26,7 @@ export const ForgotPassword = () => {
 
   return (
     <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center px-4">
-      <div className="w-full max-w-md space-y-5 rounded-xl border-2 border-primary/20 bg-card p-8">
+      <div className="w-full max-w-md space-y-5 rounded-xl border-2 border-primary/20 bg-card p-8 shadow-md">
         {request.isSuccess ? (
           <div className="space-y-4 text-center">
             <MailCheck className="mx-auto h-12 w-12 text-primary" aria-hidden="true" />

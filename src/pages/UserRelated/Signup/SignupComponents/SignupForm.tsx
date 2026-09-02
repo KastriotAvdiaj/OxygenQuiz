@@ -5,6 +5,7 @@ import SignupSteps, { StepFeedback } from "./SignupSteps";
 import Steps from "@/common/Steps";
 import { Label } from "@/components/ui/form";
 import { useRegister } from "@/lib/Auth";
+import { useAuthConfig } from "@/lib/auth-config";
 import { useNotifications } from "@/common/Notifications";
 import {
   useUsernameAvailability,
@@ -66,7 +67,9 @@ export const SignupForm: React.FC<SignupFormProps> = ({
     else setStep((prev) => prev - 1);
   };
 
-  const passwordValid = formData.password.length >= 12;
+  // From the server, not a constant here — see useAuthConfig().minPasswordLength.
+  const { minPasswordLength } = useAuthConfig();
+  const passwordValid = formData.password.length >= minPasswordLength;
   const passwordsMatch =
     formData.confirmPassword.length > 0 &&
     formData.confirmPassword === formData.password;
@@ -111,7 +114,7 @@ export const SignupForm: React.FC<SignupFormProps> = ({
       case 3: {
         if (formData.password.length > 0 && !passwordValid)
           return {
-            error: "Password must be at least 12 characters",
+            error: `Password must be at least ${minPasswordLength} characters`,
             nextDisabled: true,
           };
         return { nextDisabled: !passwordValid };

@@ -13,7 +13,16 @@ type ProviderConfig = {
 type AuthConfig = {
   requireInviteCode: boolean;
   providers: Record<ExternalProvider, ProviderConfig>;
+  /** Server's Auth:MinPasswordLength. Absent on an API older than this field. */
+  minPasswordLength?: number;
 };
+
+/**
+ * Used when the server doesn't say — an old API, or a failed config fetch. Matches the production
+ * floor rather than the development value: guessing short would let a form accept a password the
+ * server then rejects, which reads as a broken form rather than a policy.
+ */
+const FALLBACK_MIN_PASSWORD_LENGTH = 8;
 
 const fetchAuthConfig = (): Promise<AuthConfig> =>
   // skipErrorToast: config resolution failing (offline, rate-limited, old API) already has a
@@ -75,6 +84,14 @@ export const useAuthConfig = () => {
     requireInviteCode: query.data?.requireInviteCode !== false,
     google: query.data?.providers?.google ?? DISABLED,
     microsoft: query.data?.providers?.microsoft ?? DISABLED,
+    /**
+     * The single source for "at least N characters" anywhere in the UI. It used to be a 12
+     * hand-copied into the signup form, the reset form and a zod schema, with no way to change
+     * one of them for development without changing all three — and no way to notice when the
+     * server's number moved.
+     */
+    minPasswordLength:
+      query.data?.minPasswordLength ?? FALLBACK_MIN_PASSWORD_LENGTH,
     /**
      * True until the single attempt settles, then false FOREVER — `isFetched` is monotonic,
      * `isLoading` is not. Callers gate rendering on this, so a value that can flip back to true

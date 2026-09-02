@@ -34,6 +34,3 @@ export const useResetPassword = () =>
       resetPassword(token, newPassword),
     throwOnError: false,
   });
-
-/** Mirrors the server's rule in ResetPasswordDTO. Kept in step by hand — see the doc. */
-export const MIN_PASSWORD_LENGTH = 12;

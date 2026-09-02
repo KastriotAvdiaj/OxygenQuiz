@@ -49,9 +49,15 @@ const loginWithEmailAndPassword = (data: LoginInput): Promise<AuthResponse> => {
   return apiService.post("Authentication/login", data);
 };
 
-// Mirrors the backend SignupDTO validation: valid email, username 3–50, password 12–128.
-// The backend additionally rejects common/breached passwords (NotACommonPassword); that check
-// can only run server-side, so a weak-but-long password may still come back as a 400.
+// Mirrors the backend SignupDTO: valid email, username 3–50, password up to 128.
+//
+// The password MINIMUM is deliberately not here. It is configuration now (Auth:MinPasswordLength,
+// 8 in production and lower in development) and reaches the client through
+// /Authentication/auth-config — see `useAuthConfig().minPasswordLength`, which the signup and
+// reset forms use. A hard-coded floor in this schema would be a fourth copy of the number and the
+// one nobody would remember to change. The backend also rejects common/breached passwords
+// (NotACommonPassword); that check can only run server-side, so a weak password may still come
+// back as a 400.
 export const registerInputSchema = z.object({
   email: z.string().min(1, "Required").email("Invalid email"),
   username: z
@@ -60,7 +66,7 @@ export const registerInputSchema = z.object({
     .max(50, "Username must be at most 50 characters"),
   password: z
     .string()
-    .min(12, "Password must be at least 12 characters")
+    .min(1, "Required")
     .max(128, "Password must be at most 128 characters"),
   // Optional here: whether it's required depends on the backend Signup:RequireInviteCode flag,
   // which the signup flow reads via /Authentication/auth-config. The server enforces it on submit.

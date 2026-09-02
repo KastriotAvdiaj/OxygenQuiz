@@ -10,9 +10,10 @@ namespace QuizAPI.DTOs.Authentication
         [Required, MinLength(3), MaxLength(50)]
         public string Username { get; set; } = string.Empty;
 
-        // 12+ chars is the current minimum recommendation; complexity is handled by screening
-        // against a common/breached-password blocklist rather than mandated character classes.
-        [Required, MinLength(12), MaxLength(128), NotACommonPassword]
+        // Length comes from Auth:MinPasswordLength (8 in production, relaxed in development);
+        // complexity is handled by screening against a common/breached-password blocklist rather
+        // than mandated character classes, which is the pairing NIST SP 800-63B recommends.
+        [Required, MinPasswordLength, MaxLength(128), NotACommonPassword]
         public string Password { get; set; } = string.Empty;
 
         // Optional at the DTO level so the same DTO works in both invite-only and open modes;

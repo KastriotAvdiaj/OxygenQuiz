@@ -3,7 +3,8 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { CheckCircle2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { MIN_PASSWORD_LENGTH, useResetPassword } from "./api/password-reset";
+import { useAuthConfig } from "@/lib/auth-config";
+import { useResetPassword } from "./api/password-reset";
 
 /**
  * `/reset-password?token=…` — redeem the link and choose a new password.
@@ -26,10 +27,14 @@ export const ResetPassword = () => {
   const [confirm, setConfirm] = useState("");
   const reset = useResetPassword();
 
-  const tooShort = password.length > 0 && password.length < MIN_PASSWORD_LENGTH;
+  // The server's own Auth:MinPasswordLength, delivered by /auth-config, so this form cannot
+  // promise a rule the API does not enforce (or refuse one it would have accepted).
+  const { minPasswordLength } = useAuthConfig();
+
+  const tooShort = password.length > 0 && password.length < minPasswordLength;
   const mismatch = confirm.length > 0 && password !== confirm;
   const canSubmit =
-    password.length >= MIN_PASSWORD_LENGTH && password === confirm && !reset.isPending;
+    password.length >= minPasswordLength && password === confirm && !reset.isPending;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,7 +62,10 @@ export const ResetPassword = () => {
         <p className="text-muted-foreground">
           You&apos;ve been signed out everywhere else. Sign in with your new password.
         </p>
-        <Button className="w-full" onClick={() => navigate("/login")}>
+        {/* replace: the URL behind this one carries the token. It is spent and useless, but
+            leaving it in history means Back returns to a dead reset form, and it keeps a
+            credential-shaped string in the address bar's history for no reason. */}
+        <Button className="w-full" onClick={() => navigate("/login", { replace: true })}>
           Go to sign in
         </Button>
       </Shell>
@@ -69,7 +77,7 @@ export const ResetPassword = () => {
       <div className="space-y-2 text-center">
         <h1 className="text-2xl font-bold">Choose a new password</h1>
         <p className="text-muted-foreground">
-          At least {MIN_PASSWORD_LENGTH} characters, and not one of the common ones.
+          At least {minPasswordLength} characters, and not one of the common ones.
         </p>
       </div>
 
@@ -90,8 +98,8 @@ export const ResetPassword = () => {
           />
           {tooShort && (
             <p className="text-xs text-muted-foreground">
-              {MIN_PASSWORD_LENGTH - password.length} more character
-              {MIN_PASSWORD_LENGTH - password.length === 1 ? "" : "s"} to go.
+              {minPasswordLength - password.length} more character
+              {minPasswordLength - password.length === 1 ? "" : "s"} to go.
             </p>
           )}
         </div>
@@ -142,8 +150,8 @@ const Shell = ({
     <div
       className={
         align === "center"
-          ? "w-full max-w-md space-y-5 rounded-xl border-2 border-primary/20 bg-card p-8 text-center"
-          : "w-full max-w-md space-y-5 rounded-xl border-2 border-primary/20 bg-card p-8"
+          ? "w-full max-w-md space-y-5 rounded-xl border-2 border-primary/20 bg-card p-8 text-center shadow-lg"
+          : "w-full max-w-md space-y-5 rounded-xl border-2 border-primary/20 bg-card p-8 shadow-lg"
       }
     >
       {children}
