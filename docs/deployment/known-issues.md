@@ -116,7 +116,17 @@ Auth-specific enhancements are tracked in [authentication.md](../auth/authentica
 - ~~**P3 — `AllowedHosts: "*"`.**~~ Superseded by the P2 entry directly above, which
   covers `AllowedHosts` along with the two `Jwt` values that have the same problem.
   → `OxygenBackend/QuizAPI/appsettings.json`
-- **P2 — No email provider is configured, so no transactional email is ever sent.**
+- **P2 — No email provider is *deployed*, so no transactional email is sent yet.**
+  *(Was "none is configured"; the code half landed 2026-09-02.)* `BrevoEmailSender`
+  now implements `IEmailSender` against Brevo's transactional API and is selected
+  automatically whenever `Email:Brevo:ApiKey` is set, falling back to the logger
+  otherwise. **What remains is not code:** verify `oxygenquiz.com` as a Brevo sending
+  domain (SPF/DKIM records into Cloudflare), add the backend container's egress IP to
+  Brevo's authorized-IP list if key IP-blocking is enabled, and put `BREVO_API_KEY`
+  into `~/OxygenQuiz/.env.prod`. Until then production still logs instead of sending —
+  but it now says so at `Error` on every boot instead of doing it silently, which was
+  the actual defect. Grep `[Email]`. Original report follows.
+- **P2 — (original) No email provider is configured, so no transactional email is ever sent.**
   `IEmailSender` has exactly one implementation, `LoggingEmailSender`, which writes the
   message to the log and returns — and that is what production runs. Two features
   depend on it and both are therefore inert in production rather than broken in any

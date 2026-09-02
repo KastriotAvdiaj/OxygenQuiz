@@ -3,7 +3,9 @@
 > **Status: implemented (2026-06-21) — soft gate, with a dev email sender.**
 > Wired end-to-end: `EmailConfirmed` flag + `EmailVerificationTokens` table (migration
 > `AddEmailVerification`, which backfills existing users to confirmed), `IEmailSender`
-> (a dev `LoggingEmailSender` that logs the link — **swap for a real provider in prod**),
+> (`LoggingEmailSender` in development; `BrevoEmailSender` takes over automatically once
+> `Email:Brevo:ApiKey` is set — see [`password-reset.md`](password-reset.md) §7 for the DNS and
+> key steps that remain),
 > `verify-email` / `resend-verification` endpoints, the `/confirm-email` page, and the
 > app-wide "confirm your email" banner with resend.
 >

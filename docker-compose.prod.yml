@@ -27,6 +27,12 @@ services:
       - Ai__ApiKey=${AI_API_KEY}
       - Authentication__Google__Enabled=true
       - Authentication__Google__ClientId=${GOOGLE_CLIENT_ID}
+      #  Transactional email (Brevo) + the base URL its links point at
+      - Email__Brevo__ApiKey=${BREVO_API_KEY}
+      # Links in verification and reset emails are built from this. It previously fell back to
+      # the first CORS origin, which was right by luck; once mail actually sends, a wrong link
+      # is a broken feature rather than a wrong log line.
+      - App__FrontendBaseUrl=https://oxygenquiz.com
       # - Security__EnforceProductionConfig=true   # turn ON after domain+TLS are wired and tested
   postgres:
     image: postgres:15

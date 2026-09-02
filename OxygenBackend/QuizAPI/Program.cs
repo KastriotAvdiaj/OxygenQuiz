@@ -167,8 +167,34 @@ foreach (var provider in new[] { "Google", "Microsoft" })
         throw new InvalidOperationException(
             $"Authentication:{provider}:Enabled is true but Authentication:{provider}:ClientId is not configured.");
 }
-// Email verification: dev logger sender today; swap for a real provider in prod (see docs/auth/email-verification.md).
-builder.Services.AddScoped<QuizAPI.Services.Email.IEmailSender, QuizAPI.Services.Email.LoggingEmailSender>();
+// Transactional email (verification + password reset). Brevo when a key is configured, the dev
+// logger otherwise — the same degrade-rather-than-crash shape as the AI resolver
+// (docs/adr/0004-ai-misconfiguration-disables-the-feature.md). A missing key must not stop the
+// app: email is not what the API is for. It IS logged loudly below, because a silently
+// non-delivering mail path is the exact failure that went unnoticed for months
+// (docs/deployment/known-issues.md).
+builder.Services.Configure<QuizAPI.Services.Email.EmailOptions>(
+    configuration.GetSection(QuizAPI.Services.Email.EmailOptions.SectionName));
+
+var emailApiKey = configuration["Email:Brevo:ApiKey"];
+var emailProviderConfigured = !string.IsNullOrWhiteSpace(emailApiKey);
+
+if (emailProviderConfigured)
+{
+    builder.Services.AddHttpClient<QuizAPI.Services.Email.IEmailSender,
+                                   QuizAPI.Services.Email.BrevoEmailSender>(client =>
+    {
+        client.BaseAddress = new Uri("https://api.brevo.com/");
+        client.DefaultRequestHeaders.Add("api-key", emailApiKey);
+        client.Timeout = TimeSpan.FromSeconds(
+            configuration.GetValue("Email:Brevo:TimeoutSeconds", 10));
+    });
+}
+else
+{
+    builder.Services.AddScoped<QuizAPI.Services.Email.IEmailSender,
+                               QuizAPI.Services.Email.LoggingEmailSender>();
+}
 builder.Services.AddScoped<IQuizService, QuizService>();
 builder.Services.AddScoped<IQuestionService, QuestionService>();
 builder.Services.AddScoped<ITestQuestionService, TestQuestionService>();
@@ -345,6 +371,21 @@ var app = builder.Build();
 // logs. Warnings are things that work but should not stay; the error is the reason the feature is
 // off. Info on the happy path names the vendor actually in use, so "which model is production on"
 // is answerable from the logs rather than by reading three config files.
+// Said once, at the only moment anyone reads startup logs. An unconfigured mail path is an Error
+// in Production and merely informational elsewhere: locally the logger IS the intended sender.
+if (emailProviderConfigured)
+    app.Logger.LogInformation(
+        "[Email] Brevo sender active, from {From}.", configuration["Email:FromAddress"]);
+else if (app.Environment.IsProduction())
+    app.Logger.LogError(
+        "[Email] No Email:Brevo:ApiKey is configured, so verification and password-reset messages " +
+        "are being written to this log INSTEAD OF BEING SENT. Users cannot confirm an address or " +
+        "recover an account until this is set.");
+else
+    app.Logger.LogInformation(
+        "[Email] No provider configured — messages are logged, not sent. This is the expected " +
+        "development setup; the confirmation and reset links appear in this log.");
+
 foreach (var aiWarning in aiConfig.Warnings)
     app.Logger.LogWarning("[AI] {Warning}", aiWarning);
 

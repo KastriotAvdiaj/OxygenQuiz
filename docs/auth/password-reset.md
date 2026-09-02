@@ -171,22 +171,47 @@ second time; an expired token and a garbage token give the same message; resetti
 session you had open in another browser; and a Google-only account can set a password and then use
 either method.
 
-## 7. What is still missing: actually sending mail
+## 7. Actually sending mail
 
-`IEmailSender` has one implementation and it logs. To make this reach users:
+**The code is done.** `BrevoEmailSender` (`Services/Email/`) posts to Brevo's transactional API and
+is selected automatically whenever `Email:Brevo:ApiKey` is non-blank; with no key the app falls
+back to `LoggingEmailSender`, which is the intended development setup. Startup says which one is
+active, at `Error` in Production when it is the logger.
 
-1. Add a provider implementation (Resend and Postmark both take a few lines over `HttpClient`).
-2. Register it in `Program.cs` in place of `LoggingEmailSender` — ideally keeping the logger as the
-   fallback when no API key is configured, so development needs no account and a missing key
-   degrades rather than throws. The `Ai` section's resolver is the pattern to copy
-   ([`../adr/0004-ai-misconfiguration-disables-the-feature.md`](../adr/0004-ai-misconfiguration-disables-the-feature.md)).
-3. Verify a sending domain — SPF and DKIM records on `oxygenquiz.com`, which is on Cloudflare DNS.
-   Without this, mail from the app lands in spam or is rejected outright.
-4. Put the key in `~/OxygenQuiz/.env.prod` and reference it from the compose file's `environment:`
-   block — a name in `.env.prod` that nothing references reaches nothing
+The API was chosen over Brevo's SMTP relay because Hetzner blocks outbound SMTP ports on new
+accounts (a blocked 587 is indistinguishable from a misconfiguration), `System.Net.Mail.SmtpClient`
+is obsolete for new work so SMTP would mean a MailKit dependency, and an HTTP status with a JSON
+body is diagnosable where an SMTP code is a guess.
+
+**What remains is account and DNS work, which no amount of code can do:**
+
+1. **Verify `oxygenquiz.com` as a Brevo sending domain.** Brevo issues DKIM and SPF records; they
+   go into Cloudflare DNS. Skipping this means mail is rejected with a 400 naming the sender, or
+   silently filed as spam. This is the slow step — start it first.
+2. **Authorized IPs.** If key IP-blocking is enabled in Brevo, add the backend container's *egress*
+   address, which is what Brevo sees and is not necessarily what you assume:
+   `docker compose -f docker-compose.prod.yml exec backend sh -c "curl -s https://api.ipify.org"`.
+   A missing entry looks exactly like a bad key. **Note this in any server-rebuild checklist** — a
+   new VPS address silently stops all mail.
+3. **`BREVO_API_KEY` into `~/OxygenQuiz/.env.prod`.** The compose file already references it, and
+   a name in `.env.prod` that nothing references reaches nothing
    ([`../deployment/production-topology.md`](../deployment/production-topology.md)).
-5. Set `App:FrontendBaseUrl` in production. Links currently fall back to the first configured CORS
-   origin, which is correct today by luck rather than by intent.
 
-Until then, treat both this and email verification as features that work in development and are
-inert in production.
+`App__FrontendBaseUrl` is now set explicitly in the compose file. It used to fall back to the first
+CORS origin — right by luck, and a wrong link matters once mail actually sends.
+
+### Confirming it works
+
+```bash
+docker compose -f docker-compose.prod.yml logs backend | grep '\[Email\]'
+```
+
+`[Email] Brevo sender active, from no-reply@oxygenquiz.com.` is the line you want. Then sign up a
+throwaway account and watch for the message. On a rejection the log carries Brevo's own response:
+401/403 points at the key or the IP list, and a 400 mentioning `sender` points at an unverified
+domain — three failures that are indistinguishable from outside.
+
+**A send failure never throws**, deliberately: it would 500 a signup whose account was already
+created, and it would break the reset endpoint's always-200 rule, rebuilding the enumeration oracle
+§3 exists to prevent. Failures are logged at `Error` and swallowed; the token is already stored, so
+the user can ask again.
