@@ -159,7 +159,8 @@ dotnet ef migrations add AddPasswordResetTokens --project OxygenBackend/QuizAPI
 
 `Program.cs` calls `Database.MigrateAsync()` on every boot, so it applies itself on the next start.
 
-Then, with no email provider configured, the link comes out in the API log:
+In development, where no `Email:Brevo:ApiKey` is set, the link comes out in the API log instead of
+an inbox — that is the intended local setup, not a failure:
 
 ```
 [DEV EMAIL] To: someone@example.com | Subject: Reset your Oxygen Quiz password

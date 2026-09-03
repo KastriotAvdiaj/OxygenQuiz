@@ -116,7 +116,17 @@ Auth-specific enhancements are tracked in [authentication.md](../auth/authentica
 - ~~**P3 — `AllowedHosts: "*"`.**~~ Superseded by the P2 entry directly above, which
   covers `AllowedHosts` along with the two `Jwt` values that have the same problem.
   → `OxygenBackend/QuizAPI/appsettings.json`
-- **P2 — No email provider is *deployed*, so no transactional email is sent yet.**
+- ~~**P2 — No email provider, so no transactional email is ever sent.**~~
+  **Resolved 2026-09-03**, pending one confirmed delivery. Brevo is configured and
+  live: `oxygenquiz.com` is authenticated (Brevo code, DKIM ×2, DMARC) with a `send`
+  branded subdomain, the API key is in `.env.prod`, the VPS egress IP is on Brevo's
+  authorized list, and the backend logs `[Email] Brevo sender active` at boot. Every
+  send now logs a line either way, so the silence that hid this for months is gone.
+  **Do not strike this entirely until a message has actually been observed arriving** —
+  "the sender initialised" is not "mail is delivered", and confusing the two is the
+  exact error this entry existed to record. Notes from the two intermediate states
+  follow.
+- **P2 — (superseded) No email provider is *deployed*, so no transactional email is sent yet.**
   *(Was "none is configured"; the code half landed 2026-09-02.)* `BrevoEmailSender`
   now implements `IEmailSender` against Brevo's transactional API and is selected
   automatically whenever `Email:Brevo:ApiKey` is set, falling back to the logger

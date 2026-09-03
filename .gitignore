@@ -27,6 +27,9 @@ dist-ssr
 # Local, machine-specific overrides only. The non-secret per-mode files
 # (.env.development / .env.production) ARE committed so CI reproduces the build.
 # `*.local` above already covers .env.local and .env.*.local.
+# A bare `.env` is never ours: on the production server it is a symlink to .env.prod so that
+# compose resolves secrets without --env-file (docs/deployment/production-topology.md).
+.env
 
 
 #backend 

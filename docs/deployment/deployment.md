@@ -105,7 +105,7 @@ preference — it's baked into the current architecture:
 
 **Data & assets:**
 - [ ] Uploads pointed at S3/R2 (or a persistent volume confirmed to survive redeploys).
-- [ ] A real email sender configured if you gate on verification (today it's `LoggingEmailSender` — dev only; see [`email-verification.md`](../auth/email-verification.md)).
+- [x] A real email sender. **Done 2026-09-03:** Brevo, via `BrevoEmailSender`, selected whenever `Email:Brevo:ApiKey` is set; `LoggingEmailSender` remains the development default. See [`../auth/password-reset.md`](../auth/password-reset.md) §7.
 
 **Build sanity:**
 - [ ] `dotnet build` clean; `npm run build` produces `dist/`.
