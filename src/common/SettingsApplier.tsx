@@ -1,7 +1,12 @@
 import { useEffect, useRef } from "react";
 import { useUser } from "@/lib/Auth";
 import { useTheme } from "@/components/ui";
-import { applyFont, DEFAULT_APP_FONT, DEFAULT_QUIZ_FONT } from "@/lib/fonts";
+import {
+  applyFont,
+  normalizeFont,
+  DEFAULT_APP_FONT,
+  DEFAULT_QUIZ_FONT,
+} from "@/lib/fonts";
 import { useSettingsData } from "@/pages/UserRelated/SettingsPage/api/get-settings";
 
 // Drop a real audio file here (public/audio/background-music.mp3).
@@ -44,12 +49,17 @@ export const SettingsApplier = () => {
   // demotes `:root` in global.css to what it should be — a first-paint fallback for the
   // moment before this runs. `src/lib/__tests__/font-defaults.test.ts` asserts the two
   // still agree, because two declarations of one fact don't stay equal on their own.
+  //
+  // Normalized on the way out for the same reason the settings draft normalizes on the way
+  // in: a stored `""` (an old row backfilled with one) is not null, so `??` would let it
+  // through and set the variable to nothing. The two have to agree about what an unusable
+  // stored value means, or the font you see depends on which of them mounted last.
   useEffect(() => {
-    applyFont("app", settings?.appFont ?? DEFAULT_APP_FONT);
+    applyFont("app", normalizeFont(settings?.appFont, DEFAULT_APP_FONT));
   }, [settings?.appFont]);
 
   useEffect(() => {
-    applyFont("quiz", settings?.quizFont ?? DEFAULT_QUIZ_FONT);
+    applyFont("quiz", normalizeFont(settings?.quizFont, DEFAULT_QUIZ_FONT));
   }, [settings?.quizFont]);
 
   // Apply music preference: volume, then play or pause.

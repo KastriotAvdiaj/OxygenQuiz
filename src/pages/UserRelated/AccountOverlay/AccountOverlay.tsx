@@ -182,7 +182,12 @@ export const AccountOverlay = () => {
   // Block navigation (including closing the overlay) while the settings draft is dirty.
   // This is exactly why the overlay is URL-driven: close is a navigation, so the same
   // guard that protected the old standalone page still applies here, unchanged.
-  const blocker = useBlocker(settings.isDirty);
+  //
+  // Gated on `isOpen` as a fuse. This hook is mounted on every route, so a draft that
+  // reads dirty while the overlay is shut would block every link in the app and answer
+  // each click with an unsaved-changes dialog for a form the user never opened. A dirty
+  // draft can only be reached through the overlay, so nothing legitimate is lost.
+  const blocker = useBlocker(isOpen && settings.isDirty);
 
   // Hard exits (tab close / refresh) get the browser's own generic prompt.
   useEffect(() => {
@@ -194,6 +199,20 @@ export const AccountOverlay = () => {
     window.addEventListener("beforeunload", warn);
     return () => window.removeEventListener("beforeunload", warn);
   }, [settings.isDirty]);
+
+  // Radix locks `body { pointer-events: none }` while a modal layer is open and restores
+  // the value captured when the *first* layer opened. The leave guard is a second modal
+  // stacked on this one, so when both close in the same commit — precisely what
+  // "Discard & leave" does — the restore can run against the lock instead of the original
+  // and the lock survives its own dialog: the page looks normal and nothing on it can be
+  // clicked. Clearing it once neither dialog is open costs nothing when Radix got the
+  // ordering right; the query guards against stealing the lock from someone else's dialog.
+  useEffect(() => {
+    if (isOpen || blocker.state === "blocked") return;
+    if (document.querySelector('[role="dialog"][data-state="open"]')) return;
+    if (document.body.style.pointerEvents === "none")
+      document.body.style.pointerEvents = "";
+  }, [isOpen, blocker.state]);
 
   // Signing out mid-edit shouldn't trip the unsaved-changes guard.
   const handleLogout = () => {

@@ -8,7 +8,7 @@ import {
   SelectValue,
 } from "@/components/ui";
 import { UserSettings } from "@/types/settings-types";
-import { FONT_OPTIONS, applyFont } from "@/lib/fonts";
+import { FONT_OPTIONS } from "@/lib/fonts";
 import { Section, Row } from "./SharedPrimitives";
 
 const FontSelect = ({
@@ -47,16 +47,16 @@ export const TypographySection = ({
   syncFonts,
   setSyncFonts,
 }: TypographySectionProps) => {
+  // Draft only. The live preview is applied from the draft in `useSettingsForm`, which is
+  // what makes Discard revert it — writing the CSS variable from here left the browser on a
+  // font the form had already thrown away.
   const setFont = (zone: "app" | "quiz", value: string) => {
     if (syncFonts) {
       setForm((prev) =>
         prev ? { ...prev, appFont: value, quizFont: value } : prev
       );
-      applyFont("app", value);
-      applyFont("quiz", value);
     } else {
       set(zone === "app" ? "appFont" : "quizFont", value);
-      applyFont(zone, value);
     }
   };
 
@@ -70,10 +70,7 @@ export const TypographySection = ({
             checked={syncFonts}
             onCheckedChange={(on) => {
               setSyncFonts(on);
-              if (on && form) {
-                set("quizFont", form.appFont);
-                applyFont("quiz", form.appFont);
-              }
+              if (on && form) set("quizFont", form.appFont);
             }}
           />
         }
