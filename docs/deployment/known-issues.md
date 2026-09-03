@@ -121,7 +121,8 @@ Auth-specific enhancements are tracked in [authentication.md](../auth/authentica
   now implements `IEmailSender` against Brevo's transactional API and is selected
   automatically whenever `Email:Brevo:ApiKey` is set, falling back to the logger
   otherwise. **What remains is not code:** verify `oxygenquiz.com` as a Brevo sending
-  domain (SPF/DKIM records into Cloudflare), add the backend container's egress IP to
+  domain (a TXT ownership code, DKIM, and DMARC into Cloudflare — **not** SPF, which
+  Brevo only needs for a dedicated IP), add the VPS host's public IP to
   Brevo's authorized-IP list if key IP-blocking is enabled, and put `BREVO_API_KEY`
   into `~/OxygenQuiz/.env.prod`. Until then production still logs instead of sending —
   but it now says so at `Error` on every boot instead of doing it silently, which was

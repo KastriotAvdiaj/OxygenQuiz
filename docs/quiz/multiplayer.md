@@ -276,6 +276,18 @@ Re-stamping would blank the chat someone had already read every time their tab r
 watermark — a deliberate leave is treated as arriving fresh. If you ever make leave a soft state,
 this changes with it.
 
+**The transcript is shadcn's `Message`** (`src/components/ui/message.tsx`, ported from the AI
+Elements registry entry). A row is `<Message from="user | assistant">` wrapping
+`<MessageContent>`: `from` puts an `is-user` / `is-assistant` marker class on the wrapper and the
+content styles hang off it (`group-[.is-user]:…`), so alignment and bubble live in the component
+rather than in a ternary at the call site. Here `user` means *this* account — your own messages sit
+right and unlabelled, everyone else's sit left under their name. System notices are not messages
+and stay a centred italic line.
+
+The port keeps only `Message` and `MessageContent`. Upstream also ships branch navigation, an
+actions toolbar, attachments and a markdown `MessageResponse`, which would pull in `ai`,
+`streamdown` and `button-group` for a chat that sends plain 500-character strings.
+
 ### Chat on phones
 
 Under `lg` the chat panel is **dropped from the stacked column** and moves into a bottom drawer

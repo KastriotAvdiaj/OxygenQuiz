@@ -185,12 +185,28 @@ body is diagnosable where an SMTP code is a guess.
 
 **What remains is account and DNS work, which no amount of code can do:**
 
-1. **Verify `oxygenquiz.com` as a Brevo sending domain.** Brevo issues DKIM and SPF records; they
-   go into Cloudflare DNS. Skipping this means mail is rejected with a 400 naming the sender, or
-   silently filed as spam. This is the slow step — start it first.
-2. **Authorized IPs.** If key IP-blocking is enabled in Brevo, add the backend container's *egress*
-   address, which is what Brevo sees and is not necessarily what you assume:
-   `docker compose -f docker-compose.prod.yml exec backend sh -c "curl -s https://api.ipify.org"`.
+1. **Verify `oxygenquiz.com` as a Brevo sending domain.** Brevo (Settings → Senders, Domains, IPs
+   → Domains) issues the records; they go into Cloudflare DNS; then you confirm back in Brevo.
+   Three records, and **SPF is not one of them** — Brevo only asks for SPF when you take a
+   dedicated IP, so do not add one on spec, especially if the domain already has an SPF record for
+   something else (two SPF records is worse than none).
+   - a **TXT** "Brevo code" proving domain ownership
+   - **DKIM**, as two CNAMEs or one TXT
+   - a **DMARC** TXT at `_dmarc`
+
+   Cloudflare specifics: set the DKIM CNAMEs to **DNS only (grey cloud)** — proxying makes
+   Cloudflare answer with its own records and the check fails — and enter only the subdomain in the
+   Name field, since Cloudflare appends the zone itself. Skipping domain authentication means mail
+   is rejected with a 400 naming the sender, or silently filed as spam.
+2. **Authorized IPs.** If key IP-blocking is enabled in Brevo, add the container's *egress*
+   address — which is what Brevo sees, and is the **VPS host's** public IP, because containers on
+   the default bridge NAT out through it. Get it from the host, not the container (the ASP.NET
+   runtime image has no curl or wget):
+
+   ```bash
+   curl -s https://api.ipify.org        # on the VPS host
+   ```
+
    A missing entry looks exactly like a bad key. **Note this in any server-rebuild checklist** — a
    new VPS address silently stops all mail.
 3. **`BREVO_API_KEY` into `~/OxygenQuiz/.env.prod`.** The compose file already references it, and

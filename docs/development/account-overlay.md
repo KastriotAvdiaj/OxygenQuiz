@@ -105,6 +105,41 @@ The guard has two layers, both inherited from the old page:
 
 Logging out calls `discard()` first, so signing out mid-edit doesn't trip the guard.
 
+### The font preview belongs to the draft
+
+Typography is the one setting you can see before you save it: picking a font writes
+`--font-app` / `--font-quiz` on `<html>`. That variable is outside React, so `useSettingsForm`
+syncs it *from the draft* in an Effect — the Typography section only sets state.
+
+This is what makes Discard mean something. The section used to call `applyFont()` itself, so
+nothing ever wrote the old value back: abandoning an edit left the new font on screen until a
+reload, on a form that had already reverted to the old one and was still showing it in the Select.
+Now discard resets the draft and the Effect puts the saved font back with it.
+
+`SettingsApplier` still applies the *saved* fonts app-wide; the draft only exists while the
+overlay's form is loaded, and the two agree except during a preview.
+
+### Two fuses on the guard
+
+`useBlocker` refuses navigation for the whole app, and this hook is mounted on every route, so a
+draft that reads dirty when it isn't takes the entire UI down with it — every link answers with an
+unsaved-changes dialog for a form the user never opened, which reads as "the buttons stopped
+working". Two things keep that from happening:
+
+- **Dirty compares like with like.** The draft is normalized on load (`normalizeFont` coalesces an
+  empty or retired font to the default); dirty tracking compares it against the *normalized*
+  server copy. Comparing against the raw response made every account with a legacy font value
+  permanently dirty from first paint.
+- **The blocker is gated on the overlay being open.** A dirty draft is only reachable through the
+  overlay, so nothing legitimate is lost, and a future bug in dirty tracking can't freeze
+  navigation on pages that have nothing to do with settings.
+
+There is a third, smaller one in `AccountOverlay`: Radix locks `body { pointer-events: none }` per
+open modal layer and restores what it captured when the first one opened. The leave guard is a
+second modal on top of the overlay, and "Discard & leave" closes both in the same commit, which can
+restore the lock over itself and leave the page unclickable. The overlay clears a stranded lock
+once neither of its dialogs is open.
+
 ## What this replaced
 
 | Old | Now |
