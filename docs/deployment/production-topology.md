@@ -65,6 +65,25 @@ Everything else the backend reads must be written as an explicit `- Key__Sub=val
 compose file. **Adding a variable to `.env.prod` alone does nothing** unless something in the
 compose file references it.
 
+### Forgetting `--env-file` on `up -d` breaks production
+
+Compose interpolates an unset `${...}` to a **blank string**, not an error. So an `up -d` without
+the flag recreates the stack with a blank `POSTGRES_PASSWORD`, `JWT_KEY`, `ADMIN_PASSWORD` and
+every API key — and the backend's `Jwt:Key` guard then refuses to start at all. The
+`WARN … variable is not set` lines are harmless noise on read-only commands like `logs`, `ps` and
+`exec`, which is exactly what makes them easy to stop reading; on `up` they are the last warning
+before an outage.
+
+Compose reads a file named literally `.env` automatically. Making that the same file removes the
+trap rather than relying on remembering:
+
+```bash
+ln -s .env.prod ~/OxygenQuiz/.env
+```
+
+Every compose command then resolves the secrets with or without the flag, and the warnings stop.
+`.env` is in `.gitignore`, so the link is never committed.
+
 ### What is tracked, and what is not
 
 As of `64f399e8` (2026-08-31) the live compose file **is in version control**, at the repo root as
