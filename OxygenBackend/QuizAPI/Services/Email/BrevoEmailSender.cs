@@ -62,7 +62,20 @@ namespace QuizAPI.Services.Email
 
                 using var response = await _http.PostAsync("v3/smtp/email", content, ct);
 
-                if (response.IsSuccessStatusCode) return;
+                if (response.IsSuccessStatusCode)
+                {
+                    // Successes are logged too, and that is the point rather than noise. This path
+                    // spent months doing nothing while looking healthy, and a sender that only
+                    // speaks up on failure gives you no way to tell "sent fine" from "never ran" —
+                    // silence means both. At a few messages a day the cost is nothing. The
+                    // messageId is Brevo's own, so a line here can be matched against an entry in
+                    // their dashboard when a user swears they got nothing.
+                    var accepted = await response.Content.ReadAsStringAsync(ct);
+                    _logger.LogInformation(
+                        "[Email] Sent \"{Subject}\" to {Recipient}. Brevo accepted: {Response}",
+                        subject, Mask(toEmail), accepted.Trim());
+                    return;
+                }
 
                 // Brevo puts a machine-readable {code, message} in the body, and it is the
                 // difference between "the key is wrong", "this IP is not authorized" and "the
@@ -73,14 +86,32 @@ namespace QuizAPI.Services.Email
                     "[Email] Brevo rejected a message to {Recipient}: {Status} {Body}. " +
                     "401/403 usually means the API key or the authorized-IP list; 400 with " +
                     "'sender' in it usually means the From domain is not verified yet.",
-                    toEmail, (int)response.StatusCode, body);
+                    Mask(toEmail), (int)response.StatusCode, body);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex,
                     "[Email] Sending to {Recipient} failed. The message is lost; the user can " +
-                    "request another.", toEmail);
+                    "request another.", Mask(toEmail));
             }
+        }
+
+        /// <summary>
+        /// <c>k****@gmail.com</c>. Enough to tell two recipients apart in a log and to recognise
+        /// your own test address; not a list of every user's email sitting in container logs that
+        /// get shipped, grepped and pasted into chat threads. Brevo's own dashboard holds the full
+        /// address if an investigation genuinely needs it — and its tracking-anonymization setting
+        /// exists to limit that too, which would be inconsistent to enable while dumping the same
+        /// addresses here.
+        /// </summary>
+        private static string Mask(string email)
+        {
+            if (string.IsNullOrWhiteSpace(email)) return "(none)";
+
+            var at = email.IndexOf('@');
+            if (at <= 0) return "***";
+
+            return $"{email[0]}***{email[at..]}";
         }
     }
 }

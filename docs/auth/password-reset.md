@@ -222,10 +222,22 @@ CORS origin — right by luck, and a wrong link matters once mail actually sends
 docker compose -f docker-compose.prod.yml logs backend | grep '\[Email\]'
 ```
 
-`[Email] Brevo sender active, from no-reply@oxygenquiz.com.` is the line you want. Then sign up a
-throwaway account and watch for the message. On a rejection the log carries Brevo's own response:
-401/403 points at the key or the IP list, and a 400 mentioning `sender` points at an unverified
-domain — three failures that are indistinguishable from outside.
+`[Email] Brevo sender active, from no-reply@oxygenquiz.com.` at startup, then one line per
+message:
+
+```
+[Email] Sent "Reset your Oxygen Quiz password" to k***@example.com. Brevo accepted: {"messageId":"<…>"}
+```
+
+**Successes are logged deliberately.** A sender that only speaks on failure makes "sent fine" and
+"never ran" both look like silence, which is precisely how this path went months doing nothing
+while appearing healthy. Recipients are masked — enough to tell two apart, not a list of every
+user's address sitting in logs that get grepped and pasted into chat. Brevo's dashboard
+(Transactional → Email → Logs) holds the full record if an investigation needs it.
+
+On a rejection the log carries Brevo's own response: 401/403 points at the key or the authorized-IP
+list, and a 400 mentioning `sender` points at an unverified domain — three failures that are
+otherwise indistinguishable from outside.
 
 **A send failure never throws**, deliberately: it would 500 a signup whose account was already
 created, and it would break the reset endpoint's always-200 rule, rebuilding the enumeration oracle
