@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Message, MessageContent } from "@/components/ui/message";
 import type { LobbyChatMessage } from "../../hooks/use-lobby-chat";
 
 export interface LobbyChatViewProps {
@@ -55,33 +56,42 @@ export const LobbyChatView = ({
               Say hi while you wait…
             </p>
           ) : (
-            messages.map((m, i) =>
-              m.isSystem ? (
-                <p
-                  key={i}
-                  className="text-center text-[11px] italic text-muted-foreground/70"
-                >
-                  {m.text}
-                </p>
-              ) : (
-                <div
-                  key={i}
-                  className="text-sm leading-snug [overflow-wrap:anywhere]"
-                >
-                  <span
-                    className={`font-semibold ${
-                      m.username === username
-                        ? "text-primary"
-                        : "text-foreground"
-                    }`}
+            messages.map((m, i) => {
+              // System notices are the room talking about itself, not a participant — they
+              // stay a centred line rather than a bubble with an author.
+              if (m.isSystem)
+                return (
+                  <p
+                    key={i}
+                    className="text-center text-[11px] italic text-muted-foreground/70"
                   >
-                    {m.username}
-                  </span>
-                  <span className="text-muted-foreground">: </span>
-                  <span>{m.text}</span>
-                </div>
-              ),
-            )
+                    {m.text}
+                  </p>
+                );
+
+              // `from` is what drives the whole layout: shadcn's Message marks the row
+              // `is-user` / `is-assistant` and MessageContent aligns and skins itself off
+              // that. "user" means *this* account, so your own messages sit right.
+              const isOwn = m.username === username;
+              return (
+                <Message key={i} from={isOwn ? "user" : "assistant"}>
+                  {/* Both sides get a bubble; the theme's `secondary` and `muted` are the
+                      same value in dark mode, so "mine" is a primary tint rather than
+                      upstream's secondary — alignment alone is a weak cue in a 2-column
+                      panel this narrow. */}
+                  <MessageContent className="gap-0.5 rounded-lg group-[.is-assistant]:bg-muted group-[.is-assistant]:px-3 group-[.is-assistant]:py-2 group-[.is-user]:bg-primary/15 group-[.is-user]:px-3 group-[.is-user]:py-2">
+                    {!isOwn && (
+                      <span className="text-xs font-semibold text-primary">
+                        {m.username}
+                      </span>
+                    )}
+                    <span className="leading-snug [overflow-wrap:anywhere]">
+                      {m.text}
+                    </span>
+                  </MessageContent>
+                </Message>
+              );
+            })
           )}
         </div>
       </ScrollArea>
