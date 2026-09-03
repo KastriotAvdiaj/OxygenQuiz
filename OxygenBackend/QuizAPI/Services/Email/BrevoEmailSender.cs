@@ -45,7 +45,8 @@ namespace QuizAPI.Services.Email
         /// ever written to expect it to.</para>
         /// </summary>
         public async Task SendAsync(
-            string toEmail, string subject, string htmlBody, CancellationToken ct = default)
+            string toEmail, string subject, string htmlBody, string? textBody = null,
+            CancellationToken ct = default)
         {
             var payload = new
             {
@@ -53,6 +54,7 @@ namespace QuizAPI.Services.Email
                 to = new[] { new { email = toEmail } },
                 subject,
                 htmlContent = htmlBody,
+                textContent = string.IsNullOrWhiteSpace(textBody) ? null : textBody,
             };
 
             try

@@ -217,6 +217,19 @@ body is diagnosable where an SMTP code is a guess.
 `App__FrontendBaseUrl` is now set explicitly in the compose file. It used to fall back to the first
 CORS origin — right by luck, and a wrong link matters once mail actually sends.
 
+### Link wrapping: checked, and not happening
+
+Brevo can rewrite links in outgoing mail to route clicks through its own domain. That would have
+been a problem here rather than a cosmetic one: a reset URL carries a one-time token, so wrapping
+puts that token in a third party's click logs, and a security email whose button points somewhere
+other than your own domain is exactly what people are taught to distrust.
+
+**Verified 2026-09-03 on a real message: not wrapped.** The received link was
+`https://oxygenquiz.com/reset-password?token=…`. No action needed. Worth re-checking if link
+tracking is ever switched on in the Brevo dashboard, since that is the setting that would change
+it — and the branded `send.oxygenquiz.com` subdomain exists so that, if it ever is, the wrapper at
+least stays on our own domain.
+
 ### Confirming it works
 
 ```bash

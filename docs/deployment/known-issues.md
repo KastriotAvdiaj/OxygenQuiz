@@ -117,7 +117,11 @@ Auth-specific enhancements are tracked in [authentication.md](../auth/authentica
   covers `AllowedHosts` along with the two `Jwt` values that have the same problem.
   → `OxygenBackend/QuizAPI/appsettings.json`
 - ~~**P2 — No email provider, so no transactional email is ever sent.**~~
-  **Resolved 2026-09-03**, pending one confirmed delivery. Brevo is configured and
+  **Resolved 2026-09-03. Confirmed:** a password-reset message was received in a
+  Gmail inbox (not spam), from `no-reply@oxygenquiz.com`, with the link pointing at
+  `https://oxygenquiz.com/reset-password?token=…` — **unwrapped**, so Brevo is not
+  routing reset tokens through its click-tracking redirector and no tokens reach its
+  click logs. Original detail follows. Brevo is configured and
   live: `oxygenquiz.com` is authenticated (Brevo code, DKIM ×2, DMARC) with a `send`
   branded subdomain, the API key is in `.env.prod`, the VPS egress IP is on Brevo's
   authorized list, and the backend logs `[Email] Brevo sender active` at boot. Every

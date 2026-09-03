@@ -582,14 +582,18 @@ public class AuthenticationService(
         await _passwordResetTokenRepository.SaveChangesAsync(ct);
 
         var link = $"{FrontendBaseUrl()}/reset-password?token={Uri.EscapeDataString(raw)}";
-        var html =
-            $"<p>Hi {user.Username},</p>" +
-            "<p>Someone asked to reset the password on your Oxygen Quiz account. If it was you:</p>" +
-            $"<p><a href=\"{link}\">Choose a new password</a></p>" +
-            "<p>This link expires in 1 hour and can only be used once. If it wasn't you, ignore " +
-            "this email — your password has not changed.</p>";
+        var (html, text) = EmailTemplates.Action(
+            recipientName: user.Username,
+            preheader: "Your reset link is valid for one hour.",
+            intro: "Someone asked to reset the password on your Oxygen Quiz account. " +
+                   "If that was you, choose a new one here.",
+            buttonLabel: "Choose a new password",
+            url: link,
+            footer: "This link expires in 1 hour and can only be used once. If it wasn't you, " +
+                    "ignore this email — your password has not changed.");
 
-        await _emailSender.SendAsync(user.Email, "Reset your Oxygen Quiz password", html, ct);
+        await _emailSender.SendAsync(
+            user.Email, "Reset your Oxygen Quiz password", html, text, ct);
 
         // Logged even though the endpoint is silent, so a burst against one account is visible
         // afterwards even though the requester was told nothing.
@@ -685,13 +689,17 @@ public class AuthenticationService(
         await _emailVerificationTokenRepository.SaveChangesAsync(ct);
 
         var link = $"{FrontendBaseUrl()}/confirm-email?token={Uri.EscapeDataString(raw)}";
-        var html =
-            $"<p>Hi {user.Username},</p>" +
-            "<p>Confirm your email to finish setting up your Oxygen Quiz account:</p>" +
-            $"<p><a href=\"{link}\">Confirm my email</a></p>" +
-            "<p>This link expires in 24 hours. If you didn't sign up, you can ignore this email.</p>";
+        var (html, text) = EmailTemplates.Action(
+            recipientName: user.Username,
+            preheader: "One click to confirm your address.",
+            intro: "Confirm your email address to finish setting up your Oxygen Quiz account.",
+            buttonLabel: "Confirm my email",
+            url: link,
+            footer: "This link expires in 24 hours. If you didn't sign up for Oxygen Quiz, you " +
+                    "can safely ignore this email.");
 
-        await _emailSender.SendAsync(user.Email, "Confirm your Oxygen Quiz email", html, ct);
+        await _emailSender.SendAsync(
+            user.Email, "Confirm your Oxygen Quiz email", html, text, ct);
     }
 
     // The confirmation link points at the frontend. Prefer an explicit App:FrontendBaseUrl,
