@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
@@ -23,10 +24,15 @@ import {
  * Two declarations of one fact don't stay equal by good intentions, so this asserts it.
  * If you change one, this fails until you change the other.
  */
-// `import.meta.url`, not `__dirname`: Vite compiles test files as ESM, where
-// `__dirname` does not exist.
+// Resolved with `node:path`, deliberately not `new URL("../../global.css", import.meta.url)`.
+// `import.meta.url` is the right base — Vite compiles test files as ESM, so `__dirname` does not
+// exist — but this suite runs under `environment: 'jsdom'`, where the global `URL` is *jsdom's*.
+// jsdom resolves a relative URL against the document location, so the `file:` base is discarded
+// and the result is `http://localhost:3000/src/global.css`; `fileURLToPath` then throws
+// ERR_INVALID_URL_SCHEME and the whole suite fails to collect. Converting the base to a path
+// first keeps the resolution in Node's hands.
 const GLOBAL_CSS = readFileSync(
-  fileURLToPath(new URL("../../global.css", import.meta.url)),
+  path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../global.css"),
   "utf-8",
 );
 
