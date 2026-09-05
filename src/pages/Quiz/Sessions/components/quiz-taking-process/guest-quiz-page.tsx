@@ -1,9 +1,10 @@
 import { useEffect, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Loader2, AlertCircle, LogIn } from "lucide-react";
+import { AlertCircle, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSubmitGuestAnswer } from "../../api/guest-quiz-session";
 import { QuizInterface } from "./quiz-interface";
+import { QuizLoadingView } from "../quiz-loading-view";
 import { useGuestQuizSession } from "@/hooks/use-guest-quiz-session";
 
 interface GuestQuizPageProps {
@@ -21,7 +22,6 @@ export function GuestQuizPage({ quizId }: GuestQuizPageProps) {
     lastAnswerResult,
     currentQuestionNumber,
     error,
-    isInitialLoading,
     completedAnswers,
     handleAnswerSubmissionSuccess,
     setCurrentQuestionNumber,
@@ -76,17 +76,13 @@ export function GuestQuizPage({ quizId }: GuestQuizPageProps) {
     fetchNextQuestion(quizSession.id);
   };
 
-  // Full-screen states use flex-1, not h-screen — see docs/RESPONSIVE.md
-  // ("Filling the screen"): h-screen over-measures inside the app shell.
-  if (isInitialLoading && !error) {
-    return (
-      <div className="flex flex-1 w-full items-center justify-center px-4">
-        <div className="quiz-card-elevated p-8 text-center space-y-4">
-          <Loader2 className="h-12 w-12 animate-spin mx-auto text-quiz-primary" />
-          <p className="quiz-text-primary text-xl font-medium">Preparing your quiz...</p>
-        </div>
-      </div>
-    );
+  // Session creation only — same gate as QuizPage, and for the same reason: a null
+  // currentQuestion here is the between-questions gap, which belongs to QuizInterface's own
+  // loader (it keeps the leave button and the layout). The hook's `isInitialLoading` still
+  // ORs in `!currentQuestion`, so it is deliberately not used here.
+  // flex-1, not h-screen — h-screen over-measures inside the app shell (docs/RESPONSIVE.md).
+  if (!quizSession && !error) {
+    return <QuizLoadingView words={["LOADING", "YOUR QUIZ"]} label="Loading your quiz" />;
   }
 
   if (error || !quizSession) {

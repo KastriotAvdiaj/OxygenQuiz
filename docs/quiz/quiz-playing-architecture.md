@@ -37,9 +37,11 @@ All paths are under `src/pages/Quiz/Sessions/`.
 | File | Role |
 | ---- | ---- |
 | `components/.../quiz-page-route-wrapper.tsx` | Entry point. Decides logged-in (`QuizPage`) vs guest (`GuestQuizPage`) and handles the one-free-guest-quiz gate. See `docs/auth/guest-play.md`. |
-| `components/.../quiz-page.tsx` | **The controller.** Wires `useQuizSession` + `useSubmitAnswer`, owns `handleSubmitAnswer` / `handleNextQuestion`, and renders the loading / error / active-session screens or `QuizInterface`. The only component that submits to the backend. |
+| `components/.../quiz-page.tsx` | **The controller.** Wires `useQuizSession` + `useSubmitAnswer`, owns `handleSubmitAnswer` / `handleNextQuestion`, and picks between the loading / error / active-session screens and `QuizInterface`. The only component that submits to the backend. Keeps `ErrorScreen` inline; the other two full-screen states live in their own files below. |
+| `components/quiz-loading-view.tsx` | **THE loading screen** — a `SplitFlapText` board, no card. Sits one level above `quiz-taking-process/` because it is not specific to it: `QuizPage` / `GuestQuizPage` render it while the session is created ("LOADING / YOUR QUIZ"), `QuizInterface` for the gap between two questions ("LOADING / QUESTION"). Change the loading look here and every waiting moment in the quiz follows. Storied in `quiz-loading-view.stories.tsx`. |
+| `components/.../active-session-view.tsx` | The **"Session In Progress"** fork — Resume / Start Fresh / Back, shown when the player already has an unfinished session for this quiz. Presentational; `isLoading` disables both actions while either request is in flight. Storied in `active-session-view.stories.tsx`. |
 | `../../hooks/use-quiz-session.ts` | The **state brain**: current question, last answer result, progress, resume / active-session logic. |
-| `components/.../quiz-interface.tsx` | Page layout. Renders `QuestionDisplay`, the "Next / Finish" button, the auto-advance countdown, and the "Quiz Complete" screen. No answer logic. |
+| `components/.../quiz-interface.tsx` | Page layout. Renders `QuestionDisplay`, the "Next / Finish" button, the auto-advance countdown, and the "Quiz Complete" screen. No answer logic. With a null `currentQuestion` it renders `QuizLoadingView` in place of the question, keeping the leave button and the layout — that is the between-questions gap, see §3b. |
 | `components/.../question-display.tsx` | Per-question **shell + dispatcher**: timer, question card, media, "time's up" banner, instant-feedback panel, the double-submit guard, and the `switch (questionType)` that picks an input component. |
 | `components/.../question-display-type-files/*.tsx` | The three **input components** (multiple-choice, true-or-false, type-the-answer). Each owns its own selection state and reports the answer via `onSubmit`. **Shared with multiplayer.** |
 | `components/.../quiz-submit-button.tsx` | The **single Submit button** used by all three input components (and both modes). Owns styling, the loading spinner, the visibility rule, and the disabled logic. |
@@ -99,6 +101,59 @@ Three things to know before touching this:
 
 `Quiz.ShuffleQuestions` is applied at the same two seams, seeded the same way. It had been dead
 since the initial migration — a column, a DTO field and a visible checkbox that no code ever read.
+
+## 3b. The loading screen, and the gate that used to hide it
+
+There is **one** loading component — `quiz-loading-view.tsx` — rendered from three places.
+What decides which of them you are looking at is the pages' early-return gate, and that gate
+used to be wrong.
+
+**The bug.** `useQuizSession` derives:
+
+```ts
+const isInitialLoading =
+  (!quizSession || !currentQuestion) && !error && !existingActiveSession;
+```
+
+and `fetchNextQuestion` clears the question **before** it requests:
+
+```ts
+setLastAnswerResult(null);
+setCurrentQuestion(null);
+```
+
+`QuizPage` returned early on `isInitialLoading`, so every click of **Next** matched it. The
+player got a full-screen card — no header, no leave button, the whole layout gone — and
+`QuizInterface` was never rendered without a question, which made its own loading branch
+dead code. `GuestQuizPage` had the identical gate.
+
+**The fix.** Both pages now gate on the session alone:
+
+```ts
+if (!quizSession && !error) return <QuizLoadingView ... />;
+```
+
+So:
+
+| Moment | Who renders it | Board reads |
+| ------ | -------------- | ----------- |
+| Creating / resolving the session | `QuizPage`, `GuestQuizPage` (full screen) | LOADING → YOUR QUIZ |
+| Between two questions | `QuizInterface` (inside the quiz chrome — leave button and layout stay) | LOADING → QUESTION |
+
+`isInitialLoading` is still returned by both hooks (the guest hook's tests use it) but is
+marked `@deprecated` for gating: it means "no question on screen", which is not the same
+question as "are we still starting up".
+
+**Still dead, deliberately:** `QuizInterface`'s "Quiz Complete! / Preparing your results…"
+branch needs `currentQuestion === null` **and** a `lastAnswerResult`, but `fetchNextQuestion`
+clears both together and the complete-with-feedback path keeps the question on screen until
+the user presses Finish. Nothing a player does reaches it.
+
+**If you change the loading look:** edit `quiz-loading-view.tsx`, not the call sites. And
+note `SplitFlapText` only animates on a phrase *change* — a single-entry `words` array
+renders a board that never moves.
+
+---
 
 ## 4. Why there is ONE submit button now (and why there used to be three)
 

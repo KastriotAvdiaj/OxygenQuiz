@@ -4,11 +4,12 @@ import type {
   InstantFeedbackAnswerResult,
 } from "../../../../../types/quiz-session-types";
 import { motion } from "framer-motion";
-import { Loader2, ArrowRight, Trophy } from "lucide-react";
+import { ArrowRight, Trophy } from "lucide-react";
 import { useEffect, useRef } from "react";
 import * as React from "react";
 import { LiftedButton } from "@/common/LiftedButton";
 import { QuizLeaveButton } from "./quiz-leave-button";
+import { QuizLoadingView } from "../quiz-loading-view";
 
 interface QuizInterfaceProps {
   sessionId: string;
@@ -200,33 +201,11 @@ export function QuizInterface({
               </p>
             </motion.div>
           ) : (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4 }}
-              className="quiz-card-elevated p-8 text-center space-y-6 rounded-xl">
-              <div className="w-12 h-12 rounded-full mx-auto flex items-center justify-center mb-4 bg-primary">
-                <Loader2 className="h-6 w-6 animate-spin text-white" />
-              </div>
-
-              <div className="space-y-3">
-                <h3 className="quiz-text-primary text-xl font-semibold">
-                  Preparing your question...
-                </h3>
-                <p className="text-gray-600 dark:text-gray-400">
-                  Get ready for the next challenge!
-                </p>
-              </div>
-
-              <div className="w-48 h-1.5 bg-quiz-border-subtle rounded-full mx-auto overflow-hidden">
-                <motion.div
-                  className="h-full rounded-full bg-primary"
-                  initial={{ width: "0%" }}
-                  animate={{ width: "75%" }}
-                  transition={{ duration: 1.5, ease: "easeInOut" }}
-                />
-              </div>
-            </motion.div>
+            /* The gap between two questions: the answer is graded, the next question is in
+               flight. Reachable since QuizPage stopped gating on currentQuestion — the leave
+               button and the layout above stay put while this swaps in. Same component the
+               page uses for the initial load, so the two moments look like one thing. */
+            <QuizLoadingView words={["LOADING", "QUESTION"]} label="Loading the next question" />
           )}
         </div>
       </div>

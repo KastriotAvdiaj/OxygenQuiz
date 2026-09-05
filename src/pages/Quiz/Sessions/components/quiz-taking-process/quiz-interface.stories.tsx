@@ -22,6 +22,8 @@ import {
  * instantly, with hand-written fake data and no real quiz session. This is the
  * "test it in my own time instead of playing through" workflow you wanted.
  *
+ * The loading state is the one to read carefully — see LoadingNextQuestion at the bottom.
+ *
  * KEY TAKEAWAY: you don't story the data-fetching wrapper; you story the
  * presentational component it renders. Keeping fetching in hooks and rendering in
  * prop-driven components is what makes a page storyable at all.
@@ -101,7 +103,19 @@ export const FinalQuestionComplete: Story = {
   },
 };
 
-/** No active question yet → the "Preparing your question…" loading state. */
+/**
+ * The gap between two questions: answer graded, next question in flight.
+ *
+ * This used to be unreachable. QuizPage gated on `useQuizSession.isInitialLoading`, which
+ * ORs in `!currentQuestion` — and `fetchNextQuestion` nulls the question before it
+ * requests, so the page short-circuited to its own full-screen card and QuizInterface was
+ * never rendered without a question. The page now gates on `!quizSession && !error`, so
+ * this branch is what a player actually sees on Next: the leave button and the layout stay
+ * put, and only the middle swaps to QuizLoadingView
+ * (docs/quiz/quiz-playing-architecture.md §3b).
+ *
+ * The board flips on a ~1s cycle, so give the story a moment before judging it.
+ */
 export const LoadingNextQuestion: Story = {
   args: {
     currentQuestion: null,

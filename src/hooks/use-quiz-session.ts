@@ -173,6 +173,14 @@ export const useQuizSession = ({
   }
 
   // --- Derived State ---
+  /**
+   * @deprecated for gating the loading screen. It ORs in `!currentQuestion`, which is also
+   * true for the whole gap between two questions — a page that returns early on it never
+   * reaches QuizInterface without a question, so QuizInterface's own loading state can never
+   * render. QuizPage now gates on `!quizSession && !error` instead and lets that gap fall
+   * through (docs/quiz/quiz-playing-architecture.md §3b). Still returned for the tests and
+   * for anything that genuinely means "no question on screen".
+   */
   const isInitialLoading =
     (!quizSession || !currentQuestion) && !error && !existingActiveSession;
   const isInitializing = initializationRef.current.isInitializing;

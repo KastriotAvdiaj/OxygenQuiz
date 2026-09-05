@@ -112,6 +112,9 @@ export const useGuestQuizSession = ({ quizId }: UseGuestQuizSessionParams) => {
     currentQuestionNumber,
     error,
     completedAnswers,
+    // @deprecated for gating the loading screen — see the note in use-quiz-session.ts.
+    // GuestQuizPage gates on `!quizSession && !error` so the between-questions gap reaches
+    // QuizInterface's own loader.
     isInitialLoading: !quizSession || (!currentQuestion && !error),
     setCurrentQuestionNumber,
     fetchNextQuestion,
