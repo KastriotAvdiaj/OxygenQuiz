@@ -69,22 +69,22 @@ export const TopNotification = ({
   }, [timeout]);
 
   return (
-    <AnimatePresence>
+    // Same fix as Notification.tsx: onAnimationComplete receives the definition object, so the
+    // old `definition === "exit"` never matched and this toast leaked into the store too.
+    <AnimatePresence onExitComplete={() => onDismiss(id)}>
       {visible && (
         <motion.div
           className="pointer-events-auto"
           initial={{ opacity: 0, y: -30, scale: 0.9 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: -20, scale: 0.95 }}
+          // pointerEvents in the exit target, for the same reason as Notification.tsx: the
+          // retained node keeps whatever className it last rendered with, so an invisible toast
+          // goes on swallowing clicks unless the exit itself turns it off.
+          exit={{ opacity: 0, y: -20, scale: 0.95, pointerEvents: "none" }}
           transition={{
             type: "spring",
             stiffness: 400,
             damping: 25,
-          }}
-          onAnimationComplete={(definition) => {
-            if (definition === "exit") {
-              onDismiss(id);
-            }
           }}
         >
           <div

@@ -46,25 +46,33 @@ export const Notification = ({
   }, [timeout]);
 
   return (
-    <AnimatePresence>
+    // onExitComplete, not the motion element's onAnimationComplete: framer-motion hands
+    // onAnimationComplete the animation *definition*, and this exit is an inline object, so the
+    // old `definition === "exit"` compared {opacity:0,y:-50} against a string and was never true.
+    // onDismiss therefore never ran and the toast was never removed from the store - see
+    // docs/development/notifications.md.
+    <AnimatePresence onExitComplete={() => onDismiss(id)}>
       {visible && (
         <motion.div
-          className="z-50 flex w-full flex-col items-center space-y-4 sm:items-end"
+          // max-w-sm, not w-full: this element takes the clicks now, and a full-width one made a
+          // viewport-wide strip swallow them either side of the visible card.
+          className="pointer-events-auto z-50 w-full max-w-sm"
           initial={{ opacity: 0, x: 150 }}
           animate={{ opacity: 1, x: 0 }}
           exit={{
             opacity: 0,
             y: -50,
+            // Stop taking clicks the instant it starts leaving. The card sits over the header at
+            // the top-right, and while it faded out it was invisible but still swallowing clicks
+            // on whatever is underneath. It has to be set here rather than from `visible`: during
+            // the exit React renders nothing, and AnimatePresence keeps the node exactly as it was
+            // last rendered, so a className computed from `visible` never updates.
+            pointerEvents: "none",
           }}
           transition={{ duration: 0.4 }}
-          onAnimationComplete={(definition) => {
-            if (definition === "exit") {
-              onDismiss(id);
-            }
-          }}
         >
           <div
-            className={`pointer-events-auto w-full max-w-sm overflow-hidden rounded-lg bg-white shadow-lg ring-1 ring-black/5 z-50 border-l-4 ${
+            className={`w-full max-w-sm overflow-hidden rounded-lg bg-white shadow-lg ring-1 ring-black/5 z-50 border-l-4 ${
               borderColors[type]
             }`}
             role="alert"
