@@ -42,4 +42,12 @@
     <Folder Include="wwwroot\uploads\" />
   </ItemGroup>
 
+
+  <ItemGroup>
+    <!-- PwnedPasswordsChecker deliberately keeps its hash-splitting and response-parsing helpers
+         internal (they are implementation, not API) but they are the parts worth unit-testing
+         without the network. -->
+    <InternalsVisibleTo Include="QuizAPI.Tests" />
+  </ItemGroup>
+
 </Project>

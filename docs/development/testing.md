@@ -276,6 +276,19 @@ To make tests **block deploys**:
 
 ## 7. Setup notes & known gaps
 
+- **The test project compiles against `QuizAPI`'s real constructors, so it breaks silently
+  when they change.** It had drifted out of compilation: `AuthenticationService` gained an
+  `IPasswordResetTokenRepository` and an `IBreachedPasswordChecker`, and `IEmailSender.SendAsync`
+  gained a `textBody` parameter, without the two auth test classes being updated — so nothing in
+  `QuizAPI.Tests` ran at all, and the failure looked like a build error rather than a red test.
+  Fixed 2026-09-05. **When you add a constructor parameter to a service that has tests, build the
+  test project in the same change** — the solution note below is why it's easy to miss locally.
+
+- **`InternalsVisibleTo`.** `QuizAPI.csproj` exposes its internals to `QuizAPI.Tests`.
+  `PwnedPasswordsChecker` deliberately keeps its hash-splitting and response-parsing helpers
+  internal — they're implementation, not API — but they're the parts worth unit-testing without
+  the network.
+
 - **Solution reference.** The test project isn't yet in `QuizAPI.sln`. CI targets the
   `.csproj` directly so it isn't required, but to see tests in Visual Studio's Test
   Explorer, add it once:

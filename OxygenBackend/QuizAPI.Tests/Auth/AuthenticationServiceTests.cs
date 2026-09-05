@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Moq;
@@ -12,6 +12,7 @@ using QuizAPI.Repositories.Interfaces;
 using QuizAPI.Services.Audit;
 using QuizAPI.Services.AuthenticationService;
 using QuizAPI.Services.Email;
+using QuizAPI.Services.Password;
 using QuizAPI.Services.Invitations;
 using QuizAPI.Tests.TestSupport;
 using Xunit;
@@ -30,6 +31,7 @@ public class AuthenticationServiceTests
     private readonly Mock<IRoleRepository> _roles = new();
     private readonly Mock<IRefreshTokenRepository> _refreshTokens = new();
     private readonly Mock<IEmailVerificationTokenRepository> _emailTokens = new();
+    private readonly Mock<IPasswordResetTokenRepository> _passwordResetTokens = new();
     private readonly Mock<IInviteCodeRepository> _inviteCodes = new();
     private readonly IInviteCodeGenerator _inviteGenerator = new InviteCodeGenerator();
     private readonly Mock<IExternalLoginRepository> _externalLogins = new();
@@ -37,6 +39,9 @@ public class AuthenticationServiceTests
     private readonly Mock<IAuditService> _audit = new();
     private readonly Mock<INotificationService> _notifications = new();
     private readonly Mock<IEmailSender> _email = new();
+    // Fails open by default, matching IBreachedPasswordChecker's contract: a checker that
+    // can't reach the API must never block a signup.
+    private readonly Mock<IBreachedPasswordChecker> _breachedPasswords = new();
 
     // The signup transaction is opened on the DbContext. EF's in-memory provider has no real
     // transactions, so we silence its TransactionIgnoredWarning and treat begin/commit/rollback
@@ -58,10 +63,11 @@ public class AuthenticationServiceTests
 
     private AuthenticationService CreateSut(bool requireInviteCode = false) => new(
         _users.Object, _roles.Object, _refreshTokens.Object, _emailTokens.Object,
-        _inviteCodes.Object, _inviteGenerator, _externalLogins.Object,
+        _passwordResetTokens.Object, _inviteCodes.Object, _inviteGenerator, _externalLogins.Object,
         Enumerable.Empty<QuizAPI.Services.AuthenticationService.External.IExternalIdentityVerifier>(),
         _tokens.Object, _audit.Object,
-        _notifications.Object, _email.Object, NewInMemoryContext(), Config(requireInviteCode));
+        _notifications.Object, _email.Object, _breachedPasswords.Object, NewInMemoryContext(),
+        Config(requireInviteCode));
 
     private static SignupDTO ValidSignup(string? inviteCode = null) => new()
     {
@@ -199,7 +205,7 @@ public class AuthenticationServiceTests
         _notifications.Verify(n => n.CreateAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<string>(),
             It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
         _email.Verify(e => e.SendAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
-            It.IsAny<CancellationToken>()), Times.Never);
+            It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Never);
         _audit.Verify(a => a.LogAsync(AuditActions.UserSignedUp,
             It.IsAny<string>(), It.IsAny<string>(), It.IsAny<object>(), It.IsAny<object>(),
             It.IsAny<Guid?>(), It.IsAny<CancellationToken>()), Times.Never);

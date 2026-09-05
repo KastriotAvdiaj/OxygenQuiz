@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Moq;
@@ -13,6 +13,7 @@ using QuizAPI.Services.Audit;
 using QuizAPI.Services.AuthenticationService;
 using QuizAPI.Services.AuthenticationService.External;
 using QuizAPI.Services.Email;
+using QuizAPI.Services.Password;
 using QuizAPI.Services.Invitations;
 using QuizAPI.Tests.TestSupport;
 using Xunit;
@@ -32,6 +33,7 @@ public class ExternalAuthenticationTests
     private readonly Mock<IRoleRepository> _roles = new();
     private readonly Mock<IRefreshTokenRepository> _refreshTokens = new();
     private readonly Mock<IEmailVerificationTokenRepository> _emailTokens = new();
+    private readonly Mock<IPasswordResetTokenRepository> _passwordResetTokens = new();
     private readonly Mock<IInviteCodeRepository> _inviteCodes = new();
     private readonly IInviteCodeGenerator _inviteGenerator = new InviteCodeGenerator();
     private readonly Mock<IExternalLoginRepository> _externalLogins = new();
@@ -40,6 +42,9 @@ public class ExternalAuthenticationTests
     private readonly Mock<IAuditService> _audit = new();
     private readonly Mock<INotificationService> _notifications = new();
     private readonly Mock<IEmailSender> _email = new();
+    // Fails open by default, matching IBreachedPasswordChecker's contract: a checker that
+    // can't reach the API must never block a signup.
+    private readonly Mock<IBreachedPasswordChecker> _breachedPasswords = new();
 
     private static readonly ExternalIdentity GoogleIdentity = new(
         Provider: "google",
@@ -73,10 +78,10 @@ public class ExternalAuthenticationTests
 
     private AuthenticationService CreateSut(bool requireInviteCode = false, bool googleEnabled = true) => new(
         _users.Object, _roles.Object, _refreshTokens.Object, _emailTokens.Object,
-        _inviteCodes.Object, _inviteGenerator, _externalLogins.Object,
+        _passwordResetTokens.Object, _inviteCodes.Object, _inviteGenerator, _externalLogins.Object,
         new[] { _verifier.Object },
         _tokens.Object, _audit.Object,
-        _notifications.Object, _email.Object, NewInMemoryContext(),
+        _notifications.Object, _email.Object, _breachedPasswords.Object, NewInMemoryContext(),
         Config(requireInviteCode, googleEnabled));
 
     private static ExternalLoginDTO LoginDto() => new() { Provider = "google", IdToken = "raw-id-token" };
@@ -289,7 +294,7 @@ public class ExternalAuthenticationTests
             It.Is<ExternalLogin>(el => el.Provider == "google" && el.ProviderSubjectId == "google-sub-123"),
             It.IsAny<CancellationToken>()), Times.Once);
         _inviteCodes.Verify(r => r.TryConsumeAsync(hash, It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Once);
-        _email.Verify(e => e.SendAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        _email.Verify(e => e.SendAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Never);
         _audit.Verify(a => a.LogAsync(
             AuditActions.InviteCodeRedeemed, It.IsAny<string?>(), It.IsAny<string?>(),
             It.IsAny<object?>(), It.IsAny<object?>(), It.IsAny<Guid?>(), It.IsAny<CancellationToken>()), Times.Once);
@@ -309,7 +314,7 @@ public class ExternalAuthenticationTests
             CreateSut(requireInviteCode: true).ExternalSignupAsync(SignupDto("K7QM-3FXP-9T")));
 
         // Rolled back → none of the post-commit side effects may run.
-        _email.Verify(e => e.SendAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        _email.Verify(e => e.SendAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Never);
         _notifications.Verify(n => n.CreateAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
         _audit.Verify(a => a.LogAsync(
             AuditActions.UserSignedUp, It.IsAny<string?>(), It.IsAny<string?>(),
@@ -344,7 +349,7 @@ public class ExternalAuthenticationTests
 
         _users.Verify(r => r.AddAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()), Times.Once);
         Assert.False(created!.EmailConfirmed);
-        _email.Verify(e => e.SendAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
+        _email.Verify(e => e.SendAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 }
 
