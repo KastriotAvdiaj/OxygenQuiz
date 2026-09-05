@@ -8,6 +8,7 @@ using QuizAPI.Services.Interfaces;
 using QuizAPI.Mapping;
 using QuizAPI.Services.Audit;
 using QuizAPI.Services.Permissions;
+using QuizAPI.Services.Roles;
 using QuizAPI.Filtering;
 using QuizAPI.Controllers.Users;
 
@@ -20,9 +21,9 @@ namespace QuizAPI.Services
         private readonly IAuditService _auditService;
         private readonly IPermissionService _permissionService;
 
-        // The roles whose grant/removal is restricted to a SuperAdmin caller. Compared case-insensitively.
-        private static readonly HashSet<string> SuperAdminOnlyRoles =
-            new(StringComparer.OrdinalIgnoreCase) { "SuperAdmin" };
+        // The roles whose grant/removal is restricted to a SuperAdmin caller. Compared
+        // case-insensitively. Shared with the invite-code mint guard so the two can't drift.
+        private static HashSet<string> SuperAdminOnlyRoles => RoleRules.SuperAdminOnlyRoles;
 
         public UserService(
             IUserRepository userRepository,

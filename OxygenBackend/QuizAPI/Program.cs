@@ -151,6 +151,7 @@ builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 // Invite-code signup gate (see docs/auth/invite-code-system-plan.md). Stateless CSPRNG helper → singleton.
 builder.Services.AddSingleton<QuizAPI.Services.Invitations.IInviteCodeGenerator, QuizAPI.Services.Invitations.InviteCodeGenerator>();
+builder.Services.AddScoped<QuizAPI.Services.Invitations.IInviteCodeService, QuizAPI.Services.Invitations.InviteCodeService>();
 // External sign-in verifiers (Google/Microsoft — see docs/auth/social-login-plan.md).
 // Singletons so each provider's OIDC metadata/JWKS cache is shared across requests.
 builder.Services.AddSingleton<QuizAPI.Services.AuthenticationService.External.IExternalIdentityVerifier,

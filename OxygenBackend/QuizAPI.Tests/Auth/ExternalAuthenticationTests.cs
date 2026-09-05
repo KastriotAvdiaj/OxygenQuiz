@@ -276,7 +276,7 @@ public class ExternalAuthenticationTests
         var hash = _inviteGenerator.Hash("K7QM-3FXP-9T");
         _inviteCodes.Setup(r => r.GetRedeemableByHashAsync(hash, It.IsAny<CancellationToken>()))
                     .ReturnsAsync(new InviteCode { CodeHash = hash });
-        _inviteCodes.Setup(r => r.TryConsumeAsync(hash, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+        _inviteCodes.Setup(r => r.TryConsumeAsync(hash, It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
                     .ReturnsAsync(1);
 
         User? created = null;
@@ -293,7 +293,7 @@ public class ExternalAuthenticationTests
         _externalLogins.Verify(r => r.AddAsync(
             It.Is<ExternalLogin>(el => el.Provider == "google" && el.ProviderSubjectId == "google-sub-123"),
             It.IsAny<CancellationToken>()), Times.Once);
-        _inviteCodes.Verify(r => r.TryConsumeAsync(hash, It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Once);
+        _inviteCodes.Verify(r => r.TryConsumeAsync(hash, It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
         _email.Verify(e => e.SendAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Never);
         _audit.Verify(a => a.LogAsync(
             AuditActions.InviteCodeRedeemed, It.IsAny<string?>(), It.IsAny<string?>(),
@@ -307,7 +307,7 @@ public class ExternalAuthenticationTests
         var hash = _inviteGenerator.Hash("K7QM-3FXP-9T");
         _inviteCodes.Setup(r => r.GetRedeemableByHashAsync(hash, It.IsAny<CancellationToken>()))
                     .ReturnsAsync(new InviteCode { CodeHash = hash });
-        _inviteCodes.Setup(r => r.TryConsumeAsync(hash, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+        _inviteCodes.Setup(r => r.TryConsumeAsync(hash, It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
                     .ReturnsAsync(0); // someone else spent it between validate and consume
 
         await Assert.ThrowsAsync<AppValidationException>(() =>
@@ -322,6 +322,82 @@ public class ExternalAuthenticationTests
     }
 
     [Fact]
+    public async Task ExternalSignup_FlagOn_MissingCode_Rejects_AndCreatesNoUser()
+    {
+        SetupSignupHappyPath();
+
+        var ex = await Assert.ThrowsAsync<AppValidationException>(() =>
+            CreateSut(requireInviteCode: true).ExternalSignupAsync(SignupDto(inviteCode: null)));
+        Assert.Equal("An invite code is required.", ex.Message);
+
+        _users.Verify(r => r.AddAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()), Times.Never);
+        _externalLogins.Verify(r => r.AddAsync(It.IsAny<ExternalLogin>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ExternalSignup_FlagOn_UnknownCode_Rejects_AndCreatesNoUser()
+    {
+        SetupSignupHappyPath();
+        _inviteCodes.Setup(r => r.GetRedeemableByHashAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync((InviteCode?)null);
+
+        var ex = await Assert.ThrowsAsync<AppValidationException>(() =>
+            CreateSut(requireInviteCode: true).ExternalSignupAsync(SignupDto("BAD-CODE")));
+        Assert.Equal("Invalid or already-used invite code.", ex.Message);
+
+        _users.Verify(r => r.AddAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()), Times.Never);
+        _inviteCodes.Verify(r => r.TryConsumeAsync(It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task ExternalSignup_FlagOn_CodeGrantsARole_NewUserGetsItOnTopOfUser()
+    {
+        SetupSignupHappyPath();
+        var hash = _inviteGenerator.Hash("K7QM-3FXP-9T");
+        _inviteCodes.Setup(r => r.GetRedeemableByHashAsync(hash, It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(new InviteCode
+                    {
+                        Id = 1,
+                        CodeHash = hash,
+                        GrantedRoleId = 1,
+                        GrantedRole = new Role { Id = 1, Name = "Admin" },
+                    });
+        _inviteCodes.Setup(r => r.TryConsumeAsync(hash, It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(1);
+
+        User? created = null;
+        _users.Setup(r => r.AddAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
+              .Callback<User, CancellationToken>((u, _) => created = u)
+              .Returns(Task.CompletedTask);
+
+        await CreateSut(requireInviteCode: true).ExternalSignupAsync(SignupDto("K7QM-3FXP-9T"));
+
+        Assert.Equal(new[] { 2, 1 }, created!.UserRoles.Select(ur => ur.RoleId).ToArray());
+    }
+
+    [Fact]
+    public async Task ExternalSignup_FlagOn_CodeBoundToAnotherEmail_Rejects()
+    {
+        SetupSignupHappyPath();
+        var hash = _inviteGenerator.Hash("K7QM-3FXP-9T");
+        // On this path the address comes from the provider, not a form field — the binding is
+        // checked after the ticket is validated, against the identity's email.
+        _inviteCodes.Setup(r => r.GetRedeemableByHashAsync(hash, It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(new InviteCode
+                    {
+                        Id = 1,
+                        CodeHash = hash,
+                        IntendedEmail = "someone.else@example.com",
+                    });
+
+        var ex = await Assert.ThrowsAsync<AppValidationException>(() =>
+            CreateSut(requireInviteCode: true).ExternalSignupAsync(SignupDto("K7QM-3FXP-9T")));
+        Assert.Equal("This invite code was issued for a different email address.", ex.Message);
+
+        _users.Verify(r => r.AddAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
     public async Task ExternalSignup_FlagOff_NeverTouchesInviteRepository()
     {
         SetupSignupHappyPath();
@@ -330,7 +406,7 @@ public class ExternalAuthenticationTests
 
         Assert.NotNull(result.Response);
         _inviteCodes.Verify(r => r.GetRedeemableByHashAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
-        _inviteCodes.Verify(r => r.TryConsumeAsync(It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+        _inviteCodes.Verify(r => r.TryConsumeAsync(It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]

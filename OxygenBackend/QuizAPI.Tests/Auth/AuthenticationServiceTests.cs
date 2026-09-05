@@ -165,7 +165,7 @@ public class AuthenticationServiceTests
         Assert.Equal("Invalid or already-used invite code.", ex.Message);
 
         _users.Verify(r => r.AddAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()), Times.Never);
-        _inviteCodes.Verify(r => r.TryConsumeAsync(It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+        _inviteCodes.Verify(r => r.TryConsumeAsync(It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -174,14 +174,14 @@ public class AuthenticationServiceTests
         SetupHappyPath();
         _inviteCodes.Setup(r => r.GetRedeemableByHashAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
                     .ReturnsAsync(new InviteCode { Id = 1, CodeHash = "hash" });
-        _inviteCodes.Setup(r => r.TryConsumeAsync(It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+        _inviteCodes.Setup(r => r.TryConsumeAsync(It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
                     .ReturnsAsync(1);
 
         var result = await CreateSut(requireInviteCode: true).SignupAsync(ValidSignup(inviteCode: "K7QM-3FXP-9T"));
 
         Assert.NotNull(result.Response);
         _users.Verify(r => r.AddAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()), Times.Once);
-        _inviteCodes.Verify(r => r.TryConsumeAsync(It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Once);
+        _inviteCodes.Verify(r => r.TryConsumeAsync(It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Once);
         _audit.Verify(a => a.LogAsync(AuditActions.InviteCodeRedeemed,
             It.IsAny<string>(), It.IsAny<string>(), It.IsAny<object>(), It.IsAny<object>(),
             It.IsAny<Guid?>(), It.IsAny<CancellationToken>()), Times.Once);
@@ -194,7 +194,7 @@ public class AuthenticationServiceTests
         _inviteCodes.Setup(r => r.GetRedeemableByHashAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
                     .ReturnsAsync(new InviteCode { Id = 1, CodeHash = "hash" });
         // The early check passed, but someone else spent the code first: 0 rows affected.
-        _inviteCodes.Setup(r => r.TryConsumeAsync(It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+        _inviteCodes.Setup(r => r.TryConsumeAsync(It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
                     .ReturnsAsync(0);
 
         var ex = await Assert.ThrowsAsync<AppValidationException>(
@@ -220,7 +220,102 @@ public class AuthenticationServiceTests
 
         Assert.NotNull(result.Response);
         _inviteCodes.Verify(r => r.GetRedeemableByHashAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
-        _inviteCodes.Verify(r => r.TryConsumeAsync(It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+        _inviteCodes.Verify(r => r.TryConsumeAsync(It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    // --- Role-granting and email-bound codes ------------------------------------------------
+    // A code may carry a role and may be bound to one address. The role is read from the entity
+    // returned by the early check; the binding is enforced both here and, authoritatively, inside
+    // the atomic consume.
+
+    [Fact]
+    public async Task Signup_WhenCodeGrantsARole_NewUserGetsThatRoleOnTopOfUser()
+    {
+        SetupHappyPath();
+        _inviteCodes.Setup(r => r.GetRedeemableByHashAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(new InviteCode
+                    {
+                        Id = 1,
+                        CodeHash = "hash",
+                        GrantedRoleId = 1,
+                        GrantedRole = new Role { Id = 1, Name = "Admin" },
+                    });
+        _inviteCodes.Setup(r => r.TryConsumeAsync(It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(1);
+
+        User? created = null;
+        _users.Setup(r => r.AddAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
+              .Callback<User, CancellationToken>((u, _) => created = u)
+              .Returns(Task.CompletedTask);
+
+        await CreateSut(requireInviteCode: true).SignupAsync(ValidSignup(inviteCode: "K7QM-3FXP-9T"));
+
+        // Additive, not replacing: the account holds User AND the granted role.
+        Assert.Equal(new[] { 2, 1 }, created!.UserRoles.Select(ur => ur.RoleId).ToArray());
+    }
+
+    [Fact]
+    public async Task Signup_WhenCodeGrantsTheDefaultRole_DoesNotDuplicateIt()
+    {
+        SetupHappyPath();
+        _inviteCodes.Setup(r => r.GetRedeemableByHashAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(new InviteCode { Id = 1, CodeHash = "hash", GrantedRoleId = 2 });
+        _inviteCodes.Setup(r => r.TryConsumeAsync(It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(1);
+
+        User? created = null;
+        _users.Setup(r => r.AddAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()))
+              .Callback<User, CancellationToken>((u, _) => created = u)
+              .Returns(Task.CompletedTask);
+
+        await CreateSut(requireInviteCode: true).SignupAsync(ValidSignup(inviteCode: "K7QM-3FXP-9T"));
+
+        // The UserRoles unique index would reject a duplicate row — never build one.
+        Assert.Equal(new[] { 2 }, created!.UserRoles.Select(ur => ur.RoleId).ToArray());
+    }
+
+    [Fact]
+    public async Task Signup_WhenCodeBoundToAnotherEmail_Rejects_AndCreatesNoUser()
+    {
+        SetupHappyPath();
+        _inviteCodes.Setup(r => r.GetRedeemableByHashAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(new InviteCode
+                    {
+                        Id = 1,
+                        CodeHash = "hash",
+                        IntendedEmail = "someone.else@example.com",
+                    });
+
+        var ex = await Assert.ThrowsAsync<AppValidationException>(
+            () => CreateSut(requireInviteCode: true).SignupAsync(ValidSignup(inviteCode: "K7QM-3FXP-9T")));
+        Assert.Equal("This invite code was issued for a different email address.", ex.Message);
+
+        _users.Verify(r => r.AddAsync(It.IsAny<User>(), It.IsAny<CancellationToken>()), Times.Never);
+        _inviteCodes.Verify(r => r.TryConsumeAsync(It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Signup_WhenCodeBoundToThisEmail_Succeeds_AndPassesTheEmailToConsume()
+    {
+        SetupHappyPath();
+        _inviteCodes.Setup(r => r.GetRedeemableByHashAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(new InviteCode
+                    {
+                        Id = 1,
+                        CodeHash = "hash",
+                        // Stored lowercased; the signup email is normalized the same way before
+                        // comparison, so casing can never decide whether a code is redeemable.
+                        IntendedEmail = "new@example.com",
+                    });
+        _inviteCodes.Setup(r => r.TryConsumeAsync(It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                    .ReturnsAsync(1);
+
+        var result = await CreateSut(requireInviteCode: true).SignupAsync(ValidSignup(inviteCode: "K7QM-3FXP-9T"));
+
+        Assert.NotNull(result.Response);
+        // The binding is re-checked in the UPDATE, so the normalized address must reach it.
+        _inviteCodes.Verify(r => r.TryConsumeAsync(
+            It.IsAny<string>(), It.IsAny<Guid>(), "new@example.com", It.IsAny<CancellationToken>()), Times.Once);
     }
 
     // --- Advisory up-front invite-code check (IsInviteCodeRedeemableAsync) -------------------
@@ -249,7 +344,7 @@ public class AuthenticationServiceTests
         var valid = await CreateSut(requireInviteCode: true).IsInviteCodeRedeemableAsync("BAD-CODE");
 
         Assert.False(valid);
-        _inviteCodes.Verify(r => r.TryConsumeAsync(It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+        _inviteCodes.Verify(r => r.TryConsumeAsync(It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -262,7 +357,7 @@ public class AuthenticationServiceTests
 
         Assert.True(valid);
         // Crucially, an advisory check must NOT spend the code.
-        _inviteCodes.Verify(r => r.TryConsumeAsync(It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+        _inviteCodes.Verify(r => r.TryConsumeAsync(It.IsAny<string>(), It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]

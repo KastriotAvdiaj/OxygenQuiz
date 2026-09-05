@@ -8,6 +8,14 @@ export type GenerateInviteCodesInput = {
   label?: string;
   // ISO string (UTC). Omit for codes that never expire.
   expiresAt?: string;
+  /**
+   * Role the redeemed account gets on top of "User". Omit (or "User") for a plain invite.
+   * API counterpart: InviteCodeService.ResolveGrantedRoleAsync — naming a privileged role
+   * requires count 1, an expiry, and an intended email, and SuperAdmin requires a SuperAdmin caller.
+   */
+  role?: string;
+  /** Bind the code to one address; only a signup with this email can redeem it. */
+  intendedEmail?: string;
 };
 
 // The ONLY time plaintext codes leave the server — save them now, they can't be re-read.

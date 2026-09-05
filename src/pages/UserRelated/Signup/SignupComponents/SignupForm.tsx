@@ -166,7 +166,13 @@ export const SignupForm: React.FC<SignupFormProps> = ({
           // bounce the user back to the field that needs fixing. A bad invite code goes
           // all the way back to the invite gate — the code was collected there.
           const lower = String(message).toLowerCase();
-          if (lower.includes("invite") || lower.includes("code"))
+          // Order matters. A code bound to one address fails with a message naming BOTH the
+          // invite and the email ("issued for a different email address"), and that one belongs
+          // on the email step — the code is fine, the address is wrong, and sending the user back
+          // to re-type a code that was never the problem is a dead end.
+          if (lower.includes("different email"))
+            setStep(2 + offset);
+          else if (lower.includes("invite") || lower.includes("code"))
             onBadInviteCode?.();
           else if (lower.includes("email")) setStep(2 + offset);
           else if (lower.includes("username")) setStep(1 + offset);

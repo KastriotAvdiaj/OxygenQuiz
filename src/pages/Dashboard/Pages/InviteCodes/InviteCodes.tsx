@@ -21,7 +21,16 @@ import {
 import { Input } from "@/components/ui/form/input";
 import { Label } from "@/components/ui/form/label";
 import { DatePicker } from "@/components/ui/date-picker";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useNotifications } from "@/common/Notifications";
+import { useUser } from "@/lib/Auth";
+import { useRoles } from "../User/api/get-roles";
 import formatDate from "@/lib/date-format";
 import { useInviteCodes, type InviteCodeStatus } from "./api/get-invite-codes";
 import { useGenerateInviteCodes } from "./api/generate-invite-codes";
@@ -41,14 +50,43 @@ const deriveStatus = (c: InviteCodeStatus): Derived => {
   return { label: "Available", tone: "text-green-600 border-green-600/30" };
 };
 
+// The default role every account gets; picking it here means "grant nothing extra".
+// Mirrors RoleRules.DefaultRole / RoleRules.SuperAdminOnlyRoles on the backend.
+const PLAIN_ROLE = "User";
+const SUPERADMIN = "SuperAdmin";
+
 export const InviteCodes = () => {
   const { addNotification } = useNotifications();
   const { data, isLoading, isError } = useInviteCodes();
+
+  const { data: currentUser } = useUser();
+  const callerIsSuperAdmin = currentUser?.roles?.includes(SUPERADMIN) ?? false;
+  const { data: roles } = useRoles();
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [count, setCount] = useState(10);
   const [label, setLabel] = useState("");
   const [expiresAt, setExpiresAt] = useState("");
+  const [role, setRole] = useState(PLAIN_ROLE);
+  const [intendedEmail, setIntendedEmail] = useState("");
+
+  // A code that grants a role is a far more valuable bearer secret than a tester invite, so the
+  // API forces it to be single, expiring and bound to one address. Deriving this during render
+  // (rather than storing it) keeps the form from ever disagreeing with the role that's selected.
+  const isElevated = role !== PLAIN_ROLE;
+
+  // Data-driven, minus SuperAdmin when the caller can't mint one — the same filter the Change
+  // Roles dialog applies. The backend refuses it regardless; this just keeps the UI honest.
+  const roleOptions = useMemo(() => {
+    const names = (roles ?? [])
+      .map((r) => r.name)
+      .filter((name): name is string => Boolean(name))
+      .filter(
+        (name) => callerIsSuperAdmin || name.toLowerCase() !== SUPERADMIN.toLowerCase()
+      );
+    // Guarantee the plain option exists even if /Roles hasn't resolved yet.
+    return names.includes(PLAIN_ROLE) ? names : [PLAIN_ROLE, ...names];
+  }, [roles, callerIsSuperAdmin]);
   // Plaintext codes from the last generation — shown once, then dismissed.
   const [freshCodes, setFreshCodes] = useState<string[] | null>(null);
   const [copied, setCopied] = useState(false);
@@ -94,7 +132,11 @@ export const InviteCodes = () => {
   }, [rows]);
 
   const submitGenerate = () => {
-    if (count < 1 || count > 200) {
+    // Client-side mirrors of the API rules in InviteCodeService.ValidateRails — fast feedback,
+    // never the rule itself.
+    const effectiveCount = isElevated ? 1 : count;
+
+    if (effectiveCount < 1 || effectiveCount > 200) {
       addNotification({
         type: "error",
         title: "Invalid count",
@@ -102,10 +144,31 @@ export const InviteCodes = () => {
       });
       return;
     }
+
+    if (isElevated && !expiresAt) {
+      addNotification({
+        type: "error",
+        title: "Expiry required",
+        message: `A code granting ${role} must expire. Pick a date.`,
+      });
+      return;
+    }
+
+    if (isElevated && !intendedEmail.trim()) {
+      addNotification({
+        type: "error",
+        title: "Email required",
+        message: `A code granting ${role} must be issued to a specific email address.`,
+      });
+      return;
+    }
+
     generate.mutate({
-      count,
+      count: effectiveCount,
       label: label.trim() || undefined,
       expiresAt: expiresAt ? new Date(expiresAt).toISOString() : undefined,
+      role: isElevated ? role : undefined,
+      intendedEmail: intendedEmail.trim() || undefined,
     });
   };
 
@@ -123,6 +186,8 @@ export const InviteCodes = () => {
     setLabel("");
     setExpiresAt("");
     setCount(10);
+    setRole(PLAIN_ROLE);
+    setIntendedEmail("");
   };
 
   return (
@@ -185,7 +250,9 @@ export const InviteCodes = () => {
             <TableHeader>
               <TableRow>
                 <TableHead>Status</TableHead>
+                <TableHead>Grants</TableHead>
                 <TableHead>Label</TableHead>
+                <TableHead>Issued to</TableHead>
                 <TableHead>Created</TableHead>
                 <TableHead>Expires</TableHead>
                 <TableHead>Used by</TableHead>
@@ -204,8 +271,25 @@ export const InviteCodes = () => {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-sm">
+                      {c.grantedRole ? (
+                        <Badge
+                          variant="outline"
+                          className="text-purple-600 border-purple-600/30"
+                        >
+                          {c.grantedRole}
+                        </Badge>
+                      ) : (
+                        <span className="text-muted-foreground">User</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-sm">
                       {c.label || (
                         <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {c.intendedEmail || (
+                        <span className="text-muted-foreground">Anyone</span>
                       )}
                     </TableCell>
                     <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
@@ -295,16 +379,61 @@ export const InviteCodes = () => {
           ) : (
             <div className="space-y-4">
               <div className="space-y-1.5">
-                <Label htmlFor="count">How many</Label>
+                <Label htmlFor="role">Grants role</Label>
+                <Select value={role} onValueChange={setRole}>
+                  <SelectTrigger id="role" variant="minimal">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {roleOptions.map((name) => (
+                      <SelectItem key={name} value={name}>
+                        {name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  {isElevated
+                    ? `Whoever redeems this code becomes a ${role}. One code, expiring, for one named address.`
+                    : "A normal account. Hand these out freely."}
+                </p>
+              </div>
+
+              {!isElevated && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="count">How many</Label>
+                  <Input
+                    id="count"
+                    type="number"
+                    variant="minimal"
+                    min={1}
+                    max={200}
+                    value={count}
+                    onChange={(e) => setCount(Number(e.target.value))}
+                  />
+                </div>
+              )}
+
+              <div className="space-y-1.5">
+                <Label
+                  htmlFor="intendedEmail"
+                  className={isElevated ? "" : "text-muted-foreground"}
+                >
+                  {isElevated ? "Issued to" : "Issued to (optional)"}
+                </Label>
                 <Input
-                  id="count"
-                  type="number"
+                  id="intendedEmail"
+                  type="email"
                   variant="minimal"
-                  min={1}
-                  max={200}
-                  value={count}
-                  onChange={(e) => setCount(Number(e.target.value))}
+                  placeholder="person@example.com"
+                  value={intendedEmail}
+                  onChange={(e) => setIntendedEmail(e.target.value)}
                 />
+                <p className="text-xs text-muted-foreground">
+                  {isElevated
+                    ? "Required. Only a signup using this address can redeem the code, so a leaked code is useless."
+                    : "Bind the code to one address. Leave blank for a code anyone may redeem."}
+                </p>
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="label" className="text-muted-foreground">
@@ -319,8 +448,11 @@ export const InviteCodes = () => {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="expiresAt" className="text-muted-foreground">
-                  Expires (optional)
+                <Label
+                  htmlFor="expiresAt"
+                  className={isElevated ? "" : "text-muted-foreground"}
+                >
+                  {isElevated ? "Expires" : "Expires (optional)"}
                 </Label>
                 {/* minDate=today: an invite code that expired before it was issued is
                     nonsense. The calendar portals out of the dialog by default — see
@@ -333,7 +465,9 @@ export const InviteCodes = () => {
                   minDate={new Date()}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Leave blank for codes that never expire.
+                  {isElevated
+                    ? "Required for a role-granting code — it must stop working on its own."
+                    : "Leave blank for codes that never expire."}
                 </p>
               </div>
             </div>

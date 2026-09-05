@@ -5,15 +5,32 @@ namespace QuizAPI.DTOs.Invitations
     /// <summary>Request to mint a batch of invite codes.</summary>
     public class GenerateInviteCodesDTO
     {
-        // Capped so a typo (or abuse) can't mint an unbounded batch.
+        // Capped so a typo (or abuse) can't mint an unbounded batch. Role-granting codes are capped
+        // harder still — to exactly 1 — by InviteCodeService.
         [Range(1, 200)]
         public int Count { get; set; } = 1;
 
         [MaxLength(256)]
         public string? Label { get; set; }
 
-        /// <summary>Optional expiry (UTC). Null = codes never expire.</summary>
+        /// <summary>Optional expiry (UTC). Null = codes never expire — but a role-granting code
+        /// must set one.</summary>
         public DateTime? ExpiresAt { get; set; }
+
+        /// <summary>
+        /// Role the redeemed account gets on top of "User". Null or "User" = a plain invite.
+        /// Naming a privileged role turns on the elevated-code rails (see InviteCodeService).
+        /// </summary>
+        [MaxLength(64)]
+        public string? Role { get; set; }
+
+        /// <summary>
+        /// Bind the code to one address: only a signup with this email can redeem it. Required when
+        /// <see cref="Role"/> names anything above "User".
+        /// </summary>
+        [MaxLength(256)]
+        [EmailAddress]
+        public string? IntendedEmail { get; set; }
     }
 
     /// <summary>
@@ -37,6 +54,12 @@ namespace QuizAPI.DTOs.Invitations
         public Guid? ConsumedByUserId { get; set; }
         public string? ConsumedByUsername { get; set; }
         public DateTime? RevokedAt { get; set; }
+
+        /// <summary>Role this code grants on redemption. Null = plain invite ("User" only).</summary>
+        public string? GrantedRole { get; set; }
+
+        /// <summary>Address the code is bound to, if any.</summary>
+        public string? IntendedEmail { get; set; }
 
         /// <summary>Convenience flag for the UI: still usable right now.</summary>
         public bool IsRedeemable { get; set; }

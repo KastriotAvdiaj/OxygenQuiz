@@ -224,6 +224,19 @@ namespace QuizAPI.Data
                 .HasForeignKey(c => c.ConsumedByUserId)
                 .OnDelete(DeleteBehavior.SetNull);
 
+            // The role a code grants on redemption. Restrict, not SetNull: silently downgrading a
+            // pending Admin invite to a plain one because someone deleted the role would be a
+            // surprise in the wrong direction. Revoke the outstanding codes first.
+            modelBuilder.Entity<InviteCode>()
+                .HasOne(c => c.GrantedRole)
+                .WithMany()
+                .HasForeignKey(c => c.GrantedRoleId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Redemption filters on this alongside the hash, and an admin looks up "who did I invite".
+            modelBuilder.Entity<InviteCode>()
+                .HasIndex(c => c.IntendedEmail);
+
             // External identity links (Google/Microsoft): looked up by the provider's stable
             // subject id, so that pair is the unique key. Cascade on user delete — a link is
             // meaningless without its user. One user may link several providers (UserId index).

@@ -2,7 +2,7 @@ import { queryOptions, useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/Api-client";
 import { QueryConfig } from "@/lib/React-query";
 
-// Mirrors the backend InviteCodeStatusDTO (Controllers/Admin/InviteCodesController.List).
+// Mirrors the backend InviteCodeStatusDTO (Services/Invitations/InviteCodeService.ListAsync).
 // Never includes plaintext — the raw code is only returned once, at generation.
 export type InviteCodeStatus = {
   id: number;
@@ -13,6 +13,10 @@ export type InviteCodeStatus = {
   consumedByUserId: string | null;
   consumedByUsername: string | null;
   revokedAt: string | null;
+  /** Role granted on redemption, on top of "User". Null = a plain invite. */
+  grantedRole: string | null;
+  /** Address the code is bound to, if any. Null = anyone holding it may redeem. */
+  intendedEmail: string | null;
   isRedeemable: boolean;
 };
 

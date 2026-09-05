@@ -1,4 +1,4 @@
-using QuizAPI.Data;
+﻿using QuizAPI.Data;
 using QuizAPI.DTOs.Authentication;
 using QuizAPI.Exceptions;
 using QuizAPI.ManyToManyTables;
@@ -6,6 +6,7 @@ using QuizAPI.Mapping;
 using QuizAPI.Models;
 using QuizAPI.Repositories.Interfaces;
 using QuizAPI.Services.Audit;
+using QuizAPI.Services.Roles;
 using QuizAPI.Services.Email;
 using QuizAPI.Services.Invitations;
 using QuizAPI.Services.Password;
@@ -33,7 +34,7 @@ public class AuthenticationService(
     ApplicationDbContext dbContext,
     IConfiguration configuration) : IAuthenticationService
 {
-    private const string DefaultRoleName = "User";
+    private const string DefaultRoleName = RoleRules.DefaultRole;
 
     private readonly IUserRepository _userRepository = userRepository;
     private readonly IRoleRepository _roleRepository = roleRepository;
@@ -61,16 +62,23 @@ public class AuthenticationService(
         // *consumed* after the user row is created (below), in the same transaction, so a failed
         // signup never burns a code.
         var requireInviteCode = _configuration.GetValue<bool>("Signup:RequireInviteCode");
+        var normalizedEmail = dto.Email.Trim().ToLowerInvariant();
         string? inviteCodeHash = null;
+        InviteCode? redeemedCode = null;
         if (requireInviteCode)
         {
             if (string.IsNullOrWhiteSpace(dto.InviteCode))
                 throw new AppValidationException("An invite code is required.");
 
             inviteCodeHash = _inviteCodeGenerator.Hash(dto.InviteCode);
-            var redeemable = await _inviteCodeRepository.GetRedeemableByHashAsync(inviteCodeHash, ct);
-            if (redeemable is null)
-                throw new AppValidationException("Invalid or already-used invite code.");
+            redeemedCode = await _inviteCodeRepository.GetRedeemableByHashAsync(inviteCodeHash, ct)
+                ?? throw new AppValidationException("Invalid or already-used invite code.");
+
+            // A code issued to one address may only be spent by that address. Said plainly rather
+            // than folded into "invalid code": the holder is the intended recipient using the wrong
+            // email, and telling them so is the difference between a fixable mistake and a dead end.
+            // The binding is re-checked inside the atomic consume below, which is the authority.
+            EnsureInviteCodeEmailMatches(redeemedCode, normalizedEmail);
         }
 
         // Breached-password screening. After the invite gate and before the uniqueness queries
@@ -100,10 +108,7 @@ public class AuthenticationService(
             LastLogin = DateTime.UtcNow,
             IsDeleted = false,
             ProfileImageUrl = string.Empty,
-            UserRoles = new List<UserRole>
-            {
-                new() { RoleId = defaultRole.Id, AssignedAt = DateTime.UtcNow }
-            }
+            UserRoles = BuildRolesForNewUser(defaultRole, redeemedCode)
         };
 
         // Wrap user creation + invite-code consumption in one transaction. If we lose the race for
@@ -117,7 +122,8 @@ public class AuthenticationService(
 
         if (requireInviteCode)
         {
-            var rows = await _inviteCodeRepository.TryConsumeAsync(inviteCodeHash!, user.Id, ct);
+            var rows = await _inviteCodeRepository.TryConsumeAsync(
+                inviteCodeHash!, user.Id, normalizedEmail, ct);
             if (rows != 1)
             {
                 await transaction.RollbackAsync(ct);
@@ -147,9 +153,7 @@ public class AuthenticationService(
             AuditActions.UserSignedUp, entity: "User", entityId: user.Id.ToString(), userId: user.Id, ct: ct);
 
         if (requireInviteCode)
-            await _auditService.LogAsync(
-                AuditActions.InviteCodeRedeemed, entity: "InviteCode", entityId: inviteCodeHash,
-                userId: user.Id, ct: ct);
+            await LogInviteCodeRedeemedAsync(redeemedCode!, user.Id, ct);
 
         // Reload with the full role/permission graph: the in-memory entity above
         // only carries RoleIds, so user.ToDto() (which walks Role + RolePermissions)
@@ -161,6 +165,52 @@ public class AuthenticationService(
         return await BuildAuthResultAsync(created, roleNames, ct);
     }
 
+    /// <summary>
+    /// Role set for a newly created account: always the default "User" role, plus whatever role the
+    /// redeemed invite code granted. Additive on purpose — an account missing "User" would surprise
+    /// every path that assumes every account holds it, and an Admin who is also a User is exactly
+    /// what the admin Users table produces today.
+    ///
+    /// AssignedByUserId stays null: nobody granted this interactively. The InviteCodeRedeemed audit
+    /// records which code did, and that code's own generation audit records which admin minted it.
+    /// </summary>
+    private static List<UserRole> BuildRolesForNewUser(Role defaultRole, InviteCode? redeemedCode)
+    {
+        var roles = new List<UserRole>
+        {
+            new() { RoleId = defaultRole.Id, AssignedAt = DateTime.UtcNow }
+        };
+
+        if (redeemedCode?.GrantedRoleId is { } grantedRoleId && grantedRoleId != defaultRole.Id)
+            roles.Add(new UserRole { RoleId = grantedRoleId, AssignedAt = DateTime.UtcNow });
+
+        return roles;
+    }
+
+    /// <summary>
+    /// Rejects a signup whose email doesn't match the address a bound code was issued to. An
+    /// unbound code (IntendedEmail null) matches anyone.
+    /// </summary>
+    private static void EnsureInviteCodeEmailMatches(InviteCode code, string normalizedEmail)
+    {
+        if (code.IntendedEmail is not null &&
+            !string.Equals(code.IntendedEmail, normalizedEmail, StringComparison.OrdinalIgnoreCase))
+            throw new AppValidationException(
+                "This invite code was issued for a different email address.");
+    }
+
+    /// <summary>
+    /// Audits a redemption against the code's <c>Id</c> — not its hash, which is what this used to
+    /// record and which no other invite audit uses, so a redemption couldn't be joined to the row
+    /// it spent. The granted role rides along because an elevated grant that arrived this way never
+    /// passes through UserRolesChanged, and would otherwise appear nowhere in the audit trail.
+    /// </summary>
+    private Task LogInviteCodeRedeemedAsync(InviteCode code, Guid userId, CancellationToken ct) =>
+        _auditService.LogAsync(
+            AuditActions.InviteCodeRedeemed, entity: "InviteCode", entityId: code.Id.ToString(),
+            newValue: new { grantedRole = code.GrantedRole?.Name },
+            userId: userId, ct: ct);
+
     public async Task<bool> IsInviteCodeRedeemableAsync(string? code, CancellationToken ct = default)
     {
         // Blank never matches — short-circuit before hashing.
@@ -169,6 +219,11 @@ public class AuthenticationService(
 
         // Same Normalize+Hash path as generation and redemption, so a code that reads as valid
         // here is looked up exactly as it will be at submit.
+        //
+        // Deliberately blind to the email binding: this runs on the invite gate, the first screen,
+        // before any address has been typed. A code bound to someone else's email therefore reads as
+        // valid here and is rejected at submit with a message that says so. Taking an email here to
+        // close that gap would turn a boolean into an "is X invited?" oracle, which is worse.
         var hash = _inviteCodeGenerator.Hash(code);
         var redeemable = await _inviteCodeRepository.GetRedeemableByHashAsync(hash, ct);
         return redeemable is not null;
@@ -287,15 +342,18 @@ public class AuthenticationService(
         // atomically inside the transaction below).
         var requireInviteCode = _configuration.GetValue<bool>("Signup:RequireInviteCode");
         string? inviteCodeHash = null;
+        InviteCode? redeemedCode = null;
         if (requireInviteCode)
         {
             if (string.IsNullOrWhiteSpace(dto.InviteCode))
                 throw new AppValidationException("An invite code is required.");
 
             inviteCodeHash = _inviteCodeGenerator.Hash(dto.InviteCode);
-            var redeemable = await _inviteCodeRepository.GetRedeemableByHashAsync(inviteCodeHash, ct);
-            if (redeemable is null)
-                throw new AppValidationException("Invalid or already-used invite code.");
+            redeemedCode = await _inviteCodeRepository.GetRedeemableByHashAsync(inviteCodeHash, ct)
+                ?? throw new AppValidationException("Invalid or already-used invite code.");
+
+            // The email-binding check waits until the identity is validated below: on this path the
+            // address comes from the provider, not the form, so there is nothing to compare yet.
         }
 
         // Races since the ticket was minted (10-minute window): the identity may have been
@@ -308,6 +366,12 @@ public class AuthenticationService(
         if (identity.Email is null)
             throw new AppValidationException(
                 "Your provider account did not share an email address. Please sign up with the form instead.");
+
+        var normalizedEmail = identity.Email.Trim().ToLowerInvariant();
+
+        // Now that the provider-supplied address is known, apply the code's email binding.
+        if (redeemedCode is not null)
+            EnsureInviteCodeEmailMatches(redeemedCode, normalizedEmail);
 
         if (await _userRepository.EmailExistsAsync(identity.Email, ct))
             throw new ConflictException("Email is already in use.");
@@ -333,10 +397,7 @@ public class AuthenticationService(
             LastLogin = DateTime.UtcNow,
             IsDeleted = false,
             ProfileImageUrl = string.Empty,
-            UserRoles = new List<UserRole>
-            {
-                new() { RoleId = defaultRole.Id, AssignedAt = DateTime.UtcNow }
-            }
+            UserRoles = BuildRolesForNewUser(defaultRole, redeemedCode)
         };
 
         // Same transactional shape as SignupAsync: user + identity link + consumed invite code
@@ -356,7 +417,8 @@ public class AuthenticationService(
 
         if (requireInviteCode)
         {
-            var rows = await _inviteCodeRepository.TryConsumeAsync(inviteCodeHash!, user.Id, ct);
+            var rows = await _inviteCodeRepository.TryConsumeAsync(
+                inviteCodeHash!, user.Id, normalizedEmail, ct);
             if (rows != 1)
             {
                 await transaction.RollbackAsync(ct);
@@ -385,9 +447,7 @@ public class AuthenticationService(
             newValue: new { identity.Provider }, userId: user.Id, ct: ct);
 
         if (requireInviteCode)
-            await _auditService.LogAsync(
-                AuditActions.InviteCodeRedeemed, entity: "InviteCode", entityId: inviteCodeHash,
-                userId: user.Id, ct: ct);
+            await LogInviteCodeRedeemedAsync(redeemedCode!, user.Id, ct);
 
         // Reload with the full role/permission graph — same rationale as SignupAsync.
         var created = await _userRepository.GetByIdAsync(user.Id, tracked: false, ct)

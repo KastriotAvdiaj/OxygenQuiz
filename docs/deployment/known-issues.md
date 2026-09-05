@@ -216,6 +216,29 @@ timeLimit` points, i.e. ~33 pts on a 30s question but ~100 pts (10% of base) on 
 
 ## Code quality / cleanup
 
+- **P3 — `GET /api/Authentication/signup-config` is dead.** It was superseded by
+  `auth-config`, which returns the invite flag alongside the social-login config and
+  the password floor. The old endpoint is still routed and commented "kept for
+  compatibility", but nothing in `src/` calls it and the client module that did
+  (`Signup/api/signup-config.ts`) was deleted. Remove it, or say in the comment what
+  compatibility it is for.
+  → `OxygenBackend/QuizAPI/Controllers/Authentication/Authentication.cs`,
+  [`invite-code-system.md`](../auth/invite-code-system.md)
+
+- **P3 — `GET /api/admin/invite-codes` returns every row, unpaginated and unfiltered.**
+  Every other list in the app goes through the `PagedResponse`/`FilterQuery` framework
+  (see [`filtering.md`](../quiz/filtering.md)); this one materialises the whole table and
+  maps it in memory. Fine at 25 codes, not at several hundred — and the admin page has no
+  way to filter to "available" or to one label. Worth converting the day a batch gets big.
+  → `OxygenBackend/QuizAPI/Services/Invitations/InviteCodeService.cs`,
+  `src/pages/Dashboard/Pages/InviteCodes/InviteCodes.tsx`
+
+- **P3 — `IUserService` is registered twice in `Program.cs`.** Two identical
+  `AddScoped<IUserService, UserService>()` lines. Harmless — the last registration wins and
+  it is the same pair — but it reads as an accident and invites someone to "fix" one of them
+  into something different.
+  → `OxygenBackend/QuizAPI/Program.cs`
+
 - **P3 — Multiplayer & singleplayer gameplay UIs diverged (being unified).**
   The live multiplayer match screen (`MultiplayerGame.tsx`) was built with its
   own bespoke question/answer markup (`QuestionPanel` + `AnswerInput`), visually
