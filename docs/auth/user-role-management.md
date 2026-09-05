@@ -86,6 +86,14 @@ In the admin **Users** table (`src/pages/Dashboard/Pages/User/`):
   DTO's `MinLength(1)`). Server-side rules are the real enforcement; this just keeps the UI honest.
   Success/failure surface as toasts, and the failure message prefers the server's `ProblemDetails`
   text (so the 403/400 reasons show through).
+
+  The role list is a portalled popover. It briefly rendered in place instead, via a `withinDialog`
+  prop on `MultiSelect`, to dodge the `pointer-events: none` lock Radix puts on the body while a
+  modal dialog is open — but that trapped the list inside `DialogContent`, which is height-capped
+  and `overflow-y-auto`, so the options were clipped and the dialog grew a scrollbar. It now uses
+  the pairing `popover.tsx` documents and `date-picker.tsx` demonstrates: stay portalled, and set
+  `pointer-events-auto` on that layer alone. `withinDialog` is gone rather than deprecated, so the
+  old approach can't be reached for again.
 - **`api/get-roles.ts`** — `useRoles()`, a cached `GET /Roles` query feeding the picker.
 - **`api/update-user-roles.ts`** — `useUpdateUserRoles`, a `PUT /Users/{id}/roles` mutation that
   invalidates the `["users"]` query (prefix-invalidating the paginated search) so the table's Roles

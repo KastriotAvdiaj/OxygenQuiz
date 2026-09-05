@@ -26,12 +26,6 @@ interface MultiSelectProps<TValue extends MultiSelectValue> {
   /** Show a filter box at the top of the list — useful for long lists (e.g. users). */
   searchable?: boolean;
   className?: string;
-  /**
-   * Set when this MultiSelect is used inside a modal Dialog. The options list is
-   * then rendered in-place instead of portalled to <body>, so the dialog's
-   * `pointer-events: none` lock doesn't swallow clicks on the options.
-   */
-  withinDialog?: boolean;
 }
 
 // Trigger styled to match the "form" Select variant (see components/ui/select.tsx) so it sits
@@ -50,7 +44,6 @@ export function MultiSelect<TValue extends MultiSelectValue = number>({
   onChange,
   searchable = false,
   className,
-  withinDialog = false,
 }: MultiSelectProps<TValue>) {
   const [query, setQuery] = React.useState("");
 
@@ -99,10 +92,21 @@ export function MultiSelect<TValue extends MultiSelectValue = number>({
           <ChevronsUpDown className="h-4 w-4 shrink-0 text-foreground/60" />
         </PopoverTrigger>
 
+        {/* Always portalled, with `pointer-events-auto` — the same pairing date-picker.tsx uses,
+            and for the same reason. Radix locks the body with `pointer-events: none` while a modal
+            Dialog is open, and a portalled popover is a child of that body, so without this every
+            click on an option is swallowed. Re-enabling it on this layer alone keeps the list
+            clickable and leaves the rest of the lock intact.
+
+            This used to render in place inside a dialog instead. That dodged the lock, but a list
+            is exactly the tall content DialogContent clips: it is height-capped and
+            `overflow-y-auto`, so the options were cut off and the dialog grew a scrollbar rather
+            than the list floating over it. `collisionPadding` flips it above the trigger near the
+            bottom of the screen. */}
         <PopoverContent
           align="start"
-          portalled={!withinDialog}
-          className="w-[var(--radix-popover-trigger-width)] min-w-[12rem] p-1 dark:border-foreground/30">
+          collisionPadding={12}
+          className="pointer-events-auto w-[var(--radix-popover-trigger-width)] min-w-[12rem] p-1 dark:border-foreground/30">
           {searchable && (
             <div className="relative mb-1">
               <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
