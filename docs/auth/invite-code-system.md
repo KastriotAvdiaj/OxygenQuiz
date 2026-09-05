@@ -368,9 +368,16 @@ UI over the admin endpoints in §8, so minting no longer requires Swagger/curl:
   The role select is data-driven from `GET /Roles` via `useRoles()`, minus `SuperAdmin` when the
   caller isn't one — the same filter `change-user-role.tsx` applies, for the same reason (the UI
   shouldn't offer a grant the backend will refuse). Choosing anything above `User` is derived
-  during render into `isElevated`, which hides the count field (elevated codes are always 1) and
-  makes the expiry and email fields required, with the copy explaining why. All of it mirrors
-  `InviteCodeService.ValidateRails`; none of it *is* the rule.
+  during render into `isElevated`, which makes the expiry and email fields required, with the copy
+  explaining why. All of it mirrors `InviteCodeService.ValidateRails`; none of it *is* the rule.
+
+  A second derived flag, `isSingleCode`, hides the count field — for an elevated code, and also
+  whenever an address is typed into **Issued to**, whatever the role. The dialog used to accept
+  "10" and an address together and only reject the pair on Generate, which reads as the form
+  changing its mind; the count now disappears the moment an address is entered, because only the
+  first of ten codes bound to one address could ever be redeemed. The count field sits *below*
+  the email input so it vanishes from under the caret rather than shifting the field being typed
+  in upwards.
 - **Track** — a status table (from `GET /api/admin/invite-codes`) shows each code's derived status
   (**Available / Used / Revoked / Expired**), what it **grants**, label, who it was **issued to**,
   created/expiry dates, and — for used codes — who redeemed it and when. Summary cards total the

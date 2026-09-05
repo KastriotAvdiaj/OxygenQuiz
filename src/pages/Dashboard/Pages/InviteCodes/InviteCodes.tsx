@@ -75,6 +75,11 @@ export const InviteCodes = () => {
   // (rather than storing it) keeps the form from ever disagreeing with the role that's selected.
   const isElevated = role !== PLAIN_ROLE;
 
+  // Binding an address also forces a batch of one, for a plainer reason: only the first of ten
+  // codes bound to one email could ever be redeemed, so the other nine would be born dead. The
+  // API rejects the combination; the count field disappears here so it can't be asked for.
+  const isSingleCode = isElevated || intendedEmail.trim() !== "";
+
   // Data-driven, minus SuperAdmin when the caller can't mint one — the same filter the Change
   // Roles dialog applies. The backend refuses it regardless; this just keeps the UI honest.
   const roleOptions = useMemo(() => {
@@ -82,7 +87,8 @@ export const InviteCodes = () => {
       .map((r) => r.name)
       .filter((name): name is string => Boolean(name))
       .filter(
-        (name) => callerIsSuperAdmin || name.toLowerCase() !== SUPERADMIN.toLowerCase()
+        (name) =>
+          callerIsSuperAdmin || name.toLowerCase() !== SUPERADMIN.toLowerCase(),
       );
     // Guarantee the plain option exists even if /Roles hasn't resolved yet.
     return names.includes(PLAIN_ROLE) ? names : [PLAIN_ROLE, ...names];
@@ -134,7 +140,7 @@ export const InviteCodes = () => {
   const submitGenerate = () => {
     // Client-side mirrors of the API rules in InviteCodeService.ValidateRails — fast feedback,
     // never the rule itself.
-    const effectiveCount = isElevated ? 1 : count;
+    const effectiveCount = isSingleCode ? 1 : count;
 
     if (effectiveCount < 1 || effectiveCount > 200) {
       addNotification({
@@ -371,7 +377,7 @@ export const InviteCodes = () => {
                   </div>
                 ))}
               </div>
-              <p className="text-xs text-amber-600">
+              <p className="text-xs text-primary">
                 Save these now. Once you close this dialog they're gone — only
                 usage status is visible afterwards.
               </p>
@@ -399,21 +405,6 @@ export const InviteCodes = () => {
                 </p>
               </div>
 
-              {!isElevated && (
-                <div className="space-y-1.5">
-                  <Label htmlFor="count">How many</Label>
-                  <Input
-                    id="count"
-                    type="number"
-                    variant="minimal"
-                    min={1}
-                    max={200}
-                    value={count}
-                    onChange={(e) => setCount(Number(e.target.value))}
-                  />
-                </div>
-              )}
-
               <div className="space-y-1.5">
                 <Label
                   htmlFor="intendedEmail"
@@ -432,9 +423,26 @@ export const InviteCodes = () => {
                 <p className="text-xs text-muted-foreground">
                   {isElevated
                     ? "Required. Only a signup using this address can redeem the code, so a leaked code is useless."
-                    : "Bind the code to one address. Leave blank for a code anyone may redeem."}
+                    : intendedEmail.trim()
+                      ? "One code, for this address only. Clear this field to generate a batch anyone can redeem."
+                      : "Bind the code to one address. Leave blank for a code anyone may redeem."}
                 </p>
               </div>
+
+              {!isSingleCode && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="count">How many</Label>
+                  <Input
+                    id="count"
+                    type="number"
+                    variant="minimal"
+                    min={1}
+                    max={200}
+                    value={count}
+                    onChange={(e) => setCount(Number(e.target.value))}
+                  />
+                </div>
+              )}
               <div className="space-y-1.5">
                 <Label htmlFor="label" className="text-muted-foreground">
                   Label (optional)
@@ -481,12 +489,9 @@ export const InviteCodes = () => {
                 <Button variant="outline" onClick={closeDialog}>
                   Cancel
                 </Button>
-                <LiftedButton
-                  onClick={submitGenerate}
-                  disabled={generate.isPending}
-                >
+                <Button onClick={submitGenerate} disabled={generate.isPending}>
                   {generate.isPending ? "Generating…" : "Generate"}
-                </LiftedButton>
+                </Button>
               </>
             )}
           </DialogFooter>
