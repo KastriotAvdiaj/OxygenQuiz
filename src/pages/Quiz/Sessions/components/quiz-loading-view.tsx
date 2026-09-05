@@ -17,12 +17,12 @@ export interface QuizLoadingViewProps {
 
 /**
  * THE loading screen of the quiz flow — one component, every waiting moment:
- * QuizPage and GuestQuizPage while the session is created, and QuizInterface for the gap
- * between two questions. They used to be three near-identical cards with three slightly
- * different strings, which is how "Preparing your quiz…" and "Preparing your question…"
- * ended up impossible to tell apart in a bug report. It sits above quiz-taking-process/
- * rather than inside it because nothing about it is specific to taking a quiz.
- * Change the loading look here.
+ * QuizPage and GuestQuizPage while the session is created, QuizInterface for the gap
+ * between two questions, and both results wrappers while the finished session loads.
+ * They used to be four near-identical cards with four slightly different strings, which is
+ * how "Preparing your quiz…" and "Preparing your question…" ended up impossible to tell
+ * apart in a bug report. It lives here, above quiz-taking-process/ and quiz-results/,
+ * because it belongs to both. Change the loading look here.
  *
  * No card: the board IS the visual. Wrapping it in `quiz-card-elevated` boxed a mechanical
  * object inside a soft panel and fought the tiles' own relief.

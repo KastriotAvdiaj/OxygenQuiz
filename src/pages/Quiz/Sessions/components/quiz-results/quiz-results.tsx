@@ -55,10 +55,17 @@ export function QuizResults({
   };
 
   return (
-    // flex-1: fill the layout's viewport column so short result pages don't
-    // leave a dead strip below (docs/RESPONSIVE.md).
-    <div className="flex-1 w-full bg-background">
-      <div className="container mx-auto px-3 py-4 sm:px-4 sm:py-6 max-w-4xl">
+    // flex + flex-1: fill the layout's viewport column so short result pages don't leave a
+    // dead strip below (docs/RESPONSIVE.md), and make the inner container a flex item so
+    // `m-auto` can centre it.
+    <div className="flex flex-1 w-full bg-background">
+      {/* m-auto, not mx-auto: on a flex item auto margins eat the free space on BOTH axes,
+          so the Overview tab sits in the middle of the screen instead of hard against the
+          header. When the content is taller than the column — Question Review with a dozen
+          questions — the free space is negative, the auto margins resolve to 0, and it
+          starts at the top and scrolls normally. `justify-center`/`items-center` would clip
+          the top of that case instead. */}
+      <div className="container m-auto w-full px-3 py-4 sm:px-4 sm:py-6 max-w-4xl">
         {/* Header */}
         <div className="mb-4 sm:mb-5 text-center">
           <h1 className="inline-block text-2xl sm:text-3xl font-black tracking-tight text-primary">

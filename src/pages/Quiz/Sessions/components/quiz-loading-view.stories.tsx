@@ -6,10 +6,11 @@ import { QuizLoadingView } from "./quiz-loading-view";
  * The one loading screen of the quiz flow — a split-flap board, no card.
  *
  * Every waiting moment in the quiz flow renders this exact component: QuizPage and
- * GuestQuizPage while the session is created, and QuizInterface for the gap between two
- * questions. That is the point of it existing: there used to be look-alike cards with
- * slightly different strings, and one of them was not even reachable, which made "which
- * loader am I looking at?" genuinely hard to answer from a screenshot.
+ * GuestQuizPage while the session is created, QuizInterface for the gap between two
+ * questions, and both results wrappers while the finished session loads. That is the point
+ * of it existing: there used to be look-alike cards with slightly different strings, and
+ * one of them was not even reachable, which made "which loader am I looking at?" genuinely
+ * hard to answer from a screenshot.
  *
  * WHAT TO WATCH FOR HERE: the board only animates when the phrase CHANGES, so `words`
  * needs two or more entries — a one-word board renders and then sits dead. Give it a few
@@ -42,6 +43,14 @@ export const LoadingQuiz: Story = {
   args: {
     words: ["LOADING", "YOUR QUIZ"],
     label: "Loading your quiz",
+  },
+};
+
+/** The results page, while the finished session loads. */
+export const LoadingResults: Story = {
+  args: {
+    words: ["LOADING", "RESULTS"],
+    label: "Loading your results",
   },
 };
 

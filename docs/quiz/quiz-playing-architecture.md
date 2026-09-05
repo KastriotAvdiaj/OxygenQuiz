@@ -38,7 +38,7 @@ All paths are under `src/pages/Quiz/Sessions/`.
 | ---- | ---- |
 | `components/.../quiz-page-route-wrapper.tsx` | Entry point. Decides logged-in (`QuizPage`) vs guest (`GuestQuizPage`) and handles the one-free-guest-quiz gate. See `docs/auth/guest-play.md`. |
 | `components/.../quiz-page.tsx` | **The controller.** Wires `useQuizSession` + `useSubmitAnswer`, owns `handleSubmitAnswer` / `handleNextQuestion`, and picks between the loading / error / active-session screens and `QuizInterface`. The only component that submits to the backend. Keeps `ErrorScreen` inline; the other two full-screen states live in their own files below. |
-| `components/quiz-loading-view.tsx` | **THE loading screen** — a `SplitFlapText` board, no card. Sits one level above `quiz-taking-process/` because it is not specific to it: `QuizPage` / `GuestQuizPage` render it while the session is created ("LOADING / YOUR QUIZ"), `QuizInterface` for the gap between two questions ("LOADING / QUESTION"). Change the loading look here and every waiting moment in the quiz follows. Storied in `quiz-loading-view.stories.tsx`. |
+| `components/quiz-loading-view.tsx` | **THE loading screen** — a `SplitFlapText` board, no card. Sits one level above `quiz-taking-process/` and `quiz-results/` because both use it: `QuizPage` / `GuestQuizPage` while the session is created ("LOADING / YOUR QUIZ"), `QuizInterface` for the gap between two questions ("LOADING / QUESTION"), and both results wrappers ("LOADING / RESULTS"). Change the loading look here and every waiting moment follows. Storied in `quiz-loading-view.stories.tsx`. |
 | `components/.../active-session-view.tsx` | The **"Session In Progress"** fork — Resume / Start Fresh / Back, shown when the player already has an unfinished session for this quiz. Presentational; `isLoading` disables both actions while either request is in flight. Storied in `active-session-view.stories.tsx`. |
 | `../../hooks/use-quiz-session.ts` | The **state brain**: current question, last answer result, progress, resume / active-session logic. |
 | `components/.../quiz-interface.tsx` | Page layout. Renders `QuestionDisplay`, the "Next / Finish" button, the auto-advance countdown, and the "Quiz Complete" screen. No answer logic. With a null `currentQuestion` it renders `QuizLoadingView` in place of the question, keeping the leave button and the layout — that is the between-questions gap, see §3b. |
@@ -139,6 +139,7 @@ So:
 | ------ | -------------- | ----------- |
 | Creating / resolving the session | `QuizPage`, `GuestQuizPage` (full screen) | LOADING → YOUR QUIZ |
 | Between two questions | `QuizInterface` (inside the quiz chrome — leave button and layout stay) | LOADING → QUESTION |
+| Fetching the finished session | `QuizResultsRouteWrapper`, `GuestQuizResultsRouteWrapper` (full screen) | LOADING → RESULTS |
 
 `isInitialLoading` is still returned by both hooks (the guest hook's tests use it) but is
 marked `@deprecated` for gating: it means "no question on screen", which is not the same
@@ -152,6 +153,29 @@ the user presses Finish. Nothing a player does reaches it.
 **If you change the loading look:** edit `quiz-loading-view.tsx`, not the call sites. And
 note `SplitFlapText` only animates on a phrase *change* — a single-entry `words` array
 renders a board that never moves.
+
+---
+
+## 3c. Why the results page centres with `m-auto`
+
+Both results wrappers used to open with `<div className="h-64 pt-[4rem]">`. `h-64` is a
+**fixed 16rem**, so `QuizResults`' own `flex-1` had no flex parent to grow inside and no
+height to grow into: the content spilled out of a 16rem box pinned under the header, and the
+rest of the screen was dead background. That is the empty half of the screenshot in every
+"results page looks unfinished" report.
+
+The wrappers are now `flex flex-1 flex-col pt-[var(--header-height,4rem)]` — a real column
+in the shell's viewport (the padding clears the OVERLAY header these routes use, read from
+the shell's own variable rather than a hard-coded 4rem). `QuizResults` is `flex flex-1
+w-full`, and its inner container centres with **`m-auto`, not `justify-center`**:
+
+- Short content (the Overview tab) — auto margins absorb the free space on both axes, so the
+  card sits in the middle of the screen.
+- Tall content (Question Review with a dozen questions) — the free space is negative, auto
+  margins resolve to 0, the content starts under the header and scrolls normally.
+
+`justify-center` / `items-center` get the first case right and **clip the top** of the
+second, which is why they are not used here.
 
 ---
 

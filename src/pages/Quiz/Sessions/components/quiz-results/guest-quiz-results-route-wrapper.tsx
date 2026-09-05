@@ -2,8 +2,8 @@ import { useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { LoadingWave } from "@/components/ui";
 import { QuizResults } from "./quiz-results";
+import { QuizLoadingView } from "../quiz-loading-view";
 import {
   useGetGuestSessionResults,
   useFinishGuestSession,
@@ -39,13 +39,9 @@ export function GuestQuizResultsRouteWrapper() {
 
   const goToSignup = () => navigate("/signup");
 
-  // flex-1, not h-screen: sized by the layout's viewport column (docs/RESPONSIVE.md).
+  // Same board as the logged-in results page — one loading look for the whole flow.
   if (loading) {
-    return (
-      <div className="flex flex-1 w-full items-center justify-center px-4">
-        <LoadingWave size="lg" variant="quiz" />
-      </div>
-    );
+    return <QuizLoadingView words={["LOADING", "RESULTS"]} label="Loading your results" />;
   }
 
   if (error || !session) {
@@ -64,7 +60,9 @@ export function GuestQuizResultsRouteWrapper() {
   }
 
   return (
-    <div className="h-64 pt-[4rem]">
+    // See the note in quiz-results-route-wrapper.tsx — the old `h-64` pinned this to 16rem.
+    // The banner keeps its natural height at the top; QuizResults centres in what is left.
+    <div className="flex flex-1 flex-col pt-[var(--header-height,4rem)]">
       <div className="container mx-auto px-4 mb-4">
         <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 text-center text-sm">
           You played as a guest — this result won't be saved.{" "}
