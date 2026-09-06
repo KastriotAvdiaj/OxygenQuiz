@@ -3,7 +3,7 @@ import { useParams, useSearchParams } from "react-router-dom";
 import { useMultiplayer } from "@/hooks/useMultiplayer";
 import { useNotifications } from "@/common/Notifications";
 import { useUser } from "@/lib/Auth";
-import { useNavigationGuard } from "./use-navigation-guard";
+import { useNavigationGuard } from "@/hooks/use-navigation-guard";
 import { audio } from "@/lib/audio";
 import type { SelectedQuiz } from "@/types/quiz-types";
 
