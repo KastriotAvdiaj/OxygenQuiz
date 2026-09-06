@@ -94,6 +94,31 @@ export interface UserAnswer {
 
 }
 
+/** One unanswered question, reduced to what the resume catch-up walk reads. */
+export interface PendingQuestion {
+  quizQuestionId: number;
+  timeLimitInSeconds: number;
+}
+
+/**
+ * The still-running clock of an unfinished session — mirrors the backend's
+ * SessionResumeStateDto. Present only while the session is unfinished.
+ *
+ * Everything needed to predict what `resolve-and-resume` would do right now, so the
+ * "Session In Progress" screen can replay that catch-up locally instead of showing a
+ * snapshot that was stale on arrival. See docs/quiz/session-resume-screen.md.
+ */
+export interface SessionResumeState {
+  /** The server's clock when the response was built, for correcting device clock drift. */
+  serverTimeUtc: string;
+  /** The question in flight, if one was served. */
+  currentQuizQuestionId: number | null;
+  /** When it was served. Null means no clock is running. */
+  currentQuestionStartTime: string | null;
+  /** Every unanswered question of the session's pinned quiz version, in play order. */
+  pendingQuestions: PendingQuestion[];
+}
+
 export interface QuizSession {
   id: string;
   quizId: number;
@@ -112,6 +137,9 @@ export interface QuizSession {
   totalQuestions: number;
   quizDescription?: string;
   category: string;
+
+  /** Null once the session is completed — there is nothing left to count down. */
+  resumeState?: SessionResumeState | null;
 }
 
 export interface QuizSessionSummary {

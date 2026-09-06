@@ -114,7 +114,6 @@ export function QuizResults({
 
           <LiftedButton
             onClick={handleSelectNewQuiz}
-            // variant={"fancy"}
             className="flex items-center justify-center"
           >
             <Home className="h-5 w-5 sm:h-4 sm:w-4" />

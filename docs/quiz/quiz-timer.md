@@ -124,6 +124,10 @@ countdown renders perfectly valid markup, so nothing static can see it.
 
 ## Related
 
+- [`session-resume-screen.md`](./session-resume-screen.md) — the other clock on screen. Built on
+  this same model (anchored timestamps, primitive-only effect dependencies) for the same reasons,
+  and deliberately NOT this component: it is driven by a projection rather than owning a deadline
+  of its own.
 - [`quiz-grading.md`](./quiz-grading.md) — how elapsed time becomes points, and why the server
   re-derives it.
 - [`multiplayer.md`](./multiplayer.md) — the match loop and the events this reads.

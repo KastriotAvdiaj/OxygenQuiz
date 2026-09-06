@@ -86,7 +86,9 @@ list:
   count would either complete early after a removal or become impossible to satisfy
   after an addition);
 - `SessionAbandonmentService` / `QuizSessionCleanupService` — timeout math;
-- the session DTO mappers' `TotalQuestions` (results/progress screens).
+- the session DTO mappers' `TotalQuestions` (results/progress screens) and
+  `ResumeState.PendingQuestions` (the resume screen's live countdown —
+  [`session-resume-screen.md`](./session-resume-screen.md)).
 
 **Multiplayer** needs no pin: `MatchOrchestrator.LoadRoundQuestionsAsync` loads the
 (live) question rows once at match start into in-memory `RoundQuestion`s and never

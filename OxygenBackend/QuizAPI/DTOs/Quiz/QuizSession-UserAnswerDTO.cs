@@ -120,7 +120,67 @@ namespace QuizAPI.DTOs.Quiz
             public int TotalQuestions { get; set; }
             public string? QuizDescription { get; set; }
             public string? Category{ get; set; }
+
+            /// <summary>
+            /// The still-running clock of an unfinished session. Null once the session is
+            /// completed — there is nothing left to count down. See
+            /// <see cref="SessionResumeStateDto"/>.
+            /// </summary>
+            public SessionResumeStateDto? ResumeState { get; set; }
     }
+
+        /// <summary>
+        /// Everything a client needs to predict what
+        /// <c>QuizSessionService.ResolveAndResumeAsync</c> would do right now, without asking.
+        /// The "Session In Progress" screen replays that catch-up locally once a second, so a
+        /// player looking at it watches the question they abandoned run out instead of reading a
+        /// snapshot that was already stale when it arrived
+        /// (docs/quiz/session-resume-screen.md).
+        ///
+        /// It is a PREDICTION, never an authority: the server redoes the whole walk on
+        /// resolve-and-resume and its answer is the one that counts.
+        /// </summary>
+        public class SessionResumeStateDto
+        {
+            /// <summary>
+            /// The server's clock at the moment this DTO was built. The client subtracts its own
+            /// <c>Date.now()</c> to get an offset and corrects with it, for the same reason
+            /// multiplayer measures skew every round: a device whose clock has drifted a few
+            /// seconds would otherwise be shown free time, or time it no longer has
+            /// (docs/quiz/quiz-timer.md §Clock skew).
+            ///
+            /// Stamped by the property initializer rather than the EF projection on purpose —
+            /// "now" is a client-side value in both the SQL projection and the compiled in-memory
+            /// <c>ToDto()</c> path, and putting <c>DateTime.UtcNow</c> inside the expression tree
+            /// makes it a provider-translation question it does not need to be.
+            /// </summary>
+            public DateTime ServerTimeUtc { get; set; } = DateTime.UtcNow;
+
+            /// <summary>The question the player was last served, if one is in flight.</summary>
+            public int? CurrentQuizQuestionId { get; set; }
+
+            /// <summary>
+            /// When that question was served. Null means no clock is running — a session created
+            /// but never served a question resumes on its first question with the full limit, and
+            /// the screen shows no countdown.
+            /// </summary>
+            public DateTime? CurrentQuestionStartTime { get; set; }
+
+            /// <summary>
+            /// Every unanswered question of the session's pinned quiz version, in play order.
+            /// Ids and time limits only — no text, options or answers, so this leaks nothing the
+            /// player could not already get by resuming. The client burns overflow seconds through
+            /// these limits exactly as step 2 of <c>ResolveAndResumeAsync</c> does.
+            /// </summary>
+            public List<PendingQuestionDto> PendingQuestions { get; set; } = new();
+        }
+
+        /// <summary>One unanswered question, reduced to what the catch-up walk reads.</summary>
+        public class PendingQuestionDto
+        {
+            public int QuizQuestionId { get; set; }
+            public int TimeLimitInSeconds { get; set; }
+        }
 
         public class UserAnswerDto
         {

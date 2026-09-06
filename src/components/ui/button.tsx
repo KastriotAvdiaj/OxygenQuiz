@@ -28,7 +28,6 @@ const buttonVariants = cva(
         dashboard:
           "flex w-full text-foreground bg-background justify-start text-[17px] items-center rounded hover:bg-muted active:scale-95",
         quiz: "flex justify-center items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-yellow-400 to-red-500 text-white shadow-lg hover:ring-2 hover:ring-offset-2 hover:ring-yellow-500 active:scale-95 transition-all duration-300",
-        fancy: "fancy-button",
         lifted: "lift-button",
       },
       size: {
@@ -53,14 +52,6 @@ const buttonVariants = cva(
   }
 );
 
-export interface FancyButtonColors {
-  primary: string;
-  secondary: string;
-  shadow: string;
-  text: string;
-  border: string;
-}
-
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
@@ -68,7 +59,6 @@ export interface ButtonProps
   active?: boolean;
   isPending?: boolean;
   icon?: React.ReactNode;
-  fancyColors?: FancyButtonColors;
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
@@ -82,24 +72,11 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       isPending = false,
       icon,
       children,
-      fancyColors,
       style,
       ...props
     },
     ref
   ) => {
-    const fancyStyle =
-      variant === "fancy" && fancyColors
-        ? ({
-            "--fancy-primary": fancyColors.primary,
-            "--fancy-secondary": fancyColors.secondary,
-            "--fancy-shadow": fancyColors.shadow,
-            "--fancy-text": fancyColors.text,
-            "--fancy-border": fancyColors.border,
-            ...style,
-          } as React.CSSProperties)
-        : style;
-
     // `asChild` hands rendering to a Radix Slot, which merges into exactly ONE element
     // child. The layout <span> below would be a second child and Slot throws on sight
     // ("Expected a single React element child or `Slottable`"), so the child element has
@@ -111,7 +88,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         <Slot
           className={cn(buttonVariants({ variant, size, active, className }))}
           ref={ref}
-          style={fancyStyle}
+          style={style}
           {...props}
         >
           {isPending && (
@@ -130,7 +107,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         className={cn(buttonVariants({ variant, size, active, className }))}
         ref={ref}
         disabled={isPending || props.disabled}
-        style={fancyStyle}
+        style={style}
         {...props}
       >
         {isPending && (

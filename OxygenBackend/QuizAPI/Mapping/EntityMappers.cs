@@ -1,4 +1,4 @@
-using System.Linq.Expressions;
+﻿using System.Linq.Expressions;
 using Newtonsoft.Json;
 using QuizAPI.Common;
 using QuizAPI.DTOs.Question;
@@ -599,6 +599,34 @@ namespace QuizAPI.Mapping
                 TotalQuestions = s.Quiz.QuizQuestions.Count(qq =>
                     qq.CreatedInVersion <= s.QuizVersion
                     && (qq.RemovedInVersion == null || qq.RemovedInVersion > s.QuizVersion)),
+                // The live clock, for the "Session In Progress" screen's local replay of the
+                // resume catch-up (docs/quiz/session-resume-screen.md). Only an unfinished session
+                // has one; a completed session's remaining set is empty by definition, so the
+                // whole block collapses to null rather than shipping an empty object everywhere
+                // results are fetched.
+                //
+                // The version predicate is inlined rather than calling QuizQuestion
+                // .IsVisibleToVersion: this expression is translated to SQL, and a helper method
+                // is not (same reason TotalQuestions above spells it out).
+                ResumeState = s.IsCompleted
+                    ? null
+                    : new SessionResumeStateDto
+                    {
+                        CurrentQuizQuestionId = s.CurrentQuizQuestionId,
+                        CurrentQuestionStartTime = s.CurrentQuestionStartTime,
+                        PendingQuestions = s.Quiz.QuizQuestions
+                            .Where(qq =>
+                                qq.CreatedInVersion <= s.QuizVersion
+                                && (qq.RemovedInVersion == null || qq.RemovedInVersion > s.QuizVersion)
+                                && !s.UserAnswers.Any(ua => ua.QuizQuestionId == qq.Id))
+                            .OrderBy(qq => qq.OrderInQuiz)
+                            .Select(qq => new PendingQuestionDto
+                            {
+                                QuizQuestionId = qq.Id,
+                                TimeLimitInSeconds = qq.TimeLimitInSeconds,
+                            })
+                            .ToList(),
+                    },
                 UserAnswers = s.UserAnswers
                     .OrderBy(ua => ua.QuizQuestion.OrderInQuiz)
                     .Select(ua => new UserAnswerDto

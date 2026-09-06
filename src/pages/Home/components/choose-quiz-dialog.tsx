@@ -20,7 +20,6 @@ export const ChooseQuiz = () => {
     <Link to="/choose-mode">
       {/* Fluid CTA: fixed text-5xl dwarfed phone screens (docs/RESPONSIVE.md) */}
       <LiftedButton
-        // variant={"fancy"}
         outerClassName={`rounded-none p-2`}
         className={`text-xl sm:text-3xl md:text-4xl lg:text-5xl px-5 py-2 sm:p-4 rounded-none -bottom-0 -right-0 inset-x-[0]`}
         disabled={isLoading || isNavigating}
