@@ -4,6 +4,9 @@ import type {
   InstantFeedbackAnswerResult,
 } from "../../../../../types/quiz-session-types";
 import { AnimatePresence, motion } from "framer-motion";
+// `initial` takes a plain Target (no per-property transition); `animate` and `exit` take a
+// TargetAndTransition, which is what lets the exit carry its own curve below.
+import type { Target, TargetAndTransition, Transition } from "framer-motion";
 import { ArrowRight, Loader2, Trophy } from "lucide-react";
 import { useEffect, useRef } from "react";
 import * as React from "react";
@@ -62,9 +65,55 @@ export function QuizInterface({
   const [autoAdvanceCounter, setAutoAdvanceCounter] = React.useState(3);
   const prefersReducedMotion = usePrefersReducedMotion();
 
-  // How far a card travels on its way in and out. 0 under prefers-reduced-motion: the swap
-  // becomes a cross-fade, which still reads as a change without anything flying across.
-  const slide = prefersReducedMotion ? 0 : 48;
+  // ── The question-to-question swap ────────────────────────────────────────────────────────
+  // A card is DEALT: the outgoing one is thrown to the left, tilting and shrinking as it
+  // goes, while the next arrives from the right, tilted, and settles level.
+  //
+  // It travels a full card-width. The previous version moved 48px in 0.28s, which is roughly
+  // the distance a card shifts when a scrollbar appears — it read as a flicker rather than a
+  // change, and a player answering quickly could genuinely not tell whether Next had done
+  // anything. The swap is the only moment in the quiz that says "that one's finished", so it
+  // is worth half a second.
+  //
+  // Both cards are on screen together (AnimatePresence popLayout — see below), so the two
+  // halves have to be readable as one gesture: the same tilt in mirror, the same scale, one
+  // leaving as the other arrives.
+  //
+  // Under prefers-reduced-motion the whole thing collapses to a cross-fade. Still legibly a
+  // new question; nothing flies across the screen.
+
+  const enterFrom: Target = prefersReducedMotion
+    ? { opacity: 0 }
+    : { opacity: 0, x: "100%", rotate: 5, scale: 0.92 };
+
+  const settled: TargetAndTransition = prefersReducedMotion
+    ? { opacity: 1 }
+    : { opacity: 1, x: 0, rotate: 0, scale: 1 };
+
+  const dealtAway: TargetAndTransition = prefersReducedMotion
+    ? { opacity: 0, transition: { duration: 0.2 } }
+    : {
+        opacity: 0,
+        x: "-100%",
+        rotate: -5,
+        scale: 0.92,
+        // Leaving gets its own curve — accelerating away, where arriving decelerates in. And
+        // the fade is quicker than the travel on purpose: the outer container clips at the
+        // VIEWPORT, not at the card, so on a wide screen a card at -100% is still over the
+        // gutter. Gone by then, rather than skidding to a halt in view.
+        transition: { duration: 0.5, ease: [0.5, 0, 0.9, 0.4], opacity: { duration: 0.34 } },
+      };
+
+  // Arriving: a long, decelerating ease so the card carries weight and lands rather than
+  // stops. Opacity runs shorter than the travel so the card is solid for most of its journey
+  // instead of ghosting the whole way in.
+  const dealtIn: Transition = prefersReducedMotion
+    ? { duration: 0.2 }
+    : {
+        duration: 0.55,
+        ease: [0.22, 1, 0.36, 1],
+        opacity: { duration: 0.4, ease: "easeOut" },
+      };
 
   const isQuizComplete = lastAnswerResult?.isQuizComplete ?? false;
 
@@ -163,10 +212,10 @@ export function QuizInterface({
               <motion.div
                 key={currentQuestion.quizQuestionId}
                 className="space-y-3 sm:space-y-6"
-                initial={{ opacity: 0, x: slide }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -slide }}
-                transition={{ duration: 0.28, ease: [0.32, 0.72, 0, 1] }}>
+                initial={enterFrom}
+                animate={settled}
+                exit={dealtAway}
+                transition={dealtIn}>
                 <QuestionDisplay
                   question={currentQuestion}
                   onSubmit={onSubmitAnswer}
@@ -236,9 +285,11 @@ export function QuizInterface({
                 className="flex w-full"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
+                // Fades rather than deals: there is no outgoing card to mirror, and a loader
+                // thrown off the screen would claim the player had just finished something.
+                exit={{ opacity: 0, transition: { duration: 0.3 } }}
                 transition={{ duration: 0.2 }}>
-                <QuizLoadingView words={["LOADING", "QUESTION"]} label="Loading the first question" />
+                <QuizLoadingView label="Loading the first question" />
               </motion.div>
             )}
           </AnimatePresence>

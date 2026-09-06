@@ -84,7 +84,7 @@ export function GuestQuizPage({ quizId }: GuestQuizPageProps) {
   // ORs in `!currentQuestion`, so it is deliberately not used here.
   // flex-1, not h-screen — h-screen over-measures inside the app shell (docs/RESPONSIVE.md).
   if (!quizSession && !error) {
-    return <QuizLoadingView words={["LOADING", "YOUR QUIZ"]} label="Loading your quiz" />;
+    return <QuizLoadingView label="Loading your quiz" />;
   }
 
   if (error || !quizSession) {

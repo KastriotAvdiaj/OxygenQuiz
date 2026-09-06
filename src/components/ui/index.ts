@@ -10,6 +10,7 @@ export * from '@/components/ui/LoginForm';
 export * from '@/components/ui/mode-toggle';
 export * from '@/components/ui/pagination-control';
 export * from '@/components/ui/segmented-control';
+export * from '@/components/ui/split-flap-loader';
 export * from '@/components/ui/select';
 export * from '@/components/ui/Spinner';
 export * from '@/components/ui/switch';

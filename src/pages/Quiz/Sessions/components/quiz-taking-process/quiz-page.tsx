@@ -127,7 +127,7 @@ export function QuizPage({ quizId, userId }: QuizPageProps) {
   // session alone lets that gap fall through to QuizInterface, which renders the same
   // QuizLoadingView inside the quiz chrome.
   if (!quizSession && !error) {
-    return <QuizLoadingView words={["LOADING", "YOUR QUIZ"]} label="Loading your quiz" />;
+    return <QuizLoadingView label="Loading your quiz" />;
   }
 
   if (error) {

@@ -38,7 +38,7 @@ All paths are under `src/pages/Quiz/Sessions/`.
 | ---- | ---- |
 | `components/.../quiz-page-route-wrapper.tsx` | Entry point. Decides logged-in (`QuizPage`) vs guest (`GuestQuizPage`) and handles the one-free-guest-quiz gate. See `docs/auth/guest-play.md`. |
 | `components/.../quiz-page.tsx` | **The controller.** Wires `useQuizSession` + `useSubmitAnswer`, owns `handleSubmitAnswer` / `handleNextQuestion`, and picks between the loading / error / active-session screens and `QuizInterface`. The only component that submits to the backend. Keeps `ErrorScreen` inline; the other two full-screen states live in their own files below. |
-| `components/quiz-loading-view.tsx` | **THE loading screen** — a `SplitFlapText` board, no card. Sits one level above `quiz-taking-process/` and `quiz-results/` because both use it: `QuizPage` / `GuestQuizPage` while the session is created ("LOADING / YOUR QUIZ"), `QuizInterface` for the gap between two questions ("LOADING / QUESTION"), and both results wrappers ("LOADING / RESULTS"). Change the loading look here and every waiting moment follows. Storied in `quiz-loading-view.stories.tsx`. |
+| `components/quiz-loading-view.tsx` | **THE loading screen** — a centred `LoadingWave`, the same loader the rest of the app waits with. Sits one level above `quiz-taking-process/` and `quiz-results/` because both use it: `QuizPage` / `GuestQuizPage` while the session is created, `QuizInterface` before the first question, and both results wrappers. Change the loading look here and every waiting moment follows. Storied in `quiz-loading-view.stories.tsx`. |
 | `components/.../active-session-view.tsx` | The **"Session In Progress"** fork — Resume / Start Fresh / Back, shown when the player already has an unfinished session for this quiz. **The clock does not stop here:** it replays the backend's resume catch-up locally once a second, so the question in flight counts down and the tally moves as questions expire ([`session-resume-screen.md`](./session-resume-screen.md)). Presentational; `isLoading` disables both actions while either request is in flight. Storied in `active-session-view.stories.tsx`. |
 | `components/.../resume-projection.ts` | The local replay behind that screen: `projectResume()` mirrors `ResolveAndResumeAsync` for a given instant, `useResumeProjection()` re-evaluates it as the wall clock moves. A **prediction only** — the server redoes the walk on resume and its answer is the one that counts. |
 | `../../hooks/use-quiz-session.ts` | The **state brain**: current question, last answer result, progress, resume / active-session logic. |
@@ -136,19 +136,41 @@ if (!quizSession && !error) return <QuizLoadingView ... />;
 
 So:
 
-| Moment | Who renders it | Board reads |
-| ------ | -------------- | ----------- |
-| Creating / resolving the session | `QuizPage`, `GuestQuizPage` (full screen) | LOADING → YOUR QUIZ |
-| The first question of a session | `QuizInterface` (the only time it has no question — see §3d) | LOADING → QUESTION |
-| Fetching the finished session | `QuizResultsRouteWrapper`, `GuestQuizResultsRouteWrapper` (full screen) | LOADING → RESULTS |
+| Moment | Who renders it | Screen-reader label |
+| ------ | -------------- | ------------------- |
+| Creating / resolving the session | `QuizPage`, `GuestQuizPage` (full screen) | "Loading your quiz" |
+| The first question of a session | `QuizInterface` (the only time it has no question — see §3d) | "Loading the first question" |
+| Fetching the finished session | `QuizResultsRouteWrapper`, `GuestQuizResultsRouteWrapper` (full screen) | "Loading your results" |
 
 `isInitialLoading` is still returned by both hooks (the guest hook's tests use it) but is
 marked `@deprecated` for gating: it means "no question on screen", which is not the same
 question as "are we still starting up".
 
-**If you change the loading look:** edit `quiz-loading-view.tsx`, not the call sites. And
-note `SplitFlapText` only animates on a phrase *change* — a single-entry `words` array
-renders a board that never moves.
+**All three show the same word.** Which wait it is lives in the `label`, where a screen reader
+will use it; on screen it is "LOADING" every time, because the visible difference between three
+loaders a second apart is noise, not information.
+
+### Why it is a LoadingWave and not a split-flap board
+
+It was a board for a while — `SplitFlapText`, dark tiles in both themes, a second per flip. It
+is a good effect and it was the wrong one here, for a reason that only shows up in the running
+app rather than in a story:
+
+`QuizPageRouteWrapper` renders a `LoadingWave` while it works out logged-in vs guest, and only
+then mounts `QuizPage`. So entering a quiz played **LoadingWave → board → board**, three waits
+inside about a second and a half, in two visual languages. Each handover read as something new
+happening rather than the same wait continuing. On a fast connection the board also never got
+past its first flip, so the effect it exists for never actually played.
+
+`LoadingWave` is what the app waits with everywhere else — the Provider boot screen, the
+dashboard lists, the profile panels, the multiplayer quiz picker — and `quiz-loading-view.tsx`
+matches its `size="lg"`, so the route-to-page handover is now invisible.
+
+The board was not deleted. It is `SplitFlapLoader` in `components/ui`, storied, for a moment
+that wants a set-piece rather than a spinner. If you use it, remember it only animates on a
+phrase *change* — a single-entry `words` array renders a board that never moves.
+
+**If you change the loading look:** edit `quiz-loading-view.tsx`, not the call sites.
 
 ---
 
@@ -194,10 +216,28 @@ the player is looking at stays until there is a replacement to put in its place.
 empty state, so there is nothing to cover: a slow network simply holds the feedback screen a
 beat longer.
 
-**What the player sees.** Answer → feedback → the next question is dealt in from the right as
-the answered one slides out left (`AnimatePresence mode="popLayout"`, keyed on
-`quizQuestionId`). `popLayout` matters: with `mode="wait"` the incoming card would wait for the
-outgoing one and you would be back to an empty stage between the two.
+**What the player sees.** Answer → feedback → the next question is **dealt in** from the right,
+tilted, settling level, as the answered one is thrown out to the left, tilting and shrinking the
+other way (`AnimatePresence mode="popLayout"`, keyed on `quizQuestionId`). `popLayout` matters:
+with `mode="wait"` the incoming card would wait for the outgoing one and you would be back to an
+empty stage between the two — and the two halves of the gesture would never overlap, which is
+what makes it read as one movement.
+
+The travel is a full card-width over ~0.55s. It started at 48px over 0.28s, which is about the
+distance a card shifts when a scrollbar appears: it read as a flicker rather than a change, and
+a player answering quickly could not tell that Next had done anything. The swap is the only
+moment in the quiz that says *that one is finished* — it is worth half a second.
+
+Two details in `quiz-interface.tsx` that are load-bearing rather than decorative:
+
+- **Arriving decelerates, leaving accelerates.** Same gesture, opposite halves. One shared
+  easing makes both cards look like they are being dragged by the same string.
+- **The exit fades faster than it travels.** The container clips at the viewport, not at the
+  card, so on a wide screen a card at `x: -100%` is still over the page gutter. It is at zero
+  opacity by then rather than skidding to a halt in view.
+
+Under `prefers-reduced-motion` the whole thing collapses to a cross-fade — still legibly a new
+question, with nothing flying across the screen.
 
 **The only loading left is a spinner in the Next button** (`isFetchingNextQuestion`). The
 question never leaves the screen, so a slow connection needs nothing more than that.

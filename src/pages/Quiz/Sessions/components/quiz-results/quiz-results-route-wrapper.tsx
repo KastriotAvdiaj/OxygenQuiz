@@ -35,7 +35,7 @@ export function QuizResultsRouteWrapper() {
   // Loading state — the same board as the rest of the quiz flow. The old markup had no
   // flex-1 and no height of its own, so it sat squashed against the top of the shell.
   if (loading) {
-    return <QuizLoadingView words={["LOADING", "RESULTS"]} label="Loading your results" />;
+    return <QuizLoadingView label="Loading your results" />;
   }
 
   // Error state

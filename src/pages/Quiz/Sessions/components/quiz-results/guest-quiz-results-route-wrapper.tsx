@@ -41,7 +41,7 @@ export function GuestQuizResultsRouteWrapper() {
 
   // Same board as the logged-in results page — one loading look for the whole flow.
   if (loading) {
-    return <QuizLoadingView words={["LOADING", "RESULTS"]} label="Loading your results" />;
+    return <QuizLoadingView label="Loading your results" />;
   }
 
   if (error || !session) {
