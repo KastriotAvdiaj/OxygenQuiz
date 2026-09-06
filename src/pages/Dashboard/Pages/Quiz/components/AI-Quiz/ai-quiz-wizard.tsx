@@ -1,5 +1,7 @@
 import { useState } from "react";
 
+import { useNavigationGuard } from "@/hooks/use-navigation-guard";
+
 import {
   useGenerateAiQuiz,
   useAiQuota,
@@ -31,6 +33,26 @@ export const AiQuizWizard = () => {
 
   const generateMutation = useGenerateAiQuiz();
   const quotaQuery = useAiQuota();
+
+  /**
+   * The request is in flight and the page owns it — there is no job id to come back to, so
+   * a Back click, a refresh or a closed tab spends the generation and returns nothing. The
+   * card has always said "Keep this tab open"; this is what makes that true.
+   *
+   * Armed here rather than in the view because the view holds no hooks by design (see its
+   * header comment) and because `isPending` lives on the mutation, which is this file's one
+   * job. The three pieces come back out as props so every state stays reachable from a
+   * story.
+   *
+   * Only while generating. The typed topic and the details are not guarded: they are cheap
+   * to retype, and confirming every exit from a form nobody has spent anything on is the
+   * kind of prompt people learn to click through — which would blunt this one.
+   */
+  const {
+    showLeaveDialog,
+    confirmNavigation,
+    cancelNavigation,
+  } = useNavigationGuard(generateMutation.isPending);
 
   const handleGenerate = () => {
     setGenerateError(null);
@@ -100,6 +122,9 @@ export const AiQuizWizard = () => {
       onStartOver={handleStartOver}
       parseResult={draft.parseResult}
       builderSlot={draft.builderSlot}
+      showLeaveDialog={showLeaveDialog}
+      onConfirmLeave={confirmNavigation}
+      onCancelLeave={cancelNavigation}
     />
   );
 };
