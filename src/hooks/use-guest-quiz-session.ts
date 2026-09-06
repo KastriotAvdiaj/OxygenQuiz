@@ -25,7 +25,9 @@ export const useGuestQuizSession = ({ quizId }: UseGuestQuizSessionParams) => {
   const [quizSession, setQuizSession] = useState<QuizSession | null>(null);
   const [currentQuestion, setCurrentQuestion] = useState<CurrentQuestion | null>(null);
   const [lastAnswerResult, setLastAnswerResult] = useState<InstantFeedbackAnswerResult | null>(null);
-  const [currentQuestionNumber, setCurrentQuestionNumber] = useState(1);
+  // 0, not 1: the number is bumped when a question ARRIVES (fetchNextQuestion), so it counts
+  // questions on screen rather than questions asked for.
+  const [currentQuestionNumber, setCurrentQuestionNumber] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [completedAnswers, setCompletedAnswers] = useState<InstantFeedbackAnswerResult[]>([]);
 
@@ -34,15 +36,17 @@ export const useGuestQuizSession = ({ quizId }: UseGuestQuizSessionParams) => {
 
   const hasInitialized = useRef(false);
 
+  /** Nothing is cleared up front, and the number moves on arrival — see the long note on the
+   *  same function in use-quiz-session.ts. */
   const fetchNextQuestion = useCallback(
     async (sessionId: string) => {
-      setLastAnswerResult(null);
-      setCurrentQuestion(null);
       setError(null);
 
       try {
         const questionData = await getNextQuestionMutation.mutateAsync({ sessionId });
+        setLastAnswerResult(null);
         setCurrentQuestion(questionData);
+        setCurrentQuestionNumber((prev) => prev + 1);
       } catch (err: any) {
         const message = extractErrorMessage(err);
         if (message.includes("completed") || message.includes("No more questions")) {
@@ -98,7 +102,6 @@ export const useGuestQuizSession = ({ quizId }: UseGuestQuizSessionParams) => {
       } else if (answerResult.isQuizComplete) {
         navigate(`/quiz/results-guest/${quizSession!.id}`, { replace: true });
       } else {
-        setCurrentQuestionNumber((prev) => prev + 1);
         fetchNextQuestion(quizSession!.id);
       }
     },
@@ -116,6 +119,7 @@ export const useGuestQuizSession = ({ quizId }: UseGuestQuizSessionParams) => {
     // GuestQuizPage gates on `!quizSession && !error` so the between-questions gap reaches
     // QuizInterface's own loader.
     isInitialLoading: !quizSession || (!currentQuestion && !error),
+    isFetchingNextQuestion: getNextQuestionMutation.isPending,
     setCurrentQuestionNumber,
     fetchNextQuestion,
     handleAnswerSubmissionSuccess,

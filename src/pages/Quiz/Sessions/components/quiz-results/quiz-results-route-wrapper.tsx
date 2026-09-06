@@ -20,9 +20,11 @@ export function QuizResultsRouteWrapper() {
     sessionId: sessionId || "",
   });
 
+  // `/quiz/:quizId/play` — the play route has always had the /play suffix (Router.tsx). Without
+  // it this matches no route at all, so Try Again dropped the player on the not-found page.
   const handleRetryQuiz = () => {
     if (session) {
-      navigate(`/quiz/${session.quizId}`);
+      navigate(`/quiz/${session.quizId}/play`);
     }
   };
 

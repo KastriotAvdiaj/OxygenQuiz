@@ -23,8 +23,8 @@ export function GuestQuizPage({ quizId }: GuestQuizPageProps) {
     currentQuestionNumber,
     error,
     completedAnswers,
+    isFetchingNextQuestion,
     handleAnswerSubmissionSuccess,
-    setCurrentQuestionNumber,
     fetchNextQuestion,
   } = useGuestQuizSession({ quizId });
 
@@ -37,6 +37,7 @@ export function GuestQuizPage({ quizId }: GuestQuizPageProps) {
   useEffect(() => {
     questionShownAtRef.current = currentQuestion ? performance.now() : null;
   }, [currentQuestion]);
+
 
   const handleSubmitAnswer = (
     selectedOptionId: number | null,
@@ -72,7 +73,8 @@ export function GuestQuizPage({ quizId }: GuestQuizPageProps) {
       navigate(`/quiz/results-guest/${quizSession.id}`, { replace: true });
       return;
     }
-    setCurrentQuestionNumber((prev) => prev + 1);
+    // The number moves when the question ARRIVES, inside fetchNextQuestion — bumping it
+    // here would read "3 of 10" over question 2 for the length of the request.
     fetchNextQuestion(quizSession.id);
   };
 
@@ -129,6 +131,7 @@ export function GuestQuizPage({ quizId }: GuestQuizPageProps) {
       category={quizSession.category}
       completedAnswers={completedAnswers}
       onLeave={handleGoBack}
+      isFetchingNextQuestion={isFetchingNextQuestion}
     />
   );
 }

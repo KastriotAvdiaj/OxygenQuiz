@@ -22,7 +22,8 @@ import {
  * instantly, with hand-written fake data and no real quiz session. This is the
  * "test it in my own time instead of playing through" workflow you wanted.
  *
- * The loading state is the one to read carefully — see LoadingNextQuestion at the bottom.
+ * The two states worth reading carefully are at the bottom: FirstQuestionLoading and
+ * FetchingNextQuestion.
  *
  * KEY TAKEAWAY: you don't story the data-fetching wrapper; you story the
  * presentational component it renders. Keeping fetching in hooks and rendering in
@@ -104,22 +105,40 @@ export const FinalQuestionComplete: Story = {
 };
 
 /**
- * The gap between two questions: answer graded, next question in flight.
+ * Cold start: the session exists but its first question is still in flight. The ONLY time
+ * `currentQuestion` is null — from the second question on, `fetchNextQuestion` holds the one
+ * on screen until its replacement arrives, so there is no gap and no loader between questions
+ * (docs/quiz/quiz-playing-architecture.md §3d).
  *
- * This used to be unreachable. QuizPage gated on `useQuizSession.isInitialLoading`, which
- * ORs in `!currentQuestion` — and `fetchNextQuestion` nulls the question before it
- * requests, so the page short-circuited to its own full-screen card and QuizInterface was
- * never rendered without a question. The page now gates on `!quizSession && !error`, so
- * this branch is what a player actually sees on Next: the leave button and the layout stay
- * put, and only the middle swaps to QuizLoadingView
- * (docs/quiz/quiz-playing-architecture.md §3b).
- *
- * The board flips on a ~1s cycle, so give the story a moment before judging it.
+ * The old between-questions loading state used to live here, and before that it was
+ * unreachable: QuizPage gated on `useQuizSession.isInitialLoading`, which ORs in
+ * `!currentQuestion`, so the page short-circuited to its own full-screen card and
+ * QuizInterface was never rendered without a question.
  */
-export const LoadingNextQuestion: Story = {
+export const FirstQuestionLoading: Story = {
   args: {
     currentQuestion: null,
     lastAnswerResult: null,
     showInstantFeedback: false,
+  },
+};
+
+/**
+ * Next pressed, the request in flight, the answered question still on screen. This is what a
+ * slow network looks like now: a spinner in the Next button, the countdown gone, and nothing
+ * else moving. Compare it with AnsweredCorrectly — same screen, one changed prop.
+ */
+export const FetchingNextQuestion: Story = {
+  args: {
+    currentQuestion: sampleQuestion,
+    showInstantFeedback: true,
+    isFetchingNextQuestion: true,
+    lastAnswerResult: {
+      status: AnswerStatus.Correct,
+      scoreAwarded: 100,
+      isQuizComplete: false,
+      correctOptionId: 1,
+      timeSpentInSeconds: 8,
+    } satisfies InstantFeedbackAnswerResult,
   },
 };

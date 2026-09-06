@@ -24,9 +24,9 @@ export function QuizPage({ quizId, userId }: QuizPageProps) {
     currentQuestionNumber,
     error,
     isInitializing,
+    isFetchingNextQuestion,
     handleRetry,
     handleAnswerSubmissionSuccess,
-    setCurrentQuestionNumber,
     fetchNextQuestion,
     isValidationError,
     completedAnswers,
@@ -48,6 +48,7 @@ export function QuizPage({ quizId, userId }: QuizPageProps) {
   useEffect(() => {
     questionShownAtRef.current = currentQuestion ? performance.now() : null;
   }, [currentQuestion]);
+
 
   // --- Event Handlers ---
   const handleSubmitAnswer = (
@@ -100,7 +101,8 @@ export function QuizPage({ quizId, userId }: QuizPageProps) {
         navigate(`/quiz/results/${quizSession.id}`, { replace: true });
         return;
       }
-      setCurrentQuestionNumber((prev) => prev + 1);
+      // The number moves when the question ARRIVES, inside fetchNextQuestion — bumping it
+      // here would read "3 of 10" over question 2 for the length of the request.
       fetchNextQuestion(quizSession.id);
     }
   };
@@ -168,6 +170,7 @@ export function QuizPage({ quizId, userId }: QuizPageProps) {
       category={quizSession.category}
       completedAnswers={completedAnswers}
       onLeave={handleGoBack}
+      isFetchingNextQuestion={isFetchingNextQuestion}
     />
   );
 }

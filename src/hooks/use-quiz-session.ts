@@ -54,6 +54,8 @@ interface UseQuizSessionReturn {
   // Loading states
   isInitialLoading: boolean;
   isInitializing: boolean;
+  /** A next-question request is in flight. The current question is still on screen. */
+  isFetchingNextQuestion: boolean;
 
   // Actions
   handleRetry: () => void;
@@ -134,7 +136,9 @@ export const useQuizSession = ({
     useState<CurrentQuestion | null>(null);
   const [lastAnswerResult, setLastAnswerResult] =
     useState<InstantFeedbackAnswerResult | null>(null);
-  const [currentQuestionNumber, setCurrentQuestionNumber] = useState(1);
+  // 0, not 1: the number is bumped when a question ARRIVES (fetchNextQuestion), so it counts
+  // questions on screen rather than questions asked for.
+  const [currentQuestionNumber, setCurrentQuestionNumber] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const [isValidationError, setIsValidationError] = useState(false);
@@ -187,17 +191,28 @@ export const useQuizSession = ({
 
   // --- Action Handlers ---
 
+  /**
+   * NOTHING IS CLEARED UP FRONT. This used to null `currentQuestion` and `lastAnswerResult`
+   * before firing the request, which opened a hole in the UI for the length of a round trip —
+   * every loading screen and transition the quiz has ever had existed to cover that hole. The
+   * question the player is looking at now stays until there is a replacement to put in its
+   * place, so there is no empty state to fill and a slow network simply holds the current
+   * screen a beat longer (docs/quiz/quiz-playing-architecture.md §3d).
+   *
+   * The question NUMBER moves on arrival too, for the same reason: bumping it here would read
+   * "3 of 10" over question 2.
+   */
   const fetchNextQuestion = useCallback(
     (sessionId: string) => {
-      setLastAnswerResult(null);
-      setCurrentQuestion(null);
       setError(null);
 
       getNextQuestionMutation.mutate(
         { sessionId },
         {
           onSuccess: (questionData) => {
+            setLastAnswerResult(null);
             setCurrentQuestion(questionData);
+            setCurrentQuestionNumber((prev) => prev + 1);
           },
           onError: (error: any) => {
             console.error("Failed to get next question:", error);
@@ -239,7 +254,9 @@ export const useQuizSession = ({
       setQuizSession(session);
       setError(null);
       setExistingActiveSession(null);
-      setCurrentQuestionNumber(answeredCount + 1);
+      // fetchNextQuestion bumps the number when the question lands, so start one BELOW the
+      // question about to arrive rather than on it.
+      setCurrentQuestionNumber(answeredCount);
       initializationRef.current.hasInitialized = true;
 
       fetchNextQuestion(session.id);
@@ -282,8 +299,9 @@ export const useQuizSession = ({
         setCurrentQuestion(result.activeQuestion);
         setCurrentQuestionNumber(result.questionNumber);
       } else {
-        // Fallback: fetch next question (shouldn't normally happen)
-        setCurrentQuestionNumber(result.questionNumber);
+        // Fallback: fetch next question (shouldn't normally happen). One below, for the same
+        // reason as activateSession.
+        setCurrentQuestionNumber(result.questionNumber - 1);
         fetchNextQuestion(result.session.id);
       }
     } catch (err: any) {
@@ -424,7 +442,6 @@ export const useQuizSession = ({
         // "go back to look at the quiz list" silently began another attempt.
         navigate(`/quiz/results/${quizSession!.id}`, { replace: true });
       } else {
-        setCurrentQuestionNumber((prev) => prev + 1);
         fetchNextQuestion(quizSession!.id);
       }
     },
@@ -449,6 +466,7 @@ export const useQuizSession = ({
     isValidationError,
     isInitialLoading,
     isInitializing,
+    isFetchingNextQuestion: getNextQuestionMutation.isPending,
     completedAnswers,
     existingActiveSession,
     handleRetry,

@@ -41,7 +41,7 @@ All paths are under `src/pages/Quiz/Sessions/`.
 | `components/quiz-loading-view.tsx` | **THE loading screen** — a `SplitFlapText` board, no card. Sits one level above `quiz-taking-process/` and `quiz-results/` because both use it: `QuizPage` / `GuestQuizPage` while the session is created ("LOADING / YOUR QUIZ"), `QuizInterface` for the gap between two questions ("LOADING / QUESTION"), and both results wrappers ("LOADING / RESULTS"). Change the loading look here and every waiting moment follows. Storied in `quiz-loading-view.stories.tsx`. |
 | `components/.../active-session-view.tsx` | The **"Session In Progress"** fork — Resume / Start Fresh / Back, shown when the player already has an unfinished session for this quiz. Presentational; `isLoading` disables both actions while either request is in flight. Storied in `active-session-view.stories.tsx`. |
 | `../../hooks/use-quiz-session.ts` | The **state brain**: current question, last answer result, progress, resume / active-session logic. |
-| `components/.../quiz-interface.tsx` | Page layout. Renders `QuestionDisplay`, the "Next / Finish" button, the auto-advance countdown, and the "Quiz Complete" screen. No answer logic. With a null `currentQuestion` it renders `QuizLoadingView` in place of the question, keeping the leave button and the layout — that is the between-questions gap, see §3b. |
+| `components/.../quiz-interface.tsx` | Page layout. Renders `QuestionDisplay`, the "Next / Finish" button and the auto-advance countdown, and owns the question-to-question swap (`AnimatePresence`, keyed on `quizQuestionId`). No answer logic. A null `currentQuestion` here means the first question of the session and nothing else — see §3d. |
 | `components/.../question-display.tsx` | Per-question **shell + dispatcher**: timer, question card, media, "time's up" banner, instant-feedback panel, the double-submit guard, and the `switch (questionType)` that picks an input component. |
 | `components/.../question-display-type-files/*.tsx` | The three **input components** (multiple-choice, true-or-false, type-the-answer). Each owns its own selection state and reports the answer via `onSubmit`. **Shared with multiplayer.** |
 | `components/.../quiz-submit-button.tsx` | The **single Submit button** used by all three input components (and both modes). Owns styling, the loading spinner, the visibility rule, and the disabled logic. |
@@ -138,17 +138,12 @@ So:
 | Moment | Who renders it | Board reads |
 | ------ | -------------- | ----------- |
 | Creating / resolving the session | `QuizPage`, `GuestQuizPage` (full screen) | LOADING → YOUR QUIZ |
-| Between two questions | `QuizInterface` (inside the quiz chrome — leave button and layout stay) | LOADING → QUESTION |
+| The first question of a session | `QuizInterface` (the only time it has no question — see §3d) | LOADING → QUESTION |
 | Fetching the finished session | `QuizResultsRouteWrapper`, `GuestQuizResultsRouteWrapper` (full screen) | LOADING → RESULTS |
 
 `isInitialLoading` is still returned by both hooks (the guest hook's tests use it) but is
 marked `@deprecated` for gating: it means "no question on screen", which is not the same
 question as "are we still starting up".
-
-**Still dead, deliberately:** `QuizInterface`'s "Quiz Complete! / Preparing your results…"
-branch needs `currentQuestion === null` **and** a `lastAnswerResult`, but `fetchNextQuestion`
-clears both together and the complete-with-feedback path keeps the question on screen until
-the user presses Finish. Nothing a player does reaches it.
 
 **If you change the loading look:** edit `quiz-loading-view.tsx`, not the call sites. And
 note `SplitFlapText` only animates on a phrase *change* — a single-entry `words` array
@@ -176,6 +171,76 @@ w-full`, and its inner container centres with **`m-auto`, not `justify-center`**
 
 `justify-center` / `items-center` get the first case right and **clip the top** of the
 second, which is why they are not used here.
+
+---
+
+## 3d. There is no between-questions loading state
+
+Pressing Next used to blank the stage for a round trip. Every attempt to make that feel better
+— a centred card, then a split-flap board, then a pair of sliding doors — was decoration over
+a hole the client dug for itself:
+
+```ts
+// fetchNextQuestion, before
+setLastAnswerResult(null);
+setCurrentQuestion(null);   // ← the hole
+getNextQuestionMutation.mutate(...)
+```
+
+It threw the current question away *before* asking for the next one. Nothing clears up front
+any more. `currentQuestion` and `lastAnswerResult` are replaced in `onSuccess`, so the question
+the player is looking at stays until there is a replacement to put in its place. There is no
+empty state, so there is nothing to cover: a slow network simply holds the feedback screen a
+beat longer.
+
+**What the player sees.** Answer → feedback → the next question is dealt in from the right as
+the answered one slides out left (`AnimatePresence mode="popLayout"`, keyed on
+`quizQuestionId`). `popLayout` matters: with `mode="wait"` the incoming card would wait for the
+outgoing one and you would be back to an empty stage between the two.
+
+**The only loading left is a spinner in the Next button** (`isFetchingNextQuestion`). The
+question never leaves the screen, so a slow connection needs nothing more than that.
+
+`QuizInterface` still renders the loading board in exactly one case: the FIRST question of a
+session, where there genuinely is nothing to hold.
+
+### What this changed, and why
+
+**The question number moves on arrival.** It used to be bumped next to the `fetchNextQuestion`
+call, which would now read "3 of 10" over question 2 for the length of the request. Both hooks
+bump it in `onSuccess` instead, and `currentQuestionNumber` therefore starts at **0** — it
+counts questions on screen, not questions asked for. `activateSession` seeds it one below the
+question it is about to fetch for the same reason.
+
+**Next is gated while a fetch is in flight.** With the question still on screen the button is
+still there, and a second click fires a second `next-question` — which the backend answers with
+"An answer for the current question is still pending", because `GetNextQuestionAsync` only runs
+`WHERE CurrentQuizQuestionId == null`. That is an error screen in the middle of a working quiz.
+`handleNextQuestion` returns early and the button is disabled.
+
+**The auto-advance countdown depends on primitives only.** It used to list `onNextQuestion` in
+its deps, and both pages hand it a fresh closure every render. That was survivable when
+`lastAnswerResult` was nulled immediately; now that the feedback screen stays up for the whole
+fetch, a re-render would re-arm a three-second timer that fires another request. The callback
+lives in a ref and the effect depends on `[answerId, showInstantFeedback, isQuizComplete,
+isFetchingNextQuestion]` — the same rule `quiz-timer.md` argues for the timer.
+
+**Think-time and the clock need no special handling.** The question is visible for its whole
+life now, so `questionShownAtRef` on mount is accurate, and the countdown ticking from mount
+agrees with a server that started counting when it served the question.
+
+### Why not prefetch
+
+The obvious alternative — fetch question N+1 while the player answers N — needs a backend
+change. `GetNextQuestionAsync` stamps `CurrentQuestionStartTime` and refuses to run while a
+question is pending, so asking early would start the next question's clock early. Holding costs
+nothing and needs no server work.
+
+`overflow-x-clip` on the content area keeps a card sliding out from giving the app shell a
+horizontal scrollbar. Not `overflow-x-hidden`: hidden on one axis turns the other into a scroll
+container, which clips the feedback panel and the timer's glow.
+
+Under `prefers-reduced-motion` the slide distance drops to 0 and the swap is a cross-fade.
 
 ---
 

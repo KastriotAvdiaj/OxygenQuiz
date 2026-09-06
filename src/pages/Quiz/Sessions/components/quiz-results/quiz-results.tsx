@@ -38,11 +38,13 @@ export function QuizResults({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session.id]);
 
+  // The fallback for a caller that passes no onRetryQuiz. Same missing /play suffix as the
+  // route wrapper had — see the note there.
   const handleRetryQuiz = () => {
     if (onRetryQuiz) {
       onRetryQuiz();
     } else {
-      navigate(`/quiz/${session.quizId}`);
+      navigate(`/quiz/${session.quizId}/play`);
     }
   };
 
