@@ -42,7 +42,10 @@ export function QuizResults({
     if (onRetryQuiz) {
       onRetryQuiz();
     } else {
-      navigate(`/quiz/${session.quizId}`);
+      // `/quiz/:quizId` is not a route — the only quiz route is `/quiz/:quizId/play`
+      // (Router.tsx). This navigated into the catch-all NotFound, so "Try Again" from the
+      // results page reliably 404'd.
+      navigate(`/quiz/${session.quizId}/play`);
     }
   };
 

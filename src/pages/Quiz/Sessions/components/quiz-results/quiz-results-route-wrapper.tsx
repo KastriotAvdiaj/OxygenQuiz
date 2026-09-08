@@ -22,7 +22,10 @@ export function QuizResultsRouteWrapper({}) {
 
   const handleRetryQuiz = () => {
     if (session) {
-      navigate(`/quiz/${session.quizId}`);
+      // `/quiz/:quizId` is not a route; `/quiz/:quizId/play` is. Same bug as the copy of this
+      // handler in quiz-results.tsx — this wrapper passes `onRetryQuiz` down, so that one only
+      // fired when the prop was absent, which is why it survived unnoticed.
+      navigate(`/quiz/${session.quizId}/play`);
     }
   };
 

@@ -35,6 +35,14 @@ import { audio } from "@/lib/audio";
 interface UseQuizSessionParams {
   quizId: number;
   userId: string;
+  /**
+   * The share-link grant, when the player arrived via `/play/shared/:token`. Undefined for
+   * every normal play. The backend ignores it for Public quizzes and for quizzes you own, and
+   * *requires* it to start a session on an Unlisted quiz you don't own — so omitting it is what
+   * made a copied share link resolve the quiz and then fail to start
+   * (docs/quiz/quiz-visibility.md).
+   */
+  shareToken?: string;
 }
 
 interface UseQuizSessionReturn {
@@ -125,6 +133,7 @@ const isActiveSessionError = (error: any): boolean => {
 export const useQuizSession = ({
   quizId,
   userId,
+  shareToken,
 }: UseQuizSessionParams): UseQuizSessionReturn => {
   const navigate = useNavigate();
 
@@ -299,7 +308,7 @@ export const useQuizSession = ({
 
       const sessionData = await abandonAndRestartSession({
         sessionId: existingActiveSession.id,
-        data: { quizId, userId },
+        data: { quizId, userId, shareToken },
       });
 
       activateSession(sessionData, 0);
@@ -313,7 +322,7 @@ export const useQuizSession = ({
     } finally {
       initializationRef.current.isInitializing = false;
     }
-  }, [existingActiveSession, quizId, userId, activateSession]);
+  }, [existingActiveSession, quizId, userId, shareToken, activateSession]);
 
   const initializeQuizSession = useCallback(async () => {
     // Already started or finished — nothing to do (silent).
@@ -345,7 +354,7 @@ export const useQuizSession = ({
       setExistingActiveSession(null);
 
       const sessionData = await createSessionMutation.mutateAsync({
-        data: { quizId, userId },
+        data: { quizId, userId, shareToken },
       });
 
       activateSession(sessionData, 0);
@@ -383,7 +392,7 @@ export const useQuizSession = ({
     } finally {
       initializationRef.current.isInitializing = false;
     }
-  }, [quizId, userId, retryCount, createSessionMutation, activateSession]);
+  }, [quizId, userId, shareToken, retryCount, createSessionMutation, activateSession]);
 
   // --- Effect to Trigger Initialization ---
   useEffect(() => {

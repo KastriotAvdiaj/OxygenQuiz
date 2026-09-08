@@ -1,6 +1,6 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Loader2, AlertCircle, RefreshCw, Play, RotateCcw, Clock, ArrowLeft } from "lucide-react";
+import { Loader2, AlertCircle, RefreshCw, Play, RotateCcw, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSubmitAnswer } from "../../api/submit-answer";
 import { QuizInterface } from "./quiz-interface";
@@ -11,9 +11,11 @@ import { motion } from "framer-motion";
 interface QuizPageProps {
   quizId: number;
   userId: string;
+  /** Present only when the player arrived through a share link (`/play/shared/:token`). */
+  shareToken?: string;
 }
 
-export function QuizPage({ quizId, userId }: QuizPageProps) {
+export function QuizPage({ quizId, userId, shareToken }: QuizPageProps) {
   const navigate = useNavigate();
 
   const {
@@ -33,7 +35,7 @@ export function QuizPage({ quizId, userId }: QuizPageProps) {
     existingActiveSession,
     handleResumeSession,
     handleAbandonAndRestart,
-  } = useQuizSession({ quizId, userId });
+  } = useQuizSession({ quizId, userId, shareToken });
 
   const submitAnswerMutation = useSubmitAnswer();
 
@@ -106,6 +108,14 @@ export function QuizPage({ quizId, userId }: QuizPageProps) {
   };
 
   // --- Render: Active Session Detected ---
+  //
+  // `error` is passed in rather than being left to the ErrorScreen below. This branch returns
+  // before that one, so a failure raised *by this screen's own buttons* — Resume and Start
+  // Fresh both `setError` and leave `existingActiveSession` in place — set a message that
+  // nothing could ever render. The visible result was a button that did nothing at all.
+  //
+  // Showing it here rather than switching to the full ErrorScreen is deliberate: the two
+  // actions are the recovery, so the screen the user needs is the one they are already on.
   if (existingActiveSession) {
     return (
       <ActiveSessionScreen
@@ -114,6 +124,7 @@ export function QuizPage({ quizId, userId }: QuizPageProps) {
         onRestart={handleAbandonAndRestart}
         onGoBack={handleGoBack}
         isLoading={isInitializing}
+        error={error}
       />
     );
   }
@@ -247,6 +258,7 @@ const ActiveSessionScreen = ({
   onRestart,
   onGoBack,
   isLoading,
+  error,
 }: {
   session: { 
     userAnswers: unknown[]; 
@@ -258,35 +270,67 @@ const ActiveSessionScreen = ({
   onRestart: () => void;
   onGoBack: () => void;
   isLoading: boolean;
+  /** Shown in place of silence when Resume or Start Fresh fails. */
+  error?: string | null;
 }) => {
+  /**
+   * Local pending state for this screen's two actions.
+   *
+   * `isLoading` comes from `useQuizSession`'s `isInitializing`, which is read off a **ref**
+   * (`initializationRef.current.isInitializing`). A ref is the right tool for the re-entrancy
+   * guard it primarily serves, but it does not trigger a render — so flipping it at the start
+   * of the request changed nothing on screen, and by the time anything did re-render the
+   * `finally` had already set it back to false. The spinner was unreachable in practice.
+   *
+   * Combined with the failure path being invisible, that is the whole of "the button doesn't
+   * work": no spinner on the way in, and nothing to show on the way out.
+   */
+  const [isBusy, setIsBusy] = useState(false);
+  const run = (action: () => void | Promise<void>) => async () => {
+    setIsBusy(true);
+    try {
+      await action();
+    } finally {
+      // The screen unmounts on the success paths (resume navigates or swaps the view), so this
+      // only actually lands when the action failed — which is exactly when the buttons need to
+      // become clickable again.
+      setIsBusy(false);
+    }
+  };
+  const busy = isLoading || isBusy;
+
   const answeredCount = session.userAnswers?.length ?? 0;
   const totalQuestions = session.totalQuestions;
-  const startedAgo = getRelativeTime(session.startTime);
+
+  /**
+   * "Started 1 min ago" used to be computed once, on mount, and then sat there — a screen whose
+   * only moving part is elapsed time, showing a frozen clock. This screen is exactly where
+   * someone lingers (it is a decision, not a step), so the one number on it was the one most
+   * likely to be wrong by the time they read it.
+   *
+   * A timer is an external system, which is what an Effect is for (CLAUDE.md, "Effects and
+   * state"). 30s rather than 1s because the value has minute granularity — a per-second tick
+   * would re-render this subtree sixty times to change nothing.
+   */
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(id);
+  }, []);
+  const startedAgo = getRelativeTime(session.startTime, now);
 
   return (
     <div
-      className="flex flex-1 w-full items-center justify-center px-4 py-6"
-      style={{
-        background: `
-          radial-gradient(circle at 20% 80%, hsl(var(--primary) / 0.08) 0%, transparent 50%),
-          radial-gradient(circle at 80% 20%, hsl(var(--primary) / 0.08) 0%, transparent 50%),
-          hsl(var(--background))
-        `,
-      }}>
+      className="flex flex-1 w-full items-center justify-center px-4 py-6">
       <motion.div
         initial={{ opacity: 0, y: 20, scale: 0.97 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 0.4, ease: "easeOut" }}
-        className="w-full max-w-md space-y-6">
-        {/* Header */}
+        className="w-full max-w-md space-y-6 bg-background dark:bg-muted p-4 shadow-md border border-foreground/10 rounded-xl">
+        {/* Header. No icon: a clock glyph above the words "Session In Progress" restates the
+            heading in a picture, and the card below already carries the progress and the
+            elapsed time — the two things the icon was gesturing at. */}
         <div className="text-center space-y-3">
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.15, type: "spring", stiffness: 200 }}
-            className="w-16 h-16 rounded-2xl mx-auto flex items-center justify-center bg-primary/10 border border-primary/20">
-            <Clock className="w-8 h-8 text-primary" />
-          </motion.div>
           <h2 className="text-2xl font-bold tracking-tight">
             Session In Progress
           </h2>
@@ -296,7 +340,9 @@ const ActiveSessionScreen = ({
         </div>
 
         {/* Session Info Card */}
-        <div className="rounded-xl border bg-card/50 backdrop-blur-sm p-5 space-y-4">
+        {/* bg-background, not bg-card/50: the page behind this sits on a very light gradient,
+            and a half-transparent card over it left only the border to say where the card was. */}
+        <div className="rounded-xl border border-foreground/10 bg-background dark:bg-muted p-5 space-y-4">
           <div className="flex justify-between items-center text-sm">
             <span className="text-muted-foreground">Progress</span>
             <span className="font-semibold">
@@ -322,15 +368,22 @@ const ActiveSessionScreen = ({
           </div>
         </div>
 
+        {error && (
+          <div
+            role="alert"
+            className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+            {error}
+          </div>
+        )}
+
         {/* Action Buttons */}
         <div className="space-y-4">
           <Button
-            onClick={onResume}
-            disabled={isLoading}
+            onClick={run(onResume)}
+            disabled={busy}
             size="lg"
-            className="w-full text-base font-semibold gap-2"
-            variant="fancy">
-            {isLoading ? (
+            className="w-full text-base font-semibold gap-2">
+            {busy ? (
               <Loader2 className="h-5 w-5 animate-spin" />
             ) : (
               <Play className="h-5 w-5" />
@@ -339,12 +392,12 @@ const ActiveSessionScreen = ({
           </Button>
 
           <Button
-            onClick={onRestart}
-            disabled={isLoading}
+            onClick={run(onRestart)}
+            disabled={busy}
             size="lg"
             variant="outline"
             className="w-full text-base gap-2">
-            {isLoading ? (
+            {busy ? (
               <Loader2 className="h-5 w-5 animate-spin" />
             ) : (
               <RotateCcw className="h-5 w-5" />
@@ -368,10 +421,10 @@ const ActiveSessionScreen = ({
 
 // --- Utility ---
 
-function getRelativeTime(isoString: string): string {
+/** `now` is passed in so the caller can re-run this on a tick rather than only on mount. */
+function getRelativeTime(isoString: string, now: number = Date.now()): string {
   const date = new Date(isoString);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
+  const diffMs = now - date.getTime();
   const diffMins = Math.floor(diffMs / 60000);
 
   if (diffMins < 1) return "just now";

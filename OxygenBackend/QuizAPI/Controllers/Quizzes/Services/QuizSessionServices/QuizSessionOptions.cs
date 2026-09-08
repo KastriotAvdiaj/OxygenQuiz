@@ -13,6 +13,17 @@
         public int MaxConcurrentSessionsPerUser { get; set; } = 1;
 
         /// <summary>
+        /// How often the background sweep looks for sessions that have gone stale. Set to 0 (or
+        /// less) to disable the sweep entirely, which leaves abandonment happening only on the
+        /// lazy paths — when the player comes back to the quiz, or on resume.
+        ///
+        /// Five minutes rather than something tighter because nothing is waiting on the result:
+        /// a session that went stale is stale whether it is marked now or in four minutes, and
+        /// the sweep walks every incomplete session each pass.
+        /// </summary>
+        public int AbandonmentSweepMinutes { get; set; } = 5;
+
+        /// <summary>
         /// Ceiling on how much network latency the server will credit back when a client reports
         /// its own think time (<c>UserAnswerCM.ClientElapsedMs</c>). A client-reported elapsed is
         /// only believed when the server-measured window exceeds it by at most this many seconds;
