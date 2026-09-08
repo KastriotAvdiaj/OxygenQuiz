@@ -10,12 +10,14 @@ import { cn } from "@/utils/cn";
  * page-level primary action. In this panel the buttons sit among labels and helper text, so
  * they want to be quieter than that.
  *
- * <b>Responsive on purpose.</b> The compact height only applies from `sm` up: 14px text with
- * `py-1.5` is a 32px control, and docs/RESPONSIVE.md asks for ≥36px on anything you tap. So
- * phones keep `py-2` (36px) and pointer devices get the smaller face.
+ * <b>The sizing now lives on `LiftedButton` as `size="sm"`</b>, not in a class string here.
+ * The quiz page's action row needed the same compact face, and copying the numbers to a second
+ * file is exactly what this component's own "one decision, one home" note was against. The
+ * responsive rule travels with it: the tighter face applies from `sm:` up only, because 14px
+ * text with `py-1.5` computes to 32px and docs/RESPONSIVE.md asks ≥36px for anything tappable.
  *
- * A component rather than a copy-pasted class string because the wizard's buttons live in
- * two files — the sizing is one decision and should have one home.
+ * This component still exists because the wizard's buttons live in two files and share more
+ * than a size — it is the wizard's button, and `size="sm"` is only how it is currently built.
  *
  * <b>Forwards its ref</b> so Radix `asChild` triggers (`DrawerTrigger`, `DrawerClose`) can
  * render it. Without that they warn and quietly drop the composition, which is how you end
@@ -23,11 +25,7 @@ import { cn } from "@/utils/cn";
  */
 export const WizardButton = forwardRef<HTMLButtonElement, LiftedButtonProps>(
   ({ className, ...props }, ref) => (
-    <LiftedButton
-      ref={ref}
-      {...props}
-      className={cn("px-3 py-2 text-sm sm:py-1.5", className)}
-    />
+    <LiftedButton ref={ref} size="sm" {...props} className={cn(className)} />
   )
 );
 WizardButton.displayName = "WizardButton";
