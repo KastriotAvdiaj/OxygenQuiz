@@ -1,4 +1,4 @@
-import { Navigate, useParams, Link } from "react-router-dom";
+import { Navigate, useParams, useSearchParams, Link } from "react-router-dom";
 import { AlertCircle, RefreshCw, LogIn } from "lucide-react";
 import { QuizPage } from "./quiz-page";
 import { GuestQuizPage } from "./guest-quiz-page";
@@ -15,6 +15,17 @@ import { Button } from "@/components/ui/button";
  */
 export const QuizPageRouteWrapper = () => {
   const { quizId } = useParams<{ quizId: string }>();
+  /**
+   * The share-link grant, when the player reached this quiz from a share link. The catalogue's
+   * start dialog puts it here on the way through; it is required to open a session on an
+   * Unlisted quiz you don't own, and ignored for everything else.
+   *
+   * Not passed to `GuestQuizPage`: guest play is restricted to Public quizzes server-side, so
+   * a guest holding a token would be refused anyway — and the share route sends signed-out
+   * visitors to log in before they ever reach this page.
+   */
+  const [searchParams] = useSearchParams();
+  const shareToken = searchParams.get("shareToken") ?? undefined;
   const { data: user, isLoading: isUserLoading } = useUser();
   const currentPath = window.location.pathname;
   const userId = user?.id;
@@ -40,7 +51,13 @@ export const QuizPageRouteWrapper = () => {
   }
 
   if (userId) {
-    return <QuizPage quizId={parseInt(quizId, 10)} userId={userId} />;
+    return (
+      <QuizPage
+        quizId={parseInt(quizId, 10)}
+        userId={userId}
+        shareToken={shareToken}
+      />
+    );
   }
 
   // Signed out from here down. Only treat the visitor as "guest quiz already spent"
