@@ -150,9 +150,8 @@ namespace QuizAPI.DTOs.Quiz
             /// (docs/quiz/quiz-timer.md §Clock skew).
             ///
             /// Stamped by the property initializer rather than the EF projection on purpose —
-            /// "now" is a client-side value in both the SQL projection and the compiled in-memory
-            /// <c>ToDto()</c> path, and putting <c>DateTime.UtcNow</c> inside the expression tree
-            /// makes it a provider-translation question it does not need to be.
+            /// "now" is a client-side value either way, and putting <c>DateTime.UtcNow</c> inside
+            /// an expression tree makes it a provider-translation question it does not need to be.
             /// </summary>
             public DateTime ServerTimeUtc { get; set; } = DateTime.UtcNow;
 
@@ -173,6 +172,25 @@ namespace QuizAPI.DTOs.Quiz
             /// these limits exactly as step 2 of <c>ResolveAndResumeAsync</c> does.
             /// </summary>
             public List<PendingQuestionDto> PendingQuestions { get; set; } = new();
+
+            /// <summary>
+            /// When this session stops being resumable at all — <c>ISessionAbandonmentService
+            /// .GetAbandonmentDeadlineAsync</c>, the same number the server tests itself against.
+            ///
+            /// <para><b>Why the client needs it.</b> The resume screen replays the catch-up walk
+            /// locally so its clock keeps running (<c>resume-projection.ts</c>), but the walk is
+            /// only the second half of what resume does: the abandonment check runs before it. A
+            /// screen that models the walk alone will happily promise "resume within 26s and you
+            /// keep it" for a session the server has already written off — which is what it did
+            /// until 2026-09-10. With the deadline on the wire the screen can stop offering a
+            /// resume that cannot succeed.</para>
+            ///
+            /// <para>Null only when it could not be computed (no such session). It is deliberately
+            /// NOT populated on every read: the resume screen is fed by
+            /// <c>GET /quizsessions/{id}</c>, and computing it costs an aggregate query that
+            /// answer submission has no use for.</para>
+            /// </summary>
+            public DateTime? AbandonmentDeadline { get; set; }
         }
 
         /// <summary>One unanswered question, reduced to what the catch-up walk reads.</summary>

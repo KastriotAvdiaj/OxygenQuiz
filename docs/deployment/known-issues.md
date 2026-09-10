@@ -216,6 +216,34 @@ timeLimit` points, i.e. ~33 pts on a 30s question but ~100 pts (10% of base) on 
 
 ## Code quality / cleanup
 
+- **P2 — `UserAnswer.ToDtoList()` silently drops multiple-choice options.** The sibling of the
+  bug fixed on 2026-09-10, and the reason it is still here is that it does not throw.
+  `ToDtoList` compiles `QuizSessionMappers.ProjectUserAnswer` — an expression written to be
+  translated to SQL — and runs it against loaded entities. Its only caller,
+  `UserAnswersService.GetSessionAnswersAsync`, includes `QuizQuestion → Question` and
+  `AnswerOption`, but the projection also reads
+  `((MultipleChoiceQuestion)ua.QuizQuestion.Question).AnswerOptions`, which is **not** included.
+  That navigation is initialised to an empty `List<>` on the model, so instead of a
+  `NullReferenceException` every multiple-choice answer comes back with `AnswerOptions: []` — a
+  review screen with no options to show, and a response that looks structurally valid.
+  Compare `ProjectSession`, whose compiled twin hit a *reference* navigation and at least failed
+  loudly (see `Mapping/EntityMappers.cs`).
+  _How to fix:_ either add `.ThenInclude(q => ((MultipleChoiceQuestion)q).AnswerOptions)` to the
+  query, or — better, and consistent with what `GetSessionDtoAsync` now does — project in SQL with
+  `.Select(QuizSessionMappers.ProjectUserAnswer)` and delete the compiled twin. Verify against a
+  session containing a multiple-choice answer; a True/False-only session cannot reproduce it.
+  → `OxygenBackend/QuizAPI/Controllers/Quizzes/Services/QuizSessionServices/UserAnswerService/UserAnswersService.cs`,
+  `OxygenBackend/QuizAPI/Mapping/EntityMappers.cs`
+
+- **P3 — `POST /api/quizsessions/cleanup-abandoned` is now a duplicate trigger.** The admin
+  endpoint that ran the abandoned-session sweep by hand was, until 2026-09-10, the only thing that
+  ever ran it (the `BackgroundService` written for the job was never registered — see
+  [`../quiz/quiz-playing-architecture.md`](../quiz/quiz-playing-architecture.md) §4b). Now that
+  `abandoned-session-sweep` runs every five minutes through Hangfire, the endpoint is a manual
+  kick for a job with a schedule and a dashboard. Harmless, and worth either keeping deliberately
+  (say so in the summary) or dropping in favour of Hangfire's own "trigger now".
+  → `OxygenBackend/QuizAPI/Controllers/Quizzes/QuizSessionsController.cs`
+
 - **P3 — `GET /api/Authentication/signup-config` is dead.** It was superseded by
   `auth-config`, which returns the invite flag alongside the social-login config and
   the password floor. The old endpoint is still routed and commented "kept for

@@ -503,7 +503,8 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                 if (await _abandonmentService.IsSessionAbandonedAsync(session))
                 {
                     await MarkSessionAbandoned(session, AbandonmentReason.Timeout);
-                    return Result<ResumeResultDto>.Success(BuildCompletedResult(session, sessionId));
+                    return Result<ResumeResultDto>.Success(
+                        await BuildCompletedResultAsync(session, sessionId));
                 }
 
                 var answeredIds = session.UserAnswers.Select(ua => ua.QuizQuestionId).ToHashSet();
@@ -518,7 +519,8 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                 if (!unansweredQuestions.Any())
                 {
                     await CompleteSession(session);
-                    return Result<ResumeResultDto>.Success(BuildCompletedResult(session, sessionId));
+                    return Result<ResumeResultDto>.Success(
+                        await BuildCompletedResultAsync(session, sessionId));
                 }
 
                 var skippedCount = 0;
@@ -709,11 +711,31 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
             await _context.SaveChangesAsync();
         }
 
-        private ResumeResultDto BuildCompletedResult(QuizSession session, Guid sessionId)
+        /// <summary>
+        /// The "nothing left to resume" reply, shared by the two early exits of
+        /// <see cref="ResolveAndResumeAsync"/>.
+        ///
+        /// <para><b>It re-queries rather than mapping the entity it already holds</b>, and that is
+        /// the whole point of the method. It used to call <c>session.ToDto()</c> — the compiled
+        /// in-memory twin of <c>QuizSessionMappers.ProjectSession</c> — on an entity loaded with
+        /// Quiz and UserAnswers but not <c>Quiz.Category</c> or <c>UserAnswer.QuizQuestion</c>,
+        /// both of which that projection walks. In SQL they are joins; in memory they are null,
+        /// so every abandoned-session resume threw NullReferenceException from inside the mapper,
+        /// after <c>MarkSessionAbandoned</c> had already committed. The third exit of the same
+        /// method was doing it correctly through the SQL projection all along.</para>
+        ///
+        /// <para>The compiled twin has since been deleted (see <c>Mapping/EntityMappers.cs</c>),
+        /// so this shape is now the only one available — but the extra round trip is deliberate,
+        /// not a consolation: an Include contract that only a projection knows about is not
+        /// something the next caller can be expected to reconstruct.</para>
+        /// </summary>
+        private async Task<ResumeResultDto> BuildCompletedResultAsync(QuizSession session, Guid sessionId)
         {
+            var sessionDto = await GetSessionDtoAsync(sessionId);
+
             return new ResumeResultDto
             {
-                Session = session.ToDto(),
+                Session = sessionDto!,
                 IsQuizComplete = true,
                 SkippedCount = 0,
                 QuestionNumber = session.UserAnswers?.Count ?? 0,
@@ -726,7 +748,9 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
         {
             try
             {
-                var sessionDto = await GetSessionDtoAsync(sessionId);
+                // The one read that feeds the "Session In Progress" screen, so the one read that
+                // pays for the abandonment deadline.
+                var sessionDto = await GetSessionDtoAsync(sessionId, includeAbandonmentDeadline: true);
                 return sessionDto != null
                     ? Result<QuizSessionDto>.Success(sessionDto)
                     : Result<QuizSessionDto>.ValidationFailure("Quiz session not found.");
@@ -924,16 +948,65 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
 
         #region Private Helper Methods
 
-        private async Task<QuizSessionDto?> GetSessionDtoAsync(Guid sessionId)
+        /// <param name="includeAbandonmentDeadline">
+        /// Adds <c>ResumeState.AbandonmentDeadline</c>, which the "Session In Progress" screen
+        /// needs and nothing else does. Off by default because it costs an aggregate query over
+        /// the quiz's question limits, and this method is also on the answer-submission path.
+        /// </param>
+        private async Task<QuizSessionDto?> GetSessionDtoAsync(
+            Guid sessionId, bool includeAbandonmentDeadline = false)
         {
-            // with all the necessary JOINs to get the data, including AnswerOptions.
+            // Projected in SQL — with all the necessary JOINs, including AnswerOptions. Never
+            // compile this expression and run it against an entity; see EntityMappers.cs.
             var sessionDto = await _context.QuizSessions
                 .Where(s => s.Id == sessionId)
                 .AsNoTracking()
                 .Select(QuizSessionMappers.ProjectSession) 
                 .FirstOrDefaultAsync();
 
+            // ResumeState is null for a completed session, and a completed session has no
+            // deadline to miss.
+            if (includeAbandonmentDeadline && sessionDto?.ResumeState != null)
+            {
+                sessionDto.ResumeState.AbandonmentDeadline =
+                    await GetAbandonmentDeadlineAsync(sessionId);
+            }
+
             return sessionDto;
+        }
+
+        /// <summary>
+        /// The session's abandonment deadline, read straight from the service that enforces it so
+        /// the client cannot be told a different number than the server tests against.
+        /// </summary>
+        private async Task<DateTime?> GetAbandonmentDeadlineAsync(Guid sessionId)
+        {
+            // Timing columns only. `CalculateTimeoutsAsync` falls back to its own aggregate over
+            // QuizQuestions when the Quiz navigation isn't loaded, so materialising the graph here
+            // would buy nothing — and this is a probe, never something we save.
+            var timing = await _context.QuizSessions
+                .AsNoTracking()
+                .Where(s => s.Id == sessionId)
+                .Select(s => new
+                {
+                    s.Id,
+                    s.QuizId,
+                    s.QuizVersion,
+                    s.StartTime,
+                    s.CurrentQuestionStartTime,
+                })
+                .FirstOrDefaultAsync();
+
+            if (timing == null) return null;
+
+            return await _abandonmentService.GetAbandonmentDeadlineAsync(new QuizSession
+            {
+                Id = timing.Id,
+                QuizId = timing.QuizId,
+                QuizVersion = timing.QuizVersion,
+                StartTime = timing.StartTime,
+                CurrentQuestionStartTime = timing.CurrentQuestionStartTime,
+            });
         }
 
         #endregion

@@ -107,6 +107,28 @@ export function QuizPage({ quizId, userId }: QuizPageProps) {
     }
   };
 
+  // --- Render: something failed ---
+  //
+  // BEFORE the active-session branch, and that ordering is the whole fix. `handleResumeSession`
+  // sets `error` on failure but only clears `existingActiveSession` on success, so with the
+  // branches the other way round a failed resume re-rendered the *same* "Session In Progress"
+  // screen: the spinner stopped, nothing else changed, and the player was left pressing a button
+  // that had already 500'd. An error nobody can see is worse than no error handling at all,
+  // because every layer looks like it is working.
+  //
+  // Kept above the loading branch too — an error with no session must not blank the page.
+  if (error) {
+    return (
+      <ErrorScreen
+        error={error}
+        onRetry={handleRetry}
+        onGoBack={handleGoBack}
+        isRetrying={isInitializing}
+        canRetry={canRetry}
+      />
+    );
+  }
+
   // --- Render: Active Session Detected ---
   if (existingActiveSession) {
     return (
@@ -126,34 +148,14 @@ export function QuizPage({ quizId, userId }: QuizPageProps) {
   // code and the player lost the leave button and the layout on every Next. Gating on the
   // session alone lets that gap fall through to QuizInterface, which renders the same
   // QuizLoadingView inside the quiz chrome.
-  if (!quizSession && !error) {
+  if (!quizSession) {
     return <QuizLoadingView label="Loading your quiz" />;
   }
 
-  if (error) {
-    return (
-      <ErrorScreen
-        error={error}
-        onRetry={handleRetry}
-        onGoBack={handleGoBack}
-        isRetrying={isInitializing}
-        canRetry={canRetry}
-      />
-    );
-  }
-
-  if (!quizSession) {
-    return (
-      <ErrorScreen
-        error="Unable to start quiz session. The session could not be found."
-        onRetry={handleRetry}
-        onGoBack={handleGoBack}
-        isRetrying={isInitializing}
-        icon="warning"
-        canRetry={canRetry}
-      />
-    );
-  }
+  // (A second `if (!quizSession)` used to follow this one, rendering "the session could not be
+  // found". It was unreachable before this file was touched — the branch above already answers
+  // that condition — and reordering the error branch only made it obvious. A failure with no
+  // session now reaches the ErrorScreen at the top, which is where it was always meant to go.)
 
   return (
     <QuizInterface

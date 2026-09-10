@@ -134,6 +134,34 @@ export const EverythingRanOut: Story = {
 };
 
 /**
+ * Past the abandonment deadline. Distinct from `EverythingRanOut`, and the difference is the one
+ * this screen used to get wrong: there the catch-up walk consumed every question, here the walk
+ * never runs at all — the server closes the session on sight. So there is no "N questions ran
+ * out" tally, no countdown, and the button offers results rather than a resume that would be
+ * refused.
+ *
+ * The deadline is deliberately recent while the pending list is long: replaying only the walk,
+ * this session looks like it has minutes of quiz left. That was the bug.
+ */
+export const SessionClosed: Story = {
+  args: {
+    session: {
+      quizTitle: "Algebra and Calculus Definitions and Formulas",
+      totalQuestions: 15,
+      userAnswers: Array.from({ length: 2 }),
+      startTime: minutesAgo(25),
+      resumeState: {
+        serverTimeUtc: new Date().toISOString(),
+        currentQuizQuestionId: 3,
+        currentQuestionStartTime: minutesAgo(20),
+        pendingQuestions: pending(2, 15),
+        abandonmentDeadline: minutesAgo(4),
+      },
+    },
+  },
+};
+
+/**
  * A session created but never served a question — nothing is decaying, so there is deliberately
  * no countdown. A timer here would invent urgency the server doesn't have.
  */

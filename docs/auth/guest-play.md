@@ -63,7 +63,7 @@ applies to guest play too — there's only ever one implementation to maintain.
 | `QuizSession.IsGuestSession` | `OxygenBackend/QuizAPI/Models/Quiz/QuizSession.cs` | `bool`, default `false`. The only schema change (migration `AddGuestQuizSessions`). |
 | `IQuizSessionService.CreateGuestSessionAsync` / `IsGuestSessionAsync` / `DiscardGuestSessionAsync` | `Controllers/Quizzes/Services/QuizSessionServices/QuizSessionService.cs` | New methods alongside the existing real-account ones. |
 | `GuestQuizSessionsController` | `OxygenBackend/QuizAPI/Controllers/Quizzes/GuestQuizSessionsController.cs` | The anonymous route surface (`/api/guest-quiz-sessions/*`). No `[Authorize]` anywhere — see "Security model" below for how it stays safe without it. |
-| Guest-aware cleanup | `Controllers/Quizzes/Services/QuizSessionServices/AbandonmentService/SessionAbandonmentService.cs` (`MarkSessionsAsAbandonedAsync`) | The existing periodic abandoned-session sweep now **deletes** guest sessions instead of marking them "completed" — see Lifecycle. |
+| Guest-aware cleanup | `Controllers/Quizzes/Services/QuizSessionServices/AbandonmentService/SessionAbandonmentService.cs` (`MarkSessionsAsAbandonedAsync`) | The periodic abandoned-session sweep **deletes** guest sessions instead of marking them "completed" — see Lifecycle. Note the sweep itself only started running on 2026-09-10; see the warning under Lifecycle. |
 
 `GuestQuizSessionsController` routes (all under `/api/guest-quiz-sessions`):
 
@@ -240,7 +240,7 @@ never reaches them at all; there's no guest-mode fallback for multiplayer anywhe
      → nothing about this attempt exists anywhere anymore
 
 3b. Abandoned path: visitor closes the tab mid-quiz, never reaches results
-     → the existing periodic abandoned-session cleanup job picks it up later
+     → the periodic abandoned-session cleanup job picks it up later
      → because IsGuestSession = true, the cleanup DELETES the row (and its answers)
        instead of marking it "completed" the way a real account's session would be
      → the guest_played cookie is never set in this path — that browser still has its
@@ -250,6 +250,19 @@ never reaches them at all; there's no guest-mode fallback for multiplayer anywhe
 There is no path where a guest session outlives the attempt. Either the guest finishes and views
 results (deleted immediately by `/finish`), or they don't and the cleanup job deletes it within
 its normal sweep window.
+
+> **This was not true until 2026-09-10, and any database older than that has the rows to prove it.**
+> The sentence above described a sweep that was never scheduled: the `BackgroundService` written
+> for it was never registered (`AddHostedService` appears nowhere in this project — recurring work
+> goes through Hangfire), so path 3b deleted nothing, ever. Every guest who closed the tab
+> mid-quiz left their session row and its answers behind permanently. The sweep now runs as the
+> `abandoned-session-sweep` Hangfire job, every five minutes, and will clear the backlog on its
+> first passes — worth knowing before reading anything into a sudden drop in row counts. See
+> [`../quiz/quiz-playing-architecture.md`](../quiz/quiz-playing-architecture.md) §4b.
+>
+> The guest-limit cookie is unaffected either way: it is set on the results path only, so a guest
+> whose session was swept still has their free quiz. That is consistent with "the limit is soft,
+> not a security boundary".
 
 ## What to update if this changes
 

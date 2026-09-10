@@ -22,29 +22,47 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.AbandonmentSe
             _options = options.Value;
         }
 
+        /// <summary>
+        /// Whether this session has stopped being resumable. Defined as "now is past
+        /// <see cref="GetAbandonmentDeadlineAsync"/>" and nothing else, so the verdict the server
+        /// acts on and the deadline it publishes to the client are the same number by
+        /// construction. Written as two separate comparisons this drifted the moment either was
+        /// touched, and the client had no way to see either of them.
+        /// </summary>
         public async Task<bool> IsSessionAbandonedAsync(QuizSession session)
         {
             if (session.IsCompleted) return false;
 
-            var timeouts = await CalculateTimeoutsAsync(session);
-            var timeSinceStart = DateTime.UtcNow - session.StartTime;
-            var timeSinceLastActivity = session.CurrentQuestionStartTime.HasValue
-                ? DateTime.UtcNow - session.CurrentQuestionStartTime.Value
-                : timeSinceStart;
-
-            var isAbandoned = timeSinceStart > timeouts.TotalTimeout ||
-                             timeSinceLastActivity > timeouts.ActivityTimeout;
+            var deadline = await GetAbandonmentDeadlineAsync(session);
+            var isAbandoned = DateTime.UtcNow > deadline;
 
             if (isAbandoned)
             {
                 _logger.LogInformation(
-                    "Session {SessionId} determined as abandoned. Total time: {TotalTime:F1}min (limit: {TotalLimit:F1}min), " +
-                    "Activity time: {ActivityTime:F1}min (limit: {ActivityLimit:F1}min)",
-                    session.Id, timeSinceStart.TotalMinutes, timeouts.TotalTimeout.TotalMinutes,
-                    timeSinceLastActivity.TotalMinutes, timeouts.ActivityTimeout.TotalMinutes);
+                    "Session {SessionId} determined as abandoned. Deadline was {Deadline:O}, " +
+                    "{Overdue:F1}min ago (started {Started:O}, last activity {LastActivity:O})",
+                    session.Id, deadline, (DateTime.UtcNow - deadline).TotalMinutes,
+                    session.StartTime, session.CurrentQuestionStartTime ?? session.StartTime);
             }
 
             return isAbandoned;
+        }
+
+        /// <inheritdoc />
+        public async Task<DateTime> GetAbandonmentDeadlineAsync(QuizSession session)
+        {
+            var timeouts = await CalculateTimeoutsAsync(session);
+
+            // No question served yet means the session's own start is its last activity: a session
+            // created and then never played still ages out.
+            var lastActivity = session.CurrentQuestionStartTime ?? session.StartTime;
+
+            var byTotalTime = session.StartTime + timeouts.TotalTimeout;
+            var byInactivity = lastActivity + timeouts.ActivityTimeout;
+
+            // The earlier of the two. Whichever one fires, the session is done — so the deadline
+            // the player is shown is the first of them, not the last.
+            return byTotalTime < byInactivity ? byTotalTime : byInactivity;
         }
 
         public async Task<QuizSession?> GetActiveSessionForUserAsync(Guid userId, int quizId)
@@ -127,15 +145,35 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.AbandonmentSe
                                      quizQuestions.Count * _options.QuestionBufferSeconds;
             var expectedDuration = TimeSpan.FromSeconds(totalQuizTimeSeconds);
 
-            var maxQuestionTime = quizQuestions.Any()
-                ? quizQuestions.Max(qq => qq.TimeLimitInSeconds)
-                : _options.DefaultMaxQuestionTimeSeconds;
-
             var totalTimeout = expectedDuration.Add(
                 TimeSpan.FromMinutes(expectedDuration.TotalMinutes * _options.TotalTimeoutBufferPercentage));
 
-            var activityTimeout = TimeSpan.FromSeconds(
-                maxQuestionTime * _options.ActivityTimeoutMultiplier + _options.ActivityBufferSeconds);
+            // ── The activity timeout must not be able to outrun the catch-up walk ──────────────
+            //
+            // `ResolveAndResumeAsync` checks abandonment FIRST, and only then walks the expired
+            // questions. So any absence this timeout calls "abandoned" is an absence the walk
+            // never gets to resolve — and if that absence is shorter than the walk's own reach,
+            // the walk is unreachable and the "Session In Progress" screen is offering a resume
+            // the server will refuse.
+            //
+            // The walk's reach is bounded by the total playable time of the session's unanswered
+            // questions, which is at most every visible question's limit. Setting the timeout to
+            // the whole quiz's playable time plus a grace therefore guarantees the invariant:
+            //
+            //     activityTimeout > (the longest catch-up the walk could ever perform)
+            //
+            // so abandonment can only fire once the walk would have run out of questions anyway.
+            // Using every question rather than just the unanswered ones over-estimates late in a
+            // quiz, and that is the deliberate direction: too generous costs a stale row the
+            // total-time cap reaps anyway, too tight costs a player their session.
+            //
+            // It used to be `longestQuestion * 2 + 60s` — two minutes for a quiz of 30-second
+            // questions, which voided any absence long enough to expire three questions. The
+            // catch-up walk, its client-side mirror and the whole resume screen were dead code in
+            // production. See docs/adr/0008-abandonment-cannot-outrun-the-catch-up-walk.md.
+            var activityTimeout = quizQuestions.Count > 0
+                ? TimeSpan.FromSeconds(totalQuizTimeSeconds + _options.ActivityBufferSeconds)
+                : TimeSpan.FromSeconds(_options.FallbackActivityTimeoutSeconds);
 
             return (totalTimeout, activityTimeout);
         }

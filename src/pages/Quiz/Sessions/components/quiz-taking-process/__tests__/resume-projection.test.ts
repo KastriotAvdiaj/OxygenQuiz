@@ -155,4 +155,66 @@ describe("projectResume", () => {
     expect(p.isComplete).toBe(true);
     expect(p.landingQuestionNumber).toBeNull();
   });
+
+  /**
+   * Step 0 — the check `ResolveAndResumeAsync` makes BEFORE the walk, and the one this file
+   * modelled for months without knowing it existed. Getting it wrong is not a rounding error:
+   * the screen promised a resume for sessions the server had already closed, and pressing the
+   * button was the only way to find out.
+   */
+  describe("the abandonment deadline", () => {
+    const withDeadline = (secondsFromT0: number) =>
+      state({ abandonmentDeadline: new Date(T0 + secondsFromT0 * 1000).toISOString() });
+
+    it("reports the session as abandoned once the deadline has passed", () => {
+      const p = projectResume(withDeadline(60), 4, after(61));
+
+      expect(p.isAbandoned).toBe(true);
+      // Implies complete: there is nothing to resume onto either way.
+      expect(p.isComplete).toBe(true);
+      expect(p.landingQuestionNumber).toBeNull();
+      expect(p.secondsRemaining).toBeNull();
+    });
+
+    it("claims nothing ran out, because abandonment does not run the walk", () => {
+      // The server marks the session abandoned and returns; it creates no timed-out answers.
+      // A tally here would invent a story about questions that were never resolved at all.
+      const p = projectResume(withDeadline(60), 4, after(300));
+
+      expect(p.skippedCount).toBe(0);
+    });
+
+    it("beats the walk even while a question still looks live", () => {
+      // 3s into a 10s question: the walk alone would happily offer 7 more seconds on it. The
+      // deadline passed a second ago, so the offer is void. This exact disagreement is the bug.
+      const p = projectResume(withDeadline(2), 4, after(3));
+
+      expect(p.isAbandoned).toBe(true);
+      expect(p.secondsRemaining).toBeNull();
+    });
+
+    it("leaves a session alone right up to the deadline", () => {
+      // `serverNow > deadline`, so the deadline instant itself is still live — the same
+      // inclusive boundary the walk uses for `elapsed <= timeLimit`, and worth pinning for the
+      // same reason: one tick either side is the difference between playing and not.
+      //
+      // Deadline and elapsed are set to the same 5s so the assertion below reads off the
+      // question in flight rather than the tail of a walk. (This test first asserted a deadline
+      // of 60s and a `serverNow` 60s into a 10-second question, which is a session whose every
+      // window had already closed — it was checking step 3, not the boundary it names.)
+      const p = projectResume(withDeadline(5), 4, after(5));
+
+      expect(p.isAbandoned).toBe(false);
+      expect(p.secondsRemaining).toBe(5); // still on the question in flight, halfway through
+    });
+
+    it("predicts exactly as before when the payload carries no deadline", () => {
+      // Older payloads, and the reads that don't pay to compute it. No deadline means no
+      // abandonment knowledge — not "abandoned", and not "definitely fine" either.
+      const p = projectResume(state(), 4, after(3));
+
+      expect(p.isAbandoned).toBe(false);
+      expect(p.secondsRemaining).toBe(7);
+    });
+  });
 });

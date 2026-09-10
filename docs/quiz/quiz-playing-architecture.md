@@ -343,6 +343,50 @@ chosen to start. Replacing means Back from results goes to wherever they were be
 Anything new that sends a player from `/quiz/:quizId/play` to a results route must replace too. A
 plain `navigate()` there reopens the hole.
 
+## 4b. Ending a session nobody came back to
+
+A session that is left mid-question has to be closed by something. Two things do it, and they
+share one implementation on purpose — `SessionAbandonmentService`:
+
+| Trigger | Where | When |
+| --- | --- | --- |
+| **Lazily**, when the player returns | `ResolveAndResumeAsync` → `IsSessionAbandonedAsync` | The moment they press Resume |
+| **Actively**, on a schedule | `AbandonedSessionSweeper`, a Hangfire recurring job (`abandoned-session-sweep`, every 5 minutes) | Whether or not anyone returns |
+
+Real-account sessions are marked abandoned with a reason and a timestamp; guest sessions are
+**deleted** along with their answers, which is the guarantee
+[`../auth/guest-play.md`](../auth/guest-play.md) makes about them.
+
+**Neither of these worked until 2026-09-10, and the way they failed is worth recording.**
+
+The scheduled half did not exist. A `QuizSessionCleanupService : BackgroundService` was written
+for it — a complete implementation, with its own copy of the timeout arithmetic — and was never
+passed to `AddHostedService`. There is no such call anywhere in this project, because recurring
+work goes through Hangfire (`ImageCleanUpService`, `AiReservationSweeper`). So it had never run,
+not once, and nothing about that was visible: the class compiled, the file looked maintained, and
+its logging was never absent from anywhere anyone was reading. The consequences were that stale
+sessions accumulated indefinitely — and with `MaxConcurrentSessionsPerUser = 1`, each one blocked
+that player from restarting that quiz — and that abandoned guest sessions were never deleted at
+all, contrary to what guest-play.md promised.
+
+The lazy half existed and threw. `BuildCompletedResult` mapped the loaded `QuizSession` entity
+with `session.ToDto()`, the compiled in-memory twin of `QuizSessionMappers.ProjectSession` — an
+expression written for SQL, which walks `Quiz.Category.Name` and `UserAnswer.QuizQuestion`.
+Neither is in the resume query's Include chain. In SQL they are joins; compiled and run against an
+entity they are null dereferences, so **every abandoned-session resume threw
+`NullReferenceException` from inside the mapper**, after the session had already been committed as
+abandoned. The same method's third exit had been doing it correctly through the SQL projection all
+along. That compiled twin is now deleted; see the note at the bottom of `Mapping/EntityMappers.cs`.
+
+So: a scheduled job that never ran, and a fallback that crashed when it did. The pattern to take
+away is that **both were single points of failure that fail silently** — one by never executing,
+one by executing on a path nobody reaches in testing. When something is meant to happen "later or
+on demand", check that either path has ever actually happened.
+
+The timeouts these two share have their own constraint — they must not be shorter than the
+catch-up walk's reach, or the resume screen offers something the server refuses. That is
+[`../adr/0008-abandonment-cannot-outrun-the-catch-up-walk.md`](../adr/0008-abandonment-cannot-outrun-the-catch-up-walk.md).
+
 ## 5. Known rough edges (good first cleanups)
 
 These are pre-existing and safe to tidy when you're in the area:

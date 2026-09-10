@@ -66,6 +66,12 @@ export const ActiveSessionView = ({
   const resolvedCount = Math.min(totalQuestions, answeredCount + skippedCount);
   const isSpent = projection?.isComplete ?? false;
 
+  // Past the server's abandonment deadline: pressing the button closes the session and shows
+  // results. Distinct from `isSpent` — that one means the catch-up walk ate every question, this
+  // one means the walk never runs. Same destination, and the difference is worth saying out loud
+  // because the player's remaining questions are gone for a different reason.
+  const isAbandoned = projection?.isAbandoned ?? false;
+
   // A countdown only when the server has a question in flight — see ResumeProjection.
   const countdown =
     projection && projection.nextChangeAtMs !== null && projection.secondsRemaining !== null
@@ -104,10 +110,16 @@ export const ActiveSessionView = ({
             )}
           </motion.div>
           <h2 className="text-2xl font-bold tracking-tight">
-            {isSpent ? "Time's Up" : "Session In Progress"}
+            {isAbandoned ? "Session Closed" : isSpent ? "Time's Up" : "Session In Progress"}
           </h2>
           <p className="text-muted-foreground text-sm">
-            {isSpent ? (
+            {isAbandoned ? (
+              <>
+                You were away too long, so your session for{" "}
+                <span className="font-medium text-foreground">{session.quizTitle}</span> has
+                closed. Anything you already answered still counts.
+              </>
+            ) : isSpent ? (
               <>
                 Every question in{" "}
                 <span className="font-medium text-foreground">{session.quizTitle}</span> ran out
@@ -172,7 +184,12 @@ export const ActiveSessionView = ({
           </div>
         </div>
 
-        {/* Action Buttons */}
+        {/* Action Buttons.
+
+            The primary button follows `isSpent`, which an abandoned session also sets: both
+            outcomes close the session and land on results, so one label is the honest control.
+            Offering "Resume Quiz" past the abandonment deadline is exactly the promise the
+            server refuses — the bug this screen shipped with. */}
         <div className="space-y-3">
           <Button
             onClick={onResume}

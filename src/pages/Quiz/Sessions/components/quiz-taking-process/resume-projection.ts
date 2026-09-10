@@ -22,6 +22,13 @@ export interface ResumeProjection {
   /** True once the walk has consumed every remaining question: Resume goes straight to results. */
   isComplete: boolean;
   /**
+   * The session is past its abandonment deadline: the server will not run the catch-up walk at
+   * all, it will close the session and hand back results. Implies `isComplete`, but is a
+   * different fact and the screen says so differently — "every question ran out" is the walk
+   * finishing, this is the session being over regardless of what was left.
+   */
+  isAbandoned: boolean;
+  /**
    * Server-clock ms at which this projection next changes — the instant the landing question's
    * window closes. Null when nothing is counting down (no question was in flight, or the quiz
    * has already run out), and that null IS the screen's signal to render a still frame instead
@@ -60,8 +67,26 @@ export function projectResume(
     secondsRemaining: null,
     timeLimitInSeconds: null,
     isComplete: true,
+    isAbandoned: false,
     nextChangeAtMs: null,
   };
+
+  // --- Step 0: the check the server makes BEFORE any of this ---
+  //
+  // `ResolveAndResumeAsync` asks "is this session abandoned?" first and returns immediately if it
+  // is — no walk, no timed-out answers, just a closed session. Modelling steps 1-3 without this
+  // one is how the screen came to promise "resume within 26s and you keep it" for a session the
+  // server had already written off. There is no tally here on purpose: abandonment does not
+  // create timed-out answers, so nothing "ran out" in the sense the walk means.
+  //
+  // Absent deadline = an older or cheaper payload that didn't carry one. Then we know nothing
+  // about abandonment and predict exactly what we always did.
+  if (state.abandonmentDeadline) {
+    const deadlineMs = parseUtc(state.abandonmentDeadline);
+    if (serverNowMs > deadlineMs) {
+      return { ...complete, isAbandoned: true };
+    }
+  }
 
   const pending = state.pendingQuestions;
   if (pending.length === 0) return complete;
@@ -92,6 +117,7 @@ export function projectResume(
     if (elapsed <= current.timeLimitInSeconds) {
       return {
         skippedCount: 0,
+        isAbandoned: false,
         landingQuestionNumber: answeredCount + 1,
         // `limit - floor(elapsed)` is what BuildResumeOnCurrentQuestion hands the player, so it
         // is what the screen promises. (It equals ceil(limit - elapsed) — same number, and the
@@ -122,6 +148,7 @@ export function projectResume(
 
     return {
       skippedCount,
+      isAbandoned: false,
       landingQuestionNumber: answeredCount + skippedCount + 1,
       // `(int)overflowSeconds` on the server — truncation, not rounding.
       secondsRemaining: question.timeLimitInSeconds - Math.floor(overflowSeconds),

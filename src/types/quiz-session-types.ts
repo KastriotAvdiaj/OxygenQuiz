@@ -117,6 +117,16 @@ export interface SessionResumeState {
   currentQuestionStartTime: string | null;
   /** Every unanswered question of the session's pinned quiz version, in play order. */
   pendingQuestions: PendingQuestion[];
+  /**
+   * When the session stops being resumable at all — the server's own abandonment deadline.
+   *
+   * The catch-up walk is only the second half of what resume does; the abandonment check runs
+   * before it, and a screen that models the walk alone will promise a resume the server has
+   * already decided to refuse. Optional because only `GET /quizsessions/{id}` pays to compute
+   * it: absent means "no abandonment knowledge", and the projection then behaves exactly as it
+   * did before this field existed.
+   */
+  abandonmentDeadline?: string | null;
 }
 
 export interface QuizSession {

@@ -305,6 +305,13 @@ export const useQuizSession = ({
         fetchNextQuestion(result.session.id);
       }
     } catch (err: any) {
+      // Drop the session along with raising the error. Whatever went wrong, the screen offering
+      // to resume it is no longer trustworthy: the commonest failures here are "this session is
+      // already completed" (the server closed it, possibly as part of this very call) and a 500,
+      // and re-offering Resume for either just invites the same press again. QuizPage renders
+      // `error` ahead of `existingActiveSession`, so this is belt-and-braces — but the belt is
+      // what stops a stale screen coming back if that ordering is ever disturbed.
+      setExistingActiveSession(null);
       setError(
         extractErrorMessage(err, "Failed to resume session. Please try again.")
       );

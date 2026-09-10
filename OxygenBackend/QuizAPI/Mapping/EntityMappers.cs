@@ -686,15 +686,33 @@ namespace QuizAPI.Mapping
                 AbandonedAt = s.AbandonedAt
             };
 
+        // ── No in-memory twin for ProjectSession, deliberately ───────────────────────────────
+        //
+        // Compiling one of these expressions turns every navigation it walks from a SQL join into
+        // a plain dereference, so an entity loaded without the matching Include chain does not
+        // return partial data — it throws NullReferenceException from inside the mapper, several
+        // frames away from the query that was actually wrong.
+        //
+        // ProjectSession is the worst offender: it reaches Quiz.Category.Name and, through every
+        // UserAnswer, QuizQuestion.Question and its subtype collections. A `ToDto(this QuizSession)`
+        // existed here and had exactly one caller — the two early exits of ResolveAndResumeAsync,
+        // whose query includes Quiz and UserAnswers but not Quiz.Category or UserAnswer.QuizQuestion.
+        // Pressing "Resume Quiz" on an abandoned session threw there every time, and the same
+        // method's third exit was already doing it correctly through the SQL projection.
+        // See docs/quiz/quiz-playing-architecture.md and known-issues.md.
+        //
+        // So: ProjectSession is for `.Select(...)` against IQueryable and nothing else. Anything
+        // holding a QuizSession entity and wanting a DTO should re-query by id.
+        //
+        // ProjectSummary keeps its compiled twin because it reads only Quiz.Title and two counts,
+        // and its callers page rows in memory. The lesson is not "never compile one" — it is that
+        // the compiled form silently inherits an Include contract nothing checks.
         private static readonly Func<UserAnswer, UserAnswerDto> _userAnswer = ProjectUserAnswer.Compile();
-        private static readonly Func<QuizSession, QuizSessionDto> _session = ProjectSession.Compile();
         private static readonly Func<QuizSession, QuizSessionSummaryDto> _summary = ProjectSummary.Compile();
 
         public static UserAnswerDto ToDto(this UserAnswer ua) => _userAnswer(ua);
         public static List<UserAnswerDto> ToDtoList(this IEnumerable<UserAnswer> answers) =>
             answers.Select(_userAnswer).ToList();
-        public static QuizSessionDto ToDto(this QuizSession s) => _session(s);
-        public static QuizSessionSummaryDto ToSummaryDto(this QuizSession s) => _summary(s);
         public static List<QuizSessionSummaryDto> ToSummaryDtoList(this IEnumerable<QuizSession> sessions) =>
             sessions.Select(_summary).ToList();
 

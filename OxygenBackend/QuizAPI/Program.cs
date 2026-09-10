@@ -301,6 +301,7 @@ builder.Services.AddScoped<QuizAPI.Services.Ai.IAiQuotaPolicy, QuizAPI.Services.
 builder.Services.AddScoped<QuizAPI.Services.Ai.IAiQuotaService, QuizAPI.Services.Ai.AiQuotaService>();
 builder.Services.AddScoped<QuizAPI.Services.Ai.IAiGenerationService, QuizAPI.Services.Ai.AiGenerationService>();
 builder.Services.AddScoped<QuizAPI.Services.Ai.AiReservationSweeper>();
+builder.Services.AddScoped<QuizAPI.Services.AbandonedSessionSweeper>();
 
 builder.Services.AddHttpContextAccessor();
 
@@ -556,6 +557,18 @@ using (var scope = app.Services.CreateScope())
     // Runs often because the cost of a stuck reservation is a user who can't generate.
     recurringJobs.AddOrUpdate<QuizAPI.Services.Ai.AiReservationSweeper>(
         "ai-reservation-sweep",
+        service => service.RunAsync(),
+        "*/5 * * * *" // every 5 minutes
+    );
+
+    // Ends quiz sessions nobody came back to. Until this was added, NOTHING did: the
+    // BackgroundService written for it was never registered (there is no AddHostedService in this
+    // project), so abandonment only ever happened when a player happened to reopen the quiz —
+    // and abandoned guest sessions, which guest-play.md promises are deleted, never were.
+    // Five minutes for the same reason as the sweep above: the cost of a stale session is a
+    // player who cannot start that quiz again, because MaxConcurrentSessionsPerUser is 1.
+    recurringJobs.AddOrUpdate<QuizAPI.Services.AbandonedSessionSweeper>(
+        "abandoned-session-sweep",
         service => service.RunAsync(),
         "*/5 * * * *" // every 5 minutes
     );
