@@ -19,6 +19,12 @@ interface BaseCategorySelectProps {
   includeAllOption?: boolean;
   error?: string;
   clearErrors?: () => void;
+  /**
+   * Overrides the form-mode placeholder shown when nothing is picked. Defaults to
+   * "Select category". The AI wizard passes its own, because there the empty state is not
+   * an unanswered question — it means "let the model choose" (ADR 0001).
+   */
+  placeholder?: string;
   /** Base look when there's no error. "quiz" (default) is the pushable field; "minimal" is
    *  the quiet modern style used by settings panels. */
   fieldVariant?: "quiz" | "minimal" | "form";
@@ -46,6 +52,8 @@ export const CategorySelect: React.FC<CategorySelectProps> = (props) => {
     error,
     clearErrors,
     mode = "form",
+    placeholder,
+
     fieldVariant = "minimal",
   } = props;
 
@@ -143,7 +151,7 @@ export const CategorySelect: React.FC<CategorySelectProps> = (props) => {
           <SelectValue
             className="text-foreground"
             placeholder={
-              includeAllOption ? "All Categories" : "Select category"
+              placeholder ?? (includeAllOption ? "All Categories" : "Select category")
             }
           />
         </SelectTrigger>

@@ -22,6 +22,7 @@ import type { ParseResult } from "./parse-ai-output";
 import { AdvancedOptions } from "./components/advanced-options";
 import { ConfirmDetailsCard } from "./components/confirm-details-card";
 import { GenerateErrorPanel } from "./components/generate-error-panel";
+import { LeaveGenerationDialog } from "./components/leave-generation-dialog";
 import { GenerationInput } from "./components/generation-input";
 import { ImportNotices } from "./components/import-notices";
 import { ImportSummary } from "./components/import-summary";
@@ -106,6 +107,16 @@ export interface AiQuizWizardViewProps {
    * stand-in. See docs/development/storybook.md ("Slot props").
    */
   builderSlot?: ReactNode;
+
+  // ── Leaving mid-generation ───────────────────────────────────────────────────
+  /**
+   * The router blocked a navigation while a generation was in flight. Armed in the
+   * container by `useNavigationGuard`; a prop rather than a hook here so a story can open
+   * the dialog by passing `true`.
+   */
+  showLeaveDialog?: boolean;
+  onConfirmLeave?: () => void;
+  onCancelLeave?: () => void;
 }
 
 /**
@@ -169,6 +180,9 @@ export const AiQuizWizardView = ({
   onStartOver,
   parseResult,
   builderSlot,
+  showLeaveDialog = false,
+  onConfirmLeave,
+  onCancelLeave,
 }: AiQuizWizardViewProps) => {
   const navigate = useNavigate();
 
@@ -232,11 +246,31 @@ export const AiQuizWizardView = ({
     generateError?.code === "EmailNotVerified" ||
     generateError?.code === "QuotaExceeded";
 
+  /**
+   * Rendered by **every** branch below, not just the wizard.
+   *
+   * The blocker is armed on `isGenerating`, which today can only be true on screen 3 — but
+   * "today" is the whole problem. `useNavigationGuard`'s contract is that a blocked
+   * navigation always has a visible way out, and the multiplayer lobby shipped the other
+   * version of this: the blocker armed on one branch, the dialog defined on another, and a
+   * click that stranded the router in "blocked" with no proceed and no reset, re-rendering
+   * the subtree on every further click until the question timer froze. One element used in
+   * all three returns costs a line each and cannot drift that way.
+   */
+  const leaveDialog = (
+    <LeaveGenerationDialog
+      isOpen={showLeaveDialog}
+      onConfirm={() => onConfirmLeave?.()}
+      onCancel={() => onCancelLeave?.()}
+    />
+  );
+
   // ── Screen 1: still fetching the lookups
   if (isLoadingEntities) {
     return (
       <div className="w-full h-64 flex items-center justify-center">
         <Spinner size="lg" />
+        {leaveDialog}
       </div>
     );
   }
@@ -257,6 +291,7 @@ export const AiQuizWizardView = ({
           onStartOver={onStartOver}
         />
         <div className="flex-1 min-h-0">{builderSlot}</div>
+        {leaveDialog}
       </div>
     );
   }
@@ -432,7 +467,12 @@ export const AiQuizWizardView = ({
                     </>
                   ) : (
                     <>
-                      <Sparkles className="h-4 w-4" /> Generate
+                      {/* "Generate quiz", not "Generate". The button sits in a row with a
+                          quota note and a link to another generator, and the sparkle is
+                          decoration — it names the vibe, not the object. Naming the noun
+                          also survives the screen-reader case, where the icon says
+                          nothing at all. */}
+                      <Sparkles className="h-4 w-4" /> Generate quiz
                     </>
                   )}
                 </span>
@@ -450,6 +490,8 @@ export const AiQuizWizardView = ({
           </CardContent>
         </Card>
       )}
+
+      {leaveDialog}
     </div>
   );
 };

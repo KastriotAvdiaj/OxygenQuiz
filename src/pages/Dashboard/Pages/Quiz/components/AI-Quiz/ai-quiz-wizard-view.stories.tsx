@@ -321,6 +321,55 @@ export const Generating: Story = {
 };
 
 /**
+ * The user tried to leave while the model was still writing, and the router blocked it.
+ *
+ * `showLeaveDialog` is a prop rather than something a `play` function provokes, because the
+ * blocker lives in the container (`useNavigationGuard` needs a real router to block) and the
+ * view only renders what it is told. That split is what makes this state openable at all —
+ * the alternative is a story that has to navigate to reach a dialog.
+ *
+ * Paired with `isGenerating` on purpose: those are the only circumstances the container can
+ * arm it in, and a story showing the dialog over an idle form would be advertising a state
+ * that cannot happen.
+ */
+export const LeavingMidGeneration: Story = {
+  args: {
+    topic: "The French Revolution",
+    isGenerating: true,
+    showLeaveDialog: true,
+  },
+  play: async () => {
+    // The dialog portals out of `canvasElement`, so it is looked up on the document.
+    const body = within(document.body);
+    await expect(
+      await body.findByText(/still writing/i),
+    ).toBeInTheDocument();
+    // Both ways out are present. A blocked navigation that renders no proceed and no reset
+    // is the multiplayer freeze this dialog exists to avoid — see use-navigation-guard.ts.
+    await expect(
+      body.getByRole("button", { name: /leave and cancel/i }),
+    ).toBeInTheDocument();
+    await expect(
+      body.getByRole("button", { name: /stay on this page/i }),
+    ).toBeInTheDocument();
+  },
+};
+
+/**
+ * The guard is *not* armed on an idle form. Typing a topic costs nothing to redo, and a
+ * confirm on every exit is the kind of prompt people learn to click through — which would
+ * blunt the one that matters above.
+ */
+export const NoLeaveDialogWhenIdle: Story = {
+  args: { topic: "The French Revolution", showLeaveDialog: false },
+  play: async () => {
+    await expect(
+      within(document.body).queryByText(/still writing/i),
+    ).not.toBeInTheDocument();
+  },
+};
+
+/**
  * Generate stays clickable on an empty form — pressing it explains what's missing instead of
  * greying out and leaving the user to guess.
  *

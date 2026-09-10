@@ -20,6 +20,12 @@ interface BaseDifficultySelectProps {
   includeAllOption?: boolean;
   error?: string;
   clearErrors?: () => void;
+  /**
+   * Overrides the form-mode placeholder shown when nothing is picked. Defaults to
+   * "Select difficulty". The AI wizard passes its own, because there the empty state is not
+   * an unanswered question — it means "let the model choose" (ADR 0001).
+   */
+  placeholder?: string;
   /** Base look when there's no error. "quiz" (default) is the pushable field; "minimal" is
    *  the quiet modern style used by settings panels. */
   fieldVariant?: "quiz" | "minimal" | "form";
@@ -47,6 +53,8 @@ export const DifficultySelect: React.FC<DifficultySelectProps> = (props) => {
     error,
     clearErrors,
     mode = "form",
+    placeholder,
+
     fieldVariant = "minimal",
   } = props;
 
@@ -125,7 +133,7 @@ export const DifficultySelect: React.FC<DifficultySelectProps> = (props) => {
         }}
       >
         <SelectTrigger variant={variant} className="min-w-[200px]">
-          <SelectValue placeholder="Select difficulty" />
+          <SelectValue placeholder={placeholder ?? "Select difficulty"} />
         </SelectTrigger>
         <SelectContent variant={variant} className="min-w-[200px]">
           {includeAllOption && (

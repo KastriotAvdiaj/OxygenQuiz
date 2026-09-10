@@ -97,7 +97,15 @@ export const GenerationInput = ({
           id="ai-topic"
           variant="minimal"
           className={cn("mt-1 text-base", error && "minimal-input--error")}
-          placeholder="Type your topic here..."
+          // An example, not an instruction. "Type your topic here" restates the label
+          // directly above it and teaches nothing; the useful unknown for a first-time user
+          // is not *that* a topic goes here but how specific one may be — that an audience
+          // and a slant are allowed, not just a noun. Carried in the placeholder rather than
+          // a helper line under the field: it costs no vertical space on a screen whose
+          // primary action is 60px above the fold by budget
+          // (docs/adr/0002-quiz-creation-routes-hide-the-dashboard-header.md), and a hint
+          // that only matters while the box is empty should leave with the empty box.
+          placeholder="e.g. World War II, for high-school students"
           value={topic}
           onChange={(e) => onTopicChange(e.target.value)}
           onKeyDown={(e) => {

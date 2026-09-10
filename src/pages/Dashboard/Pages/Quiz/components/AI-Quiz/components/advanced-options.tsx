@@ -138,7 +138,18 @@ export const AdvancedOptions = ({
         {/* The three lookups the quiz is filed under. Labelled as a set rather than left as
             a bare run of dropdowns: each select already names itself, but nothing said what
             the three of them together were for. "Classification" over "Quiz details" —
-            the title and description above are quiz details too. */}
+            the title and description above are quiz details too.
+
+            Each carries an "AI will…" placeholder rather than the selects' default
+            "Select category". Their default wording is written for forms where the field is
+            an unanswered question; here an empty select is a *decision already made* — the
+            model picks it — and three dropdowns saying "Select…" under an "Optional" eyebrow
+            read as three things you still owe the form. This is the same job the "The AI will
+            suggest one" placeholders do for title and description opposite, so the whole
+            column now states its own fallback. It is a wording fix, not a hidden field or a
+            preselected value: ADR 0001 keeps the fields visible and unset, and the group-level
+            "Leave anything blank and the AI decides it" stays the one statement of
+            optionality — no field gains an "(optional)" label. */}
         <div className="space-y-3 short:space-y-2">
           <span className="block text-sm font-medium text-foreground">
             Classification
@@ -146,6 +157,7 @@ export const AdvancedOptions = ({
           <CategorySelect
             categories={categories}
             fieldVariant="minimal"
+            placeholder="The AI will pick one"
             value={categoryId?.toString() ?? ""}
             onChange={(v: string) => onCategoryIdChange(parseInt(v, 10))}
             includeAllOption={false}
@@ -153,6 +165,7 @@ export const AdvancedOptions = ({
           <LanguageSelect
             languages={languages}
             fieldVariant="minimal"
+            placeholder="The AI will detect it"
             value={languageId?.toString() ?? ""}
             onChange={(v: string) => onLanguageIdChange(parseInt(v, 10))}
             includeAllOption={false}
@@ -160,6 +173,7 @@ export const AdvancedOptions = ({
           <DifficultySelect
             difficulties={difficulties}
             fieldVariant="minimal"
+            placeholder="The AI will judge it"
             value={difficultyId?.toString() ?? ""}
             onChange={(v: string) => onDifficultyIdChange(parseInt(v, 10))}
             includeAllOption={false}

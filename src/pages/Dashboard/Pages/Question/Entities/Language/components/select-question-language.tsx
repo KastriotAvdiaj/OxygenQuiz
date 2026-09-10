@@ -19,6 +19,12 @@ interface BaseLanguageSelectProps {
   includeAllOption?: boolean;
   error?: string;
   clearErrors?: () => void;
+  /**
+   * Overrides the form-mode placeholder shown when nothing is picked. Defaults to
+   * "Select language". The AI wizard passes its own, because there the empty state is not
+   * an unanswered question — it means "let the model choose" (ADR 0001).
+   */
+  placeholder?: string;
   /** Base look when there's no error. "quiz" (default) is the pushable field; "minimal" is
    *  the quiet modern style used by settings panels. */
   fieldVariant?: "quiz" | "minimal" | "form";
@@ -46,6 +52,8 @@ export const LanguageSelect: React.FC<LanguageSelectProps> = (props) => {
     error,
     clearErrors,
     mode = "form",
+    placeholder,
+
     fieldVariant = "minimal",
   } = props;
 
@@ -134,7 +142,7 @@ export const LanguageSelect: React.FC<LanguageSelectProps> = (props) => {
         }}
       >
         <SelectTrigger variant={variant} className="min-w-[200px]">
-          <SelectValue placeholder="Select language" />
+          <SelectValue placeholder={placeholder ?? "Select language"} />
         </SelectTrigger>
         <SelectContent variant={variant} className="min-w-[200px]">
           {includeAllOption && (
