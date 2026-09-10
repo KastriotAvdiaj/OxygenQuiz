@@ -42,6 +42,14 @@ Consequences:
   wrapper was `height: 100%` (one viewport, no more); pages taller than one
   screen overflowed a fixed box instead of growing the scroll area.
 
+- **Never give a Radix panel an exit animation.** `data-[state=inactive]:animate-out`
+  on `TabsContent` (or any Radix `Presence` child) makes Radix hold the outgoing
+  panel *in the layout* until the animation ends. For those ~200ms the scroll
+  container is as tall as both panels put together — measured 800px -> 1919px on
+  the quiz-results page — so its scrollbar appears and vanishes on every switch,
+  and everything below the tabs jumps. Enter animations are free; exit ones are
+  only safe if the leaving panel is taken out of flow.
+
 ## The shells
 
 Every rule in this document is addressed to page authors, and for a long time
