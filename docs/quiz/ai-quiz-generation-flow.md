@@ -845,7 +845,11 @@ wizard, with a cube and one line of status text — but be clear about what it i
 are paced off a clock, not off anything the server said, because there is nothing to read. It
 makes the wait legible; it does not make it observable. When streaming lands, that copy is the
 first thing that should stop being a guess. `fail-slow` above is how to watch it, and
-`useGenerationWait` is why a fast *failure* does not sit behind it.
+`useGenerationWait` is why a fast *failure* does not sit behind it — it detours
+through `aborting`, which fades out on the working copy rather than claiming success
+on the way to an error panel. A success instead gets a floor of 3.6s, a 1.4s beat on
+the questions landing, and a 0.3s fade: at least 5.3s of overlay, which on the normal
+10-40s path expires long before the model answers.
 
 **14. The cost model is flat; DeepSeek's pricing is not.** `EstimateCost` multiplies tokens by one
 rate per direction, which was true of every vendor when it was written. Since **2026-08-16**

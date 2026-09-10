@@ -260,12 +260,18 @@ export const AiQuizWizardView = ({
    * all three returns costs a line each and cannot drift that way.
    */
   /**
-   * The set-piece for the wait itself. `useGenerationWait` is what keeps a fast
-   * success from flashing it — and what makes sure a fast *failure* doesn't sit
-   * behind it, since the error panel is what that screen owes the user.
+   * The set-piece for the wait itself, from the first frame to the last.
+   * `useGenerationWait` owns the timing: a floor so a fast success can't flash it,
+   * a beat on the questions landing, and a straight exit on failure so the error
+   * panel is never stuck behind an animation.
    */
-  const showGeneratingOverlay = useGenerationWait(isGenerating, {
-    failed: generateError !== null,
+  const generationPhase = useGenerationWait(isGenerating, {
+    // Questions arrived — either straight into the review, or into the one-field
+    // confirm card. Both are the model having done its job.
+    succeeded: parseResult?.ok === true || needsConfirmation,
+    // The request failed, or it came back and the parser could make nothing of it.
+    // Either way the next thing on screen is a panel explaining it, not a quiz.
+    failed: generateError !== null || (parseResult !== null && !parseResult.ok),
   });
 
   /**
@@ -274,8 +280,12 @@ export const AiQuizWizardView = ({
    * still be holding out its minimum, so the branch it unmounts on is not the branch it
    * mounted on.
    */
-  const generatingOverlay = showGeneratingOverlay ? (
-    <GeneratingOverlay mode={mode} />
+  const generatingOverlay = generationPhase ? (
+    <GeneratingOverlay
+      phase={generationPhase}
+      mode={mode}
+      questionCount={parseResult?.ok ? parseResult.questions.length : undefined}
+    />
   ) : null;
 
   const leaveDialog = (

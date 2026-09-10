@@ -664,9 +664,15 @@ body {
      all are in AI-Quiz/components/rubiks-cube.tsx.
 
      Here rather than in class strings because Tailwind v3 ships no
-     `transform-style` / `backface-visibility` utilities and the piece is four
+     `transform-style` / `backface-visibility` utilities and the piece is six
      keyframes deep. Everything sizes off `--cubie`, so a caller scales the whole
      cube with one custom property.
+
+     Three nested transforms, because one element can only run one of them:
+       .rubiks-tumble  pitch and roll, slow, back and forth
+       .rubiks-cube    the continuous yaw
+       .rubiks-layer   one Y slice, turning on its own delay
+     Take any one away and the cube reads as an ornament rotating on a stick.
 
      STICKER COLOURS ARE THE ONE DOCUMENTED EXCEPTION to "colours come from theme
      tokens" (CLAUDE.md, Styling). A cube is only readable as a cube in its own
@@ -686,12 +692,22 @@ body {
     height: calc(var(--cubie) * 3 + var(--cubie-gap) * 2);
   }
 
+  .rubiks-tumble {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+    /* Deliberately not a multiple of the yaw or the layer cycle: three loops that
+       never line up is what stops the whole thing looking like a loop. */
+    animation: rubiks-tumble 11s ease-in-out infinite;
+  }
+
   .rubiks-cube {
     position: relative;
     width: 100%;
     height: 100%;
     transform-style: preserve-3d;
-    animation: rubiks-orbit 18s linear infinite;
+    animation: rubiks-yaw 18s linear infinite;
   }
 
   /* One per Y slice. All three turn about Y, staggered by their delay, which is
@@ -737,9 +753,16 @@ body {
   .rubiks-face-u { transform: rotateX(90deg) translateZ(var(--cubie-half)); }
   .rubiks-face-d { transform: rotateX(-90deg) translateZ(var(--cubie-half)); }
 
-  @keyframes rubiks-orbit {
-    from { transform: rotateX(-24deg) rotateY(0deg); }
-    to { transform: rotateX(-24deg) rotateY(360deg); }
+  @keyframes rubiks-yaw {
+    from { transform: rotateY(0deg); }
+    to { transform: rotateY(360deg); }
+  }
+
+  @keyframes rubiks-tumble {
+    0% { transform: rotateX(-28deg) rotateZ(0deg); }
+    35% { transform: rotateX(12deg) rotateZ(-7deg); }
+    70% { transform: rotateX(-16deg) rotateZ(6deg); }
+    100% { transform: rotateX(-28deg) rotateZ(0deg); }
   }
 
   /* Four quarter-turns and back to 360deg, so the iteration ends where it began
@@ -753,23 +776,52 @@ body {
     97%, 100% { transform: rotateY(360deg); }
   }
 
+  /* The moment the questions land. A pop and a faster spin, and that is all: the
+     obvious idea — snap every layer to solved — cannot be done without a visible
+     jump, because CSS gives no way to interpolate *out of* a running keyframe
+     (swapping the animation resolves `from` against the underlying style, not the
+     frame you were on). A cube caught mid-turn under "your quiz is ready" costs
+     nothing; a lurch would be the only thing anyone noticed. */
+  .rubiks-solved {
+    animation: rubiks-pop 560ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .rubiks-solved .rubiks-cube {
+    animation-duration: 7s;
+  }
+
+  @keyframes rubiks-pop {
+    0% { transform: scale(1); }
+    45% { transform: scale(1.14); }
+    100% { transform: scale(1); }
+  }
+
   /* Held still: same cube, posed so three faces show. `.rubiks-still` is the
      opt-out a story or a snapshot uses; the media query is the one users get. */
+  .rubiks-still,
+  .rubiks-still .rubiks-tumble,
   .rubiks-still .rubiks-cube,
   .rubiks-still .rubiks-layer {
     animation: none;
   }
+  .rubiks-still .rubiks-tumble {
+    transform: rotateX(-24deg);
+  }
   .rubiks-still .rubiks-cube {
-    transform: rotateX(-24deg) rotateY(-34deg);
+    transform: rotateY(-34deg);
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .rubiks-cube,
-    .rubiks-layer {
+    .rubiks,
+    .rubiks .rubiks-tumble,
+    .rubiks .rubiks-cube,
+    .rubiks .rubiks-layer {
       animation: none;
     }
-    .rubiks-cube {
-      transform: rotateX(-24deg) rotateY(-34deg);
+    .rubiks .rubiks-tumble {
+      transform: rotateX(-24deg);
+    }
+    .rubiks .rubiks-cube {
+      transform: rotateY(-34deg);
     }
   }
 

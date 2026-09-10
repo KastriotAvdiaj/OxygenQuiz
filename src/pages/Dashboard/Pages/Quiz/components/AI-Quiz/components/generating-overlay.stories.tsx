@@ -53,7 +53,7 @@ type Story = StoryObj<typeof meta>;
 
 /** Topic mode: the model is inventing the material, so the heading says writing. */
 export const Topic: Story = {
-  args: { mode: "Topic" },
+  args: { phase: "generating", mode: "Topic" },
 };
 
 /**
@@ -61,5 +61,38 @@ export const Topic: Story = {
  * telling them we're "writing" it would misdescribe what they asked for.
  */
 export const SourceMaterial: Story = {
-  args: { mode: "Source" },
+  args: { phase: "generating", mode: "Source" },
+};
+
+/**
+ * The questions landed. The cube pops and spins faster, the copy turns over, and
+ * `useGenerationWait` holds this for 1.4s before the layer fades off the review step.
+ *
+ * Read the copy carefully: it says questions, not a saved quiz, because nothing has
+ * been saved. The reply is parsed in the browser and the review step is where the user
+ * accepts it — a "quiz created" here would be the one lie on a screen whose whole job
+ * is to report what happened.
+ */
+export const Landed: Story = {
+  args: { phase: "succeeded", mode: "Topic", questionCount: 12 },
+};
+
+/**
+ * The count is optional — a reply that needed a category picked first arrives without
+ * one, and the line falls back rather than inventing a number.
+ */
+export const LandedWithoutCount: Story = {
+  args: { phase: "succeeded", mode: "Topic" },
+};
+
+/**
+ * The failure exit. It fades out still showing the working copy, on purpose: a
+ * generation that failed has an error panel waiting behind this, and 300ms of "your
+ * questions are ready" over a quota refusal is worse than no animation at all. That is
+ * the whole reason `aborting` is a separate phase from `leaving`.
+ *
+ * Storybook renders it mid-fade; in the app it is gone ~300ms later.
+ */
+export const Aborting: Story = {
+  args: { phase: "aborting", mode: "Topic" },
 };
