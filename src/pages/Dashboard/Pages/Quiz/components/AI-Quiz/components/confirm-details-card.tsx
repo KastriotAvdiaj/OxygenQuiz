@@ -5,6 +5,7 @@ import type { QuestionCategory, QuestionLanguage } from "@/types/question-types"
 
 import { CategorySelect } from "../../../../Question/Entities/Categories/Components/select-question-category";
 import { LanguageSelect } from "../../../../Question/Entities/Language/components/select-question-language";
+import { isUnspecifiedLookup } from "../../../../Question/Entities/lookup-visibility";
 
 export interface ConfirmDetailsCardProps {
   categories: QuestionCategory[];
@@ -20,13 +21,18 @@ export interface ConfirmDetailsCardProps {
 }
 
 /**
- * Shown when the questions are ready but the model named a category or language we don't
- * have — it invented one, or picked a real-sounding name that isn't in this instance.
+ * Shown when the questions are ready but the model didn't give us a category or language we
+ * can use — it invented one, picked a real-sounding name that isn't in this instance, or named
+ * the seeded "Unspecified" row, which resolves but may never be stored on a question.
  *
  * The generation is not wasted. Throwing away a good set of questions because a *label*
  * didn't resolve would be the wrong trade, so we ask only for the field that's missing and
  * go straight to review. Naming the AI's rejected suggestion matters too: without it the
  * user is asked to fix something with no explanation of what went wrong.
+ *
+ * The two rejections need different words. "Unspecified" *is* one of your categories, so
+ * telling the user it isn't would be a plain lie about their own data — it was refused for
+ * being a placeholder, not for being unknown.
  */
 export const ConfirmDetailsCard = ({
   categories,
@@ -58,7 +64,9 @@ export const ConfirmDetailsCard = ({
           />
           {suggestedCategoryName && (
             <p className="text-muted-foreground text-xs mt-1">
-              The AI suggested "{suggestedCategoryName}", which isn't one of your categories.
+              {isUnspecifiedLookup(suggestedCategoryName)
+                ? "The AI didn't settle on a category. Pick one — the questions inherit it, and they can't be saved without it."
+                : `The AI suggested "${suggestedCategoryName}", which isn't one of your categories.`}
             </p>
           )}
         </div>
@@ -75,7 +83,9 @@ export const ConfirmDetailsCard = ({
           />
           {suggestedLanguageName && (
             <p className="text-muted-foreground text-xs mt-1">
-              The AI suggested "{suggestedLanguageName}", which isn't one of your languages.
+              {isUnspecifiedLookup(suggestedLanguageName)
+                ? "The AI didn't settle on a language. Pick one — the questions inherit it, and they can't be saved without it."
+                : `The AI suggested "${suggestedLanguageName}", which isn't one of your languages.`}
             </p>
           )}
         </div>

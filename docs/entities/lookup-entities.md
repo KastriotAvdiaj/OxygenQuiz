@@ -122,6 +122,27 @@ directly above the code that ignored it.
 `POST` returns the created **DTO**, not the entity and not the request model. Languages used to
 return the request model, so the caller never learned the new row's id.
 
+## 6b. One row in each table is a system default
+
+`DbSeeder` inserts an **"Unspecified"** row into all three tables. It is not content: it is the
+value the app assigns while something is being drafted, and two rules exist to stop it surviving —
+a question may never be *stored* as Unspecified in category or language, and a quiz may not be
+*published* while any of its three lookups is. Both live in the services, both are matched **by
+name**, and the full write-up is
+[`../quiz/quiz-question-classification.md`](../quiz/quiz-question-classification.md).
+
+Two consequences for anyone working in this layer:
+
+- **The name and the match are `QuizAPI.Common.LookupDefaults`.** Read the rule from there rather
+  than writing `== "Unspecified"` again. It is matched by name and not by id on purpose — the
+  seeded rows are not guaranteed to land on the same ids in every environment, so an id-based
+  check passes every test and then silently forbids "Art" in production.
+- **The list endpoints return it, deliberately.** These are plain table reads and this row is a
+  real row; hiding it server-side would break the admin work of *finding* the entries that still
+  need classifying. It is filtered at the point of *selection* instead —
+  `lookup-visibility.ts` on the frontend — which is a display concern and behaves differently in a
+  filter dropdown than in a form one.
+
 ## 7. Known gaps
 
 - `Category.gradient` is stored, editable and filterable but never rendered — see

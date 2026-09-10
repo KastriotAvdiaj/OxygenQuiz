@@ -601,10 +601,15 @@ timeLimit` points, i.e. ~33 pts on a 30s question but ~100 pts (10% of base) on 
   _Newly reachable:_ the "category/language can't be Unspecified" rule (2026-07-31) means a quiz
   with an Unspecified category now fails **every** question POST at once, turning the most likely
   mistake into a partial-failure storm.
+  _Half fixed (2026-09-10):_ the pre-flight check below now exists. `handleQuizSubmit` refuses an
+  Unspecified category or language before it writes anything, so the likeliest cause of a mass
+  failure no longer reaches the loop — and the AI path that was seeding that value has been closed
+  at the source (see [`../adr/0007-a-forbidden-lookup-is-never-offered.md`](../adr/0007-a-forbidden-lookup-is-never-offered.md)).
+  The `Promise.all` defect itself is untouched: any *other* per-question failure — a rejected
+  image, a 500, a dropped connection on question 3 of 20 — still orphans the rest.
   _How to fix (cheap, frontend-only):_ swap `Promise.all` for `Promise.allSettled`; if any question
-  failed, stop **before** creating the quiz and report which ones rather than proceeding. Pair it
-  with a pre-flight check of the quiz's own category/language, which is knowable up front and is
-  now the likeliest cause of a mass failure.
+  failed, stop **before** creating the quiz and report which ones rather than proceeding. (The
+  pre-flight half of this suggestion is done; this is the remaining half.)
   → `src/pages/Dashboard/Pages/Quiz/components/Create-Quiz-Form/create-quiz.tsx` (`handleQuizSubmit`)
 - **P3 — Manual quiz create is N+1 requests across two transactions.** A 20-question quiz is 21
   requests: 20 concurrent question POSTs to the shared per-type endpoints, then one quiz POST.

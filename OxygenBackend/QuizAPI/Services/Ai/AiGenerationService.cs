@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Extensions.Options;
+using QuizAPI.Common;
 using QuizAPI.Exceptions;
 using QuizAPI.Repositories.Interfaces;
 
@@ -221,10 +222,25 @@ namespace QuizAPI.Services.Ai
             };
         }
 
-        /// <summary>Trims, drops blanks and de-duplicates a caller-supplied name list.</summary>
+        /// <summary>
+        /// Trims, drops blanks, de-duplicates and removes the seeded "Unspecified" row from a
+        /// caller-supplied name list.
+        ///
+        /// <para>These lists are not data — they are the <b>vocabulary the model may choose
+        /// from</b>, and everything in one is an answer we have promised to accept. "Unspecified"
+        /// is not: a question may never be stored as it, and a quiz filed under it cannot be
+        /// published. Offering it invites the one reply the API is obliged to reject, several
+        /// hundred tokens after we could have said so for free.</para>
+        ///
+        /// <para>The frontend already omits it (<c>use-ai-quiz-draft.tsx</c>), so in practice this
+        /// removes nothing. That is the point: the prompt is a server-side contract, and a caller
+        /// is not where it gets enforced — a second client, a replayed request or a stale bundle
+        /// would otherwise reopen it.</para>
+        /// </summary>
         private static List<string> CleanNames(IReadOnlyList<string> names) =>
             names.Where(n => !string.IsNullOrWhiteSpace(n))
                  .Select(n => n.Trim())
+                 .Where(n => !LookupDefaults.IsUnspecified(n))
                  .Distinct(StringComparer.OrdinalIgnoreCase)
                  .ToList();
 

@@ -11,6 +11,7 @@ import type {
 import CreateQuizForm from "../Create-Quiz-Form/create-quiz";
 import { QuizQuestionProvider } from "../Create-Quiz-Form/Quiz-questions-context";
 import { useQuizForm } from "../Create-Quiz-Form/use-quiz-form";
+import { isUnspecifiedLookup } from "../../../Question/Entities/lookup-visibility";
 
 import { DEFAULT_AI_QUESTION_TYPES } from "./components/question-type-options";
 import {
@@ -103,8 +104,12 @@ export const useAiQuizDraft = () => {
    * the quiz's rating and the fallback for anything unrecognised.
    */
   const defaultDifficultyId = useMemo(() => {
-    if (difficulties.length === 0) return null;
-    const sorted = [...difficulties].sort((a, b) => a.weight - b.weight);
+    // Unspecified is not a rating, so it is not a candidate. It is seeded with weight 0, which
+    // sorts it first — with a small lookup table it can win the median outright and hand the
+    // quiz a difficulty that silently blocks publishing (`EnsurePublishableAsync`).
+    const ratings = difficulties.filter((d) => !isUnspecifiedLookup(d.level));
+    if (ratings.length === 0) return null;
+    const sorted = [...ratings].sort((a, b) => a.weight - b.weight);
     return sorted[Math.floor(sorted.length / 2)].id;
   }, [difficulties]);
 
@@ -116,9 +121,16 @@ export const useAiQuizDraft = () => {
 
   // Names, not ids, are what the model deals in — resolution happens here against lists we
   // already have, exactly as difficulty names have always been resolved.
+  //
+  // A resolver is also where a proposal gets **rejected**, and "Unspecified" is the proposal
+  // that has to be. It is a real row, so it would resolve to a real id and travel on as a
+  // perfectly valid-looking choice — right up to the API refusing it. Refusing it by name here
+  // (not by trusting the prompt never to offer it) is what makes `needsConfirmation` fire, so
+  // the user is asked for a category instead of being handed one that cannot be saved.
+  // See ADR 0003 and docs/quiz/quiz-question-classification.md.
   const suggestedCategoryId = useMemo(() => {
     const name = suggestions?.category;
-    if (!name) return null;
+    if (!name || isUnspecifiedLookup(name)) return null;
     return (
       categories.find((c) => c.name.toLowerCase() === name.toLowerCase())?.id ??
       null
@@ -127,7 +139,7 @@ export const useAiQuizDraft = () => {
 
   const suggestedLanguageId = useMemo(() => {
     const name = suggestions?.language;
-    if (!name) return null;
+    if (!name || isUnspecifiedLookup(name)) return null;
     return (
       languages.find((l) => l.language.toLowerCase() === name.toLowerCase())
         ?.id ?? null
@@ -231,9 +243,26 @@ export const useAiQuizDraft = () => {
       languageId !== null
         ? languages.find((l) => l.id === languageId)?.language
         : undefined,
-    languageNames: languages.map((l) => l.language),
-    categoryNames: categoryId !== null ? [] : categories.map((c) => c.name),
-    difficultyNames: difficulties.map((d) => d.level),
+    // The seeded "Unspecified" row is never part of a vocabulary we offer. It is an internal
+    // default the app assigns, a question may never be stored as it, and a quiz filed under it
+    // cannot be published — so naming it in the prompt only invites the one answer we are
+    // obliged to reject. `AiGenerationService` drops it again on the way through, because the
+    // prompt is a server-side contract and this caller is not the gate.
+    languageNames: languages
+      .filter((l) => !isUnspecifiedLookup(l.language))
+      .map((l) => l.language),
+    categoryNames:
+      categoryId !== null
+        ? []
+        : categories
+            .filter((c) => !isUnspecifiedLookup(c.name))
+            .map((c) => c.name),
+    // Difficulty is the one lookup a *question* may legally hold as Unspecified, but the model
+    // is being asked to rate difficulty — a shrug is not one of the answers, and it would cost
+    // the quiz its publishability.
+    difficultyNames: difficulties
+      .filter((d) => !isUnspecifiedLookup(d.level))
+      .map((d) => d.level),
     questionCount,
     allowedTypes,
     extraInstructions: extraInstructions.trim() || undefined,

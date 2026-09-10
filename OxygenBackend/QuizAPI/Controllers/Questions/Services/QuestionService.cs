@@ -1,5 +1,6 @@
 using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
+using QuizAPI.Common;
 using QuizAPI.Controllers.Image.Services;
 using QuizAPI.Controllers.Questions.Services.AnswerOptions;
 using QuizAPI.DTOs.Question;
@@ -34,14 +35,9 @@ namespace QuizAPI.Controllers.Questions.Services
 
         // ── Classification rules ──────────────────────────────────────────────────
 
-        /// <summary>
-        /// Name of the seeded system-default lookup rows. Mirrors UNSPECIFIED_LOOKUP_LABEL in
-        /// src/pages/Dashboard/Pages/Question/Entities/lookup-visibility.ts.
-        /// </summary>
-        private const string UnspecifiedLookupName = "Unspecified";
-
-        private static bool IsUnspecified(string name) =>
-            string.Equals(name.Trim(), UnspecifiedLookupName, StringComparison.OrdinalIgnoreCase);
+        // The name and the match live in QuizAPI.Common.LookupDefaults — one definition for the
+        // three services that need it. See that file for why the rule is by name and not by id.
+        private static bool IsUnspecified(string name) => LookupDefaults.IsUnspecified(name);
 
         /// <summary>
         /// Every question must carry a real category and language. "Unspecified" is an internal

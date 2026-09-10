@@ -231,12 +231,12 @@ const CreateQuizForm = ({
         navigate(`${dashboardBase}/quizzes`);
       },
       onError: (error) => {
+        // Log only. `/quiz/ai-import`'s failures are authored 4xx messages — "Pick a category
+        // for this quiz — its questions inherit it…" — and `parseApiError` already shows them
+        // verbatim (docs/development/error-handling.md § "What the toast *says*"). Adding a
+        // generic toast on top buried the useful one under "Please try again", which reads as a
+        // second, unrelated failure and tells the user nothing about what to do.
         console.error("AI quiz import error:", error);
-        addNotification({
-          type: "error",
-          title: "Error",
-          message: "Failed to create quiz. Please try again.",
-        });
       },
     },
   });
@@ -282,6 +282,53 @@ const CreateQuizForm = ({
   const handleQuizSubmit = async (values: any) => {
     try {
       setIsCreatingQuestions(true);
+
+      // Quiz-level classification gate: the client mirror of
+      // `QuestionService.ValidateClassificationAsync` and `QuizService.CreateAiQuizAsync`
+      // (docs/quiz/quiz-question-classification.md). Every question this submit creates
+      // inherits the quiz's category and language, and no question may be *stored* as the
+      // seeded "Unspecified" row — so the API rejects the entire save.
+      //
+      // Not in the zod schema, because the schema only sees an id and `.positive()` is happy
+      // with the seeded row's. The rule is matched by name, exactly as both services match it,
+      // since seeded ids aren't stable across environments. It stays a mirror and never the
+      // rule itself: the API is still the gate.
+      //
+      // It runs before anything is written, which is the point. On the manual path each new
+      // question is its own POST, so an Unspecified category failed every one of them at once
+      // (docs/deployment/known-issues.md § quiz-creation atomicity) — a burst of doomed
+      // requests to say what one empty dropdown could have said for free.
+      //
+      // Difficulty is deliberately absent: Unspecified is legal on a question and is what a new
+      // one starts from. It blocks *publishing* only, which `canPublish` below already handles.
+      const unspecifiedClassification = [
+        isUnspecifiedLookup(
+          queryData.categories.find((c) => c.id === values.categoryId)?.name,
+        )
+          ? "category"
+          : null,
+        isUnspecifiedLookup(
+          queryData.languages.find((l) => l.id === values.languageId)?.language,
+        )
+          ? "language"
+          : null,
+      ].filter((field): field is string => field !== null);
+
+      if (unspecifiedClassification.length > 0) {
+        // These fields live on the Quiz tab, and the submit button is reachable from the
+        // Question tab — same reason `quizTabErrorCount` exists.
+        setActiveTab("quiz");
+        addNotification({
+          type: "error",
+          title:
+            unspecifiedClassification.length === 1
+              ? `Pick a ${unspecifiedClassification[0]} for this quiz`
+              : "Pick a category and language for this quiz",
+          message:
+            'Its questions inherit them, and "Unspecified" isn\'t allowed on a question.',
+        });
+        return;
+      }
 
       const questionsWithSettings = getQuestionsWithSettings();
 
@@ -376,20 +423,29 @@ const CreateQuizForm = ({
           },
         );
 
-        await createAiQuizMutation.mutateAsync({
-          data: {
-            title: values.title,
-            description: values.description,
-            categoryId: values.categoryId,
-            languageId: values.languageId,
-            difficultyId: values.difficultyId,
-            status: values.status,
-            showFeedbackImmediately: values.showFeedbackImmediately,
-            shuffleQuestions: values.shuffleQuestions,
-            imageUrl: values.imageUrl,
-            questions: importQuestions,
-          },
-        });
+        try {
+          await createAiQuizMutation.mutateAsync({
+            data: {
+              title: values.title,
+              description: values.description,
+              categoryId: values.categoryId,
+              languageId: values.languageId,
+              difficultyId: values.difficultyId,
+              status: values.status,
+              showFeedbackImmediately: values.showFeedbackImmediately,
+              shuffleQuestions: values.shuffleQuestions,
+              imageUrl: values.imageUrl,
+              questions: importQuestions,
+            },
+          });
+        } catch {
+          // Handled: the interceptor has shown the server's own message. Returning here rather
+          // than falling through to the outer catch is deliberate — that handler suppresses
+          // itself by reading `createAiQuizMutation.isError`, which is React state set in the
+          // same tick and therefore a race. Nothing was written either way: this endpoint is
+          // atomic, so there is no half-made quiz to explain.
+          return;
+        }
 
         resetAllValidationStates();
         return;

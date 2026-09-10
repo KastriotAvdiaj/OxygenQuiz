@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using QuizAPI.Common;
 using QuizAPI.Controllers.Image.Services;
 using QuizAPI.DTOs.Quiz;
 using QuizAPI.Exceptions;
@@ -36,14 +37,10 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
             _imageService = imageService ?? throw new ArgumentNullException(nameof(imageService));
         }
 
-        /// <summary>
-        /// Name of the seeded system-default lookup rows. Kept in sync with
-        /// QuestionService.UnspecifiedLookupName and the frontend's UNSPECIFIED_LOOKUP_LABEL.
-        /// </summary>
-        private const string UnspecifiedLookupName = "Unspecified";
-
-        private static bool IsUnspecifiedLookup(string name) =>
-            string.Equals(name.Trim(), UnspecifiedLookupName, StringComparison.OrdinalIgnoreCase);
+        // The name and the match live in QuizAPI.Common.LookupDefaults — one definition for the
+        // three services that need it, rather than this copy and QuestionService's being "kept in
+        // sync" by hand.
+        private static bool IsUnspecifiedLookup(string name) => LookupDefaults.IsUnspecified(name);
 
         /// <summary>
         /// The publication gate: a quiz may not be <c>Public</c> while any of its category,

@@ -156,8 +156,12 @@ assumption). The backend re-validates everything the client already checked:
 
 These are the properties that make the feature safe. Every change should preserve them.
 
-1. **The AI never sees or emits entity IDs.** Categories and languages are not in the
-   prompt at all; difficulty appears only as a closed list of names. (`prompt.ts`)
+1. **The AI never sees or emits entity IDs.** Every lookup crosses the boundary as a **name**
+   and is resolved to an id on our side. Category, language and difficulty are each offered as a
+   closed list of names (`AiPromptBuilder`); an id has never been in the prompt, and a name in the
+   reply is resolved, never trusted. (Note for readers of older revisions: category and language
+   *were* once absent from the prompt entirely. They are sent now, so the model can suggest one
+   when the user didn't pick — invariant 9 is the constraint that made that safe.)
 2. **Category and language are always inherited from the quiz.** They are never read from
    AI output, never `Unspecified`. (`parse-ai-output.ts` → `ParseContext`) The manual builder
    applies the same rule to hand-authored questions — see
@@ -187,6 +191,16 @@ These are the properties that make the feature safe. Every change should preserv
    a default, and getting it wrong makes a question harder rather than easier.
    (`prompt.ts` `TYPE_SPECS`, `parse-ai-output.ts` TypeTheAnswer branch —
    see [typed-answer-matching.md](typed-answer-matching.md))
+9. **A vocabulary we offer is a promise to accept it.** Every name in `categoryNames`,
+   `languageNames` or `difficultyNames` is an answer we have committed to honouring, so the seeded
+   "Unspecified" row is filtered out of all three — in `buildInput` on the way out and in
+   `AiGenerationService.CleanNames` on the way through. And a resolver **rejects** as well as
+   translates: `suggestedCategoryId` / `suggestedLanguageId` refuse Unspecified by name and return
+   `null`, which routes the reply into `ConfirmDetailsCard` instead of into a 400 twenty questions
+   later. Offering a value a rule forbids is the failure mode this invariant exists for — it cost
+   one shipped bug, written up in
+   [quiz-question-classification.md](quiz-question-classification.md) § "How it used to leak in"
+   and decided in [`../adr/0007-a-forbidden-lookup-is-never-offered.md`](../adr/0007-a-forbidden-lookup-is-never-offered.md).
 
 ---
 

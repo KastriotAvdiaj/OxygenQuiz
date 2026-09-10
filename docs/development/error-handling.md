@@ -127,6 +127,30 @@ Current opt-outs and why:
 the button — put it there and skip the toast. Reach for the toast when the failure has nowhere
 to live, or when the user has already navigated away from the thing that failed.
 
+### The mirror-image mistake: a second toast that says less
+
+`skipErrorToast` guards against the caller's message being drowned by the global one. The
+opposite happens just as easily and is harder to spot, because both toasts are "working":
+a `mutationConfig.onError` that raises **its own generic line** on top of an authored server
+message. `/quiz/ai-import` did this until 2026-09-10 —
+
+> ⚠ Pick a category for this quiz — its questions inherit it, and "Unspecified" isn't allowed on a question.
+> ⚠ Failed to create quiz. Please try again.
+
+— two toasts for one 400, the second one contradicting the first by implying a retry would help.
+"Please try again" is not a fallback here; it is a worse answer competing with a good one.
+
+**So: if the server authored the message, let it through.** An `onError` that has nothing more
+specific to add should log and stop. Add a toast there only when the caller knows something the
+server can't — as the manual create path does, where "your questions were saved to your bank"
+depends on how far the multi-step submit got.
+
+The same fix wanted a second, less obvious change. The outer `catch` in `handleQuizSubmit`
+suppressed itself by reading `createAiQuizMutation.isError` — React state, set in the same tick
+as the throw, so whether the third toast appeared was a race. The AI branch now catches its own
+rejection and returns. **Deciding whether you already showed an error by reading state you just
+set is not a decision, it's a coin flip** — track it in the control flow instead.
+
 ### What the toast *says*
 
 Whether a toast fires and what it contains are two different mechanisms. The section above is
