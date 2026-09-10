@@ -650,9 +650,12 @@ const CreateQuizForm = ({
                   <TabsList className="w-full border-none bg-none shadow-none rounded-md">
                     <TabsTrigger
                       value="quiz"
+                      activeClassName={
+                        quizTabErrorCount > 0 ? "bg-red-500" : undefined
+                      }
                       className={`rounded-xl ${
                         quizTabErrorCount > 0
-                          ? "ring-2 ring-red-500 ring-offset-1 ring-offset-background data-[state=active]:bg-red-500 data-[state=active]:text-white data-[state=inactive]:bg-red-500/10 data-[state=inactive]:text-red-500 data-[state=inactive]:hover:bg-red-500/15"
+                          ? "ring-2 ring-red-500 ring-offset-1 ring-offset-background data-[state=active]:text-white data-[state=inactive]:bg-red-500/10 data-[state=inactive]:text-red-500 data-[state=inactive]:hover:bg-red-500/15"
                           : ""
                       }`}
                     >

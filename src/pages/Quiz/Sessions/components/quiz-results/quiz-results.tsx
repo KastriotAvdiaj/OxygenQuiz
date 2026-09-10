@@ -79,13 +79,13 @@ export function QuizResults({
         {/* Main Content */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-4 sm:mb-6 h-auto">
-            <TabsTrigger value="overview" className="px-2 mx-0 sm:px-4 sm:mx-2">
+            <TabsTrigger value="overview" className="px-2 sm:px-4">
               <span className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm">
                 <BarChart3 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 Overview
               </span>
             </TabsTrigger>
-            <TabsTrigger value="review" className="px-2 mx-0 sm:px-4 sm:mx-2">
+            <TabsTrigger value="review" className="px-2 sm:px-4">
               <span className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm">
                 <FileText className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 Question Review
