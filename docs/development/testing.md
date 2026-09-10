@@ -63,14 +63,36 @@ interesting part, so we fake it with Moq (pattern C below).
 
 ### Backend — `OxygenBackend/QuizAPI.Tests`
 
+> **Keep this table complete.** It went from 6 rows to 23 without anyone noticing, which made it
+> read as "these are the six things under test" rather than a stale list — the worst failure mode
+> for an inventory, because it invites writing a test that already exists and misreads real
+> coverage as absent. Add a row in the same change as the file.
+
 | File | Type | Covers |
 | --- | --- | --- |
 | `Scoring/QuizScoringTests.cs` | Pure unit | Speed bonus, point-system multipliers, the "never below 1" floor, edge cases (no limit, over-time, negative time). |
+| `Scoring/QuizTimingTests.cs` | Pure unit | Which elapsed time an answer is scored with — the latency-compensation trust boundary in `QuizTiming.EffectiveElapsed`. Doubles as the spec for what a client can and cannot make the server believe. See [`quiz-grading.md`](../quiz/quiz-grading.md). |
 | `Grading/AnswerGradingServiceTests.cs` | Service + InMemory DB | Right/wrong decisions for every question type (single & multi-select MCQ, true/false, type-the-answer with case sensitivity and acceptable alternatives), the timeout-to-zero override, and unknown-question handling. Typed answers now delegate to `TypeTheAnswerMatcher`, so the fine-grained cases live in the file below and these stay as integration coverage of the wiring. |
 | `Grading/TypeTheAnswerMatcherTests.cs` | Pure unit | What counts as a correct typed answer: normalisation (whitespace, accents, punctuation, leading articles), case sensitivity, acceptable alternatives, whole-word partial matching, and the guards that stop an empty submission matching everything. Covers both graders, since the live grader and the question preview share this matcher. See [`typed-answer-matching.md`](../quiz/typed-answer-matching.md). |
 | `Auth/AuthenticationServiceTests.cs` | Service + Moq | Duplicate email/username rejected, missing default role rejected, bad credentials rejected, invalid/empty verification tokens rejected, logout no-op. |
 | `Auth/NotACommonPasswordTests.cs` | Pure unit | Common/breached + single-repeated-char passwords rejected; strong passphrases pass. |
 | `Visibility/QuestionVisibilityFilterTests.cs` | Filter + InMemory DB | Who may load a question: the guest-vs-owner-vs-stranger matrix over the `QuestionBase` global query filter, including the regression that made every public quiz built from newly-authored (`Private`) questions 500 for anonymous visitors, and the inverse guard that a Private question in a **Draft** quiz stays hidden. Asserts on the `Include`d navigation, not just the join row — the row always loaded; it was `Question` that came back null. See [`quiz-visibility.md`](../quiz/quiz-visibility.md). |
+| `Playing/AnswerOptionOrderTests.cs` | Pure unit + InMemory DB | Answer options are shuffled at serve time, deterministically. Pins the whole positional distribution (not just "not first") and the exact permutation, because the two tempting simplifications — seeded `Random`, `string.GetHashCode()` — pass every behavioural test and break only across a restart or a runtime upgrade. See [`../adr/0006-answer-order-is-shuffled-at-serve-time.md`](../adr/0006-answer-order-is-shuffled-at-serve-time.md). |
+| `Playing/SessionResumeStateTests.cs` | Projection + InMemory DB | `QuizSessionDto.ResumeState` hands back exactly the question set, in the order, that the resume walk itself iterates. Every test is a way for the two to drift: an answered question or a wrong-version row makes the "Session In Progress" screen promise questions resume won't give. See [`../quiz/session-resume-screen.md`](../quiz/session-resume-screen.md). |
+| `Playing/SessionAbandonmentTimeoutTests.cs` | Service + InMemory DB | The abandonment check cannot void a session the catch-up walk would have resumed — stated behaviourally (a session at the walk's furthest reach is still resumable) so it survives a refactor of the arithmetic. Also the min()-of-two-caps deadline, and that a never-played session still ages out. See [`../adr/0008-abandonment-cannot-outrun-the-catch-up-walk.md`](../adr/0008-abandonment-cannot-outrun-the-catch-up-walk.md). |
+| `Editing/QuizQuestionVersioningTests.cs` | Pure unit | The copy-on-write edit diff never mutates or deletes a live join row — it retires and inserts — so a session pinned to an older quiz version keeps its exact question set, order, points and time limits. See [`../quiz/quiz-editing.md`](../quiz/quiz-editing.md). |
+| `Discovery/QuizVarietyOrderingTests.cs` | Pure unit | The catalogue's "variety" ordering interleaves categories, newest of each first, so a new user sees breadth instead of a wall of one category. Plain LINQ, so it runs identically here and in SQL. See [`../quiz/quiz-discovery.md`](../quiz/quiz-discovery.md). |
+| `Questions/AcceptableAnswerRulesTests.cs` | Pure unit | What `Normalize` stores in the acceptable-answers JSON column. Every write path funnels through it — the per-type endpoints, AI import, CSV import — so this is what ends up persisted. |
+| `Stats/UserStatsServiceTests.cs` | Service + InMemory DB | Profile play-stats inclusion rules, all three easy to get wrong and impossible to spot when wrong: guest sessions never count, abandoned sessions don't drag the average down, only graded answers reach accuracy. |
+| `Users/UserServiceRoleTests.cs` | Service + real repo + InMemory DB | The privilege-escalation rules on "change user role": only a SuperAdmin may grant or remove SuperAdmin, and the last SuperAdmin can't be demoted. Real repository so the lockout count query actually runs. |
+| `Auth/InviteCodeServiceTests.cs` | Service + InMemory DB | Mint-time invite rules, load-bearing one being the escalation guard: a role-granting code is a second way to hand out that role, so an Admin must not be able to mint themselves a SuperAdmin code and walk around the guard on role updates. See [`../auth/invite-code-system.md`](../auth/invite-code-system.md). |
+| `Auth/ExternalAuthenticationTests.cs` | Service + Moq + real TokenService | Google/Microsoft sign-in: login-or-link resolution, invite-gated external signup, and the signup-ticket boundary. The provider verifier is mocked (their crypto isn't ours to test); the ticket is a real signed JWT, so tamper rejection and "an access token is NOT a ticket" are asserted against the real implementation. See [`../auth/social-login.md`](../auth/social-login.md). |
+| `Auth/PwnedPasswordsCheckerTests.cs` | Pure unit (internals) | The two pure halves of the k-anonymity lookup: how the hash is split, how the response is read. Worth testing because **every way it breaks looks like working** — a case change or a stray `\r` turns "breached" into "no match", which is what a healthy check returns for a good password. See [`../auth/password-policy.md`](../auth/password-policy.md). |
+| `Ai/AiConfigurationResolverTests.cs` | Pure unit | The decision table behind "a broken AI configuration switches the feature off, it does not stop the app". Two properties matter more than the cases: no input ever throws, and unavailable implies `Enabled == false`. See [`../adr/0004-ai-misconfiguration-disables-the-feature.md`](../adr/0004-ai-misconfiguration-disables-the-feature.md). |
+| `Ai/AiGenerationServiceAvailabilityTests.cs` | Service + Moq | `IsAvailableAsync` agrees with the gates inside `GenerateAsync`. The budget case is the one pinned: it's one `await` a refactor can quietly drop while everything compiles and every other test stays green — and the symptom is a live Generate button that 503s. |
+| `Ai/AiJsonExtractorTests.cs` | Pure unit | The server's only look at model output: "is there a usable JSON object in here?" That answer decides whether a retry is worth a second call and whether the user's quota slot is released. Semantic validation is deliberately not here — it lives in `parse-ai-output.ts`. |
+| `Ai/AiPromptBuilderTests.cs` | Pure unit | The prompt's invariants, asserted directly rather than golden-matched: no entity ids ever reach the model, questions carry no category or language, the allowed-types and time-limit vocabularies are closed. A leaked primary key here would still generate a fine quiz, which is exactly why it needs a test. |
+| `Ai/AiVocabularyTests.cs` | Service + Moq | The seeded "Unspecified" lookup is never offered to the model, case-insensitively and after trimming, while real names still reach the prompt. Regression test: the wizard used to send the whole lookup table, the model duly picked it, and the builder opened with a category the API refuses. See [`../adr/0007-a-forbidden-lookup-is-never-offered.md`](../adr/0007-a-forbidden-lookup-is-never-offered.md). |
 | `TestSupport/TestCurrentUserService.cs` | Helper | Test double for `ICurrentUserService` (drives the DbContext query filters). Its `IsAdmin` defaults to **true**, which short-circuits every filter to "see everything" — so a visibility test must set `IsAdmin = false` explicitly or it proves nothing. |
 
 ### Frontend — unit tests (`src/**/__tests__`)
@@ -87,6 +109,9 @@ interesting part, so we fake it with Moq (pattern C below).
 | `src/pages/UserRelated/Signup/__tests__/signup-auth-config-storm.test.tsx` | Signup when `auth-config` is unreachable: **exactly one** request (regression guard for the request storm — see [social-login.md](../auth/social-login.md)), and the flow **fails closed** to the invite gate rather than an open signup. |
 | `src/hooks/__tests__/use-guest-quiz-session.test.tsx` | Guest session startup **rendered inside `StrictMode`**: the hook leaves its loading state with a question, surfaces a failed creation as an error, and creates exactly one session per mount. Guards the hang where a mutation resolved into a detached observer and the page waited forever — see [guest-play.md](../auth/guest-play.md) § "Why this hook awaits its mutations". |
 | `src/components/ui/__tests__/button.test.tsx` | `Button` renders normally, and as its child element under `asChild` (Radix `Slot` accepts one element child — the layout `<span>` used to make two and throw). The only `asChild` callers are error screens, so this breaks exactly when it's needed. |
+| `src/lib/__tests__/font-defaults.test.ts` | The default app and quiz fonts agree between `global.css` (which paints before any JS runs) and the constant `SettingsApplier` applies. They disagreed for months, so every first paint flashed the wrong typeface. |
+| `src/pages/Dashboard/.../AI-Quiz/__tests__/extract-quiz-suggestions.test.ts` | The quiz-level title, category and language are read out of the model's reply **in the parser** — the one place a generated and a pasted reply both pass through. Guards the regression where a pasted reply carrying all three was never enriched and the wizard demanded them by hand. |
+| `src/pages/Quiz/Sessions/.../__tests__/resume-projection.test.ts` | `projectResume` agrees with `ResolveAndResumeAsync`: the inclusive `elapsed <= timeLimit` boundary, truncated seconds, the walk restarting from the front of the list, and the abandonment deadline that runs **before** the walk. Written as the server's rules rather than the function's branches, with numbers sitting on each boundary. See [`../quiz/session-resume-screen.md`](../quiz/session-resume-screen.md). |
 | `src/pages/Quiz/Sessions/.../__tests__/quiz-timer.test.tsx` | `QuizTimer` under re-render pressure: it keeps counting while a parent re-renders faster than its own interval with a fresh `onTimeUp` each time, fires `onTimeUp` exactly once, and neither gains nor loses time across a pause/resume. Fake timers drive `Date.now()`, which is what makes a deadline-anchored countdown testable. See [`quiz-timer.md`](../quiz/quiz-timer.md). |
 
 The signup-storm test is worth copying as a pattern: it mocks `@/lib/Api-client` to reject, then
@@ -108,8 +133,17 @@ testing a component the app never renders.
 
 ### Frontend — Storybook stories (`*.stories.tsx`)
 
-Eight stories exist (notifications, dialogs, loading-wave, pagination, multiplayer game,
-quiz interface). These power Storybook and Chromatic visual review.
+Twenty-three stories exist, covering the notification surfaces, dialogs and data table, the
+loading and split-flap views, the AI quiz wizard (including its generating overlay), the
+create-quiz method dialog, the multiplayer lobby and game, the quiz interface, the
+"Session In Progress" screen, and the error boundaries. These power Storybook and Chromatic
+visual review.
+
+They are **not** a substitute for the unit suite and are not asserted on in CI today (see the
+`storybook` project note under §6). What they are good for is the states that are painful to
+reach by hand: `active-session-view.stories.tsx`, for instance, anchors its timestamps to
+`Date.now()`, so leaving a story open really does run the countdown out and flip the screen
+through each of its outcomes.
 
 ---
 
@@ -289,17 +323,19 @@ To make tests **block deploys**:
   internal — they're implementation, not API — but they're the parts worth unit-testing without
   the network.
 
-- **Solution reference.** The test project isn't yet in `QuizAPI.sln`. CI targets the
-  `.csproj` directly so it isn't required, but to see tests in Visual Studio's Test
-  Explorer, add it once:
+- **Solution reference.** The test project still isn't in `QuizAPI.sln` (checked 2026-09-10).
+  CI targets the `.csproj` directly so it isn't required, but to see tests in Visual Studio's
+  Test Explorer, add it once:
 
   ```bash
   dotnet sln OxygenBackend/QuizAPI/QuizAPI.sln add OxygenBackend/QuizAPI.Tests/QuizAPI.Tests.csproj
   ```
 
-- **Storybook test project.** `vitest.workspace.ts` points the `storybook` project at
-  `.storybook/vitest.setup.ts`, which doesn't exist yet. Create that setup file (or remove
-  the `storybook` project from the workspace) before wiring Storybook tests into CI.
+- **Storybook test project.** `.storybook/vitest.setup.ts` **now exists**, so the `storybook`
+  project is no longer broken for a missing file — but it runs stories in a real Chromium
+  through Playwright, which is why `npm test` (bare `vitest`, all projects) is still the wrong
+  command for everyday work and every recipe above says `--project unit`. Decide deliberately
+  whether the story run belongs in CI; today nothing asserts on it.
 
 - **Out of scope this pass.** End-to-end flows (login → take a quiz → results), the Python
   LLM microservice, and SignalR multiplayer hubs have no automated tests yet. Playwright is
