@@ -20,7 +20,7 @@ import { RubiksCube } from "./rubiks-cube";
  * media query without any caller opting in.
  */
 const meta = {
-  title: "Quiz/AI/RubiksCube",
+  title: "Dashboard/Quiz/RubiksCube",
   component: RubiksCube,
   parameters: { layout: "centered" },
 } satisfies Meta<typeof RubiksCube>;
