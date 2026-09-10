@@ -22,6 +22,8 @@ import type { ParseResult } from "./parse-ai-output";
 import { AdvancedOptions } from "./components/advanced-options";
 import { ConfirmDetailsCard } from "./components/confirm-details-card";
 import { GenerateErrorPanel } from "./components/generate-error-panel";
+import { GeneratingOverlay } from "./components/generating-overlay";
+import { useGenerationWait } from "./components/use-generation-wait";
 import { LeaveGenerationDialog } from "./components/leave-generation-dialog";
 import { GenerationInput } from "./components/generation-input";
 import { ImportNotices } from "./components/import-notices";
@@ -257,6 +259,25 @@ export const AiQuizWizardView = ({
    * the subtree on every further click until the question timer froze. One element used in
    * all three returns costs a line each and cannot drift that way.
    */
+  /**
+   * The set-piece for the wait itself. `useGenerationWait` is what keeps a fast
+   * success from flashing it — and what makes sure a fast *failure* doesn't sit
+   * behind it, since the error panel is what that screen owes the user.
+   */
+  const showGeneratingOverlay = useGenerationWait(isGenerating, {
+    failed: generateError !== null,
+  });
+
+  /**
+   * Rendered by every branch, like `leaveDialog` below — with one reason of its own.
+   * A successful generation moves the view to the review screen while the overlay may
+   * still be holding out its minimum, so the branch it unmounts on is not the branch it
+   * mounted on.
+   */
+  const generatingOverlay = showGeneratingOverlay ? (
+    <GeneratingOverlay mode={mode} />
+  ) : null;
+
   const leaveDialog = (
     <LeaveGenerationDialog
       isOpen={showLeaveDialog}
@@ -271,6 +292,7 @@ export const AiQuizWizardView = ({
       <div className="w-full h-64 flex items-center justify-center">
         <Spinner size="lg" />
         {leaveDialog}
+        {generatingOverlay}
       </div>
     );
   }
@@ -292,6 +314,7 @@ export const AiQuizWizardView = ({
         />
         <div className="flex-1 min-h-0">{builderSlot}</div>
         {leaveDialog}
+        {generatingOverlay}
       </div>
     );
   }
@@ -492,6 +515,7 @@ export const AiQuizWizardView = ({
       )}
 
       {leaveDialog}
+      {generatingOverlay}
     </div>
   );
 };

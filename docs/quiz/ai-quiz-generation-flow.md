@@ -840,6 +840,13 @@ the data.
 inside Cloudflare's 100s proxy timeout, but the user sees nothing until it finishes. That is what
 slice 2.2 is for; until then, keep the cap where it is.
 
+`GeneratingOverlay` covers the wait as of 2026-09-10 — a blurred blocking layer over the
+wizard, with a cube and one line of status text — but be clear about what it is: those lines
+are paced off a clock, not off anything the server said, because there is nothing to read. It
+makes the wait legible; it does not make it observable. When streaming lands, that copy is the
+first thing that should stop being a guess. `fail-slow` above is how to watch it, and
+`useGenerationWait` is why a fast *failure* does not sit behind it.
+
 **14. The cost model is flat; DeepSeek's pricing is not.** `EstimateCost` multiplies tokens by one
 rate per direction, which was true of every vendor when it was written. Since **2026-08-16**
 DeepSeek doubles both rates during **01:00–04:00 and 06:00–10:00 UTC**, so a peak-hour generation

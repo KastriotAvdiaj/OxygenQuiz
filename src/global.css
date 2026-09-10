@@ -657,6 +657,122 @@ body {
    `scrollbar-thin` = a slim, themed track that fades in on hover instead of the
    heavy global 8px bar. `scrollbar-hide` = fully hidden but still scrollable. */
 @layer utilities {
+  /* ── The AI-generation cube ──────────────────────────────────────────────────
+     A 3x3 cube in CSS 3D, for the one genuinely long wait in the app: the model
+     writing a quiz, 10-40s with a 90s provider timeout behind it
+     (docs/quiz/ai-quiz-generation-flow.md). Markup and the reason it exists at
+     all are in AI-Quiz/components/rubiks-cube.tsx.
+
+     Here rather than in class strings because Tailwind v3 ships no
+     `transform-style` / `backface-visibility` utilities and the piece is four
+     keyframes deep. Everything sizes off `--cubie`, so a caller scales the whole
+     cube with one custom property.
+
+     STICKER COLOURS ARE THE ONE DOCUMENTED EXCEPTION to "colours come from theme
+     tokens" (CLAUDE.md, Styling). A cube is only readable as a cube in its own
+     six colours; they encode a real-world object, not app state. The plastic
+     around them does follow the theme.
+
+     Motion stops for `prefers-reduced-motion` below — in CSS, not via the hook,
+     so it cannot be forgotten by a caller. */
+  .rubiks {
+    --cubie: 30px;
+    --cubie-gap: 2px;
+    --cubie-half: calc(var(--cubie) / 2);
+    --cubie-step: calc(var(--cubie) + var(--cubie-gap));
+    /* Far enough back that the cube reads as a cube and not a fisheye. */
+    perspective: 900px;
+    width: calc(var(--cubie) * 3 + var(--cubie-gap) * 2);
+    height: calc(var(--cubie) * 3 + var(--cubie-gap) * 2);
+  }
+
+  .rubiks-cube {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+    animation: rubiks-orbit 18s linear infinite;
+  }
+
+  /* One per Y slice. All three turn about Y, staggered by their delay, which is
+     what makes it read as a cube being worked rather than a spinning ornament. */
+  .rubiks-layer {
+    position: absolute;
+    inset: 0;
+    transform-style: preserve-3d;
+    animation: rubiks-turn 12s ease-in-out infinite;
+    animation-delay: var(--layer-delay, 0s);
+  }
+
+  .rubiks-cubie {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: var(--cubie);
+    height: var(--cubie);
+    margin: calc(var(--cubie-half) * -1) 0 0 calc(var(--cubie-half) * -1);
+    transform-style: preserve-3d;
+    transform: translate3d(
+      calc(var(--x) * var(--cubie-step)),
+      calc(var(--y) * var(--cubie-step)),
+      calc(var(--z) * var(--cubie-step))
+    );
+  }
+
+  .rubiks-face {
+    position: absolute;
+    inset: 0;
+    border-radius: calc(var(--cubie) * 0.2);
+    /* No sticker = an inner face, which is plastic. You see these the moment a
+       layer turns, and a cube whose insides are coloured looks wrong. */
+    background: var(--sticker, hsl(var(--foreground) / 0.14));
+    box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.4);
+    backface-visibility: hidden;
+  }
+
+  .rubiks-face-f { transform: translateZ(var(--cubie-half)); }
+  .rubiks-face-b { transform: rotateY(180deg) translateZ(var(--cubie-half)); }
+  .rubiks-face-r { transform: rotateY(90deg) translateZ(var(--cubie-half)); }
+  .rubiks-face-l { transform: rotateY(-90deg) translateZ(var(--cubie-half)); }
+  .rubiks-face-u { transform: rotateX(90deg) translateZ(var(--cubie-half)); }
+  .rubiks-face-d { transform: rotateX(-90deg) translateZ(var(--cubie-half)); }
+
+  @keyframes rubiks-orbit {
+    from { transform: rotateX(-24deg) rotateY(0deg); }
+    to { transform: rotateX(-24deg) rotateY(360deg); }
+  }
+
+  /* Four quarter-turns and back to 360deg, so the iteration ends where it began
+     and nothing snaps back. The holds between are the point: a layer that turned
+     continuously would just be a second spinner. */
+  @keyframes rubiks-turn {
+    0%, 14% { transform: rotateY(0deg); }
+    22%, 39% { transform: rotateY(90deg); }
+    47%, 64% { transform: rotateY(180deg); }
+    72%, 89% { transform: rotateY(270deg); }
+    97%, 100% { transform: rotateY(360deg); }
+  }
+
+  /* Held still: same cube, posed so three faces show. `.rubiks-still` is the
+     opt-out a story or a snapshot uses; the media query is the one users get. */
+  .rubiks-still .rubiks-cube,
+  .rubiks-still .rubiks-layer {
+    animation: none;
+  }
+  .rubiks-still .rubiks-cube {
+    transform: rotateX(-24deg) rotateY(-34deg);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .rubiks-cube,
+    .rubiks-layer {
+      animation: none;
+    }
+    .rubiks-cube {
+      transform: rotateX(-24deg) rotateY(-34deg);
+    }
+  }
+
   .scrollbar-thin {
     scrollbar-width: thin;
     scrollbar-color: hsl(var(--border)) transparent;

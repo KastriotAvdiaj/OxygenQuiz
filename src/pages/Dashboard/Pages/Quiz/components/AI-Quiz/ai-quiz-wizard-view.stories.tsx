@@ -316,6 +316,14 @@ export const NoTypesSelected: Story = {
   args: { topic: "The French Revolution", allowedTypes: [] },
 };
 
+/**
+ * The wait. `isGenerating` raises `GeneratingOverlay` over the whole screen — the cube,
+ * a status line paced off the clock, and a blurred form behind it.
+ *
+ * The overlay is deliberately not a Radix dialog: `LeavingMidGeneration` below opens a
+ * real one on top of it, and that pair is the reason. This story is where you check the
+ * form is still legible through the blur; that one is where you check the stacking.
+ */
 export const Generating: Story = {
   args: { topic: "The French Revolution", isGenerating: true },
 };
