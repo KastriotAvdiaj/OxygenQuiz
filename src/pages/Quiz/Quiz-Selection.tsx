@@ -8,8 +8,12 @@ import {
 } from "./components/quiz-header";
 import { motion } from "framer-motion";
 import { ArchiveX, ArrowLeft, ListFilter, X } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { QuizStartModal } from "./components/quiz-start-modal";
+import {
+  useSharedQuiz,
+  sharedQuizToSummary,
+} from "./Sessions/api/get-shared-quiz";
 import { QuizSummaryDTO } from "@/types/quiz-types";
 import { useDisclosure } from "@/hooks/use-disclosure";
 import { useDebounce } from "@/hooks/use-debounce";
@@ -75,6 +79,25 @@ export function QuizSelection() {
   const [pageNumber, setPageNumber] = useState(1);
   const [selectedQuiz, setSelectedQuiz] = useState<QuizSummaryDTO | null>(null);
   const { close, open, isOpen } = useDisclosure();
+
+  /**
+   * Arrived from a share link (`/play/shared/:token` redirects here).
+   *
+   * The quiz is Unlisted, so it is not in the catalogue behind this page and never will be —
+   * the grid cannot be the source for it. It is resolved by token instead, and the same query
+   * key was already fetched by the redirecting route, so this is a cache read rather than a
+   * second request.
+   *
+   * The token is kept in the URL rather than in router state so a refresh still works: state
+   * would vanish and leave the recipient staring at a catalogue that does not contain the quiz
+   * someone sent them.
+   */
+  const [searchParams, setSearchParams] = useSearchParams();
+  const sharedToken = searchParams.get("shared");
+  const { data: sharedQuiz } = useSharedQuiz({
+    token: sharedToken ?? "",
+    queryConfig: { enabled: Boolean(sharedToken) },
+  });
 
   // Debounce search so we don't fire a request on every keystroke.
   const debouncedSearch = useDebounce(searchQuery, 400);
@@ -183,17 +206,37 @@ export function QuizSelection() {
     [open]
   );
 
+  useEffect(() => {
+    if (!sharedQuiz) return;
+    setSelectedQuiz(sharedQuizToSummary(sharedQuiz));
+    open();
+  }, [sharedQuiz, open]);
+
   const handleCloseModal = useCallback(() => {
     close();
     setSelectedQuiz(null);
-  }, [close]);
+    // Drop `?shared=` on dismiss, or the effect above reopens the dialog the moment anything
+    // else re-renders this page — and the recipient could never reach the catalogue behind it.
+    if (sharedToken) {
+      const next = new URLSearchParams(searchParams);
+      next.delete("shared");
+      setSearchParams(next, { replace: true });
+    }
+  }, [close, sharedToken, searchParams, setSearchParams]);
 
   const handleStartQuiz = useCallback(
     (quizId: number) => {
       close();
-      navigate(`/quiz/${quizId}/play`);
+      // The grant travels to the play route for a shared quiz. Without it, starting a session
+      // on an Unlisted quiz you don't own is refused server-side — the quiz would resolve,
+      // the dialog would open, and Play would fail.
+      navigate(
+        sharedToken
+          ? `/quiz/${quizId}/play?shareToken=${encodeURIComponent(sharedToken)}`
+          : `/quiz/${quizId}/play`
+      );
     },
-    [navigate, close]
+    [navigate, close, sharedToken]
   );
 
   // fillHeight only for the desktop sidebar (it gets a page-height column that

@@ -12,6 +12,12 @@ type DeleteQuizProps = {
   finished: () => void;
   useLiftedButton?: boolean;
   /**
+   * Face size for the lifted trigger, forwarded to `LiftedButton`. Defaults to `default`.
+   * Pass `sm` where this sits in a row with other actions — the quiz page's footer — so the
+   * destructive button isn't the largest control on the page purely by inheritance.
+   */
+  size?: "default" | "sm";
+  /**
    * Controlled mode. Pass these to render the confirm dialog on its own (no
    * trigger) from OUTSIDE a dropdown menu, so closing the menu — or the row
    * unmounting after the list refetches — can't strand the dialog mid-close.
@@ -25,6 +31,7 @@ export const DeleteQuiz = ({
   finished,
   className,
   useLiftedButton,
+  size = "default",
   open,
   onOpenChange,
 }: DeleteQuizProps) => {
@@ -54,7 +61,9 @@ export const DeleteQuiz = ({
       triggerButton={
         isControlled ? undefined : useLiftedButton ? (
           <LiftedButton
+            size={size}
             className={cn(className)}
+            backgroundColorForBorder="bg-red-800"
           >
             <Trash2 size={16} /> Delete
           </LiftedButton>

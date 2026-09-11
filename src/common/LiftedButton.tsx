@@ -48,6 +48,19 @@ export interface LiftedButtonProps
   className?: string; // Applied to the front (visible face)
   outerClassName?: string; // Applied to the outer button element (layout)
   variant?: "default" | "icon";
+  /**
+   * Face size. `default` is the page-level primary action — `py-2 px-4` at inherited 16px,
+   * about 40px tall. `sm` is the same button among other controls: 14px text and a tighter
+   * face, which stops a row of actions reading as a row of primary actions.
+   *
+   * <b>`sm` only tightens from `sm:` up.</b> 14px text with `py-1.5` computes to a 32px
+   * control, and docs/RESPONSIVE.md asks for ≥36px on anything you tap — so phones keep
+   * `py-2` (36px) and pointer devices get the smaller face. Density is not a width concern
+   * in general, but a touch-target floor is.
+   *
+   * The default is unchanged, so the ~50 existing call sites keep the face they have.
+   */
+  size?: "default" | "sm";
   backgroundColorForBorder?: string; // Applied to the edge layer
   isPending?: boolean;
   /**
@@ -94,6 +107,7 @@ export const LiftedButton = React.forwardRef<
       isPending,
       liftColor,
       variant = "default",
+      size = "default",
       style,
       ...props
     },
@@ -181,7 +195,11 @@ export const LiftedButton = React.forwardRef<
             // A button label that needs two lines is a label that needs shortening.
             "relative flex items-center justify-center gap-2 whitespace-nowrap bg-primary text-white will-change-transform",
             rounded,
-            isIcon ? "p-2" : "py-2 px-4",
+            isIcon
+              ? "p-2"
+              : size === "sm"
+                ? "px-3 py-2 text-sm sm:py-1.5"
+                : "py-2 px-4",
             front.rest,
             `transition-transform [transition-duration:600ms] ${springOut}`,
             !isDisabled && cn(front.hover, front.active, springHover, snapActive),

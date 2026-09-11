@@ -321,6 +321,14 @@ export const apiService = {
     return response.data;
   },
 
+  // PATCH was missing until the quiz publish/unpublish action needed it. Its absence is why
+  // the only two PATCH calls in the app reach for the bare `api` instance — which returns the
+  // whole axios response, and is how `/play/shared/undefined` happened elsewhere.
+  async patch<T = any>(url: string, data?: any, config: AxiosRequestConfig = {}): Promise<T> {
+    const response = await api.patch<T>(url, data, config);
+    return response.data;
+  },
+
   async delete<T = any>(url: string, config: AxiosRequestConfig = {}): Promise<T> {
     const response = await api.delete<T>(url, config);
     return response.data;

@@ -244,6 +244,43 @@ timeLimit` points, i.e. ~33 pts on a 30s question but ~100 pts (10% of base) on 
   (say so in the summary) or dropping in favour of Hangfire's own "trigger now".
   → `OxygenBackend/QuizAPI/Controllers/Quizzes/QuizSessionsController.cs`
 
+- **P2 — calling `api` directly instead of `apiService` silently yields the whole
+  `AxiosResponse`.** Only `apiService` unwraps `.data`; the raw `api` instance's success
+  interceptor returns the response untouched (`llmApi`, confusingly, *does* unwrap). The
+  mistake compiles: `api.post(url, body)` annotated `Promise<Thing>` type-checks fine, because
+  axios infers its response type from the expected return type — and the caller then reads
+  `undefined` off an `AxiosResponse`. This shipped: the quiz share button produced
+  `/play/shared/undefined` for as long as it existed, and `create-share-link.ts` has been fixed
+  to use `apiService`. **The pattern is still there in ~14 other files.** Most are mutations
+  whose response body nobody reads, so it is dormant rather than wrong; the ones that *do* read
+  a response are worth checking — `get-individual-question.ts`, `get-total-users.ts`,
+  `get-categorized-quizzes.ts`. Note also that `apiService` had no `patch` until 2026-09-08,
+  which is why the app's only PATCH calls reach for the raw instance: a gap in the wrapper
+  pushes people to the escape hatch. Worth an ESLint `no-restricted-imports` on `api` outside
+  `src/lib/`, with explicit opt-outs for the callers that genuinely want headers.
+  → `src/lib/Api-client.ts` (the rule is already documented in the `api` doc comment and in
+  [`error-handling.md`](../development/error-handling.md))
+
+- **P2 — an authored `ValidationFailure` reaches the user as generic form copy.** A
+  `Result.ValidationFailure("Existing session is already completed.")` is rendered by the global
+  axios interceptor as *"Some of the details weren't accepted. Please check the form and try
+  again."* — `parseApiError` classifies the body as `generated` (machine field validation) and
+  substitutes `FIELD_ERROR`, while the caller's own `extractErrorMessage` finds the real string. So
+  the same failure shows two different messages at once: the accurate one inline, the misleading
+  one in a toast, on a screen with no form on it. Either `ValidationFailure` should serialise as an
+  authored `ProblemDetails`, or `parseApiError` needs to tell the two apart — the current
+  discriminator (`errors` key) cannot.
+  → `src/lib/Api-client.ts`, `OxygenBackend/QuizAPI/Controllers/BaseApiController.cs`,
+  [`error-handling.md`](../development/error-handling.md)
+
+- **P3 — the "Session In Progress" screen can briefly disagree with the server.** It is built from
+  a list read (`findActiveSessionForQuiz`), and the session can be abandoned between that read and
+  the button press — so it can show `0 / 8 · Session In Progress` for a session the server already
+  considers finished. Both actions are now idempotent, so the first click resolves it (Resume →
+  results, Start Fresh → new attempt) rather than erroring. Making the screen itself truthful would
+  need the read to be authoritative, or a re-check on mount.
+  → [`../quiz/session-lifecycle.md`](../quiz/session-lifecycle.md) §4
+
 - **P3 — `GET /api/Authentication/signup-config` is dead.** It was superseded by
   `auth-config`, which returns the invite flag alongside the social-login config and
   the password floor. The old endpoint is still routed and commented "kept for

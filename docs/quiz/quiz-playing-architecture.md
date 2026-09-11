@@ -6,6 +6,10 @@
 
 ---
 
+> **Resume, abandonment and the "Session In Progress" screen** are a separate concern with their
+> own document: [`session-lifecycle.md`](./session-lifecycle.md). Read that one before changing
+> anything about what happens to a session while nobody is playing it.
+
 ## 1. The 60-second mental model
 
 Playing a quiz is a top-down stack. State and the backend call live at the top; the bottom is dumb UI

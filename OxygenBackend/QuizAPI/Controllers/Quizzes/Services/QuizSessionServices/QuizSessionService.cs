@@ -410,16 +410,24 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                 if (existingSession == null)
                     return Result<QuizSessionDto>.ValidationFailure("Existing session not found or doesn't belong to you.");
 
-                if (existingSession.IsCompleted)
-                    return Result<QuizSessionDto>.ValidationFailure("Existing session is already completed.");
-
-                // Mark existing session as abandoned with proper tracking
-                existingSession.IsCompleted = true;
-                existingSession.EndTime = DateTime.UtcNow;
-                existingSession.CurrentQuizQuestionId = null;
-                existingSession.CurrentQuestionStartTime = null;
-                existingSession.AbandonmentReason = AbandonmentReason.UserInitiated; // NEW
-                existingSession.AbandonedAt = DateTime.UtcNow; // NEW
+                // An already-finished session is not an obstacle to starting a new one — it is the
+                // normal state of the thing being replaced.
+                //
+                // This used to return a validation failure, which made "Start Fresh" fail for
+                // exactly the person who needed it most: someone coming back to a quiz they had
+                // left long enough for it to be abandoned. The old session was already in the
+                // state this method was trying to put it in, and the request was refused on that
+                // basis. Abandoning is now a no-op when it has already happened, and the method
+                // gets on with its actual job — creating the new session.
+                if (!existingSession.IsCompleted)
+                {
+                    existingSession.IsCompleted = true;
+                    existingSession.EndTime = DateTime.UtcNow;
+                    existingSession.CurrentQuizQuestionId = null;
+                    existingSession.CurrentQuestionStartTime = null;
+                    existingSession.AbandonmentReason = AbandonmentReason.UserInitiated;
+                    existingSession.AbandonedAt = DateTime.UtcNow;
+                }
 
                 // Create new session (re-authorize the same way CreateSessionAsync does).
                 var quiz = await _context.Quizzes
@@ -495,10 +503,25 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                         .ThenInclude(q => q.QuizQuestions)
                             .ThenInclude(qq => qq.Question)
                     .Include(s => s.UserAnswers)
-                    .FirstOrDefaultAsync(s => s.Id == sessionId && s.UserId == userId && !s.IsCompleted);
+                    .FirstOrDefaultAsync(s => s.Id == sessionId && s.UserId == userId);
 
                 if (session == null)
-                    return Result<ResumeResultDto>.ValidationFailure("Session not found or already completed.");
+                    return Result<ResumeResultDto>.ValidationFailure("Session not found.");
+
+                // An already-finished session is an ANSWER, not a failure.
+                //
+                // This filtered on `!s.IsCompleted` in the query, so a session that had already
+                // been marked abandoned came back null and resume returned a validation failure —
+                // the caller had asked "where am I in this quiz?" and got told the quiz did not
+                // exist. Returning the completed result instead lets the client do the one useful
+                // thing: send the player to their results.
+                //
+                // This is now the common case rather than a rarity: the abandonment sweep marks
+                // stale sessions on a timer, so a player who leaves and comes back later hits a
+                // session that is already completed rather than one this call gets to abandon
+                // itself on the next line.
+                if (session.IsCompleted)
+                    return Result<ResumeResultDto>.Success(BuildCompletedResult(session, sessionId));
 
                 if (await _abandonmentService.IsSessionAbandonedAsync(session))
                 {

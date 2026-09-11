@@ -140,13 +140,17 @@ namespace QuizAPI.Services.Reports
         }
 
         public async Task<QuizAnalyticsDto?> GetQuizAnalyticsAsync(
-            Guid userId, int quizId, ReportCriteria criteria, CancellationToken ct = default)
+            Guid? ownerId, int quizId, ReportCriteria criteria, CancellationToken ct = default)
         {
             var (from, toExclusive) = NormalizeRange(criteria);
 
-            // Ownership gate: only the quiz's creator may view its analytics.
+            // Ownership clamp, not a permission check — the controller has already decided whether
+            // this caller may act (CLAUDE.md, "Permission checks in the controller, ownership clamps
+            // in the repository"). A null ownerId means an admin reading any quiz's analytics: they
+            // can already read and delete every quiz, so withholding its statistics protected
+            // nothing while making the admin-only quiz page 404 its own panel.
             var quiz = await _context.Quizzes.AsNoTracking()
-                .Where(q => q.Id == quizId && q.UserId == userId)
+                .Where(q => q.Id == quizId && (ownerId == null || q.UserId == ownerId))
                 .Select(q => new { q.Id, q.Title })
                 .FirstOrDefaultAsync(ct);
             if (quiz is null) return null;

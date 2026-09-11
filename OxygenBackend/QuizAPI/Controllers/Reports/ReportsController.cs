@@ -64,7 +64,11 @@ namespace QuizAPI.Controllers.Reports
         {
             if (_currentUser.UserId is not Guid userId) return Unauthorized();
 
-            var analytics = await _reports.GetQuizAnalyticsAsync(userId, quizId, criteria, ct);
+            // Admins read any quiz's analytics; everyone else is clamped to their own. The quiz
+            // dashboard page this feeds is itself admin-gated, so without the bypass the only
+            // people who could open the page were the only people guaranteed to get a 404 from it.
+            var analytics = await _reports.GetQuizAnalyticsAsync(
+                _currentUser.IsAdmin ? null : userId, quizId, criteria, ct);
             return analytics is null ? NotFound() : Ok(analytics);
         }
 

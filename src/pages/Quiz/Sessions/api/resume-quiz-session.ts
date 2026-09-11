@@ -44,13 +44,17 @@ export const getQuizSessionState = ({
 
 /**
  * Abandons an existing session and creates a brand new one for the same quiz.
+ *
+ * Takes the same `shareToken` grant as plain session creation, and for the same reason: the
+ * endpoint binds `QuizSessionCM` too, and the new session is authorized from scratch. Without
+ * it, restarting an Unlisted quiz reached by share link would fail where starting it succeeded.
  */
 export const abandonAndRestartSession = ({
   sessionId,
   data,
 }: {
   sessionId: string;
-  data: { quizId: number; userId: string };
+  data: { quizId: number; userId: string; shareToken?: string };
 }): Promise<QuizSession> => {
   return apiService.post(`/quizsessions/${sessionId}/abandon-and-restart`, data);
 };

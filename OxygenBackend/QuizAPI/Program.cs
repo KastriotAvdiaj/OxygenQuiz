@@ -218,6 +218,11 @@ builder.Services.AddSingleton<IMatchOrchestrator, MatchOrchestrator>();
 // Business Logic Services
 builder.Services.AddScoped<IAnswerGradingService, AnswerGradingService>();
 builder.Services.AddScoped<ISessionAbandonmentService, SessionAbandonmentService>();
+// Runs that same service on a timer. Without it, abandonment only ever happened when the player
+// came back — a session nobody returned to stayed "in progress" forever and skewed completion
+// rate. See SessionAbandonmentSweep for why the old QuizSessionCleanupService was deleted
+// rather than registered.
+builder.Services.AddHostedService<QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.AbandonmentService.SessionAbandonmentSweep>();
 builder.Services.AddScoped<DashboardService>();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddScoped<QuizAPI.Services.SettingsService.ISettingsService, QuizAPI.Services.SettingsService.SettingsService>();

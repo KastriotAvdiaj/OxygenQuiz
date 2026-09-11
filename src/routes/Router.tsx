@@ -58,6 +58,12 @@ const QuizResultsRouteWrapper = lazy(() =>
     (module) => ({ default: module.QuizResultsRouteWrapper }),
   ),
 );
+const SharedQuizRouteWrapper = lazy(() =>
+  import("@/pages/Quiz/Sessions/components/quiz-taking-process/shared-quiz-route-wrapper").then(
+    (module) => ({ default: module.SharedQuizRouteWrapper }),
+  ),
+);
+
 const GuestQuizResultsRouteWrapper = lazy(() =>
   import("@/pages/Quiz/Sessions/components/quiz-results/guest-quiz-results-route-wrapper").then(
     (module) => ({ default: module.GuestQuizResultsRouteWrapper }),
@@ -235,6 +241,20 @@ const createAppRouter = (queryClient: QueryClient) =>
             children={<QuizPageRouteWrapper />}
           />
         </>
+      ),
+    },
+    {
+      // The destination of `buildShareUrl`. No auth loader, but not for the reason
+      // /quiz/:quizId/play has none: that route falls back to a guest attempt, this one sends
+      // signed-out visitors to log in. The wrapper decides, because it must resolve the token
+      // before it knows whether there is anything to send them to.
+      path: "/play/shared/:token",
+      errorElement: <DashboardErrorElement />,
+      element: (
+        <HomeLayout
+          headerBehavior={HeaderBehavior.HIDDEN}
+          children={<SharedQuizRouteWrapper />}
+        />
       ),
     },
     {
