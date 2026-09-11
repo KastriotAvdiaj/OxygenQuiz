@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { DataTable, Card, Spinner, Button } from "@/components/ui";
+import { DataTable, Card, Spinner } from "@/components/ui";
+import { LiftedButton } from "@/common/LiftedButton";
 import { quizColumns } from "./components/Data-Table-Columns/columns";
 import { useSearchQuizzes } from "./api/search-quizzes";
 import { rule, type FilterQuery, type FilterRule } from "@/lib/filtering";
@@ -131,16 +132,35 @@ export const Quizzes = () => {
   const quizzes = quizData.data?.items ?? [];
 
   return (
-    <div className="container mx-auto py-8 px-4 md:px-0">
-      {/* ── Page header ── */}
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Quiz Management</h1>
+    // `px-4` is gone: DashboardLayout's `main` owns the page gutter now, and the two
+    // stacked to 32px on a phone. `py-4 sm:py-8` is the same density step applied
+    // vertically — 64px of empty page above the title is a desktop measurement.
+    <div className="container mx-auto py-4 sm:py-8">
+      {/* ── Page header ──
+          One row on desktop, two on phones. A title and its actions fighting over 390px
+          is what wrapped this h1 to "Quiz / Management" and broke the Create button's
+          label across three lines: `justify-between` has no way to relieve the pressure,
+          so both children just shrink until their text wraps. Stacking gives each a full
+          width, which is also the phone convention — title, then an action row.
+
+          The h1 is display type and scales with width; the buttons are controls and
+          deliberately do not (docs/RESPONSIVE.md). */}
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-2xl font-bold sm:text-3xl">Quiz Management</h1>
         <div className="flex items-center gap-2">
           {/* <DataTransferControls entity="quizzes" invalidateKey={["quizzes"]} /> */}
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex items-center gap-2 lg:hidden"
+          {/* Same lifted treatment as the Questions page — see the note there for why
+              `lg:hidden` sits on `outerClassName` and what `liftColor` controls.
+
+              No `text-*` here, deliberately: this has to stand exactly as tall as the
+              "+ Create Quiz" button beside it, and both faces are `py-2` around one line of
+              text, so the height is decided entirely by the font-size. The two are siblings
+              in this row, so inheriting rather than declaring is what keeps them equal —
+              a `text-sm` here made this button 2px shorter than its neighbour. */}
+          <LiftedButton
+            outerClassName="w-fit lg:hidden"
+            className="gap-2 bg-background font-medium text-foreground"
+            liftColor="muted"
             onClick={() => setFiltersOpen(true)}
           >
             <Filter className="h-4 w-4" />
@@ -150,7 +170,7 @@ export const Quizzes = () => {
                 {activeFilterCount}
               </span>
             )}
-          </Button>
+          </LiftedButton>
           {/* Every "which way?" decision for quiz creation, in one place: manual vs AI,
               then what the AI works from. Lives in its own component (and its own story)
               rather than inline here — see create-quiz-method-dialog.tsx. */}
@@ -166,7 +186,8 @@ export const Quizzes = () => {
       <div className="flex gap-6 items-start">
         {/* Table card */}
         <div className="flex-1 min-w-0">
-          <Card className="p-6 bg-card border dark:border-foreground/30">
+          {/* Card padding is a gutter too — see the note in Questions.tsx. */}
+          <Card className="p-4 sm:p-6 bg-card border dark:border-foreground/30">
             {quizData.isError ? (
               <p className="text-center text-red-500 py-8">
                 Failed to load quizzes. Please try again later.

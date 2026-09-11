@@ -22,6 +22,8 @@ import type {
 
 import type { ParseResult } from "./parse-ai-output";
 
+import { RestoredDraftNotice } from "../draft-notices";
+
 import { AdvancedOptions } from "./components/advanced-options";
 import { ConfirmDetailsCard } from "./components/confirm-details-card";
 import { GenerationInput } from "./components/generation-input";
@@ -98,6 +100,16 @@ export interface OwnAiQuizViewProps {
 
   /** The prefilled quiz builder — a slot for the same reason as in the wizard view. */
   builderSlot?: ReactNode;
+
+  // ── Unfinished work brought back ─────────────────────────────────────────────
+  /**
+   * When the draft this page was restored from was saved, or `null` on a fresh visit. Props
+   * rather than hooks, like everything else here, so a story can show the notice.
+   * See docs/quiz/quiz-draft-persistence.md.
+   */
+  restoredDraftSavedAt?: number | null;
+  /** "Start fresh": drop the restored draft and empty the page. */
+  onDiscardDraft?: () => void;
 }
 
 /**
@@ -148,6 +160,8 @@ export const OwnAiQuizView = ({
   suggestedLanguageName,
   onStartOver,
   builderSlot,
+  restoredDraftSavedAt = null,
+  onDiscardDraft,
 }: OwnAiQuizViewProps) => {
   const navigate = useNavigate();
 
@@ -212,6 +226,12 @@ export const OwnAiQuizView = ({
   if (parseResult?.ok) {
     return (
       <div className="flex flex-col gap-3 lg:h-full lg:min-h-0">
+        {restoredDraftSavedAt != null && onDiscardDraft && (
+          <RestoredDraftNotice
+            savedAt={restoredDraftSavedAt}
+            onDiscard={onDiscardDraft}
+          />
+        )}
         <ImportNotices result={parseResult} />
         {/* Always topic-based here, so the fact-check nudge always applies. */}
         <ImportSummary result={parseResult} isFromTopic onStartOver={onStartOver} />
@@ -254,6 +274,14 @@ export const OwnAiQuizView = ({
           </InfoHint>
         </div>
       </header>
+
+      {restoredDraftSavedAt != null && onDiscardDraft && (
+        <RestoredDraftNotice
+          className="mb-4 short:mb-2"
+          savedAt={restoredDraftSavedAt}
+          onDiscard={onDiscardDraft}
+        />
+      )}
 
       {needsConfirmation ? (
         <ConfirmDetailsCard

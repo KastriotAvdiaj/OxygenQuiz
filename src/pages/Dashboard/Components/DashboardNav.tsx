@@ -17,6 +17,12 @@ type DashboardNavProps = {
   activePage: string;
   isCollapsed?: boolean;
   setIsCollapsed?: (isCollapsed: boolean) => void;
+  /**
+   * Hide the collapse control. The drawer copy of this nav (phones, opened from the island's
+   * More button) has nowhere to collapse *to* — a 280px sheet holding a 76px icon rail is
+   * just a sheet with a hole in it — so the control would be a dead end.
+   */
+  hideCollapseToggle?: boolean;
 };
 
 type NavGroup = { name: string; items: DashboardNavItem[] };
@@ -125,6 +131,7 @@ export const DashboardNav: React.FC<DashboardNavProps> = ({
   activePage,
   isCollapsed = false,
   setIsCollapsed = () => {},
+  hideCollapseToggle = false,
 }) => {
   const { checkAccess } = useAuthorization();
 
@@ -185,6 +192,7 @@ export const DashboardNav: React.FC<DashboardNavProps> = ({
           ))}
         </div>
 
+        {!hideCollapseToggle && (
         <div className="mt-3 border-t border-border pt-2">
           <button
             type="button"
@@ -216,6 +224,7 @@ export const DashboardNav: React.FC<DashboardNavProps> = ({
             </AnimatePresence>
           </button>
         </div>
+        )}
       </nav>
     </TooltipProvider>
   );

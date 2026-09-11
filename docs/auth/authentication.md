@@ -95,10 +95,14 @@ To change the behavior: shorten `RefreshTokenDays` in `TokenService`, or to make
 ### E. Automated (suggested)
 Add integration tests against the auth endpoints with `WebApplicationFactory`: login→refresh→replay happy path; reuse of a rotated token returns 401; logout then refresh returns 401. Use a respawned/in-memory Postgres so token rows are real.
 
-## Planned work (designed, not yet built)
+## Related auth features (all implemented)
 
-- **Email verification** — signups are currently unverified (only format + uniqueness are
-  checked). Design for a double opt-in confirmation flow: [`email-verification.md`](email-verification.md).
+- **Email verification** — ✅ implemented (2026-06-21): `EmailConfirmed` flag +
+  `EmailVerificationTokens` table, `verify-email` / `resend-verification` endpoints, the
+  `/confirm-email` page and the app-wide resend banner. It is a **soft** gate — nothing is
+  blocked on an unconfirmed address yet, the banner is the whole enforcement. External signups
+  with a provider-verified email skip the flow entirely (`EmailConfirmed` = the provider's
+  verdict). See [`email-verification.md`](email-verification.md).
 - **Google & Microsoft sign-in** — ✅ implemented (2026-07-26): backend ID-token verification,
   invite-first gated signup, auto-link on verified email. External-only accounts have a null
   `PasswordHash` (login guards it). See [`social-login.md`](social-login.md) (as built) and

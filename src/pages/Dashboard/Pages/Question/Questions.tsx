@@ -3,7 +3,7 @@ import { useQuestionCategoryData } from "./Entities/Categories/api/get-question-
 import { useQuestionDifficultyData } from "./Entities/Difficulty/api/get-question-difficulties";
 import { useQuestionLanguageData } from "./Entities/Language/api/get-question-language";
 
-import { Card, Spinner, Button } from "@/components/ui";
+import { Card, Spinner } from "@/components/ui";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useDisclosure } from "@/hooks/use-disclosure";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -99,20 +99,29 @@ export const Questions = () => {
   }
 
   return (
-    <div className="container mx-auto py-8 px-4 md:px-0">
-      <div className="flex justify-between items-center mb-6">
-        <div className="flex items-center gap-4">
-          <h1 className="text-3xl font-bold">Questions Management</h1>
-          {/* Mobile Filter Toggle */}
-          <Button
-            variant="outline"
-            className="lg:hidden flex items-center gap-2"
-            onClick={() => setFiltersOpen(true)}
-          >
-            <Filter className="h-4 w-4" />
-            Filters
-          </Button>
-        </div>
+    // Gutters and vertical rhythm: see the matching note in Quizzes.tsx — `main` owns the
+    // page padding now, and this was doubling it on phones.
+    <div className="container mx-auto py-4 sm:py-8">
+      {/* Title and its actions get a row each on phones, one shared row from `sm`. Sharing a
+          390px line is what wrapped this heading to "Questions / Management". */}
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-2xl font-bold sm:text-3xl">Questions Management</h1>
+        {/* Mobile Filter Toggle.
+            `lg:hidden` and the width go on `outerClassName`, not `className`: the latter
+            styles the front FACE, so hiding it there would leave the button's own box —
+            and its shadow and edge layers — still laid out and still taking a row.
+            `liftColor` drives the depth layers (edge gradient + drop shadow) off
+            `--lift-base`; "muted" keeps the 3D under a background-coloured face instead of
+            the default primary blue, which would read as a blue button with a white top. */}
+        <LiftedButton
+          outerClassName="w-fit lg:hidden"
+          className="gap-2 bg-background font-medium text-foreground"
+          liftColor="muted"
+          onClick={() => setFiltersOpen(true)}
+        >
+          <Filter className="h-4 w-4" />
+          Filters
+        </LiftedButton>
       </div>
 
       {/* Mobile Sheet for filters */}
@@ -146,7 +155,9 @@ export const Questions = () => {
         {/* Questions section */}
         <div className="flex gap-6 items-start">
           <div className="flex-1 min-w-0">
-            <Card className="p-6 bg-card border dark:border-foreground/30">
+            {/* Card padding is a gutter too: 24px each side inside a page that already
+                indents is 48px of a phone spent on nothing. */}
+            <Card className="p-4 sm:p-6 bg-card border dark:border-foreground/30">
              <div className="flex items-center justify-between gap-3 p-2 mb-4">
               <Dialog
                 open={isAddQuestionDialogOpen}
@@ -199,12 +210,37 @@ export const Questions = () => {
                 value={activeTab}
                 onValueChange={(value) => setActiveTab(value as QuestionType)}
                 className="w-full">
-                <TabsList className="grid grid-cols-3 mb-6">
-                  <TabsTrigger value={QuestionType.MultipleChoice}>
+                {/* Three equal columns holding labels as long as "Multiple Choice" is the
+                    thing that was spilling out of this control on a phone: TabsTrigger is
+                    `whitespace-nowrap px-4`, so at ~96px a column the text simply ran past
+                    its cell.
+
+                    The fix is to let the label WRAP, not to shrink it. Type size and hit
+                    area are control density, and density does not scale with width
+                    (docs/RESPONSIVE.md) — a 12px tab label is harder to read on the device
+                    held closest to your face. So the control gets taller instead: `h-auto`
+                    on the list, two lines allowed inside a trigger, and a min-height that
+                    keeps the single-line tabs at the 44px touch floor.
+
+                    `sm:min-h-0` is not tidying-up — it is load-bearing. From `sm` the list
+                    goes back to a fixed `h-12`, which leaves 36px inside its `p-1.5`; a
+                    trigger still asking for 44px cannot fit and grows straight out through
+                    the bottom of the pill. The min-height belongs only to the width where
+                    the list is `h-auto` and can grow with it. */}
+                <TabsList className="mb-6 grid h-auto grid-cols-3 gap-1 sm:h-12 sm:gap-4">
+                  <TabsTrigger
+                    className="min-h-[2.75rem] whitespace-normal px-2 leading-tight sm:min-h-0 sm:whitespace-nowrap sm:px-4"
+                    value={QuestionType.MultipleChoice}>
                     Multiple Choice
                   </TabsTrigger>
-                  <TabsTrigger value={QuestionType.TrueFalse}>True/False</TabsTrigger>
-                  <TabsTrigger value={QuestionType.TypeTheAnswer}>
+                  <TabsTrigger
+                    className="min-h-[2.75rem] whitespace-normal px-2 leading-tight sm:min-h-0 sm:whitespace-nowrap sm:px-4"
+                    value={QuestionType.TrueFalse}>
+                    True/False
+                  </TabsTrigger>
+                  <TabsTrigger
+                    className="min-h-[2.75rem] whitespace-normal px-2 leading-tight sm:min-h-0 sm:whitespace-nowrap sm:px-4"
+                    value={QuestionType.TypeTheAnswer}>
                     Type Answer
                   </TabsTrigger>
                 </TabsList>

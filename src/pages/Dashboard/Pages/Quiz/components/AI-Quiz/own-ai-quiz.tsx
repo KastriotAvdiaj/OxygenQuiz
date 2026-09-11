@@ -19,7 +19,8 @@ import { useAiQuizDraft } from "./use-ai-quiz-draft";
  * second flow was being hidden inside the first.
  *
  * Everything shared with the generate path lives in `useAiQuizDraft`. What's here is the
- * clipboard and the pasted reply.
+ * clipboard — including the fallback for when the browser refuses it. The pasted reply
+ * itself lives in the hook, because it has to be part of the draft that survives a refresh.
  *
  * <b>Topic only.</b> The draft's `mode` stays at its `"Topic"` default and this page never
  * offers the tabs: source material is something we send *to the model* on the generate path
@@ -32,7 +33,6 @@ export const OwnAiQuiz = () => {
 
   const [copied, setCopied] = useState(false);
   const [isCopying, setIsCopying] = useState(false);
-  const [aiResponse, setAiResponse] = useState("");
 
   /**
    * The prompt, shown on screen because the clipboard refused it.
@@ -85,7 +85,7 @@ export const OwnAiQuiz = () => {
   };
 
   const handleAiResponseChange = (value: string) => {
-    setAiResponse(value);
+    draft.setPastedReply(value);
     // Editing the reply invalidates the previous verdict — keep the error from hanging
     // around next to text it no longer describes.
     if (draft.payload) draft.resetPayload();
@@ -99,12 +99,12 @@ export const OwnAiQuiz = () => {
    * answered. If they genuinely can't be resolved, `needsConfirmation` catches it downstream
    * and asks only for what's missing.
    */
-  const handleImport = () => draft.setPayload(aiResponse);
+  const handleImport = () => draft.setPayload(draft.pastedReply);
 
   /** Discards the questions and returns to the paste box. */
   const handleStartOver = () => {
     draft.resetPayload();
-    setAiResponse("");
+    draft.setPastedReply("");
   };
 
   return (
@@ -137,7 +137,7 @@ export const OwnAiQuiz = () => {
       copied={copied}
       promptToCopyByHand={promptToCopyByHand}
       isCopying={isCopying}
-      aiResponse={aiResponse}
+      aiResponse={draft.pastedReply}
       onAiResponseChange={handleAiResponseChange}
       onImport={handleImport}
       parseResult={draft.parseResult}
@@ -146,6 +146,8 @@ export const OwnAiQuiz = () => {
       suggestedLanguageName={draft.suggestedLanguageName}
       onStartOver={handleStartOver}
       builderSlot={draft.builderSlot}
+      restoredDraftSavedAt={draft.restoredAt}
+      onDiscardDraft={draft.discardDraft}
     />
   );
 };

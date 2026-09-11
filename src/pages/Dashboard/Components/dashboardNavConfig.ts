@@ -24,6 +24,22 @@ export type DashboardNavItem = {
    * Items without a group fall into the leading, unlabelled section.
    */
   group?: string;
+  /**
+   * Show this item in the floating phone island (`DashboardIsland`), which is icon-only
+   * and holds **at most three**. Everything else stays reachable through the island's
+   * "More" button, which opens the full nav in a drawer.
+   *
+   * Keep it to three. A pill nav is sized by its content, and a fourth icon starts to
+   * read as a toolbar bolted to the bottom of the screen rather than an island. The
+   * island renders flagged items in the order they appear in this array, so reordering
+   * the island means moving a block here — which also moves it in the sidebar. If the
+   * two orders ever need to differ, that is the moment to add an explicit index, not
+   * before.
+   *
+   * Role gating still applies: the island filters by `roles` exactly like the sidebar,
+   * so an item the viewer can't reach never takes a slot.
+   */
+  island?: boolean;
 };
 
 // Admin / SuperAdmin dashboard (/dashboard)
@@ -40,12 +56,14 @@ export const adminDashboardNavButtons: DashboardNavItem[] = [
     label: "Quizzes",
     icon: Folder,
     group: "Overview",
+    island: true,
   },
   {
     id: "questions",
     label: "Questions",
     icon: MessageSquareText,
     group: "Overview",
+    island: true,
   },
   {
     // Placeholder. The reports UI is built (MyReports.tsx) but unfinished, so the route
@@ -63,6 +81,7 @@ export const adminDashboardNavButtons: DashboardNavItem[] = [
     icon: Users,
     roles: ["Admin", "SuperAdmin"],
     group: "Access",
+    island: true,
   },
   {
     id: "permissions",
@@ -122,12 +141,14 @@ export const userDashboardNavButtons: DashboardNavItem[] = [
     label: "My Quizzes",
     icon: Folder,
     group: "Overview",
+    island: true,
   },
   {
     id: "questions",
     label: "My Questions",
     icon: MessageSquareText,
     group: "Overview",
+    island: true,
   },
   {
     // The full list behind the Quiz Stats panel's "View quiz history" button.
@@ -135,5 +156,6 @@ export const userDashboardNavButtons: DashboardNavItem[] = [
     label: "Quiz History",
     icon: History,
     group: "Overview",
+    island: true,
   },
 ];

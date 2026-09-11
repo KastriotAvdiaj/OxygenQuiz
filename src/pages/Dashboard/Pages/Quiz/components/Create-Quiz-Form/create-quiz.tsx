@@ -43,7 +43,7 @@ import { DifficultySelect } from "../../../Question/Entities/Difficulty/Componen
 import { LanguageSelect } from "../../../Question/Entities/Language/components/select-question-language";
 import { Spinner, Switch } from "@/components/ui";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNotifications } from "@/common/Notifications";
 import { useNavigate, useLocation } from "react-router";
 import { ExistingQuestionCard } from "./components/existing-display-quiz-question-card/main-display-quiz-question-export";
@@ -73,6 +73,35 @@ import { CreatedQuestionsPanel } from "./components/question-panel/questions-pan
 import { useUpdateQuiz, isVersionConflictError } from "../../api/update-quiz";
 import { useCreateAiQuiz, AiImportQuestion } from "../../api/create-ai-quiz";
 import { Quiz } from "@/types/quiz-types";
+import { useUser } from "@/lib/Auth";
+import { useDraftAutosave } from "@/hooks/use-draft-autosave";
+import { DraftSavedIndicator, RestoredDraftNotice } from "../draft-notices";
+import {
+  ManualQuizDraft,
+  QUIZ_DRAFT_SLOTS,
+  QUIZ_DRAFT_VERSION,
+  isManualQuizDraftWorthKeeping,
+} from "../quiz-drafts";
+
+/**
+ * What an empty create form looks like, so that "Start fresh" on a restored draft puts the
+ * fields back exactly where a first visit would find them. Spelled out rather than passing
+ * `reset()` nothing: `reset(undefined)` restores the form's *defaultValues*, which on this
+ * route are the restored draft — it would put the draft straight back.
+ */
+const EMPTY_QUIZ_FORM_VALUES = {
+  title: "",
+  description: "",
+  categoryId: undefined,
+  languageId: undefined,
+  difficultyId: undefined,
+  imageUrl: "",
+  timeLimitInSeconds: 0,
+  showFeedbackImmediately: false,
+  status: "Draft" as const,
+  shuffleQuestions: false,
+  questions: [],
+};
 
 interface CreateQuizFormProps {
   /**
@@ -93,12 +122,29 @@ interface CreateQuizFormProps {
    * leave orphan questions. See docs/quiz/ai-quiz-architecture.md §7.
    */
   aiImportMode?: boolean;
+  /**
+   * When this form was seeded from a stored draft, the moment that draft was written — it
+   * drives the "picked up where you left off" notice. `null` on a fresh start.
+   * `create-quiz-route.tsx` is what reads the draft; this form only reports it and keeps it
+   * up to date.
+   */
+  restoredDraftSavedAt?: number | null;
+  /**
+   * Called once the quiz has been written to the server, before the redirect.
+   *
+   * The AI wizard uses it to drop the draft it is keeping: the builder it renders in review
+   * mode is a child of the wizard, so a successful save here is what tells the wizard its
+   * reply is no longer unfinished work.
+   */
+  onSaved?: () => void;
 }
 
 const CreateQuizForm = ({
   editQuiz,
   initialValues,
   aiImportMode = false,
+  restoredDraftSavedAt = null,
+  onSaved,
 }: CreateQuizFormProps = {}) => {
   const isEditMode = editQuiz != null;
   const { queryData } = useQuizForm();
@@ -113,10 +159,36 @@ const CreateQuizForm = ({
     resetAllValidationStates,
     activeTab,
     setActiveTab,
+    clearQuiz,
   } = useQuiz();
   const { addNotification } = useNotifications();
   const navigate = useNavigate();
   const location = useLocation();
+  const { data: user } = useUser();
+
+  /**
+   * Only the *manual create* flow keeps a local draft.
+   *
+   * Edit mode is out because the quiz already has a server record and an optimistic-concurrency
+   * story to go with it — a local copy of a half-edited quiz would race the 409 that
+   * `updateQuizMutation` relies on to protect changes made elsewhere. AI review mode is out
+   * because the wizard already persists the generated payload under its own slot; a second
+   * snapshot of the same questions would mean two offers to restore one quiz.
+   */
+  const draftsEnabled = !editQuiz && !aiImportMode;
+
+  /**
+   * The autosave hook lives inside the `<Form>` render prop, because that is where the form's
+   * values are — but the mutation callbacks below are defined out here. This is the wire
+   * between them: it is assigned during render and called on a successful create, so a quiz
+   * that has been saved for real stops being offered back as an unfinished draft.
+   */
+  const discardDraftRef = useRef<() => void>(() => {});
+
+  /** Drives the restore notice. Local state so "Start fresh" can take it away. */
+  const [restoredNoticeAt, setRestoredNoticeAt] = useState<number | null>(
+    draftsEnabled ? restoredDraftSavedAt : null,
+  );
   // This form is mounted under both the admin dashboard (/dashboard/...) and the
   // personal dashboard (/my-dashboard/...). Redirect back into whichever section
   // the user is actually in — a normal user has no access to /dashboard and would
@@ -205,6 +277,12 @@ const CreateQuizForm = ({
   const createQuizMutation = useCreateQuiz({
     mutationConfig: {
       onSuccess: () => {
+        // The work is on the server now, so the local copy has done its job. Cleared through
+        // the hook rather than by deleting the key directly: the hook also cancels the write
+        // it still has pending, which would otherwise land during the navigation below and
+        // resurrect the draft a moment after the quiz was created.
+        discardDraftRef.current();
+        onSaved?.();
         addNotification({
           type: "success",
           title: "Success",
@@ -223,6 +301,9 @@ const CreateQuizForm = ({
   const createAiQuizMutation = useCreateAiQuiz({
     mutationConfig: {
       onSuccess: () => {
+        // This form keeps no draft in AI review mode — the wizard above it does, and this is
+        // what tells it the reply has become a real quiz.
+        onSaved?.();
         addNotification({
           type: "success",
           title: "Success",
@@ -597,7 +678,7 @@ const CreateQuizForm = ({
             : undefined,
       }}
     >
-      {({ register, formState, setValue, watch, clearErrors }) => {
+      {({ register, formState, setValue, watch, clearErrors, reset }) => {
         useEffect(() => {
           const questions = addedQuestions.map(
             (q: QuizQuestion, index: number) => ({
@@ -653,6 +734,55 @@ const CreateQuizForm = ({
           if (!canPublish && status === "Public") setValue("status", "Draft");
         }, [canPublish, status, setValue]);
 
+        // ── Draft persistence (docs/quiz/quiz-draft-persistence.md) ────────────────────
+        //
+        // `watch()` with no argument subscribes to every field, so this snapshot is rebuilt
+        // on each keystroke — which is exactly what the autosave hook wants, since it
+        // compares *contents* and not object identity. `questions` is left out on purpose:
+        // the form field of that name is bookkeeping written by the Effect above, while the
+        // questions worth restoring (with their per-question settings) come from the
+        // provider, in the very shape `initialQuestions` takes them back in.
+        const formValues = watch();
+        const draftCandidate: ManualQuizDraft = {
+          form: {
+            title: formValues.title,
+            description: formValues.description,
+            categoryId: formValues.categoryId,
+            languageId: formValues.languageId,
+            difficultyId: formValues.difficultyId,
+            imageUrl: formValues.imageUrl,
+            timeLimitInSeconds: formValues.timeLimitInSeconds,
+            showFeedbackImmediately: formValues.showFeedbackImmediately,
+            status: formValues.status,
+            shuffleQuestions: formValues.shuffleQuestions,
+          },
+          questions: getQuestionsWithSettings(),
+        };
+
+        const { savedAt: draftSavedAt, discard: discardDraft } =
+          useDraftAutosave<ManualQuizDraft>({
+            slot: QUIZ_DRAFT_SLOTS.manual,
+            userId: user?.id,
+            version: QUIZ_DRAFT_VERSION,
+            // `enabled`, not a null value: edit mode and AI review share this component and
+            // this slot, and a null value would *delete* the manual builder's draft rather
+            // than leave it alone. See the hook's `enabled` doc.
+            enabled: draftsEnabled,
+            value: isManualQuizDraftWorthKeeping(draftCandidate)
+              ? draftCandidate
+              : null,
+          });
+
+        discardDraftRef.current = discardDraft;
+
+        /** "Start fresh": drop the stored draft and empty both halves of the builder. */
+        const handleDiscardDraft = () => {
+          discardDraft();
+          reset(EMPTY_QUIZ_FORM_VALUES);
+          clearQuiz();
+          setRestoredNoticeAt(null);
+        };
+
         const { errors } = formState;
 
         // Fields that live on the "Quiz" tab. When the user submits from the
@@ -694,501 +824,522 @@ const CreateQuizForm = ({
         // };
 
         return (
-          <div className="mx-auto w-full max-w-[1600px] grid grid-cols-1 lg:grid-cols-5 gap-3 sm:gap-4 items-start lg:h-full lg:min-h-0 lg:overflow-hidden">
-            {/* Quiz Details Sidebar */}
-            <Card className="md:text-xs lg:text-sm h-fit lg:h-full lg:col-span-1 bg-background border-2 border-primary/30 flex flex-col lg:overflow-hidden">
-              <Tabs
-                value={activeTab}
-                onValueChange={setActiveTab}
-                className="flex flex-1 flex-col min-h-0"
-              >
-                <CardHeader className="w-full relative bg-primary/10 text-center border-b border-primary/30 px-2 py-3 flex-none">
-                  <TabsList className="w-full border-none bg-none shadow-none rounded-md">
-                    <TabsTrigger
-                      value="quiz"
-                      activeClassName={
-                        quizTabErrorCount > 0 ? "bg-red-500" : undefined
-                      }
-                      className={`rounded-xl ${
-                        quizTabErrorCount > 0
-                          ? "ring-2 ring-red-500 ring-offset-1 ring-offset-background data-[state=active]:text-white data-[state=inactive]:bg-red-500/10 data-[state=inactive]:text-red-500 data-[state=inactive]:hover:bg-red-500/15"
-                          : ""
-                      }`}
-                    >
-                      <p className="flex gap-2 px-4 items-center text-sm">
-                        <Folder
-                          className={`h-4 w-4 ${
-                            activeTab === "quiz"
-                              ? "text-white"
-                              : quizTabErrorCount > 0
-                                ? "text-red-500"
+          <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-3 lg:h-full lg:min-h-0">
+            {/* Above the builder rather than over it: the draft is already restored, so this
+                reports what happened and offers the way out. It is not a gate asking
+                permission to do something that has been done. See ADR 0009. */}
+            {restoredNoticeAt !== null && (
+              <RestoredDraftNotice
+                className="flex-none"
+                savedAt={restoredNoticeAt}
+                onDiscard={handleDiscardDraft}
+                summary={
+                  addedQuestions.length > 0
+                    ? `${addedQuestions.length} question${
+                        addedQuestions.length === 1 ? "" : "s"
+                      }`
+                    : undefined
+                }
+              />
+            )}
+
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-3 sm:gap-4 items-start lg:min-h-0 lg:flex-1 lg:overflow-hidden">
+              {/* Quiz Details Sidebar */}
+              <Card className="md:text-xs lg:text-sm h-fit lg:h-full lg:col-span-1 bg-background border-2 border-primary/30 flex flex-col lg:overflow-hidden">
+                <Tabs
+                  value={activeTab}
+                  onValueChange={setActiveTab}
+                  className="flex flex-1 flex-col min-h-0"
+                >
+                  <CardHeader className="w-full relative bg-primary/10 text-center border-b border-primary/30 px-2 py-3 flex-none">
+                    <TabsList className="w-full border-none bg-none shadow-none rounded-md">
+                      <TabsTrigger
+                        value="quiz"
+                        activeClassName={
+                          quizTabErrorCount > 0 ? "bg-red-500" : undefined
+                        }
+                        className={`rounded-xl ${
+                          quizTabErrorCount > 0
+                            ? "ring-2 ring-red-500 ring-offset-1 ring-offset-background data-[state=active]:text-white data-[state=inactive]:bg-red-500/10 data-[state=inactive]:text-red-500 data-[state=inactive]:hover:bg-red-500/15"
+                            : ""
+                        }`}
+                      >
+                        <p className="flex gap-2 px-4 items-center text-sm">
+                          <Folder
+                            className={`h-4 w-4 ${
+                              activeTab === "quiz"
+                                ? "text-white"
+                                : quizTabErrorCount > 0
+                                  ? "text-red-500"
+                                  : "text-primary"
+                            }`}
+                          />
+                          Quiz
+                          {quizTabErrorCount > 0 && (
+                            <span
+                              className="ml-0.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[11px] font-semibold text-white leading-none group-data-[state=active]:bg-white group-data-[state=active]:text-red-600"
+                              aria-label={`${quizTabErrorCount} field${
+                                quizTabErrorCount === 1 ? "" : "s"
+                              } need attention`}
+                            >
+                              {quizTabErrorCount}
+                            </span>
+                          )}
+                        </p>
+                      </TabsTrigger>
+                      <TabsTrigger value="questions" className="rounded-xl">
+                        <p className="flex gap-2 px-4 items-center text-sm">
+                          <MessageSquareText
+                            className={`h-4 w-4 ${
+                              activeTab === "questions"
+                                ? "text-white"
                                 : "text-primary"
-                          }`}
+                            }`}
+                          />
+                          Question
+                        </p>
+                      </TabsTrigger>
+                    </TabsList>
+                  </CardHeader>
+
+                  <TabsContent
+                    value="questions"
+                    className="flex items-center justify-center w-full"
+                  >
+                    <section className="flex flex-col gap-4 p-4 w-full">
+                      {addedQuestions.length === 0 ? (
+                        <div className="text-muted-foreground text-center py-8">
+                          No questions added yet
+                        </div>
+                      ) : displayQuestion ? (
+                        <QuestionSettingsCard
+                          question={displayQuestion}
+                          showCopyActions={addedQuestions.length > 1}
                         />
-                        Quiz
-                        {quizTabErrorCount > 0 && (
-                          <span
-                            className="ml-0.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[11px] font-semibold text-white leading-none group-data-[state=active]:bg-white group-data-[state=active]:text-red-600"
-                            aria-label={`${quizTabErrorCount} field${
-                              quizTabErrorCount === 1 ? "" : "s"
-                            } need attention`}
+                      ) : null}
+                    </section>
+                  </TabsContent>
+
+                  <TabsContent
+                    value="quiz"
+                    className="flex-1 min-h-0 overflow-hidden mt-0"
+                  >
+                    <CardContent className="bg-background space-y-4 h-full overflow-y-auto scrollbar-thin py-3">
+                      {/* Basic Information */}
+                      <div className="space-y-2">
+                        <div>
+                          <Label
+                            htmlFor="title"
+                            className="text-sm font-medium flex items-center gap-1"
                           >
-                            {quizTabErrorCount}
-                          </span>
-                        )}
-                      </p>
-                    </TabsTrigger>
-                    <TabsTrigger value="questions" className="rounded-xl">
-                      <p className="flex gap-2 px-4 items-center text-sm">
-                        <MessageSquareText
-                          className={`h-4 w-4 ${
-                            activeTab === "questions"
-                              ? "text-white"
-                              : "text-primary"
-                          }`}
+                            Quiz Title <span className="text-destructive">*</span>
+                          </Label>
+                          <Input
+                            variant={errors.title ? "isIncorrect" : "minimal"}
+                            id="title"
+                            placeholder="Enter quiz title"
+                            className="mt-1"
+                            {...register("title")}
+                            error={errors.title}
+                          />
+                        </div>
+
+                        <div>
+                          <Label
+                            htmlFor="description"
+                            className="text-sm font-medium"
+                          >
+                            Description
+                          </Label>
+                          <Textarea
+                            variant="minimal"
+                            id="description"
+                            placeholder="Describe your quiz"
+                            className="mt-1 min-h-[80px] resize-none"
+                            {...register("description")}
+                            error={errors.description}
+                          />
+                        </div>
+                      </div>
+                      <Separator className="bg-primary/20" />
+
+                      {/* <ImageUpload
+                        onUpload={handleImageUpload}
+                        onRemove={handleImageRemove}
+                        initialImageUrl={editQuiz?.imageUrl ?? null}
+                      /> */}
+
+                      {/* Dropdowns */}
+                      <div className="space-y-3">
+                        <h4 className="text-sm font-semibold text-primary flex items-center gap-1">
+                          Filters
+                        </h4>
+                        <CategorySelect
+                          categories={queryData.categories}
+                          fieldVariant="form"
+                          value={watch("categoryId")?.toString() || ""}
+                          onChange={(selectedValue: string) =>
+                            setValue("categoryId", parseInt(selectedValue, 10))
+                          }
+                          includeAllOption={false}
+                          error={formState.errors["categoryId"]?.message}
+                          clearErrors={() => clearErrors("categoryId")}
                         />
-                        Question
-                      </p>
-                    </TabsTrigger>
-                  </TabsList>
+
+                        <DifficultySelect
+                          difficulties={queryData.difficulties}
+                          fieldVariant="form"
+                          value={watch("difficultyId")?.toString() || ""}
+                          onChange={(selectedValue: string) =>
+                            setValue("difficultyId", parseInt(selectedValue, 10))
+                          }
+                          includeAllOption={false}
+                          error={formState.errors["difficultyId"]?.message}
+                          clearErrors={() => clearErrors("difficultyId")}
+                        />
+
+                        <LanguageSelect
+                          languages={queryData.languages}
+                          fieldVariant="form"
+                          value={watch("languageId")?.toString() || ""}
+                          includeAllOption={false}
+                          onChange={(selectedValue: string) =>
+                            setValue("languageId", parseInt(selectedValue, 10))
+                          }
+                          error={formState.errors["languageId"]?.message}
+                          clearErrors={() => clearErrors("languageId")}
+                        />
+                      </div>
+
+                      <Separator className="bg-primary/20" />
+
+                      {/* Quiz Settings */}
+                      <div className="space-y-4">
+                        <h4 className="text-sm font-semibold text-primary flex items-center gap-1">
+                          Settings
+                        </h4>
+
+                        <div>
+                          <Label className="text-xs font-medium flex items-center gap-2 mb-2">
+                            Status
+                          </Label>
+                          <Select
+                            value={watch("status") || "Draft"}
+                            onValueChange={(value) =>
+                              setValue(
+                                "status",
+                                value as "Draft" | "Unlisted" | "Public",
+                              )
+                            }
+                          >
+                            <SelectTrigger
+                              variant={errors.status ? "form-error" : "form"}
+                              className="w-full"
+                            >
+                              <SelectValue placeholder="Select status" />
+                            </SelectTrigger>
+                            <SelectContent
+                              variant={errors.status ? "form-error" : "form"}
+                            >
+                              <SelectItem
+                                variant={errors.status ? "form-error" : "form"}
+                                value="Draft"
+                              >
+                                Draft — only you can see it
+                              </SelectItem>
+                              <SelectItem
+                                variant={errors.status ? "form-error" : "form"}
+                                value="Unlisted"
+                              >
+                                Unlisted — playable via share link
+                              </SelectItem>
+                              {/* Radix's own `data-[disabled]` styling (opacity + no pointer
+                                  events) already lives in SelectItem's base class, so disabling is
+                                  the whole change. The option stays *visible* rather than being
+                                  removed: a missing row reads as a feature that doesn't exist,
+                                  where a greyed one plus the note below reads as a condition the
+                                  user can satisfy. */}
+                              <SelectItem
+                                variant={errors.status ? "form-error" : "form"}
+                                value="Public"
+                                disabled={!canPublish}
+                              >
+                                Public — listed for everyone
+                                {!canPublish && " (needs a full classification)"}
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                          {!canPublish && (
+                            <p className="text-muted-foreground mt-1.5 flex items-start gap-1.5 text-xs">
+                              <Info className="mt-0.5 h-3 w-3 shrink-0" />
+                              <span>
+                                Set a real{" "}
+                                <span className="text-foreground font-medium">
+                                  {unspecifiedFields.length === 3
+                                    ? `${unspecifiedFields[0]}, ${unspecifiedFields[1]} and ${unspecifiedFields[2]}`
+                                    : unspecifiedFields.join(" and ")}
+                                </span>{" "}
+                                above to publish this quiz. Draft and Unlisted work
+                                either way.
+                              </span>
+                            </p>
+                          )}
+                          {errors.status && (
+                            <p className="text-sm text-red-500 mt-1">
+                              {errors.status.message
+                                ? errors.status.message
+                                : "Please select a status."}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      <Separator className="bg-primary/20" />
+
+                      {/* Toggle Options */}
+                      <div className="space-y-3">
+                        <h4 className="text-sm font-semibold text-primary">
+                          Options
+                        </h4>
+
+                        <div className="flex items-center justify-between">
+                          <Label
+                            htmlFor="showFeedback"
+                            className="text-sm font-medium flex items-center gap-2"
+                          >
+                            Instant Feedback
+                          </Label>
+                          <Switch
+                            id="showFeedback"
+                            checked={watch("showFeedbackImmediately") || false}
+                            onCheckedChange={(checked) =>
+                              setValue("showFeedbackImmediately", checked)
+                            }
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <Label
+                            htmlFor="shuffleQuestions"
+                            className="text-sm font-medium flex items-center gap-2"
+                          >
+                            Shuffle Questions
+                          </Label>
+                          <Switch
+                            id="shuffleQuestions"
+                            checked={watch("shuffleQuestions") || false}
+                            onCheckedChange={(checked) =>
+                              setValue("shuffleQuestions", checked)
+                            }
+                          />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </TabsContent>
+                </Tabs>
+              </Card>
+
+              {/* Main Quiz Creator Area */}
+              <Card className="bg-background border-2 border-primary/30 rounded-xl shadow-lg flex flex-col items-center w-full lg:col-span-3 lg:h-full lg:overflow-hidden">
+                <CardHeader className="w-full relative bg-primary/10 p-3 text-center border-b border-primary/30 flex-none">
+                  <section className="flex justify-center rounded-lg">
+                    {/* Blurred backdrop while the add-question menu is open. */}
+                    {isAddMenuOpen && (
+                      <div className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm" />
+                    )}
+
+                    <Popover open={isAddMenuOpen} onOpenChange={setIsAddMenuOpen}>
+                      <PopoverTrigger asChild>
+                        <LiftedButton
+                          type="button"
+                          className="flex items-center gap-2"
+                        >
+                          <Plus className="h-4 w-4" />
+                          Add a question
+                        </LiftedButton>
+                      </PopoverTrigger>
+                      <PopoverContent
+                        align="center"
+                        sideOffset={10}
+                        className="z-50 w-64 p-3 flex flex-col gap-3 bg-background dark:border-foreground/20"
+                      >
+                        {/* Browse the public pool — opens the full pool dialog (rendered
+                            outside this menu so it survives the menu closing). */}
+                        <LiftedButton
+                          type="button"
+                          liftColor="muted"
+                          className="w-full justify-center bg-muted text-foreground border border-foreground/20"
+                          onClick={() => {
+                            setIsAddMenuOpen(false);
+                            setIsPoolOpen(true);
+                          }}
+                        >
+                          <Plus className="h-4 w-4" />
+                          Browse Public Pool
+                        </LiftedButton>
+
+                        {/* or */}
+                        <div className="flex items-center gap-3">
+                          <span className="h-px flex-1 bg-border" />
+                          <span className="text-xs font-medium text-muted-foreground">
+                            or
+                          </span>
+                          <span className="h-px flex-1 bg-border" />
+                        </div>
+
+                        {/* Create a brand-new question — opens the type chooser below. */}
+                        <LiftedButton
+                          type="button"
+                          className="w-full justify-center flex items-center gap-2"
+                          onClick={() => {
+                            setIsAddMenuOpen(false);
+                            openAddQuestionDialog();
+                          }}
+                        >
+                          <Plus className="h-4 w-4" />
+                          Create New
+                        </LiftedButton>
+                      </PopoverContent>
+                    </Popover>
+
+                    {/* Public-pool browser — controlled, lives outside the menu. */}
+                    <SelectQuestionComponent
+                      open={isPoolOpen}
+                      onOpenChange={setIsPoolOpen}
+                    />
+
+                    <Dialog
+                      open={isAddQuestionDialogOpen}
+                      onOpenChange={(open) =>
+                        open ? openAddQuestionDialog() : closeAddQuestionDialog()
+                      }
+                    >
+                      <DialogContent className="bg-background p-4 rounded-md pt-8 dark:border border-foreground/30 ">
+                        <DialogHeader>
+                          <DialogTitle className="flex items-center justify-center">
+                            Choose the type of question
+                          </DialogTitle>
+                        </DialogHeader>
+                        {/* A grid, not a flex row. Flex shrinks an item's *content box* while
+                            its padding stays put, so three fixed-padding buttons in a narrow
+                            dialog didn't get smaller — they squeezed their labels into wrapping
+                            mid-phrase, at three different widths (shrink is proportional to
+                            base width). Equal grid columns give one width for all three and
+                            stack them below `sm`, where three across can't fit legibly.
+                            `outerClassName` sizes the button element; `className` is the front
+                            face, and it needs h-full/w-full to fill a stretched grid cell —
+                            otherwise a two-line label makes one blue face taller than the
+                            others. See docs/RESPONSIVE.md. */}
+                        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                          <LiftedButton
+                            type="button"
+                            outerClassName="w-full"
+                            className="h-full w-full text-center text-sm leading-tight"
+                            onClick={() => {
+                              const tempId = -Date.now();
+                              const newQuestion =
+                                createNewMultipleChoiceQuestion(tempId);
+                              addQuestionToQuiz(newQuestion);
+                              closeAddQuestionDialog();
+                            }}
+                          >
+                            Multiple Choice
+                          </LiftedButton>
+                          <LiftedButton
+                            type="button"
+                            outerClassName="w-full"
+                            className="h-full w-full text-center text-sm leading-tight"
+                            onClick={() => {
+                              const tempId = -Date.now();
+                              const newQuestion =
+                                createNewTrueFalseQuestion(tempId);
+                              addQuestionToQuiz(newQuestion);
+                              closeAddQuestionDialog();
+                            }}
+                          >
+                            True/False
+                          </LiftedButton>
+                          <LiftedButton
+                            type="button"
+                            outerClassName="w-full"
+                            className="h-full w-full text-center text-sm leading-tight"
+                            onClick={() => {
+                              const tempId = -Date.now();
+                              const newQuestion =
+                                createNewTypeTheAnswerQuestion(tempId);
+                              addQuestionToQuiz(newQuestion);
+                              closeAddQuestionDialog();
+                            }}
+                          >
+                            Type The Answer
+                          </LiftedButton>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </section>
                 </CardHeader>
 
-                <TabsContent
-                  value="questions"
-                  className="flex items-center justify-center w-full"
-                >
-                  <section className="flex flex-col gap-4 p-4 w-full">
-                    {addedQuestions.length === 0 ? (
-                      <div className="text-muted-foreground text-center py-8">
-                        No questions added yet
-                      </div>
-                    ) : displayQuestion ? (
-                      <QuestionSettingsCard
+                <CardContent className="flex flex-col w-full flex-1 min-h-0 overflow-y-auto p-3">
+                  {displayQuestion !== null ? (
+                    isAnyQuestion(displayQuestion) ? (
+                      <ExistingQuestionCard
+                        key={displayQuestion.id}
                         question={displayQuestion}
-                        showCopyActions={addedQuestions.length > 1}
                       />
-                    ) : null}
-                  </section>
-                </TabsContent>
-
-                <TabsContent
-                  value="quiz"
-                  className="flex-1 min-h-0 overflow-hidden mt-0"
-                >
-                  <CardContent className="bg-background space-y-4 h-full overflow-y-auto scrollbar-thin py-3">
-                    {/* Basic Information */}
-                    <div className="space-y-2">
-                      <div>
-                        <Label
-                          htmlFor="title"
-                          className="text-sm font-medium flex items-center gap-1"
-                        >
-                          Quiz Title <span className="text-destructive">*</span>
-                        </Label>
-                        <Input
-                          variant={errors.title ? "isIncorrect" : "minimal"}
-                          id="title"
-                          placeholder="Enter quiz title"
-                          className="mt-1"
-                          {...register("title")}
-                          error={errors.title}
-                        />
-                      </div>
-
-                      <div>
-                        <Label
-                          htmlFor="description"
-                          className="text-sm font-medium"
-                        >
-                          Description
-                        </Label>
-                        <Textarea
-                          variant="minimal"
-                          id="description"
-                          placeholder="Describe your quiz"
-                          className="mt-1 min-h-[80px] resize-none"
-                          {...register("description")}
-                          error={errors.description}
-                        />
-                      </div>
-                    </div>
-                    <Separator className="bg-primary/20" />
-
-                    {/* <ImageUpload
-                      onUpload={handleImageUpload}
-                      onRemove={handleImageRemove}
-                      initialImageUrl={editQuiz?.imageUrl ?? null}
-                    /> */}
-
-                    {/* Dropdowns */}
-                    <div className="space-y-3">
-                      <h4 className="text-sm font-semibold text-primary flex items-center gap-1">
-                        Filters
-                      </h4>
-                      <CategorySelect
-                        categories={queryData.categories}
-                        fieldVariant="form"
-                        value={watch("categoryId")?.toString() || ""}
-                        onChange={(selectedValue: string) =>
-                          setValue("categoryId", parseInt(selectedValue, 10))
-                        }
-                        includeAllOption={false}
-                        error={formState.errors["categoryId"]?.message}
-                        clearErrors={() => clearErrors("categoryId")}
+                    ) : isNewAnyQuestion(displayQuestion) ? (
+                      <NewQuestionCard
+                        key={displayQuestion.id}
+                        question={displayQuestion}
                       />
-
-                      <DifficultySelect
-                        difficulties={queryData.difficulties}
-                        fieldVariant="form"
-                        value={watch("difficultyId")?.toString() || ""}
-                        onChange={(selectedValue: string) =>
-                          setValue("difficultyId", parseInt(selectedValue, 10))
-                        }
-                        includeAllOption={false}
-                        error={formState.errors["difficultyId"]?.message}
-                        clearErrors={() => clearErrors("difficultyId")}
-                      />
-
-                      <LanguageSelect
-                        languages={queryData.languages}
-                        fieldVariant="form"
-                        value={watch("languageId")?.toString() || ""}
-                        includeAllOption={false}
-                        onChange={(selectedValue: string) =>
-                          setValue("languageId", parseInt(selectedValue, 10))
-                        }
-                        error={formState.errors["languageId"]?.message}
-                        clearErrors={() => clearErrors("languageId")}
-                      />
-                    </div>
-
-                    <Separator className="bg-primary/20" />
-
-                    {/* Quiz Settings */}
-                    <div className="space-y-4">
-                      <h4 className="text-sm font-semibold text-primary flex items-center gap-1">
-                        Settings
-                      </h4>
-
-                      <div>
-                        <Label className="text-xs font-medium flex items-center gap-2 mb-2">
-                          Status
-                        </Label>
-                        <Select
-                          value={watch("status") || "Draft"}
-                          onValueChange={(value) =>
-                            setValue(
-                              "status",
-                              value as "Draft" | "Unlisted" | "Public",
-                            )
-                          }
-                        >
-                          <SelectTrigger
-                            variant={errors.status ? "form-error" : "form"}
-                            className="w-full"
-                          >
-                            <SelectValue placeholder="Select status" />
-                          </SelectTrigger>
-                          <SelectContent
-                            variant={errors.status ? "form-error" : "form"}
-                          >
-                            <SelectItem
-                              variant={errors.status ? "form-error" : "form"}
-                              value="Draft"
-                            >
-                              Draft — only you can see it
-                            </SelectItem>
-                            <SelectItem
-                              variant={errors.status ? "form-error" : "form"}
-                              value="Unlisted"
-                            >
-                              Unlisted — playable via share link
-                            </SelectItem>
-                            {/* Radix's own `data-[disabled]` styling (opacity + no pointer
-                                events) already lives in SelectItem's base class, so disabling is
-                                the whole change. The option stays *visible* rather than being
-                                removed: a missing row reads as a feature that doesn't exist,
-                                where a greyed one plus the note below reads as a condition the
-                                user can satisfy. */}
-                            <SelectItem
-                              variant={errors.status ? "form-error" : "form"}
-                              value="Public"
-                              disabled={!canPublish}
-                            >
-                              Public — listed for everyone
-                              {!canPublish && " (needs a full classification)"}
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                        {!canPublish && (
-                          <p className="text-muted-foreground mt-1.5 flex items-start gap-1.5 text-xs">
-                            <Info className="mt-0.5 h-3 w-3 shrink-0" />
-                            <span>
-                              Set a real{" "}
-                              <span className="text-foreground font-medium">
-                                {unspecifiedFields.length === 3
-                                  ? `${unspecifiedFields[0]}, ${unspecifiedFields[1]} and ${unspecifiedFields[2]}`
-                                  : unspecifiedFields.join(" and ")}
-                              </span>{" "}
-                              above to publish this quiz. Draft and Unlisted work
-                              either way.
-                            </span>
-                          </p>
-                        )}
-                        {errors.status && (
-                          <p className="text-sm text-red-500 mt-1">
-                            {errors.status.message
-                              ? errors.status.message
-                              : "Please select a status."}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-
-                    <Separator className="bg-primary/20" />
-
-                    {/* Toggle Options */}
-                    <div className="space-y-3">
-                      <h4 className="text-sm font-semibold text-primary">
-                        Options
-                      </h4>
-
-                      <div className="flex items-center justify-between">
-                        <Label
-                          htmlFor="showFeedback"
-                          className="text-sm font-medium flex items-center gap-2"
-                        >
-                          Instant Feedback
-                        </Label>
-                        <Switch
-                          id="showFeedback"
-                          checked={watch("showFeedbackImmediately") || false}
-                          onCheckedChange={(checked) =>
-                            setValue("showFeedbackImmediately", checked)
-                          }
-                        />
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <Label
-                          htmlFor="shuffleQuestions"
-                          className="text-sm font-medium flex items-center gap-2"
-                        >
-                          Shuffle Questions
-                        </Label>
-                        <Switch
-                          id="shuffleQuestions"
-                          checked={watch("shuffleQuestions") || false}
-                          onCheckedChange={(checked) =>
-                            setValue("shuffleQuestions", checked)
-                          }
-                        />
-                      </div>
-                    </div>
-                  </CardContent>
-                </TabsContent>
-              </Tabs>
-            </Card>
-
-            {/* Main Quiz Creator Area */}
-            <Card className="bg-background border-2 border-primary/30 rounded-xl shadow-lg flex flex-col items-center w-full lg:col-span-3 lg:h-full lg:overflow-hidden">
-              <CardHeader className="w-full relative bg-primary/10 p-3 text-center border-b border-primary/30 flex-none">
-                <section className="flex justify-center rounded-lg">
-                  {/* Blurred backdrop while the add-question menu is open. */}
-                  {isAddMenuOpen && (
-                    <div className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm" />
-                  )}
-
-                  <Popover open={isAddMenuOpen} onOpenChange={setIsAddMenuOpen}>
-                    <PopoverTrigger asChild>
-                      <LiftedButton
-                        type="button"
-                        className="flex items-center gap-2"
-                      >
-                        <Plus className="h-4 w-4" />
-                        Add a question
-                      </LiftedButton>
-                    </PopoverTrigger>
-                    <PopoverContent
-                      align="center"
-                      sideOffset={10}
-                      className="z-50 w-64 p-3 flex flex-col gap-3 bg-background dark:border-foreground/20"
-                    >
-                      {/* Browse the public pool — opens the full pool dialog (rendered
-                          outside this menu so it survives the menu closing). */}
-                      <LiftedButton
-                        type="button"
-                        liftColor="muted"
-                        className="w-full justify-center bg-muted text-foreground border border-foreground/20"
-                        onClick={() => {
-                          setIsAddMenuOpen(false);
-                          setIsPoolOpen(true);
-                        }}
-                      >
-                        <Plus className="h-4 w-4" />
-                        Browse Public Pool
-                      </LiftedButton>
-
-                      {/* or */}
-                      <div className="flex items-center gap-3">
-                        <span className="h-px flex-1 bg-border" />
-                        <span className="text-xs font-medium text-muted-foreground">
-                          or
-                        </span>
-                        <span className="h-px flex-1 bg-border" />
-                      </div>
-
-                      {/* Create a brand-new question — opens the type chooser below. */}
-                      <LiftedButton
-                        type="button"
-                        className="w-full justify-center flex items-center gap-2"
-                        onClick={() => {
-                          setIsAddMenuOpen(false);
-                          openAddQuestionDialog();
-                        }}
-                      >
-                        <Plus className="h-4 w-4" />
-                        Create New
-                      </LiftedButton>
-                    </PopoverContent>
-                  </Popover>
-
-                  {/* Public-pool browser — controlled, lives outside the menu. */}
-                  <SelectQuestionComponent
-                    open={isPoolOpen}
-                    onOpenChange={setIsPoolOpen}
-                  />
-
-                  <Dialog
-                    open={isAddQuestionDialogOpen}
-                    onOpenChange={(open) =>
-                      open ? openAddQuestionDialog() : closeAddQuestionDialog()
-                    }
-                  >
-                    <DialogContent className="bg-background p-4 rounded-md pt-8 dark:border border-foreground/30 ">
-                      <DialogHeader>
-                        <DialogTitle className="flex items-center justify-center">
-                          Choose the type of question
-                        </DialogTitle>
-                      </DialogHeader>
-                      {/* A grid, not a flex row. Flex shrinks an item's *content box* while
-                          its padding stays put, so three fixed-padding buttons in a narrow
-                          dialog didn't get smaller — they squeezed their labels into wrapping
-                          mid-phrase, at three different widths (shrink is proportional to
-                          base width). Equal grid columns give one width for all three and
-                          stack them below `sm`, where three across can't fit legibly.
-                          `outerClassName` sizes the button element; `className` is the front
-                          face, and it needs h-full/w-full to fill a stretched grid cell —
-                          otherwise a two-line label makes one blue face taller than the
-                          others. See docs/RESPONSIVE.md. */}
-                      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-                        <LiftedButton
-                          type="button"
-                          outerClassName="w-full"
-                          className="h-full w-full text-center text-sm leading-tight"
-                          onClick={() => {
-                            const tempId = -Date.now();
-                            const newQuestion =
-                              createNewMultipleChoiceQuestion(tempId);
-                            addQuestionToQuiz(newQuestion);
-                            closeAddQuestionDialog();
-                          }}
-                        >
-                          Multiple Choice
-                        </LiftedButton>
-                        <LiftedButton
-                          type="button"
-                          outerClassName="w-full"
-                          className="h-full w-full text-center text-sm leading-tight"
-                          onClick={() => {
-                            const tempId = -Date.now();
-                            const newQuestion =
-                              createNewTrueFalseQuestion(tempId);
-                            addQuestionToQuiz(newQuestion);
-                            closeAddQuestionDialog();
-                          }}
-                        >
-                          True/False
-                        </LiftedButton>
-                        <LiftedButton
-                          type="button"
-                          outerClassName="w-full"
-                          className="h-full w-full text-center text-sm leading-tight"
-                          onClick={() => {
-                            const tempId = -Date.now();
-                            const newQuestion =
-                              createNewTypeTheAnswerQuestion(tempId);
-                            addQuestionToQuiz(newQuestion);
-                            closeAddQuestionDialog();
-                          }}
-                        >
-                          Type The Answer
-                        </LiftedButton>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-                </section>
-              </CardHeader>
-
-              <CardContent className="flex flex-col w-full flex-1 min-h-0 overflow-y-auto p-3">
-                {displayQuestion !== null ? (
-                  isAnyQuestion(displayQuestion) ? (
-                    <ExistingQuestionCard
-                      key={displayQuestion.id}
-                      question={displayQuestion}
-                    />
-                  ) : isNewAnyQuestion(displayQuestion) ? (
-                    <NewQuestionCard
-                      key={displayQuestion.id}
-                      question={displayQuestion}
-                    />
+                    ) : (
+                      <div>Unknown question type</div>
+                    )
                   ) : (
-                    <div>Unknown question type</div>
-                  )
-                ) : (
-                  <div className="flex flex-1 flex-col items-center justify-center px-6 py-16 text-center">
-                    <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full border border-dashed border-foreground/20 text-muted-foreground">
-                      <Plus className="h-5 w-5" />
+                    <div className="flex flex-1 flex-col items-center justify-center px-6 py-16 text-center">
+                      <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full border border-dashed border-foreground/20 text-muted-foreground">
+                        <Plus className="h-5 w-5" />
+                      </div>
+                      <p className="text-sm font-medium text-foreground">
+                        No questions yet
+                      </p>
+                      <p className="mt-1 max-w-[16rem] text-xs text-muted-foreground">
+                        Use “Add a question” above to browse the pool or create a
+                        new one.
+                      </p>
                     </div>
-                    <p className="text-sm font-medium text-foreground">
-                      No questions yet
-                    </p>
-                    <p className="mt-1 max-w-[16rem] text-xs text-muted-foreground">
-                      Use “Add a question” above to browse the pool or create a
-                      new one.
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-              <CardFooter className="flex-none py-3">
-                <section className="w-full items-center flex justify-center">
-                  <LiftedButton
-                    type="submit"
-                    disabled={isSubmitting}
-                    variant="default"
-                  >
-                    <div className="flex items-center justify-center">
-                      <Spinner
-                        size="sm"
-                        className={`absolute ${
-                          isSubmitting ? "visible" : "invisible"
-                        }`}
-                      />
-                      <span className={isSubmitting ? "invisible" : "visible"}>
-                        {isCreatingQuestions
-                          ? "Creating Questions..."
-                          : isEditMode
-                            ? "Save Changes"
-                            : "Finish"}
-                      </span>
-                    </div>
-                  </LiftedButton>
-                </section>
-              </CardFooter>
-            </Card>
+                  )}
+                </CardContent>
+                <CardFooter className="flex-none flex-col gap-1.5 py-3">
+                  <section className="w-full items-center flex justify-center">
+                    <LiftedButton
+                      type="submit"
+                      disabled={isSubmitting}
+                      variant="default"
+                    >
+                      <div className="flex items-center justify-center">
+                        <Spinner
+                          size="sm"
+                          className={`absolute ${
+                            isSubmitting ? "visible" : "invisible"
+                          }`}
+                        />
+                        <span className={isSubmitting ? "invisible" : "visible"}>
+                          {isCreatingQuestions
+                            ? "Creating Questions..."
+                            : isEditMode
+                              ? "Save Changes"
+                              : "Finish"}
+                        </span>
+                      </div>
+                    </LiftedButton>
+                  </section>
+                  <DraftSavedIndicator savedAt={draftSavedAt} />
+                </CardFooter>
+              </Card>
 
-            <div className="lg:col-span-1 lg:h-full lg:min-h-0">
-              <CreatedQuestionsPanel />
+              <div className="lg:col-span-1 lg:h-full lg:min-h-0">
+                <CreatedQuestionsPanel />
+              </div>
             </div>
           </div>
         );

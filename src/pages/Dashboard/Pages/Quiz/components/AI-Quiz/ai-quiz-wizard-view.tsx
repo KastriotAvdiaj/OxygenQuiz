@@ -19,6 +19,8 @@ import type {
 } from "../../api/generate-ai-quiz";
 import type { ParseResult } from "./parse-ai-output";
 
+import { RestoredDraftNotice } from "../draft-notices";
+
 import { AdvancedOptions } from "./components/advanced-options";
 import { ConfirmDetailsCard } from "./components/confirm-details-card";
 import { GenerateErrorPanel } from "./components/generate-error-panel";
@@ -119,6 +121,16 @@ export interface AiQuizWizardViewProps {
   showLeaveDialog?: boolean;
   onConfirmLeave?: () => void;
   onCancelLeave?: () => void;
+
+  // ── Unfinished work brought back ─────────────────────────────────────────────
+  /**
+   * When the draft this page was restored from was saved, or `null` on a fresh visit. Props
+   * rather than hooks, like everything else here, so a story can show the notice.
+   * See docs/quiz/quiz-draft-persistence.md.
+   */
+  restoredDraftSavedAt?: number | null;
+  /** "Start fresh": drop the restored draft and empty the page. */
+  onDiscardDraft?: () => void;
 }
 
 /**
@@ -182,6 +194,8 @@ export const AiQuizWizardView = ({
   onStartOver,
   parseResult,
   builderSlot,
+  restoredDraftSavedAt = null,
+  onDiscardDraft,
   showLeaveDialog = false,
   onConfirmLeave,
   onCancelLeave,
@@ -313,6 +327,12 @@ export const AiQuizWizardView = ({
   if (parseResult?.ok) {
     return (
       <div className="flex flex-col gap-3 lg:h-full lg:min-h-0">
+        {restoredDraftSavedAt != null && onDiscardDraft && (
+          <RestoredDraftNotice
+            savedAt={restoredDraftSavedAt}
+            onDiscard={onDiscardDraft}
+          />
+        )}
         {/* Exceptions first: the count in ImportSummary already reflects what survived, so
             "four were skipped" is the thing that needs reading, and it is the one banner here
             the user cannot have switched off. */}
@@ -367,6 +387,14 @@ export const AiQuizWizardView = ({
             : "Paste your material and we'll draft questions from it. You review everything before it saves."}
         </p> */}
       </header>
+
+      {restoredDraftSavedAt != null && onDiscardDraft && (
+        <RestoredDraftNotice
+          className="mb-4 short:mb-2"
+          savedAt={restoredDraftSavedAt}
+          onDiscard={onDiscardDraft}
+        />
+      )}
 
       {/* Questions arrived but we can't place them yet. Shown *instead of* the topic box, so
           the user finishes the one thing standing between them and the review step rather

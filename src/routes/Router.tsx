@@ -18,9 +18,7 @@ import { RouteErrorElement } from "@/pages/UtilityPages/Error/Route-Error-Elemen
 import "../global.css";
 import { Navigate, Outlet } from "react-router-dom";
 // import { HomeLayout } from "@/layouts/layout";
-// import QuizCreator from "@/pages/Dashboard/Pages/Quiz/components/Create-Quiz-Form/create-quiz";
 //import  {QuizSelection} from "@/pages/Quiz/Quiz-Selection";
-// import { QuizQuestionProvider } from "@/pages/Dashboard/Pages/Quiz/components/Create-Quiz-Form/Quiz-questions-context";
 // import { DashboardErrorElement } from "@/pages/UtilityPages/Error/Dashboard-Error-Element";
 import { quizLoader } from "@/loaders/quiz.loader";
 import { dashboardEntryLoader } from "@/loaders/dashboardEntryLoader";
@@ -65,9 +63,10 @@ const GuestQuizResultsRouteWrapper = lazy(() =>
     (module) => ({ default: module.GuestQuizResultsRouteWrapper }),
   ),
 );
-const QuizCreator = lazy(
-  () =>
-    import("@/pages/Dashboard/Pages/Quiz/components/Create-Quiz-Form/create-quiz"),
+const CreateQuizRoute = lazy(() =>
+  import(
+    "@/pages/Dashboard/Pages/Quiz/components/Create-Quiz-Form/create-quiz-route"
+  ).then((module) => ({ default: module.CreateQuizRoute })),
 );
 const AiQuizWizard = lazy(() =>
   import("@/pages/Dashboard/Pages/Quiz/components/AI-Quiz/ai-quiz-wizard").then(
@@ -84,12 +83,6 @@ const DashboardErrorElement = lazy(() =>
     (module) => ({ default: module.DashboardErrorElement }),
   ),
 );
-const QuizQuestionProvider = lazy(() =>
-  import("@/pages/Dashboard/Pages/Quiz/components/Create-Quiz-Form/Quiz-questions-context").then(
-    (module) => ({ default: module.QuizQuestionProvider }),
-  ),
-);
-
 enum HeaderBehavior {
   DEFAULT = "default",
   OVERLAY_TRANSPARENT = "overlay-transparent",
@@ -430,12 +423,12 @@ const createAppRouter = (queryClient: QueryClient) =>
           },
         },
         {
+          // The route component mounts QuizQuestionProvider itself, after reading any stored
+          // draft — so the builder's first render already has the user's unfinished work in
+          // it, rather than an Effect copying it in afterwards.
+          // See docs/quiz/quiz-draft-persistence.md.
           path: "quizzes/create-quiz",
-          element: (
-            <QuizQuestionProvider>
-              <QuizCreator />
-            </QuizQuestionProvider>
-          ),
+          element: <CreateQuizRoute />,
         },
         {
           // Bare `/ai` is no longer a screen — the generation mode lives in the URL now, so
@@ -594,12 +587,9 @@ const createAppRouter = (queryClient: QueryClient) =>
           element: <Navigate to="/my-dashboard/quizzes" replace />,
         },
         {
+          // Same as the admin dashboard's create route — see the note there.
           path: "quizzes/create",
-          element: (
-            <QuizQuestionProvider>
-              <QuizCreator />
-            </QuizQuestionProvider>
-          ),
+          element: <CreateQuizRoute />,
         },
         {
           // Same redirect as the admin dashboard — see the note there.

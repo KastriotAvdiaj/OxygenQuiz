@@ -45,8 +45,11 @@ const SignupFlow: React.FC = () => {
   // then swapping the invite gate in. This is safe ONLY because `isLoading` is monotonic (see
   // useAuthConfig): MethodChoice below reads the same query, so a flag that could flip back to
   // true would unmount it mid-flight and oscillate. On failure this falls through to the
-  // conservative defaults — no invite required, no providers — which is how signup should
-  // degrade: email/password stays reachable when the config endpoint is gone.
+  // conservative defaults, which point in OPPOSITE directions (see useAuthConfig): providers
+  // → disabled, invite gate → REQUIRED. Hiding a button degrades gracefully; skipping a gate
+  // does not, so an unreadable config shows the gate rather than the method screen. The
+  // advisory code check is unreachable too and never hard-blocks, so email/password is still
+  // reachable through the gate — the server decides the code at submit either way.
   if (isLoading) {
     return (
       <div className="flex justify-center py-16" aria-busy="true">

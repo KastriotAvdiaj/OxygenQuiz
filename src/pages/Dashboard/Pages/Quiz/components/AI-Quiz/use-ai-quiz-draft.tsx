@@ -1,6 +1,9 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { useLocation } from "react-router-dom";
 
+import { useUser } from "@/lib/Auth";
+import { readDraft } from "@/lib/drafts/draft-storage";
+import { useDraftAutosave } from "@/hooks/use-draft-autosave";
 import type { QuestionType } from "@/types/question-types";
 
 import { CreateQuizInput } from "../../api/create-quiz";
@@ -12,6 +15,13 @@ import CreateQuizForm from "../Create-Quiz-Form/create-quiz";
 import { QuizQuestionProvider } from "../Create-Quiz-Form/Quiz-questions-context";
 import { useQuizForm } from "../Create-Quiz-Form/use-quiz-form";
 import { isUnspecifiedLookup } from "../../../Question/Entities/lookup-visibility";
+import {
+  AiQuizDraft,
+  QUIZ_DRAFT_SLOTS,
+  QUIZ_DRAFT_VERSION,
+  isAiQuizDraftWorthKeeping,
+  parseAiQuizDraft,
+} from "../quiz-drafts";
 
 import { DEFAULT_AI_QUESTION_TYPES } from "./components/question-type-options";
 import {
@@ -36,11 +46,46 @@ import { AI_QUESTION_LIMITS, DEFAULT_QUESTION_COUNT } from "./prompt";
  * surprise, not a convenience.
  *
  * Each container keeps only what is genuinely its own — the generate mutation and quota on
- * one side, the clipboard and the pasted reply on the other.
+ * one side, the clipboard on the other.
  */
 export const useAiQuizDraft = () => {
   const { queryData } = useQuizForm();
   const location = useLocation();
+  const { data: user } = useUser();
+
+  /**
+   * <b>Which slot this page's unfinished work goes in.</b>
+   *
+   * One per AI path, because they are two attempts and not one — the same reason nothing
+   * else survives the trip between them (see this hook's header). A topic typed on the
+   * generate page appearing on the bring-your-own-AI page would be a surprise, not a
+   * convenience.
+   */
+  const draftSlot = location.pathname.endsWith("/ai/own")
+    ? QUIZ_DRAFT_SLOTS.aiOwn
+    : QUIZ_DRAFT_SLOTS.aiTopic;
+
+  /**
+   * Read once, in an initialiser, so every `useState` below can open on the restored value
+   * and the first render is already the user's page. An Effect copying storage into state
+   * afterwards would show them an empty form first and fight anything they typed into it.
+   *
+   * See docs/quiz/quiz-draft-persistence.md.
+   */
+  const [restored] = useState(() =>
+    readDraft<AiQuizDraft>({
+      slot: draftSlot,
+      userId: user?.id,
+      version: QUIZ_DRAFT_VERSION,
+      parse: parseAiQuizDraft,
+    }),
+  );
+  const draft = restored?.data ?? null;
+
+  /** Drives the "picked up where you left off" notice; cleared by "Start fresh". */
+  const [restoredAt, setRestoredAt] = useState<number | null>(
+    restored?.savedAt ?? null,
+  );
 
   // Both dashboards mount these routes under their own prefix, so every path is derived
   // rather than hard-coded. See the route table in docs/quiz/ai-quiz-two-paths.md.
@@ -68,21 +113,43 @@ export const useAiQuizDraft = () => {
   const mode: AiGenerationMode = location.pathname.endsWith("/ai/material")
     ? "Source"
     : "Topic";
-  const [topic, setTopic] = useState("");
-  const [sourceData, setSourceData] = useState("");
+  const [topic, setTopic] = useState(draft?.topic ?? "");
+  const [sourceData, setSourceData] = useState(draft?.sourceData ?? "");
 
   // ── Advanced: all optional. `null` means "let the model decide" for category and
   // language, and "use the default" for difficulty.
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [categoryId, setCategoryId] = useState<number | null>(null);
-  const [languageId, setLanguageId] = useState<number | null>(null);
-  const [difficultyId, setDifficultyId] = useState<number | null>(null);
-  const [questionCount, setQuestionCount] = useState(DEFAULT_QUESTION_COUNT);
-  const [allowedTypes, setAllowedTypes] = useState<QuestionType[]>([
-    ...DEFAULT_AI_QUESTION_TYPES,
-  ]);
-  const [extraInstructions, setExtraInstructions] = useState("");
+  const [title, setTitle] = useState(draft?.title ?? "");
+  const [description, setDescription] = useState(draft?.description ?? "");
+  const [categoryId, setCategoryId] = useState<number | null>(
+    draft?.categoryId ?? null,
+  );
+  const [languageId, setLanguageId] = useState<number | null>(
+    draft?.languageId ?? null,
+  );
+  const [difficultyId, setDifficultyId] = useState<number | null>(
+    draft?.difficultyId ?? null,
+  );
+  const [questionCount, setQuestionCount] = useState(
+    draft?.questionCount ?? DEFAULT_QUESTION_COUNT,
+  );
+  const [allowedTypes, setAllowedTypes] = useState<QuestionType[]>(
+    () => draft?.allowedTypes ?? [...DEFAULT_AI_QUESTION_TYPES],
+  );
+  const [extraInstructions, setExtraInstructions] = useState(
+    draft?.extraInstructions ?? "",
+  );
+
+  /**
+   * The bring-your-own-AI paste box.
+   *
+   * <b>Why it lives here now.</b> It used to be the one piece of state `own-ai-quiz.tsx`
+   * kept for itself, alongside the clipboard. But a pasted reply is a wall of text the user
+   * fetched from another app, and losing it to a stray refresh is precisely the accident
+   * this hook's snapshot exists to prevent — and state that has to be persisted *together*
+   * belongs in one snapshot rather than two. It is unused on the generate path, as `mode`
+   * and `sourceData` already are.
+   */
+  const [pastedReply, setPastedReply] = useState(draft?.pastedReply ?? "");
 
   /**
    * The model's reply, held raw until we have the ids needed to place it.
@@ -93,7 +160,7 @@ export const useAiQuizDraft = () => {
    * only on the generate path, so a pasted reply carrying all three still demanded them by
    * hand. See docs/quiz/ai-quiz-generation-flow.md §1a.
    */
-  const [payload, setPayload] = useState<string | null>(null);
+  const [payload, setPayload] = useState<string | null>(draft?.payload ?? null);
 
   const { categories, difficulties, languages } = queryData;
 
@@ -268,6 +335,62 @@ export const useAiQuizDraft = () => {
     extraInstructions: extraInstructions.trim() || undefined,
   });
 
+  /**
+   * Keep the page's unfinished work, so a refresh or a closed tab doesn't cost it.
+   *
+   * `payload` is the reason this exists. The typing is cheap to redo; a generation is not —
+   * it came out of the user's quota, and losing it to a stray refresh makes them spend it
+   * twice for one quiz. The card has always told people to keep the tab open while a
+   * generation is *in flight* (`useNavigationGuard` enforces it, because there is no job id
+   * to come back to); this covers everything on either side of that moment.
+   */
+  const { discard: discardStoredDraft } = useDraftAutosave<AiQuizDraft>({
+    slot: draftSlot,
+    userId: user?.id,
+    version: QUIZ_DRAFT_VERSION,
+    value: (() => {
+      const candidate: AiQuizDraft = {
+        topic,
+        sourceData,
+        title,
+        description,
+        categoryId,
+        languageId,
+        difficultyId,
+        questionCount,
+        allowedTypes,
+        extraInstructions,
+        pastedReply,
+        payload,
+      };
+      // `null` for an untouched wizard: storing one would offer to restore work nobody did.
+      return isAiQuizDraftWorthKeeping(candidate) ? candidate : null;
+    })(),
+  });
+
+  /**
+   * "Start fresh": throw the stored draft away and put the page back to how it opens.
+   *
+   * Distinct from `resetPayload` / the containers' "Start over", which discard a *reply* and
+   * deliberately keep the topic that produced it so it can be tried again.
+   */
+  const discardDraft = () => {
+    discardStoredDraft();
+    setTopic("");
+    setSourceData("");
+    setTitle("");
+    setDescription("");
+    setCategoryId(null);
+    setLanguageId(null);
+    setDifficultyId(null);
+    setQuestionCount(DEFAULT_QUESTION_COUNT);
+    setAllowedTypes([...DEFAULT_AI_QUESTION_TYPES]);
+    setExtraInstructions("");
+    setPastedReply("");
+    setPayload(null);
+    setRestoredAt(null);
+  };
+
   // ── Handoff: questions parsed, so hand the builder everything prefilled.
   // `aiImportMode` makes it submit through the atomic /quiz/ai-import endpoint
   // (docs/quiz/ai-quiz-architecture.md §7.3).
@@ -292,6 +415,10 @@ export const useAiQuizDraft = () => {
             } satisfies Partial<CreateQuizInput>
           }
           aiImportMode
+          // The quiz exists on the server now, so the reply that produced it is no longer
+          // unfinished work. Without this the wizard unmounts on the redirect, flushes its
+          // pending write, and offers to restore the quiz the user just created.
+          onSaved={discardDraft}
         />
       </QuizQuestionProvider>
     ) : undefined;
@@ -338,6 +465,15 @@ export const useAiQuizDraft = () => {
     toggleType,
     extraInstructions,
     setExtraInstructions,
+
+    // Bring-your-own-AI: the reply the user pasted, before it reaches the parser.
+    pastedReply,
+    setPastedReply,
+
+    /** When the restored draft was saved, or `null` if this is a fresh page. */
+    restoredAt,
+    /** Throws the stored draft away and empties the page. */
+    discardDraft,
 
     // The reply, and everything downstream of it
     buildInput,

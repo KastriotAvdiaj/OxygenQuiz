@@ -639,6 +639,21 @@ export const LoadingEntities: Story = {
   args: { isLoadingEntities: true },
 };
 
+// ── Unfinished work brought back ───────────────────────────────────────────────────────
+// docs/quiz/quiz-draft-persistence.md, and ADR 0009 for why this is a notice and not a
+// dialog: the work is already restored, so this reports it rather than asking permission.
+// The generate path is where it matters most — a restored draft here carries the model's
+// reply, which cost the user quota.
+
+export const RestoredFromDraft: Story = {
+  args: {
+    topic: "The French Revolution",
+    title: "Revolution, in ten questions",
+    restoredDraftSavedAt: Date.now() - 4 * 60 * 1000,
+    onDiscardDraft: () => {},
+  },
+};
+
 // ── Responsive checks (docs/RESPONSIVE.md: verify at 360/390px) ────────────────────────
 
 export const OnMobile: Story = {

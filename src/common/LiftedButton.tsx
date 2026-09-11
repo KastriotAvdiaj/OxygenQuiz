@@ -174,7 +174,12 @@ export const LiftedButton = React.forwardRef<
         {/* Front */}
         <span
           className={cn(
-            "relative flex items-center justify-center gap-2 bg-primary text-white will-change-transform",
+            // `whitespace-nowrap` matches the shared Button, which has carried it from the
+            // start. Without it this face is just a flex child that shrinks, so a label in a
+            // tight row breaks mid-phrase — "+ Create Quiz" became three stacked lines in a
+            // 390px page header, which reads as a broken component rather than a full row.
+            // A button label that needs two lines is a label that needs shortening.
+            "relative flex items-center justify-center gap-2 whitespace-nowrap bg-primary text-white will-change-transform",
             rounded,
             isIcon ? "p-2" : "py-2 px-4",
             front.rest,
