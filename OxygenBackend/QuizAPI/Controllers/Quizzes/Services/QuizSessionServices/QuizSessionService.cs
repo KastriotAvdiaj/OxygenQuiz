@@ -521,7 +521,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                 // session that is already completed rather than one this call gets to abandon
                 // itself on the next line.
                 if (session.IsCompleted)
-                    return Result<ResumeResultDto>.Success(BuildCompletedResult(session, sessionId));
+                    return Result<ResumeResultDto>.Success(await BuildCompletedResultAsync(session, sessionId));
 
                 if (await _abandonmentService.IsSessionAbandonedAsync(session))
                 {
