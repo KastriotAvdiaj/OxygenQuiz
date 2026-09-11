@@ -309,6 +309,43 @@ scrollable region.** Not the page's scroll, not the panel's — its own.
 - **Label the region** (`role="group"` + `aria-label`) so its checkboxes announce
   as one named set rather than a loose run of controls.
 
+## Dense tables: drop columns, don't scroll sideways
+
+A table with more than about five columns does not fit anywhere except a wide desktop, and
+`overflow-x-auto` is not the rescue it looks like. `DataTable` hides low-priority columns
+instead and moves their values into a per-row detail panel behind a chevron. The decision,
+and the two alternatives it rejected, are in
+[`adr/0010-a-narrow-table-drops-columns-it-does-not-scroll.md`](adr/0010-a-narrow-table-drops-columns-it-does-not-scroll.md).
+
+To use it, tag the column definitions:
+
+```ts
+{ accessorKey: "createdAt", header: "Date Created", meta: { priority: 2 } }
+```
+
+- **1** identity and the thing you came to check (never hidden) · **2** earns a column when
+  there is room · **3** detail, fine behind a tap.
+- **No `priority` means 1.** A table that hasn't opted in renders exactly as before.
+- Priorities are a *content* decision — "which two columns matter" is a claim about what
+  someone came to the page to do. Write the reasoning next to the definitions, as
+  `Quiz/components/Data-Table-Columns/columns.tsx` does.
+
+Three things worth knowing before touching this:
+
+- **It measures the table's container, not the viewport**, via `ResizeObserver`. On the quiz
+  and question pages a 1024px window holds a 76px nav rail *and* a 350px filter sidebar, so
+  the table's box is about 550px — a `matchMedia` rule would call that desktop and crush nine
+  columns into it. This is the general trap with `sm:`/`lg:` on anything that sits beside a
+  sidebar: the breakpoint describes the window, not the space the component got.
+- **Two nested scrollers cancel each other.** `DataTable` used to add `overflow-x-auto`
+  around a `Table` that already wraps itself in `overflow-auto`; the inner one clipped first
+  so the outer never fired. If you add a scroll wrapper, check the component doesn't bring
+  its own.
+- **A horizontal scrollbar inside a tall box is below the fold.** It sits at the bottom edge
+  of the scrolling element — ten rows down — so the control that scrolls the table is off
+  screen exactly when the header it belongs to is. Reported as "there's no scrollbar". This
+  applies to any wide-and-tall scroll region, not just tables.
+
 ## Safe areas (notches, home indicators)
 
 `index.html` sets `viewport-fit=cover`; `.app-shell-viewport` pads left/right
@@ -603,7 +640,11 @@ now a recorded decision rather than a preference —
    in-between width like 500px — that's where flex shrink deforms rather than
    wraps. A text-plus-button row needs `min-w-0` on the text and `shrink-0` on
    the button for the same reason.
-11. A screen that must fit one viewport? Assert it, don't eyeball it. `FitsTheFold`
+11. Rendering a table? Give its columns `meta: { priority }` — more than ~5 columns fit
+   nowhere but a wide desktop, and horizontal scroll is not the rescue it looks like. See
+   "Dense tables". Sizing anything that sits *beside* a sidebar: measure the container,
+   not the viewport.
+12. A screen that must fit one viewport? Assert it, don't eyeball it. `FitsTheFold`
    in `ai-quiz-wizard-view.stories.tsx` is the reference: a story pinned to the
    target viewport with a play function measuring the primary action's headroom.
    Height is the one property that regresses without producing an error.

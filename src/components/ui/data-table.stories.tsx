@@ -32,16 +32,22 @@ interface QuizRow {
   questions: number;
 }
 
+/**
+ * Priorities mirror the real quiz table (see that file for the reasoning): identity and
+ * status always render, the two you scan by appear when there is room, the rest are detail.
+ * They are what `NarrowViewport` below exercises.
+ */
 const columns: ColumnDef<QuizRow, any>[] = [
-  { accessorKey: "title", header: "Quiz Info" },
-  { accessorKey: "createdAt", header: "Date Created" },
-  { accessorKey: "author", header: "Author" },
-  { accessorKey: "category", header: "Category" },
-  { accessorKey: "difficulty", header: "Difficulty" },
-  { accessorKey: "questions", header: "Questions" },
+  { accessorKey: "title", header: "Quiz Info", meta: { priority: 1 } },
+  { accessorKey: "createdAt", header: "Date Created", meta: { priority: 2 } },
+  { accessorKey: "author", header: "Author", meta: { priority: 2 } },
+  { accessorKey: "category", header: "Category", meta: { priority: 3 } },
+  { accessorKey: "difficulty", header: "Difficulty", meta: { priority: 3 } },
+  { accessorKey: "questions", header: "Questions", meta: { priority: 3 } },
   {
     accessorKey: "status",
     header: "Status",
+    meta: { priority: 1 },
     // A badge column on purpose: both dashboards put one on a tinted row (Status here,
     // active/inactive on Users), and it has to stay legible on either stripe.
     cell: ({ row }) => (
@@ -96,9 +102,20 @@ export const Empty: Story = {
 };
 
 /**
- * Long values in a narrow viewport. The table wrapper scrolls horizontally
- * (`overflow-x-auto`) rather than squeezing columns — check the tint still lines up across
- * the scrolled region.
+ * A narrow viewport, which is now a column-priority story rather than a scrolling one.
+ *
+ * The table measures **its own container**, so this one drops to the priority-1 columns —
+ * Quiz Info and Status — and grows a chevron at the start of each row; everything else
+ * moves into the detail panel behind it. Expand a row and check that the tint behind the
+ * detail matches the row it belongs to, that the `<dt>` labels read as the headers they
+ * replaced, and that the Status badge is still legible on either stripe.
+ *
+ * Resize the canvas to watch the tiers come back: Date Created and Author return at 620px,
+ * the rest at 960px, at which point the chevron column disappears entirely.
+ *
+ * It measures the container and not the window on purpose — see
+ * docs/adr/0010-a-narrow-table-drops-columns-it-does-not-scroll.md — so dragging the
+ * Storybook canvas is a real test of the behaviour, not an approximation of it.
  */
 export const NarrowViewport: Story = {
   parameters: { viewport: { defaultViewport: "mobile2" } },

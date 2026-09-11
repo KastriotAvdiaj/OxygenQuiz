@@ -33,10 +33,28 @@ import { DeleteQuiz } from "../delete-quiz";
 import { Link } from "react-router-dom";
 import { QuizSummaryDTO } from "@/types/quiz-types";
 
+/**
+ * Nine columns, which no phone and no tablet can hold at once. `meta.priority` decides the
+ * order they leave in as the table's container narrows — `DataTable` hides the ones that
+ * don't fit and puts their values in the row's detail panel. See
+ * docs/adr/0010-a-narrow-table-drops-columns-it-does-not-scroll.md.
+ *
+ * The tiers, and the reasoning for this table:
+ *
+ * - **1 — Quiz Info, Status, Actions.** Which quiz it is, whether it is live, and what you
+ *   can do about it. A list stripped to these three still answers the question an admin
+ *   opens this page with; strip one more and it doesn't.
+ * - **2 — Date Created, Author.** The two you scan to find a specific quiz among similar
+ *   titles. Worth a column as soon as there is room for one.
+ * - **3 — Category, Difficulty, Language, Questions.** Attributes of a quiz you have
+ *   already found. They are also all filterable from the panel beside this table, which is
+ *   the better tool for "show me the hard Albanian ones" anyway.
+ */
 export const quizColumns: ColumnDef<QuizSummaryDTO>[] = [
   {
     id: "quizInfo",
     header: "Quiz Info",
+    meta: { priority: 1 },
     cell: ({ row }) => {
       const { title, description } = row.original;
       return (
@@ -51,6 +69,7 @@ export const quizColumns: ColumnDef<QuizSummaryDTO>[] = [
   {
     accessorKey: "createdAt",
     header: "Date Created",
+    meta: { priority: 2 },
     cell: ({ row }) => {
       const date = row.original.createdAt;
       return formatDate(date);
@@ -59,6 +78,7 @@ export const quizColumns: ColumnDef<QuizSummaryDTO>[] = [
   {
     accessorKey: "user",
     header: "Author",
+    meta: { priority: 2 },
     cell: ({ row }) => {
       const user = row.original.user;
       return (
@@ -71,18 +91,22 @@ export const quizColumns: ColumnDef<QuizSummaryDTO>[] = [
   {
     accessorKey: "category",
     header: "Category",
+    meta: { priority: 3 },
   },
   {
     accessorKey: "difficulty",
     header: "Difficulty",
+    meta: { priority: 3 },
   },
   {
     accessorKey: "language",
     header: "Language",
+    meta: { priority: 3 },
   },
   {
     accessorKey: "status",
     header: "Status",
+    meta: { priority: 1 },
     cell: ({ row }) => {
       const { status, deletedAt } = row.original;
       if (deletedAt) {
@@ -116,10 +140,12 @@ export const quizColumns: ColumnDef<QuizSummaryDTO>[] = [
   {
     accessorKey: "questionCount",
     header: "Questions",
+    meta: { priority: 3 },
   },
   {
     id: "actions",
     header: "Actions",
+    meta: { priority: 1 },
     cell: ({ row }) => {
       const quiz = row.original;
 
