@@ -13,8 +13,9 @@ import type { QuizQuestionAnalyticsRow } from "@/types/analytics-types";
  */
 
 /**
- * Answers a single question needs before its correct rate is shown at all. Below this the cell
- * shows an em dash and says why.
+ * Graded answers a single question needs before its correct rate is shown at all. Below this the
+ * cell states what it is waiting for — see `rateState` below, and the cell in
+ * `question-performance-row.tsx`, which spells the reason out rather than printing a bare dash.
  */
 export const MIN_ANSWERS_FOR_RATE = 5;
 
@@ -37,6 +38,40 @@ export const SIGNED_IN_ONLY_NOTE =
   "Counts signed-in plays only — guest attempts aren't kept.";
 
 /**
+ * Why a question's correct rate is, or isn't, showable — as one named state rather than a
+ * comparison repeated at every call site.
+ *
+ * The cell, the "Needs a look" flag and the "Hardest first" sort all have to agree on this. They
+ * used to each re-derive it from `timesAnswered >= MIN_ANSWERS_FOR_RATE`, which is how the sort
+ * came to silently fall back to quiz order while its tab still looked live: nothing tied the
+ * comparator's view of "rated" to anything the user could see.
+ *
+ * `gradedCount` rather than `timesAnswered` is the gate, because the rate's denominator is
+ * `gradedCount` (see `QuizQuestionAnalyticsRow`). A question with five answers all stuck Pending
+ * has no rate, and saying "needs 5 answers" to someone who can see "5 answered" would be a lie.
+ */
+export type RateState =
+  | { kind: "rated" }
+  | { kind: "no-answers" }
+  | { kind: "too-few"; graded: number }
+  | { kind: "awaiting-grading"; ungraded: number };
+
+export const rateState = (stats?: QuizQuestionAnalyticsRow): RateState => {
+  const answered = stats?.timesAnswered ?? 0;
+  const graded = stats?.gradedCount ?? 0;
+  const ungraded = stats?.ungradedCount ?? 0;
+
+  if (answered === 0) return { kind: "no-answers" };
+  if (graded === 0 && ungraded > 0) return { kind: "awaiting-grading", ungraded };
+  if (graded < MIN_ANSWERS_FOR_RATE) return { kind: "too-few", graded };
+  return { kind: "rated" };
+};
+
+/** True when at least one question has a showable rate — i.e. sorting by it can do something. */
+export const anyRateIsShowable = (rows: (QuizQuestionAnalyticsRow | undefined)[]) =>
+  rows.some((row) => rateState(row).kind === "rated");
+
+/**
  * True when a question is weak enough to be worth the author's attention.
  *
  * Gated on the same answer floor as the rate itself: flagging a question for a 0% built from one
@@ -45,6 +80,4 @@ export const SIGNED_IN_ONLY_NOTE =
  * worded one are indistinguishable from here, and only the author can tell them apart.
  */
 export const needsALook = (stats?: QuizQuestionAnalyticsRow) =>
-  stats !== undefined &&
-  stats.timesAnswered >= MIN_ANSWERS_FOR_RATE &&
-  stats.correctRate < 50;
+  rateState(stats).kind === "rated" && stats!.correctRate < 50;

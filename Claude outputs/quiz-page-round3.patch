@@ -1,0 +1,617 @@
+# Round 3 — diffs by item
+
+Already written into the repo.
+
+==============================================================================
+1. "Needs a look" out of the Type column
+==============================================================================
+
+--- a/src/pages/Dashboard/Pages/Quiz/components/quiz-view/question-performance-row.tsx
++++ b/src/pages/Dashboard/Pages/Quiz/components/quiz-view/question-performance-row.tsx
+@@ -1,6 +1,11 @@
+ import { ChevronDown } from "lucide-react";
+ 
+ import { Badge } from "@/components/ui/badge";
++import {
++  Collapsible,
++  CollapsibleContent,
++  CollapsibleTrigger,
++} from "@/components/ui/collapsible";
+ import { Progress } from "@/components/ui/progress";
+ import {
+   Tooltip,
+@@ -118,77 +123,98 @@
+   const flagged = needsALook(stats);
+ 
+   return (
+-    <div
++    /* Radix `Collapsible` rather than `{isOpen && <panel/>}`. The conditional mounted and
++       unmounted the panel instantly, so a row snapped open and the rows below it jumped — with
++       fifteen questions that is a page that moves under the cursor. Collapsible keeps the panel
++       mounted through the exit animation and publishes its measured height as
++       `--radix-collapsible-content-height`, which is the only way to animate to `auto`.
++
++       Controlled from the table, which owns `openIds`: several rows stay open at once (the task
++       is comparing two weak questions), so this is deliberately not an Accordion. */
++    <Collapsible
++      open={isOpen}
++      onOpenChange={onToggle}
+       className={cn(
+         "rounded-lg border transition-colors",
+         flagged ? "border-l-4 border-l-amber-500 border-border" : "border-border"
+       )}
+     >
+       {/* The whole header is the expand affordance. min-h-11 (44px) per docs/RESPONSIVE.md —
+-          this is the row's primary action and it is the one people tap most. */}
+-      <button
+-        type="button"
+-        onClick={onToggle}
+-        aria-expanded={isOpen}
+-        className="flex min-h-11 w-full items-center gap-3 px-3 py-2.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-lg"
+-      >
+-        <span className="w-6 shrink-0 text-sm text-muted-foreground tabular-nums">
+-          {order}
+-        </span>
+-
+-        {/* min-w-0 so the text truncates instead of squeezing the columns beside it
+-            (docs/RESPONSIVE.md, "Rows of buttons"). */}
+-        <span className="min-w-0 flex-1">
+-          <span className="block truncate text-sm font-medium">
+-            {question.text}
+-          </span>
+-          {/* Below md the numbers move under the text rather than becoming their own
+-              columns — a six-column table on a phone is unreadable at any font size. */}
+-          <span className="mt-0.5 block text-xs text-muted-foreground md:hidden">
++          this is the row's primary action and it is the one people tap most. `asChild` keeps
++          the real <button> here rather than nesting one inside Radix's. */}
++      <CollapsibleTrigger asChild>
++        <button
++          type="button"
++          className="flex min-h-11 w-full items-center gap-3 px-3 py-2.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-lg"
++        >
++          <span className="w-6 shrink-0 text-sm text-muted-foreground tabular-nums">
++            {order}
++          </span>
++
++          {/* min-w-0 so the text truncates instead of squeezing the columns beside it
++              (docs/RESPONSIVE.md, "Rows of buttons"). */}
++          <span className="flex min-w-0 flex-1 flex-col">
++            <span className="flex min-w-0 items-center gap-2">
++              <span className="truncate text-sm font-medium">{question.text}</span>
++              {/* <b>The flag lives here, not in the Type column.</b> It used to REPLACE the
++                  type label — so a flagged row showed "Needs a look" under a heading that
++                  said TYPE, and on a quiz where every question is flagged the Type column
++                  told you nothing about any question's type. Two different facts were
++                  sharing one cell. The badge is `shrink-0` and the text truncates, which is
++                  the right priority: the badge is short and fixed, the text is elastic. */}
++              {flagged && (
++                <Badge
++                  variant="outline"
++                  className="shrink-0 border-amber-500 text-amber-600 dark:text-amber-500"
++                >
++                  Needs a look
++                </Badge>
++              )}
++            </span>
++            {/* Below md the numbers move under the text rather than becoming their own
++                columns — a six-column table on a phone is unreadable at any font size. */}
++            <span className="mt-0.5 text-xs text-muted-foreground md:hidden">
++              {TYPE_LABELS[question.type]}
++              {rateState(stats).kind === "rated" && (
++                <> · {stats!.correctRate}% correct</>
++              )}
++              {stats && stats.timesAnswered > 0 && (
++                <> · {formatDurationOr(stats.averageTimeSeconds, "—")}</>
++              )}
++            </span>
++          </span>
++
++          {/* Always the type. That is what the column heading promises. */}
++          <span className="hidden w-32 shrink-0 text-xs text-muted-foreground md:block">
+             {TYPE_LABELS[question.type]}
+-            {rateState(stats).kind === "rated" && (
+-              <> · {stats!.correctRate}% correct</>
++          </span>
++
++          <span className="hidden w-40 shrink-0 md:block">
++            <CorrectRate stats={stats} />
++          </span>
++
++          <span className="hidden w-16 shrink-0 text-right text-sm text-muted-foreground tabular-nums md:block">
++            {stats ? formatDurationOr(stats.averageTimeSeconds, "—") : "—"}
++          </span>
++
++          <span className="hidden w-16 shrink-0 text-right text-sm text-muted-foreground tabular-nums sm:block">
++            {stats?.timesAnswered ?? 0}
++          </span>
++
++          <ChevronDown
++            className={cn(
++              "h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200",
++              isOpen && "rotate-180"
+             )}
+-            {stats && stats.timesAnswered > 0 && (
+-              <> · {formatDurationOr(stats.averageTimeSeconds, "—")}</>
+-            )}
+-          </span>
+-        </span>
+-
+-        <span className="hidden w-32 shrink-0 md:block">
+-          {flagged ? (
+-            <Badge variant="outline" className="border-amber-500 text-amber-600 dark:text-amber-500">
+-              Needs a look
+-            </Badge>
+-          ) : (
+-            <span className="text-xs text-muted-foreground">
+-              {TYPE_LABELS[question.type]}
+-            </span>
+-          )}
+-        </span>
+-
+-        <span className="hidden w-40 shrink-0 md:block">
+-          <CorrectRate stats={stats} />
+-        </span>
+-
+-        <span className="hidden w-16 shrink-0 text-right text-sm text-muted-foreground tabular-nums md:block">
+-          {stats ? formatDurationOr(stats.averageTimeSeconds, "—") : "—"}
+-        </span>
+-
+-        <span className="hidden w-16 shrink-0 text-right text-sm text-muted-foreground tabular-nums sm:block">
+-          {stats?.timesAnswered ?? 0}
+-        </span>
+-
+-        <ChevronDown
+-          className={cn(
+-            "h-4 w-4 shrink-0 text-muted-foreground transition-transform",
+-            isOpen && "rotate-180"
+-          )}
+-          aria-hidden
+-        />
+-      </button>
+-
+-      {isOpen && (
++            aria-hidden
++          />
++        </button>
++      </CollapsibleTrigger>
++
++      {/* `overflow-hidden` is what makes the height animation crop rather than spill.
++          `motion-reduce:animate-none` honours the OS setting the same way the loading wave
++          does in global.css — the panel still opens, it just arrives rather than travels. */}
++      <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down motion-reduce:animate-none">
+         <div className="border-t border-border px-3 py-3">
+           <QuestionDetail
+             question={question}
+@@ -196,8 +222,8 @@
+             timeLimitInSeconds={timeLimitInSeconds}
+           />
+         </div>
+-      )}
+-    </div>
++      </CollapsibleContent>
++    </Collapsible>
+   );
+ };
+ 
+
+==============================================================================
+2. Accordion animation (Radix Collapsible + keyframes)
+   — the row file above carries this too
+==============================================================================
+
+--- a/tailwind.config.js
++++ b/tailwind.config.js
+@@ -100,11 +100,39 @@
+   				to: {
+   					height: '0'
+   				}
++  			},
++  			// Radix Collapsible exposes its measured height under a DIFFERENT variable from
++  			// Accordion's, so the pair above cannot be reused — a Collapsible animated with
++  			// `accordion-down` reads an unset var and jumps straight to full height with no
++  			// transition at all. Same shape, different variable, hence the duplication.
++  			'collapsible-down': {
++  				from: {
++  					height: '0',
++  					opacity: '0'
++  				},
++  				to: {
++  					height: 'var(--radix-collapsible-content-height)',
++  					opacity: '1'
++  				}
++  			},
++  			'collapsible-up': {
++  				from: {
++  					height: 'var(--radix-collapsible-content-height)',
++  					opacity: '1'
++  				},
++  				to: {
++  					height: '0',
++  					opacity: '0'
++  				}
+   			}
+   		},
+   		animation: {
+   			'accordion-down': 'accordion-down 0.2s ease-out',
+-  			'accordion-up': 'accordion-up 0.2s ease-out'
++  			'accordion-up': 'accordion-up 0.2s ease-out',
++  			// Slightly longer than the accordion pair and eased both ends: these panels open a
++  			// two-column block of answer options, which is a lot more travel than a line of text.
++  			'collapsible-down': 'collapsible-down 0.22s cubic-bezier(0.4, 0, 0.2, 1)',
++  			'collapsible-up': 'collapsible-up 0.18s cubic-bezier(0.4, 0, 0.2, 1)'
+   		}
+   	}
+   },
+
+==============================================================================
+3. Two columns on wide screens
+==============================================================================
+
+--- a/src/pages/Dashboard/Pages/Quiz/Quiz.tsx
++++ b/src/pages/Dashboard/Pages/Quiz/Quiz.tsx
+@@ -154,15 +154,19 @@
+   return (
+     // <b>The card is the width of what is in it.</b> Constraining the inner content box was
+     // half a fix: the card still spanned the viewport, so the content sat centred inside a
+-    // frame with a wide empty band down each side. `max-w-5xl` (1024px) is what the widest
+-    // element here actually needs — the six-column question row — and it now applies to the
+-    // card, so the border tracks the content instead of the window.
++    // frame with a wide empty band down each side. The measure now applies to the card, so the
++    // border tracks the content instead of the window.
++    //
++    // Two measures, because the page has two shapes. Stacked (below `xl`) the widest element is
++    // the six-column question row and `max-w-5xl` is right. Split into columns (from `xl`) the
++    // page needs room for both at once, so it opens out to `max-w-7xl` — which is still a
++    // measure, not full-bleed: past ~1280px more width only stretches the question rows.
+     //
+     // <b>No card title.</b> It read "Quiz #37": a database id, above an <h1> that already
+     // carries the quiz's name. Nobody looking at a quiz needs its primary key, and two
+     // headings for one page is one too many. `ContentLayout` drops the header bar entirely
+     // when no title is passed.
+-    <ContentLayout className="mx-auto max-w-5xl">
++    <ContentLayout className="mx-auto max-w-5xl xl:max-w-7xl">
+       {/* ── Actions, at the top. They used to sit under the tabs, which put the primary
+           actions for the page below everything on it. Delete is here too now, but one level
+           down in the overflow menu — see the footer note. */}
+@@ -291,123 +295,146 @@
+         id={quiz.id}
+       />
+ 
+-      {/* ── Hero: what this quiz is. The description was buried under a tab; it is the one
+-          piece of prose the author wrote about their own quiz and it belongs at the top. */}
+-      <header className="space-y-3 pb-6">
+-        <div className="flex flex-wrap items-center gap-2">
+-          <Badge
+-            variant={isDraft ? "secondary" : "default"}
+-            className={!isDraft ? "bg-green-500 text-white" : ""}>
+-            {quiz.status}
+-          </Badge>
+-          <span className="text-sm text-muted-foreground">
+-            {quiz.category.name} · {quiz.difficulty.level} · {quiz.language.language}
+-          </span>
++      {/* <b>Two columns from `xl` up: what the quiz IS on the left, what its questions DID on
++          the right.</b> Stacked, a 15-question quiz pushes the whole left-hand story — title,
++          description, the five numbers, the attempts chart — off the top of the screen the
++          moment you start reading the questions, so the two halves of the job can never be
++          held together. Side by side you keep the context while you scan.
++
++          A fixed 22rem for the left column rather than a fraction: it holds a stat-tile pair
++          and a chart, both of which have a natural size, and letting it grow with the viewport
++          would only stretch them. Everything left over goes to the question rows, which are
++          the part that actually wants width. Below `xl` this collapses to one column and the
++          order is the reading order. */}
++      <div className="grid gap-6 xl:grid-cols-[22rem_minmax(0,1fr)] xl:gap-10">
++        {/* ── Left: what this quiz is, and how it has done overall. */}
++        <div className="min-w-0 space-y-6">
++          {/* ── Hero. The description was buried under a tab; it is the one
++              piece of prose the author wrote about their own quiz and it belongs at the top. */}
++          <header className="space-y-3">
++            <div className="flex flex-wrap items-center gap-2">
++              <Badge
++                variant={isDraft ? "secondary" : "default"}
++                className={!isDraft ? "bg-green-500 text-white" : ""}>
++                {quiz.status}
++              </Badge>
++              <span className="text-sm text-muted-foreground">
++                {quiz.category.name} · {quiz.difficulty.level} · {quiz.language.language}
++              </span>
++            </div>
++
++            <h1 className="text-3xl font-bold">{quiz.title}</h1>
++
++            {quiz.description && (
++              <p className="max-w-3xl leading-relaxed text-muted-foreground">
++                {quiz.description}
++              </p>
++            )}
++
++            {/* The facts the old properties grid carried, on one line, where each sits next to
++                something that gives it context.
++
++                Three fixes here, all of the same kind — the line was printing storage values
++                rather than reading as a sentence:
++                • `490s limit` is a field value, not a duration anyone parses. `formatDuration`
++                  turns it into `8m 10s`. It is the quiz-wide limit, so it belongs in minutes;
++                  the per-question limits in the expanded rows use the same function.
++                • `Instant feedback on` reads as a setting name with a state appended — the kind
++                  of label that belongs in a settings form, not in a description of the quiz.
++                  "Answers checked as you go" says what the player experiences, which is what a
++                  reader of this line is trying to picture.
++                • "Created" was here *and* in the footer, in the same format, on the same screen.
++                  It is kept here, beside the rest of what the quiz is, and dropped from the
++                  footer, which now carries only the identifiers. */}
++            <p className="text-sm text-muted-foreground">
++              {quiz.questionCount} questions
++              {quiz.timeLimitInSeconds > 0 && (
++                <> · {formatDuration(quiz.timeLimitInSeconds)} limit</>
++              )}
++              {quiz.showFeedbackImmediately && <> · Answers checked as you go</>}
++              {quiz.shuffleQuestions && <> · Shuffled</>}
++              {" · Created "}
++              {new Date(quiz.createdAt).toLocaleDateString(undefined, {
++                day: "numeric",
++                month: "short",
++                year: "numeric",
++              })}
++            </p>
++          </header>
++
++          <Separator />
++
++          {/* ── How it has done. Absent rather than zeroed when analytics can't be read: a quiz
++              that has never been played and a quiz whose stats we failed to fetch are different
++              things, and showing "0 attempts" for the second one is a lie. */}
++          <section className="space-y-4">
++            {analyticsQuery.isLoading ? (
++              <div className="flex justify-center py-8">
++                <LoadingWave size="md" variant="muted" />
++              </div>
++            ) : !analytics ? (
++              <p className="text-sm text-muted-foreground">
++                Analytics aren&apos;t available for this quiz.
++              </p>
++            ) : analytics.attempts === 0 ? (
++              <p className="text-sm text-muted-foreground">
++                No plays yet — the numbers appear once someone takes this quiz.{" "}
++                {SIGNED_IN_ONLY_NOTE}
++              </p>
++            ) : (
++              /* <b>Two columns from `lg` up, one below.</b> Stacked, these two blocks left a
++                 full-width strip of tiles above a full-width panel holding three lines of text —
++                 a lot of vertical travel for very little, and the reason the card felt oversized
++                 even once its width was fixed. Side by side they read as one answer to one
++                 question: how much play, and when.
++
++                 The stat tiles switch to a 2-wide grid (see `QuizStatStrip`'s `columns` prop)
++                 because five tiles in a row do not fit half a card.
++
++                 `xl:grid-cols-1` un-does the split again: from `xl` this whole block is already
++                 inside the 22rem left-hand column, and two columns inside one narrow column is
++                 how you get a chart 150px wide. */
++              <div className="grid gap-4 lg:grid-cols-2 lg:items-start xl:grid-cols-1">
++                <QuizStatStrip analytics={analytics} columns="two" />
++                <div className="rounded-lg border border-border p-4">
++                  {/* The heading follows the representation. Below the trend threshold the panel
++                      is a list of the days that had plays, and calling that "over time" promises
++                      a shape it deliberately isn't drawing. */}
++                  <h2 className="mb-2 text-sm font-medium">
++                    {analytics.attempts < MIN_ATTEMPTS_FOR_TREND
++                      ? "Recent attempts"
++                      : "Attempts over time"}
++                  </h2>
++                  <AttemptsChart
++                    points={analytics.attemptsOverTime}
++                    totalAttempts={analytics.attempts}
++                  />
++                </div>
++              </div>
++            )}
++          </section>
+         </div>
+ 
+-        <h1 className="text-3xl font-bold">{quiz.title}</h1>
+-
+-        {quiz.description && (
+-          <p className="max-w-3xl leading-relaxed text-muted-foreground">
+-            {quiz.description}
+-          </p>
+-        )}
+-
+-        {/* The facts the old properties grid carried, on one line, where each sits next to
+-            something that gives it context.
+-
+-            Three fixes here, all of the same kind — the line was printing storage values
+-            rather than reading as a sentence:
+-            • `490s limit` is a field value, not a duration anyone parses. `formatDuration`
+-              turns it into `8m 10s`. It is the quiz-wide limit, so it belongs in minutes;
+-              the per-question limits in the expanded rows use the same function.
+-            • `Instant feedback on` reads as a setting name with a state appended — the kind
+-              of label that belongs in a settings form, not in a description of the quiz.
+-              "Answers checked as you go" says what the player experiences, which is what a
+-              reader of this line is trying to picture.
+-            • "Created" was here *and* in the footer, in the same format, on the same screen.
+-              It is kept here, beside the rest of what the quiz is, and dropped from the
+-              footer, which now carries only the identifiers. */}
+-        <p className="text-sm text-muted-foreground">
+-          {quiz.questionCount} questions
+-          {quiz.timeLimitInSeconds > 0 && (
+-            <> · {formatDuration(quiz.timeLimitInSeconds)} limit</>
+-          )}
+-          {quiz.showFeedbackImmediately && <> · Answers checked as you go</>}
+-          {quiz.shuffleQuestions && <> · Shuffled</>}
+-          {" · Created "}
+-          {new Date(quiz.createdAt).toLocaleDateString(undefined, {
+-            day: "numeric",
+-            month: "short",
+-            year: "numeric",
+-          })}
+-        </p>
+-      </header>
+-
+-      <Separator />
+-
+-      {/* ── How it has done. Absent rather than zeroed when analytics can't be read: a quiz
+-          that has never been played and a quiz whose stats we failed to fetch are different
+-          things, and showing "0 attempts" for the second one is a lie. */}
+-      <section className="space-y-4 py-6">
+-        {analyticsQuery.isLoading ? (
+-          <div className="flex justify-center py-8">
+-            <LoadingWave size="md" variant="muted" />
+-          </div>
+-        ) : !analytics ? (
+-          <p className="text-sm text-muted-foreground">
+-            Analytics aren&apos;t available for this quiz.
+-          </p>
+-        ) : analytics.attempts === 0 ? (
+-          <p className="text-sm text-muted-foreground">
+-            No plays yet — the numbers appear once someone takes this quiz.{" "}
+-            {SIGNED_IN_ONLY_NOTE}
+-          </p>
+-        ) : (
+-          /* <b>Two columns from `lg` up, one below.</b> Stacked, these two blocks left a
+-             full-width strip of tiles above a full-width panel holding three lines of text —
+-             a lot of vertical travel for very little, and the reason the card felt oversized
+-             even once its width was fixed. Side by side they read as one answer to one
+-             question: how much play, and when.
+-
+-             The stat tiles switch to a 2-wide grid inside the left column (see
+-             `QuizStatStrip`'s `columns` prop) because five tiles in a row do not fit half a
+-             card. Below `lg` the grid collapses and the original stacked order returns. */
+-          <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
+-            <QuizStatStrip analytics={analytics} columns="two" />
+-            <div className="rounded-lg border border-border p-4">
+-              {/* The heading follows the representation. Below the trend threshold the panel
+-                  is a list of the days that had plays, and calling that "over time" promises
+-                  a shape it deliberately isn't drawing. */}
+-              <h2 className="mb-2 text-sm font-medium">
+-                {analytics.attempts < MIN_ATTEMPTS_FOR_TREND
+-                  ? "Recent attempts"
+-                  : "Attempts over time"}
+-              </h2>
+-              <AttemptsChart
+-                points={analytics.attemptsOverTime}
+-                totalAttempts={analytics.attempts}
++        {/* ── Right: every question, with its numbers on the same row.
++            The separator only earns its place in the stacked layout — from `xl` the column gap
++            already does the dividing, and a horizontal rule across one column of two reads as
++            a mistake. */}
++        <div className="min-w-0">
++          <Separator className="mb-6 xl:hidden" />
++          <section className="pb-6">
++            {questionsQuery.isLoading ? (
++              <div className="flex justify-center py-8">
++                <LoadingWave size="md" variant="muted" />
++              </div>
++            ) : (
++              <QuestionPerformanceTable
++                questions={questionsQuery.data ?? []}
++                analytics={analytics?.questions ?? []}
+               />
+-            </div>
+-          </div>
+-        )}
+-      </section>
+-
+-      <Separator />
+-
+-      {/* ── Every question, with its numbers on the same row. */}
+-      <section className="py-6">
+-        {questionsQuery.isLoading ? (
+-          <div className="flex justify-center py-8">
+-            <LoadingWave size="md" variant="muted" />
+-          </div>
+-        ) : (
+-          <QuestionPerformanceTable
+-            questions={questionsQuery.data ?? []}
+-            analytics={analytics?.questions ?? []}
+-          />
+-        )}
+-      </section>
++            )}
++          </section>
++        </div>
++      </div>
+ 
+       <Separator />
+ 
+
+==============================================================================
+DOCS
+==============================================================================
+
+--- a/docs/quiz/quiz-analytics-page.md
++++ b/docs/quiz/quiz-analytics-page.md
+@@ -60,6 +60,18 @@
+ "Needs a look" flag and the "Hardest first" sort all consult it. They previously each re-derived it
+ from `timesAnswered >= MIN_ANSWERS_FOR_RATE`, which is how the sort came to silently fall back to
+ quiz order while its tab still looked live.
++
++### Where "Needs a look" appears
++
++`needsALook` is `rated && correctRate < 50` — a prompt to look, not a verdict: a genuinely hard
++question and a badly worded one are indistinguishable from here. It shows as an amber badge
++**beside the question text**, plus an amber left border on the row.
++
++**Not in the Type column.** The badge used to *replace* the type label, so a flagged row read
++"Needs a look" under a heading that said TYPE — two unrelated facts sharing one cell, and on a
++quiz where every question is flagged (entirely possible: a hard quiz genuinely can have all
++fifteen under 50%) the Type column told you nothing about any question's type. The type is now
++always the type.
+ 
+ ### Sort availability
+ 
+@@ -192,7 +204,10 @@
+   the question rows (there were three drifting copies).
+ - `components/quiz-view/quiz-stat-strip.tsx`, `stat-tile.tsx` — the headline numbers.
+ - `components/quiz-view/attempts-chart.tsx` — the list-or-chart panel.
+-- `components/quiz-view/question-performance-table.tsx`, `question-performance-row.tsx`.
++- `components/quiz-view/question-performance-table.tsx`, `question-performance-row.tsx` — the
++  row is a Radix `Collapsible`, controlled from the table (which owns `openIds`, because several
++  rows stay open at once). Not an `Accordion`: an accordion closes one row when you open
++  another, and the task this page exists for is comparing two weak questions.
+ - `question-performance-table.stories.tsx` — the low-data states are pinned here, because they
+   are the ones most likely to regress and the ones that matter most.
+ 
+@@ -226,11 +241,37 @@
+ band down each side, which looks worse than not constraining anything: the frame says "this is
+ how much room there is" while the content sits in the middle ignoring it.
+ 
+-The analytics block is **two columns from `lg` up** — stat tiles left (`QuizStatStrip
+-columns="two"`), attempts panel right — and one column below. Stacked full-width, those two
+-blocks were a strip of tiles above a panel holding three lines of text, which is a lot of
+-vertical travel for very little. The questions list stays full width: its row is six columns
+-and has nothing to gain from halving.
++The page has **two shapes**, and the card's measure follows:
++
++| Viewport | Card | Body |
++|---|---|---|
++| below `xl` | `max-w-5xl` | one column: hero, then analytics (tiles beside chart from `lg`), then questions |
++| `xl` and up | `max-w-7xl` | two columns: a fixed **22rem** of quiz detail, and the questions in everything left over |
++
++Stacked, a 15-question quiz pushes the entire left-hand story — title, description, the five
++numbers, the chart — off the top of the screen the moment you start reading questions, so the
++two halves of the job can never be held together. Side by side the context stays put.
++
++The left column is a fixed `22rem` rather than a fraction: it holds a stat-tile pair and a
++chart, both of which have a natural size, and letting it grow with the viewport would only
++stretch them. Width goes to the question rows, which are the part that wants it. Inside that
++column the analytics block reverts to `xl:grid-cols-1` — it is already in a narrow column, and
++two columns inside one narrow column is how you get a 150px-wide chart.
++
++The separator between analytics and questions is `xl:hidden`: from `xl` the column gap does the
++dividing, and a horizontal rule across one column of two reads as a mistake.
++
++### Motion
++
++Expanding a row animates its height via Radix `Collapsible` and the `collapsible-down` /
++`collapsible-up` keyframes in `tailwind.config.js`. Those are a near-duplicate of the
++`accordion-*` pair on purpose — Radix publishes the measured height under a **different** CSS
++variable per primitive (`--radix-collapsible-content-height`), so a Collapsible animated with
++`accordion-down` reads an unset var and jumps to full height with no transition at all.
++
++The old `{isOpen && <panel/>}` mounted and unmounted instantly, so a row snapped open and every
++row below it jumped. `motion-reduce:animate-none` honours the OS setting, the same way the
++loading wave does in `global.css` — the panel still opens, it just arrives rather than travels.
+ 
+ ## No database ids
+ 

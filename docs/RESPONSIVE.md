@@ -346,6 +346,50 @@ Three things worth knowing before touching this:
   screen exactly when the header it belongs to is. Reported as "there's no scrollbar". This
   applies to any wide-and-tall scroll region, not just tables.
 
+## Dashboard list pages: one header, one card
+
+Quizzes, Questions and Users are the same page three times: a title, a filter panel, and a
+table of records. They are written to look it.
+
+**Every action the page owns lives in the page header, to the right of the h1. The card below
+holds the table and nothing else.**
+
+```tsx
+<div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  <h1 className="text-2xl font-bold sm:text-3xl">Quiz Management</h1>
+  <div className="flex items-center gap-2">
+    <LiftedButton outerClassName="w-fit lg:hidden" liftColor="muted" …>Filters</LiftedButton>
+    <CreateQuizMethodDialog … />   {/* the page's create action */}
+  </div>
+</div>
+```
+
+The three pages had drifted apart: Questions kept "Add Question" in a `justify-between` row
+*inside* the card, Users kept "Create User" in another one, and Quizzes had already moved
+"+ Create Quiz" up beside Filters. Three layouts for one page shape, and the two in-card rows
+cost a whole band of vertical space between the card's top edge and the first table row —
+on a phone, most of what is left after the header.
+
+Why the header wins:
+
+- **Scope.** "Create a quiz" acts on the page, not on the table. A control inside the card
+  claims to act on what the card contains, which is the list.
+- **One action row, already responsive.** The header row is `flex-col` on phones and
+  `sm:flex-row` from there, so the actions get a full width of their own when they need it.
+  A second row inside the card has to solve the same problem again, and both in-card rows
+  were solving it with `justify-between`, which just squeezes children until their labels
+  wrap.
+- **The card becomes one thing.** Table plus pagination, with the page's chrome outside it.
+
+Two details that bite:
+
+- **No `text-*` on buttons sharing that row.** The `LiftedButton` face is `py-2` around one
+  line of text, so font-size alone decides its height — a `text-xs` on one of two siblings
+  makes it visibly shorter than the other. Both trigger buttons had one.
+- **`lg:hidden` goes on `outerClassName`, not `className`.** `className` styles the front
+  face; hiding it there leaves the button's own box, edge and shadow laid out and still
+  taking a row.
+
 ## Safe areas (notches, home indicators)
 
 `index.html` sets `viewport-fit=cover`; `.app-shell-viewport` pads left/right
@@ -644,7 +688,10 @@ now a recorded decision rather than a preference —
    nowhere but a wide desktop, and horizontal scroll is not the rescue it looks like. See
    "Dense tables". Sizing anything that sits *beside* a sidebar: measure the container,
    not the viewport.
-12. A screen that must fit one viewport? Assert it, don't eyeball it. `FitsTheFold`
+12. Building another dashboard list page (title + filters + table)? Actions go in the page
+   header beside the h1, not in a row inside the card, and no `text-*` on buttons that
+   share that row. See "Dashboard list pages".
+13. A screen that must fit one viewport? Assert it, don't eyeball it. `FitsTheFold`
    in `ai-quiz-wizard-view.stories.tsx` is the reference: a story pinned to the
    target viewport with a play function measuring the primary action's headroom.
    Height is the one property that regresses without producing an error.

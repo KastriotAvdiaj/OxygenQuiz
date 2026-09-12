@@ -137,8 +137,30 @@ namespace QuizAPI.Controllers.Quizzes.Services.AnswerGradingServices
 
                 if (userAnswer == null)
                 {
-                    _logger.LogError("UserAnswer {UserAnswerId} not found after 5 attempts - this should not happen with the new flow", userAnswerId);
-                    return; // Let Hangfire retry the entire job
+                    // A guest's answers are DELETED the moment they view their results, and the
+                    // abandonment sweep deletes them too (docs/auth/guest-play.md) — so a missing
+                    // row is routine on that path and there is nothing left to grade. Returning
+                    // is correct there, and only there.
+                    var rowWasDeleted = !await context.UserAnswers.AnyAsync(ua => ua.Id == userAnswerId);
+                    if (rowWasDeleted)
+                    {
+                        _logger.LogInformation(
+                            "UserAnswer {UserAnswerId} no longer exists — session was deleted (guest play or abandonment sweep). Nothing to grade.",
+                            userAnswerId);
+                        return;
+                    }
+
+                    // Otherwise the row exists and we simply could not read it. THROW, don't
+                    // return: a Hangfire job that returns normally is recorded as **Succeeded**
+                    // and never retried, so the `return` that used to sit here — with the comment
+                    // "Let Hangfire retry the entire job" — did the exact opposite of what it
+                    // said. The answer stayed Pending forever, and the only trace was this log
+                    // line. [AutomaticRetry] above gives three more attempts at 5s/30s/60s.
+                    _logger.LogError(
+                        "UserAnswer {UserAnswerId} could not be read after 5 attempts though the row exists - failing the job so Hangfire retries",
+                        userAnswerId);
+                    throw new InvalidOperationException(
+                        $"UserAnswer {userAnswerId} could not be loaded for grading.");
                 }
 
                 // Skip if already graded (in case of retry after partial success)

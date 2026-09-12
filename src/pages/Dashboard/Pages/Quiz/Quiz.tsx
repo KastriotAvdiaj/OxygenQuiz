@@ -1,17 +1,8 @@
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router";
-import { Edit2, EyeOff, Eye, Share2 } from "lucide-react";
-
-import { Spinner } from "@/components/ui";
-import { Badge } from "@/components/ui/badge";
+import { LoadingWave } from "@/components/ui";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { LiftedButton } from "@/common/LiftedButton";
 import { useNotifications } from "@/common/Notifications";
 import { ContentLayout } from "@/layouts/individual-content-layout";
 import type { QuizStatus } from "@/types/quiz-types";
@@ -22,11 +13,16 @@ import { useQuizAnalytics } from "./api/get-quiz-analytics";
 import { useCreateShareLink, buildShareUrl } from "./api/create-share-link";
 import { useSetQuizStatus } from "./api/set-quiz-status";
 import { DeleteQuiz } from "./components/delete-quiz";
-import { IconButtonWithTooltip } from "../Question/Components/Re-Usable-Components/icon-button-with-tooltip";
 import { AttemptsChart } from "./components/quiz-view/attempts-chart";
 import { QuestionPerformanceTable } from "./components/quiz-view/question-performance-table";
+import { QuizActionsMenu } from "./components/quiz-view/quiz-actions-menu";
 import { QuizStatStrip } from "./components/quiz-view/quiz-stat-strip";
-import { SIGNED_IN_ONLY_NOTE } from "./components/quiz-view/thresholds";
+import { QuizStatusBadge } from "./components/quiz-view/quiz-status-badge";
+import { formatDuration } from "./components/quiz-view/format-duration";
+import {
+  MIN_ATTEMPTS_FOR_TREND,
+  SIGNED_IN_ONLY_NOTE,
+} from "./components/quiz-view/thresholds";
 
 /**
  * One quiz, as one page.
@@ -52,17 +48,6 @@ import { SIGNED_IN_ONLY_NOTE } from "./components/quiz-view/thresholds";
  * analytics data that does not exist yet, and a plausible-looking number invented here would be
  * worse than an absent one.
  */
-/**
- * The non-primary face for this page's action row. A background-coloured front with a
- * foreground-tinted edge, so a quiet button still reads as the same *kind* of object as the
- * primary one beside it rather than as a flat link.
- *
- * A constant rather than repeated inline, because two buttons wear it and a row whose members
- * drift apart is the problem this row already had once.
- */
-const QUIET_FACE =
-  "bg-background hover:bg-muted text-foreground border border-foreground/20";
-
 export const QuizRoute = () => {
   const params = useParams();
   const quizId = Number(params.quizId as string);
@@ -74,6 +59,9 @@ export const QuizRoute = () => {
   const analyticsQuery = useQuizAnalytics({ quizId });
   const shareLink = useCreateShareLink();
   const setStatus = useSetQuizStatus();
+
+  // Owned here rather than by the menu item, so the confirm dialog outlives the menu closing.
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   /**
    * Publish / unpublish. The caller picks the target, because `quiz` (and so the current
@@ -120,12 +108,12 @@ export const QuizRoute = () => {
   };
 
   if (quizQuery.isLoading) {
+    // `LoadingWave` is the app's loader now; `Spinner` is what this page was written against
+    // before that. The word carries the message, so the "Loading quiz..." line underneath is
+    // gone with it — it was saying the same thing twice.
     return (
-      <div className="w-full h-full flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <Spinner size="lg" />
-          <p className="text-muted-foreground">Loading quiz...</p>
-        </div>
+      <div className="w-full h-full flex items-center justify-center py-16">
+        <LoadingWave size="lg" variant="muted" />
       </div>
     );
   }
@@ -150,198 +138,207 @@ export const QuizRoute = () => {
   const isDraft = quiz.status === "Draft";
 
   return (
-    <ContentLayout title={`Quiz #${quiz.id}`}>
-      {/* ── Actions, at the top. They used to sit under the tabs, which put the primary
-          actions for the page below everything on it. Delete is not here: it lives in the
-          footer, away from the controls people press often. */}
-      <div className="flex flex-wrap items-center justify-end gap-2 pb-4">
-        {/* One family, one size, three weights.
+    // <b>The card is the width of what is in it.</b> Constraining the inner content box was
+    // half a fix: the card still spanned the viewport, so the content sat centred inside a
+    // frame with a wide empty band down each side. The measure now applies to the card, so the
+    // border tracks the content instead of the window.
+    //
+    // Two measures, because the page has two shapes. Stacked (below `xl`) the widest element is
+    // the six-column question row and `max-w-5xl` is right. Split into columns (from `xl`) the
+    // page needs room for both at once, so it opens out to `max-w-7xl` — which is still a
+    // measure, not full-bleed: past ~1280px more width only stretches the question rows.
+    //
+    // <b>No card title.</b> It read "Quiz #37": a database id, above an <h1> that already
+    // carries the quiz's name. Nobody looking at a quiz needs its primary key, and two
+    // headings for one page is one too many. `ContentLayout` drops the header bar entirely
+    // when no title is passed.
+    <ContentLayout className="mx-auto max-w-5xl xl:max-w-7xl">
+      {/* Controlled, and rendered outside the menu on purpose (see `DeleteQuiz`). */}
+      <DeleteQuiz
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        // Defer navigation one tick so the dialog can close and Radix can restore
+        // <body> pointer-events before this page unmounts.
+        finished={() => setTimeout(() => navigate("/dashboard/quizzes"), 0)}
+        id={quiz.id}
+      />
 
-            These were three different kinds of button: a flat 32px shadcn outline for Share
-            beside two ~40px lifted ones, which made Share read as a control from a different
-            screen rather than the quietest of three actions. They are now all `LiftedButton`
-            at `size="sm"`, and *colour* carries the hierarchy instead of size — Edit is the
-            primary face, Share and Publish share the quiet one. Nothing here is a page-level
-            primary action of the kind the default face is for: this is a toolbar. */}
+      {/* <b>Two columns from `xl` up: what the quiz IS on the left, what its questions DID on
+          the right.</b> Stacked, a 15-question quiz pushes the whole left-hand story — title,
+          description, the five numbers, the attempts chart — off the top of the screen the
+          moment you start reading the questions, so the two halves of the job can never be
+          held together. Side by side you keep the context while you scan.
 
-        {/* Not on a Draft: the backend mints a token its own resolver 404s, so sharing one
-            could only produce a link that fails at the recipient's end. */}
-        {!isDraft && (
-          <LiftedButton
-            size="sm"
-            onClick={handleShare}
-            isPending={shareLink.isPending}
-            className={QUIET_FACE}
-            backgroundColorForBorder="bg-foreground/50"
-            liftColor="foreground">
-            <Share2 className="h-4 w-4" />
-            {quiz.status === "Unlisted" ? "Copy share link" : "Share"}
-          </LiftedButton>
-        )}
+          A fixed 22rem for the left column rather than a fraction: it holds a stat-tile pair
+          and a chart, both of which have a natural size, and letting it grow with the viewport
+          would only stretch them. Everything left over goes to the question rows, which are
+          the part that actually wants width. Below `xl` this collapses to one column and the
+          order is the reading order. */}
+      <div className="grid gap-6 xl:grid-cols-[22rem_minmax(0,1fr)] xl:gap-10">
+        {/* ── Left: what this quiz is, and how it has done overall. */}
+        <div className="min-w-0 space-y-6">
+          {/* ── Hero. The description was buried under a tab; it is the one
+              piece of prose the author wrote about their own quiz and it belongs at the top. */}
+          <header className="space-y-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <QuizStatusBadge status={quiz.status} />
+              <span className="text-sm text-muted-foreground">
+                {quiz.category.name} · {quiz.difficulty.level} · {quiz.language.language}
+              </span>
+            </div>
 
-        {/* Now wired. The endpoint has been complete and tested since the visibility work;
-            only this mutation was missing, which is why the button shipped disabled with a
-            "Feature not implemented" tooltip for as long as it did. */}
-        <IconButtonWithTooltip
-          variant="default"
-          size="sm"
-          iconPosition="start"
-          tooltip={
-            isDraft
-              ? "Make this quiz public so anyone can find and play it"
-              : "Return this quiz to draft — only you will see it"
-          }
-          icon={isDraft ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-          buttonText={isDraft ? "Publish" : "Unpublish"}
-          className={QUIET_FACE}
-          backgroundColorForBorder="bg-foreground/50"
-          liftColor="foreground"
-          isPending={setStatus.isPending}
-          onClick={handleSetStatus(isDraft ? "Public" : "Draft")}
-        />
+            {/* <b>Every action is in the ⋯ menu, and the menu sits on the title row.</b>
+              This was a toolbar of three buttons in the top-right plus a fourth for the
+              overflow — four controls occupying a full-width strip above a page whose own
+              heading came second. The data-table rows already answer this with one 32px ⋯
+              button and a labelled menu, so the same pattern here means one thing to learn
+              instead of two.
 
-        <LiftedButton
-          size="sm"
-          onClick={() => navigate(`/dashboard/quizzes/edit-quiz/${quiz.id}`)}>
-          <Edit2 className="h-4 w-4" />
-          Edit Quiz
-        </LiftedButton>
+              On the title row rather than back in the corner: the affordance now sits on the
+              thing it acts on, and a single small button alone in the top-right of a wide
+              card reads as something left behind. From `xl` the title is in the 22rem column
+              and the menu rides along with it. */}
+            <div className="flex items-start justify-between gap-3">
+              <h1 className="min-w-0 text-3xl font-bold">{quiz.title}</h1>
+              <QuizActionsMenu
+                quiz={quiz}
+                isDraft={isDraft}
+                onShare={handleShare}
+                isSharePending={shareLink.isPending}
+                onSetStatus={handleSetStatus(isDraft ? "Public" : "Draft")}
+                isStatusPending={setStatus.isPending}
+                onEdit={() => navigate(`/dashboard/quizzes/edit-quiz/${quiz.id}`)}
+                onDelete={() => setDeleteOpen(true)}
+              />
+            </div>
 
-        {/* The phone equivalent of the row above, minus what already fits. */}
-        <div className="md:hidden">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                More
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                onClick={() => navigate(`/dashboard/quizzes/edit-quiz/${quiz.id}`)}>
-                <Edit2 className="h-4 w-4 mr-2" />
-                Edit Quiz
-              </DropdownMenuItem>
-              {!isDraft && (
-                <DropdownMenuItem onClick={handleShare} disabled={shareLink.isPending}>
-                  <Share2 className="h-4 w-4 mr-2" />
-                  Share
-                </DropdownMenuItem>
+            {quiz.description && (
+              <p className="max-w-3xl leading-relaxed text-muted-foreground">
+                {quiz.description}
+              </p>
+            )}
+
+            {/* The facts the old properties grid carried, on one line, where each sits next to
+                something that gives it context.
+
+                Three fixes here, all of the same kind — the line was printing storage values
+                rather than reading as a sentence:
+                • `490s limit` is a field value, not a duration anyone parses. `formatDuration`
+                  turns it into `8m 10s`. It is the quiz-wide limit, so it belongs in minutes;
+                  the per-question limits in the expanded rows use the same function.
+                • `Instant feedback on` reads as a setting name with a state appended — the kind
+                  of label that belongs in a settings form, not in a description of the quiz.
+                  "Answers checked as you go" says what the player experiences, which is what a
+                  reader of this line is trying to picture.
+                • "Created" was here *and* in the footer, in the same format, on the same screen.
+                  It is kept here, beside the rest of what the quiz is, and dropped from the
+                  footer, which now carries only the identifiers. */}
+            <p className="text-sm text-muted-foreground">
+              {quiz.questionCount} questions
+              {quiz.timeLimitInSeconds > 0 && (
+                <> · {formatDuration(quiz.timeLimitInSeconds)} limit</>
               )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+              {quiz.showFeedbackImmediately && <> · Answers checked as you go</>}
+              {quiz.shuffleQuestions && <> · Shuffled</>}
+              {" · Created "}
+              {new Date(quiz.createdAt).toLocaleDateString(undefined, {
+                day: "numeric",
+                month: "short",
+                year: "numeric",
+              })}
+            </p>
+          </header>
+
+          <Separator />
+
+          {/* ── How it has done. Absent rather than zeroed when analytics can't be read: a quiz
+              that has never been played and a quiz whose stats we failed to fetch are different
+              things, and showing "0 attempts" for the second one is a lie. */}
+          <section className="space-y-4">
+            {analyticsQuery.isLoading ? (
+              <div className="flex justify-center py-8">
+                <LoadingWave size="md" variant="muted" />
+              </div>
+            ) : !analytics ? (
+              <p className="text-sm text-muted-foreground">
+                Analytics aren&apos;t available for this quiz.
+              </p>
+            ) : analytics.attempts === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                No plays yet — the numbers appear once someone takes this quiz.{" "}
+                {SIGNED_IN_ONLY_NOTE}
+              </p>
+            ) : (
+              /* <b>Two columns from `lg` up, one below.</b> Stacked, these two blocks left a
+                 full-width strip of tiles above a full-width panel holding three lines of text —
+                 a lot of vertical travel for very little, and the reason the card felt oversized
+                 even once its width was fixed. Side by side they read as one answer to one
+                 question: how much play, and when.
+
+                 The stat tiles switch to a 2-wide grid (see `QuizStatStrip`'s `columns` prop)
+                 because five tiles in a row do not fit half a card.
+
+                 `xl:grid-cols-1` un-does the split again: from `xl` this whole block is already
+                 inside the 22rem left-hand column, and two columns inside one narrow column is
+                 how you get a chart 150px wide. */
+              <div className="grid gap-4 lg:grid-cols-2 lg:items-start xl:grid-cols-1">
+                <QuizStatStrip analytics={analytics} columns="two" />
+                <div className="rounded-lg border border-border p-4">
+                  {/* The heading follows the representation. Below the trend threshold the panel
+                      is a list of the days that had plays, and calling that "over time" promises
+                      a shape it deliberately isn't drawing. */}
+                  <h2 className="mb-2 text-sm font-medium">
+                    {analytics.attempts < MIN_ATTEMPTS_FOR_TREND
+                      ? "Recent attempts"
+                      : "Attempts over time"}
+                  </h2>
+                  <AttemptsChart
+                    points={analytics.attemptsOverTime}
+                    totalAttempts={analytics.attempts}
+                  />
+                </div>
+              </div>
+            )}
+          </section>
+        </div>
+
+        {/* ── Right: every question, with its numbers on the same row.
+            The separator only earns its place in the stacked layout — from `xl` the column gap
+            already does the dividing, and a horizontal rule across one column of two reads as
+            a mistake. */}
+        <div className="min-w-0">
+          <Separator className="mb-6 xl:hidden" />
+          <section className="pb-6">
+            {questionsQuery.isLoading ? (
+              <div className="flex justify-center py-8">
+                <LoadingWave size="md" variant="muted" />
+              </div>
+            ) : (
+              <QuestionPerformanceTable
+                questions={questionsQuery.data ?? []}
+                analytics={analytics?.questions ?? []}
+              />
+            )}
+          </section>
         </div>
       </div>
 
-      {/* ── Hero: what this quiz is. The description was buried under a tab; it is the one
-          piece of prose the author wrote about their own quiz and it belongs at the top. */}
-      <header className="space-y-3 pb-6">
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge
-            variant={isDraft ? "secondary" : "default"}
-            className={!isDraft ? "bg-green-500 text-white" : ""}>
-            {quiz.status}
-          </Badge>
-          <span className="text-sm text-muted-foreground">
-            {quiz.category.name} · {quiz.difficulty.level} · {quiz.language.language}
-          </span>
-        </div>
-
-        <h1 className="text-3xl font-bold">{quiz.title}</h1>
-
-        {quiz.description && (
-          <p className="max-w-3xl leading-relaxed text-muted-foreground">
-            {quiz.description}
-          </p>
-        )}
-
-        {/* The facts the old properties grid carried, on one line, where each sits next to
-            something that gives it context. */}
-        <p className="text-sm text-muted-foreground">
-          {quiz.questionCount} questions
-          {quiz.timeLimitInSeconds > 0 && <> · {quiz.timeLimitInSeconds}s limit</>}
-          {quiz.showFeedbackImmediately && <> · Instant feedback on</>}
-          {quiz.shuffleQuestions && <> · Shuffled</>}
-          {" · Created "}
-          {new Date(quiz.createdAt).toLocaleDateString(undefined, {
-            day: "numeric",
-            month: "short",
-            year: "numeric",
-          })}
-        </p>
-      </header>
-
       <Separator />
 
-      {/* ── How it has done. Absent rather than zeroed when analytics can't be read: a quiz
-          that has never been played and a quiz whose stats we failed to fetch are different
-          things, and showing "0 attempts" for the second one is a lie. */}
-      <section className="space-y-4 py-6">
-        {analyticsQuery.isLoading ? (
-          <div className="flex justify-center py-8">
-            <Spinner size="lg" />
-          </div>
-        ) : !analytics ? (
-          <p className="text-sm text-muted-foreground">
-            Analytics aren&apos;t available for this quiz.
-          </p>
-        ) : analytics.attempts === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            No plays yet — the numbers appear once someone takes this quiz.{" "}
-            {SIGNED_IN_ONLY_NOTE}
-          </p>
-        ) : (
-          <>
-            <QuizStatStrip analytics={analytics} />
-            <div className="rounded-lg border border-border p-4">
-              <h2 className="mb-2 text-sm font-medium">Attempts over time</h2>
-              <AttemptsChart
-                points={analytics.attemptsOverTime}
-                totalAttempts={analytics.attempts}
-              />
-            </div>
-          </>
-        )}
-      </section>
+      {/* ── Footer.
+          <b>Delete has moved out of here.</b> It used to float loose at the bottom of the page
+          as a red lifted button with nothing around it — the largest, loudest control on the
+          screen, in the one place where nothing else competed for attention, reachable by
+          scrolling to the end and clicking once. It now sits in the overflow menu beside the
+          other actions: destructive, marked as such, and two deliberate clicks away.
 
-      <Separator />
-
-      {/* ── Every question, with its numbers on the same row. */}
-      <section className="py-6">
-        {questionsQuery.isLoading ? (
-          <div className="flex justify-center py-8">
-            <Spinner size="lg" />
-          </div>
-        ) : (
-          <QuestionPerformanceTable
-            questions={questionsQuery.data ?? []}
-            analytics={analytics?.questions ?? []}
-          />
-        )}
-      </section>
-
-      <Separator />
-
-      {/* ── Footer: the identifiers nobody needs while working, and the action nobody should
-          reach for by accident. */}
-      <footer className="flex flex-col gap-4 py-6 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-xs text-muted-foreground">
-          Quiz ID {quiz.id} · Version {quiz.version} · Created{" "}
-          {new Date(quiz.createdAt).toLocaleDateString(undefined, {
-            day: "numeric",
-            month: "short",
-            year: "numeric",
-          })}
-        </p>
-
-        <DeleteQuiz
-          useLiftedButton
-          size="sm"
-          className="w-fit bg-red-500 hover:bg-red-600"
-          // Defer navigation one tick so the dialog can close and Radix can restore
-          // <body> pointer-events before this page unmounts.
-          finished={() => setTimeout(() => navigate("/dashboard/quizzes"), 0)}
-          id={quiz.id}
-        />
+          <b>The quiz id has gone too.</b> It is a primary key; it means something to a query
+          and nothing to the person reading the page. Version stays — it is a fact about the
+          quiz's own history (every edit retires rows and bumps it, see
+          docs/quiz/quiz-editing.md) and it explains why an old session can be playing
+          different questions from the ones listed above. */}
+      <footer className="py-6">
+        <p className="text-xs text-muted-foreground">Version {quiz.version}</p>
       </footer>
     </ContentLayout>
   );

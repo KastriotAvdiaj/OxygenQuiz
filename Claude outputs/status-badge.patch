@@ -1,0 +1,153 @@
+# Status badge — one hue, three shades
+
+Already written into the repo.
+
+--- a/src/components/ui/badge.tsx
++++ b/src/components/ui/badge.tsx
+@@ -35,8 +35,15 @@
+     <div
+       className={cn(
+         badgeVariants({ variant }),
+-        className,
+-        `${theme.theme === "dark" ? "border-foreground/40" : ""} `
++        // The dark-mode edge is a DEFAULT, so it goes before `className`, not after.
++        //
++        // It used to come last, which meant `cn`'s tailwind-merge resolved it as the winner
++        // and every caller's border colour was silently discarded in dark mode — the amber
++        // edge on the question rows' "Needs a look" badge among them. A caller passing
++        // `border-primary` got `border-foreground/40` and no warning. `className` last is
++        // what every other component here does and what every caller assumes.
++        theme.theme === "dark" ? "border-foreground/40" : "",
++        className
+       )}
+       {...props}
+     />
+--- /dev/null
++++ b/src/pages/Dashboard/Pages/Quiz/components/quiz-view/quiz-status-badge.tsx
+@@ -0,0 +1,48 @@
++import { Badge } from "@/components/ui/badge";
++import type { QuizStatus } from "@/types/quiz-types";
++
++/**
++ * The quiz's status, as one badge in three shades of the theme accent.
++ *
++ * <b>The three statuses are one scale, so they get one hue.</b> Draft → Unlisted → Public is
++ * a ramp of *reach* (nobody, anyone with the link, everybody — see quiz-visibility.md), and
++ * the fill tracks it: faint tint, mid tint, solid. Reading them as a sequence is the point,
++ * which is exactly what the previous treatment prevented — Public was a hard-coded
++ * `bg-green-500` and Draft fell back to the grey `secondary` variant, so the two looked like
++ * unrelated states from different systems rather than two ends of one axis. Green also said
++ * "success", which Public isn't; it is a visibility setting, not an achievement.
++ *
++ * <b>Why the text colour does not vary.</b> The obvious ramp — `text-primary` on a
++ * `bg-primary/N` tint — fails contrast in dark mode at every tint strength: the accent is
++ * `#3b82f6`, whose luminance against a near-black surface tops out around **3.7:1**, short of
++ * AA's 4.5. `bg-primary/50` with any foreground is worse still (2.4:1 light, 2.2:1 dark). So
++ * the ramp is carried by fill and border, and the label stays on a foreground token that
++ * clears AA in both themes. Measured, not guessed:
++ *
++ * | | light | dark |
++ * |---|---|---|
++ * | Public — `text-primary-foreground` on `bg-primary` | 4.94 | 4.85 |
++ * | Unlisted — `text-foreground` on `bg-primary/15` | 16.20 | 11.65 |
++ * | Draft — `text-foreground` on `bg-primary/5` | 18.66 | 13.26 |
++ *
++ * Every class is a complete literal picked from this map — never assembled — because the JIT
++ * compiler only generates what it can read verbatim in source.
++ */
++const STATUS_STYLES: Record<QuizStatus, string> = {
++  Public: "border-primary bg-primary text-primary-foreground hover:bg-primary/90",
++  Unlisted: "border-primary/70 bg-primary/15 text-foreground hover:bg-primary/25",
++  Draft: "border-primary/30 bg-primary/5 text-foreground hover:bg-primary/10",
++};
++
++/** What the status actually controls, for the reader who has not memorised the three words. */
++const STATUS_TITLES: Record<QuizStatus, string> = {
++  Public: "Anyone can find and play this quiz",
++  Unlisted: "Playable with the share link, but not listed publicly",
++  Draft: "Only you can see this quiz",
++};
++
++export const QuizStatusBadge = ({ status }: { status: QuizStatus }) => (
++  <Badge variant="outline" className={STATUS_STYLES[status]} title={STATUS_TITLES[status]}>
++    {status}
++  </Badge>
++);
+--- a/src/pages/Dashboard/Pages/Quiz/Quiz.tsx
++++ b/src/pages/Dashboard/Pages/Quiz/Quiz.tsx
+@@ -1,7 +1,6 @@
+ import { useState } from "react";
+ import { useParams, useNavigate } from "react-router";
+ import { LoadingWave } from "@/components/ui";
+-import { Badge } from "@/components/ui/badge";
+ import { Button } from "@/components/ui/button";
+ import { Separator } from "@/components/ui/separator";
+ import { useNotifications } from "@/common/Notifications";
+@@ -18,6 +17,7 @@
+ import { QuestionPerformanceTable } from "./components/quiz-view/question-performance-table";
+ import { QuizActionsMenu } from "./components/quiz-view/quiz-actions-menu";
+ import { QuizStatStrip } from "./components/quiz-view/quiz-stat-strip";
++import { QuizStatusBadge } from "./components/quiz-view/quiz-status-badge";
+ import { formatDuration } from "./components/quiz-view/format-duration";
+ import {
+   MIN_ATTEMPTS_FOR_TREND,
+@@ -181,11 +181,7 @@
+               piece of prose the author wrote about their own quiz and it belongs at the top. */}
+           <header className="space-y-3">
+             <div className="flex flex-wrap items-center gap-2">
+-              <Badge
+-                variant={isDraft ? "secondary" : "default"}
+-                className={!isDraft ? "bg-green-500 text-white" : ""}>
+-                {quiz.status}
+-              </Badge>
++              <QuizStatusBadge status={quiz.status} />
+               <span className="text-sm text-muted-foreground">
+                 {quiz.category.name} · {quiz.difficulty.level} · {quiz.language.language}
+               </span>
+--- a/docs/quiz/quiz-analytics-page.md
++++ b/docs/quiz/quiz-analytics-page.md
+@@ -290,6 +290,44 @@
+ row below it jumped. `motion-reduce:animate-none` honours the OS setting, the same way the
+ loading wave does in `global.css` — the panel still opens, it just arrives rather than travels.
+ 
++## Badge colour
++
++Two badges appear on this page and they mean different kinds of thing, so they are coloured by
++different rules — the same rule the builder follows
++([`question-type-color-schema.md`](./question-type-color-schema.md)): **colour encodes _type_
++quietly; _state_ is what gets loud.**
++
++**Status (Draft / Unlisted / Public) is a type** — one scale, so one hue in three shades. The
++ramp is *reach*: nobody → anyone with the link → everybody (see
++[`quiz-visibility.md`](./quiz-visibility.md)), and the fill tracks it.
++
++| Status | Classes | Contrast light / dark |
++|---|---|---|
++| Draft | `border-primary/30 bg-primary/5 text-foreground` | 18.66 / 13.26 |
++| Unlisted | `border-primary/70 bg-primary/15 text-foreground` | 16.20 / 11.65 |
++| Public | `border-primary bg-primary text-primary-foreground` | 4.94 / 4.85 |
++
++It replaced a hard-coded `bg-green-500` for Public and the grey `secondary` variant for Draft —
++two states from apparently unrelated systems rather than two ends of one axis. Green also
++claimed "success", which Public is not: it is a visibility setting, not an achievement.
++
++**The ramp is carried by fill and border, not by text colour.** The obvious version —
++`text-primary` on a `bg-primary/N` tint — fails AA in dark mode at *every* tint strength,
++because the accent is `#3b82f6` and its luminance against a near-black surface tops out around
++**3.7:1**. `bg-primary/50` is worse: 2.4:1 light, 2.2:1 dark, with any foreground. Those numbers
++are measured, and they are why the label sits on a foreground token instead.
++
++**"Needs a look" is a state, so it stays amber.** It is the one thing on the page asking to be
++acted on, and folding it into the primary family would both mute it and put two blue badges
++with unrelated meanings side by side on the same row.
++
++### One fix this needed
++
++`Badge` appended its dark-mode `border-foreground/40` *after* `className`, so tailwind-merge
++resolved it as the winner and **every caller's border colour was silently discarded in dark
++mode** — including the amber edge on "Needs a look". The default now goes before `className`,
++which is what the rest of the components here do and what every caller assumes.
++
+ ## No database ids
+ 
+ Neither the quiz id nor the question ids appear anywhere on this page. A primary key identifies

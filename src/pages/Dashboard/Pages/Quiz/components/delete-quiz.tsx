@@ -4,19 +4,11 @@ import { useNotifications } from "@/common/Notifications";
 import { useDeleteQuiz } from "../api/delete-quiz";
 import { Trash2 } from "lucide-react";
 import { cn } from "@/utils/cn";
-import { LiftedButton } from "@/common/LiftedButton";
 
 type DeleteQuizProps = {
   className?: string;
   id: number;
   finished: () => void;
-  useLiftedButton?: boolean;
-  /**
-   * Face size for the lifted trigger, forwarded to `LiftedButton`. Defaults to `default`.
-   * Pass `sm` where this sits in a row with other actions — the quiz page's footer — so the
-   * destructive button isn't the largest control on the page purely by inheritance.
-   */
-  size?: "default" | "sm";
   /**
    * Controlled mode. Pass these to render the confirm dialog on its own (no
    * trigger) from OUTSIDE a dropdown menu, so closing the menu — or the row
@@ -30,8 +22,6 @@ export const DeleteQuiz = ({
   id,
   finished,
   className,
-  useLiftedButton,
-  size = "default",
   open,
   onOpenChange,
 }: DeleteQuizProps) => {
@@ -59,15 +49,7 @@ export const DeleteQuiz = ({
       title="Delete Quiz"
       body="Are you sure you want to delete this quiz?"
       triggerButton={
-        isControlled ? undefined : useLiftedButton ? (
-          <LiftedButton
-            size={size}
-            className={cn(className)}
-            backgroundColorForBorder="bg-red-800"
-          >
-            <Trash2 size={16} /> Delete
-          </LiftedButton>
-        ) : (
+        isControlled ? undefined : (
           <Button
             variant="userMenu"
             className={cn("h-5 font-normal px-0 flex w-full", className)}

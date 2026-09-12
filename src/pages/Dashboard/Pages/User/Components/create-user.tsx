@@ -35,8 +35,16 @@ export const CreateUserForm = () => {
     <FormDrawer
       isDone={createUserMutation.isSuccess}
       triggerButton={
-        <LiftedButton variant="default" className="text-xs">
-          <Plus className="w-4 h-4"/> Create User
+        // No `text-*`: this stands beside the Filters button in the page header, both
+        // faces are `py-2` around one line of text, so font-size alone decides the height —
+        // a `text-xs` here made this button shorter than its neighbour. The face already
+        // brings `flex items-center gap-2`.
+        //
+        // Line comments, not a braced JSX comment: inside an attribute's braces we are in
+        // an expression, where a further `{ ... }` is an object literal and not a comment
+        // slot. That form parses as "unexpected token" on the element below it.
+        <LiftedButton variant="default">
+          <Plus className="w-4 h-4" /> Create User
         </LiftedButton>
       }
       title="Create User"

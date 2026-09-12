@@ -22,18 +22,39 @@ import { ChangeUserRole } from "./change-user-role";
 import formatDate from "@/lib/date-format";
 import { useUser } from "@/lib/Auth";
 
+/**
+ * Eight columns, which no phone and no tablet can hold at once. `meta.priority` decides the
+ * order they leave in as the table's container narrows — `DataTable` hides the ones that
+ * don't fit and puts their values in the row's detail panel. See
+ * docs/adr/0010-a-narrow-table-drops-columns-it-does-not-scroll.md.
+ *
+ * The tiers, and the reasoning for this table:
+ *
+ * - **1 — Username, Status, Actions.** Who the account belongs to, whether it is still
+ *   active, and what you can do about it. A list stripped to these three still answers the
+ *   question an admin opens this page with; strip one more and it doesn't.
+ * - **2 — Email, Roles.** The two you scan to tell similar usernames apart and to see who
+ *   holds elevated access. Worth a column as soon as there is room for one.
+ * - **3 — Date Registered, Last Login, Image Url.** Attributes of an account you have
+ *   already found. The two dates are also both filterable from the panel beside this table,
+ *   which is the better tool for "who signed up last week" anyway; the image URL is a raw
+ *   string nobody reads across a row.
+ */
 export const columns: ColumnDef<User>[] = [
   {
     accessorKey: "username",
     header: "Username",
+    meta: { priority: 1 },
   },
   {
     accessorKey: "email",
     header: "Email",
+    meta: { priority: 2 },
   },
   {
     accessorKey: "roles",
     header: "Roles",
+    meta: { priority: 2 },
     cell: ({ row }) => {
       const roles = row.original.roles ?? [];
       return roles.length ? roles.join(", ") : "—";
@@ -42,6 +63,7 @@ export const columns: ColumnDef<User>[] = [
   {
     accessorKey: "dateRegistered",
     header: "Date Registered",
+    meta: { priority: 3 },
     cell: ({ row }) => {
       const date = row.original.dateRegistered;
       return formatDate(date);
@@ -50,6 +72,7 @@ export const columns: ColumnDef<User>[] = [
   {
     accessorKey: "isDeleted",
     header: "Status",
+    meta: { priority: 1 },
     cell: ({ row }) => {
       const isDeleted = row.original.isDeleted;
 
@@ -74,6 +97,7 @@ export const columns: ColumnDef<User>[] = [
   {
     accessorKey: "lastLogin",
     header: "Last Login",
+    meta: { priority: 3 },
     cell: ({ row }) => {
       const date = row.original.lastLogin;
       return formatDate(date);
@@ -82,10 +106,12 @@ export const columns: ColumnDef<User>[] = [
   {
     accessorKey: "profileImageUrl",
     header: "Image Url",
+    meta: { priority: 3 },
   },
   {
     id: "actions",
     header: "Actions",
+    meta: { priority: 1 },
     cell: ({ row }) => {
       const user = row.original;
 

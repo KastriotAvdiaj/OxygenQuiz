@@ -13,18 +13,19 @@ import CreateUserForm from "./create-user";
 // }
 
 // export const UserControls = ({ onRefresh, exportQuery }: UserControlsProps) => { THIS IS THE OLD ONE, WE DECIDED TO REMOVE REFRESH, EXPORT AND IMPORT
+// The `flex justify-between my-4` row this used to render is gone with the buttons it was
+// spacing: the create action now sits in the page header beside Filters, where it is one
+// flex child among siblings and owns neither the row nor its margins.
 export const UserControls = () => {
   return (
-    <div className="flex items-center justify-between my-4">
-        <CreateUserForm />
-        <div className="flex items-center gap-2">
-{/* 
-        <LiftedButton className="text-xs bg-background text-foreground" onClick={onRefresh}>
-          <RefreshCw className="mr-2 h-4 w-4" />
-          Refresh
-        </LiftedButton>
-       <DataTransferControls entity="users" invalidateKey={["users"]} exportQuery={exportQuery} /> */}
-          </div>
-    </div>
+    <>
+      <CreateUserForm />
+      {/*
+      <LiftedButton className="text-xs bg-background text-foreground" onClick={onRefresh}>
+        <RefreshCw className="mr-2 h-4 w-4" />
+        Refresh
+      </LiftedButton>
+      <DataTransferControls entity="users" invalidateKey={["users"]} exportQuery={exportQuery} /> */}
+    </>
   );
 };

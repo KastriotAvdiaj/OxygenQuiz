@@ -1,6 +1,11 @@
 import { ChevronDown } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { Progress } from "@/components/ui/progress";
 import {
   Tooltip,
@@ -12,7 +17,8 @@ import { cn } from "@/utils/cn";
 import { QuestionType, type AnyQuestion } from "@/types/question-types";
 import type { QuizQuestionAnalyticsRow } from "@/types/analytics-types";
 
-import { MIN_ANSWERS_FOR_RATE, needsALook } from "./thresholds";
+import { formatDurationOr } from "./format-duration";
+import { MIN_ANSWERS_FOR_RATE, needsALook, rateState } from "./thresholds";
 
 /**
  * One question, with its content and its performance in the same row.
@@ -43,49 +49,66 @@ const TYPE_LABELS: Record<QuestionType, string> = {
   [QuestionType.TypeTheAnswer]: "Type The Answer",
 };
 
-const formatSeconds = (seconds: number) => {
-  if (!seconds) return "—";
-  const m = Math.floor(seconds / 60);
-  if (m === 0) return `${seconds.toFixed(1)}s`;
-  return `${m}m ${Math.round(seconds % 60)}s`;
-};
-
 /**
  * The correct-rate cell, or an honest refusal to draw one.
  *
- * Under `MIN_ANSWERS_FOR_RATE` the bar and the percentage are both suppressed. "100%" off a
- * single answer looks exactly like "100%" off two hundred, and the whole point of this column is
- * to make a weak question visible — a column that can't tell those apart does the opposite.
+ * Under `MIN_ANSWERS_FOR_RATE` graded answers the bar and the percentage are both suppressed.
+ * "100%" off a single answer looks exactly like "100%" off two hundred, and the whole point of
+ * this column is to make a weak question visible — a column that can't tell those apart does the
+ * opposite.
+ *
+ * <b>It used to withhold the rate behind a bare em dash</b>, with the reason available only on
+ * hover. On a quiz with a handful of plays that is every row, and a column of identical dashes
+ * reads as a broken feature rather than a deliberate one — which is exactly how it was reported.
+ * The cell now says what it is waiting for, in the cell, and the tooltip only adds the counts.
+ * The em dash is reserved for "we have nothing at all", which is the one case where there is
+ * genuinely nothing to say.
  */
 const CorrectRate = ({ stats }: { stats?: QuizQuestionAnalyticsRow }) => {
-  const answered = stats?.timesAnswered ?? 0;
+  const state = rateState(stats);
 
-  if (answered < MIN_ANSWERS_FOR_RATE) {
+  if (state.kind === "rated") {
     return (
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span className="text-muted-foreground tabular-nums cursor-default">
-              —
-            </span>
-          </TooltipTrigger>
-          <TooltipContent>
-            {answered === 0
-              ? "No answers yet."
-              : `Needs ${MIN_ANSWERS_FOR_RATE} answers before a rate means anything (has ${answered}).`}
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
+      <div className="flex items-center gap-2">
+        <Progress value={stats!.correctRate} className="h-2 w-full min-w-16" />
+        <span className="text-sm tabular-nums w-12 text-right">
+          {stats!.correctRate}%
+        </span>
+      </div>
     );
   }
 
+  // Each branch is a complete literal: Tailwind's JIT only sees classes written out verbatim
+  // (CLAUDE.md, "Tailwind class strings stay complete literals").
+  const { label, detail } =
+    state.kind === "no-answers"
+      ? {
+          label: "Not answered yet",
+          detail: "Nobody has reached this question in a recorded play.",
+        }
+      : state.kind === "awaiting-grading"
+        ? {
+            label: "Awaiting grading",
+            detail: `${state.ungraded} ${
+              state.ungraded === 1 ? "answer is" : "answers are"
+            } queued for background grading. This quiz doesn't show feedback immediately, so answers are scored after the fact.`,
+          }
+        : {
+            label: `${state.graded} of ${MIN_ANSWERS_FOR_RATE} answers`,
+            detail: `A rate needs ${MIN_ANSWERS_FOR_RATE} graded answers before it means anything — off ${state.graded} it would mostly be a coin flip.`,
+          };
+
   return (
-    <div className="flex items-center gap-2">
-      <Progress value={stats!.correctRate} className="h-2 w-full min-w-16" />
-      <span className="text-sm tabular-nums w-12 text-right">
-        {stats!.correctRate}%
-      </span>
-    </div>
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span className="cursor-default text-xs text-muted-foreground tabular-nums">
+            {label}
+          </span>
+        </TooltipTrigger>
+        <TooltipContent className="max-w-xs">{detail}</TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 };
 
@@ -100,77 +123,98 @@ export const QuestionPerformanceRow = ({
   const flagged = needsALook(stats);
 
   return (
-    <div
+    /* Radix `Collapsible` rather than `{isOpen && <panel/>}`. The conditional mounted and
+       unmounted the panel instantly, so a row snapped open and the rows below it jumped — with
+       fifteen questions that is a page that moves under the cursor. Collapsible keeps the panel
+       mounted through the exit animation and publishes its measured height as
+       `--radix-collapsible-content-height`, which is the only way to animate to `auto`.
+
+       Controlled from the table, which owns `openIds`: several rows stay open at once (the task
+       is comparing two weak questions), so this is deliberately not an Accordion. */
+    <Collapsible
+      open={isOpen}
+      onOpenChange={onToggle}
       className={cn(
         "rounded-lg border transition-colors",
         flagged ? "border-l-4 border-l-amber-500 border-border" : "border-border"
       )}
     >
       {/* The whole header is the expand affordance. min-h-11 (44px) per docs/RESPONSIVE.md —
-          this is the row's primary action and it is the one people tap most. */}
-      <button
-        type="button"
-        onClick={onToggle}
-        aria-expanded={isOpen}
-        className="flex min-h-11 w-full items-center gap-3 px-3 py-2.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-lg"
-      >
-        <span className="w-6 shrink-0 text-sm text-muted-foreground tabular-nums">
-          {order}
-        </span>
-
-        {/* min-w-0 so the text truncates instead of squeezing the columns beside it
-            (docs/RESPONSIVE.md, "Rows of buttons"). */}
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-sm font-medium">
-            {question.text}
+          this is the row's primary action and it is the one people tap most. `asChild` keeps
+          the real <button> here rather than nesting one inside Radix's. */}
+      <CollapsibleTrigger asChild>
+        <button
+          type="button"
+          className="flex min-h-11 w-full items-center gap-3 px-3 py-2.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-lg"
+        >
+          <span className="w-6 shrink-0 text-sm text-muted-foreground tabular-nums">
+            {order}
           </span>
-          {/* Below md the numbers move under the text rather than becoming their own
-              columns — a six-column table on a phone is unreadable at any font size. */}
-          <span className="mt-0.5 block text-xs text-muted-foreground md:hidden">
-            {TYPE_LABELS[question.type]}
-            {stats && stats.timesAnswered >= MIN_ANSWERS_FOR_RATE && (
-              <> · {stats.correctRate}% correct</>
-            )}
-            {stats && stats.timesAnswered > 0 && (
-              <> · {formatSeconds(stats.averageTimeSeconds)}</>
-            )}
-          </span>
-        </span>
 
-        <span className="hidden w-32 shrink-0 md:block">
-          {flagged ? (
-            <Badge variant="outline" className="border-amber-500 text-amber-600 dark:text-amber-500">
-              Needs a look
-            </Badge>
-          ) : (
-            <span className="text-xs text-muted-foreground">
-              {TYPE_LABELS[question.type]}
+          {/* min-w-0 so the text truncates instead of squeezing the columns beside it
+              (docs/RESPONSIVE.md, "Rows of buttons"). */}
+          <span className="flex min-w-0 flex-1 flex-col">
+            <span className="flex min-w-0 items-center gap-2">
+              <span className="truncate text-sm font-medium">{question.text}</span>
+              {/* <b>The flag lives here, not in the Type column.</b> It used to REPLACE the
+                  type label — so a flagged row showed "Needs a look" under a heading that
+                  said TYPE, and on a quiz where every question is flagged the Type column
+                  told you nothing about any question's type. Two different facts were
+                  sharing one cell. The badge is `shrink-0` and the text truncates, which is
+                  the right priority: the badge is short and fixed, the text is elastic. */}
+              {flagged && (
+                <Badge
+                  variant="outline"
+                  className="shrink-0 border-amber-500 text-amber-600 dark:text-amber-500"
+                >
+                  Needs a look
+                </Badge>
+              )}
             </span>
-          )}
-        </span>
+            {/* Below md the numbers move under the text rather than becoming their own
+                columns — a six-column table on a phone is unreadable at any font size. */}
+            <span className="mt-0.5 text-xs text-muted-foreground md:hidden">
+              {TYPE_LABELS[question.type]}
+              {rateState(stats).kind === "rated" && (
+                <> · {stats!.correctRate}% correct</>
+              )}
+              {stats && stats.timesAnswered > 0 && (
+                <> · {formatDurationOr(stats.averageTimeSeconds, "—")}</>
+              )}
+            </span>
+          </span>
 
-        <span className="hidden w-40 shrink-0 md:block">
-          <CorrectRate stats={stats} />
-        </span>
+          {/* Always the type. That is what the column heading promises. */}
+          <span className="hidden w-32 shrink-0 text-xs text-muted-foreground md:block">
+            {TYPE_LABELS[question.type]}
+          </span>
 
-        <span className="hidden w-16 shrink-0 text-right text-sm text-muted-foreground tabular-nums md:block">
-          {stats ? formatSeconds(stats.averageTimeSeconds) : "—"}
-        </span>
+          <span className="hidden w-40 shrink-0 md:block">
+            <CorrectRate stats={stats} />
+          </span>
 
-        <span className="hidden w-16 shrink-0 text-right text-sm text-muted-foreground tabular-nums sm:block">
-          {stats?.timesAnswered ?? 0}
-        </span>
+          <span className="hidden w-16 shrink-0 text-right text-sm text-muted-foreground tabular-nums md:block">
+            {stats ? formatDurationOr(stats.averageTimeSeconds, "—") : "—"}
+          </span>
 
-        <ChevronDown
-          className={cn(
-            "h-4 w-4 shrink-0 text-muted-foreground transition-transform",
-            isOpen && "rotate-180"
-          )}
-          aria-hidden
-        />
-      </button>
+          <span className="hidden w-16 shrink-0 text-right text-sm text-muted-foreground tabular-nums sm:block">
+            {stats?.timesAnswered ?? 0}
+          </span>
 
-      {isOpen && (
+          <ChevronDown
+            className={cn(
+              "h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200",
+              isOpen && "rotate-180"
+            )}
+            aria-hidden
+          />
+        </button>
+      </CollapsibleTrigger>
+
+      {/* `overflow-hidden` is what makes the height animation crop rather than spill.
+          `motion-reduce:animate-none` honours the OS setting the same way the loading wave
+          does in global.css — the panel still opens, it just arrives rather than travels. */}
+      <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down motion-reduce:animate-none">
         <div className="border-t border-border px-3 py-3">
           <QuestionDetail
             question={question}
@@ -178,8 +222,8 @@ export const QuestionPerformanceRow = ({
             timeLimitInSeconds={timeLimitInSeconds}
           />
         </div>
-      )}
-    </div>
+      </CollapsibleContent>
+    </Collapsible>
   );
 };
 
@@ -211,17 +255,24 @@ const QuestionDetail = ({
       <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
         Details
       </p>
-      <MetaLine label="Question ID" value={question.id} />
+      {/* No question id. It is a primary key — it identifies the row to a query and nothing
+          to the author deciding whether this question needs rewriting, which is the only
+          reason anyone opens this panel. */}
       <MetaLine label="Authored difficulty" value={question.difficulty?.level ?? "—"} />
       <MetaLine
         label="Time limit"
-        value={timeLimitInSeconds ? `${timeLimitInSeconds}s` : "None"}
+        value={formatDurationOr(timeLimitInSeconds, "None")}
       />
       {stats && (
         <MetaLine
           label="Correct / incorrect"
           value={`${stats.correctCount} / ${stats.incorrectCount}`}
         />
+      )}
+      {/* Only when it isn't zero: on an instant-feedback quiz it always is, and a permanent
+          "Awaiting grading 0" would be noise on every row of every such quiz. */}
+      {stats && stats.ungradedCount > 0 && (
+        <MetaLine label="Awaiting grading" value={stats.ungradedCount} />
       )}
     </div>
   </div>

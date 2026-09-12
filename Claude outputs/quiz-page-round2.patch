@@ -1,0 +1,990 @@
+# Round 2 — diffs by topic
+
+Already written into the repo; grouped here for review.
+
+==============================================================================
+GRADING — the retry bug the trace turned up
+==============================================================================
+
+--- a/OxygenBackend/QuizAPI/Controllers/Quizzes/Services/QuizSessionServices/AnswerGradingService/AnswerGradingService.cs
++++ b/OxygenBackend/QuizAPI/Controllers/Quizzes/Services/QuizSessionServices/AnswerGradingService/AnswerGradingService.cs
+@@ -137,8 +137,30 @@
+ 
+                 if (userAnswer == null)
+                 {
+-                    _logger.LogError("UserAnswer {UserAnswerId} not found after 5 attempts - this should not happen with the new flow", userAnswerId);
+-                    return; // Let Hangfire retry the entire job
++                    // A guest's answers are DELETED the moment they view their results, and the
++                    // abandonment sweep deletes them too (docs/auth/guest-play.md) — so a missing
++                    // row is routine on that path and there is nothing left to grade. Returning
++                    // is correct there, and only there.
++                    var rowWasDeleted = !await context.UserAnswers.AnyAsync(ua => ua.Id == userAnswerId);
++                    if (rowWasDeleted)
++                    {
++                        _logger.LogInformation(
++                            "UserAnswer {UserAnswerId} no longer exists — session was deleted (guest play or abandonment sweep). Nothing to grade.",
++                            userAnswerId);
++                        return;
++                    }
++
++                    // Otherwise the row exists and we simply could not read it. THROW, don't
++                    // return: a Hangfire job that returns normally is recorded as **Succeeded**
++                    // and never retried, so the `return` that used to sit here — with the comment
++                    // "Let Hangfire retry the entire job" — did the exact opposite of what it
++                    // said. The answer stayed Pending forever, and the only trace was this log
++                    // line. [AutomaticRetry] above gives three more attempts at 5s/30s/60s.
++                    _logger.LogError(
++                        "UserAnswer {UserAnswerId} could not be read after 5 attempts though the row exists - failing the job so Hangfire retries",
++                        userAnswerId);
++                    throw new InvalidOperationException(
++                        $"UserAnswer {userAnswerId} could not be loaded for grading.");
+                 }
+ 
+                 // Skip if already graded (in case of retry after partial success)
+
+==============================================================================
+TIMEZONE — bucket days in the viewer's clock
+==============================================================================
+
+--- a/OxygenBackend/QuizAPI/DTOs/Reports/ReportDtos.cs
++++ b/OxygenBackend/QuizAPI/DTOs/Reports/ReportDtos.cs
+@@ -9,6 +9,27 @@
+     {
+         public DateTime? From { get; set; }
+         public DateTime? To { get; set; }
++
++        /// <summary>
++        /// The viewer's IANA time zone (<c>Europe/Belgrade</c>), from the browser's
++        /// <c>Intl.DateTimeFormat().resolvedOptions().timeZone</c>. Decides which calendar day an
++        /// attempt is counted under — see <see cref="OffsetMinutes"/> and
++        /// <c>ReportService.ResolveViewerZone</c>. Omitted or unrecognised ⇒ UTC.
++        /// </summary>
++        public string? TimeZone { get; set; }
++
++        /// <summary>
++        /// Fallback for <see cref="TimeZone"/>: the viewer's current UTC offset in minutes, east
++        /// of UTC positive (so UTC+2 is <c>120</c>). Note this is the **inverse** of JavaScript's
++        /// <c>getTimezoneOffset()</c>, which returns -120 for the same zone; the client negates
++        /// before sending.
++        ///
++        /// Used only when the IANA name can't be resolved, which happens if the container is ever
++        /// built without tzdata. It is a fixed offset, so it is wrong for attempts on the other
++        /// side of a DST boundary — but wrong by an hour beats wrong by a whole day, which is
++        /// what falling all the way back to UTC would mean for anyone east of Greenwich.
++        /// </summary>
++        public int? OffsetMinutes { get; set; }
+     }
+ 
+     /// <summary>One row of the Quiz Performance report — aggregates for a quiz the user owns.</summary>
+@@ -66,6 +87,17 @@
+     /// <summary>Attempts (and completions) started on a given day, for the trend chart.</summary>
+     public sealed class AttemptsByDayPoint
+     {
++        /// <summary>
++        /// Midnight on the day this bucket covers, <b>in the viewer's time zone</b>, with
++        /// <see cref="DateTimeKind.Unspecified"/> — so it serializes as <c>2026-09-11T00:00:00</c>
++        /// with **no trailing Z**.
++        ///
++        /// That absent Z is load-bearing. It is a wall-clock date, not an instant, and JavaScript
++        /// parses an offset-less date-time as local time — so `new Date(point.date)` in the
++        /// browser lands on the same calendar day the server bucketed it under. Stamping it Utc
++        /// (which is what produced the old <c>T00:00:00Z</c>) would make every client west of
++        /// Greenwich render the label one day early.
++        /// </summary>
+         public DateTime Date { get; set; }
+         public int Attempts { get; set; }
+         public int Completed { get; set; }
+--- a/OxygenBackend/QuizAPI/Services/Reports/ReportService.cs
++++ b/OxygenBackend/QuizAPI/Services/Reports/ReportService.cs
+@@ -18,13 +18,19 @@
+     public class ReportService : IReportService
+     {
+         private readonly ApplicationDbContext _context;
+-
+-        public ReportService(ApplicationDbContext context) => _context = context;
++        private readonly ILogger<ReportService> _logger;
++
++        public ReportService(ApplicationDbContext context, ILogger<ReportService> logger)
++        {
++            _context = context;
++            _logger = logger;
++        }
+ 
+         public async Task<List<QuizPerformanceRow>> GetQuizPerformanceAsync(
+             Guid userId, ReportCriteria criteria, CancellationToken ct = default)
+         {
+-            var (from, toExclusive) = NormalizeRange(criteria);
++            var zone = ResolveViewerZone(criteria);
++            var (from, toExclusive) = NormalizeRange(criteria, zone);
+ 
+             // The user's quizzes (so quizzes with no attempts still appear).
+             var quizzes = await _context.Quizzes.AsNoTracking()
+@@ -79,7 +85,8 @@
+         public async Task<List<QuestionAnalyticsRow>> GetQuestionAnalyticsAsync(
+             Guid userId, ReportCriteria criteria, CancellationToken ct = default)
+         {
+-            var (from, toExclusive) = NormalizeRange(criteria);
++            var zone = ResolveViewerZone(criteria);
++            var (from, toExclusive) = NormalizeRange(criteria, zone);
+ 
+             // The user's questions (so unanswered ones still appear).
+             var questions = await _context.Questions.AsNoTracking()
+@@ -143,7 +150,8 @@
+         public async Task<QuizAnalyticsDto?> GetQuizAnalyticsAsync(
+             Guid? ownerId, int quizId, ReportCriteria criteria, CancellationToken ct = default)
+         {
+-            var (from, toExclusive) = NormalizeRange(criteria);
++            var zone = ResolveViewerZone(criteria);
++            var (from, toExclusive) = NormalizeRange(criteria, zone);
+ 
+             // Ownership clamp, not a permission check — the controller has already decided whether
+             // this caller may act (CLAUDE.md, "Permission checks in the controller, ownership clamps
+@@ -263,18 +271,88 @@
+                     QuizScoring.PointsForCorrectAnswer(
+                         TimeSpan.Zero, q.TimeLimitInSeconds, q.PointSystem)),
+                 ScoreDistribution = BuildScoreDistribution(completed.Select(a => a.TotalScore).ToList()),
+-                AttemptsOverTime = sessions
+-                    .GroupBy(s => s.StartTime.Date)
+-                    .OrderBy(g => g.Key)
+-                    .Select(g => new AttemptsByDayPoint
+-                    {
+-                        Date = g.Key,
+-                        Attempts = g.Count(),
+-                        Completed = g.Count(s => s.IsCompleted),
+-                    })
+-                    .ToList(),
++                AttemptsOverTime = BuildAttemptsOverTime(
++                    sessions.Select(s => (s.StartTime, s.IsCompleted, s.Abandoned)), zone),
+                 Questions = questionRows,
+             };
++        }
++
++        /// <summary>
++        /// Which calendar day each attempt is counted under, and in whose clock.
++        ///
++        /// <b>This used to group on <c>s.StartTime.Date</c> — the raw UTC date.</b> Storage was
++        /// never the problem: <c>StartTime</c> is written from <c>DateTime.UtcNow</c> into a
++        /// <c>timestamp with time zone</c> column and read back as <c>Kind=Utc</c>, so the
++        /// *instant* of every attempt is exact. Truncating that instant in UTC was the bug — a
++        /// play at 01:00 in UTC+2 was charted on the previous day, and an owner in Prishtina
++        /// reading their own quiz's chart saw their evening plays land on yesterday.
++        ///
++        /// Shifting into the viewer's zone first answers the question this panel is actually
++        /// asked: "when are attempts arriving, in my time". It does **not** answer "what time of
++        /// day do players play" — that needs the player's own zone captured at session creation,
++        /// which is a new nullable column and a separate piece of work
++        /// (docs/proposals/quiz-view-redesign.md §8, step 2).
++        ///
++        /// The grouping already ran in memory after <c>.ToListAsync()</c>, so this costs nothing
++        /// extra in SQL.
++        ///
++        /// <b>Completed counts only genuine completions</b>, matching the headline figure.
++        /// Abandoned-by-timeout sessions carry <c>IsCompleted = true</c>, and the old
++        /// <c>g.Count(s => s.IsCompleted)</c> here counted them — so the chart's Completed series
++        /// could run above the completion rate printed beside it.
++        /// </summary>
++        private static List<AttemptsByDayPoint> BuildAttemptsOverTime(
++            IEnumerable<(DateTime StartTime, bool IsCompleted, bool Abandoned)> sessions,
++            TimeZoneInfo zone) =>
++            sessions
++                .GroupBy(s => TimeZoneInfo.ConvertTimeFromUtc(
++                    DateTime.SpecifyKind(s.StartTime, DateTimeKind.Utc), zone).Date)
++                .OrderBy(g => g.Key)
++                .Select(g => new AttemptsByDayPoint
++                {
++                    // Unspecified, not Utc: this is a wall-clock day in the viewer's zone, and
++                    // the absent trailing Z is what makes the browser read it as one. See
++                    // AttemptsByDayPoint.Date.
++                    Date = DateTime.SpecifyKind(g.Key, DateTimeKind.Unspecified),
++                    Attempts = g.Count(),
++                    Completed = g.Count(s => s.IsCompleted && !s.Abandoned),
++                })
++                .ToList();
++
++        /// <summary>
++        /// The zone to bucket days in: the caller's IANA name, else their raw UTC offset, else
++        /// UTC.
++        ///
++        /// The offset fallback exists because <c>FindSystemTimeZoneById</c> needs tzdata, and
++        /// whether the runtime image ships it is a deployment property rather than something this
++        /// code can assert. If the name ever fails to resolve, an offset is still far closer than
++        /// UTC — see <see cref="ReportCriteria.OffsetMinutes"/> for what it gives up.
++        /// </summary>
++        private TimeZoneInfo ResolveViewerZone(ReportCriteria criteria)
++        {
++            if (!string.IsNullOrWhiteSpace(criteria.TimeZone))
++            {
++                try
++                {
++                    return TimeZoneInfo.FindSystemTimeZoneById(criteria.TimeZone);
++                }
++                catch (Exception ex) when (
++                    ex is TimeZoneNotFoundException || ex is InvalidTimeZoneException)
++                {
++                    _logger.LogWarning(ex,
++                        "Unknown time zone '{TimeZone}' — is tzdata present in the image? Falling back to the reported offset, then UTC.",
++                        criteria.TimeZone);
++                }
++            }
++
++            if (criteria.OffsetMinutes is int minutes && Math.Abs(minutes) <= 14 * 60)
++            {
++                var offset = TimeSpan.FromMinutes(minutes);
++                var id = $"UTC{(minutes < 0 ? '-' : '+')}{offset.Duration():hh\\:mm}";
++                return TimeZoneInfo.CreateCustomTimeZone(id, offset, id, id);
++            }
++
++            return TimeZoneInfo.Utc;
+         }
+ 
+         // Bucket completed-attempt scores into 5 equal-width bands from 0 to the highest score.
+@@ -306,18 +384,38 @@
+ 
+         // Date-only criteria read inclusively: "from" snaps to the start of the day, "to" to the
+         // start of the next day (so the whole "to" day is included). The timestamps are stored as
+-        // UTC (timestamptz), and Npgsql requires comparison values to be Kind=Utc, so we mark them.
+-        private static (DateTime? From, DateTime? ToExclusive) NormalizeRange(ReportCriteria criteria)
+-        {
+-            DateTime? from = criteria.From.HasValue
+-                ? DateTime.SpecifyKind(criteria.From.Value.Date, DateTimeKind.Utc)
+-                : null;
+-
+-            DateTime? toExclusive = criteria.To.HasValue
+-                ? DateTime.SpecifyKind(criteria.To.Value.Date.AddDays(1), DateTimeKind.Utc)
+-                : null;
+-
+-            return (from, toExclusive);
++        // UTC (timestamptz), and Npgsql requires comparison values to be Kind=Utc, so we convert.
++        //
++        // The day boundaries are anchored in the CALLER'S zone, for the same reason the buckets
++        // are: "attempts from the 1st to the 7th" should mean the caller's 1st and 7th. With no
++        // zone supplied the zone resolves to UTC and this behaves exactly as it did — which is
++        // the case for both other reports, neither of which sends one.
++        private static (DateTime? From, DateTime? ToExclusive) NormalizeRange(
++            ReportCriteria criteria, TimeZoneInfo zone)
++        {
++            return (
++                criteria.From.HasValue ? StartOfDayUtc(criteria.From.Value, zone) : null,
++                criteria.To.HasValue ? StartOfDayUtc(criteria.To.Value.AddDays(1), zone) : null);
++        }
++
++        /// <summary>
++        /// Midnight on <paramref name="local"/> in <paramref name="zone"/>, as a UTC instant.
++        ///
++        /// A handful of zones spring forward AT midnight (so 00:00 simply does not exist on that
++        /// date) and a few fall back through it (so it happens twice). `ConvertTimeToUtc` throws
++        /// on the first and silently picks standard time on the second, and neither is worth
++        /// failing a report over: walk forward to the first valid minute instead.
++        /// </summary>
++        private static DateTime StartOfDayUtc(DateTime local, TimeZoneInfo zone)
++        {
++            var midnight = DateTime.SpecifyKind(local.Date, DateTimeKind.Unspecified);
++
++            for (var i = 0; i < 180 && zone.IsInvalidTime(midnight); i++)
++                midnight = midnight.AddMinutes(1);
++
++            return zone.IsInvalidTime(midnight)
++                ? DateTime.SpecifyKind(local.Date, DateTimeKind.Utc)
++                : TimeZoneInfo.ConvertTimeToUtc(midnight, zone);
+         }
+ 
+         /// <summary>
+--- a/OxygenBackend/QuizAPI/Controllers/Reports/ReportsController.cs
++++ b/OxygenBackend/QuizAPI/Controllers/Reports/ReportsController.cs
+@@ -59,6 +59,11 @@
+         }
+ 
+         // ── Single-quiz analytics (individual quiz page) ──────────────────────────
++        //
++        // `criteria.timeZone` / `criteria.offsetMinutes` decide which calendar day each attempt
++        // is counted under. They are the caller's own clock, not a permission, so there is
++        // nothing to validate beyond what ReportService already does — an unrecognised zone
++        // degrades to the offset and then to UTC rather than failing the request.
+         [HttpGet("quiz/{quizId:int}/analytics")]
+         public async Task<IActionResult> QuizAnalytics(int quizId, [FromQuery] ReportCriteria criteria, CancellationToken ct)
+         {
+--- a/src/pages/Dashboard/Pages/Quiz/api/get-quiz-analytics.ts
++++ b/src/pages/Dashboard/Pages/Quiz/api/get-quiz-analytics.ts
+@@ -2,17 +2,48 @@
+ import { apiService } from "@/lib/Api-client";
+ import { QueryConfig } from "@/lib/React-query";
+ import { QuizAnalytics } from "@/types/analytics-types";
++
++/**
++ * The viewer's clock, as the server needs it to bucket attempts by day.
++ *
++ * The server has no way to know whose day a play belongs to — it only has the UTC instant — so
++ * until this was sent, `attemptsOverTime` was grouped by the **server's** UTC date and an attempt
++ * at 01:00 in UTC+2 was charted on the previous day.
++ *
++ * Two values, because the IANA name needs tzdata present in the API image and that is a property
++ * of the deployment rather than something the client can check. `offsetMinutes` is the backstop:
++ * a fixed offset is wrong across a DST boundary, but wrong by an hour beats wrong by a day.
++ *
++ * Note the negation — `getTimezoneOffset()` returns **-120** for UTC+2 (it is the offset to add
++ * to local time to reach UTC), and the API wants the conventional east-positive form.
++ */
++const viewerClock = () => {
++  let timeZone: string | undefined;
++  try {
++    timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || undefined;
++  } catch {
++    // Intl is present everywhere we support, but resolvedOptions() can throw on a locked-down
++    // runtime. The offset below is enough on its own.
++    timeZone = undefined;
++  }
++  return { timeZone, offsetMinutes: -new Date().getTimezoneOffset() };
++};
+ 
+ export const getQuizAnalytics = ({
+   quizId,
+ }: {
+   quizId: number;
+ }): Promise<QuizAnalytics> => {
+-  return apiService.get(`/reports/quiz/${quizId}/analytics`);
++  return apiService.get(`/reports/quiz/${quizId}/analytics`, {
++    params: viewerClock(),
++  });
+ };
+ 
+ export const getQuizAnalyticsQueryOptions = (quizId: number) => {
+   return queryOptions({
++    // The zone is NOT part of the key. It is stable for the life of a session, and a viewer who
++    // crosses a boundary mid-session gets the new bucketing on the next natural refetch — not
++    // worth a cache miss on every mount to pre-empt.
+     queryKey: ["quiz", quizId, "analytics"],
+     queryFn: () => getQuizAnalytics({ quizId }),
+   });
+--- a/src/types/analytics-types.ts
++++ b/src/types/analytics-types.ts
+@@ -7,8 +7,15 @@
+ };
+ 
+ export type AttemptsByDayPoint = {
+-  date: string; // ISO date
++  /**
++   * Midnight on this bucket's day **in the viewer's time zone**, serialized without an offset
++   * (`2026-09-11T00:00:00`). The missing `Z` matters: JavaScript reads an offset-less date-time
++   * as local, which is what makes `new Date(point.date)` land on the day the server counted.
++   * Never re-format this with `timeZone: "UTC"`.
++   */
++  date: string;
+   attempts: number;
++  /** Genuine completions only — sessions the abandonment sweep flagged are excluded. */
+   completed: number;
+ };
+ 
+--- a/src/pages/Dashboard/Pages/Quiz/components/quiz-view/attempts-chart.tsx
++++ b/src/pages/Dashboard/Pages/Quiz/components/quiz-view/attempts-chart.tsx
+@@ -34,11 +34,10 @@
+ /**
+  * Tooltip heading: long, because there is one of them and it should read as a sentence.
+  *
+- * The value it receives is a **UTC day bucket** — `ReportService` groups on `s.StartTime.Date`,
+- * so it arrives as an ISO midnight (`2026-09-11T00:00:00Z`). Formatting it in the viewer's zone
+- * would shift the label off the bucket it names (a UTC midnight is the *previous* evening west
+- * of Greenwich), so the parts are read back in UTC to keep the label matching the data. The
+- * bucketing itself being UTC is a separate, real defect — see the component note below.
++ * <b>No `timeZone` override, deliberately.</b> The server now buckets in the viewer's own zone
++ * and sends each key as an offset-less `2026-09-11T00:00:00`, which JavaScript parses as local
++ * midnight — so the default (local) formatting lands on exactly the day the bucket counts.
++ * Forcing UTC here, as this did while the buckets were UTC, would now undo the fix.
+  */
+ const formatDayLong = (iso: string) =>
+   new Date(iso).toLocaleDateString(undefined, {
+@@ -46,7 +45,6 @@
+     day: "numeric",
+     month: "long",
+     year: "numeric",
+-    timeZone: "UTC",
+   });
+ 
+ export interface AttemptsChartProps {
+@@ -70,10 +68,15 @@
+  * to get two plays on a Tuesday would appear to be growing. Past the threshold, where a
+  * direction means something, the area chart returns unchanged.
+  *
+- * <b>Days are bucketed by the server in UTC</b> (`ReportService`, `s.StartTime.Date`), so a play
+- * at 01:00 in UTC+2 lands on the previous day here. That is a real defect and it is not fixed in
+- * this component — the fix belongs where the bucketing happens. See
+- * docs/proposals/quiz-view-redesign.md §8 and docs/deployment/known-issues.md.
++ * <b>Days are bucketed in the viewer's time zone</b>, not the server's. The client sends its
++ * IANA zone with the analytics request and `ReportService` shifts each `StartTime` into it before
++ * truncating, so a play at 01:00 in UTC+2 is counted on the day its player experienced. Keys
++ * therefore arrive offset-less (`2026-09-11T00:00:00`) and must be read as local — see
++ * `formatDayLong`. docs/quiz/quiz-analytics-page.md has the whole path.
++ *
++ * This is not the same as "what time of day do players play": that needs each player's own zone
++ * recorded at session creation, which nothing stores yet
++ * (docs/proposals/quiz-view-redesign.md §8, step 2).
+  */
+ export const AttemptsChart = ({ points, totalAttempts }: AttemptsChartProps) => {
+   if (totalAttempts < MIN_ATTEMPTS_FOR_TREND) {
+
+==============================================================================
+IDS REMOVED + LOADER + CARD WIDTH + TWO COLUMNS
+==============================================================================
+
+--- a/src/layouts/individual-content-layout.tsx
++++ b/src/layouts/individual-content-layout.tsx
+@@ -3,31 +3,46 @@
+ import { cn } from "@/utils/cn";
+ 
+ interface ContentLayoutProps {
+-  title: string;
++  /**
++   * Heading for the card's own header bar. **Optional**: a page whose content already opens with
++   * its own `<h1>` should omit it rather than print a second, smaller title above the first.
++   * When omitted the header bar is not rendered at all — no empty strip, no stray border.
++   */
++  title?: string;
+   children: React.ReactNode;
+   /**
+-   * Classes for the content box inside the card — a page that wants a reading measure passes
+-   * `mx-auto w-full max-w-5xl` here rather than wrapping its own children, which would mean
+-   * re-indenting the entire page body around a presentational div.
++   * Classes for the card itself — pass `mx-auto max-w-5xl` to make the card hug its content
++   * instead of spanning the viewport.
++   *
++   * This belongs on the **card**, not on the content box inside it. Constraining only the inner
++   * box (which is what `contentClassName` did) leaves the card at full width with a wide empty
++   * band down each side of the content — the frame says "this is how much room there is" while
++   * the content sits in the middle ignoring it.
+    *
+    * Opt-in, and deliberately not a default: this layout is shared with the dashboard's wide
+-   * data-table pages, which want every pixel of a large monitor. A page whose widest element is
+-   * a paragraph or a six-column row does not, and constraining it is how the two stop fighting.
++   * data-table pages, which want every pixel of a large monitor.
+    */
+-  contentClassName?: string;
++  className?: string;
+ }
+ 
+ export const ContentLayout: React.FC<ContentLayoutProps> = ({
+   title,
+   children,
+-  contentClassName,
++  className,
+ }) => {
+   return (
+-    <Card className="w-full mt-4 bg-background border border-border shadow-lg">
+-      <CardHeader className="border-b border-input mb-4">
+-        <CardTitle>{title}</CardTitle>
+-      </CardHeader>
+-      <CardContent className={cn(contentClassName)}>{children}</CardContent>
++    <Card
++      className={cn(
++        "w-full mt-4 bg-background border border-border shadow-lg",
++        className
++      )}
++    >
++      {title && (
++        <CardHeader className="border-b border-input mb-4">
++          <CardTitle>{title}</CardTitle>
++        </CardHeader>
++      )}
++      <CardContent className={cn(!title && "pt-6")}>{children}</CardContent>
+     </Card>
+   );
+ };
+--- a/src/pages/Dashboard/Pages/Quiz/Quiz.tsx
++++ b/src/pages/Dashboard/Pages/Quiz/Quiz.tsx
+@@ -2,7 +2,7 @@
+ import { useParams, useNavigate } from "react-router";
+ import { Edit2, EyeOff, Eye, MoreHorizontal, Share2, Trash2 } from "lucide-react";
+ 
+-import { Spinner } from "@/components/ui";
++import { LoadingWave } from "@/components/ui";
+ import { Badge } from "@/components/ui/badge";
+ import { Button } from "@/components/ui/button";
+ import { Separator } from "@/components/ui/separator";
+@@ -122,12 +122,12 @@
+   };
+ 
+   if (quizQuery.isLoading) {
++    // `LoadingWave` is the app's loader now; `Spinner` is what this page was written against
++    // before that. The word carries the message, so the "Loading quiz..." line underneath is
++    // gone with it — it was saying the same thing twice.
+     return (
+-      <div className="w-full h-full flex items-center justify-center">
+-        <div className="flex flex-col items-center gap-4">
+-          <Spinner size="lg" />
+-          <p className="text-muted-foreground">Loading quiz...</p>
+-        </div>
++      <div className="w-full h-full flex items-center justify-center py-16">
++        <LoadingWave size="lg" variant="muted" />
+       </div>
+     );
+   }
+@@ -152,15 +152,17 @@
+   const isDraft = quiz.status === "Draft";
+ 
+   return (
+-    // <b>One measure for the whole page.</b> This card was full-bleed, so every section
+-    // below ran the full width of the viewport: on a wide monitor the hero description became
+-    // a single 200-character line, the stat tiles stretched into letterboxes, and a question
+-    // row put its text at one edge and its numbers at the other with a hand's width of nothing
+-    // between them. `max-w-5xl` (1024px) is what the widest thing here actually needs — the
+-    // six-column question row — and `contentClassName` centres it, once, for every section
+-    // rather than six sections each picking their own width. Opt-in, because the dashboard's
+-    // data-table pages share this layout and want the room.
+-    <ContentLayout title={`Quiz #${quiz.id}`} contentClassName="mx-auto w-full max-w-5xl">
++    // <b>The card is the width of what is in it.</b> Constraining the inner content box was
++    // half a fix: the card still spanned the viewport, so the content sat centred inside a
++    // frame with a wide empty band down each side. `max-w-5xl` (1024px) is what the widest
++    // element here actually needs — the six-column question row — and it now applies to the
++    // card, so the border tracks the content instead of the window.
++    //
++    // <b>No card title.</b> It read "Quiz #37": a database id, above an <h1> that already
++    // carries the quiz's name. Nobody looking at a quiz needs its primary key, and two
++    // headings for one page is one too many. `ContentLayout` drops the header bar entirely
++    // when no title is passed.
++    <ContentLayout className="mx-auto max-w-5xl">
+       {/* ── Actions, at the top. They used to sit under the tabs, which put the primary
+           actions for the page below everything on it. Delete is here too now, but one level
+           down in the overflow menu — see the footer note. */}
+@@ -350,7 +352,7 @@
+       <section className="space-y-4 py-6">
+         {analyticsQuery.isLoading ? (
+           <div className="flex justify-center py-8">
+-            <Spinner size="lg" />
++            <LoadingWave size="md" variant="muted" />
+           </div>
+         ) : !analytics ? (
+           <p className="text-sm text-muted-foreground">
+@@ -362,8 +364,17 @@
+             {SIGNED_IN_ONLY_NOTE}
+           </p>
+         ) : (
+-          <>
+-            <QuizStatStrip analytics={analytics} />
++          /* <b>Two columns from `lg` up, one below.</b> Stacked, these two blocks left a
++             full-width strip of tiles above a full-width panel holding three lines of text —
++             a lot of vertical travel for very little, and the reason the card felt oversized
++             even once its width was fixed. Side by side they read as one answer to one
++             question: how much play, and when.
++
++             The stat tiles switch to a 2-wide grid inside the left column (see
++             `QuizStatStrip`'s `columns` prop) because five tiles in a row do not fit half a
++             card. Below `lg` the grid collapses and the original stacked order returns. */
++          <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
++            <QuizStatStrip analytics={analytics} columns="two" />
+             <div className="rounded-lg border border-border p-4">
+               {/* The heading follows the representation. Below the trend threshold the panel
+                   is a list of the days that had plays, and calling that "over time" promises
+@@ -378,7 +389,7 @@
+                 totalAttempts={analytics.attempts}
+               />
+             </div>
+-          </>
++          </div>
+         )}
+       </section>
+ 
+@@ -388,7 +399,7 @@
+       <section className="py-6">
+         {questionsQuery.isLoading ? (
+           <div className="flex justify-center py-8">
+-            <Spinner size="lg" />
++            <LoadingWave size="md" variant="muted" />
+           </div>
+         ) : (
+           <QuestionPerformanceTable
+@@ -400,16 +411,20 @@
+ 
+       <Separator />
+ 
+-      {/* ── Footer: the identifiers nobody needs while working.
++      {/* ── Footer.
+           <b>Delete has moved out of here.</b> It used to float loose at the bottom of the page
+           as a red lifted button with nothing around it — the largest, loudest control on the
+           screen, in the one place where nothing else competed for attention, reachable by
+           scrolling to the end and clicking once. It now sits in the overflow menu beside the
+-          other actions: destructive, marked as such, and two deliberate clicks away. */}
++          other actions: destructive, marked as such, and two deliberate clicks away.
++
++          <b>The quiz id has gone too.</b> It is a primary key; it means something to a query
++          and nothing to the person reading the page. Version stays — it is a fact about the
++          quiz's own history (every edit retires rows and bumps it, see
++          docs/quiz/quiz-editing.md) and it explains why an old session can be playing
++          different questions from the ones listed above. */}
+       <footer className="py-6">
+-        <p className="text-xs text-muted-foreground">
+-          Quiz ID {quiz.id} · Version {quiz.version}
+-        </p>
++        <p className="text-xs text-muted-foreground">Version {quiz.version}</p>
+       </footer>
+     </ContentLayout>
+   );
+--- a/src/pages/Dashboard/Pages/Quiz/components/quiz-view/quiz-stat-strip.tsx
++++ b/src/pages/Dashboard/Pages/Quiz/components/quiz-view/quiz-stat-strip.tsx
+@@ -32,23 +32,43 @@
+  * doesn't return (it takes no range from this page). See docs/proposals/quiz-view-redesign.md §2
+  * — a plausible-looking number invented on the client is worse than no number.
+  */
+-export const QuizStatStrip = ({ analytics }: { analytics: QuizAnalytics }) => {
++export interface QuizStatStripProps {
++  analytics: QuizAnalytics;
++  /**
++   * How wide the strip may spread on a large screen. `"row"` puts every tile on one line;
++   * `"two"` keeps it two-wide, for a strip sharing the row with something else.
++   *
++   * A prop rather than a guess from the container, because the two callers want genuinely
++   * different things and a tile grid cannot read its own available width without measuring —
++   * which would be an Effect synchronising with the DOM to decide a layout Tailwind can express
++   * directly.
++   */
++  columns?: "row" | "two";
++}
++
++export const QuizStatStrip = ({
++  analytics,
++  columns = "row",
++}: QuizStatStripProps) => {
+   const singleAttempt = analytics.attempts === 1;
+   const outOf =
+     analytics.maxPossibleScore > 0
+       ? `of ${formatScore(analytics.maxPossibleScore)} possible`
+       : undefined;
+ 
++  // Complete literals, picked between — never an interpolated column count (CLAUDE.md,
++  // "Tailwind class strings stay complete literals"). In `row` mode the track has to match the
++  // tile count exactly, and collapsing the score pair changes that from five to four: a
++  // five-column track holding four tiles leaves a gap on the end.
++  const track =
++    columns === "two"
++      ? "sm:grid-cols-2"
++      : singleAttempt
++        ? "lg:grid-cols-4"
++        : "lg:grid-cols-5";
++
+   return (
+-    // Two complete literals, picked between — never an interpolated column count (CLAUDE.md,
+-    // "Tailwind class strings stay complete literals"). Collapsing the score pair changes the
+-    // tile count from five to four, and a five-column track holding four tiles leaves a gap.
+-    <div
+-      className={cn(
+-        "grid grid-cols-2 gap-3",
+-        singleAttempt ? "lg:grid-cols-4" : "lg:grid-cols-5"
+-      )}
+-    >
++    <div className={cn("grid grid-cols-2 gap-3", track)}>
+       <StatTile
+         label="Attempts"
+         value={analytics.attempts}
+--- a/src/pages/Dashboard/Pages/Quiz/components/quiz-view/question-performance-row.tsx
++++ b/src/pages/Dashboard/Pages/Quiz/components/quiz-view/question-performance-row.tsx
+@@ -229,7 +229,9 @@
+       <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+         Details
+       </p>
+-      <MetaLine label="Question ID" value={question.id} />
++      {/* No question id. It is a primary key — it identifies the row to a query and nothing
++          to the author deciding whether this question needs rewriting, which is the only
++          reason anyone opens this panel. */}
+       <MetaLine label="Authored difficulty" value={question.difficulty?.level ?? "—"} />
+       <MetaLine
+         label="Time limit"
+
+==============================================================================
+DOCS
+==============================================================================
+
+--- a/docs/quiz/quiz-analytics-page.md
++++ b/docs/quiz/quiz-analytics-page.md
+@@ -94,10 +94,21 @@
+ - `ungradedCount` — the remainder, i.e. `Pending`.
+ 
+ A quiz with `ShowFeedbackImmediately = false` persists answers as `Pending` and grades them in a
+-background job, and `SubmitAnswerService.TryEnqueueBackgroundGrading` logs-and-continues when the
+-enqueue fails — so an answer can sit `Pending` indefinitely. Counting those in the denominator made
+-a perfectly good question read as 0% correct. A timeout *does* count as graded: the player was
+-shown the question and did not answer it correctly in time, which is what the rate measures.
++Hangfire job. **Nothing grades them at the end of the quiz.** Neither `CompleteSessionAsync` nor
++the auto-complete in `SubmitAnswerService.CheckAndCompleteQuizAsync` touches grading — they set
++`EndTime` and `IsCompleted` and stop. `GET /QuizSessions/{id}/results` *waits*: it polls
++`AreAllAnswersGradedAsync` every 500ms for up to 30s, then logs a warning and returns whatever is
++there. The client polls `/grading-status` the same way. Both observe; neither grades.
++
++In practice the job lands within seconds — the Hangfire server is registered in every
++environment and `[AutomaticRetry]` gives three attempts at 5s/30s/60s — so `awaiting-grading`
++should be a state nobody ever sees. It exists because the paths that strand an answer are real:
++a throwing enqueue (caught and logged by `TryEnqueueBackgroundGrading`), a job that exhausts its
++retries, or a session abandoned mid-quiz. Counting those in the denominator made a perfectly
++good question read as **0% correct**, which is a lie of a different order from "not yet graded".
++
++A timeout *does* count as graded: the player was shown the question and did not answer it
++correctly in time, which is exactly what the rate measures.
+ 
+ The expanded row surfaces `ungradedCount` as an *Awaiting grading* line, and only when it is
+ non-zero — on an instant-feedback quiz it always is zero, and a permanent "Awaiting grading 0"
+@@ -122,19 +133,55 @@
+ One tile carries `emphasis` (Attempts). Five equally-weighted boxes rank nothing and make the
+ reader take all of them in to find the one that answers their question.
+ 
+-## Known defect: days are bucketed in UTC
+-
+-`ReportService` groups `AttemptsOverTime` on `s.StartTime.Date` — the **UTC** date. Storage is
+-correct (`DateTime.UtcNow` into `timestamp with time zone`, read back as `Kind=Utc`); the bucketing
+-is not. A play at 01:00 in UTC+2 is charted on the previous day, in production, today.
+-
+-The tooltip and the recent-attempts list both format the bucket key **in UTC on purpose**, so the
+-label matches the bucket it names — rendering a UTC midnight in the viewer's zone would shift the
+-label onto the wrong day and make the display wrong in a second, different way.
+-
+-The fix belongs where the bucketing happens, not in the chart. See
+-[`../proposals/quiz-view-redesign.md`](../proposals/quiz-view-redesign.md) §8 and
+-[`../deployment/known-issues.md`](../deployment/known-issues.md).
++## Days are bucketed in the viewer's time zone
++
++The client sends its clock with the analytics request and the server buckets against it:
++
++```
++Intl.DateTimeFormat().resolvedOptions().timeZone   ──▶  ReportCriteria.TimeZone
++-new Date().getTimezoneOffset()                    ──▶  ReportCriteria.OffsetMinutes
++                                                          │
++                                        ResolveViewerZone ─┤ IANA name, else offset, else UTC
++                                                          ▼
++              TimeZoneInfo.ConvertTimeFromUtc(StartTime, zone).Date   ──▶  the bucket
++```
++
++**This used to group on the raw UTC date.** Storage was never the problem — `StartTime` is
++written from `DateTime.UtcNow` into a `timestamp with time zone` column and read back as
++`Kind=Utc`, so the instant of every attempt is exact. Truncating that instant in UTC was the bug:
++a play at 01:00 in UTC+2 was counted on the previous day, so an owner in Prishtina saw their
++evening plays land on yesterday.
++
++**The bucket key is serialized without a `Z`** — `2026-09-11T00:00:00`, from a
++`DateTimeKind.Unspecified` value. That is deliberate and load-bearing. It is a wall-clock date,
++not an instant, and JavaScript parses an offset-less date-time as *local*, so `new Date(key)`
++lands on the same calendar day the server counted. Stamping it `Utc` (which is what produced the
++old `T00:00:00Z`) makes every client west of Greenwich render the label a day early. For the same
++reason the chart formats it with no `timeZone` override — forcing UTC there would undo the fix.
++
++Date-range boundaries (`from`/`to`) resolve in the same zone, so "the 1st to the 7th" means the
++caller's 1st and 7th. With no zone supplied the zone resolves to UTC and every report behaves
++exactly as it did — which is the case for the two other reports, neither of which sends one.
++
++**The offset is a fallback, not a second opinion.** `FindSystemTimeZoneById` needs tzdata in the
++runtime image; whether it is there is a deployment property this code cannot assert, so an
++unresolvable name degrades to the reported offset rather than all the way back to UTC. A fixed
++offset is wrong for attempts on the other side of a DST boundary — wrong by an hour instead of
++wrong by a day. If the log ever shows *"Unknown time zone … is tzdata present in the image?"*,
++that is the fallback firing and the image needs `tzdata`.
++
++Zones that spring forward *at* midnight (Santiago, Beirut) have no 00:00 on that date at all.
++`StartOfDayUtc` walks forward to the first valid minute rather than letting
++`ConvertTimeToUtc` throw and fail the whole report.
++
++### What this does not answer
++
++"When do attempts arrive, in my time" — yes. **"What time of day do players play" — no.** That
++needs each player's own zone captured at session creation, which is a new nullable column on
++`QuizSession` and a separate piece of work
++([`../proposals/quiz-view-redesign.md`](../proposals/quiz-view-redesign.md) §8, step 2). Any
++time-of-day view built before that column exists would be reporting the viewer's evening, not the
++player's.
+ 
+ ## Files
+ 
+@@ -150,7 +197,10 @@
+   are the ones most likely to regress and the ones that matter most.
+ 
+ **Backend**
+-- `Services/Reports/ReportService.GetQuizAnalyticsAsync` — every number on the page.
++- `Services/Reports/ReportService.GetQuizAnalyticsAsync` — every number on the page;
++  `BuildAttemptsOverTime` / `ResolveViewerZone` / `StartOfDayUtc` are the day-bucketing above.
++  The per-day `Completed` counts genuine completions only, matching the headline figure —
++  sessions the abandonment sweep flagged `IsCompleted` are excluded from both.
+ - `DTOs/Reports/ReportDtos.cs` — `QuizAnalyticsDto`, `QuizQuestionAnalyticsRow`.
+ - `Controllers/Reports/ReportsController.QuizAnalytics` — owner-scoped, admin bypass.
+ 
+@@ -170,7 +220,24 @@
+ 
+ ## Layout
+ 
+-`ContentLayout` takes an opt-in `contentClassName`; this page passes `mx-auto w-full max-w-5xl`.
+-The card is full-bleed by default because the dashboard's data-table pages share it and want the
+-room, but this page's widest element is a six-column question row, and unconstrained it put a
+-row's text at one edge of a wide monitor and its numbers at the other.
++`ContentLayout` takes an opt-in `className` applied to the **card**; this page passes
++`mx-auto max-w-5xl`, so the card hugs its content instead of spanning the viewport. Constraining
++only the inner content box — the first attempt — left the card at full width with a wide empty
++band down each side, which looks worse than not constraining anything: the frame says "this is
++how much room there is" while the content sits in the middle ignoring it.
++
++The analytics block is **two columns from `lg` up** — stat tiles left (`QuizStatStrip
++columns="two"`), attempts panel right — and one column below. Stacked full-width, those two
++blocks were a strip of tiles above a panel holding three lines of text, which is a lot of
++vertical travel for very little. The questions list stays full width: its row is six columns
++and has nothing to gain from halving.
++
++## No database ids
++
++Neither the quiz id nor the question ids appear anywhere on this page. A primary key identifies
++a row to a query; it tells the person deciding whether a question needs rewriting nothing at all.
++The card header used to read "Quiz #37" directly above an `<h1>` carrying the quiz's actual name
++— an id *and* a duplicate heading — so `ContentLayout`'s title is now optional and this page
++omits it. `Version` stays in the footer: it is a fact about the quiz's own history (every edit
++retires rows and bumps it, see [`quiz-editing.md`](./quiz-editing.md)) and it explains why an
++in-flight session can be playing different questions from the ones listed.
+--- a/docs/proposals/quiz-view-redesign.md
++++ b/docs/proposals/quiz-view-redesign.md
+@@ -18,8 +18,10 @@
+   submitted, drop-off point, last-edited. All still backend work, all still the best ideas here.
+ - **§5, the range toggle** — `getQuizAnalytics` still takes no range from this page, so a
+   client-side 7d/30d/All would re-scope the chart while every number around it stayed all-time.
+-- **§8, the UTC day-bucketing bug** — still live in production. Also recorded in
+-  [`../deployment/known-issues.md`](../deployment/known-issues.md).
++- ~~**§8, the UTC day-bucketing bug**~~ — **step 1 is done** (2026-09-12): days are bucketed in
++  the viewer's zone, sent as an IANA name with a UTC-offset fallback. **Step 2 is not** — the
++  player's own zone at session creation is still not stored, so a time-of-day view remains
++  unbuildable. See [`../quiz/quiz-analytics-page.md`](../quiz/quiz-analytics-page.md).
+ - **§9** — unchanged; it is about the matcher, not this page.
+ 
+ **Decided so far** (2026-09-08, in discussion). The first two have since shipped; the
+@@ -220,23 +222,21 @@
+ **instant** of every attempt is exact and nothing has been lost. What was never captured is
+ the *player's* offset at the time of play.
+ 
+-**There is a live bug here, independent of the redesign.** `AttemptsOverTime` groups by
+-`s.StartTime.Date` — the **UTC** date (`ReportService.cs`). An attempt at 01:00 in
+-UTC+2 is charted on the previous day, in production, today. **Still unfixed** as of 2026-09-11;
+-confirmed end to end (`DateTime.UtcNow` → `timestamp with time zone` → `Kind=Utc` → `.Date`
+-truncation → `System.Text.Json` writing `2026-09-11T00:00:00Z`). The chart deliberately formats
+-that key back in UTC so the label matches its bucket — fixing the label without the bucketing
+-would move the wrongness rather than remove it.
++~~**There is a live bug here, independent of the redesign.**~~ `AttemptsOverTime` grouped by
++`s.StartTime.Date` — the **UTC** date — so an attempt at 01:00 in UTC+2 was charted on the
++previous day. Confirmed end to end (`DateTime.UtcNow` → `timestamp with time zone` → `Kind=Utc`
++→ `.Date` truncation → `System.Text.Json` writing `2026-09-11T00:00:00Z`) and **fixed on
++2026-09-12** by step 1 below.
+ 
+ Two steps, and they answer different questions:
+ 
+-**Step 1 — render and bucket in the viewer's timezone.** Fixes the day-boundary bug above and
+-answers "when do attempts arrive, *in my time*". The grouping already happens in memory after
+-`.ToListAsync()`, so converting before the `GroupBy` is a small change. Get the zone in by
+-sending the client's IANA name (`Intl.DateTimeFormat().resolvedOptions().timeZone`) as a query
+-param and converting with `TimeZoneInfo`; the API runs on `mcr.microsoft.com/dotnet/aspnet:8.0`
+-(Debian), which ships tzdata — worth verifying rather than assuming, and if it is ever a
+-problem the alternative is to send `getTimezoneOffset()` minutes and accept DST edges.
++**Step 1 — render and bucket in the viewer's timezone. DONE (2026-09-12),** as specified here:
++the client sends `Intl.DateTimeFormat().resolvedOptions().timeZone` and `ReportService` converts
++with `TimeZoneInfo` before the in-memory `GroupBy`. Rather than choose between the IANA name and
++the offset, it sends **both** — the tzdata question this section flagged is a deployment
++property the code cannot assert, so `getTimezoneOffset()` minutes ride along as an automatic
++fallback and a warning is logged if it ever fires. Implementation notes are in
++[`../quiz/quiz-analytics-page.md`](../quiz/quiz-analytics-page.md).
+ 
+ **Step 2 — capture the player's zone at session creation.** Only this can answer "when is it
+ *evening for the player*", which is the brief's actual claim. It needs a new nullable column on
+@@ -245,8 +245,8 @@
+ it covers only sessions recorded since the column existed, and fall back to the viewer's zone
+ otherwise.
+ 
+-Do step 1 regardless; it is a bug fix. Step 2 is only worth it if the time-of-day insight is
+-actually wanted, and it earns nothing until enough post-migration sessions exist.
++Step 1 is done. Step 2 is only worth it if the time-of-day insight is actually wanted, and it
++earns nothing until enough post-migration sessions exist.
+ 
+ ## 9. Typed answers: what is actually broken, and what is a toggle
+ 
+--- a/docs/deployment/known-issues.md
++++ b/docs/deployment/known-issues.md
+@@ -1004,40 +1004,47 @@
+ 
+ ## Single-quiz analytics page (2026-09-11 — see docs/quiz/quiz-analytics-page.md)
+ 
+-- **P2 — Attempts-over-time is bucketed by the *server's* UTC day.**
+-  `ReportService.GetQuizAnalyticsAsync` groups on `s.StartTime.Date`. Storage is correct at every
+-  step — `DateTime.UtcNow` → `timestamp with time zone` → read back `Kind=Utc` — so the *instant*
+-  of every attempt is exact and nothing has been lost. The **bucketing** is what's wrong: a play
+-  at 01:00 in UTC+2 is charted on the previous day, in production, today. The zeroed time in the
+-  serialized value (`2026-09-11T00:00:00Z`) is the bucket key, not a timeless write.
+-
+-  Not fixed in the chart on purpose. The tooltip and the recent-attempts list format that key back
+-  in **UTC**, so the label always names the bucket it belongs to; rendering it in the viewer's zone
+-  would shift the label onto the wrong day and make the display wrong in a second, different way.
+-  The fix belongs where the grouping happens: the `GroupBy` already runs in memory after
+-  `.ToListAsync()`, so converting before it is small. Send the client's IANA zone
+-  (`Intl.DateTimeFormat().resolvedOptions().timeZone`) and convert with `TimeZoneInfo` — the API
+-  image is Debian and ships tzdata, worth verifying rather than assuming.
+-
+-  This answers "when do attempts arrive, in my time". It does **not** answer "when is it evening
+-  for the player" — that needs a player-timezone column on `QuizSession`, which is step 2 of
+-  [`../proposals/quiz-view-redesign.md`](../proposals/quiz-view-redesign.md) §8 and only earns
+-  anything once enough post-migration sessions exist.
++- ~~**P2 — Attempts-over-time is bucketed by the *server's* UTC day.**~~ **Fixed (2026-09-12).**
++  The client now sends its IANA zone (with a UTC-offset fallback) on the analytics request and
++  `ReportService` shifts each `StartTime` into it before truncating, so an attempt is counted on
++  the day its player experienced. The bucket key serializes without a `Z` so the browser reads it
++  as a local wall-clock date. Date-range boundaries anchor in the same zone. See
++  [`../quiz/quiz-analytics-page.md`](../quiz/quiz-analytics-page.md).
++
++  **One thing to watch in production:** the IANA path needs `tzdata` in the API image. If it is
++  missing, the log carries *"Unknown time zone '…' — is tzdata present in the image?"* and the
++  offset fallback takes over — correct except across a DST boundary. Worth grepping for once
++  after the first deploy.
+   → `OxygenBackend/QuizAPI/Services/Reports/ReportService.cs`,
+-    `src/pages/Dashboard/Pages/Quiz/components/quiz-view/attempts-chart.tsx`
++    `src/pages/Dashboard/Pages/Quiz/api/get-quiz-analytics.ts`
+ 
+ - **P3 — An answer can sit `Pending` forever, and nothing surfaces it to an operator.**
+-  On a quiz with `ShowFeedbackImmediately = false`, answers are persisted `Pending` and graded by a
+-  Hangfire job. `SubmitAnswerService.TryEnqueueBackgroundGrading` catches enqueue failures, logs
+-  them and continues — deliberately, since the answer is already committed — which means a failed
+-  enqueue produces a row that is never graded and never retried.
+-
+-  Analytics no longer *misreport* this: `correctRate` is computed over `gradedCount`, so stranded
+-  rows no longer drag a question's rate toward 0%, and the page shows "Awaiting grading" instead of
+-  a number. But that is a symptom made visible, not the defect fixed. There is still no sweep for
+-  long-`Pending` answers and no alert — an operator learns about it only by opening a quiz page.
+-  A periodic re-enqueue of answers older than a few minutes would close it.
+-  → `OxygenBackend/QuizAPI/Controllers/Quizzes/Services/QuizSessionServices/SubmitAnswerService/SubmitAnswerService.cs`
++  On a quiz with `ShowFeedbackImmediately = false`, answers are persisted `Pending` and graded by
++  a Hangfire job. **Nothing grades them at quiz end** — `CompleteSessionAsync` and the
++  auto-complete in `SubmitAnswerService` only set the flags, and `/results` merely *waits* up to
++  30s for the jobs to land before returning whatever state exists. Grading happens in
++  `ProcessAnswerGradingAsync` or not at all.
++
++  It normally lands within seconds. Three paths strand it permanently:
++  1. ~~`ProcessAnswerGradingAsync` **returned** instead of throwing when the row could not be
++     read, under a comment reading "Let Hangfire retry the entire job" — a job that returns
++     normally is recorded **Succeeded** and never retried, so it did the exact opposite.~~
++     **Fixed (2026-09-12):** it now distinguishes a genuinely deleted row (routine on the guest
++     path, where answers are deleted on results view) from one it merely failed to read, and
++     throws on the latter so the three `[AutomaticRetry]` attempts actually happen.
++  2. `EnqueueAnswerGrading` rethrows and `TryEnqueueBackgroundGrading` catches-and-continues, so
++     a failed enqueue leaves a row with no job at all. Deliberate — the answer is already
++     committed and failing the submission would be worse — but it leaves no retry.
++  3. The three automatic retries are exhausted and the job lands in Hangfire's Failed state.
++
++  Analytics no longer *misreport* any of this: `correctRate` is computed over `gradedCount`, so
++  stranded rows can't drag a question toward 0%, and the page shows "Awaiting grading". That is
++  a symptom made visible, not the remaining defect closed — there is still no sweep for
++  long-`Pending` answers and no alert, so an operator learns about it by opening a quiz page.
++  A recurring job re-enqueuing answers `Pending` for more than a few minutes would close it, and
++  there is already a `recurringJobs.AddOrUpdate` block in `Program.cs` to hang it off.
++  → `OxygenBackend/QuizAPI/Controllers/Quizzes/Services/QuizSessionServices/AnswerGradingService/AnswerGradingService.cs`,
++    `.../SubmitAnswerService/SubmitAnswerService.cs`
+ 
+ - **P3 — `GetQuestionAnalyticsAsync` still counts `Pending` answers in its correct-rate
+   denominator.** The same bug that was fixed in `GetQuizAnalyticsAsync` above, in the sibling
+@@ -1047,12 +1054,10 @@
+   someone is next in that file.
+   → `OxygenBackend/QuizAPI/Services/Reports/ReportService.cs`
+ 
+-- **P3 — `AttemptsByDayPoint.Completed` counts abandoned sessions; the headline `Completed` does
+-  not.** The top-level figure excludes sessions flagged `IsCompleted` by the abandonment sweep
+-  (their wall-clock duration is idle time), but the per-day point is a bare
+-  `g.Count(s => s.IsCompleted)`. So the chart's Completed series runs above the completion rate
+-  beside it. Only visible on quizzes past `MIN_ATTEMPTS_FOR_TREND` attempts, which is why it has
+-  gone unnoticed.
++- ~~**P3 — `AttemptsByDayPoint.Completed` counts abandoned sessions; the headline `Completed`
++  does not.**~~ **Fixed (2026-09-12)**, alongside the timezone bucketing in the same method —
++  the per-day count is now `IsCompleted && !Abandoned`, matching the headline figure. It had only
++  ever been visible on quizzes past `MIN_ATTEMPTS_FOR_TREND` attempts, where the chart is drawn.
+   → `OxygenBackend/QuizAPI/Services/Reports/ReportService.cs`
+ 
+ - **P3 — `User/Components/stats-cards.tsx` is fake and has no call sites.** Four hard-coded

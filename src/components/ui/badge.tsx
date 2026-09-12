@@ -35,8 +35,15 @@ function Badge({ className, variant, ...props }: BadgeProps) {
     <div
       className={cn(
         badgeVariants({ variant }),
-        className,
-        `${theme.theme === "dark" ? "border-foreground/40" : ""} `
+        // The dark-mode edge is a DEFAULT, so it goes before `className`, not after.
+        //
+        // It used to come last, which meant `cn`'s tailwind-merge resolved it as the winner
+        // and every caller's border colour was silently discarded in dark mode — the amber
+        // edge on the question rows' "Needs a look" badge among them. A caller passing
+        // `border-primary` got `border-foreground/40` and no warning. `className` last is
+        // what every other component here does and what every caller assumes.
+        theme.theme === "dark" ? "border-foreground/40" : "",
+        className
       )}
       {...props}
     />

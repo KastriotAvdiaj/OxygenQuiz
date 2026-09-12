@@ -106,22 +106,77 @@ export const Questions = () => {
           390px line is what wrapped this heading to "Questions / Management". */}
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold sm:text-3xl">Questions Management</h1>
-        {/* Mobile Filter Toggle.
-            `lg:hidden` and the width go on `outerClassName`, not `className`: the latter
-            styles the front FACE, so hiding it there would leave the button's own box —
-            and its shadow and edge layers — still laid out and still taking a row.
-            `liftColor` drives the depth layers (edge gradient + drop shadow) off
-            `--lift-base`; "muted" keeps the 3D under a background-coloured face instead of
-            the default primary blue, which would read as a blue button with a white top. */}
-        <LiftedButton
-          outerClassName="w-fit lg:hidden"
-          className="gap-2 bg-background font-medium text-foreground"
-          liftColor="muted"
-          onClick={() => setFiltersOpen(true)}
-        >
-          <Filter className="h-4 w-4" />
-          Filters
-        </LiftedButton>
+        <div className="flex items-center gap-2">
+          {/* Mobile Filter Toggle.
+              `lg:hidden` and the width go on `outerClassName`, not `className`: the latter
+              styles the front FACE, so hiding it there would leave the button's own box —
+              and its shadow and edge layers — still laid out and still taking a row.
+              `liftColor` drives the depth layers (edge gradient + drop shadow) off
+              `--lift-base`; "muted" keeps the 3D under a background-coloured face instead
+              of the default primary blue, which would read as a blue button with a white
+              top.
+
+              No `text-*` on either button here, deliberately: they have to stand exactly as
+              tall as each other, and both faces are `py-2` around one line of text, so the
+              height is decided entirely by the font-size. */}
+          <LiftedButton
+            outerClassName="w-fit lg:hidden"
+            className="gap-2 bg-background font-medium text-foreground"
+            liftColor="muted"
+            onClick={() => setFiltersOpen(true)}
+          >
+            <Filter className="h-4 w-4" />
+            Filters
+          </LiftedButton>
+          {/* The page's create action lives in the page header on all three dashboard list
+              pages, not inside the card — the card holds the table and nothing else.
+              See docs/RESPONSIVE.md, "Dashboard list pages: one header, one card". */}
+          <Dialog
+            open={isAddQuestionDialogOpen}
+            onOpenChange={(open) =>
+              open ? openAddQuestionDialog() : closeAddQuestionDialog()
+            }
+          >
+            <DialogTrigger asChild>
+              <LiftedButton>Add Question +</LiftedButton>
+            </DialogTrigger>
+            {/* sm:max-w-sm, not the shared max-w-lg: three stacked buttons in a 512px
+                shell read as a half-empty panel. `w-fit` used to be here and did nothing
+                useful — the buttons inside are full-width, so fit-content just resolved
+                back to the max-width while also fighting the phone gutter DialogContent
+                applies for every dialog (docs/RESPONSIVE.md). */}
+            <DialogContent className="bg-background p-4 rounded-md pt-8 sm:max-w-sm dark:border border-foreground/30">
+              <DialogHeader>
+                <DialogTitle className="flex items-center justify-center">
+                  Choose the type of question
+                </DialogTitle>
+              </DialogHeader>
+              <div className="flex flex-col gap-4 mt-4">
+                <CreateQuestionForm
+                  languages={languagesQuery.data || []}
+                  categories={categoriesQuery.data || []}
+                  difficulties={difficultiesQuery.data || []}
+                  onSuccess={closeAddQuestionDialog}
+                />
+                <CreateTrueFalseQuestionForm
+                  languages={languagesQuery.data || []}
+                  categories={categoriesQuery.data || []}
+                  difficulties={difficultiesQuery.data || []}
+                  onSuccess={closeAddQuestionDialog}
+                />
+                <CreateTypeAnswerQuestionForm
+                  languages={languagesQuery.data || []}
+                  categories={categoriesQuery.data || []}
+                  difficulties={difficultiesQuery.data || []}
+                  onSuccess={closeAddQuestionDialog}
+                />
+              </div>
+            </DialogContent>
+          </Dialog>
+          {/* <Authorization allowedRoles={[ROLES.Admin, ROLES.SuperAdmin]}>
+                <DataTransferControls entity="questions" invalidateKey={["questions"]} />
+              </Authorization> */}
+        </div>
       </div>
 
       {/* Mobile Sheet for filters */}
@@ -158,54 +213,6 @@ export const Questions = () => {
             {/* Card padding is a gutter too: 24px each side inside a page that already
                 indents is 48px of a phone spent on nothing. */}
             <Card className="p-4 sm:p-6 bg-card border dark:border-foreground/30">
-             <div className="flex items-center justify-between gap-3 p-2 mb-4">
-              <Dialog
-                open={isAddQuestionDialogOpen}
-                onOpenChange={(open) =>
-                  open ? openAddQuestionDialog() : closeAddQuestionDialog()
-                }>
-                <DialogTrigger asChild>
-                  <LiftedButton className="flex items-center gap-2 text-xs">
-                    Add Question +
-                  </LiftedButton>
-                </DialogTrigger>
-              {/* sm:max-w-sm, not the shared max-w-lg: three stacked buttons in a 512px
-                  shell read as a half-empty panel. `w-fit` used to be here and did nothing
-                  useful — the buttons inside are full-width, so fit-content just resolved
-                  back to the max-width while also fighting the phone gutter DialogContent
-                  applies for every dialog (docs/RESPONSIVE.md). */}
-              <DialogContent className="bg-background p-4 rounded-md pt-8 sm:max-w-sm dark:border border-foreground/30">
-                <DialogHeader>
-                  <DialogTitle className="flex items-center justify-center">
-                    Choose the type of question
-                  </DialogTitle>
-                </DialogHeader>
-                <div className="flex flex-col gap-4 mt-4">
-                  <CreateQuestionForm
-                    languages={languagesQuery.data || []}
-                    categories={categoriesQuery.data || []}
-                    difficulties={difficultiesQuery.data || []}
-                    onSuccess={closeAddQuestionDialog}
-                  />
-                  <CreateTrueFalseQuestionForm
-                    languages={languagesQuery.data || []}
-                    categories={categoriesQuery.data || []}
-                    difficulties={difficultiesQuery.data || []}
-                    onSuccess={closeAddQuestionDialog}
-                  />
-                  <CreateTypeAnswerQuestionForm
-                    languages={languagesQuery.data || []}
-                    categories={categoriesQuery.data || []}
-                    difficulties={difficultiesQuery.data || []}
-                    onSuccess={closeAddQuestionDialog}
-                  />
-                </div>
-              </DialogContent>
-              </Dialog>
-            {/* <Authorization allowedRoles={[ROLES.Admin, ROLES.SuperAdmin]}>
-            <DataTransferControls entity="questions" invalidateKey={["questions"]} />
-          </Authorization> */}
-        </div>
               <Tabs
                 value={activeTab}
                 onValueChange={(value) => setActiveTab(value as QuestionType)}

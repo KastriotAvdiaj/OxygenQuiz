@@ -72,22 +72,33 @@ const questions: QuizQuestionDTO[] = [
   entry(typed(3, "Name the ship that carried the Pilgrims."), 3),
 ];
 
+/**
+ * `ungraded` splits `timesAnswered` into graded and not — the rate's denominator is the graded
+ * half. Defaults to 0, which is every instant-feedback quiz.
+ */
 const stats = (
   questionId: number,
   timesAnswered: number,
   correctRate: number,
-  averageTimeSeconds = 4.2
-): QuizQuestionAnalyticsRow => ({
-  questionId,
-  order: questionId,
-  text: "",
-  type: "MultipleChoice",
-  timesAnswered,
-  correctCount: Math.round((correctRate / 100) * timesAnswered),
-  incorrectCount: timesAnswered - Math.round((correctRate / 100) * timesAnswered),
-  correctRate,
-  averageTimeSeconds,
-});
+  averageTimeSeconds = 4.2,
+  ungraded = 0
+): QuizQuestionAnalyticsRow => {
+  const gradedCount = timesAnswered - ungraded;
+  const correctCount = Math.round((correctRate / 100) * gradedCount);
+  return {
+    questionId,
+    order: questionId,
+    text: "",
+    type: "MultipleChoice",
+    timesAnswered,
+    gradedCount,
+    ungradedCount: ungraded,
+    correctCount,
+    incorrectCount: gradedCount - correctCount,
+    correctRate,
+    averageTimeSeconds,
+  };
+};
 
 const meta = {
   title: "Dashboard/Quiz/QuestionPerformanceTable",
@@ -125,9 +136,13 @@ export const FlaggedQuestion: Story = {
 };
 
 /**
- * **The important one.** Below `MIN_ANSWERS_FOR_RATE` answers, the rate is suppressed entirely
- * rather than printed off one or two responses — and nothing is flagged, because a 33% built
- * from three answers is not evidence of a bad question.
+ * **The important one.** Below `MIN_ANSWERS_FOR_RATE` graded answers, the rate is suppressed
+ * entirely rather than printed off one or two responses — and nothing is flagged, because a 33%
+ * built from three answers is not evidence of a bad question.
+ *
+ * The cell says *what it is waiting for* rather than showing a bare em dash. On a quiz with a
+ * handful of plays this is every row, and a column of identical dashes was read as a broken
+ * feature rather than a deliberate one.
  */
 export const NotEnoughAnswersYet: Story = {
   args: {
@@ -142,6 +157,39 @@ export const NotEnoughAnswersYet: Story = {
     await expect(canvas.queryByText("Needs a look")).not.toBeInTheDocument();
     // No percentage anywhere: not "0%", not "100%".
     await expect(canvas.queryByText(/%$/)).not.toBeInTheDocument();
+    // But the reason is stated in the cell, not hidden behind a hover.
+    await expect(
+      await canvas.findByText(`4 of ${MIN_ANSWERS_FOR_RATE} answers`),
+    ).toBeInTheDocument();
+    // And the sort that would have nothing to rank is visibly unavailable rather than
+    // silently reordering nothing.
+    await expect(canvas.getByRole("radio", { name: "Hardest first" })).toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
+  },
+};
+
+/**
+ * A quiz with `ShowFeedbackImmediately = false`: answers are persisted `Pending` and scored by a
+ * background job. They are **not** counted as wrong — the rate's denominator is `gradedCount`,
+ * so a question whose answers are all still queued has no rate rather than a 0% one. The enqueue
+ * in `SubmitAnswerService` logs-and-continues on failure, so this state can also be permanent.
+ */
+export const AwaitingBackgroundGrading: Story = {
+  args: {
+    analytics: [
+      stats(1, 8, 0, 4.2, 8),
+      stats(2, 8, 0, 5.1, 8),
+      stats(3, 8, 0, 6.0, 8),
+    ],
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    // Not "0%" — nothing has been graded, which is a different claim.
+    await expect(canvas.queryByText(/%$/)).not.toBeInTheDocument();
+    await expect(canvas.queryByText("Needs a look")).not.toBeInTheDocument();
+    await expect((await canvas.findAllByText("Awaiting grading")).length).toBe(3);
   },
 };
 

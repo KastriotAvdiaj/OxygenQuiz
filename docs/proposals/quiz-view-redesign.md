@@ -1,8 +1,31 @@
 # Proposal: restructure the single-quiz dashboard page
 
-**Status: open.** Nothing implemented. Written 2026-09-06; decisions below recorded 2026-09-08.
+**Status: partly implemented. Kept for the sections still open — and because §2, §5 and §8 are
+cited by section number from source comments.** Written 2026-09-06; decisions recorded 2026-09-08;
+status brought up to date 2026-09-11.
 
-**Decided so far** (2026-09-08, in discussion — none implemented yet):
+**What has shipped** is described in [`../quiz/quiz-analytics-page.md`](../quiz/quiz-analytics-page.md),
+which is now the place to look for how the page behaves. In short: the tabs and the
+`QuizProperties` grid are gone, the merged question table exists, Publish/Unpublish is wired, the
+analytics endpoint has its admin bypass, and Share is hidden on Drafts (§1 and §4's cheap wins,
+and step 4 of §6). Since then: per-question correct rate is computed over *graded* answers rather
+than all submissions, the sorts that cannot rank anything say so instead of silently no-opping,
+and `MaxPossibleScore` is on the DTO — which closes the second half of §2 item 8.
+
+**What is still open**, and why this file stays:
+
+- **§2 items 1, 2, 3, 7** — per-option answer counts, the typed strings players actually
+  submitted, drop-off point, last-edited. All still backend work, all still the best ideas here.
+- **§5, the range toggle** — `getQuizAnalytics` still takes no range from this page, so a
+  client-side 7d/30d/All would re-scope the chart while every number around it stayed all-time.
+- ~~**§8, the UTC day-bucketing bug**~~ — **step 1 is done** (2026-09-12): days are bucketed in
+  the viewer's zone, sent as an IANA name with a UTC-offset fallback. **Step 2 is not** — the
+  player's own zone at session creation is still not stored, so a time-of-day view remains
+  unbuildable. See [`../quiz/quiz-analytics-page.md`](../quiz/quiz-analytics-page.md).
+- **§9** — unchanged; it is about the matcher, not this page.
+
+**Decided so far** (2026-09-08, in discussion). The first two have since shipped; the
+other two have not.
 
 - **§1 permissions** — the owner gets their own route under `/my-dashboard/quizzes/:quizId`
   (server-side ownership already gates every endpoint it needs), **and** the analytics
@@ -65,7 +88,7 @@ change.
 | 5 | Repeat attempts by the same player | **partial — misleading if shipped as-is** | `QuizSession.UserId` exists, but see §3. |
 | 6 | Time-of-day activity | **partial — do not ship as stated** | `StartTime` is a bare `DateTime` (UTC). No player timezone is stored. "Play peaks 8–10pm" would be 8–10pm **UTC**, not in any player's evening. |
 | 7 | Last edited | **needs backend** | `Quiz` has `CreatedAt` and `Version`, no `UpdatedAt`. "Edited N times" is free; *when* is a new column. |
-| 8 | Best run / perfect count / avg time per question | **mostly exists** | `highestScore` and per-question `averageTimeSeconds` are already on the DTO. "Perfect · 2 players" needs a max-possible-score, which is derivable but not currently computed. "of 4,100 possible" likewise. |
+| 8 | Best run / perfect count / avg time per question | **done** | `highestScore` and per-question `averageTimeSeconds` were already on the DTO. The max-possible-score now is too: `QuizAnalyticsDto.MaxPossibleScore`, summed from `QuizScoring.PointsForCorrectAnswer(TimeSpan.Zero, …)` so it cannot drift from the grader. The stat strip uses it as "of 4,500 possible". "Perfect · 2 players" is now a client-side comparison away. |
 | 9 | Share / Host live / QR poster / Embed | **see §4** | One is broken, one is a much bigger feature, two do not exist at all. |
 
 ---
@@ -199,19 +222,21 @@ No new shared component is required by this redesign.
 **instant** of every attempt is exact and nothing has been lost. What was never captured is
 the *player's* offset at the time of play.
 
-**There is a live bug here, independent of the redesign.** `AttemptsOverTime` groups by
-`s.StartTime.Date` — the **UTC** date (`ReportService.cs:248`). An attempt at 01:00 in
-UTC+2 is charted on the previous day, in production, today.
+~~**There is a live bug here, independent of the redesign.**~~ `AttemptsOverTime` grouped by
+`s.StartTime.Date` — the **UTC** date — so an attempt at 01:00 in UTC+2 was charted on the
+previous day. Confirmed end to end (`DateTime.UtcNow` → `timestamp with time zone` → `Kind=Utc`
+→ `.Date` truncation → `System.Text.Json` writing `2026-09-11T00:00:00Z`) and **fixed on
+2026-09-12** by step 1 below.
 
 Two steps, and they answer different questions:
 
-**Step 1 — render and bucket in the viewer's timezone.** Fixes the day-boundary bug above and
-answers "when do attempts arrive, *in my time*". The grouping already happens in memory after
-`.ToListAsync()`, so converting before the `GroupBy` is a small change. Get the zone in by
-sending the client's IANA name (`Intl.DateTimeFormat().resolvedOptions().timeZone`) as a query
-param and converting with `TimeZoneInfo`; the API runs on `mcr.microsoft.com/dotnet/aspnet:8.0`
-(Debian), which ships tzdata — worth verifying rather than assuming, and if it is ever a
-problem the alternative is to send `getTimezoneOffset()` minutes and accept DST edges.
+**Step 1 — render and bucket in the viewer's timezone. DONE (2026-09-12),** as specified here:
+the client sends `Intl.DateTimeFormat().resolvedOptions().timeZone` and `ReportService` converts
+with `TimeZoneInfo` before the in-memory `GroupBy`. Rather than choose between the IANA name and
+the offset, it sends **both** — the tzdata question this section flagged is a deployment
+property the code cannot assert, so `getTimezoneOffset()` minutes ride along as an automatic
+fallback and a warning is logged if it ever fires. Implementation notes are in
+[`../quiz/quiz-analytics-page.md`](../quiz/quiz-analytics-page.md).
 
 **Step 2 — capture the player's zone at session creation.** Only this can answer "when is it
 *evening for the player*", which is the brief's actual claim. It needs a new nullable column on
@@ -220,8 +245,8 @@ starts. Nullable because every existing row lacks it — so any time-of-day view
 it covers only sessions recorded since the column existed, and fall back to the viewer's zone
 otherwise.
 
-Do step 1 regardless; it is a bug fix. Step 2 is only worth it if the time-of-day insight is
-actually wanted, and it earns nothing until enough post-migration sessions exist.
+Step 1 is done. Step 2 is only worth it if the time-of-day insight is actually wanted, and it
+earns nothing until enough post-migration sessions exist.
 
 ## 9. Typed answers: what is actually broken, and what is a toggle
 

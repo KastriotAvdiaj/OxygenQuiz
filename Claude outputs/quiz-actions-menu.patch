@@ -1,0 +1,366 @@
+# Round 4 — all actions into one ⋯ menu on the title row
+
+Already written into the repo.
+
+--- /dev/null
++++ b/src/pages/Dashboard/Pages/Quiz/components/quiz-view/quiz-actions-menu.tsx
+@@ -0,0 +1,119 @@
++import { Edit2, Eye, EyeOff, MoreHorizontal, Share2, Trash2 } from "lucide-react";
++
++import { Button } from "@/components/ui/button";
++import {
++  DropdownMenu,
++  DropdownMenuContent,
++  DropdownMenuItem,
++  DropdownMenuLabel,
++  DropdownMenuSeparator,
++  DropdownMenuTrigger,
++} from "@/components/ui/dropdown-menu";
++import type { Quiz } from "@/types/quiz-types";
++
++export interface QuizActionsMenuProps {
++  quiz: Quiz;
++  isDraft: boolean;
++  onShare: () => void;
++  isSharePending: boolean;
++  onSetStatus: () => void;
++  isStatusPending: boolean;
++  onEdit: () => void;
++  onDelete: () => void;
++}
++
++/**
++ * Every action on the quiz page, in one menu.
++ *
++ * <b>This replaces a four-control toolbar</b> — Share, Publish/Unpublish and Edit Quiz as
++ * separate buttons, plus a ⋯ menu for Delete and the phone-sized copies of the other three.
++ * Four controls in a full-width strip above the page's own heading, and the same actions
++ * written twice so the narrow layout could reach them.
++ *
++ * The quiz **rows** in the data table already solved this: one 32px ⋯ button, a labelled menu,
++ * destructive item in red at the bottom. Matching it means someone who has used the list knows
++ * this page without learning a second pattern — and the duplication disappears, because a menu
++ * is the same menu at every width.
++ *
++ * The trigger deliberately copies the row's `h-8 w-8 p-0 rounded` rather than `size="icon"`,
++ * which is 36px and would sit a row taller than everything it lines up with.
++ *
++ * <b>Not a `Tooltip` on the Publish item.</b> The button it replaced carried one explaining
++ * what Unpublish costs; a menu item can say it in the item, and a tooltip inside an open
++ * Radix menu fights the menu for the same hover.
++ */
++export const QuizActionsMenu = ({
++  quiz,
++  isDraft,
++  onShare,
++  isSharePending,
++  onSetStatus,
++  isStatusPending,
++  onEdit,
++  onDelete,
++}: QuizActionsMenuProps) => (
++  <DropdownMenu>
++    <DropdownMenuTrigger asChild>
++      <Button
++        variant="default"
++        className="h-8 w-8 shrink-0 rounded p-0"
++        aria-label="Quiz actions"
++      >
++        <span className="sr-only">Open menu</span>
++        <MoreHorizontal className="h-4 w-4" />
++      </Button>
++    </DropdownMenuTrigger>
++
++    <DropdownMenuContent align="end" className="w-56 bg-muted">
++      <DropdownMenuLabel>Actions</DropdownMenuLabel>
++
++      <DropdownMenuItem className="hover:bg-background" onClick={onEdit}>
++        <Edit2 size={16} /> Edit quiz
++      </DropdownMenuItem>
++
++      {/* Not offered on a Draft: the backend mints a token its own resolver 404s, so sharing
++          one could only produce a link that fails at the recipient's end. */}
++      {!isDraft && (
++        <DropdownMenuItem
++          className="hover:bg-background"
++          disabled={isSharePending}
++          onClick={onShare}
++        >
++          <Share2 size={16} />
++          {quiz.status === "Unlisted" ? "Copy share link" : "Share"}
++        </DropdownMenuItem>
++      )}
++
++      <DropdownMenuSeparator className="bg-background/60" />
++
++      {/* The label carries what the old tooltip did — "Unpublish" alone doesn't say what it
++          costs, and there is room here to say it. */}
++      <DropdownMenuItem
++        className="hover:bg-background"
++        disabled={isStatusPending}
++        onClick={onSetStatus}
++      >
++        {isDraft ? <Eye size={16} /> : <EyeOff size={16} />}
++        <span className="flex flex-col">
++          <span>{isDraft ? "Publish" : "Unpublish"}</span>
++          <span className="text-xs text-muted-foreground">
++            {isDraft ? "Anyone can find and play it" : "Back to draft — only you see it"}
++          </span>
++        </span>
++      </DropdownMenuItem>
++
++      <DropdownMenuSeparator className="bg-background/60" />
++
++      {/* `onSelect` + a frame's delay, not `onClick`: the confirm dialog is owned by the page
++          and rendered outside this menu, and opening it while Radix is still closing the menu
++          leaves two modal layers overlapping and `pointer-events: none` stuck on <body>. The
++          data-table row does the same thing for the same reason. */}
++      <DropdownMenuItem
++        className="text-red-600 focus:text-red-600"
++        onSelect={() => requestAnimationFrame(onDelete)}
++      >
++        <Trash2 size={16} /> Delete quiz
++      </DropdownMenuItem>
++    </DropdownMenuContent>
++  </DropdownMenu>
++);
+--- a/src/pages/Dashboard/Pages/Quiz/Quiz.tsx
++++ b/src/pages/Dashboard/Pages/Quiz/Quiz.tsx
+@@ -1,24 +1,9 @@
+ import { useState } from "react";
+ import { useParams, useNavigate } from "react-router";
+-import { Edit2, EyeOff, Eye, MoreHorizontal, Share2, Trash2 } from "lucide-react";
+-
+ import { LoadingWave } from "@/components/ui";
+ import { Badge } from "@/components/ui/badge";
+ import { Button } from "@/components/ui/button";
+ import { Separator } from "@/components/ui/separator";
+-import {
+-  DropdownMenu,
+-  DropdownMenuContent,
+-  DropdownMenuItem,
+-  DropdownMenuSeparator,
+-  DropdownMenuTrigger,
+-} from "@/components/ui/dropdown-menu";
+-import {
+-  Tooltip,
+-  TooltipContent,
+-  TooltipProvider,
+-  TooltipTrigger,
+-} from "@/components/ui/tooltip";
+ import { useNotifications } from "@/common/Notifications";
+ import { ContentLayout } from "@/layouts/individual-content-layout";
+ import type { QuizStatus } from "@/types/quiz-types";
+@@ -31,6 +16,7 @@
+ import { DeleteQuiz } from "./components/delete-quiz";
+ import { AttemptsChart } from "./components/quiz-view/attempts-chart";
+ import { QuestionPerformanceTable } from "./components/quiz-view/question-performance-table";
++import { QuizActionsMenu } from "./components/quiz-view/quiz-actions-menu";
+ import { QuizStatStrip } from "./components/quiz-view/quiz-stat-strip";
+ import { formatDuration } from "./components/quiz-view/format-duration";
+ import {
+@@ -167,124 +153,6 @@
+     // headings for one page is one too many. `ContentLayout` drops the header bar entirely
+     // when no title is passed.
+     <ContentLayout className="mx-auto max-w-5xl xl:max-w-7xl">
+-      {/* ── Actions, at the top. They used to sit under the tabs, which put the primary
+-          actions for the page below everything on it. Delete is here too now, but one level
+-          down in the overflow menu — see the footer note. */}
+-      <div className="flex flex-wrap items-center justify-end gap-2 pb-4">
+-        {/* <b>Stock `Button`, stock sizes.</b> This row was three bespoke controls — two
+-            `LiftedButton`s and an `IconButtonWithTooltip`, all carrying a hand-rolled
+-            `QUIET_FACE` class string and `backgroundColorForBorder` / `liftColor` props — at
+-            roughly 40px with the lift's own padding on top. The result was oversized and
+-            cramped at the same time: tall buttons, no room between them, and three different
+-            border treatments in a row of three.
+-
+-            The design system already answers this. `variant="outline"` is the quiet face and
+-            `variant="default"` the primary one, `size="sm"` is 32px for every button in the
+-            app, and a single `gap-2` on the row spaces them. Hierarchy is carried by variant
+-            alone, which is what variants are for. The lifted face is right for a page's one
+-            big action; this is a toolbar of three. */}
+-
+-        {/* Not on a Draft: the backend mints a token its own resolver 404s, so sharing one
+-            could only produce a link that fails at the recipient's end. */}
+-        {!isDraft && (
+-          <Button
+-            variant="outline"
+-            size="sm"
+-            onClick={handleShare}
+-            isPending={shareLink.isPending}>
+-            <Share2 className="h-4 w-4" />
+-            {quiz.status === "Unlisted" ? "Copy share link" : "Share"}
+-          </Button>
+-        )}
+-
+-        {/* Now wired. The endpoint has been complete and tested since the visibility work;
+-            only this mutation was missing, which is why the button shipped disabled with a
+-            "Feature not implemented" tooltip for as long as it did.
+-
+-            The tooltip stays — "Unpublish" doesn't say what it costs — but it no longer needs
+-            a bespoke button to carry it. */}
+-        <TooltipProvider>
+-          <Tooltip>
+-            <TooltipTrigger asChild>
+-              <Button
+-                variant="outline"
+-                size="sm"
+-                isPending={setStatus.isPending}
+-                onClick={handleSetStatus(isDraft ? "Public" : "Draft")}>
+-                {isDraft ? (
+-                  <Eye className="h-4 w-4" />
+-                ) : (
+-                  <EyeOff className="h-4 w-4" />
+-                )}
+-                {isDraft ? "Publish" : "Unpublish"}
+-              </Button>
+-            </TooltipTrigger>
+-            <TooltipContent className="max-w-xs">
+-              {isDraft
+-                ? "Make this quiz public so anyone can find and play it"
+-                : "Return this quiz to draft — only you will see it"}
+-            </TooltipContent>
+-          </Tooltip>
+-        </TooltipProvider>
+-
+-        <Button
+-          variant="default"
+-          size="sm"
+-          onClick={() => navigate(`/dashboard/quizzes/edit-quiz/${quiz.id}`)}>
+-          <Edit2 className="h-4 w-4" />
+-          Edit Quiz
+-        </Button>
+-
+-        {/* Everything that doesn't belong in the row: Delete, plus the phone-sized copies of
+-            the actions above. One menu rather than a loose button at the foot of the page. */}
+-        <DropdownMenu>
+-          <DropdownMenuTrigger asChild>
+-            {/* `size="icon"` is 36px square and `size="sm"` is 32px tall, so the icon button
+-                would stand a row taller than the three beside it. Squared off to match. The
+-                `outline` variant carries no radius of its own — only `sm` does — so it is
+-                stated here too. */}
+-            <Button
+-              variant="outline"
+-              size="icon"
+-              className="h-8 w-8 rounded-md"
+-              aria-label="More quiz actions">
+-              <MoreHorizontal className="h-4 w-4" />
+-            </Button>
+-          </DropdownMenuTrigger>
+-          <DropdownMenuContent align="end">
+-            {/* md:hidden — these already have their own buttons on a wide screen. */}
+-            <DropdownMenuItem
+-              className="md:hidden"
+-              onClick={() => navigate(`/dashboard/quizzes/edit-quiz/${quiz.id}`)}>
+-              <Edit2 className="h-4 w-4 mr-2" />
+-              Edit Quiz
+-            </DropdownMenuItem>
+-            {!isDraft && (
+-              <DropdownMenuItem
+-                className="md:hidden"
+-                onClick={handleShare}
+-                disabled={shareLink.isPending}>
+-                <Share2 className="h-4 w-4 mr-2" />
+-                Share
+-              </DropdownMenuItem>
+-            )}
+-            <DropdownMenuSeparator className="md:hidden" />
+-            {/* Opens the confirm dialog held below, rather than nesting a dialog trigger
+-                inside the menu — closing the menu would otherwise strand the dialog
+-                mid-close. See `DeleteQuiz`'s controlled mode. */}
+-            <DropdownMenuItem
+-              className="text-destructive focus:text-destructive"
+-              onSelect={(event) => {
+-                event.preventDefault();
+-                setDeleteOpen(true);
+-              }}>
+-              <Trash2 className="h-4 w-4 mr-2" />
+-              Delete quiz
+-            </DropdownMenuItem>
+-          </DropdownMenuContent>
+-        </DropdownMenu>
+-      </div>
+-
+       {/* Controlled, and rendered outside the menu on purpose (see `DeleteQuiz`). */}
+       <DeleteQuiz
+         open={deleteOpen}
+@@ -323,7 +191,30 @@
+               </span>
+             </div>
+ 
+-            <h1 className="text-3xl font-bold">{quiz.title}</h1>
++            {/* <b>Every action is in the ⋯ menu, and the menu sits on the title row.</b>
++              This was a toolbar of three buttons in the top-right plus a fourth for the
++              overflow — four controls occupying a full-width strip above a page whose own
++              heading came second. The data-table rows already answer this with one 32px ⋯
++              button and a labelled menu, so the same pattern here means one thing to learn
++              instead of two.
++
++              On the title row rather than back in the corner: the affordance now sits on the
++              thing it acts on, and a single small button alone in the top-right of a wide
++              card reads as something left behind. From `xl` the title is in the 22rem column
++              and the menu rides along with it. */}
++            <div className="flex items-start justify-between gap-3">
++              <h1 className="min-w-0 text-3xl font-bold">{quiz.title}</h1>
++              <QuizActionsMenu
++                quiz={quiz}
++                isDraft={isDraft}
++                onShare={handleShare}
++                isSharePending={shareLink.isPending}
++                onSetStatus={handleSetStatus(isDraft ? "Public" : "Draft")}
++                isStatusPending={setStatus.isPending}
++                onEdit={() => navigate(`/dashboard/quizzes/edit-quiz/${quiz.id}`)}
++                onDelete={() => setDeleteOpen(true)}
++              />
++            </div>
+ 
+             {quiz.description && (
+               <p className="max-w-3xl leading-relaxed text-muted-foreground">
+--- a/docs/quiz/quiz-analytics-page.md
++++ b/docs/quiz/quiz-analytics-page.md
+@@ -221,17 +221,34 @@
+ 
+ ## Actions
+ 
+-The action row uses stock `Button` at `size="sm"`: `outline` for Share and Publish/Unpublish,
+-`default` for Edit Quiz, with an icon-only overflow menu. Hierarchy is carried by variant, not by
+-size — the lifted face is for a page's one big action, and this is a toolbar.
+-
+-**Delete lives in the overflow menu**, marked destructive, behind the usual confirm dialog. It
+-previously floated loose at the foot of the page as a red lifted button with nothing around it: the
+-largest, loudest control on the screen, in the one place where nothing competed with it.
+-
+-Share is **hidden on a Draft** — the backend mints a token its own resolver 404s, so it could only
+-produce a dead link. Note the share URL is broken for a separate reason; see
+-[`quiz-visibility.md`](./quiz-visibility.md).
++**Every action lives in one ⋯ menu, on the title row.** `QuizActionsMenu` holds Edit quiz,
++Share, Publish/Unpublish and Delete; the trigger is a 32px icon button right-aligned against
++the `<h1>`.
++
++It is deliberately the **same pattern as the quiz rows in the data table** — same
++`h-8 w-8 p-0 rounded` trigger, same `Actions` label, same red destructive item last — so
++someone who has used the list already knows this page.
++
++What it replaced: a four-control toolbar in a full-width strip above the page's own heading
++(Share, Publish/Unpublish and Edit Quiz as buttons, plus a ⋯ menu for Delete), with the first
++three written a **second** time inside that menu as `md:hidden` items so the narrow layout
++could reach them. A menu is the same menu at every width, so that duplication is gone.
++
++Two details worth keeping:
++
++- **Share is not offered on a Draft.** The backend mints a token its own resolver 404s, so it
++  could only produce a link that fails at the recipient's end. (The share URL is broken for a
++  separate reason; see [`quiz-visibility.md`](./quiz-visibility.md).)
++- **Delete opens on the next animation frame.** The confirm dialog is owned by the page and
++  rendered outside the menu — opening it while Radix is still closing the menu leaves two modal
++  layers overlapping and `pointer-events: none` stuck on `<body>`. The data-table row does the
++  same thing for the same reason.
++
++Publish/Unpublish carries its consequence as a sub-line in the item rather than a tooltip: a
++tooltip inside an open Radix menu fights the menu for the same hover.
++
++`LoadingWave` is the loader in all three loading states (page, analytics, questions) — not
++`Spinner`, which this page was written against before the wave existed.
+ 
+ ## Layout
+ 

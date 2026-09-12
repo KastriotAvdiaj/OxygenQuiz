@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using QuizAPI.Data;
 using QuizAPI.DTOs.Reports;
 using QuizAPI.Models.Quiz;
+using QuizAPI.Services.Scoring;
 
 namespace QuizAPI.Services.Reports
 {
@@ -17,13 +18,19 @@ namespace QuizAPI.Services.Reports
     public class ReportService : IReportService
     {
         private readonly ApplicationDbContext _context;
+        private readonly ILogger<ReportService> _logger;
 
-        public ReportService(ApplicationDbContext context) => _context = context;
+        public ReportService(ApplicationDbContext context, ILogger<ReportService> logger)
+        {
+            _context = context;
+            _logger = logger;
+        }
 
         public async Task<List<QuizPerformanceRow>> GetQuizPerformanceAsync(
             Guid userId, ReportCriteria criteria, CancellationToken ct = default)
         {
-            var (from, toExclusive) = NormalizeRange(criteria);
+            var zone = ResolveViewerZone(criteria);
+            var (from, toExclusive) = NormalizeRange(criteria, zone);
 
             // The user's quizzes (so quizzes with no attempts still appear).
             var quizzes = await _context.Quizzes.AsNoTracking()
@@ -78,7 +85,8 @@ namespace QuizAPI.Services.Reports
         public async Task<List<QuestionAnalyticsRow>> GetQuestionAnalyticsAsync(
             Guid userId, ReportCriteria criteria, CancellationToken ct = default)
         {
-            var (from, toExclusive) = NormalizeRange(criteria);
+            var zone = ResolveViewerZone(criteria);
+            var (from, toExclusive) = NormalizeRange(criteria, zone);
 
             // The user's questions (so unanswered ones still appear).
             var questions = await _context.Questions.AsNoTracking()
@@ -142,7 +150,8 @@ namespace QuizAPI.Services.Reports
         public async Task<QuizAnalyticsDto?> GetQuizAnalyticsAsync(
             Guid? ownerId, int quizId, ReportCriteria criteria, CancellationToken ct = default)
         {
-            var (from, toExclusive) = NormalizeRange(criteria);
+            var zone = ResolveViewerZone(criteria);
+            var (from, toExclusive) = NormalizeRange(criteria, zone);
 
             // Ownership clamp, not a permission check — the controller has already decided whether
             // this caller may act (CLAUDE.md, "Permission checks in the controller, ownership clamps
@@ -186,6 +195,8 @@ namespace QuizAPI.Services.Reports
                 {
                     qq.QuestionId,
                     qq.OrderInQuiz,
+                    qq.TimeLimitInSeconds,
+                    qq.PointSystem,
                     Text = qq.Question.Text,
                     Type = qq.Question.Type,
                 })
@@ -215,6 +226,13 @@ namespace QuizAPI.Services.Reports
                     var correct = outcomes.Count(o => o.Status == AnswerStatus.Correct);
                     var incorrect = outcomes.Count(o => o.Status == AnswerStatus.Incorrect);
 
+                    // Graded means "has a settled outcome". Pending (awaiting the background
+                    // grader) and NotAnswered are excluded from the denominator: a Pending row is
+                    // not evidence the player got it wrong, and stranded Pending rows are a real
+                    // possibility — the enqueue in SubmitAnswerService logs and continues on
+                    // failure. Counting them as failures made a fine question read 0% correct.
+                    var graded = outcomes.Count(o => IsGraded(o.Status));
+
                     var times = outcomes
                         .Where(o => o.SubmittedTime != null)
                         .Select(o => (o.SubmittedTime!.Value - o.QuestionStartTime).TotalSeconds)
@@ -228,9 +246,11 @@ namespace QuizAPI.Services.Reports
                         Text = Truncate(q.Text, 120),
                         Type = q.Type.ToString(),
                         TimesAnswered = outcomes.Count,
+                        GradedCount = graded,
+                        UngradedCount = outcomes.Count - graded,
                         CorrectCount = correct,
                         IncorrectCount = incorrect,
-                        CorrectRate = Percent(correct, outcomes.Count),
+                        CorrectRate = Percent(correct, graded),
                         AverageTimeSeconds = times.Count == 0 ? 0 : Math.Round(times.Average(), 1),
                     };
                 })
@@ -247,19 +267,92 @@ namespace QuizAPI.Services.Reports
                 AverageScore = completed.Count == 0 ? 0 : Math.Round(completed.Average(a => (double)a.TotalScore), 1),
                 AverageDurationSeconds = AverageDuration(completed.Select(a => (a.StartTime, a.EndTime))),
                 HighestScore = completed.Count == 0 ? 0 : completed.Max(a => a.TotalScore),
+                MaxPossibleScore = quizQuestions.Sum(q =>
+                    QuizScoring.PointsForCorrectAnswer(
+                        TimeSpan.Zero, q.TimeLimitInSeconds, q.PointSystem)),
                 ScoreDistribution = BuildScoreDistribution(completed.Select(a => a.TotalScore).ToList()),
-                AttemptsOverTime = sessions
-                    .GroupBy(s => s.StartTime.Date)
-                    .OrderBy(g => g.Key)
-                    .Select(g => new AttemptsByDayPoint
-                    {
-                        Date = g.Key,
-                        Attempts = g.Count(),
-                        Completed = g.Count(s => s.IsCompleted),
-                    })
-                    .ToList(),
+                AttemptsOverTime = BuildAttemptsOverTime(
+                    sessions.Select(s => (s.StartTime, s.IsCompleted, s.Abandoned)), zone),
                 Questions = questionRows,
             };
+        }
+
+        /// <summary>
+        /// Which calendar day each attempt is counted under, and in whose clock.
+        ///
+        /// <b>This used to group on <c>s.StartTime.Date</c> — the raw UTC date.</b> Storage was
+        /// never the problem: <c>StartTime</c> is written from <c>DateTime.UtcNow</c> into a
+        /// <c>timestamp with time zone</c> column and read back as <c>Kind=Utc</c>, so the
+        /// *instant* of every attempt is exact. Truncating that instant in UTC was the bug — a
+        /// play at 01:00 in UTC+2 was charted on the previous day, and an owner in Prishtina
+        /// reading their own quiz's chart saw their evening plays land on yesterday.
+        ///
+        /// Shifting into the viewer's zone first answers the question this panel is actually
+        /// asked: "when are attempts arriving, in my time". It does **not** answer "what time of
+        /// day do players play" — that needs the player's own zone captured at session creation,
+        /// which is a new nullable column and a separate piece of work
+        /// (docs/proposals/quiz-view-redesign.md §8, step 2).
+        ///
+        /// The grouping already ran in memory after <c>.ToListAsync()</c>, so this costs nothing
+        /// extra in SQL.
+        ///
+        /// <b>Completed counts only genuine completions</b>, matching the headline figure.
+        /// Abandoned-by-timeout sessions carry <c>IsCompleted = true</c>, and the old
+        /// <c>g.Count(s => s.IsCompleted)</c> here counted them — so the chart's Completed series
+        /// could run above the completion rate printed beside it.
+        /// </summary>
+        private static List<AttemptsByDayPoint> BuildAttemptsOverTime(
+            IEnumerable<(DateTime StartTime, bool IsCompleted, bool Abandoned)> sessions,
+            TimeZoneInfo zone) =>
+            sessions
+                .GroupBy(s => TimeZoneInfo.ConvertTimeFromUtc(
+                    DateTime.SpecifyKind(s.StartTime, DateTimeKind.Utc), zone).Date)
+                .OrderBy(g => g.Key)
+                .Select(g => new AttemptsByDayPoint
+                {
+                    // Unspecified, not Utc: this is a wall-clock day in the viewer's zone, and
+                    // the absent trailing Z is what makes the browser read it as one. See
+                    // AttemptsByDayPoint.Date.
+                    Date = DateTime.SpecifyKind(g.Key, DateTimeKind.Unspecified),
+                    Attempts = g.Count(),
+                    Completed = g.Count(s => s.IsCompleted && !s.Abandoned),
+                })
+                .ToList();
+
+        /// <summary>
+        /// The zone to bucket days in: the caller's IANA name, else their raw UTC offset, else
+        /// UTC.
+        ///
+        /// The offset fallback exists because <c>FindSystemTimeZoneById</c> needs tzdata, and
+        /// whether the runtime image ships it is a deployment property rather than something this
+        /// code can assert. If the name ever fails to resolve, an offset is still far closer than
+        /// UTC — see <see cref="ReportCriteria.OffsetMinutes"/> for what it gives up.
+        /// </summary>
+        private TimeZoneInfo ResolveViewerZone(ReportCriteria criteria)
+        {
+            if (!string.IsNullOrWhiteSpace(criteria.TimeZone))
+            {
+                try
+                {
+                    return TimeZoneInfo.FindSystemTimeZoneById(criteria.TimeZone);
+                }
+                catch (Exception ex) when (
+                    ex is TimeZoneNotFoundException || ex is InvalidTimeZoneException)
+                {
+                    _logger.LogWarning(ex,
+                        "Unknown time zone '{TimeZone}' — is tzdata present in the image? Falling back to the reported offset, then UTC.",
+                        criteria.TimeZone);
+                }
+            }
+
+            if (criteria.OffsetMinutes is int minutes && Math.Abs(minutes) <= 14 * 60)
+            {
+                var offset = TimeSpan.FromMinutes(minutes);
+                var id = $"UTC{(minutes < 0 ? '-' : '+')}{offset.Duration():hh\\:mm}";
+                return TimeZoneInfo.CreateCustomTimeZone(id, offset, id, id);
+            }
+
+            return TimeZoneInfo.Utc;
         }
 
         // Bucket completed-attempt scores into 5 equal-width bands from 0 to the highest score.
@@ -291,19 +384,49 @@ namespace QuizAPI.Services.Reports
 
         // Date-only criteria read inclusively: "from" snaps to the start of the day, "to" to the
         // start of the next day (so the whole "to" day is included). The timestamps are stored as
-        // UTC (timestamptz), and Npgsql requires comparison values to be Kind=Utc, so we mark them.
-        private static (DateTime? From, DateTime? ToExclusive) NormalizeRange(ReportCriteria criteria)
+        // UTC (timestamptz), and Npgsql requires comparison values to be Kind=Utc, so we convert.
+        //
+        // The day boundaries are anchored in the CALLER'S zone, for the same reason the buckets
+        // are: "attempts from the 1st to the 7th" should mean the caller's 1st and 7th. With no
+        // zone supplied the zone resolves to UTC and this behaves exactly as it did — which is
+        // the case for both other reports, neither of which sends one.
+        private static (DateTime? From, DateTime? ToExclusive) NormalizeRange(
+            ReportCriteria criteria, TimeZoneInfo zone)
         {
-            DateTime? from = criteria.From.HasValue
-                ? DateTime.SpecifyKind(criteria.From.Value.Date, DateTimeKind.Utc)
-                : null;
-
-            DateTime? toExclusive = criteria.To.HasValue
-                ? DateTime.SpecifyKind(criteria.To.Value.Date.AddDays(1), DateTimeKind.Utc)
-                : null;
-
-            return (from, toExclusive);
+            return (
+                criteria.From.HasValue ? StartOfDayUtc(criteria.From.Value, zone) : null,
+                criteria.To.HasValue ? StartOfDayUtc(criteria.To.Value.AddDays(1), zone) : null);
         }
+
+        /// <summary>
+        /// Midnight on <paramref name="local"/> in <paramref name="zone"/>, as a UTC instant.
+        ///
+        /// A handful of zones spring forward AT midnight (so 00:00 simply does not exist on that
+        /// date) and a few fall back through it (so it happens twice). `ConvertTimeToUtc` throws
+        /// on the first and silently picks standard time on the second, and neither is worth
+        /// failing a report over: walk forward to the first valid minute instead.
+        /// </summary>
+        private static DateTime StartOfDayUtc(DateTime local, TimeZoneInfo zone)
+        {
+            var midnight = DateTime.SpecifyKind(local.Date, DateTimeKind.Unspecified);
+
+            for (var i = 0; i < 180 && zone.IsInvalidTime(midnight); i++)
+                midnight = midnight.AddMinutes(1);
+
+            return zone.IsInvalidTime(midnight)
+                ? DateTime.SpecifyKind(local.Date, DateTimeKind.Utc)
+                : TimeZoneInfo.ConvertTimeToUtc(midnight, zone);
+        }
+
+        /// <summary>
+        /// True when an answer has a settled outcome. TimedOut counts: the player was shown the
+        /// question and did not answer it correctly in time, which is exactly what a correct rate
+        /// is measuring. Pending and NotAnswered do not — neither is evidence either way.
+        /// </summary>
+        private static bool IsGraded(AnswerStatus status) =>
+            status == AnswerStatus.Correct
+            || status == AnswerStatus.Incorrect
+            || status == AnswerStatus.TimedOut;
 
         private static double Percent(int part, int total) =>
             total == 0 ? 0 : Math.Round(100.0 * part / total, 1);

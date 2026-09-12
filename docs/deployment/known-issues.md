@@ -1002,6 +1002,72 @@ redesign means a scroll regression could have come from either.
 
 ---
 
+## Single-quiz analytics page (2026-09-11 — see docs/quiz/quiz-analytics-page.md)
+
+- ~~**P2 — Attempts-over-time is bucketed by the *server's* UTC day.**~~ **Fixed (2026-09-12).**
+  The client now sends its IANA zone (with a UTC-offset fallback) on the analytics request and
+  `ReportService` shifts each `StartTime` into it before truncating, so an attempt is counted on
+  the day its player experienced. The bucket key serializes without a `Z` so the browser reads it
+  as a local wall-clock date. Date-range boundaries anchor in the same zone. See
+  [`../quiz/quiz-analytics-page.md`](../quiz/quiz-analytics-page.md).
+
+  **One thing to watch in production:** the IANA path needs `tzdata` in the API image. If it is
+  missing, the log carries *"Unknown time zone '…' — is tzdata present in the image?"* and the
+  offset fallback takes over — correct except across a DST boundary. Worth grepping for once
+  after the first deploy.
+  → `OxygenBackend/QuizAPI/Services/Reports/ReportService.cs`,
+    `src/pages/Dashboard/Pages/Quiz/api/get-quiz-analytics.ts`
+
+- **P3 — An answer can sit `Pending` forever, and nothing surfaces it to an operator.**
+  On a quiz with `ShowFeedbackImmediately = false`, answers are persisted `Pending` and graded by
+  a Hangfire job. **Nothing grades them at quiz end** — `CompleteSessionAsync` and the
+  auto-complete in `SubmitAnswerService` only set the flags, and `/results` merely *waits* up to
+  30s for the jobs to land before returning whatever state exists. Grading happens in
+  `ProcessAnswerGradingAsync` or not at all.
+
+  It normally lands within seconds. Three paths strand it permanently:
+  1. ~~`ProcessAnswerGradingAsync` **returned** instead of throwing when the row could not be
+     read, under a comment reading "Let Hangfire retry the entire job" — a job that returns
+     normally is recorded **Succeeded** and never retried, so it did the exact opposite.~~
+     **Fixed (2026-09-12):** it now distinguishes a genuinely deleted row (routine on the guest
+     path, where answers are deleted on results view) from one it merely failed to read, and
+     throws on the latter so the three `[AutomaticRetry]` attempts actually happen.
+  2. `EnqueueAnswerGrading` rethrows and `TryEnqueueBackgroundGrading` catches-and-continues, so
+     a failed enqueue leaves a row with no job at all. Deliberate — the answer is already
+     committed and failing the submission would be worse — but it leaves no retry.
+  3. The three automatic retries are exhausted and the job lands in Hangfire's Failed state.
+
+  Analytics no longer *misreport* any of this: `correctRate` is computed over `gradedCount`, so
+  stranded rows can't drag a question toward 0%, and the page shows "Awaiting grading". That is
+  a symptom made visible, not the remaining defect closed — there is still no sweep for
+  long-`Pending` answers and no alert, so an operator learns about it by opening a quiz page.
+  A recurring job re-enqueuing answers `Pending` for more than a few minutes would close it, and
+  there is already a `recurringJobs.AddOrUpdate` block in `Program.cs` to hang it off.
+  → `OxygenBackend/QuizAPI/Controllers/Quizzes/Services/QuizSessionServices/AnswerGradingService/AnswerGradingService.cs`,
+    `.../SubmitAnswerService/SubmitAnswerService.cs`
+
+- **P3 — `GetQuestionAnalyticsAsync` still counts `Pending` answers in its correct-rate
+  denominator.** The same bug that was fixed in `GetQuizAnalyticsAsync` above, in the sibling
+  report. Left alone on purpose: the reports screen is not shipped
+  ([`../quiz/reports.md`](../quiz/reports.md)), `QuestionAnalyticsRow` has no `GradedCount` field
+  to expose, and the fix belongs with whatever work makes that screen reachable. Two lines when
+  someone is next in that file.
+  → `OxygenBackend/QuizAPI/Services/Reports/ReportService.cs`
+
+- ~~**P3 — `AttemptsByDayPoint.Completed` counts abandoned sessions; the headline `Completed`
+  does not.**~~ **Fixed (2026-09-12)**, alongside the timezone bucketing in the same method —
+  the per-day count is now `IsCompleted && !Abandoned`, matching the headline figure. It had only
+  ever been visible on quizzes past `MIN_ATTEMPTS_FOR_TREND` attempts, where the chart is drawn.
+  → `OxygenBackend/QuizAPI/Services/Reports/ReportService.cs`
+
+- **P3 — `User/Components/stats-cards.tsx` is fake and has no call sites.** Four hard-coded
+  literals with invented deltas ("+2.5% from last month") and its data hook commented out. It looks
+  like the reusable stat component and isn't — the real one is
+  `Quiz/components/quiz-view/stat-tile.tsx`. Delete it before someone extends it.
+  → `src/pages/Dashboard/Pages/User/Components/stats-cards.tsx`
+
+---
+
 ## Documentation debt (2026-08-23)
 
 - **P3 — Four `*-plan.md` files are load-bearing reference docs and shouldn't be.**

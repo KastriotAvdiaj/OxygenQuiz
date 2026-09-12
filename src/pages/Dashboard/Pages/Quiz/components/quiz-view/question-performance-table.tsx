@@ -5,15 +5,15 @@ import type { QuizQuestionAnalyticsRow } from "@/types/analytics-types";
 import type { QuizQuestionDTO } from "@/types/quiz-types";
 
 import { QuestionPerformanceRow } from "./question-performance-row";
-import { MIN_ANSWERS_FOR_RATE, SIGNED_IN_ONLY_NOTE, needsALook } from "./thresholds";
+import {
+  MIN_ANSWERS_FOR_RATE,
+  SIGNED_IN_ONLY_NOTE,
+  anyRateIsShowable,
+  needsALook,
+  rateState,
+} from "./thresholds";
 
 type SortKey = "order" | "hardest" | "slowest";
-
-const SORT_OPTIONS = [
-  { value: "order" as const, label: "Quiz order" },
-  { value: "hardest" as const, label: "Hardest first" },
-  { value: "slowest" as const, label: "Slowest first" },
-];
 
 export interface QuestionPerformanceTableProps {
   questions: QuizQuestionDTO[];
@@ -45,28 +45,81 @@ export const QuestionPerformanceTable = ({
     [analytics]
   );
 
-  // Derived during render rather than stored (CLAUDE.md, "Derive during render instead of
-  // storing"): sorting is a pure function of the questions and the chosen key, and holding a
-  // sorted copy in state would need re-syncing on every refetch.
+  /**
+   * Whether each sort can actually do anything, and — where it can't — why.
+   *
+   * "Hardest first" ranks on correct rate, and a rate is withheld until a question has
+   * `MIN_ANSWERS_FOR_RATE` graded answers. On a quiz with a handful of plays that is every
+   * question, so the comparator used to fall through to `orderInQuiz` for every pair and produce
+   * a list identical to "Quiz order" — the tab lit up and nothing moved. A control that can only
+   * no-op should say so rather than pretend.
+   *
+   * "Slowest first" has no such floor: `averageTimeSeconds` is real from the first answer, so it
+   * is only dead when literally nothing has been answered.
+   */
+  const hardestReason = useMemo(() => {
+    const rows = questions.map((q) => statsById.get(q.questionId));
+    if (anyRateIsShowable(rows)) return undefined;
+    return `Sorting by difficulty needs at least one question with ${MIN_ANSWERS_FOR_RATE} graded answers. Until then every question's correct rate is withheld, so there is nothing to rank.`;
+  }, [questions, statsById]);
+
+  const slowestReason = useMemo(() => {
+    const answered = questions.some(
+      (q) => (statsById.get(q.questionId)?.timesAnswered ?? 0) > 0
+    );
+    return answered
+      ? undefined
+      : "Sorting by time needs at least one answered question.";
+  }, [questions, statsById]);
+
+  const sortOptions = useMemo(
+    () => [
+      { value: "order" as const, label: "Quiz order" },
+      {
+        value: "hardest" as const,
+        label: "Hardest first",
+        disabledReason: hardestReason,
+      },
+      {
+        value: "slowest" as const,
+        label: "Slowest first",
+        disabledReason: slowestReason,
+      },
+    ],
+    [hardestReason, slowestReason]
+  );
+
+  // The *effective* sort, derived rather than stored: if the data stops supporting the chosen
+  // key — a refetch, or an admin opening a quiz whose stats are 404ing — the list falls back to
+  // quiz order without an Effect racing the render to reset the state (CLAUDE.md, "Derive during
+  // render instead of storing"). The chosen key is kept, so the tab re-selects itself the moment
+  // the data supports it again.
+  const effectiveSort: SortKey =
+    (sort === "hardest" && hardestReason) || (sort === "slowest" && slowestReason)
+      ? "order"
+      : sort;
+
+  // Sorting is a pure function of the questions and the chosen key; holding a sorted copy in
+  // state would need re-syncing on every refetch.
   const ordered = useMemo(() => {
     const rows = [...questions];
 
-    if (sort === "hardest") {
+    if (effectiveSort === "hardest") {
       // Questions without enough answers sort last regardless of their apparent rate — a 0%
       // built from one answer is not the hardest question, it is the least-known one, and
       // floating it to the top is precisely the false alarm MIN_ANSWERS_FOR_RATE prevents.
       return rows.sort((a, b) => {
         const sa = statsById.get(a.questionId);
         const sb = statsById.get(b.questionId);
-        const aRated = (sa?.timesAnswered ?? 0) >= MIN_ANSWERS_FOR_RATE;
-        const bRated = (sb?.timesAnswered ?? 0) >= MIN_ANSWERS_FOR_RATE;
+        const aRated = rateState(sa).kind === "rated";
+        const bRated = rateState(sb).kind === "rated";
         if (aRated !== bRated) return aRated ? -1 : 1;
         if (!aRated) return a.orderInQuiz - b.orderInQuiz;
         return sa!.correctRate - sb!.correctRate;
       });
     }
 
-    if (sort === "slowest") {
+    if (effectiveSort === "slowest") {
       return rows.sort((a, b) => {
         const sa = statsById.get(a.questionId)?.averageTimeSeconds ?? 0;
         const sb = statsById.get(b.questionId)?.averageTimeSeconds ?? 0;
@@ -75,7 +128,7 @@ export const QuestionPerformanceTable = ({
     }
 
     return rows.sort((a, b) => a.orderInQuiz - b.orderInQuiz);
-  }, [questions, sort, statsById]);
+  }, [questions, effectiveSort, statsById]);
 
   const flaggedCount = useMemo(
     () => questions.filter((q) => needsALook(statsById.get(q.questionId))).length,
@@ -110,9 +163,9 @@ export const QuestionPerformanceTable = ({
           </p>
         </div>
         <SegmentedControl
-          value={sort}
+          value={effectiveSort}
           onValueChange={(value) => setSort(value as SortKey)}
-          options={SORT_OPTIONS}
+          options={sortOptions}
           aria-label="Sort questions"
         />
       </div>

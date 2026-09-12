@@ -59,6 +59,11 @@ namespace QuizAPI.Controllers.Reports
         }
 
         // ── Single-quiz analytics (individual quiz page) ──────────────────────────
+        //
+        // `criteria.timeZone` / `criteria.offsetMinutes` decide which calendar day each attempt
+        // is counted under. They are the caller's own clock, not a permission, so there is
+        // nothing to validate beyond what ReportService already does — an unrecognised zone
+        // degrades to the offset and then to UTC rather than failing the request.
         [HttpGet("quiz/{quizId:int}/analytics")]
         public async Task<IActionResult> QuizAnalytics(int quizId, [FromQuery] ReportCriteria criteria, CancellationToken ct)
         {
