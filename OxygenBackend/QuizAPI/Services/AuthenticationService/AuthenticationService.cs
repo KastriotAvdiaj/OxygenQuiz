@@ -5,6 +5,7 @@ using QuizAPI.ManyToManyTables;
 using QuizAPI.Mapping;
 using QuizAPI.Models;
 using QuizAPI.Repositories.Interfaces;
+using QuizAPI.Services.AccountClosure;
 using QuizAPI.Services.Audit;
 using QuizAPI.Services.Roles;
 using QuizAPI.Services.Email;
@@ -32,6 +33,7 @@ public class AuthenticationService(
     IEmailSender emailSender,
     IBreachedPasswordChecker breachedPasswordChecker,
     ApplicationDbContext dbContext,
+    IAccountClosureService accountClosure,
     IConfiguration configuration) : IAuthenticationService
 {
     private const string DefaultRoleName = RoleRules.DefaultRole;
@@ -51,6 +53,7 @@ public class AuthenticationService(
     private readonly IEmailSender _emailSender = emailSender;
     private readonly IBreachedPasswordChecker _breachedPasswordChecker = breachedPasswordChecker;
     private readonly ApplicationDbContext _dbContext = dbContext;
+    private readonly IAccountClosureService _accountClosure = accountClosure;
     private readonly IConfiguration _configuration = configuration;
 
     public async Task<AuthResult> SignupAsync(SignupDTO dto, CancellationToken ct = default)
@@ -231,7 +234,10 @@ public class AuthenticationService(
 
     public async Task<AuthResult> LoginAsync(LoginDTO dto, CancellationToken ct = default)
     {
-        var user = await _userRepository.GetByEmailAsync(dto.Email, tracked: true, ct);
+        // Past the soft-delete filter on purpose: an account in its closure grace period is
+        // soft-deleted, and signing in is how the person cancels it (docs/adr/0012-...). Which
+        // kind of deleted row this is gets decided below, AFTER the password check.
+        var user = await _userRepository.GetByEmailIncludingDeletedAsync(dto.Email, tracked: true, ct);
 
         // A null/empty hash means the account was created via Google/Microsoft and has no
         // password. It must fail BEFORE BCrypt.Verify (which throws on a malformed hash), and it
@@ -246,6 +252,28 @@ public class AuthenticationService(
                 AuditActions.LoginFailed, entity: "User", newValue: new { dto.Email }, ct: ct);
             throw new UnauthorizedException("Invalid credentials.");
         }
+
+        // Soft-deleted with no closure request = an ADMIN removed this account. That is a lockout
+        // and stays one: same generic message, so the widened lookup above cannot be used to tell
+        // a removed account apart from a wrong password.
+        //
+        // An anonymised account cannot reach here at all (its hash is null, so the check above
+        // already rejected it) — it is named anyway, because relying on that is relying on a
+        // detail of a different method.
+        if (user.AnonymisedAt is not null || (user.IsDeleted && user.DeletionRequestedAt is null))
+        {
+            await _auditService.LogAsync(
+                AuditActions.LoginFailed, entity: "User", newValue: new { dto.Email }, ct: ct);
+            throw new UnauthorizedException("Invalid credentials.");
+        }
+
+        // Closing, and they came back. Signing in restores the account outright — the gentlest
+        // possible recovery, and it fails in the safe direction: the worst case is an account that
+        // was going to be scrubbed isn't, which the person can redo in two clicks. Returns false
+        // for the overwhelming majority of logins, which have nothing pending.
+        //
+        // It operates on the same scoped DbContext, so it un-deletes the very entity tracked here.
+        await _accountClosure.CancelClosureAsync(user.Id, ct);
 
         user.LastLogin = DateTime.UtcNow;
         await _userRepository.SaveChangesAsync(ct);

@@ -59,9 +59,9 @@ shared definition the invite-code mint guard uses, so the delete rule cannot dri
 role-granting rule.
 
 Self-deletion is refused because this endpoint is the *administrative* tool. Closing your own
-account is a separate self-service flow with its own grace period, specified in
-[`adr/0012-account-deletion-is-anonymisation-after-a-grace-period.md`](../adr/0012-account-deletion-is-anonymisation-after-a-grace-period.md)
-and **not yet built** — so today an Admin who wants to leave has to ask another admin.
+account is a separate self-service flow with its own 30-day grace period —
+[`account-closure.md`](account-closure.md). Its backend exists; the settings UI that would call it
+does not yet, so today an Admin who wants to leave still has to ask another admin.
 
 ---
 

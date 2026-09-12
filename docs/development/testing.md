@@ -84,7 +84,10 @@ interesting part, so we fake it with Moq (pattern C below).
 | `Discovery/QuizVarietyOrderingTests.cs` | Pure unit | The catalogue's "variety" ordering interleaves categories, newest of each first, so a new user sees breadth instead of a wall of one category. Plain LINQ, so it runs identically here and in SQL. See [`../quiz/quiz-discovery.md`](../quiz/quiz-discovery.md). |
 | `Questions/AcceptableAnswerRulesTests.cs` | Pure unit | What `Normalize` stores in the acceptable-answers JSON column. Every write path funnels through it — the per-type endpoints, AI import, CSV import — so this is what ends up persisted. |
 | `Stats/UserStatsServiceTests.cs` | Service + InMemory DB | Profile play-stats inclusion rules, all three easy to get wrong and impossible to spot when wrong: guest sessions never count, abandoned sessions don't drag the average down, only graded answers reach accuracy. |
-| `Users/UserServiceRoleTests.cs` | Service + real repo + InMemory DB | The privilege-escalation rules on "change user role": only a SuperAdmin may grant or remove SuperAdmin, and the last SuperAdmin can't be demoted. Real repository so the lockout count query actually runs. |
+| `Users/UserServiceRoleTests.cs` | Service + real repo + InMemory DB | The privilege-escalation rules on "change user role": only a SuperAdmin may grant or remove SuperAdmin, and a protected account's roles can't be changed at all. Also pins the *inverse* of the guard it replaced — demoting the only unprotected SuperAdmin now succeeds — so the removed count-based lockout can't quietly come back. See [`../adr/0011-system-accounts-are-protected-rows.md`](../adr/0011-system-accounts-are-protected-rows.md). |
+| `Users/UserServiceDeleteTests.cs` | Service + real repo + InMemory DB | Every cell of the administrative-delete matrix: an Admin may delete plain users only, a SuperAdmin anything unprotected, nobody a protected account or themselves. The load-bearing case is a protected account with **no roles at all** — the guest placeholder sails past the elevated-role check, so protection is the only thing stopping it. Until ADR 0011 the sole check was "is the caller an Admin?", and the deletion it allowed has no undo. |
+| `Users/AccountClosureTests.cs` | Service + InMemory DB | Self-service closure: the three states (active / requested / anonymised), that a second request doesn't restart the 30-day clock, that the scrub keeps the row and destroys the person in it, that the sweep is idempotent, and that it skips protected accounts even if the request-time check were bypassed. See [`../auth/account-closure.md`](../auth/account-closure.md). |
+| `Auth/AccountClosureLoginTests.cs` | Service + real repo + real closure service + InMemory DB | That signing in during the grace period actually cancels the closure — wiring across three classes, so nothing here is mocked that matters (see pattern E). Its twin test is the safety net: an **admin-deleted** account is also soft-deleted, and must stay locked out despite login's widened lookup. |
 | `Auth/InviteCodeServiceTests.cs` | Service + InMemory DB | Mint-time invite rules, load-bearing one being the escalation guard: a role-granting code is a second way to hand out that role, so an Admin must not be able to mint themselves a SuperAdmin code and walk around the guard on role updates. See [`../auth/invite-code-system.md`](../auth/invite-code-system.md). |
 | `Auth/ExternalAuthenticationTests.cs` | Service + Moq + real TokenService | Google/Microsoft sign-in: login-or-link resolution, invite-gated external signup, and the signup-ticket boundary. The provider verifier is mocked (their crypto isn't ours to test); the ticket is a real signed JWT, so tamper rejection and "an access token is NOT a ticket" are asserted against the real implementation. See [`../auth/social-login.md`](../auth/social-login.md). |
 | `Auth/PwnedPasswordsCheckerTests.cs` | Pure unit (internals) | The two pure halves of the k-anonymity lookup: how the hash is split, how the response is read. Worth testing because **every way it breaks looks like working** — a case change or a stray `\r` turns "breached" into "no match", which is what a healthy check returns for a good password. See [`../auth/password-policy.md`](../auth/password-policy.md). |
@@ -260,6 +263,31 @@ Components — pattern: `confirmation-dialog.test.tsx` (use `render`, `screen`,
 `fireEvent`/`userEvent`, and import `@testing-library/jest-dom` for matchers).
 
 ---
+
+### E. When a mock is the wrong tool
+
+Patterns B and C are both legitimate and the choice between them is not stylistic.
+
+**Mock when the thing under test is one class's decision.** "Does signup reject a breached
+password?" needs a checker that says *breached* on demand, not a real HTTP call. The test is fast,
+and a failure points at one file.
+
+**Use the real collaborators when the thing under test is the wiring between classes.**
+`AccountClosureLoginTests` is the reference: "signing in cancels a pending closure" is a claim about
+`LoginAsync`, `AccountClosureService` and `UserRepository` agreeing with each other. A
+`Mock<IAccountClosureService>` there would assert only that `LoginAsync` called a method — it would
+keep passing if the closure service stopped clearing `IsDeleted`, and keep passing if the lookup
+silently reverted to the filtered one. Both are the bug.
+
+**The failure mode to watch for is a stub that has gone stale.** When `LoginAsync` changed from
+`GetByEmailAsync` to `GetByEmailIncludingDeletedAsync`, two tests in `AuthenticationServiceTests`
+were still stubbing the old method. The mock returned `null`, login threw, and both tests **stayed
+green** — including one that would now pass with the password check deleted entirely. Nothing warns
+you: Moq answers un-configured calls with a default rather than complaining.
+
+So, when you change a method a mocked collaborator exposes, grep the test project for the old name
+in the same change. And if a test's assertion would survive deleting the behaviour it names, it is
+testing the mock.
 
 ## 5. Adding a new test — step by step
 

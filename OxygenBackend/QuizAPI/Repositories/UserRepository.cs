@@ -50,6 +50,21 @@ namespace QuizAPI.Repositories
             return await query.SingleOrDefaultAsync(u => u.Email == email, ct);
         }
 
+        /// <summary>
+        /// Login's lookup. Deliberately looks past the global <c>!IsDeleted</c> filter, because a
+        /// user whose account is closing IS soft-deleted and signing in is how they cancel it
+        /// (docs/adr/0012-...). LoginAsync then decides which kind of deleted row it has: a closure
+        /// in its grace period lets the person in and cancels, an ADMIN deletion does not — so
+        /// widening the lookup here does not widen who can log in.
+        /// </summary>
+        public async Task<User?> GetByEmailIncludingDeletedAsync(
+            string email, bool tracked = false, CancellationToken ct = default)
+        {
+            var query = WithRolesAndPermissions().IgnoreQueryFilters();
+            if (!tracked) query = query.AsNoTracking();
+            return await query.SingleOrDefaultAsync(u => u.Email == email, ct);
+        }
+
         public async Task<IReadOnlyList<User>> GetByIdsAsync(IEnumerable<Guid> ids, CancellationToken ct = default) =>
             await WithRoles().AsNoTracking().Where(u => ids.Contains(u.Id)).ToListAsync(ct);
 

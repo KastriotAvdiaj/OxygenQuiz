@@ -9,6 +9,7 @@ using QuizAPI.Exceptions;
 using QuizAPI.ManyToManyTables;
 using QuizAPI.Models;
 using QuizAPI.Repositories.Interfaces;
+using QuizAPI.Services.AccountClosure;
 using QuizAPI.Services.Audit;
 using QuizAPI.Services.AuthenticationService;
 using QuizAPI.Services.AuthenticationService.External;
@@ -60,6 +61,11 @@ public class ExternalAuthenticationTests
                  .ReturnsAsync(GoogleIdentity);
     }
 
+    // Account closure is only reachable from LoginAsync, where it cancels a pending closure.
+    // Default-mocked: CancelClosureAsync returns false, which is "nothing was pending" — the
+    // answer for every account in these tests. See docs/adr/0012-...
+    private readonly Mock<IAccountClosureService> _accountClosure = new();
+
     private static ApplicationDbContext NewInMemoryContext() =>
         new(new DbContextOptionsBuilder<ApplicationDbContext>()
                 .UseInMemoryDatabase(Guid.NewGuid().ToString())
@@ -82,6 +88,7 @@ public class ExternalAuthenticationTests
         new[] { _verifier.Object },
         _tokens.Object, _audit.Object,
         _notifications.Object, _email.Object, _breachedPasswords.Object, NewInMemoryContext(),
+        _accountClosure.Object,
         Config(requireInviteCode, googleEnabled));
 
     private static ExternalLoginDTO LoginDto() => new() { Provider = "google", IdToken = "raw-id-token" };

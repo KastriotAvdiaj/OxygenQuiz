@@ -133,7 +133,6 @@ builder.Services.AddScoped<IQuestionCategoryRepository, QuestionCategoryReposito
 builder.Services.AddScoped<IQuestionDifficultyRepository, QuestionDifficultyRepository>();
 builder.Services.AddScoped<IQuestionLanguageRepository, QuestionLanguageRepository>();
 builder.Services.AddScoped<ICategoryPaletteService, CategoryPaletteService>();
-builder.Services.AddScoped<IUserService, UserService>();
 
 // Exception Handling services
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
@@ -144,6 +143,12 @@ builder.Services.AddScoped<IPermissionService, PermissionService>();
 
 // Core Entity Services
 builder.Services.AddScoped<IUserService, UserService>();
+// Self-service account closure (docs/adr/0012-...). Scoped, and also resolved by the Hangfire
+// sweeper below through its own scope.
+builder.Services.Configure<QuizAPI.Services.AccountClosure.AccountClosureOptions>(
+    configuration.GetSection(QuizAPI.Services.AccountClosure.AccountClosureOptions.SectionName));
+builder.Services.AddScoped<QuizAPI.Services.AccountClosure.IAccountClosureService,
+    QuizAPI.Services.AccountClosure.AccountClosureService>();
 builder.Services.AddScoped<QuizAPI.Controllers.Users.Services.IAvatarService, QuizAPI.Controllers.Users.Services.AvatarService>();
 // Profile play-stats (read-only aggregation — see docs/quiz/user-stats-history.md).
 builder.Services.AddScoped<QuizAPI.Controllers.Users.Services.UserStatsService.IUserStatsService, QuizAPI.Controllers.Users.Services.UserStatsService.UserStatsService>();
@@ -307,6 +312,7 @@ builder.Services.AddScoped<QuizAPI.Services.Ai.IAiQuotaService, QuizAPI.Services
 builder.Services.AddScoped<QuizAPI.Services.Ai.IAiGenerationService, QuizAPI.Services.Ai.AiGenerationService>();
 builder.Services.AddScoped<QuizAPI.Services.Ai.AiReservationSweeper>();
 builder.Services.AddScoped<QuizAPI.Services.AbandonedSessionSweeper>();
+builder.Services.AddScoped<QuizAPI.Services.AccountAnonymisationSweeper>();
 
 builder.Services.AddHttpContextAccessor();
 
@@ -576,6 +582,16 @@ using (var scope = app.Services.CreateScope())
         "abandoned-session-sweep",
         service => service.RunAsync(),
         "*/5 * * * *" // every 5 minutes
+    );
+
+    // Scrubs accounts whose 30-day closure grace period has elapsed. THIS JOB IS THE PROMISE: a
+    // closure that never gets swept is an account that told its owner their data was going and
+    // then kept it. Hourly is plenty against a thirty-day deadline, and lighter than the
+    // five-minute sweeps above, whose deadlines are measured in minutes.
+    recurringJobs.AddOrUpdate<QuizAPI.Services.AccountAnonymisationSweeper>(
+        "account-anonymisation-sweep",
+        service => service.RunAsync(),
+        Cron.Hourly()
     );
 }
 

@@ -9,6 +9,7 @@ using QuizAPI.Exceptions;
 using QuizAPI.ManyToManyTables;
 using QuizAPI.Models;
 using QuizAPI.Repositories.Interfaces;
+using QuizAPI.Services.AccountClosure;
 using QuizAPI.Services.Audit;
 using QuizAPI.Services.AuthenticationService;
 using QuizAPI.Services.Email;
@@ -43,6 +44,11 @@ public class AuthenticationServiceTests
     // can't reach the API must never block a signup.
     private readonly Mock<IBreachedPasswordChecker> _breachedPasswords = new();
 
+    // Account closure is only reachable from LoginAsync, where it cancels a pending closure.
+    // Default-mocked: CancelClosureAsync returns false, which is "nothing was pending" — the
+    // answer for every account in these tests. See docs/adr/0012-...
+    private readonly Mock<IAccountClosureService> _accountClosure = new();
+
     // The signup transaction is opened on the DbContext. EF's in-memory provider has no real
     // transactions, so we silence its TransactionIgnoredWarning and treat begin/commit/rollback
     // as no-ops — the atomic-consume guarantee lives in the SQL WHERE clause, covered separately.
@@ -67,6 +73,7 @@ public class AuthenticationServiceTests
         Enumerable.Empty<QuizAPI.Services.AuthenticationService.External.IExternalIdentityVerifier>(),
         _tokens.Object, _audit.Object,
         _notifications.Object, _email.Object, _breachedPasswords.Object, NewInMemoryContext(),
+        _accountClosure.Object,
         Config(requireInviteCode));
 
     private static SignupDTO ValidSignup(string? inviteCode = null) => new()
@@ -363,7 +370,9 @@ public class AuthenticationServiceTests
     [Fact]
     public async Task Login_WhenUserNotFound_ThrowsUnauthorized()
     {
-        _users.Setup(r => r.GetByEmailAsync(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+        // GetByEmailIncludingDeletedAsync, not GetByEmailAsync: login deliberately looks past the
+        // soft-delete filter so a closing account can be recovered by signing in (ADR 0012).
+        _users.Setup(r => r.GetByEmailIncludingDeletedAsync(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
               .ReturnsAsync((User?)null);
 
         await Assert.ThrowsAsync<UnauthorizedException>(
@@ -379,7 +388,7 @@ public class AuthenticationServiceTests
             Email = "x@y.com",
             PasswordHash = BCrypt.Net.BCrypt.HashPassword("the-real-password"),
         };
-        _users.Setup(r => r.GetByEmailAsync("x@y.com", It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+        _users.Setup(r => r.GetByEmailIncludingDeletedAsync("x@y.com", It.IsAny<bool>(), It.IsAny<CancellationToken>()))
               .ReturnsAsync(user);
 
         await Assert.ThrowsAsync<UnauthorizedException>(

@@ -21,6 +21,11 @@ namespace QuizAPI.Services.Audit
         public const string PasswordReset = "PasswordReset";
         public const string UserCreated = "UserCreated";
         public const string UserDeleted = "UserDeleted";
+        // Self-service closure, as distinct from UserDeleted above (an admin removing someone).
+        // See docs/adr/0012-account-deletion-is-anonymisation-after-a-grace-period.md.
+        public const string AccountClosureRequested = "AccountClosureRequested";
+        public const string AccountClosureCancelled = "AccountClosureCancelled";
+        public const string AccountAnonymised = "AccountAnonymised";
         // A user's role set was changed by an admin (from the Users page).
         public const string UserRolesChanged = "UserRolesChanged";
 

@@ -44,6 +44,22 @@ namespace QuizAPI.Models
         // See docs/adr/0011-system-accounts-are-protected-rows.md.
         public bool IsProtected { get; set; }
 
+        // Self-service account closure (docs/adr/0012-...). Three states, read together:
+        //
+        //   both null                          → active
+        //   DeletionRequestedAt set, IsDeleted → closure requested, grace period running.
+        //                                        Recoverable: signing in cancels it.
+        //   AnonymisedAt set                   → scrubbed. The row survives so every foreign key
+        //                                        still resolves, but nobody is in it any more.
+        //
+        // IsDeleted stays exactly what it was — the flag the global query filter reads — rather
+        // than growing a third meaning. Which is also how an ADMIN deletion stays distinguishable
+        // from a closure: IsDeleted with no DeletionRequestedAt is an admin removing an account,
+        // and that one is a lockout with no way back in (see AuthenticationService.LoginAsync).
+        public DateTime? DeletionRequestedAt { get; set; }
+
+        public DateTime? AnonymisedAt { get; set; }
+
         public DateTime LastLogin { get; set; }
 
 

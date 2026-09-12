@@ -5,6 +5,7 @@ using QuizAPI.Controllers.Users.Services.UserStatsService;
 using QuizAPI.DTOs.Quiz;
 using QuizAPI.DTOs.User;
 using QuizAPI.Filtering;
+using QuizAPI.Services.AccountClosure;
 using QuizAPI.Services.CurrentUserService;
 using QuizAPI.Services.Interfaces;
 
@@ -19,17 +20,20 @@ namespace QuizAPI.Controllers.Users
         private readonly IAvatarService _avatarService;
         private readonly ICurrentUserService _currentUser;
         private readonly IUserStatsService _userStatsService;
+        private readonly IAccountClosureService _accountClosure;
 
         public UsersController(
             IUserService userService,
             IAvatarService avatarService,
             ICurrentUserService currentUser,
-            IUserStatsService userStatsService)
+            IUserStatsService userStatsService,
+            IAccountClosureService accountClosure)
         {
             _userService = userService;
             _avatarService = avatarService;
             _currentUser = currentUser;
             _userStatsService = userStatsService;
+            _accountClosure = accountClosure;
         }
 
         /// <summary>
@@ -233,6 +237,48 @@ namespace QuizAPI.Controllers.Users
 
             await _userService.DeleteUserAsync(id, User.IsInRole("SuperAdmin"), callerId, ct);
             return NoContent();
+        }
+
+        /// <summary>
+        /// Closes the caller's own account: schedules anonymisation and signs them out. Returns the
+        /// date the scrub happens, so the client can say when recovery stops being possible.
+        ///
+        /// Separate from DELETE {id} on purpose — that is the administrative tool and refuses
+        /// self-deletion. This one is how a person leaves, and unlike the admin action it is
+        /// reversible for the whole grace period, by simply signing in again.
+        /// See docs/adr/0012-account-deletion-is-anonymisation-after-a-grace-period.md.
+        /// </summary>
+        [HttpPost("me/closure")]
+        [Authorize]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public async Task<IActionResult> CloseMyAccount(CancellationToken ct)
+        {
+            if (_currentUser.UserId is not Guid userId)
+                return Unauthorized();
+
+            var anonymiseAt = await _accountClosure.RequestClosureAsync(userId, ct);
+            return Ok(new { anonymiseAt });
+        }
+
+        /// <summary>
+        /// Cancels a pending closure for the caller. Signing in does this automatically, so this
+        /// exists for the case where the person is already signed in when they change their mind —
+        /// and so that "undo" is an explicit action rather than a side effect you have to know about.
+        /// </summary>
+        [HttpDelete("me/closure")]
+        [Authorize]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> CancelMyAccountClosure(CancellationToken ct)
+        {
+            if (_currentUser.UserId is not Guid userId)
+                return Unauthorized();
+
+            var cancelled = await _accountClosure.CancelClosureAsync(userId, ct);
+            return cancelled ? NoContent() : NotFound("No pending account closure.");
         }
 
         /// <summary>
