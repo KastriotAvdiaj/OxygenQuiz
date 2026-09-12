@@ -15,9 +15,14 @@ using Xunit;
 namespace QuizAPI.Tests.Users;
 
 /// <summary>
-/// Tests for the admin "change user role" action, focused on the privilege-escalation rules:
-/// only a SuperAdmin may grant or remove the SuperAdmin role, and the last SuperAdmin can't be
-/// demoted. Uses a real repository over an in-memory context so the lockout count query runs for real.
+/// Tests for the admin "change user role" action, focused on the privilege-escalation rules: only a
+/// SuperAdmin may grant or remove the SuperAdmin role, and a protected account's roles cannot be
+/// changed at all. Uses a real repository over an in-memory context.
+///
+/// The count-based "last SuperAdmin can't be demoted" guard was removed in ADR 0011 — the guarantee
+/// is now that the seeded root account is protected and therefore permanently a SuperAdmin. See
+/// <see cref="RemovingTheOnlyUnprotectedSuperAdmin_Succeeds"/>, which pins the new behaviour so the
+/// old guard cannot quietly come back.
 /// </summary>
 public class UserServiceRoleTests
 {
@@ -41,6 +46,15 @@ public class UserServiceRoleTests
             new Role { Id = AdminRoleId, Name = "Admin", Description = "", isActive = true, RolePermissions = new List<RolePermission>() },
             new Role { Id = SuperAdminRoleId, Name = "SuperAdmin", Description = "", isActive = true, RolePermissions = new List<RolePermission>() });
         ctx.SaveChanges();
+    }
+
+    /// <summary>A seeded system row: never deletable, roles never editable (ADR 0011).</summary>
+    private static User AddProtectedUser(ApplicationDbContext ctx, string name, params int[] roleIds)
+    {
+        var user = AddUser(ctx, name, roleIds);
+        user.IsProtected = true;
+        ctx.SaveChanges();
+        return user;
     }
 
     private static User AddUser(ApplicationDbContext ctx, string name, params int[] roleIds)
@@ -124,18 +138,36 @@ public class UserServiceRoleTests
         Assert.Equal(new[] { "SuperAdmin" }, await RoleNamesOf(ctx, target.Id));
     }
 
+    /// <summary>
+    /// The inverse of the guard this replaced. Demoting the only *unprotected* SuperAdmin is now
+    /// allowed: lockout is prevented by the protected root account, which holds SuperAdmin and can
+    /// never lose it, so there is nothing left for a count to protect. Under the old rule this call
+    /// was refused — which would have blocked a legitimate demotion.
+    /// </summary>
     [Fact]
-    public async Task RemovingLastSuperAdmin_ThrowsValidation()
+    public async Task RemovingTheOnlyUnprotectedSuperAdmin_Succeeds()
     {
         using var ctx = NewContext();
         SeedRoles(ctx);
-        var onlySa = AddUser(ctx, "sa", SuperAdminRoleId);
+        AddProtectedUser(ctx, "root", SuperAdminRoleId);
+        var target = AddUser(ctx, "sa", SuperAdminRoleId);
 
-        var ex = await Assert.ThrowsAsync<AppValidationException>(() =>
-            SutFor(ctx).SetUserRolesAsync(onlySa.Id, Roles("User"), callerIsSuperAdmin: true, Guid.NewGuid()));
-        Assert.Contains("last SuperAdmin", ex.Message);
+        await SutFor(ctx).SetUserRolesAsync(target.Id, Roles("User"), callerIsSuperAdmin: true, Guid.NewGuid());
 
-        Assert.Equal(new[] { "SuperAdmin" }, await RoleNamesOf(ctx, onlySa.Id));
+        Assert.Equal(new[] { "User" }, await RoleNamesOf(ctx, target.Id));
+    }
+
+    [Fact]
+    public async Task ProtectedAccount_RolesCannotBeChanged_EvenBySuperAdmin()
+    {
+        using var ctx = NewContext();
+        SeedRoles(ctx);
+        var root = AddProtectedUser(ctx, "root", SuperAdminRoleId);
+
+        await Assert.ThrowsAsync<ForbiddenException>(() =>
+            SutFor(ctx).SetUserRolesAsync(root.Id, Roles("User"), callerIsSuperAdmin: true, Guid.NewGuid()));
+
+        Assert.Equal(new[] { "SuperAdmin" }, await RoleNamesOf(ctx, root.Id));
     }
 
     [Fact]

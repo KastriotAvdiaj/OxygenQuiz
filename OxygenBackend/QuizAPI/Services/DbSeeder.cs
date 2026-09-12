@@ -54,11 +54,22 @@ namespace QuizAPI.Services
         /// </summary>
         private async Task EnsureGuestAccountAsync(CancellationToken ct)
         {
-            var exists = await _db.Users
+            var guestRow = await _db.Users
                 .IgnoreQueryFilters()
-                .AnyAsync(u => u.Id == GuestAccount.Id, ct);
+                .FirstOrDefaultAsync(u => u.Id == GuestAccount.Id, ct);
 
-            if (exists) return;
+            if (guestRow is not null)
+            {
+                // Same self-heal as the admin row above, and for the same reason.
+                if (!guestRow.IsProtected)
+                {
+                    guestRow.IsProtected = true;
+                    await _db.SaveChangesAsync(ct);
+                    _logger.LogInformation("Marked shared guest-play account as protected.");
+                }
+
+                return;
+            }
 
             var guest = new User
             {
@@ -72,6 +83,7 @@ namespace QuizAPI.Services
                 DateRegistered = DateTime.UtcNow,
                 LastLogin = DateTime.UtcNow,
                 IsDeleted = false,
+                IsProtected = true,
                 ProfileImageUrl = string.Empty,
             };
 
@@ -90,7 +102,22 @@ namespace QuizAPI.Services
                 .FirstOrDefaultAsync(u => u.ImmutableName == adminImmutableName, ct);
 
             if (existing is not null)
+            {
+                // Self-heal rather than return straight away. Every environment that predates
+                // IsProtected already has this row, so the seeder is the only thing that ever runs
+                // against it — and if it returned here, the column would sit at its `false` default
+                // forever and the guard would protect nothing. The migration backfills too; this
+                // covers the database restored from a pre-migration backup.
+                // See docs/adr/0011-system-accounts-are-protected-rows.md.
+                if (!existing.IsProtected)
+                {
+                    existing.IsProtected = true;
+                    await _db.SaveChangesAsync(ct);
+                    _logger.LogInformation("Marked seeded admin account as protected.");
+                }
+
                 return existing;
+            }
 
             var password = _config["Seed:AdminPassword"]
                 ?? throw new InvalidOperationException(
@@ -108,6 +135,7 @@ namespace QuizAPI.Services
                 DateRegistered = DateTime.UtcNow,
                 LastLogin = DateTime.UtcNow,
                 IsDeleted = false,
+                IsProtected = true,
                 ProfileImageUrl = string.Empty,
                 UserRoles = new List<UserRole>
                 {

@@ -11,7 +11,7 @@ import {
 
 import type { AttemptsByDayPoint } from "@/types/analytics-types";
 
-import { MIN_ATTEMPTS_FOR_TREND } from "./thresholds";
+import { MIN_DAYS_FOR_TREND, showsTrend } from "./thresholds";
 
 // Unchanged from the previous Analytics tab — this is a layout change, not a restyle, so the
 // series keep the colors they had. Note `--chart-1..5` exist in global.css and are unused; if
@@ -49,24 +49,23 @@ const formatDayLong = (iso: string) =>
 
 export interface AttemptsChartProps {
   points: AttemptsByDayPoint[];
-  totalAttempts: number;
 }
 
 /**
  * Attempts over time — as a trend once there is a trend, and as a list of runs before that.
  *
- * <b>Under `MIN_ATTEMPTS_FOR_TREND` there is no chart at all.</b> This used to draw a full
- * 240px-high scatter plot with grid lines, two axes and a caption apologising for itself, to
- * show two or three dots. Three days of data cannot support a chart that size: the axes imply a
- * range worth reading, the grid implies precision worth measuring against, and the reader spends
- * more effort decoding the frame than there is information inside it. The same three facts fit
- * on three lines, where each one is exact and none of them has to be read off an axis — and the
- * caption explaining why the chart isn't a trend becomes unnecessary, because nothing on screen
- * claims to be one.
+ * <b>Under `MIN_DAYS_FOR_TREND` days there is no chart at all.</b> A 240px frame with grid
+ * lines and two axes around three dots costs more to decode than it carries: the axes imply a
+ * range worth reading and the grid implies precision worth measuring against, when the same
+ * three facts fit on three lines where each is exact and none has to be read off an axis. A
+ * filled line through three days would also say "this is the shape of things", and the first
+ * quiz to get two plays on a Tuesday would appear to be growing.
  *
- * A filled line through three days would say "this is the shape of things", and the first quiz
- * to get two plays on a Tuesday would appear to be growing. Past the threshold, where a
- * direction means something, the area chart returns unchanged.
+ * <b>The gate counts days, not attempts</b> — see `showsTrend`. It used to count attempts,
+ * which is only loosely related to how many points land on the axis: eight plays over eight
+ * days were refused a chart while forty plays on one launch day got one with a single point in
+ * it. The number of x-axis points is the thing that decides whether a line can be read, so it
+ * is the thing the gate asks about.
  *
  * <b>Days are bucketed in the viewer's time zone</b>, not the server's. The client sends its
  * IANA zone with the analytics request and `ReportService` shifts each `StartTime` into it before
@@ -78,8 +77,8 @@ export interface AttemptsChartProps {
  * recorded at session creation, which nothing stores yet
  * (docs/proposals/quiz-view-redesign.md §8, step 2).
  */
-export const AttemptsChart = ({ points, totalAttempts }: AttemptsChartProps) => {
-  if (totalAttempts < MIN_ATTEMPTS_FOR_TREND) {
+export const AttemptsChart = ({ points }: AttemptsChartProps) => {
+  if (!showsTrend(points.length)) {
     return <RecentAttempts points={points} />;
   }
 
@@ -133,6 +132,9 @@ export const AttemptsChart = ({ points, totalAttempts }: AttemptsChartProps) => 
  * runs before they mean anything" — a sentence that existed only to explain why the chart above
  * it shouldn't be read as a chart. Once nothing on screen claims to be a trend there is nothing
  * to disclaim, and the list needs no legend: a date and a count are self-describing.
+ *
+ * It stays short by construction: at `MIN_DAYS_FOR_TREND` days the panel becomes a chart, so
+ * this list is never more than four rows long.
  */
 const RecentAttempts = ({ points }: { points: AttemptsByDayPoint[] }) => {
   if (points.length === 0) return null;

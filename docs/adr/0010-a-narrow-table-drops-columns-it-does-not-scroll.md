@@ -99,8 +99,9 @@ Alternatives considered and rejected:
 - **Priorities are a content decision, not a layout one.** They belong with the column
   definitions and want a sentence of reasoning each, because "which two columns matter" is a
   claim about what an admin came to the page to do. `columns.tsx` carries that reasoning for
-  the quiz table; the users and invite-code tables have not been given priorities yet and are
-  unchanged until they are.
+  the quiz table, and `User/Components/columns.tsx` for the users table (added 2026-09-11,
+  shortly after this was accepted). The invite-code table has not been given priorities yet and
+  is unchanged until it is.
 - **This does not settle the phone question forever.** Three columns of a table is a usable
   list, not a good one. If the admin surfaces ever become something people genuinely work in
   from a phone, the row-as-card path is still the better answer and this decision is the

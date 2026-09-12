@@ -21,7 +21,9 @@ and `MaxPossibleScore` is on the DTO — which closes the second half of §2 ite
 - ~~**§8, the UTC day-bucketing bug**~~ — **step 1 is done** (2026-09-12): days are bucketed in
   the viewer's zone, sent as an IANA name with a UTC-offset fallback. **Step 2 is not** — the
   player's own zone at session creation is still not stored, so a time-of-day view remains
-  unbuildable. See [`../quiz/quiz-analytics-page.md`](../quiz/quiz-analytics-page.md).
+  unbuildable. Decision recorded in
+  [`../adr/0011-attempts-are-bucketed-in-the-viewers-timezone.md`](../adr/0011-attempts-are-bucketed-in-the-viewers-timezone.md);
+  behaviour in [`../quiz/quiz-analytics-page.md`](../quiz/quiz-analytics-page.md).
 - **§9** — unchanged; it is about the matcher, not this page.
 
 **Decided so far** (2026-09-08, in discussion). The first two have since shipped; the

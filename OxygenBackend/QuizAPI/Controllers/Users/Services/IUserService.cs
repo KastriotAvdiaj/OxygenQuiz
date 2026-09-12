@@ -21,15 +21,22 @@ namespace QuizAPI.Services.Interfaces
         /// <summary>
         /// Replaces a user's role set (admin action). <paramref name="callerIsSuperAdmin"/> gates the
         /// privileged transitions: only a SuperAdmin may grant or remove the SuperAdmin role — an
-        /// Admin can manage Admin/User but is refused (403) if the change touches SuperAdmin. The last
-        /// remaining SuperAdmin cannot be demoted (lockout guard). <paramref name="callerId"/> is
+        /// Admin can manage Admin/User but is refused (403) if the change touches SuperAdmin. A
+        /// protected account's roles cannot be changed by anyone. <paramref name="callerId"/> is
         /// recorded on each new assignment and in the audit log.
         /// </summary>
         Task SetUserRolesAsync(
             Guid userId, SetUserRolesDTO dto, bool callerIsSuperAdmin, Guid callerId,
             CancellationToken ct = default);
 
-        Task DeleteUserAsync(Guid userId, CancellationToken ct = default);
+        /// <summary>
+        /// Administrative deletion (soft). Refused for a protected account, for the caller's own
+        /// account (that is account closure, a different flow), and — when the caller is an Admin
+        /// rather than a SuperAdmin — for any target holding an elevated role.
+        /// See docs/adr/0011-system-accounts-are-protected-rows.md.
+        /// </summary>
+        Task DeleteUserAsync(
+            Guid userId, bool callerIsSuperAdmin, Guid callerId, CancellationToken ct = default);
         Task<bool> UserExistsAsync(Guid userId, CancellationToken ct = default);
 
         /// <summary>True if the username is free (case-insensitive). Used by signup to give live feedback.</summary>

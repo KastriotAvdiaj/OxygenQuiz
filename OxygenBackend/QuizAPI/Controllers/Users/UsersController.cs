@@ -188,8 +188,8 @@ namespace QuizAPI.Controllers.Users
 
         /// <summary>
         /// Replaces a user's role set. Admin/SuperAdmin only, and the SuperAdmin role specifically can
-        /// only be granted or removed by a SuperAdmin (an Admin attempting it gets 403). The last
-        /// SuperAdmin can't be demoted. The body is the desired end-state list of role names.
+        /// only be granted or removed by a SuperAdmin (an Admin attempting it gets 403). A protected
+        /// account's roles can't be changed at all. The body is the desired end-state list of role names.
         /// </summary>
         [HttpPut("{id:guid}/roles")]
         [Authorize(Roles = "Admin,SuperAdmin")]
@@ -212,22 +212,37 @@ namespace QuizAPI.Controllers.Users
             return NoContent();
         }
 
+        /// <summary>
+        /// Administrative deletion (soft). Admin/SuperAdmin only — this used to be a bare
+        /// [Authorize] + CanActOnUser, which resolves to "self OR Admin OR SuperAdmin" and let any
+        /// Admin delete every SuperAdmin with no way back. The service owns the fine-grained rules
+        /// (protected accounts, self-deletion, elevated targets); the controller only tells it
+        /// whether the caller is a SuperAdmin, the same split SetUserRoles uses.
+        /// See docs/adr/0011-system-accounts-are-protected-rows.md.
+        /// </summary>
         [HttpDelete("{id:guid}")]
-        [Authorize]
+        [Authorize(Roles = "Admin,SuperAdmin")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> DeleteUser(Guid id, CancellationToken ct)
         {
-            if (!CanActOnUser(id)) return Forbid();
+            if (_currentUser.UserId is not Guid callerId)
+                return Unauthorized();
 
-            await _userService.DeleteUserAsync(id, ct);
+            await _userService.DeleteUserAsync(id, User.IsInRole("SuperAdmin"), callerId, ct);
             return NoContent();
         }
 
         /// <summary>
         /// True if the caller is acting on their own account, or is an Admin/SuperAdmin.
         /// Prevents one authenticated user from mutating another user's account (IDOR).
+        ///
+        /// This is a profile-edit guard and nothing more — only UpdateUser uses it. It is
+        /// deliberately NOT enough for destructive actions: it says nothing about the target's own
+        /// privileges, so on the delete endpoint it let an Admin remove a SuperAdmin. Deletion and
+        /// role changes both pass the caller's SuperAdmin claim to the service and let it decide.
         /// </summary>
         private bool CanActOnUser(Guid targetUserId) =>
             _currentUser.UserId == targetUserId

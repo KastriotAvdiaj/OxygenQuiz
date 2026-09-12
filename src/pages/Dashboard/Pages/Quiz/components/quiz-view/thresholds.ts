@@ -20,11 +20,29 @@ import type { QuizQuestionAnalyticsRow } from "@/types/analytics-types";
 export const MIN_ANSWERS_FOR_RATE = 5;
 
 /**
- * Attempts the quiz needs before a trend line is drawn. Below this, the same axis frame is kept
- * and the individual attempts are plotted as discrete marks — a line through three points
- * implies a direction that three points cannot support.
+ * **Days** the quiz needs plays on before a trend line is drawn. Below this the panel lists
+ * those days as text instead.
+ *
+ * <b>Days, not attempts.</b> This was `MIN_ATTEMPTS_FOR_TREND = 10` and it counted the wrong
+ * thing. What makes a trend readable is how many points sit on the time axis, and attempts are
+ * only loosely related to that — the two failure cases were symmetrical and both real:
+ *
+ * - 8 plays across 8 separate days failed the gate and rendered as eight list rows each
+ *   reading "1 attempt". That is eight plottable points refused a plot.
+ * - 40 plays on one launch day passed it and drew a chart containing a single point.
+ *
+ * Five is where the list stops being the better answer. Under it the list wins on exactness —
+ * a date and a count, nothing to read off an axis — and over it the list is just a long
+ * column of near-identical rows.
  */
-export const MIN_ATTEMPTS_FOR_TREND = 10;
+export const MIN_DAYS_FOR_TREND = 5;
+
+/**
+ * Whether the attempts panel draws a chart or lists days — asked in one place so the panel and
+ * its heading can never disagree. `dayCount` is `attemptsOverTime.length`: the server emits one
+ * point per day that actually had a play, so days with none are absent and do not count.
+ */
+export const showsTrend = (dayCount: number) => dayCount >= MIN_DAYS_FOR_TREND;
 
 /**
  * Why the numbers on this page can undercount, stated once so every surface says it the same way.

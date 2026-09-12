@@ -223,6 +223,12 @@ namespace QuizAPI.Services
             var user = await _userRepository.GetByIdAsync(userId, tracked: true, ct: ct)
                 ?? throw new NotFoundException($"User with ID {userId} not found.");
 
+            // A protected account's roles are fixed. Root must stay a SuperAdmin for the guarantee
+            // in ADR 0011 to hold, and guest has no roles worth editing — so this is checked before
+            // anything else, including the escalation gate below.
+            if (user.IsProtected)
+                throw new ForbiddenException("This is a system account. Its roles can't be changed.");
+
             // Validate names against the seeded roles (throws on anything unknown).
             var desiredRoles = await ResolveRolesAsync(requested, ct);
 
@@ -249,15 +255,13 @@ namespace QuizAPI.Services
                 throw new ForbiddenException(
                     "Only a SuperAdmin can grant or remove the SuperAdmin role.");
 
-            // Lockout guard: never demote the last remaining SuperAdmin.
-            if (removed.Any(r => SuperAdminOnlyRoles.Contains(r)))
-            {
-                var superAdminCount = await _userRepository.Query()
-                    .CountAsync(u => u.UserRoles.Any(ur => ur.Role.Name == "SuperAdmin"), ct);
-                if (superAdminCount <= 1)
-                    throw new AppValidationException(
-                        "You can't remove the last SuperAdmin. Assign the role to another account first.");
-            }
+            // There used to be a count-based lockout guard here refusing to remove the SuperAdmin
+            // role when only one account held it. It protected whoever happened to be LAST STANDING
+            // rather than the account the system is built around, and under ADR 0011 it became
+            // actively wrong: root is protected and therefore permanently a SuperAdmin, so the count
+            // can never reach zero — but demoting the second-to-last SuperAdmin would have dropped
+            // it to one and been refused, blocking a change that is now entirely legitimate.
+            // The guarantee lives in IsProtected instead.
 
             // Apply the diff in place on the tracked collection: drop removed, add new (recording who
             // assigned them and when).
@@ -294,10 +298,38 @@ namespace QuizAPI.Services
                 ct: ct);
         }
 
-        public async Task DeleteUserAsync(Guid userId, CancellationToken ct = default)
+        /// <summary>
+        /// Administrative deletion. The three refusals here are the whole point of this method —
+        /// before ADR 0011 the only check was "is the caller an Admin?", which let any Admin delete
+        /// every SuperAdmin, irreversibly (there is no restore path, and the global
+        /// !IsDeleted query filter hides the row from everything that could find it).
+        /// </summary>
+        public async Task DeleteUserAsync(
+            Guid userId, bool callerIsSuperAdmin, Guid callerId, CancellationToken ct = default)
         {
             var user = await _userRepository.GetByIdAsync(userId, tracked: true, ct: ct)
                 ?? throw new NotFoundException($"User with ID {userId} not found.");
+
+            // 1. System rows the app cannot run without. Nobody, at any level.
+            if (user.IsProtected)
+                throw new ForbiddenException("This is a system account and can't be deleted.");
+
+            // 2. This endpoint is the administrative tool, not the way you leave. Closing your own
+            //    account is a separate, self-service flow with its own grace period
+            //    (docs/adr/0012-account-deletion-is-anonymisation-after-a-grace-period.md).
+            if (user.Id == callerId)
+                throw new ForbiddenException(
+                    "You can't delete your own account here. Close it from your account settings.");
+
+            // 3. Escalation gate, mirroring SetUserRolesAsync: an Admin manages regular users, and
+            //    anything above that belongs to a SuperAdmin. IsElevated is the shared definition of
+            //    "above User" (RoleRules), so this can't drift from the role-granting rule.
+            if (!callerIsSuperAdmin &&
+                user.UserRoles.Any(ur => RoleRules.IsElevated(ur.Role.Name)))
+            {
+                throw new ForbiddenException(
+                    "Only a SuperAdmin can delete an account that holds an elevated role.");
+            }
 
             user.IsDeleted = true;
             await _userRepository.SaveChangesAsync(ct);

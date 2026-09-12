@@ -84,13 +84,31 @@ The selected key is kept in state but the *effective* key is derived during rend
 that removes the supporting data falls back to quiz order without an Effect, and the tab
 re-selects itself when the data returns.
 
-### `MIN_ATTEMPTS_FOR_TREND` (10) — the attempts panel
+### `MIN_DAYS_FOR_TREND` (5) — the attempts panel
 
-Below 10 attempts there is **no chart**: the panel is headed *Recent attempts* and lists the days
-that had plays, newest first, as text. A 240px chart frame around three points costs more to decode
-than it carries, and a filled line through three days claims a direction three days cannot support.
+Under **5 days with plays on them** there is no chart: the panel is headed *Recent attempts* and
+lists those days, newest first, as text. A 240px frame with grid lines and two axes around three
+points costs more to decode than it carries, and a filled line through three days claims a
+direction three days cannot support. At 5+ the panel is headed *Attempts over time* and draws the
+area chart.
 
-At 10+ the panel is headed *Attempts over time* and draws the area chart (attempts and completed).
+**The gate counts days, not attempts.** It used to be `MIN_ATTEMPTS_FOR_TREND = 10`, which
+measured the wrong thing — attempts are only loosely related to how many points land on the time
+axis, and both failure cases were real:
+
+| | Attempts | Days | Old gate | Now |
+|---|---|---|---|---|
+| Plays trickling in | 8 | 8 | list — eight rows each reading "1 attempt" | chart |
+| Launch-day spike | 40 | 1 | chart — containing one point | list |
+
+Five is where the list stops being the better answer. Below it the list wins on exactness: a date
+and a count, nothing to read off an axis, and an owner with four plays wants to know *which days*
+far more than they want a shape. Above it the list is a long column of near-identical rows. The
+list is therefore never more than four rows long, by construction.
+
+`showsTrend(dayCount)` is the single source of truth — the panel and its heading both call it, so
+they cannot disagree about which mode they are in. `dayCount` is `attemptsOverTime.length`: the
+server emits one point per day that had a play, so empty days are absent and do not count.
 
 No caption explains any of this, deliberately. The previous low-data view drew a scatter plot and
 then apologised for it in a footnote; once nothing on screen claims to be a trend there is nothing
@@ -146,6 +164,9 @@ One tile carries `emphasis` (Attempts). Five equally-weighted boxes rank nothing
 reader take all of them in to find the one that answers their question.
 
 ## Days are bucketed in the viewer's time zone
+
+> Why this clock and not the server's or the player's:
+> [`../adr/0011-attempts-are-bucketed-in-the-viewers-timezone.md`](../adr/0011-attempts-are-bucketed-in-the-viewers-timezone.md).
 
 The client sends its clock with the analytics request and the server buckets against it:
 

@@ -19,6 +19,18 @@ Where it goes — pick the narrowest place that fits:
   context, and the result of a real trade-off. ADRs are append-only and dated. You never edit
   one because you changed your mind; you write a new one that supersedes it. The record of the
   wrong turn is the point.
+
+  **Write it unprompted.** An ADR that has to be requested is one nobody knew to request: the
+  decisions most worth recording are the ones that felt obvious to whoever made them. So the
+  test runs at the end of every piece of work, not when someone thinks to ask — if the three
+  above hold, the ADR ships in the same change as the code.
+
+  **The bar stays where it is, though.** "Every feature gets one" sounds like more rigour and
+  produces less: a directory where every file is a decision is a changelog, and the three
+  genuine reversals in it stop being findable. Most work has no rejected alternative behind
+  it — it is an implementation, and `docs/<area>/*.md` is where it belongs. When a change
+  clearly matters but fails the three tests, say so in the summary rather than writing a
+  thin ADR to be safe.
 - **The relevant `docs/<area>/*.md`** — how the thing behaves *today*. Edit these freely; they
   describe the present and carry no history.
 - **`docs/deployment/known-issues.md`** — something real, found, and deliberately not fixed

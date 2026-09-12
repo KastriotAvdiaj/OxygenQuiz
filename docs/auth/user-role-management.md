@@ -3,6 +3,9 @@
 > **What it does:** Lets an admin change which roles a user holds, from the admin **Users** table.
 > Backed by a single endpoint that replaces the user's role set, with a privilege-escalation gate so
 > the SuperAdmin role can only be granted or removed by a SuperAdmin.
+>
+> Administrative **deletion** carries the matching rules and is documented in §1.1 — it used to carry
+> none, which is why it is here at all.
 
 ---
 
@@ -18,16 +21,47 @@ fine-grained policy:
 
 Two extra guards:
 
-- **Lockout guard.** The last remaining SuperAdmin can't be demoted — the change is rejected with a
-  `400` ("assign the role to another account first"). This prevents locking the whole org out of the
-  most privileged surface.
+- **Protected accounts.** A seeded system account's roles cannot be changed by anyone, including a
+  SuperAdmin — `403`. That is what keeps the root admin permanently a SuperAdmin, and it is checked
+  before the escalation gate. See
+  [`adr/0011-system-accounts-are-protected-rows.md`](../adr/0011-system-accounts-are-protected-rows.md).
 - **Idempotent no-op.** If the requested set equals the user's current set, the call returns quietly
   with no audit entry and no cache eviction.
+
+> **Gone: the count-based lockout guard.** This used to refuse removing the SuperAdmin role when only
+> one account held it. It protected whoever happened to be *last standing* rather than the account the
+> system is built around, and once root became protected it was not merely redundant but wrong —
+> demoting the second-to-last SuperAdmin would drop the count to one and be refused, blocking a change
+> that is now entirely legitimate. `UserServiceRoleTests.RemovingTheOnlyUnprotectedSuperAdmin_Succeeds`
+> pins the new behaviour.
 
 The escalation decision is split cleanly: the **controller** reads the caller's `SuperAdmin` claim
 from the validated JWT (`User.IsInRole("SuperAdmin")`) and passes it down; the **service** owns the
 actual rule (it's the layer that knows the current-vs-desired diff). The service throws
 `ForbiddenException` → `403` when an Admin's change would touch the SuperAdmin role.
+
+### 1.1 Who may delete whom
+
+Administrative deletion is a soft delete (`IsDeleted = true`) with an audit entry, and it is
+**not reversible from inside the application** — nothing sets the flag back, and the global
+`!IsDeleted` query filter hides the row from every read. So the rules matter as much as the
+role rules do, and until ADR 0011 there were none: the endpoint was a bare `[Authorize]` plus
+`CanActOnUser`, which resolves to *self OR Admin OR SuperAdmin*. An Admin could delete every
+SuperAdmin.
+
+| Caller | Plain `User` | `Admin` / `SuperAdmin` | Protected account | Themselves |
+|---|---|---|---|---|
+| **Admin** | ✅ | ❌ `403` | ❌ `403` | ❌ `403` |
+| **SuperAdmin** | ✅ | ✅ | ❌ `403` | ❌ `403` |
+
+"Elevated" is `RoleRules.IsElevated` — anything that is not the default `User` role — the same
+shared definition the invite-code mint guard uses, so the delete rule cannot drift from the
+role-granting rule.
+
+Self-deletion is refused because this endpoint is the *administrative* tool. Closing your own
+account is a separate self-service flow with its own grace period, specified in
+[`adr/0012-account-deletion-is-anonymisation-after-a-grace-period.md`](../adr/0012-account-deletion-is-anonymisation-after-a-grace-period.md)
+and **not yet built** — so today an Admin who wants to leave has to ask another admin.
 
 ---
 
@@ -38,10 +72,18 @@ PUT /api/Users/{id}/roles
 [Authorize(Roles = "Admin,SuperAdmin")]
 Body:  { "roles": ["Admin"] }
 204 No Content   — applied (or no-op)
-400 Bad Request  — empty list, or removing the last SuperAdmin
-403 Forbidden    — Admin tried to grant/remove SuperAdmin
+400 Bad Request  — empty list
+403 Forbidden    — Admin tried to grant/remove SuperAdmin, or the target is protected
 404 Not Found    — no such user
 409 Conflict     — unknown role name
+```
+
+```
+DELETE /api/Users/{id}
+[Authorize(Roles = "Admin,SuperAdmin")]
+204 No Content   — soft-deleted
+403 Forbidden    — protected account, your own account, or an Admin targeting an elevated role
+404 Not Found    — no such user
 ```
 
 The body is the **desired end-state** set, not a delta: whatever roles it names become the user's
@@ -100,9 +142,15 @@ In the admin **Users** table (`src/pages/Dashboard/Pages/User/`):
   column refreshes immediately. Mirrors the existing create/delete-user mutation conventions.
 
 **Row-level gating** (`Components/columns.tsx`): the Change Role action is disabled when the row is
-**your own account** (no self-demotion / lockout footgun) or when an **Admin is looking at a
-SuperAdmin** (only a SuperAdmin may manage a SuperAdmin). Both mirror the backend rules — the disabled
-item shows the reason via `title`. The backend still enforces all of this regardless of the UI state.
+**your own account** (no self-demotion / lockout footgun), when an **Admin is looking at a
+SuperAdmin** (only a SuperAdmin may manage a SuperAdmin), or when the row is a **protected account**.
+Delete is disabled on the same three conditions, plus an Admin looking at any elevated role. Each
+disabled item shows its reason via `title`. All of it mirrors the backend rules — the server enforces
+them regardless of UI state; the gating exists so the UI doesn't offer a click that can only 403.
+
+Protected rows also carry a **System** badge next to the username. They are shown rather than hidden
+on purpose: concealing them would leave anyone who finds `guest` in the database with no way to learn
+what it is.
 
 ---
 
@@ -114,9 +162,14 @@ in-memory context (so the lockout count query runs for real), mocking only audit
 - Admin grants Admin to a User → succeeds, cache evicted, audit written.
 - Admin grants **or** removes SuperAdmin → `ForbiddenException`, nothing changes.
 - SuperAdmin grants SuperAdmin → succeeds.
-- Demoting the **last** SuperAdmin → rejected; demoting one when another exists → succeeds.
+- Demoting the only **unprotected** SuperAdmin → succeeds (the replacement for the old last-SA test).
+- Changing a **protected** account's roles → `ForbiddenException`, nothing changes.
 - No-op (same roles) → no audit, no cache eviction.
 - Unknown role name → `ConflictException`.
+
+`QuizAPI.Tests/Users/UserServiceDeleteTests.cs` covers the delete matrix in §1.1: each cell of the
+table, plus a protected account with **no roles at all** (the guest placeholder — it would sail past
+the elevated-role check, so protection is the only thing stopping it) and an unknown id.
 
 ---
 
@@ -136,6 +189,7 @@ in-memory context (so the lockout count query runs for real), mocking only audit
 
 **Tests**
 - `QuizAPI.Tests/Users/UserServiceRoleTests.cs` (new)
+- `QuizAPI.Tests/Users/UserServiceDeleteTests.cs` (new — the delete matrix)
 
 ---
 

@@ -45,6 +45,22 @@ export const columns: ColumnDef<User>[] = [
     accessorKey: "username",
     header: "Username",
     meta: { priority: 1 },
+    cell: ({ row }) => {
+      const { username, isProtected } = row.original;
+      // The badge is the only place the app explains why this row has no actions. Hiding system
+      // accounts instead would leave anyone who finds them in the database with no way to learn
+      // what they are — see docs/adr/0011-system-accounts-are-protected-rows.md.
+      return (
+        <span className="flex items-center gap-2">
+          {username}
+          {isProtected && (
+            <span className="rounded-full border border-foreground/20 bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+              System
+            </span>
+          )}
+        </span>
+      );
+    },
   },
   {
     accessorKey: "email",
@@ -134,10 +150,27 @@ export const columns: ColumnDef<User>[] = [
         (r) => r.toLowerCase() === "superadmin"
       );
       const canManageRoles =
-        !isSelf && (callerIsSuperAdmin || !targetIsSuperAdmin);
-      const disabledReason = isSelf
-        ? "You can't change your own role"
-        : "Only a SuperAdmin can change a SuperAdmin's role";
+        !isSelf && !user.isProtected && (callerIsSuperAdmin || !targetIsSuperAdmin);
+      const disabledReason = user.isProtected
+        ? "System accounts can't have their roles changed"
+        : isSelf
+          ? "You can't change your own role"
+          : "Only a SuperAdmin can change a SuperAdmin's role";
+
+      // Deletion mirrors the server rule in UserService.DeleteUserAsync: never a system account,
+      // never yourself (that's account settings, not the admin table), and an Admin may only
+      // delete plain users. The API refuses regardless — this just stops the UI offering a click
+      // that can only end in a 403.
+      const targetIsElevated = (user.roles ?? []).some(
+        (r) => r.toLowerCase() !== "user"
+      );
+      const canDelete =
+        !user.isProtected && !isSelf && (callerIsSuperAdmin || !targetIsElevated);
+      const deleteDisabledReason = user.isProtected
+        ? "System accounts can't be deleted"
+        : isSelf
+          ? "Close your own account from your account settings"
+          : "Only a SuperAdmin can delete an account with an elevated role";
 
       return (
         <>
@@ -157,14 +190,19 @@ export const columns: ColumnDef<User>[] = [
               <Copy size={16} /> Copy ID
             </DropdownMenuItem>
             <DropdownMenuSeparator className="bg-background/60" />
-            <DropdownMenuItem
-              disabled={user.id === mainUser.data.id}
-              onClick={(e) => {
-                e.stopPropagation();
-                e.preventDefault();
-              }}>
-              <DeleteUser id={user.id} closeDropDown={close} />
-            </DropdownMenuItem>
+            {canDelete ? (
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                }}>
+                <DeleteUser id={user.id} closeDropDown={close} />
+              </DropdownMenuItem>
+            ) : (
+              <DropdownMenuItem disabled title={deleteDisabledReason}>
+                <UserX size={16} /> Delete User
+              </DropdownMenuItem>
+            )}
             <DropdownMenuSeparator className="bg-background/60" />
             {canManageRoles ? (
               <DropdownMenuItem

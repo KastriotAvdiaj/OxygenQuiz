@@ -16,6 +16,10 @@ doc comment for reasoning that only makes sense beside the code.
 Not for renames, typos, or anything a reader gets from the diff. Plan docs (`*-plan.md`)
 are transient: fold what is still true into the feature doc and delete the plan.
 
+**Nobody has to ask for the ADR.** When a piece of work clears the three tests above, the ADR
+is part of that work, written without prompting — the same way the code is. Waiting to be
+asked is how the reasoning ends up in a code comment instead, which is failure mode one below.
+
 Full version, including the two failure modes this project has actually hit:
 [`docs/development/documenting-changes.md`](docs/development/documenting-changes.md).
 

@@ -27,6 +27,7 @@ namespace QuizAPI.Mapping
                 DateRegistered = user.DateRegistered,
                 LastLogin = user.LastLogin,
                 IsDeleted = user.IsDeleted,
+                IsProtected = user.IsProtected,
                 ProfileImageUrl = user.ProfileImageUrl,
                 Roles = user.UserRoles.Select(ur => ur.Role.Name).ToList(),
                 Permissions = permissions
@@ -45,6 +46,7 @@ namespace QuizAPI.Mapping
             DateRegistered = user.DateRegistered,
             LastLogin = user.LastLogin,
             IsDeleted = user.IsDeleted,
+            IsProtected = user.IsProtected,
             ProfileImageUrl = user.ProfileImageUrl,
             Roles = roleNames.ToList(),
             Permissions = Array.Empty<string>()

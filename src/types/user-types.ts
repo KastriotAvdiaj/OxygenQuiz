@@ -10,6 +10,9 @@ export type User = Entity<{
   dateRegistered: string;
   userUpdatedAt: string | null;
   isDeleted: boolean;
+  // A seeded system account (root admin, guest placeholder). Never deletable, roles never
+  // editable — see docs/adr/0011-system-accounts-are-protected-rows.md.
+  isProtected: boolean;
   lastLogin: string;
   profileImageUrl: string;
   // Many-to-many: a user has a collection of role names (0, 1, or many).

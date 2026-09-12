@@ -20,8 +20,8 @@ import { QuizStatStrip } from "./components/quiz-view/quiz-stat-strip";
 import { QuizStatusBadge } from "./components/quiz-view/quiz-status-badge";
 import { formatDuration } from "./components/quiz-view/format-duration";
 import {
-  MIN_ATTEMPTS_FOR_TREND,
   SIGNED_IN_ONLY_NOTE,
+  showsTrend,
 } from "./components/quiz-view/thresholds";
 
 /**
@@ -288,14 +288,11 @@ export const QuizRoute = () => {
                       is a list of the days that had plays, and calling that "over time" promises
                       a shape it deliberately isn't drawing. */}
                   <h2 className="mb-2 text-sm font-medium">
-                    {analytics.attempts < MIN_ATTEMPTS_FOR_TREND
-                      ? "Recent attempts"
-                      : "Attempts over time"}
+                    {showsTrend(analytics.attemptsOverTime.length)
+                      ? "Attempts over time"
+                      : "Recent attempts"}
                   </h2>
-                  <AttemptsChart
-                    points={analytics.attemptsOverTime}
-                    totalAttempts={analytics.attempts}
-                  />
+                  <AttemptsChart points={analytics.attemptsOverTime} />
                 </div>
               </div>
             )}

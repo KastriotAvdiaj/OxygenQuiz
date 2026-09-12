@@ -52,6 +52,28 @@ Instead, **guest play reuses the exact same `QuizSessionService` engine**, with 
 This means any future change to question sequencing, grading, or timing logic automatically
 applies to guest play too — there's only ever one implementation to maintain.
 
+## The shared account is load-bearing, and protected
+
+`GuestAccount.Id` is not a convenience — guest play cannot create a session without it, because
+`QuizSession.UserId` is a required foreign key and `CreateGuestSessionAsync` writes that id
+directly without ever loading the user. The row has to exist.
+
+Nothing enforced that. The row sat in `Users` like any other account and was deletable from the
+admin dashboard by anyone with Admin or above. A soft delete would not have broken play today —
+the row survives a soft delete, so the foreign key still resolves — but the deletion would have
+stuck (`EnsureGuestAccountAsync` checks existence with `IgnoreQueryFilters()`, sees the
+soft-deleted row, and does not recreate it), and it becomes genuinely destructive the moment
+deletion starts scrubbing fields.
+
+So the row is now marked `IsProtected`: it cannot be deleted, its roles cannot be changed, and it
+appears in the admin user list with a **System** badge and its actions disabled. See
+[`../adr/0011-system-accounts-are-protected-rows.md`](../adr/0011-system-accounts-are-protected-rows.md)
+and [`../adr/0012-account-deletion-is-anonymisation-after-a-grace-period.md`](../adr/0012-account-deletion-is-anonymisation-after-a-grace-period.md).
+
+Worth keeping in mind when reading the rest of this file: because a guest's session and answers
+are deleted once they view their results, this account accumulates nothing. At any moment it owns
+only the sessions currently in flight.
+
 ## Architecture
 
 ### Backend

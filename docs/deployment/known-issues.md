@@ -1014,7 +1014,8 @@ redesign means a scroll regression could have come from either.
   **One thing to watch in production:** the IANA path needs `tzdata` in the API image. If it is
   missing, the log carries *"Unknown time zone '…' — is tzdata present in the image?"* and the
   offset fallback takes over — correct except across a DST boundary. Worth grepping for once
-  after the first deploy.
+  after the first deploy. The decision, and the three clocks it chose between, are in
+  [`../adr/0011-attempts-are-bucketed-in-the-viewers-timezone.md`](../adr/0011-attempts-are-bucketed-in-the-viewers-timezone.md).
   → `OxygenBackend/QuizAPI/Services/Reports/ReportService.cs`,
     `src/pages/Dashboard/Pages/Quiz/api/get-quiz-analytics.ts`
 
@@ -1057,7 +1058,7 @@ redesign means a scroll regression could have come from either.
 - ~~**P3 — `AttemptsByDayPoint.Completed` counts abandoned sessions; the headline `Completed`
   does not.**~~ **Fixed (2026-09-12)**, alongside the timezone bucketing in the same method —
   the per-day count is now `IsCompleted && !Abandoned`, matching the headline figure. It had only
-  ever been visible on quizzes past `MIN_ATTEMPTS_FOR_TREND` attempts, where the chart is drawn.
+  ever been visible on quizzes past the trend threshold, where the chart is drawn.
   → `OxygenBackend/QuizAPI/Services/Reports/ReportService.cs`
 
 - **P3 — `User/Components/stats-cards.tsx` is fake and has no call sites.** Four hard-coded
