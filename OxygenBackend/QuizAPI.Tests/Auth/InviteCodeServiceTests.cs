@@ -78,8 +78,9 @@ public class InviteCodeServiceTests
 
         await CreateSut().GenerateAsync(Elevated("Admin"), callerIsSuperAdmin: false);
 
-        Assert.Equal(1, stored!.Single().GrantedRoleId);
-        Assert.Equal("person@example.com", stored.Single().IntendedEmail);
+        var minted = stored!.Single();
+        Assert.Equal(1, minted.GrantedRoleId);
+        Assert.Equal("person@example.com", minted.IntendedEmail);
     }
 
     [Fact]
@@ -110,10 +111,11 @@ public class InviteCodeServiceTests
         var result = await CreateSut().GenerateAsync(
             new GenerateInviteCodesDTO { Count = 25, Role = role }, callerIsSuperAdmin: false);
 
+        var batch = stored!;
         Assert.Equal(25, result.Codes.Count);
-        Assert.All(stored!, c => Assert.Null(c.GrantedRoleId));
+        Assert.All(batch, c => Assert.Null(c.GrantedRoleId));
         // Every code in the batch is distinct, and only its hash is stored.
-        Assert.Equal(25, stored.Select(c => c.CodeHash).Distinct().Count());
+        Assert.Equal(25, batch.Select(c => c.CodeHash).Distinct().Count());
     }
 
     // --- Rails on an elevated code ----------------------------------------------------------

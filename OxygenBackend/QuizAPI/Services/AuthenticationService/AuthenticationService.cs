@@ -38,6 +38,15 @@ public class AuthenticationService(
 {
     private const string DefaultRoleName = RoleRules.DefaultRole;
 
+    /// <summary>
+    /// The only thing signup says about an address it won't accept, on both signup paths. It covers
+    /// a live account and one inside its closure grace period without distinguishing them, so the
+    /// endpoint stays a single bit; the second sentence is the way back for the person it belongs
+    /// to, and costs nothing to show the person who mistyped a stranger's address.
+    /// </summary>
+    private const string EmailInUseMessage =
+        "Email is already in use. If this is your account, sign in to recover it.";
+
     private readonly IUserRepository _userRepository = userRepository;
     private readonly IRoleRepository _roleRepository = roleRepository;
     private readonly IRefreshTokenRepository _refreshTokenRepository = refreshTokenRepository;
@@ -89,8 +98,11 @@ public class AuthenticationService(
         // for a network round trip. Fails open — see IBreachedPasswordChecker.
         await GuardAgainstBreachedPasswordAsync(dto.Password, ct);
 
+        // One message for two cases — the address is live, or it belongs to an account inside its
+        // closure grace period. Saying which would turn signup into an "is X leaving?" oracle for
+        // any address; the recovery hint is safe precisely because it is shown for both.
         if (await _userRepository.EmailExistsAsync(dto.Email, ct))
-            throw new ConflictException("Email is already in use.");
+            throw new ConflictException(EmailInUseMessage);
 
         if (await _userRepository.UsernameExistsAsync(immutableName, ct))
             throw new ConflictException("Username is already taken.");
@@ -433,8 +445,11 @@ public class AuthenticationService(
         if (redeemedCode is not null)
             EnsureInviteCodeEmailMatches(redeemedCode, normalizedEmail);
 
+        // Same message as password signup, and reachable for the same two reasons. Unlike the
+        // login-or-link path above, this one can only be here with an UNVERIFIED provider email —
+        // a verified one would have linked rather than reached signup.
         if (await _userRepository.EmailExistsAsync(identity.Email, ct))
-            throw new ConflictException("Email is already in use.");
+            throw new ConflictException(EmailInUseMessage);
 
         if (await _userRepository.UsernameExistsAsync(immutableName, ct))
             throw new ConflictException("Username is already taken.");

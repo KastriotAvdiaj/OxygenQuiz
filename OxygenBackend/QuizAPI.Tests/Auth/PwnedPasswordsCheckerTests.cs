@@ -58,10 +58,10 @@ public class PwnedPasswordsCheckerTests
     }
 
     [Fact]
-    public void The_disabled_checker_reports_nothing_as_breached()
+    public async Task The_disabled_checker_reports_nothing_as_breached()
     {
         var checker = new NullBreachedPasswordChecker();
 
-        Assert.False(checker.IsBreachedAsync("password").Result);
+        Assert.False(await checker.IsBreachedAsync("password"));
     }
 }

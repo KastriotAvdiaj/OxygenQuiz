@@ -4,7 +4,7 @@
 > becomes recoverable for 30 days; after that its personal data is scrubbed and the row is kept, so
 > every foreign key still resolves and nobody else's history changes.
 >
-> **Status: built and reachable.** §6 lists what remains. The decision and
+> **Status: built and reachable.** §8 lists what remains. The decision and
 > the alternatives it rejected are in
 > [`../adr/0012-account-deletion-is-anonymisation-after-a-grace-period.md`](../adr/0012-account-deletion-is-anonymisation-after-a-grace-period.md).
 
@@ -144,24 +144,44 @@ button would only produce a 403.
 `ConfirmationDialog` grew an optional `children` slot for this — it previously took only a string
 `body`, which cannot hold a confirmation input.
 
-## 7. Not built yet
+## 7. The address is held for the grace period
 
-- **The email stays reserved during grace — as a decision, not as code.** `EmailExistsAsync` goes
-  through the soft-delete filter, so a closing account's address is re-registerable right now. The
-  same hole predates this work: an admin-deleted account's address was always immediately reusable.
-  Signup needs a third answer — free, taken, and *reserved by a pending closure* — that doesn't leak
-  whether a particular address once had an account. External sign-in no longer reaches that hole by
-  accident (§3: a verified provider email now finds the closing account and links to it instead of
-  falling through to signup), but `ExternalSignupAsync` still asks `EmailExistsAsync`, so the gap is
-  closed in one place and not in the other.
+`EmailExistsAsync` counts a row as owning its address when the account is live **or** closing
+(`DeletionRequestedAt` set, `AnonymisedAt` null). It is the whole of signup's answer, on both the
+password and external paths.
+
+Why it has to: sign-in finds a closing account **by email**. Let someone re-register that address
+and the person who closed the account loses the recovery the grace period exists to give them — the
+lookup now finds a stranger's row. The window used to be open: the check ran through the global
+`!IsDeleted` filter, so an address read as free the instant its owner closed the account.
+
+Three consequences worth keeping straight:
+
+- **The hold releases itself.** Anonymisation rewrites the address to
+  `deleted-{guid}@deleted.invalid`, so a scrubbed account frees its email with no release step and
+  no admin action.
+- **An admin-deleted row does NOT hold its address**, deliberately. Nothing ever anonymises those,
+  so counting them would burn the address permanently — and re-registering it grants nothing, since
+  the new account is a new row with none of the old one's history or roles.
+- **Signup says one thing for both cases**: *"Email is already in use. If this is your account, sign
+  in to recover it."* Naming the closing case would turn signup into an "is X leaving?" oracle for
+  any address. The hint is safe because it is shown for a live account too, and it points a
+  returning person at the one action that actually works. There is no email-availability endpoint,
+  so submit is the only place to ask.
+
+`Users/EmailReservationTests.cs` pins all four states.
+
+## 8. Not built yet
+
 - **The reminder email** a few days before the window closes. Thirty days is long enough to forget,
   and that mail is the last moment recovery is possible.
-- **Login doesn't say it cancelled anything.** The closure is silently undone. It fails in the safe
-  direction, but the person should be told; that needs a field on `AuthResponseDTO`.
+- **Sign-in doesn't say it cancelled anything.** The closure is silently undone, on every path. It
+  fails in the safe direction, but the person should be told; that needs a field on
+  `AuthResponseDTO`.
 
 ---
 
-## 8. Related
+## 9. Related
 
 - [`../adr/0012-account-deletion-is-anonymisation-after-a-grace-period.md`](../adr/0012-account-deletion-is-anonymisation-after-a-grace-period.md) — the decision
 - [`../adr/0011-system-accounts-are-protected-rows.md`](../adr/0011-system-accounts-are-protected-rows.md) — why root and guest can never enter this flow

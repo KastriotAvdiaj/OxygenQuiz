@@ -8,8 +8,8 @@ Paste this into a new chat to bootstrap context. Last updated **2026-09-13**.
   react-router, Tailwind, shadcn-style UI). Backend: ASP.NET Core 8 + EF Core (Postgres).
 - Repo root has `OxygenBackend/QuizAPI` (.NET), `OxygenBackend/QuizAPI.Tests` (xUnit), `src/`
   (frontend).
-- Backend tests: `dotnet test OxygenBackend/QuizAPI.Tests/QuizAPI.Tests.csproj` — **324 passing**
-  as of this handoff.
+- Backend tests: `dotnet test OxygenBackend/QuizAPI.Tests/QuizAPI.Tests.csproj` — **331 passing**
+  as of this handoff, no warnings.
 - Frontend typecheck: `./node_modules/.bin/tsc --noEmit -p tsconfig.json`. NOTE: tsc does NOT catch
   Babel/Vite transform errors (e.g. a `{/* */}` comment inside a JSX attribute's braces, which is
   an object literal, not a comment) — load the page or `npm run build` to catch those.
@@ -18,26 +18,36 @@ Paste this into a new chat to bootstrap context. Last updated **2026-09-13**.
 
 ---
 
-## ⚠️ Verify this first
+## Closed: "signing in didn't restore my closed account"
 
-**Signing in during the 30-day grace period is supposed to restore a closed account.** In manual
-testing on 2026-09-13 it reportedly returned *"wrong credentials"* instead. That contradicts
-ADR 0012, the code in `AuthenticationService.LoginAsync`, and three passing tests in
-`QuizAPI.Tests/Auth/AccountClosureLoginTests.cs`.
+Reported on 2026-09-13 as *"invalid credentials"* when signing back in during the grace period.
+**It was the Google path, not the password path** — and worth reading once, because the shape of the
+mistake is repeatable.
 
-Most likely explanations, cheapest first:
+`LoginAsync` was correct and its three tests were real. But recovery is a property of **signing in**,
+not of `LoginAsync`, and `ExternalLoginAsync` still resolved its user through the filtered
+`GetByIdAsync`: a closing account came back null, which the code read as "this link points at
+nothing" and answered `Invalid credentials`. For an account created with Google and no password,
+that was no route back in at all. The branch matching a verified provider email had the same hole
+from the other side — it would have fallen through to signup and created a **second** account on the
+same address.
 
-1. The password typed was genuinely wrong, or it was a different account.
-2. The API was running a build from before the `LoginAsync` change — it was stopped and restarted
-   several times that session.
-3. A real bug the unit tests miss because they use the in-memory provider: the widened lookup
-   `GetByEmailIncludingDeletedAsync` applies `IgnoreQueryFilters()`, and filter behaviour is one of
-   the places in-memory and Npgsql can differ.
+Fixed by giving both external branches widened lookups and one shared decision with the password
+path, `AuthenticationService.AdmitOrRejectDeletedAsync`. Verified against the live stack, not just
+the suite. Covered by `QuizAPI.Tests/Auth/AccountClosureExternalLoginTests.cs`; the table in
+[`auth/account-closure.md`](auth/account-closure.md) §3 lists every path and its lookup, and a new
+sign-in method needs a row there and a test of its own.
 
-To reproduce: close a throwaway account, then log in with the correct password. Expect a successful
-login and `IsDeleted = false`, `DeletionRequestedAt = null` on that row. If it fails, check the row
-directly — if `DeletionRequestedAt` is populated, the lookup or the cancel call is the suspect; if
-it is null, closure wrote the wrong state.
+Four tests in `ExternalAuthenticationTests` had to be repointed at the new lookups — they were
+stubbing the methods the service no longer calls, so they failed loudly. That is the good version of
+`testing.md` §4E: the stale-stub hazard only goes quiet when the stub isn't what the test asserts on.
+
+**Then the email half of the same bug.** `EmailExistsAsync` also ran through the filter, so a closing
+account's address read as free and could be re-registered — which would have cost its owner the
+recovery above, since sign-in finds a closing account by email. It now counts live and closing rows,
+and deliberately not admin-deleted ones (nothing anonymises those, so the address would be burned
+forever). Signup answers both cases with one message that names neither. See
+[`auth/account-closure.md`](auth/account-closure.md) §7.
 
 ---
 
@@ -77,26 +87,21 @@ card holds the table and nothing else. Users-table columns gained `meta.priority
 **A build fix.** `QuizSessionService.cs:524` called a sync `BuildCompletedResult` that doesn't
 exist; the prod Docker build was failing on it.
 
-**Tests: 311 → 324.** New: `Users/UserServiceDeleteTests.cs`, `Users/AccountClosureTests.cs`,
-`Auth/AccountClosureLoginTests.cs`.
+**Tests: 311 → 331.** New: `Users/UserServiceDeleteTests.cs`, `Users/AccountClosureTests.cs`,
+`Auth/AccountClosureLoginTests.cs`, `Auth/AccountClosureExternalLoginTests.cs`,
+`Users/EmailReservationTests.cs`.
 
 ---
 
 ## OPEN — in the order I'd take them
 
-1. **Verify the login-cancel behaviour** (top of this file). Everything else in closure assumes it.
-2. **Email reservation during the grace period.** `EmailExistsAsync` goes through the soft-delete
-   filter, so a closing account's address is re-registerable *right now*. This hole **predates this
-   work** — an admin-deleted account's address was always immediately reusable. Signup needs a third
-   answer (free / taken / reserved by a pending closure) that doesn't leak whether an address once
-   had an account.
-3. **The reminder email** a few days before the grace window closes. 30 days is long enough to
+1. **The reminder email** a few days before the grace window closes. 30 days is long enough to
    forget, and that mail is the last moment recovery is possible.
-4. **Login doesn't say it cancelled a closure.** Silently undone. Needs a field on
-   `AuthResponseDTO` and a frontend notice.
-5. **Multiplayer persistence** — the biggest remaining piece. Fully designed, nothing built. Its own
+2. **Sign-in doesn't say it cancelled a closure.** Silently undone, on every path now. Needs a field
+   on `AuthResponseDTO` and a frontend notice.
+3. **Multiplayer persistence** — the biggest remaining piece. Fully designed, nothing built. Its own
    section below.
-6. **Inherited, unverified this session:** `GET /api/users/{id}`, `/username/{username}` and
+4. **Inherited, unverified this session:** `GET /api/users/{id}`, `/username/{username}` and
    `POST /api/users/batch` are `[Authorize]` but still return the full `UserDTO` including email to
    any signed-in user. A slim DTO would be the fix. Also: background music is silent until an audio
    file is dropped at `public/audio/background-music.mp3`, and `/users/:userId` public profile is
@@ -146,7 +151,7 @@ as abandoned; the resume path refusing multiplayer sessions; `ReportService` gai
 the review screen growing player tabs.
 
 **One question still open:** whether a `Match` survives its quiz being soft-deleted. It doesn't block
-items 1–4 — the default (it survives, like sessions do) is reversible.
+the first four work items — the default (it survives, like sessions do) is reversible.
 
 **No guests to worry about:** `QuizHub` is `[Authorize]`, so every participant is a real account.
 

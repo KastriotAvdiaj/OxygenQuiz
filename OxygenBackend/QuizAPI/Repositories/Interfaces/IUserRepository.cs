@@ -31,6 +31,11 @@ namespace QuizAPI.Repositories.Interfaces
         Task<IReadOnlyList<User>> GetByIdsAsync(IEnumerable<Guid> ids, CancellationToken ct = default);
         Task<bool> ExistsAsync(Guid id, CancellationToken ct = default);
         Task<bool> UsernameExistsAsync(string immutableName, CancellationToken ct = default);
+        /// <summary>
+        /// True if the address is unavailable to a new signup. Counts live accounts AND accounts in
+        /// their closure grace period, which still own their address — see the implementation for
+        /// why an admin-deleted row is not counted.
+        /// </summary>
         Task<bool> EmailExistsAsync(string email, CancellationToken ct = default);
         Task AddAsync(User user, CancellationToken ct = default);
         Task<int> SaveChangesAsync(CancellationToken ct = default);

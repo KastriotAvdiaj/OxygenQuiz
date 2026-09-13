@@ -88,8 +88,24 @@ namespace QuizAPI.Repositories
         public Task<bool> UsernameExistsAsync(string immutableName, CancellationToken ct = default) =>
             _context.Users.AnyAsync(u => u.ImmutableName == immutableName, ct);
 
+        /// <summary>
+        /// Signup's uniqueness check, and it deliberately counts one kind of deleted row: an
+        /// account in its closure grace period still owns its address. Through the plain filter the
+        /// address read as free, so the person who just closed their account could re-register it —
+        /// and then be unable to recover the original by signing in, because a second row now holds
+        /// the email the lookup searches by.
+        ///
+        /// <para>The hold ends by itself: anonymisation rewrites the address to
+        /// <c>deleted-{guid}@deleted.invalid</c>, so a scrubbed account frees its email with no
+        /// separate release step. An ADMIN-deleted row is deliberately NOT counted — nothing ever
+        /// anonymises those, so counting them would burn the address permanently, and re-registering
+        /// it grants nothing: the new account is a new row, never the old one.</para>
+        /// </summary>
         public Task<bool> EmailExistsAsync(string email, CancellationToken ct = default) =>
-            _context.Users.AnyAsync(u => u.Email == email, ct);
+            _context.Users.IgnoreQueryFilters()
+                .AnyAsync(u => u.Email == email &&
+                               (!u.IsDeleted ||
+                                (u.DeletionRequestedAt != null && u.AnonymisedAt == null)), ct);
 
         public async Task AddAsync(User user, CancellationToken ct = default) =>
             await _context.Users.AddAsync(user, ct);
