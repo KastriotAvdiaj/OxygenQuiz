@@ -25,6 +25,9 @@ namespace QuizAPI.Services.Audit
         // See docs/adr/0012-account-deletion-is-anonymisation-after-a-grace-period.md.
         public const string AccountClosureRequested = "AccountClosureRequested";
         public const string AccountClosureCancelled = "AccountClosureCancelled";
+        // The "your account is about to be deleted" mail went out. Worth a verb of its own: it is
+        // the last warning anyone gets, so "was it sent?" has to be answerable afterwards.
+        public const string AccountClosureReminderSent = "AccountClosureReminderSent";
         public const string AccountAnonymised = "AccountAnonymised";
         // A user's role set was changed by an admin (from the Users page).
         public const string UserRolesChanged = "UserRolesChanged";

@@ -60,7 +60,9 @@ public class AccountClosureLoginTests
             ctx,
             new Mock<IAuditService>().Object,
             Options.Create(new AccountClosureOptions { GracePeriodDays = GraceDays }),
-            NullLogger<AccountClosureService>.Instance);
+            NullLogger<AccountClosureService>.Instance,
+            new Mock<IEmailSender>().Object,
+            new ConfigurationBuilder().Build());
 
         var sut = new AuthenticationService(
             new UserRepository(ctx),

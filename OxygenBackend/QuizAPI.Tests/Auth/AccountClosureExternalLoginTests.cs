@@ -91,7 +91,9 @@ public class AccountClosureExternalLoginTests
             ctx,
             new Mock<IAuditService>().Object,
             Options.Create(new AccountClosureOptions { GracePeriodDays = GraceDays }),
-            NullLogger<AccountClosureService>.Instance);
+            NullLogger<AccountClosureService>.Instance,
+            new Mock<IEmailSender>().Object,
+            new ConfigurationBuilder().Build());
 
         var tokens = new Mock<ITokenService>();
         tokens.Setup(t => t.GenerateRefreshToken())

@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -8,6 +9,7 @@ using QuizAPI.Models;
 using QuizAPI.Repositories;
 using QuizAPI.Services.AccountClosure;
 using QuizAPI.Services.Audit;
+using QuizAPI.Services.Email;
 using QuizAPI.Tests.TestSupport;
 using Xunit;
 
@@ -39,7 +41,9 @@ public class EmailReservationTests
         new(ctx,
             new Mock<IAuditService>().Object,
             Options.Create(new AccountClosureOptions { GracePeriodDays = graceDays }),
-            NullLogger<AccountClosureService>.Instance);
+            NullLogger<AccountClosureService>.Instance,
+            new Mock<IEmailSender>().Object,
+            new ConfigurationBuilder().Build());
 
     private static User AddUser(ApplicationDbContext ctx)
     {

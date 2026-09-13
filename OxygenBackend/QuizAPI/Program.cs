@@ -313,6 +313,7 @@ builder.Services.AddScoped<QuizAPI.Services.Ai.IAiGenerationService, QuizAPI.Ser
 builder.Services.AddScoped<QuizAPI.Services.Ai.AiReservationSweeper>();
 builder.Services.AddScoped<QuizAPI.Services.AbandonedSessionSweeper>();
 builder.Services.AddScoped<QuizAPI.Services.AccountAnonymisationSweeper>();
+builder.Services.AddScoped<QuizAPI.Services.ClosureReminderSweeper>();
 
 builder.Services.AddHttpContextAccessor();
 
@@ -590,6 +591,16 @@ using (var scope = app.Services.CreateScope())
     // five-minute sweeps above, whose deadlines are measured in minutes.
     recurringJobs.AddOrUpdate<QuizAPI.Services.AccountAnonymisationSweeper>(
         "account-anonymisation-sweep",
+        service => service.RunAsync(),
+        Cron.Hourly()
+    );
+
+    // Warns people three days before that scrub — the last moment recovery is possible, and the
+    // only mail in this flow nobody asked for. Kept out of the sweep above so an email outage
+    // can't take the scrub down with it; hourly, because the row is stamped once the mail is away
+    // and being an hour late against a three-day window changes nothing.
+    recurringJobs.AddOrUpdate<QuizAPI.Services.ClosureReminderSweeper>(
+        "account-closure-reminder-sweep",
         service => service.RunAsync(),
         Cron.Hourly()
     );

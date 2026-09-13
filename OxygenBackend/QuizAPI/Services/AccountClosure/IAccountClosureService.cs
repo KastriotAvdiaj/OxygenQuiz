@@ -31,5 +31,12 @@ namespace QuizAPI.Services.AccountClosure
         /// that still have <c>AnonymisedAt == null</c>.
         /// </summary>
         Task<int> AnonymisePendingAsync(CancellationToken ct = default);
+
+        /// <summary>
+        /// Emails everyone whose scrub is <c>ReminderDaysBefore</c> days away and who hasn't been
+        /// warned yet. Returns how many were sent. Entry point for its own sweep, and safe to call
+        /// repeatedly: a row is stamped once the mail is away, so the second run finds nothing.
+        /// </summary>
+        Task<int> SendClosureRemindersAsync(CancellationToken ct = default);
     }
 }

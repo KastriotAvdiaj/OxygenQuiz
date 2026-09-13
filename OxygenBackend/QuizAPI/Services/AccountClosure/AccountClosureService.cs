@@ -4,6 +4,7 @@ using QuizAPI.Data;
 using QuizAPI.Exceptions;
 using QuizAPI.Models;
 using QuizAPI.Services.Audit;
+using QuizAPI.Services.Email;
 
 namespace QuizAPI.Services.AccountClosure
 {
@@ -23,17 +24,23 @@ namespace QuizAPI.Services.AccountClosure
         private readonly IAuditService _audit;
         private readonly AccountClosureOptions _options;
         private readonly ILogger<AccountClosureService> _logger;
+        private readonly IEmailSender _email;
+        private readonly IConfiguration _configuration;
 
         public AccountClosureService(
             ApplicationDbContext db,
             IAuditService audit,
             IOptions<AccountClosureOptions> options,
-            ILogger<AccountClosureService> logger)
+            ILogger<AccountClosureService> logger,
+            IEmailSender email,
+            IConfiguration configuration)
         {
             _db = db;
             _audit = audit;
             _options = options.Value;
             _logger = logger;
+            _email = email;
+            _configuration = configuration;
         }
 
         public async Task<DateTime> RequestClosureAsync(Guid userId, CancellationToken ct = default)
@@ -101,6 +108,11 @@ namespace QuizAPI.Services.AccountClosure
 
             user.DeletionRequestedAt = null;
             user.IsDeleted = false;
+
+            // Cleared, not kept: leaving it set would silence the warning for someone who comes
+            // back, changes their mind again months later, and this time does stay away.
+            user.ClosureReminderSentAt = null;
+
             await _db.SaveChangesAsync(ct);
 
             await _audit.LogAsync(
@@ -133,6 +145,99 @@ namespace QuizAPI.Services.AccountClosure
                 _logger.LogInformation("Anonymised {Count} closed account(s).", due.Count);
 
             return due.Count;
+        }
+
+        /// <summary>
+        /// The last warning. Sends to every account whose scrub is <c>ReminderDaysBefore</c> days
+        /// away and that hasn't been warned, then stamps the row so the next hourly run skips it.
+        ///
+        /// <para><b>Sent, then stamped, one row at a time.</b> The stamp is what makes the mail
+        /// exactly-once, so it must not be written before the provider has accepted the message —
+        /// a crash between the two would cost someone their only warning. The other order costs a
+        /// duplicate email in the same situation, which is the cheaper failure. One
+        /// <c>SaveChanges</c> per person for the same reason: a batch that throws on its last
+        /// address must not un-stamp the fifty that already went.</para>
+        ///
+        /// <para><b>A failed send is left unstamped on purpose</b>, so the next run retries it. A
+        /// permanently bad address therefore retries hourly until the scrub removes the row from the
+        /// query — noisy in the log, which is the right place for "we cannot reach this person".</para>
+        /// </summary>
+        public async Task<int> SendClosureRemindersAsync(CancellationToken ct = default)
+        {
+            // A warning that arrives after the data is gone is not a warning. Rather than sending it
+            // late, an out-of-range setting turns the reminder off — 0 is how you do that on purpose.
+            if (_options.ReminderDaysBefore <= 0 ||
+                _options.ReminderDaysBefore >= _options.GracePeriodDays)
+                return 0;
+
+            // Due once the closure is old enough that only ReminderDaysBefore of the grace period
+            // is left. Expressed against DeletionRequestedAt rather than "days until the scrub",
+            // because that is the column the index and every other query in this file work on.
+            var requestedOnOrBefore = DateTime.UtcNow
+                .AddDays(-(_options.GracePeriodDays - _options.ReminderDaysBefore));
+
+            var due = await _db.Users.IgnoreQueryFilters()
+                .Where(u => u.DeletionRequestedAt != null
+                         && u.DeletionRequestedAt <= requestedOnOrBefore
+                         && u.AnonymisedAt == null
+                         && u.ClosureReminderSentAt == null
+                         && !u.IsProtected)
+                .OrderBy(u => u.DeletionRequestedAt)
+                .Take(_options.SweepBatchSize)
+                .ToListAsync(ct);
+
+            var sent = 0;
+
+            foreach (var user in due)
+            {
+                var anonymiseAt = user.DeletionRequestedAt!.Value.AddDays(_options.GracePeriodDays);
+                var daysLeft = Math.Max(1, (int)Math.Ceiling((anonymiseAt - DateTime.UtcNow).TotalDays));
+
+                try
+                {
+                    // The button is the login page, because logging in IS the recovery — there is no
+                    // token to mint and nothing to click that a stolen mail could abuse. Worth
+                    // noticing: this is the one email we send whose link needs no secret at all.
+                    var (html, text) = EmailTemplates.Action(
+                        recipientName: user.Username,
+                        preheader: $"{daysLeft} day(s) left to keep your account.",
+                        intro: $"You asked us to close your Oxygen Quiz account. In {daysLeft} day(s) " +
+                               "we permanently delete the personal data on it — your quizzes and play " +
+                               "history stay, but the account itself can no longer be recovered. " +
+                               "If you've changed your mind, just log in and it's cancelled.",
+                        buttonLabel: "Log in and keep my account",
+                        url: $"{AppLinks.FrontendBaseUrl(_configuration)}/login",
+                        footer: "If you still want the account closed, do nothing — this is the only " +
+                                "reminder we'll send.");
+
+                    await _email.SendAsync(
+                        user.Email, "Your Oxygen Quiz account is about to be deleted", html, text, ct);
+                }
+                catch (Exception ex)
+                {
+                    // One unreachable address must not cost everyone behind it in the batch their
+                    // warning, so this is caught rather than thrown: unstamped, retried next hour.
+                    _logger.LogError(ex, "Closure reminder failed for user {UserId}.", user.Id);
+                    continue;
+                }
+
+                user.ClosureReminderSentAt = DateTime.UtcNow;
+                await _db.SaveChangesAsync(ct);
+                sent++;
+
+                await _audit.LogAsync(
+                    AuditActions.AccountClosureReminderSent,
+                    entity: "User",
+                    entityId: user.Id.ToString(),
+                    newValue: new { AnonymiseAt = anonymiseAt },
+                    userId: user.Id,
+                    ct: ct);
+            }
+
+            if (sent > 0)
+                _logger.LogInformation("Sent {Count} account-closure reminder(s).", sent);
+
+            return sent;
         }
 
         /// <summary>

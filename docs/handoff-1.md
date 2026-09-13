@@ -8,7 +8,7 @@ Paste this into a new chat to bootstrap context. Last updated **2026-09-13**.
   react-router, Tailwind, shadcn-style UI). Backend: ASP.NET Core 8 + EF Core (Postgres).
 - Repo root has `OxygenBackend/QuizAPI` (.NET), `OxygenBackend/QuizAPI.Tests` (xUnit), `src/`
   (frontend).
-- Backend tests: `dotnet test OxygenBackend/QuizAPI.Tests/QuizAPI.Tests.csproj` — **331 passing**
+- Backend tests: `dotnet test OxygenBackend/QuizAPI.Tests/QuizAPI.Tests.csproj` — **338 passing**
   as of this handoff, no warnings.
 - Frontend typecheck: `./node_modules/.bin/tsc --noEmit -p tsconfig.json`. NOTE: tsc does NOT catch
   Babel/Vite transform errors (e.g. a `{/* */}` comment inside a JSX attribute's braces, which is
@@ -87,21 +87,25 @@ card holds the table and nothing else. Users-table columns gained `meta.priority
 **A build fix.** `QuizSessionService.cs:524` called a sync `BuildCompletedResult` that doesn't
 exist; the prod Docker build was failing on it.
 
-**Tests: 311 → 331.** New: `Users/UserServiceDeleteTests.cs`, `Users/AccountClosureTests.cs`,
+**The reminder email.** Three days before the scrub, `account-closure-reminder-sweep` mails everyone
+still closing — once, stamped by `User.ClosureReminderSentAt`, button pointing at the login page
+because logging in IS the recovery and the link therefore needs no token. Its own Hangfire job
+rather than a branch of the anonymisation sweep, so an email outage can't take the scrub down with
+it. `auth/account-closure.md` §6.
+
+**Tests: 311 → 338.** New: `Users/UserServiceDeleteTests.cs`, `Users/AccountClosureTests.cs`,
 `Auth/AccountClosureLoginTests.cs`, `Auth/AccountClosureExternalLoginTests.cs`,
-`Users/EmailReservationTests.cs`.
+`Users/EmailReservationTests.cs`, `Users/ClosureReminderTests.cs`.
 
 ---
 
 ## OPEN — in the order I'd take them
 
-1. **The reminder email** a few days before the grace window closes. 30 days is long enough to
-   forget, and that mail is the last moment recovery is possible.
-2. **Sign-in doesn't say it cancelled a closure.** Silently undone, on every path now. Needs a field
-   on `AuthResponseDTO` and a frontend notice.
-3. **Multiplayer persistence** — the biggest remaining piece. Fully designed, nothing built. Its own
+1. **Sign-in doesn't say it cancelled a closure.** Silently undone, on every path now. Needs a field
+   on `AuthResponseDTO` and a frontend notice. Small, and the last loose end in the closure flow.
+2. **Multiplayer persistence** — the biggest remaining piece. Fully designed, nothing built. Its own
    section below.
-4. **Inherited, unverified this session:** `GET /api/users/{id}`, `/username/{username}` and
+3. **Inherited, unverified this session:** `GET /api/users/{id}`, `/username/{username}` and
    `POST /api/users/batch` are `[Authorize]` but still return the full `UserDTO` including email to
    any signed-in user. A slim DTO would be the fix. Also: background music is silent until an audio
    file is dropped at `public/audio/background-music.mp3`, and `/users/:userId` public profile is

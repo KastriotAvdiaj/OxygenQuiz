@@ -45,7 +45,7 @@ public class AuthenticationService(
     /// to, and costs nothing to show the person who mistyped a stranger's address.
     /// </summary>
     private const string EmailInUseMessage =
-        "Email is already in use. If this is your account, sign in to recover it.";
+        "Email is already in use. If this is your account, log in to recover it.";
 
     private readonly IUserRepository _userRepository = userRepository;
     private readonly IRoleRepository _roleRepository = roleRepository;
@@ -837,10 +837,7 @@ public class AuthenticationService(
             user.Email, "Confirm your Oxygen Quiz email", html, text, ct);
     }
 
-    // The confirmation link points at the frontend. Prefer an explicit App:FrontendBaseUrl,
-    // else the first configured CORS origin, else the local dev default.
-    private string FrontendBaseUrl() =>
-        _configuration["App:FrontendBaseUrl"]
-        ?? _configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()?.FirstOrDefault()
-        ?? "https://localhost:5173";
+    // The confirmation link points at the frontend. Shared with the closure reminder, which sends
+    // the same kind of link from a background job — see AppLinks for the fallback chain.
+    private string FrontendBaseUrl() => AppLinks.FrontendBaseUrl(_configuration);
 }

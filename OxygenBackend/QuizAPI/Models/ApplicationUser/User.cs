@@ -60,6 +60,13 @@ namespace QuizAPI.Models
 
         public DateTime? AnonymisedAt { get; set; }
 
+        // When the "your account is about to be deleted" mail went out, and the reason it is a
+        // column rather than a computed window: the reminder must be sent exactly once, and the
+        // sweep that sends it runs hourly, so anything derived from the clock alone would send
+        // again on every run inside the window. Cleared when a closure is cancelled, so someone who
+        // comes back, leaves again and stays away still gets warned the second time.
+        public DateTime? ClosureReminderSentAt { get; set; }
+
         public DateTime LastLogin { get; set; }
 
 

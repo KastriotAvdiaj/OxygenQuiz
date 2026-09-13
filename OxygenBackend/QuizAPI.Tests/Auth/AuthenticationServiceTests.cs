@@ -119,7 +119,12 @@ public class AuthenticationServiceTests
 
         var ex = await Assert.ThrowsAsync<ConflictException>(
             () => CreateSut().SignupAsync(ValidSignup()));
-        Assert.Equal("Email is already in use.", ex.Message);
+
+        // One message for a live account and for one inside its closure grace period — the second
+        // sentence is what makes that safe to say, by pointing anyone it belongs to at the recovery
+        // without admitting which case they are in. See docs/auth/account-closure.md §8.
+        Assert.Equal(
+            "Email is already in use. If this is your account, log in to recover it.", ex.Message);
     }
 
     [Fact]
