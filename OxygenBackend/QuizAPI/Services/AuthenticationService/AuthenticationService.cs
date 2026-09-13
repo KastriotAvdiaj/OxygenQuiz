@@ -265,7 +265,7 @@ public class AuthenticationService(
             throw new UnauthorizedException("Invalid credentials.");
         }
 
-        await AdmitOrRejectDeletedAsync(user, ct);
+        var closureCancelled = await AdmitOrRejectDeletedAsync(user, ct);
 
         user.LastLogin = DateTime.UtcNow;
         await _userRepository.SaveChangesAsync(ct);
@@ -277,7 +277,7 @@ public class AuthenticationService(
         await _auditService.LogAsync(
             AuditActions.UserLoggedIn, entity: "User", entityId: user.Id.ToString(), userId: user.Id, ct: ct);
 
-        return await BuildAuthResultAsync(user, roleNames, ct);
+        return await BuildAuthResultAsync(user, roleNames, ct, closureCancelled);
     }
 
     /// <summary>
@@ -302,7 +302,11 @@ public class AuthenticationService(
     /// entity tracked by the caller. It returns false for the overwhelming majority of sign-ins,
     /// which have nothing pending.</para>
     /// </summary>
-    private async Task AdmitOrRejectDeletedAsync(User user, CancellationToken ct)
+    /// <returns>
+    /// True if this sign-in cancelled a pending closure, so the caller can say so in the response —
+    /// otherwise the recovery is invisible to the person it happened to.
+    /// </returns>
+    private async Task<bool> AdmitOrRejectDeletedAsync(User user, CancellationToken ct)
     {
         if (user.AnonymisedAt is not null || (user.IsDeleted && user.DeletionRequestedAt is null))
         {
@@ -311,7 +315,7 @@ public class AuthenticationService(
             throw new UnauthorizedException("Invalid credentials.");
         }
 
-        await _accountClosure.CancelClosureAsync(user.Id, ct);
+        return await _accountClosure.CancelClosureAsync(user.Id, ct);
     }
 
     public async Task<ExternalLoginOutcome> ExternalLoginAsync(ExternalLoginDTO dto, CancellationToken ct = default)
@@ -335,7 +339,7 @@ public class AuthenticationService(
                     existingLink.UserId, tracked: true, ct)
                 ?? throw new UnauthorizedException("Invalid credentials.");
 
-            await AdmitOrRejectDeletedAsync(linkedUser, ct);
+            var linkedClosureCancelled = await AdmitOrRejectDeletedAsync(linkedUser, ct);
 
             linkedUser.LastLogin = DateTime.UtcNow;
             await _auditService.LogAsync(
@@ -344,7 +348,7 @@ public class AuthenticationService(
 
             var linkedRoles = linkedUser.UserRoles.Select(ur => ur.Role.Name!).ToArray();
             return ExternalLoginOutcome.LoggedIn(
-                await BuildAuthResultAsync(linkedUser, linkedRoles, ct));
+                await BuildAuthResultAsync(linkedUser, linkedRoles, ct, linkedClosureCancelled));
         }
 
         // 2. First contact for this identity. If its email matches an existing account, link —
@@ -366,7 +370,7 @@ public class AuthenticationService(
                 // Provider vouched for the address, so this is the owner: same two-way decision as
                 // everywhere else — an admin-deleted account stays locked out, a closing one is
                 // restored — before a link is written to it.
-                await AdmitOrRejectDeletedAsync(emailOwner, ct);
+                var ownerClosureCancelled = await AdmitOrRejectDeletedAsync(emailOwner, ct);
 
                 await _externalLoginRepository.AddAsync(new ExternalLogin
                 {
@@ -389,7 +393,7 @@ public class AuthenticationService(
                 var ownerRoles = emailOwner.UserRoles.Select(ur => ur.Role.Name!).ToArray();
                 // The new link row and LastLogin are saved by BuildAuthResultAsync (shared context).
                 return ExternalLoginOutcome.LoggedIn(
-                    await BuildAuthResultAsync(emailOwner, ownerRoles, ct));
+                    await BuildAuthResultAsync(emailOwner, ownerRoles, ct, ownerClosureCancelled));
             }
         }
 
@@ -617,7 +621,15 @@ public class AuthenticationService(
     /// Mints an access token, persists a fresh refresh token, and packages both with the user DTO.
     /// Any pending tracked changes (e.g. a rotated token's RevokedAt) are saved here in one round-trip.
     /// </summary>
-    private async Task<AuthResult> BuildAuthResultAsync(User user, string[] roleNames, CancellationToken ct)
+    /// <param name="closureCancelled">
+    /// Passed through to the response so the client can tell the person their closure was undone.
+    /// Defaults to false for the paths where it cannot be true — signup, external signup, refresh —
+    /// which is also why it sits after <paramref name="ct"/> rather than in the middle of the
+    /// signature: those call sites stay untouched, and the only callers that pass it are the three
+    /// sign-in paths that actually asked.
+    /// </param>
+    private async Task<AuthResult> BuildAuthResultAsync(
+        User user, string[] roleNames, CancellationToken ct, bool closureCancelled = false)
     {
         var accessToken = _tokenService.GenerateToken(user, roleNames);
         var (rawRefresh, refreshHash, refreshExpiry) = _tokenService.GenerateRefreshToken();
@@ -635,7 +647,12 @@ public class AuthenticationService(
 
         return new AuthResult
         {
-            Response = new AuthResponseDTO { Token = accessToken, User = user.ToDto() },
+            Response = new AuthResponseDTO
+            {
+                Token = accessToken,
+                User = user.ToDto(),
+                ClosureCancelled = closureCancelled,
+            },
             RawRefreshToken = rawRefresh,
             RefreshTokenExpiresAt = refreshExpiry
         };

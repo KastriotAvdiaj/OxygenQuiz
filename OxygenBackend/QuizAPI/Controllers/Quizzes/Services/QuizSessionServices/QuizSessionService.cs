@@ -508,6 +508,26 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                 if (session == null)
                     return Result<ResumeResultDto>.ValidationFailure("Session not found.");
 
+                // A match cannot be resumed, and everything below this line assumes otherwise.
+                //
+                // "Where was I?" has no answer for a game that ran on a shared clock with other
+                // people in the room: the catch-up walk would mark every question the player did
+                // not answer as expired and hand them the next one — resuming them into a match
+                // that has ended, alone, against questions nobody else is still playing.
+                //
+                // A FINISHED match session is still a fair question, and gets the answer any
+                // finished session gets: their results. The per-player session is exactly what
+                // /quiz/results/:sessionId renders, which is why multiplayer needed no results page
+                // of its own (docs/quiz/multiplayer-persistence-plan.md).
+                if (session.Mode == QuizSessionMode.Multiplayer)
+                {
+                    return session.IsCompleted
+                        ? Result<ResumeResultDto>.Success(
+                            await BuildCompletedResultAsync(session, sessionId))
+                        : Result<ResumeResultDto>.ValidationFailure(
+                            "A multiplayer match can't be resumed.");
+                }
+
                 // An already-finished session is an ANSWER, not a failure.
                 //
                 // This filtered on `!s.IsCompleted` in the query, so a session that had already

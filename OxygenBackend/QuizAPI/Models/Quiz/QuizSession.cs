@@ -11,6 +11,16 @@ namespace QuizAPI.Models.Quiz
         Timeout,           // Automatic abandonment due to inactivity
         SystemCleanup      // Background cleanup job
     }
+
+    /// <summary>
+    /// How the session was played. SinglePlayer is 0 so every row that existed before multiplayer
+    /// persistence backfills to it without a data migration — which is also the truth about them.
+    /// </summary>
+    public enum QuizSessionMode
+    {
+        SinglePlayer = 0,
+        Multiplayer = 1
+    }
     public class QuizSession
     {
         [Key]
@@ -48,5 +58,27 @@ namespace QuizAPI.Models.Quiz
         /// and are deleted immediately once the guest views their results — never kept around.
         /// </summary>
         public bool IsGuestSession { get; set; } = false;
+
+        /// <summary>
+        /// Single player, or one player's share of a multiplayer match. The distinction is not
+        /// cosmetic: a match session is created and completed inside the match loop and never looks
+        /// like an in-flight single-player session, so the abandonment sweeper and the resume path
+        /// both have to know to leave it alone. Quiz analytics read it too — multiplayer plays are
+        /// excluded from an author's averages by default, because a fixed clock and social pressure
+        /// depress scores for reasons that have nothing to do with question quality.
+        ///
+        /// See docs/quiz/multiplayer-persistence-plan.md.
+        /// </summary>
+        public QuizSessionMode Mode { get; set; } = QuizSessionMode.SinglePlayer;
+
+        /// <summary>
+        /// The match this session belonged to; null for every single-player session. It is what ties
+        /// one player's answers to the other players' — the review screen's per-player tabs are this
+        /// foreign key read backwards.
+        /// </summary>
+        public Guid? MatchId { get; set; }
+
+        [ForeignKey(nameof(MatchId))]
+        public virtual Match? Match { get; set; }
     }
 }

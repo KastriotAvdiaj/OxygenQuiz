@@ -223,11 +223,12 @@ builder.Services.AddSingleton<IMatchOrchestrator, MatchOrchestrator>();
 // Business Logic Services
 builder.Services.AddScoped<IAnswerGradingService, AnswerGradingService>();
 builder.Services.AddScoped<ISessionAbandonmentService, SessionAbandonmentService>();
-// Runs that same service on a timer. Without it, abandonment only ever happened when the player
-// came back — a session nobody returned to stayed "in progress" forever and skewed completion
-// rate. See SessionAbandonmentSweep for why the old QuizSessionCleanupService was deleted
-// rather than registered.
-builder.Services.AddHostedService<QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.AbandonmentService.SessionAbandonmentSweep>();
+// The schedule that runs it lives with every other recurring job, at the bottom of this file
+// (`abandoned-session-sweep`). There was a second scheduler here — a SessionAbandonmentSweep
+// BackgroundService, registered, doing the same sweep on its own timer — so every stale session
+// was examined twice by two mechanisms with two different intervals. Harmless, because the sweep
+// is idempotent, and exactly the kind of duplication that stops being harmless the moment one of
+// them grows a rule the other doesn't have.
 builder.Services.AddScoped<DashboardService>();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddScoped<QuizAPI.Services.SettingsService.ISettingsService, QuizAPI.Services.SettingsService.SettingsService>();
@@ -551,6 +552,12 @@ app.MapControllers();
 app.MapHub<QuizAPI.Hubs.QuizHub>("/quizHub");
 app.MapHub<QuizAPI.Hubs.NotificationHub>("/notificationHub");
 
+// Cron has no "every N minutes" that spans an hour boundary: "*/90 * * * *" is not 90 minutes, it
+// is nothing. So anything an hour or longer becomes hourly — the only interval in that range this
+// app can express, and close enough for a sweep whose deadlines are measured in minutes.
+static string EveryNMinutes(int minutes) =>
+    minutes >= 60 ? Cron.Hourly() : $"*/{minutes} * * * *";
+
 // Schedule recurring jobs through the DI-registered IRecurringJobManager rather than the static
 // RecurringJob API. The static API depends on Hangfire's global JobStorage.Current, which only gets
 // initialized as a side effect of mapping the Hangfire dashboard — and the dashboard is intentionally
@@ -573,17 +580,35 @@ using (var scope = app.Services.CreateScope())
         "*/5 * * * *" // every 5 minutes
     );
 
-    // Ends quiz sessions nobody came back to. Until this was added, NOTHING did: the
-    // BackgroundService written for it was never registered (there is no AddHostedService in this
-    // project), so abandonment only ever happened when a player happened to reopen the quiz —
-    // and abandoned guest sessions, which guest-play.md promises are deleted, never were.
-    // Five minutes for the same reason as the sweep above: the cost of a stale session is a
-    // player who cannot start that quiz again, because MaxConcurrentSessionsPerUser is 1.
-    recurringJobs.AddOrUpdate<QuizAPI.Services.AbandonedSessionSweeper>(
-        "abandoned-session-sweep",
-        service => service.RunAsync(),
-        "*/5 * * * *" // every 5 minutes
-    );
+    // Ends quiz sessions nobody came back to. Before it existed, abandonment happened only when a
+    // player happened to reopen the quiz — and abandoned guest sessions, which guest-play.md
+    // promises are deleted, never were. The cost of a stale session is a player who cannot start
+    // that quiz again, because MaxConcurrentSessionsPerUser is 1.
+    //
+    // THE ONLY SCHEDULE for this sweep: a BackgroundService used to run it in parallel on its own
+    // timer (see the note next to ISessionAbandonmentService above). Because that one owned the
+    // QuizSession:AbandonmentSweepMinutes setting, the interval is read here rather than hardcoded
+    // — otherwise removing it would have silently turned a configured knob, including its
+    // documented "0 disables the sweep", into a no-op.
+    var quizSessionOptions = scope.ServiceProvider
+        .GetRequiredService<Microsoft.Extensions.Options.IOptions<
+            QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.QuizSessionOptions>>().Value;
+
+    if (quizSessionOptions.AbandonmentSweepMinutes <= 0)
+    {
+        // Disabled on purpose. RemoveIfExists rather than "just don't add": Hangfire's recurring
+        // jobs live in the database, so a job registered by a previous boot keeps running until
+        // something removes it — turning the setting off would otherwise appear to do nothing.
+        recurringJobs.RemoveIfExists("abandoned-session-sweep");
+    }
+    else
+    {
+        recurringJobs.AddOrUpdate<QuizAPI.Services.AbandonedSessionSweeper>(
+            "abandoned-session-sweep",
+            service => service.RunAsync(),
+            EveryNMinutes(quizSessionOptions.AbandonmentSweepMinutes)
+        );
+    }
 
     // Scrubs accounts whose 30-day closure grace period has elapsed. THIS JOB IS THE PROMISE: a
     // closure that never gets swept is an account that told its owner their data was going and

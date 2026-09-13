@@ -182,6 +182,7 @@ public class AccountClosureExternalLoginTests
 
         Assert.NotNull(outcome.Auth);
         Assert.Null(outcome.SignupRequired);
+        Assert.True(outcome.Auth!.Response.ClosureCancelled);
 
         var after = await Reload(ctx, user.Id);
         Assert.False(after.IsDeleted);
@@ -229,6 +230,7 @@ public class AccountClosureExternalLoginTests
 
         Assert.NotNull(outcome.Auth);
         Assert.Null(outcome.SignupRequired);
+        Assert.True(outcome.Auth!.Response.ClosureCancelled);
 
         var after = await Reload(ctx, user.Id);
         Assert.False(after.IsDeleted);

@@ -1,7 +1,13 @@
 # Multiplayer persistence — plan
 
-> **Status: planned, not built.** Nothing in this document exists in code yet. Fold what survives
-> into [`multiplayer.md`](multiplayer.md) and delete this file once it ships.
+> **Status: partly built — the tables and the guards exist, nothing writes to them yet.**
+> Work items 1, 3 and 4 have landed (see §Work); 2, 5 and 6 have not, so everything in
+> "What happens today" is still true of a live match. Fold what survives into
+> [`multiplayer.md`](multiplayer.md) and delete this file once the rest ships.
+>
+> The order is deliberate: the guards (3, 4) went in BEFORE the writes (2), because a multiplayer
+> session written while the abandonment sweep and the resume path still knew nothing about it would
+> be marked abandoned within minutes of the match ending.
 
 ## What happens today
 
@@ -71,20 +77,28 @@ which has to be kept in step with the first forever.
 
 ## Work
 
-1. **Migration.** `Match` table; `Mode` and `MatchId` on `QuizSession`. Existing sessions backfill
-   to `Mode = SinglePlayer`.
+1. ~~**Migration.**~~ **Done.** `Match` (quiz, pinned version, room code, host, started/ended,
+   winner); `Mode` and `MatchId` on `QuizSession`, indexed on `MatchId` and `(QuizId, Mode)`.
+   `SinglePlayer = 0`, so existing rows backfill to the truth about them without a data migration.
+   Every FK is `Restrict`, matching `QuizSession`: a played game is a record, and a record that
+   vanishes when a quiz or an account is removed is not one.
 2. **`MatchOrchestrator` writes.** Keep the `UserAnswer` objects it already builds, attach them to
    a scoped `DbContext`, and save once at match end rather than per round — a mid-match database
-   round trip per player per question is latency the round loop does not have.
-3. **`AbandonedSessionSweeper` skips `Mode = Multiplayer`.** Otherwise it will start flagging
-   finished matches as abandoned: a match session is created and completed inside the match loop
-   and never looks like an active single-player session.
-4. **The resume path refuses multiplayer sessions.** "Where was I?" is meaningless for a match
-   that has ended, and `ResolveAndResumeAsync` would otherwise try to catch one up.
+   round trip per player per question is latency the round loop does not have. **Not built.**
+3. ~~**The abandonment sweep skips `Mode = Multiplayer`.**~~ **Done**, in
+   `SessionAbandonmentService` rather than in the sweeper: both queries (`CleanupAbandonedSessions`
+   and `GetActiveSessionForUser`) filter on mode, and `IsSessionAbandonedAsync` returns false for a
+   match whoever asks. The rules live with the service the lazy paths share, not with a schedule.
+   The second query matters as much as the first: it answers "does this player already have a game
+   of this quiz running?", so an unfiltered match session would have blocked them from starting the
+   quiz alone (`MaxConcurrentSessionsPerUser` is 1).
+4. ~~**The resume path refuses multiplayer sessions.**~~ **Done.** `ResolveAndResumeAsync` returns a
+   validation failure for an unfinished match and the ordinary completed result for a finished one
+   — that result is the player's results page, which is the answer they actually wanted.
 5. **`ReportService` gains a mode filter**, defaulting to single-player only, plus the toggle on
-   the analytics page.
+   the analytics page. **Not built.**
 6. **The review screen grows player tabs**, reading from the database rather than from
-   `match.lastResult`.
+   `match.lastResult`. **Not built.**
 
 ## Settled since
 

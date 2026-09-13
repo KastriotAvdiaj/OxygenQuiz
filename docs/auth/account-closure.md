@@ -4,7 +4,7 @@
 > becomes recoverable for 30 days; after that its personal data is scrubbed and the row is kept, so
 > every foreign key still resolves and nobody else's history changes.
 >
-> **Status: built and reachable.** §8 lists what remains. The decision and
+> **Status: built, reachable and finished** — nothing in this flow is outstanding. The decision and
 > the alternatives it rejected are in
 > [`../adr/0012-account-deletion-is-anonymisation-after-a-grace-period.md`](../adr/0012-account-deletion-is-anonymisation-after-a-grace-period.md).
 
@@ -43,7 +43,9 @@ introduces a new flow. Two risky changes wearing one commit.
 2. **Grace, 30 days** — the account is gone from every read. Signing in cancels the closure and
    restores the account outright — **by any method the person has**, password or Google/Microsoft;
    so does `DELETE /api/Users/me/closure` for someone still holding a session.
-3. **Anonymisation** — the `account-anonymisation-sweep` Hangfire job, hourly.
+3. **Warning, day 27** — the `account-closure-reminder-sweep` Hangfire job, hourly, mails everyone
+   three days out (§6). Once each.
+4. **Anonymisation** — the `account-anonymisation-sweep` Hangfire job, hourly.
 
 ### What the scrub does
 
@@ -86,6 +88,14 @@ The order matters and is asserted:
    probeable, and it must not re-open accounts an admin removed.
 3. Only then does a pending closure get cancelled.
 
+**And the response says so.** `AuthResponseDTO.ClosureCancelled` is true on the one sign-in that
+undid a closure, false on every ordinary one, and the client turns it into a "welcome back, your
+account is no longer scheduled for deletion" notice (`announceClosureCancelled` in `lib/Auth.tsx`,
+called from every path that adopts a session). Without it the restore is invisible: the only way to
+find out it worked would be to close the account again and watch what happens. The flag is safe to
+send — it reaches only someone who has just proven they own the account, and tells them nothing they
+did not do themselves.
+
 **A path that skips step 1's widened lookup breaks recovery silently.** External sign-in shipped
 resolving its user through the filtered `GetByIdAsync`, so a closing account came back as null and a
 returning Google user was told `Invalid credentials` — with no route back in at all for an account
@@ -98,12 +108,14 @@ that never had a password. `AccountClosureExternalLoginTests` covers each extern
 
 ```jsonc
 "AccountClosure": {
-  "GracePeriodDays": 30,   // how long recovery stays possible
-  "SweepBatchSize": 200    // most one sweep will scrub; a backlog drains over later runs
+  "GracePeriodDays": 30,     // how long recovery stays possible
+  "SweepBatchSize": 200,     // most one sweep will scrub or mail; a backlog drains over later runs
+  "ReminderDaysBefore": 3    // warning email this many days before the scrub; 0 turns it off
 }
 ```
 
-Both have working defaults; the section is optional.
+All three have working defaults; the section is optional. `ReminderDaysBefore` at or above
+`GracePeriodDays` sends nothing rather than sending late — see §6.
 
 ---
 
@@ -121,7 +133,36 @@ selects only rows with `AnonymisedAt == null`, so it is safe to run twice and sa
 
 ---
 
-## 6. The UI
+## 6. The reminder is the last warning
+
+`ClosureReminderSweeper` → `IAccountClosureService.SendClosureRemindersAsync`, registered as
+`account-closure-reminder-sweep`, also `Cron.Hourly()`. Three days before the scrub (
+`ReminderDaysBefore`), everyone still closing gets one email: *"Your Oxygen Quiz account is about to
+be deleted"*, with a button to the login page — **logging in is the recovery, so the link carries no
+token and nothing in the mail is worth stealing.** It is the only mail in this flow nobody asked
+for, and the last moment recovery is possible.
+
+Four decisions hold it together:
+
+- **`ClosureReminderSentAt` is a column, not a computed window.** The sweep runs hourly and the
+  window is three days wide; without a stamp, the same person gets about seventy copies. Cleared by
+  `CancelClosureAsync`, so someone who comes back, leaves again and stays away is warned the second
+  time too.
+- **Send, then stamp, one row at a time.** A crash between the two costs a duplicate email; the other
+  order costs someone their only warning. One `SaveChanges` per person, so a batch that fails on its
+  last address doesn't un-stamp the fifty already sent.
+- **A failed send is left unstamped** and retried next hour. A permanently bad address retries until
+  the scrub removes the row — noisy in the log, which is where "we cannot reach this person" belongs.
+- **It is a separate job from the scrub.** They read the same rows, but this one depends on an email
+  provider that can be down or throttled, and a mail outage must not take the scrub — the promise —
+  down with it.
+
+Out-of-range `ReminderDaysBefore` (0, negative, or ≥ `GracePeriodDays`) sends nothing: a warning
+after the data is gone is not a warning. `Users/ClosureReminderTests.cs` pins all of the above.
+
+---
+
+## 7. The UI
 
 `CloseAccountSection`, at the bottom of the account overlay's **My Account** panel
 (`AccountOverlay/panels/`). It is the only way a person can leave, and therefore an Admin's only
@@ -144,7 +185,7 @@ button would only produce a 403.
 `ConfirmationDialog` grew an optional `children` slot for this — it previously took only a string
 `body`, which cannot hold a confirmation input.
 
-## 7. The address is held for the grace period
+## 8. The address is held for the grace period
 
 `EmailExistsAsync` counts a row as owning its address when the account is live **or** closing
 (`DeletionRequestedAt` set, `AnonymisedAt` null). It is the whole of signup's answer, on both the
@@ -163,27 +204,23 @@ Three consequences worth keeping straight:
 - **An admin-deleted row does NOT hold its address**, deliberately. Nothing ever anonymises those,
   so counting them would burn the address permanently — and re-registering it grants nothing, since
   the new account is a new row with none of the old one's history or roles.
-- **Signup says one thing for both cases**: *"Email is already in use. If this is your account, sign
-  in to recover it."* Naming the closing case would turn signup into an "is X leaving?" oracle for
+- **Signup says one thing for both cases**: *"Email is already in use. If this is your account, log
+  in to recover it."* ("log in", not "sign in" — next to a **Sign up** button the two read as the
+  same word.) Naming the closing case would turn signup into an "is X leaving?" oracle for
   any address. The hint is safe because it is shown for a live account too, and it points a
   returning person at the one action that actually works. There is no email-availability endpoint,
   so submit is the only place to ask.
 
-`Users/EmailReservationTests.cs` pins all four states.
-
-## 8. Not built yet
-
-- **The reminder email** a few days before the window closes. Thirty days is long enough to forget,
-  and that mail is the last moment recovery is possible.
-- **Sign-in doesn't say it cancelled anything.** The closure is silently undone, on every path. It
-  fails in the safe direction, but the person should be told; that needs a field on
-  `AuthResponseDTO`.
+`Users/EmailReservationTests.cs` pins all four states. The reasoning, and the two alternatives it
+rejected, are in
+[`../adr/0013-a-closing-account-keeps-its-email-a-deleted-one-does-not.md`](../adr/0013-a-closing-account-keeps-its-email-a-deleted-one-does-not.md).
 
 ---
 
 ## 9. Related
 
 - [`../adr/0012-account-deletion-is-anonymisation-after-a-grace-period.md`](../adr/0012-account-deletion-is-anonymisation-after-a-grace-period.md) — the decision
+- [`../adr/0013-a-closing-account-keeps-its-email-a-deleted-one-does-not.md`](../adr/0013-a-closing-account-keeps-its-email-a-deleted-one-does-not.md) — who owns an address, and for how long
 - [`../adr/0011-system-accounts-are-protected-rows.md`](../adr/0011-system-accounts-are-protected-rows.md) — why root and guest can never enter this flow
 - [`user-role-management.md`](user-role-management.md) §1.1 — administrative deletion, the other operation
 - [`../development/testing.md`](../development/testing.md) §4E — why the login test doesn't mock

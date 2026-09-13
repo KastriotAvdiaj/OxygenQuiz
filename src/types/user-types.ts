@@ -38,6 +38,12 @@ export type Role = Entity<{
 export type AuthResponse = {
   token: string;
   user: User;
+  /**
+   * This sign-in cancelled a pending account closure — the account was scheduled for deletion and
+   * signing in restored it (docs/auth/account-closure.md). Optional because an API older than the
+   * field simply omits it, and "no news" is the right reading of that.
+   */
+  closureCancelled?: boolean;
 };
 
 // Public, safe-to-expose profile of any user (mirrors backend PublicUserProfileDTO).

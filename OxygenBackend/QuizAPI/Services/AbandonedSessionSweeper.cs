@@ -9,9 +9,8 @@ namespace QuizAPI.Services
     ///
     /// <para><b>Nothing did this until 2026-09-10.</b> A <c>QuizSessionCleanupService :
     /// BackgroundService</c> existed, complete with its own copy of the timeout maths, and was
-    /// never passed to <c>AddHostedService</c> — there is no such call anywhere in the project,
-    /// because recurring work here goes through Hangfire. So it had never run once. Abandonment
-    /// happened only when a user happened to touch the session, which meant:</para>
+    /// never passed to <c>AddHostedService</c>. So it had never run once. Abandonment happened only
+    /// when a user happened to touch the session, which meant:</para>
     /// <list type="bullet">
     ///   <item>stale sessions accumulated forever, and with
     ///   <c>MaxConcurrentSessionsPerUser = 1</c> each one blocked that player from restarting
@@ -29,6 +28,14 @@ namespace QuizAPI.Services
     /// <c>AbandonedAt</c> nor deleted guest rows. One set of rules, in the service that also
     /// answers "is this session abandoned?" on the resume path, is what keeps a swept session and
     /// a refused resume telling the player the same story.</para>
+    ///
+    /// <para><b>It is also the only schedule for this sweep, as of 2026-09-13.</b> A second one —
+    /// <c>SessionAbandonmentSweep</c>, a registered <c>BackgroundService</c> — ran the same service
+    /// on its own timer, so every stale session was examined twice. This one survives because
+    /// recurring work in this project goes through Hangfire: retries, run history and a visible
+    /// failure, none of which a silent background loop gives you. It took over
+    /// <c>QuizSession:AbandonmentSweepMinutes</c> along with the job, so the setting still works,
+    /// including 0 to disable.</para>
     ///
     /// Registered as a Hangfire recurring job in Program.cs, matching <c>AiReservationSweeper</c>.
     /// </summary>

@@ -8,8 +8,8 @@ Paste this into a new chat to bootstrap context. Last updated **2026-09-13**.
   react-router, Tailwind, shadcn-style UI). Backend: ASP.NET Core 8 + EF Core (Postgres).
 - Repo root has `OxygenBackend/QuizAPI` (.NET), `OxygenBackend/QuizAPI.Tests` (xUnit), `src/`
   (frontend).
-- Backend tests: `dotnet test OxygenBackend/QuizAPI.Tests/QuizAPI.Tests.csproj` — **338 passing**
-  as of this handoff, no warnings.
+- Backend tests: `dotnet test OxygenBackend/QuizAPI.Tests/QuizAPI.Tests.csproj` — **342 passing**
+  as of this handoff.
 - Frontend typecheck: `./node_modules/.bin/tsc --noEmit -p tsconfig.json`. NOTE: tsc does NOT catch
   Babel/Vite transform errors (e.g. a `{/* */}` comment inside a JSX attribute's braces, which is
   an object literal, not a comment) — load the page or `npm run build` to catch those.
@@ -93,7 +93,11 @@ because logging in IS the recovery and the link therefore needs no token. Its ow
 rather than a branch of the anonymisation sweep, so an email outage can't take the scrub down with
 it. `auth/account-closure.md` §6.
 
-**Tests: 311 → 338.** New: `Users/UserServiceDeleteTests.cs`, `Users/AccountClosureTests.cs`,
+**Sign-in now says it cancelled a closure.** `AuthResponseDTO.ClosureCancelled`, turned into a
+notice by `announceClosureCancelled` in `lib/Auth.tsx` — one place, so every sign-in path gets it.
+**With that, the whole closure flow is finished**; `auth/account-closure.md` has no open items left.
+
+**Tests: 311 → 342.** New: `Users/UserServiceDeleteTests.cs`, `Users/AccountClosureTests.cs`,
 `Auth/AccountClosureLoginTests.cs`, `Auth/AccountClosureExternalLoginTests.cs`,
 `Users/EmailReservationTests.cs`, `Users/ClosureReminderTests.cs`.
 
@@ -101,11 +105,9 @@ it. `auth/account-closure.md` §6.
 
 ## OPEN — in the order I'd take them
 
-1. **Sign-in doesn't say it cancelled a closure.** Silently undone, on every path now. Needs a field
-   on `AuthResponseDTO` and a frontend notice. Small, and the last loose end in the closure flow.
-2. **Multiplayer persistence** — the biggest remaining piece. Fully designed, nothing built. Its own
+1. **Multiplayer persistence** — the biggest remaining piece. Fully designed, nothing built. Its own
    section below.
-3. **Inherited, unverified this session:** `GET /api/users/{id}`, `/username/{username}` and
+2. **Inherited, unverified this session:** `GET /api/users/{id}`, `/username/{username}` and
    `POST /api/users/batch` are `[Authorize]` but still return the full `UserDTO` including email to
    any signed-in user. A slim DTO would be the fix. Also: background music is silent until an audio
    file is dropped at `public/audio/background-music.mp3`, and `/users/:userId` public profile is
@@ -196,10 +198,12 @@ Two habits that came out of it and are worth keeping either way:
   (`docs/development/account-overlay.md`), not a standalone page.
 - **Audit logging:** `IAuditService.LogAsync` (never throws, call AFTER save), verbs from
   `Services/Audit/AuditActions.cs`. Docs in `docs/development/audit-logging.md`.
-- **Recurring work is Hangfire**, registered via `IRecurringJobManager` in `Program.cs`. There is no
-  `AddHostedService` in this project — a `BackgroundService` written for abandonment was never
-  registered and therefore never ran once. Check the job is registered before debugging anything
-  that "isn't happening".
+- **Recurring work is Hangfire**, registered via `IRecurringJobManager` in `Program.cs` — and as of
+  2026-09-13 that is the ONLY scheduler: the one `AddHostedService` left in the project ran the
+  abandonment sweep a second time, on its own timer, and has been removed. Background work in this
+  codebase has failed both ways — a `BackgroundService` nobody registered that never ran once, and
+  a registered one nobody noticed duplicating a Hangfire job — so when something "isn't happening",
+  check what is actually scheduled before reading any other code.
 - **Documenting changes:** `docs/adr/` for hard-to-reverse decisions (append-only, supersede rather
   than edit); `docs/<area>/*.md` for how something behaves **today**; plan docs are transient. Full
   version in `docs/development/documenting-changes.md`.

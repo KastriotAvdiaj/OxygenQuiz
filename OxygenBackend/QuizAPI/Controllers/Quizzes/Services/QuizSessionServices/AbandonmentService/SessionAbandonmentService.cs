@@ -33,6 +33,15 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.AbandonmentSe
         {
             if (session.IsCompleted) return false;
 
+            // A multiplayer session is not a thing anyone can come back to. It is created and
+            // finished inside the match loop, on the match's clock, and its "activity" is the
+            // server broadcasting rounds rather than the player touching an endpoint — so every
+            // timeout below would measure the wrong thing and eventually declare a finished match
+            // abandoned. The queries that feed this method filter on Mode as well; this guard is
+            // here so a future caller that forgets cannot mislabel a match either.
+            // See docs/quiz/multiplayer-persistence-plan.md.
+            if (session.Mode == QuizSessionMode.Multiplayer) return false;
+
             var deadline = await GetAbandonmentDeadlineAsync(session);
             var isAbandoned = DateTime.UtcNow > deadline;
 
@@ -67,8 +76,13 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.AbandonmentSe
 
         public async Task<QuizSession?> GetActiveSessionForUserAsync(Guid userId, int quizId)
         {
+            // Single player only. This answers "does this player already have a game of this quiz
+            // running?", which gates starting a new one (MaxConcurrentSessionsPerUser) and drives
+            // the "Session In Progress" screen. A match session is neither resumable nor in the
+            // player's way, so counting one would block them from starting the quiz alone.
             var activeSessions = await _context.QuizSessions
-                .Where(s => s.UserId == userId && s.QuizId == quizId && !s.IsCompleted)
+                .Where(s => s.UserId == userId && s.QuizId == quizId && !s.IsCompleted
+                         && s.Mode == QuizSessionMode.SinglePlayer)
                 .Include(s => s.Quiz)
                     .ThenInclude(q => q.QuizQuestions)
                 .ToListAsync();
@@ -100,8 +114,11 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.AbandonmentSe
 
         public async Task<int> CleanupAbandonedSessionsAsync()
         {
+            // Mode filtered in the query, not just by the guard in IsSessionAbandonedAsync: the
+            // sweep loads every incomplete session and walks each one's timeout maths, and there is
+            // no reason to pay for rows the answer is already known for.
             var incompleteSessions = await _context.QuizSessions
-                .Where(s => !s.IsCompleted)
+                .Where(s => !s.IsCompleted && s.Mode == QuizSessionMode.SinglePlayer)
                 .Include(s => s.Quiz)
                     .ThenInclude(q => q.QuizQuestions)
                 .ToListAsync();

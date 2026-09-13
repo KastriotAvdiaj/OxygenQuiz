@@ -4,12 +4,34 @@ import { z } from "zod";
 import { api, apiService } from "./Api-client";
 import { setAccessToken, clearAccessToken } from "./token-store";
 import { AuthResponse, User } from "@/types/user-types";
+import { useNotifications } from "@/common/Notifications";
 import {
   QueryClient,
   useMutation,
   useQueryClient,
 } from "@tanstack/react-query";
 import type { ExternalProvider } from "./auth-config";
+
+/**
+ * Tells someone their account closure was undone, when this sign-in undid one.
+ *
+ * Every sign-in path funnels through here rather than through the login page, because recovery
+ * works from any of them — password, Google, Microsoft — and because the server decides whether it
+ * happened. The notice is the whole feature: the restore itself is silent, so without it the person
+ * who left, changed their mind and came back has no way to know it worked short of closing the
+ * account again to see what happens.
+ *
+ * `success`, not `info`: it is the answer to something they set in motion, not an announcement.
+ */
+const announceClosureCancelled = (response: AuthResponse): void => {
+  if (!response.closureCancelled) return;
+  useNotifications.getState().addNotification({
+    type: "success",
+    title: "Welcome back — your account is no longer scheduled for deletion",
+    message:
+      "Signing in cancelled the closure you requested. Nothing was lost, and you can close the account again from Account settings at any time.",
+  });
+};
 
 export const getUser = async (): Promise<User | null> => {
   try {
@@ -104,6 +126,8 @@ const authConfig = {
       throw new Error("Authentication failed: User data not received");
     }
 
+    announceClosureCancelled(response);
+
     return response.user;
   },
   registerFn: async (data: RegisterInput) => {
@@ -169,6 +193,7 @@ const adoptSession = (response: AuthResponse): User => {
   if (!response?.token) throw new Error("Authentication failed: Token not received");
   if (!response.user) throw new Error("Authentication failed: User data not received");
   setAccessToken(response.token);
+  announceClosureCancelled(response);
   return response.user;
 };
 

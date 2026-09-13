@@ -125,6 +125,9 @@ public class AccountClosureLoginTests
 
         Assert.NotNull(result);
 
+        // The response has to say so, or the recovery is invisible to the person it happened to.
+        Assert.True(result.Response.ClosureCancelled);
+
         var after = await Reload(ctx, user.Id);
         Assert.False(after.IsDeleted);
         Assert.Null(after.DeletionRequestedAt);
@@ -152,6 +155,24 @@ public class AccountClosureLoginTests
             sut.LoginAsync(new LoginDTO { Email = "removed@example.com", Password = Password }));
 
         Assert.True((await Reload(ctx, user.Id)).IsDeleted);
+    }
+
+    /// <summary>
+    /// The other side of the flag, and the one that runs on nearly every login: nothing was
+    /// pending, so nothing is announced. A notice on an ordinary sign-in would be alarming — it
+    /// would tell people their account had been scheduled for deletion when it never was.
+    /// </summary>
+    [Fact]
+    public async Task AnOrdinaryLogin_DoesNotClaimToHaveCancelledAnything()
+    {
+        using var ctx = NewContext();
+        AddUser(ctx, "regular@example.com");
+        var (sut, _) = BuildSut(ctx);
+
+        var result = await sut.LoginAsync(
+            new LoginDTO { Email = "regular@example.com", Password = Password });
+
+        Assert.False(result.Response.ClosureCancelled);
     }
 
     /// <summary>

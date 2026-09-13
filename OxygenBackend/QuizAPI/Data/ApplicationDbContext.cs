@@ -26,6 +26,8 @@ namespace QuizAPI.Data
 
         public DbSet<QuizSession> QuizSessions { get; set; }
 
+        public DbSet<Match> Matches { get; set; }
+
         public DbSet<UserAnswer> UserAnswers { get; set; }
 
         public DbSet<UserRole> UserRoles { get; set; }
@@ -398,6 +400,47 @@ namespace QuizAPI.Data
                 .HasForeignKey(qs => qs.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+
+            // ── Multiplayer match (docs/quiz/multiplayer-persistence-plan.md) ──
+            // Restrict throughout, matching QuizSession's own rules and for the same reason: a
+            // played game is a record, and a record that vanishes when a quiz or an account is
+            // removed is not one. An anonymised account keeps its row and its id, so a match it
+            // hosted or won still resolves — it just no longer names anybody.
+            modelBuilder.Entity<Match>()
+                .HasOne(m => m.Quiz)
+                .WithMany()
+                .HasForeignKey(m => m.QuizId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Match>()
+                .HasOne(m => m.HostUser)
+                .WithMany()
+                .HasForeignKey(m => m.HostUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Match>()
+                .HasOne(m => m.WinnerUser)
+                .WithMany()
+                .HasForeignKey(m => m.WinnerUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // The sessions that make up a match. Restrict rather than cascade: deleting a match out
+            // from under its sessions would orphan one player's answers from the others', and
+            // nothing in the app deletes matches anyway.
+            modelBuilder.Entity<QuizSession>()
+                .HasOne(qs => qs.Match)
+                .WithMany(m => m.Sessions)
+                .HasForeignKey(qs => qs.MatchId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Every reader of match data starts from "the sessions in this match", and the analytics
+            // mode filter scans a quiz's sessions by mode. Neither stays cheap unindexed once
+            // matches are common.
+            modelBuilder.Entity<QuizSession>()
+                .HasIndex(qs => qs.MatchId);
+
+            modelBuilder.Entity<QuizSession>()
+                .HasIndex(qs => new { qs.QuizId, qs.Mode });
 
             //Configuration for QuizSession and UserAnswers relationship
             modelBuilder.Entity<UserAnswer>()
