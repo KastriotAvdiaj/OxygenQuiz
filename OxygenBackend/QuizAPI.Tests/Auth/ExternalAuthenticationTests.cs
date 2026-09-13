@@ -119,7 +119,11 @@ public class ExternalAuthenticationTests
         var user = ExistingUser();
         _externalLogins.Setup(r => r.GetByProviderSubjectAsync("google", "google-sub-123", It.IsAny<CancellationToken>()))
                        .ReturnsAsync(new ExternalLogin { UserId = user.Id, Provider = "google", ProviderSubjectId = "google-sub-123" });
-        _users.Setup(r => r.GetByIdAsync(user.Id, true, It.IsAny<CancellationToken>()))
+        // IncludingDeleted, not GetByIdAsync: external sign-in resolves its user past the
+        // soft-delete filter so a closing account can be recovered (ADR 0012, and
+        // AccountClosureExternalLoginTests). A stub on the old method here would leave this test
+        // asserting nothing but "null throws Unauthorized".
+        _users.Setup(r => r.GetByIdIncludingDeletedAsync(user.Id, true, It.IsAny<CancellationToken>()))
               .ReturnsAsync(user);
         SetupTokenMinting();
 
@@ -138,7 +142,7 @@ public class ExternalAuthenticationTests
         var user = ExistingUser();
         _externalLogins.Setup(r => r.GetByProviderSubjectAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
                        .ReturnsAsync((ExternalLogin?)null);
-        _users.Setup(r => r.GetByEmailAsync("person@example.com", true, It.IsAny<CancellationToken>()))
+        _users.Setup(r => r.GetByEmailIncludingDeletedAsync("person@example.com", true, It.IsAny<CancellationToken>()))
               .ReturnsAsync(user);
         SetupTokenMinting();
 
@@ -164,7 +168,7 @@ public class ExternalAuthenticationTests
                  .ReturnsAsync(GoogleIdentity with { EmailVerified = false });
         _externalLogins.Setup(r => r.GetByProviderSubjectAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
                        .ReturnsAsync((ExternalLogin?)null);
-        _users.Setup(r => r.GetByEmailAsync("person@example.com", true, It.IsAny<CancellationToken>()))
+        _users.Setup(r => r.GetByEmailIncludingDeletedAsync("person@example.com", true, It.IsAny<CancellationToken>()))
               .ReturnsAsync(ExistingUser());
 
         await Assert.ThrowsAsync<ConflictException>(() => CreateSut().ExternalLoginAsync(LoginDto()));
@@ -177,7 +181,7 @@ public class ExternalAuthenticationTests
     {
         _externalLogins.Setup(r => r.GetByProviderSubjectAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
                        .ReturnsAsync((ExternalLogin?)null);
-        _users.Setup(r => r.GetByEmailAsync(It.IsAny<string>(), true, It.IsAny<CancellationToken>()))
+        _users.Setup(r => r.GetByEmailIncludingDeletedAsync(It.IsAny<string>(), true, It.IsAny<CancellationToken>()))
               .ReturnsAsync((User?)null);
         _tokens.Setup(t => t.GenerateExternalSignupTicket(GoogleIdentity)).Returns("ticket-jwt");
 

@@ -65,6 +65,20 @@ namespace QuizAPI.Repositories
             return await query.SingleOrDefaultAsync(u => u.Email == email, ct);
         }
 
+        /// <summary>
+        /// External sign-in's lookup, and widened for the same reason as
+        /// <see cref="GetByEmailIncludingDeletedAsync"/>: a Google/Microsoft link resolves to a
+        /// UserId, and during the grace period that row is soft-deleted. The caller applies the
+        /// same admin-deleted / anonymised gate the password path does.
+        /// </summary>
+        public async Task<User?> GetByIdIncludingDeletedAsync(
+            Guid id, bool tracked = false, CancellationToken ct = default)
+        {
+            var query = WithRolesAndPermissions().IgnoreQueryFilters();
+            if (!tracked) query = query.AsNoTracking();
+            return await query.FirstOrDefaultAsync(u => u.Id == id, ct);
+        }
+
         public async Task<IReadOnlyList<User>> GetByIdsAsync(IEnumerable<Guid> ids, CancellationToken ct = default) =>
             await WithRoles().AsNoTracking().Where(u => ids.Contains(u.Id)).ToListAsync(ct);
 

@@ -14,12 +14,20 @@ namespace QuizAPI.Repositories.Interfaces
         Task<User?> GetByEmailAsync(string email, bool tracked = false, CancellationToken ct = default);
 
         /// <summary>
-        /// As <see cref="GetByEmailAsync"/> but past the soft-delete filter. Only LoginAsync should
-        /// use this, and only so a closing account can be recovered by signing in — see the note on
-        /// the implementation.
+        /// As <see cref="GetByEmailAsync"/> but past the soft-delete filter. Only the sign-in paths
+        /// should use this, and only so a closing account can be recovered by signing in — see the
+        /// note on the implementation.
         /// </summary>
         Task<User?> GetByEmailIncludingDeletedAsync(
             string email, bool tracked = false, CancellationToken ct = default);
+
+        /// <summary>
+        /// As <see cref="GetByIdAsync"/> but past the soft-delete filter. Exists for external
+        /// sign-in, which resolves a user by the provider link's UserId rather than by email and
+        /// would otherwise not see a closing account at all.
+        /// </summary>
+        Task<User?> GetByIdIncludingDeletedAsync(
+            Guid id, bool tracked = false, CancellationToken ct = default);
         Task<IReadOnlyList<User>> GetByIdsAsync(IEnumerable<Guid> ids, CancellationToken ct = default);
         Task<bool> ExistsAsync(Guid id, CancellationToken ct = default);
         Task<bool> UsernameExistsAsync(string immutableName, CancellationToken ct = default);

@@ -35,6 +35,12 @@ export type ConfirmationDialogProps = {
    */
   isOpen?: boolean;
   onOpenChange?: (open: boolean) => void;
+  /**
+   * Rich body content, rendered under `body`. Use it when the confirmation needs more than a
+   * sentence — a destructive action that asks you to type a name, a list of what will be
+   * affected. `body` stays the right choice for one line of plain text.
+   */
+  children?: React.ReactNode;
 };
 
 export const ConfirmationDialog = ({
@@ -47,6 +53,7 @@ export const ConfirmationDialog = ({
   isDone = false,
   isOpen: controlledOpen,
   onOpenChange,
+  children,
 }: ConfirmationDialogProps) => {
   const { close: closeInternal, open: openInternal, isOpen: internalOpen } =
     useDisclosure();
@@ -91,6 +98,7 @@ export const ConfirmationDialog = ({
             <p>{body}</p>
           </div>
         )}
+        {children && <div className="mt-2">{children}</div>}
       </div>
 
       <DialogFooter>

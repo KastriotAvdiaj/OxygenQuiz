@@ -253,27 +253,7 @@ public class AuthenticationService(
             throw new UnauthorizedException("Invalid credentials.");
         }
 
-        // Soft-deleted with no closure request = an ADMIN removed this account. That is a lockout
-        // and stays one: same generic message, so the widened lookup above cannot be used to tell
-        // a removed account apart from a wrong password.
-        //
-        // An anonymised account cannot reach here at all (its hash is null, so the check above
-        // already rejected it) — it is named anyway, because relying on that is relying on a
-        // detail of a different method.
-        if (user.AnonymisedAt is not null || (user.IsDeleted && user.DeletionRequestedAt is null))
-        {
-            await _auditService.LogAsync(
-                AuditActions.LoginFailed, entity: "User", newValue: new { dto.Email }, ct: ct);
-            throw new UnauthorizedException("Invalid credentials.");
-        }
-
-        // Closing, and they came back. Signing in restores the account outright — the gentlest
-        // possible recovery, and it fails in the safe direction: the worst case is an account that
-        // was going to be scrubbed isn't, which the person can redo in two clicks. Returns false
-        // for the overwhelming majority of logins, which have nothing pending.
-        //
-        // It operates on the same scoped DbContext, so it un-deletes the very entity tracked here.
-        await _accountClosure.CancelClosureAsync(user.Id, ct);
+        await AdmitOrRejectDeletedAsync(user, ct);
 
         user.LastLogin = DateTime.UtcNow;
         await _userRepository.SaveChangesAsync(ct);
@@ -288,6 +268,40 @@ public class AuthenticationService(
         return await BuildAuthResultAsync(user, roleNames, ct);
     }
 
+    /// <summary>
+    /// The one place that decides what a soft-deleted row means at sign-in. EVERY sign-in path must
+    /// call it after it has proven the person is who they say they are — password, Google,
+    /// Microsoft — because each one loads the user past the <c>!IsDeleted</c> filter and each one
+    /// therefore inherits the same two-way decision.
+    ///
+    /// <para>Soft-deleted with no closure request = an ADMIN removed this account. That is a
+    /// lockout and stays one: same generic message, so the widened lookup cannot be used to tell a
+    /// removed account apart from a wrong password. Soft-deleted WITH a closure request is a person
+    /// coming back inside the grace period, and signing in restores the account outright (ADR 0012)
+    /// — the gentlest possible recovery, and it fails in the safe direction: the worst case is an
+    /// account that was going to be scrubbed isn't, which the person can redo in two clicks.</para>
+    ///
+    /// <para>An anonymised account cannot reach the password path at all (its hash is null, so the
+    /// BCrypt check already rejected it) — it is named anyway, because the external paths have no
+    /// such accident to rely on, and because relying on it would be relying on a detail of a
+    /// different method.</para>
+    ///
+    /// <para>CancelClosureAsync operates on the same scoped DbContext, so it un-deletes the very
+    /// entity tracked by the caller. It returns false for the overwhelming majority of sign-ins,
+    /// which have nothing pending.</para>
+    /// </summary>
+    private async Task AdmitOrRejectDeletedAsync(User user, CancellationToken ct)
+    {
+        if (user.AnonymisedAt is not null || (user.IsDeleted && user.DeletionRequestedAt is null))
+        {
+            await _auditService.LogAsync(
+                AuditActions.LoginFailed, entity: "User", newValue: new { user.Email }, ct: ct);
+            throw new UnauthorizedException("Invalid credentials.");
+        }
+
+        await _accountClosure.CancelClosureAsync(user.Id, ct);
+    }
+
     public async Task<ExternalLoginOutcome> ExternalLoginAsync(ExternalLoginDTO dto, CancellationToken ct = default)
     {
         var identity = await VerifyExternalTokenAsync(dto.Provider, dto.IdToken, ct);
@@ -299,8 +313,17 @@ public class AuthenticationService(
         if (existingLink is not null)
         {
             // Tracked load: LastLogin is updated and saved inside BuildAuthResultAsync's save.
-            var linkedUser = await _userRepository.GetByIdAsync(existingLink.UserId, tracked: true, ct)
+            //
+            // Past the soft-delete filter for the same reason LoginAsync is: an account in its
+            // closure grace period is soft-deleted, and signing in — by ANY method the person has —
+            // is how they cancel it. The filtered GetByIdAsync returned null here, which turned a
+            // returning Google user into "Invalid credentials" and made the account unrecoverable
+            // for anyone who had never set a password.
+            var linkedUser = await _userRepository.GetByIdIncludingDeletedAsync(
+                    existingLink.UserId, tracked: true, ct)
                 ?? throw new UnauthorizedException("Invalid credentials.");
+
+            await AdmitOrRejectDeletedAsync(linkedUser, ct);
 
             linkedUser.LastLogin = DateTime.UtcNow;
             await _auditService.LogAsync(
@@ -317,12 +340,21 @@ public class AuthenticationService(
         //    an account-takeover vector: anyone can type someone else's address into a profile.
         if (identity.Email is not null)
         {
-            var emailOwner = await _userRepository.GetByEmailAsync(identity.Email, tracked: true, ct);
+            // Widened like the branch above: a first Google sign-in by someone whose password
+            // account is mid-closure has to find that account, or it falls through to signup and
+            // silently creates a SECOND account on the same address.
+            var emailOwner = await _userRepository.GetByEmailIncludingDeletedAsync(
+                identity.Email, tracked: true, ct);
             if (emailOwner is not null)
             {
                 if (!identity.EmailVerified)
                     throw new ConflictException(
                         "An account with this email already exists. Log in with your password to use it.");
+
+                // Provider vouched for the address, so this is the owner: same two-way decision as
+                // everywhere else — an admin-deleted account stays locked out, a closing one is
+                // restored — before a link is written to it.
+                await AdmitOrRejectDeletedAsync(emailOwner, ct);
 
                 await _externalLoginRepository.AddAsync(new ExternalLogin
                 {

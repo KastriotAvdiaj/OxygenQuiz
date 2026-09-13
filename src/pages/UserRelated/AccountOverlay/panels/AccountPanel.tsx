@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { AvatarUploader } from "@/pages/UserRelated/Profile/components/AvatarUploader";
 import { useUser } from "@/lib/Auth";
 import formatDate from "@/lib/date-format";
+import { CloseAccountSection } from "./CloseAccountSection";
 
 /**
  * Identity rows, Discord-style: label on the left, value and action on the right,
@@ -137,6 +138,11 @@ export const AccountPanel = () => {
           />
         </div>
       </section>
+
+      {/* Last, and visually separated by its destructive border. The only way to leave —
+          the Users dashboard refuses self-deletion on purpose (ADR 0011), which makes this
+          an Admin's only exit too. See docs/auth/account-closure.md. */}
+      <CloseAccountSection />
     </div>
   );
 };

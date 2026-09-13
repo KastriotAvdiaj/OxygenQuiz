@@ -94,16 +94,61 @@ exist; the prod Docker build was failing on it.
    forget, and that mail is the last moment recovery is possible.
 4. **Login doesn't say it cancelled a closure.** Silently undone. Needs a field on
    `AuthResponseDTO` and a frontend notice.
-5. **Multiplayer persistence** — `quiz/multiplayer-persistence-plan.md`. Matches currently write
-   nothing: no record, no analytics, no personal stats, and the results screen dies on "Back to
-   lobby". Decided shape: a `Match` header row plus the same `QuizSession`/`UserAnswer` rows single
-   player already writes, one session per player. One question still open there (whether a `Match`
-   survives its quiz being soft-deleted) and it doesn't block steps 1–4.
+5. **Multiplayer persistence** — the biggest remaining piece. Fully designed, nothing built. Its own
+   section below.
 6. **Inherited, unverified this session:** `GET /api/users/{id}`, `/username/{username}` and
    `POST /api/users/batch` are `[Authorize]` but still return the full `UserDTO` including email to
    any signed-in user. A slim DTO would be the fix. Also: background music is silent until an audio
    file is dropped at `public/audio/background-music.mp3`, and `/users/:userId` public profile is
    scaffolded but unlinked.
+
+---
+
+## Multiplayer persistence — designed, not built
+
+The authority is [`quiz/multiplayer-persistence-plan.md`](quiz/multiplayer-persistence-plan.md).
+This is the summary; read that before writing code, because the reasoning for each decision is there
+and not repeated here.
+
+**Today a match writes nothing.** `MatchOrchestrator.GradeRoundAsync` builds `UserAnswer` objects
+purely to hand to `IAnswerGradingService` and never attaches them to a `DbContext`. No `QuizSession`
+row is created. `ResetToLobbyAsync` wipes the scoreboard when the match ends. So: no history, no
+record a match happened, **zero effect on quiz analytics or personal stats** (both read
+`QuizSessions` + `UserAnswers`), and a player can never see which questions they got wrong.
+
+**The decided shape** — one `Match` header row, plus **the same `QuizSession` and `UserAnswer` rows
+single player already writes**, one session per player. Three players finishing a 5-question match
+on quiz 12 produce 1 `Match`, 3 `QuizSession` (each with `Mode = Multiplayer` and `MatchId`), and 15
+`UserAnswer`. The point is that multiplayer stops being a parallel universe: analytics, stats and the
+results pages keep working without being taught what a match is. A separate
+`Match`/`MatchParticipant`/`MatchAnswer` set of tables was considered and rejected — it means a
+second reader for every consumer, forever.
+
+**Decisions already taken** (all argued out; don't relitigate without reading the plan):
+
+- Multiplayer plays are **excluded from a quiz's analytics by default**, with a mode filter to
+  include or split. A fixed clock and social pressure depress scores for reasons unrelated to
+  question quality, and the author's average score is their signal for exactly that.
+- They **are** included in personal stats. The player played; it counts.
+- The results page is **permanent, and is the single-player page**. `/quiz/results/:sessionId` and
+  `/quiz/results/:sessionId/review` already exist and already render a session's overview and
+  per-question breakdown — a match's per-player session gets those URLs for free.
+- **Everyone in a match can see everyone's answers, permanently**, via a tab per player.
+- A **rematch is a new `Match` row**. The lobby persists across it; the match does not.
+- A **mid-match disconnect** records the answers given and marks the rest as not answered. Most of
+  the mechanism already exists — `OnDisconnectedAsync` has a 5-second grace so refreshes survive,
+  and `GradeRoundAsync` iterates live participants, so someone who left just stops appearing. What's
+  missing is only a status distinguishing "played and got these wrong" from "wasn't there".
+
+**Six work items**, in the plan doc: migration; `MatchOrchestrator` saving (once at match end, not
+per round); `AbandonedSessionSweeper` skipping `Mode = Multiplayer` or it will flag finished matches
+as abandoned; the resume path refusing multiplayer sessions; `ReportService` gaining a mode filter;
+the review screen growing player tabs.
+
+**One question still open:** whether a `Match` survives its quiz being soft-deleted. It doesn't block
+items 1–4 — the default (it survives, like sessions do) is reversible.
+
+**No guests to worry about:** `QuizHub` is `[Authorize]`, so every participant is a real account.
 
 ---
 
