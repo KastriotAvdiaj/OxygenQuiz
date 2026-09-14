@@ -1,5 +1,8 @@
+using System.Collections.Concurrent;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
 using QuizAPI.Common;
+using QuizAPI.Data;
 using QuizAPI.Controllers.Quizzes.Services.AnswerGradingServices;
 using QuizAPI.Hubs;
 using QuizAPI.Hubs.Clients;
@@ -74,9 +77,26 @@ namespace QuizAPI.Services.QuizSessionServices
             // player in the match is served from this one list and so sees the same board (they
             // are talking to each other; "it's the third one" has to mean the same thing to all of
             // them), and the next match in the same lobby gets a different seed and a new order.
-            session.Questions = await LoadRoundQuestionsAsync(quizId, Guid.NewGuid().ToString());
+            var loaded = await LoadRoundQuestionsAsync(quizId, Guid.NewGuid().ToString());
+            session.Questions = loaded.Questions;
             if (session.Questions.Count == 0)
                 throw new InvalidOperationException("This quiz has no questions.");
+
+            // ── What this match will be written down as, decided now rather than at the end ──
+            // The version, because the author may edit the quiz while it is being played. The host,
+            // because they may have left by the time there is a match to record — and a match row
+            // needs a host. Both are cheap here, before the countdown, and impossible later.
+            session.MatchQuizVersion = loaded.QuizVersion;
+            session.MatchStartedUtc = DateTime.UtcNow;
+            session.RecordedAnswers.Clear();
+
+            using (var scope = _scopeFactory.CreateScope())
+            {
+                var users = scope.ServiceProvider.GetRequiredService<IUserRepository>();
+                var host = await users.GetByUsernameAsync(session.HostUsername)
+                    ?? throw new InvalidOperationException("The host's account could not be found.");
+                session.MatchHostUserId = host.Id;
+            }
 
             // Reset scores/correct counts for everyone currently in the lobby.
             session.PlayerScores.Clear();
@@ -116,6 +136,7 @@ namespace QuizAPI.Services.QuizSessionServices
             session.PlayerScores.Clear();
             session.PlayerCorrect.Clear();
             session.PlayerAnswers.Clear();
+            session.RecordedAnswers.Clear();
 
             // Un-ready everyone: a rematch should need a fresh opt-in, not fire the instant the
             // final scoreboard renders while someone is still reading it. Broadcast each change so
@@ -168,6 +189,24 @@ namespace QuizAPI.Services.QuizSessionServices
 
                 session.QuizState = QuizState.QuizEnded;
                 await clients.MatchEnded(BuildMatchResult(session));
+
+                // Written here and nowhere else: after the last round, before the lobby reset
+                // below wipes the scoreboard this reads. A match that was cancelled or crashed
+                // never reaches this line and therefore leaves no row at all, which is the
+                // intended shape — half a match is not a record of anything.
+                //
+                // Its own try/catch: the match is over and the players have their results, so a
+                // failed write must not read as "Match failed" in the log, and must not stop the
+                // lobby from becoming startable again. What is lost is the record, which is worth
+                // an error line of its own.
+                try
+                {
+                    await PersistMatchAsync(sessionId, session);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Match {SessionId} finished but could not be recorded.", sessionId);
+                }
             }
             catch (OperationCanceledException)
             {
@@ -226,13 +265,39 @@ namespace QuizAPI.Services.QuizSessionServices
                 var isCorrect = false;
                 var points = 0;
 
+                // The graded answer, kept rather than discarded — this is the row that will be
+                // written at match end. Present-and-silent is recorded too, as TimedOut: a player
+                // who sat out a question was there for it, and the review screen has to be able to
+                // say so rather than showing the same blank it shows for someone who had left.
+                UserAnswer recorded;
+
                 if (answered && submission != null)
                 {
                     var userAnswer = BuildUserAnswer(round, submission, session.QuestionStartTime);
                     var grade = await grading.GradeAnswerAsync(round.QuizQuestionId, userAnswer, session.QuestionStartTime);
                     isCorrect = grade.IsCorrect;
                     points = grade.Score;
+
+                    userAnswer.QuizQuestionId = round.QuizQuestionId;
+                    userAnswer.Status = grade.Status;
+                    userAnswer.Score = grade.Score;
+                    recorded = userAnswer;
                 }
+                else
+                {
+                    recorded = new UserAnswer
+                    {
+                        QuizQuestionId = round.QuizQuestionId,
+                        Status = AnswerStatus.TimedOut,
+                        Score = 0,
+                        QuestionStartTime = session.QuestionStartTime,
+                        SubmittedTime = null,
+                    };
+                }
+
+                session.RecordedAnswers
+                    .GetOrAdd(p.Username, _ => new ConcurrentDictionary<int, UserAnswer>())
+                    [round.QuizQuestionId] = recorded;
 
                 // Make sure every player has a standings entry, then add this round's gains.
                 session.PlayerScores.AddOrUpdate(p.Username, points, (_, total) => total + points);
@@ -287,7 +352,129 @@ namespace QuizAPI.Services.QuizSessionServices
             return userAnswer;
         }
 
-        private async Task<List<RoundQuestion>> LoadRoundQuestionsAsync(int quizId, string matchSeed)
+        /// <summary>
+        /// Writes the whole match: one <see cref="Match"/> header, one <see cref="QuizSession"/> per
+        /// player, and every <see cref="UserAnswer"/> — the same tables single player writes, which
+        /// is what lets analytics, personal stats and the results pages read a match without being
+        /// taught what one is (docs/quiz/multiplayer-persistence-plan.md).
+        ///
+        /// <para><b>Once, at the end, in one SaveChanges.</b> Per round would put a database round
+        /// trip per player per question inside a loop the players are watching a timer in. It also
+        /// means an interrupted match writes nothing rather than a partial record of itself.</para>
+        ///
+        /// <para><b>It touches DbContext directly</b> rather than going through repositories, for
+        /// the reason <c>AccountClosureService</c> does: this is one atomic act across three tables,
+        /// and routing it through per-entity repositories would spread a single transaction across
+        /// interfaces that exist to serve unrelated read paths.</para>
+        ///
+        /// <para><b>A player who never answered anything gets no row.</b> Multiplayer counts toward
+        /// personal stats, so a row of blanks scoring zero would drag down the average of someone
+        /// who joined, saw one question and left — a game they did not play should not look like a
+        /// game they played badly. The match still happened; they are simply not in it.</para>
+        /// </summary>
+        private async Task PersistMatchAsync(string sessionId, MultiplayerSession session)
+        {
+            if (!int.TryParse(session.SelectedQuizId, out var quizId))
+                return;
+
+            // "Played" means submitted something. Everyone else — present and silent throughout,
+            // or gone after the first question — leaves no session row.
+            var played = session.RecordedAnswers
+                .Where(kv => kv.Value.Values.Any(a => a.SubmittedTime is not null))
+                .ToDictionary(kv => kv.Key, kv => kv.Value);
+
+            if (played.Count == 0)
+                return;
+
+            using var scope = _scopeFactory.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+            // The match loop knows players by username; the tables know them by id. Resolved in one
+            // query, through the ordinary filter: an account closed or removed mid-match drops out
+            // here rather than being written into a permanent record.
+            var immutableNames = played.Keys.Select(n => n.ToLowerInvariant()).ToList();
+            var userIds = await db.Users
+                .Where(u => immutableNames.Contains(u.ImmutableName))
+                .ToDictionaryAsync(u => u.ImmutableName, u => u.Id);
+
+            var endedAt = DateTime.UtcNow;
+            var winnerUsername = BuildMatchResult(session).WinnerUsername;
+
+            var match = new Match
+            {
+                Id = Guid.NewGuid(),
+                QuizId = quizId,
+                QuizVersion = session.MatchQuizVersion,
+                RoomCode = sessionId,
+                HostUserId = session.MatchHostUserId,
+                StartedAt = session.MatchStartedUtc,
+                EndedAt = endedAt,
+                // Null on a tie — BuildMatchResult returns no winner when the top two are level,
+                // and that is the same answer the players were just shown.
+                WinnerUserId = winnerUsername is not null
+                    && userIds.TryGetValue(winnerUsername.ToLowerInvariant(), out var winnerId)
+                        ? winnerId
+                        : null,
+            };
+            db.Matches.Add(match);
+
+            var everyQuestionId = session.Questions.Select(q => q.QuizQuestionId).ToList();
+
+            foreach (var (username, answers) in played)
+            {
+                if (!userIds.TryGetValue(username.ToLowerInvariant(), out var userId))
+                    continue;   // account gone mid-match; the other players' rows still land
+
+                var quizSession = new QuizSession
+                {
+                    Id = Guid.NewGuid(),
+                    QuizId = quizId,
+                    UserId = userId,
+                    StartTime = session.MatchStartedUtc,
+                    EndTime = endedAt,
+                    TotalScore = session.PlayerScores.GetValueOrDefault(username),
+                    IsCompleted = true,
+                    QuizVersion = session.MatchQuizVersion,
+                    Mode = QuizSessionMode.Multiplayer,
+                    Match = match,
+                };
+
+                // Every question gets a row, in the match's order, for every player who stayed and
+                // for every player who did not. A missing entry means they were no longer in the
+                // room, which NotAnswered records — the review screen reads the difference between
+                // that and TimedOut and can say "left" instead of showing silent blanks.
+                foreach (var quizQuestionId in everyQuestionId)
+                {
+                    if (answers.TryGetValue(quizQuestionId, out var recorded))
+                    {
+                        quizSession.UserAnswers.Add(recorded);
+                        continue;
+                    }
+
+                    quizSession.UserAnswers.Add(new UserAnswer
+                    {
+                        QuizQuestionId = quizQuestionId,
+                        Status = AnswerStatus.NotAnswered,
+                        Score = 0,
+                        // The round they were absent for has no start time we kept; the match's own
+                        // start is the honest stand-in, and nothing reads it for an unanswered row.
+                        QuestionStartTime = session.MatchStartedUtc,
+                        SubmittedTime = null,
+                    });
+                }
+
+                db.QuizSessions.Add(quizSession);
+            }
+
+            await db.SaveChangesAsync();
+
+            _logger.LogInformation(
+                "Match {SessionId} recorded as {MatchId}: {Players} player session(s), {Questions} question(s).",
+                sessionId, match.Id, played.Count, everyQuestionId.Count);
+        }
+
+        private async Task<(List<RoundQuestion> Questions, int QuizVersion)> LoadRoundQuestionsAsync(
+            int quizId, string matchSeed)
         {
             using var scope = _scopeFactory.CreateScope();
             var quizzes = scope.ServiceProvider.GetRequiredService<IQuizRepository>();
@@ -303,7 +490,7 @@ namespace QuizAPI.Services.QuizSessionServices
             if (quiz?.ShuffleQuestions == true)
                 quizQuestions = DeterministicShuffle.By(quizQuestions, matchSeed, qq => qq.Id);
 
-            return quizQuestions.Select(qq => new RoundQuestion
+            var questions = quizQuestions.Select(qq => new RoundQuestion
             {
                 QuizQuestionId = qq.Id,
                 QuestionId = qq.QuestionId,
@@ -322,6 +509,11 @@ namespace QuizAPI.Services.QuizSessionServices
                     : new List<RoundOption>(),
                 AllowMultipleSelections = qq.Question is MultipleChoiceQuestion { AllowMultipleSelections: true },
             }).ToList();
+
+            // The version is returned with the questions because it has to be the version these
+            // questions came from: reading it separately later would be a second answer to the
+            // same question, free to disagree after an edit.
+            return (questions, quiz?.Version ?? 1);
         }
 
         private static RoundQuestionView ToView(RoundQuestion round, int index, int total) => new()

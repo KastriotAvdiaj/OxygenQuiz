@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
+using QuizAPI.Models.Quiz;
 
 namespace QuizAPI.Services.QuizSessionServices
 {
@@ -37,6 +38,39 @@ namespace QuizAPI.Services.QuizSessionServices
         public ConcurrentDictionary<string, int> PlayerCorrect { get; set; } = new();
         /// <summary>Cancels the match loop if the lobby is torn down mid-game.</summary>
         public CancellationTokenSource? MatchCts { get; set; }
+
+        // ── What the match will be written down as (saved once, at the end; see MatchOrchestrator) ──
+
+        /// <summary>When the match began. Becomes every player session's StartTime, so they share
+        /// one start rather than each recording when their own first question opened.</summary>
+        public DateTime MatchStartedUtc { get; set; }
+
+        /// <summary>
+        /// The quiz version the questions were loaded from, pinned at start for the same reason a
+        /// single-player session pins one: the author editing mid-game must not change what these
+        /// answers are later judged against.
+        /// </summary>
+        public int MatchQuizVersion { get; set; } = 1;
+
+        /// <summary>
+        /// The host's account id, resolved at start — while the host is certainly still here. A
+        /// match's host row cannot be filled in at the end, because by then they may have left.
+        /// </summary>
+        public Guid MatchHostUserId { get; set; }
+
+        /// <summary>
+        /// Every graded answer of the match so far, keyed by username and then by QuizQuestion id.
+        /// The match loop already builds these objects to hand to the grader and used to drop them;
+        /// holding them costs one small object per player per question and saves a database round
+        /// trip inside the round loop, which is latency the players would feel.
+        ///
+        /// <para>A player who leaves simply stops getting entries, so the gaps are the record of
+        /// when they went — filled in as <see cref="AnswerStatus.NotAnswered"/> rows at save time,
+        /// as distinct from the <see cref="AnswerStatus.TimedOut"/> rows of someone who was present
+        /// and said nothing.</para>
+        /// </summary>
+        public ConcurrentDictionary<string, ConcurrentDictionary<int, UserAnswer>> RecordedAnswers
+        { get; set; } = new();
 
         /// <summary>Ephemeral lobby chat — a capped buffer of recent messages (in-memory only).</summary>
         public List<LobbyChatMessage> RecentMessages { get; set; } = new();
