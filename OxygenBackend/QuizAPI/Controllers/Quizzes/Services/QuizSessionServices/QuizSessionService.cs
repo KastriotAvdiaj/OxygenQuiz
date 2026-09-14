@@ -518,7 +518,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                 // A FINISHED match session is still a fair question, and gets the answer any
                 // finished session gets: their results. The per-player session is exactly what
                 // /quiz/results/:sessionId renders, which is why multiplayer needed no results page
-                // of its own (docs/quiz/multiplayer-persistence-plan.md).
+                // of its own (docs/quiz/multiplayer.md §7).
                 if (session.Mode == QuizSessionMode.Multiplayer)
                 {
                     return session.IsCompleted
@@ -814,6 +814,67 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                 .Where(s => s.Id == sessionId)
                 .Select(s => (Guid?)s.UserId)
                 .FirstOrDefaultAsync();
+        }
+
+        /// <inheritdoc />
+        public async Task<bool> IsMatchPeerAsync(Guid sessionId, Guid userId)
+        {
+            // Two conditions, deliberately in one query so neither can be applied without the
+            // other: the target session belongs to a match, and the caller has a session in that
+            // same match. A single-player session has a null MatchId and so matches nothing here —
+            // this can never widen access to solo play.
+            return await _context.QuizSessions.AsNoTracking().AnyAsync(target =>
+                target.Id == sessionId &&
+                target.MatchId != null &&
+                _context.QuizSessions.Any(mine =>
+                    mine.MatchId == target.MatchId && mine.UserId == userId));
+        }
+
+        /// <inheritdoc />
+        public async Task<Result<List<MatchPlayerDto>>> GetMatchPlayersAsync(Guid sessionId)
+        {
+            var match = await _context.QuizSessions.AsNoTracking()
+                .Where(s => s.Id == sessionId)
+                .Select(s => new { s.MatchId })
+                .FirstOrDefaultAsync();
+
+            if (match is null)
+                return Result<List<MatchPlayerDto>>.ValidationFailure("Quiz session not found.");
+
+            // Not an error: the caller asks this of every results page it renders, and most of them
+            // are single player. An empty list means "no tabs to draw".
+            if (match.MatchId is null)
+                return Result<List<MatchPlayerDto>>.Success(new List<MatchPlayerDto>());
+
+            var winnerUserId = await _context.Matches.AsNoTracking()
+                .Where(m => m.Id == match.MatchId)
+                .Select(m => m.WinnerUserId)
+                .FirstOrDefaultAsync();
+
+            var players = await _context.QuizSessions.AsNoTracking()
+                .Where(s => s.MatchId == match.MatchId)
+                .Select(s => new MatchPlayerDto
+                {
+                    SessionId = s.Id,
+                    UserId = s.UserId,
+                    Username = s.User.Username,
+                    ProfileImageUrl = s.User.ProfileImageUrl,
+                    TotalScore = s.TotalScore,
+                    CorrectAnswers = s.UserAnswers.Count(a => a.Status == AnswerStatus.Correct),
+                    // NotAnswered means the round happened without them; TimedOut means they were
+                    // there and said nothing. Only the first is "left".
+                    LeftEarly = s.UserAnswers.Any(a => a.Status == AnswerStatus.NotAnswered),
+                    IsWinner = winnerUserId != null && s.UserId == winnerUserId,
+                })
+                .ToListAsync();
+
+            // Same order the final scoreboard used — score, then correct count, then name — so the
+            // tabs read in the order the players last saw themselves in.
+            return Result<List<MatchPlayerDto>>.Success(players
+                .OrderByDescending(p => p.TotalScore)
+                .ThenByDescending(p => p.CorrectAnswers)
+                .ThenBy(p => p.Username)
+                .ToList());
         }
 
         public async Task<Result<PagedResponse<QuizSessionSummaryDto>>> GetUserSessionsAsync(

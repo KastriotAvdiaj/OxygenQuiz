@@ -15,6 +15,29 @@ export const getSessionResults = ({ sessionId }: { sessionId: string }): Promise
   return apiService.get(`/QuizSessions/${sessionId}/results`);
 };
 
+/**
+ * One player's line in a finished multiplayer match (mirrors the API's `MatchPlayerDto`).
+ * `sessionId` is the point: it is what the review screen loads to show their answers.
+ */
+export type MatchPlayer = {
+  sessionId: string;
+  userId: string;
+  username: string;
+  profileImageUrl: string | null;
+  totalScore: number;
+  correctAnswers: number;
+  /** Has questions they were not present for — the review screen says "left" rather than blanks. */
+  leftEarly: boolean;
+  isWinner: boolean;
+};
+
+export const getMatchPlayers = ({
+  sessionId,
+}: {
+  sessionId: string;
+}): Promise<MatchPlayer[]> =>
+  apiService.get(`/QuizSessions/${sessionId}/match-players`);
+
 type UseGetQuizSessionOptions = {
   sessionId: string;
   queryConfig?: QueryConfig<typeof getQuizSession>;
@@ -72,5 +95,22 @@ export const useGetSessionResults = ({
     queryFn: () => getSessionResults({ sessionId }),
     enabled: !!sessionId,
     ...queryConfig,
+  });
+};
+
+/**
+ * The other players in this session's match, or an empty list for single player.
+ *
+ * Asked on every results page, so the empty answer is the common one and is not an error. A match
+ * is finished and immutable by the time anyone can see this screen, which is why it never refetches
+ * on focus: nothing about a played match changes.
+ */
+export const useMatchPlayers = ({ sessionId }: { sessionId: string }) => {
+  return useQuery({
+    queryKey: ['match-players', sessionId],
+    queryFn: () => getMatchPlayers({ sessionId }),
+    enabled: !!sessionId,
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
   });
 };

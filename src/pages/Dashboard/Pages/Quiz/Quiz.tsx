@@ -9,7 +9,8 @@ import type { QuizStatus } from "@/types/quiz-types";
 
 import { useQuizData } from "./api/get-quiz";
 import { useQuizQuestionsData } from "./api/get-quiz-questions";
-import { useQuizAnalytics } from "./api/get-quiz-analytics";
+import { useQuizAnalytics, type AnalyticsMode } from "./api/get-quiz-analytics";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import { useCreateShareLink, buildShareUrl } from "./api/create-share-link";
 import { useSetQuizStatus } from "./api/set-quiz-status";
 import { DeleteQuiz } from "./components/delete-quiz";
@@ -56,7 +57,10 @@ export const QuizRoute = () => {
 
   const quizQuery = useQuizData({ quizId });
   const questionsQuery = useQuizQuestionsData({ quizId });
-  const analyticsQuery = useQuizAnalytics({ quizId });
+  // Solo by default, matching the API: a match's scores answer a different question than the one
+  // an author is asking when they open this page (docs/quiz/multiplayer.md §7).
+  const [analyticsMode, setAnalyticsMode] = useState<AnalyticsMode>("SinglePlayer");
+  const analyticsQuery = useQuizAnalytics({ quizId, mode: analyticsMode });
   const shareLink = useCreateShareLink();
   const setStatus = useSetQuizStatus();
 
@@ -255,6 +259,23 @@ export const QuizRoute = () => {
               that has never been played and a quiz whose stats we failed to fetch are different
               things, and showing "0 attempts" for the second one is a lie. */}
           <section className="space-y-4">
+            {/* Multiplayer plays are excluded by default and this is the only sign they exist, so
+                the control renders even while the numbers are loading — it is how an author finds
+                out there are matches to look at. */}
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-sm font-medium">Performance</h2>
+              <SegmentedControl
+                aria-label="Which plays to count"
+                value={analyticsMode}
+                onValueChange={setAnalyticsMode}
+                options={[
+                  { value: "SinglePlayer", label: "Solo" },
+                  { value: "Multiplayer", label: "Multiplayer" },
+                  { value: "All", label: "Both" },
+                ]}
+              />
+            </div>
+
             {analyticsQuery.isLoading ? (
               <div className="flex justify-center py-8">
                 <LoadingWave size="md" variant="muted" />
@@ -265,8 +286,16 @@ export const QuizRoute = () => {
               </p>
             ) : analytics.attempts === 0 ? (
               <p className="text-sm text-muted-foreground">
-                No plays yet — the numbers appear once someone takes this quiz.{" "}
-                {SIGNED_IN_ONLY_NOTE}
+                {analyticsMode === "Multiplayer" ? (
+                  // Not the same sentence: "no plays yet" under a Multiplayer filter would read as
+                  // "nobody has ever played this", which may be flatly untrue of a popular quiz.
+                  <>This quiz hasn&apos;t been played in a multiplayer match yet.</>
+                ) : (
+                  <>
+                    No plays yet — the numbers appear once someone takes this quiz.{" "}
+                    {SIGNED_IN_ONLY_NOTE}
+                  </>
+                )}
               </p>
             ) : (
               /* <b>Two columns from `lg` up, one below.</b> Stacked, these two blocks left a

@@ -426,7 +426,97 @@ bordered box, solid title bar, inset body.
 
 ---
 
-## 7. Known limitations
+## 7. What a match leaves behind
+
+Until 2026-09-14 a match was graded entirely in memory and thrown away: no record it happened, no
+effect on analytics or personal stats, and no way for a player to see which questions they got
+wrong. A finished match now writes rows.
+
+### 7.1 The shape
+
+Three players finishing a 5-question match on quiz 12:
+
+| Table | Rows | Holds |
+|---|---|---|
+| `Match` | 1 | quiz id, pinned quiz version, room code, host, started/ended, winner |
+| `QuizSession` | 3 | one per player, with `Mode = Multiplayer` and `MatchId` |
+| `UserAnswer` | 15 | 3 players × 5 questions, unchanged shape |
+
+The middle row is the whole idea. **Multiplayer writes the same tables single player already
+writes**, so analytics, personal stats and the results pages work on a match without being taught
+what a match is.
+
+**The rejected alternative was a separate `Match` / `MatchParticipant` / `MatchAnswer` set of
+tables.** It keeps single-player numbers safe by construction — nothing multiplayer can ever land in
+them — and it costs a second reader for every consumer: a second analytics query, a second stats
+query, a second results page, each to be kept in step with the first forever. Filtering by `Mode`
+buys the same separation for one `WHERE` clause.
+
+### 7.2 What the answer rows say
+
+Every player who stayed gets a row for every question, so "left after Q3" is readable from the rows
+themselves and needs no extra flag on the session:
+
+| The player | Status |
+|---|---|
+| answered | `Correct` / `Incorrect` |
+| was present and said nothing | `TimedOut` |
+| had already left | `NotAnswered` |
+
+**A player who never submitted anything gets no session row at all.** Multiplayer counts toward
+personal stats, so a row of blanks scoring zero would drag down the average of someone who joined,
+saw one question and left — a game they did not play must not look like one they played badly.
+
+### 7.3 When it is written
+
+`MatchOrchestrator.PersistMatchAsync`, once, after the final scoreboard and before
+`ResetToLobbyAsync` wipes the scores it reads. Per round would put a database round trip per player
+per question inside a loop the players are watching a timer in.
+
+- **An interrupted match writes nothing.** A cancelled or crashed loop never reaches that line, so
+  there is no half-match row — half a match is not a record of anything.
+- **Host id and quiz version are captured at match start**, because by the end the host may have
+  left and the author may have edited the quiz.
+- **A failed write is logged as itself** ("finished but could not be recorded") and never blocks the
+  lobby from becoming startable again; the players already have their results.
+- **A rematch is a new `Match` row.** It is a separate game with separate answers; the lobby is what
+  persists across it (§3.1), not the match.
+
+### 7.4 What had to learn about it
+
+Two existing mechanisms would have mistaken a match session for an abandoned single-player one, so
+both were taught the difference **before** anything started writing:
+
+- `SessionAbandonmentService` filters on `Mode` in both queries, and `IsSessionAbandonedAsync`
+  returns false for a match whoever asks. The second query matters as much as the first: it answers
+  "does this player already have a game of this quiz running?", so an unfiltered match session would
+  have blocked that player from starting the quiz alone (`MaxConcurrentSessionsPerUser` is 1).
+- `ResolveAndResumeAsync` refuses an unfinished match and sends a finished one to its results. "Where
+  was I?" has no answer for a game that ran on a shared clock with other people in the room.
+
+### 7.5 Who reads it
+
+- **Quiz analytics exclude multiplayer by default**, with a Solo / Multiplayer / Both control. A
+  fixed clock and social pressure depress scores for reasons unrelated to question quality, and an
+  author's average score is their signal for exactly that
+  ([`quiz-analytics-page.md`](./quiz-analytics-page.md)).
+- **Personal stats always include it.** The player played; it counts.
+- **The results page is the single-player page.** `/quiz/results/:sessionId` and its review tab
+  already render a session, so a match's per-player session gets those URLs for free.
+- **Everyone in a match can read everyone's answers, permanently**, through `MatchPlayerTabs` on the
+  review tab. You were all in the same room being asked the same questions, and hiding it a week
+  later would be strange. `EnsureSessionOrMatchPeerAccessAsync` admits a match peer to exactly two
+  reads — the roster and `/results` — and to nothing writable.
+
+### 7.6 Still open
+
+Whether a `Match` should survive its quiz being **soft-deleted**. Sessions deliberately outlive a
+deleted quiz and a match currently does too, which is the reversible default; the reason to revisit
+is if a deleted quiz's matches start appearing somewhere they shouldn't.
+
+---
+
+## 8. Known limitations
 
 Multiplayer entries in [`known-issues.md`](../deployment/known-issues.md) are the tracked backlog;
 this is the feature-level summary.
@@ -458,10 +548,13 @@ this is the feature-level summary.
   `HubException`, and passed through verbatim by the client.
 - **No username uniqueness constraint** within a lobby beyond account identity, and no validation
   of room-code shape on input.
-- **No automated tests.** `QuizAPI.Tests` covers scoring, grading, auth, versioning and stats — the
-  pieces the match loop *calls* — but there are no tests for the hub, the session manager or the
-  orchestrator itself, and none for the lobby hooks. The lifecycle rules in §3 are exactly the kind
-  of thing a test would have caught.
+- **The match loop has no automated tests.** `MatchPersistenceTests` covers the reads over the rows
+  a match leaves (§7) and `QuizAPI.Tests` covers scoring, grading, auth, versioning and stats — the
+  pieces the loop *calls* — but there is nothing for the hub, the session manager or
+  `MatchOrchestrator` itself, and none for the lobby hooks. The orchestrator is a singleton holding
+  a hub context, a scope factory and a three-second countdown, so testing it means first deciding
+  how much of that to fake. The lifecycle rules in §3 are exactly the kind of thing a test would
+  have caught.
 - **Rematch reset has a narrow theoretical race.** Session fields are mutated without a lock (as
   they are throughout this class), so a `StartMatch` landing in the microseconds between the loop
   nulling `MatchCts` and its reset completing could have its freshly-loaded state cleared. In
@@ -469,7 +562,7 @@ this is the feature-level summary.
 
 ---
 
-## 8. Working on it
+## 9. Working on it
 
 **Locally:** run the API and `npm run dev`, then open the app in two browser profiles (not two tabs
 — they'd share the account). Create in one, join with the code in the other, ready both, start.
@@ -487,10 +580,11 @@ cancellation mid-question — because both run through the same `finally`.
 
 ---
 
-## 9. Changelog
+## 10. Changelog
 
 | Date | Change |
 |---|---|
+| 2026-09-14 | **A match is recorded when it ends** — §7, folded in from the multiplayer-persistence plan doc, which this replaces and which is deleted. One `Match` row plus the same `QuizSession` and `UserAnswer` rows single player writes, so analytics, stats and the results pages read a match without being taught what one is. Analytics exclude matches by default (Solo / Multiplayer / Both); the review tab grows a tab per player. **Sections 7, 8 and 9 became 8, 9 and 10** to make room — a citation to an old §7–§9 elsewhere is off by one. |
 | 2026-08-02 | **The desktop board fits the viewport.** The shell takes an explicit `calc(100dvh - header)` height (a percentage `h-full` can't work — the layout's `min-h-full` wrapper leaves the height indefinite) and the 2×2 grid divides it with an `auto` top row and a `minmax(0,1fr)` bottom row. Chat's message list fills its share instead of forcing a hard-coded `lg:h-[17rem]`. The lobby had been overflowing the fold on laptop-height screens, and chat grew instead of scrolling. |
 | 2026-08-02 | **A blocked navigation mid-match now has a way out.** `useNavigationGuard` is armed for the whole session, but the dialog that resolves it lived only inside `<LobbyPageView>` — on the far side of `MultiplayerLobbyPage`'s early return for an active match. Clicking a header link during a match armed the blocker, showed nothing, and left it stuck in `blocked`; each further click produced a new blocker object and re-rendered the game subtree, which froze the question timer. `<LeaveLobbyDialog>` is now rendered in both branches, with match-specific copy. Full write-up: [`quiz-timer.md`](./quiz-timer.md). |
 | 2026-08-02 | **The question timer no longer restarts on re-render, and no longer trusts the device clock.** `QuizTimer` holds its callbacks in refs so its countdown effect depends on primitives only, and re-anchors its deadline exactly twice — new question, and resume from pause. Separately, `useMatch` now measures the server/client clock offset from each `QuestionStarted` and `multiplayer-question-view` corrects for it, so a phone with a drifted clock no longer opens a 30s question at 32 or 34. |

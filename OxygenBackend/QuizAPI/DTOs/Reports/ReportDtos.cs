@@ -30,6 +30,34 @@ namespace QuizAPI.DTOs.Reports
         /// what falling all the way back to UTC would mean for anyone east of Greenwich.
         /// </summary>
         public int? OffsetMinutes { get; set; }
+
+        /// <summary>
+        /// Which kind of play to count. Defaults to <see cref="SessionModeFilter.SinglePlayer"/>,
+        /// which is the answer an author wants without having to ask for it: a fixed clock and three
+        /// other people racing you depress scores for reasons that have nothing to do with question
+        /// quality, and "average score" is the number an author reads to judge exactly that. Mixing
+        /// the two silently would make one number mean two things.
+        ///
+        /// <para>The filter exists because those plays are real and sometimes worth seeing — hence
+        /// <see cref="SessionModeFilter.All"/> and <see cref="SessionModeFilter.Multiplayer"/>, as
+        /// an explicit choice rather than a default. Personal stats go the other way and always
+        /// include multiplayer: the player played, it counts.</para>
+        ///
+        /// See docs/quiz/multiplayer.md §7.
+        /// </summary>
+        public SessionModeFilter Mode { get; set; } = SessionModeFilter.SinglePlayer;
+    }
+
+    /// <summary>
+    /// Which sessions a report counts. Deliberately not <c>QuizSessionMode</c>: that enum says what
+    /// a session IS, this one says what a question is ASKING ABOUT, and the difference is the extra
+    /// member — <see cref="All"/>, which no single session can ever be.
+    /// </summary>
+    public enum SessionModeFilter
+    {
+        SinglePlayer = 0,
+        Multiplayer = 1,
+        All = 2
     }
 
     /// <summary>One row of the Quiz Performance report — aggregates for a quiz the user owns.</summary>

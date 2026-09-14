@@ -29,37 +29,57 @@ const viewerClock = () => {
   return { timeZone, offsetMinutes: -new Date().getTimezoneOffset() };
 };
 
+/**
+ * Which plays the numbers are about (mirrors the API's `SessionModeFilter`).
+ *
+ * `SinglePlayer` is the default on both sides. A multiplayer match is played against a fixed clock
+ * with other people racing, which depresses scores for reasons that have nothing to do with the
+ * questions — and an author reads "average score" to judge exactly that. The other two values are a
+ * deliberate choice, never a default.
+ */
+export type AnalyticsMode = "SinglePlayer" | "Multiplayer" | "All";
+
 export const getQuizAnalytics = ({
   quizId,
+  mode = "SinglePlayer",
 }: {
   quizId: number;
+  mode?: AnalyticsMode;
 }): Promise<QuizAnalytics> => {
   return apiService.get(`/reports/quiz/${quizId}/analytics`, {
-    params: viewerClock(),
+    params: { ...viewerClock(), mode },
   });
 };
 
-export const getQuizAnalyticsQueryOptions = (quizId: number) => {
+export const getQuizAnalyticsQueryOptions = (
+  quizId: number,
+  mode: AnalyticsMode = "SinglePlayer",
+) => {
   return queryOptions({
     // The zone is NOT part of the key. It is stable for the life of a session, and a viewer who
     // crosses a boundary mid-session gets the new bucketing on the next natural refetch — not
     // worth a cache miss on every mount to pre-empt.
-    queryKey: ["quiz", quizId, "analytics"],
-    queryFn: () => getQuizAnalytics({ quizId }),
+    //
+    // The mode IS part of it: it changes the answer, the viewer flips it deliberately, and each
+    // setting is worth keeping so switching back and forth is instant rather than a refetch.
+    queryKey: ["quiz", quizId, "analytics", mode],
+    queryFn: () => getQuizAnalytics({ quizId, mode }),
   });
 };
 
 type UseQuizAnalyticsOptions = {
   queryConfig?: QueryConfig<typeof getQuizAnalyticsQueryOptions>;
   quizId: number;
+  mode?: AnalyticsMode;
 };
 
 export const useQuizAnalytics = ({
   queryConfig,
   quizId,
+  mode = "SinglePlayer",
 }: UseQuizAnalyticsOptions) => {
   return useQuery({
-    ...getQuizAnalyticsQueryOptions(quizId),
+    ...getQuizAnalyticsQueryOptions(quizId, mode),
     ...queryConfig,
   });
 };

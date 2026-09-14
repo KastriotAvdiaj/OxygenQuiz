@@ -11,6 +11,7 @@ import { HelpCircle, Clock, User, Calendar, Play } from "lucide-react";
 import type { QuizSummaryDTO } from "@/types/quiz-types";
 import { secondsToMinutes } from "./quiz-duration";
 import { parseQuizPalette, readableTextColor } from "./quiz-palette";
+import { LiftedButton } from "@/common/LiftedButton";
 
 // Single-player only — multiplayer hosting starts inside the lobby, never from
 // this modal (the old mode="multiplayer" branch was unreachable).
@@ -146,7 +147,7 @@ export function QuizStartModal({
 
           {/* Action button — flat, category-tinted, with auto-contrast label so
               it stays readable and consistent across every palette. */}
-          <button
+          <LiftedButton
             type="button"
             onClick={handleStartQuiz}
             className="flex h-10 w-full items-center justify-center gap-2 rounded-lg text-sm sm:text-base font-bold font-quiz tracking-wider transition-all duration-200 hover:brightness-95 active:scale-[0.99]"
@@ -154,7 +155,7 @@ export function QuizStartModal({
           >
             <Play className="h-4 w-4 fill-current" />
             Start Quiz
-          </button>
+          </LiftedButton>
         </div>
       </DialogContent>
     </Dialog>

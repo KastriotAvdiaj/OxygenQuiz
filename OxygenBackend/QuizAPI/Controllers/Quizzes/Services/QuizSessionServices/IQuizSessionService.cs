@@ -30,6 +30,22 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
         Task<Guid?> GetSessionOwnerAsync(Guid sessionId);
 
         /// <summary>
+        /// True when <paramref name="userId"/> played in the same match as <paramref name="sessionId"/>.
+        /// The second ownership rule in this service, and the only one that is not "you own it":
+        /// everyone in a match may read everyone's answers, permanently (ADR-less by design — it is
+        /// argued in docs/quiz/multiplayer.md §7). It stays narrow on purpose: the
+        /// match is the unit, so it grants nothing about a session outside it.
+        /// </summary>
+        Task<bool> IsMatchPeerAsync(Guid sessionId, Guid userId);
+
+        /// <summary>
+        /// The other players in this session's match, ordered as the final scoreboard was, each with
+        /// the session id holding their answers. Empty for a single-player session — the caller
+        /// renders no tabs rather than one.
+        /// </summary>
+        Task<Result<List<MatchPlayerDto>>> GetMatchPlayersAsync(Guid sessionId);
+
+        /// <summary>
         /// Paginated play history (newest first), projected to summaries in SQL and excluding
         /// guest sessions. Powers the profile history list — see docs/quiz/user-stats-history.md.
         /// </summary>

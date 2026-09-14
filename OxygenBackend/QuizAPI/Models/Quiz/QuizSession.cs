@@ -67,7 +67,7 @@ namespace QuizAPI.Models.Quiz
         /// excluded from an author's averages by default, because a fixed clock and social pressure
         /// depress scores for reasons that have nothing to do with question quality.
         ///
-        /// See docs/quiz/multiplayer-persistence-plan.md.
+        /// See docs/quiz/multiplayer.md §7.
         /// </summary>
         public QuizSessionMode Mode { get; set; } = QuizSessionMode.SinglePlayer;
 

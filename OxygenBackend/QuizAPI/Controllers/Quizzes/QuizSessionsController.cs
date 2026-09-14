@@ -53,6 +53,45 @@ public class QuizSessionsController : BaseApiController
         return null;
     }
 
+    /// <summary>
+    /// As <see cref="EnsureSessionAccessAsync"/>, but also admits someone who played in the same
+    /// match. Used only by the two reads a results page makes, because a match's players may see
+    /// each other's answers permanently (docs/quiz/multiplayer.md §7) — they were in
+    /// the same room being asked the same questions.
+    ///
+    /// <para>It is a second method rather than a flag on the first: every other action here writes
+    /// to a session or advances it, and "we played together" must never grant that.</para>
+    /// </summary>
+    private async Task<IActionResult?> EnsureSessionOrMatchPeerAccessAsync(Guid sessionId)
+    {
+        var denied = await EnsureSessionAccessAsync(sessionId);
+        if (denied is null) return null;
+
+        var currentUserId = _currentUser.UserId;
+        if (currentUserId is null) return denied;
+
+        return await _quizSessionService.IsMatchPeerAsync(sessionId, currentUserId.Value)
+            ? null
+            : denied;
+    }
+
+    /// <summary>
+    /// The players in this session's match, each with the session id holding their answers.
+    /// Empty for a single-player session, which is an answer rather than a 404 — the results page
+    /// asks this every time and draws no tabs when the list is empty.
+    /// </summary>
+    [HttpGet("{sessionId:guid}/match-players")]
+    [ProducesResponseType(typeof(List<MatchPlayerDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetMatchPlayers(Guid sessionId)
+    {
+        var denied = await EnsureSessionOrMatchPeerAccessAsync(sessionId);
+        if (denied != null) return denied;
+
+        var result = await _quizSessionService.GetMatchPlayersAsync(sessionId);
+        return HandleResult(result);
+    }
+
     #region --- Live Quiz Flow ---
 
     [HttpGet("{sessionId:guid}/current-state")]
@@ -260,7 +299,9 @@ public class QuizSessionsController : BaseApiController
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetSessionResults(Guid sessionId, [FromQuery] int maxWaitSeconds = 30)
     {
-        var denied = await EnsureSessionAccessAsync(sessionId);
+        // Match peers admitted here, and only here: this is the read the review screen makes when
+        // you switch to another player's tab.
+        var denied = await EnsureSessionOrMatchPeerAccessAsync(sessionId);
         if (denied != null) return denied;
 
         var result = await _quizSessionService.GetSessionWithGradedAnswersAsync(sessionId, maxWaitSeconds);

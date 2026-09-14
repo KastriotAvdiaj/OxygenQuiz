@@ -13,7 +13,7 @@ namespace QuizAPI.Models.Quiz
     /// consumer — a second analytics query, a second stats query, a second results page — each of
     /// which has to be kept in step with the first forever. Writing the existing tables means
     /// analytics, personal stats and the results screens work without being taught what a match is.
-    /// See docs/quiz/multiplayer-persistence-plan.md.</para>
+    /// See docs/quiz/multiplayer.md §7.</para>
     ///
     /// <para>This row holds only what belongs to the match rather than to any one player: which quiz
     /// and which version of it, the room it was played in, who hosted, when it ran, and who won.</para>

@@ -39,7 +39,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.AbandonmentSe
             // timeout below would measure the wrong thing and eventually declare a finished match
             // abandoned. The queries that feed this method filter on Mode as well; this guard is
             // here so a future caller that forgets cannot mislabel a match either.
-            // See docs/quiz/multiplayer-persistence-plan.md.
+            // See docs/quiz/multiplayer.md §7.
             if (session.Mode == QuizSessionMode.Multiplayer) return false;
 
             var deadline = await GetAbandonmentDeadlineAsync(session);

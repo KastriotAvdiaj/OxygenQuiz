@@ -356,7 +356,7 @@ namespace QuizAPI.Services.QuizSessionServices
         /// Writes the whole match: one <see cref="Match"/> header, one <see cref="QuizSession"/> per
         /// player, and every <see cref="UserAnswer"/> — the same tables single player writes, which
         /// is what lets analytics, personal stats and the results pages read a match without being
-        /// taught what one is (docs/quiz/multiplayer-persistence-plan.md).
+        /// taught what one is (docs/quiz/multiplayer.md §7).
         ///
         /// <para><b>Once, at the end, in one SaveChanges.</b> Per round would put a database round
         /// trip per player per question inside a loop the players are watching a timer in. It also

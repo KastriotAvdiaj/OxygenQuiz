@@ -401,7 +401,7 @@ namespace QuizAPI.Data
                 .OnDelete(DeleteBehavior.Restrict);
 
 
-            // ── Multiplayer match (docs/quiz/multiplayer-persistence-plan.md) ──
+            // ── Multiplayer match (docs/quiz/multiplayer.md §7) ──
             // Restrict throughout, matching QuizSession's own rules and for the same reason: a
             // played game is a record, and a record that vanishes when a quiz or an account is
             // removed is not one. An anonymised account keeps its row and its id, so a match it

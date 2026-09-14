@@ -18,7 +18,7 @@ what the code does.
 |---|---|---|
 | Hero, footer | `useQuizData` | `GET /quiz/{id}` |
 | Question list (content) | `useQuizQuestionsData` | `GET /quiz/{id}/questions` |
-| Stat strip, attempts, per-question numbers | `useQuizAnalytics` | `GET /reports/quiz/{id}/analytics` |
+| Stat strip, attempts, per-question numbers | `useQuizAnalytics` | `GET /reports/quiz/{id}/analytics?mode=` |
 
 Analytics is the only one that may legitimately be absent — it is owner-scoped with an admin
 bypass, and the query can still fail. Every consumer treats absence as "not available" and renders
@@ -30,6 +30,33 @@ The join between content and analytics is on **`questionId`** (the Question's id
 `QuizQuestion` row id). Analytics carries only the quiz's current questions (`RemovedInVersion ==
 null`, see [`quiz-editing.md`](./quiz-editing.md)), so a row can have content with no stats — a
 question added after the last play — but never the reverse.
+
+## Solo / Multiplayer / Both
+
+Every number on this page answers the question for **one kind of play at a time**, chosen by the
+segmented control above the stats. `ReportCriteria.Mode` carries it (`?mode=`), and it defaults to
+`SinglePlayer` on both sides.
+
+**Why solo is the default, rather than everything.** A multiplayer match is played against a fixed
+clock with other people racing, and that depresses scores for reasons that have nothing to do with
+the questions. Average score is the number an author reads to judge exactly that, so folding matches
+in silently would make one number mean two things — and the author would have no way to tell which.
+
+Three consequences:
+
+- **The mode is part of the React Query key**, so each setting keeps its own cached answer and
+  flipping between them is instant rather than a refetch each way.
+- **The per-question table is filtered too**, on the answer's session mode. Filtering only the
+  session aggregates would leave the two halves of this page disagreeing about how many attempts
+  there were.
+- **The empty state changes with the mode.** Under a Multiplayer filter, "no plays yet" would read
+  as "nobody has ever played this", which may be flatly untrue of a popular quiz; it says the quiz
+  hasn't been played in a match yet instead.
+
+The rule lives in `SessionModeFilterExtensions.WhereMode`, one implementation, because a report that
+forgot to apply it would not fail — it would answer a different question with a number that looks
+right. Personal stats deliberately go the other way and always include matches: the player played,
+it counts. See [`multiplayer.md`](./multiplayer.md) §7.
 
 ## Low-data rules
 

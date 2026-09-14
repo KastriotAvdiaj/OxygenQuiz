@@ -11,7 +11,13 @@ import {
 import { audio } from "@/lib/audio";
 import { QuizOverview } from "./quiz-overview";
 import { QuestionReview } from "./question-review";
+import { MatchPlayerTabs } from "./match-player-tabs";
 import { LiftedButton } from "@/common/LiftedButton";
+import { LoadingWave } from "@/components/ui";
+import {
+  useMatchPlayers,
+  useGetSessionResults,
+} from "../../api/get-quiz-session";
 interface QuizResultsProps {
   session: QuizSession;
   onRetryQuiz?: () => void;
@@ -25,6 +31,22 @@ export function QuizResults({
 }: QuizResultsProps) {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("overview");
+
+  // ── Whose answers the Review tab is showing ──
+  // Empty for single player, so this costs one cheap request and renders nothing there. The
+  // Overview tab stays yours throughout: it is your score and your result, and a scoreboard of
+  // everyone is what the match itself already showed.
+  const { data: matchPlayers } = useMatchPlayers({ sessionId: session.id });
+  const [reviewedSessionId, setReviewedSessionId] = useState(session.id);
+
+  // Your own session is already in hand; anyone else's is fetched when you ask for it, and cached
+  // after that, so flicking between players is instant on the way back.
+  const isOwnSession = reviewedSessionId === session.id;
+  const otherPlayerQuery = useGetSessionResults({
+    sessionId: reviewedSessionId,
+    queryConfig: { enabled: !isOwnSession },
+  });
+  const reviewedSession = isOwnSession ? session : otherPlayerQuery.data;
 
   // Play a fanfare once when results appear: celebratory if the user got at least half
   // right, a gentler sound otherwise.
@@ -98,7 +120,24 @@ export function QuizResults({
           </TabsContent>
 
           <TabsContent value="review">
-            <QuestionReview session={session} />
+            <MatchPlayerTabs
+              players={matchPlayers ?? []}
+              value={reviewedSessionId}
+              onValueChange={setReviewedSessionId}
+              ownSessionId={session.id}
+            />
+
+            {reviewedSession ? (
+              <QuestionReview session={reviewedSession} />
+            ) : otherPlayerQuery.isError ? (
+              <p className="text-sm text-muted-foreground">
+                Couldn&apos;t load that player&apos;s answers.
+              </p>
+            ) : (
+              <div className="flex justify-center py-8">
+                <LoadingWave size="md" variant="muted" />
+              </div>
+            )}
           </TabsContent>
         </Tabs>
 

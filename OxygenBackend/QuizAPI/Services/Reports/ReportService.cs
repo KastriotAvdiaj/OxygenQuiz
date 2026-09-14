@@ -38,9 +38,10 @@ namespace QuizAPI.Services.Reports
                 .Select(q => new { q.Id, q.Title })
                 .ToListAsync(ct);
 
-            // Their sessions within the date window.
+            // Their sessions within the date window, single player only unless asked otherwise.
             var sessions = await _context.QuizSessions.AsNoTracking()
                 .Where(s => s.Quiz.UserId == userId)
+                .WhereMode(criteria.Mode)
                 .Where(s => from == null || s.StartTime >= from)
                 .Where(s => toExclusive == null || s.StartTime < toExclusive)
                 .Select(s => new
@@ -167,6 +168,7 @@ namespace QuizAPI.Services.Reports
             // Sessions for this quiz within the window.
             var sessions = await _context.QuizSessions.AsNoTracking()
                 .Where(s => s.QuizId == quizId)
+                .WhereMode(criteria.Mode)
                 .Where(s => from == null || s.StartTime >= from)
                 .Where(s => toExclusive == null || s.StartTime < toExclusive)
                 .Select(s => new
@@ -202,9 +204,16 @@ namespace QuizAPI.Services.Reports
                 })
                 .ToListAsync(ct);
 
-            // Answers to this quiz's questions within the window.
+            // Answers to this quiz's questions within the window. Filtered by the session's mode as
+            // well, and not only for consistency: leaving it out would give a per-question table
+            // built from every play under session aggregates built from one kind, so the two halves
+            // of the same page would quietly disagree about how many attempts there were.
             var answers = await _context.UserAnswers.AsNoTracking()
                 .Where(a => a.QuizQuestion.QuizId == quizId)
+                .Where(a => criteria.Mode == SessionModeFilter.All
+                         || (criteria.Mode == SessionModeFilter.Multiplayer
+                                ? a.QuizSession.Mode == QuizSessionMode.Multiplayer
+                                : a.QuizSession.Mode == QuizSessionMode.SinglePlayer))
                 .Where(a => from == null || (a.SubmittedTime != null && a.SubmittedTime >= from))
                 .Where(a => toExclusive == null || (a.SubmittedTime != null && a.SubmittedTime < toExclusive))
                 .Select(a => new
