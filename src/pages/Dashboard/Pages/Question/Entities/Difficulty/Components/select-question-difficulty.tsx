@@ -75,7 +75,9 @@ export const DifficultySelect: React.FC<DifficultySelectProps> = (props) => {
     return (
       <div>
         {label && (
-          <Label className="text-sm font-medium text-foreground">{label}</Label>
+          <Label className="mb-1.5 block text-xs font-medium text-muted-foreground">
+            {label}
+          </Label>
         )}
         <Select
           value={value ? value.toString() : "all"}
@@ -123,7 +125,9 @@ export const DifficultySelect: React.FC<DifficultySelectProps> = (props) => {
   return (
     <div>
       {label && (
-        <Label className="text-sm font-medium text-foreground">{label}</Label>
+        <Label className="mb-1.5 block text-xs font-medium text-muted-foreground">
+            {label}
+          </Label>
       )}
       <Select
         value={isValueValid ? value : ""}

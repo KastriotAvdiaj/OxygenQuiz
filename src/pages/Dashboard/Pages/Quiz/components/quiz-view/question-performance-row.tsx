@@ -155,7 +155,13 @@ export const QuestionPerformanceRow = ({
               (docs/RESPONSIVE.md, "Rows of buttons"). */}
           <span className="flex min-w-0 flex-1 flex-col">
             <span className="flex min-w-0 items-center gap-2">
-              <span className="truncate text-sm font-medium">{question.text}</span>
+              {/* Truncated by design — the columns beside it are fixed and the text is the
+                  elastic one. `title` covers the pointer case; the expanded panel carries
+                  the whole thing for everyone else, because a hover tooltip is no answer on
+                  a touch screen and no answer at all for a long question. */}
+              <span className="truncate text-sm font-medium" title={question.text}>
+                {question.text}
+              </span>
               {/* <b>The flag lives here, not in the Type column.</b> It used to REPLACE the
                   type label — so a flagged row showed "Needs a look" under a heading that
                   said TYPE, and on a quiz where every question is flagged the Type column
@@ -243,7 +249,17 @@ const QuestionDetail = ({
   stats?: QuizQuestionAnalyticsRow;
   timeLimitInSeconds: number;
 }) => (
-  <div className="grid gap-4 md:grid-cols-2">
+  <div className="space-y-4">
+    {/* The question in full, first. The row above it truncates to one line, so on anything
+        longer than a few words this panel was the only place the text could live — and it
+        did not have it: you could open a row to find out why a question scores 0% and still
+        not be able to read the question. It leads rather than sitting in a column, because
+        it is the thing being judged; the options and the numbers are evidence about it. */}
+    <p className="whitespace-pre-wrap text-sm font-medium leading-relaxed text-foreground">
+      {question.text}
+    </p>
+
+    <div className="grid gap-4 md:grid-cols-2">
     <div className="space-y-2">
       <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
         {question.type === QuestionType.TypeTheAnswer ? "Accepted answers" : "Options"}
@@ -274,6 +290,7 @@ const QuestionDetail = ({
       {stats && stats.ungradedCount > 0 && (
         <MetaLine label="Awaiting grading" value={stats.ungradedCount} />
       )}
+      </div>
     </div>
   </div>
 );

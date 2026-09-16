@@ -26,8 +26,22 @@ export const FIELD_PRESS =
 /**
  * Color themes: border, surface tints, focus ring and the `--edge` color.
  * `primary` tracks the app theme via --primary-edge (global.css); the fixed
- * hues (orange = Type-the-Answer, green/red = answer feedback) derive their
- * edge the same way --primary-edge does: color-mix towards black.
+ * hues (orange = Type-the-Answer, teal = True/False, green/red = answer
+ * feedback) derive their edge the same way --primary-edge does: color-mix
+ * towards black.
+ *
+ * <b>The question-type hues here mirror `question-type-theme.ts`, and the
+ * duplication is forced rather than chosen.</b> That file lives under
+ * `pages/`, and `components/ui/` must not import upwards from it. The single
+ * source of truth for what colour a question type *is* stays there — see
+ * docs/quiz/question-type-color-schema.md — and this is the mirror the field
+ * shell needs. Change a type's hue there, change it here in the same commit.
+ *
+ * Known drift, left alone deliberately: the schema calls Type-the-Answer
+ * **amber** (`text-amber-600`) while this theme is orange-500. The two are
+ * close enough that nobody has reported it, and repainting every
+ * Type-the-Answer field is a change nobody asked for — but it is the next
+ * thing to reconcile if this map is touched again.
  */
 export const FIELD_THEMES = {
   primary:
@@ -38,6 +52,10 @@ export const FIELD_THEMES = {
     "[--edge:color-mix(in_srgb,#f97316,black_30%)] bg-background text-foreground " +
     "border-orange-500/60 dark:border-orange-500/70 hover:border-orange-500/80 " +
     "focus:border-orange-500 focus:bg-orange-500/5 dark:focus:bg-orange-500/10 focus-visible:ring-orange-500",
+  teal:
+    "[--edge:color-mix(in_srgb,#0d9488,black_25%)] bg-background text-foreground " +
+    "border-teal-500/60 dark:border-teal-500/70 hover:border-teal-500/80 " +
+    "focus:border-teal-500 focus:bg-teal-500/5 dark:focus:bg-teal-500/10 focus-visible:ring-teal-500",
   green:
     "[--edge:color-mix(in_srgb,#16a34a,black_25%)] bg-green-500/10 dark:bg-green-500/15 text-foreground " +
     "border-green-600/80 focus:border-green-600 focus-visible:ring-green-500",

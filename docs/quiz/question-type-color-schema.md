@@ -56,6 +56,16 @@ apart — changing a hue is a one-line edit here and every card updates together
 > Class strings must stay **complete literals** (e.g. `"border-teal-500/30"`), never built by
 > concatenation — Tailwind's JIT only generates classes it can see verbatim in source.
 
+**One mirror exists, and it is deliberate.** The *fields* inside a question card — the big question
+text box on a read-only card — are styled by `FIELD_THEMES` in `components/ui/form/field-variants.ts`,
+which cannot import this file: `components/ui/` must not depend on `pages/`. So the per-type hues
+are written twice, and the rule is that they change together in one commit. True/False was blue
+there until 2026-09-16 while being teal here, which put a primary-blue question field in the middle
+of a teal-bordered True/False card on every imported question — the type's colour stated loudest by
+the card and contradicted by the control inside it. Type-the-Answer is still orange-500 there
+against amber here; close enough that nobody has reported it, and the next thing to reconcile if
+that map is touched.
+
 ## States, precisely
 
 | State            | Frame                                             | Fill                 |

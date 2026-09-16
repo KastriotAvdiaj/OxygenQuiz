@@ -47,13 +47,19 @@ const variantStyles: Record<NonNullable<InputProps["variant"]>, string> = {
 };
 
 /**
- * Question-type recolors for the quiz/display variants: Type-the-Answer
- * fields are orange; True/False keeps the primary palette. Multiple choice
- * never reaches this map (guarded below).
+ * Question-type recolors for the quiz/display variants, mirroring
+ * `question-type-theme.ts` (see the note in field-variants.ts for why the
+ * mirror exists). Multiple choice never reaches this map — it *is* the
+ * primary palette, and it is guarded out below.
+ *
+ * True/False was `primary` until 2026-09-16, which put a blue question field
+ * inside a teal-bordered True/False card on every imported question — the one
+ * place the type's colour is stated loudest, contradicted by the field in the
+ * middle of it.
  */
 const questionTypeThemes: Partial<Record<QuestionType, string>> = {
   [QuestionType.TypeTheAnswer]: FIELD_THEMES.orange,
-  [QuestionType.TrueFalse]: FIELD_THEMES.primary,
+  [QuestionType.TrueFalse]: FIELD_THEMES.teal,
 };
 
 const getVariantStyles = (

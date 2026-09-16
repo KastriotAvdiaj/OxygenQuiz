@@ -971,10 +971,17 @@ const CreateQuizForm = ({
 
                       {/* Dropdowns */}
                       <div className="space-y-3">
+                        {/* "Filters" alone left three dropdowns reading as bare values:
+                            a first-time user sees "Programming" and "Hard" with nothing
+                            saying what either is a *kind* of. Each select already knows its
+                            own name — it just never showed it. Sized and coloured like the
+                            "Status" label under Settings below, so the panel reads as one
+                            list of labelled fields rather than two conventions. */}
                         <h4 className="text-sm font-semibold text-primary flex items-center gap-1">
                           Filters
                         </h4>
                         <CategorySelect
+                          label="Category"
                           categories={queryData.categories}
                           fieldVariant="form"
                           value={watch("categoryId")?.toString() || ""}
@@ -987,6 +994,7 @@ const CreateQuizForm = ({
                         />
 
                         <DifficultySelect
+                          label="Difficulty"
                           difficulties={queryData.difficulties}
                           fieldVariant="form"
                           value={watch("difficultyId")?.toString() || ""}
@@ -999,6 +1007,7 @@ const CreateQuizForm = ({
                         />
 
                         <LanguageSelect
+                          label="Language"
                           languages={queryData.languages}
                           fieldVariant="form"
                           value={watch("languageId")?.toString() || ""}
