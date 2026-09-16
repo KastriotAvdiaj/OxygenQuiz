@@ -3,6 +3,7 @@ import { ConfirmationDialog } from "@/components/ui/dialog";
 import { useNotifications } from "@/common/Notifications";
 import { useDeleteUser } from "../api/delete-user";
 import { UserX } from "lucide-react";
+import { LiftedButton } from "@/common/LiftedButton";
 
 type DeleteUserProps = {
   id: string;
@@ -35,17 +36,18 @@ export const DeleteUser = ({ id, closeDropDown }: DeleteUserProps) => {
         </Button>
       }
       confirmButton={
-        <Button
+        <LiftedButton
+          className="bg-red-600 text-white hover:bg-red-700 focus:ring-red-500 py-1"
+          liftColor="red-700"
           isPending={deleteUserMutation.isPending}
           type="button"
-          variant="destructive"
           onClick={() => {
             console.log("Deleting user with ID:", id);
             deleteUserMutation.mutate({ userId: id });
           }}
         >
           Delete User
-        </Button>
+        </LiftedButton>
       }
     />
   );

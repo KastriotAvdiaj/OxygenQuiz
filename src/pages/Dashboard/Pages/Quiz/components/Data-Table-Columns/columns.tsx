@@ -180,7 +180,7 @@ export const quizColumns: ColumnDef<QuizSummaryDTO>[] = [
               <>
                 <DropdownMenuSeparator className="bg-background/60" />
                 <DropdownMenuItem
-                  className="text-red-600 focus:text-red-600"
+                  // className="text-red-600 focus:text-red-600"
                   onSelect={() => {
                     // Let the menu finish closing, then open the dialog on the next
                     // frame so the two Radix modal layers never overlap.

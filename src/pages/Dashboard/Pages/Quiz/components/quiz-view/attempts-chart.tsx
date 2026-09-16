@@ -11,7 +11,7 @@ import {
 
 import type { AttemptsByDayPoint } from "@/types/analytics-types";
 
-import { MIN_DAYS_FOR_TREND, showsTrend } from "./thresholds";
+import { showsTrend } from "./thresholds";
 
 // Unchanged from the previous Analytics tab — this is a layout change, not a restyle, so the
 // series keep the colors they had. Note `--chart-1..5` exist in global.css and are unused; if

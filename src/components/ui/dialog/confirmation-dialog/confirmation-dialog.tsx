@@ -1,8 +1,6 @@
 import { CircleAlert, Info } from "lucide-react";
 import * as React from "react";
 import { useEffect } from "react";
-import { Button } from "@/components/ui/button";
-
 import { useDisclosure } from "@/hooks/use-disclosure";
 import {
   Dialog,
@@ -12,6 +10,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "../dialog";
+import { LiftedButton } from "@/common/LiftedButton";
 
 export type ConfirmationDialogProps = {
   /** Optional. Omit when driving the dialog via `isOpen`/`onOpenChange`. */
@@ -103,13 +102,14 @@ export const ConfirmationDialog = ({
 
       <DialogFooter>
         {confirmButton}
-        <Button
+        <LiftedButton
+        className="bg-background border border-foreground/30 text-sm text-foreground sm:text-base py-1"
+        liftColor="muted"
           ref={cancelButtonRef}
-          variant="outline"
           onClick={() => setOpen(false)}
         >
           {cancelButtonText}
-        </Button>
+        </LiftedButton>
       </DialogFooter>
     </DialogContent>
   </Dialog>

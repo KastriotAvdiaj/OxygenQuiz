@@ -171,8 +171,8 @@ export const MainErrorFallback: React.FC<FallbackProps> = ({
             </LiftedButton>
             <LiftedButton
               onClick={() => (window.location.href = "/")}
-              className="w-full bg-muted text-sm text-foreground sm:text-base"
-              liftColor="hsl(var(--muted-foreground))"
+              className="w-full bg-background border border-foreground/30 text-sm text-foreground sm:text-base"
+              liftColor="muted"
             >
               <Home className="mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" /> Go Home
             </LiftedButton>

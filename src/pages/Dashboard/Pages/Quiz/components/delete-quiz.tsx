@@ -4,6 +4,7 @@ import { useNotifications } from "@/common/Notifications";
 import { useDeleteQuiz } from "../api/delete-quiz";
 import { Trash2 } from "lucide-react";
 import { cn } from "@/utils/cn";
+import { LiftedButton } from "@/common/LiftedButton";
 
 type DeleteQuizProps = {
   className?: string;
@@ -59,16 +60,17 @@ export const DeleteQuiz = ({
         )
       }
       confirmButton={
-        <Button
+        <LiftedButton
           isPending={deleteQuizMutation.isPending}
           type="button"
-          variant="destructive"
+          className="bg-red-600 text-white hover:bg-red-700 focus:ring-red-500 py-1"
+          liftColor="red-700"
           onClick={() => {
             deleteQuizMutation.mutate({ quizId: id });
           }}
         >
           Delete Quiz
-        </Button>
+        </LiftedButton>
       }
     />
   );
