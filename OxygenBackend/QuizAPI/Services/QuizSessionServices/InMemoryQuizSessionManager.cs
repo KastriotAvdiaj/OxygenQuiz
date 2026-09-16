@@ -20,9 +20,66 @@ public class InMemoryQuizSessionManager : IQuizSessionManager
             "Room code doesn't exist. Check the code, or ask the host for a new invite.";
         private const string FullMessage = "This lobby is full.";
 
+        /// <summary>
+        /// How long an empty lobby is kept before it counts as abandoned.
+        ///
+        /// <para>Sized for a page refresh, not for a user changing their mind: a cold reload has to
+        /// boot the SPA, authenticate, open the SignalR connection and re-join, and on a slow
+        /// network or a dev build that is comfortably past the 5s the disconnect handler waits
+        /// before removing the participant. Ninety seconds covers that with room to spare while
+        /// still being far short of "come back after lunch".</para>
+        ///
+        /// <para>Deliberately not solved by widening the disconnect grace instead. That window is
+        /// what keeps the roster honest — stretch it to 90s and a player who genuinely leaves sits
+        /// in everyone else's lobby, marked ready, for a minute and a half.</para>
+        /// </summary>
+        private static readonly TimeSpan AbandonedLobbyGrace = TimeSpan.FromSeconds(90);
+
+        /// <summary>
+        /// The lookup every caller uses. A session past its empty-grace is treated as gone and
+        /// removed on the way out, so nothing has to remember to check: a stale room code fails
+        /// the same NotFound way it always did.
+        /// </summary>
+        private bool TryGetLiveSession(string sessionId, out MultiplayerSession session)
+        {
+            session = null!;
+            if (!_sessions.TryGetValue(sessionId, out var found)) return false;
+
+            // Read under the session's own lock, the way every mutation in this file writes it.
+            // A DateTime? is two fields, so an unlocked read can in principle tear — and the half
+            // of it that would be wrong is exactly the half this whole change is about.
+            DateTime? emptySince;
+            lock (found) { emptySince = found.EmptySinceUtc; }
+
+            if (emptySince is { } since && DateTime.UtcNow - since >= AbandonedLobbyGrace)
+            {
+                _sessions.TryRemove(sessionId, out _);
+                return false;
+            }
+
+            session = found;
+            return true;
+        }
+
+        /// <summary>
+        /// Drops every lobby that has been empty past the grace. Called when a lobby is created —
+        /// a bounded, uncontended moment — so abandoned rooms cannot accumulate just because
+        /// nobody ever types their code again. Lazy collection through
+        /// <see cref="TryGetLiveSession"/> handles the ones that are asked for.
+        /// </summary>
+        private void PurgeAbandonedSessions()
+        {
+            var cutoff = DateTime.UtcNow - AbandonedLobbyGrace;
+            foreach (var entry in _sessions)
+            {
+                if (entry.Value.EmptySinceUtc is { } emptySince && emptySince < cutoff)
+                    _sessions.TryRemove(entry.Key, out _);
+            }
+        }
+
         public Task<Participant> AddParticipantAsync(string sessionId, string username, string connectionId, string? profileImageUrl = null)
         {
-            if (!_sessions.TryGetValue(sessionId, out var session))
+            if (!TryGetLiveSession(sessionId, out var session))
             {
                 // SessionJoinException (not InvalidOperationException) so QuizHub can relay the real
                 // reason to the client — see the type's docs.
@@ -60,6 +117,9 @@ public class InMemoryQuizSessionManager : IQuizSessionManager
                     participant.ProfileImageUrl = profileImageUrl ?? participant.ProfileImageUrl;
                 }
 
+                // Somebody is in the room again, so it is no longer on its way out.
+                session.EmptySinceUtc = null;
+
                 return Task.FromResult(participant);
             }
         }
@@ -73,7 +133,7 @@ public class InMemoryQuizSessionManager : IQuizSessionManager
         /// </summary>
         public Task<SessionAvailability> CheckSessionAsync(string sessionId, string username)
         {
-            if (!_sessions.TryGetValue(sessionId, out var session))
+            if (!TryGetLiveSession(sessionId, out var session))
             {
                 return Task.FromResult(new SessionAvailability
                 {
@@ -107,7 +167,7 @@ public class InMemoryQuizSessionManager : IQuizSessionManager
 
         public Task RemoveParticipantAsync(string sessionId, string username)
         {
-            if (_sessions.TryGetValue(sessionId, out var session))
+            if (TryGetLiveSession(sessionId, out var session))
             {
                 lock (session)
                 {
@@ -125,9 +185,17 @@ public class InMemoryQuizSessionManager : IQuizSessionManager
                         }
                         else if (session.Participants.Count == 0)
                         {
-                            // Lobby emptied: stop any running match loop, then close the session.
+                            // Lobby emptied. The match loop stops immediately — there is nobody
+                            // left to play it — but the lobby itself is kept for
+                            // AbandonedLobbyGrace rather than destroyed on the spot, because the
+                            // commonest way a lobby empties is its host refreshing the page. See
+                            // MultiplayerSession.EmptySinceUtc.
+                            //
+                            // HostUsername is deliberately left pointing at whoever just left: the
+                            // branch above only reassigns it when someone is still here, so a host
+                            // who comes back inside the grace is still the host.
                             session.MatchCts?.Cancel();
-                            _sessions.TryRemove(sessionId, out _);
+                            session.EmptySinceUtc = DateTime.UtcNow;
                         }
                     }
                 }
@@ -137,7 +205,7 @@ public class InMemoryQuizSessionManager : IQuizSessionManager
 
         public Task<List<Participant>> GetParticipantsAsync(string sessionId)
         {
-            if (_sessions.TryGetValue(sessionId, out var session))
+            if (TryGetLiveSession(sessionId, out var session))
             {
                 lock (session)
                 {
@@ -150,7 +218,7 @@ public class InMemoryQuizSessionManager : IQuizSessionManager
 
         public Task SetPlayerReadyAsync(string sessionId, string username, bool isReady)
         {
-            if (_sessions.TryGetValue(sessionId, out var session))
+            if (TryGetLiveSession(sessionId, out var session))
             {
                 lock (session)
                 {
@@ -167,7 +235,7 @@ public class InMemoryQuizSessionManager : IQuizSessionManager
 
         public Task<string?> GetHostUsernameAsync(string sessionId)
         {
-             if (_sessions.TryGetValue(sessionId, out var session))
+             if (TryGetLiveSession(sessionId, out var session))
              {
                  return Task.FromResult<string?>(session.HostUsername);
              }
@@ -176,7 +244,7 @@ public class InMemoryQuizSessionManager : IQuizSessionManager
 
         public Task<bool> IsHostAsync(string sessionId, string username)
         {
-            if (_sessions.TryGetValue(sessionId, out var session))
+            if (TryGetLiveSession(sessionId, out var session))
             {
                 return Task.FromResult(session.HostUsername == username);
             }
@@ -185,6 +253,12 @@ public class InMemoryQuizSessionManager : IQuizSessionManager
 
         public Task<MultiplayerSession> CreateSessionAsync(string sessionId, string lobbyName, int maxPlayers, string hostUsername, string connectionId, string? hostProfileImageUrl = null)
         {
+            // Empty lobbies now outlive their last participant (see AbandonedLobbyGrace), so
+            // something has to collect the ones nobody ever comes back to. Here: creating a lobby
+            // is rare, bounded and already touching this dictionary, and it means a code freed by
+            // abandonment is reusable by the time anyone is generating codes again.
+            PurgeAbandonedSessions();
+
             var session = new MultiplayerSession
             {
                 SessionId = sessionId,
@@ -219,7 +293,7 @@ public class InMemoryQuizSessionManager : IQuizSessionManager
 
         public Task SetQuizAsync(string sessionId, SelectedQuizView quiz)
         {
-            if (_sessions.TryGetValue(sessionId, out var session))
+            if (TryGetLiveSession(sessionId, out var session))
             {
                 lock (session)
                 {
@@ -232,7 +306,7 @@ public class InMemoryQuizSessionManager : IQuizSessionManager
 
         public Task<MultiplayerSession?> GetSessionAsync(string sessionId)
         {
-        _sessions.TryGetValue(sessionId, out var session);
+        TryGetLiveSession(sessionId, out var session);
         return Task.FromResult(session);
     }
 
@@ -241,7 +315,7 @@ public class InMemoryQuizSessionManager : IQuizSessionManager
 
         public Task<LobbyChatMessage> AddChatMessageAsync(string sessionId, string username, string text, bool isSystem = false)
         {
-            if (!_sessions.TryGetValue(sessionId, out var session))
+            if (!TryGetLiveSession(sessionId, out var session))
                 throw new InvalidOperationException($"Session {sessionId} not found.");
 
             var message = new LobbyChatMessage
@@ -269,7 +343,7 @@ public class InMemoryQuizSessionManager : IQuizSessionManager
         {
             IReadOnlyList<LobbyChatMessage> empty = new List<LobbyChatMessage>();
 
-            if (!_sessions.TryGetValue(sessionId, out var session))
+            if (!TryGetLiveSession(sessionId, out var session))
                 return Task.FromResult(empty);
 
             lock (session)

@@ -39,6 +39,24 @@ namespace QuizAPI.Services.QuizSessionServices
         /// <summary>Cancels the match loop if the lobby is torn down mid-game.</summary>
         public CancellationTokenSource? MatchCts { get; set; }
 
+        /// <summary>
+        /// When the lobby last became empty, or null while someone is in it.
+        ///
+        /// <para>A lobby used to be destroyed the instant its last participant left, and that made
+        /// a host refreshing their own page a coin toss: the disconnect handler removes a
+        /// participant 5s after the socket drops, a cold page load frequently takes longer than
+        /// that to reconnect, and a host alone in a lobby is the common case. The room was gone
+        /// before the browser finished starting, and the client's auto-resume then asked to rejoin
+        /// a session that no longer existed.</para>
+        ///
+        /// <para>An empty lobby now lingers for <c>InMemoryQuizSessionManager.AbandonedLobbyGrace</c>
+        /// instead. Everything that makes it *this* lobby — the code, the name, the host, the quiz
+        /// the host picked — is still here when they come back, and <c>HostUsername</c> is
+        /// untouched by the last participant leaving, so they return as host rather than as a
+        /// stranger in their own room.</para>
+        /// </summary>
+        public DateTime? EmptySinceUtc { get; set; }
+
         // ── What the match will be written down as (saved once, at the end; see MatchOrchestrator) ──
 
         /// <summary>When the match began. Becomes every player session's StartTime, so they share

@@ -155,7 +155,12 @@ rematch needs a fresh opt-in from everyone, because `canStartQuiz` requires all-
   delayed check sees a different id and leaves them alone.
 - **Host reassignment** — `RemoveParticipantAsync` promotes `Participants.First()` and updates
   `HostUsername`; the hub broadcasts `HostChanged`.
-- **Empty lobby** — cancels `MatchCts` and removes the session from the dictionary.
+- **Empty lobby** — cancels `MatchCts` (nobody is left to play the match) and stamps
+  `EmptySinceUtc`. The session is **kept** for `InMemoryQuizSessionManager.AbandonedLobbyGrace`
+  (90s) rather than removed, because the commonest way a lobby empties is its host refreshing.
+  Every lookup goes through `TryGetLiveSession`, which collects a session past its grace on the
+  way out, so a stale code still fails `NotFound`; `CreateSessionAsync` also sweeps, so rooms
+  nobody returns to cannot accumulate.
 
 **Client-side, `useNavigationGuard(hasJoined)` blocks in-app navigation** (React Router's
 `useBlocker`, plus `beforeunload` for refresh and tab close) for as long as you're in the session —
@@ -584,6 +589,7 @@ cancellation mid-question — because both run through the same `finally`.
 
 | Date | Change |
 |---|---|
+| 2026-09-16 | **A host who refreshes keeps their lobby.** The 5s disconnect grace is fine for a socket blip and too short for a cold page load — boot the SPA, authenticate, open the connection, re-join — so the host was removed before the browser was ready. A host alone in the lobby is the common case, and removing the last participant destroyed the session outright, so the client's auto-resume then asked to rejoin a room that no longer existed and the user was left on an empty page with a "could not rejoin" toast. An empty lobby now lingers 90s (`EmptySinceUtc` + `TryGetLiveSession` + a sweep on create) with its code, name, quiz pick and `HostUsername` intact, so the returning host comes back *as host*. Deliberately not fixed by widening the disconnect grace, which would leave a player who genuinely left sitting in everyone's roster, marked ready, for a minute and a half. The client also surfaces a failed resume through `joinError` — the view's own error state, carrying the server's message — instead of a toast over a blank lobby. |
 | 2026-09-14 | **A match is recorded when it ends** — §7, folded in from the multiplayer-persistence plan doc, which this replaces and which is deleted. One `Match` row plus the same `QuizSession` and `UserAnswer` rows single player writes, so analytics, stats and the results pages read a match without being taught what one is. Analytics exclude matches by default (Solo / Multiplayer / Both); the review tab grows a tab per player. **Sections 7, 8 and 9 became 8, 9 and 10** to make room — a citation to an old §7–§9 elsewhere is off by one. |
 | 2026-08-02 | **The desktop board fits the viewport.** The shell takes an explicit `calc(100dvh - header)` height (a percentage `h-full` can't work — the layout's `min-h-full` wrapper leaves the height indefinite) and the 2×2 grid divides it with an `auto` top row and a `minmax(0,1fr)` bottom row. Chat's message list fills its share instead of forcing a hard-coded `lg:h-[17rem]`. The lobby had been overflowing the fold on laptop-height screens, and chat grew instead of scrolling. |
 | 2026-08-02 | **A blocked navigation mid-match now has a way out.** `useNavigationGuard` is armed for the whole session, but the dialog that resolves it lived only inside `<LobbyPageView>` — on the far side of `MultiplayerLobbyPage`'s early return for an active match. Clicking a header link during a match armed the blocker, showed nothing, and left it stuck in `blocked`; each further click produced a new blocker object and re-rendered the game subtree, which froze the question timer. `<LeaveLobbyDialog>` is now rendered in both branches, with match-specific copy. Full write-up: [`quiz-timer.md`](./quiz-timer.md). |

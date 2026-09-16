@@ -207,9 +207,19 @@ export const useLobbyConnection = ({ mode = "join" }: UseLobbyConnectionOptions)
             setHasJoined(true);
             console.log("Auto-resumed session:", storedId);
           })
-          .catch((err) => {
+          .catch((err: unknown) => {
             console.error("Failed to auto-resume session:", err);
             sessionStorage.removeItem("quiz_session");
+
+            // The toast alone left the user looking at an empty lobby with no explanation of
+            // why nothing was in it. `joinError` is what the view already renders for a failed
+            // join, and a resume that fails is a failed join — the server's own message says
+            // whether the room is gone or full, which is more than "could not rejoin" ever did.
+            setJoinError(
+              err instanceof Error
+                ? err.message
+                : "Could not rejoin your previous lobby."
+            );
             addNotification({
               type: "warning",
               title: "Could not rejoin previous session",
