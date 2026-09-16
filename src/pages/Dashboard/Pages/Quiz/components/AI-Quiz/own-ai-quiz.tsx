@@ -110,23 +110,14 @@ export const OwnAiQuiz = () => {
   return (
     <OwnAiQuizView
       categories={draft.categories}
-      difficulties={draft.difficulties}
       languages={draft.languages}
       isLoadingEntities={draft.isLoadingEntities}
       generatePath={draft.paths.generate}
       manualCreatePath={draft.paths.manualCreate}
       topic={draft.topic}
       onTopicChange={draft.setTopic}
-      title={draft.title}
-      onTitleChange={draft.setTitle}
-      description={draft.description}
-      onDescriptionChange={draft.setDescription}
-      categoryId={draft.categoryId}
       onCategoryIdChange={draft.setCategoryId}
-      languageId={draft.languageId}
       onLanguageIdChange={draft.setLanguageId}
-      difficultyId={draft.difficultyId}
-      onDifficultyIdChange={draft.setDifficultyId}
       questionCount={draft.questionCount}
       onQuestionCountChange={draft.setQuestionCount}
       allowedTypes={draft.allowedTypes}
@@ -142,6 +133,8 @@ export const OwnAiQuiz = () => {
       onImport={handleImport}
       parseResult={draft.parseResult}
       needsConfirmation={draft.needsConfirmation}
+      effectiveCategoryId={draft.effectiveCategoryId}
+      effectiveLanguageId={draft.effectiveLanguageId}
       suggestedCategoryName={draft.suggestedCategoryName}
       suggestedLanguageName={draft.suggestedLanguageName}
       onStartOver={handleStartOver}

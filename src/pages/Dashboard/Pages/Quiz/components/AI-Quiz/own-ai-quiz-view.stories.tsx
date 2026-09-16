@@ -10,7 +10,6 @@ import {
   NO_JSON_REPLY,
   WRONG_SHAPE_REPLY,
   categories,
-  difficulties,
   languages,
   parse,
 } from "./__fixtures__/ai-quiz.fixtures";
@@ -33,15 +32,6 @@ const meta = {
   parameters: { layout: "fullscreen" },
   decorators: [
     (Story) => {
-      // `ImportSummary` reads its "don't show again" flag from localStorage on mount — clear it
-      // so these stories always render the state their names claim. Same reasoning as the
-      // wizard's stories.
-      try {
-        localStorage.removeItem("oxygenquiz:ai-import-notice:v1");
-      } catch {
-        // Storage blocked: the component shows the notice, which is what these stories want.
-      }
-
       const queryClient = new QueryClient({
         defaultOptions: { queries: { retry: false, enabled: false } },
       });
@@ -56,17 +46,11 @@ const meta = {
   ],
   args: {
     categories,
-    difficulties,
     languages,
     isLoadingEntities: false,
     generatePath: "/dashboard/quizzes/create-quiz/ai/topic",
     manualCreatePath: "/dashboard/quizzes/create-quiz",
     topic: "",
-    title: "",
-    description: "",
-    categoryId: null,
-    languageId: null,
-    difficultyId: null,
     questionCount: 5,
     allowedTypes: [QuestionType.MultipleChoice],
     extraInstructions: "",
@@ -76,14 +60,13 @@ const meta = {
     aiResponse: "",
     parseResult: null,
     needsConfirmation: false,
+    effectiveCategoryId: null,
+    effectiveLanguageId: null,
     suggestedCategoryName: null,
     suggestedLanguageName: null,
     onTopicChange: fn(),
-    onTitleChange: fn(),
-    onDescriptionChange: fn(),
     onCategoryIdChange: fn(),
     onLanguageIdChange: fn(),
-    onDifficultyIdChange: fn(),
     onQuestionCountChange: fn(),
     onToggleType: fn(),
     onExtraInstructionsChange: fn(),
@@ -192,7 +175,9 @@ export const NeedsCategoryConfirmation: Story = {
     topic: "The French Revolution",
     needsConfirmation: true,
     suggestedCategoryName: "European History",
-    languageId: 1,
+    // Resolved, so it is never asked about — see the wizard's story of the same name.
+    suggestedLanguageName: "English",
+    effectiveLanguageId: 1,
   },
 };
 
@@ -211,7 +196,6 @@ export const LoadingEntities: Story = {
 export const RestoredFromDraft: Story = {
   args: {
     topic: "The French Revolution",
-    title: "Revolution, in ten questions",
     restoredDraftSavedAt: Date.now() - 4 * 60 * 1000,
     onDiscardDraft: () => {},
   },

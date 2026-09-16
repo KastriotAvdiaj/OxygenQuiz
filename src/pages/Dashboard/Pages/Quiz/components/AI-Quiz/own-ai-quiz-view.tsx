@@ -15,7 +15,6 @@ import { Separator } from "@/components/ui/separator";
 import { cn } from "@/utils/cn";
 import type {
   QuestionCategory,
-  QuestionDifficulty,
   QuestionLanguage,
   QuestionType,
 } from "@/types/question-types";
@@ -28,7 +27,7 @@ import { AdvancedOptions } from "./components/advanced-options";
 import { ConfirmDetailsCard } from "./components/confirm-details-card";
 import { GenerationInput } from "./components/generation-input";
 import { ImportNotices } from "./components/import-notices";
-import { ImportSummary } from "./components/import-summary";
+import { ImportNote } from "./components/import-note";
 import { InfoHint } from "./components/info-hint";
 import { StepMarker } from "./components/step-marker";
 import { WizardButton } from "./components/wizard-button";
@@ -36,7 +35,6 @@ import { WizardButton } from "./components/wizard-button";
 export interface OwnAiQuizViewProps {
   // ── Entity lookups (fetched by the container) ────────────────────────────────
   categories: QuestionCategory[];
-  difficulties: QuestionDifficulty[];
   languages: QuestionLanguage[];
   isLoadingEntities: boolean;
 
@@ -59,16 +57,13 @@ export interface OwnAiQuizViewProps {
   onTopicChange: (value: string) => void;
 
   // ── Advanced. All optional: null category/language means "let the AI suggest". ─
-  title: string;
-  onTitleChange: (value: string) => void;
-  description: string;
-  onDescriptionChange: (value: string) => void;
-  categoryId: number | null;
+  /**
+   * Category and language are no longer asked for *before* generating — the form that used
+   * to has gone (see `AdvancedOptions`). These two remain because `ConfirmDetailsCard` sets
+   * them afterwards, when the model's own proposal didn't resolve.
+   */
   onCategoryIdChange: (id: number) => void;
-  languageId: number | null;
   onLanguageIdChange: (id: number) => void;
-  difficultyId: number | null;
-  onDifficultyIdChange: (id: number) => void;
   questionCount: number;
   onQuestionCountChange: (value: number) => void;
   allowedTypes: QuestionType[];
@@ -94,6 +89,15 @@ export interface OwnAiQuizViewProps {
 
   /** Questions arrived, but a category or language still needs picking before review. */
   needsConfirmation: boolean;
+  /**
+   * What the quiz will be saved with once the model's suggestions have been resolved — the
+   * user's pick, or the resolved suggestion, or null when neither produced anything. The
+   * confirmation card asks for exactly the fields that are null here; `categoryId` /
+   * `languageId` above stay the raw picks, because the Advanced form must keep showing the
+   * user their own choice and nothing else.
+   */
+  effectiveCategoryId: number | null;
+  effectiveLanguageId: number | null;
   suggestedCategoryName: string | null;
   suggestedLanguageName: string | null;
   onStartOver: () => void;
@@ -124,23 +128,14 @@ export interface OwnAiQuizViewProps {
  */
 export const OwnAiQuizView = ({
   categories,
-  difficulties,
   languages,
   isLoadingEntities,
   generatePath,
   manualCreatePath,
   topic,
   onTopicChange,
-  title,
-  onTitleChange,
-  description,
-  onDescriptionChange,
-  categoryId,
   onCategoryIdChange,
-  languageId,
   onLanguageIdChange,
-  difficultyId,
-  onDifficultyIdChange,
   questionCount,
   onQuestionCountChange,
   allowedTypes,
@@ -156,6 +151,8 @@ export const OwnAiQuizView = ({
   onImport,
   parseResult,
   needsConfirmation,
+  effectiveCategoryId,
+  effectiveLanguageId,
   suggestedCategoryName,
   suggestedLanguageName,
   onStartOver,
@@ -234,7 +231,7 @@ export const OwnAiQuizView = ({
         )}
         <ImportNotices result={parseResult} />
         {/* Always topic-based here, so the fact-check nudge always applies. */}
-        <ImportSummary result={parseResult} isFromTopic onStartOver={onStartOver} />
+        <ImportNote isFromTopic onStartOver={onStartOver} />
         <div className="flex-1 min-h-0">{builderSlot}</div>
       </div>
     );
@@ -287,9 +284,9 @@ export const OwnAiQuizView = ({
         <ConfirmDetailsCard
           categories={categories}
           languages={languages}
-          categoryId={categoryId}
+          effectiveCategoryId={effectiveCategoryId}
           onCategoryIdChange={onCategoryIdChange}
-          languageId={languageId}
+          effectiveLanguageId={effectiveLanguageId}
           onLanguageIdChange={onLanguageIdChange}
           suggestedCategoryName={suggestedCategoryName}
           suggestedLanguageName={suggestedLanguageName}
@@ -326,19 +323,6 @@ export const OwnAiQuizView = ({
             </div>
 
             <AdvancedOptions
-              categories={categories}
-              difficulties={difficulties}
-              languages={languages}
-              title={title}
-              onTitleChange={onTitleChange}
-              description={description}
-              onDescriptionChange={onDescriptionChange}
-              categoryId={categoryId}
-              onCategoryIdChange={onCategoryIdChange}
-              languageId={languageId}
-              onLanguageIdChange={onLanguageIdChange}
-              difficultyId={difficultyId}
-              onDifficultyIdChange={onDifficultyIdChange}
               questionCount={questionCount}
               onQuestionCountChange={onQuestionCountChange}
               allowedTypes={allowedTypes}

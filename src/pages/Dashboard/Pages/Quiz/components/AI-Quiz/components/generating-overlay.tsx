@@ -1,11 +1,11 @@
-import { Check } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
+import { LoadingWave } from "@/components/ui";
 import { cn } from "@/utils/cn";
 
 import type { AiGenerationMode } from "../../../api/generate-ai-quiz";
 
-import { RubiksCube } from "./rubiks-cube";
+import { Typewriter } from "./typewriter";
 import type { GenerationPhase } from "./use-generation-wait";
 
 /**
@@ -55,8 +55,13 @@ export interface GeneratingOverlayProps {
  *
  * <b>It ends on a beat rather than a cut.</b> The questions arriving used to swap the
  * screen out from under the user with no acknowledgement that the expensive thing had
- * worked. Now the cube pops, the copy says what came back, and the layer fades to
- * reveal the review step already sitting behind it.
+ * worked. Now the copy turns over to say what came back, the layer fades — and only then
+ * does the review step arrive, with an entrance of its own. The view holds it back until
+ * this overlay is leaving; see `resultsMayShow` in ai-quiz-wizard-view.tsx for why the
+ * two have to be sequenced rather than crossfaded.
+ *
+ * The typewriter keeps typing through that beat. It is the copy's job to say the work
+ * finished, and two things announcing the same moment is one thing too many.
  *
  * <b>Not a Radix dialog</b>, though it looks like one. `LeaveGenerationDialog` opens
  * *on top of* this — that is precisely when it opens — and stacking two modal dialogs
@@ -110,26 +115,66 @@ export const GeneratingOverlay = ({
           : "animate-in fade-in-0 duration-300"
       )}
     >
-      {/* The cube's own transforms live on `.rubiks`, so the entrance gets its own
-          element — two animations on one element would fight over `transform`. */}
+      {/* The piece runs its own transforms, so the entrance gets its own element —
+          two animations on one element would fight over `transform`. */}
       <div
         className={cn(
           !isLeaving && "animate-in zoom-in-50 fade-in-0 duration-700 ease-out",
           isLeaving && "animate-out zoom-out-95 duration-300 fill-mode-forwards"
         )}
       >
-        <RubiksCube cubieSize={40} solved={isDone} />
+        <Typewriter scale={1.6} />
       </div>
 
+      {/* Both states live in the same grid cell, which is what makes the landing a
+          cross-fade rather than a cut: the working copy has to still be there to fade
+          *out* of. Stacking them also fixes the height — the block keeps the taller
+          state's height throughout, so nothing under it jumps at the moment of the
+          handover. Each is hidden from assistive tech while it is the one fading. */}
       <div
         className={cn(
-          "max-w-sm text-center",
+          "grid max-w-sm place-items-center text-center",
           !isLeaving &&
             "animate-in fade-in-0 slide-in-from-bottom-2 duration-500",
           isLeaving && "animate-out fade-out-0 duration-200 fill-mode-forwards"
         )}
       >
-        {isDone ? <Landed questionCount={questionCount} /> : <Working mode={mode} seconds={seconds} />}
+        <div
+          aria-hidden={isDone}
+          className={cn(
+            "col-start-1 row-start-1 transition-all duration-300 ease-in",
+            isDone && "pointer-events-none -translate-x-8 opacity-0"
+          )}
+        >
+          <Working mode={mode} seconds={seconds} />
+        </div>
+
+        {/* One line, and the only green on the screen. No tick beside it: a word that
+            says the thing does not need a symbol that says it again, and the colour is
+            already carrying the "good news" half. It says *ready for review* rather than
+            "created" or "saved", because nothing has been — the reply is parsed in the
+            browser and the review step is where the user accepts it. A success message
+            that claimed a saved quiz would be the one lie on a screen whose whole job is
+            to report what just happened.
+
+            The two slide sideways rather than fading in place: the working copy leaves to
+            the left and this arrives from the right, which is a carriage return — the one
+            gesture the machine above it makes, and the reason the pair reads as one
+            movement instead of two dissolves. Delayed by the length of the exit, so it
+            arrives into the space the other has left rather than crossing it on the way. */}
+        <p
+          aria-hidden={!isDone}
+          className={cn(
+            "col-start-1 row-start-1 font-quiz text-lg font-semibold tracking-wide text-quiz-success transition-all duration-500 ease-out sm:text-xl",
+            isDone
+              ? "translate-x-0 opacity-100 delay-200"
+              : "translate-x-10 opacity-0"
+          )}
+        >
+          {questionCount === undefined
+            ? "Your quiz is ready for review"
+            : `${questionCount} question${questionCount === 1 ? "" : "s"} ready for review`}
+        </p>
       </div>
     </div>
   );
@@ -143,16 +188,34 @@ const Working = ({
   seconds: number;
 }) => {
   const step = stepFor(seconds);
+  const heading =
+    mode === "Source" ? "Reading your material" : "Writing your questions";
+
   return (
     <>
-      <h2 className="text-lg font-semibold text-foreground">
-        {mode === "Source" ? "Reading your material" : "Writing your questions"}
-      </h2>
+      {/* The app's own wait signature, borrowed for its one set-piece: the same
+          letter-by-letter wave every `LoadingWave` in the product runs. A static heading
+          over a moving typewriter had the animation doing all the work of saying "still
+          going"; now the sentence is alive too, which is what the rest of the app does.
+
+          Stepped down a size from the default `md`, because this is a 22-character
+          sentence rather than the word "LOADING" and 0.2em of tracking adds up fast — at
+          `text-xl` it runs out of a 360px screen (docs/RESPONSIVE.md).
+
+          The heading is repeated for screen readers: `LoadingWave` splits the text into
+          per-character spans and hides them, announcing only "Loading". */}
+      <LoadingWave
+        text={heading}
+        className="text-base tracking-[0.12em] sm:text-lg"
+      />
+      <h2 className="sr-only">{heading}</h2>
       {/* Keyed so the line re-enters rather than swapping in place — the change
-          is the information, and a silent text replacement reads as a glitch. */}
+          is the information, and a silent text replacement reads as a glitch. It enters
+          from the right like everything else on this layer: one direction of travel for
+          the whole set-piece, matching the carriage above. */}
       <p
         key={step.label}
-        className="mt-2 animate-in fade-in-0 slide-in-from-bottom-1 text-sm text-muted-foreground"
+        className="mt-2 animate-in fade-in-0 slide-in-from-right-3 text-sm text-muted-foreground"
       >
         {step.label}
       </p>
@@ -163,25 +226,3 @@ const Working = ({
   );
 };
 
-const Landed = ({ questionCount }: { questionCount?: number }) => (
-  <>
-    <span className="mx-auto mb-3 flex h-9 w-9 animate-in zoom-in-50 items-center justify-center rounded-full bg-primary/15 text-primary duration-300">
-      <Check className="h-5 w-5" />
-    </span>
-    {/* "Questions", not "quiz created". Nothing has been created — the reply is
-        parsed in the browser and the review step is where the user accepts it. A
-        success message that claims a saved quiz would be the one lie on a screen
-        whose whole job is to say what just happened. */}
-    <h2 className="text-lg font-semibold text-foreground">
-      Your questions are ready
-    </h2>
-    <p className="mt-2 text-sm text-muted-foreground">
-      {questionCount === undefined
-        ? "They're in — bringing them up."
-        : `${questionCount} question${questionCount === 1 ? "" : "s"} drafted.`}
-    </p>
-    <p className="mt-4 text-xs text-muted-foreground/80">
-      Nothing is saved yet — you review everything first.
-    </p>
-  </>
-);

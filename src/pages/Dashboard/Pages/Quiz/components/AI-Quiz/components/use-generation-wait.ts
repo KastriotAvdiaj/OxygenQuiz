@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 
 /**
- * The floor on the cube. A generation that comes back unusually fast still holds
- * here, so the set-piece is never a flash — and with the beats below the overlay
- * is on screen for at least 5.3s whatever happens.
+ * The floor on the typewriter. A generation that comes back unusually fast still
+ * holds here, so the set-piece is never a flash — and with the beats below the
+ * overlay is on screen for at least 5.3s whatever happens.
  *
  * It is a floor, not a delay. Real generations run 10-40s
  * (docs/quiz/ai-quiz-generation-flow.md), so on the normal path this expires long
@@ -46,6 +46,12 @@ export type GenerationPhase =
  * <b>Nothing can strand it.</b> If the request settles without either flag — a state
  * the container shouldn't be able to produce — the machine still leaves rather than
  * parking a full-screen layer over the app forever.
+ *
+ * <b>The phases are load-bearing beyond this file.</b> The view reads them to decide
+ * when a result may take the screen (`resultsMayShow` in ai-quiz-wizard-view.tsx), so
+ * `succeeded` is not merely a caption change — it is the beat during which the next
+ * screen is deliberately not built yet. Shortening or removing a phase here changes
+ * the handoff there.
  *
  * Presentation timing, not generation state, which is why it lives beside the overlay
  * and takes flags the view already has. A story can bypass it and pass a phase.

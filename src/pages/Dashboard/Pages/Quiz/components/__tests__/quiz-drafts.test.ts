@@ -101,9 +101,33 @@ describe("is an AI quiz draft worth keeping", () => {
     expect(isAiQuizDraftWorthKeeping(untouchedAiDraft())).toBe(false);
   });
 
-  it("says yes to a typed topic", () => {
+  // The AI slots are for what a generation cost, not for what was typed to ask for it. A
+  // topic abandoned after one word used to bring the restore banner back on the next visit,
+  // over a form pre-filled with something the user had already walked away from.
+  it("says no to a typed topic with no reply behind it", () => {
     expect(
       isAiQuizDraftWorthKeeping({ ...untouchedAiDraft(), topic: "Photosynthesis" }),
+    ).toBe(false);
+  });
+
+  it("says no to Advanced options on their own", () => {
+    expect(
+      isAiQuizDraftWorthKeeping({
+        ...untouchedAiDraft(),
+        title: "Plants",
+        categoryId: 3,
+        extraInstructions: "keep it exam-style",
+      }),
+    ).toBe(false);
+  });
+
+  it("keeps the typing once there is a generation to keep it with", () => {
+    expect(
+      isAiQuizDraftWorthKeeping({
+        ...untouchedAiDraft(),
+        topic: "Photosynthesis",
+        payload: '{"questions":[]}',
+      }),
     ).toBe(true);
   });
 

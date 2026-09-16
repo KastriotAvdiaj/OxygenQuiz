@@ -9,7 +9,6 @@ import { AiGenerateError } from "../../api/generate-ai-quiz";
 import {
   SOURCE_MATERIAL,
   categories,
-  difficulties,
   languages,
   parse,
 } from "./__fixtures__/ai-quiz.fixtures";
@@ -214,18 +213,6 @@ const meta = {
   parameters: { layout: "fullscreen" },
   decorators: [
     (Story) => {
-      // `ImportSummary` reads a "don't show again" flag from localStorage on mount, so without
-      // this a developer who dismissed the notice once would see every review-handoff story
-      // below render its collapsed row instead of the banner — a story silently showing a
-      // different state than its name claims. Storybook usually gets its own origin and so its
-      // own storage, but "usually" is not what a fixture should rest on.
-      try {
-        localStorage.removeItem("oxygenquiz:ai-import-notice:v1");
-      } catch {
-        // Storage unavailable: the component falls back to showing the notice, which is the
-        // state these stories want anyway.
-      }
-
       const queryClient = new QueryClient({
         defaultOptions: { queries: { retry: false, enabled: false } },
       });
@@ -240,7 +227,6 @@ const meta = {
   ],
   args: {
     categories,
-    difficulties,
     languages,
     isLoadingEntities: false,
     quizzesPath: "/dashboard/quizzes",
@@ -248,11 +234,6 @@ const meta = {
     mode: "Topic",
     topic: "",
     sourceData: "",
-    title: "",
-    description: "",
-    categoryId: null,
-    languageId: null,
-    difficultyId: null,
     questionCount: DEFAULT_QUESTION_COUNT,
     // Mirrors the container's initial state: multiple choice only.
     allowedTypes: [QuestionType.MultipleChoice],
@@ -261,16 +242,15 @@ const meta = {
     generateError: null,
     quota: quotaAvailable,
     needsConfirmation: false,
+    effectiveCategoryId: null,
+    effectiveLanguageId: null,
     suggestedCategoryName: null,
     suggestedLanguageName: null,
     parseResult: null,
     onTopicChange: fn(),
     onSourceDataChange: fn(),
-    onTitleChange: fn(),
-    onDescriptionChange: fn(),
     onCategoryIdChange: fn(),
     onLanguageIdChange: fn(),
-    onDifficultyIdChange: fn(),
     onQuestionCountChange: fn(),
     onToggleType: fn(),
     onExtraInstructionsChange: fn(),
@@ -296,14 +276,14 @@ export const TopicEntered: Story = {
  * Every optional field filled in. There is no drawer to open any more — the details form is
  * part of the screen — so this story is just the filled state of the page, and the old
  * `AdvancedDrawerOpen` twin that clicked the trigger went with the drawer.
+ *
+ * Fewer fields than it once had: title, description and the Classification group left the
+ * wizard entirely, because the builder on the next screen owns all five. See
+ * `AdvancedOptions`.
  */
 export const AdvancedOverridden: Story = {
   args: {
     topic: "The French Revolution",
-    title: "Revolution: the short version",
-    categoryId: 2,
-    languageId: 1,
-    difficultyId: 3,
     questionCount: AI_QUESTION_LIMITS.maxGeneratedQuestions,
     // Two of the three types, so a ticked row sits next to an unticked one.
     allowedTypes: [QuestionType.MultipleChoice, QuestionType.TrueFalse],
@@ -317,8 +297,12 @@ export const NoTypesSelected: Story = {
 };
 
 /**
- * The wait. `isGenerating` raises `GeneratingOverlay` over the whole screen — the cube,
- * a status line paced off the clock, and a blurred form behind it.
+ * The wait. `isGenerating` raises `GeneratingOverlay` over the whole screen — the
+ * typewriter, a status line paced off the clock, and a blurred form behind it.
+
+ * What is *not* behind it is the result. The review screen used to mount as soon as the
+ * payload parsed, which was while this was still saying the model was writing; it now
+ * waits for the overlay to start leaving (`resultsMayShow`) and enters on its own.
  *
  * The overlay is deliberately not a Radix dialog: `LeavingMidGeneration` below opens a
  * real one on top of it, and that pair is the reason. This story is where you check the
@@ -531,7 +515,24 @@ export const NeedsCategoryConfirmation: Story = {
     topic: "The French Revolution",
     needsConfirmation: true,
     suggestedCategoryName: "European History",
-    languageId: 1,
+    // The model named a language we *do* have, so it resolved and is never asked about —
+    // even though the user picked nothing by hand (`languageId` stays null). This story
+    // used to set `languageId: 1` to get this render, which was the bug in miniature: the
+    // only way to see the right card was to pretend the user had chosen.
+    suggestedLanguageName: "English",
+    effectiveLanguageId: 1,
+  },
+  // The card asks for what is *missing*, not for everything it wasn't handed by hand. The
+  // language resolved, so it must not be asked for — and the user must certainly not be
+  // told that English "isn't one of your languages" while English sits in the dropdown.
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+
+    await expect(canvas.getByText("Select category")).toBeInTheDocument();
+    await expect(canvas.queryByText("Select language")).not.toBeInTheDocument();
+    await expect(
+      canvas.queryByText(/isn't one of your languages/i),
+    ).not.toBeInTheDocument();
   },
 };
 
@@ -541,6 +542,8 @@ export const NeedsCategoryAndLanguageConfirmation: Story = {
     needsConfirmation: true,
     suggestedCategoryName: "European History",
     suggestedLanguageName: "Shqip",
+    effectiveCategoryId: null,
+    effectiveLanguageId: null,
   },
 };
 
@@ -648,7 +651,6 @@ export const LoadingEntities: Story = {
 export const RestoredFromDraft: Story = {
   args: {
     topic: "The French Revolution",
-    title: "Revolution, in ten questions",
     restoredDraftSavedAt: Date.now() - 4 * 60 * 1000,
     onDiscardDraft: () => {},
   },

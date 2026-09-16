@@ -13,12 +13,22 @@ a draft is not a `Quiz` row.
 | Screen | Slot | Contents |
 |---|---|---|
 | Manual builder (`/quizzes/create-quiz`, `/quizzes/create`) | `quiz-create` | Quiz-level fields, plus every added question with its per-question settings |
-| AI wizard, generate path (`.../ai/topic`) | `quiz-ai-topic` | Topic, Advanced options, and **the model's reply** |
+| AI wizard, generate path (`.../ai/topic`) | `quiz-ai-topic` | **The model's reply**, and the topic and Advanced options that produced it |
 | AI wizard, bring-your-own (`.../ai/own`) | `quiz-ai-own` | The same, plus the reply pasted into the box before it has been imported |
 
 The AI reply — `payload` — is the reason the AI slots exist. The typing is cheap to redo; a
 generation is not. It came out of the user's quota, and losing it to a stray refresh makes them
 spend it twice for one quiz.
+
+**So a reply is also the only thing that starts an AI draft.** `isAiQuizDraftWorthKeeping`
+answers `true` for a `payload` or a `pastedReply` and for nothing else: the form travels *with*
+a reply, but never on its own. It used to answer `true` for any typed field, and the result was
+that a one-word topic entered and abandoned brought the whole restore apparatus back on the next
+visit — a banner, and a form pre-filled with something the user had already decided against.
+That reads as the app having saved work nobody asked it to save, which is the opposite of what
+the notice is for. The cost is real and worth stating: a long topic and a tuned set of Advanced
+options typed just before a crash are now lost. The manual builder is unchanged — it has no
+expensive artefact to anchor on, and typed questions *are* the work there.
 
 The two AI paths get **separate slots**, for the same reason `useAiQuizDraft` keeps nothing
 across the trip between them: they are two attempts, not one, and a topic typed on the generate

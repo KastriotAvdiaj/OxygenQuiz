@@ -7,7 +7,6 @@ import { Spinner } from "@/components/ui";
 import { cn } from "@/utils/cn";
 import type {
   QuestionCategory,
-  QuestionDifficulty,
   QuestionLanguage,
   QuestionType,
 } from "@/types/question-types";
@@ -29,7 +28,7 @@ import { useGenerationWait } from "./components/use-generation-wait";
 import { LeaveGenerationDialog } from "./components/leave-generation-dialog";
 import { GenerationInput } from "./components/generation-input";
 import { ImportNotices } from "./components/import-notices";
-import { ImportSummary } from "./components/import-summary";
+import { ImportNote } from "./components/import-note";
 import { QuotaNote } from "./components/quota-note";
 import { WizardButton } from "./components/wizard-button";
 
@@ -38,12 +37,11 @@ export {
   DEFAULT_AI_QUESTION_TYPES,
 } from "./components/question-type-options";
 export { ImportNotices } from "./components/import-notices";
-export { ImportSummary } from "./components/import-summary";
+export { ImportNote } from "./components/import-note";
 
 export interface AiQuizWizardViewProps {
   // ── Entity lookups (fetched by the container) ────────────────────────────────
   categories: QuestionCategory[];
-  difficulties: QuestionDifficulty[];
   languages: QuestionLanguage[];
   isLoadingEntities: boolean;
 
@@ -70,16 +68,13 @@ export interface AiQuizWizardViewProps {
   onSourceDataChange: (value: string) => void;
 
   // ── Advanced. All optional: null category/language means "let the AI suggest". ─
-  title: string;
-  onTitleChange: (value: string) => void;
-  description: string;
-  onDescriptionChange: (value: string) => void;
-  categoryId: number | null;
+  /**
+   * Category and language are no longer asked for *before* generating — the form that used
+   * to has gone (see `AdvancedOptions`). These two remain because `ConfirmDetailsCard` sets
+   * them afterwards, when the model's own proposal didn't resolve.
+   */
   onCategoryIdChange: (id: number) => void;
-  languageId: number | null;
   onLanguageIdChange: (id: number) => void;
-  difficultyId: number | null;
-  onDifficultyIdChange: (id: number) => void;
   questionCount: number;
   onQuestionCountChange: (value: number) => void;
   allowedTypes: QuestionType[];
@@ -97,6 +92,15 @@ export interface AiQuizWizardViewProps {
 
   /** Questions arrived, but a category or language still needs picking before review. */
   needsConfirmation: boolean;
+  /**
+   * What the quiz will be saved with once the model's suggestions have been resolved — the
+   * user's pick, or the resolved suggestion, or null when neither produced anything. The
+   * confirmation card asks for exactly the fields that are null here; `categoryId` /
+   * `languageId` above stay the raw picks, because the Advanced form must keep showing the
+   * user their own choice and nothing else.
+   */
+  effectiveCategoryId: number | null;
+  effectiveLanguageId: number | null;
   suggestedCategoryName: string | null;
   suggestedLanguageName: string | null;
   onStartOver: () => void;
@@ -158,7 +162,6 @@ export interface AiQuizWizardViewProps {
  */
 export const AiQuizWizardView = ({
   categories,
-  difficulties,
   languages,
   isLoadingEntities,
   quizzesPath,
@@ -168,16 +171,8 @@ export const AiQuizWizardView = ({
   onTopicChange,
   sourceData,
   onSourceDataChange,
-  title,
-  onTitleChange,
-  description,
-  onDescriptionChange,
-  categoryId,
   onCategoryIdChange,
-  languageId,
   onLanguageIdChange,
-  difficultyId,
-  onDifficultyIdChange,
   questionCount,
   onQuestionCountChange,
   allowedTypes,
@@ -189,6 +184,8 @@ export const AiQuizWizardView = ({
   generateError,
   quota,
   needsConfirmation,
+  effectiveCategoryId,
+  effectiveLanguageId,
   suggestedCategoryName,
   suggestedLanguageName,
   onStartOver,
@@ -302,6 +299,31 @@ export const AiQuizWizardView = ({
     />
   ) : null;
 
+  /**
+   * Whether a result is allowed to take the screen yet.
+   *
+   * <b>The bug this closes.</b> `parseResult.ok` flips the moment the payload parses,
+   * which is while the overlay is still saying the model is writing. The review screen
+   * was therefore built, mounted and sitting there for the whole of the success beat,
+   * and the overlay's fade was not a transition to it — it was a curtain coming off
+   * something that had already happened. Anything the builder did on mount happened
+   * under a screen claiming the work was still in progress.
+   *
+   * So the two are sequenced rather than crossfaded: the overlay keeps the screen while
+   * it is working and while it says the questions are ready, and the result arrives on
+   * `leaving` — inside the 300ms fade, which is enough for the builder to mount and
+   * paint, so the reveal is never a blank frame — with an entrance of its own.
+   *
+   * `aborting` and `null` are both "the overlay is not claiming anything", so results
+   * show immediately: on a failure what is behind is the form and its error panel, and
+   * holding *that* back would be the same mistake pointing the other way.
+   */
+  const resultsMayShow =
+    generationPhase !== "generating" && generationPhase !== "succeeded";
+
+  /** The entrance every post-generation screen shares, so they arrive the same way. */
+  const arriving = "animate-in fade-in-0 slide-in-from-bottom-3 duration-500 ease-out";
+
   const leaveDialog = (
     <LeaveGenerationDialog
       isOpen={showLeaveDialog}
@@ -324,24 +346,26 @@ export const AiQuizWizardView = ({
   // ── Screen 2: parsing succeeded, so drop the user into the real quiz builder with
   // everything prefilled. They get inline editing, validation and the normal submit path,
   // and nothing is saved until they act.
-  if (parseResult?.ok) {
+  if (parseResult?.ok && resultsMayShow) {
     return (
-      <div className="flex flex-col gap-3 lg:h-full lg:min-h-0">
+      <div className={cn("flex flex-col gap-3 lg:h-full lg:min-h-0", arriving)}>
+        {/* Named, because on this screen it is the only thing that explains where a set
+            of questions nobody remembers making came from. Unnamed it reads as a claim
+            about the quiz — next to a banner that says nothing is saved yet, "saved 5
+            minutes ago" is the worst sentence on the page. Reaching this screen by
+            generating does not show it at all: `setPayload` retires the notice. */}
         {restoredDraftSavedAt != null && onDiscardDraft && (
           <RestoredDraftNotice
             savedAt={restoredDraftSavedAt}
             onDiscard={onDiscardDraft}
+            summary="your drafted questions, from an earlier visit"
           />
         )}
-        {/* Exceptions first: the count in ImportSummary already reflects what survived, so
-            "four were skipped" is the thing that needs reading, and it is the one banner here
-            the user cannot have switched off. */}
+        {/* Exceptions first, and they are the only thing here that gets a box: "four were
+            skipped" is what needs reading, and it is the one message on this screen the user
+            cannot switch off. `ImportNote` under it is a single muted line. */}
         <ImportNotices result={parseResult} />
-        <ImportSummary
-          result={parseResult}
-          isFromTopic={mode === "Topic"}
-          onStartOver={onStartOver}
-        />
+        <ImportNote isFromTopic={mode === "Topic"} onStartOver={onStartOver} />
         <div className="flex-1 min-h-0">{builderSlot}</div>
         {leaveDialog}
         {generatingOverlay}
@@ -399,18 +423,20 @@ export const AiQuizWizardView = ({
       {/* Questions arrived but we can't place them yet. Shown *instead of* the topic box, so
           the user finishes the one thing standing between them and the review step rather
           than being invited to generate again. */}
-      {needsConfirmation ? (
-        <ConfirmDetailsCard
-          categories={categories}
-          languages={languages}
-          categoryId={categoryId}
-          onCategoryIdChange={onCategoryIdChange}
-          languageId={languageId}
-          onLanguageIdChange={onLanguageIdChange}
-          suggestedCategoryName={suggestedCategoryName}
-          suggestedLanguageName={suggestedLanguageName}
-          onStartOver={onStartOver}
-        />
+      {needsConfirmation && resultsMayShow ? (
+        <div className={arriving}>
+          <ConfirmDetailsCard
+            categories={categories}
+            languages={languages}
+            effectiveCategoryId={effectiveCategoryId}
+            onCategoryIdChange={onCategoryIdChange}
+            effectiveLanguageId={effectiveLanguageId}
+            onLanguageIdChange={onLanguageIdChange}
+            suggestedCategoryName={suggestedCategoryName}
+            suggestedLanguageName={suggestedLanguageName}
+            onStartOver={onStartOver}
+          />
+        </div>
       ) : (
         // No CardHeader: it existed to hold the mode tabs, and the tinted strip left behind
         // after they moved to the method dialog was a band of colour heading nothing. What
@@ -436,19 +462,6 @@ export const AiQuizWizardView = ({
             </div>
 
             <AdvancedOptions
-              categories={categories}
-              difficulties={difficulties}
-              languages={languages}
-              title={title}
-              onTitleChange={onTitleChange}
-              description={description}
-              onDescriptionChange={onDescriptionChange}
-              categoryId={categoryId}
-              onCategoryIdChange={onCategoryIdChange}
-              languageId={languageId}
-              onLanguageIdChange={onLanguageIdChange}
-              difficultyId={difficultyId}
-              onDifficultyIdChange={onDifficultyIdChange}
               questionCount={questionCount}
               onQuestionCountChange={onQuestionCountChange}
               allowedTypes={allowedTypes}
@@ -540,13 +553,10 @@ export const AiQuizWizardView = ({
               </WizardButton>
             </div>
 
-            {/* No progress bar until slice 2.2 streams one, so the least we can do is say
-                how long "a while" is and that leaving kills it. */}
-            {isGenerating && (
-              <p className="text-muted-foreground text-xs text-center">
-                This usually takes 10–30 seconds. Keep this tab open.
-              </p>
-            )}
+            {/* No "this takes 10-30 seconds" line here any more. It only rendered while
+                `isGenerating`, which is exactly when `GeneratingOverlay` is covering this
+                card — so it was written for a reader who could not see it. The overlay
+                carries the same sentence, where it is actually on top. */}
 
           </CardContent>
         </Card>

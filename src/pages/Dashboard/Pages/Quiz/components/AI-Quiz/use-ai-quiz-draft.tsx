@@ -160,7 +160,25 @@ export const useAiQuizDraft = () => {
    * only on the generate path, so a pasted reply carrying all three still demanded them by
    * hand. See docs/quiz/ai-quiz-generation-flow.md §1a.
    */
-  const [payload, setPayload] = useState<string | null>(draft?.payload ?? null);
+  const [payload, setStoredPayload] = useState<string | null>(
+    draft?.payload ?? null,
+  );
+
+  /**
+   * Replacing the reply also retires the "picked up where you left off" notice, because
+   * the work that notice describes has just been thrown away.
+   *
+   * Every path that produces or clears a reply goes through here — generate (which nulls
+   * it on the way in), the paste importer, Start over — so the notice cannot outlive its
+   * subject. It used to: the flag was set once on mount and cleared only by "Start
+   * fresh", so a restored draft you immediately regenerated left the banner sitting over
+   * a set of questions it had nothing to do with, still offering to bring back work that
+   * no longer existed.
+   */
+  const setPayload = (next: string | null) => {
+    setStoredPayload(next);
+    setRestoredAt(null);
+  };
 
   const { categories, difficulties, languages } = queryData;
 
@@ -483,6 +501,14 @@ export const useAiQuizDraft = () => {
     resetPayload: () => setPayload(null),
     parseResult,
     needsConfirmation,
+    /**
+     * What the quiz will actually be saved with, once the user's pick and the model's
+     * resolved suggestion have been folded together. The confirmation card asks for the
+     * fields that are null here — it cannot use `categoryId` / `languageId` above, which are
+     * null whenever the user simply left the field to the model, resolved or not.
+     */
+    effectiveCategoryId,
+    effectiveLanguageId,
     suggestedCategoryName: suggestions?.category ?? null,
     suggestedLanguageName: suggestions?.language ?? null,
     builderSlot,

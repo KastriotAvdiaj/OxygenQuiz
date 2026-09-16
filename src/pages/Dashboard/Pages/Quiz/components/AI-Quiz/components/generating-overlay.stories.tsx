@@ -18,7 +18,7 @@ import { GeneratingOverlay } from "./generating-overlay";
  * stacking is why this is a plain fixed layer at z-40 rather than a second Radix dialog.
  *
  * <b>Not the app's loader.</b> Every ordinary wait is `LoadingWave`. This is a set-piece
- * for the one action that is slow, metered and uncancellable — see `RubiksCube` for why
+ * for the one action that is slow, metered and uncancellable — see `Typewriter` for why
  * that exception was made and why it should stay at one.
  */
 const withMockedWizard: Decorator = (Story) => (
@@ -65,8 +65,10 @@ export const SourceMaterial: Story = {
 };
 
 /**
- * The questions landed. The cube pops and spins faster, the copy turns over, and
- * `useGenerationWait` holds this for 1.4s before the layer fades off the review step.
+ * The questions landed. The typing stops where it stands, the copy turns over, and
+ * `useGenerationWait` holds this for 1.4s — *then* the layer fades and the review step
+ * arrives behind it. The review screen is not built until this beat is over: see
+ * `resultsMayShow` in ai-quiz-wizard-view.tsx.
  *
  * Read the copy carefully: it says questions, not a saved quiz, because nothing has
  * been saved. The reply is parsed in the browser and the review step is where the user

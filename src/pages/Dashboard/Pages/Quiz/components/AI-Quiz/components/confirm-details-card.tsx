@@ -10,9 +10,21 @@ import { isUnspecifiedLookup } from "../../../../Question/Entities/lookup-visibi
 export interface ConfirmDetailsCardProps {
   categories: QuestionCategory[];
   languages: QuestionLanguage[];
-  categoryId: number | null;
+  /**
+   * The category the quiz will actually be saved with: the user's own pick when they made
+   * one, otherwise the model's suggestion *after* it resolved against the real table. `null`
+   * means nothing resolved, which is the only reason to ask for it.
+   *
+   * Deliberately **not** the user's raw pick. That is null whenever they left the field
+   * alone — including when the model's suggestion matched perfectly — so a card opened
+   * because the *category* was unmatched also asked for a language that was never in doubt,
+   * and told the user their own language "isn't one of your languages". Picking the category
+   * then jumped straight to review, because nothing was missing in the first place.
+   */
+  effectiveCategoryId: number | null;
   onCategoryIdChange: (id: number) => void;
-  languageId: number | null;
+  /** As `effectiveCategoryId`, for the language. */
+  effectiveLanguageId: number | null;
   onLanguageIdChange: (id: number) => void;
   /** What the model said, so the user can see why it didn't stick. */
   suggestedCategoryName: string | null;
@@ -30,6 +42,9 @@ export interface ConfirmDetailsCardProps {
  * go straight to review. Naming the AI's rejected suggestion matters too: without it the
  * user is asked to fix something with no explanation of what went wrong.
  *
+ * Each field is asked for on its own: the card is shown when *something* couldn't be placed,
+ * which is rarely everything. See `effectiveCategoryId` for the distinction that decides it.
+ *
  * The two rejections need different words. "Unspecified" *is* one of your categories, so
  * telling the user it isn't would be a plain lie about their own data — it was refused for
  * being a placeholder, not for being unknown.
@@ -37,9 +52,9 @@ export interface ConfirmDetailsCardProps {
 export const ConfirmDetailsCard = ({
   categories,
   languages,
-  categoryId,
+  effectiveCategoryId,
   onCategoryIdChange,
-  languageId,
+  effectiveLanguageId,
   onLanguageIdChange,
   suggestedCategoryName,
   suggestedLanguageName,
@@ -52,12 +67,16 @@ export const ConfirmDetailsCard = ({
         Your questions are ready. We just need one or two details the AI couldn't match.
       </p>
     </CardHeader>
+    {/* `form`, the same field the builder's Filters panel uses. It is the same question
+        asked one screen earlier, so it should not be a different-looking control — and
+        `minimal` here meant the first select a user ever saw for their category looked
+        like nothing else in the quiz tooling. */}
     <CardContent className="space-y-4 pt-4">
-      {categoryId === null && (
+      {effectiveCategoryId === null && (
         <div>
           <CategorySelect
             categories={categories}
-            fieldVariant="minimal"
+            fieldVariant="form"
             value=""
             onChange={(v: string) => onCategoryIdChange(parseInt(v, 10))}
             includeAllOption={false}
@@ -72,11 +91,11 @@ export const ConfirmDetailsCard = ({
         </div>
       )}
 
-      {languageId === null && (
+      {effectiveLanguageId === null && (
         <div>
           <LanguageSelect
             languages={languages}
-            fieldVariant="minimal"
+            fieldVariant="form"
             value=""
             onChange={(v: string) => onLanguageIdChange(parseInt(v, 10))}
             includeAllOption={false}

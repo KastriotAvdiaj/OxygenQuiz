@@ -212,6 +212,14 @@ These are the properties that make the feature safe. Every change should preserv
 > split out rather than inheriting it — otherwise a user tired of the status message would have
 > silently opted out of being told that four of their ten questions never made it. See
 > [`../adr/0005-the-import-report-is-not-a-notice-you-can-turn-off.md`](../adr/0005-the-import-report-is-not-a-notice-you-can-turn-off.md).
+>
+> On **2026-09-16** the other half of that split shrank to a single muted line (`ImportNote`,
+> formerly `ImportSummary`) and lost the status count, both dismissals and the `localStorage` key
+> with them. That does not weaken the sentence above — it is strictly more conservative, since
+> the only opt-out on the screen is now gone entirely — but it does mean ADR 0005's description
+> of `ImportSummary` "gaining both dismissals" describes a component that no longer exists under
+> that name. The decision it was protecting is untouched: the exception report is still its own
+> component, still renders only when something happened, and still cannot be turned off.
 
 
 | Failure | Where caught | Behaviour |

@@ -86,7 +86,6 @@ export const AiQuizWizard = () => {
   return (
     <AiQuizWizardView
       categories={draft.categories}
-      difficulties={draft.difficulties}
       languages={draft.languages}
       isLoadingEntities={draft.isLoadingEntities}
       quizzesPath={draft.paths.quizzes}
@@ -96,16 +95,8 @@ export const AiQuizWizard = () => {
       onTopicChange={draft.setTopic}
       sourceData={draft.sourceData}
       onSourceDataChange={draft.setSourceData}
-      title={draft.title}
-      onTitleChange={draft.setTitle}
-      description={draft.description}
-      onDescriptionChange={draft.setDescription}
-      categoryId={draft.categoryId}
       onCategoryIdChange={draft.setCategoryId}
-      languageId={draft.languageId}
       onLanguageIdChange={draft.setLanguageId}
-      difficultyId={draft.difficultyId}
-      onDifficultyIdChange={draft.setDifficultyId}
       questionCount={draft.questionCount}
       onQuestionCountChange={draft.setQuestionCount}
       allowedTypes={draft.allowedTypes}
@@ -117,6 +108,8 @@ export const AiQuizWizard = () => {
       generateError={generateError}
       quota={quotaQuery.data ?? null}
       needsConfirmation={draft.needsConfirmation}
+      effectiveCategoryId={draft.effectiveCategoryId}
+      effectiveLanguageId={draft.effectiveLanguageId}
       suggestedCategoryName={draft.suggestedCategoryName}
       suggestedLanguageName={draft.suggestedLanguageName}
       onStartOver={handleStartOver}

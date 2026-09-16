@@ -52,21 +52,27 @@ lands **pre-filled in the review step**, where the human confirms or changes it:
 | Title | Model suggests it. Free text — nothing to resolve. |
 | Category | Model picks from the category **names** we send. Unmatched → blank. |
 | Language | Model picks from the language **names** we send, normally matching the language the topic was typed in, and writes the questions in it. |
-| Difficulty, count, types | Defaults, shown in the details form under the topic box. |
+| Difficulty | The median-weighted rating. Not asked for at all; changed in the builder. |
+| Count, types, extra instructions | Defaults, shown in the details form under the topic box. |
 
-The details form is **visible, not hidden**. It has been an inline accordion, a centred dialog
+**The wizard asks for what the model needs, and nothing the builder already owns.** Title,
+description, category, language and difficulty were all fields on this form until 2026-09-16,
+and every one of them was a second ask: the builder shows all five, filled in, on the very next
+screen — so the wizard was collecting them once with no questions on screen to judge by, and
+again with them. What is left is the topic, how many questions, which types, and any extra
+steer. See [ADR 0014](../adr/0014-the-wizard-asks-for-the-brief-not-the-quiz.md) for why that
+does not reopen the hidden-defaults problem ADR 0001 was written about.
+
+What remains is **visible, not hidden**. The form has been an inline accordion, a centred dialog
 and a right-hand drawer, and every version traded one problem for another: the accordion
 tripled the height of the wizard's one screen and pushed Generate out of view, and the overlays
 fixed that by concealing their own contents — which is why the trigger had to grow a "3 set"
-badge, and why a user who never opened it never learned the knobs existed.
-
-What resolves it is layout, not disclosure. The fields sit in a `md:grid-cols-2` grid — what the
-quiz *is* on the left (title, description, classification), what the AI should *make* on the
-right (count, types, extra instructions) — which keeps the whole card roughly one viewport tall
-with Generate still on screen, and collapses to a single column below `md`. Only the topic
-carries a "Recommended" mark; the section header states once that everything under it is
-optional, so no field repeats "(optional)" in its own label. Fields write straight through —
-no draft state to apply or cancel, since everything is confirmed again at review.
+badge, and why a user who never opened it never learned the knobs existed. That is settled by
+layout, not disclosure — and with three controls left it is a single column; the
+`md:grid-cols-2` split went with the column it was balancing. Only the topic carries a
+"Recommended" mark; the section header states once that everything under it is optional, so no
+field repeats "(optional)" in its own label. Fields write straight through — no draft state to
+apply or cancel, since everything is confirmed again at review.
 
 This changes a rule the original design stated flatly — *"Do NOT output a category or a language"*
 — so it is worth being precise about what moved and what did not.
@@ -77,11 +83,12 @@ category and language, the prompt still forbids per-question classification, and
 matched case-insensitively against the list we supplied and discarded if it doesn't match.
 No id crosses the API in either direction.
 
-**Changed.** The *quiz's* category and language may now be **suggested** by the model. The
+**Changed.** The *quiz's* category and language are now **always suggested** by the model. The
 original rule existed to stop the AI determining classification; what it accidentally also
 enforced was that the human express their choice through a dropdown *before* generating. Those
 are different things. Confirming a pre-filled value in a review step the user already passes
-through is the same decision, made at a better moment.
+through is the same decision, made at a better moment — and once that argument is accepted, the
+dropdown before generating has nothing left to do, which is what eventually removed it.
 
 **Why that's still safe.** Three independent gates survive: the model can only name things that
 exist, the server re-checks the name against what it sent, and `CreateAiQuizAsync` validates the
@@ -110,7 +117,7 @@ worst case is a wrong-but-real category on a Draft quiz that a human is looking 
 | Wizard view | `AI-Quiz/ai-quiz-wizard-view.tsx` | **Composition only.** The three screens (§3b) and which component renders in each. |
 | Shared draft | `AI-Quiz/use-ai-quiz-draft.tsx` | Everything both AI paths share: lookups, request state, reply → parse → builder handoff. |
 | Own-AI path | `AI-Quiz/own-ai-quiz.tsx` + `own-ai-quiz-view.tsx` | Copy the prompt out, paste the reply back. Its own route — [`ai-quiz-two-paths.md`](./ai-quiz-two-paths.md). |
-| View pieces | `AI-Quiz/components/*.tsx` | One block each: `generation-input`, `advanced-options`, `quota-note`, `generate-error-panel`, `confirm-details-card`, `import-summary`, `question-type-options`, `question-count-stepper`. |
+| View pieces | `AI-Quiz/components/*.tsx` | One block each: `generation-input`, `advanced-options`, `quota-note`, `generate-error-panel`, `confirm-details-card`, `import-note`, `question-type-options`, `question-count-stepper`. |
 | Limits | `AI-Quiz/prompt.ts` | Numbers only. The prompt text lives in C# (slice 2.1). |
 
 ---
@@ -350,6 +357,16 @@ edits mid-review. That memo is for correctness, not speed.
 good — the view shows an "Almost there" card asking only for the missing field, and says what the
 AI suggested and why it didn't match. Throwing away a valid generation over an unmatched name
 would be the wrong trade.
+
+> **"Only the missing field" means the `effective` id, not the user's pick.** `ConfirmDetailsCard`
+> decides what to ask for from `effectiveCategoryId` / `effectiveLanguageId`; the raw `categoryId` /
+> `languageId` are null whenever the user left the field to the model — *including* when the
+> model's suggestion resolved perfectly. Feeding the card the raw pick made it ask for both fields
+> whenever either one failed, and print *"The AI suggested 'English', which isn't one of your
+> languages"* over a dropdown with English in it. It looked like a resolution bug and wasn't:
+> picking the category alone went straight to review, because the language had resolved all along.
+> The raw pick still drives the Advanced form, which must show the user their own choice and
+> nothing else — the two values are not interchangeable and the prop names now say which is which.
 
 **Both paths converge — and *where* they converge is load-bearing.** They meet at a single
 `payload: string | null`, before any resolution happens. From there suggestions, ids, parsing
@@ -841,7 +858,7 @@ inside Cloudflare's 100s proxy timeout, but the user sees nothing until it finis
 slice 2.2 is for; until then, keep the cap where it is.
 
 `GeneratingOverlay` covers the wait as of 2026-09-10 — a blurred blocking layer over the
-wizard, with a cube and one line of status text — but be clear about what it is: those lines
+wizard, with a typewriter and one line of status text — but be clear about what it is: those lines
 are paced off a clock, not off anything the server said, because there is nothing to read. It
 makes the wait legible; it does not make it observable. When streaming lands, that copy is the
 first thing that should stop being a guess. `fail-slow` above is how to watch it, and
@@ -850,6 +867,16 @@ through `aborting`, which fades out on the working copy rather than claiming suc
 on the way to an error panel. A success instead gets a floor of 3.6s, a 1.4s beat on
 the questions landing, and a 0.3s fade: at least 5.3s of overlay, which on the normal
 10-40s path expires long before the model answers.
+
+The handoff is **sequenced, not crossfaded**, and that took a second pass to get right. `parseResult.ok`
+flips the instant the payload parses, so the review screen was mounted and sitting there for the whole
+of the success beat — the fade was not a transition to it, it was a curtain coming off something that
+had already happened, and whatever the builder did on mount happened under a screen still claiming the
+model was writing. `resultsMayShow` in `ai-quiz-wizard-view.tsx` now holds every post-generation screen
+(the review step *and* the one-field confirm card) until the overlay reaches `leaving`, which hands the
+builder the 300ms of the fade to mount and paint — enough that the reveal is never a blank frame — and
+gives it an entrance of its own. A failure is exempt: `aborting` shows results immediately, because
+what is behind a failure is the form and its error panel.
 
 **14. The cost model is flat; DeepSeek's pricing is not.** `EstimateCost` multiplies tokens by one
 rate per direction, which was true of every vendor when it was written. Since **2026-08-16**

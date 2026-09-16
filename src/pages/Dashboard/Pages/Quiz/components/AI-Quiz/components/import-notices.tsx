@@ -14,7 +14,7 @@ export interface ImportNoticesProps {
  * mode the import banner was built to prevent (docs/quiz/ai-quiz-architecture.md §6), and two
  * rows of that catalogue — "that question dropped w/ reason" and "falls back to quiz difficulty;
  * flagged in summary" — name this UI as the mechanism that makes it non-silent. It used to live
- * inside `ImportSummary` alongside the routine "Drafted 7 questions" line, which meant the
+ * inside the old `ImportSummary` banner alongside a routine "Drafted 7 questions" line, which meant the
  * obvious next request — let people stop seeing that line — would have taken this with it.
  *
  * So: **no dismiss, no "don't show again", no persistence.** A user cannot opt out of being told

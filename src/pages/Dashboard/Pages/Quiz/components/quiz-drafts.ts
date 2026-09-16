@@ -166,17 +166,22 @@ export const parseAiQuizDraft = (raw: unknown): AiQuizDraft | null => {
 };
 
 /**
- * As above: the defaults the wizard opens with — question count, the starting question types
- * — are not something the user typed, so on their own they are not worth restoring.
+ * **A model reply, and nothing else.** The wizard's whole form — topic, title, the Advanced
+ * options — is deliberately not evidence that anything is worth restoring.
+ *
+ * This is narrower than it was, and the narrowing is the point. The AI slots exist because a
+ * generation costs the user quota and cannot be re-run for free; typing a topic costs seconds.
+ * Keeping the typing too meant that a one-word topic entered and abandoned brought the whole
+ * restore apparatus back on the next visit — a banner, and a form pre-filled with something
+ * the user had already decided against. People read that as the app having saved their work
+ * without being asked, which is the opposite of what a restore notice is for.
+ *
+ * The cost of the narrowing, stated plainly: a long topic and a tuned set of Advanced options
+ * typed just before a crash are now gone. That is the trade — a notice that is always about
+ * something expensive, in exchange for a form that does not remember a word you typed once.
+ *
+ * `pastedReply` counts because it is a reply the user fetched from another app, which is the
+ * bring-your-own path's equivalent of spending the quota.
  */
 export const isAiQuizDraftWorthKeeping = (draft: AiQuizDraft): boolean =>
-  draft.payload !== null ||
-  hasText(draft.pastedReply) ||
-  hasText(draft.topic) ||
-  hasText(draft.sourceData) ||
-  hasText(draft.title) ||
-  hasText(draft.description) ||
-  hasText(draft.extraInstructions) ||
-  draft.categoryId !== null ||
-  draft.languageId !== null ||
-  draft.difficultyId !== null;
+  draft.payload !== null || hasText(draft.pastedReply);
