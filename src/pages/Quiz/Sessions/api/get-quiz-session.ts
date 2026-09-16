@@ -82,18 +82,31 @@ export const useGetGradingStatus = ({
 
 type UseGetSessionResultsOptions = {
   sessionId: string;
+  /**
+   * Hold the request — the results view uses it to fetch another player's session only once
+   * you ask for it.
+   *
+   * Its own option rather than something passed through `queryConfig`, matching
+   * `useGetGradingStatus` above. `QueryConfig<T>` is `Omit<ReturnType<T>, …>` and `ReturnType`
+   * of a fetcher is its *promise*, so the type resolves to a Promise with two keys removed:
+   * it accepts `{}` and rejects every real query option, `enabled` included. Fixing that
+   * properly means retyping it off `UseQueryOptions`, which several hooks currently lean on
+   * being wrong — a change with its own diff, not a rider on this one.
+   */
+  enabled?: boolean;
   queryConfig?: QueryConfig<typeof getSessionResults>;
 };
 
 export const useGetSessionResults = ({
   sessionId,
+  enabled = true,
   queryConfig,
 }: UseGetSessionResultsOptions) => {
   return useQuery({
     // Use a distinct queryKey to avoid cache conflicts with the original getQuizSession
     queryKey: ['quiz-session-results', sessionId],
     queryFn: () => getSessionResults({ sessionId }),
-    enabled: !!sessionId,
+    enabled: !!sessionId && enabled,
     ...queryConfig,
   });
 };

@@ -44,7 +44,7 @@ export function QuizResults({
   const isOwnSession = reviewedSessionId === session.id;
   const otherPlayerQuery = useGetSessionResults({
     sessionId: reviewedSessionId,
-    queryConfig: { enabled: !isOwnSession },
+    enabled: !isOwnSession,
   });
   const reviewedSession = isOwnSession ? session : otherPlayerQuery.data;
 
