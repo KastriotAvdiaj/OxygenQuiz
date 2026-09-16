@@ -1,3 +1,55 @@
+const plugin = require("tailwindcss/plugin");
+
+/**
+ * Publish every theme colour as a CSS variable on `:root` — `--color-red-400`,
+ * `--color-primary`, `--color-quiz-success`, and so on.
+ *
+ * Tailwind compiles classes from what it can read in source, so a colour chosen at *runtime*
+ * can never be a class: `bg-${hue}` produces nothing. Components that take a colour as a
+ * **value** rather than a class — `liftColor` on LiftedButton, the `--edge` custom property
+ * behind the mode cards and the quiz start modal — had only two ways out of that before this
+ * plugin: a raw hex sitting in the component, or a hand-kept map of hexes that drifts from the
+ * palette the moment either side changes. Declaring the scale once gives them something to
+ * point at.
+ *
+ * It reads `theme('colors')`, so it covers the app's own tokens as well as Tailwind's scale,
+ * and a colour added to the config above needs no second edit here. The naming matches
+ * Tailwind v4's own `--color-<name>-<shade>`, so this stops being custom code on the day we
+ * upgrade rather than becoming a thing to unpick.
+ *
+ * Cost is ~285 custom properties in the base layer — 8.5KB raw, ~2KB gzipped — paid once.
+ */
+const paletteVariables = plugin(({ addBase, theme }) => {
+  const variables = {};
+
+  const collect = (value, path) => {
+    // Only concrete strings become variables. A colour may also be a function (the
+    // `<alpha-value>` form Tailwind calls with an opacity), and that has no meaning
+    // outside the class it was written for.
+    if (typeof value === "string") {
+      variables[`--color-${path.join("-")}`] = value;
+      return;
+    }
+
+    if (value && typeof value === "object") {
+      for (const [key, nested] of Object.entries(value)) {
+        collect(nested, key === "DEFAULT" ? path : [...path, key]);
+      }
+    }
+  };
+
+  // Keywords, not colours: `currentColor` resolves against whichever element reads it, which
+  // is the opposite of what a caller naming a colour is asking for.
+  const KEYWORDS = ["inherit", "current", "transparent"];
+
+  for (const [name, value] of Object.entries(theme("colors"))) {
+    if (KEYWORDS.includes(name)) continue;
+    collect(value, [name]);
+  }
+
+  addBase({ ":root": variables });
+});
+
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   darkMode: ["class"],
@@ -136,5 +188,5 @@ module.exports = {
   		}
   	}
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [require("tailwindcss-animate"), paletteVariables],
 };

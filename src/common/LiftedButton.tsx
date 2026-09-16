@@ -27,19 +27,89 @@ export const LIFT_COLOR_TOKENS = [
 
 export type LiftColorToken = (typeof LIFT_COLOR_TOKENS)[number];
 
+type PaletteHue =
+  | "slate"
+  | "gray"
+  | "zinc"
+  | "neutral"
+  | "stone"
+  | "red"
+  | "orange"
+  | "amber"
+  | "yellow"
+  | "lime"
+  | "green"
+  | "emerald"
+  | "teal"
+  | "cyan"
+  | "sky"
+  | "blue"
+  | "indigo"
+  | "violet"
+  | "purple"
+  | "fuchsia"
+  | "pink"
+  | "rose";
+
+type PaletteShade =
+  | 50
+  | 100
+  | 200
+  | 300
+  | 400
+  | 500
+  | 600
+  | 700
+  | 800
+  | 900
+  | 950;
+
+/**
+ * An entry on Tailwind's colour scale, written the way the class is — "red-400",
+ * "emerald-600". Spelled out as a union rather than `${string}-${number}` so the editor
+ * completes it and a typo is a compile error instead of a colour that silently never arrives.
+ */
+export type TailwindPaletteColor = `${PaletteHue}-${PaletteShade}`;
+
+/**
+ * Matches a palette entry by *shape*, so the resolver can tell "red-400" from a CSS keyword.
+ * The shade is required: bare "red" is a valid CSS colour and has to pass through untouched,
+ * as does "rebeccapurple".
+ */
+const PALETTE_ENTRY = /^[a-z]+-(?:50|950|[1-9]00)$/;
+
 /**
  * Resolve a `liftColor` prop to a concrete CSS color:
  * - a known theme token (e.g. "primary", "foreground") → `hsl(var(--token))`
+ * - a Tailwind palette entry ("red-400") → `var(--color-red-400, …)`
  * - any other string (hex, rgb(), hsl(), a raw `var(--x)`) → passed through unchanged
  * - `undefined` → the theme primary
+ *
+ * The palette branch works because `tailwind.config.js` publishes the whole scale as CSS
+ * variables (the `paletteVariables` plugin there). It has to: a colour picked at runtime can
+ * never be a Tailwind class, because the JIT only generates what it can read verbatim in
+ * source.
+ *
+ * The `var()` carries a fallback for a reason. A name shaped like a palette entry but with no
+ * variable behind it — "red-450", or a hue dropped from the theme — would leave `--lift-base`
+ * unset, and every depth layer here is a `color-mix` reading it. An invalid mix computes to
+ * nothing, so the edge and shadow would *vanish*: a button that lost its depth entirely rather
+ * than one wearing the wrong colour. Falling back to primary keeps it a button.
  */
 const resolveLiftColor = (
-  liftColor?: LiftColorToken | (string & {}),
+  liftColor?: LiftColorToken | TailwindPaletteColor | (string & {}),
 ): string => {
   if (!liftColor) return "hsl(var(--primary))";
-  return (LIFT_COLOR_TOKENS as readonly string[]).includes(liftColor)
-    ? `hsl(var(--${liftColor}))`
-    : liftColor;
+
+  if ((LIFT_COLOR_TOKENS as readonly string[]).includes(liftColor)) {
+    return `hsl(var(--${liftColor}))`;
+  }
+
+  if (PALETTE_ENTRY.test(liftColor)) {
+    return `var(--color-${liftColor}, hsl(var(--primary)))`;
+  }
+
+  return liftColor;
 };
 
 export interface LiftedButtonProps
@@ -64,13 +134,20 @@ export interface LiftedButtonProps
   backgroundColorForBorder?: string; // Applied to the edge layer
   isPending?: boolean;
   /**
-   * Base color for the 3D depth layers (edge gradient + drop shadow). Accepts either a
-   * semantic theme token — "primary", "foreground", "destructive", … (see
-   * {@link LIFT_COLOR_TOKENS}) — or any raw CSS color, e.g. "#7c3aed" or
-   * "hsl(var(--muted-foreground))". Defaults to the theme primary; pass this when the front
-   * face isn't primary-colored so the button doesn't sit on a blue backdrop.
+   * Base color for the 3D depth layers (edge gradient + drop shadow). Accepts, in order of
+   * preference:
+   * - a semantic theme token — "primary", "foreground", "destructive", … (see
+   *   {@link LIFT_COLOR_TOKENS}). Reach for these first: they follow the theme into dark mode.
+   * - a Tailwind palette entry — "red-400", "emerald-600" (see {@link TailwindPaletteColor}).
+   *   The scale, but a fixed point on it: a palette entry does **not** change between light and
+   *   dark, so check the button on both before shipping one.
+   * - any raw CSS color — "#7c3aed", "hsl(var(--muted-foreground))", a `var(--x)`. For colours
+   *   that aren't in the theme at all, like a quiz's category palette.
+   *
+   * Defaults to the theme primary; pass this whenever the front face isn't primary-colored, or
+   * the button sits on a blue backdrop it has nothing to do with.
    */
-  liftColor?: LiftColorToken | (string & {});
+  liftColor?: LiftColorToken | TailwindPaletteColor | (string & {});
 }
 
 // 3D "pushable" button: shadow (blurred, drops on press), edge (darker

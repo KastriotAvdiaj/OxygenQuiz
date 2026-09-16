@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, type CSSProperties } from "react";
 import {
   Dialog,
   DialogContent,
@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { HelpCircle, Clock, User, Calendar, Play } from "lucide-react";
 import type { QuizSummaryDTO } from "@/types/quiz-types";
 import { secondsToMinutes } from "./quiz-duration";
-import { parseQuizPalette, readableTextColor } from "./quiz-palette";
+import { parseQuizPalette, quizEdgeColor, readableTextColor } from "./quiz-palette";
 import { LiftedButton } from "@/common/LiftedButton";
 
 // Single-player only — multiplayer hosting starts inside the lobby, never from
@@ -38,6 +38,9 @@ export function QuizStartModal({
     () => readableTextColor(primaryColor),
     [primaryColor]
   );
+  // The dialog's depth layer. Set as a custom property rather than a class because the
+  // colour is a runtime value — Tailwind's JIT only emits classes it can read in source.
+  const edgeColor = useMemo(() => quizEdgeColor(primaryColor), [primaryColor]);
 
   const handleStartQuiz = () => {
     onStartQuiz(quiz.id);
@@ -56,10 +59,22 @@ export function QuizStartModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      {/* max-h + inner scroll: long titles/descriptions must not push the CTA
+      {/* Borrows the ModeCard silhouette — 2px border, 2xl radius, a flat `0 4px 0`
+          edge — so the modal reads as part of the same family as the mode cards. The
+          depth is the only thing borrowed: a card is a control and lifts under the
+          cursor, a dialog is a surface and stays put, so there is no hover transform
+          here.
+
+          The edge is the quiz's own colour rather than a theme token, which is what
+          ties the dialog to the card that opened it.
+
+          max-h + inner scroll: long titles/descriptions must not push the CTA
           off small screens — the body scrolls instead (85dvh tracks the visible
           mobile viewport; svh fallback n/a, vh fallback below). */}
-      <DialogContent className="sm:max-w-sm mx-auto border-border bg-card font-quiz p-0 overflow-hidden gap-0 max-h-[85vh] supports-[height:1dvh]:max-h-[85dvh] flex flex-col">
+      <DialogContent
+        className="sm:max-w-sm mx-auto rounded-2xl border-2 border-border dark:border-2 dark:border-border bg-card font-quiz p-0 overflow-hidden gap-0 shadow-[0_4px_0_0_var(--edge)] max-h-[85vh] supports-[height:1dvh]:max-h-[85dvh] flex flex-col"
+        style={{ "--edge": edgeColor } as CSSProperties}
+      >
         <div className="p-4 sm:p-5 space-y-4 overflow-y-auto">
           <DialogHeader className="space-y-2.5">
             <div className="flex items-center gap-2 flex-wrap">
@@ -145,17 +160,37 @@ export function QuizStartModal({
             </div>
           </div>
 
-          {/* Action button — flat, category-tinted, with auto-contrast label so
-              it stays readable and consistent across every palette. */}
-          <LiftedButton
-            type="button"
-            onClick={handleStartQuiz}
-            className="flex h-10 w-full items-center justify-center gap-2 rounded-lg text-sm sm:text-base font-bold font-quiz tracking-wider transition-all duration-200 hover:brightness-95 active:scale-[0.99]"
-            style={{ backgroundColor: primaryColor, color: ctaTextColor }}
-          >
-            <Play className="h-4 w-4 fill-current" />
-            Start Quiz
-          </LiftedButton>
+          {/* Action row. Centred and content-width rather than full-bleed: this is the
+              one thing to do here, and a button stretched edge to edge reads as a form
+              footer.
+
+              `liftColor` is the face colour, so LiftedButton derives its edge and shadow
+              from the category instead of falling back to the theme blue — the same
+              relationship the dialog's own `--edge` has to the same colour.
+
+              The face is painted through `--face` / `--face-text` rather than a plain
+              `style` backgroundColor because LiftedButton's `style` lands on the *outer*
+              element and the coloured face is an inner span. Custom properties inherit
+              down to it, and `bg-[var(…)]` is a real Tailwind class, so tailwind-merge
+              drops the component's own `bg-primary` / `text-white` instead of leaving two
+              background rules to fight over source order. */}
+          <div className="flex justify-center pt-1">
+            <LiftedButton
+              type="button"
+              onClick={handleStartQuiz}
+              liftColor={primaryColor}
+              className="h-10 gap-2 px-6 text-sm sm:text-base font-bold font-quiz tracking-wider bg-[var(--face)] text-[color:var(--face-text)]"
+              style={
+                {
+                  "--face": primaryColor,
+                  "--face-text": ctaTextColor,
+                } as CSSProperties
+              }
+            >
+              <Play className="h-4 w-4 fill-current" />
+              Start Quiz
+            </LiftedButton>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

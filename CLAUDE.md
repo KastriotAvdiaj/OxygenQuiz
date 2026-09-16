@@ -63,6 +63,13 @@ Full version, including the two failure modes this project has actually hit:
 - **Colors come from theme tokens or `question-type-theme.ts`,** never raw hues in a
   component. See `docs/quiz/question-type-color-schema.md` for what each token means and the
   rule it enforces: color encodes *type* quietly, *state* is what gets loud.
+- **A color chosen at runtime is a CSS variable, not a class** — it can't be a class, by the
+  rule above. Every theme color is published as `--color-<name>-<shade>` by the
+  `paletteVariables` plugin in `tailwind.config.js`, so a prop that takes a color can name the
+  scale (`liftColor="red-400"`) instead of carrying a hex, and a value with no token at all —
+  a quiz's category palette — reaches the element as an inline custom property (`--edge`,
+  `--face` on the start modal). Theme token first, palette entry second, raw color last: only
+  the first follows the theme into dark mode.
 
 ## Backend conventions (C#)
 

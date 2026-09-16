@@ -21,6 +21,14 @@ through `parseQuizPalette` in `src/pages/Quiz/components/quiz-palette.ts`, which
 A palette is **2–5 hex colours** plus a `gradient` boolean, edited in `color-palette-input.tsx`
 with a live `QuizCard` preview.
 
+Two further colours are *derived* from the dominant one rather than stored beside it, both in the
+same file: `readableTextColor` picks a black or white label by WCAG luminance, and
+`quizEdgeColor` produces the solid depth colour under a quiz-coloured surface — the start modal's
+flat `0 4px 0` edge — by darkening the face 30%, the rule `--primary-edge` in `global.css`
+already applies to the theme primary. A near-black face lightens instead: darkened, it has no
+visible edge at all. Neither colour can be a Tailwind class, because a runtime value never
+reaches the JIT — both reach the element as inline custom properties (`--edge`, `--face`).
+
 > `gradient` is stored, editable and filterable but **never rendered** — the only component that
 > reads it has no call sites. See [`../deployment/known-issues.md`](../deployment/known-issues.md).
 > The proposer leaves it alone for that reason.
