@@ -60,9 +60,12 @@ Guest sessions never reach the abandoned state: they are **deleted**, rows and a
 to that quiz), `ResolveAndResumeAsync` (on resume), or the admin-only
 `POST /QuizSessions/cleanup`.
 
-**On a timer**, via `SessionAbandonmentSweep` — a hosted service that calls the same
+**On a timer**, via the `abandoned-session-sweep` Hangfire recurring job (`AbandonedSessionSweeper`,
+scheduled at the bottom of `Program.cs`), which calls the same
 `ISessionAbandonmentService.CleanupAbandonedSessionsAsync` every `AbandonmentSweepMinutes`
-(default 5; set it to 0 to disable the sweep and keep only the lazy paths).
+(default 5; set it to 0 to disable the sweep and keep only the lazy paths — the job is then removed
+from Hangfire's storage, not just left unscheduled). It replaced a `SessionAbandonmentSweep` hosted
+service that ran the same sweep on its own timer alongside it.
 
 The sweep exists because lazy abandonment only ever fires for a player who **comes back**. Someone
 who never returns left a row at `IsCompleted = false` forever — counted as neither completed nor
@@ -71,7 +74,7 @@ abandoned, which is precisely the population `completionRate` is computed agains
 > A `QuizSessionCleanupService` existed for this and was never registered, so it had never run. It
 > was deleted rather than wired up: it predated `AbandonmentReason` and guest sessions, so it
 > stamped neither and did not delete guest rows. Turning it on would have produced a second, wrong
-> kind of abandoned session. `SessionAbandonmentSweep` owns only the schedule; the rules stay in
+> kind of abandoned session. The Hangfire job owns only the schedule; the rules stay in
 > `ISessionAbandonmentService`, shared with the lazy paths.
 
 **The timing rules** live in `SessionAbandonmentService.CalculateTimeoutsAsync` and are derived from

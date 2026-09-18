@@ -3,7 +3,6 @@ venv
 .git
 .gitignore
 Dockerfile
-microservice/
 .dockerignore
 .env
 coverage
