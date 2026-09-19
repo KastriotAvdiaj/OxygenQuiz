@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Squares from "@/common/Effect-Related/background-squares";
 import Prism from "@/common/Effect-Related/Prism";
 import Header from "@/common/Header";
@@ -5,6 +6,8 @@ import { useTheme } from "@/components/ui";
 import { EmailVerificationBanner } from "@/common/EmailVerificationBanner";
 import { APP_SCROLL_CONTAINER_ID } from "@/lib/app-scroll";
 import { AccountOverlay } from "@/pages/UserRelated/AccountOverlay/AccountOverlay";
+import { PageLoading } from "@/components/ui/page-loading";
+import { RouteProgressBar } from "@/common/RouteProgressBar";
 
 type EffectType = "squares" | "lightning" | "prism" | "none";
 
@@ -105,6 +108,10 @@ export const HomeLayout = ({
 
   return (
     <>
+      {/* Outside the header, and shown even on `hidden`: it reports the shell's own state,
+          not the page's, and the moment it exists for is the one where the page has not
+          changed yet. */}
+      <RouteProgressBar />
       {!isHeaderHidden && <Header BackgroundColor={hasHeaderBackground} />}
       {/* THE app scroll container (see docs/RESPONSIVE.md — "Scrolling model").
           html/body never scroll; this div does. `.app-shell-viewport` sizes it to
@@ -130,11 +137,23 @@ export const HomeLayout = ({
           {/* Soft-gate nudge for unconfirmed users; self-hides otherwise. Skipped on overlay
               headers, where there's no normal-flow header to sit beneath. */}
           {!isOverlay && !isHeaderHidden && <EmailVerificationBanner />}
-          {shouldWrapContent ? (
-            <div className="flex min-w-0 flex-1 flex-col">{children}</div>
-          ) : (
-            children
-          )}
+          {/* THE route boundary. Every page below is a lazy chunk (Router.tsx), and
+              without a boundary here the nearest one is the app shell's — ABOVE
+              RouterProvider — so opening any page tore the whole app down to a bare
+              loading screen and built it back, header and background included. That is
+              the flash between finishing a quiz and seeing the results. Catching the
+              chunk here keeps the shell on screen and swaps only the content column.
+
+              Its fallback is the same `PageLoading` the pages themselves use, so a page
+              that loads its chunk and *then* waits on a query shows one continuous
+              loading screen rather than two in a row. */}
+          <Suspense fallback={<PageLoading label="Loading this page" />}>
+            {shouldWrapContent ? (
+              <div className="flex min-w-0 flex-1 flex-col">{children}</div>
+            ) : (
+              children
+            )}
+          </Suspense>
         </div>
       </div>
 

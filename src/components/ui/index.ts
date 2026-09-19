@@ -8,6 +8,7 @@ export * from '@/components/ui/dropdown-menu';
 export * from '@/components/ui/loading-wave';
 export * from '@/components/ui/LoginForm';
 export * from '@/components/ui/mode-toggle';
+export * from '@/components/ui/page-loading';
 export * from '@/components/ui/pagination-control';
 export * from '@/components/ui/segmented-control';
 export * from '@/components/ui/split-flap-loader';

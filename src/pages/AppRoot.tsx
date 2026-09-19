@@ -26,7 +26,10 @@ export const AppRoot = ({ basePath, navItems, fullWidthPaths, focusPaths }: AppR
       focusPaths={focusPaths}>
       <Suspense
         fallback={
-          <div className="flex h-screen w-screen items-center justify-center">
+          // Fills the dashboard's content column. h-screen/w-screen here made the
+          // spinner centre on the *viewport*, i.e. behind the sidebar and under the
+          // header, so it visibly jumped into place when the page took over.
+          <div className="flex min-h-[60vh] w-full items-center justify-center">
             <Spinner size="xl" />
           </div>
         }>

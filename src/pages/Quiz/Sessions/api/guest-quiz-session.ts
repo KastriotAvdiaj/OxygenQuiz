@@ -89,6 +89,12 @@ export const getGuestSessionResults = ({
   return apiService.get(`/guest-quiz-sessions/${sessionId}/results`);
 };
 
+/** See `sessionResultsQueryOptions` in get-quiz-session.ts — same deal, guest endpoint. */
+export const guestSessionResultsQueryOptions = (sessionId: string) => ({
+  queryKey: ["guest-quiz-session-results", sessionId],
+  queryFn: () => getGuestSessionResults({ sessionId }),
+});
+
 export const useGetGuestSessionResults = ({
   sessionId,
   queryConfig,
@@ -97,8 +103,7 @@ export const useGetGuestSessionResults = ({
   queryConfig?: QueryConfig<typeof getGuestSessionResults>;
 }) => {
   return useQuery({
-    queryKey: ["guest-quiz-session-results", sessionId],
-    queryFn: () => getGuestSessionResults({ sessionId }),
+    ...guestSessionResultsQueryOptions(sessionId),
     enabled: !!sessionId,
     ...queryConfig,
   });

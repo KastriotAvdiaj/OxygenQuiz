@@ -52,7 +52,14 @@ export const Dashboard = () => {
         />
       </div>
       <div className="overflow-y-auto">
-        <Suspense fallback={<Spinner size="xl" />}>
+        <Suspense
+          fallback={
+            // Centred, like every other dashboard wait. Bare, this spinner sat in the
+            // top-left corner and the page appeared somewhere else entirely.
+            <div className="flex min-h-[60vh] w-full items-center justify-center">
+              <Spinner size="xl" />
+            </div>
+          }>
           <Routes>
             <Route index element={<Navigate to="application" replace />} />
             <Route path="application" element={<Application />} />

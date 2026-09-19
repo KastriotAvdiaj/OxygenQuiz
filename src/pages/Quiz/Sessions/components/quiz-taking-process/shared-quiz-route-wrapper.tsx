@@ -2,7 +2,7 @@ import { Navigate, useParams, Link } from "react-router-dom";
 import { AlertCircle, LogIn } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { LoadingWave } from "@/components/ui";
+import { QuizLoadingView } from "../quiz-loading-view";
 import { useUser } from "@/lib/Auth";
 
 import { useSharedQuiz } from "../../api/get-shared-quiz";
@@ -51,11 +51,7 @@ export const SharedQuizRouteWrapper = () => {
   if (!token) return <BadLinkScreen />;
 
   if (isUserLoading) {
-    return (
-      <div className="flex flex-1 justify-center items-center py-16">
-        <LoadingWave size="lg" />
-      </div>
-    );
+    return <QuizLoadingView label="Opening the shared quiz" />;
   }
 
   // `window.location.pathname` rather than a built string: the token is already in the URL and
@@ -70,11 +66,7 @@ export const SharedQuizRouteWrapper = () => {
   }
 
   if (isQuizLoading) {
-    return (
-      <div className="flex flex-1 justify-center items-center py-16">
-        <LoadingWave size="lg" />
-      </div>
-    );
+    return <QuizLoadingView label="Opening the shared quiz" />;
   }
 
   // One message for every "no". The backend 404s an unknown token and a token whose quiz went

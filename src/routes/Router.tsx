@@ -23,6 +23,10 @@ import { Navigate, Outlet } from "react-router-dom";
 import { quizLoader } from "@/loaders/quiz.loader";
 import { dashboardEntryLoader } from "@/loaders/dashboardEntryLoader";
 import { quizSelectionLoader } from "@/loaders/quiz-selection.loader";
+import {
+  guestQuizResultsLoader,
+  quizResultsLoader,
+} from "@/loaders/quiz-results.loader";
 import { MultiplayerLobbyPage } from "@/pages/Quiz/Multiplayer/MultiplayerLobbyPage";
 const HomeLayout = lazy(() => {
   console.log("Loading HomeLayout chunk...");
@@ -260,7 +264,9 @@ const createAppRouter = (queryClient: QueryClient) =>
     {
       path: "/quiz/results/:sessionId",
       errorElement: <DashboardErrorElement />,
-      loader: userAuthLoader(queryClient),
+      // Auth *and* a head start on the results request — see the loader. Without it,
+      // finishing a quiz ran two loading screens in a row.
+      loader: quizResultsLoader(queryClient),
       element: (
         <>
           <HomeLayout
@@ -275,6 +281,7 @@ const createAppRouter = (queryClient: QueryClient) =>
       // spends the browser's one free guest quiz (GuestQuizResultsRouteWrapper calls /finish).
       path: "/quiz/results-guest/:sessionId",
       errorElement: <DashboardErrorElement />,
+      loader: guestQuizResultsLoader(queryClient),
       element: (
         <>
           <HomeLayout
@@ -287,7 +294,7 @@ const createAppRouter = (queryClient: QueryClient) =>
     {
       path: "/quiz/results/:sessionId/review",
       errorElement: <DashboardErrorElement />,
-      loader: userAuthLoader(queryClient),
+      loader: quizResultsLoader(queryClient),
       element: (
         <>
           <HomeLayout

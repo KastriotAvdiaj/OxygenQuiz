@@ -42,7 +42,7 @@ All paths are under `src/pages/Quiz/Sessions/`.
 | ---- | ---- |
 | `components/.../quiz-page-route-wrapper.tsx` | Entry point. Decides logged-in (`QuizPage`) vs guest (`GuestQuizPage`) and handles the one-free-guest-quiz gate. See `docs/auth/guest-play.md`. |
 | `components/.../quiz-page.tsx` | **The controller.** Wires `useQuizSession` + `useSubmitAnswer`, owns `handleSubmitAnswer` / `handleNextQuestion`, and picks between the loading / error / active-session screens and `QuizInterface`. The only component that submits to the backend. Keeps `ErrorScreen` inline; the other two full-screen states live in their own files below. |
-| `components/quiz-loading-view.tsx` | **THE loading screen** — a centred `LoadingWave`, the same loader the rest of the app waits with. Sits one level above `quiz-taking-process/` and `quiz-results/` because both use it: `QuizPage` / `GuestQuizPage` while the session is created, `QuizInterface` before the first question, and both results wrappers. Change the loading look here and every waiting moment follows. Storied in `quiz-loading-view.stories.tsx`. |
+| `components/quiz-loading-view.tsx` | **THE loading screen of this flow** — now a thin name over `PageLoading` (`components/ui/page-loading.tsx`), which is THE loading screen of the whole app. Sits one level above `quiz-taking-process/` and `quiz-results/` because both use it: `QuizPageRouteWrapper` and `SharedQuizRouteWrapper` while they resolve who is playing, `QuizPage` / `GuestQuizPage` while the session is created, `QuizInterface` before the first question, and both results wrappers. It exists only so the quiz flow can name what it is waiting for — **change the loading look in `PageLoading`**, and every waiting moment in the app follows. See [ADR 0015](../adr/0015-the-layout-owns-the-route-loading-boundary.md). Storied in `quiz-loading-view.stories.tsx`. |
 | `components/.../active-session-view.tsx` | The **"Session In Progress"** fork — Resume / Start Fresh / Back, shown when the player already has an unfinished session for this quiz. **The clock does not stop here:** it replays the backend's resume catch-up locally once a second, so the question in flight counts down and the tally moves as questions expire ([`session-resume-screen.md`](./session-resume-screen.md)). Presentational; `isLoading` disables both actions while either request is in flight. Storied in `active-session-view.stories.tsx`. |
 | `components/.../resume-projection.ts` | The local replay behind that screen: `projectResume()` mirrors `ResolveAndResumeAsync` for a given instant, `useResumeProjection()` re-evaluates it as the wall clock moves. A **prediction only** — the server redoes the walk on resume and its answer is the one that counts. |
 | `../../hooks/use-quiz-session.ts` | The **state brain**: current question, last answer result, progress, resume / active-session logic. |
@@ -167,8 +167,15 @@ happening rather than the same wait continuing. On a fast connection the board a
 past its first flip, so the effect it exists for never actually played.
 
 `LoadingWave` is what the app waits with everywhere else — the Provider boot screen, the
-dashboard lists, the profile panels, the multiplayer quiz picker — and `quiz-loading-view.tsx`
-matches its `size="lg"`, so the route-to-page handover is now invisible.
+dashboard lists, the profile panels, the multiplayer quiz picker.
+
+Matching it by hand did not hold. Each of the three waits above picked its own `size` and its
+own centring, and the app shell's boot screen — the one they hand over *from* — picked `xl`
+while the quiz flow picked `lg` with `py-16`. So the word still shrank by 40% and moved down
+the screen on the way into a quiz; the handover was invisible only between the two call sites
+that happened to agree. The size is no longer a call-site decision: every full-page wait
+renders `PageLoading`, which owns the size, the centring and the appearance delay. See
+[ADR 0015](../adr/0015-the-layout-owns-the-route-loading-boundary.md).
 
 The board was not deleted. It is `SplitFlapLoader` in `components/ui`, storied, for a moment
 that wants a set-piece rather than a spinner. If you use it, remember it only animates on a

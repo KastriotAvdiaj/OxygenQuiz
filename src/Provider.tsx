@@ -4,7 +4,7 @@ import * as React from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { HelmetProvider } from "react-helmet-async";
 import { ThemeProvider } from "./components/ui/theme-provider";
-import { LoadingWave } from "./components/ui/loading-wave";
+import { PageLoading } from "./components/ui/page-loading";
 import { MainErrorFallback } from "./pages/UtilityPages/Error/Main-Error-Boundary";
 import { AuthLoader } from "./lib/Auth";
 import { queryConfig } from "./lib/React-query";
@@ -26,15 +26,11 @@ export const AppProvider = ({ children }: AppProviderProps) => {
   );
 
   return (
-    <React.Suspense
-      fallback={
-        // app-shell-viewport, not h-screen: sizes to the real visible viewport
-        // on mobile (docs/RESPONSIVE.md)
-        <div className="app-shell-viewport flex w-full items-center justify-center bg-background">
-          <LoadingWave size="xl" />
-        </div>
-      }
-    >
+    // The outermost boundary, ABOVE RouterProvider — so anything it catches blanks the
+    // whole app, header included. That is right for the very first paint and wrong for a
+    // navigation, which is why the layout has a boundary of its own (layouts/layout.tsx):
+    // by the time a route chunk loads, this one should already be resolved.
+    <React.Suspense fallback={<PageLoading fullScreen label="Starting OxygenQuiz" />}>
       <ErrorBoundary FallbackComponent={MainErrorFallback}>
         <HelmetProvider>
           <QueryClientProvider client={queryClient}>
@@ -43,9 +39,7 @@ export const AppProvider = ({ children }: AppProviderProps) => {
               <Notifications />
               <AuthLoader
                 renderLoading={() => (
-                  <div className="app-shell-viewport flex w-full items-center justify-center bg-background">
-                    <LoadingWave size="xl" />
-                  </div>
+                  <PageLoading fullScreen label="Signing you in" />
                 )}
               >
                 <SettingsApplier />

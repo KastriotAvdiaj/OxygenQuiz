@@ -97,15 +97,30 @@ type UseGetSessionResultsOptions = {
   queryConfig?: QueryConfig<typeof getSessionResults>;
 };
 
+/**
+ * The finished session, as a query definition rather than a hook.
+ *
+ * Shared with the route loader (`loaders/quiz-results.loader.tsx`), which warms this exact
+ * key before the results page mounts — that is what stopped the page painting a second
+ * loading screen the moment the first one finished. The key has to be defined in one place
+ * for that to work: a loader that prefetches a *nearly* matching key fills the cache with
+ * something the component never reads, and the only symptom is the loader coming back.
+ *
+ * Distinct from `['quiz-session', id]` on purpose — /results returns the graded session,
+ * `getQuizSession` the in-progress one, and they must not share a cache entry.
+ */
+export const sessionResultsQueryOptions = (sessionId: string) => ({
+  queryKey: ['quiz-session-results', sessionId],
+  queryFn: () => getSessionResults({ sessionId }),
+});
+
 export const useGetSessionResults = ({
   sessionId,
   enabled = true,
   queryConfig,
 }: UseGetSessionResultsOptions) => {
   return useQuery({
-    // Use a distinct queryKey to avoid cache conflicts with the original getQuizSession
-    queryKey: ['quiz-session-results', sessionId],
-    queryFn: () => getSessionResults({ sessionId }),
+    ...sessionResultsQueryOptions(sessionId),
     enabled: !!sessionId && enabled,
     ...queryConfig,
   });

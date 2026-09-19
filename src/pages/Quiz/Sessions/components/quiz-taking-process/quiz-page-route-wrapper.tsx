@@ -4,7 +4,7 @@ import { QuizPage } from "./quiz-page";
 import { GuestQuizPage } from "./guest-quiz-page";
 import { useUser } from "@/lib/Auth";
 import { useGuestCanPlay } from "../../api/guest-quiz-session";
-import { LoadingWave } from "@/components/ui";
+import { QuizLoadingView } from "../quiz-loading-view";
 import { Button } from "@/components/ui/button";
 
 /**
@@ -43,11 +43,10 @@ export const QuizPageRouteWrapper = () => {
   }
 
   if (isUserLoading || (!userId && isGuestStatusLoading)) {
-    return (
-      <div className="flex flex-1 justify-center items-center py-16">
-        <LoadingWave size="lg" />
-      </div>
-    );
+    // QuizLoadingView, not a local LoadingWave: this wait hands straight over to
+    // QuizPage's, and a different size or a different `py` here is exactly how the word
+    // used to shrink and jump between the two.
+    return <QuizLoadingView label="Starting your quiz" />;
   }
 
   if (userId) {
