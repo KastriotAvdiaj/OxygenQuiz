@@ -50,19 +50,26 @@ export function QuestionReview({ session }: QuestionReviewProps) {
   };
 
   const getOptionClassName = (isSelected: boolean, isCorrect: boolean) => {
-    // Subtle tint + colored left accent bar; text stays in the normal foreground
-    // color so the card reads calmly in both light and dark mode.
+    // Hairline on all four sides + a thicker colored left accent bar; text stays in the
+    // normal foreground color so the card reads calmly in both light and dark mode.
+    //
+    // Every state carries the same geometry (`border border-l-4`) on purpose. The tint
+    // alone cannot carry a row in dark mode — `bg-muted/50` over `bg-card` is a ~2%
+    // lightness difference there, so an untinted option used to have no visible edge at
+    // all — and giving only the status rows a border would shift their text 3px against
+    // their neighbours. So the hairline is in the base and only its *color* varies.
     let className =
-      "p-2 sm:p-2.5 rounded-lg text-sm text-foreground border-l-4 border-transparent";
+      "p-2 sm:p-2.5 rounded-lg text-sm text-foreground border border-l-4";
 
     if (isCorrect) {
       // The correct answer (whether or not the user picked it)
-      className += " bg-green-500/10 border-green-500";
+      className += " bg-green-500/10 border-green-500/40 border-l-green-500";
     } else if (isSelected && !isCorrect) {
       // The user's incorrect pick
-      className += " bg-red-500/10 border-red-500";
+      className += " bg-red-500/10 border-red-500/40 border-l-red-500";
     } else {
-      className += " bg-muted/50 text-muted-foreground";
+      className +=
+        " bg-muted/50 text-muted-foreground border-border border-l-border";
     }
 
     return className;

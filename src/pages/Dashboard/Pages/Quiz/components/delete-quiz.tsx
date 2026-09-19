@@ -41,10 +41,18 @@ export const DeleteQuiz = ({
     },
   });
 
+  // Reset mutation state whenever dialog visibility changes or component re-opens
+  const handleOpenChange = (newOpen: boolean) => {
+    if (newOpen) {
+      deleteQuizMutation.reset();
+    }
+    onOpenChange?.(newOpen);
+  };
+
   return (
     <ConfirmationDialog
       isOpen={open}
-      onOpenChange={onOpenChange}
+      onOpenChange={handleOpenChange}
       isDone={deleteQuizMutation.isSuccess || deleteQuizMutation.isError}
       icon="danger"
       title="Delete Quiz"

@@ -113,6 +113,7 @@ const headerLabel = (header: unknown, fallback: string): string =>
 interface DataTableProps<TData> {
   columns: ColumnDef<TData, any>[];
   data: TData[];
+  getRowId?: (row: TData, index: number) => string;
 }
 
 /**
@@ -154,7 +155,7 @@ interface DataTableProps<TData> {
  * That wrapper is also why this component no longer adds an `overflow-x-auto` of its own:
  * two nested scrollers meant the inner one clipped first and the outer never fired.
  */
-export function DataTable<TData>({ columns, data }: DataTableProps<TData>) {
+export function DataTable<TData>({ columns, data, getRowId }: DataTableProps<TData>) {
   const { ref: fitRef, priority: fittingPriority } = useFittingPriority();
   const [expandedRows, setExpandedRows] = React.useState<Record<string, boolean>>(
     {}
@@ -180,6 +181,8 @@ export function DataTable<TData>({ columns, data }: DataTableProps<TData>) {
     columns,
     state: { columnVisibility },
     getCoreRowModel: getCoreRowModel(),
+    // Fall back to `row.id` if available, otherwise default to index
+    getRowId: getRowId ?? ((row: any, index) => row?.id?.toString() ?? index.toString()),
   });
 
   const hasHiddenColumns = table

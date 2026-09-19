@@ -1,4 +1,4 @@
-import { Input, Label } from "@/components/ui/form";
+import { Label, Textarea } from "@/components/ui/form";
 import type { QuestionType } from "@/types/question-types";
 
 import { QuestionCountStepper } from "./question-count-stepper";
@@ -103,7 +103,7 @@ export const AdvancedOptions = ({
         </Label>
         {/* minimal rather than `settings`: the denser dashboard field looked like a
             different kind of control mid-form. */}
-        <Input
+        <Textarea
           id="ai-extra"
           variant="minimal"
           className="mt-1"
