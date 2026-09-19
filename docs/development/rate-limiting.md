@@ -20,7 +20,7 @@ attack still overwhelms the box. Keep the origin firewalled to Cloudflare's IP r
 
 ## What's configured
 
-All of it lives in [`Middleware/RateLimitingExtensions.cs`](../OxygenBackend/QuizAPI/Middleware/RateLimitingExtensions.cs),
+All of it lives in [`Middleware/RateLimitingExtensions.cs`](../../OxygenBackend/QuizAPI/Middleware/RateLimitingExtensions.cs),
 wired up in `Program.cs` (`AddOxygenRateLimiting()` + `app.UseRateLimiter()`).
 
 | Scope | Limit | Window | Applies to |

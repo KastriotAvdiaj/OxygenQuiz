@@ -62,7 +62,7 @@ The reasoning lives in the docs, not in this file:
 | [`auth/account-closure.md`](auth/account-closure.md) | How closure behaves today; §7 is the to-do list |
 | [`auth/user-role-management.md`](auth/user-role-management.md) | Role rules + §1.1 the delete matrix |
 | [`development/testing.md`](development/testing.md) | §2 the test inventory (keep it complete), §4E when a mock is the wrong tool |
-| [`quiz/multiplayer-persistence-plan.md`](quiz/multiplayer-persistence-plan.md) | Designed, **not built**. Six work items |
+| [`quiz/multiplayer.md`](quiz/multiplayer.md) § 7 | **Built 2026-09-14**, after this handoff. Replaces the deleted multiplayer-persistence plan doc |
 | [`RESPONSIVE.md`](RESPONSIVE.md) | "Dense tables" and "Dashboard list pages: one header, one card" |
 
 ---
@@ -117,7 +117,15 @@ notice by `announceClosureCancelled` in `lib/Auth.tsx` — one place, so every s
 
 ## Multiplayer persistence — designed, not built
 
-The authority is [`quiz/multiplayer-persistence-plan.md`](quiz/multiplayer-persistence-plan.md).
+> **Superseded (2026-09-14).** This was written on 2026-09-13, the day before the work landed.
+> A match *is* recorded when it ends, in exactly the shape described below. The plan document
+> this section pointed at was folded into [`quiz/multiplayer.md`](quiz/multiplayer.md) § 7 and
+> deleted; that section is now the authority. Everything below is kept as the record of what
+> was decided and why, not as a description of the code — in particular "today a match writes
+> nothing" is no longer true. Note also that `multiplayer.md` §§ 7–9 became §§ 8–10 in the same
+> change, so older citations are off by one.
+
+The authority is [`quiz/multiplayer.md`](quiz/multiplayer.md) § 7.
 This is the summary; read that before writing code, because the reasoning for each decision is there
 and not repeated here.
 

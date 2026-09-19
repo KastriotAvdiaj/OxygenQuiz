@@ -19,7 +19,7 @@ A session walks one question at a time. The client polls/drives these endpoints
 5. **Results** — `GET /api/QuizSessions/{id}/results` returns the full `QuizSessionDto`
    (all answers); for non-instant quizzes it waits up to `maxWaitSeconds` for background grading.
 
-`GetNextQuestionAsync` ([QuizSessionService.cs](../OxygenBackend/QuizAPI/Controllers/Quizzes/Services/QuizSessionServices/QuizSessionService.cs))
+`GetNextQuestionAsync` ([QuizSessionService.cs](../../OxygenBackend/QuizAPI/Controllers/Quizzes/Services/QuizSessionServices/QuizSessionService.cs))
 sets the question-start clock from the **app clock** (a captured `DateTime.UtcNow`, not a SQL
 `now()` inside `ExecuteUpdate`) so it stays consistent with `SubmittedTime` — otherwise a DB clock
 running ahead of the app makes a fast answer record negative elapsed time.

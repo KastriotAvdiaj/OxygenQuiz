@@ -1,7 +1,7 @@
 # Production Runbook — oxygenquiz.com on Hetzner
 
 Concrete, ordered steps to deploy OxygenQuiz to the Hetzner VPS behind Cloudflare.
-Config files live in [`/deploy`](../deploy). Server IP: **89.167.23.147**. Domain: **oxygenquiz.com**.
+Config files live in [`/deploy`](../../deploy). Server IP: **89.167.23.147**. Domain: **oxygenquiz.com**.
 
 > ⚠️ **This runbook describes design B, which has never been deployed.** The live production
 > stack is nginx (host package) + backend + Postgres, with the frontend on Cloudflare Workers —
