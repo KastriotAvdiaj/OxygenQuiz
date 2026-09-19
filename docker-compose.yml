@@ -1,9 +1,7 @@
-version: '3.9'
-
 services:
   backend:
     build:
-      context: ./oxygenbackend/quizapi
+      context: ./OxygenBackend/QuizAPI
       dockerfile: Dockerfile
     ports:
       - "5000:8080"
@@ -18,11 +16,17 @@ services:
       # never these committed values.
       - Jwt__Key=dev-only-insecure-key-change-in-production-0123456789
       - Seed__AdminPassword=admin
+      # The containerised frontend is served over plain http on 5173, not the https dev server
+      # that appsettings.Development.json allows.
+      - Cors__AllowedOrigins__0=http://localhost:5173
 
   frontend:
     build:
-      context: . 
+      context: .
       dockerfile: Dockerfile
+      args:
+        # Without this the image would call the production API (see the root Dockerfile).
+        VITE_API_URL: http://localhost:5000/api
     ports:
       - "5173:80"
     depends_on:

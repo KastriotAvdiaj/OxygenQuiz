@@ -166,26 +166,10 @@ function authRequestInterceptor(config: InternalAxiosRequestConfig) {
   return config;
 }
 
-export const llmApi = Axios.create({
-  baseURL: import.meta.env.VITE_LLM_URL,
-});
-
-llmApi.interceptors.response.use(
-  (response) => {
-    // Axios responses have the actual data inside a `data` property.
-    // This unwraps it for you, so in your hooks you can just use `response`
-    // instead of `response.data`.
-    return response.data;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
-
 /**
  * The configured axios instance: base URL, bearer token, silent 401 refresh, error toast.
  *
- * **It resolves to the full `AxiosResponse`, not the body.** Unlike `llmApi` above, the
+ * **It resolves to the full `AxiosResponse`, not the body.** The
  * success interceptor returns `response` untouched — so read `.data`, or use
  * {@link apiService}, which does it for you. Prefer `apiService` in feature code; reach for
  * `api` only when you need headers or the raw response.

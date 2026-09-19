@@ -5,7 +5,9 @@ import mkcert from 'vite-plugin-mkcert'
 
 
 export default defineConfig({
-  plugins: [react(),mkcert()],
+  // mkcert downloads its binary from GitHub on first use. Tests need neither HTTPS nor the
+  // network, so the unit suite skips it and runs anywhere, offline included.
+  plugins: [react(), ...(process.env.VITEST ? [] : [mkcert()])],
   test: {
     name: 'unit',
     environment: 'jsdom',

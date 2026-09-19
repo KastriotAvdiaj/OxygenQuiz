@@ -246,7 +246,7 @@ timeLimit` points, i.e. ~33 pts on a 30s question but ~100 pts (10% of base) on 
 
 - **P2 — calling `api` directly instead of `apiService` silently yields the whole
   `AxiosResponse`.** Only `apiService` unwraps `.data`; the raw `api` instance's success
-  interceptor returns the response untouched (`llmApi`, confusingly, *does* unwrap). The
+  interceptor returns the response untouched. The
   mistake compiles: `api.post(url, body)` annotated `Promise<Thing>` type-checks fine, because
   axios infers its response type from the expected return type — and the caller then reads
   `undefined` off an `AxiosResponse`. This shipped: the quiz share button produced

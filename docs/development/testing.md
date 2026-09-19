@@ -118,6 +118,8 @@ interesting part, so we fake it with Moq (pattern C below).
 | `src/lib/__tests__/font-defaults.test.ts` | The default app and quiz fonts agree between `global.css` (which paints before any JS runs) and the constant `SettingsApplier` applies. They disagreed for months, so every first paint flashed the wrong typeface. |
 | `src/pages/Dashboard/.../AI-Quiz/__tests__/extract-quiz-suggestions.test.ts` | The quiz-level title, category and language are read out of the model's reply **in the parser** — the one place a generated and a pasted reply both pass through. Guards the regression where a pasted reply carrying all three was never enriched and the wizard demanded them by hand. |
 | `src/pages/Quiz/Sessions/.../__tests__/resume-projection.test.ts` | `projectResume` agrees with `ResolveAndResumeAsync`: the inclusive `elapsed <= timeLimit` boundary, truncated seconds, the walk restarting from the front of the list, and the abandonment deadline that runs **before** the walk. Written as the server's rules rather than the function's branches, with numbers sitting on each boundary. See [`../quiz/session-resume-screen.md`](../quiz/session-resume-screen.md). |
+| `src/pages/Dashboard/.../AI-Quiz/__tests__/parse-ai-output.test.ts` | The trust boundary for model output: JSON found inside a chatty, fenced reply; category, language and visibility come from the quiz, never the model; `allowPartialMatch` is always false; unusable questions are dropped **with a reason** while the rest survive; time limits snap to a value the builder can display; difficulty is matched by name with a reported fallback; and a reply with nothing usable fails with an actionable message. |
+| `src/pages/Quiz/Sessions/.../__tests__/question-display.test.tsx` | What one question can send to the server: Submit stays disabled until something is chosen; an answer is submitted **at most once** (lock-in click, then Submit, is still one call); multi-select sends every chosen id; a timeout submits `isTimedOut` and **not** the unsubmitted selection; an answer made in time is never also timed out; a typed answer is trimmed and submits on Enter. Asserts on `onSubmit`, the only thing the server sees. |
 | `src/pages/Quiz/Sessions/.../__tests__/quiz-timer.test.tsx` | `QuizTimer` under re-render pressure: it keeps counting while a parent re-renders faster than its own interval with a fresh `onTimeUp` each time, fires `onTimeUp` exactly once, and neither gains nor loses time across a pause/resume. Fake timers drive `Date.now()`, which is what makes a deadline-anchored countdown testable. See [`quiz-timer.md`](../quiz/quiz-timer.md). |
 
 The signup-storm test is worth copying as a pattern: it mocks `@/lib/Api-client` to reject, then
@@ -368,6 +370,5 @@ To make tests **block deploys**:
   command for everyday work and every recipe above says `--project unit`. Decide deliberately
   whether the story run belongs in CI; today nothing asserts on it.
 
-- **Out of scope this pass.** End-to-end flows (login → take a quiz → results), the Python
-  LLM microservice, and SignalR multiplayer hubs have no automated tests yet. Playwright is
+- **Out of scope this pass.** End-to-end flows (login → take a quiz → results) and SignalR multiplayer hubs have no automated tests yet. Playwright is
   already a dependency if you want to add browser-level E2E later.
