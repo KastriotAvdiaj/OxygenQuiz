@@ -12,7 +12,7 @@ item, add it here instead of letting it float.
 
 Auth-specific enhancements are tracked in [authentication.md](../auth/authentication.md)
 ("Recommended improvements"); the security-review status lives in
-[handoff.md](../handoff.md). This file is the catch-all index.
+[handoff-1.md](../handoff-1.md). This file is the catch-all index.
 
 ---
 
@@ -1068,6 +1068,47 @@ redesign means a scroll regression could have come from either.
   → `src/pages/Dashboard/Pages/User/Components/stats-cards.tsx`
 
 ---
+
+## Loading states (2026-09-18 — see docs/development/loading-states.md, ADR 0015)
+
+Found while collapsing the double loading screen on quiz completion. The public shell was
+fixed; these were left.
+
+- **P2 — Dashboard routes show no loading state at all.** The dashboard's child routes use
+  React Router's own `lazy: async () => ({ Component })` rather than `React.lazy`. That is
+  resolved as part of the navigation instead of by a suspending render, so **no Suspense
+  fallback ever fires** — the current page simply sits there until the chunk arrives. The two
+  `Spinner` boundaries in `AppRoot.tsx` and `Dashboard.tsx` catch other things, not this.
+  `RouteProgressBar` would cover the stall, but it is rendered by `HomeLayout` only;
+  `DashboardLayout` does not render it, so the admin side has no navigation feedback of any
+  kind. Deferred because it is a change to how ~15 routes are declared, not a fix.
+  → `src/routes/Router.tsx`, `src/layouts/dashboard-layout.tsx`
+- **P3 — Two visual languages for a wait.** The public app waits with `PageLoading` /
+  `LoadingWave`; the admin dashboard waits with `Spinner`, across ~18 screens plus the
+  in-button loader. Both are internally consistent and nothing crosses between them, so this
+  is cosmetic — but it is the reason the sizing rule in
+  [`../development/loading-states.md`](../development/loading-states.md) has to name two
+  components instead of one. Converting the dashboard is a visual decision, not a cleanup.
+  → `src/components/ui/Spinner.tsx`
+- **P3 — `SplitFlapLoader` has no call sites.** Kept deliberately (ADR 0015 context, and
+  `docs/quiz/quiz-playing-architecture.md` § 3b explains why it stopped being the quiz
+  loader), storied, and dead. Listed so it is not rediscovered as an oversight.
+  → `src/components/ui/split-flap-loader.tsx`
+
+## Quiz card (2026-09-18 — see docs/quiz/quiz-card.md)
+
+- **P3 — The card no longer shows its creator, and the code for it is still there.** The
+  redesign has no author slot. `CreatorAvatar` in `card-parts.tsx` and `initials` in
+  `card-model.ts` are both unreferenced, kept because attribution on a public catalogue is a
+  decision that gets revisited rather than a feature that was removed. If it stays out, delete
+  both together; neither is useful alone.
+  → `src/pages/Quiz/components/quiz-card/`
+- **P3 — No stories and no tests for the card.** The only visual check is the admin palette
+  preview in `color-palette-input.tsx`, which exercises exactly one palette shape. The cases
+  that matter are the ones the catalogue will not show on demand — two-colour and five-colour
+  palettes, a near-white accent, a one-line title, an unrecognised difficulty. Listed in
+  [`../quiz/quiz-card.md`](../quiz/quiz-card.md) § 7.
+  → `src/pages/Quiz/components/quiz-card/`
 
 ## Documentation debt (2026-08-23)
 

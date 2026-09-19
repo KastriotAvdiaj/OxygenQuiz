@@ -14,9 +14,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 /**
  * The interactive frame: a real `<button>`, so the card is keyboard-reachable and gets a
- * focus ring for free (it was a bare `div` with `onClick` before). The rounded corners and
- * `overflow-hidden` live here too, so the card's colour stripe clips to the app's radius
- * without the layout restating it.
+ * focus ring for free (it was a bare `div` with `onClick` before). The rounded corners live
+ * here too, so the layout never restates the radius.
+ *
+ * The radius is a literal `18px` rather than `rounded-xl`: the theme's `--radius` is 0.3rem,
+ * sized for dashboard chrome, and this card is a poster. `quiz-card.tsx` explains the
+ * trade-off.
  */
 export function QuizCardFrame({
   quiz,
@@ -44,13 +47,13 @@ export function QuizCardFrame({
       aria-label={`${quiz.title} — ${quiz.category}, ${quiz.difficulty}, ${quiz.questionCount} ${quiz.questionCount === 1 ? "question" : "questions"}`}
       className={cn(
         "group h-full w-full cursor-pointer text-left font-app",
-        "rounded-xl focus-visible:outline-none focus-visible:ring-2",
+        "rounded-[18px] focus-visible:outline-none focus-visible:ring-2",
         "focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       )}
     >
       <div
         className={cn(
-          "relative flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card",
+          "relative flex h-full flex-col overflow-hidden rounded-[18px] border border-border bg-card",
           "transition-all duration-300 ease-out",
           "hover:-translate-y-1 hover:border-[var(--accent)] hover:shadow-lg"
         )}
@@ -64,6 +67,10 @@ export function QuizCardFrame({
 /**
  * The quiz creator: a round avatar in the corner of the card, revealing the full name on
  * hover.
+ *
+ * Not rendered by the current layout — the redesigned card has no author slot — but kept
+ * because the data (`initials` in `card-model.ts`) is still derived and attribution is a
+ * decision that gets revisited. Delete both together if it stays out.
  *
  * No fill of its own — just a muted hairline. A solid background would compete with the
  * palette stripe for attention, and it would box in creator photos that already have their

@@ -21,6 +21,12 @@ through `parseQuizPalette` in `src/pages/Quiz/components/quiz-palette.ts`, which
 A palette is **2–5 hex colours** plus a `gradient` boolean, edited in `color-palette-input.tsx`
 with a live `QuizCard` preview.
 
+The card is the only place the **whole** palette is visible rather than just its dominant
+colour — it renders every colour as a dot, and pads a palette shorter than four with tints and
+shades of the accent rather than trimming a long one. So a palette edit is judged in that
+preview, at full fidelity, before it is saved. See
+[`../quiz/quiz-card.md`](../quiz/quiz-card.md) § 2.
+
 Two further colours are *derived* from the dominant one rather than stored beside it, both in the
 same file: `readableTextColor` picks a black or white label by WCAG luminance, and
 `quizEdgeColor` produces the solid depth colour under a quiz-coloured surface — the start modal's

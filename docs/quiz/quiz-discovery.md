@@ -1,5 +1,8 @@
 # Quiz discovery: the "variety" ordering
 
+> This file is about the **order** quizzes arrive in. What each one looks like once it gets
+> there is [`quiz-card.md`](./quiz-card.md).
+
 The quiz catalogue's first page is a new user's first impression of the app. Sorted by
 `createdAt` (the old default), it showed whatever happened to be published last — often a
 wall of one category — hiding the app's actual breadth. The **variety ordering** fixes
@@ -75,5 +78,6 @@ test asserts).
 - Ordering is deterministic (deliberately, for pagination), so the first page is the
   same for everyone until new quizzes are published. If you later want rotation, add a
   seeded shuffle *within* each rank round rather than randomizing globally.
-- Category images/colors already differentiate the cards visually; if you want to go
-  further, a "browse by category" strip above the grid would build on the same data.
+- Category colours already differentiate the cards visually — each card shows its category's
+  full palette ([`quiz-card.md`](./quiz-card.md)) — so a "browse by category" strip above the
+  grid would build on data the page already has.
