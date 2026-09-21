@@ -30,10 +30,17 @@ const FACET_FIELDS: Record<QuizFacetKey, string> = {
  * @param onAfterChange Runs after every toggle/clear; callers use it to reset
  *   pagination in the same render (an effect would fire one render late and
  *   briefly query an out-of-range page — see Quiz-Selection.tsx).
+ * @param initial Selections to start with (read once, on mount) — e.g. the category
+ *   named in `/choose-quiz?category=` (category-param.ts).
  */
-export function useQuizFilterState(onAfterChange?: () => void) {
-  const [selections, setSelections] =
-    useState<QuizFilterSelections>(EMPTY_SELECTIONS);
+export function useQuizFilterState(
+  onAfterChange?: () => void,
+  initial?: Partial<QuizFilterSelections>
+) {
+  const [selections, setSelections] = useState<QuizFilterSelections>(() => ({
+    ...EMPTY_SELECTIONS,
+    ...initial,
+  }));
 
   const toggle = useCallback(
     (facet: QuizFacetKey, id: number) => {

@@ -22,6 +22,36 @@ same defaults:
   (`src/pages/Quiz/Multiplayer/components/lobby/quiz-selection-dialog.tsx`);
   the panel sits behind a "Filters" toggle in its compact variant
 
+### Getting to the pickers
+
+- The header's **Play** link (`/choose-mode`, added 2026-09-20) — one item, from anywhere, for
+  both singleplayer and multiplayer. Not "choose mode" + "select quiz": those are two steps of
+  one flow, and the header runs out of room at 360px, which is this app's narrowest supported
+  width (`RESPONSIVE.md`).
+- The landing page's **Choose a quiz** button goes straight to `/choose-quiz`, skipping the mode
+  screen — that page is about playing solo ([`../home/landing-page.md`](../home/landing-page.md)).
+
+### Opening the list on one category: `?category=<name>`
+
+`/choose-quiz?category=Geography` opens the list with that category already selected. It is
+matched by **name** (case- and spacing-insensitive, otherwise exact — "Film and TV" does not
+match "Film & TV"), because ids differ between dev and live. Nothing in the app links with it
+today — it was built for the landing page's old sample question, which is gone
+([`../home/landing-page.md`](../home/landing-page.md)) — but it is tested and ready for any link
+that wants a category-filtered list; build those with `categoryListPath()` from
+`quiz-filters/category-param.ts`.
+
+- The loader prefetches the categories whenever the param is present, so the page can resolve
+  the name on its first render and start with the filter already applied.
+- **No category by that name**, or **the category has no public quizzes** → the list shows
+  every quiz with a note ("No Mythology & Folklore quizzes yet — here's everything else.")
+  instead of an empty page. The empty case is detected from the filtered result and cleared
+  during render, so the empty grid never paints. The note goes away once the visitor filters
+  or searches themselves.
+- If the categories can't be loaded, the param is ignored rather than claiming the category
+  doesn't exist.
+- The param is read once, on arrival; after that the filters are the visitor's.
+
 Both default to the `Mixed Categories` sort option (`DEFAULT_SORT = "variety"` in
 `quiz-header.tsx`). Users can still switch to Newest/Oldest/A–Z; the variety option is
 just the landing default. Because the two pickers send identical default queries, they

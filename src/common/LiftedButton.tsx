@@ -148,6 +148,12 @@ export interface LiftedButtonProps
    * the button sits on a blue backdrop it has nothing to do with.
    */
   liftColor?: LiftColorToken | TailwindPaletteColor | (string & {});
+  /**
+   * The soft blurred shadow under the face. On by default; pass `false` where it reads as a
+   * glow rather than a shadow — a saturated face (the landing page's yellow Play button) on a
+   * saturated background (the blue wave). The edge layer still gives the button its depth.
+   */
+  glow?: boolean;
 }
 
 // 3D "pushable" button: shadow (blurred, drops on press), edge (darker
@@ -185,6 +191,7 @@ export const LiftedButton = React.forwardRef<
       liftColor,
       variant = "default",
       size = "default",
+      glow = true,
       style,
       ...props
     },
@@ -243,6 +250,7 @@ export const LiftedButton = React.forwardRef<
       >
         {/* Shadow — colored in light mode; in dark mode a colored blur reads
             as a glow halo, so it falls back to a plain translucent black. */}
+        {glow && (
         <span
           className={cn(
             "absolute inset-0 blur-[2px] will-change-transform",
@@ -254,6 +262,7 @@ export const LiftedButton = React.forwardRef<
             !isDisabled && cn(shadow.hover, shadow.active, springHover, snapActive)
           )}
         />
+        )}
         {/* Edge */}
         <span
           className={cn(

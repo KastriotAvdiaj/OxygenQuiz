@@ -83,3 +83,5 @@ graphify-out/
 /.vs/
 # *.user: Visual Studio per-user project settings.
 *.user
+# Cloudflare Wrangler local state and temp build output
+.wrangler/

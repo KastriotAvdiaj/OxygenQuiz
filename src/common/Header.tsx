@@ -111,15 +111,18 @@ const Header = ({ BackgroundColor }: HeaderProps) => {
             )}
           </NavLink>
 
+          {/* The one way back into a game from anywhere: /choose-mode covers both singleplayer
+              and multiplayer. Deliberately one item, not "choose mode" + "select quiz" — those
+              are two steps of the same flow, and the header is tight on phones. */}
           <NavLink
-            to="/about-us"
+            to="/choose-mode"
             className={({ isActive }) =>
               isActive ? "text-foreground" : "hover:text-foreground/80"
             }
           >
             {({ isActive }) => (
               <HoverEffect isActive={isActive}>
-                <li className="text-foreground cursor-pointer">About Us</li>
+                <li className="text-foreground cursor-pointer">Play</li>
               </HoverEffect>
             )}
           </NavLink>

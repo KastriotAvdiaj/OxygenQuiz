@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Check, X } from "lucide-react";
 import type {
   CurrentQuestion,
   InstantFeedbackAnswerResult,
@@ -9,6 +8,7 @@ import { QuizSubmitButton } from "../quiz-submit-button";
 import {
   ANSWER_SELECTED_BACKGROUND,
   ANSWER_SELECTED_BORDER,
+  OPTION_SCALE_TRANSITION,
 } from "../answer-colors";
 
 interface TrueOrFalseQuestionProps {
@@ -19,6 +19,8 @@ interface TrueOrFalseQuestionProps {
   answerResult?: InstantFeedbackAnswerResult | null;
   isTimedOut?: boolean;
   onSelectionChange?: (optionId: number | null, textAnswer?: string) => void;
+  /** First click answers — see the same prop on MultipleChoiceQuestion. */
+  submitOnSelect?: boolean;
 }
 
 export function TrueOrFalseQuestion({
@@ -29,6 +31,7 @@ export function TrueOrFalseQuestion({
   answerResult = null,
   isTimedOut = false,
   onSelectionChange,
+  submitOnSelect = false,
 }: TrueOrFalseQuestionProps) {
   const [selectedOptionId, setSelectedOptionId] = useState<number | null>(null);
 
@@ -49,7 +52,10 @@ export function TrueOrFalseQuestion({
   const handleOptionClick = (optionId: number) => {
     if (isTimedOut) return;
 
-    if (selectedOptionId === optionId) {
+    if (submitOnSelect) {
+      setSelectedOptionId(optionId);
+      onSubmit(optionId);
+    } else if (selectedOptionId === optionId) {
       // Double-click: lock in and submit
       onSubmit(optionId);
     } else {
@@ -82,21 +88,21 @@ export function TrueOrFalseQuestion({
 
   const renderOption = (
     option: { id: number; text: string },
-    isTrue: boolean,
     animDelay: number,
     animX: number,
   ) => {
     const feedback = getFeedbackState(option);
     const isSelected = selectedOptionId === option.id;
-    // Neutral by default — True/False are distinguished by their icon + label, not by colour.
-    // Green/red is reserved for post-answer feedback (correct/incorrect) below.
-    const defaultColor = "hsl(var(--muted-foreground))";
 
     return (
       <motion.div
         initial={{ opacity: 0, x: animX }}
         animate={{ opacity: 1, x: 0 }}
-        transition={{ delay: animDelay }}
+        transition={{
+          opacity: { delay: animDelay },
+          x: { delay: animDelay },
+          scale: OPTION_SCALE_TRANSITION,
+        }}
         whileHover={{ scale: isDisabled ? 1 : 1.03 }}
         whileTap={{ scale: isDisabled ? 1 : 0.97 }}
       >
@@ -104,8 +110,8 @@ export function TrueOrFalseQuestion({
           onClick={() => !isDisabled && handleOptionClick(option.id)}
           disabled={isDisabled}
           className={`
-            w-full h-16 sm:h-20 md:h-24 rounded-xl border-3 transition-all duration-300
-            flex items-center justify-center gap-3 text-lg sm:text-xl font-semibold
+            w-full h-14 sm:h-16 md:h-[4.5rem] rounded-xl border-3 transition-all duration-300
+            flex items-center justify-center gap-3 text-base sm:text-lg font-semibold
             ${
               feedback === "correct"
                 ? "border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300"
@@ -123,7 +129,9 @@ export function TrueOrFalseQuestion({
             }
             ${
               feedback === "default" && !isSelected
-                ? "border-border hover:border-primary/40 bg-card text-foreground"
+                ? // Same surface as the multiple-choice options, so the two question types
+                  // don't look like two different games.
+                  "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 bg-white dark:bg-gray-800 text-foreground"
                 : ""
             }
           `}
@@ -148,23 +156,6 @@ export function TrueOrFalseQuestion({
           }}
         >
           <div className="flex items-center gap-3">
-            <div
-              className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center"
-              style={{
-                backgroundColor:
-                  feedback === "correct"
-                    ? "#10b981"
-                    : isSelected
-                      ? ANSWER_SELECTED_BORDER
-                      : defaultColor,
-              }}
-            >
-              {isTrue ? (
-                <Check className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-              ) : (
-                <X className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-              )}
-            </div>
             <span>{option.text}</span>
             {instantFeedback && answerResult && feedback !== "default" && (
               <motion.div
@@ -186,15 +177,19 @@ export function TrueOrFalseQuestion({
   return (
     // Compact base spacing: phones must fit everything in one viewport (docs/RESPONSIVE.md).
     <div className="space-y-3 sm:space-y-6">
-      <div className="grid grid-cols-2 gap-2.5 sm:gap-6 max-w-2xl mx-auto">
+      {/* pt on the row, not the shared `space-y`: two big buttons sat almost against the
+          question card, which read as one block. Modest on phones — the whole question screen
+          still has to fit one viewport (docs/RESPONSIVE.md). */}
+      <div className="grid grid-cols-2 gap-2.5 pt-1 sm:gap-6 sm:pt-3 max-w-2xl mx-auto">
         {/* True Option */}
-        {trueOption && renderOption(trueOption, true, 0.1, -20)}
+        {trueOption && renderOption(trueOption, 0.1, -20)}
 
         {/* False Option */}
-        {falseOption && renderOption(falseOption, false, 0.2, 20)}
+        {falseOption && renderOption(falseOption, 0.2, 20)}
       </div>
 
       {/* Submit button (shared across all question types) */}
+      {!submitOnSelect && (
       <QuizSubmitButton
         onSubmit={() => onSubmit(selectedOptionId)}
         canSubmit={selectedOptionId !== null}
@@ -208,6 +203,7 @@ export function TrueOrFalseQuestion({
             : undefined
         }
       />
+      )}
     </div>
   );
 }

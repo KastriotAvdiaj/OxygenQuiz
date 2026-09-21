@@ -9,6 +9,7 @@ import { QuizSubmitButton } from "../quiz-submit-button";
 import {
   ANSWER_SELECTED_BACKGROUND,
   ANSWER_SELECTED_BORDER,
+  OPTION_SCALE_TRANSITION,
 } from "../answer-colors";
 
 interface MultipleChoiceQuestionProps {
@@ -19,6 +20,13 @@ interface MultipleChoiceQuestionProps {
   answerResult?: InstantFeedbackAnswerResult | null;
   isTimedOut?: boolean;
   onSelectionChange?: (optionId: number | null, textAnswer?: string) => void;
+  /**
+   * The first click on an option *is* the answer — no second click, no Submit button.
+   * Single-select only (a multi-select question still needs the button to finish picking).
+   * Used by the landing page's sample question (docs/home/landing-page.md); the real game
+   * keeps select-then-confirm so a misclick costs nothing.
+   */
+  submitOnSelect?: boolean;
 }
 
 export function MultipleChoiceQuestion({
@@ -29,6 +37,7 @@ export function MultipleChoiceQuestion({
   answerResult = null,
   isTimedOut = false,
   onSelectionChange,
+  submitOnSelect = false,
 }: MultipleChoiceQuestionProps) {
   // Multi-select questions accept more than one correct option.
   const isMulti = !!question.allowMultipleSelections;
@@ -60,6 +69,9 @@ export function MultipleChoiceQuestion({
           ? prev.filter((id) => id !== optionId)
           : [...prev, optionId],
       );
+    } else if (submitOnSelect) {
+      setSelectedIds([optionId]);
+      onSubmit(optionId);
     } else if (selectedIds[0] === optionId) {
       // Double-click on the already-selected option locks it in and submits.
       onSubmit(optionId);
@@ -126,7 +138,11 @@ export function MultipleChoiceQuestion({
               key={option.id}
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: index * 0.1 }}
+              transition={{
+                opacity: { delay: index * 0.1 },
+                x: { delay: index * 0.1 },
+                scale: OPTION_SCALE_TRANSITION,
+              }}
               whileHover={{ scale: isDisabled ? 1 : 1.02 }}
               whileTap={{ scale: isDisabled ? 1 : 0.98 }}
             >
@@ -241,6 +257,7 @@ export function MultipleChoiceQuestion({
       </div>
 
       {/* Submit button + hint (shared across all question types) */}
+      {!(submitOnSelect && !isMulti) && (
       <QuizSubmitButton
         onSubmit={submitSelection}
         canSubmit={selectedIds.length > 0}
@@ -256,6 +273,7 @@ export function MultipleChoiceQuestion({
             : undefined
         }
       />
+      )}
     </div>
   );
 }

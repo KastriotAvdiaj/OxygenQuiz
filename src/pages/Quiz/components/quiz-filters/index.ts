@@ -5,3 +5,4 @@ export {
   type QuizFacetKey,
   type QuizFilterSelections,
 } from "./use-quiz-filter-state";
+export { CATEGORY_PARAM, categoryListPath, findCategoryByName } from "./category-param";

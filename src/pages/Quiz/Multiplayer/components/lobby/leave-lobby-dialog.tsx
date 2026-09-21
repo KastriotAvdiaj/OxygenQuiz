@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+import { LiftedButton } from "@/common/LiftedButton";
 import {
   Dialog,
   DialogContent,
@@ -32,7 +32,7 @@ export const LeaveLobbyDialog = ({
   return (
     <Dialog open={isOpen} onOpenChange={() => onCancel()}>
       <DialogContent
-        className="sm:max-w-md border-[3px] border-foreground p-0 overflow-hidden"
+        className="sm:max-w-md p-0 overflow-hidden bg-background"
         // Prevent dismissal via overlay click or Escape key
         onInteractOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
@@ -60,20 +60,20 @@ export const LeaveLobbyDialog = ({
           </DialogHeader>
 
           <DialogFooter className="flex flex-row gap-2 sm:gap-3 pt-2">
-            <Button
-              variant="outline"
+            <LiftedButton
               onClick={onCancel}
-              className="flex-1 h-10 sm:h-11 font-bold font-quiz tracking-wider border-2 hover:bg-background/40"
+              className="flex-1 h-10 sm:h-11 font-bold font-quiz tracking-wider bg-background text-foreground border border-border "
+              liftColor="border"
             >
               Stay
-            </Button>
-            <Button
-              variant="destructive"
+            </LiftedButton>
+            <LiftedButton
               onClick={onConfirm}
-              className="flex-1 h-10 sm:h-11 font-bold font-quiz tracking-wider shadow-lg"
+              className="flex-1 h-10 sm:h-11 font-bold font-quiz tracking-wider shadow-lg bg-destructive text-destructive-foreground"
+              liftColor="red-600"
             >
               {inMatch ? "Leave Match" : "Leave Lobby"}
-            </Button>
+            </LiftedButton>
           </DialogFooter>
         </div>
       </DialogContent>

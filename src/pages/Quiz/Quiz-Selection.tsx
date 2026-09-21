@@ -33,7 +33,9 @@ import { useQuestionCategoryData } from "../Dashboard/Pages/Question/Entities/Ca
 import { useQuestionDifficultyData } from "../Dashboard/Pages/Question/Entities/Difficulty/api/get-question-difficulties";
 import { useQuestionLanguageData } from "../Dashboard/Pages/Question/Entities/Language/api/get-question-language";
 import {
+  CATEGORY_PARAM,
   QuizFilterPanel,
+  findCategoryByName,
   useQuizFilterState,
   type QuizFacetKey,
 } from "./components/quiz-filters";
@@ -106,6 +108,28 @@ export function QuizSelection() {
   // fired one render late and briefly queried an out-of-range page.
   const resetPage = useCallback(() => setPageNumber(1), []);
 
+  // Filter option lists (with ids) — the API filters by id, not by name.
+  const { data: categoryData } = useQuestionCategoryData({});
+  const categories = categoryData ?? [];
+  const { data: difficulties = [] } = useQuestionDifficultyData({});
+  const { data: languages = [] } = useQuestionLanguageData({});
+
+  /**
+   * Arrived via `?category=<name>` (category-param.ts) — e.g. the landing page's "Play a full …
+   * quiz". Resolved once, on mount: the loader prefetches the categories whenever the param is
+   * present, so they are already cached here. `id: null` = no category by that name;
+   * `id: undefined` = categories couldn't be loaded, so we can't tell — then the param is
+   * ignored silently rather than claiming the category doesn't exist.
+   */
+  const [arrival] = useState(() => {
+    const name = searchParams.get(CATEGORY_PARAM)?.trim();
+    if (!name) return null;
+    if (!categoryData) return { name, id: undefined };
+    const match = findCategoryByName(categoryData, name);
+    // The stored spelling, not the link's: the note should say "Geography", not "geography".
+    return { name: match?.name ?? name, id: match?.id ?? null };
+  });
+
   // Multi-select facets (category / difficulty / language) → `in` filter rules.
   const {
     selections,
@@ -114,12 +138,10 @@ export function QuizSelection() {
     filters,
     activeCount: facetCount,
     selectionKey,
-  } = useQuizFilterState(resetPage);
-
-  // Filter option lists (with ids) — the API filters by id, not by name.
-  const { data: categories = [] } = useQuestionCategoryData({});
-  const { data: difficulties = [] } = useQuestionDifficultyData({});
-  const { data: languages = [] } = useQuestionLanguageData({});
+  } = useQuizFilterState(
+    resetPage,
+    arrival?.id != null ? { categoryIds: [arrival.id] } : undefined
+  );
 
   // Build the server-side query: search + filters + sort + paging, all handled by
   // the public quiz catalogue endpoint (/quiz/search, scope "public").
@@ -132,6 +154,32 @@ export function QuizSelection() {
   };
 
   const { data: quizData, isLoading } = useSearchQuizzes({ scope: "public", query });
+
+  /**
+   * The arrival's category exists but has no public quizzes: drop the filter and say so,
+   * rather than landing someone on "No quizzes found". Set during render (React's
+   * "adjust state while rendering" pattern), so the empty grid never paints — an Effect would
+   * show it for a frame first. Only while the list is still exactly what the link asked for.
+   */
+  const [arrivalWasEmpty, setArrivalWasEmpty] = useState(false);
+  const showingArrivalOnly =
+    arrival?.id != null &&
+    facetCount === 1 &&
+    selections.categoryIds[0] === arrival.id &&
+    !debouncedSearch;
+  if (!arrivalWasEmpty && showingArrivalOnly && quizData && quizData.totalItems === 0) {
+    setArrivalWasEmpty(true);
+    clearFacets();
+  }
+
+  // The note stays until the visitor filters or searches for something themselves.
+  const arrivalNote =
+    arrival &&
+    (arrival.id === null || arrivalWasEmpty) &&
+    facetCount === 0 &&
+    !searchQuery
+      ? `No ${arrival.name} quizzes yet — here's everything else.`
+      : null;
 
   const quizzes = quizData?.items ?? [];
   const pagination = quizData ? pagedResponseToPagination(quizData) : undefined;
@@ -363,6 +411,15 @@ export function QuizSelection() {
               )}
               <div className="h-px flex-1 min-w-[3rem] bg-gradient-to-r from-primary/40 via-primary/15 to-transparent" />
             </div>
+
+            {arrivalNote && (
+              <p
+                role="status"
+                className="mb-4 rounded-lg border border-primary/30 bg-primary/10 px-3 py-2 text-sm text-foreground sm:mb-5"
+              >
+                {arrivalNote}
+              </p>
+            )}
 
             {/* Quiz Grid */}
             {isLoading ? (

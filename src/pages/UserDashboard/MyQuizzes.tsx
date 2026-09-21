@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { DataTable, Card, LoadingWave, Button } from "@/components/ui";
-import { Link } from "react-router-dom";
 import { quizColumns } from "@/pages/Dashboard/Pages/Quiz/components/Data-Table-Columns/columns";
 import { useSearchQuizzes } from "@/pages/Dashboard/Pages/Quiz/api/search-quizzes";
 import { rule, type FilterQuery, type FilterRule } from "@/lib/filtering";
@@ -12,16 +11,7 @@ import { pagedResponseToPagination } from "@/lib/pagination-query";
 import { useQuestionCategoryData } from "@/pages/Dashboard/Pages/Question/Entities/Categories/api/get-question-categories";
 import { useQuestionDifficultyData } from "@/pages/Dashboard/Pages/Question/Entities/Difficulty/api/get-question-difficulties";
 import { useQuestionLanguageData } from "@/pages/Dashboard/Pages/Question/Entities/Language/api/get-question-language";
-import { LiftedButton } from "@/common/LiftedButton";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/form";
-import { GrFormNextLink } from "react-icons/gr";
+import { CreateQuizMethodDialog } from "@/pages/Dashboard/Pages/Quiz/components/create-quiz-method-dialog";
 import { QuizFiltersPanel } from "@/pages/Dashboard/Pages/Quiz/components/Quiz-Filter";
 import { Filter } from "lucide-react";
 import {
@@ -123,30 +113,14 @@ export const MyQuizzes = () => {
               </span>
             )}
           </Button>
-          <Dialog>
-          <DialogTrigger asChild>
-            <LiftedButton>+ Create Quiz</LiftedButton>
-          </DialogTrigger>
-          <DialogContent className="bg-background">
-            <DialogHeader>
-              <DialogTitle>
-                <p className="text-xl">Choose your quiz title</p>
-                <p className="text-muted-foreground text-xs">
-                  (You can still change later)
-                </p>
-              </DialogTitle>
-            </DialogHeader>
-            <Input variant="minimal" placeholder="Quiz Title" />
-            <section className="flex flex-col items-end mt-6">
-              <Link to="/my-dashboard/quizzes/create" className="w-fit">
-                <LiftedButton className="w-fit">
-                  Next
-                  <GrFormNextLink />
-                </LiftedButton>
-              </Link>
-            </section>
-          </DialogContent>
-        </Dialog>
+          {/* Same chooser as the admin Quizzes page — manual, or AI (generate / bring your own).
+              The /my-dashboard AI routes existed but nothing linked to them; this is the entry
+              point. The old title-first dialog is gone: its input was never read. */}
+          <CreateQuizMethodDialog
+            manualPath="/my-dashboard/quizzes/create"
+            aiTopicPath="/my-dashboard/quizzes/create/ai/topic"
+            aiMaterialPath="/my-dashboard/quizzes/create/ai/material"
+          />
         </div>
       </div>
 

@@ -26,6 +26,9 @@ interface InviteGateProps {
  */
 const InviteGate: React.FC<InviteGateProps> = ({ initialCode = "", onPassed }) => {
   const [code, setCode] = useState(initialCode);
+  // Set when Continue is pressed with nothing usable yet. The button is never dead: pressing it
+  // says what's missing instead (an empty field with a greyed-out button explains nothing).
+  const [blockedMessage, setBlockedMessage] = useState<string | undefined>(undefined);
   const inviteValidity = useInviteCodeValidity(code);
 
   const getFeedback = (): StepFeedback => {
@@ -48,6 +51,23 @@ const InviteGate: React.FC<InviteGateProps> = ({ initialCode = "", onPassed }) =
   };
 
   const feedback = getFeedback();
+
+  const submit = () => {
+    setBlockedMessage(undefined);
+    onPassed(code.trim());
+  };
+
+  const explainBlock = () => {
+    if (code.trim().length === 0) {
+      setBlockedMessage("Enter your invite code to continue");
+    } else if (inviteValidity.isChecking) {
+      setBlockedMessage("Hang on — still checking that code");
+    } else if (!inviteValidity.longEnough) {
+      setBlockedMessage("That code looks too short — check it against your invite");
+    } else {
+      setBlockedMessage("This invite code isn't valid or has already been used");
+    }
+  };
 
   return (
     <>
@@ -77,10 +97,11 @@ const InviteGate: React.FC<InviteGateProps> = ({ initialCode = "", onPassed }) =
       </section>
 
       <form
-        className="space-y-4 sm:space-y-5 text-base min-h-[210px] sm:min-h-[250px] flex flex-col justify-center"
+        className="space-y-1.5 text-base min-h-[160px] sm:min-h-[180px] flex flex-col justify-center"
         onSubmit={(e) => {
           e.preventDefault();
-          if (!feedback.nextDisabled) onPassed(code.trim());
+          if (feedback.nextDisabled) explainBlock();
+          else submit();
         }}
       >
         <Step
@@ -90,12 +111,14 @@ const InviteGate: React.FC<InviteGateProps> = ({ initialCode = "", onPassed }) =
           placeholder="e.g. K7QM-3FXP-9T"
           value={code}
           // Codes are case- and dash-insensitive server-side; uppercase as the user types.
-          onChange={(e) => setCode(e.target.value.toUpperCase())}
-          onNext={() => {
-            if (!feedback.nextDisabled) onPassed(code.trim());
+          onChange={(e) => {
+            setCode(e.target.value.toUpperCase());
+            setBlockedMessage(undefined);
           }}
+          onNext={submit}
+          onNextBlocked={explainBlock}
           isFirstStep
-          error={feedback.error}
+          error={feedback.error ?? blockedMessage}
           success={feedback.success}
           isChecking={feedback.isChecking}
           nextDisabled={feedback.nextDisabled}

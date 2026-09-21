@@ -17,3 +17,15 @@ export const ANSWER_SELECTED_BORDER = "hsl(var(--primary))";
  * came from; the other question types had drifted onto a hardcoded hex.
  */
 export const ANSWER_SELECTED_BACKGROUND = "hsl(var(--primary) / 0.1)";
+
+/**
+ * Hover / press scale on an answer option. Snappy on purpose, and given per-property: the
+ * options' entrance uses a staggered `delay`, and a single `transition` prop applied that delay
+ * to hover too — the 4th option took ~a second to respond, and the release lagged the same way.
+ * Use as `transition={{ opacity: …, x: …, scale: OPTION_SCALE_TRANSITION }}`.
+ */
+export const OPTION_SCALE_TRANSITION = {
+  type: "spring",
+  stiffness: 500,
+  damping: 32,
+} as const;

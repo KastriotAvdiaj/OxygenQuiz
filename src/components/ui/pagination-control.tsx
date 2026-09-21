@@ -108,7 +108,7 @@ export const PaginationControls = ({
             type="button"
             variant="secondary"
             size="icon"
-            className="h-10 w-10 hidden sm:flex justify-center disabled:opacity-30 border shadow-sm rounded-lg"
+            className="h-10 w-10 hidden sm:flex justify-center disabled:opacity-80 border dark:border-foreground/30 shadow-sm rounded-lg bg-background"
             onClick={() => onPageChange(1)}
             disabled={currentPage === 1}
             aria-label="Go to first page"
@@ -122,7 +122,7 @@ export const PaginationControls = ({
           type="button"
           variant="secondary"
           size="icon"
-          className="h-10 w-10 disabled:opacity-30 border shadow-sm rounded-lg"
+          className="h-10 w-10 disabled:opacity-60 border dark:border-foreground/30 shadow-sm rounded-lg bg-background"
           onClick={() => onPageChange(currentPage - 1)}
           disabled={!hasPreviousPage}
           aria-label="Go to previous page"
@@ -151,10 +151,10 @@ export const PaginationControls = ({
                 variant={pageNumber === currentPage ? "default" : "outline"}
                 size="icon"
                 className={cn(
-                  "h-10 w-10 transition-all rounded-lg border border-gray-300 dark:border-gray-800 shadow-sm",
+                  "h-10 w-10 transition-all rounded-lg border border-gray-300 dark:border-foreground/20 shadow-sm ",
                   pageNumber === currentPage
                     ? "font-bold shadow-md text-white"
-                    : "hover:bg-accent hover:text-accent-foreground",
+                    : "hover:bg-accent hover:text-accent-foreground bg-background",
                 )}
                 onClick={() => onPageChange(pageNumber as number)}
                 aria-current={pageNumber === currentPage ? "page" : undefined}
@@ -170,7 +170,7 @@ export const PaginationControls = ({
           type="button"
           variant="secondary"
           size="icon"
-          className="h-10 w-10 disabled:opacity-30 border shadow-sm rounded-lg"
+          className="h-10 w-10 disabled:opacity-60 border dark:border-foreground/30 shadow-sm rounded-lg bg-background"
           onClick={() => onPageChange(currentPage + 1)}
           disabled={!hasNextPage}
           aria-label="Go to next page"
@@ -184,7 +184,7 @@ export const PaginationControls = ({
             type="button"
             variant="secondary"
             size="icon"
-            className="h-10 w-10 hidden sm:flex justify-center disabled:opacity-30 border shadow-sm rounded-lg"
+            className="h-10 w-10 hidden sm:flex justify-center disabled:opacity-80 border shadow-sm rounded-lg bg-background"
             onClick={() => onPageChange(totalPages)}
             disabled={currentPage === totalPages}
             aria-label="Go to last page"

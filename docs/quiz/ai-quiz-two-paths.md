@@ -64,7 +64,10 @@ grey, so it reads as a footnote rather than a competing offer.
 ## 2a. The chooser, and why the wizard stopped asking
 
 Every "which way?" decision now happens in `create-quiz-method-dialog.tsx`, before anything is
-typed, in two steps inside one overlay:
+typed, in two steps inside one overlay. Both dashboards open it from their **+ Create Quiz**
+button — admin `Quizzes.tsx` and user `MyQuizzes.tsx`, each passing its own route prefix. (Until
+2026-09-19 the user page opened an older title-only dialog that linked straight to the manual
+builder, so the `/my-dashboard` AI routes existed but were unreachable.)
 
 1. **How do you want to build this quiz?** — Manually / With AI.
 2. **What should the AI work from?** — From a topic / From my material.

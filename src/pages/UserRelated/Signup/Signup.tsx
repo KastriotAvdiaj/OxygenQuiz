@@ -69,8 +69,8 @@ const Signup: React.FC = () => {
 
         {/* Form Container — my-auto centers it in the space left after the
             control row; tighter rhythm on phones (docs/RESPONSIVE.md) */}
-        <div className="w-full max-w-md space-y-5 sm:space-y-6 mx-auto my-auto">
-          <div className="space-y-2">
+        <div className="w-full max-w-md mx-auto my-auto">
+          <div className="mb-6 sm:mb-8">
             <h2 className="text-xl sm:text-3xl font-bold text-foreground">Create Account</h2>
             {/* <p className="text-sm sm:text-base text-muted-foreground">
               Fill in your details to get started
@@ -81,10 +81,14 @@ const Signup: React.FC = () => {
               signing up manually or with Google/Microsoft. The invite-only note and the
               provider buttons live INSIDE the flow, on the stages where they belong —
               nothing signup-related renders before the gate. */}
-          <SignupFlow />
+          {/* The stages sit in a card: on this page the form is the only thing on the right
+              half, and loose controls on a bare background had nothing holding them together. */}
+          <div className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
+            <SignupFlow />
+          </div>
 
           {/* Login Link */}
-          <p className="text-center text-sm text-muted-foreground">
+          <p className="mt-4 text-center text-sm text-muted-foreground sm:mt-5">
             Already have an account?{" "}
             <a
               href="/login"

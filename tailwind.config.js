@@ -129,7 +129,17 @@ module.exports = {
   			'quiz-border-subtle': 'hsl(var(--quiz-border-subtle))',
   			'quiz-text-primary': 'hsl(var(--quiz-text-primary))',
   			'quiz-text-secondary': 'hsl(var(--quiz-text-secondary))',
-  			'quiz-shadow': 'hsl(var(--quiz-shadow))'
+  			'quiz-shadow': 'hsl(var(--quiz-shadow))',
+  			// The landing page's call to action (src/pages/Home). Warm amber: it has to read on
+  			// both the page background and the blue wave, and the complementary warm tone is
+  			// what stands out against blue. One value for both themes — it sits on the wave,
+  			// which doesn't change with the theme either. The label is white by choice; white on
+  			// this yellow is low contrast (~1.7:1), so the button text carries a soft shadow to
+  			// hold its edges (Home.tsx).
+  			cta: {
+  				DEFAULT: '#fbbf24',
+  				foreground: '#ffffff'
+  			}
   		},
   		borderRadius: {
   			lg: 'var(--radius)',

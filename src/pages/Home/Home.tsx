@@ -1,34 +1,45 @@
-import RotatingText from "@/common/Effect-Related/RotatingText";
-import { ChooseQuiz } from "./components/choose-quiz-dialog";
+import { motion } from "framer-motion";
+import { Pitch } from "./hero/pitch";
+import { Wave } from "./hero/wave";
+import { WAVE_MASK_VARS } from "./hero/wave-shapes";
+import { fadeIn, useLandingIntro } from "./use-landing-intro";
+
+/**
+ * The landing page: a big headline across the middle of the screen, over a blue wave — and
+ * where the text crosses onto the wave, it changes colour. Decisions and reasoning:
+ * docs/home/landing-page.md.
+ *
+ * How the colour change works: the pitch is rendered **twice**, in identical layout.
+ * 1. The `"page"` copy, in normal colours, in flow — the real one, with every link and button.
+ * 2. The `"wave"` copy on top, recoloured, masked to the wave's exact shape with CSS
+ *    `mask-image` (the same path as the drawn wave, stretched the same way). It shows only on
+ *    the wave, and there it covers the page copy. It is decorative: `aria-hidden`, no pointer
+ *    events, its buttons invisible placeholders.
+ *
+ * The wave and its mask **fade** in rather than slide: moving the wave would drag it out from
+ * under its own mask.
+ */
 export const Home = () => {
+  const intro = useLandingIntro();
+
   return (
-    // flex-1 (not min-h-screen): fills the layout's dynamic-viewport column —
-    // 100vh over-measures on mobile and pushed the CTA under the browser chrome
-    // (docs/RESPONSIVE.md).
-    <div className="relative z-10 flex-1 w-full flex flex-col items-center justify-center text-foreground gap-5 px-4">
-      {/* Fluid type. Stacked on phones ON PURPOSE: with flex-wrap the layout
-          jumped between one and two lines depending on the rotating word's
-          width ("Mind" fit, "Memory" wrapped) — a consistent two-line stack
-          beats an unstable one; inline again from sm up (docs/RESPONSIVE.md). */}
-      <div className="flex flex-col items-center justify-center gap-1.5 text-center text-3xl sm:flex-row sm:flex-wrap sm:gap-2 sm:text-4xl md:text-5xl lg:text-6xl text-foreground">
-        <h1>Sharpen Your</h1>
-        <RotatingText
-          mainClassName="px-2 sm:px-2 md:px-3 bg-cyan-300 text-black font-header font-semibold italic overflow-hidden py-0.5 sm:py-1 md:py-2 justify-center rounded-lg"
-          texts={["Thinking ", "Mind ", "Memory ", "Logic "]}
-          staggerFrom={"last"}
-          animatePresenceMode="popLayout"
-          initial={{ y: "100%" }}
-          animate={{ y: 0 }}
-          exit={{ y: "-120%" }}
-          staggerDuration={0.025}
-          splitLevelClassName="overflow-hidden pb-0.5 sm:pb-1 md:pb-1"
-          transition={{ type: "spring", damping: 30, stiffness: 400 }}
-          rotationInterval={2500}
-        />
-      </div>
-      <div className="flex items-center flex-col justify-center items-center">
-        <ChooseQuiz />
-      </div>
+    // flex-1 (not min-h-screen): fills the layout's dynamic-viewport column (docs/RESPONSIVE.md).
+    // overflow-hidden: the wave is sized to the page and must never add a scrollbar.
+    <div className="relative flex w-full flex-1 flex-col overflow-hidden text-foreground">
+      <motion.div {...fadeIn(intro)} className="pointer-events-none absolute inset-0">
+        <Wave />
+      </motion.div>
+
+      <Pitch tone="page" intro={intro} />
+
+      <motion.div
+        {...fadeIn(intro)}
+        aria-hidden="true"
+        style={WAVE_MASK_VARS}
+        className="pointer-events-none absolute inset-0 flex flex-col [-webkit-mask-image:var(--wave-mask-sm)] [-webkit-mask-size:100%_100%] [mask-image:var(--wave-mask-sm)] [mask-size:100%_100%] lg:[-webkit-mask-image:var(--wave-mask-lg)] lg:[mask-image:var(--wave-mask-lg)]"
+      >
+        <Pitch tone="wave" intro={intro} />
+      </motion.div>
     </div>
   );
 };

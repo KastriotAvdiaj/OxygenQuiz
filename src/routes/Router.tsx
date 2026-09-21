@@ -104,11 +104,6 @@ enum HeaderBehavior {
 const Home = lazy(() =>
   import("../pages/Home/Home").then((module) => ({ default: module.Home })),
 );
-const AboutUs = lazy(() =>
-  import("../pages/AboutUs/AboutUs").then((module) => ({
-    default: module.AboutUs,
-  })),
-);
 const Login = lazy(() => import("../pages/UserRelated/Login/Login"));
 const Signup = lazy(() => import("../pages/UserRelated/Signup/Signup"));
 const ConfirmEmail = lazy(
@@ -152,14 +147,6 @@ const createAppRouter = (queryClient: QueryClient) =>
             // effect="prism"
             children={<Home />}
           />
-        </>
-      ),
-    },
-    {
-      path: "/about-us",
-      element: (
-        <>
-          <HomeLayout children={<AboutUs />} />
         </>
       ),
     },

@@ -37,21 +37,30 @@ const MethodChoice: React.FC<MethodChoiceProps> = ({
   const { google, microsoft } = useAuthConfig();
   const hasProviders = google.enabled || microsoft.enabled;
 
+  // justify-center: the stage reserves a minimum height so the card doesn't resize between
+  // stages; without it the spare room all pooled under the last button.
   return (
-    <div className="flex flex-col min-h-[210px] sm:min-h-[250px]">
-      <p className="text-sm sm:text-base text-muted-foreground mb-4 sm:mb-6">
+    <div className="flex flex-col justify-center min-h-[210px] sm:min-h-[250px] mt-6">
+      {/* <p className="text-sm sm:text-base text-muted-foreground mb-4 sm:mb-6">
         How would you like to create your account?
-      </p>
+      </p> */}
 
-      <LiftedButton
-        type="button"
-        className="text-base font-bold shadow-xl"
-        outerClassName="w-full h-11"
-        onClick={onChooseManual}
-      >
-        <Mail className="w-4 h-4" />
-        Continue with email
-      </LiftedButton>
+      {/* Same width and height as the provider buttons below (SocialButtons caps them at
+          300px and 40px tall) — the two ways in are alternatives, so neither should look
+          bigger than the other. */}
+      <div className="flex w-full justify-center">
+        <div className="w-full max-w-[300px]">
+          <LiftedButton
+            type="button"
+            className="text-sm sm:text-base font-bold shadow-xl"
+            outerClassName="w-full h-10"
+            onClick={onChooseManual}
+          >
+            <Mail className="w-4 h-4" />
+            Continue with email
+          </LiftedButton>
+        </div>
+      </div>
 
       {hasProviders && (
         <>
@@ -61,7 +70,8 @@ const MethodChoice: React.FC<MethodChoiceProps> = ({
               <span className="w-full border-t border-border" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-3 text-muted-foreground font-medium">
+              {/* bg-card, not bg-background: this sits inside the signup card now. */}
+              <span className="bg-card px-3 text-muted-foreground font-medium">
                 Or
               </span>
             </div>

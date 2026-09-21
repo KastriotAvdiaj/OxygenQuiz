@@ -1110,6 +1110,13 @@ fixed; these were left.
   [`../quiz/quiz-card.md`](../quiz/quiz-card.md) § 7.
   → `src/pages/Quiz/components/quiz-card/`
 
+## Landing page & quiz list (2026-09-19 — see docs/home/landing-page.md)
+
+- **P2 — `/choose-quiz` breaks when `GET /questionCategories` fails.** Found while testing
+  `?category=`: with the categories endpoint returning 500, the page shows no quizzes at all —
+  with or without the param, so it predates it. The quiz grid should not depend on the filter
+  panel's lookup data. → `src/pages/Quiz/Quiz-Selection.tsx`
+
 ## Documentation debt (2026-08-23)
 
 - **P3 — Four `*-plan.md` files are load-bearing reference docs and shouldn't be.**

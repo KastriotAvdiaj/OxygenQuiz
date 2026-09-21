@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { LiftedButton } from "@/common/LiftedButton";
 import InputField from "@/common/InputField";
 import { Error } from "@/components/ui/form/error";
-import { ArrowLeft, Loader2, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Loader2, CheckCircle2 } from "lucide-react";
 
 interface StepProps {
   label: string;
@@ -22,6 +22,12 @@ interface StepProps {
   isChecking?: boolean;
   /** Parent-controlled gate for the Continue/Create button. */
   nextDisabled?: boolean;
+  /**
+   * When given, the button stays **clickable** while `nextDisabled` and calls this instead of
+   * `onNext` — for steps that would rather say what's wrong than present a dead button (the
+   * invite gate). Steps that don't pass it keep the plain disabled button.
+   */
+  onNextBlocked?: () => void;
 }
 
 const Step: React.FC<StepProps> = ({
@@ -39,6 +45,7 @@ const Step: React.FC<StepProps> = ({
   success,
   isChecking,
   nextDisabled,
+  onNextBlocked,
 }) => (
   <>
     <InputField
@@ -51,7 +58,7 @@ const Step: React.FC<StepProps> = ({
     />
 
     {/* Feedback line: checking -> error -> success (only one shows at a time). */}
-    <div className="min-h-[1.25rem] mt-1.5" aria-live="polite">
+    <div className="min-h-[1.25rem]" aria-live="polite">
       {isChecking ? (
         <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
           <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -67,7 +74,9 @@ const Step: React.FC<StepProps> = ({
       ) : null}
     </div>
 
-    <div className="flex justify-between items-center mt-6 gap-4">
+    {/* Tight under the field: the feedback line above already reserves its own row, and mt-6
+          on top of that left the button floating away from the input it belongs to. */}
+      <div className="flex justify-between items-center mt-1 gap-4 sm:mt-2">
       {!isFirstStep && onBack && (
         <Button
           type="button"
@@ -80,15 +89,24 @@ const Step: React.FC<StepProps> = ({
         </Button>
       )}
 
-      <div className={isFirstStep ? "w-full" : "w-2/3 ml-auto"}>
+      {/* First step has no Back button beside it, so the action doesn't need the full width —
+          a compact button on the right reads as "next", not as the page's main event. */}
+      <div className={isFirstStep ? "ml-auto w-auto" : "w-2/3 ml-auto"}>
         <LiftedButton
           type="button"
-          className="text-base font-bold shadow-xl"
+          className="px-8 text-base font-bold shadow-xl"
           outerClassName="w-full h-11"
-          onClick={onNext}
-          disabled={nextDisabled}
+          onClick={nextDisabled && onNextBlocked ? onNextBlocked : onNext}
+          disabled={nextDisabled && !onNextBlocked}
         >
-          {isLastStep ? "Create Account" : "Continue"}
+          {isLastStep ? (
+            "Create Account"
+          ) : (
+            <>
+              Continue
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </>
+          )}
         </LiftedButton>
       </div>
     </div>
