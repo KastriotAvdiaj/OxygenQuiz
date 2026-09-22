@@ -1,7 +1,4 @@
-import { useEffect, useState } from "react";
 import { useReducedMotion } from "framer-motion";
-
-const KEY = "oq:landing-intro-played";
 
 /**
  * The entrance's timing, in seconds, in one place (docs/home/landing-page.md): the wave rises
@@ -40,38 +37,14 @@ export function fadeIn(intro: boolean) {
   };
 }
 
-const readPlayed = () => {
-  // try/catch: storage can be disabled (private mode, blocked site data) — then the intro just
-  // plays every time, which is the harmless failure.
-  try {
-    return window.sessionStorage.getItem(KEY) === "1";
-  } catch {
-    return false;
-  }
-};
-
 /**
- * Whether the landing page should play its entrance: only on the first visit to `/` in this
- * browser tab (sessionStorage clears when the tab closes), and never under
- * `prefers-reduced-motion`. Later visits render at rest, so a returning player clicking Home
- * isn't made to sit through it again. In development (`npm run dev`) it plays on every visit.
+ * Whether the landing page should play its entrance: on **every** visit to `/`, except under
+ * `prefers-reduced-motion` (on Windows, "Animation effects" off in Settings sets it).
  *
- * Read once, in the state initializer — the answer must not flip mid-visit when the flag is
- * written. Writing the flag is the Effect: it synchronizes with browser storage.
+ * It used to play only once per browser tab (a `sessionStorage` flag), so on the live site a
+ * reload or a click on Home showed a page at rest, and the entrance looked missing. The whole
+ * thing is under a second, so it isn't worth hiding.
  */
 export function useLandingIntro(): boolean {
-  const reduceMotion = useReducedMotion();
-  const [firstVisit] = useState(() => !readPlayed());
-
-  useEffect(() => {
-    try {
-      window.sessionStorage.setItem(KEY, "1");
-    } catch {
-      /* see readPlayed */
-    }
-  }, []);
-
-  // In development it always plays, so the entrance can be watched and tuned on every reload
-  // (`import.meta.env.DEV` is false in production builds, so this line compiles away there).
-  return (import.meta.env.DEV || firstVisit) && !reduceMotion;
+  return !useReducedMotion();
 }

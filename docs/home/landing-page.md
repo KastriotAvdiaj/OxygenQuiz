@@ -14,19 +14,46 @@ into this form on 2026-09-21 (see "How it got here").
   It replaced the rotating "Sharpen your ___": a single, fixed line reads bolder at this size,
   and a changing word would make the two copies (below) harder to keep in step.
 - **The subtitle**, in a muted diagonal gradient clipped to the text (white on the wave).
-- **Actions** (`hero/hero-actions.tsx`): **Play** is the one big button — yellow-amber with a
-  white label (`cta` token in `tailwind.config.js`, ▶ icon, → `/choose-quiz`). White on this
-  yellow is low contrast (~1.7:1), so the label carries a soft text shadow; a deeper amber that
-  passes contrast was tried and rejected — it read as brown. Then an **"or"** divider, then two
-  smaller muted lifted buttons (the "Cancel" treatment from the confirmation dialog):
+  `bg-clip-text` paints only over the element's background box, which ends at the line box, so the
+  descenders of g/y/q were sliced off; bottom padding extends the box over them and an equal
+  negative margin keeps the layout where it was.
+- **Actions** (`hero/hero-actions.tsx`): three **flat pills** built on the shared `Button` — not
+  `LiftedButton`, see below. **Play** is the big one (▶ icon, → `/choose-quiz`), and it is **always
+  the inverse of the other two**: navy `foreground` with a white label in the light theme, white
+  with a blue label in the dark one, where the secondaries are white and near-black respectively.
+  That inversion is what makes it the primary action without a colour of its own. It steps up a
+  size at `lg` and again at `xl`. The label stays **"Play"** (not "Play a quiz"): the ▶ and the
+  header's "Play" already say what it does. Then an **"or"** divider, then two smaller outlined
+  pills:
   - **Host a lobby** → `/multiplayer-menu`. Multiplayer needs an account — guests get one
     singleplayer quiz and no multiplayer ([`../auth/guest-play.md`](../auth/guest-play.md)).
   - **Create a quiz** opens the same manual-or-AI chooser as the user dashboard
     (`CreateQuizMethodDialog`, user-dashboard routes; logged-out visitors are sent to login and
-    back). A small **"With AI"** speech bubble floats on its corner and bobs gently (it holds still under
-    reduced motion), so the AI option is visible before the chooser opens.
-  All three buttons scale down a step per breakpoint, and none has the lifted button's soft
-  shadow (`glow={false}`): on the blue wave it read as a glow.
+    back). A small **"AI"** tag (primary pill, ringed in the page colour so it
+    cuts out from the page or the wave) is pinned to its top-right corner, **on the button itself**, so the AI option is visible before the
+    chooser opens. It replaced a rotated, bobbing "With AI" speech bubble that read as a
+    notification floating above the button rather than part of it.
+  All three share one pill shape, a colour change on hover, a small press (`active:scale-[0.98]`)
+  and a `foreground` focus ring — the shared `Button`'s own `--ring` is close to the wave's blue
+  and disappeared on it.
+
+### Why they are flat
+
+They were `LiftedButton`s (the 3D "pushable" button used across the app) until 2026-09-22. That
+button draws its edge and shadow by *darkening its own colour*, which works for the theme blue and
+not for a near-black or white face: every attempt at a visible edge here was either invisible in
+the light theme or an ornament in its own right (a bright blue ledge, a translucent shadow). Flat
+pills on a flat wave — shape, size and contrast carry the hierarchy instead. `LiftedButton` is
+unchanged and still used everywhere else.
+
+### Why Play isn't amber any more
+
+It was amber (`cta`) with a white label until 2026-09-22 — white on that yellow is ~1.7:1, held
+together by a text shadow. Four treatments were rendered side by side in both themes: amber with
+the headline's navy ink (legible, but the owner's read was that the warm accent didn't sit with the
+rest of the page), navy in both themes (in the dark theme it is nearly the secondaries' colour),
+white in both themes (in the light theme, likewise), and the inversion that shipped. The `cta`
+token stays — "answers." still turns amber on the wave — but nothing else uses it now.
 
 ## The wave
 
@@ -58,11 +85,19 @@ differ — or the white copy stops lining up with the real one.
 
 ## Entrance
 
-On the **first visit to `/` in a browser tab**, and on **every** visit in development
-(`npm run dev`): the wave fades in, then the pitch rises in line by line. The wave **fades**
+On **every** visit to `/`: the wave fades in, then the pitch rises in line by line. The wave **fades**
 rather than slides: moving it would drag it out from under its own mask. Constant speed (`linear`).
-Timings live in `INTRO` in `use-landing-intro.ts`; a `sessionStorage` flag marks it played.
-Off under `prefers-reduced-motion`.
+Timings live in `INTRO` in `use-landing-intro.ts`. Off under `prefers-reduced-motion` (on
+Windows, turning off "Animation effects" sets it). Until 2026-09-21 a `sessionStorage` flag
+limited it to the first visit per browser tab — so in production a reload or a click on Home
+showed the page at rest and the entrance looked broken. At under a second it isn't worth hiding.
+
+**Why a loading screen shows before this static page:** the page itself makes no requests, but
+the app shell does. `AuthLoader` (`src/Provider.tsx`) holds the whole app — every route, this one
+included — on `GET /Authentication/me`; for a signed-out visitor that 401s and the API client then
+tries `POST /Authentication/refresh` before giving up, so two API round trips come first. Only
+after that do the lazy `layout` and `Home` chunks start downloading. `PageLoading` stays hidden
+for the first 140ms, so a fast answer shows nothing; a slow API shows "Signing you in".
 
 ## Files
 
@@ -70,12 +105,11 @@ Off under `prefers-reduced-motion`.
 |---|---|
 | `src/pages/Home/Home.tsx` | Composition: the wave, the page copy, the masked wave copy |
 | `src/pages/Home/hero/pitch.tsx` | Headline, subtitle, actions — one component, two tones |
-| `src/pages/Home/hero/hero-actions.tsx` | Play / or / Host a lobby / Create a quiz + "With AI" bubble |
+| `src/pages/Home/hero/hero-actions.tsx` | Play / or / Host a lobby / Create a quiz + "AI" tag |
 | `src/pages/Home/hero/tone.ts` | `HeroTone` (`"page"` / `"wave"`) and the on-wave text colour |
 | `src/pages/Home/hero/wave-shapes.ts` | The two wave paths and the masks built from them |
 | `src/pages/Home/hero/wave.tsx` | The drawn wave |
-| `src/pages/Home/use-landing-intro.ts` | First-visit flag, `INTRO` timings, `riseIn` / `fadeIn` |
-| `src/common/LiftedButton.tsx` | `glow` prop (default on) |
+| `src/pages/Home/use-landing-intro.ts` | `INTRO` timings, `riseIn` / `fadeIn`, reduced-motion check |
 
 ## How it got here
 

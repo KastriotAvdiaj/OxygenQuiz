@@ -37,11 +37,14 @@ export function Pitch({ tone, intro }: { tone: HeroTone; intro: boolean }) {
         </span>
       </motion.h1>
 
-      {/* Muted gradient text, clipped to the words (`w-fit`). */}
+      {/* Muted gradient text, clipped to the words (`w-fit`). `bg-clip-text` paints the text
+          only where the element's background box is, and that box ends at the line box — the
+          descenders of g/y/q hang below it and were cut off. The bottom padding extends the box
+          over them; the matching negative margin keeps the layout exactly where it was. */}
       <motion.p
         {...riseIn(intro, 1)}
         className={cn(
-          "mt-4 w-fit bg-gradient-to-br bg-clip-text text-lg font-medium leading-snug text-transparent sm:mt-6 sm:text-2xl md:text-[1.75rem] lg:text-[2.25rem]",
+          "-mb-[0.2em] mt-4 w-fit bg-gradient-to-br bg-clip-text pb-[0.2em] text-lg font-medium leading-snug text-transparent sm:mt-6 sm:text-2xl md:text-[1.75rem] lg:text-[2.25rem]",
           onWave
             ? "from-white to-white/70 dark:from-background dark:to-background/75"
             : "from-foreground/85 via-muted-foreground to-muted-foreground/60",
@@ -50,7 +53,7 @@ export function Pitch({ tone, intro }: { tone: HeroTone; intro: boolean }) {
         Challenge yourself with a variety of quizzes.
       </motion.p>
 
-      <motion.div {...riseIn(intro, 2)} className="mt-6 sm:mt-8">
+      <motion.div {...riseIn(intro, 2)} className="mt-10 sm:mt-12 lg:mt-16">
         <HeroActions tone={tone} />
       </motion.div>
     </div>

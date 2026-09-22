@@ -130,15 +130,12 @@ module.exports = {
   			'quiz-text-primary': 'hsl(var(--quiz-text-primary))',
   			'quiz-text-secondary': 'hsl(var(--quiz-text-secondary))',
   			'quiz-shadow': 'hsl(var(--quiz-shadow))',
-  			// The landing page's call to action (src/pages/Home). Warm amber: it has to read on
-  			// both the page background and the blue wave, and the complementary warm tone is
-  			// what stands out against blue. One value for both themes — it sits on the wave,
-  			// which doesn't change with the theme either. The label is white by choice; white on
-  			// this yellow is low contrast (~1.7:1), so the button text carries a soft shadow to
-  			// hold its edges (Home.tsx).
+  			// The landing page's accent (src/pages/Home): the amber "answers." turns on the blue
+  			// wave. Warm, so it stands out against the blue, and one value for both themes —
+  			// it sits on the wave, which doesn't change with the theme either. It was the Play
+  			// button's colour too until 2026-09-22; see docs/home/landing-page.md.
   			cta: {
-  				DEFAULT: '#fbbf24',
-  				foreground: '#ffffff'
+  				DEFAULT: '#fbbf24'
   			}
   		},
   		borderRadius: {
