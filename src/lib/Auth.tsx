@@ -1,8 +1,10 @@
 import { configureAuth } from "react-query-auth";
 import { redirect, LoaderFunctionArgs } from "react-router-dom";
 import { z } from "zod";
-import { api, apiService } from "./Api-client";
-import { setAccessToken, clearAccessToken } from "./token-store";
+import { isAxiosError } from "axios";
+import { api, apiService, refreshSession } from "./Api-client";
+import { getAccessToken, setAccessToken, clearAccessToken } from "./token-store";
+import { hasSessionHint } from "./session-hint";
 import { AuthResponse, User } from "@/types/user-types";
 import { useNotifications } from "@/common/Notifications";
 import {
@@ -33,15 +35,47 @@ const announceClosureCancelled = (response: AuthResponse): void => {
   });
 };
 
+/**
+ * Who is signed in — or `null` for nobody. This is react-query-auth's `userFn`, so `AuthLoader`
+ * (Provider.tsx) holds the whole app on "Signing you in" until it settles. On a fresh page load
+ * that wait is the first thing anyone sees, so the function is shaped to make it as short as
+ * possible. Three cases, cheapest first:
+ *
+ *  1. **No access token and no session hint** — a visitor who has never signed in (or signed
+ *     out). Answer `null` without touching the network: the app renders on the next tick.
+ *  2. **No access token, hint present** — a page load for someone who probably has a session.
+ *     Resume it with one call to /refresh, which returns the user alongside the new token.
+ *     (Before this, the same answer took /me → 401 → /refresh → /me: three round trips.)
+ *     Any HTTP refusal here means "signed out"; only an unreachable API throws.
+ *  3. **Access token in memory** — a refetch mid-session (e.g. after a profile change). Plain
+ *     /me; the response interceptor still handles an expired token transparently.
+ *
+ * Why the hint can be trusted to skip the network, and why the frontend never deletes it:
+ * `lib/session-hint.ts` and docs/auth/session-hint.md.
+ */
 export const getUser = async (): Promise<User | null> => {
+  if (!getAccessToken()) {
+    if (!hasSessionHint()) return null;
+
+    try {
+      const { user } = await refreshSession();
+      return user ?? null;
+    } catch (error) {
+      // The server answered and the answer was "no": a 401 (refresh token expired, revoked, or
+      // rotated away by another tab) or a 429 from the auth rate limit. Either way there is no
+      // session right now, and the visitor should see the app signed out rather than an error
+      // screen — the same outcome the old /me → interceptor → refresh path produced. Only "the
+      // server did not answer at all" (API down, offline) is a real failure worth surfacing.
+      if (isAxiosError(error) && error.response) return null;
+      throw error;
+    }
+  }
+
   try {
     const user: User = (await api.get("Authentication/me")).data;
-    if (!user) {
-      return null;
-    }
-    return user;
-  } catch (error: any) {
-    if (error.response?.status === 401) {
+    return user ?? null;
+  } catch (error) {
+    if (isAxiosError(error) && error.response?.status === 401) {
       return null;
     }
     throw error;

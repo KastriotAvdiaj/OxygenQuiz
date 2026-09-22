@@ -111,11 +111,12 @@ A quick map of the settings that matter, and which layer supplies them in prod:
 |---|---|---|
 | `POSTGRES_PASSWORD`, `JWT_KEY`, `ADMIN_PASSWORD` | env vars from `.env.prod` | The three real secrets. Never in Git. |
 | `Jwt:Issuer` / `Jwt:Audience` | env vars (`Jwt__Issuer`, …) | Base file's `localhost` values are overridden. |
-| `Cors:AllowedOrigins` | env vars (`Cors__AllowedOrigins__0`, …) | Overrides both `appsettings.json` and the stale `appsettings.Production.json` list. |
+| `Cors:AllowedOrigins` | env vars (`Cors__AllowedOrigins__0`, …) | Overrides both `appsettings.json` and the `appsettings.Production.json` list (which now matches — see §6 B). |
 | `AllowedHosts` | env var | Base file says `"*"`; prod pins the real host. |
 | `Seed:AdminUsername` | code default `"admin"` (unless env set) | — |
 | `Seed:AdminEmail` | **code default `"admin@example.com"`** (unless `Seed__AdminEmail` set) | ⚠️ the login trap — see §6. |
 | `Authentication:Google:Enabled` / `:ClientId` | env vars (`Authentication__Google__Enabled`, `…__ClientId`) | Required for Google sign-in. **No client secret exists** — the app runs the GIS ID-token flow. `Enabled=true` with a blank `ClientId` fails startup; `Enabled=false` is silent, so omitting these ships social login switched off with no error. |
+| `Auth:SessionHintCookieDomain` | `appsettings.Production.json` (`oxygenquiz.com`) | Domain of the readable `has_session` cookie. Must cover both `api.` and the SPA's host, or every reload signs everyone out. Empty (host-only) in dev and Docker. See [`../auth/session-hint.md`](../auth/session-hint.md) §5. |
 | `Ai:ApiKey` | env var (`Ai__ApiKey`) | The fourth real secret, once AI generation is switched on. Blank with `Ai__Enabled=true` **switches the AI features off** — it does not fail startup; see the note below the table. |
 | `Ai:Enabled` | env var (`Ai__Enabled`), else `appsettings.json` | Off by default. One switch for **both** AI features — quiz generation and the category-palette proposer. |
 | `Ai:Vendor` | `appsettings.json`, or `Ai__Vendor` to differ per environment | Names an entry in `Ai:Vendors`. **The only value you change to swap vendor.** Currently `groq` everywhere. An unknown name switches AI off rather than guessing. |

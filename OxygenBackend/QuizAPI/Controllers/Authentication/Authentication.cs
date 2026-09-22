@@ -21,6 +21,13 @@ public class AuthenticationController(
     // Scope the cookie to the auth endpoints so it isn't attached to every API call.
     private const string RefreshCookiePath = "/api/Authentication";
 
+    // The session hint: a non-secret, JavaScript-readable "1" that rides alongside the refresh
+    // cookie and lives exactly as long. It answers one question for the frontend at boot — "is
+    // there any point asking the server who I am?" — without a network round trip. It proves
+    // nothing and grants nothing; the refresh cookie is still the only credential. The name is
+    // mirrored in src/lib/session-hint.ts. See docs/auth/session-hint.md and ADR 0016.
+    private const string SessionHintCookieName = "has_session";
+
     private readonly IAuthenticationService _authService = authService;
     private readonly IUserService _userService = userService;
     private readonly IConfiguration _configuration = configuration;
@@ -75,7 +82,7 @@ public class AuthenticationController(
 
         if (outcome.Auth is not null)
         {
-            SetRefreshCookie(outcome.Auth.RawRefreshToken, outcome.Auth.RefreshTokenExpiresAt);
+            SetSessionCookies(outcome.Auth.RawRefreshToken, outcome.Auth.RefreshTokenExpiresAt);
             return Ok(outcome.Auth.Response);
         }
 
@@ -94,7 +101,7 @@ public class AuthenticationController(
     public async Task<IActionResult> ExternalSignup([FromBody] ExternalSignupDTO dto, CancellationToken ct)
     {
         var result = await _authService.ExternalSignupAsync(dto, ct);
-        SetRefreshCookie(result.RawRefreshToken, result.RefreshTokenExpiresAt);
+        SetSessionCookies(result.RawRefreshToken, result.RefreshTokenExpiresAt);
         return Ok(result.Response);
     }
 
@@ -121,7 +128,7 @@ public class AuthenticationController(
     public async Task<IActionResult> Signup([FromBody] SignupDTO dto, CancellationToken ct)
     {
         var result = await _authService.SignupAsync(dto, ct);
-        SetRefreshCookie(result.RawRefreshToken, result.RefreshTokenExpiresAt);
+        SetSessionCookies(result.RawRefreshToken, result.RefreshTokenExpiresAt);
         return Ok(result.Response);
     }
 
@@ -130,7 +137,7 @@ public class AuthenticationController(
     public async Task<IActionResult> Login([FromBody] LoginDTO dto, CancellationToken ct)
     {
         var result = await _authService.LoginAsync(dto, ct);
-        SetRefreshCookie(result.RawRefreshToken, result.RefreshTokenExpiresAt);
+        SetSessionCookies(result.RawRefreshToken, result.RefreshTokenExpiresAt);
         return Ok(result.Response);
     }
 
@@ -146,11 +153,19 @@ public class AuthenticationController(
         // ExceptionHandlerMiddleware logs a full stack trace, so routine anonymous traffic used to
         // bury real failures in the container logs. A *present but invalid* token still throws:
         // that one is worth seeing.
+        //
+        // It is also the one place a stale session hint is corrected: a browser that sends the hint
+        // but no refresh cookie has definitely got no session, so the hint goes too. The opposite
+        // case — hint present, refresh cookie present but invalid — is deliberately NOT corrected
+        // here; see "Why an invalid refresh token leaves the hint alone" in docs/auth/session-hint.md.
         if (string.IsNullOrWhiteSpace(raw))
+        {
+            ClearSessionHintCookie();
             return Unauthorized(new { message = "Missing refresh token." });
+        }
 
         var result = await _authService.RefreshAsync(raw, ct);
-        SetRefreshCookie(result.RawRefreshToken, result.RefreshTokenExpiresAt);
+        SetSessionCookies(result.RawRefreshToken, result.RefreshTokenExpiresAt);
         return Ok(result.Response);
     }
 
@@ -159,7 +174,7 @@ public class AuthenticationController(
     {
         var raw = Request.Cookies[RefreshCookieName];
         await _authService.LogoutAsync(raw, ct);
-        ClearRefreshCookie();
+        ClearSessionCookies();
         return NoContent();
     }
 
@@ -222,7 +237,14 @@ public class AuthenticationController(
         return Ok(user);
     }
 
-    private void SetRefreshCookie(string rawToken, DateTime expiresAt) =>
+    /// <summary>
+    /// Starts (or rotates) a browser session: the HttpOnly refresh cookie, which is the credential,
+    /// and the readable session hint beside it, which is not. Every path that issues a refresh
+    /// token comes through here, so the two cannot be set apart — and they share one expiry, so
+    /// they also lapse together.
+    /// </summary>
+    private void SetSessionCookies(string rawToken, DateTime expiresAt)
+    {
         Response.Cookies.Append(RefreshCookieName, rawToken, new CookieOptions
         {
             HttpOnly = true,
@@ -232,7 +254,12 @@ public class AuthenticationController(
             Expires = expiresAt
         });
 
-    private void ClearRefreshCookie() =>
+        Response.Cookies.Append(SessionHintCookieName, "1", SessionHintCookieOptions(expiresAt));
+    }
+
+    /// <summary>Ends the browser session: both cookies, always together.</summary>
+    private void ClearSessionCookies()
+    {
         Response.Cookies.Append(RefreshCookieName, string.Empty, new CookieOptions
         {
             HttpOnly = true,
@@ -241,4 +268,40 @@ public class AuthenticationController(
             Path = RefreshCookiePath,
             Expires = DateTime.UtcNow.AddDays(-1)
         });
+
+        ClearSessionHintCookie();
+    }
+
+    private void ClearSessionHintCookie() =>
+        Response.Cookies.Append(
+            SessionHintCookieName, string.Empty, SessionHintCookieOptions(DateTime.UtcNow.AddDays(-1)));
+
+    /// <summary>
+    /// The hint's cookie attributes. Clearing must repeat the exact Domain and Path it was set
+    /// with, or the browser treats the deletion as a different cookie — which is why both the set
+    /// and the clear build their options here.
+    /// </summary>
+    /// <remarks>
+    /// <para><b>Not HttpOnly</b> — being readable by <c>document.cookie</c> is its entire job.</para>
+    /// <para><b>Domain</b> comes from <c>Auth:SessionHintCookieDomain</c>. In production the API
+    /// (api.oxygenquiz.com) and the SPA (oxygenquiz.com) are different hosts, and a host-only
+    /// cookie set by the API is invisible to the SPA's JavaScript; <c>oxygenquiz.com</c> widens it
+    /// to the whole site. Left unset in development, where both run on <c>localhost</c> and a
+    /// host-only cookie is already shared across ports.</para>
+    /// <para><b>SameSite=Lax</b> — the server never reads it, so it has no reason to travel on
+    /// cross-site requests.</para>
+    /// </remarks>
+    private CookieOptions SessionHintCookieOptions(DateTime expiresAt)
+    {
+        var domain = _configuration["Auth:SessionHintCookieDomain"];
+        return new CookieOptions
+        {
+            HttpOnly = false,
+            Secure = true,
+            SameSite = SameSiteMode.Lax,
+            Path = "/",
+            Domain = string.IsNullOrWhiteSpace(domain) ? null : domain,
+            Expires = expiresAt
+        };
+    }
 }

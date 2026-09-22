@@ -11,31 +11,44 @@ OxygenQuiz uses a **two-token** scheme:
 
 The split is deliberate: the access token is short-lived and kept only in memory so an XSS bug has no persisted token to steal; the refresh token is long-lived but never exposed to JavaScript and can be revoked server-side.
 
+A third cookie, **`has_session=1`**, rides alongside the refresh token. It is readable by JavaScript, holds no secret and grants nothing — it only tells the frontend, at boot, whether asking the server who is signed in can possibly succeed. See [`session-hint.md`](session-hint.md).
+
 ## The flow
 
 ### Login / signup
 1. `POST /api/Authentication/login` (or `/signup`) → `AuthenticationService.LoginAsync`.
 2. Password verified with BCrypt. On success `BuildAuthResultAsync` mints an access token **and** a refresh token (storing only its hash).
-3. The controller returns `{ token, user }` in the body and sets the `refresh_token` HttpOnly cookie.
+3. The controller returns `{ token, user }` in the body and sets the `refresh_token` HttpOnly cookie plus the readable `has_session` hint (`SetSessionCookies` — every path that issues a refresh token sets both).
 4. The frontend (`Auth.tsx` → `loginFn`) saves `token` into the in-memory store (`setAccessToken`) and caches the `user`.
 
 ### An authenticated request
 1. `authRequestInterceptor` (in `Api-client.ts`) reads the token from the in-memory store (`getAccessToken`) and attaches `Authorization: Bearer …` to every request.
 2. The API validates the JWT (issuer, audience, lifetime, signature). Valid → handled; expired/invalid → `401`.
 
+### Page load: resuming a session
+On a fresh load there is never an access token in memory. `getUser` (`Auth.tsx`, run by `AuthLoader` before the app paints) therefore does not call `/me`:
+
+- **no `has_session` hint** → answers "signed out" with **no request at all**;
+- **hint present** → calls `refreshSession()` (`Api-client.ts`) directly. `/refresh` returns `{ token, user }`, so one round trip both stores the new access token and identifies the user.
+
+Mid-session refetches (token already in memory) still use `GET /me`. Why this shape, and the rules that keep the hint trustworthy: [`session-hint.md`](session-hint.md).
+
 ### Silent refresh on 401 (the important part)
 When any request returns `401`, the response interceptor in `Api-client.ts`:
-1. Calls `POST /Authentication/refresh` **once** — the browser automatically attaches the HttpOnly `refresh_token` cookie.
+1. Calls `POST /Authentication/refresh` **once** (via the same `refreshSession()` boot uses) — the browser automatically attaches the HttpOnly `refresh_token` cookie.
 2. `RefreshAsync` looks up the token by hash, confirms it's **active** (not revoked, not expired), then **rotates**: it revokes the presented token and issues a brand-new access **and** refresh token.
 3. The new access token is stored **in memory** and the original failed request is **replayed** transparently.
-4. A single-flight `refreshPromise` means many concurrent 401s share one refresh call.
-5. If refresh fails (no/expired/revoked refresh token) → the access cookie is cleared and the error propagates, sending the user to `/login`.
+4. A single-flight promise inside `refreshSession()` means many concurrent 401s — and the boot-time call — share one refresh call. With rotation this is required, not an optimisation: two parallel refreshes would present the same token twice, and the second would be rejected.
+5. If refresh fails (no/expired/revoked refresh token) → the in-memory access token is cleared and the 401 propagates. `getUser` turns that into "not signed in"; a protected route's `createAuthLoader` then redirects to `/login`.
 
-**Missing cookie vs. bad cookie are handled differently on purpose.** A signed-out visitor has no
-`refresh_token` at all, and the frontend still calls `/refresh` on load to find out whether a
-session can be resumed — so "no cookie" is a routine answer, not a fault. The controller checks for
-it and returns `401` directly. Only a cookie that is *present but invalid* (expired, revoked,
-unknown hash) reaches `RefreshAsync` and throws `UnauthorizedException`.
+**Missing cookie vs. bad cookie are handled differently on purpose.** A browser with no
+`refresh_token` at all can still reach `/refresh` — a stale `has_session` hint at boot, or the 401
+interceptor on an anonymous visitor's call to an `[Authorize]` endpoint — so "no cookie" is a
+routine answer, not a fault. The controller checks for it and returns `401` directly, and clears
+the hint while it is there (no refresh cookie means the hint is certainly wrong). Only a cookie
+that is *present but invalid* (expired, revoked, unknown hash) reaches `RefreshAsync` and throws
+`UnauthorizedException` — and that path deliberately leaves the hint alone; see
+[`session-hint.md`](session-hint.md) §4.
 
 Both end as a `401` to the client, so nothing about the auth flow changed. The reason it matters is
 logging: an exception is logged by `ExceptionHandlerMiddleware` at `fail` level with a full stack
@@ -45,21 +58,22 @@ tailing `docker compose logs -f backend`. Keep this shape in mind elsewhere: **a
 routine outcome should not be signalled with an exception on a hot path.**
 
 ### Logout
-`POST /Authentication/logout` revokes the stored refresh token (`RevokedAt = now`) and clears the cookie; the frontend removes `quiz_app_token` and redirects home.
+`POST /Authentication/logout` revokes the stored refresh token (`RevokedAt = now`) and clears both cookies — `refresh_token` and the `has_session` hint (`ClearSessionCookies`); the frontend clears the in-memory access token (`clearAccessToken`) and redirects home.
 
 ### Route protection
-`createAuthLoader` (`Auth.tsx`) runs before protected routes: it fetches `/me`, redirects to `/login?redirectTo=…` if unauthenticated, and enforces role/permission gates. **SuperAdmin bypasses all gates.** Helpers: `adminAuthLoader`, `superAdminAuthLoader`, `permissionAuthLoader`.
+`createAuthLoader` (`Auth.tsx`) runs before protected routes: it resolves the user (from the React Query cache, else via `getUser`), redirects to `/login?redirectTo=…` if unauthenticated, and enforces role/permission gates. **SuperAdmin bypasses all gates.** Helpers: `adminAuthLoader`, `superAdminAuthLoader`, `permissionAuthLoader`.
 
 ## Main functions / files
 
 | Concern | File |
 |---------|------|
-| Endpoints, cookie set/clear | `Controllers/Authentication/Authentication.cs` |
+| Endpoints, cookie set/clear (refresh cookie + session hint) | `Controllers/Authentication/Authentication.cs` |
 | Login/signup/refresh/logout logic, rotation | `Services/AuthenticationService/AuthenticationService.cs` |
 | JWT minting, refresh-token generation + hashing | `Services/AuthenticationService/TokenService.cs` |
 | Active-token lookup, revoke-all | `Repositories/RefreshTokenRepository.cs` |
 | JWT validation, CORS, scheme setup | `Program.cs` |
-| Token attach + silent-refresh interceptor | `src/lib/Api-client.ts` |
+| Token attach + silent-refresh interceptor, `refreshSession` | `src/lib/Api-client.ts` |
+| Reading the session hint | `src/lib/session-hint.ts` |
 | In-memory access-token store | `src/lib/token-store.ts` |
 | Frontend auth config, route loaders/gates | `src/lib/Auth.tsx` |
 
@@ -67,7 +81,7 @@ routine outcome should not be signalled with an exception on a hot path.**
 
 The access token is held only in memory, so it's gone on every reload — but the **refresh token lasts 7 days, lives in an HttpOnly cookie, and is rotated on every use**. When you reopen the app:
 
-- On reload the in-memory access token is null, so the first API call 401s; the interceptor silently refreshes using the 7-day `refresh_token` cookie, repopulates the in-memory token, and replays the request — *and a new 7-day refresh token is issued.*
+- On reload the in-memory access token is null. The `has_session` hint is present, so boot calls `/refresh` with the 7-day `refresh_token` cookie, repopulates the in-memory token and gets the user back in the same response — *and a new 7-day refresh token (and hint) is issued.*
 - You stay signed in without the token ever being persisted in JS-readable storage.
 
 Because rotation resets the 7-day window each time, **visiting at least once a week keeps you logged in indefinitely**. This is a deliberate "remember me" / sliding-session design, not a bug. You're only forced to log in again if more than 7 days pass with no activity, or after an explicit logout.
@@ -77,9 +91,9 @@ To change the behavior: shorten `RefreshTokenDays` in `TokenService`, or to make
 ## How to test the refresh-token implementation
 
 ### A. Quick manual test (browser DevTools)
-1. Log in. In DevTools → Application → Cookies, confirm **only** `refresh_token` exists (HttpOnly ✓, Secure ✓, Path `/api/Authentication`). There should be **no `quiz_app_token` cookie** — the access token is in memory now.
+1. Log in. In DevTools → Application → Cookies, confirm exactly two auth cookies: `refresh_token` (HttpOnly ✓, Secure ✓, Path `/api/Authentication`) and `has_session=1` (HttpOnly ✗, Path `/`, same expiry). There should be **no `quiz_app_token` cookie** — the access token is in memory.
 2. Reload the page (this clears the in-memory access token, simulating an expired one).
-3. Watch the Network tab on load: the first authenticated call (e.g. `Authentication/me`) → `401`, then `Authentication/refresh` → `200`, then the call replayed → `200`. You stay logged in.
+3. Watch the Network tab on load: a single `Authentication/refresh` → `200`, and **no** `Authentication/me`. You stay logged in. (Signed out, there is no `Authentication/*` request at all — see [`session-hint.md`](session-hint.md) §7.)
 4. Confirm rotation: note the `refresh_token` value before step 2; after refresh it should be **different**.
 
 ### B. Rotation / reuse (DB-level)

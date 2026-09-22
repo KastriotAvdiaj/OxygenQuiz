@@ -38,7 +38,8 @@ away.
 
 1. **`Provider.tsx`** — above `RouterProvider`, so it can only replace *the whole app*. That is
    correct for exactly one moment: the very first paint, before any layout exists. It also backs
-   the auth gate's `renderLoading`.
+   the auth gate's `renderLoading` — a wait kept short by not asking the server at all when the
+   visitor has no session ([`../auth/session-hint.md`](../auth/session-hint.md)).
 2. **`layouts/layout.tsx` (`HomeLayout`)** — wraps its children. Every public page is a
    `React.lazy` chunk, and this is what catches them, so a route swaps the content column and
    leaves the header, background and account overlay mounted. **A route that renders a lazy

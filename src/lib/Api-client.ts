@@ -4,6 +4,7 @@ import Axios, {
   AxiosResponse,
 } from "axios";
 import { getAccessToken, setAccessToken, clearAccessToken } from "./token-store";
+import type { AuthResponse } from "@/types/user-types";
 import { useNotifications } from "@/common/Notifications";
 
 declare module "axios" {
@@ -189,26 +190,43 @@ export const api = Axios.create({
 api.interceptors.request.use(authRequestInterceptor);
 
 // --- Silent refresh on 401 -------------------------------------------------
-// The API now actually validates JWTs, so an expired access token yields 401.
-// We try the refresh-token cookie once (POST /Authentication/refresh), store the
-// new access token, and replay the original request. A single-flight promise
-// makes concurrent 401s share one refresh call.
-let refreshPromise: Promise<string> | null = null;
+// The API validates JWTs, so an expired (or, after a reload, absent) access token yields 401.
+// We try the refresh-token cookie once (POST /Authentication/refresh), store the new access
+// token, and replay the original request.
+//
+// `refreshSession` is also called directly at boot by `getUser` (lib/Auth.tsx): /refresh
+// already answers with `{ token, user }`, so resuming a session needs one round trip, not the
+// /me → 401 → /refresh → /me replay it used to take. See docs/auth/session-hint.md.
+let refreshPromise: Promise<AuthResponse> | null = null;
 
-async function refreshAccessToken(): Promise<string> {
-  // Bare axios call so we don't re-enter this interceptor. withCredentials sends
-  // the HttpOnly refresh cookie.
-  const response = await Axios.post(
-    `${api.defaults.baseURL}/Authentication/refresh`,
-    {},
-    { withCredentials: true }
-  );
-  const newToken: string | undefined = response.data?.token;
-  if (!newToken) {
-    throw new Error("Refresh did not return a token");
-  }
-  setAccessToken(newToken);
-  return newToken;
+/**
+ * Exchanges the HttpOnly refresh cookie for a fresh session: stores the new access token in
+ * memory and resolves with the full auth response (token + user). Rejects with the axios error
+ * when there is no session to resume (a 401).
+ *
+ * Single-flight: concurrent callers — the boot-time `getUser` and any number of 401'd requests —
+ * share one in-flight call. That matters more than it looks, because refresh tokens ROTATE: two
+ * parallel refreshes from one tab would present the same token twice, and the second would be
+ * rejected as already revoked.
+ */
+export function refreshSession(): Promise<AuthResponse> {
+  refreshPromise ??= (async () => {
+    // Bare axios call so we don't re-enter this interceptor. withCredentials sends
+    // the HttpOnly refresh cookie.
+    const response = await Axios.post<AuthResponse>(
+      `${api.defaults.baseURL}/Authentication/refresh`,
+      {},
+      { withCredentials: true }
+    );
+    if (!response.data?.token) {
+      throw new Error("Refresh did not return a token");
+    }
+    setAccessToken(response.data.token);
+    return response.data;
+  })().finally(() => {
+    refreshPromise = null;
+  });
+  return refreshPromise;
 }
 
 api.interceptors.response.use(
@@ -238,15 +256,12 @@ api.interceptors.response.use(
       if (!originalRequest._retry && !isRefreshCall) {
         originalRequest._retry = true;
         try {
-          refreshPromise = refreshPromise ?? refreshAccessToken();
-          const newToken = await refreshPromise;
-          refreshPromise = null;
+          const { token: newToken } = await refreshSession();
 
           originalRequest.headers = originalRequest.headers ?? {};
           originalRequest.headers["Authorization"] = `Bearer ${newToken}`;
           return api(originalRequest);
         } catch (refreshError) {
-          refreshPromise = null;
           console.log("Refresh failed, signing out:", refreshError);
           clearAccessToken();
           return Promise.reject(error);
