@@ -1,5 +1,5 @@
 import { useParams } from "react-router-dom";
-import { LoadingWave } from "@/components/ui";
+import { BlobLoader } from "@/components/ui";
 import { usePublicProfile } from "./api/get-public-profile";
 import { ProfileView } from "./ProfileView";
 
@@ -15,7 +15,7 @@ export const UserProfile = () => {
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-screen">
-        <LoadingWave size="lg" />
+        <BlobLoader size="lg" />
       </div>
     );
   }

@@ -3,7 +3,7 @@ import { useBlocker } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { ChevronLeft, ChevronRight, X, Save, Undo2, LogOut } from "lucide-react";
-import { Button, LoadingWave } from "@/components/ui";
+import { Button, BlobLoader } from "@/components/ui";
 import {
   Dialog,
   DialogContent,
@@ -237,7 +237,7 @@ export const AccountOverlay = () => {
     if (!settings.form)
       return (
         <div className="flex justify-center py-10">
-          <LoadingWave size="sm" />
+          <BlobLoader size="sm" />
         </div>
       );
 

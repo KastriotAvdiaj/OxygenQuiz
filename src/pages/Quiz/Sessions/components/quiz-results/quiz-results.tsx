@@ -13,7 +13,7 @@ import { QuizOverview } from "./quiz-overview";
 import { QuestionReview } from "./question-review";
 import { MatchPlayerTabs } from "./match-player-tabs";
 import { LiftedButton } from "@/common/LiftedButton";
-import { LoadingWave } from "@/components/ui";
+import { BlobLoader } from "@/components/ui";
 import {
   useMatchPlayers,
   useGetSessionResults,
@@ -135,7 +135,7 @@ export function QuizResults({
               </p>
             ) : (
               <div className="flex justify-center py-8">
-                <LoadingWave size="md" variant="muted" />
+                <BlobLoader size="md" />
               </div>
             )}
           </TabsContent>

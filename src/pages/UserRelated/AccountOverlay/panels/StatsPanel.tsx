@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { ArrowRight, Gamepad2, Target, Timer, Trophy } from "lucide-react";
 import { useUser } from "@/lib/Auth";
-import { LoadingWave } from "@/components/ui";
+import { BlobLoader } from "@/components/ui";
 import { useUserQuizStats } from "@/pages/UserRelated/Profile/api/get-user-quiz-stats";
 import type { UserQuizStats } from "@/types/quiz-session-types";
 import formatDate from "@/lib/date-format";
@@ -126,7 +126,7 @@ export const StatsPanel = () => {
     <div className="space-y-6">
       {isLoading ? (
         <div className="flex justify-center py-12">
-          <LoadingWave size="sm" />
+          <BlobLoader size="sm" />
         </div>
       ) : !stats ? (
         // The query sets `throwOnError: false` precisely so a missing or failing endpoint

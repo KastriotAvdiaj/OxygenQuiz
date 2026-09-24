@@ -28,6 +28,11 @@ export type LoadingWaveProps = {
 };
 
 /**
+ * **Unused — no call sites.** Replaced as the app's loader by `BlobLoader`
+ * (`blob-loader.tsx`) after the landing-page redesign: the bouncing wordmark did not fit
+ * the new look. Kept deliberately, storied, the same way `SplitFlapLoader` is — not an
+ * oversight to clean up (docs/development/loading-states.md, docs/deployment/known-issues.md).
+ *
  * An animated word-mark loader: the letters of `text` rise and fall one after
  * another, sending a wave across the word to signal a busy/loading state.
  *

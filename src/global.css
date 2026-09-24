@@ -653,6 +653,30 @@ body {
   }
 }
 
+/* BlobLoader (components/ui/blob-loader.tsx): the ball crosses from the left bar into the
+   right one. 300% of its own width is exactly the gap; the snap back to 0 happens while it
+   is hidden inside the bars, so the loop has no visible seam. */
+@keyframes blob-loader {
+  90%,
+  100% {
+    transform: translateX(300%);
+  }
+}
+
+.animate-blob-loader {
+  animation-name: blob-loader;
+  animation-iteration-count: infinite;
+  animation-timing-function: ease;
+}
+
+/* Less motion: park the ball between the bars so it still reads as the same mark. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-blob-loader {
+    animation: none;
+    transform: translateX(150%);
+  }
+}
+
 /* Scrollbar helpers used by scrollable panels (facet lists, dialogs, drawers).
    `scrollbar-thin` = a slim, themed track that fades in on hover instead of the
    heavy global 8px bar. `scrollbar-hide` = fully hidden but still scrollable. */

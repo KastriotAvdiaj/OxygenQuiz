@@ -1,6 +1,6 @@
 import { useCallback, useRef } from "react";
 import { Badge } from "@/components/ui/badge";
-import { LoadingWave } from "@/components/ui";
+import { BlobLoader } from "@/components/ui";
 import { PaginationControls } from "@/components/ui/pagination-control";
 import { HelpCircle, Clock, Check, ArchiveX, ChevronDown, ListFilter } from "lucide-react";
 import type { QuizSummaryDTO } from "@/types/quiz-types";
@@ -181,7 +181,7 @@ export const QuizSelectionDialogView = ({
         >
           {isLoading ? (
             <div className="flex h-40 flex-col items-center justify-center">
-              <LoadingWave size="md" />
+              <BlobLoader size="md" />
             </div>
           ) : quizzes.length === 0 ? (
             <motion.div

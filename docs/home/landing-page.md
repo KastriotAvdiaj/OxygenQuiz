@@ -66,6 +66,10 @@ the headline and the colour change shows on phones too (a flat band along the bo
 reached the text). The page root is `overflow-hidden` so the wave never adds a
 scrollbar.
 
+The wave is the first of the primary-colour shapes on player-facing pages; the others (the
+cloud behind the cards on `/choose-mode` and `/multiplayer-menu`) are in
+[`../development/decorative-shapes.md`](../development/decorative-shapes.md).
+
 ## Text that changes colour on the wave
 
 The pitch is rendered **twice**, in identical layout:

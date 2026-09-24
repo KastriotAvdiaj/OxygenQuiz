@@ -1,6 +1,7 @@
 export * from '@/components/ui/button';
 export * from '@/components/ui/card';
 export * from '@/components/ui/avatar';
+export * from '@/components/ui/blob-loader';
 export * from '@/components/ui/button';
 export * from '@/components/ui/drawer';
 export * from '@/components/ui/data-table';

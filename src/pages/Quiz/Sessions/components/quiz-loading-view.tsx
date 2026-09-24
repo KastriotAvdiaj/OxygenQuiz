@@ -1,12 +1,6 @@
 import { PageLoading } from "@/components/ui";
 
 export interface QuizLoadingViewProps {
-  /**
-   * The word that waves. Uppercase, and short — `LoadingWave` staggers one animation per
-   * character, so a sentence turns into a long ripple rather than a loader. Callers pass the
-   * default; the prop exists for a screen that genuinely needs different copy.
-   */
-  text?: string;
   /** What a screen reader announces. Say which wait this is — the word on screen doesn't. */
   label?: string;
   /** Extra classes on the centering wrapper. */
@@ -25,7 +19,7 @@ export interface QuizLoadingViewProps {
  * It is now a thin name over `PageLoading` (`components/ui/page-loading.tsx`), which is what
  * the rest of the app waits with — the shell's Suspense boundary, the auth gate, the layout's
  * route boundary. That is the whole point of the indirection: entering a quiz used to run the
- * shell's `xl` wordmark → a route wrapper's `lg` one → this one, the same word changing size
+ * shell's `xl` wordmark (the `LoadingWave` era — it is `BlobLoader` now) → a route wrapper's `lg` one → this one, the same word changing size
  * and vertical position twice inside a second and a half. There is one size and one position
  * now, and no call site can pick a different one. **Change the loading look in `PageLoading`,
  * not here** — this file exists only so the quiz flow can say what it is waiting for.
@@ -38,9 +32,8 @@ export interface QuizLoadingViewProps {
  * (docs/quiz/quiz-playing-architecture.md §3b).
  */
 export const QuizLoadingView = ({
-  text = "LOADING",
   label = "Loading",
   className = "",
 }: QuizLoadingViewProps) => (
-  <PageLoading text={text} label={label} className={className} />
+  <PageLoading label={label} className={className} />
 );

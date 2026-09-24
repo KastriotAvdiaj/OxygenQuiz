@@ -43,8 +43,8 @@ export const QuizPageRouteWrapper = () => {
   }
 
   if (isUserLoading || (!userId && isGuestStatusLoading)) {
-    // QuizLoadingView, not a local LoadingWave: this wait hands straight over to
-    // QuizPage's, and a different size or a different `py` here is exactly how the word
+    // QuizLoadingView, not a local BlobLoader: this wait hands straight over to
+    // QuizPage's, and a different size or a different `py` here is exactly how the loader
     // used to shrink and jump between the two.
     return <QuizLoadingView label="Starting your quiz" />;
   }

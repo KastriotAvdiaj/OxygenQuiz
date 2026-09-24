@@ -11,7 +11,7 @@ present tense: what to use, and where.
 ## 1. The rule
 
 **Never render a full-page loader yourself.** No page, route wrapper or layout builds its own
-centred `LoadingWave`, picks its own `size`, or wraps one in its own `flex items-center`. Use
+centred `BlobLoader`, picks its own `size`, or wraps one in its own `flex items-center`. Use
 `PageLoading`, or `QuizLoadingView` if you are inside the quiz flow and want to name the wait.
 
 This is a rule about handovers, not about tidiness. A wait is almost never one wait: a route
@@ -27,7 +27,8 @@ thing continuing. Agreement by convention does not survive a fourth call site �
 |---|---|---|
 | `components/ui/page-loading.tsx` — **`PageLoading`** | Anything that holds the screen while it resolves | Owns the size, the centring and the appearance delay. `fullScreen` only for a boundary that owns the viewport before any layout exists. |
 | `pages/Quiz/Sessions/components/quiz-loading-view.tsx` — **`QuizLoadingView`** | The quiz flow's waits | A thin name over `PageLoading`. Exists so a call site can say *which* wait it is via `label`. **Change the look in `PageLoading`, not here.** |
-| `components/ui/loading-wave.tsx` — **`LoadingWave`** | In-panel waits: a tab body, a list inside a card, a drawer | The primitive. Sized `sm`/`md` in place. Do not use it for a full page — that is what `PageLoading` wraps. |
+| `components/ui/blob-loader.tsx` — **`BlobLoader`** | In-panel waits: a tab body, a list inside a card, a drawer | The primitive: a ball crossing between two bars, fused by an SVG goo filter. `primary` by default, transparent, so it sits on either theme. Sized `sm`/`md`/`lg` in place; every size steps down on phones and up on large screens. Do not use it for a full page — that is what `PageLoading` wraps. |
+| `components/ui/loading-wave.tsx` — **`LoadingWave`** | Nothing, currently | The previous primitive (a bouncing `LOADING` wordmark). Replaced by `BlobLoader` after the landing-page redesign because it no longer fit the look; kept and storied, like `SplitFlapLoader`. |
 | `components/ui/Spinner.tsx` — **`Spinner`** | The admin dashboard | The dashboard's own idiom, used by ~18 screens. Not worth converting; just keep it centred. |
 | `components/ui/split-flap-loader.tsx` — **`SplitFlapLoader`** | Nothing, currently | A set-piece, kept for a moment that wants one. It only animates on a phrase *change* — a single-entry `words` array renders a board that never moves. |
 
@@ -101,7 +102,19 @@ nowhere — they over-measure on mobile and double-count the header padding. `fu
 `.app-shell-viewport`, which sizes to the *dynamic* viewport. See
 [`../RESPONSIVE.md`](../RESPONSIVE.md).
 
-One consequence worth naming: one size for every full-page wait means the wordmark is `xl`
+One consequence worth naming: one size for every full-page wait means the loader is `xl`
 everywhere it applies, including waits that used to render smaller inside a layout. That is the
-point. If it ever feels too large in a narrow column, change it in `PageLoading` — once, not per
-call site.
+point. `xl` is itself responsive — 64px wide on phones, 80px from `sm`, 96px from `md`, 112px from
+`lg`, 128px from `xl` — so it
+never needs a per-page override. If it ever feels wrong in a narrow column, change it in
+`PageLoading` — once, not per call site.
+
+## 8. Why `BlobLoader` uses an SVG filter
+
+The effect it is based on is the CSS "gooey" trick: `filter: blur() contrast()` plus
+`mix-blend-mode: darken`. That only works as black shapes on an opaque white box, so it can't be
+`primary`, can't sit on the dark theme, and can't sit on the landing page's wave. `BlobLoader`
+does the same thing to the *alpha* channel instead (`feGaussianBlur` then a steep
+`feColorMatrix` threshold), so the loader is transparent and takes its colour from `variant`.
+The blur radius is in px — an SVG filter cannot use percentages — so each size carries its own.
+With `prefers-reduced-motion` the ball is parked between the bars.

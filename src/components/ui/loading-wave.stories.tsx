@@ -3,6 +3,9 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { LoadingWave } from "./loading-wave";
 
 /**
+ * **Unused.** `LoadingWave` was the app's loader until `BlobLoader` replaced it; it is
+ * kept, with no call sites, for a moment that wants a wordmark.
+ *
  * `LoadingWave` is a word-mark loader: the letters of `text` rise and fall one
  * after another, sending a wave across the word. It's purely prop-driven, so
  * each story below is just the component rendered with a different set of props.
@@ -10,7 +13,7 @@ import { LoadingWave } from "./loading-wave";
  * Use the Controls tab to live-tweak `text`, `size`, `variant` and `speed`.
  */
 const meta = {
-  title: "UI/LoadingWave",
+  title: "UI/LoadingWave (unused)",
   component: LoadingWave,
   parameters: { layout: "centered" },
   argTypes: {

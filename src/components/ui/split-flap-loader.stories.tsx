@@ -5,7 +5,7 @@ import { SplitFlapLoader } from "./split-flap-loader";
 /**
  * A full-bleed split-flap board, for a wait the user is meant to sit through.
  *
- * NOT the app's default loader — that is `LoadingWave`, which is what the quiz flow, the
+ * NOT the app's default loader — that is `BlobLoader`, which is what the quiz flow, the
  * dashboard lists and the boot screen all render. This one is deliberately louder: a second
  * per flip, the whole screen, a mechanical object rather than a word breathing. It was the
  * quiz flow's loader for a while and lost the job for being too big a gesture for a gap that

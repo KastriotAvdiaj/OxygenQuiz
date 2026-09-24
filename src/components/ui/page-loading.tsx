@@ -1,11 +1,15 @@
 import { useEffect, useState } from "react";
-import { LoadingWave } from "@/components/ui/loading-wave";
+import { BlobLoader } from "@/components/ui/blob-loader";
 import { cn } from "@/utils/cn";
 
 /**
  * THE full-page wait. One component, one size, one position — used by the app shell's
  * Suspense boundary, the auth gate, and every route that has to hold the screen while it
  * resolves.
+ *
+ * The loader itself is `BlobLoader` at `xl` — the ball crossing between two bars. It was
+ * the `LoadingWave` wordmark until the landing-page redesign; the reasoning below is from
+ * that era but holds for any loader.
  *
  * It exists because the app used to hand a wait from one loader to another mid-flight:
  * starting a quiz ran the shell's `xl` wordmark, then a route wrapper's `lg` one with
@@ -29,8 +33,6 @@ import { cn } from "@/utils/cn";
 const APPEAR_AFTER_MS = 140;
 
 export type PageLoadingProps = {
-  /** Word to wave. Short and uppercase — `LoadingWave` animates one letter at a time. */
-  text?: string;
   /** What a screen reader announces. Say which wait this is; the word on screen doesn't. */
   label?: string;
   /**
@@ -43,7 +45,6 @@ export type PageLoadingProps = {
 };
 
 export const PageLoading = ({
-  text = "LOADING",
   label = "Loading",
   fullScreen = false,
   className,
@@ -74,7 +75,9 @@ export const PageLoading = ({
           shown ? "opacity-100" : "opacity-0",
         )}
       >
-        <LoadingWave text={text} size="xl" />
+        {/* The label is announced by the outer status region; the loader's own would
+            repeat it. */}
+        <BlobLoader size="xl" label="" />
       </span>
       <span className="sr-only">{label}</span>
     </div>

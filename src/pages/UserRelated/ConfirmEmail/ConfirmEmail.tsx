@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
-import { LoadingWave } from "@/components/ui";
+import { BlobLoader } from "@/components/ui";
 import { useUser } from "@/lib/Auth";
 import type { User } from "@/types/user-types";
 import { verifyEmail, useResendVerification } from "./api/email-verification";
@@ -58,7 +58,7 @@ export const ConfirmEmail = () => {
           </>
         ) : verify.isPending || verify.isIdle ? (
           <div className="flex flex-col items-center gap-4">
-            <LoadingWave size="md" />
+            <BlobLoader size="md" />
             <p className="text-muted-foreground">Confirming your email…</p>
           </div>
         ) : verify.isSuccess ? (

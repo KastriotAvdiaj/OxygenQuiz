@@ -19,7 +19,7 @@ export interface SplitFlapLoaderProps {
  * A full-bleed loading screen built from a mechanical split-flap board, like a departure
  * board resolving.
  *
- * It is a **feature loader, not the default one** — `LoadingWave` is what the app uses for
+ * It is a **feature loader, not the default one** — `BlobLoader` is what the app uses for
  * ordinary waiting, everywhere from the Provider boot screen to the dashboard lists and the
  * quiz flow. This one is louder and slower by design: it takes a second per flip and it fills
  * the screen, which makes it right for a moment the player is meant to sit through and wrong
