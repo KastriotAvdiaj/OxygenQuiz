@@ -411,6 +411,18 @@ namespace QuizAPI.Mapping
 
     public static class QuizMappers
     {
+        /// <summary>
+        /// Wire names for <see cref="QuizFormat"/>. Projections use a ternary over these rather than
+        /// <c>Format.ToString()</c>, which EF cannot translate inside a nested projection
+        /// (CLAUDE.md, "Read projections are translated to SQL"). A new format adds a name here and a
+        /// branch to both ternaries.
+        /// </summary>
+        public static class FormatNames
+        {
+            public const string Classic = nameof(QuizFormat.Classic);
+            public const string Associations = nameof(QuizFormat.Associations);
+        }
+
         public static readonly Expression<Func<Quiz, QuizSummaryDTO>> ProjectSummary =
             q => new QuizSummaryDTO
             {
@@ -430,6 +442,7 @@ namespace QuizAPI.Mapping
                 User = q.User == null ? string.Empty : q.User.Username,
                 UserProfileImageUrl = q.User == null ? null : q.User.ProfileImageUrl,
                 Status = q.Status.ToString(),
+                Format = q.Format == QuizFormat.Associations ? FormatNames.Associations : FormatNames.Classic,
                 DeletedAt = q.DeletedAt
             };
 
@@ -448,6 +461,7 @@ namespace QuizAPI.Mapping
                 // Live rows only — retired rows belong to past versions (docs/quiz/quiz-editing.md).
                 QuestionCount = q.QuizQuestions.Count(qq => qq.RemovedInVersion == null),
                 Status = q.Status.ToString(),
+                Format = q.Format == QuizFormat.Associations ? FormatNames.Associations : FormatNames.Classic,
                 // ShareToken is deliberately left null here — the service populates it only on the
                 // owner's own read so the link never leaks to other callers.
                 User = q.User == null ? null : new UserBasicDTO
@@ -591,6 +605,8 @@ namespace QuizAPI.Mapping
                 AbandonmentReason = s.AbandonmentReason,
                 AbandonedAt = s.AbandonedAt,
                 QuizTitle = s.Quiz.Title,
+                // The Classic results page sends a Board play to its own page (docs/quiz/associations.md).
+                Format = s.Quiz.Format == QuizFormat.Associations ? QuizMappers.FormatNames.Associations : QuizMappers.FormatNames.Classic,
                 HasInstantFeedback = s.Quiz.ShowFeedbackImmediately,
                 QuizDescription = s.Quiz.Description,
                 Category = s.Quiz.Category.Name,
@@ -672,6 +688,8 @@ namespace QuizAPI.Mapping
                 Id = s.Id,
                 QuizId = s.QuizId,
                 QuizTitle = s.Quiz.Title,
+                // The history list routes a Board play to its own results page and badges it.
+                Format = s.Quiz.Format == QuizFormat.Associations ? QuizMappers.FormatNames.Associations : QuizMappers.FormatNames.Classic,
                 StartTime = s.StartTime,
                 EndTime = s.EndTime,
                 TotalScore = s.TotalScore,

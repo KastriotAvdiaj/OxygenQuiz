@@ -68,6 +68,23 @@ const SharedQuizRouteWrapper = lazy(() =>
   ),
 );
 
+// Associations Solo play (docs/quiz/associations.md, "Playing").
+const AssociationStartRoute = lazy(() =>
+  import("@/pages/Quiz/Associations/solo/association-start-route").then(
+    (module) => ({ default: module.AssociationStartRoute }),
+  ),
+);
+const AssociationGamePage = lazy(() =>
+  import("@/pages/Quiz/Associations/solo/association-game-page").then(
+    (module) => ({ default: module.AssociationGamePage }),
+  ),
+);
+const AssociationResultsPage = lazy(() =>
+  import("@/pages/Quiz/Associations/results/association-results-page").then(
+    (module) => ({ default: module.AssociationResultsPage }),
+  ),
+);
+
 const GuestQuizResultsRouteWrapper = lazy(() =>
   import("@/pages/Quiz/Sessions/components/quiz-results/guest-quiz-results-route-wrapper").then(
     (module) => ({ default: module.GuestQuizResultsRouteWrapper }),
@@ -278,6 +295,33 @@ const createAppRouter = (queryClient: QueryClient) =>
         </>
       ),
     },
+    // ── Associations Solo ──
+    // Signed-in only (userAuthLoader): guest play of a Board comes with the format's release, and
+    // while it is in preview the API answers 404 to anyone but an admin anyway.
+    {
+      path: "/associations/:quizId/play",
+      loader: userAuthLoader(queryClient),
+      errorElement: <DashboardErrorElement />,
+      element: (
+        <HomeLayout headerBehavior={HeaderBehavior.HIDDEN} children={<AssociationStartRoute />} />
+      ),
+    },
+    {
+      path: "/associations/play/:sessionId",
+      loader: userAuthLoader(queryClient),
+      errorElement: <DashboardErrorElement />,
+      element: (
+        <HomeLayout headerBehavior={HeaderBehavior.HIDDEN} children={<AssociationGamePage />} />
+      ),
+    },
+    {
+      path: "/associations/results/:sessionId",
+      loader: userAuthLoader(queryClient),
+      errorElement: <DashboardErrorElement />,
+      element: (
+        <HomeLayout headerBehavior={HeaderBehavior.OVERLAY_SOLID} children={<AssociationResultsPage />} />
+      ),
+    },
     {
       path: "/quiz/results/:sessionId/review",
       errorElement: <DashboardErrorElement />,
@@ -472,6 +516,28 @@ const createAppRouter = (queryClient: QueryClient) =>
           element: <OwnAiQuiz />,
         },
         {
+          // The Associations board builder (docs/quiz/associations.md, "Authoring"). Under
+          // create-quiz/ so the layout's full-width prefix match covers it with no new entry.
+          path: "quizzes/create-quiz/associations",
+          lazy: async () => {
+            const { CreateAssociationQuizRoute } = await import(
+              "../pages/Dashboard/Pages/Quiz/components/Association-Board-Form/association-board-routes"
+            );
+            return { Component: CreateAssociationQuizRoute };
+          },
+        },
+        {
+          // Editing a board. Under edit-quiz/ for the same full-width reason; `quizEditPath`
+          // (quiz-paths.ts) is how every Edit link picks this over the Classic editor.
+          path: "quizzes/edit-quiz/:quizId/board",
+          lazy: async () => {
+            const { EditAssociationQuizRoute } = await import(
+              "../pages/Dashboard/Pages/Quiz/components/Association-Board-Form/association-board-routes"
+            );
+            return { Component: EditAssociationQuizRoute };
+          },
+        },
+        {
           // Edit mode of the same form — the wrapper loads the quiz + its questions
           // and mounts QuizQuestionProvider itself (seeded with the existing questions).
           path: "quizzes/edit-quiz/:quizId",
@@ -549,7 +615,7 @@ const createAppRouter = (queryClient: QueryClient) =>
         <AppRoot
           basePath="/my-dashboard"
           navItems={userDashboardNavButtons}
-          fullWidthPaths={["/my-dashboard/quizzes/create"]}
+          fullWidthPaths={["/my-dashboard/quizzes/create", "/my-dashboard/quizzes/edit"]}
           // See the admin tree above — same rule, same reason (ADR 0002).
           focusPaths={["/my-dashboard/quizzes/create/ai"]}
         />
@@ -617,6 +683,38 @@ const createAppRouter = (queryClient: QueryClient) =>
         {
           path: "quizzes/create/ai/own",
           element: <OwnAiQuiz />,
+        },
+        {
+          // Owners edit their own quizzes here. The admin dashboard's edit routes are admin-only
+          // (its loader 404s everyone else), so until 2026-09-23 a player could create a quiz
+          // but never change it. Same components as the admin routes; the API allows only the
+          // owner to save. `quizEditPath(quiz, "/my-dashboard")` builds these links.
+          path: "quizzes/edit/:quizId",
+          lazy: async () => {
+            const { EditQuizRoute } = await import(
+              "../pages/Dashboard/Pages/Quiz/components/Create-Quiz-Form/edit-quiz"
+            );
+            return { Component: EditQuizRoute };
+          },
+        },
+        {
+          path: "quizzes/edit/:quizId/board",
+          lazy: async () => {
+            const { EditAssociationQuizRoute } = await import(
+              "../pages/Dashboard/Pages/Quiz/components/Association-Board-Form/association-board-routes"
+            );
+            return { Component: EditAssociationQuizRoute };
+          },
+        },
+        {
+          // Same board builder as the admin dashboard — see the note there.
+          path: "quizzes/create/associations",
+          lazy: async () => {
+            const { CreateAssociationQuizRoute } = await import(
+              "../pages/Dashboard/Pages/Quiz/components/Association-Board-Form/association-board-routes"
+            );
+            return { Component: CreateAssociationQuizRoute };
+          },
         },
         {
           // Retired alongside `profile` above — settings are overlay sections now.

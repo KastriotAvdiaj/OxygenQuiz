@@ -16,6 +16,13 @@ This exists to lower signup friction (try the product before committing to an ac
 reopening the security surface that made [`play-auth-and-identity.md`](play-auth-and-identity.md)
 require login in the first place.
 
+**Classic quizzes only, for now.** An Associations board is not guest-playable: the format is
+admin-only while it is tested, and its guest routes come with its release
+([`../quiz/associations.md`](../quiz/associations.md) §9.8). `CreateGuestSessionAsync` refuses a
+board (the Classic format guard). What *is* already in place is the deletion half: both guest
+deletion paths below remove a session's Associations game first, so nothing of a guest's board
+could outlive the attempt either.
+
 ## The limit is soft, by design
 
 The one-quiz limit is enforced with an **HttpOnly cookie** (`guest_played`), not a hard server-side
@@ -257,13 +264,14 @@ never reaches them at all; there's no guest-mode fallback for multiplayer anywhe
      → frontend navigates to /quiz/results-guest/:sessionId
      → GET results loads the graded session
      → frontend calls POST /finish
-         → backend deletes UserAnswers + the QuizSession row
+         → backend deletes the session's Associations game, if any, then UserAnswers + the QuizSession row
          → backend sets the guest_played cookie (1 year)
      → nothing about this attempt exists anywhere anymore
 
 3b. Abandoned path: visitor closes the tab mid-quiz, never reaches results
      → the periodic abandoned-session cleanup job picks it up later
-     → because IsGuestSession = true, the cleanup DELETES the row (and its answers)
+     → because IsGuestSession = true, the cleanup DELETES the row (its answers, and any
+       Associations game it plays)
        instead of marking it "completed" the way a real account's session would be
      → the guest_played cookie is never set in this path — that browser still has its
        free quiz available (consistent with "the limit is soft, not a security boundary")

@@ -5,7 +5,7 @@ import { Typewriter } from "./typewriter";
 /**
  * The typewriter `GeneratingOverlay` shows while the model writes a quiz.
  *
- * NOT a loader you can reach for. Every ordinary wait in the app is `LoadingWave`, on
+ * NOT a loader you can reach for. Every ordinary wait in the app is `BlobLoader`, on
  * purpose — a wait should not announce itself as a different thing each time
  * (quiz-loading-view.tsx). This is the second sanctioned exception after the split-flap
  * board, and it exists for one screen: AI generation runs 10-40 seconds with no

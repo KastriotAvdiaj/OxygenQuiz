@@ -3,10 +3,11 @@ import { Link } from "react-router-dom";
 import { Activity, ChevronLeft, ChevronRight, Clock, Target } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { LoadingWave } from "@/components/ui";
+import { BlobLoader } from "@/components/ui";
 import { useUserSessions } from "@/pages/Quiz/Sessions/api/get-user-sessions";
 import type { QuizSessionSummary } from "@/types/quiz-session-types";
 import formatDate from "@/lib/date-format";
+import { sessionResultsPath } from "@/pages/Quiz/quiz-play-path";
 
 const PAGE_SIZE = 8;
 
@@ -36,28 +37,33 @@ const statusBadge = (session: QuizSessionSummary) => {
 
 const HistoryRow = ({ session }: { session: QuizSessionSummary }) => {
   const duration = formatDuration(session.duration);
+  const isBoard = session.format === "Associations";
   const accuracy =
-    session.totalQuestions > 0
+    !isBoard && session.totalQuestions > 0
       ? Math.round((session.correctAnswers / session.totalQuestions) * 100)
       : null;
 
   return (
     <Link
-      to={`/quiz/results/${session.id}`}
+      to={sessionResultsPath(session)}
       className="flex items-center justify-between gap-4 rounded-lg border border-foreground/10 p-3 transition-colors hover:bg-foreground/5"
     >
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <span className="truncate font-medium">{session.quizTitle}</span>
+          {isBoard && <Badge variant="secondary">Board</Badge>}
           {statusBadge(session)}
         </div>
         <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
           <span>{formatDate(session.startTime)}</span>
-          <span className="flex items-center gap-1">
-            <Target className="h-3 w-3" />
-            {session.correctAnswers}/{session.totalQuestions}
-            {accuracy !== null && ` (${accuracy}%)`}
-          </span>
+          {/* A board has no questions to count — its score says how it went. */}
+          {!isBoard && (
+            <span className="flex items-center gap-1">
+              <Target className="h-3 w-3" />
+              {session.correctAnswers}/{session.totalQuestions}
+              {accuracy !== null && ` (${accuracy}%)`}
+            </span>
+          )}
           {duration && (
             <span className="flex items-center gap-1">
               <Clock className="h-3 w-3" />
@@ -89,7 +95,7 @@ export const QuizHistoryList = ({ userId }: { userId: string }) => {
   if (isLoading) {
     return (
       <div className="flex justify-center py-10">
-        <LoadingWave size="sm" />
+        <BlobLoader size="sm" />
       </div>
     );
   }

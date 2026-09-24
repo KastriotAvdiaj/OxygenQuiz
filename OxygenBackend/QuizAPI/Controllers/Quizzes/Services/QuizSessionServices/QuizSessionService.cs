@@ -25,15 +25,18 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
         private readonly ISessionAbandonmentService _abandonmentService;
         private readonly IAnswerGradingService _gradingService;
         private readonly ISubmitAnswerService _submitAnswerService;
+        private readonly QuizAPI.Repositories.Interfaces.IAssociationGameRepository _associationGames;
 
         public QuizSessionService(
             ApplicationDbContext context,
             ILogger<QuizSessionService> logger,
             ISessionAbandonmentService abandonmentService,
             IAnswerGradingService gradingService,
-            ISubmitAnswerService submitAnswerService
+            ISubmitAnswerService submitAnswerService,
+            QuizAPI.Repositories.Interfaces.IAssociationGameRepository associationGames
             )
         {
+            _associationGames = associationGames;
             _context = context;
             _logger = logger;
             _abandonmentService = abandonmentService;
@@ -143,6 +146,10 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                     return Result<CurrentQuestionDto>.ValidationFailure("This quiz session is already completed.");
                 }
 
+                // Only a Classic quiz has questions to serve (QuizFormatGuard).
+                if (session.Quiz.Format != QuizFormat.Classic)
+                    return Result<CurrentQuestionDto>.ValidationFailure(QuizFormatGuard.NotClassicMessage(session.Quiz.Format));
+
                 var answeredQuestionIds = session.UserAnswers.Select(ua => ua.QuizQuestionId).ToHashSet();
                 // Only rows visible to the session's pinned quiz version: an edit made after this
                 // session started must not add, remove or reconfigure the player's questions.
@@ -234,16 +241,11 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
         #region Session Management
 
         /// <summary>
-        /// Whether <paramref name="userId"/> may start a session for <paramref name="quiz"/>:
-        /// Public quizzes are open to all; the owner may always play (including their own Drafts);
-        /// an Unlisted quiz additionally requires the matching share token. See docs/quiz/quiz-visibility.md.
+        /// Whether <paramref name="userId"/> may start a session for <paramref name="quiz"/>. The rule
+        /// lives in <see cref="QuizPlayAccess"/>, shared with Associations play.
         /// </summary>
         private static bool IsPlayAuthorized(Quiz quiz, Guid userId, string? shareToken) =>
-            quiz.Status == QuizStatus.Public
-            || quiz.UserId == userId
-            || (quiz.Status == QuizStatus.Unlisted
-                && !string.IsNullOrEmpty(quiz.ShareToken)
-                && string.Equals(quiz.ShareToken, shareToken, StringComparison.Ordinal));
+            QuizPlayAccess.IsPlayAuthorized(quiz, userId, shareToken);
 
         public async Task<Result<QuizSessionDto>> CreateSessionAsync(QuizSessionCM model)
         {
@@ -251,8 +253,9 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
             {
                 using var transaction = await _context.Database.BeginTransactionAsync();
 
-                // Bypass the discovery filter so Unlisted quizzes can be authorized explicitly below;
-                // soft-deleted quizzes are still excluded. Same failure message whether the quiz is
+                // Status is authorized explicitly below (Quiz has no visibility query filter — ADR
+                // 0019); soft-deleted quizzes are excluded explicitly because IgnoreQueryFilters()
+                // also switches off the soft-delete filter. Same failure message whether the quiz is
                 // missing or simply not accessible, so ids/tokens can't be probed for existence.
                 var quiz = await _context.Quizzes
                     .AsNoTracking()
@@ -261,6 +264,10 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
 
                 if (quiz == null || !IsPlayAuthorized(quiz, model.UserId, model.ShareToken))
                     return Result<QuizSessionDto>.ValidationFailure("Quiz not found or not available.");
+
+                // After authorization, so the format of a quiz the caller may not see isn't revealed.
+                if (quiz.Format != QuizFormat.Classic)
+                    return Result<QuizSessionDto>.ValidationFailure(QuizFormatGuard.NotClassicMessage(quiz.Format));
 
                 // Use the existing method (now with fixed logic)
                 var existingActiveSession = await _abandonmentService.GetActiveSessionForUserAsync(model.UserId, model.QuizId);
@@ -333,6 +340,9 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                 if (quiz == null)
                     return Result<QuizSessionDto>.ValidationFailure("Quiz not found or not available.");
 
+                if (quiz.Format != QuizFormat.Classic)
+                    return Result<QuizSessionDto>.ValidationFailure(QuizFormatGuard.NotClassicMessage(quiz.Format));
+
                 var session = new QuizSession
                 {
                     Id = Guid.NewGuid(),
@@ -382,6 +392,10 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
 
                 if (session == null)
                     return Result.ValidationFailure("Guest session not found.");
+
+                // An Associations game first — its player row restricts the session's deletion so
+                // that the game and its moves can't outlive a guest (docs/quiz/associations.md, "Guests").
+                await _associationGames.DeleteGamesOfSessionsAsync(new[] { sessionId });
 
                 var answers = _context.UserAnswers.Where(a => a.SessionId == sessionId);
                 _context.UserAnswers.RemoveRange(answers);
@@ -437,6 +451,9 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
 
                 if (quiz == null || !IsPlayAuthorized(quiz, model.UserId, model.ShareToken))
                     return Result<QuizSessionDto>.ValidationFailure("Quiz not found or not available.");
+
+                if (quiz.Format != QuizFormat.Classic)
+                    return Result<QuizSessionDto>.ValidationFailure(QuizFormatGuard.NotClassicMessage(quiz.Format));
 
                 var newSession = model.ToEntity();
                 newSession.Id = Guid.NewGuid();
@@ -507,6 +524,10 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
 
                 if (session == null)
                     return Result<ResumeResultDto>.ValidationFailure("Session not found.");
+
+                // The catch-up walk below is Classic arithmetic over QuizQuestion rows (QuizFormatGuard).
+                if (session.Quiz.Format != QuizFormat.Classic)
+                    return Result<ResumeResultDto>.ValidationFailure(QuizFormatGuard.NotClassicMessage(session.Quiz.Format));
 
                 // A match cannot be resumed, and everything below this line assumes otherwise.
                 //
@@ -958,6 +979,10 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
 
                 if (session == null)
                     return Result.ValidationFailure("Quiz session not found.");
+
+                // Same order as the guest paths: an Associations game (a Solo one whole, a Duel
+                // one just this player's seat) before the session its player row points at.
+                await _associationGames.DeleteGamesOfSessionsAsync(new[] { sessionId });
 
                 _context.QuizSessions.Remove(session);
                 await _context.SaveChangesAsync();

@@ -22,6 +22,14 @@ namespace QuizAPI.Data
         public DbSet<TrueFalseQuestion> TrueFalseQuestions { get; set; }
         public DbSet<TypeTheAnswerQuestion> TypeTheAnswerQuestions { get; set; }
 
+        // Associations format content (docs/quiz/associations.md).
+        public DbSet<QuizAPI.Models.Associations.AssociationBoard> AssociationBoards { get; set; }
+        public DbSet<QuizAPI.Models.Associations.AssociationColumn> AssociationColumns { get; set; }
+        public DbSet<QuizAPI.Models.Associations.AssociationTile> AssociationTiles { get; set; }
+        public DbSet<QuizAPI.Models.Associations.AssociationGame> AssociationGames { get; set; }
+        public DbSet<QuizAPI.Models.Associations.AssociationGamePlayer> AssociationGamePlayers { get; set; }
+        public DbSet<QuizAPI.Models.Associations.AssociationGameMove> AssociationGameMoves { get; set; }
+
         public DbSet<Quiz> Quizzes { get; set; }
 
         public DbSet<QuizSession> QuizSessions { get; set; }
@@ -97,15 +105,19 @@ namespace QuizAPI.Data
                 .HasFilter($"\"{nameof(Quiz.ShareToken)}\" IS NOT NULL");
 
             //GLOBAL QUERY FILTERS
-            // Discovery rule (see docs/quiz/quiz-visibility.md): a quiz is only returned by default if it is
-            // Public, owned by the caller, or the caller is an admin. Draft/Unlisted quizzes never leak
-            // into lists — Unlisted access goes through the explicit share-token / lobby paths, which
-            // call IgnoreQueryFilters() deliberately.
-            modelBuilder.Entity<Quiz>().HasQueryFilter(q =>
-                _current.IsAdmin ||
-                q.Status == QuizStatus.Public ||
-                (_current.UserId != null && q.UserId == _current.UserId)
-                );
+            // There is deliberately NO visibility filter on Quiz. The only Quiz filter is soft delete
+            // (declared further down). Draft / Unlisted / ownership are enforced explicitly at each
+            // entry point — the catalogue's `Status == Public`, GetQuizById's Draft check,
+            // IsPlayAuthorized, CanHostQuizAsync, the owner checks in QuizService.
+            //
+            // A visibility filter used to be declared here, and it never ran: in EF Core 8 a second
+            // HasQueryFilter on the same entity replaces the first, and the soft-delete one came
+            // second. Everything was built against soft delete alone. It must not be "restored":
+            // query filters apply to included navigations, so a stranger's session on an Unlisted
+            // quiz (played via share link) would load without its Quiz, and the Hangfire sweeps and
+            // the match loop — which run with no current user — would lose every non-Public quiz.
+            // See docs/adr/0019-quiz-visibility-is-enforced-at-each-entry-point.md and
+            // QuizAPI.Tests/Visibility/QuizQueryFilterTests.cs, which fails if one is added.
 
             // Rule 4 is the one to read carefully. It used to open with `_current.UserId != null &&`
             // wrapping BOTH halves of the OR, which meant an anonymous caller failed the clause
@@ -350,6 +362,9 @@ namespace QuizAPI.Data
             // Soft delete: hide quizzes with a DeletedAt timestamp from every query automatically.
             // Played sessions / user answers are left untouched (their Quiz FK stays Restrict), so
             // history survives. Admin reads bypass this with IgnoreQueryFilters (see QuizRepository).
+            // This is the ONLY query filter on Quiz — and EF Core 8 allows only one per entity: a
+            // second HasQueryFilter call on Quiz would silently replace this one. See the note at the
+            // top of the global query filters.
             modelBuilder.Entity<Quiz>().HasQueryFilter(q => q.DeletedAt == null);
 
             //Configuration for Quiz and User relationship
@@ -464,6 +479,9 @@ namespace QuizAPI.Data
                 .HasValue<TypeTheAnswerQuestion>(QuestionType.TypeTheAnswer);
 
 
+            ConfigureAssociationBoards(modelBuilder);
+            ConfigureAssociationGames(modelBuilder);
+
             modelBuilder.Entity<TypeTheAnswerQuestion>()
                 .Property(e => e.AcceptableAnswers)
                 .HasConversion(
@@ -475,6 +493,81 @@ namespace QuizAPI.Data
                     c => c.ToList()));
 
 
+        }
+
+        /// <summary>
+        /// The Associations Board tables (docs/quiz/associations.md). Kept in its own method so the
+        /// format's persistence reads as one unit.
+        /// </summary>
+        private static void ConfigureAssociationBoards(ModelBuilder modelBuilder)
+        {
+            // Same JSON-with-comparer shape as TypeTheAnswerQuestion.AcceptableAnswers: without the
+            // comparer EF can't see an in-place list edit and silently skips the UPDATE.
+            var listComparer = new ValueComparer<List<string>>(
+                (a, b) => a!.SequenceEqual(b!),
+                c => c.Aggregate(0, (acc, v) => HashCode.Combine(acc, v != null ? v.GetHashCode() : 0)),
+                c => c.ToList());
+
+            var board = modelBuilder.Entity<QuizAPI.Models.Associations.AssociationBoard>();
+            board.Property(b => b.FinalAcceptableSolutions)
+                .HasConversion(
+                    v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                    v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new List<string>())
+                .Metadata.SetValueComparer(listComparer);
+            // Restrict, like every other FK to Quiz: a quiz is soft-deleted, never removed, and its
+            // Boards are history that played games point at.
+            board.HasOne(b => b.Quiz).WithMany().HasForeignKey(b => b.QuizId).OnDelete(DeleteBehavior.Restrict);
+            // One live Board per quiz — the same filtered-unique shape as QuizQuestion's live rows.
+            board.HasIndex(b => b.QuizId)
+                .IsUnique()
+                .HasFilter($"\"{nameof(QuizAPI.Models.Associations.AssociationBoard.RemovedInVersion)}\" IS NULL")
+                .HasDatabaseName("IX_AssociationBoards_QuizId_Live");
+            board.HasIndex(b => new { b.QuizId, b.CreatedInVersion });
+
+            var column = modelBuilder.Entity<QuizAPI.Models.Associations.AssociationColumn>();
+            column.Property(c => c.AcceptableSolutions)
+                .HasConversion(
+                    v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                    v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new List<string>())
+                .Metadata.SetValueComparer(listComparer);
+            column.HasOne(c => c.Board).WithMany(b => b.Columns).HasForeignKey(c => c.BoardId).OnDelete(DeleteBehavior.Cascade);
+            column.HasIndex(c => new { c.BoardId, c.Position }).IsUnique();
+
+            var tile = modelBuilder.Entity<QuizAPI.Models.Associations.AssociationTile>();
+            tile.HasOne(t => t.Column).WithMany(c => c.Tiles).HasForeignKey(t => t.ColumnId).OnDelete(DeleteBehavior.Cascade);
+            tile.HasIndex(t => new { t.ColumnId, t.Position }).IsUnique();
+        }
+
+        /// <summary>
+        /// The Associations play tables (docs/quiz/associations.md, "Playing"; ADR 0020). A game is
+        /// its move log: the game row and the players are the header, the moves are the record.
+        /// </summary>
+        private static void ConfigureAssociationGames(ModelBuilder modelBuilder)
+        {
+            var game = modelBuilder.Entity<QuizAPI.Models.Associations.AssociationGame>();
+            // Restrict: a played game points at the exact Board version it was played on, and
+            // copy-on-write never deletes Boards, so nothing should be able to remove one from under it.
+            game.HasOne(g => g.Board).WithMany().HasForeignKey(g => g.BoardId).OnDelete(DeleteBehavior.Restrict);
+            // Restrict, like QuizSession.MatchId: nothing deletes matches, and a match's games are its record.
+            game.HasOne(g => g.Match).WithMany().HasForeignKey(g => g.MatchId).OnDelete(DeleteBehavior.Restrict);
+            game.HasIndex(g => g.MatchId);
+            game.Property(g => g.RulesJson).IsRequired();
+
+            var player = modelBuilder.Entity<QuizAPI.Models.Associations.AssociationGamePlayer>();
+            player.HasKey(p => new { p.GameId, p.SessionId });
+            player.HasOne(p => p.Game).WithMany(g => g.Players).HasForeignKey(p => p.GameId).OnDelete(DeleteBehavior.Cascade);
+            // Restrict from the session: deleting a session must go through the game (guest cleanup,
+            // DeleteSessionAsync), or the game and its moves would be left behind with no player —
+            // the exact silent leak docs/quiz/associations.md "Guests" warns about.
+            player.HasOne(p => p.Session).WithMany().HasForeignKey(p => p.SessionId).OnDelete(DeleteBehavior.Restrict);
+            // A session is one player's share of exactly one game.
+            player.HasIndex(p => p.SessionId).IsUnique();
+
+            var move = modelBuilder.Entity<QuizAPI.Models.Associations.AssociationGameMove>();
+            move.HasOne(m => m.Game).WithMany(g => g.Moves).HasForeignKey(m => m.GameId).OnDelete(DeleteBehavior.Cascade);
+            // The backstop against a double click: two requests that both read Seq n and append n+1
+            // can't both commit. The service turns the violation into a 409.
+            move.HasIndex(m => new { m.GameId, m.Seq }).IsUnique();
         }
     }
 }

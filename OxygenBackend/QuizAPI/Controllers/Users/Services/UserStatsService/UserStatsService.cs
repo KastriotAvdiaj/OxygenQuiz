@@ -32,7 +32,12 @@ namespace QuizAPI.Controllers.Users.Services.UserStatsService
                 // the shared guest account id — never let them leak into anyone's stats.
                 var sessions = _context.QuizSessions
                     .AsNoTracking()
-                    .Where(s => s.UserId == userId && !s.IsGuestSession);
+                    .Where(s => s.UserId == userId && !s.IsGuestSession)
+                    // Classic only, so averages and the best score stay on one scale: a Board's
+                    // points mean something else (docs/quiz/user-stats-history.md). Through
+                    // IgnoreQueryFilters so a soft-deleted quiz's plays still count, as they always have.
+                    .Where(s => _context.Quizzes.IgnoreQueryFilters()
+                        .Any(q => q.Id == s.QuizId && q.Format == QuizFormat.Classic));
 
                 // Completed = finished the quiz; abandoned sessions carry a reason and are
                 // reported separately, matching the analytics convention in docs/quiz/reports.md.

@@ -28,9 +28,10 @@ namespace QuizAPI.Repositories.Interfaces
         Task<Quiz?> GetByShareTokenAsync(string shareToken, CancellationToken ct = default);
 
         /// <summary>
-        /// Fetches a live quiz by id with the discovery filter bypassed (Unlisted/Draft included),
-        /// for authorization checks that must see the quiz regardless of the caller. Soft-deleted
-        /// quizzes are excluded.
+        /// Fetches a live quiz by id whatever its status (Unlisted/Draft included), for
+        /// authorization checks that must see the quiz regardless of the caller. Soft-deleted
+        /// quizzes are excluded. (Quiz has no visibility query filter — ADR 0019 — so the status
+        /// is always the caller's job to check.)
         /// </summary>
         Task<Quiz?> GetByIdUnfilteredAsync(int id, CancellationToken ct = default);
 

@@ -1,4 +1,5 @@
 import { QuestionType, QuestionMediaType } from "@/types/question-types";
+import type { QuizFormat } from "@/types/quiz-types";
 
 // Enums from the backend
 export enum AnswerStatus {
@@ -133,6 +134,8 @@ export interface QuizSession {
   id: string;
   quizId: number;
   quizTitle: string;
+  /** A board play has no answers here; its results live at /associations/results/:id. */
+  format: QuizFormat;
   userId: string;
   startTime: string; // ISO date string
   endTime: string | null; // ISO date string
@@ -156,6 +159,7 @@ export interface QuizSessionSummary {
   id: string;
   quizId: number;
   quizTitle: string;
+  format: QuizFormat;
   startTime: string;
   endTime: string | null;
   totalScore: number;

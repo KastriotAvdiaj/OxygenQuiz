@@ -107,6 +107,8 @@ namespace QuizAPI.DTOs.Quiz
             public Guid Id { get; set; }
             public int QuizId { get; set; }
             public string QuizTitle { get; set; } = string.Empty;
+            /// <summary>"Classic" or "Associations".</summary>
+            public string Format { get; set; } = "Classic";
             public Guid UserId { get; set; }
             public DateTime StartTime { get; set; }
             public DateTime? EndTime { get; set; }
@@ -264,6 +266,8 @@ namespace QuizAPI.DTOs.Quiz
             public Guid Id { get; set; }
             public int QuizId { get; set; }
             public string QuizTitle { get; set; } = string.Empty;
+            /// <summary>"Classic" or "Associations" — a Board play has no questions and its own results page.</summary>
+            public string Format { get; set; } = "Classic";
             public DateTime StartTime { get; set; }
             public DateTime? EndTime { get; set; }
             public int TotalScore { get; set; }

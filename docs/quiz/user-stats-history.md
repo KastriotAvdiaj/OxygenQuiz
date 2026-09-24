@@ -49,6 +49,17 @@ AverageAnswerTimeSeconds mean (SubmittedTime − QuestionStartTime)
 LastPlayedAt
 ```
 
+**Classic plays only.** Every session count and score aggregate above is over sessions of Classic
+quizzes (`Format == Classic`, read past the soft-delete filter so a since-deleted quiz's plays still
+count). An Associations board's score is on a different scale — a Final can be worth 46 — and would
+bend the average and the best score; board stats are their own feature, later
+([`associations.md`](./associations.md) §9.7). The answer aggregates are Classic by construction: a
+board play has no `UserAnswer` rows.
+
+The **history list** does include board plays: `QuizSessionSummaryDto.format` gives each row a
+"Board" badge, hides the question count (a board has none) and links it to
+`/associations/results/:id` instead of the Classic results page.
+
 `AverageAnswerTimeSeconds` is honest think time, not think time + ping: `SubmittedTime` stores the
 **latency-compensated** elapsed the answer was scored with (see
 [quiz-grading.md](quiz-grading.md#latency-compensated-timing)).

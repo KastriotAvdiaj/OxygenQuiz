@@ -17,7 +17,7 @@ import { GeneratingOverlay } from "./generating-overlay";
  * for the one pairing that matters: the leave dialog opening *on top* of this. That
  * stacking is why this is a plain fixed layer at z-40 rather than a second Radix dialog.
  *
- * <b>Not the app's loader.</b> Every ordinary wait is `LoadingWave`. This is a set-piece
+ * <b>Not the app's loader.</b> Every ordinary wait is `BlobLoader`. This is a set-piece
  * for the one action that is slow, metered and uncancellable — see `Typewriter` for why
  * that exception was made and why it should stay at one.
  */

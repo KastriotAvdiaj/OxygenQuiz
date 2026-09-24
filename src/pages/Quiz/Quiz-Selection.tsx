@@ -18,10 +18,11 @@ import { QuizSummaryDTO } from "@/types/quiz-types";
 import { useDisclosure } from "@/hooks/use-disclosure";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useSearchQuizzes } from "../Dashboard/Pages/Quiz/api/search-quizzes";
-import { type FilterQuery } from "@/lib/filtering";
+import { rule, type FilterQuery } from "@/lib/filtering";
 import { pagedResponseToPagination } from "@/lib/pagination-query";
 import { PaginationControls } from "@/components/ui/pagination-control";
-import { LoadingWave } from "@/components/ui";
+import { BlobLoader } from "@/components/ui";
+import { Blob, BLOB_A, BLOB_B, BLOB_C, BLOB_D } from "@/components/shapes/blob";
 import {
   Sheet,
   SheetContent,
@@ -40,6 +41,17 @@ import {
   type QuizFacetKey,
 } from "./components/quiz-filters";
 import { scrollAppToTop } from "@/lib/app-scroll";
+import { quizPlayPath } from "./quiz-play-path";
+import { SegmentedControl } from "@/components/ui/segmented-control";
+import { useFormatAvailable } from "../Dashboard/Pages/Quiz/format-access";
+
+/** The catalogue's format filter. "all" sends no rule; the others filter server-side (QuizFilterFields: format). */
+type FormatFilter = "all" | "Classic" | "Associations";
+const FORMAT_OPTIONS: { value: FormatFilter; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "Classic", label: "Quizzes" },
+  { value: "Associations", label: "Boards" },
+];
 
 // Number of quiz cards shown per page.
 const PAGE_SIZE = 12;
@@ -71,6 +83,30 @@ const itemVariants = {
 // (Multiplayer/components/lobby/quiz-selection-dialog.tsx), which shares the
 // same QuizToolbar + QuizFilterPanel. The old ?mode=multiplayer branch here
 // was dead code.
+
+// Background blob layout — see the comment where they render. Class strings are complete
+// literals so Tailwind can see them (CLAUDE.md).
+const PAGE_BLOBS = [
+  { shape: BLOB_A, className: "-left-[3%] top-[16%] w-[16%] sm:w-[10%] lg:w-[7%]" },
+  { shape: BLOB_B, className: "-right-[4%] top-[24%] w-[18%] sm:top-[12%] sm:w-[11%] lg:w-[8%]" },
+  { shape: BLOB_C, className: "right-[9%] top-[40%] w-[10%] sm:w-[7%] lg:w-[5%]" },
+  { shape: BLOB_D, className: "left-[12%] top-[56%] w-[14%] sm:w-[9%] lg:w-[6%]" },
+  { shape: BLOB_B, className: "left-[24%] top-[36%] hidden lg:block lg:w-[3.5%]" },
+  { shape: BLOB_A, className: "left-[38%] top-[70%] w-[20%] sm:w-[12%] lg:w-[9%]" },
+  { shape: BLOB_B, className: "right-[20%] top-[62%] hidden sm:block sm:w-[8%] lg:w-[6%]" },
+  { shape: BLOB_C, className: "-left-[5%] top-[82%] w-[22%] sm:w-[13%] lg:w-[9%]" },
+  { shape: BLOB_D, className: "right-[4%] top-[86%] w-[14%] sm:w-[9%] lg:w-[7%]" },
+  { shape: BLOB_A, className: "left-[62%] top-[92%] hidden sm:block sm:w-[7%] lg:w-[5%]" },
+  // Added 2026-09-24 with the blur — more of them, since softened they read as light, not shapes.
+  { shape: BLOB_C, className: "left-[3%] top-[4%] w-[12%] sm:w-[8%] lg:w-[6%]" },
+  { shape: BLOB_D, className: "right-[28%] top-[2%] hidden sm:block sm:w-[9%] lg:w-[7%]" },
+  { shape: BLOB_A, className: "right-[2%] top-[48%] w-[16%] sm:w-[10%] lg:w-[8%]" },
+  { shape: BLOB_B, className: "left-[6%] top-[38%] w-[10%] sm:w-[7%] lg:w-[5%]" },
+  { shape: BLOB_C, className: "left-[26%] top-[62%] hidden lg:block lg:w-[7%]" },
+  { shape: BLOB_D, className: "right-[36%] top-[78%] w-[18%] sm:w-[11%] lg:w-[8%]" },
+  { shape: BLOB_B, className: "left-[14%] top-[96%] hidden sm:block sm:w-[8%] lg:w-[6%]" },
+  { shape: BLOB_A, className: "right-[14%] top-[98%] w-[12%] sm:w-[8%] lg:w-[6%]" },
+];
 export function QuizSelection() {
   const navigate = useNavigate();
 
@@ -143,6 +179,19 @@ export function QuizSelection() {
     arrival?.id != null ? { categoryIds: [arrival.id] } : undefined
   );
 
+  // Format: quizzes, Associations boards, or both. Offered only to someone who can see boards —
+  // while the format is in preview that is admins (format-access.ts); for anyone else the server
+  // returns no boards anyway, so the control would have nothing to separate.
+  const boardsAvailable = useFormatAvailable("Associations");
+  const [formatFilter, setFormatFilter] = useState<FormatFilter>("all");
+  const handleFormatChange = useCallback(
+    (next: FormatFilter) => {
+      setFormatFilter(next);
+      resetPage();
+    },
+    [resetPage]
+  );
+
   // Build the server-side query: search + filters + sort + paging, all handled by
   // the public quiz catalogue endpoint (/quiz/search, scope "public").
   const query: FilterQuery = {
@@ -150,7 +199,8 @@ export function QuizSelection() {
     pageSize: PAGE_SIZE,
     search: debouncedSearch || undefined,
     sort: [SORT_RULES[sortBy]],
-    filters,
+    filters:
+      boardsAvailable && formatFilter !== "all" ? [...filters, rule.eq("format", formatFilter)] : filters,
   };
 
   const { data: quizData, isLoading } = useSearchQuizzes({ scope: "public", query });
@@ -277,14 +327,12 @@ export function QuizSelection() {
       close();
       // The grant travels to the play route for a shared quiz. Without it, starting a session
       // on an Unlisted quiz you don't own is refused server-side — the quiz would resolve,
-      // the dialog would open, and Play would fail.
-      navigate(
-        sharedToken
-          ? `/quiz/${quizId}/play?shareToken=${encodeURIComponent(sharedToken)}`
-          : `/quiz/${quizId}/play`
-      );
+      // the dialog would open, and Play would fail. The format picks the play screen: a board
+      // has its own (quizPlayPath).
+      const format = selectedQuiz?.id === quizId ? selectedQuiz.format : undefined;
+      navigate(quizPlayPath({ id: quizId, format }, sharedToken));
     },
-    [navigate, close, sharedToken]
+    [navigate, close, sharedToken, selectedQuiz]
   );
 
   // fillHeight only for the desktop sidebar (it gets a page-height column that
@@ -311,6 +359,20 @@ export function QuizSelection() {
     // screen while staying free to grow taller — percentage heights were what
     // pinned this page to one viewport and broke scrolling on mobile.
     <div className="relative flex-1 font-app tracking-normal text-foreground bg-muted">
+      {/* Background blobs (docs/development/decorative-shapes.md). First child, so the
+          `relative` content wrapper below paints over them: quiz cards sit on top, and the
+          gaps between cards show the blobs through. Kept out of the upper middle of the
+          results area (x ≈ 32–76%, y ≈ 10–52%) — the loader (primary: it would vanish) and
+          "No quizzes found" (muted text) both render there — and off the toolbar row.
+          Positions are % of the page, which grows with the results; sizes are % of its
+          width, stepping down as the screen widens. The layer clips anything past its edges.
+          The whole layer is blurred and faded (one filter on the layer, not one per blob — a
+          single compositing pass), so the shapes read as soft light behind the cards. */}
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden opacity-60 blur-2xl">
+        {PAGE_BLOBS.map(({ shape, className }, i) => (
+          <Blob key={i} shape={shape} className={className} />
+        ))}
+      </div>
       {/* Wide-but-capped layout: the sidebar + grid want more room than the
           default `container` (1280–1536px), but full-bleed reads sparse on
           very large monitors — 1700px is the sweet spot. */}
@@ -320,7 +382,7 @@ export function QuizSelection() {
         <div className="mb-5 sm:mb-6">
           <button
             onClick={() => navigate("/choose-mode")}
-            className="group inline-flex items-center gap-1.5 rounded-lg border border-border bg-card/60 px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-foreground/20 hover:text-foreground"
+            className="group inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-foreground/20 hover:text-foreground"
           >
             <ArrowLeft className="h-3.5 w-3.5 transition-transform group-hover:-translate-x-0.5" />
             <span className="hidden sm:inline">Back to Mode Selection</span>
@@ -339,6 +401,16 @@ export function QuizSelection() {
           </aside>
 
           <div className="min-w-0 flex-1">
+            {boardsAvailable && (
+              <div className="mb-3">
+                <SegmentedControl
+                  aria-label="Format"
+                  value={formatFilter}
+                  onValueChange={handleFormatChange}
+                  options={FORMAT_OPTIONS}
+                />
+              </div>
+            )}
             {/* Toolbar — search + sort; facets live in the sidebar/drawer */}
             <div className="mb-4 sm:mb-5">
               <QuizToolbar
@@ -424,7 +496,7 @@ export function QuizSelection() {
             {/* Quiz Grid */}
             {isLoading ? (
               <div className="flex h-64 sm:h-80 items-center justify-center">
-                <LoadingWave size="lg" />
+                <BlobLoader size="lg" />
               </div>
             ) : quizzes.length === 0 ? (
               <motion.div

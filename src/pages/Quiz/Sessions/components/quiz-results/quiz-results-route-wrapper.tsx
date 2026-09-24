@@ -1,11 +1,12 @@
 // src/components/quiz/QuizResultsRouteWrapper.tsx
 
-import { useParams, useNavigate } from "react-router-dom";
+import { Navigate, useParams, useNavigate } from "react-router-dom";
 import { Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { QuizResults } from "./quiz-results";
 import { QuizLoadingView } from "../quiz-loading-view";
 import { useGetSessionResults } from "../../api/get-quiz-session";
+import { sessionResultsPath } from "@/pages/Quiz/quiz-play-path";
 
 export function QuizResultsRouteWrapper() {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -64,6 +65,12 @@ export function QuizResultsRouteWrapper() {
         </div>
       </div>
     );
+  }
+
+  // A board play has no answers to review here — it has its own results page. Reached from an
+  // old link or a hand-typed URL; the history list already routes boards there directly.
+  if (session.format === "Associations") {
+    return <Navigate to={sessionResultsPath(session)} replace />;
   }
 
   return (

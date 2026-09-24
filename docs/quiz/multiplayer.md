@@ -220,6 +220,11 @@ to the caller.
 - Only the host can `SelectQuiz`. The id is validated server-side via
   `IQuizService.CanHostQuizAsync` (Public, or owned by the host) — the title/category/difficulty in
   the payload are **display labels only** and are never trusted.
+- **Only a Classic quiz can be selected.** An Associations quiz is refused at `SelectQuiz` with
+  "Associations quizzes can't be played in a lobby yet" — the match loop is Classic-only, and
+  refusing at selection means the lobby never shows a pick it can't play
+  ([`associations.md`](./associations.md) §2). The Associations Duel will replace this refusal with
+  a dispatch on format.
 - `canStartQuiz` (client) = host **and** ≥2 participants **and** all ready **and** a quiz selected.
   The server independently re-checks the quiz and the ≥2 count in `StartMatchAsync`; the client
   computation is convenience, not enforcement.
@@ -348,7 +353,7 @@ Identity is **never** a parameter. Every method derives the username from the co
 | `JoinSession` | `sessionId` | any authenticated | Converts `SessionJoinException` to `HubException` so the client sees the real cause (`not-found` / `full`). Idempotent for an existing participant; adds to the SignalR group only **after** the participant add succeeds. |
 | `LeaveSession` | `sessionId` | participant | Broadcasts `UserLeft`, plus `HostChanged` if the host left. |
 | `ToggleReady` | `sessionId, isReady` | participant | Sets the **caller's** own flag only. |
-| `SelectQuiz` | `sessionId, quiz` | **host** | `quiz` is a `SelectedQuizView`; only `Id` is authorized (`CanHostQuizAsync`). |
+| `SelectQuiz` | `sessionId, quiz` | **host** | `quiz` is a `SelectedQuizView`; only `Id` is authorized (`CanHostQuizAsync`). A non-Classic quiz is refused. |
 | `SendLobbyMessage` | `sessionId, text` | participant | Lobby/Starting phases only. |
 | `StartMatch` | `sessionId` | **host** | Rethrows the orchestrator's `InvalidOperationException` as a `HubException`, so the client shows the real reason. |
 | `SubmitAnswer` | `sessionId, answer, clientElapsedMs?` | participant | Returns silently (no throw) when not accepting answers. |

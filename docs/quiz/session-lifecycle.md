@@ -79,8 +79,17 @@ abandoned, which is precisely the population `completionRate` is computed agains
 
 **The timing rules** live in `SessionAbandonmentService.CalculateTimeoutsAsync` and are derived from
 the quiz rather than fixed: a total timeout (the sum of the pinned version's question limits plus a
-per-question buffer, times a percentage margin) and an activity timeout (the longest single question
-times a multiplier, plus a buffer). All configurable on `QuizSessionOptions`.
+per-question buffer, times a percentage margin) and an activity timeout (the whole quiz's playable
+time plus `ActivityBufferSeconds` — never shorter than the longest catch-up the resume walk could
+perform, [ADR 0008](../adr/0008-abandonment-cannot-outrun-the-catch-up-walk.md)). All configurable
+on `QuizSessionOptions`. *(Corrected 2026-09-23: this used to describe the pre-ADR-0008 rule, "the
+longest single question times a multiplier".)*
+
+**An Associations session has no questions**, so the arithmetic above would give it a total timeout
+of zero. `GetAbandonmentDeadlineAsync` branches on the quiz's format first: a Board session's
+deadline is its game's `DeadlineUtc` + `ActivityBufferSeconds`, and marking it abandoned also ends
+the game (`TimeUp`). A Board session is otherwise resumed differently — no walk, no "Session In
+Progress" screen; see [`associations.md`](./associations.md) §9.5–§9.6.
 
 ## 4. The two buttons
 

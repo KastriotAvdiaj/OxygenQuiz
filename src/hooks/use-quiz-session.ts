@@ -255,6 +255,7 @@ export const useQuizSession = ({
         userAnswers: sessionData.userAnswers,
         id: sessionData.id,
         quizTitle: sessionData.quizTitle,
+        format: sessionData.format,
         totalQuestions: sessionData.totalQuestions,
         hasInstantFeedback: sessionData.hasInstantFeedback,
         category: sessionData.category,

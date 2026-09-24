@@ -65,6 +65,7 @@ export const sharedQuizToSummary = (quiz: Quiz): QuizSummaryDTO => ({
   gradient: false,
   timeLimitInSeconds: quiz.timeLimitInSeconds,
   status: quiz.status,
+  format: quiz.format,
   createdAt: quiz.createdAt,
   questionCount: quiz.questionCount,
   user: quiz.user?.username ?? "",

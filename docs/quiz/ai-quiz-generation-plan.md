@@ -416,9 +416,12 @@ COMMIT    Status=Succeeded, write token counts and cost estimate
 RELEASE   Status=Released — does not count against the cap
 ```
 
-Reservations older than 10 minutes are swept to `Released` by a `BackgroundService`, following the
-`QuizSessionCleanupService` pattern already in the codebase (a crashed request must not burn a
-slot forever).
+Reservations older than 10 minutes are swept to `Released` by `AiReservationSweeper`, a Hangfire
+recurring job scheduled in `Program.cs` (a crashed request must not burn a slot forever). This
+section originally said "a `BackgroundService`, following the `QuizSessionCleanupService`
+pattern" — that class was never registered and has since been deleted (see
+[`session-lifecycle.md`](./session-lifecycle.md) §3); recurring work in this app goes through
+Hangfire.
 
 ### 9.3 `AiGenerationUsage` — the one new table
 
@@ -556,7 +559,7 @@ Services/Ai/AiPromptBuilder.cs
 Services/Ai/AiGenerationService.cs           + IAiGenerationService.cs
 Services/Ai/IAiQuotaService.cs               + AiQuotaService.cs
 Services/Ai/IAiQuotaPolicy.cs                + ConfigAiQuotaPolicy.cs
-Services/Ai/AiReservationSweeper.cs          (BackgroundService)
+Services/Ai/AiReservationSweeper.cs          (Hangfire recurring job)
 Services/Ai/SourceExtraction/ISourceExtractor.cs
 Services/Ai/SourceExtraction/{PlainText,Pdf,Docx}Extractor.cs
 Services/Ai/AiOptions.cs                     (bound from the "Ai" config section)

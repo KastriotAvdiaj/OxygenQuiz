@@ -18,6 +18,7 @@ const makeQuiz = (overrides: Partial<QuizSummaryDTO>): QuizSummaryDTO => ({
   colorPaletteJson: JSON.stringify(["#6366f1"]),
   timeLimitInSeconds: 20,
   status: "Public",
+  format: "Classic",
   createdAt: new Date().toISOString(),
   questionCount: 12,
   user: "Ada",

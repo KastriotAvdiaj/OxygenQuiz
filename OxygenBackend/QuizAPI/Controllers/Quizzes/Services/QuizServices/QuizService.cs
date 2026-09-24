@@ -24,13 +24,18 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
         private readonly IQuestionRepository _questions;
         private readonly ILogger<QuizService> _logger;
         private readonly IImageService _imageService;
+        private readonly QuizAPI.Services.CurrentUserService.ICurrentUserService _current;
 
         public QuizService(
             IQuizRepository quizzes,
             IQuestionRepository questions,
             ILogger<QuizService> logger,
-            IImageService imageService)
+            IImageService imageService,
+            QuizAPI.Services.CurrentUserService.ICurrentUserService currentUser)
         {
+            // Who is asking decides which quiz *formats* exist for them (QuizFormatAccess):
+            // a format still in preview is admin-only, in every read below.
+            _current = currentUser ?? throw new ArgumentNullException(nameof(currentUser));
             _quizzes = quizzes ?? throw new ArgumentNullException(nameof(quizzes));
             _questions = questions ?? throw new ArgumentNullException(nameof(questions));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -63,7 +68,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
         /// <para>Enforced on every path that can set a status: create, AI import, update, and the
         /// status-only PATCH. The client greys the option out first — this is the gate.</para>
         /// </summary>
-        private async Task EnsurePublishableAsync(
+        public async Task EnsurePublishableAsync(
             int categoryId, int languageId, int difficultyId, QuizStatus status,
             CancellationToken ct = default)
         {
@@ -97,7 +102,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
         {
             try
             {
-                var quizQuery = ApplyQuizFilters(_quizzes.Query(), filterParams);
+                var quizQuery = ApplyQuizFilters(_quizzes.Query().VisibleTo(_current.IsAdmin), filterParams);
                 return await ToSummaryPageAsync(quizQuery, filterParams);
             }
             catch (Exception ex)
@@ -125,7 +130,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
             bool includeDeleted = false,
             CancellationToken ct = default)
         {
-            IQueryable<Quiz> q = _quizzes.Query(includeDeleted);
+            IQueryable<Quiz> q = _quizzes.Query(includeDeleted).VisibleTo(_current.IsAdmin);
 
             if (restrictToUserId is { } uid)
                 q = q.Where(x => x.UserId == uid);
@@ -152,7 +157,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
         {
             try
             {
-                var quizQuery = _quizzes.Query().Where(q => q.Status == QuizStatus.Public);
+                var quizQuery = _quizzes.Query().VisibleTo(_current.IsAdmin).Where(q => q.Status == QuizStatus.Public);
                 quizQuery = ApplyQuizFilters(quizQuery, filterParams);
                 return await ToSummaryPageAsync(quizQuery, filterParams);
             }
@@ -167,7 +172,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
         {
             try
             {
-                var quizQuery = _quizzes.Query().Where(q => q.UserId == userId);
+                var quizQuery = _quizzes.Query().VisibleTo(_current.IsAdmin).Where(q => q.UserId == userId);
                 quizQuery = ApplyQuizFilters(quizQuery, filterParams);
                 return await ToSummaryPageAsync(quizQuery, filterParams);
             }
@@ -183,7 +188,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
             try
             {
                 var quiz = await _quizzes.GetByIdAsync(id);
-                if (quiz == null)
+                if (quiz == null || !QuizFormatAccess.IsAvailableTo(quiz.Format, _current.IsAdmin))
                     return null;
 
                 var dto = quiz.ToDto();
@@ -213,7 +218,8 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                 // discovery, and the token IS the access grant. A Draft quiz is never reachable by
                 // link even if a token somehow exists.
                 var quiz = await _quizzes.GetByShareTokenAsync(shareToken);
-                if (quiz == null || quiz.Status == QuizStatus.Draft)
+                if (quiz == null || quiz.Status == QuizStatus.Draft
+                    || !QuizFormatAccess.IsAvailableTo(quiz.Format, _current.IsAdmin))
                     return null;
 
                 return quiz.ToDto();
@@ -229,7 +235,8 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
         {
             try
             {
-                if (!await _quizzes.ExistsAsync(id))
+                var format = await GetFormatAsync(id);
+                if (format is null || !QuizFormatAccess.IsAvailableTo(format.Value, _current.IsAdmin))
                     return null;
 
                 var quizQuestions = await _quizzes.GetQuizQuestionsAsync(id);
@@ -506,6 +513,12 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                     return null;
                 }
 
+                // This update is Classic-shaped: it recomputes TimeLimitInSeconds as the sum of the
+                // incoming questions, which for a board (no questions) would silently zero its time.
+                // Other formats have their own update endpoint (QuizFormatGuard). After the ownership
+                // check, so a stranger learns nothing about the quiz from the refusal.
+                QuizFormatGuard.EnsureClassic(quiz.Format);
+
                 // Optimistic concurrency: reject a stale edit.
                 if (quiz.Version != quizUM.Version)
                     throw new DbUpdateConcurrencyException("Quiz has been modified by another user");
@@ -637,6 +650,12 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
             // A host may run a Public quiz or any quiz they own (Draft/Unlisted included — the lobby
             // membership becomes the access grant for invited participants).
             return quiz.Status == QuizStatus.Public || quiz.UserId == hostUserId;
+        }
+
+        public async Task<QuizFormat?> GetFormatAsync(int quizId)
+        {
+            var quiz = await _quizzes.GetByIdUnfilteredAsync(quizId);
+            return quiz?.Format;
         }
 
         // 16 random bytes → 32 hex chars: unguessable and URL-safe.

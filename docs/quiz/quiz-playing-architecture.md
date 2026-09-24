@@ -154,7 +154,7 @@ question as "are we still starting up".
 will use it; on screen it is "LOADING" every time, because the visible difference between three
 loaders a second apart is noise, not information.
 
-### Why it is a LoadingWave and not a split-flap board
+### Why it is not a split-flap board
 
 It was a board for a while — `SplitFlapText`, dark tiles in both themes, a second per flip. It
 is a good effect and it was the wrong one here, for a reason that only shows up in the running
@@ -166,8 +166,10 @@ inside about a second and a half, in two visual languages. Each handover read as
 happening rather than the same wait continuing. On a fast connection the board also never got
 past its first flip, so the effect it exists for never actually played.
 
-`LoadingWave` is what the app waits with everywhere else — the Provider boot screen, the
-dashboard lists, the profile panels, the multiplayer quiz picker.
+`LoadingWave` was what the app waited with everywhere else — the Provider boot screen, the
+dashboard lists, the profile panels, the multiplayer quiz picker. It has since been replaced
+everywhere, this flow included, by `BlobLoader`; the argument is unchanged — one loader, one
+look ([`../development/loading-states.md`](../development/loading-states.md)).
 
 Matching it by hand did not hold. Each of the three waits above picked its own `size` and its
 own centring, and the app shell's boot screen — the one they hand over *from* — picked `xl`

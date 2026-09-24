@@ -19,12 +19,39 @@ public class UserStatsServiceTests
 {
     private static readonly DateTime Start = new(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
-    private static ApplicationDbContext NewContext() =>
-        new(
+    /// <summary>
+    /// With Classic quizzes 1–10 in place: the stats count Classic plays only, and a session whose
+    /// quiz row doesn't exist is of no format at all. (In the real database the foreign key makes
+    /// that impossible; these tests used to lean on InMemory not enforcing it.)
+    /// </summary>
+    private static ApplicationDbContext NewContext()
+    {
+        var ctx = new ApplicationDbContext(
             new DbContextOptionsBuilder<ApplicationDbContext>()
                 .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
                 .Options,
             new TestCurrentUserService());
+        ctx.Quizzes.AddRange(Enumerable.Range(1, 10).Select(id => new Quiz { Id = id, Title = $"Quiz {id}", Format = QuizFormat.Classic }));
+        ctx.SaveChanges();
+        ctx.ChangeTracker.Clear();
+        return ctx;
+    }
+
+    [Fact]
+    public async Task BoardPlays_AreLeftOut_SoScoresStayOnOneScale()
+    {
+        await using var ctx = NewContext();
+        var userId = Guid.NewGuid();
+        ctx.Quizzes.Add(new Quiz { Id = 11, Title = "Board", Format = QuizFormat.Associations });
+        ctx.QuizSessions.AddRange(Session(userId, quizId: 1, totalScore: 10), Session(userId, quizId: 11, totalScore: 46));
+        await ctx.SaveChangesAsync();
+
+        var stats = (await NewService(ctx).GetUserQuizStatsAsync(userId)).Data!;
+
+        Assert.Equal(1, stats.QuizzesPlayed);
+        Assert.Equal(10, stats.BestScore);
+        Assert.Equal(10, stats.AverageScore);
+    }
 
     private static UserStatsService NewService(ApplicationDbContext ctx) =>
         new(ctx, NullLogger<UserStatsService>.Instance);

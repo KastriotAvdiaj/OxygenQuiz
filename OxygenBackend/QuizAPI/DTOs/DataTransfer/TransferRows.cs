@@ -127,6 +127,7 @@ namespace QuizAPI.DTOs.DataTransfer
         public string Language { get; set; } = string.Empty;
         public string Difficulty { get; set; } = string.Empty;
         public string Status { get; set; } = string.Empty;   // Draft / Unlisted / Public
+        public string Format { get; set; } = string.Empty;   // Classic / Associations — see QuizFormat
         public int TimeLimitInSeconds { get; set; }
         public bool ShuffleQuestions { get; set; }
         public bool ShowFeedbackImmediately { get; set; }
@@ -144,6 +145,12 @@ namespace QuizAPI.DTOs.DataTransfer
         public int LanguageId { get; set; }
         public int DifficultyId { get; set; }
         public string Status { get; set; } = "Draft";   // Draft / Unlisted / Public
+
+        // Optional. Blank or "Classic" imports a regular quiz, which is all import can build: an
+        // Associations row would need its Board, and board content isn't importable yet
+        // (docs/quiz/associations.md §2). Such a row is skipped with a message rather than
+        // silently created as an empty Classic quiz.
+        public string? Format { get; set; }
         public int? TimeLimitInSeconds { get; set; }
         public bool ShuffleQuestions { get; set; }
         public bool ShowFeedbackImmediately { get; set; }

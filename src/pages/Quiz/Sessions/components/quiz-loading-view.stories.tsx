@@ -14,14 +14,14 @@ import { QuizLoadingView } from "./quiz-loading-view";
  * was not even reachable, which made "which loader am I looking at?" genuinely hard to answer
  * from a screenshot.
  *
- * WHY IT LOOKS LIKE THE REST OF THE APP: it renders `LoadingWave`, the same loader as the
- * boot screen, the dashboard lists and `QuizPageRouteWrapper` — which mounts immediately
- * before this one. Entering a quiz used to run LoadingWave → a split-flap board → the same
+ * WHY IT LOOKS LIKE THE REST OF THE APP: it renders `PageLoading` → `BlobLoader`, the same
+ * loader as the boot screen, the dashboard lists and `QuizPageRouteWrapper` — which mounts
+ * immediately before this one. Entering a quiz used to run LoadingWave → a split-flap board → the same
  * board again, and three different-looking waits inside a second and a half read as three
  * different things going wrong. The board itself is still around as `SplitFlapLoader` in
  * `components/ui`, for a moment that wants a set-piece.
  *
- * The visible word is the same everywhere on purpose. Which wait it is lives in `label`,
+ * The loader looks the same everywhere on purpose. Which wait it is lives in `label`,
  * where a screen reader will actually use it.
  */
 const meta = {
@@ -49,17 +49,8 @@ export const LoadingResults: Story = {
 };
 
 /**
- * Custom copy. The prop exists, but note that `LoadingWave` staggers one animation per
- * character — past a short word the wave stops reading as a loader and starts reading as a
- * sentence rippling, which is why every real caller takes the default.
- */
-export const CustomWord: Story = {
-  args: { text: "SHUFFLING", label: "Shuffling the questions" },
-};
-
-/**
- * Narrow viewport. `LoadingWave`'s `lg` size steps down on phones, so the word fits at 360px
- * instead of spanning the screen (docs/RESPONSIVE.md).
+ * Narrow viewport. `BlobLoader`'s `xl` size steps down on phones (to 64px wide), so it
+ * stays a loader rather than a centrepiece at 360px (docs/RESPONSIVE.md).
  */
 export const Mobile: Story = {
   parameters: {

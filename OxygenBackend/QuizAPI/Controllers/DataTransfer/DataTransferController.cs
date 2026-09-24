@@ -16,6 +16,7 @@ using QuizAPI.DTOs.Quiz;
 using QuizAPI.Filtering;
 using QuizAPI.DTOs.User;
 using QuizAPI.Models;
+using QuizAPI.Models.Quiz;
 using QuizAPI.Services.CurrentUserService;
 using QuizAPI.Services.DataTransfer;
 using QuizAPI.Services.Interfaces;
@@ -496,6 +497,7 @@ namespace QuizAPI.Controllers.DataTransfer
                 Language = q.Language?.Language ?? string.Empty,
                 Difficulty = q.Difficulty?.Level ?? string.Empty,
                 Status = q.Status.ToString(),
+                Format = q.Format.ToString(),
                 TimeLimitInSeconds = q.TimeLimitInSeconds ?? 0,
                 ShuffleQuestions = q.ShuffleQuestions,
                 ShowFeedbackImmediately = q.ShowFeedbackImmediately,
@@ -538,6 +540,15 @@ namespace QuizAPI.Controllers.DataTransfer
                 {
                     result.Skipped++;
                     result.Errors.Add("Skipped a quiz with an empty Title.");
+                    continue;
+                }
+
+                // Before the title dedupe, so a refused row doesn't reserve its title.
+                if (!string.IsNullOrWhiteSpace(r.Format)
+                    && !string.Equals(r.Format.Trim(), nameof(QuizFormat.Classic), StringComparison.OrdinalIgnoreCase))
+                {
+                    result.Skipped++;
+                    result.Errors.Add($"\"{Truncate(r.Title.Trim(), 40)}\" is a {r.Format.Trim()} quiz — only regular quizzes can be imported. Skipped.");
                     continue;
                 }
 

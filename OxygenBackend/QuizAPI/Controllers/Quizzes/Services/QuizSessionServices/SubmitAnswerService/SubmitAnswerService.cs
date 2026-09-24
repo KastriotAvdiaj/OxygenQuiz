@@ -99,6 +99,9 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.SubmitAnswerS
                 _logger.LogWarning("Session {SessionId} is already completed.", session.Id);
                 return Result.ValidationFailure("This quiz session is already completed.");
             }
+            // Only a Classic quiz takes UserAnswer submissions (QuizFormatGuard).
+            if (session.Quiz.Format != QuizFormat.Classic)
+                return Result.ValidationFailure(QuizFormatGuard.NotClassicMessage(session.Quiz.Format));
             if (session.CurrentQuizQuestionId == null || session.CurrentQuestionStartTime == null)
             {
                 _logger.LogWarning("Session {SessionId} not expecting an answer right now.", session.Id);

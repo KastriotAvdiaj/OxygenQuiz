@@ -53,20 +53,40 @@ and nothing about publishing. A quiz can clear it and still fail this gate.
 There is one discovery rule and a couple of explicit capability paths.
 
 ### Discovery (lists, search, catalogue)
-The EF Core global query filter on `Quiz` (`ApplicationDbContext`) returns a quiz only when it is
-`Public`, owned by the caller, or the caller is an admin. So **Draft and Unlisted quizzes never leak
-into any list or search** — the public catalogue endpoints filter to `Status == Public` to match.
+**Visibility is checked explicitly at every entry point — there is no global query filter for it.**
+The only query filter on `Quiz` is soft delete. The public catalogue, list and search endpoints
+filter to `Status == Public` themselves, "my quizzes" filters to the caller, and the admin lists
+are role-gated — so **Draft and Unlisted quizzes never appear in any list or search**.
+
+> **Why not a global filter.** This doc used to say there was one. It was declared, and it never
+> ran: EF Core 8 keeps one filter per entity and the soft-delete declaration replaced it. Making it
+> work was tried and rejected — it hides a quiz from the sessions of anyone who played it via a
+> share link, and from background jobs that run with no current user. See
+> [ADR 0019](../adr/0019-quiz-visibility-is-enforced-at-each-entry-point.md). **A new endpoint that
+> returns a quiz must check access itself.**
+
+### Formats in preview are admin-only
+
+A quiz **format** that is still being built and tested exists for admins only:
+`QuizFormatAccess.PreviewFormats` (today: Associations). For everyone else — players and guests —
+those quizzes are absent from the catalogue, search, "my quizzes", a read by id, the questions
+list and a share link, and the format's authoring endpoints answer 404. It is enforced in
+`QuizService` (`VisibleTo(isAdmin)` on every list, `IsAvailableTo` on every single read), on top of
+the status rules on this page, and pinned by `QuizAPI.Tests/Formats/PreviewFormatAccessTests.cs`.
+Releasing a format is removing it from that array (and from `PREVIEW_FORMATS` on the frontend,
+which only decides what to offer). See [associations.md](associations.md), "Admins only, for now".
 
 ### Unlisted via share link
 - The owner calls `POST /api/quiz/{id}/share-link` to lazily generate (and thereafter reuse) an
   unguessable `ShareToken`. The token is only ever returned to the owner.
 - A visitor opens `/play/shared/{token}`, which resolves the quiz through
-  `GET /api/quiz/shared/{token}`. That endpoint bypasses the discovery filter on purpose
-  (`IgnoreQueryFilters`) because the token *is* the grant; it returns 404 for an unknown token or a
+  `GET /api/quiz/shared/{token}`. That endpoint reads the quiz whatever its status
+  (the token *is* the grant); it returns 404 for an unknown token or a
   Draft quiz.
 - **Login is required to play** even with a valid link — the token grants access, the account ties
   the play session to a user. Starting the session sends the token in `QuizSessionCM.ShareToken`,
-  which `QuizSessionService.IsPlayAuthorized` validates.
+  which `QuizPlayAccess.IsPlayAuthorized` (`Common/QuizPlayAccess.cs`) validates — the one rule
+  shared by Classic sessions and Associations games ([`associations.md`](./associations.md) §9.2).
 
 ### Unlisted via multiplayer lobby
 - A host may select a quiz that is `Public` **or one they own** (any status, including Unlisted/Draft).
@@ -82,8 +102,8 @@ account or token to authorize Unlisted/Draft access.
 
 ### Questions inside a quiz you may play
 
-There is a **second** global query filter, on `QuestionBase`, and it is easy to forget it exists
-because the quiz-level one gets all the attention. A question loads when any of these holds:
+There **is** a visibility query filter on `QuestionBase` (unlike `Quiz`, see above), and it is easy
+to forget it exists. A question loads when any of these holds:
 
 1. the caller is an admin;
 2. the caller owns the question;
@@ -138,7 +158,7 @@ to `Draft`. See [import-templates/README.md](../data/import-templates/README.md)
 
 Done:
 - Backend model (`QuizStatus` + `ShareToken`), migration with data backfill, and the full
-  enforcement surface (discovery filter, session-create authorization, share-token endpoints,
+  enforcement surface (explicit status checks per endpoint — see ADR 0019 — session-create authorization, share-token endpoints,
   `QuizHub.SelectQuiz` validation, guest-play restriction).
 - Frontend status model: create/edit form status selector, dashboard status column + filter, and the
   owner-side **share-link generation + copy** on the quiz detail page.

@@ -342,6 +342,14 @@ public class QuizHub : Hub<IQuizClient>
             var quizService = scope.ServiceProvider.GetRequiredService<IQuizService>();
             if (!await quizService.CanHostQuizAsync(parsedQuizId, hostUserId))
                 throw new HubException("You can't host this quiz.");
+
+            // The match loop is Classic (MatchOrchestrator). Associations duels get their own
+            // orchestrator and a dispatch on format here (docs/quiz/associations.md §2); until
+            // then a board is refused at selection rather than at start, so the lobby never shows a
+            // pick it can't play.
+            var format = await quizService.GetFormatAsync(parsedQuizId);
+            if (format is not null && format != QuizAPI.Models.Quiz.QuizFormat.Classic)
+                throw new HubException("Associations quizzes can't be played in a lobby yet.");
         }
 
         // Set quiz. The whole payload is stored, not just the id, so JoinSession can replay it

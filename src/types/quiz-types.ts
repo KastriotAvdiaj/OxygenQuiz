@@ -15,6 +15,14 @@ import { UserBasic } from "./user-types";
 export type QuizStatus = "Draft" | "Unlisted" | "Public";
 
 /**
+ * Which kind of game a quiz is (server counterpart: `QuizFormat`). Fixed at creation.
+ * - Classic      — an ordered list of questions, each answered once.
+ * - Associations — one Board: 4 columns × 4 tiles, a solution per column and a final solution.
+ * See docs/adr/0018-quiz-formats-are-separate-verticals.md and docs/quiz/associations.md.
+ */
+export type QuizFormat = "Classic" | "Associations";
+
+/**
  * A summary of a quiz, typically used for lists.
  */
 export type QuizSummaryDTO = {
@@ -29,7 +37,9 @@ export type QuizSummaryDTO = {
   gradient:boolean;
   timeLimitInSeconds:number;
   status: QuizStatus;
+  format: QuizFormat;
   createdAt: string;
+  /** Always 0 for an Associations quiz — a board has no questions. Check `format` first. */
   questionCount: number;
   user: string;
   /** Profile image URL of the quiz's creator. Absent if they have no avatar set. */
@@ -92,6 +102,7 @@ export type Quiz = {
   timeLimitInSeconds: number;
   showFeedbackImmediately: boolean;
   status: QuizStatus;
+  format: QuizFormat;
   /** Unlisted share-link token. Only present on the owner's own read. */
   shareToken?: string | null;
   shuffleQuestions: boolean;

@@ -1,4 +1,5 @@
-import { useParams } from "react-router";
+import { Navigate, useParams } from "react-router";
+import { useQuizEditPath } from "../../quiz-paths";
 import { Brain } from "lucide-react";
 import { Spinner } from "@/components/ui";
 import { useQuizData } from "../../api/get-quiz";
@@ -17,8 +18,18 @@ export const EditQuizRoute = () => {
   const params = useParams();
   const quizId = Number(params.quizId as string);
 
+  const editPath = useQuizEditPath();
   const quizQuery = useQuizData({ quizId });
-  const questionsQuery = useQuizQuestionsData({ quizId });
+  // A board has no questions to load; don't ask for them.
+  const isBoard = quizQuery.data?.format === "Associations";
+  const questionsQuery = useQuizQuestionsData({ quizId, queryConfig: { enabled: quizQuery.isSuccess && !isBoard } });
+
+  // An Associations quiz reached through an old or hand-typed Classic edit link goes to its
+  // own editor. The Classic form would try to save it as a question list, which the API
+  // refuses (docs/quiz/associations.md §2).
+  if (quizQuery.data && isBoard) {
+    return <Navigate to={editPath(quizQuery.data)} replace />;
+  }
 
   if (quizQuery.isLoading || questionsQuery.isLoading) {
     return (

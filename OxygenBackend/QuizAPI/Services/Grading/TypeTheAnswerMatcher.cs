@@ -49,12 +49,35 @@ namespace QuizAPI.Services.Grading
         {
             if (question is null) return false;
 
-            var caseSensitive = question.IsCaseSensitive;
+            return IsMatch(
+                question.CorrectAnswer,
+                question.AcceptableAnswers,
+                question.IsCaseSensitive,
+                question.AllowPartialMatch,
+                submitted);
+        }
 
+        /// <summary>
+        /// The same decision as <see cref="IsCorrect"/>, over plain values instead of a
+        /// <see cref="TypeTheAnswerQuestion"/>. This is the core; <see cref="IsCorrect"/> is a thin
+        /// adapter over it.
+        ///
+        /// It exists so that grading text that is <i>not</i> a typed-answer question — an
+        /// Associations Guess against a Column or Final solution — goes through exactly the same
+        /// normalisation and matching rather than a second implementation that could drift from
+        /// this one (the drift this class was created to end). See docs/quiz/associations.md.
+        /// </summary>
+        public static bool IsMatch(
+            string? correct,
+            IEnumerable<string>? acceptable,
+            bool caseSensitive,
+            bool allowPartialMatch,
+            string? submitted)
+        {
             var answer = Normalise(submitted, caseSensitive);
             if (answer.Length == 0) return false;
 
-            var expectedAnswers = Expected(question, caseSensitive);
+            var expectedAnswers = Expected(correct, acceptable, caseSensitive);
 
             foreach (var expected in expectedAnswers)
             {
@@ -62,7 +85,7 @@ namespace QuizAPI.Services.Grading
                     return true;
             }
 
-            if (!question.AllowPartialMatch)
+            if (!allowPartialMatch)
                 return false;
 
             // "the Eiffel Tower" is accepted when the expected answer is "Eiffel".
@@ -233,16 +256,16 @@ namespace QuizAPI.Services.Grading
         /// everything under partial match, and authors do leave empty rows behind in the builder's
         /// "other accepted answers" list.
         /// </summary>
-        private static List<string> Expected(TypeTheAnswerQuestion question, bool caseSensitive)
+        private static List<string> Expected(string? correct, IEnumerable<string>? acceptable, bool caseSensitive)
         {
             var results = new List<string>();
 
-            var primary = Normalise(question.CorrectAnswer, caseSensitive);
+            var primary = Normalise(correct, caseSensitive);
             if (primary.Length > 0) results.Add(primary);
 
-            if (question.AcceptableAnswers is null) return results;
+            if (acceptable is null) return results;
 
-            foreach (var alternative in question.AcceptableAnswers)
+            foreach (var alternative in acceptable)
             {
                 var normalised = Normalise(alternative, caseSensitive);
                 if (normalised.Length > 0) results.Add(normalised);

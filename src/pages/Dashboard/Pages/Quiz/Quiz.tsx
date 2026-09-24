@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router";
-import { LoadingWave } from "@/components/ui";
+import { BlobLoader } from "@/components/ui";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useNotifications } from "@/common/Notifications";
@@ -20,6 +20,8 @@ import { QuizActionsMenu } from "./components/quiz-view/quiz-actions-menu";
 import { QuizStatStrip } from "./components/quiz-view/quiz-stat-strip";
 import { QuizStatusBadge } from "./components/quiz-view/quiz-status-badge";
 import { formatDuration } from "./components/quiz-view/format-duration";
+import { AssociationBoardPreview } from "./components/quiz-view/association-board-preview";
+import { quizEditPath } from "./quiz-paths";
 import {
   SIGNED_IN_ONLY_NOTE,
   showsTrend,
@@ -56,11 +58,21 @@ export const QuizRoute = () => {
   const { addNotification } = useNotifications();
 
   const quizQuery = useQuizData({ quizId });
-  const questionsQuery = useQuizQuestionsData({ quizId });
+  // An Associations quiz has a board instead of questions, and no analytics yet
+  // (docs/quiz/associations.md). Neither query is asked for it.
+  const isBoard = quizQuery.data?.format === "Associations";
+  const questionsQuery = useQuizQuestionsData({
+    quizId,
+    queryConfig: { enabled: quizQuery.isSuccess && !isBoard },
+  });
   // Solo by default, matching the API: a match's scores answer a different question than the one
   // an author is asking when they open this page (docs/quiz/multiplayer.md §7).
   const [analyticsMode, setAnalyticsMode] = useState<AnalyticsMode>("SinglePlayer");
-  const analyticsQuery = useQuizAnalytics({ quizId, mode: analyticsMode });
+  const analyticsQuery = useQuizAnalytics({
+    quizId,
+    mode: analyticsMode,
+    queryConfig: { enabled: quizQuery.isSuccess && !isBoard },
+  });
   const shareLink = useCreateShareLink();
   const setStatus = useSetQuizStatus();
 
@@ -112,12 +124,12 @@ export const QuizRoute = () => {
   };
 
   if (quizQuery.isLoading) {
-    // `LoadingWave` is the app's loader now; `Spinner` is what this page was written against
-    // before that. The word carries the message, so the "Loading quiz..." line underneath is
-    // gone with it — it was saying the same thing twice.
+    // `BlobLoader` is the app's loader; `Spinner` is what this page was written against
+    // before that. The "Loading quiz..." line underneath stays gone: the loader announces
+    // itself to screen readers, and sighted users already know what page they opened.
     return (
       <div className="w-full h-full flex items-center justify-center py-16">
-        <LoadingWave size="lg" variant="muted" />
+        <BlobLoader size="lg" />
       </div>
     );
   }
@@ -211,7 +223,7 @@ export const QuizRoute = () => {
                 isSharePending={shareLink.isPending}
                 onSetStatus={handleSetStatus(isDraft ? "Public" : "Draft")}
                 isStatusPending={setStatus.isPending}
-                onEdit={() => navigate(`/dashboard/quizzes/edit-quiz/${quiz.id}`)}
+                onEdit={() => navigate(quizEditPath(quiz))}
                 onDelete={() => setDeleteOpen(true)}
               />
             </div>
@@ -238,9 +250,13 @@ export const QuizRoute = () => {
                   It is kept here, beside the rest of what the quiz is, and dropped from the
                   footer, which now carries only the identifiers. */}
             <p className="text-sm text-muted-foreground">
-              {quiz.questionCount} questions
+              {isBoard ? "Associations board" : `${quiz.questionCount} questions`}
               {quiz.timeLimitInSeconds > 0 && (
-                <> · {formatDuration(quiz.timeLimitInSeconds)} limit</>
+                <>
+                  {" · "}
+                  {formatDuration(quiz.timeLimitInSeconds)}
+                  {isBoard ? " board time" : " limit"}
+                </>
               )}
               {quiz.showFeedbackImmediately && <> · Answers checked as you go</>}
               {quiz.shuffleQuestions && <> · Shuffled</>}
@@ -264,21 +280,29 @@ export const QuizRoute = () => {
                 out there are matches to look at. */}
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-sm font-medium">Performance</h2>
-              <SegmentedControl
-                aria-label="Which plays to count"
-                value={analyticsMode}
-                onValueChange={setAnalyticsMode}
-                options={[
-                  { value: "SinglePlayer", label: "Solo" },
-                  { value: "Multiplayer", label: "Multiplayer" },
-                  { value: "All", label: "Both" },
-                ]}
-              />
+              {!isBoard && (
+                <SegmentedControl
+                  aria-label="Which plays to count"
+                  value={analyticsMode}
+                  onValueChange={setAnalyticsMode}
+                  options={[
+                    { value: "SinglePlayer", label: "Solo" },
+                    { value: "Multiplayer", label: "Multiplayer" },
+                    { value: "All", label: "Both" },
+                  ]}
+                />
+              )}
             </div>
 
-            {analyticsQuery.isLoading ? (
+            {isBoard ? (
+              // Not zeros: a board's plays aren't counted yet, which is a different thing from
+              // nobody having played it (docs/quiz/quiz-analytics-page.md).
+              <p className="text-sm text-muted-foreground">
+                Analytics for Associations quizzes aren&apos;t available yet.
+              </p>
+            ) : analyticsQuery.isLoading ? (
               <div className="flex justify-center py-8">
-                <LoadingWave size="md" variant="muted" />
+                <BlobLoader size="md" />
               </div>
             ) : !analytics ? (
               <p className="text-sm text-muted-foreground">
@@ -335,9 +359,11 @@ export const QuizRoute = () => {
         <div className="min-w-0">
           <Separator className="mb-6 xl:hidden" />
           <section className="pb-6">
-            {questionsQuery.isLoading ? (
+            {isBoard ? (
+              <AssociationBoardPreview quizId={quiz.id} />
+            ) : questionsQuery.isLoading ? (
               <div className="flex justify-center py-8">
-                <LoadingWave size="md" variant="muted" />
+                <BlobLoader size="md" />
               </div>
             ) : (
               <QuestionPerformanceTable

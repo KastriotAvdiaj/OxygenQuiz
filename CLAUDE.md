@@ -94,6 +94,14 @@ Full version, including the two failure modes this project has actually hit:
 - **Permission checks in the controller, ownership clamps in the repository.** The controller
   decides *may this caller act*, the repository decides *on which rows* — passing
   `canUpdateAny ? null : userId` down keeps a caller from probing ids they can't touch.
+- **`Quiz` has no visibility query filter — only soft delete.** An endpoint that returns a quiz
+  checks Draft / Unlisted / ownership itself. Don't add a second `HasQueryFilter` to an entity: in
+  EF Core 8 it replaces the first. See `docs/adr/0019-quiz-visibility-is-enforced-at-each-entry-point.md`.
+- **A new read of quizzes applies `VisibleTo(_current.IsAdmin)` / `QuizFormatAccess.IsAvailableTo`.**
+  Formats in preview (Associations) are admin-only, and a read that skips it leaks them to players.
+- **An Associations game is its move log — never store board state.** Replay the moves under the
+  game's `RulesJson` (ADR 0020). Anything that deletes `QuizSession` rows calls
+  `IAssociationGameRepository.DeleteGamesOfSessionsAsync` first; the FK restricts it otherwise.
 - **Validate lookups after the ownership lookup, not before,** for the same reason: failing
   on a bad category id before checking ownership leaks whether the question exists.
 

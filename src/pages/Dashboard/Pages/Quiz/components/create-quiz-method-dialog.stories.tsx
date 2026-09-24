@@ -39,6 +39,7 @@ const meta = {
     manualPath: "/dashboard/quizzes/create-quiz",
     aiTopicPath: "/dashboard/quizzes/create-quiz/ai/topic",
     aiMaterialPath: "/dashboard/quizzes/create-quiz/ai/material",
+    associationsPath: "/dashboard/quizzes/create-quiz/associations",
     onOpenChange: fn(),
   },
 } satisfies Meta<typeof CreateQuizMethodDialog>;
@@ -86,6 +87,7 @@ export const OpenForUserDashboard: Story = {
     manualPath: "/my-dashboard/quizzes/create",
     aiTopicPath: "/my-dashboard/quizzes/create/ai/topic",
     aiMaterialPath: "/my-dashboard/quizzes/create/ai/material",
+    associationsPath: "/my-dashboard/quizzes/create/associations",
   },
 };
 

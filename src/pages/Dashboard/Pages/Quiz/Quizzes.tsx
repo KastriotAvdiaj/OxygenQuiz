@@ -178,6 +178,7 @@ export const Quizzes = () => {
             manualPath="/dashboard/quizzes/create-quiz"
             aiTopicPath="/dashboard/quizzes/create-quiz/ai/topic"
             aiMaterialPath="/dashboard/quizzes/create-quiz/ai/material"
+            associationsPath="/dashboard/quizzes/create-quiz/associations"
           />
         </div>
       </div>

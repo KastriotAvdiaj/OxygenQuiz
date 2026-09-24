@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
   Clock,
+  LayoutGrid,
   FileText,
   PencilLine,
   Sparkles,
@@ -20,6 +21,7 @@ import {
 import { LiftedButton } from "@/common/LiftedButton";
 import { ModeCard } from "@/pages/Quiz/components/mode-card";
 import { cn } from "@/utils/cn";
+import { useFormatAvailable } from "../format-access";
 
 /**
  * Whether "from my material" can be picked yet.
@@ -57,6 +59,13 @@ export interface CreateQuizMethodDialogProps {
    * exactly what a disabled placeholder is supposed to prevent.
    */
   aiMaterialPath: string;
+  /**
+   * The Associations board builder, e.g. `/dashboard/quizzes/create-quiz/associations`. A
+   * different *format* rather than a different way of writing questions — but it is still "how
+   * do you want to build this quiz?", so it is a card here rather than a separate button
+   * (docs/quiz/associations.md, "Authoring").
+   */
+  associationsPath: string;
   /**
    * What opens the dialog. Defaults to the standard "+ Create Quiz" button; pass your own
    * if a surface needs different affordance (it's wrapped in `DialogTrigger asChild`).
@@ -112,6 +121,7 @@ export const CreateQuizMethodDialog = ({
   manualPath,
   aiTopicPath,
   aiMaterialPath,
+  associationsPath,
   trigger,
   open,
   onOpenChange,
@@ -119,6 +129,9 @@ export const CreateQuizMethodDialog = ({
 }: CreateQuizMethodDialogProps) => {
   const navigate = useNavigate();
   const [step, setStep] = useState<Step>(initialStep);
+  // Associations is admin-only while it is tested (format-access.ts); players see the two
+  // Classic cards, exactly as before.
+  const showAssociations = useFormatAvailable("Associations");
 
   /**
    * Reset on *open*, not on close. Resetting as it closes swaps the body back to step 1
@@ -140,7 +153,9 @@ export const CreateQuizMethodDialog = ({
           foot row; `sm:max-w-xl` is the width at which two of them sit side by side without
           either wrapping its title. DialogContent still owns the phone gutter and the dvh
           height cap itself — see docs/RESPONSIVE.md. */}
-      <DialogContent className="sm:max-w-xl">
+      {/* Three cards on the first step (manual, AI, board) need a wider dialog than the AI
+          step's two; the width follows the step. */}
+      <DialogContent className={isMethodStep && showAssociations ? "sm:max-w-3xl" : "sm:max-w-xl"}>
         <DialogHeader>
           {/* pr-6 clears the close button; the back arrow sits inline with the title rather
               than above it, so the header keeps one line at phone widths. */}
@@ -170,7 +185,8 @@ export const CreateQuizMethodDialog = ({
             foot row floating; `mt-auto` inside ModeCard pins both to the bottom. */}
         <div
           className={cn(
-            "mt-2 grid items-stretch gap-3 sm:grid-cols-2 sm:gap-4",
+            "mt-2 grid items-stretch gap-3 sm:gap-4",
+            isMethodStep && showAssociations ? "sm:grid-cols-3" : "sm:grid-cols-2",
             // The phone column is capped for the same reason the game-mode hub caps its own:
             // edge-to-edge full-width cards read as page sections rather than tappable
             // choices. In a dialog the gutter does half the work, so this is gentler.
@@ -204,6 +220,21 @@ export const CreateQuizMethodDialog = ({
                 onSelect={() => setStep("aiSource")}
                 delay={0.08}
               />
+              {/* A different format, not a different way of writing questions: one board of
+                  four columns and a final solution, like the show's final. */}
+              {showAssociations && (
+              <ModeCard
+                icon={LayoutGrid}
+                title="Associations"
+                description="Build a board: four columns of clues and a final solution."
+                meta="The Oxygen final"
+                metaIcon={Zap}
+                accent="foreground"
+                size="compact"
+                onSelect={() => navigate(associationsPath)}
+                delay={0.16}
+              />
+              )}
             </>
           ) : (
             <>

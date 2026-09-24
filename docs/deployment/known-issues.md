@@ -213,6 +213,14 @@ timeLimit` points, i.e. ~33 pts on a 30s question but ~100 pts (10% of base) on 
   competitive ladder or public leaderboard ships.
   → `OxygenBackend/QuizAPI/Services/Scoring/QuizTiming.cs`,
   `Controllers/Quizzes/Services/QuizSessionServices/QuizSessionOptions.cs`
+- ~~**P2 — The `Quiz` visibility query filter is silently replaced by the soft-delete filter.**~~
+  **Resolved 2026-09-22 — by removing the dead filter, not by reviving it.** EF Core 8 keeps only
+  the last `HasQueryFilter` per entity, so the visibility filter had never run since soft delete
+  was added. An audit found every entry point already enforces visibility itself, so there was no
+  exposure; and making the filter work broke Unlisted plays and background reads in tests. Full
+  reasoning in [ADR 0019](../adr/0019-quiz-visibility-is-enforced-at-each-entry-point.md);
+  `QuizAPI.Tests/Visibility/QuizQueryFilterTests.cs` fails if a visibility filter is added back.
+  → `OxygenBackend/QuizAPI/Data/ApplicationDbContext.cs`
 
 ## Code quality / cleanup
 
@@ -1015,7 +1023,7 @@ redesign means a scroll regression could have come from either.
   missing, the log carries *"Unknown time zone '…' — is tzdata present in the image?"* and the
   offset fallback takes over — correct except across a DST boundary. Worth grepping for once
   after the first deploy. The decision, and the three clocks it chose between, are in
-  [`../adr/0011-attempts-are-bucketed-in-the-viewers-timezone.md`](../adr/0011-attempts-are-bucketed-in-the-viewers-timezone.md).
+  [`../adr/0017-attempts-are-bucketed-in-the-viewers-timezone.md`](../adr/0017-attempts-are-bucketed-in-the-viewers-timezone.md).
   → `OxygenBackend/QuizAPI/Services/Reports/ReportService.cs`,
     `src/pages/Dashboard/Pages/Quiz/api/get-quiz-analytics.ts`
 
@@ -1084,7 +1092,7 @@ fixed; these were left.
   kind. Deferred because it is a change to how ~15 routes are declared, not a fix.
   → `src/routes/Router.tsx`, `src/layouts/dashboard-layout.tsx`
 - **P3 — Two visual languages for a wait.** The public app waits with `PageLoading` /
-  `LoadingWave`; the admin dashboard waits with `Spinner`, across ~18 screens plus the
+  `BlobLoader`; the admin dashboard waits with `Spinner`, across ~18 screens plus the
   in-button loader. Both are internally consistent and nothing crosses between them, so this
   is cosmetic — but it is the reason the sizing rule in
   [`../development/loading-states.md`](../development/loading-states.md) has to name two
@@ -1094,6 +1102,10 @@ fixed; these were left.
   `docs/quiz/quiz-playing-architecture.md` § 3b explains why it stopped being the quiz
   loader), storied, and dead. Listed so it is not rediscovered as an oversight.
   → `src/components/ui/split-flap-loader.tsx`
+- **P3 — `LoadingWave` has no call sites.** Replaced by `BlobLoader` as the app's loader after
+  the landing-page redesign (it no longer fit the look). Kept deliberately and storied, same as
+  `SplitFlapLoader`; its `loading-wave` keyframe in `global.css` stays with it.
+  → `src/components/ui/loading-wave.tsx`
 
 ## Quiz card (2026-09-18 — see docs/quiz/quiz-card.md)
 
@@ -1116,6 +1128,41 @@ fixed; these were left.
   `?category=`: with the categories endpoint returning 500, the page shows no quizzes at all —
   with or without the param, so it predates it. The quiz grid should not depend on the filter
   panel's lookup data. → `src/pages/Quiz/Quiz-Selection.tsx`
+
+## Associations (2026-09-23 — see docs/quiz/associations.md)
+
+- **P3 — The board builder has no local draft.** The Classic builder autosaves an unfinished quiz
+  to the browser (`useDraftAutosave`, docs/quiz/quiz-draft-persistence.md); the board builder
+  doesn't, so closing the tab mid-way loses the Board. The server rule stays "a Board is complete
+  when saved", so the fix is client-only: wire `useDraftAutosave` into `AssociationBoardForm` with a
+  board-shaped draft. Deferred to keep Phase 3 to authoring itself.
+  → `src/pages/Dashboard/Pages/Quiz/components/Association-Board-Form/association-board-form.tsx`
+- ~~**P3 — Quizzes (both formats) could only be edited from the admin dashboard.**~~ **Fixed
+  2026-09-23.** The player dashboard mounts the editors at `/my-dashboard/quizzes/edit/:id` (and
+  `…/board`); the shared table links within its own dashboard (`useQuizEditPath`). Only an owner
+  can save — unchanged, that was always the API's rule. See docs/quiz/quiz-editing.md.
+- **P3 — Players have no single-quiz page.** `/dashboard/quiz/:id` (stats, board preview) is in the
+  admin dashboard only, so "My quizzes" hides the table's View item rather than link to a 404. An
+  owner-facing version would need the analytics endpoint's owner scoping (it has it) and a
+  player-dashboard route.
+  → `src/pages/Dashboard/Pages/Quiz/components/Data-Table-Columns/columns.tsx`
+- **P3 — No image on a Board quiz in the builder.** The API accepts `imageUrl` on create and
+  update; the builder has no upload field, matching the Classic builder, whose `ImageUpload` is
+  commented out.
+- **P3 — The lobby's quiz picker lists Boards to admins** (2026-09-23). Picking one is refused by
+  the hub ("Associations quizzes can't be played in a lobby yet"), so nothing breaks, but the pick
+  shouldn't be offered. Filtering client-side would break the picker's server paging; the proper fix
+  is the Duel's dispatch (Phase 5, `associations-plan.md` §9.1), which makes the pick valid instead.
+  Players never see Boards (§0 of the feature doc).
+  → `src/pages/Quiz/Multiplayer/components/lobby/quiz-selection-dialog-view.tsx`
+- **P3 — "Play again" and "Start over" drop an Unlisted board's share token** (2026-09-23). Both call
+  `POST /associations/sessions/{id}/restart` without the `shareToken` that started the game, so for
+  an Unlisted board you don't own the restart is refused (404). Nothing is lost — the server checks
+  the right to start before it ends anything (`A_refused_restart_leaves_the_running_game_alone`) —
+  and starting again from the share link works. Fix: carry the token in the game page's URL (`?shareToken=`) and pass it on.
+  → `src/pages/Quiz/Associations/solo/association-game-page.tsx`, `results/association-results-page.tsx`
+- **P3 — Guest play of a Board isn't built** (2026-09-23), deliberately: unreachable while the format
+  is admin-only. Built with the release — `associations-plan.md` §8.5; feature doc §9.8.
 
 ## Documentation debt (2026-08-23)
 

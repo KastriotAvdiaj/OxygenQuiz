@@ -34,13 +34,15 @@ namespace QuizAPI.Services.Reports
 
             // The user's quizzes (so quizzes with no attempts still appear).
             var quizzes = await _context.Quizzes.AsNoTracking()
-                .Where(q => q.UserId == userId)
+                // Classic only: these rows are scores, durations and completion over questions, and
+                // a Board's numbers are on another scale (docs/quiz/associations.md, "Stats, history, reports").
+                .Where(q => q.UserId == userId && q.Format == QuizFormat.Classic)
                 .Select(q => new { q.Id, q.Title })
                 .ToListAsync(ct);
 
             // Their sessions within the date window, single player only unless asked otherwise.
             var sessions = await _context.QuizSessions.AsNoTracking()
-                .Where(s => s.Quiz.UserId == userId)
+                .Where(s => s.Quiz.UserId == userId && s.Quiz.Format == QuizFormat.Classic)
                 .WhereMode(criteria.Mode)
                 .Where(s => from == null || s.StartTime >= from)
                 .Where(s => toExclusive == null || s.StartTime < toExclusive)
@@ -166,8 +168,10 @@ namespace QuizAPI.Services.Reports
             if (quiz is null) return null;
 
             // Sessions for this quiz within the window.
+            // A Board's sessions are left out, explicitly: the quiz page shows "not available" for
+            // Boards and never asks, but a report must not rely on its caller for that.
             var sessions = await _context.QuizSessions.AsNoTracking()
-                .Where(s => s.QuizId == quizId)
+                .Where(s => s.QuizId == quizId && s.Quiz.Format == QuizFormat.Classic)
                 .WhereMode(criteria.Mode)
                 .Where(s => from == null || s.StartTime >= from)
                 .Where(s => toExclusive == null || s.StartTime < toExclusive)

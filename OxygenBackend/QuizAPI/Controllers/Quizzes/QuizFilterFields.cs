@@ -18,6 +18,9 @@ namespace QuizAPI.Controllers.Quizzes
             .Field("difficultyId", q => q.DifficultyId, new[] { Eq, In })
             .Field("languageId",   q => q.LanguageId,   new[] { Eq, In })
             .Field("status",       q => q.Status,       new[] { Eq, In })   // enum: Draft / Unlisted / Public
+            // enum: Classic / Associations. Filters only within what the caller may see — a player
+            // asking for Associations while it is in preview gets nothing (QuizFormatAccess.VisibleTo).
+            .Field("format",       q => q.Format,       new[] { Eq, In })
             .Field("userId",       q => q.UserId,       new[] { Eq, In })   // filter by one or more authors
             .Field("createdAt",    q => q.CreatedAt,    new[] { Eq, Gt, Gte, Lt, Lte, Between }, sortable: true, defaultSort: true);
     }

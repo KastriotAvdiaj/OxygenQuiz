@@ -40,7 +40,7 @@ export interface TypewriterProps {
  * overlay's copy turns over instead, which is unambiguous, and the typing simply carries
  * on underneath it for the second and a half before the layer leaves.
  *
- * <b>Why it isn't `LoadingWave`.</b> Every ordinary wait in the app is LoadingWave, and
+ * <b>Why it isn't `BlobLoader`.</b> Every ordinary wait in the app is BlobLoader, and
  * that is on purpose — a wait should not announce itself as a different thing each time
  * (quiz-loading-view.tsx). This is the exception the split-flap board already
  * established: a moment that wants a set-piece. Keep the exception to one.

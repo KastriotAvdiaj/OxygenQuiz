@@ -12,6 +12,21 @@ import { secondsToMinutes } from "../quiz-duration";
  * (a module that mixes components with hooks breaks Fast Refresh).
  */
 
+/**
+ * What the card says about a quiz's size: "13 questions" for Classic, "Associations board" for a
+ * board. `count` is null when there is no number to show. Also used for the frame's aria-label, so
+ * the spoken and the visible description never disagree.
+ */
+export function quizSizeLabel(
+  quiz: Pick<QuizSummaryDTO, "format" | "questionCount">
+): { count: number | null; label: string } {
+  if (quiz.format === "Associations") return { count: null, label: "Associations board" };
+  return {
+    count: quiz.questionCount,
+    label: quiz.questionCount === 1 ? "question" : "questions",
+  };
+}
+
 /** Difficulty as a 1–3 rank for the meter. `null` if it isn't one of easy/medium/hard. */
 function difficultyRank(difficulty?: string): 1 | 2 | 3 | null {
   switch (difficulty?.trim().toLowerCase()) {
@@ -44,7 +59,9 @@ export function useQuizCardModel(quiz: QuizSummaryDTO) {
       accent,
       onAccent: readableTextColor(accent),
       initials: initialsFromName(quiz.user),
-      questionLabel: quiz.questionCount === 1 ? "question" : "questions",
+      // A board has no questions, so its count would read "0 questions" — the format name is the
+      // honest size line instead. See docs/quiz/quiz-card.md.
+      sizeLabel: quizSizeLabel({ format: quiz.format, questionCount: quiz.questionCount }),
       duration:
         quiz.timeLimitInSeconds > 0
           ? secondsToMinutes(quiz.timeLimitInSeconds)
@@ -55,6 +72,7 @@ export function useQuizCardModel(quiz: QuizSummaryDTO) {
     quiz.colorPaletteJson,
     quiz.user,
     quiz.questionCount,
+    quiz.format,
     quiz.timeLimitInSeconds,
     quiz.difficulty,
   ]);

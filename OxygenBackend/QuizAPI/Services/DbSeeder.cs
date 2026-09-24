@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using QuizAPI.Data;
 using QuizAPI.ManyToManyTables;
 using QuizAPI.Models;
+using QuizAPI.Models.Quiz;
 using System.Text.Json;
 
 namespace QuizAPI.Services
@@ -240,6 +241,67 @@ namespace QuizAPI.Services
                 await _db.SaveChangesAsync(ct);
                 _logger.LogInformation("Seeded sample questions for development.");
             }
+
+            await EnsureSampleAssociationsBoardAsync(adminUserId, ct);
+        }
+
+        /// <summary>
+        /// One Public Associations quiz, so the format can be tried in development without first
+        /// authoring a Board (docs/quiz/associations.md). Seeded once: skipped whenever any
+        /// Associations quiz already exists, so deleting it and restarting brings it back but
+        /// editing it doesn't get overwritten.
+        /// </summary>
+        private async Task EnsureSampleAssociationsBoardAsync(Guid adminUserId, CancellationToken ct)
+        {
+            if (await _db.Quizzes.IgnoreQueryFilters().AnyAsync(q => q.Format == QuizFormat.Associations, ct))
+                return;
+
+            var englishId = await _db.QuestionLanguages.IgnoreQueryFilters().Where(l => l.Language == "English").Select(l => l.Id).FirstOrDefaultAsync(ct);
+            var mediumId = await _db.QuestionDifficulties.IgnoreQueryFilters().Where(d => d.Level == "Medium").Select(d => d.ID).FirstOrDefaultAsync(ct);
+            var geographyId = await _db.QuestionCategories.IgnoreQueryFilters().Where(c => c.Name == "Geography").Select(c => c.Id).FirstOrDefaultAsync(ct);
+            if (englishId == 0 || mediumId == 0 || geographyId == 0)
+                return;   // the lookups were renamed or removed; nothing sensible to seed against
+
+            var quiz = new Quiz
+            {
+                Title = "Italian cities",
+                Description = "A sample Associations board.",
+                UserId = adminUserId,
+                CategoryId = geographyId,
+                LanguageId = englishId,
+                DifficultyId = mediumId,
+                Status = QuizStatus.Public,
+                Format = QuizFormat.Associations,
+                TimeLimitInSeconds = 240,
+                CreatedAt = DateTime.UtcNow,
+                Version = 1,
+            };
+
+            static QuizAPI.Models.Associations.AssociationColumn Column(int position, string solution, params string[] tiles) => new()
+            {
+                Position = position,
+                Solution = solution,
+                Tiles = tiles.Select((text, i) => new QuizAPI.Models.Associations.AssociationTile { Position = i, Text = text }).ToList(),
+            };
+
+            _db.Quizzes.Add(quiz);
+            _db.AssociationBoards.Add(new QuizAPI.Models.Associations.AssociationBoard
+            {
+                Quiz = quiz,
+                CreatedInVersion = 1,
+                FinalSolution = "Italy",
+                FinalAcceptableSolutions = new List<string> { "Italia" },
+                Columns = new List<QuizAPI.Models.Associations.AssociationColumn>
+                {
+                    Column(0, "Rome", "Tiber", "Colosseum", "Vatican", "Seven hills"),
+                    Column(1, "Venice", "Gondola", "Canals", "Carnival", "Lagoon"),
+                    Column(2, "Milan", "Duomo", "Fashion week", "La Scala", "San Siro"),
+                    Column(3, "Naples", "Vesuvius", "Pizza", "Bay", "Maradona"),
+                },
+            });
+
+            await _db.SaveChangesAsync(ct);
+            _logger.LogInformation("Seeded a sample Associations board for development.");
         }
     }
 }

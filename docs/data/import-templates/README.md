@@ -58,3 +58,4 @@ The richest list. Fill only the columns relevant to each row's `Type`:
 | `TimeLimitInSeconds` | optional integer — the **quiz total**, recomputed as the sum of its questions' limits on import. Note the per-question limits themselves are not importable: attached questions currently come in at `0` seconds each, so the total lands at `0` too. Set them in the editor afterwards. |
 | `ShuffleQuestions`, `ShowFeedbackImmediately` | true/false |
 | `QuestionIds` | optional pipe-separated IDs of **existing** questions, in order: `12\|15\|18`. Blank imports the quiz as a draft you finish in the editor; any id that doesn't exist skips the whole row. |
+| `Format` | optional. Blank or `Classic` imports a regular quiz. Any other value (`Associations`) **skips the row** with a message: a board's content isn't importable yet, and creating an empty regular quiz in its place would be wrong. Exports always write this column. See [associations.md](../../quiz/associations.md) §2. |

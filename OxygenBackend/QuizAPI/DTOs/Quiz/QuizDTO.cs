@@ -20,8 +20,13 @@ namespace QuizAPI.DTOs.Quiz
             [Required]
             public int LanguageId { get; set; }
 
+            /// <summary>
+            /// Ignored on create: <c>QuizService</c> derives a Classic quiz's time as the sum of its
+            /// questions' limits, and the catalogue shows that as the quiz's duration. (A comment
+            /// here used to call this "the overall time limit for the quiz"; nothing enforces one.)
+            /// </summary>
             [Range(0, 2000)]
-            public int? TimeLimitInSeconds { get; set; } = 0; //THIS IS THE OVERALL TIME LIMIT FOR THE QUIZ, NOT FOR EACH QUESTION
+            public int? TimeLimitInSeconds { get; set; } = 0;
 
             public bool ShowFeedbackImmediately { get; set; } = false;
 
@@ -52,6 +57,9 @@ namespace QuizAPI.DTOs.Quiz
         public int TimeLimitInSeconds { get; set; }
 
         public string Status { get; set; } = string.Empty;
+
+        /// <summary>"Classic" or "Associations" (see <see cref="Models.Quiz.QuizFormat"/>).</summary>
+        public string Format { get; set; } = nameof(Models.Quiz.QuizFormat.Classic);
         public DateTime CreatedAt { get; set; }
         public int QuestionCount { get; set; }
         public string User { get; set; } = string.Empty;
@@ -83,6 +91,9 @@ namespace QuizAPI.DTOs.Quiz
         public bool ShowFeedbackImmediately { get; set; }
 
         public string Status { get; set; } = string.Empty;
+
+        /// <summary>"Classic" or "Associations" (see <see cref="Models.Quiz.QuizFormat"/>).</summary>
+        public string Format { get; set; } = nameof(Models.Quiz.QuizFormat.Classic);
 
         /// <summary>
         /// The Unlisted share-link token. Only ever populated on the owner's own detail read so the

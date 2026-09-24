@@ -18,6 +18,7 @@ import { ColumnDef } from "@tanstack/react-table";
 // } from "@/components/ui/dropdown-menu";
 import formatDate from "@/lib/date-format";
 import TitleWithDescription from "./title-description";
+import { dashboardBaseOf, useQuizEditPath } from "../../quiz-paths";
 import { useDisclosure } from "@/hooks/use-disclosure";
 import {
   Button,
@@ -30,7 +31,7 @@ import {
 } from "@/components/ui";
 import { Copy, Edit2, Eye, MoreHorizontal, Trash2 } from "lucide-react";
 import { DeleteQuiz } from "../delete-quiz";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { QuizSummaryDTO } from "@/types/quiz-types";
 
 /**
@@ -141,94 +142,111 @@ export const quizColumns: ColumnDef<QuizSummaryDTO>[] = [
     accessorKey: "questionCount",
     header: "Questions",
     meta: { priority: 3 },
+    // A board has no questions; "0" would read as an empty quiz (docs/quiz/associations.md §1).
+    cell: ({ row }) =>
+      row.original.format === "Associations" ? (
+        <span className="text-muted-foreground">Board</span>
+      ) : (
+        row.original.questionCount
+      ),
   },
   {
     id: "actions",
     header: "Actions",
     meta: { priority: 1 },
-    cell: ({ row }) => {
-      const quiz = row.original;
-
-      const { open, isOpen, close } = useDisclosure();
-      // Separate disclosure for the delete confirmation. It's rendered OUTSIDE the
-      // dropdown (below) so closing the menu can't unmount an open dialog and leave
-      // `pointer-events: none` stuck on <body>.
-      const deleteDialog = useDisclosure();
-
-      return (
-        <>
-        <DropdownMenu
-          open={isOpen}
-          onOpenChange={(state) => (state ? open() : close())}
-        >
-          <DropdownMenuTrigger asChild>
-            <Button variant="default" className="h-8 w-8 p-0 rounded">
-              <span className="sr-only">Open menu</span>
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="bg-muted">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem
-              onClick={() =>
-                navigator.clipboard.writeText(quiz.id as unknown as string)
-              }
-            >
-              <Copy size={16} /> Copy ID
-            </DropdownMenuItem>
-            {!quiz.deletedAt && (
-              <>
-                <DropdownMenuSeparator className="bg-background/60" />
-                <DropdownMenuItem
-                  // className="text-red-600 focus:text-red-600"
-                  onSelect={() => {
-                    // Let the menu finish closing, then open the dialog on the next
-                    // frame so the two Radix modal layers never overlap.
-                    requestAnimationFrame(() => deleteDialog.open());
-                  }}
-                >
-                  <Trash2 size={16} /> Delete
-                </DropdownMenuItem>
-              </>
-            )}
-            <DropdownMenuSeparator className="bg-background/60" />
-            <DropdownMenuItem className="hover:bg-background">
-              <Link
-                to={`/dashboard/quiz/${quiz.id}`}
-                className="w-full h-full flex items-center gap-2"
-              >
-                <Eye size={16} />
-                View
-              </Link>
-            </DropdownMenuItem>
-            {!quiz.deletedAt && (
-              <>
-            <DropdownMenuSeparator className="bg-background/60" />
-              <DropdownMenuItem className="hover:bg-background">
-                <Link
-                  to={`/dashboard/quizzes/edit-quiz/${quiz.id}`}
-                  className="w-full h-full flex items-center gap-2"
-                  >
-                  <Edit2 size={16} />
-                  Edit
-                </Link>
-              </DropdownMenuItem>
-                  </>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        {/* Rendered outside the dropdown on purpose — see note above. */}
-        <DeleteQuiz
-          id={quiz.id}
-          open={deleteDialog.isOpen}
-          onOpenChange={(state) =>
-            state ? deleteDialog.open() : deleteDialog.close()
-          }
-          finished={deleteDialog.close}
-        />
-        </>
-      );
-    },
+    // A component, not an inline cell body: the actions need hooks (menu and dialog state, the
+    // edit path), and hooks inside a plain render function break the rules of hooks.
+    cell: ({ row }) => <QuizActionsCell quiz={row.original} />,
   },
 ];
+
+/** The ⋯ menu for one quiz row. Shared by the admin table and "My quizzes". */
+function QuizActionsCell({ quiz }: { quiz: QuizSummaryDTO }) {
+  const { open, isOpen, close } = useDisclosure();
+  // The table is shared by both dashboards; edit within whichever one it's shown in.
+  const editPath = useQuizEditPath();
+  // The single-quiz page lives in the admin dashboard only; a player opening it gets the admin
+  // area's 404, so "View" is offered only where it works (known-issues.md, Associations).
+  const canView = dashboardBaseOf(useLocation().pathname) === "/dashboard";
+  // Separate disclosure for the delete confirmation. It's rendered OUTSIDE the
+  // dropdown (below) so closing the menu can't unmount an open dialog and leave
+  // `pointer-events: none` stuck on <body>.
+  const deleteDialog = useDisclosure();
+
+  return (
+    <>
+    <DropdownMenu
+      open={isOpen}
+      onOpenChange={(state) => (state ? open() : close())}
+    >
+      <DropdownMenuTrigger asChild>
+        <Button variant="default" className="h-8 w-8 p-0 rounded">
+          <span className="sr-only">Open menu</span>
+          <MoreHorizontal className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="bg-muted">
+        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+        <DropdownMenuItem
+          onClick={() =>
+            navigator.clipboard.writeText(quiz.id as unknown as string)
+          }
+        >
+          <Copy size={16} /> Copy ID
+        </DropdownMenuItem>
+        {!quiz.deletedAt && (
+          <>
+            <DropdownMenuSeparator className="bg-background/60" />
+            <DropdownMenuItem
+              // className="text-red-600 focus:text-red-600"
+              onSelect={() => {
+                // Let the menu finish closing, then open the dialog on the next
+                // frame so the two Radix modal layers never overlap.
+                requestAnimationFrame(() => deleteDialog.open());
+              }}
+            >
+              <Trash2 size={16} /> Delete
+            </DropdownMenuItem>
+          </>
+        )}
+        {canView && (<>
+        <DropdownMenuSeparator className="bg-background/60" />
+        <DropdownMenuItem className="hover:bg-background">
+          <Link
+            to={`/dashboard/quiz/${quiz.id}`}
+            className="w-full h-full flex items-center gap-2"
+          >
+            <Eye size={16} />
+            View
+          </Link>
+        </DropdownMenuItem>
+        </>)}
+        {!quiz.deletedAt && (
+          <>
+        <DropdownMenuSeparator className="bg-background/60" />
+          <DropdownMenuItem className="hover:bg-background">
+            <Link
+              to={editPath(quiz)}
+              className="w-full h-full flex items-center gap-2"
+              >
+              <Edit2 size={16} />
+              Edit
+            </Link>
+          </DropdownMenuItem>
+              </>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+
+    {/* Rendered outside the dropdown on purpose — see note above. */}
+    <DeleteQuiz
+      id={quiz.id}
+      open={deleteDialog.isOpen}
+      onOpenChange={(state) =>
+        state ? deleteDialog.open() : deleteDialog.close()
+      }
+      finished={deleteDialog.close}
+    />
+    </>
+  );
+}

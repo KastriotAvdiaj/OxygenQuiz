@@ -406,6 +406,211 @@ namespace QuizAPI.Migrations
                     b.ToTable("AnswerOptions");
                 });
 
+            modelBuilder.Entity("QuizAPI.Models.Associations.AssociationBoard", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CreatedInVersion")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("FinalAcceptableSolutions")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("FinalSolution")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int>("QuizId")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("RemovedInVersion")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("QuizId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_AssociationBoards_QuizId_Live")
+                        .HasFilter("\"RemovedInVersion\" IS NULL");
+
+                    b.HasIndex("QuizId", "CreatedInVersion");
+
+                    b.ToTable("AssociationBoards");
+                });
+
+            modelBuilder.Entity("QuizAPI.Models.Associations.AssociationColumn", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AcceptableSolutions")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("BoardId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Position")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Solution")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BoardId", "Position")
+                        .IsUnique();
+
+                    b.ToTable("AssociationColumns");
+                });
+
+            modelBuilder.Entity("QuizAPI.Models.Associations.AssociationGame", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("BoardId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("DeadlineUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("EndReason")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("EndedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("FirstSeat")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("MatchId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("PlayStyle")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("RulesJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("StartedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BoardId");
+
+                    b.HasIndex("MatchId");
+
+                    b.ToTable("AssociationGames");
+                });
+
+            modelBuilder.Entity("QuizAPI.Models.Associations.AssociationGameMove", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("At")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("GameId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("GuessText")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<bool?>("IsCorrect")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Points")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Seat")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Seq")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("Target")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("TileId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GameId", "Seq")
+                        .IsUnique();
+
+                    b.ToTable("AssociationGameMoves");
+                });
+
+            modelBuilder.Entity("QuizAPI.Models.Associations.AssociationGamePlayer", b =>
+                {
+                    b.Property<Guid>("GameId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("SessionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Seat")
+                        .HasColumnType("integer");
+
+                    b.HasKey("GameId", "SessionId");
+
+                    b.HasIndex("SessionId")
+                        .IsUnique();
+
+                    b.ToTable("AssociationGamePlayers");
+                });
+
+            modelBuilder.Entity("QuizAPI.Models.Associations.AssociationTile", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ColumnId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Position")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ColumnId", "Position")
+                        .IsUnique();
+
+                    b.ToTable("AssociationTiles");
+                });
+
             modelBuilder.Entity("QuizAPI.Models.AuditLog", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1091,6 +1296,9 @@ namespace QuizAPI.Migrations
                     b.Property<int>("DifficultyId")
                         .HasColumnType("integer");
 
+                    b.Property<int>("Format")
+                        .HasColumnType("integer");
+
                     b.Property<string>("ImageUrl")
                         .HasColumnType("text");
 
@@ -1572,6 +1780,87 @@ namespace QuizAPI.Migrations
                     b.Navigation("Question");
                 });
 
+            modelBuilder.Entity("QuizAPI.Models.Associations.AssociationBoard", b =>
+                {
+                    b.HasOne("QuizAPI.Models.Quiz.Quiz", "Quiz")
+                        .WithMany()
+                        .HasForeignKey("QuizId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Quiz");
+                });
+
+            modelBuilder.Entity("QuizAPI.Models.Associations.AssociationColumn", b =>
+                {
+                    b.HasOne("QuizAPI.Models.Associations.AssociationBoard", "Board")
+                        .WithMany("Columns")
+                        .HasForeignKey("BoardId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Board");
+                });
+
+            modelBuilder.Entity("QuizAPI.Models.Associations.AssociationGame", b =>
+                {
+                    b.HasOne("QuizAPI.Models.Associations.AssociationBoard", "Board")
+                        .WithMany()
+                        .HasForeignKey("BoardId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("QuizAPI.Models.Quiz.Match", "Match")
+                        .WithMany()
+                        .HasForeignKey("MatchId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Board");
+
+                    b.Navigation("Match");
+                });
+
+            modelBuilder.Entity("QuizAPI.Models.Associations.AssociationGameMove", b =>
+                {
+                    b.HasOne("QuizAPI.Models.Associations.AssociationGame", "Game")
+                        .WithMany("Moves")
+                        .HasForeignKey("GameId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Game");
+                });
+
+            modelBuilder.Entity("QuizAPI.Models.Associations.AssociationGamePlayer", b =>
+                {
+                    b.HasOne("QuizAPI.Models.Associations.AssociationGame", "Game")
+                        .WithMany("Players")
+                        .HasForeignKey("GameId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("QuizAPI.Models.Quiz.QuizSession", "Session")
+                        .WithMany()
+                        .HasForeignKey("SessionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Game");
+
+                    b.Navigation("Session");
+                });
+
+            modelBuilder.Entity("QuizAPI.Models.Associations.AssociationTile", b =>
+                {
+                    b.HasOne("QuizAPI.Models.Associations.AssociationColumn", "Column")
+                        .WithMany("Tiles")
+                        .HasForeignKey("ColumnId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Column");
+                });
+
             modelBuilder.Entity("QuizAPI.Models.EmailVerificationToken", b =>
                 {
                     b.HasOne("QuizAPI.Models.User", "User")
@@ -1855,6 +2144,23 @@ namespace QuizAPI.Migrations
             modelBuilder.Entity("QuizAPI.ManyToManyTables.QuizQuestion", b =>
                 {
                     b.Navigation("UserAnswers");
+                });
+
+            modelBuilder.Entity("QuizAPI.Models.Associations.AssociationBoard", b =>
+                {
+                    b.Navigation("Columns");
+                });
+
+            modelBuilder.Entity("QuizAPI.Models.Associations.AssociationColumn", b =>
+                {
+                    b.Navigation("Tiles");
+                });
+
+            modelBuilder.Entity("QuizAPI.Models.Associations.AssociationGame", b =>
+                {
+                    b.Navigation("Moves");
+
+                    b.Navigation("Players");
                 });
 
             modelBuilder.Entity("QuizAPI.Models.Permission", b =>

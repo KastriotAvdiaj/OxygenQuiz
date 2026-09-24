@@ -28,6 +28,12 @@ the existing export framework (`IDataExportService`).
 Both list **all** of your owned items (so an item with no activity still shows with zeros); the
 date criteria filter only the activity counted within each row.
 
+**Classic quizzes only.** Quiz Performance lists your Classic quizzes and counts their sessions; an
+Associations board is left out, explicitly (`Format == Classic` in `ReportService`), because its
+scores and durations are on another scale. The single-quiz analytics count Classic sessions only
+for the same reason — the analytics page already shows "not available" for a board. Board analytics
+are planned ([`associations.md`](./associations.md) §9.7).
+
 ## Criteria
 
 `from` / `to` (both optional, applied **server-side** when previewing). Dates are read

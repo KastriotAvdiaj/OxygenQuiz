@@ -85,7 +85,8 @@ list:
 - `SubmitAnswerService.CheckAndCompleteQuizAsync` — the completion check (an unpinned
   count would either complete early after a removal or become impossible to satisfy
   after an addition);
-- `SessionAbandonmentService` / `QuizSessionCleanupService` — timeout math;
+- `SessionAbandonmentService` — timeout math (shared by the lazy paths and the
+  `abandoned-session-sweep` Hangfire job);
 - the session DTO mappers' `TotalQuestions` (results/progress screens) and
   `ResumeState.PendingQuestions` (the resume screen's live countdown —
   [`session-resume-screen.md`](./session-resume-screen.md)).
@@ -113,9 +114,10 @@ reports — filters to **live rows only**.
 - `api/update-quiz.ts` — `useUpdateQuiz` (PUT `/quiz`), schema =
   `createQuizInputSchema` + `id` + `version`; invalidates the `quiz`/`quizzes`/
   `myQuizzes`/`quizQuestions` query families; exports `isVersionConflictError` for 409.
-- `components/Create-Quiz-Form/edit-quiz.tsx` — `EditQuizRoute`
-  (`/dashboard/quizzes/edit-quiz/:quizId`): loads the quiz + its live questions, then
-  reuses the create form in edit mode. The provider is keyed by `id-vVersion` so a
+- `components/Create-Quiz-Form/edit-quiz.tsx` — `EditQuizRoute`, mounted at
+  `/dashboard/quizzes/edit-quiz/:quizId` **and** `/my-dashboard/quizzes/edit/:quizId`: loads
+  the quiz + its live questions, then reuses the create form in edit mode. An Associations quiz
+  that lands here is redirected to its board editor. The provider is keyed by `id-vVersion` so a
   refetch re-seeds cleanly.
 - `Quiz-questions-context.tsx` — the provider accepts `initialQuestions`
   (question + per-question settings) to seed edit mode.
@@ -123,31 +125,45 @@ reports — filters to **live rows only**.
   switches the submit to the update mutation, sends the loaded `version`, shows
   "Save Changes", and maps 409 to a "quiz changed elsewhere — reload" notification.
 - Entry points: the quiz detail page's **Edit Quiz** buttons (previously disabled) and
-  an **Edit** action in the dashboard quiz table.
+  an **Edit** action in the quiz table. **Every Edit link is built by `quizEditPath` /
+  `useQuizEditPath`** (`quiz-paths.ts`), which picks the format's editor and stays in the
+  dashboard the table is shown in.
 
-## Migration (run on your machine — not yet generated)
+### Owners edit from their own dashboard
 
-```bash
-cd OxygenBackend/QuizAPI
-dotnet ef migrations add QuizEditingVersioning
-```
+**Who can edit a quiz: its owner, and nobody else** — the API (`UpdateQuizAsync`) saves only
+for the quiz's owner, admins included; there is no "edit any quiz" path.
 
-Then, inside the generated migration's `Up()`, after the column additions, backfill
-existing sessions to their quiz's current version (new columns default correctly for
-join rows — `CreatedInVersion = 1` — but pre-existing sessions of quizzes already at
-`Version > 1` must not default to 1):
+Until 2026-09-23 the UI didn't match that. The editor was mounted only under `/dashboard`, whose
+loader 404s everyone but admins, and "My quizzes" reused the admin table's Edit link — so a player
+could create a quiz and never change it, and only an admin editing their *own* quiz could actually
+save. The player dashboard now mounts the same editors at `/my-dashboard/quizzes/edit/:quizId`
+(and `…/board`), inside its full-width paths, and the shared table links there when it is shown in
+"My quizzes". The table's **View** item is hidden in "My quizzes": the single-quiz page is still
+admin-only (`known-issues.md`).
 
-```csharp
-migrationBuilder.Sql("""
-    UPDATE "QuizSessions" s
-    SET    "QuizVersion" = q."Version"
-    FROM   "Quizzes" q
-    WHERE  s."QuizId" = q."Id";
-""");
-```
+## Migration
 
-The migration also swaps the `(QuizId, QuestionId)` unique index for the filtered one —
-verify the generated migration contains the `HasFilter`/`IS NULL` variant.
+`20260702170817_QuizEditingVersioning` (applied on startup like every migration). Besides the new
+columns it does two things worth knowing if you ever touch it:
+
+- **Backfills existing sessions** to their quiz's current version
+  (`UPDATE "QuizSessions" … SET "QuizVersion" = q."Version"`). The column's default of 1 is only
+  right for join rows; a session of a quiz already past version 1 must not claim to have started
+  on version 1.
+- **Swaps the `(QuizId, QuestionId)` unique index for the filtered one**
+  (`WHERE "RemovedInVersion" IS NULL`), so a question removed and re-added can have two rows across
+  versions but only one live one.
+
+(This section used to say the migration was "not yet generated" and give the commands to write
+it; it has long since been generated and contains both.)
+
+## Associations Boards follow the same rule
+
+An Associations quiz has no `QuizQuestion` rows; its content is one **Board**, versioned the same
+way — never updated in place, retired with `RemovedInVersion` and replaced at the new version when
+its content changes, left alone when only metadata changes. See
+[`associations.md`](./associations.md) §8.2.
 
 ## Growth & cleanup
 

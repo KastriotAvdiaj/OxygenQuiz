@@ -9,6 +9,14 @@ grader (`AnswerGradingService`, which singleplayer *and* multiplayer route throu
 preview (`TestQuestionService`) call it, so a preview can never disagree with real play. Tests:
 `QuizAPI.Tests/Grading/TypeTheAnswerMatcherTests.cs`.
 
+**It has two entry points over one core.** `IsCorrect(question, submitted)` takes a
+`TypeTheAnswerQuestion`; `IsMatch(correct, acceptable, caseSensitive, allowPartialMatch, submitted)`
+takes the same inputs as plain values and is the core — `IsCorrect` just reads them off the
+question. The core exists so that text which isn't a typed-answer question gets the *same*
+matching rather than a copy of it: an Associations Guess against a Column or Final solution calls
+it with case-insensitive and partial match off ([`associations.md`](./associations.md) §7). A change
+to normalisation or matching here changes both, deliberately.
+
 ---
 
 ## The two things an author is choosing between
@@ -178,6 +186,12 @@ The fallback is now gated on the expected answer actually being written in a spa
 contiguous-token-run comparison, where a single expected token is just token equality. The behaviour
 documented above was always the intent; this is the code catching up to it. Caught by
 `PartialMatchOn_RejectsSubstringInsideAWord`, which was already asserting the correct behaviour.
+
+## What changed (2026-09-22)
+
+The core was extracted as `IsMatch` over plain values, and `IsCorrect` now delegates to it, so the
+Associations format could reuse the matching instead of reimplementing it. No behaviour changed for
+typed answers: `TypeTheAnswerMatcherTests` passed unmodified before and after.
 
 ## What changed (2026-07-31)
 

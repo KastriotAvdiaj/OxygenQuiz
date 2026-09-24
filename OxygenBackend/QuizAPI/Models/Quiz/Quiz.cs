@@ -80,6 +80,13 @@ namespace QuizAPI.Models.Quiz
         public QuizStatus Status { get; set; } = QuizStatus.Draft;
 
         /// <summary>
+        /// Which kind of game this quiz is. Set at creation and never changed — see
+        /// <see cref="QuizFormat"/> and docs/adr/0018-quiz-formats-are-separate-verticals.md.
+        /// </summary>
+        [Required]
+        public QuizFormat Format { get; set; } = QuizFormat.Classic;
+
+        /// <summary>
         /// Unguessable token that grants play access to an <see cref="QuizStatus.Unlisted"/> quiz.
         /// Null until the owner generates a share link; cleared has no effect on Public/Draft quizzes.
         /// Unique when present (filtered index in <see cref="Data.ApplicationDbContext"/>).

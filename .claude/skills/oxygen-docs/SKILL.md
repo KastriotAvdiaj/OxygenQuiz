@@ -14,8 +14,11 @@ the model.
 Adapted from the generic `domain-modeling` skill. Two deliberate differences, both because
 this repo already solved these problems:
 
-- **No `docs/adr/`.** Decisions go through `docs/proposals/`, which is this repo's ADR system
-  and has its own lifecycle. Creating a second decision folder is a bug, not a feature.
+- **Two decision folders, split by whether the decision is made.** `docs/proposals/` holds
+  decisions *not yet made*; `docs/adr/` holds decisions that *were* made (numbered, dated,
+  append-only — see [`docs/development/documenting-changes.md`](../../../docs/development/documenting-changes.md)).
+  An accepted proposal is folded into the feature doc (below); if the decision also clears the
+  ADR bar, the ADR is written in the same change. Do not invent a third place.
 - **No root `CONTEXT.md`.** Vocabulary lives per area, in `docs/<area>/glossary.md`.
 
 ## Where things go
@@ -31,6 +34,7 @@ this repo already solved these problems:
 | `docs/deployment/` | Infrastructure, runbooks, configuration, `known-issues.md` |
 | `docs/development/` | Tooling, testing, storybook, error handling, rate limiting |
 | `docs/proposals/` | Decisions **not yet made** — see below |
+| `docs/adr/` | Decisions **made** — hard to reverse, surprising, a real trade-off. Next free number; never edited, only superseded |
 
 If a topic genuinely fits no area, ask before inventing a new folder.
 

@@ -2,6 +2,7 @@ import { type CSSProperties, type ReactNode } from "react";
 import type { QuizSummaryDTO } from "@/types/quiz-types";
 import { cn } from "@/utils/cn";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { quizSizeLabel } from "./card-model";
 
 /**
  * The rendered pieces of a quiz card.
@@ -14,13 +15,18 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 /**
  * The interactive frame: a real `<button>`, so the card is keyboard-reachable and gets a
- * focus ring for free (it was a bare `div` with `onClick` before). The rounded corners live
- * here too, so the layout never restates the radius.
+ * focus ring for free (it was a bare `div` with `onClick` before). The rounded corners and the
+ * pushable edge live here too, so the layout never restates them.
  *
- * The radius is a literal `18px` rather than `rounded-xl`: the theme's `--radius` is 0.3rem,
- * sized for dashboard chrome, and this card is a poster. `quiz-card.tsx` explains the
- * trade-off.
+ * `rounded-2xl`, not the theme's `--radius` (0.3rem, sized for dashboard chrome): the same
+ * radius as the mode cards on /choose-mode, which this card deliberately matches.
  */
+/** "13 questions" / "Associations board" — the same words the card shows (`quizSizeLabel`). */
+function sizeText(quiz: QuizSummaryDTO): string {
+  const { count, label } = quizSizeLabel(quiz);
+  return count === null ? label : `${count} ${label}`;
+}
+
 export function QuizCardFrame({
   quiz,
   accent,
@@ -44,18 +50,24 @@ export function QuizCardFrame({
       type="button"
       onClick={onSelect}
       style={accentVars}
-      aria-label={`${quiz.title} — ${quiz.category}, ${quiz.difficulty}, ${quiz.questionCount} ${quiz.questionCount === 1 ? "question" : "questions"}`}
+      aria-label={`${quiz.title} — ${quiz.category}, ${quiz.difficulty}, ${sizeText(quiz)}`}
       className={cn(
         "group h-full w-full cursor-pointer text-left font-app",
-        "rounded-[18px] focus-visible:outline-none focus-visible:ring-2",
+        "rounded-2xl focus-visible:outline-none focus-visible:ring-2",
         "focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       )}
     >
+      {/* The pushable look of the mode cards (mode-card.tsx): a 2px border and a solid 4px
+          "edge" underneath in a darker shade of the quiz's own accent, lifting on hover and
+          pressing on click. The hover/press transforms are CSS on this element — the grid's
+          framer-motion wrapper sits outside, so its inline transform can't override them. */}
       <div
         className={cn(
-          "relative flex h-full flex-col overflow-hidden rounded-[18px] border border-border bg-card",
-          "transition-all duration-300 ease-out",
-          "hover:-translate-y-1 hover:border-[var(--accent)] hover:shadow-lg"
+          "relative flex h-full flex-col overflow-hidden rounded-2xl border-2 border-border bg-card",
+          "[--edge:color-mix(in_srgb,var(--accent),black_25%)] shadow-[0_4px_0_0_var(--edge)]",
+          "transition-[transform,box-shadow,border-color] duration-200",
+          "hover:-translate-y-1 hover:border-[var(--accent)] hover:shadow-[0_7px_0_0_var(--edge)]",
+          "active:translate-y-[2px] active:shadow-[0_2px_0_0_var(--edge)]"
         )}
       >
         {children}

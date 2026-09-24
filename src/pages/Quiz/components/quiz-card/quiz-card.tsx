@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from "react";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Grid3x3, ListChecks } from "lucide-react";
 import type { QuizSummaryDTO } from "@/types/quiz-types";
 import { DifficultyMeter, QuizCardFrame } from "./card-parts";
 import { useQuizCardModel } from "./card-model";
@@ -12,12 +12,15 @@ interface QuizCardProps {
 /**
  * A single quiz in the picker grid.
  *
- * Playful but still quiet: the card stays on the neutral surface and the quiz's colour is
- * spent on the palette dots, the category label, the difficulty meter and the play
- * affordance. The colours are the quiz's own — derived from its category palette, never
- * hardcoded (`quiz-palette.ts`) — and this is the one place the *whole* palette is shown
- * rather than just its first colour, which is why the dot row is however many colours the
- * category has and not a fixed four (see `useDots`).
+ * Built like the mode cards on /choose-mode (`mode-card.tsx`) so the two pages read as one app
+ * (2026-09-24): an icon chip, a display title, a foot row ending in an arrow, and the pushable
+ * 3D edge (`card-parts.tsx`). No description — the start dialog shows it. Where a mode card has a
+ * fixed accent, this one uses the quiz's own — derived from its category palette, never hardcoded
+ * (`quiz-palette.ts`) — for the chip, the edge, the category label, the difficulty meter and the
+ * arrow. The chip's icon is the format: a list for Classic, a grid for an Associations board.
+ *
+ * A Classic card still shows the *whole* palette as the dot row (however many colours the
+ * category has, not a fixed four — see `useDots`); a board shows its "Board" label there.
  *
  * The title carries the personality: `font-quiz` (DynaPuff by default, user-swappable via
  * `--font-quiz`) at display size, the same face the quiz itself is played in, so the card
@@ -25,15 +28,9 @@ interface QuizCardProps {
  * as metadata.
  *
  * Details that are easy to undo by accident:
- *  - The dots are inset, not a flush stripe. They sit inside the body padding so the card's
- *    only edge treatment is its border — which is what makes the big radius read as round
- *    rather than as a clipped bar.
- *  - The radius is an explicit value, not `rounded-xl`. The theme's `--radius` is 0.3rem,
- *    tuned for dense dashboard chrome; this card is a poster and wants a much rounder
- *    corner. It is deliberately the one place that opts out.
+ *  - The chip's icon colour is `onAccent`, not white: palettes run from navy to pale yellow.
  *  - The frame is a `<button>` (see `card-parts.tsx`), so the card is keyboard-reachable
- *    and gets a real focus ring. The arrow is therefore a decorative `<span>`, never a
- *    nested `<button>`.
+ *    and gets a real focus ring. The arrow is therefore decorative, never a nested `<button>`.
  *  - Fully fluid (`h-full w-full`, no fixed widths) — the parent grid decides the columns
  *    and `auto-rows-fr` there keeps every card in a row the same height, which is why the
  *    stats row is pinned with `mt-auto` rather than sitting under the title.
@@ -68,30 +65,49 @@ function useDots(colors: string[]): string[] {
 }
 
 export function QuizCard({ quiz, onClick }: QuizCardProps) {
-  const { colors, accent, questionLabel, duration, difficultyRank } =
+  const { colors, accent, onAccent, sizeLabel, duration, difficultyRank } =
     useQuizCardModel(quiz);
   const dots = useDots(colors);
+  const isBoard = quiz.format === "Associations";
+  const FormatIcon = isBoard ? Grid3x3 : ListChecks;
 
   const handleSelect = useCallback(() => {
     onClick?.(quiz);
   }, [onClick, quiz]);
 
   return (
-    <QuizCardFrame quiz={quiz} accent={accent} onSelect={handleSelect}>
-      <div className="flex flex-1 flex-col p-5">
-        {/* aria-hidden: decorative. The category name below already carries the meaning
-            the colour is standing in for. */}
-        <div aria-hidden="true" className="flex shrink-0 items-center gap-1.5">
-          {dots.map((color, index) => (
-            <span
-              key={`${color}-${index}`}
-              className="h-[7px] w-[7px] rounded-full"
-              style={{ backgroundColor: color }}
-            />
-          ))}
+    <QuizCardFrame quiz={quiz} accent={accent} onAccent={onAccent} onSelect={handleSelect}>
+      <div className="flex flex-1 flex-col p-4 sm:p-5">
+        <div className="flex shrink-0 items-center gap-3">
+          {/* The chip of the mode cards, in the quiz's accent — and the format's shape: a list
+              for a quiz of questions, a grid for a board. Text/icon colour flips with the accent
+              (onAccent), because palettes run from navy to pale yellow. */}
+          <span
+            aria-hidden="true"
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg sm:h-10 sm:w-10 sm:rounded-xl shadow-[0_3px_0_0_var(--edge)] transition-transform duration-200 group-hover:-rotate-6"
+            style={{ backgroundColor: accent, color: onAccent }}
+          >
+            <FormatIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+          </span>
+
+          {isBoard ? (
+            <BoardMark accent={accent} />
+          ) : (
+            /* aria-hidden: decorative. The category name below already carries the meaning
+               the colour is standing in for. */
+            <span aria-hidden="true" className="ml-auto flex items-center gap-1.5">
+              {dots.map((color, index) => (
+                <span
+                  key={`${color}-${index}`}
+                  className="h-[7px] w-[7px] rounded-full"
+                  style={{ backgroundColor: color }}
+                />
+              ))}
+            </span>
+          )}
         </div>
 
-        <h3 className="mt-4 font-quiz text-[1.7rem] font-bold leading-[1.12] text-foreground line-clamp-2">
+        <h3 className="mt-3 font-quiz text-xl sm:mt-4 sm:text-[1.6rem] font-bold leading-[1.12] tracking-wide text-foreground line-clamp-2">
           {quiz.title}
         </h3>
 
@@ -99,7 +115,7 @@ export function QuizCard({ quiz, onClick }: QuizCardProps) {
             than on a fill, so it needs no contrast flip — but very pale categories can
             go faint here, which is the trade-off this design makes for its calm. */}
         <span
-          className="mt-2.5 min-w-0 truncate text-[11px] font-bold uppercase tracking-widest"
+          className="mt-2 min-w-0 truncate text-[11px] font-bold uppercase tracking-widest"
           style={{ color: accent }}
         >
           {quiz.category}
@@ -107,15 +123,20 @@ export function QuizCard({ quiz, onClick }: QuizCardProps) {
 
         {/* The breathing room the design is built around. Without a minimum the footer
             rides up under a one-line title and the card loses its poster proportions;
-            `mt-auto` below then takes over on rows stretched taller by a sibling. */}
-        <div aria-hidden="true" className="min-h-[3.25rem] flex-1" />
+            `mt-auto` below then takes over on rows stretched taller by a sibling. Smaller on
+            phones: one card per row there, and a poster-tall card showed three to a screen. */}
+        <div aria-hidden="true" className="min-h-[1.25rem] flex-1 sm:min-h-[3.25rem]" />
 
-        <div className="mt-auto flex items-center gap-2 text-xs text-muted-foreground">
+        <div className="mt-auto flex items-center gap-2 pt-2 text-xs text-muted-foreground">
           <span className="tabular-nums">
-            <span className="font-bold text-foreground">
-              {quiz.questionCount}
-            </span>{" "}
-            {questionLabel}
+            {sizeLabel.count !== null && (
+              <>
+                <span className="font-bold text-foreground">
+                  {sizeLabel.count}
+                </span>{" "}
+              </>
+            )}
+            {sizeLabel.label}
           </span>
 
           {duration && (
@@ -135,20 +156,31 @@ export function QuizCard({ quiz, onClick }: QuizCardProps) {
             />
           </span>
 
-          {/* Decorative: the whole card is the button, so this must not be focusable and
-              must not announce itself. It exists to say "this opens something". */}
-          <span
+          {/* Decorative: the whole card is the button. The mode cards' bare arrow, travelling
+              on hover — "this opens something". */}
+          <ArrowRight
             aria-hidden="true"
-            className="ml-auto flex h-8 w-8 shrink-0 items-center justify-center rounded-full border transition-colors duration-300 ease-out"
-            style={{
-              borderColor: `color-mix(in srgb, ${accent} 45%, transparent)`,
-              color: accent,
-            }}
-          >
-            <ArrowRight className="h-4 w-4 transition-transform duration-300 ease-out group-hover:translate-x-0.5" />
-          </span>
+            className="ml-auto h-5 w-5 shrink-0 transition-transform duration-200 group-hover:translate-x-1.5"
+            style={{ color: accent }}
+          />
         </div>
       </div>
     </QuizCardFrame>
+  );
+}
+
+/**
+ * Says "Board" on an Associations card, where a Classic card shows its palette dots. With the
+ * grid chip beside it, a board reads as a different kind of thing before anyone reads the
+ * footer; the size line ("Associations board") says the same in words (card-model.ts).
+ */
+function BoardMark({ accent }: { accent: string }) {
+  return (
+    <span
+      className="ml-auto rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest"
+      style={{ borderColor: `color-mix(in srgb, ${accent} 45%, transparent)`, color: accent }}
+    >
+      Board
+    </span>
   );
 }

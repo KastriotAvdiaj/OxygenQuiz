@@ -1,4 +1,4 @@
-# 11. Attempts are bucketed in the viewer's timezone
+# 17. Attempts are bucketed in the viewer's timezone
 
 Date: 2026-09-12
 Status: Accepted

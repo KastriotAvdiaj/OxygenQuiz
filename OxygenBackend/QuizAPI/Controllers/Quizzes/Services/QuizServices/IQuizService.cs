@@ -44,7 +44,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
         Task<QuizDTO?> GetQuizByIdAsync(int id, Guid? currentUserId = null);
 
         /// <summary>
-        /// Resolves an Unlisted quiz by its share token, bypassing discovery filters. The token is
+        /// Resolves an Unlisted quiz by its share token, whatever the caller. The token is
         /// the access grant (see docs/quiz/quiz-visibility.md). Returns null for an unknown token or a
         /// Draft quiz.
         /// </summary>
@@ -105,6 +105,21 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
         /// host's quiz selection server-side. See docs/quiz/quiz-visibility.md.
         /// </summary>
         Task<bool> CanHostQuizAsync(int quizId, Guid hostUserId);
+
+        /// <summary>
+        /// The quiz's <see cref="Models.Quiz.QuizFormat"/>, or null if it doesn't exist (or is
+        /// soft-deleted). Performs no access check — callers authorize first. Used by entry points
+        /// that must refuse a format they can't run (see <see cref="Common.QuizFormatGuard"/>).
+        /// </summary>
+        Task<Models.Quiz.QuizFormat?> GetFormatAsync(int quizId);
+
+        /// <summary>
+        /// The publishing gate: a quiz may be Public only with a real category, language and
+        /// difficulty (docs/quiz/quiz-visibility.md). Throws <c>AppValidationException</c>. Shared
+        /// with the Associations authoring service, which is the same rule for a different format.
+        /// </summary>
+        Task EnsurePublishableAsync(int categoryId, int languageId, int difficultyId,
+            Models.Quiz.QuizStatus status, CancellationToken ct = default);
 
         /// <summary>
         /// Get all publicly available quizzes

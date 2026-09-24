@@ -46,7 +46,8 @@ public class MatchReadsTests
             NullLogger<QuizSessionService>.Instance,
             new Mock<ISessionAbandonmentService>().Object,
             new Mock<IAnswerGradingService>().Object,
-            new Mock<ISubmitAnswerService>().Object);
+            new Mock<ISubmitAnswerService>().Object,
+            new QuizAPI.Repositories.AssociationGameRepository(ctx));
 
     private static User AddUser(ApplicationDbContext ctx, string name)
     {

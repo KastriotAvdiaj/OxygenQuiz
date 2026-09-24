@@ -53,7 +53,8 @@ public class SessionAbandonmentTimeoutTests
     private static SessionAbandonmentService NewService(ApplicationDbContext ctx) =>
         new(ctx,
             NullLogger<SessionAbandonmentService>.Instance,
-            Options.Create(new QuizSessionOptions()));
+            Options.Create(new QuizSessionOptions()),
+            new QuizAPI.Repositories.AssociationGameRepository(ctx));
 
     /// <summary>
     /// A quiz of <see cref="QuestionCount"/> equal-length questions and one unfinished session on

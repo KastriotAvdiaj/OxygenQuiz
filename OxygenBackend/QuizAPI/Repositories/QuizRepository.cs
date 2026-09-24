@@ -43,7 +43,9 @@ namespace QuizAPI.Repositories
                 .FirstOrDefaultAsync(q => q.ShareToken == shareToken && q.DeletedAt == null, ct);
 
         public Task<Quiz?> GetByIdUnfilteredAsync(int id, CancellationToken ct = default) =>
-            // Bypasses the discovery filter (Unlisted/Draft included); soft-deleted still excluded.
+            // Unlisted/Draft included — Quiz has no visibility filter (ADR 0019), so this reads the
+            // same as GetByIdAsync minus the relations; soft-deleted is excluded explicitly because
+            // IgnoreQueryFilters() switches off the soft-delete filter too.
             // Used by authorization checks that must see the quiz regardless of who is asking.
             _context.Quizzes.AsNoTracking().IgnoreQueryFilters()
                 .FirstOrDefaultAsync(q => q.Id == id && q.DeletedAt == null, ct);

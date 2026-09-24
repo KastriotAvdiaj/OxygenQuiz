@@ -13,7 +13,7 @@
 import { useMemo, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { LoadingWave } from "@/components/ui";
+import { BlobLoader } from "@/components/ui";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -296,7 +296,7 @@ export const MyReports = () => {
         <CardContent className="p-0">
           {loading ? (
             <div className="flex justify-center items-center py-12">
-              <LoadingWave size="md" />
+              <BlobLoader size="md" />
             </div>
           ) : filtered === null ? (
             <p className="text-center text-muted-foreground py-12">

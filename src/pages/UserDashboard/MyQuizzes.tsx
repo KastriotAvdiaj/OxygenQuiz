@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { DataTable, Card, LoadingWave, Button } from "@/components/ui";
+import { DataTable, Card, BlobLoader, Button } from "@/components/ui";
 import { quizColumns } from "@/pages/Dashboard/Pages/Quiz/components/Data-Table-Columns/columns";
 import { useSearchQuizzes } from "@/pages/Dashboard/Pages/Quiz/api/search-quizzes";
 import { rule, type FilterQuery, type FilterRule } from "@/lib/filtering";
@@ -79,7 +79,7 @@ export const MyQuizzes = () => {
   if (isFilterDataLoading) {
     return (
       <div className="flex justify-center items-center h-screen">
-        <LoadingWave size="lg" />
+        <BlobLoader size="lg" />
       </div>
     );
   }
@@ -120,6 +120,7 @@ export const MyQuizzes = () => {
             manualPath="/my-dashboard/quizzes/create"
             aiTopicPath="/my-dashboard/quizzes/create/ai/topic"
             aiMaterialPath="/my-dashboard/quizzes/create/ai/material"
+            associationsPath="/my-dashboard/quizzes/create/associations"
           />
         </div>
       </div>
@@ -135,7 +136,7 @@ export const MyQuizzes = () => {
               </p>
             ) : quizData.isLoading ? (
               <div className="flex justify-center items-center py-16">
-                <LoadingWave size="md" />
+                <BlobLoader size="md" />
               </div>
             ) : (
               <>

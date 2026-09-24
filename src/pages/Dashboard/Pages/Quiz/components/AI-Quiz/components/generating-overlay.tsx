@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-import { LoadingWave } from "@/components/ui";
+import { BlobLoader } from "@/components/ui";
 import { cn } from "@/utils/cn";
 
 import type { AiGenerationMode } from "../../../api/generate-ai-quiz";
@@ -193,22 +193,20 @@ const Working = ({
 
   return (
     <>
-      {/* The app's own wait signature, borrowed for its one set-piece: the same
-          letter-by-letter wave every `LoadingWave` in the product runs. A static heading
-          over a moving typewriter had the animation doing all the work of saying "still
-          going"; now the sentence is alive too, which is what the rest of the app does.
+      {/* The app's own wait signature beside the heading: a small `BlobLoader`, so the
+          sentence still says "still going" and the typewriter above is not doing all of
+          that work alone. It used to be the heading itself, waved letter by letter with
+          `LoadingWave`; when the blob replaced the wave as the app's loader, the heading
+          went back to being plain, readable text — a real <h2>, so there is no second
+          screen-reader copy to keep in sync. The blob's own label is blank for the same
+          reason: the heading already says what is happening.
 
-          Stepped down a size from the default `md`, because this is a 22-character
-          sentence rather than the word "LOADING" and 0.2em of tracking adds up fast — at
-          `text-xl` it runs out of a 360px screen (docs/RESPONSIVE.md).
-
-          The heading is repeated for screen readers: `LoadingWave` splits the text into
-          per-character spans and hides them, announcing only "Loading". */}
-      <LoadingWave
-        text={heading}
-        className="text-base tracking-[0.12em] sm:text-lg"
-      />
-      <h2 className="sr-only">{heading}</h2>
+          Kept at `text-base sm:text-lg` with 0.12em tracking: a 22-character sentence
+          runs out of a 360px screen at `text-xl` (docs/RESPONSIVE.md). */}
+      <div className="flex items-center justify-center gap-3">
+        <BlobLoader size="sm" label="" />
+        <h2 className="font-quiz text-base tracking-[0.12em] sm:text-lg">{heading}</h2>
+      </div>
       {/* Keyed so the line re-enters rather than swapping in place — the change
           is the information, and a silent text replacement reads as a glitch. It enters
           from the right like everything else on this layer: one direction of travel for

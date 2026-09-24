@@ -72,11 +72,13 @@ export function QuizStartModal({
           off small screens — the body scrolls instead (85dvh tracks the visible
           mobile viewport; svh fallback n/a, vh fallback below). */}
       <DialogContent
-        className="sm:max-w-sm mx-auto rounded-2xl border-2 border-border dark:border-2 dark:border-border bg-card font-quiz p-0 overflow-hidden gap-0 shadow-[0_4px_0_0_var(--edge)] max-h-[85vh] supports-[height:1dvh]:max-h-[85dvh] flex flex-col"
+        className="sm:max-w-lg mx-auto rounded-2xl border-2 border-border dark:border-2 dark:border-border bg-card font-quiz p-0 overflow-hidden gap-0 shadow-[0_4px_0_0_var(--edge)] max-h-[85vh] supports-[height:1dvh]:max-h-[85dvh] flex flex-col"
         style={{ "--edge": edgeColor } as CSSProperties}
       >
-        <div className="p-4 sm:p-5 space-y-4 overflow-y-auto">
-          <DialogHeader className="space-y-2.5">
+        {/* Sized up (sm:max-w-lg, roomier padding, bigger title) since 2026-09-24: the cards no
+            longer show the description, so this is where a quiz is read before it is played. */}
+        <div className="p-5 sm:p-7 space-y-5 overflow-y-auto">
+          <DialogHeader className="space-y-3">
             <div className="flex items-center gap-2 flex-wrap">
               <Badge
                 variant="secondary"
@@ -97,39 +99,49 @@ export function QuizStartModal({
               </Badge>
             </div>
 
-            <DialogTitle className="text-lg sm:text-xl font-bold leading-tight text-left pr-6 text-foreground tracking-wider">
+            <DialogTitle className="text-xl sm:text-3xl font-bold leading-tight text-left pr-6 text-foreground tracking-wider">
               {quiz.title}
             </DialogTitle>
 
             {quiz.description && (
-              <DialogDescription className="text-sm text-muted-foreground text-left leading-relaxed">
+              <DialogDescription className="font-app text-sm sm:text-base text-muted-foreground text-left leading-relaxed">
                 {quiz.description}
               </DialogDescription>
             )}
           </DialogHeader>
 
           {/* Stats grid */}
-          <div className="rounded-lg border border-border p-3 space-y-2.5">
+          <div className="rounded-xl border border-border p-4 space-y-3">
             <div className="grid grid-cols-2 gap-3">
-              <div className="flex items-center gap-2 text-sm">
+              <div className="flex items-center gap-2.5 text-sm sm:text-base">
                 <div
-                  className="p-1.5 rounded-md"
+                  className="p-2 rounded-lg"
                   style={{ backgroundColor: `${primaryColor}15` }}
                 >
-                  <HelpCircle className="h-3.5 w-3.5" style={{ color: primaryColor }} />
+                  <HelpCircle className="h-4 w-4" style={{ color: primaryColor }} />
                 </div>
                 <div>
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Questions</p>
-                  <p className="font-bold text-foreground">{quiz.questionCount}</p>
+                  {/* A board has no questions — "0" here would be a wrong answer, not a missing one. */}
+                  {quiz.format === "Associations" ? (
+                    <>
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Format</p>
+                      <p className="font-bold text-foreground">Associations board</p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Questions</p>
+                      <p className="font-bold text-foreground">{quiz.questionCount}</p>
+                    </>
+                  )}
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 text-sm">
+              <div className="flex items-center gap-2.5 text-sm sm:text-base">
                 <div
-                  className="p-1.5 rounded-md"
+                  className="p-2 rounded-lg"
                   style={{ backgroundColor: `${primaryColor}15` }}
                 >
-                  <Clock className="h-3.5 w-3.5" style={{ color: primaryColor }} />
+                  <Clock className="h-4 w-4" style={{ color: primaryColor }} />
                 </div>
                 <div>
                   <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">Time Limit</p>
@@ -144,7 +156,7 @@ export function QuizStartModal({
             <div className="h-px w-full bg-border/50" />
 
             {/* Author & Date */}
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <div className="flex items-center justify-between text-xs sm:text-sm text-muted-foreground">
               {quiz.user && (
                 <div className="flex items-center gap-1.5">
                   <User className="h-3 w-3" style={{ color: primaryColor }} />
@@ -179,7 +191,7 @@ export function QuizStartModal({
               type="button"
               onClick={handleStartQuiz}
               liftColor={primaryColor}
-              className="h-10 gap-2 px-6 text-sm sm:text-base font-bold font-quiz tracking-wider bg-[var(--face)] text-[color:var(--face-text)]"
+              className="h-11 gap-2 px-8 text-base sm:text-lg font-bold font-quiz tracking-wider bg-[var(--face)] text-[color:var(--face-text)]"
               style={
                 {
                   "--face": primaryColor,

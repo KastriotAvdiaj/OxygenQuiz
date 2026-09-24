@@ -12,6 +12,12 @@ what the code does.
 > sees a low attempt count is otherwise being quietly misled, so every surface that shows a count
 > says so — the shared wording is `SIGNED_IN_ONLY_NOTE` in `quiz-view/thresholds.ts`.
 
+> **An Associations quiz shows a different page body.** Its Board (read-only, solutions visible)
+> replaces the question list, and the Performance section says analytics aren't available for the
+> format yet — neither the questions nor the analytics query is sent. Not zeros: a board's plays
+> aren't counted yet, which is not the same as nobody having played it. See
+> [`associations.md`](./associations.md) §8.5.
+
 ## Where the data comes from
 
 | Panel | Query | Endpoint |
@@ -193,7 +199,7 @@ reader take all of them in to find the one that answers their question.
 ## Days are bucketed in the viewer's time zone
 
 > Why this clock and not the server's or the player's:
-> [`../adr/0011-attempts-are-bucketed-in-the-viewers-timezone.md`](../adr/0011-attempts-are-bucketed-in-the-viewers-timezone.md).
+> [`../adr/0017-attempts-are-bucketed-in-the-viewers-timezone.md`](../adr/0017-attempts-are-bucketed-in-the-viewers-timezone.md).
 
 The client sends its clock with the analytics request and the server buckets against it:
 
@@ -295,8 +301,9 @@ Two details worth keeping:
 Publish/Unpublish carries its consequence as a sub-line in the item rather than a tooltip: a
 tooltip inside an open Radix menu fights the menu for the same hover.
 
-`LoadingWave` is the loader in all three loading states (page, analytics, questions) — not
-`Spinner`, which this page was written against before the wave existed.
+`BlobLoader` is the loader in all three loading states (page, analytics, questions) — not
+`Spinner`, which this page was written against before the app had its own loader. (It was
+`LoadingWave` in between.)
 
 ## Layout
 

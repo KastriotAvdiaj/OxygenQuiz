@@ -5,6 +5,7 @@ using Hangfire.PostgreSql;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 // MongoDB is intentionally not wired into DI. It backed write-only lobby-chat
@@ -150,6 +151,27 @@ builder.Services.Configure<QuizAPI.Services.AccountClosure.AccountClosureOptions
 builder.Services.AddScoped<QuizAPI.Services.AccountClosure.IAccountClosureService,
     QuizAPI.Services.AccountClosure.AccountClosureService>();
 builder.Services.AddScoped<QuizAPI.Controllers.Users.Services.IAvatarService, QuizAPI.Controllers.Users.Services.AvatarService>();
+// Associations rules: every tunable number of the format (scoring, Duel turn, endgame, board time),
+// read from "Associations:Rules" — all optional, defaults in AssociationRules. Validated at startup
+// so a bad value fails the boot, not the first game. See docs/quiz/associations.md.
+builder.Services.AddOptions<QuizAPI.Services.Associations.AssociationRulesOptions>()
+    .Bind(configuration.GetSection(QuizAPI.Services.Associations.AssociationRulesOptions.SectionName))
+    .Validate(o => o.ToRules().Validate().Count == 0,
+        "Associations:Rules is invalid — see AssociationRules.Validate for what each value must be.")
+    .ValidateOnStart();
+builder.Services.AddSingleton<QuizAPI.Services.Associations.IAssociationRulesProvider,
+    QuizAPI.Services.Associations.ConfiguredAssociationRulesProvider>();
+builder.Services.AddScoped<QuizAPI.Repositories.Interfaces.IAssociationBoardRepository,
+    QuizAPI.Repositories.AssociationBoardRepository>();
+builder.Services.AddScoped<QuizAPI.Services.Associations.IAssociationBoardService,
+    QuizAPI.Services.Associations.AssociationBoardService>();
+// Associations play (docs/quiz/associations.md, "Playing"). The clock is injected so the Solo
+// deadline can be tested without waiting for it.
+builder.Services.TryAddSingleton(TimeProvider.System);
+builder.Services.AddScoped<QuizAPI.Repositories.Interfaces.IAssociationGameRepository,
+    QuizAPI.Repositories.AssociationGameRepository>();
+builder.Services.AddScoped<QuizAPI.Services.Associations.IAssociationPlayService,
+    QuizAPI.Services.Associations.AssociationPlayService>();
 // Profile play-stats (read-only aggregation — see docs/quiz/user-stats-history.md).
 builder.Services.AddScoped<QuizAPI.Controllers.Users.Services.UserStatsService.IUserStatsService, QuizAPI.Controllers.Users.Services.UserStatsService.UserStatsService>();
 builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();

@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using QuizAPI.Data;
 using QuizAPI.Models.Quiz;
 using QuizAPI.ManyToManyTables;
+using QuizAPI.Repositories.Interfaces;
 
 namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.AbandonmentService
 {
@@ -11,15 +12,18 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.AbandonmentSe
         private readonly ApplicationDbContext _context;
         private readonly ILogger<SessionAbandonmentService> _logger;
         private readonly QuizSessionOptions _options;
+        private readonly IAssociationGameRepository _associationGames;
 
         public SessionAbandonmentService(
             ApplicationDbContext context,
             ILogger<SessionAbandonmentService> logger,
-            IOptions<QuizSessionOptions> options)
+            IOptions<QuizSessionOptions> options,
+            IAssociationGameRepository associationGames)
         {
             _context = context;
             _logger = logger;
             _options = options.Value;
+            _associationGames = associationGames;
         }
 
         /// <summary>
@@ -60,6 +64,22 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.AbandonmentSe
         /// <inheritdoc />
         public async Task<DateTime> GetAbandonmentDeadlineAsync(QuizSession session)
         {
+            // ── Associations: the board clock is the whole story ──────────────────────────────
+            //
+            // A Board session has no questions, so the Classic arithmetic below would give it a
+            // total timeout of zero and abandon it the moment the sweep saw it. Its life is the
+            // game's own deadline instead (docs/quiz/associations.md, "Leaving and coming back"),
+            // plus the same grace the Classic activity timeout gets. ADR 0008's invariant holds by
+            // construction: past the deadline there is nothing left to resume, so abandonment can
+            // never cut a resume short.
+            var boardDeadline = await GetBoardDeadlineAsync(session);
+            if (boardDeadline.IsBoard)
+            {
+                return boardDeadline.Deadline is DateTime deadline
+                    ? deadline.AddSeconds(_options.ActivityBufferSeconds)
+                    : session.StartTime.AddSeconds(_options.FallbackActivityTimeoutSeconds);
+            }
+
             var timeouts = await CalculateTimeoutsAsync(session);
 
             // No question served yet means the session's own start is its last activity: a session
@@ -195,6 +215,21 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.AbandonmentSe
             return (totalTimeout, activityTimeout);
         }
 
+        /// <summary>
+        /// Whether the session is an Associations one and, if so, its game's deadline (null if the
+        /// game somehow has none — a Duel, which never reaches here, or a missing row).
+        /// </summary>
+        private async Task<(bool IsBoard, DateTime? Deadline)> GetBoardDeadlineAsync(QuizSession session)
+        {
+            var format = session.Quiz?.Format
+                ?? await _context.Quizzes.IgnoreQueryFilters()
+                    .Where(q => q.Id == session.QuizId).Select(q => (QuizFormat?)q.Format).FirstOrDefaultAsync();
+            if (format != QuizFormat.Associations) return (false, null);
+
+            var deadlines = await _associationGames.GetDeadlinesAsync(new[] { session.Id });
+            return (true, deadlines.TryGetValue(session.Id, out var deadline) ? deadline : null);
+        }
+
         public async Task MarkSessionsAsAbandonedAsync(List<QuizSession> sessions)
         {
             // Guest sessions are never meant to outlive the attempt (see docs/auth/guest-play.md) —
@@ -205,6 +240,9 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.AbandonmentSe
 
             if (guestSessionIds.Count > 0)
             {
+                // An Associations game goes first: AssociationGamePlayer restricts deleting the
+                // session, so that the game and its moves can't be left behind (associations.md, "Guests").
+                await _associationGames.DeleteGamesOfSessionsAsync(guestSessionIds);
                 await _context.UserAnswers.Where(a => guestSessionIds.Contains(a.SessionId)).ExecuteDeleteAsync();
                 await _context.QuizSessions.Where(s => guestSessionIds.Contains(s.Id)).ExecuteDeleteAsync();
                 _logger.LogInformation("Deleted {Count} abandoned guest sessions: {SessionIds}",
@@ -213,6 +251,11 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.AbandonmentSe
 
             if (realSessionIds.Count > 0)
             {
+                // End any Associations game these sessions play, so its row says how it ended —
+                // TimeUp if the board clock had run out, which it always has by the time the sweep
+                // gets here. A no-op for Classic sessions.
+                await _associationGames.EndGamesOfSessionsAsync(realSessionIds, DateTime.UtcNow);
+
                 // App-clock timestamp so EndTime/AbandonedAt stay consistent with the app-clock
                 // StartTime. A bare DateTime.UtcNow inside ExecuteUpdate is evaluated on the DATABASE
                 // clock, which drifts from the app clock and skews computed durations.
