@@ -137,6 +137,9 @@ namespace QuizAPI.Services.QuizSessionServices
             session.PlayerCorrect.Clear();
             session.PlayerAnswers.Clear();
             session.RecordedAnswers.Clear();
+            // The Associations Duel shares this reset (AssociationMatchOrchestrator's finally), so a
+            // lobby has one idea of "back to the lobby" whichever format it just played.
+            session.Duel = null;
 
             // Un-ready everyone: a rematch should need a fresh opt-in, not fire the instant the
             // final scoreboard renders while someone is still reading it. Broadcast each change so

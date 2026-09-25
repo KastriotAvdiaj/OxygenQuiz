@@ -24,6 +24,8 @@ namespace QuizAPI.Repositories
         public Task<AssociationGame?> GetGameForSessionAsync(Guid sessionId, CancellationToken ct = default) =>
             _context.AssociationGames
                 .Include(g => g.Players)
+                // A Duel's winner: a forfeit decides one that replay can't.
+                .Include(g => g.Match)
                 .Include(g => g.Moves)
                 .Include(g => g.Board).ThenInclude(b => b.Columns).ThenInclude(c => c.Tiles)
                 .AsSplitQuery()
@@ -53,6 +55,24 @@ namespace QuizAPI.Repositories
         public void AddSession(QuizSession session) => _context.QuizSessions.Add(session);
         public void AddGame(AssociationGame game) => _context.AssociationGames.Add(game);
         public void AddMove(AssociationGameMove move) => _context.AssociationGameMoves.Add(move);
+        public void AddMatch(Match match) => _context.Matches.Add(match);
+
+        public async Task<Dictionary<Guid, (Guid UserId, string? Username)>> GetPlayersOfSessionsAsync(
+            IReadOnlyCollection<Guid> sessionIds, CancellationToken ct = default)
+        {
+            if (sessionIds.Count == 0) return new();
+            // Two reads, no join: a user the ordinary filter hides (a closed account) must not make
+            // the session vanish with it — the Seat is still in the game, it just has no name.
+            var sessions = await _context.QuizSessions.AsNoTracking()
+                .Where(s => sessionIds.Contains(s.Id))
+                .Select(s => new { s.Id, s.UserId })
+                .ToListAsync(ct);
+            var userIds = sessions.Select(s => s.UserId).Distinct().ToList();
+            var names = await _context.Users.AsNoTracking()
+                .Where(u => userIds.Contains(u.Id))
+                .ToDictionaryAsync(u => u.Id, u => u.Username, ct);
+            return sessions.ToDictionary(s => s.Id, s => (s.UserId, names.GetValueOrDefault(s.UserId)));
+        }
 
         public async Task<int> EndGamesOfSessionsAsync(IReadOnlyCollection<Guid> sessionIds, DateTime at, CancellationToken ct = default)
         {

@@ -202,17 +202,25 @@ public class PreviewFormatAccessTests
 
     // ── The play endpoints ──────────────────────────────────────────────
 
-    /// <summary>Strict mock, as above: Solo play is as absent for a player as authoring is.</summary>
+    /// <summary>
+    /// Strict mock, as above: Solo play is as absent for a player as authoring is. The one read a
+    /// player gets is the review of a Duel they played — an admin can invite anyone to a Duel
+    /// (associations.md §10.1), and that player has seen the whole Board already. The service
+    /// decides that (<c>GetOwnDuelAsync</c>, DuelReviewTests); nothing else reaches it.
+    /// </summary>
     [Fact]
-    public async Task EveryPlayEndpoint_IsNotFoundForAPlayer()
+    public async Task EveryPlayEndpoint_IsNotFoundForAPlayer_ExceptTheReviewOfTheirOwnDuel()
     {
-        var controller = new AssociationSessionsController(
-            new Mock<IAssociationPlayService>(MockBehavior.Strict).Object,
-            new TestCurrentUserService { UserId = PlayerId, IsAdmin = false, IsAuthenticated = true });
+        var play = new Mock<IAssociationPlayService>(MockBehavior.Strict);
         var id = Guid.NewGuid();
+        var duel = new AssociationGameViewDTO { SessionId = id, PlayStyle = "Duel" };
+        play.Setup(p => p.GetOwnDuelAsync(id, PlayerId)).ReturnsAsync(duel);
+        var controller = new AssociationSessionsController(
+            play.Object,
+            new TestCurrentUserService { UserId = PlayerId, IsAdmin = false, IsAuthenticated = true });
 
         Assert.IsType<NotFoundResult>(await controller.Start(new StartAssociationGameRequest { QuizId = 1 }));
-        Assert.IsType<NotFoundResult>(await controller.Get(id));
+        Assert.Same(duel, Assert.IsType<OkObjectResult>(await controller.Get(id)).Value);
         Assert.IsType<NotFoundResult>(await controller.Open(id, new OpenAssociationTileRequest { TileId = 1 }));
         Assert.IsType<NotFoundResult>(await controller.Guess(id, new AssociationGuessRequest { Target = "A", Text = "x" }));
         Assert.IsType<NotFoundResult>(await controller.GiveUp(id));

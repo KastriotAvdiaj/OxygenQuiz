@@ -28,7 +28,8 @@ scoring, and clients only render what they are told.
 | `QuizHub` | `Hubs/QuizHub.cs` | The only client-callable surface. `Hub<IQuizClient>`, `[Authorize]`, mapped at **`/quizHub`** (`Program.cs`). |
 | `IQuizClient` | `Hubs/Clients/IQuizClient.cs` | Strongly-typed server→client events. Adding an event here is what makes it callable as `Clients.Group(...).Foo(...)`. |
 | `IQuizSessionManager` / `InMemoryQuizSessionManager` | `Services/QuizSessionServices/` | Lobby store. A `ConcurrentDictionary<string, MultiplayerSession>` keyed by room code; per-session mutations take `lock (session)`. Registered **singleton**. |
-| `IMatchOrchestrator` / `MatchOrchestrator` | `Services/QuizSessionServices/` | The match loop: load questions → countdown → per-question round loop → grade → reveal → final result → reset. Registered **singleton**; broadcasts through `IHubContext<QuizHub, IQuizClient>`. |
+| `IMatchOrchestrator` / `MatchOrchestrator` | `Services/QuizSessionServices/` | The match loop: load questions → countdown → per-question round loop → grade → reveal → final result → reset. Registered **singleton**; broadcasts through `IHubContext<QuizHub, IQuizClient>`. Owns the **one** lobby reset, `ResetToLobbyAsync`, which the Duel loop calls too. |
+| `IAssociationMatchOrchestrator` / `AssociationMatchOrchestrator` | `Services/QuizSessionServices/` | The Associations **Duel** loop, when the picked quiz is a Board: countdown → the board → turns until it ends → record → reset. Singleton. The rules are `AssociationDuel`'s; this is the clock, the broadcasts and the write. See [`associations.md`](./associations.md) §10. |
 | `MultiplayerSession` | `Services/QuizSessionServices/MultiplayerSession.cs` | One lobby's entire state — roster, settings, selected quiz, chat buffer, and the live-match runtime fields. |
 | Match DTOs | `Services/QuizSessionServices/MatchModels.cs` | Wire contracts. Note the deliberate split: `RoundQuestion` is server-only and holds the grading key; `RoundQuestionView` / `RoundOption` are what clients see and carry **no** correct-answer information. Option order in `RoundOption` is shuffled once per match, and question order too when the quiz sets `ShuffleQuestions` — see [`../adr/0006-answer-order-is-shuffled-at-serve-time.md`](../adr/0006-answer-order-is-shuffled-at-serve-time.md). Every player is served from the one shuffled list, so "it's the third one" means the same thing to all of them. |
 
@@ -39,16 +40,18 @@ Grading is *not* reimplemented here — `MatchOrchestrator.GradeRoundAsync` reso
 
 | Piece | File | Role |
 |---|---|---|
-| `MultiplayerProvider` | `context/multiplayer-context.tsx` | Owns the one shared `HubConnection` and exposes typed invoke wrappers. |
+| `MultiplayerProvider` | `context/multiplayer-context.tsx` | Owns the one shared `HubConnection` and exposes typed invoke wrappers. Rejoins the lobby after an automatic reconnect (`lobby-rejoin.ts`, §3.6). |
 | `useLobbyConnection` | `pages/Quiz/Multiplayer/hooks/use-lobby-connection.ts` | Lobby-phase state: roster, ready, host, selected quiz, join/leave. |
 | `useMatch` | `pages/Quiz/Multiplayer/hooks/use-match.ts` | Match-phase state, driven purely by server events. |
 | `useLobbyChat` | `pages/Quiz/Multiplayer/hooks/use-lobby-chat.ts` | Chat history + send. |
 | `MultiplayerLobbyPage` | `pages/Quiz/Multiplayer/MultiplayerLobbyPage.tsx` | Thin data wrapper. Renders `<MultiplayerGame>` while `match.isActive`, otherwise `<LobbyPageView>`. |
 | `LobbyPageView` | `pages/Quiz/Multiplayer/LobbyPageView.tsx` | Presentational lobby, fully prop-driven (Storybook-previewable with no backend). |
 | `MultiplayerGame` | `pages/Quiz/Multiplayer/components/game/MultiplayerGame.tsx` | The in-match screen: countdown, question, reveal, results. |
+| `useAssociationMatch` / `DuelGame` | `pages/Quiz/Associations/duel/` | The Associations Duel's listener set (`Duel*` events) and screen, rendered instead of the lobby while a Duel is on ([`associations.md`](./associations.md) §10.7). |
 
-**Three separate listener sets** bind to the same connection, one per concern —
-`use-lobby-connection` (roster/host/quiz), `use-match` (match events), `use-lobby-chat` (chat).
+**Four separate listener sets** bind to the same connection, one per concern —
+`use-lobby-connection` (roster/host/quiz), `use-match` (match events), `use-lobby-chat` (chat),
+`use-association-match` (Duel events).
 They each `connection.off(...)` their own events on cleanup. Because `off(name)` removes *all*
 handlers for that event name, two hooks must never subscribe to the same event.
 
@@ -75,11 +78,13 @@ being explicit about who owns what.
 | Lobby capacity | Server (`MaxPlayers`) | `LobbySettingsChanged` to the caller on create/join |
 | Selected quiz | Server (`SelectedQuiz`) | `QuizSelected` broadcast on selection **and** replayed to the caller on join |
 | Match phase, timing, scores | Server (`QuizState`, `QuestionDeadlineUtc`, `PlayerScores`) | `MatchStarting` / `QuestionStarted` / `QuestionEnded` / `MatchEnded` |
+| A Duel's board, turn and scores | Server (`MultiplayerSession.Duel`) | `DuelStarting` / `DuelStarted` / `DuelUpdated` / `DuelEnded`, each carrying the whole view; `DuelState` replays it to someone (re)joining mid-Duel |
 | Which screen *this* player sees | Client (`useMatch.phase`) | Local — see the asymmetry in §3.4 |
 
 **The late-joiner rule.** Any state announced *only* by a broadcast event is invisible to anyone
 who joins afterwards. Every such field needs a matching replay in `JoinSession`. Today that's
-`CurrentParticipants`, `LobbySettingsChanged`, `QuizSelected` and `ChatHistory`. When you add a
+`CurrentParticipants`, `LobbySettingsChanged`, `QuizSelected`, `ChatHistory` and — while a Duel is
+on — `DuelState`. When you add a
 new piece of lobby state, add its catch-up send at the same time — the "late joiners never see the
 host's quiz pick" bug (2026-07-31) was exactly this omission.
 
@@ -150,7 +155,13 @@ rematch needs a fresh opt-in from everyone, because `canStartQuiz` requires all-
 - **`LeaveSession`** — explicit. Removes from the SignalR group and the roster, clears
   `Context.Items`, broadcasts `UserLeft`, and `HostChanged` if the host left.
 - **`OnDisconnectedAsync`** — grants a **5-second grace period** on a background task, then removes
-  the participant *only if their `ConnectionId` is still the one that dropped*. This is what makes a
+  the participant *only if their `ConnectionId` is still the one that dropped*. **Until 2026-09-25
+  this removed nobody**: the task made its DI scope from the hub's own `IServiceProvider`, which is
+  the invocation's scope and was disposed by the time the grace ran out, so it threw — silently,
+  being fire-and-forget. Players who closed their tab stayed in everyone's roster (and in a Duel,
+  never forfeited). Found by the Duel's two-browser run; the hub now takes an
+  `IServiceScopeFactory`, the grace runs on an injected `TimeProvider` (so
+  `QuizHubRejoinTests` can drive it), and a failure in the task is logged. This is what makes a
   page refresh survivable: the client reconnects and re-joins with a new connection id, so the
   delayed check sees a different id and leaves them alone.
 - **Host reassignment** — `RemoveParticipantAsync` promotes `Participants.First()` and updates
@@ -161,6 +172,10 @@ rematch needs a fresh opt-in from everyone, because `canStartQuiz` requires all-
   Every lookup goes through `TryGetLiveSession`, which collects a session past its grace on the
   way out, so a stale code still fails `NotFound`; `CreateSessionAsync` also sweeps, so rooms
   nobody returns to cannot accumulate.
+
+**Leaving mid-Duel is a forfeit.** Both removal paths — `LeaveSession` and the disconnect grace
+running out — call `IAssociationMatchOrchestrator.PlayerLeftAsync`, which ends a Duel the leaver is
+seated in ([ADR 0021](../adr/0021-a-duel-is-forfeited-when-the-lobby-drops-the-player.md)).
 
 **Client-side, `useNavigationGuard(hasJoined)` blocks in-app navigation** (React Router's
 `useBlocker`, plus `beforeunload` for refresh and tab close) for as long as you're in the session —
@@ -177,6 +192,36 @@ can rejoin later with the room code" is misleading while a round clock is runnin
 Note that confirming only calls `blocker.proceed()` — it does **not** invoke `LeaveSession`. The
 server keeps you in the roster until the round's deadline passes or you disconnect. Logged as a P3
 in [`known-issues.md`](../deployment/known-issues.md#multiplayer--game-state).
+
+### 3.6 Reconnecting
+
+The connection is built `.withAutomaticReconnect()`. A reconnected SignalR connection is a **new
+connection id**: on the server it is in no group, its `Context.Items` are empty, and the 5-second
+disconnect check is counting down against the *old* id. Until 2026-09-25 nothing handled that, so a
+network blip cost a player the room's broadcasts, then the `Context.Items` hub methods ("You are
+not in this lobby."), then — five seconds later — their place in the roster. In Classic that is a
+few rounds; in a Duel it is the game (a removal is a forfeit, §3.5).
+
+Now:
+
+- **The client rejoins.** `MultiplayerProvider` remembers the lobby it created or joined
+  (`createLobbyMembership` in `context/lobby-rejoin.ts`, forgotten on `LeaveSession`) and binds
+  `onreconnected` to re-invoke `JoinSession` for it. `JoinSession` is idempotent for an existing
+  participant: it moves them to the new connection id — so the disconnect check leaves them alone —
+  re-adds the connection to the group, re-stamps `Context.Items`, and sends the catch-up bundle
+  (§4.2), including the Duel's `DuelState` if one is on.
+- **The room isn't told.** A rejoin does not broadcast `UserJoined`: the others never saw the player
+  leave (`UserLeft` is sent only when the participant record goes), so announcing them again would
+  toast "X joined the lobby" at everyone for a blip. "Already in the roster" is the test, so a
+  refresh and the host's second join (§4.1) are quiet the same way.
+- **A refused rejoin is shown.** If the lobby is gone or full by the time the connection is back,
+  the provider's `rejoinError` carries the server's sentence and the lobby shows it the way it shows
+  any failed join.
+- `isConnected` now follows the connection: false while reconnecting, true again once it is back.
+
+A reconnect that takes longer than the 5-second grace is a leave, as before — the player is removed
+and rejoins as a new arrival (and a Duel is already forfeited). Pinned by `QuizHubRejoinTests`
+(server) and `lobby-rejoin.test.ts` (client).
 
 ---
 
@@ -220,14 +265,21 @@ to the caller.
 - Only the host can `SelectQuiz`. The id is validated server-side via
   `IQuizService.CanHostQuizAsync` (Public, or owned by the host) — the title/category/difficulty in
   the payload are **display labels only** and are never trusted.
-- **Only a Classic quiz can be selected.** An Associations quiz is refused at `SelectQuiz` with
-  "Associations quizzes can't be played in a lobby yet" — the match loop is Classic-only, and
-  refusing at selection means the lobby never shows a pick it can't play
-  ([`associations.md`](./associations.md) §2). The Associations Duel will replace this refusal with
-  a dispatch on format.
-- `canStartQuiz` (client) = host **and** ≥2 participants **and** all ready **and** a quiz selected.
-  The server independently re-checks the quiz and the ≥2 count in `StartMatchAsync`; the client
-  computation is convenience, not enforcement.
+- **The pick carries its format.** `SelectQuiz` fills `SelectedQuizView.Format` (`Classic` /
+  `Associations`) from the quiz itself, overwriting whatever the client sent — the lobby's rules
+  follow from it, so it can't be the client's to choose. It reaches late joiners with the rest of the
+  pick through the `QuizSelected` replay, so no new lobby state was needed.
+- **An Associations quiz is a Duel, for exactly 2 players** ([`associations.md`](./associations.md)
+  §10). While the format is in preview only an admin may pick one; anyone else gets the same "You
+  can't host this quiz." as for a quiz they may not host at all.
+- `canStartQuiz` (client) = host **and** the right number of players — ≥2, or **exactly 2** for a
+  Board — **and** all ready **and** a quiz selected. One function, `startBlockedReason`
+  (`Multiplayer/utils/lobby-start.ts`), gives both the button's state and the sentence under it. With a Board and three or more players the
+  lobby says why the button is disabled. The server independently re-checks the quiz and the count
+  (`StartMatchAsync` in each orchestrator); the client computation is convenience, not enforcement.
+- **`StartMatch` dispatches by format**: a Board to `IAssociationMatchOrchestrator`, anything else to
+  `IMatchOrchestrator`. Both use the same `MatchCts` liveness guard and the same `ResetToLobbyAsync`
+  (§3.2–3.3), so a lobby can alternate between the two.
 
 ### 4.4 The match loop
 
@@ -353,17 +405,21 @@ Identity is **never** a parameter. Every method derives the username from the co
 | `JoinSession` | `sessionId` | any authenticated | Converts `SessionJoinException` to `HubException` so the client sees the real cause (`not-found` / `full`). Idempotent for an existing participant; adds to the SignalR group only **after** the participant add succeeds. |
 | `LeaveSession` | `sessionId` | participant | Broadcasts `UserLeft`, plus `HostChanged` if the host left. |
 | `ToggleReady` | `sessionId, isReady` | participant | Sets the **caller's** own flag only. |
-| `SelectQuiz` | `sessionId, quiz` | **host** | `quiz` is a `SelectedQuizView`; only `Id` is authorized (`CanHostQuizAsync`). A non-Classic quiz is refused. |
+| `SelectQuiz` | `sessionId, quiz` | **host** | `quiz` is a `SelectedQuizView`; only `Id` is authorized (`CanHostQuizAsync`), and `Format` is filled by the server. A Board needs an admin host while in preview. |
 | `SendLobbyMessage` | `sessionId, text` | participant | Lobby/Starting phases only. |
-| `StartMatch` | `sessionId` | **host** | Rethrows the orchestrator's `InvalidOperationException` as a `HubException`, so the client shows the real reason. |
+| `StartMatch` | `sessionId` | **host** | Dispatches by the pick's format (§4.3). Rethrows the orchestrator's `InvalidOperationException` as a `HubException`, so the client shows the real reason. |
 | `SubmitAnswer` | `sessionId, answer, clientElapsedMs?` | participant | Returns silently (no throw) when not accepting answers. |
+| `OpenTile` | `sessionId, tileId` | seated Duel player | Duel only. A refusal — not your turn, already opened, time's up — is a `HubException` with the sentence to show. |
+| `GuessAssociation` | `sessionId, target, text` | seated Duel player | `target` is `A`–`D` or `Final`. |
+| `PassTurn` | `sessionId` | seated Duel player | After opening a Tile, or in the endgame. |
 
 > **Identity source inconsistency.** `JoinSession`, `LeaveSession`, `ToggleReady` and
 > `SubmitAnswer` read the username from the **JWT** (`GetUsername()`), while `StartMatch`,
 > `SelectQuiz` and `SendLobbyMessage` read it from **`Context.Items["Username"]`**, which is
 > populated by `CreateSession`/`JoinSession`. Both are safe (neither trusts the client), but the
 > `Context.Items` variety is per-connection, so it is empty on a connection that has not joined —
-> which is what surfaces as `"You are not in this lobby."`. See the reconnect gap in §7.
+> which is what surfaces as `"You are not in this lobby."`. A reconnect used to be exactly that
+> connection; the client now rejoins (§3.6).
 
 ### Client events (server → client)
 
@@ -385,6 +441,11 @@ Defined in `IQuizClient`; SignalR serializes payloads camelCased.
 | `MatchEnded` | `MatchResult` | Final scoreboard + winner |
 | `ChatMessageReceived` | `LobbyChatMessage` | New chat message |
 | `ChatHistory` | `LobbyChatMessage[]` | To a newly-joined client |
+| `DuelStarting` | `countdownSeconds` | A Duel begins (its own name — `useMatch` owns `MatchStarting`) |
+| `DuelStarted` | `DuelViewDTO` | The board is up |
+| `DuelUpdated` | `DuelUpdateDTO` (`move?`, `isCorrect?`, `points`, `view`) | A move, an expired turn, or a forfeit (`move` null) |
+| `DuelEnded` | `DuelViewDTO` | Over and recorded; each seat carries its results `sessionId` |
+| `DuelState` | `DuelViewDTO` | To a caller joining while a Duel is on (§3.6) |
 
 ---
 
@@ -534,12 +595,10 @@ this is the feature-level summary.
 - **Room codes are generated client-side** with `Math.random()` and no server-side uniqueness
   check before `CreateSession`. A collision surfaces as "Session already exists". Codes should be
   issued by the server.
-- **No re-join after an automatic reconnect.** The connection is built `.withAutomaticReconnect()`,
-  but nothing binds `onreconnected`, so a recovered connection is a *new* connection id that is not
-  in the SignalR group and has empty `Context.Items`. The client stops receiving group broadcasts,
-  the `Context.Items`-based hub methods reject it, and `OnDisconnectedAsync`'s 5-second check —
-  which compares against the id that dropped — removes the player from the roster. A reconnect
-  handler that re-invokes `JoinSession` would close all three.
+- ~~**No re-join after an automatic reconnect.**~~ — *fixed 2026-09-25* (§3.6). The client
+  rejoins in `onreconnected`, and the rejoin is quiet. **Still true for Classic:** a player who
+  reconnects mid-question gets no catch-up for the question on screen (only a Duel has one,
+  `DuelState`); they rejoin at the next `QuestionStarted`.
 - **Sessions never expire.** Nothing evicts an abandoned lobby that still has a participant record,
   so the dictionary grows for the process lifetime.
 - **Single-instance only.** Lobby and match state live in in-memory singletons, so the backend
@@ -558,10 +617,14 @@ this is the feature-level summary.
   `HubException`, and passed through verbatim by the client.
 - **No username uniqueness constraint** within a lobby beyond account identity, and no validation
   of room-code shape on input.
-- **The match loop has no automated tests.** `MatchPersistenceTests` covers the reads over the rows
-  a match leaves (§7) and `QuizAPI.Tests` covers scoring, grading, auth, versioning and stats — the
-  pieces the loop *calls* — but there is nothing for the hub, the session manager or
-  `MatchOrchestrator` itself, and none for the lobby hooks. The orchestrator is a singleton holding
+- **The Classic match loop has no automated tests.** `MatchPersistenceTests` covers the reads over
+  the rows a match leaves (§7) and `QuizAPI.Tests` covers scoring, grading, auth, versioning and
+  stats — the pieces the loop *calls* — but there is nothing for `MatchOrchestrator`'s round loop
+  itself, and none for the lobby hooks. **The Duel loop is tested** (2026-09-25):
+  `AssociationMatchOrchestratorTests` runs it on its real background task against a
+  `FakeTimeProvider`, with the real session manager and the real lobby reset, and `HubHarness`
+  (`QuizAPI.Tests/Multiplayer/`) drives `QuizHub` with SignalR's clients mocked — the pattern to
+  copy for the Classic loop. The orchestrator is a singleton holding
   a hub context, a scope factory and a three-second countdown, so testing it means first deciding
   how much of that to fake. The lifecycle rules in §3 are exactly the kind of thing a test would
   have caught.
@@ -594,6 +657,8 @@ cancellation mid-question — because both run through the same `finally`.
 
 | Date | Change |
 |---|---|
+| 2026-09-25 | **The disconnect grace removes people again** (§3.5): its background task no longer uses the disposed invocation scope. |
+| 2026-09-25 | **The Associations Duel plays in the lobby, and a reconnect rejoins.** The pick carries a server-filled `Format`; a Board needs exactly 2 players and dispatches `StartMatch` to `AssociationMatchOrchestrator` (Duel events `DuelStarting` / `DuelStarted` / `DuelUpdated` / `DuelEnded` / `DuelState`; moves `OpenTile` / `GuessAssociation` / `PassTurn`) — [`associations.md`](./associations.md) §10. Leaving mid-Duel forfeits ([ADR 0021](../adr/0021-a-duel-is-forfeited-when-the-lobby-drops-the-player.md)). The client re-invokes `JoinSession` after an automatic reconnect, and a rejoin no longer announces `UserJoined` (§3.6). First tests of a match loop and of the hub. |
 | 2026-09-16 | **A host who refreshes keeps their lobby.** The 5s disconnect grace is fine for a socket blip and too short for a cold page load — boot the SPA, authenticate, open the connection, re-join — so the host was removed before the browser was ready. A host alone in the lobby is the common case, and removing the last participant destroyed the session outright, so the client's auto-resume then asked to rejoin a room that no longer existed and the user was left on an empty page with a "could not rejoin" toast. An empty lobby now lingers 90s (`EmptySinceUtc` + `TryGetLiveSession` + a sweep on create) with its code, name, quiz pick and `HostUsername` intact, so the returning host comes back *as host*. Deliberately not fixed by widening the disconnect grace, which would leave a player who genuinely left sitting in everyone's roster, marked ready, for a minute and a half. The client also surfaces a failed resume through `joinError` — the view's own error state, carrying the server's message — instead of a toast over a blank lobby. |
 | 2026-09-14 | **A match is recorded when it ends** — §7, folded in from the multiplayer-persistence plan doc, which this replaces and which is deleted. One `Match` row plus the same `QuizSession` and `UserAnswer` rows single player writes, so analytics, stats and the results pages read a match without being taught what one is. Analytics exclude matches by default (Solo / Multiplayer / Both); the review tab grows a tab per player. **Sections 7, 8 and 9 became 8, 9 and 10** to make room — a citation to an old §7–§9 elsewhere is off by one. |
 | 2026-08-02 | **The desktop board fits the viewport.** The shell takes an explicit `calc(100dvh - header)` height (a percentage `h-full` can't work — the layout's `min-h-full` wrapper leaves the height indefinite) and the 2×2 grid divides it with an `auto` top row and a `minmax(0,1fr)` bottom row. Chat's message list fills its share instead of forcing a hard-coded `lg:h-[17rem]`. The lobby had been overflowing the fold on laptop-height screens, and chat grew instead of scrolling. |

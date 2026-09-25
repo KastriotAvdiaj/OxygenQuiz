@@ -63,6 +63,11 @@ export type SelectedQuiz = {
   category?: string | null;
   difficulty?: string | null;
   questionCount?: number | null;
+  /**
+   * Filled by the server from the quiz, whatever the picker sent — the lobby's rules follow from
+   * it: an Associations quiz is a Duel, for exactly 2 players (docs/quiz/multiplayer.md §4.3).
+   */
+  format?: QuizFormat | null;
 };
 
 /** Narrows a full quiz summary down to the fields the lobby broadcasts. */
@@ -72,6 +77,7 @@ export const toSelectedQuiz = (quiz: QuizSummaryDTO): SelectedQuiz => ({
   category: quiz.category,
   difficulty: quiz.difficulty,
   questionCount: quiz.questionCount,
+  format: quiz.format,
 });
 
 /**

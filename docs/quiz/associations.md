@@ -2,17 +2,17 @@
 
 **Associations** is OxygenQuiz's second quiz format, modelled on the final of the TV show *Oxygen*:
 a Board of four Columns, each of four hidden Tiles and a Column solution, and a Final solution that
-links the four Columns. This doc describes what exists **today**. What is still to be built — the
-Duel in a lobby, guest play, board analytics — is in
+links the four Columns. This doc describes what exists **today**. What is still to be built — guest
+play and board analytics — is in
 [`associations-plan.md`](./associations-plan.md), and moves here as it lands. The words are defined
 in [`glossary.md`](./glossary.md); why a format is its own system rather than a question type is
 [ADR 0018](../adr/0018-quiz-formats-are-separate-verticals.md).
 
-> **Status: partly implemented (2026-09-23).** Built: the `Format` of a quiz, the Classic entry
+> **Status: partly implemented (2026-09-25).** Built: the `Format` of a quiz, the Classic entry
 > points that refuse other formats, the rules engine with its scoring and settings, **authoring**
-> — the Board tables, the create / edit API and the board builder (§8) — and **Solo play** (§9):
-> start, play, leave and resume, the board clock, results and review. Not yet: the Duel (plan
-> Phase 5), guest play of a Board (at release, §9.8) and board analytics (Phase 6).
+> — the Board tables, the create / edit API and the board builder (§8) — **Solo play** (§9):
+> start, play, leave and resume, the board clock, results and review — and the **Duel** in a lobby
+> (§10). Not yet: guest play of a Board (at release, §9.8) and board analytics (Phase 6).
 
 ---
 
@@ -31,6 +31,9 @@ feature.
 - **Frontend (the affordance).** `PREVIEW_FORMATS` in `format-access.ts` decides what to offer: a
   player's create dialog shows only the two Classic cards, and the create-board route sends them
   back to their quiz list.
+- **One exception: a Duel's review.** An admin may invite anyone to a Duel (§10.1), so the other
+  player may be a player. `GET /api/associations/sessions/{id}` lets a non-admin read **their own
+  Duel session** (`GetOwnDuelAsync`) and nothing else — they have seen the whole Board already.
 - **Releasing it** is removing `Associations` from both arrays — one line each. Every read follows.
 
 Pinned by `QuizAPI.Tests/Formats/PreviewFormatAccessTests.cs` (each read separately, plus the
@@ -73,7 +76,7 @@ nothing about its format — they get the ordinary "not found or not available".
 | `QuizSessionService.ResolveAndResumeAsync` | Run the Classic catch-up walk over no questions | 400 |
 | `SubmitAnswerService.SubmitAnswerAsync` | Record a `UserAnswer` against no question | 400, nothing written |
 | `QuizService.UpdateQuizAsync` (`PUT /api/quiz`) | **Zero the board time** and rewrite the board's quiz as Classic-shaped | `AppValidationException` → 400; the stored quiz is untouched |
-| `QuizHub.SelectQuiz` | Let a lobby pick a board the Classic match loop can't play | `HubException`: "Associations quizzes can't be played in a lobby yet." Changes to a dispatch when the Duel lands (plan §9). `MatchOrchestrator.StartMatchAsync`'s "This quiz has no questions" is the backstop. |
+| `QuizHub.StartMatch` | Run the Classic match loop over a board's zero questions | Not a refusal but a **dispatch** (2026-09-25): a Board goes to the Duel (§10). `SelectQuiz` stamps the pick's format from the quiz, so the dispatch can't be steered by the client; `MatchOrchestrator.StartMatchAsync`'s "This quiz has no questions" stays as the backstop. |
 | `DataTransferController` quiz import | Create an empty Classic quiz from a board row | The row is skipped with a message; board content isn't importable yet. Export writes a `Format` column. |
 
 Session creation for a guest and for a real account, next-question, resume, submit and update each
@@ -151,8 +154,10 @@ Worked example (pinned by `DuelRulesTests.TheEndgame_WorkedExample`): P1 opens t
 misses → endgame. P2 misses (P2: 1 of 2), P1 misses (1 of 2), P2 solves C then misses the Final
 (2 of 2), P1 misses (2 of 2) → game over.
 
-**A player who leaves forfeits** — the game ends and the player still there wins. (The engine side
-of this exists; the lobby side is the Duel phase of the plan.)
+**A player who leaves forfeits** — the game ends and the player still there wins, whatever the
+score. "Leaves" means the lobby removed them: they clicked Leave, or their connection was gone
+longer than the 5-second grace (§10.4,
+[ADR 0021](../adr/0021-a-duel-is-forfeited-when-the-lobby-drops-the-player.md)).
 
 **Turn order is `(seat + 1) % seatCount`**, never "the other player". That is what lets a future
 1v1v1 be three Seats on the same engine, and a future 2v2 be two Seats with two players each — the
@@ -387,11 +392,14 @@ this section is how the server and the screens carry them out.
 
 | Table | Holds |
 |---|---|
-| `AssociationGames` | One Board being played: `BoardId` (the exact Board version — Restrict), `PlayStyle` (`Solo`; `Duel` from Phase 5), `MatchId` (Duel only), `FirstSeat` (Duel only), `StartedAt`, `DeadlineUtc` (Solo), `EndedAt`, `EndReason`, `RulesJson`. |
+| `AssociationGames` | One Board being played: `BoardId` (the exact Board version — Restrict), `PlayStyle` (`Solo` / `Duel`), `MatchId` (Duel only), `FirstSeat` (Duel only), `SeatCount` (1 / 2), `StartedAt`, `DeadlineUtc` (Solo), `EndedAt`, `EndReason`, `RulesJson`. |
 | `AssociationGamePlayers` | `(GameId, SessionId)` → `Seat`. Ties a player's `QuizSession` to the game. A session plays exactly one game (unique `SessionId`). A Seat is who takes a turn, not who a person is — a future team duel puts two sessions on one Seat. |
 | `AssociationGameMoves` | Every accepted move, in order: `Seq` (unique per game), `Seat`, `Kind`, `TileId` / `Target` / `GuessText`, `IsCorrect`, `Points`, `At` (server clock). A refused move is never a row. |
 
-Migration `20260923212621_AddAssociationGames`. **The move log is the game** —
+Migrations `20260923212621_AddAssociationGames` and `20260925071707_AddAssociationGameSeatCount`
+(default 1 — every game before it was Solo). **`SeatCount` is stored, not counted from the players**:
+deleting one Duel player's session removes their row and keeps the game, which is still the other
+player's record, and replay needs to know there were two Seats. **The move log is the game** —
 [ADR 0020](../adr/0020-an-associations-game-is-its-move-log.md): board state is never stored; every
 request replays the moves through the engine (§6) under the game's own `RulesJson`, and
 `GameEndReason`s the server decided (`TimeUp`, `Abandoned`, later `Forfeit`) are reapplied on top.
@@ -560,11 +568,158 @@ admins while §0 holds — an **All / Quizzes / Boards** control filters the gri
 `VisibleTo` already allows, so a player asking for boards gets none).
 
 `AssociationBoard` (`src/pages/Quiz/Associations/board/`) is the one board component — Solo play,
-the results review, and in Phase 5 the Duel — and it never calls the API: a Tile click and a
+the results review and the Duel (§10.7) — and it never calls the API: a Tile click and a
 target choice go up as callbacks, the new view comes down
 ([`quiz-playing-architecture.md`](./quiz-playing-architecture.md) §1). The guess box aims at the
 solution slot the player picked, or else the first unsolved one. Each move writes the returned view
 straight into the React Query cache (`useAssociationMoves`); nothing is refetched after a move.
+
+## 10. Playing — Duel
+
+Two players in a lobby, taking turns on one Board — the rules are §3.3. This section is how the
+lobby, the server and the screens carry them out. The lobby itself (create, join, ready, chat,
+rematch) is unchanged and is [`multiplayer.md`](./multiplayer.md).
+
+### 10.1 In the lobby
+
+- **An Associations quiz in a lobby is always a Duel**, for **exactly 2** players. `canStartQuiz`
+  says so with a Board picked and three or more in the room; the server re-checks
+  (`AssociationMatchOrchestrator.StartMatchAsync`: "An Associations duel is for exactly 2 players.").
+- **The pick carries its format**, filled by `QuizHub.SelectQuiz` from the quiz — never the
+  client's — and replayed to late joiners with the rest of the pick (multiplayer.md §4.3).
+  `StartMatch` dispatches on it.
+- **While the format is in preview (§0) only an admin may pick a Board**; anyone else gets "You
+  can't host this quiz.", the same as for a quiz they may not host at all. The other player needn't
+  be an admin — an admin can test a Duel with anyone they invite.
+- **The server picks who opens first at random; a rematch alternates** (D12) —
+  `MultiplayerSession.LastDuelOpener` survives the lobby reset for exactly that.
+
+### 10.2 The runner and the loop
+
+Two pieces, split on purpose:
+
+- **`AssociationDuel`** (`Services/Associations/AssociationDuel.cs`) — one live Duel, **pure**:
+  every call takes the server's "now". It maps a username to a Seat (case-insensitively) and
+  refuses everyone else ("You're not playing in this duel.", "It isn't your turn."), puts moves
+  through the engine, turns a late move away ("Time's up." — it records nothing; the clock tick
+  records the expiry), records `TurnExpired` when the clock has run out, forfeits, decides the
+  winner and builds the view. It builds the `AssociationGame` row — moves, players, rules snapshot,
+  `SeatCount` 2 — as the Duel is played, so recording it is one `Add`. `AssociationDuelTests` is
+  its spec, the clock being the times the tests pass in.
+- **`AssociationMatchOrchestrator`** — the singleton around it: the countdown (3s,
+  `DuelStarting`), the real clock (an injected `TimeProvider`), the broadcasts, the write, and
+  handing the lobby back. It shares the lobby's `MatchCts` liveness guard and calls the **same**
+  `ResetToLobbyAsync` as the Classic loop from its `finally`, which clears `session.Duel` too
+  (multiplayer.md §3.2–3.3).
+
+**The loop keeps only the turn clock.** Moves come in through the hub. The loop sleeps until the
+current turn's deadline *or* until a move wakes it (`DuelMatch.Changed`), then checks again — so a
+correct Guess, which restarts the clock, and a move that ends the Duel are both picked up at once
+rather than at the next poll. Everything that touches the runner — a hub move and a clock tick —
+goes through one `SemaphoreSlim` per Duel together with its broadcast, so updates reach the room in
+the order they happened.
+
+### 10.3 The hub surface
+
+| Client → server | Server → client (to the room unless noted) |
+|---|---|
+| `OpenTile(sessionId, tileId)` | `DuelStarting(countdownSeconds)` |
+| `GuessAssociation(sessionId, target, text)` | `DuelStarted(view)` |
+| `PassTurn(sessionId)` | `DuelUpdated({ move, isCorrect, points, view })` — a move, an expired turn, or a forfeit (`move` null) |
+| | `DuelEnded(view)` — over **and recorded** |
+| | `DuelState(view)` — to a caller joining mid-Duel |
+
+The player is always the signed-in account. A refused move is a `HubException` with the runner's
+sentence — not ignored silently: the other player's UI shouldn't send a move out of turn, and if it
+does, that's worth seeing.
+
+**Every event carries the whole view** (`DuelViewDTO`), not a delta. The plan listed
+`BoardStarted` / `TurnStarted` / `TileOpened` / `GuessResult` / `BoardEnded`; one view per event
+means a client that missed one — or reconnected — is right again on the next, and `DuelState` is
+simply the same view sent to one caller. The names all start with `Duel` so none collides with a
+Classic event (`connection.off(name)` removes every handler for a name — multiplayer.md §1).
+
+**The view** is the same for both players — nothing in a Duel is private to a Seat (D15: the
+opponent sees every Guess, right or wrong). It is built by `AssociationViews.BuildDuel` from the
+same Column / Final / move builders as the Solo view, so what is hidden is decided in one place:
+the seats (names, scores, endgame turns left), whose turn and its deadline, `serverNow` for clock
+correction, `canOpen` / `canGuess` / `canPass` for the Seat whose turn it is, `inEndgame`,
+`isOver`, `endReason`, `winnerSeat`, the board and the move log. Once it is over and recorded,
+each seat carries its `sessionId` — the player's results link.
+
+### 10.4 Leaving, reconnecting, catching up
+
+- **A seated player whom the lobby removes forfeits** — `LeaveSession`, or the disconnect grace
+  running out; both call `PlayerLeftAsync`. Someone who isn't seated leaving changes nothing.
+  Leaving during the countdown forfeits the moment the board is up.
+  [ADR 0021](../adr/0021-a-duel-is-forfeited-when-the-lobby-drops-the-player.md) has the reasoning.
+- **A blip is not a leave.** The client rejoins the lobby after an automatic reconnect, inside the
+  grace, and gets `DuelState` — the board as it stands (multiplayer.md §3.6). The turn clock does
+  not stop for it.
+- **An emptied lobby interrupts the Duel** (the session manager cancels `MatchCts`) and nothing is
+  written — unless the Duel had already ended (a forfeit, then the other player left too), which is
+  a result and is recorded.
+
+### 10.5 What a Duel leaves behind
+
+Written once, when it ends, in one save — the shape of Classic's (multiplayer.md §7): a `Match`
+(quiz, pinned version, room code, host, winner), a `QuizSession` per player (`Mode = Multiplayer`,
+`MatchId`, `TotalScore` = their board points, `QuizVersion` pinned at start), and the one
+`AssociationGame` with its two players and every move. Three deliberate differences from Classic:
+
+- **Every seated player gets a session**, moves or not. Classic drops a player who never answered
+  (§7.2 there — a row of blanks would drag down their stats). A Duel player can lose without ever
+  having had a turn (the opponent took the Final on the first), that is a real result, and the game
+  needs every Seat's row to know who sat where. (A player whose account is gone by the end gets no
+  session and no seat row.)
+- **The write comes before the final broadcast.** `DuelEnded` carries each player's results link,
+  and a link to a row that isn't there yet would 404. If the write fails, the players still get the
+  result, without links, and the failure is logged as itself.
+- **The winner is stored, not derived**: a forfeit is won by the player still there whatever the
+  score, and replay can't tell who left.
+
+Winner otherwise: the higher score; equal scores → no winner (`WinnerUserId` null).
+
+### 10.6 Reviewing a Duel
+
+Each player reviews the Duel on the Solo results page, `/associations/results/{their session id}`,
+through the same `GET /api/associations/sessions/{id}` — replay under the game's snapshot, the whole
+Board revealed. The view knows whose it is: `mySeat`, `score` (that Seat's), `seats` (names and
+scores) and `winnerSeat` (from the `Match`). A Seat whose player later deleted their session keeps
+its score and is shown as "(player left)". A Duel session takes no moves over HTTP ("This game is
+already over."). While the format is in preview, a non-admin opponent can still read their own
+Duel here (§0). The page shows both scores and who won instead of one score, names who solved
+each line of the breakdown and who made each move, and has no "Play again" — a rematch is in the
+lobby. Pinned by `DuelReviewTests`.
+
+### 10.7 The screens
+
+Everything is in `src/pages/Quiz/Associations/duel/`, beside `solo/`:
+
+- **`useAssociationMatch`** — the Duel's own listener set on the lobby's connection (`Duel*`
+  events only, so `off(name)` can't touch `useMatch`'s). Each event carries the whole view, so it
+  just replaces the last one; `receivedAtMs` is kept for the clock. Moves are `invoke`s whose
+  refusals come back as the server's sentence.
+- **`DuelGame`** — rendered by `MultiplayerLobbyPage` in place of the lobby while a Duel is on
+  (with the leave dialog, whose copy says leaving forfeits). "Get ready…" during the countdown;
+  then both Seats with their scores (the one whose turn it is outlined), the **turn clock**
+  (`BoardTimer`, red for the last 10 seconds, counting to the server's deadline corrected by
+  `serverNow` — `useBoardClock`), one line saying whose turn it is and what it allows, the shared
+  `AssociationBoard` (clickable only on your turn, and only what the turn allows), the guess box
+  with **Pass**, the last move from either side in one line, and the recent moves. At the end:
+  who won, the whole Board, **Review the duel** (the results page, in a new tab so the lobby
+  stays) and **Back to lobby** for a rematch.
+- **`duel-model.ts`** — the pure helpers (whose turn, the prompt, the outcome from the reader's
+  side, a move in words), tested in `duel-model.test.ts`.
+- **In the lobby**: a Board pick shows "Board · duel for 2", and the Start button follows
+  `startBlockedReason` (`Multiplayer/utils/lobby-start.ts`), which says why it's disabled — e.g.
+  "A board is a duel for exactly 2 players — one too many in the room."
+
+**Checked end to end** (2026-09-25) against the real API on PostgreSQL 16 with two browsers: a
+full Duel (open, wrong Guess hands over, the Final ends it), both players' reviews, a rematch
+opened by the other player, a turn running out at 30 seconds, and a player closing the tab
+forfeiting five seconds later. That run is also what found the disconnect grace had never
+removed anyone (multiplayer.md §3.5).
 
 ## Files
 
@@ -581,7 +736,8 @@ straight into the React Query cache (`useAssociationMoves`); nothing is refetche
 | Guess matching | `Services/Associations/AssociationGuessMatcher.cs` → `Services/Grading/TypeTheAnswerMatcher.cs` |
 | Game tables | `Models/Associations/AssociationGame.cs`, `ConfigureAssociationGames` in `ApplicationDbContext`, migration `20260923212621_AddAssociationGames` |
 | Solo play | `Controllers/Quizzes/AssociationSessionsController.cs`, `Services/Associations/AssociationPlayService.cs`, `AssociationViews.cs`, `Repositories/AssociationGameRepository.cs`, `DTOs/Quiz/AssociationPlayDTOs.cs`, `Common/QuizPlayAccess.cs` |
+| Duel | `Services/Associations/AssociationDuel.cs` (the runner), `AssociationMoveInput.cs` (input checks and refusal sentences shared with Solo), `Services/QuizSessionServices/AssociationMatchOrchestrator.cs` (+ `IAssociationMatchOrchestrator`), `QuizHub` (dispatch, `OpenTile` / `GuessAssociation` / `PassTurn`, forfeits, `DuelState`), `AssociationViews.BuildDuel`, `DuelViewDTO` in `AssociationPlayDTOs.cs`, migration `20260925071707_AddAssociationGameSeatCount`; [ADR 0021](../adr/0021-a-duel-is-forfeited-when-the-lobby-drops-the-player.md) |
 | Classic machinery for Board sessions | `SessionAbandonmentService` (format branch), `QuizSessionService` (delete / discard), `UserStatsService`, `ReportService` |
-| Tests | `QuizAPI.Tests/Associations/*` (incl. `AssociationPlayServiceTests`, `AssociationViewSecrecyTests`, `AssociationLifecycleTests`), `QuizAPI.Tests/Formats/ClassicEntryPointGuardTests.cs`, `PreviewFormatAccessTests.cs`, `Stats/UserStatsServiceTests.cs`; frontend `api/__tests__/association-quiz.test.ts`, `quiz-card/__tests__/card-model.test.ts`, `Associations/board/__tests__/board-model.test.ts`, `Quiz/__tests__/quiz-play-path.test.ts` |
+| Tests | `QuizAPI.Tests/Associations/*` (incl. `AssociationPlayServiceTests`, `AssociationViewSecrecyTests`, `AssociationLifecycleTests`, `AssociationDuelTests`), `QuizAPI.Tests/Multiplayer/*` (`AssociationMatchOrchestratorTests`, `QuizHubDuelTests`, `QuizHubRejoinTests`, `DuelReviewTests`), `QuizAPI.Tests/Formats/ClassicEntryPointGuardTests.cs`, `PreviewFormatAccessTests.cs`, `Stats/UserStatsServiceTests.cs`; frontend `api/__tests__/association-quiz.test.ts`, `quiz-card/__tests__/card-model.test.ts`, `Associations/board/__tests__/board-model.test.ts`, `Associations/duel/__tests__/duel-model.test.ts`, `Multiplayer/utils/__tests__/lobby-start.test.ts`, `context/__tests__/lobby-rejoin.test.ts`, `Quiz/__tests__/quiz-play-path.test.ts` |
 | Frontend — authoring | `QuizFormat` in `src/types/quiz-types.ts`; `src/types/association-types.ts`; `quizSizeLabel` in `quiz-card/card-model.ts`; `api/association-quiz.ts`; `components/Association-Board-Form/`; `quiz-paths.ts`; `components/quiz-view/association-board-preview.tsx` |
-| Frontend — play | `src/pages/Quiz/Associations/` (`api/association-play.ts`, `board/`, `solo/`, `results/`); `src/pages/Quiz/quiz-play-path.ts`; routes in `src/routes/Router.tsx` |
+| Frontend — play | `src/pages/Quiz/Associations/` (`api/association-play.ts`, `board/`, `solo/`, `duel/`, `results/`); `src/pages/Quiz/Multiplayer/utils/lobby-start.ts`; `src/context/lobby-rejoin.ts`; `src/pages/Quiz/quiz-play-path.ts`; routes in `src/routes/Router.tsx` |

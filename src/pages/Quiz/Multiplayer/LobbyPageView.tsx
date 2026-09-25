@@ -30,7 +30,6 @@ export interface LobbyPageViewProps {
   isConnected: boolean;
   isHost: boolean;
   isReady: boolean;
-  allPlayersReady: boolean;
   canStartQuiz: boolean;
   hasSelectedQuiz: boolean;
   selectedQuiz: SelectedQuiz | null;
@@ -92,7 +91,6 @@ export const LobbyPageView = ({
   isConnected,
   isHost,
   isReady,
-  allPlayersReady,
   canStartQuiz,
   hasSelectedQuiz,
   selectedQuiz,
@@ -246,9 +244,9 @@ export const LobbyPageView = ({
                 isHost={isHost}
                 isReady={isReady}
                 canStartQuiz={canStartQuiz}
-                allPlayersReady={allPlayersReady}
                 participants={participants}
                 hasSelectedQuiz={hasSelectedQuiz}
+                selectedQuiz={selectedQuiz}
                 onToggleReady={onToggleReady}
                 onStartQuiz={onStartQuiz}
               />

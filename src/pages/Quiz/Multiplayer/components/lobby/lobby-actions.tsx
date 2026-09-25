@@ -1,14 +1,16 @@
 import { Button } from "@/components/ui/button";
 import { Check, Play, Gamepad2 } from "lucide-react";
-import type { Participant } from "../../hooks/use-lobby-connection";
+import type { Participant, SelectedQuiz } from "../../hooks/use-lobby-connection";
+import { startBlockedReason } from "../../utils/lobby-start";
 
 interface LobbyActionsProps {
   isHost: boolean;
   isReady: boolean;
   canStartQuiz: boolean;
-  allPlayersReady: boolean;
   participants: Participant[];
   hasSelectedQuiz: boolean;
+  /** The pick — its format decides the player count (a Board is a Duel, for exactly 2). */
+  selectedQuiz: SelectedQuiz | null;
   onToggleReady: () => void;
   onStartQuiz: () => void;
 }
@@ -34,9 +36,9 @@ export const LobbyActions = ({
   isHost,
   isReady,
   canStartQuiz,
-  allPlayersReady,
   participants,
   hasSelectedQuiz,
+  selectedQuiz,
   onToggleReady,
   onStartQuiz,
 }: LobbyActionsProps) => {
@@ -72,16 +74,11 @@ export const LobbyActions = ({
     );
   }
 
-  // Why the game can't start yet — shown as text, not as a dead-looking button.
-  const blockedReason = (() => {
-    if (canStartQuiz) return null;
-    if (participants.length < 2) return "Waiting for more players…";
-    if (!allPlayersReady) {
-      const notReady = participants.filter((p) => !p.isReady).length;
-      return `Waiting for ${notReady} ${notReady === 1 ? "player" : "players"} to ready up…`;
-    }
-    return "Waiting to start…";
-  })();
+  // Why the game can't start yet — shown as text, not as a dead-looking button. The same rule
+  // that disables the button (lobby-start.ts), so the two can't disagree; a Board's is exactly 2.
+  const blockedReason = canStartQuiz
+    ? null
+    : (startBlockedReason({ participants, selectedQuiz }) ?? "Waiting to start…");
 
   return (
     <div className="space-y-3">

@@ -19,6 +19,12 @@ namespace QuizAPI.Services.Associations
         /// <summary>The current view. Ends the game as <c>TimeUp</c> first if its deadline has passed.</summary>
         Task<AssociationGameViewDTO> GetAsync(Guid sessionId, Guid userId, bool isAdmin);
 
+        /// <summary>
+        /// The review of a Duel this player played — the one read open to a non-admin while the
+        /// format is in preview (docs/quiz/associations.md §0, §10.6). Anything else is "not found".
+        /// </summary>
+        Task<AssociationGameViewDTO> GetOwnDuelAsync(Guid sessionId, Guid userId);
+
         Task<AssociationMoveResultDTO> OpenTileAsync(Guid sessionId, Guid userId, int tileId);
 
         Task<AssociationMoveResultDTO> GuessAsync(Guid sessionId, Guid userId, string target, string text);
@@ -168,6 +174,20 @@ namespace QuizAPI.Services.Associations
             return Build(loaded, Now());
         }
 
+        public async Task<AssociationGameViewDTO> GetOwnDuelAsync(Guid sessionId, Guid userId)
+        {
+            var session = await _games.GetSessionAsync(sessionId);
+            // A Duel session is a Multiplayer one; checked before loading, so a Solo game — this
+            // player's or anyone's — stays behind the preview gate exactly as before.
+            if (session is null || session.UserId != userId || session.Mode != QuizSessionMode.Multiplayer)
+                throw new NotFoundException(SessionNotFound);
+
+            var loaded = await LoadAsync(session);
+            if (loaded.Game.PlayStyle != PlayStyle.Duel)
+                throw new NotFoundException(SessionNotFound);
+            return Build(loaded, Now());
+        }
+
         // ── Moves ──────────────────────────────────────────────────────────
 
         public Task<AssociationMoveResultDTO> OpenTileAsync(Guid sessionId, Guid userId, int tileId) =>
@@ -175,12 +195,10 @@ namespace QuizAPI.Services.Associations
 
         public Task<AssociationMoveResultDTO> GuessAsync(Guid sessionId, Guid userId, string target, string text)
         {
-            var parsed = ParseTarget(target);
-            var trimmed = (text ?? string.Empty).Trim();
-            if (trimmed.Length == 0)
-                throw new AppValidationException("Type a guess first.");
-            if (trimmed.Length > AssociationGameLimits.MaxGuessLength)
-                throw new AppValidationException($"A guess can be at most {AssociationGameLimits.MaxGuessLength} characters.");
+            if (!AssociationMoveInput.TryParseTarget(target, out var parsed))
+                throw new AppValidationException(AssociationMoveInput.BadTarget);
+            if (AssociationMoveInput.CheckGuess(text, out var trimmed) is string problem)
+                throw new AppValidationException(problem);
 
             return MoveAsync(sessionId, userId, (seat, at) => AssociationMove.Guess(seat, parsed, trimmed, at));
         }
@@ -216,7 +234,7 @@ namespace QuizAPI.Services.Associations
             var outcome = AssociationEngine.Apply(loaded.State, loaded.Key, loaded.Rules, move);
 
             if (!outcome.Accepted)
-                throw new AppValidationException(Describe(outcome.Rejection!.Value));
+                throw new AppValidationException(AssociationMoveInput.Describe(outcome.Rejection!.Value));
 
             var record = new AssociationGameMove
             {
@@ -305,7 +323,12 @@ namespace QuizAPI.Services.Associations
             BoardKey Key,
             AssociationRules Rules,
             AssociationState State,
-            bool SettledNow);
+            bool SettledNow)
+        {
+            /// <summary>A Duel's Seats with names and scores; null for Solo.</summary>
+            public List<DuelSeatDTO>? DuelSeats { get; init; }
+            public int? DuelWinner { get; init; }
+        }
 
         /// <summary>
         /// Loads a session's game and replays it. If the Solo deadline has passed and the game is
@@ -320,7 +343,7 @@ namespace QuizAPI.Services.Associations
             var key = AssociationBoardMapping.ToKey(game.Board);
             var start = game.PlayStyle == PlayStyle.Solo
                 ? AssociationEngine.StartSolo(game.StartedAt, (int)Math.Round((game.DeadlineUtc!.Value - game.StartedAt).TotalSeconds))
-                : AssociationEngine.StartDuel(game.StartedAt, game.Players.Select(p => p.Seat).Distinct().Count(), game.FirstSeat);
+                : AssociationEngine.StartDuel(game.StartedAt, game.SeatCount, game.FirstSeat);
 
             var moves = game.Moves.OrderBy(m => m.Seq).Select(ToEngineMove);
             var serverEnd = game.EndReason is GameEndReason.TimeUp or GameEndReason.Forfeit or GameEndReason.Abandoned
@@ -336,7 +359,49 @@ namespace QuizAPI.Services.Associations
                 settled = true;
             }
 
-            return new Loaded(session, game, key, rules, state, settled);
+            var loaded = new Loaded(session, game, key, rules, state, settled);
+            return game.PlayStyle == PlayStyle.Duel ? await WithDuelSeatsAsync(loaded) : loaded;
+        }
+
+        /// <summary>
+        /// A Duel's Seats, named, and its winner. The winner is the recorded one (the <c>Match</c>),
+        /// not recomputed: a forfeit is won by the player still there whatever the score, and replay
+        /// can't tell who left.
+        /// </summary>
+        private async Task<Loaded> WithDuelSeatsAsync(Loaded loaded)
+        {
+            var game = loaded.Game;
+            var players = await _games.GetPlayersOfSessionsAsync(game.Players.Select(p => p.SessionId).ToList());
+
+            string NameOf(int seat) =>
+                game.Players.FirstOrDefault(p => p.Seat == seat) is { } row
+                && players.TryGetValue(row.SessionId, out var who) && who.Username is string name
+                    ? name
+                    // Their session was deleted (the game is still the other player's record), or
+                    // their account closed: the Seat keeps its score and loses its name.
+                    : "(player left)";
+
+            var seats = Enumerable.Range(0, game.SeatCount).Select(seat => new DuelSeatDTO
+            {
+                Seat = seat,
+                Username = NameOf(seat),
+                Score = loaded.State.Scores[seat],
+            }).ToList();
+
+            int? winner = null;
+            if (game.Match?.WinnerUserId is Guid winnerId)
+            {
+                winner = game.Players.FirstOrDefault(p => players.TryGetValue(p.SessionId, out var who) && who.UserId == winnerId)?.Seat;
+                if (winner is null)
+                {
+                    // The winner's row is gone: with two Seats, it is the one without a row.
+                    var remaining = game.Players.Select(p => p.Seat).ToHashSet();
+                    var missing = Enumerable.Range(0, game.SeatCount).Where(s => !remaining.Contains(s)).ToList();
+                    winner = missing.Count == 1 ? missing[0] : null;
+                }
+            }
+
+            return loaded with { DuelSeats = seats, DuelWinner = winner };
         }
 
         /// <summary>Marks the game and its session finished. <paramref name="at"/> is when it ended — the deadline, for TimeUp.</summary>
@@ -354,34 +419,11 @@ namespace QuizAPI.Services.Associations
 
         private AssociationGameViewDTO Build(Loaded loaded, DateTime now) =>
             AssociationViews.Build(loaded.Session.Id, loaded.Session.QuizId, loaded.Session.Quiz?.Title ?? string.Empty,
-                loaded.Game, loaded.Game.Board, loaded.State, loaded.Rules, now);
+                loaded.Game, loaded.Game.Board, loaded.State, loaded.Rules, now,
+                mySeat: loaded.Game.Players.First(p => p.SessionId == loaded.Session.Id).Seat,
+                seats: loaded.DuelSeats, winnerSeat: loaded.DuelWinner);
 
         private static AssociationMove ToEngineMove(AssociationGameMove m) =>
             new(m.Seat, m.Kind, m.At, m.TileId, m.Target, m.GuessText);
-
-        private static GuessTarget ParseTarget(string target)
-        {
-            // Names only: Enum.TryParse would also accept "4" or "-1".
-            foreach (var name in Enum.GetNames<GuessTarget>())
-                if (string.Equals(name, target?.Trim(), StringComparison.OrdinalIgnoreCase))
-                    return Enum.Parse<GuessTarget>(name);
-            throw new AppValidationException("A guess is for column A, B, C or D, or for the final solution.");
-        }
-
-        /// <summary>What the player is told when the engine refuses a move. Solo can only reach some of these.</summary>
-        private static string Describe(MoveRejection rejection) => rejection switch
-        {
-            MoveRejection.GameOver => "This game is already over.",
-            MoveRejection.UnknownTile => "That tile isn't on this board.",
-            MoveRejection.TileAlreadyOpen => "That tile is already open.",
-            MoveRejection.TargetAlreadySolved => "That one is already solved.",
-            MoveRejection.EmptyGuess => "Type a guess first.",
-            MoveRejection.Malformed => "That move is missing something.",
-            MoveRejection.BoardTimeUp => "Time is up.",
-            MoveRejection.NotYourTurn => "It isn't your turn.",
-            MoveRejection.MustOpenATileFirst => "Open a tile first.",
-            MoveRejection.AlreadyOpenedThisTurn => "You've already opened a tile this turn.",
-            _ => "That move isn't allowed here.",
-        };
     }
 }

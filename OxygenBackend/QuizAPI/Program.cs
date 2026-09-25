@@ -241,6 +241,8 @@ builder.Services.AddSingleton<ILobbyChatArchiver, NoOpLobbyChatArchiver>();
 builder.Services.AddSingleton<IQuizSessionManager, InMemoryQuizSessionManager>();
 // Drives the live multiplayer match loop (singleton: it owns running matches). See docs/plans/multiplayer-phase1.md.
 builder.Services.AddSingleton<IMatchOrchestrator, MatchOrchestrator>();
+// The Associations Duel: its own loop, the same lobby reset (docs/quiz/associations.md §10).
+builder.Services.AddSingleton<IAssociationMatchOrchestrator, AssociationMatchOrchestrator>();
 
 // Business Logic Services
 builder.Services.AddScoped<IAnswerGradingService, AnswerGradingService>();

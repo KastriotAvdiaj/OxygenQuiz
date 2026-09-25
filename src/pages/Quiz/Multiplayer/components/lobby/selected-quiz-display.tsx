@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Gamepad2, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { SelectedQuiz } from "../../hooks/use-lobby-connection";
+import { isDuelPick } from "../../utils/lobby-start";
 
 interface SelectedQuizDisplayProps {
   selectedQuiz: SelectedQuiz | null;
@@ -69,9 +70,12 @@ export const SelectedQuizDisplay = ({
   const chips = [
     selectedQuiz.category,
     selectedQuiz.difficulty,
-    questionCount > 0
-      ? `${questionCount} ${questionCount === 1 ? "question" : "questions"}`
-      : null,
+    // A Board has no questions — it's played as a Duel (docs/quiz/associations.md §10).
+    isDuelPick(selectedQuiz)
+      ? "Board · duel for 2"
+      : questionCount > 0
+        ? `${questionCount} ${questionCount === 1 ? "question" : "questions"}`
+        : null,
   ].filter((chip): chip is string => Boolean(chip));
 
   return (

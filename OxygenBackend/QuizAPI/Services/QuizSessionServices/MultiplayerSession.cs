@@ -90,6 +90,21 @@ namespace QuizAPI.Services.QuizSessionServices
         public ConcurrentDictionary<string, ConcurrentDictionary<int, UserAnswer>> RecordedAnswers
         { get; set; } = new();
 
+        // ── Associations Duel runtime (see AssociationMatchOrchestrator) ──
+
+        /// <summary>
+        /// The Duel being played, or null. Set when a Duel starts and cleared by the shared
+        /// <c>ResetToLobbyAsync</c>, like the Classic fields above.
+        /// </summary>
+        public DuelMatch? Duel { get; set; }
+
+        /// <summary>
+        /// Who opened the last Duel in this lobby, so a rematch between the same two players is
+        /// opened by the other one (D12). Survives the reset on purpose — it is about the lobby's
+        /// history, not the match.
+        /// </summary>
+        public string? LastDuelOpener { get; set; }
+
         /// <summary>Ephemeral lobby chat — a capped buffer of recent messages (in-memory only).</summary>
         public List<LobbyChatMessage> RecentMessages { get; set; } = new();
     }
@@ -129,6 +144,14 @@ namespace QuizAPI.Services.QuizSessionServices
         public string? Category { get; init; }
         public string? Difficulty { get; init; }
         public int? QuestionCount { get; init; }
+
+        /// <summary>
+        /// <c>Classic</c> or <c>Associations</c>. <b>Filled by the server</b> in <c>QuizHub.SelectQuiz</c>
+        /// from the quiz itself — whatever the client sent is overwritten — because the lobby's rules
+        /// follow from it: an Associations quiz is a Duel, for exactly 2 players
+        /// (docs/quiz/multiplayer.md §4.3). Replayed to late joiners with the rest of the pick.
+        /// </summary>
+        public string? Format { get; init; }
     }
 
     public enum QuizState

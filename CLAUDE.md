@@ -102,6 +102,9 @@ Full version, including the two failure modes this project has actually hit:
 - **An Associations game is its move log — never store board state.** Replay the moves under the
   game's `RulesJson` (ADR 0020). Anything that deletes `QuizSession` rows calls
   `IAssociationGameRepository.DeleteGamesOfSessionsAsync` first; the FK restricts it otherwise.
+- **Work that outlives a hub invocation takes an `IServiceScopeFactory`, never the hub's
+  `IServiceProvider`** — that one is the invocation's scope, disposed when it returns. The
+  disconnect grace did this and silently removed nobody (`docs/quiz/multiplayer.md` §3.5).
 - **Validate lookups after the ownership lookup, not before,** for the same reason: failing
   on a bad category id before checking ownership leaks whether the question exists.
 

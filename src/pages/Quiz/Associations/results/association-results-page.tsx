@@ -8,11 +8,13 @@ import type { AssociationGameView } from "@/types/association-types";
 import { associationGameKeys, restartAssociationGame, useAssociationGame } from "../api/association-play";
 import { AssociationBoard } from "../board/association-board";
 import { END_REASON_TEXT, describeMove, elapsedLabel, scoreBreakdown } from "../board/board-model";
+import { DUEL_END_REASON_TEXT, describeDuelMove, duelOutcome } from "../duel/duel-model";
 
 /**
- * `/associations/results/:sessionId` — a finished Solo game: the whole Board revealed, the score
- * line by line, and every move in order. All three come from the same view the game page drew,
- * rebuilt by the server from the move log (docs/quiz/associations.md §9.9, "The screens").
+ * `/associations/results/:sessionId` — a finished game: the whole Board revealed, the score line
+ * by line, and every move in order. All three come from the same view the game page drew, rebuilt
+ * by the server from the move log (docs/quiz/associations.md §9.9). A Duel is reviewed here too,
+ * from the reader's own Seat (§10.6): both scores, who won, and who did what.
  */
 export const AssociationResultsPage = () => {
   const { sessionId = "" } = useParams<{ sessionId: string }>();
@@ -53,14 +55,35 @@ const Results = ({ view }: { view: AssociationGameView }) => {
   });
 
   const rows = scoreBreakdown(view);
+  const isDuel = view.playStyle === "Duel";
+  const nameOf = (seat: number | null) => view.seats.find((s) => s.seat === seat)?.username;
 
   return (
     // The top padding clears the OVERLAY header this route uses, as the Classic results page does.
     <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 pb-6 pt-[calc(var(--header-height,4rem)+1.5rem)]">
       <header className="space-y-1 text-center">
         <p className="text-sm text-muted-foreground">{view.quizTitle}</p>
-        <h1 className="text-2xl font-bold">{view.endReason ? END_REASON_TEXT[view.endReason] : "Game over"}</h1>
-        <p className="text-4xl font-extrabold tabular-nums text-primary">{view.score} pts</p>
+        {isDuel ? (
+          <>
+            <h1 className="text-2xl font-bold">{duelOutcome(view, view.mySeat)}</h1>
+            <p className="text-sm text-muted-foreground">
+              {(view.endReason && DUEL_END_REASON_TEXT[view.endReason]) ?? "Game over"}
+            </p>
+            <p className="text-2xl font-extrabold tabular-nums">
+              {view.seats.map((seat, i) => (
+                <span key={seat.seat} className={cn(seat.seat === view.mySeat && "text-primary")}>
+                  {i > 0 && <span className="px-2 text-muted-foreground">·</span>}
+                  {seat.username} {seat.score}
+                </span>
+              ))}
+            </p>
+          </>
+        ) : (
+          <>
+            <h1 className="text-2xl font-bold">{view.endReason ? END_REASON_TEXT[view.endReason] : "Game over"}</h1>
+            <p className="text-4xl font-extrabold tabular-nums text-primary">{view.score} pts</p>
+          </>
+        )}
       </header>
 
       <AssociationBoard view={view} />
@@ -76,6 +99,7 @@ const Results = ({ view }: { view: AssociationGameView }) => {
                 <span className="min-w-0">
                   <span className="font-medium">{row.label}</span>
                   <span className="text-muted-foreground"> · {row.solution}</span>
+                  {isDuel && row.bySeat !== null && <span className="text-muted-foreground"> · {nameOf(row.bySeat)}</span>}
                 </span>
                 <span
                   className={cn(
@@ -104,7 +128,7 @@ const Results = ({ view }: { view: AssociationGameView }) => {
                 <li key={move.seq} className="flex gap-3">
                   <span className="w-10 shrink-0 tabular-nums text-muted-foreground">{elapsedLabel(view, move.at)}</span>
                   <span className={cn(move.isCorrect === true && "text-quiz-success", move.isCorrect === false && "text-muted-foreground")}>
-                    {describeMove(view, move)}
+                    {isDuel ? describeDuelMove(view, move) : describeMove(view, move)}
                   </span>
                 </li>
               ))}
@@ -114,9 +138,12 @@ const Results = ({ view }: { view: AssociationGameView }) => {
       </div>
 
       <div className="flex flex-wrap justify-center gap-3">
-        <Button onClick={() => playAgain.mutate()} disabled={playAgain.isPending}>
-          <RotateCcw className="mr-1 h-4 w-4" /> Play again
-        </Button>
+        {/* "Play again" restarts a Solo game; a Duel's rematch is in its lobby. */}
+        {!isDuel && (
+          <Button onClick={() => playAgain.mutate()} disabled={playAgain.isPending}>
+            <RotateCcw className="mr-1 h-4 w-4" /> Play again
+          </Button>
+        )}
         <Button asChild variant="outline">
           <Link to="/choose-quiz">Back to quizzes</Link>
         </Button>

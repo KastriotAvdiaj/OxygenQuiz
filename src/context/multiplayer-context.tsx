@@ -3,6 +3,8 @@ import * as signalR from "@microsoft/signalr";
 import { getAccessToken } from "@/lib/token-store";
 import { useUser } from "@/lib/Auth";
 import type { SelectedQuiz } from "@/types/quiz-types";
+import { hubErrorMessage } from "./hub-error";
+import { createLobbyMembership, type LobbyMembership } from "./lobby-rejoin";
 
 /** Stable cause codes mirroring `JoinFailureReason` on the server. */
 export type JoinFailureReason = "not-found" | "full";
@@ -23,21 +25,14 @@ export interface SessionAvailability {
   maxPlayers: number;
 }
 
-/**
- * SignalR surfaces a server-side `HubException` as an Error whose message is the hub's own text,
- * prefixed. Strip the prefix so the UI shows the sentence the server wrote; return the fallback for
- * transport failures, which carry no useful message.
- */
-const hubErrorMessage = (err: unknown, fallback: string): string => {
-  const raw = err instanceof Error ? err.message : "";
-  const cleaned = raw.replace(/^.*HubException:\s*/, "").trim();
-  if (!cleaned || /an unexpected error occurred/i.test(cleaned)) return fallback;
-  return cleaned;
-};
-
 interface MultiplayerContextType {
   connection: signalR.HubConnection | null;
   isConnected: boolean;
+  /**
+   * Set when the connection came back but the lobby refused the automatic rejoin (it was closed,
+   * or filled up) — the server's own message. Cleared by the next successful join.
+   */
+  rejoinError: string | null;
   joinSession: (sessionId: string) => Promise<void>;
   checkSession: (sessionId: string) => Promise<SessionAvailability>;
   leaveSession: (sessionId: string) => Promise<void>;
@@ -53,6 +48,9 @@ export const MultiplayerContext = createContext<MultiplayerContextType | undefin
 export const MultiplayerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [connection, setConnection] = useState<signalR.HubConnection | null>(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [rejoinError, setRejoinError] = useState<string | null>(null);
+  // Which lobby to rejoin after an automatic reconnect — see lobby-rejoin.ts.
+  const membershipRef = useRef<LobbyMembership | null>(null);
   
   // Ref to track if we are currently connected/connecting to avoid re-renders or double connections
   const connectionRef = useRef<signalR.HubConnection | null>(null);
@@ -79,6 +77,16 @@ export const MultiplayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
       .withAutomaticReconnect()
       .build();
 
+    // A reconnect is a new connection id the server doesn't know: rejoin the lobby, or the player
+    // stops hearing it and is dropped from the roster after the 5s grace (multiplayer.md §3.6).
+    membershipRef.current = createLobbyMembership(newConnection, {
+      onRejoined: (id) => console.log("SignalR reconnected; rejoined", id),
+      onRejoinFailed: (_id, message) => setRejoinError(message),
+    });
+    newConnection.onreconnecting(() => setIsConnected(false));
+    newConnection.onreconnected(() => setIsConnected(true));
+    newConnection.onclose(() => setIsConnected(false));
+
     setConnection(newConnection);
     connectionRef.current = newConnection;
 
@@ -92,6 +100,7 @@ export const MultiplayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
     return () => {
       newConnection.stop();
       connectionRef.current = null;
+      membershipRef.current = null;
       setConnection(null);
       setIsConnected(false);
     };
@@ -101,6 +110,8 @@ export const MultiplayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
     if (connectionRef.current && connectionRef.current.state === signalR.HubConnectionState.Connected) {
       try {
          await connectionRef.current.invoke("JoinSession", sessionId);
+         membershipRef.current?.joined(sessionId);
+         setRejoinError(null);
       } catch (err) {
         console.error("Error joining session:", err);
         // Relay the hub's own message. It used to be replaced with a hardcoded "The room may not
@@ -131,6 +142,7 @@ export const MultiplayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const leaveSession = useCallback(async (sessionId: string) => {
     if (connectionRef.current && connectionRef.current.state === signalR.HubConnectionState.Connected) {
         try {
+            membershipRef.current?.left();
             await connectionRef.current.invoke("LeaveSession", sessionId);
         } catch (err) {
             console.error("Error leaving session:", err);
@@ -156,6 +168,7 @@ export const MultiplayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
     if (connectionRef.current && connectionRef.current.state === signalR.HubConnectionState.Connected) {
       try {
         await connectionRef.current.invoke("CreateSession", sessionId, lobbyName, maxPlayers);
+        membershipRef.current?.joined(sessionId);
       } catch (err) {
         console.error("Error creating session:", err);
         throw new Error("Failed to create session. The room code may already exist.");
@@ -206,7 +219,7 @@ export const MultiplayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
   }, []);
 
   return (
-    <MultiplayerContext.Provider value={{ connection, isConnected, joinSession, checkSession, leaveSession, submitAnswer, createSession, selectQuiz, startMatch, sendLobbyMessage }}>
+    <MultiplayerContext.Provider value={{ connection, isConnected, rejoinError, joinSession, checkSession, leaveSession, submitAnswer, createSession, selectQuiz, startMatch, sendLobbyMessage }}>
       {children}
     </MultiplayerContext.Provider>
   );

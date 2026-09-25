@@ -16,7 +16,8 @@ namespace QuizAPI.Controllers.Quizzes
     /// 400, ConflictException → 409) and reach the client through GlobalExceptionHandler.</para>
     ///
     /// <para><b>Admins only while the format is in preview</b> (<see cref="QuizFormatAccess"/>):
-    /// anyone else gets 404 from every route, as from the authoring endpoints. Signed-in only: guest
+    /// anyone else gets 404 from every route, as from the authoring endpoints — except reading the
+    /// review of a Duel they played (an admin may invite anyone to one). Signed-in only: guest
     /// play of Boards comes with the format's release (associations.md, "Guests").</para>
     /// </summary>
     [ApiController]
@@ -58,7 +59,9 @@ namespace QuizAPI.Controllers.Quizzes
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Get(Guid sessionId)
         {
-            if (!MayUseAssociations) return NotFound();
+            // The one exception to the preview gate: a player an admin invited to a Duel may review
+            // it (associations.md §10.6). Only their own, only a Duel — the service's call.
+            if (!MayUseAssociations) return Ok(await _play.GetOwnDuelAsync(sessionId, GetCurrentUserId()));
             return Ok(await _play.GetAsync(sessionId, GetCurrentUserId(), _currentUser.IsAdmin));
         }
 

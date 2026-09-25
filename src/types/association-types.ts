@@ -115,10 +115,19 @@ export type AssociationGameView = {
   inEndgame: boolean;
   /** In the endgame: wrong Guesses still allowed, the next one included. */
   endgameTriesLeft: number | null;
+  /** The reader's Seat: 0 in Solo; 0 or 1 in a Duel. `score` is this Seat's. */
+  mySeat: number;
+  /** A Duel's Seats (names, scores). Empty for Solo. */
+  seats: DuelSeat[];
+  /** A Duel's winner; null on a tie, and for Solo. */
+  winnerSeat: number | null;
   columns: AssociationColumnView[];
   final: AssociationFinalView;
   moves: AssociationMoveView[];
 };
+
+/** What the board component draws — shared by the Solo view and the Duel view. */
+export type AssociationBoardView = Pick<AssociationGameView, "columns" | "final" | "isOver">;
 
 export type AssociationMoveResult = {
   game: AssociationGameView;
@@ -127,4 +136,52 @@ export type AssociationMoveResult = {
   points: number;
   solvedColumns: ColumnLetter[];
   finalSolved: boolean;
+};
+
+// ── Duel (server: DuelViewDTO etc. in AssociationPlayDTOs.cs; docs/quiz/associations.md §10) ──
+//
+// Played over the lobby's SignalR connection. Both players get the same view — nothing in a Duel
+// is private to one Seat — and every event carries all of it, so a missed event is repaired by
+// the next one.
+
+export type DuelSeat = {
+  seat: number;
+  username: string;
+  score: number;
+  /** In the endgame: turns this Seat has left after the one it may be taking. */
+  endgameTurnsLeft?: number | null;
+  /** This player's results page, once the Duel is over and recorded. */
+  sessionId?: string | null;
+};
+
+export type DuelView = {
+  quizId: number;
+  quizTitle: string;
+  seats: DuelSeat[];
+  firstSeat: number;
+  /** Whose turn it is; null once over. */
+  currentSeat: number | null;
+  /** The turn clock's deadline on the server's clock; null once over. */
+  turnDeadlineUtc: string | null;
+  serverNow: string;
+  turnSeconds: number;
+  /** What the Seat whose turn it is may do. */
+  canOpen: boolean;
+  canGuess: boolean;
+  canPass: boolean;
+  inEndgame: boolean;
+  isOver: boolean;
+  endReason: AssociationEndReason | null;
+  winnerSeat: number | null;
+  columns: AssociationColumnView[];
+  final: AssociationFinalView;
+  moves: AssociationMoveView[];
+};
+
+export type DuelUpdate = {
+  /** Null when the server ended the Duel (a forfeit), which is not a move. */
+  move: AssociationMoveView | null;
+  isCorrect: boolean | null;
+  points: number;
+  view: DuelView;
 };

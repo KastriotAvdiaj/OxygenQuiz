@@ -29,10 +29,107 @@ namespace QuizAPI.Services.Associations
             AssociationBoard board,
             AssociationState state,
             AssociationRules rules,
+            DateTime now,
+            int mySeat = 0,
+            List<DuelSeatDTO>? seats = null,
+            int? winnerSeat = null)
+        {
+            var over = state.IsOver;
+            var tileCount = board.Columns.Sum(c => c.Tiles.Count);
+
+            return new AssociationGameViewDTO
+            {
+                SessionId = sessionId,
+                QuizId = quizId,
+                QuizTitle = quizTitle,
+                PlayStyle = state.Style.ToString(),
+                IsOver = over,
+                EndReason = state.EndReason?.ToString(),
+                StartedAt = game.StartedAt,
+                EndedAt = game.EndedAt,
+                DeadlineUtc = game.DeadlineUtc,
+                ServerNow = now,
+                BoardSeconds = game.DeadlineUtc is DateTime deadline
+                    ? (int)Math.Round((deadline - game.StartedAt).TotalSeconds)
+                    : 0,
+                Score = state.Scores.IsDefaultOrEmpty ? 0 : state.Scores[mySeat],
+                MySeat = mySeat,
+                Seats = seats ?? new List<DuelSeatDTO>(),
+                WinnerSeat = over ? winnerSeat : null,
+                // What the player may do next — the engine's phase, said plainly so the screen never
+                // has to re-derive a rule (docs/quiz/associations.md §3.2).
+                CanOpen = !over && state.OpenTiles.Count < tileCount,
+                CanGuess = !over && state.Phase == TurnPhase.MayGuess,
+                InEndgame = !over && state.InEndgame,
+                EndgameTriesLeft = !over && state.InEndgame
+                    ? Math.Max(0, rules.EndgameTurnsPerSeat - state.EndgameTurnsTaken[state.CurrentSeat] + 1)
+                    : null,
+                Columns = BuildColumns(game, board, state),
+                Final = BuildFinal(board, state),
+                Moves = game.Moves.OrderBy(m => m.Seq).Select(BuildMove).ToList(),
+            };
+        }
+
+        /// <summary>
+        /// A Duel's view — the same for both players, since nothing in a Duel is private to one Seat
+        /// (D15: even wrong Guesses are shown). <paramref name="winnerSeat"/> is the caller's, because a
+        /// forfeit decides it and replay can't.
+        /// </summary>
+        public static DuelViewDTO BuildDuel(
+            int quizId,
+            string quizTitle,
+            AssociationGame game,
+            AssociationBoard board,
+            AssociationState state,
+            AssociationRules rules,
+            IReadOnlyList<string> usernamesBySeat,
+            int? winnerSeat,
+            IReadOnlyList<Guid>? sessionIdsBySeat,
             DateTime now)
         {
             var over = state.IsOver;
             var tileCount = board.Columns.Sum(c => c.Tiles.Count);
+            var mayGuess = !over && state.Phase == TurnPhase.MayGuess;
+
+            return new DuelViewDTO
+            {
+                QuizId = quizId,
+                QuizTitle = quizTitle,
+                FirstSeat = game.FirstSeat,
+                Seats = Enumerable.Range(0, state.SeatCount).Select(seat => new DuelSeatDTO
+                {
+                    Seat = seat,
+                    Username = seat < usernamesBySeat.Count ? usernamesBySeat[seat] : string.Empty,
+                    Score = state.Scores[seat],
+                    EndgameTurnsLeft = !over && state.InEndgame
+                        ? Math.Max(0, rules.EndgameTurnsPerSeat - state.EndgameTurnsTaken[seat])
+                        : null,
+                    SessionId = over && sessionIdsBySeat is not null && seat < sessionIdsBySeat.Count
+                        ? sessionIdsBySeat[seat]
+                        : null,
+                }).ToList(),
+                CurrentSeat = over ? null : state.CurrentSeat,
+                TurnDeadlineUtc = over ? null : state.TurnDeadline(rules),
+                ServerNow = now,
+                TurnSeconds = rules.DuelTurnSeconds,
+                CanOpen = !over && state.Phase == TurnPhase.MustOpen && state.OpenTiles.Count < tileCount,
+                CanGuess = mayGuess,
+                CanPass = mayGuess,
+                InEndgame = !over && state.InEndgame,
+                IsOver = over,
+                EndReason = state.EndReason?.ToString(),
+                WinnerSeat = over ? winnerSeat : null,
+                Columns = BuildColumns(game, board, state),
+                Final = BuildFinal(board, state),
+                Moves = game.Moves.OrderBy(m => m.Seq).Select(BuildMove).ToList(),
+            };
+        }
+
+        // ── The pieces both views share: what is hidden is decided here and only here ──
+
+        private static List<AssociationColumnViewDTO> BuildColumns(AssociationGame game, AssociationBoard board, AssociationState state)
+        {
+            var over = state.IsOver;
 
             // Who opened a Tile by hand. Tiles a solve revealed have no opener.
             var openedBy = game.Moves
@@ -40,7 +137,7 @@ namespace QuizAPI.Services.Associations
                 .GroupBy(m => m.TileId!.Value)
                 .ToDictionary(g => g.Key, g => g.First().Seat);
 
-            var columns = board.Columns.OrderBy(c => c.Position).Select(column =>
+            return board.Columns.OrderBy(c => c.Position).Select(column =>
             {
                 var letter = (ColumnLetter)column.Position;
                 state.SolvedColumns.TryGetValue(letter, out var solve);
@@ -67,52 +164,27 @@ namespace QuizAPI.Services.Associations
                     }).ToList(),
                 };
             }).ToList();
-
-            return new AssociationGameViewDTO
-            {
-                SessionId = sessionId,
-                QuizId = quizId,
-                QuizTitle = quizTitle,
-                PlayStyle = state.Style.ToString(),
-                IsOver = over,
-                EndReason = state.EndReason?.ToString(),
-                StartedAt = game.StartedAt,
-                EndedAt = game.EndedAt,
-                DeadlineUtc = game.DeadlineUtc,
-                ServerNow = now,
-                BoardSeconds = game.DeadlineUtc is DateTime deadline
-                    ? (int)Math.Round((deadline - game.StartedAt).TotalSeconds)
-                    : 0,
-                Score = state.Scores.IsDefaultOrEmpty ? 0 : state.Scores[0],
-                // What the player may do next — the engine's phase, said plainly so the screen never
-                // has to re-derive a rule (docs/quiz/associations.md §3.2).
-                CanOpen = !over && state.OpenTiles.Count < tileCount,
-                CanGuess = !over && state.Phase == TurnPhase.MayGuess,
-                InEndgame = !over && state.InEndgame,
-                EndgameTriesLeft = !over && state.InEndgame
-                    ? Math.Max(0, rules.EndgameTurnsPerSeat - state.EndgameTurnsTaken[state.CurrentSeat] + 1)
-                    : null,
-                Columns = columns,
-                Final = new AssociationFinalViewDTO
-                {
-                    Solved = state.IsFinalSolved,
-                    Solution = state.IsFinalSolved || over ? board.FinalSolution : null,
-                    Points = state.IsFinalSolved ? state.FinalPoints : null,
-                    SolvedBySeat = state.FinalSolvedBy,
-                },
-                Moves = game.Moves.OrderBy(m => m.Seq).Select(m => new AssociationMoveViewDTO
-                {
-                    Seq = m.Seq,
-                    Seat = m.Seat,
-                    Kind = m.Kind.ToString(),
-                    TileId = m.TileId,
-                    Target = m.Target?.ToString(),
-                    GuessText = m.GuessText,
-                    IsCorrect = m.IsCorrect,
-                    Points = m.Points,
-                    At = m.At,
-                }).ToList(),
-            };
         }
+
+        private static AssociationFinalViewDTO BuildFinal(AssociationBoard board, AssociationState state) => new()
+        {
+            Solved = state.IsFinalSolved,
+            Solution = state.IsFinalSolved || state.IsOver ? board.FinalSolution : null,
+            Points = state.IsFinalSolved ? state.FinalPoints : null,
+            SolvedBySeat = state.FinalSolvedBy,
+        };
+
+        internal static AssociationMoveViewDTO BuildMove(AssociationGameMove m) => new()
+        {
+            Seq = m.Seq,
+            Seat = m.Seat,
+            Kind = m.Kind.ToString(),
+            TileId = m.TileId,
+            Target = m.Target?.ToString(),
+            GuessText = m.GuessText,
+            IsCorrect = m.IsCorrect,
+            Points = m.Points,
+            At = m.At,
+        };
     }
 }

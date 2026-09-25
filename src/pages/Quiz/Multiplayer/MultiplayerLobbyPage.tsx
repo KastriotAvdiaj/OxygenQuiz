@@ -9,6 +9,9 @@ import { QuizSelectionDialog } from "./components/lobby/quiz-selection-dialog";
 import { LobbyChat } from "./components/lobby/lobby-chat";
 import { LeaveLobbyDialog } from "./components/lobby/leave-lobby-dialog";
 import { LobbyPageView } from "./LobbyPageView";
+import { useAssociationMatch } from "../Associations/duel/use-association-match";
+import { DuelGame } from "../Associations/duel/duel-game";
+import { mySeatIn } from "../Associations/duel/duel-model";
 
 interface MultiplayerLobbyPageProps {
   mode?: "create" | "join";
@@ -30,7 +33,6 @@ export const MultiplayerLobbyPage = ({
     isConnected,
     isHost,
     isReady,
-    allPlayersReady,
     canStartQuiz,
     hasSelectedQuiz,
     selectedQuiz,
@@ -97,6 +99,37 @@ export const MultiplayerLobbyPage = ({
   // Live match state (driven by server events). When a match is running we replace the lobby
   // UI with the game view; exiting returns to the lobby so players can play again.
   const match = useMatch({ sessionId, username });
+  // The Associations Duel, when the pick is a Board (docs/quiz/associations.md §10). Its own hook
+  // and its own events — the two never both run, and never share an event name.
+  const duel = useAssociationMatch(sessionId);
+  if (duel.isActive) {
+    return (
+      <>
+        <DuelGame
+          phase={duel.phase}
+          countdownSeconds={duel.countdownSeconds}
+          view={duel.view}
+          receivedAtMs={duel.receivedAtMs}
+          lastUpdate={duel.lastUpdate}
+          mySeat={duel.view ? mySeatIn(duel.view, username) : null}
+          onOpenTile={duel.openTile}
+          onGuess={duel.guess}
+          onPass={duel.pass}
+          onExit={duel.reset}
+        />
+        {/* Every render branch needs the leave dialog — see the note in the Classic branch. */}
+        <LeaveLobbyDialog
+          isOpen={showLeaveDialog}
+          isHost={isHost}
+          inMatch
+          inDuel={duel.phase !== "ended"}
+          onConfirm={confirmNavigation}
+          onCancel={cancelNavigation}
+        />
+      </>
+    );
+  }
+
   if (match.isActive) {
     return (
       <>
@@ -140,7 +173,6 @@ export const MultiplayerLobbyPage = ({
       isConnected={isConnected}
       isHost={isHost}
       isReady={isReady}
-      allPlayersReady={allPlayersReady}
       canStartQuiz={canStartQuiz}
       hasSelectedQuiz={hasSelectedQuiz}
       selectedQuiz={selectedQuiz}

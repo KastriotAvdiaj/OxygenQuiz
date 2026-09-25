@@ -1,14 +1,14 @@
 import { cn } from "@/utils/cn";
 import type {
+  AssociationBoardView,
   AssociationColumnView,
-  AssociationGameView,
   AssociationTileView,
   GuessTarget,
 } from "@/types/association-types";
 
 /**
- * The Associations board, drawn from a server view — used by Solo play and by the results
- * review (and, in Phase 5, the Duel). It never calls the API: a click on a closed Tile or on a
+ * The Associations board, drawn from a server view — used by Solo play, the Duel and the results
+ * review. It never calls the API: a click on a closed Tile or on a
  * solution slot goes up through a callback, and the new view comes back down (the play stack's
  * golden rule, docs/quiz/quiz-playing-architecture.md §1).
  *
@@ -16,7 +16,7 @@ import type {
  * Tile has no text to show (docs/quiz/associations.md, "What the client sees").
  */
 export type AssociationBoardProps = {
-  view: AssociationGameView;
+  view: AssociationBoardView;
   /** The solution slot the guess box is aimed at — outlined. */
   target?: GuessTarget | null;
   onOpenTile?: (tileId: number) => void;

@@ -33,6 +33,9 @@ function view(overrides: Partial<AssociationGameView> = {}): AssociationGameView
     canGuess: false,
     inEndgame: false,
     endgameTriesLeft: null,
+    mySeat: 0,
+    seats: [],
+    winnerSeat: null,
     columns: letters.map((letter, c) => ({
       letter,
       tiles: [0, 1, 2, 3].map((position) => ({

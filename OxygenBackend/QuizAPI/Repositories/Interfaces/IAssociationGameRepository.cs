@@ -35,6 +35,16 @@ namespace QuizAPI.Repositories.Interfaces
         void AddGame(AssociationGame game);
         void AddMove(AssociationGameMove move);
 
+        /// <summary>A Duel's multiplayer match header — written with its sessions and game in one save.</summary>
+        void AddMatch(Match match);
+
+        /// <summary>
+        /// Who played each of these sessions: the account id, and its username — null when the
+        /// account is no longer visible (closed). For naming a Duel's Seats in its review.
+        /// </summary>
+        Task<Dictionary<Guid, (Guid UserId, string? Username)>> GetPlayersOfSessionsAsync(
+            IReadOnlyCollection<Guid> sessionIds, CancellationToken ct = default);
+
         /// <summary>
         /// Ends every still-running game played by these sessions and saves: <c>TimeUp</c> if its
         /// deadline had passed at <paramref name="at"/>, otherwise <c>Abandoned</c>. For the

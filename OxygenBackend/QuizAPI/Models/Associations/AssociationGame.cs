@@ -6,7 +6,7 @@ using QuizAPI.Services.Associations;
 namespace QuizAPI.Models.Associations
 {
     /// <summary>
-    /// One Board being played — by one player (Solo) or by two taking turns (Duel, Phase 5).
+    /// One Board being played — by one player (Solo) or by two taking turns (Duel).
     /// See docs/quiz/associations.md, "Playing".
     ///
     /// <para><b>The move log is the source of truth</b>
@@ -39,6 +39,14 @@ namespace QuizAPI.Models.Associations
         /// it, because the engine's start state depends on it. Always 0 for Solo.
         /// </summary>
         public int FirstSeat { get; set; }
+
+        /// <summary>
+        /// How many Seats take turns: 1 for Solo, 2 for a Duel. Replay needs it for the same reason it
+        /// needs <see cref="FirstSeat"/> — turn order is <c>(seat + 1) % seatCount</c> — and it can't be
+        /// counted from <see cref="Players"/>: deleting one Duel player's session removes their row
+        /// and leaves the game, which is still the other player's record.
+        /// </summary>
+        public int SeatCount { get; set; } = 1;
 
         /// <summary>App clock, never SQL <c>now()</c> — the deadline is computed from it.</summary>
         public DateTime StartedAt { get; set; }

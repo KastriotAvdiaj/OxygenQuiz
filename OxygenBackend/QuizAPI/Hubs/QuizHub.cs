@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using QuizAPI.Controllers.Quizzes.Services.QuizServices;
 using QuizAPI.Data;
 using QuizAPI.Hubs.Clients;
+using QuizAPI.Services.Associations;
 using QuizAPI.Services.Interfaces;
 using QuizAPI.Services.QuizSessionServices;
 
@@ -15,17 +16,31 @@ namespace QuizAPI.Hubs;
 public class QuizHub : Hub<IQuizClient>
 {
     private readonly IQuizSessionManager _sessionManager;
-    private readonly IServiceProvider _serviceProvider;
+    /// <summary>
+    /// A factory, not the hub's own <c>IServiceProvider</c>: that one is the invocation's scope and
+    /// is disposed as soon as the invocation returns — which the disconnect grace, 5 seconds
+    /// later, used to find out by throwing (multiplayer.md §3.5).
+    /// </summary>
+    private readonly IServiceScopeFactory _scopes;
+    private readonly TimeProvider _clock;
+    private readonly ILogger<QuizHub> _logger;
     private readonly IMatchOrchestrator _matchOrchestrator;
+    private readonly IAssociationMatchOrchestrator _duels;
 
     public QuizHub(
         IQuizSessionManager sessionManager,
-        IServiceProvider serviceProvider,
-        IMatchOrchestrator matchOrchestrator)
+        IServiceScopeFactory scopes,
+        IMatchOrchestrator matchOrchestrator,
+        IAssociationMatchOrchestrator duels,
+        TimeProvider clock,
+        ILogger<QuizHub> logger)
     {
+        _logger = logger;
         _sessionManager = sessionManager;
-        _serviceProvider = serviceProvider;
+        _scopes = scopes;
+        _clock = clock;
         _matchOrchestrator = matchOrchestrator;
+        _duels = duels;
     }
 
     // The participant's identity is ALWAYS the authenticated account — never trusted from the
@@ -46,6 +61,10 @@ public class QuizHub : Hub<IQuizClient>
             : throw new HubException("You must be logged in.");
     }
 
+    // Same test as CurrentUserService.IsAdmin — the hub has the same principal, not an HttpContext.
+    private bool IsAdmin() =>
+        Context.User?.IsInRole("Admin") == true || Context.User?.IsInRole("SuperAdmin") == true;
+
     /// <summary>
     /// The authenticated account's avatar URL (null when none is set). Looked up once per
     /// join/create so participant lists can render real profile images.
@@ -53,7 +72,7 @@ public class QuizHub : Hub<IQuizClient>
     private async Task<string?> GetProfileImageUrlAsync()
     {
         var userId = GetUserId();
-        using var scope = _serviceProvider.CreateScope();
+        using var scope = _scopes.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         return await db.Users
             .Where(u => u.Id == userId)
@@ -81,6 +100,12 @@ public class QuizHub : Hub<IQuizClient>
         //    This runs BEFORE the group add on purpose: it's the step that can reject the join, and
         //    a connection added to the group first would stay subscribed to that group's broadcasts
         //    after the failure.
+        // Already in the roster means this is the same person coming back on a new connection —
+        // a page refresh, the host's second join after CreateSession, or the client's automatic
+        // rejoin after a reconnect (docs/quiz/multiplayer.md §3.6). Everyone already has them.
+        var isRejoin = (await _sessionManager.GetParticipantsAsync(sessionId))
+            .Any(p => p.Username == username);
+
         Participant participant;
         try
         {
@@ -103,7 +128,11 @@ public class QuizHub : Hub<IQuizClient>
 
         // 4. Broadcast to others that user joined (avatar included so existing
         //    clients can render it without a refetch)
-        await Clients.Group(sessionId).UserJoined(username, participant.IsHost, participant.ProfileImageUrl);
+        //    Not for a rejoin: the others never saw them leave (UserLeft is sent only when the
+        //    participant record goes), so announcing them again would toast "X joined the lobby"
+        //    at the room for a network blip.
+        if (!isRejoin)
+            await Clients.Group(sessionId).UserJoined(username, participant.IsHost, participant.ProfileImageUrl);
 
         // 5. Send CURRENT participants to the NEW user
         var currentParticipants = await _sessionManager.GetParticipantsAsync(sessionId);
@@ -130,6 +159,12 @@ public class QuizHub : Hub<IQuizClient>
         //    to be found.
         var visibleMessages = await _sessionManager.GetMessagesSinceJoinAsync(sessionId, username);
         await Clients.Caller.ChatHistory(visibleMessages);
+
+        // 7. A Duel in progress is announced only by broadcasts, so a player arriving — or coming
+        //    back after a reconnect, which is the case that matters — gets the board as it stands
+        //    (the late-joiner rule, docs/quiz/multiplayer.md §2).
+        if (await _duels.CurrentViewAsync(sessionId) is { } duel)
+            await Clients.Caller.DuelState(duel);
     }
 
     // Ephemeral lobby chat. Available only while the session is in the lobby (not mid-match).
@@ -171,6 +206,9 @@ public class QuizHub : Hub<IQuizClient>
         Context.Items.Remove("Username");
 
         await Clients.Group(sessionId).UserLeft(username);
+
+        // Leaving mid-Duel is a forfeit (D10). A no-op when no Duel is on or they aren't seated.
+        await _duels.PlayerLeftAsync(sessionId, username);
         
         // If host left, notify about new host
         if (wasHost)
@@ -182,6 +220,9 @@ public class QuizHub : Hub<IQuizClient>
             }
         }
     }
+
+    /// <summary>How long a dropped connection has to come back before the player is removed (multiplayer.md §3.5).</summary>
+    private static readonly TimeSpan DisconnectGrace = TimeSpan.FromSeconds(5);
 
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
@@ -196,33 +237,47 @@ public class QuizHub : Hub<IQuizClient>
             if (!string.IsNullOrEmpty(sessionId) && !string.IsNullOrEmpty(username))
             {
                 // Use a background task to delay participant removal, granting a 5s grace period for page refreshes
+                // Fire-and-forget, so a failure in here reaches nobody unless it is logged: this
+                // path once threw on every disconnect without a trace (multiplayer.md §3.5).
                 _ = Task.Run(async () =>
                 {
-                    await Task.Delay(5000); 
-
-                    using var scope = _serviceProvider.CreateScope();
-                    var sessionManager = scope.ServiceProvider.GetRequiredService<IQuizSessionManager>();
-                    var hubContext = scope.ServiceProvider.GetRequiredService<IHubContext<QuizHub, IQuizClient>>();
-
-                    var participants = await sessionManager.GetParticipantsAsync(sessionId);
-                    var p = participants.FirstOrDefault(x => x.Username == username);
-                    
-                    // Only remove if they exist and still have the OLD connection ID (meaning they didn't reconnect)
-                    if (p != null && p.ConnectionId == connectionId)
+                    try
                     {
-                        var wasHost = await sessionManager.IsHostAsync(sessionId, username);
-                        
-                        await sessionManager.RemoveParticipantAsync(sessionId, username);
-                        await hubContext.Clients.Group(sessionId).UserLeft(username);
-                        
-                        if (wasHost)
+                        await Task.Delay(DisconnectGrace, _clock);
+
+                        using var scope = _scopes.CreateScope();
+                        var sessionManager = scope.ServiceProvider.GetRequiredService<IQuizSessionManager>();
+                        var hubContext = scope.ServiceProvider.GetRequiredService<IHubContext<QuizHub, IQuizClient>>();
+
+                        var participants = await sessionManager.GetParticipantsAsync(sessionId);
+                        var p = participants.FirstOrDefault(x => x.Username == username);
+                    
+                        // Only remove if they exist and still have the OLD connection ID (meaning they didn't reconnect)
+                        if (p != null && p.ConnectionId == connectionId)
                         {
-                            var newHostUsername = await sessionManager.GetHostUsernameAsync(sessionId);
-                            if (newHostUsername != null)
+                            var wasHost = await sessionManager.IsHostAsync(sessionId, username);
+                        
+                            await sessionManager.RemoveParticipantAsync(sessionId, username);
+                            await hubContext.Clients.Group(sessionId).UserLeft(username);
+
+                            // Gone for good (they didn't reconnect within the grace): a Duel they were
+                            // seated in is forfeited, the same as leaving on purpose.
+                            var duels = scope.ServiceProvider.GetRequiredService<IAssociationMatchOrchestrator>();
+                            await duels.PlayerLeftAsync(sessionId, username);
+                        
+                            if (wasHost)
                             {
-                                await hubContext.Clients.Group(sessionId).HostChanged(newHostUsername);
+                                var newHostUsername = await sessionManager.GetHostUsernameAsync(sessionId);
+                                if (newHostUsername != null)
+                                {
+                                    await hubContext.Clients.Group(sessionId).HostChanged(newHostUsername);
+                                }
                             }
                         }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Removing {Username} from lobby {SessionId} after a disconnect failed.", username, sessionId);
                     }
                 });
             }
@@ -271,12 +326,47 @@ public class QuizHub : Hub<IQuizClient>
         if (!await _sessionManager.IsHostAsync(sessionId, username))
             throw new HubException("Only the host can start the match.");
 
+        // Dispatch by format. SelectedQuiz.Format is the server's own (SelectQuiz fills it from the
+        // quiz), so it can be trusted here; each orchestrator re-checks the quiz anyway.
+        var session = await _sessionManager.GetSessionAsync(sessionId);
+        var isBoard = session?.SelectedQuiz?.Format == nameof(QuizAPI.Models.Quiz.QuizFormat.Associations);
+
         try
         {
-            await _matchOrchestrator.StartMatchAsync(sessionId);
+            if (isBoard)
+                await _duels.StartMatchAsync(sessionId);
+            else
+                await _matchOrchestrator.StartMatchAsync(sessionId);
         }
         catch (InvalidOperationException ex)
         {
+            throw new HubException(ex.Message);
+        }
+    }
+
+    // ── Associations Duel moves (docs/quiz/associations.md §10) ──
+    // The player is the signed-in account, never a parameter. Whose turn it is, and whether the
+    // move is legal, is the Duel runner's call; a refusal reaches the player as its sentence.
+
+    public Task OpenTile(string sessionId, int tileId) =>
+        DuelMove(() => _duels.OpenTileAsync(sessionId, GetUsername(), tileId));
+
+    public Task GuessAssociation(string sessionId, string target, string text) =>
+        DuelMove(() => _duels.GuessAsync(sessionId, GetUsername(), target, text));
+
+    public Task PassTurn(string sessionId) =>
+        DuelMove(() => _duels.PassAsync(sessionId, GetUsername()));
+
+    private static async Task DuelMove(Func<Task> move)
+    {
+        try
+        {
+            await move();
+        }
+        catch (DuelMoveException ex)
+        {
+            // A move from the wrong Seat is a bug in the other client worth seeing, not something
+            // to drop silently (docs/quiz/associations.md §10.3) — and a late one is worth telling the player about.
             throw new HubException(ex.Message);
         }
     }
@@ -337,19 +427,31 @@ public class QuizHub : Hub<IQuizClient>
             throw new HubException("Invalid quiz.");
 
         var hostUserId = GetUserId();
-        using (var scope = _serviceProvider.CreateScope())
+        using (var scope = _scopes.CreateScope())
         {
             var quizService = scope.ServiceProvider.GetRequiredService<IQuizService>();
             if (!await quizService.CanHostQuizAsync(parsedQuizId, hostUserId))
                 throw new HubException("You can't host this quiz.");
 
-            // The match loop is Classic (MatchOrchestrator). Associations duels get their own
-            // orchestrator and a dispatch on format here (docs/quiz/associations.md §2); until
-            // then a board is refused at selection rather than at start, so the lobby never shows a
-            // pick it can't play.
-            var format = await quizService.GetFormatAsync(parsedQuizId);
-            if (format is not null && format != QuizAPI.Models.Quiz.QuizFormat.Classic)
-                throw new HubException("Associations quizzes can't be played in a lobby yet.");
+            // A board is played as a Duel (StartMatch dispatches on this). While the format is in
+            // preview only an admin may host one — refused with the same sentence as a quiz they
+            // can't host at all, so a player learns nothing about what the id is
+            // (docs/quiz/associations.md §0).
+            var format = await quizService.GetFormatAsync(parsedQuizId) ?? QuizAPI.Models.Quiz.QuizFormat.Classic;
+            if (!QuizAPI.Common.QuizFormatAccess.IsAvailableTo(format, IsAdmin()))
+                throw new HubException("You can't host this quiz.");
+
+            // The format is the server's, whatever the payload said: the lobby's rules follow from
+            // it (a board needs exactly 2 players), so it must not be the client's to choose.
+            quiz = new SelectedQuizView
+            {
+                Id = quiz.Id,
+                Title = quiz.Title,
+                Category = quiz.Category,
+                Difficulty = quiz.Difficulty,
+                QuestionCount = quiz.QuestionCount,
+                Format = format.ToString(),
+            };
         }
 
         // Set quiz. The whole payload is stored, not just the id, so JoinSession can replay it

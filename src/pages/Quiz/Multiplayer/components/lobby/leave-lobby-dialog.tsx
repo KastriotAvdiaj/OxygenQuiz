@@ -20,6 +20,11 @@ interface LeaveLobbyDialogProps {
    * server while you're away, so leaving costs points rather than nothing.
    */
   inMatch?: boolean;
+  /**
+   * The match is an Associations Duel: leaving is a forfeit — the opponent wins, whatever the
+   * score (docs/adr/0021-a-duel-is-forfeited-when-the-lobby-drops-the-player.md).
+   */
+  inDuel?: boolean;
 }
 
 export const LeaveLobbyDialog = ({
@@ -28,6 +33,7 @@ export const LeaveLobbyDialog = ({
   onConfirm,
   onCancel,
   inMatch = false,
+  inDuel = false,
 }: LeaveLobbyDialogProps) => {
   return (
     <Dialog open={isOpen} onOpenChange={() => onCancel()}>
@@ -49,7 +55,9 @@ export const LeaveLobbyDialog = ({
             </div>
 
             <DialogDescription className="text-sm text-muted-foreground leading-relaxed font-quiz">
-              {inMatch
+              {inDuel
+                ? "The duel is still on. Leaving now forfeits it: your opponent wins, whatever the score."
+                : inMatch
                 ? isHost
                   ? "The match is still running. Leaving now forfeits your remaining questions, and as host it will end the match for everyone."
                   : "The match is still running. The clock keeps going without you, so any questions left will be scored as unanswered."

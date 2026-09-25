@@ -1,3 +1,4 @@
+using QuizAPI.DTOs.Quiz;
 using QuizAPI.Services.QuizSessionServices;
 
 namespace QuizAPI.Hubs.Clients;
@@ -22,6 +23,18 @@ public interface IQuizClient
     Task QuestionStarted(RoundQuestionView question, DateTime deadlineUtc);
     Task QuestionEnded(QuestionResult result);
     Task MatchEnded(MatchResult result);
+
+    // ── Associations Duel (server-driven; see AssociationMatchOrchestrator) ──
+    // Own names, never a Classic one: connection.off(name) on the client removes every handler for
+    // that name, so the Duel's hook and useMatch must not share an event (multiplayer.md §1).
+    Task DuelStarting(int countdownSeconds);
+    Task DuelStarted(DuelViewDTO view);
+    /// <summary>A move was made (or the turn clock ran out, or someone forfeited).</summary>
+    Task DuelUpdated(DuelUpdateDTO update);
+    /// <summary>The Duel is over and recorded; the view carries each player's results link.</summary>
+    Task DuelEnded(DuelViewDTO view);
+    /// <summary>Catch-up for a player who (re)joins while a Duel is on — sent to that caller only.</summary>
+    Task DuelState(DuelViewDTO view);
 
     // ── Lobby chat (ephemeral) ──
     Task ChatMessageReceived(LobbyChatMessage message);

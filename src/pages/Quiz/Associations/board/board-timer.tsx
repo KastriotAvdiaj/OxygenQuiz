@@ -4,17 +4,28 @@ import { formatClock } from "./board-model";
 /**
  * The Solo board clock, big enough to play against: the time left, and a bar that empties with
  * it. It only draws — the countdown is `useBoardClock`'s, and the deadline is the server's.
- * Turns destructive in the last 30 seconds.
+ * Turns destructive in the last `lowAtMs` (30 seconds by default — a Duel turn, itself 30s, uses 10).
+ * Also the Duel's turn clock.
  */
-export const BoardTimer = ({ remainingMs, totalSeconds }: { remainingMs: number; totalSeconds: number }) => {
-  const low = remainingMs <= 30_000;
+export const BoardTimer = ({
+  remainingMs,
+  totalSeconds,
+  lowAtMs = 30_000,
+  label = "Time left",
+}: {
+  remainingMs: number;
+  totalSeconds: number;
+  lowAtMs?: number;
+  label?: string;
+}) => {
+  const low = remainingMs <= lowAtMs;
   const fraction = totalSeconds > 0 ? Math.min(1, remainingMs / (totalSeconds * 1000)) : 0;
 
   return (
     <div className="flex flex-col items-center gap-2">
       <span
         role="timer"
-        aria-label="Time left"
+        aria-label={label}
         className={cn(
           "text-3xl font-bold tabular-nums tracking-tight sm:text-4xl",
           low ? "text-destructive" : "text-foreground"

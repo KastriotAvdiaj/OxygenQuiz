@@ -1,4 +1,5 @@
 import type {
+  AssociationBoardView,
   AssociationEndReason,
   AssociationGameView,
   AssociationMoveView,
@@ -34,7 +35,7 @@ export function formatClock(ms: number): string {
 }
 
 /** "B3" — a Tile's name on the board: its Column's letter and its 1-based position. */
-export function tileLabel(view: AssociationGameView, tileId: number): string {
+export function tileLabel(view: Pick<AssociationBoardView, "columns">, tileId: number): string {
   for (const column of view.columns) {
     const tile = column.tiles.find((t) => t.id === tileId);
     if (tile) return `${column.letter}${tile.position + 1}`;
@@ -47,7 +48,7 @@ export function targetLabel(target: GuessTarget): string {
 }
 
 /** Whether a Guess at this target can still be made: not solved, and the game still running. */
-export function isOpenTarget(view: AssociationGameView, target: GuessTarget): boolean {
+export function isOpenTarget(view: AssociationBoardView, target: GuessTarget): boolean {
   if (view.isOver) return false;
   if (target === "Final") return !view.final.solved;
   return !view.columns.find((c) => c.letter === target)?.solved;
@@ -67,6 +68,8 @@ export type BreakdownRow = {
   solution: string | null;
   points: number;
   how: "guessed" | "with the final" | "unsolved";
+  /** Who solved it — in a Duel, Columns split between the players. Null when unsolved. */
+  bySeat: number | null;
 };
 
 /**
@@ -82,6 +85,7 @@ export function scoreBreakdown(view: AssociationGameView): (BreakdownRow & { cou
     points: column.points ?? 0,
     how: !column.solved ? ("unsolved" as const) : column.viaFinal ? ("with the final" as const) : ("guessed" as const),
     countsTowardScore: column.solved && !column.viaFinal,
+    bySeat: column.solvedBySeat,
   }));
   return [
     ...columns,
@@ -91,6 +95,7 @@ export function scoreBreakdown(view: AssociationGameView): (BreakdownRow & { cou
       points: view.final.points ?? 0,
       how: view.final.solved ? "guessed" : "unsolved",
       countsTowardScore: view.final.solved,
+      bySeat: view.final.solvedBySeat,
     },
   ];
 }

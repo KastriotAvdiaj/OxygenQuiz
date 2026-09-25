@@ -6,6 +6,7 @@ import { useUser } from "@/lib/Auth";
 import { useNavigationGuard } from "@/hooks/use-navigation-guard";
 import { audio } from "@/lib/audio";
 import type { SelectedQuiz } from "@/types/quiz-types";
+import { startBlockedReason } from "../utils/lobby-start";
 
 // Re-exported so the lobby's components can keep importing their models from one place.
 export type { SelectedQuiz };
@@ -25,7 +26,7 @@ interface UseLobbyConnectionOptions {
 export const useLobbyConnection = ({ mode = "join" }: UseLobbyConnectionOptions) => {
   const [searchParams] = useSearchParams();
   const params = useParams<{ sessionId?: string }>();
-  const { connection, isConnected, joinSession, leaveSession, selectQuiz } = useMultiplayer();
+  const { connection, isConnected, rejoinError, joinSession, leaveSession, selectQuiz } = useMultiplayer();
   const { addNotification } = useNotifications();
   const { data: user } = useUser();
 
@@ -77,13 +78,13 @@ export const useLobbyConnection = ({ mode = "join" }: UseLobbyConnectionOptions)
   );
   const isHost = currentUser?.isHost ?? false;
   const isReady = currentUser?.isReady ?? false;
-  const allPlayersReady = participants.length > 0 && participants.every((p) => p.isReady);
   const hasSelectedQuiz = selectedQuiz !== null;
 
   // Navigation guard — blocks accidental back-button / navigation while in the lobby
   const { showLeaveDialog, confirmNavigation, cancelNavigation } =
     useNavigationGuard(hasJoined);
-  const canStartQuiz = isHost && participants.length >= 2 && allPlayersReady && hasSelectedQuiz;
+  // One rule for the button and the sentence under it — including a Board's exactly-2 (lobby-start.ts).
+  const canStartQuiz = isHost && startBlockedReason({ participants, selectedQuiz }) === null;
 
   const generateRoomCode = () => {
     return Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -370,14 +371,15 @@ export const useLobbyConnection = ({ mode = "join" }: UseLobbyConnectionOptions)
     maxPlayers,
     copied,
     isJoining,
-    joinError,
+    // A refused automatic rejoin (the lobby closed while the connection was down) is a failed join
+    // too, and the view already knows how to show one — docs/quiz/multiplayer.md §3.6.
+    joinError: joinError ?? rejoinError,
     isConnected,
     selectedQuiz,
 
     // Computed
     isHost,
     isReady,
-    allPlayersReady,
     canStartQuiz,
     hasSelectedQuiz,
 

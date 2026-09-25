@@ -188,7 +188,6 @@ const meta = {
     isConnected: true,
     isHost: true,
     isReady: false,
-    allPlayersReady: false,
     canStartQuiz: false,
     hasSelectedQuiz: false,
     selectedQuiz: null,
@@ -260,7 +259,6 @@ export const HostCanStart: Story = {
     hasSelectedQuiz: true,
     selectedQuiz: chemistryQuiz,
     isReady: true,
-    allPlayersReady: true,
     canStartQuiz: true,
   },
 };

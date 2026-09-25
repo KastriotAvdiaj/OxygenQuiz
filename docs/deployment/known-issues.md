@@ -1149,12 +1149,8 @@ fixed; these were left.
 - **P3 — No image on a Board quiz in the builder.** The API accepts `imageUrl` on create and
   update; the builder has no upload field, matching the Classic builder, whose `ImageUpload` is
   commented out.
-- **P3 — The lobby's quiz picker lists Boards to admins** (2026-09-23). Picking one is refused by
-  the hub ("Associations quizzes can't be played in a lobby yet"), so nothing breaks, but the pick
-  shouldn't be offered. Filtering client-side would break the picker's server paging; the proper fix
-  is the Duel's dispatch (Phase 5, `associations-plan.md` §9.1), which makes the pick valid instead.
-  Players never see Boards (§0 of the feature doc).
-  → `src/pages/Quiz/Multiplayer/components/lobby/quiz-selection-dialog-view.tsx`
+- ~~**P3 — The lobby's quiz picker lists Boards to admins**~~ **Fixed 2026-09-25** by making the
+  pick valid: a Board in a lobby is played as a Duel (docs/quiz/associations.md §10).
 - **P3 — "Play again" and "Start over" drop an Unlisted board's share token** (2026-09-23). Both call
   `POST /associations/sessions/{id}/restart` without the `shareToken` that started the game, so for
   an Unlisted board you don't own the restart is refused (404). Nothing is lost — the server checks

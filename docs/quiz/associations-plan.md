@@ -7,7 +7,7 @@ be made of questions. The *why* behind the overall shape is
 [ADR 0018](../adr/0018-quiz-formats-are-separate-verticals.md); the vocabulary is in
 [`glossary.md`](./glossary.md).
 
-> **Status: plan (2026-09-22). Phases 0–4 are implemented** and their sections now point to
+> **Status: plan (2026-09-22). Phases 0–5 are implemented** and their sections now point to
 > [`associations.md`](./associations.md); everything else below is still a plan. This is a transient `*-plan.md`
 > ([`documenting-changes.md`](../development/documenting-changes.md)): as each phase lands, what
 > is true moves into `docs/quiz/associations.md` (the feature doc, created in Phase 1) and the
@@ -29,7 +29,7 @@ be made of questions. The *why* behind the overall shape is
 | D4 | v1 supports two ways to play: **Solo** (one player vs the clock) and **Duel** (1v1, turn-based, one shared Board). A race mode (each player on their own copy) was considered and **dropped** (2026-09-22): it isn't the show's game. |
 | D5 | Duel turn rule: open exactly one Tile, then Guess any Column or the Final; a correct Guess earns another Guess but **not** another Tile; a wrong Guess ends the turn. |
 | D6 | Scoring rewards what was *not* revealed, and a Column solution is worth more than a Tile (§2). |
-| D7 | Two future ways to play must not be blocked by v1 (§9.6): **2v2** (teams; teammates can suggest and discuss before one of them guesses) and **1v1v1** (three players taking turns on one shared Board). Both come after the core. |
+| D7 | Two future ways to play must not be blocked by v1 (§9): **2v2** (teams; teammates can suggest and discuss before one of them guesses) and **1v1v1** (three players taking turns on one shared Board). Both come after the core (§9). |
 | D8 | Duel turn length: **30s**, restarting after each correct Guess. *(was Q1)* |
 | D9 | When every Tile is open and nobody has the Final, the Duel goes into an **endgame**: each player gets **2 more turns** of guessing, alternating (P1, P2, P1, P2), then the game ends. The count is one setting (`EndgameTurnsPerSeat`, §2.1) in case it should become 3. *(was Q3; details in §1.3)* |
 | D10 | A player who leaves mid-Duel forfeits: the game ends, the player still there wins, and the match is recorded. *(was Q5)* |
@@ -53,7 +53,7 @@ a Duel, for exactly 2 players.)
 **Implemented (2026-09-22); now in [`associations.md`](./associations.md) §3.** The Board, Solo, the
 Duel turn, the endgame, forfeits and turn order for more Seats are described there as current
 behaviour, and pinned by `QuizAPI.Tests/Associations/`. Still true for planning: 1v1v1 and 2v2 are
-future work that the Seat-based engine already allows (§9.6).
+future work that the Seat-based engine already allows (§9).
 
 ## 2. Scoring — moved
 
@@ -116,7 +116,7 @@ Folder layout follows the existing split: controllers and their services under
 | `src/pages/Dashboard/Pages/Quiz/components/Association-Board-Form/` | The board builder (§12.3). |
 | `src/pages/Quiz/Associations/board/` | The board, used by Solo, Duel and the results review — one component, driven by a view. *(Built, Phase 4.)* |
 | `src/pages/Quiz/Associations/solo/`, `api/` | The start route and the game page; the API calls and hooks live in `api/association-play.ts` (`useAssociationGame`, `useAssociationMoves`). *(Built, Phase 4.)* |
-| `src/pages/Quiz/Associations/multiplayer/` | `useAssociationMatch` and the Duel screen. |
+| `src/pages/Quiz/Associations/duel/` | `useAssociationMatch` and the Duel screen. *(Built, Phase 5 — `duel/`, not `multiplayer/`.)* |
 | `src/pages/Quiz/Associations/results/` | Results and review. *(Built, Phase 4.)* |
 
 The golden rule of the classic play stack applies unchanged: **guesses flow up, state flows down**
@@ -195,91 +195,27 @@ before.
 
 ---
 
-## 9. Multiplayer
+## 9. Multiplayer — moved
 
-### 9.1 In the lobby
+**Implemented (2026-09-25); now in [`associations.md`](./associations.md) §10** (the lobby rule,
+the runner and the loop, the hub surface, forfeits and reconnects, what a Duel leaves behind, the
+review) and [`multiplayer.md`](./multiplayer.md) §3.6 (the reconnect fix this plan made a prerequisite) and §4.3.
+Differences from this plan, each deliberate and explained there:
 
-The lobby is shared and stays one lobby: create, join, ready, chat, leave and rematch are
-unchanged. What changes:
+- **Event names and shape.** `DuelStarting` / `DuelStarted` / `DuelUpdated` / `DuelEnded` /
+  `DuelState`, each carrying the whole view, instead of `BoardStarted` / `TurnStarted` /
+  `TileOpened` / `GuessResult` / `BoardEnded` deltas.
+- **Every seated player gets a session**, moves or not — not §7.2's Classic rule.
+- **The Duel is recorded before `DuelEnded`**, so the event can carry the results links.
+- **`AssociationGame.SeatCount`** was added: replay can't count Seats from player rows once one
+  player deletes their session.
+- The forfeit rule got an ADR ([0021](../adr/0021-a-duel-is-forfeited-when-the-lobby-drops-the-player.md)).
 
-- **`SelectedQuizView` carries `Format`**, filled server-side from the quiz in `QuizHub.SelectQuiz`
-  (never trusted from the payload — the rest of that DTO is display-only already).
-- **An Associations quiz means a Duel, and a Duel needs exactly 2 participants.** `canStartQuiz`
-  gains that rule and the lobby says why the start button is disabled with 3+ players; the server
-  re-checks in `StartMatchAsync`, as it does the ≥2 rule. No new lobby state is needed — the rule
-  is derived from the selected quiz's `Format`, which late joiners already receive through the
-  `QuizSelected` replay. (If a future lobby setting is added, e.g. choosing 1v1v1, the late-joiner
-  rule in [`multiplayer.md`](./multiplayer.md) §2 applies: replay it in `JoinSession`.)
-- **`StartMatch` dispatches by format** — Classic to `IMatchOrchestrator`, Associations to
-  `IAssociationMatchOrchestrator`.
-- **Both orchestrators use the same `MatchCts` liveness guard and the same `ResetToLobbyAsync`**,
-  called from each loop's `finally`. The rematch bug (§3.2–3.3 of `multiplayer.md`: "a
-  forward-only phase enum cannot double as a mutex") must not be reintroduced by a second loop
-  with its own idea of "busy". The reset clears the Associations runtime fields too.
-
-### 9.2 Duel
-
-`AssociationMatchOrchestrator` holds the engine state in memory on `MultiplayerSession` for the
-length of the match. Loop:
-
-1. `BoardStarted(view, seats, firstSeat)` after the shared countdown.
-2. `TurnStarted(seat, deadlineUtc)`.
-3. Wait for hub calls from **the Seat whose turn it is** (`OpenTile`, `GuessAssociation`,
-   `PassTurn`) or for the deadline. Each goes through the engine; each accepted move is broadcast
-   (`TileOpened`, `GuessResult`) to the room. A call from the wrong Seat is rejected with a
-   `HubException`, not ignored silently — the other player's UI should never send it, and if it
-   does, that's a bug worth seeing.
-4. Repeat until the game ends (Final, endgame over, or forfeit — §1.3) → `BoardEnded(fullBoard, scores, winner)` →
-   persist (§9.5) → `ResetToLobbyAsync` in `finally`.
-
-Winner: higher score; equal scores → no winner (`Match.WinnerUserId` null — a tie, already
-supported).
-
-### 9.4 Hub surface
-
-| Client → server | Server → client |
-|---|---|
-| `OpenTile(sessionId, tileId)` | `BoardStarted(view, seats, firstSeat)` |
-| `GuessAssociation(sessionId, target, text)` | `TurnStarted(seat, deadlineUtc, isEndgame, endgameTurnsLeft)` |
-| `PassTurn(sessionId)` | `TileOpened(tile, bySeat)` |
-| | `GuessResult(seat, target, text, isCorrect, solution?, points)` |
-| | `BoardEnded(result)` |
-
-On the client, `useAssociationMatch` is a **separate listener set with its own event names**.
-Because `connection.off(name)` removes every handler for that name, no Associations event may
-reuse a Classic event name, and no two hooks may subscribe to the same one (`multiplayer.md` §1).
-
-### 9.5 What a match leaves behind
-
-Written once, at the end, the way `PersistMatchAsync` does it
-([`multiplayer.md`](./multiplayer.md) §7.3): one `Match`, one `QuizSession` per player
-(`Mode = Multiplayer`, `MatchId`, `TotalScore` = their board points), the one `AssociationGame`,
-its two players and all moves. An interrupted match
-writes nothing. A player who never made a move gets no session row, matching §7.2's rule.
-`EnsureSessionOrMatchPeerAccessAsync` already lets match peers read each other's results, and the
-Duel review is naturally shared (one game, two seats).
-
-### 9.6 Keeping 2v2 and 1v1v1 possible
-
-Not built in v1, but designed for:
-
-- **Turns belong to a Seat, not a user.** The engine never sees a user id. A team is a Seat with
-  two sessions in `AssociationGamePlayer`.
-- **Who may act for a Seat** is decided by the orchestrator, not the engine — so "either teammate
-  may submit" is an orchestrator rule later, not an engine rewrite.
-- **Suggestions** (a teammate proposing a Guess) would be a new team-only SignalR group and a new
-  event pair; nothing in v1 needs to change shape for them.
-- **1v1v1 is a Seat count, not a new engine.** Turn order is `(seat + 1) % seatCount` and the
-  endgame counts per Seat, so three Seats work unchanged. What it *does* need is a winner rule for
-  three (ties between two of them) and lobby UI for choosing it — both future work.
-
-### 9.7 A prerequisite for Duel: reconnect
-
-`multiplayer.md` §8 records that after an automatic reconnect nothing re-joins the room, so the
-client stops receiving group broadcasts and is removed from the roster after 5s. In Classic that
-costs a player some rounds. In a turn-based Duel it **ends the game** (D10) for a two-second
-network blip. Binding `onreconnected` to re-invoke `JoinSession` is therefore part of Phase 5, not
-a nice-to-have.
+Still true for planning: 2v2 and 1v1v1 (below) are future work the Seat-based engine allows. What
+they need: *who may act for a Seat* is the runner's `SeatOf` (a team is two usernames on one Seat);
+a winner rule for three Seats (`AssociationDuel.WinnerSeat` returns null for a forfeit with three);
+lobby rules and UI for choosing them; and suggestions between teammates as a new team-only SignalR
+group and event pair.
 
 ---
 
@@ -291,7 +227,7 @@ this section first planned:
 
 - **The lobby refuses a board at `QuizHub.SelectQuiz`**, not at `MatchOrchestrator.StartMatchAsync`
   — so a lobby never shows a pick it can't play. `StartMatchAsync`'s existing "This quiz has no
-  questions" is the backstop. When the Duel lands (Phase 5) the refusal becomes the dispatch (§9.1).
+  questions" is the backstop. The refusal became the Duel's dispatch on 2026-09-25 (feature doc §10.1).
 - **`QuizService.CreateAiQuizAsync` needs no guard**: it only ever *creates* a quiz, and a new quiz
   is Classic unless a board endpoint says otherwise.
 
@@ -302,7 +238,7 @@ this section first planned:
 | ~~`SessionAbandonmentService` — a format branch using the board time (§8.3), not a refusal~~ | ~~4~~ | **Done 2026-09-23** — feature doc §9.6. |
 | ~~`UserStatsService`, `ReportService` — filter to Classic (§11)~~ | ~~4~~ | **Done 2026-09-23** — feature doc §9.7. |
 | ~~**Frontend** — `quiz-start-modal`, the `/choose-quiz` start, the Classic results route, the profile history list~~ | ~~4~~ | **Done 2026-09-23** — feature doc §9.9. `quiz-duration.ts` needed nothing: a Board's time is its `TimeLimitInSeconds`, which it already formats. |
-| **Frontend** — the lobby's quiz picker | 5 | Still lists Boards to admins; picking one gets the hub's "can't be played in a lobby yet". It becomes the Duel's dispatch (§9.1). Logged in `known-issues.md`. |
+| ~~**Frontend** — the lobby's quiz picker~~ | ~~5~~ | **Done 2026-09-25** — picking a Board is valid now; it starts a Duel (feature doc §10.1). |
 | ~~**Frontend** — the dashboard quiz tables, the single-quiz page, the edit route (→ board builder), the create-method dialog~~ | ~~3~~ | **Done 2026-09-23** — feature doc §8.5. |
 
 **Frontend done in Phase 1:** `QuizFormat` and `format` on the quiz types, and the quiz card's size
@@ -337,7 +273,7 @@ dialog's second step — it is a third card on the first.
   prompt, parser and validation.
 - **Import / export of Board content** (the `Format` column is exported; the Board itself isn't).
 - **Image, audio or video Tiles.**
-- **Team duel (2v2)** — designed for (§9.6), not built.
+- **Team duel (2v2)** — designed for (§9), not built.
 - **Spectators** in a Duel lobby with more than two people.
 - **Top 100** — its own format, later, with the data-source question still open.
 
@@ -357,7 +293,7 @@ code compiles.
 | **2 — Engine** *(done 2026-09-22)* | `AssociationEngine` (pure: `Apply`, `End`, `Replay`), `AssociationScoring`, `AssociationRules` + `Associations:Rules` options validated at startup + `IAssociationRulesProvider`; `TypeTheAnswerMatcher.IsMatch` extracted as the core, `AssociationGuessMatcher` on top. No DB, no UI. | 68 tests in `QuizAPI.Tests/Associations/`: every legality rule, every §4 scoring example under default and changed rules, the endgame worked example, endgame length 3, three Seats, replay determinism, replay under the snapshot vs changed config, corrupt-log refusal, settings validation and binding, Albanian diacritics. Existing matcher tests unchanged and green. Full suite: 443. | `associations.md` §3–§7; `typed-answer-matching.md` (the extracted core); `configuration.md`; `testing.md`; glossary (Seat, Move). | Done. |
 | **3 — Boards** *(done 2026-09-23)* | Board entities + migration `AddAssociationBoards`, repository, `AssociationBoardService` + `AssociationBoardValidator`, the three authoring endpoints, copy-on-write edits, the builder (create on both dashboards, edit on the admin one), the create dialog's third card, `quizEditPath`, the single-quiz page and quiz table for boards, a Development seed board. **Moved to Phase 4:** the game tables (`AssociationGame`, players, moves) and the rules snapshot — nothing writes them until play exists. | Backend: 21 new (`AssociationBoardServiceTests`, `AssociationBoardValidatorTests`) — create, publish gate, board time, atomicity on invalid input, owner/stranger/admin edit read, copy-on-write, metadata-only edit, trim-only edit, stale version, stranger update, Classic refused, stored Board → engine key. Full suite 464. Copy-on-write also checked on real PostgreSQL 16, and the endpoints end-to-end over HTTP. Frontend: `association-quiz.test.ts` (9); all 148 unit tests pass. | `associations.md` §8; `quiz-editing.md`; `quiz-analytics-page.md`; `known-issues.md`; `testing.md`. | Done. |
 | **4 — Solo** *(done 2026-09-23)* | The game tables (`AssociationGame`, `AssociationGamePlayer`, `AssociationGameMove`, `RulesJson`) + migration `AddAssociationGames`; [ADR 0020](../adr/0020-an-associations-game-is-its-move-log.md); `AssociationPlayService` + `AssociationSessionsController` (start / read / open / guess / give-up / restart), the server clock, resume and restart; `AssociationViews`; `QuizPlayAccess` extracted; the abandonment format branch; game deletion on every session-deleting path; Classic-only stats and reports; `format` on the session DTOs; the board component, the start / game / results screens, `quizPlayPath`, the start dialog, history and the Classic-results redirect. **Moved to the release step:** the guest twin (§8.5) — unreachable while D17 holds. | Backend: 29 new — `AssociationPlayServiceTests` (21: start, resume, settle on start, access incl. Unlisted token and admin read-only, every move, refusals recorded as nothing, TimeUp at the deadline, resume before/after it, the rules snapshot, restart of a running and a finished game, a refused restart ending nothing), `AssociationViewSecrecyTests` (2), `AssociationLifecycleTests` (4: abandonment deadline, bulk ending, guest discard, delete), the play endpoints' preview gate, Classic-only stats. Full suite 503. Mutation-checked: leaking Tile text fails the secrecy test; dropping the abandonment branch fails the lifecycle test. Real PostgreSQL 16: the migration applied, a full game over HTTP. Frontend: `board-model.test.ts` (10), `quiz-play-path.test.ts` (4); 164 unit tests pass; a full game, the time-up path, history and the redirect driven in a browser. | `associations.md` §9 (and §0, §2, §5); ADR 0020; `session-lifecycle.md`, `guest-play.md`, `user-stats-history.md`, `reports.md`, `testing.md`, `known-issues.md`, glossary. | Done — for a signed-in player. Guests: at release (§8.5). |
-| **5 — Duel** | Reconnect fix (§9.7); the exactly-2 lobby rule; dispatch; `AssociationMatchOrchestrator` (Duel); hub methods and events; `useAssociationMatch`; Duel screen; persistence. | Orchestrator driven with a fake clock: turn passing, wrong-Seat rejection, turn timeout, the endgame, forfeit, persistence written once, nothing written on interruption. (This also starts the orchestrator tests `multiplayer.md` §8 says don't exist.) | `multiplayer.md`: dispatch, the exactly-2 rule, new events, the reconnect fix; `associations.md`: Duel. An ADR if the turn-timeout or forfeit rules turn out to be a real trade-off. | Two players can play a full Duel, rematch, and both review it. |
+| **5 — Duel** *(done 2026-09-25)* | Reconnect fix (`multiplayer.md` §3.6); the exactly-2 lobby rule; dispatch; `AssociationMatchOrchestrator` (Duel); hub methods and events; `useAssociationMatch`; Duel screen; persistence. **Added:** the pure runner `AssociationDuel`, `AssociationGame.SeatCount` + migration, the Duel review on the Solo results page, [ADR 0021](../adr/0021-a-duel-is-forfeited-when-the-lobby-drops-the-player.md). | Backend: 59 new — `AssociationDuelTests` (23, the runner, times passed in), `AssociationMatchOrchestratorTests` (14, the real loop on a `FakeTimeProvider`: turn passing, wrong Seat, turn timeout, forfeit incl. during the countdown, recorded once, nothing on interruption — mutation-checked — rematch alternation, catch-up), `QuizHubDuelTests` (10), `QuizHubRejoinTests` (7, incl. the disconnect grace), `DuelReviewTests` (5), the preview-gate test updated. Full suite 570. Frontend: `lobby-rejoin`, `lobby-start`, `duel-model`; 186 unit tests; `tsc -b` clean. Real PostgreSQL 16 + two browsers: the migration, a full Duel, both reviews, rematch, a 30s expiry, a closed tab forfeiting — which found the disconnect grace had never removed anyone (fixed). | `multiplayer.md` §3.5–3.6, §4.3, §5, §8, changelog; `associations.md` §0, §2, §3.3, §9.1, §10; ADR 0021; `testing.md`; `known-issues.md`. | Done. |
 | **6 — Board stats** | The analytics in §11. | Aggregates over seeded games. | `quiz-analytics-page.md`, `user-stats-history.md`. | An author can see how their Board plays. |
 
 When Phase 6 lands, this file is deleted and `associations.md` is the only description.
@@ -368,9 +304,9 @@ When Phase 6 lands, this file is deleted and `associations.md` is the only descr
 
 | It happened before | Where | This plan |
 |---|---|---|
-| State announced only by a broadcast was invisible to late joiners | quiz pick, 2026-07-31 | The Duel rule is derived from `Format`, which the existing `QuizSelected` replay already carries — no new broadcast-only state (§9.1). |
-| A second "is this busy?" check that wasn't loop liveness | rematch, 2026-07-31 | Both orchestrators share `MatchCts` + `ResetToLobbyAsync` (§9.1). |
-| Two hooks on one event name; `off(name)` removed both | multiplayer hooks | Separate event names, separate hook (§9.4). |
+| State announced only by a broadcast was invisible to late joiners | quiz pick, 2026-07-31 | The Duel rule is derived from `Format`, which the existing `QuizSelected` replay already carries — no new broadcast-only state (feature doc §10.1). |
+| A second "is this busy?" check that wasn't loop liveness | rematch, 2026-07-31 | Both orchestrators share `MatchCts` + `ResetToLobbyAsync` (feature doc §10.2). |
+| Two hooks on one event name; `off(name)` removed both | multiplayer hooks | Separate event names, separate hook (feature doc §10.3). |
 | A scheduled job written but never registered; a fallback that crashed | session sweeper, 2026-09-10 | Abandonment for Boards reuses the one registered service (§8.3), and guest deletion gets a test (§8.5). |
 | A rule enforced in one layer, "kept in sync" by hand in another | Unspecified lookups | The engine is the only place rules live (§5); views are built in one place (§7); guards are one helper (§10). |
 | A filter that broke only for guests | question filter, 2026-08-19 | Guest play tests in Phase 4; the `Quiz` filter fix in Phase 0. |
