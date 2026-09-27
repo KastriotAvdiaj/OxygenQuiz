@@ -7,6 +7,8 @@ using QuizAPI.Services.Interfaces;          // IUserService
 using System.IdentityModel.Tokens.Jwt;      // JwtRegisteredClaimNames
 using System.Security.Claims;
 using QuizAPI.Services.AuthenticationService;
+using QuizAPI.Services.AccountIdentity;
+using QuizAPI.DTOs.User;
 
 namespace QuizAPI.Controllers.Authentication;
 
@@ -15,6 +17,7 @@ namespace QuizAPI.Controllers.Authentication;
 public class AuthenticationController(
     IAuthenticationService authService,
     IUserService userService,
+    IAccountIdentityService accountIdentity,
     IConfiguration configuration) : ControllerBase
 {
     private const string RefreshCookieName = "refresh_token";
@@ -23,6 +26,7 @@ public class AuthenticationController(
 
     private readonly IAuthenticationService _authService = authService;
     private readonly IUserService _userService = userService;
+    private readonly IAccountIdentityService _accountIdentity = accountIdentity;
     private readonly IConfiguration _configuration = configuration;
 
     // GET: api/Authentication/signup-config
@@ -207,6 +211,19 @@ public class AuthenticationController(
     public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDTO dto, CancellationToken ct)
     {
         await _authService.ResetPasswordAsync(dto.Token, dto.NewPassword, ct);
+        return Ok();
+    }
+
+    /// <summary>
+    /// Redeem an email-change link (sent to the NEW address by POST /Users/me/email-change).
+    /// Anonymous, like confirm-email: the link may be opened on a device that isn't signed in.
+    /// Rate limited as a token-guessing surface. See docs/auth/account-identity-changes.md.
+    /// </summary>
+    [HttpPost("confirm-email-change")]
+    [EnableRateLimiting(RateLimitingExtensions.AuthPolicy)]
+    public async Task<IActionResult> ConfirmEmailChange([FromBody] ConfirmEmailChangeDTO dto, CancellationToken ct)
+    {
+        await _accountIdentity.ConfirmEmailChangeAsync(dto.Token, ct);
         return Ok();
     }
 

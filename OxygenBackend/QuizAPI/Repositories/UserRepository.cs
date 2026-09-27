@@ -39,9 +39,15 @@ namespace QuizAPI.Repositories
             return await query.FirstOrDefaultAsync(u => u.Id == id, ct);
         }
 
-        public async Task<User?> GetByUsernameAsync(string username, CancellationToken ct = default) =>
-            await WithRoles().AsNoTracking()
-                .FirstOrDefaultAsync(u => u.ImmutableName == username.ToLower(), ct);
+        // Answers to both names: the immutable one (links and mentions made before a rename keep
+        // working) and the current display name. The shared namespace means at most one live
+        // account can hold a given name in either column.
+        public async Task<User?> GetByUsernameAsync(string username, CancellationToken ct = default)
+        {
+            var name = username.Trim().ToLowerInvariant();
+            return await WithRoles().AsNoTracking()
+                .FirstOrDefaultAsync(u => u.ImmutableName == name || u.Username.ToLower() == name, ct);
+        }
 
         public async Task<User?> GetByEmailAsync(string email, bool tracked = false, CancellationToken ct = default)
         {
@@ -86,7 +92,23 @@ namespace QuizAPI.Repositories
             _context.Users.AnyAsync(u => u.Id == id, ct);
 
         public Task<bool> UsernameExistsAsync(string immutableName, CancellationToken ct = default) =>
-            _context.Users.AnyAsync(u => u.ImmutableName == immutableName, ct);
+            NameTakenAsync(immutableName, exceptUserId: null, ct);
+
+        /// <summary>
+        /// Counts the same rows as <see cref="EmailExistsAsync"/> — live accounts and accounts in
+        /// their closure grace period — and the partial unique indexes in ApplicationDbContext use
+        /// the same filter, so the check and the constraint agree about which rows own a name.
+        /// </summary>
+        public Task<bool> NameTakenAsync(string name, Guid? exceptUserId, CancellationToken ct = default)
+        {
+            var lower = name.Trim().ToLowerInvariant();
+            return _context.Users.IgnoreQueryFilters()
+                .AnyAsync(u =>
+                    (exceptUserId == null || u.Id != exceptUserId) &&
+                    (u.ImmutableName == lower || u.Username.ToLower() == lower) &&
+                    (!u.IsDeleted || (u.DeletionRequestedAt != null && u.AnonymisedAt == null)),
+                    ct);
+        }
 
         /// <summary>
         /// Signup's uniqueness check, and it deliberately counts one kind of deleted row: an

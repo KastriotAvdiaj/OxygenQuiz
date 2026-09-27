@@ -56,6 +56,7 @@ namespace QuizAPI.Data
         public DbSet<EmailVerificationToken> EmailVerificationTokens { get; set; }
 
         public DbSet<PasswordResetToken> PasswordResetTokens { get; set; }
+        public DbSet<EmailChangeToken> EmailChangeTokens { get; set; }
 
         public DbSet<InviteCode> InviteCodes { get; set; }
 
@@ -152,6 +153,32 @@ namespace QuizAPI.Data
             modelBuilder.Entity<User>()
                 .HasQueryFilter(u => !u.IsDeleted);
 
+            // Uniqueness of email and names, enforced by the database and not only by the
+            // app-level checks in UserRepository (EmailExistsAsync / NameTakenAsync), which two
+            // concurrent requests can both pass. The indexes are PARTIAL, with the same filter those
+            // checks use: a row counts while it is live or inside its closure grace period. An
+            // admin-deleted row does not — its address and name are deliberately reusable (see
+            // EmailExistsAsync) — and an anonymised row has had both rewritten to unique
+            // deleted_* values anyway. A plain unique index would contradict that rule.
+            //
+            // The third index, on lower("Username"), is an expression index EF can't model; it is
+            // created in the AddIdentityChanges migration's raw SQL. Case-insensitive, because
+            // "Alice" and "alice" are the same name to a reader. The rule that a name must be free
+            // ACROSS the two columns (my display name vs. your immutable one) is not something an
+            // index can express, and stays app-level. See docs/adr/0017-one-namespace-for-names.md.
+            const string countsForUniqueness =
+                "NOT \"IsDeleted\" OR (\"DeletionRequestedAt\" IS NOT NULL AND \"AnonymisedAt\" IS NULL)";
+
+            modelBuilder.Entity<User>()
+                .HasIndex(u => u.Email)
+                .IsUnique()
+                .HasFilter(countsForUniqueness);
+
+            modelBuilder.Entity<User>()
+                .HasIndex(u => u.ImmutableName)
+                .IsUnique()
+                .HasFilter(countsForUniqueness);
+
             //User - Role many-to-many relationship
 
             modelBuilder.Entity<UserRole>()
@@ -211,6 +238,17 @@ namespace QuizAPI.Data
                 .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<PasswordResetToken>()
+                .HasIndex(t => t.TokenHash)
+                .IsUnique();
+
+            // Email-change tokens: a third twin, a third table (see EmailChangeToken).
+            modelBuilder.Entity<EmailChangeToken>()
+                .HasOne(t => t.User)
+                .WithMany()
+                .HasForeignKey(t => t.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<EmailChangeToken>()
                 .HasIndex(t => t.TokenHash)
                 .IsUnique();
 

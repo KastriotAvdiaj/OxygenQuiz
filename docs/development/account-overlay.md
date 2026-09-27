@@ -87,6 +87,18 @@ An unrecognised `?settings=` value falls back to the menu rather than 404-ing.
 
 Icons come from the same lucide outline family as `DashboardNav` and the account drawer.
 
+### My Account: what can be changed
+
+- **Password** — "Change" mails a reset link to the signed-in user's own address through the
+  forgot-password endpoint ([password-reset.md](../auth/password-reset.md)). There is no
+  current-password form: the reset already proves inbox control, lets a Google-only account set
+  a password, and revokes every session, which is what a change is usually for — the row says so
+  once the link is sent. The profile page's "Change password" links here (`/settings/account`).
+- **Username and email** — Edit opens a dialog for each (`IdentityEditors.tsx`). A rename is
+  immediate, once per 30 days; an email change mails a link to the new address and shows
+  "waiting for you to confirm" under the row until it is clicked or cancelled. The rules and
+  the reasons are in [account-identity-changes.md](../auth/account-identity-changes.md).
+
 ## Settings state
 
 `useSettingsForm.ts` (extracted from the old standalone page) owns the draft, dirty
@@ -198,6 +210,7 @@ The link is a plain `<Link>` to a different path. Because the overlay is driven 
 `?settings=`, navigating to a path without that param closes it — no explicit `close()`
 call, and the unsaved-changes `useBlocker` still fires because it's a normal navigation.
 
-Both the panel and the page reuse the hooks and components documented in
-[user-stats-history.md](../quiz/user-stats-history.md); `QuizHistoryList` has one
-implementation and two shells.
+The panel and the page share the hooks documented in
+[user-stats-history.md](../quiz/user-stats-history.md). The panel reads stats only;
+`QuizHistoryList` (the filterable history table) has one implementation, mounted by the
+dashboard page and the owner's profile.

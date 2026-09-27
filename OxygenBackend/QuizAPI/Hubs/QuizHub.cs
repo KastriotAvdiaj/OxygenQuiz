@@ -28,12 +28,16 @@ public class QuizHub : Hub<IQuizClient>
         _matchOrchestrator = matchOrchestrator;
     }
 
-    // The participant's identity is ALWAYS the authenticated account — never trusted from the
-    // client. The JWT carries a literal "username" claim (see TokenService); MapInboundClaims
-    // is off, so it stays under that name.
-    private string GetUsername() =>
-        Context.User?.FindFirst("username")?.Value
-        ?? throw new HubException("You must be logged in.");
+    // The participant's identity is ALWAYS the authenticated account's id — never trusted from
+    // the client, and never the name. The name used to come from the JWT's "username" claim and
+    // double as the identity, which broke once display names became changeable: the claim is
+    // stale until the token refreshes, and the match was saved by matching the name against
+    // ImmutableName. Now: the id is the identity, the display name is read fresh from the database
+    // when a connection enters a lobby, and from then on the session's pinned name (stored in
+    // Context.Items) is what this connection plays under. See MultiplayerSession.PlayerUserIds.
+    private string CurrentPlayerName() =>
+        Context.Items["Username"] as string
+        ?? throw new HubException("You are not in this lobby.");
 
     // The authenticated account's id, read the same way as CurrentUserService (NameIdentifier with a
     // 'sub' fallback so it works regardless of inbound claim mapping).
@@ -47,18 +51,20 @@ public class QuizHub : Hub<IQuizClient>
     }
 
     /// <summary>
-    /// The authenticated account's avatar URL (null when none is set). Looked up once per
-    /// join/create so participant lists can render real profile images.
+    /// The authenticated account's current display name and avatar, read from the database once
+    /// per join/create — not from the token, whose name claim lags a rename until it refreshes.
     /// </summary>
-    private async Task<string?> GetProfileImageUrlAsync()
+    private async Task<(string Username, string? ProfileImageUrl)> GetAccountAsync()
     {
         var userId = GetUserId();
         using var scope = _serviceProvider.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        return await db.Users
+        var account = await db.Users
             .Where(u => u.Id == userId)
-            .Select(u => u.ProfileImageUrl)
-            .FirstOrDefaultAsync();
+            .Select(u => new { u.Username, u.ProfileImageUrl })
+            .FirstOrDefaultAsync()
+            ?? throw new HubException("You must be logged in.");
+        return (account.Username, account.ProfileImageUrl);
     }
 
     /// <summary>
@@ -68,14 +74,12 @@ public class QuizHub : Hub<IQuizClient>
     /// </summary>
     public async Task<SessionAvailability> CheckSession(string sessionId)
     {
-        var username = GetUsername();
-        return await _sessionManager.CheckSessionAsync(sessionId, username);
+        return await _sessionManager.CheckSessionAsync(sessionId, GetUserId());
     }
 
     public async Task JoinSession(string sessionId)
     {
-        var username = GetUsername();
-        var profileImageUrl = await GetProfileImageUrlAsync();
+        var (accountName, profileImageUrl) = await GetAccountAsync();
 
         // 1. Add to Session Manager (Persist State).
         //    This runs BEFORE the group add on purpose: it's the step that can reject the join, and
@@ -84,7 +88,8 @@ public class QuizHub : Hub<IQuizClient>
         Participant participant;
         try
         {
-            participant = await _sessionManager.AddParticipantAsync(sessionId, username, Context.ConnectionId, profileImageUrl);
+            participant = await _sessionManager.AddParticipantAsync(
+                sessionId, GetUserId(), accountName, Context.ConnectionId, profileImageUrl);
         }
         catch (SessionJoinException ex)
         {
@@ -93,6 +98,10 @@ public class QuizHub : Hub<IQuizClient>
             // client can't tell "no such room" from "lobby full".
             throw new HubException(ex.Message);
         }
+
+        // The name this account plays under in this lobby — pinned at its first join, so it can
+        // differ from accountName if they renamed since. Everything below uses it.
+        var username = participant.Username;
 
         // 2. Add to SignalR Group
         await Groups.AddToGroupAsync(Context.ConnectionId, sessionId);
@@ -159,7 +168,10 @@ public class QuizHub : Hub<IQuizClient>
 
     public async Task LeaveSession(string sessionId)
     {
-        var username = GetUsername();
+        // Leaving a lobby this connection never joined (a stale tab, a reconnect that hadn't
+        // rejoined yet) is a no-op, not an error — there is nothing to leave.
+        if (Context.Items["Username"] is not string username)
+            return;
         var wasHost = await _sessionManager.IsHostAsync(sessionId, username);
         
         await Groups.RemoveFromGroupAsync(Context.ConnectionId, sessionId);
@@ -239,7 +251,7 @@ public class QuizHub : Hub<IQuizClient>
     // the SERVER clock — a client report can never resurrect a late answer.
     public async Task SubmitAnswer(string sessionId, string answer, long? clientElapsedMs = null)
     {
-        var username = GetUsername();
+        var username = CurrentPlayerName();
         var session = await _sessionManager.GetSessionAsync(sessionId);
         if (session is null || session.QuizState != QuizState.QuestionActive)
             return; // not accepting answers right now
@@ -283,19 +295,19 @@ public class QuizHub : Hub<IQuizClient>
 
     public async Task ToggleReady(string sessionId, bool isReady)
     {
-        var username = GetUsername();
+        var username = CurrentPlayerName();
         await _sessionManager.SetPlayerReadyAsync(sessionId, username, isReady);
         await Clients.Group(sessionId).PlayerReadyChanged(username, isReady);
     }
 
     public async Task CreateSession(string sessionId, string lobbyName, int maxPlayers)
     {
-        var username = GetUsername();
-        var profileImageUrl = await GetProfileImageUrlAsync();
+        var (username, profileImageUrl) = await GetAccountAsync();
         try
         {
             // Create session with settings
-            var session = await _sessionManager.CreateSessionAsync(sessionId, lobbyName, maxPlayers, username, Context.ConnectionId, profileImageUrl);
+            var session = await _sessionManager.CreateSessionAsync(
+                sessionId, lobbyName, maxPlayers, GetUserId(), username, Context.ConnectionId, profileImageUrl);
             
             // Add to SignalR Group
             await Groups.AddToGroupAsync(Context.ConnectionId, sessionId);

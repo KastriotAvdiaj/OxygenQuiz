@@ -99,6 +99,9 @@ builder.Services.AddScoped<IRoleRepository, RoleRepository>();
 builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 builder.Services.AddScoped<IEmailVerificationTokenRepository, EmailVerificationTokenRepository>();
 builder.Services.AddScoped<IPasswordResetTokenRepository, PasswordResetTokenRepository>();
+builder.Services.AddScoped<IEmailChangeTokenRepository, EmailChangeTokenRepository>();
+builder.Services.AddScoped<QuizAPI.Services.AccountIdentity.IAccountIdentityService,
+    QuizAPI.Services.AccountIdentity.AccountIdentityService>();
 
 // Breached-password screening (docs/auth/password-policy.md). Enabled by default; the switch
 // exists for environments with no outbound network, where every signup would otherwise wait out

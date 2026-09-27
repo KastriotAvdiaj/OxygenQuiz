@@ -4,9 +4,15 @@ namespace QuizAPI.Services.Interfaces;
 
 public interface IQuizSessionManager
 {
-    Task<Participant> AddParticipantAsync(string sessionId, string username, string connectionId, string? profileImageUrl = null);
+    /// <summary>
+    /// Adds (or reconnects) the account <paramref name="userId"/>. <paramref name="username"/> is
+    /// only used the first time this account enters the lobby; after that the name it was given is
+    /// pinned (see <see cref="MultiplayerSession.PlayerUserIds"/>) — read it from the returned
+    /// participant.
+    /// </summary>
+    Task<Participant> AddParticipantAsync(string sessionId, Guid userId, string username, string connectionId, string? profileImageUrl = null);
     /// <summary>Non-mutating pre-flight check for a room code, used by the join dialog.</summary>
-    Task<SessionAvailability> CheckSessionAsync(string sessionId, string username);
+    Task<SessionAvailability> CheckSessionAsync(string sessionId, Guid userId);
     Task RemoveParticipantAsync(string sessionId, string username);
     Task<List<Participant>> GetParticipantsAsync(string sessionId);
     Task SetPlayerReadyAsync(string sessionId, string username, bool isReady);
@@ -14,7 +20,7 @@ public interface IQuizSessionManager
     Task<bool> IsHostAsync(string sessionId, string username);
     
     // New methods for lobby redesign
-    Task<MultiplayerSession> CreateSessionAsync(string sessionId, string lobbyName, int maxPlayers, string hostUsername, string connectionId, string? hostProfileImageUrl = null);
+    Task<MultiplayerSession> CreateSessionAsync(string sessionId, string lobbyName, int maxPlayers, Guid hostUserId, string hostUsername, string connectionId, string? hostProfileImageUrl = null);
     Task SetQuizAsync(string sessionId, SelectedQuizView quiz);
     Task<MultiplayerSession?> GetSessionAsync(string sessionId);
 

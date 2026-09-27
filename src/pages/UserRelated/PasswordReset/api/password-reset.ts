@@ -42,13 +42,17 @@ export const RESET_ERROR_FALLBACK =
  * the interceptor's `parseApiError` in `src/lib/Api-client.ts`, for the same reasons.
  * Deliberately does not show a 5xx — that text may be an exception message.
  */
-export const resetErrorMessage = (error: unknown): string => {
+export const resetErrorMessage = (
+  error: unknown,
+  // The account panel's identity forms reuse this reading with their own last resort.
+  fallback: string = RESET_ERROR_FALLBACK,
+): string => {
   const response = (error as AxiosError | undefined)?.response;
-  if (!response || response.status >= 500) return RESET_ERROR_FALLBACK;
+  if (!response || response.status >= 500) return fallback;
 
   const data: unknown = response.data;
   if (typeof data === "string" && data.trim()) return data.trim();
-  if (!data || typeof data !== "object") return RESET_ERROR_FALLBACK;
+  if (!data || typeof data !== "object") return fallback;
 
   const body = data as Record<string, unknown>;
 
@@ -64,7 +68,7 @@ export const resetErrorMessage = (error: unknown): string => {
     .map((key) => body[key])
     .find((v): v is string => typeof v === "string" && v.trim().length > 0);
 
-  return authored?.trim() ?? RESET_ERROR_FALLBACK;
+  return authored?.trim() ?? fallback;
 };
 
 export const useRequestPasswordReset = () =>

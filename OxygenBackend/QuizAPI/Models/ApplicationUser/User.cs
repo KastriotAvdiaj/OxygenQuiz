@@ -7,8 +7,18 @@ namespace QuizAPI.Models
     {
         public Guid Id { get; set; }
 
+        // Two names, one namespace (docs/adr/0017-one-namespace-for-names.md):
+        //   ImmutableName — the lower-cased name chosen at signup, never changed afterwards. The
+        //                   stable handle: chat identity, /Users/username/{name}, old mentions.
+        //   Username      — the display name. Changeable (PUT /Users/me/username), rate-limited.
+        // A name is unavailable to anyone else if it matches, case-insensitively, EITHER column of
+        // any other counted account — so nobody can display the name someone else is known by.
         public string ImmutableName { get; set; }
         public string Username { get; set; }
+
+        // When the display name was last changed; null if it never has been. Drives the rename
+        // cooldown (AccountIdentityService.UsernameChangeCooldown).
+        public DateTime? UsernameChangedAt { get; set; }
 
         public string Email { get; set; }
 

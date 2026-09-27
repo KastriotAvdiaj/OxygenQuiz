@@ -16,7 +16,6 @@ namespace QuizAPI.Services.Interfaces
         Task<UserDTO?> GetUserByUsernameAsync(string username, CancellationToken ct = default);
         Task<IReadOnlyList<UserDTO>> GetUsersByIdsAsync(IEnumerable<Guid> userIds, CancellationToken ct = default);
         Task<UserDTO> CreateUserAsync(CreateUserDTO dto, CancellationToken ct = default);
-        Task UpdateUserAsync(Guid userId, UpdateUserDTO dto, CancellationToken ct = default);
 
         /// <summary>
         /// Replaces a user's role set (admin action). <paramref name="callerIsSuperAdmin"/> gates the
