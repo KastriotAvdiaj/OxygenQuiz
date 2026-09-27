@@ -4,6 +4,7 @@ import { Form, FormDrawer, Input, Label } from "@/components/ui/form";
 import { useNotifications } from "@/common/Notifications";
 import { Separator } from "@/components/ui/separator";
 import ImageUpload from "@/utils/Image-Upload";
+import { ExplanationField } from "@/common/QuestionExplanation";
 import {
   updateTrueFalseQuestionInputSchema,
   useUpdateTrueFalseQuestion,
@@ -80,6 +81,7 @@ export const UpdateTrueFalseQuestionForm: React.FC<
               id: question.id,
               text: question.text,
               imageUrl: question.imageUrl,
+              explanation: question.explanation ?? "",
               correctAnswer: question.correctAnswer,
               categoryId: question.category.id,
               difficultyId: question.difficulty.id,
@@ -232,6 +234,14 @@ export const UpdateTrueFalseQuestionForm: React.FC<
                     clearErrors={() => clearErrors("visibility")}
                   />
                 </div>
+                {/* Optional "why" shown to players after they answer — see
+                    docs/quiz/question-explanations.md. */}
+                <ExplanationField
+                  registration={register("explanation")}
+                  defaultValue={question.explanation}
+                  error={formState.errors["explanation"]}
+                  className="mt-4"
+                />
               </>
             );
           }}

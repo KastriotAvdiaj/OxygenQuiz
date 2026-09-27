@@ -127,6 +127,7 @@ namespace QuizAPI.Mapping
                 CreatedAt = q.CreatedAt,
                 ImageUrl = q.ImageUrl,
                 MediaUrl = q.MediaUrl ?? q.ImageUrl,
+                Explanation = q.Explanation,
                 MediaType =
                     q.MediaType == QuestionMediaType.Image ? "Image" :
                     q.MediaType == QuestionMediaType.Audio ? "Audio" :
@@ -171,6 +172,7 @@ namespace QuizAPI.Mapping
                 CreatedAt = q.CreatedAt,
                 ImageUrl = q.ImageUrl,
                 MediaUrl = q.MediaUrl ?? q.ImageUrl,
+                Explanation = q.Explanation,
                 MediaType =
                     q.MediaType == QuestionMediaType.Image ? "Image" :
                     q.MediaType == QuestionMediaType.Audio ? "Audio" :
@@ -219,6 +221,7 @@ namespace QuizAPI.Mapping
                 CreatedAt = q.CreatedAt,
                 ImageUrl = q.ImageUrl,
                 MediaUrl = q.MediaUrl ?? q.ImageUrl,
+                Explanation = q.Explanation,
                 MediaType =
                     q.MediaType == QuestionMediaType.Image ? "Image" :
                     q.MediaType == QuestionMediaType.Audio ? "Audio" :
@@ -264,6 +267,7 @@ namespace QuizAPI.Mapping
                 CreatedAt = q.CreatedAt,
                 ImageUrl = q.ImageUrl,
                 MediaUrl = q.MediaUrl ?? q.ImageUrl,
+                Explanation = q.Explanation,
                 MediaType =
                     q.MediaType == QuestionMediaType.Image ? "Image" :
                     q.MediaType == QuestionMediaType.Audio ? "Audio" :
@@ -337,6 +341,7 @@ namespace QuizAPI.Mapping
             ImageUrl = cm.ImageUrl,
             MediaUrl = cm.MediaUrl,
             MediaType = ParseMediaType(cm.MediaType),
+            Explanation = QuestionExplanation.Normalize(cm.Explanation),
             DifficultyId = cm.DifficultyId,
             CategoryId = cm.CategoryId,
             LanguageId = cm.LanguageId,
@@ -352,6 +357,7 @@ namespace QuizAPI.Mapping
             ImageUrl = cm.ImageUrl,
             MediaUrl = cm.MediaUrl,
             MediaType = ParseMediaType(cm.MediaType),
+            Explanation = QuestionExplanation.Normalize(cm.Explanation),
             DifficultyId = cm.DifficultyId,
             CategoryId = cm.CategoryId,
             LanguageId = cm.LanguageId,
@@ -364,6 +370,7 @@ namespace QuizAPI.Mapping
             ImageUrl = cm.ImageUrl,
             MediaUrl = cm.MediaUrl,
             MediaType = ParseMediaType(cm.MediaType),
+            Explanation = QuestionExplanation.Normalize(cm.Explanation),
             DifficultyId = cm.DifficultyId,
             CategoryId = cm.CategoryId,
             LanguageId = cm.LanguageId,
@@ -382,6 +389,7 @@ namespace QuizAPI.Mapping
             q.ImageUrl = um.ImageUrl;
             q.MediaUrl = um.MediaUrl;
             q.MediaType = ParseMediaType(um.MediaType);
+            q.Explanation = QuestionExplanation.Normalize(um.Explanation);
             q.DifficultyId = um.DifficultyId;
             q.CategoryId = um.CategoryId;
             q.LanguageId = um.LanguageId;
@@ -542,12 +550,34 @@ namespace QuizAPI.Mapping
 
     public static class QuizSessionMappers
     {
+        // ── Answer keys are withheld until the player is allowed to see them ────────────────
+        //
+        // Both projections below carry the answer key (IsCorrect, CorrectAnswerBoolean,
+        // CorrectAnswerText, AcceptableAnswers) and the verdict (Status, Score). They are served
+        // for UNFINISHED sessions too — the resume screen and the "you already have a session"
+        // path fetch them mid-quiz — so a quiz with ShowFeedbackImmediately = false used to hand
+        // the player, in the network tab, the key and the verdict for every question they had
+        // answered, undoing "results at the end".
+        //
+        // The rule, the same in both: a session reveals when it is completed (which includes
+        // abandoned) or when its quiz gives instant feedback — in which case the player has already
+        // been shown each verdict as they answered. Until then the DTO says what the player DID,
+        // not how it was judged: keys are null, Correct/Incorrect read as Pending, scores read 0.
+        // TimedOut is not masked; the player watched the clock run out.
+        //
+        // The condition is spelled out in every field rather than shared, because this is an
+        // expression translated to SQL and EF cannot inline a helper. The two projections must
+        // stay in step — ProjectSession inlines a copy of this one for the same reason.
+        // See docs/quiz/quiz-grading.md, "What the session response reveals, and when".
         public static readonly Expression<Func<UserAnswer, UserAnswerDto>> ProjectUserAnswer =
             ua => new UserAnswerDto
             {
                 Id = ua.Id,
-                Status = ua.Status,
-                Score = ua.Score,
+                Status = ua.QuizSession.IsCompleted || ua.QuizSession.Quiz.ShowFeedbackImmediately
+                         || (ua.Status != AnswerStatus.Correct && ua.Status != AnswerStatus.Incorrect)
+                    ? ua.Status
+                    : AnswerStatus.Pending,
+                Score = ua.QuizSession.IsCompleted || ua.QuizSession.Quiz.ShowFeedbackImmediately ? ua.Score : 0,
                 SelectedOptionId = ua.SelectedOptionId,
                 SubmittedAnswer = ua.SubmittedAnswer,
                 QuestionText = ua.QuizQuestion.Question.Text,
@@ -562,19 +592,23 @@ namespace QuizAPI.Mapping
                 TimeSpentInSeconds = ua.SubmittedTime.HasValue
                     ? (double?)(ua.SubmittedTime.Value - ua.QuestionStartTime).TotalSeconds
                     : null,
-                AnswerOptions = ua.QuizQuestion.Question is MultipleChoiceQuestion
+                AnswerOptions = (ua.QuizSession.IsCompleted || ua.QuizSession.Quiz.ShowFeedbackImmediately) && ua.QuizQuestion.Question is MultipleChoiceQuestion
                     ? ((MultipleChoiceQuestion)ua.QuizQuestion.Question).AnswerOptions
                         .Select(a => new AnswerOptionDTO { ID = a.Id, Text = a.Text, IsCorrect = a.IsCorrect })
                         .ToList()
                     : null,
-                CorrectAnswerBoolean = ua.QuizQuestion.Question is TrueFalseQuestion
+                CorrectAnswerBoolean = (ua.QuizSession.IsCompleted || ua.QuizSession.Quiz.ShowFeedbackImmediately) && ua.QuizQuestion.Question is TrueFalseQuestion
                     ? (bool?)((TrueFalseQuestion)ua.QuizQuestion.Question).CorrectAnswer
                     : null,
-                CorrectAnswerText = ua.QuizQuestion.Question is TypeTheAnswerQuestion
+                CorrectAnswerText = (ua.QuizSession.IsCompleted || ua.QuizSession.Quiz.ShowFeedbackImmediately) && ua.QuizQuestion.Question is TypeTheAnswerQuestion
                     ? ((TypeTheAnswerQuestion)ua.QuizQuestion.Question).CorrectAnswer
                     : null,
-                AcceptableAnswers = ua.QuizQuestion.Question is TypeTheAnswerQuestion
+                AcceptableAnswers = (ua.QuizSession.IsCompleted || ua.QuizSession.Quiz.ShowFeedbackImmediately) && ua.QuizQuestion.Question is TypeTheAnswerQuestion
                     ? ((TypeTheAnswerQuestion)ua.QuizQuestion.Question).AcceptableAnswers
+                    : null,
+                // Gives the answer away, so it follows the key.
+                Explanation = ua.QuizSession.IsCompleted || ua.QuizSession.Quiz.ShowFeedbackImmediately
+                    ? ua.QuizQuestion.Question.Explanation
                     : null
             };
 
@@ -586,7 +620,10 @@ namespace QuizAPI.Mapping
                 UserId = s.UserId,
                 StartTime = s.StartTime,
                 EndTime = s.EndTime,
-                TotalScore = s.TotalScore,
+                TotalScore = s.IsCompleted || s.Quiz.ShowFeedbackImmediately ? s.TotalScore : 0,
+                // Tells the client whether the fields below are the real verdict or withheld —
+                // see the note above ProjectUserAnswer.
+                ResultsRevealed = s.IsCompleted || s.Quiz.ShowFeedbackImmediately,
                 IsCompleted = s.IsCompleted,
                 AbandonmentReason = s.AbandonmentReason,
                 AbandonedAt = s.AbandonedAt,
@@ -632,8 +669,12 @@ namespace QuizAPI.Mapping
                     .Select(ua => new UserAnswerDto
                     {
                         Id = ua.Id,
-                        Status = ua.Status,
-                        Score = ua.Score,
+                        // Withheld until the session reveals — see the note above ProjectUserAnswer.
+                        Status = s.IsCompleted || s.Quiz.ShowFeedbackImmediately
+                                 || (ua.Status != AnswerStatus.Correct && ua.Status != AnswerStatus.Incorrect)
+                            ? ua.Status
+                            : AnswerStatus.Pending,
+                        Score = s.IsCompleted || s.Quiz.ShowFeedbackImmediately ? ua.Score : 0,
                         SelectedOptionId = ua.SelectedOptionId,
                         SubmittedAnswer = ua.SubmittedAnswer,
                         QuestionText = ua.QuizQuestion.Question.Text,
@@ -648,19 +689,23 @@ namespace QuizAPI.Mapping
                         TimeSpentInSeconds = ua.SubmittedTime.HasValue
                             ? (double?)(ua.SubmittedTime.Value - ua.QuestionStartTime).TotalSeconds
                             : null,
-                        AnswerOptions = ua.QuizQuestion.Question is MultipleChoiceQuestion
+                        AnswerOptions = (s.IsCompleted || s.Quiz.ShowFeedbackImmediately) && ua.QuizQuestion.Question is MultipleChoiceQuestion
                             ? ((MultipleChoiceQuestion)ua.QuizQuestion.Question).AnswerOptions
                                 .Select(a => new AnswerOptionDTO { ID = a.Id, Text = a.Text, IsCorrect = a.IsCorrect })
                                 .ToList()
                             : null,
-                        CorrectAnswerBoolean = ua.QuizQuestion.Question is TrueFalseQuestion
+                        CorrectAnswerBoolean = (s.IsCompleted || s.Quiz.ShowFeedbackImmediately) && ua.QuizQuestion.Question is TrueFalseQuestion
                             ? (bool?)((TrueFalseQuestion)ua.QuizQuestion.Question).CorrectAnswer
                             : null,
-                        CorrectAnswerText = ua.QuizQuestion.Question is TypeTheAnswerQuestion
+                        CorrectAnswerText = (s.IsCompleted || s.Quiz.ShowFeedbackImmediately) && ua.QuizQuestion.Question is TypeTheAnswerQuestion
                             ? ((TypeTheAnswerQuestion)ua.QuizQuestion.Question).CorrectAnswer
                             : null,
-                        AcceptableAnswers = ua.QuizQuestion.Question is TypeTheAnswerQuestion
+                        AcceptableAnswers = (s.IsCompleted || s.Quiz.ShowFeedbackImmediately) && ua.QuizQuestion.Question is TypeTheAnswerQuestion
                             ? ((TypeTheAnswerQuestion)ua.QuizQuestion.Question).AcceptableAnswers
+                            : null,
+                        // Gives the answer away, so it follows the key.
+                        Explanation = s.IsCompleted || s.Quiz.ShowFeedbackImmediately
+                            ? ua.QuizQuestion.Question.Explanation
                             : null
                     })
                     .ToList()
@@ -707,12 +752,13 @@ namespace QuizAPI.Mapping
         // ProjectSummary keeps its compiled twin because it reads only Quiz.Title and two counts,
         // and its callers page rows in memory. The lesson is not "never compile one" — it is that
         // the compiled form silently inherits an Include contract nothing checks.
-        private static readonly Func<UserAnswer, UserAnswerDto> _userAnswer = ProjectUserAnswer.Compile();
+        //
+        // ProjectUserAnswer lost its compiled twin on 2026-09-26 for the same reason: its only caller
+        // loaded answers without the MultipleChoice options, so every multiple-choice answer came
+        // back with `AnswerOptions: []` instead of throwing. It now walks QuizSession → Quiz as well,
+        // which a compiled twin would need yet another Include for. Project it in SQL.
         private static readonly Func<QuizSession, QuizSessionSummaryDto> _summary = ProjectSummary.Compile();
 
-        public static UserAnswerDto ToDto(this UserAnswer ua) => _userAnswer(ua);
-        public static List<UserAnswerDto> ToDtoList(this IEnumerable<UserAnswer> answers) =>
-            answers.Select(_userAnswer).ToList();
         public static List<QuizSessionSummaryDto> ToSummaryDtoList(this IEnumerable<QuizSession> sessions) =>
             sessions.Select(_summary).ToList();
 

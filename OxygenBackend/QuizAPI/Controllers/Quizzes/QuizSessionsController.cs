@@ -186,15 +186,16 @@ public class QuizSessionsController : BaseApiController
     }
 
     /// <summary>
-    /// Paginated summary of a user's quiz sessions, newest first (profile history —
-    /// see docs/quiz/user-stats-history.md). Page size is clamped server-side.
+    /// Paginated summary of a user's quiz sessions (history — see docs/quiz/user-stats-history.md).
+    /// Binds the standard <see cref="FilterQuery"/> (search / filter / sort / page / pageSize,
+    /// docs/quiz/filtering.md) against <see cref="QuizSessionFilterFields"/>; newest first by
+    /// default, page size clamped server-side. Plain <c>?page=&amp;pageSize=</c> still works.
     /// </summary>
     [HttpGet("user/{userId:guid}")]
     [ProducesResponseType(typeof(PagedResponse<QuizSessionSummaryDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetUserSessions(
         Guid userId,
-        [FromQuery] int page = 1,
-        [FromQuery] int pageSize = QuizSessionService.DefaultHistoryPageSize)
+        [FromQuery] FilterQuery query)
     {
         var currentUserId = _currentUser.UserId;
         if (currentUserId is null) return Unauthorized();
@@ -203,7 +204,7 @@ public class QuizSessionsController : BaseApiController
         if (userId != currentUserId && !_currentUser.IsAdmin)
             return Forbid();
 
-        var result = await _quizSessionService.GetUserSessionsAsync(userId, page, pageSize);
+        var result = await _quizSessionService.GetUserSessionsAsync(userId, query);
         return HandleResult(result);
     }
 

@@ -16,6 +16,7 @@ import {
   useCreateMultipleChoiceQuestion,
 } from "../../../api/Multiple_Choice_Question/create-multiple-choice-question";
 import ImageUpload from "@/utils/Image-Upload";
+import { ExplanationField } from "@/common/QuestionExplanation";
 import {
   QuestionCategory,
   QuestionDifficulty,
@@ -314,6 +315,13 @@ export const CreateMultipleChoiceForm: React.FC<
                   clearErrors={() => clearErrors("languageId")}
                 />
               </section>
+              {/* Optional "why" shown to players after they answer — see
+                  docs/quiz/question-explanations.md. */}
+              <ExplanationField
+                registration={register("explanation")}
+                error={formState.errors["explanation"]}
+                className="mt-4"
+              />
             </>
           );
         }}

@@ -22,7 +22,16 @@ same defaults:
   (`src/pages/Quiz/Multiplayer/components/lobby/quiz-selection-dialog.tsx`);
   the panel sits behind a "Filters" toggle in its compact variant
 
-Both default to the `Mixed Categories` sort option (`DEFAULT_SORT = "variety"` in
+The same toolbar and panel also power the play history's filters
+(`/my-dashboard/history`, see [user-stats-history.md](user-stats-history.md)). Two
+extension points exist for that and are safe to reuse: `QuizToolbar` takes a
+`sortOptions` map (value → label) in place of the catalogue's options, and
+`QuizFilterPanel` renders `children` after its three facets. In the sidebar and drawer
+the facets behave as an accordion — opening one closes the other — so two long lists
+never stack into a scrolling panel; the compact multiplayer variant keeps them
+independent because it lays them side by side.
+
+Both pickers default to the `Mixed Categories` sort option (`DEFAULT_SORT = "variety"` in
 `quiz-header.tsx`). Users can still switch to Newest/Oldest/A–Z; the variety option is
 just the landing default. Because the two pickers send identical default queries, they
 share the same React-Query cache entry.

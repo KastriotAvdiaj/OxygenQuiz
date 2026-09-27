@@ -1,6 +1,7 @@
 import { apiService } from '@/lib/Api-client';
 import type { QuizSession, QuizState, QuizSessionSummary, ResumeResult } from '../../../../types/quiz-session-types';
-import { getUserSessions } from './get-user-sessions';
+import { rule } from '@/lib/filtering';
+import { getUserSessions, SESSION_HISTORY_STATUS } from './get-user-sessions';
 
 /**
  * Resumes an existing quiz session that was interrupted but not completed.
@@ -63,9 +64,10 @@ export const abandonAndRestartSession = ({
  * Finds the user's in-progress session for a quiz, if any. Used by the resume/abandon flow when
  * "you already have an active session" comes back from session creation.
  *
- * Reads the first page of the (newest-first, paginated) history — an active session is by
- * definition the most recent one, so a single page is always enough. The history endpoint itself
- * lives in ./get-user-sessions.
+ * Asks the history endpoint for exactly that row — this quiz, still in progress, newest first —
+ * rather than scanning a page of everything. The old version read the first 20 sessions and
+ * searched them client-side, which missed an active session sitting further down the history.
+ * The history endpoint itself lives in ./get-user-sessions.
  */
 export const findActiveSessionForQuiz = async ({
   userId,
@@ -74,6 +76,16 @@ export const findActiveSessionForQuiz = async ({
   userId: string;
   quizId: number;
 }): Promise<QuizSessionSummary | undefined> => {
-  const { items } = await getUserSessions({ userId, page: 1, pageSize: 20 });
+  const { items } = await getUserSessions({
+    userId,
+    query: {
+      pageSize: 1,
+      filters: [
+        rule.eq("quizId", quizId),
+        rule.eq("status", SESSION_HISTORY_STATUS.InProgress),
+      ],
+    },
+  });
+  // The server already filtered; the check keeps a wrong row from ever being resumed.
   return items.find((s) => s.quizId === quizId && !s.isCompleted);
 };

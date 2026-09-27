@@ -459,6 +459,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
 
             question.Text = q.Text!;
             question.ImageUrl = q.ImageUrl;
+            question.Explanation = QuestionExplanation.NormalizeAndTruncate(q.Explanation);
             question.DifficultyId = q.DifficultyId;
             question.CategoryId = quiz.CategoryId;   // inherited
             question.LanguageId = quiz.LanguageId;   // inherited

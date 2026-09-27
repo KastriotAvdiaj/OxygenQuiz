@@ -107,14 +107,16 @@ describe("parseAiOutput", () => {
   it("snaps a time limit to one the builder can show, within the allowed range", () => {
     const result = parseAiOutput(
       reply([
-        { ...mc, timeLimitInSeconds: 22 },
-        { ...mc, timeLimitInSeconds: 9000 },
-        { ...mc, timeLimitInSeconds: -4 },
+        // Distinct texts: the parser drops a repeated question (question-checks.ts).
+        { ...mc, text: `${mc.text} (1)`, timeLimitInSeconds: 22 },
+        { ...mc, text: `${mc.text} (2)`, timeLimitInSeconds: 9000 },
+        { ...mc, text: `${mc.text} (3)`, timeLimitInSeconds: -4 },
       ]),
       parseContext,
     );
 
     const limits = result.questions.map((q) => q.settings.timeLimitInSeconds);
+    expect(limits).toHaveLength(3);
     expect(limits[0]).toBe(20);
     for (const seconds of limits) expect(TIME_LIMIT_VALUES).toContain(seconds);
   });
@@ -122,8 +124,8 @@ describe("parseAiOutput", () => {
   it("maps difficulty by name only, falling back to the quiz's own", () => {
     const result = parseAiOutput(
       reply([
-        { ...mc, difficulty: "hard" },
-        { ...mc, difficulty: "Legendary" },
+        { ...mc, text: `${mc.text} (1)`, difficulty: "hard" },
+        { ...mc, text: `${mc.text} (2)`, difficulty: "Legendary" },
       ]),
       parseContext,
     );

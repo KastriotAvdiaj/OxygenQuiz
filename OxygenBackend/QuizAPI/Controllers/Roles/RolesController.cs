@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using QuizAPI.Data;
+using QuizAPI.DTOs.User;
 using QuizAPI.Models;
 using QuizAPI.Services.Audit;
 
@@ -28,33 +29,32 @@ namespace QuizAPI.Controllers.Roles
             _auditService = auditService;
         }
 
+        // The reads return RoleDTO, not the Role entity: Admins can read them (not only SuperAdmins),
+        // and the entity carries a concurrency stamp and navigation collections the UI never uses.
+
         // GET: api/Roles
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Role>>> GetRoles()
+        public async Task<ActionResult<IEnumerable<RoleDTO>>> GetRoles()
         {
-            if (_context.Roles == null)
-            {
-                return NotFound();
-            }
-            return await _context.Roles.ToListAsync();
+            var roles = await _context.Roles
+                .AsNoTracking()
+                .OrderBy(r => r.Id)
+                .Select(r => new RoleDTO { Id = r.Id, Name = r.Name, IsActive = r.isActive, Description = r.Description })
+                .ToListAsync();
+            return Ok(roles);
         }
 
         // GET: api/Roles/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<Role>> GetRole(int id)
+        public async Task<ActionResult<RoleDTO>> GetRole(int id)
         {
-            if (_context.Roles == null)
-            {
-                return NotFound();
-            }
-            var role = await _context.Roles.FindAsync(id);
+            var role = await _context.Roles
+                .AsNoTracking()
+                .Where(r => r.Id == id)
+                .Select(r => new RoleDTO { Id = r.Id, Name = r.Name, IsActive = r.isActive, Description = r.Description })
+                .FirstOrDefaultAsync();
 
-            if (role == null)
-            {
-                return NotFound();
-            }
-
-            return role;
+            return role is null ? NotFound() : Ok(role);
         }
 
         // PUT: api/Roles/5

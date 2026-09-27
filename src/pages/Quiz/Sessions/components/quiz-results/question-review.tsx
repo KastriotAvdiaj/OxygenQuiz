@@ -9,6 +9,7 @@ import {
   QuizSession,
 } from "../../../../../types/quiz-session-types";
 import { QuestionMedia } from "@/common/QuestionMedia";
+import { ExplanationNote } from "@/common/QuestionExplanation";
 import { formatDuration } from "./quiz-session-utils";
 import { cn } from "@/utils/cn";
 
@@ -261,6 +262,9 @@ export function QuestionReview({ session }: QuestionReviewProps) {
             </div>
           )}
         </div>
+
+        {/* The author's "why", when there is one (docs/quiz/question-explanations.md). */}
+        <ExplanationNote explanation={answer.explanation} />
       </div>
     );
   };

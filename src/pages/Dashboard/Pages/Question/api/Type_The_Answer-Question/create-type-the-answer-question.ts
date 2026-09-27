@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
+import { explanationSchema } from "@/common/question-explanation";
 import { apiService } from "@/lib/Api-client";
 import { MutationConfig } from "@/lib/React-query";
 import { UnspecifiedIds } from "../../../Quiz/components/Create-Quiz-Form/constants";
@@ -29,6 +30,9 @@ export const createTypeTheAnswerQuestionInputSchema = z.object({
   isCaseSensitive: z.boolean().default(false),
   allowPartialMatch: z.boolean().default(false),
   imageUrl: z.string().optional(),
+  // Optional "why" shown after answering. The API caps and normalises it too
+  // (QuestionExplanation.Normalize); this is the fast-feedback half.
+  explanation: explanationSchema,
   acceptableAnswers: z
     .array(
       z.object({

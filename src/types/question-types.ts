@@ -85,6 +85,8 @@ export interface QuestionBase {
   category: CategoryDTO;
   language: LanguageDTO;
   imageUrl: string;
+  /** Optional "why", shown to players after they answer. Null when the author wrote none. */
+  explanation?: string | null;
   createdAt: string;
   user: UserBasic;
   type: QuestionType;

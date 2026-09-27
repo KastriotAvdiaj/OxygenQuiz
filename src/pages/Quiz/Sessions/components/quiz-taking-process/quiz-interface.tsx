@@ -14,6 +14,10 @@ import { LiftedButton } from "@/common/LiftedButton";
 import { QuizLeaveButton } from "./quiz-leave-button";
 import { QuizLoadingView } from "../quiz-loading-view";
 import { usePrefersReducedMotion } from "@/hooks/use-prefers-reduced-motion";
+import {
+  DEFAULT_ADVANCE_SECONDS,
+  explanationReadingSeconds,
+} from "@/common/question-explanation";
 
 interface QuizInterfaceProps {
   sessionId: string;
@@ -62,7 +66,7 @@ export function QuizInterface({
   isFetchingNextQuestion = false,
 }: QuizInterfaceProps) {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const [autoAdvanceCounter, setAutoAdvanceCounter] = React.useState(3);
+  const [autoAdvanceCounter, setAutoAdvanceCounter] = React.useState(DEFAULT_ADVANCE_SECONDS);
   const prefersReducedMotion = usePrefersReducedMotion();
 
   // ── The question-to-question swap ────────────────────────────────────────────────────────
@@ -126,13 +130,30 @@ export function QuizInterface({
   onNextQuestionRef.current = onNextQuestion;
 
   const answerId = lastAnswerResult ? currentQuestion?.quizQuestionId ?? null : null;
+  // Three seconds is enough to see a verdict and not enough to read an explanation, so a result
+  // that carries one stays up longer — scaled to its length, and never past the allowance the
+  // server sent, which is the reading slack the session's deadline grants this question. Waiting
+  // longer could run the session out while the player reads; a result without an allowance
+  // (an older server) keeps the default. See docs/quiz/question-explanations.md.
+  // A number, not the result object, so the effect below still depends on primitives only.
+  const explanation = lastAnswerResult?.explanation?.trim();
+  const readingAllowance = lastAnswerResult?.readingAllowanceSeconds;
+  const advanceSeconds =
+    explanation && readingAllowance
+      ? explanationReadingSeconds(explanation, readingAllowance)
+      : DEFAULT_ADVANCE_SECONDS;
 
   useEffect(() => {
     // Only auto-advance for mid-quiz feedback, not the final question, and never while the
     // next question is already on its way — re-arming then would fire a second request.
-    if (answerId !== null && showInstantFeedback && !isQuizComplete && !isFetchingNextQuestion) {
+    if (
+      answerId !== null &&
+      showInstantFeedback &&
+      !isQuizComplete &&
+      !isFetchingNextQuestion
+    ) {
       // Reset counter
-      setAutoAdvanceCounter(3);
+      setAutoAdvanceCounter(advanceSeconds);
 
       // Clear any existing timeout
       if (timeoutRef.current) {
@@ -150,11 +171,11 @@ export function QuizInterface({
         });
       }, 1000);
 
-      // Set timeout to auto-click after 3 seconds
+      // Auto-click once the countdown runs out
       timeoutRef.current = setTimeout(() => {
         clearInterval(countdownInterval);
         onNextQuestionRef.current();
-      }, 3000);
+      }, advanceSeconds * 1000);
 
       return () => {
         if (timeoutRef.current) {
@@ -163,7 +184,7 @@ export function QuizInterface({
         clearInterval(countdownInterval);
       };
     }
-  }, [answerId, showInstantFeedback, isQuizComplete, isFetchingNextQuestion]);
+  }, [answerId, showInstantFeedback, isQuizComplete, isFetchingNextQuestion, advanceSeconds]);
 
   const handleNextQuestion = () => {
     if (isFetchingNextQuestion) return;
@@ -266,7 +287,7 @@ export function QuizInterface({
                             className="h-full rounded-full bg-primary"
                             initial={{ width: "100%" }}
                             animate={{
-                              width: `${(autoAdvanceCounter / 3) * 100}%`,
+                              width: `${(autoAdvanceCounter / advanceSeconds) * 100}%`,
                             }}
                             transition={{ duration: 0.3 }}
                           />

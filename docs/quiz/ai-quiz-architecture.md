@@ -1,10 +1,12 @@
 # AI-Assisted Quiz Creation — Architecture
 
-Status: Phase 1 and the Phase 1.5 atomic import are implemented. Phase 2 (hosted API) not started
-— it is now planned in detail in [`ai-quiz-generation-plan.md`](./ai-quiz-generation-plan.md),
-which supersedes the sketch in §8 below.
+Status: Phase 1, the Phase 1.5 atomic import, and Phase 2 slices 2.0–2.1 (in-app generation)
+are implemented — how in-app generation works is in
+[`ai-quiz-generation-flow.md`](./ai-quiz-generation-flow.md), which supersedes the sketch in §8
+below. Work on question *accuracy* is planned in
+[`ai-question-accuracy-plan.md`](./ai-question-accuracy-plan.md).
 Companion to `docs/quiz/ai-quiz-creation-plan.md` (the *what/why*); this is the *how*.
-Last updated: 2026-08-09
+Last updated: 2026-09-26
 
 ---
 
@@ -228,6 +230,9 @@ These are the properties that make the feature safe. Every change should preserv
 | Reply is not JSON at all | `extractJson` → null | Friendly "couldn't find JSON" error, user re-pastes |
 | JSON valid but wrong shape | `aiPayloadSchema` | "doesn't match expected format" error |
 | One question malformed (no correct option, etc.) | `buildQuestion` | That question dropped w/ reason; others kept. Reported by `ImportNotices` |
+| Duplicate options, a key contradicting `allowMultipleSelections`, or the answer written in the question | `buildQuestion` → `question-checks.ts` | Dropped w/ reason, same as malformed. Reported by `ImportNotices` |
+| Same question twice in one reply | `parseAiOutput` → `question-checks.ts` | Later copy dropped; the first copy that *survived the other checks* is kept |
+| `sourceQuote` not found in the source material (Source mode) | `parseAiOutput` → `checkQuoteInSource` | Dropped as an invented fact. A missing quote is tolerated. See [`ai-question-accuracy-plan.md`](./ai-question-accuracy-plan.md) |
 | Difficulty name not recognised | `resolveDifficultyId` | Falls back to quiz difficulty; reported by `ImportNotices` |
 | `pointSystem` / time out of range | `resolveSettings` | Clamped to defaults/bounds |
 | All questions invalid | `parseAiOutput` | Whole import rejected with guidance |

@@ -144,55 +144,53 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.AbandonmentSe
 
         private async Task<(TimeSpan TotalTimeout, TimeSpan ActivityTimeout)> CalculateTimeoutsAsync(QuizSession session)
         {
-            // Timeout math must mirror what the player is actually served: only the rows visible
-            // to the session's pinned quiz version (docs/quiz/quiz-editing.md).
+            var (questions, instantFeedback) = await LoadTimedQuestionsAsync(session);
+            return SessionTimeouts.Calculate(questions, instantFeedback, _options);
+        }
+
+        /// <summary>
+        /// What the timeouts need: each question's limit and whether it has an explanation, and
+        /// whether the quiz gives instant feedback.
+        ///
+        /// <para>Timeout math must mirror what the player is actually served: only the rows visible
+        /// to the session's pinned quiz version (docs/quiz/quiz-editing.md).</para>
+        ///
+        /// <para>The loaded graph is used only when it is complete — every visible row with its
+        /// question. A missing question would read as "no explanation", which under-counts the
+        /// deadline, and too tight is the direction that costs a player their session. The query
+        /// ignores query filters for the same reason: the sweep runs with no signed-in user, and
+        /// the question-visibility filter would hide exactly the Private questions quizzes are
+        /// built from.</para>
+        /// </summary>
+        private async Task<(List<TimedQuestion> Questions, bool InstantFeedback)> LoadTimedQuestionsAsync(
+            QuizSession session)
+        {
             var sessionVersion = session.QuizVersion;
-            var quizQuestions = session.Quiz?.QuizQuestions
-                                   .Where(qq => qq.IsVisibleToVersion(sessionVersion))
-                                   .ToList() ??
-                               await _context.QuizQuestions
-                                   .Where(qq => qq.QuizId == session.QuizId
-                                       && qq.CreatedInVersion <= sessionVersion
-                                       && (qq.RemovedInVersion == null || qq.RemovedInVersion > sessionVersion))
-                                   .Select(qq => new { qq.TimeLimitInSeconds })
-                                   .ToListAsync()
-                                   .ContinueWith(t => t.Result.Select(x => new QuizQuestion { TimeLimitInSeconds = x.TimeLimitInSeconds }).ToList());
 
-            var totalQuizTimeSeconds = quizQuestions.Sum(qq => qq.TimeLimitInSeconds) +
-                                     quizQuestions.Count * _options.QuestionBufferSeconds;
-            var expectedDuration = TimeSpan.FromSeconds(totalQuizTimeSeconds);
+            var loaded = session.Quiz?.QuizQuestions
+                .Where(qq => qq.IsVisibleToVersion(sessionVersion))
+                .ToList();
 
-            var totalTimeout = expectedDuration.Add(
-                TimeSpan.FromMinutes(expectedDuration.TotalMinutes * _options.TotalTimeoutBufferPercentage));
+            var questions = loaded != null && loaded.All(qq => qq.Question != null)
+                ? loaded.Select(qq => new TimedQuestion(qq.TimeLimitInSeconds, qq.Question!.Explanation != null)).ToList()
+                : await _context.QuizQuestions
+                    .IgnoreQueryFilters()
+                    .AsNoTracking()
+                    .Where(qq => qq.QuizId == session.QuizId
+                        && qq.CreatedInVersion <= sessionVersion
+                        && (qq.RemovedInVersion == null || qq.RemovedInVersion > sessionVersion))
+                    .Select(qq => new TimedQuestion(qq.TimeLimitInSeconds, qq.Question.Explanation != null))
+                    .ToListAsync();
 
-            // ── The activity timeout must not be able to outrun the catch-up walk ──────────────
-            //
-            // `ResolveAndResumeAsync` checks abandonment FIRST, and only then walks the expired
-            // questions. So any absence this timeout calls "abandoned" is an absence the walk
-            // never gets to resolve — and if that absence is shorter than the walk's own reach,
-            // the walk is unreachable and the "Session In Progress" screen is offering a resume
-            // the server will refuse.
-            //
-            // The walk's reach is bounded by the total playable time of the session's unanswered
-            // questions, which is at most every visible question's limit. Setting the timeout to
-            // the whole quiz's playable time plus a grace therefore guarantees the invariant:
-            //
-            //     activityTimeout > (the longest catch-up the walk could ever perform)
-            //
-            // so abandonment can only fire once the walk would have run out of questions anyway.
-            // Using every question rather than just the unanswered ones over-estimates late in a
-            // quiz, and that is the deliberate direction: too generous costs a stale row the
-            // total-time cap reaps anyway, too tight costs a player their session.
-            //
-            // It used to be `longestQuestion * 2 + 60s` — two minutes for a quiz of 30-second
-            // questions, which voided any absence long enough to expire three questions. The
-            // catch-up walk, its client-side mirror and the whole resume screen were dead code in
-            // production. See docs/adr/0008-abandonment-cannot-outrun-the-catch-up-walk.md.
-            var activityTimeout = quizQuestions.Count > 0
-                ? TimeSpan.FromSeconds(totalQuizTimeSeconds + _options.ActivityBufferSeconds)
-                : TimeSpan.FromSeconds(_options.FallbackActivityTimeoutSeconds);
+            var instantFeedback = session.Quiz?.ShowFeedbackImmediately
+                ?? await _context.Quizzes
+                    .IgnoreQueryFilters()
+                    .AsNoTracking()
+                    .Where(q => q.Id == session.QuizId)
+                    .Select(q => q.ShowFeedbackImmediately)
+                    .FirstOrDefaultAsync();
 
-            return (totalTimeout, activityTimeout);
+            return (questions, instantFeedback);
         }
 
         public async Task MarkSessionsAsAbandonedAsync(List<QuizSession> sessions)

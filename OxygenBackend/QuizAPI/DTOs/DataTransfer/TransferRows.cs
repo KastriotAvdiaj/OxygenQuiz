@@ -89,6 +89,7 @@ namespace QuizAPI.DTOs.DataTransfer
         public string Language { get; set; } = string.Empty;
         public string Visibility { get; set; } = string.Empty;
         public string Details { get; set; } = string.Empty;  // human-readable answer summary
+        public string? Explanation { get; set; }
         public string CreatedBy { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; }
     }
@@ -101,6 +102,7 @@ namespace QuizAPI.DTOs.DataTransfer
         public int DifficultyId { get; set; }
         public int LanguageId { get; set; }
         public string Visibility { get; set; } = "Global";
+        public string? Explanation { get; set; }        // optional; shown to players after they answer
 
         // MultipleChoice
         public string? Options { get; set; }          // pipe-separated option texts: "Red|Green|Blue"

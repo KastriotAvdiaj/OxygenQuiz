@@ -419,6 +419,7 @@ namespace QuizAPI.Controllers.DataTransfer
                                 DifficultyId = r.DifficultyId,
                                 LanguageId = r.LanguageId,
                                 Visibility = NormalizeVisibility(r.Visibility),
+                                Explanation = r.Explanation,
                                 CorrectAnswer = r.CorrectAnswer ?? false,
                             }, userId);
                             break;
@@ -432,6 +433,7 @@ namespace QuizAPI.Controllers.DataTransfer
                                 DifficultyId = r.DifficultyId,
                                 LanguageId = r.LanguageId,
                                 Visibility = NormalizeVisibility(r.Visibility),
+                                Explanation = r.Explanation,
                                 CorrectAnswer = (r.TypeAnswer ?? string.Empty).Trim(),
                                 AcceptableAnswers = SplitPipe(r.AcceptableAnswers),
                                 IsCaseSensitive = r.IsCaseSensitive,
@@ -449,6 +451,7 @@ namespace QuizAPI.Controllers.DataTransfer
                                 DifficultyId = r.DifficultyId,
                                 LanguageId = r.LanguageId,
                                 Visibility = NormalizeVisibility(r.Visibility),
+                                Explanation = r.Explanation,
                                 AllowMultipleSelections = r.AllowMultipleSelections,
                                 AnswerOptions = options.Select(o => new AnswerOptionCM
                                 {
@@ -603,6 +606,7 @@ namespace QuizAPI.Controllers.DataTransfer
             Language = q.Language?.Language ?? string.Empty,
             Visibility = q.Visibility.ToString(),
             Details = details,
+            Explanation = q.Explanation,
             CreatedBy = q.User?.Username ?? string.Empty,
             CreatedAt = q.CreatedAt,
         };

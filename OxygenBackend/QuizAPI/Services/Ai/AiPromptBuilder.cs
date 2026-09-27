@@ -7,9 +7,10 @@ using QuizAPI.Models;
 namespace QuizAPI.Services.Ai
 {
     /// <summary>
-    /// Builds the quiz-generation prompt. A C# port of <c>src/.../AI-Quiz/prompt.ts</c>, intended
-    /// to <b>replace</b> it in slice 2.1 — until then the two are duplicates and an edit must be
-    /// made in both (docs/quiz/ai-quiz-generation-flow.md §9, gap 2).
+    /// Builds the quiz-generation prompt — the only one in the codebase. It replaced the TS
+    /// <c>buildPrompt</c> in slice 2.1; the copy-paste path fetches it from
+    /// <c>POST /api/quiz/ai-prompt</c>, so both AI paths send the same instructions
+    /// (docs/quiz/ai-quiz-generation-flow.md §9, gap 2).
     ///
     /// <para><b>Rules that are not negotiable</b> (docs/quiz/ai-quiz-creation-plan.md §5):</para>
     /// <list type="bullet">
@@ -37,6 +38,25 @@ namespace QuizAPI.Services.Ai
         public const int MinTimeLimit = 5;
         public const int MaxTimeLimit = 300;
         public const int MaxTitleLength = 80;
+
+        /// <summary>
+        /// Source mode only. Read by <c>parse-ai-output.ts</c>, which drops a question whose quote
+        /// is not in the material — see docs/quiz/ai-question-accuracy-plan.md.
+        /// </summary>
+        public const string SourceQuoteField = "sourceQuote";
+
+        /// <summary>
+        /// The "why" a player reads after answering. Asked for in both modes; optional on the way
+        /// back in, and the author can edit or delete it in review (docs/quiz/question-explanations.md).
+        /// </summary>
+        public const string ExplanationField = "explanation";
+
+        /// <summary>
+        /// What we ask for, well under the stored cap (<c>QuestionExplanation.MaxLength</c>): a
+        /// player reads it in the seconds before the next question, and every character is an
+        /// output token on a 15-question reply.
+        /// </summary>
+        public const int ExplanationTargetLength = 250;
 
         /// <summary>
         /// The only per-question time limits the app can render.
@@ -143,7 +163,7 @@ namespace QuizAPI.Services.Ai
                 "Respond with a SINGLE json object and NOTHING else. No explanation, no commentary, no markdown code fences.",
                 "The object must have exactly this shape:\n\n" + ShapeBlock(
                     typeList, difficultyList, pointSystems, categoryList, languageList,
-                    askForCategory, askForLanguage),
+                    askForCategory, askForLanguage, askForQuote: !isTopic),
                 $"\"title\": a short, specific title for the quiz — at most {MaxTitleLength} characters. Name the subject; don't pad it with the word \"Quiz\".",
             };
 
@@ -190,6 +210,38 @@ namespace QuizAPI.Services.Ai
                 ? "Ask only about well-established, verifiable facts that a reference work would agree on. Do NOT write questions about recent events, current office-holders, current prices or statistics, records, or anything phrased as \"the latest\" or \"the most recent\" — your knowledge has a cutoff and those answers go stale. Prefer durable knowledge. If you are not confident an answer is correct, ask a different question instead."
                 : "Base every question strictly on the source material. Do not invent facts that are not present in it. Make sure the answer you mark as correct is actually correct according to the source.");
 
+            if (!isTopic)
+            {
+                // The one check that catches an invented *fact* rather than a malformed question:
+                // parse-ai-output.ts drops any question whose quote is not in the material. The
+                // quote stays in the source's language even when the questions are translated —
+                // a translated "quote" can't be found, and would be dropped as invented.
+                rules.Add(
+                    $"\"{SourceQuoteField}\": copy, word for word, the sentence from the SOURCE MATERIAL that proves the correct answer. "
+                    + "Copy it exactly as it appears there, in the language it is written in, even if the questions are in a different language. "
+                    + "Do not paraphrase, shorten or translate it. If no single sentence in the material proves the answer, do not ask that question.");
+            }
+
+            // Writing the justification also makes a weaker model check its own key: an answer it
+            // can't explain is one it is more likely to have wrong. The explanation is shown to
+            // players only after they answer, so it may state the answer outright.
+            rules.Add(
+                $"\"{ExplanationField}\": one or two sentences, at most {ExplanationTargetLength} characters, saying WHY the correct answer is correct — the fact or reasoning behind it, not a restatement of the question. "
+                + "Write it in the same language as the question. "
+                + (isTopic
+                    ? "Only state facts you are confident of."
+                    : "Use only facts from the SOURCE MATERIAL."));
+
+            // Structural mistakes weaker models make often and reviewers miss easily. Each one is
+            // also checked in code (question-checks.ts) — this rule lowers how many get dropped,
+            // it is not what catches them.
+            rules.Add(
+                "Every question must be unambiguous: whatever you mark correct must be the only defensible answer. "
+                + "Wrong options must be clearly wrong, not partly true or true under another reading. "
+                + "All options must be different from each other. "
+                + "Never write the answer, or an obvious hint to it, in the question text. "
+                + "Avoid \"all of the above\", \"none of the above\" and questions phrased with NOT or EXCEPT.");
+
             if (!string.IsNullOrWhiteSpace(r.ExtraInstructions))
                 rules.Add($"Additional instructions from the user: {r.ExtraInstructions.Trim()}");
 
@@ -198,7 +250,8 @@ namespace QuizAPI.Services.Ai
 
         private static string ShapeBlock(
             string typeList, string difficultyList, string pointSystems,
-            string categoryList, string languageList, bool askForCategory, bool askForLanguage)
+            string categoryList, string languageList, bool askForCategory, bool askForLanguage,
+            bool askForQuote)
         {
             var sb = new StringBuilder();
             sb.AppendLine("{");
@@ -211,7 +264,9 @@ namespace QuizAPI.Services.Ai
             sb.AppendLine("      \"text\": string,");
             sb.AppendLine($"      \"difficulty\": {difficultyList},");
             sb.AppendLine($"      \"pointSystem\": {pointSystems},");
-            sb.AppendLine($"      \"timeLimitInSeconds\": {string.Join(" | ", AllowedTimeLimits)}");
+            sb.AppendLine($"      \"timeLimitInSeconds\": {string.Join(" | ", AllowedTimeLimits)},");
+            sb.AppendLine($"      \"{ExplanationField}\": string{(askForQuote ? "," : string.Empty)}");
+            if (askForQuote) sb.AppendLine($"      \"{SourceQuoteField}\": string");
             sb.AppendLine("    }");
             sb.AppendLine("  ]");
             sb.Append('}');

@@ -18,6 +18,7 @@ import { LanguageSelect } from "../../Entities/Language/components/select-questi
 import { VisibilitySelect } from "../../Entities/select-visibility";
 import { LiftedButton } from "@/common/LiftedButton";
 import ImageUpload from "@/utils/Image-Upload";
+import { ExplanationField } from "@/common/QuestionExplanation";
 import { MultipleChoiceQuestion } from "@/types/question-types";
 import { IconButtonWithTooltip } from "../Re-Usable-Components/icon-button-with-tooltip";
 import { Authorization } from "@/lib/authorization";
@@ -76,6 +77,7 @@ export const UpdateMultipleChoiceQuestionForm: React.FC<
               id: question.id,
               text: question.text,
               imageUrl: question.imageUrl || null,
+              explanation: question.explanation ?? "",
               categoryId: question.category.id,
               difficultyId: question.difficulty.id,
               languageId: question.language.id,
@@ -280,6 +282,14 @@ export const UpdateMultipleChoiceQuestionForm: React.FC<
                     clearErrors={() => clearErrors("visibility")}
                   />
                 </div>
+                {/* Optional "why" shown to players after they answer — see
+                    docs/quiz/question-explanations.md. */}
+                <ExplanationField
+                  registration={register("explanation")}
+                  defaultValue={question.explanation}
+                  error={formState.errors["explanation"]}
+                  className="mt-4"
+                />
               </>
             );
           }}

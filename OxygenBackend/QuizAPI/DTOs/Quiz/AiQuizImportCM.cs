@@ -75,6 +75,12 @@ namespace QuizAPI.DTOs.Quiz
 
         public string? ImageUrl { get; set; }
 
+        /// <summary>
+        /// Optional "why" for the answer. Usually model-written and author-reviewed; an over-long
+        /// one is cut, not rejected (<see cref="Models.QuestionExplanation.NormalizeAndTruncate"/>).
+        /// </summary>
+        public string? Explanation { get; set; }
+
         // ── Per-quiz settings (the QuizQuestion join row) ──
         public string PointSystem { get; set; } = "Standard";
 

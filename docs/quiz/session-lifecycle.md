@@ -77,10 +77,33 @@ abandoned, which is precisely the population `completionRate` is computed agains
 > kind of abandoned session. The Hangfire job owns only the schedule; the rules stay in
 > `ISessionAbandonmentService`, shared with the lazy paths.
 
-**The timing rules** live in `SessionAbandonmentService.CalculateTimeoutsAsync` and are derived from
-the quiz rather than fixed: a total timeout (the sum of the pinned version's question limits plus a
-per-question buffer, times a percentage margin) and an activity timeout (the longest single question
-times a multiplier, plus a buffer). All configurable on `QuizSessionOptions`.
+**The timing rules** live in `SessionTimeouts` (the arithmetic, pure) and
+`SessionAbandonmentService.CalculateTimeoutsAsync` (which loads its inputs), and are derived from the
+quiz rather than fixed. Both start from the session's **expected time**, summed per question over the
+pinned version's visible rows:
+
+```
+per question:  time limit
+             + QuestionBufferSeconds (5)                       latency, page loads, the 3 s auto-advance
+             + ExplanationReadSeconds (10)  only if the question has an explanation
+                                            AND the quiz gives instant feedback
+```
+
+- **Total timeout** — expected time × (1 + `TotalTimeoutBufferPercentage`, 0.5), from the session's
+  start.
+- **Activity timeout** — expected time + `ActivityBufferSeconds` (60), from the last question
+  served. It must never be shorter than the catch-up walk's reach — see
+  [ADR 0008](../adr/0008-abandonment-cannot-outrun-the-catch-up-walk.md). (Until 2026-09-10 it was
+  the longest question × 2 + 60 s, which made the walk unreachable.)
+
+The session is abandoned at whichever comes first. All of it is configurable on
+`QuizSessionOptions`.
+
+The reading allowance is per question so a quiz with explanations on only some questions gets
+exactly that much, and a quiz with none is unchanged. It is also the **longest the client will
+wait** on the feedback screen before auto-advancing: the server sends it with each result as
+`ReadingAllowanceSeconds`, so the client's wait can't outgrow the slack the deadline set aside for
+it — see [ADR 0016](../adr/0016-the-feedback-screen-cannot-outwait-the-session-deadline.md).
 
 ## 4. The two buttons
 
@@ -113,8 +136,9 @@ session that has since been abandoned" path went from rare to routine.
 
 ### Why the screen can disagree with the server
 
-The screen is built from a **list read** (`findActiveSessionForQuiz` filters `!isCompleted` over the
-user's recent sessions), and the session can be abandoned between that read and the button press —
+The screen is built from a **list read** (`findActiveSessionForQuiz` asks the history endpoint for
+this quiz's in-progress session — `quizId` + `status:InProgress`, see
+[user-stats-history.md](user-stats-history.md)), and the session can be abandoned between that read and the button press —
 including by the very lazy-abandonment path the surrounding requests trigger. So the screen can
 briefly claim a session is in progress when the server already considers it finished.
 

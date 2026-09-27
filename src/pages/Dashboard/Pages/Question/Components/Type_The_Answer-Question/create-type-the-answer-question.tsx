@@ -23,6 +23,7 @@ import {
 } from "@/components/ui";
 import { LiftedButton } from "@/common/LiftedButton";
 import ImageUpload from "@/utils/Image-Upload";
+import { ExplanationField } from "@/common/QuestionExplanation";
 import { QuestionCategory, QuestionDifficulty, QuestionLanguage } from "@/types/question-types";
 
 interface CreateTypeAnswerQuestionFormProps {
@@ -320,6 +321,13 @@ export const CreateTypeAnswerQuestionForm: React.FC<
                   />
                 </section>
               </div>
+              {/* Optional "why" shown to players after they answer — see
+                  docs/quiz/question-explanations.md. */}
+              <ExplanationField
+                registration={register("explanation")}
+                error={formState.errors["explanation"]}
+                className="mt-4"
+              />
             </>
           );
         }}

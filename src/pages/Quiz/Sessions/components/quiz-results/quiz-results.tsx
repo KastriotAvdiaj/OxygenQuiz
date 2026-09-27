@@ -92,7 +92,7 @@ export function QuizResults({
       <div className="container m-auto w-full px-3 py-4 sm:px-4 sm:py-6 max-w-4xl">
         {/* Header */}
         <div className="mb-4 sm:mb-5 text-center">
-          <h1 className="inline-block text-2xl sm:text-3xl font-black tracking-tight text-primary">
+          <h1 className="inline-block text-2xl sm:text-3xl font-black tracking-tight text-foreground">
             {session.quizTitle}
           </h1>
           <div className="mx-auto mt-1.5 h-1 w-16 rounded-full bg-primary/60" />

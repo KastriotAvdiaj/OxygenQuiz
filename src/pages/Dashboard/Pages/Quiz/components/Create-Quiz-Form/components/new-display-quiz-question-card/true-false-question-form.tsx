@@ -23,6 +23,7 @@ export const TrueFalseFormCard: React.FC<TrueFalseFormCardProps> = ({
 }) => {
   const [questionText, setQuestionText] = useState(question.text);
   const [imageUrl, setImageUrl] = useState(question.imageUrl || undefined);
+  const [explanation, setExplanation] = useState(question.explanation ?? "");
   const [correctAnswer, setCorrectAnswer] = useState(question.correctAnswer);
   const { updateQuestion, getQuestionErrors, questionErrors } = useQuiz();
 
@@ -37,9 +38,10 @@ export const TrueFalseFormCard: React.FC<TrueFalseFormCardProps> = ({
     () => ({
       text: questionText,
       imageUrl,
+      explanation,
       correctAnswer,
     }),
-    [questionText, imageUrl, correctAnswer]
+    [questionText, imageUrl, explanation, correctAnswer]
   );
 
   const debouncedQuestionState = useDebounce(currentQuestionState, 300);
@@ -49,6 +51,7 @@ export const TrueFalseFormCard: React.FC<TrueFalseFormCardProps> = ({
       ...question,
       text: debouncedQuestionState.text,
       imageUrl: debouncedQuestionState.imageUrl,
+      explanation: debouncedQuestionState.explanation,
       correctAnswer: debouncedQuestionState.correctAnswer,
     };
     updateQuestion(question.id, updatedQuestion);
@@ -65,7 +68,7 @@ export const TrueFalseFormCard: React.FC<TrueFalseFormCardProps> = ({
     setImageUrl(undefined);
   };
 
-  const generalErrors = getGeneralErrors(["text", "imageUrl", "correctAnswer"]);
+  const generalErrors = getGeneralErrors(["text", "imageUrl", "explanation", "correctAnswer"]);
 
   return (
     <div className="relative">
@@ -80,6 +83,9 @@ export const TrueFalseFormCard: React.FC<TrueFalseFormCardProps> = ({
         onImageRemove={handleImageRemove}
         showImageUpload={true}
         questionTextError={getFieldError("text")}
+        explanation={explanation}
+        onExplanationChange={setExplanation}
+        explanationError={getFieldError("explanation")}
       >
         <div className="space-y-6 pt-4">
           <div className="text-center">

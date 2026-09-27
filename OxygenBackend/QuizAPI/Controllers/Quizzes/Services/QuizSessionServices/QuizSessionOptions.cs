@@ -5,7 +5,25 @@
         public const string SectionName = "QuizSession";
 
         public double GracePeriodSeconds { get; set; } = 0;
+        /// <summary>
+        /// Slack per question in the session's total-time deadline: network latency, page loads,
+        /// and the three-second auto-advance after instant feedback. Global — every question of
+        /// every quiz gets it.
+        /// </summary>
         public int QuestionBufferSeconds { get; set; } = 5;
+
+        /// <summary>
+        /// Extra slack for each question that has an explanation, in a quiz with instant feedback —
+        /// the only case where the player is shown it between questions. It is also the
+        /// <b>longest the client will wait</b> before auto-advancing past an explanation: sent as
+        /// <c>InstantFeedbackAnswerResultDto.ReadingAllowanceSeconds</c>, so the client's wait can
+        /// never exceed what the deadline allows for. Raise it and both move together.
+        ///
+        /// <para>Per question rather than a bigger <see cref="QuestionBufferSeconds"/>, so a quiz
+        /// without explanations — or with only some — isn't given slack it will never use. See
+        /// docs/quiz/session-lifecycle.md, "The timing rules".</para>
+        /// </summary>
+        public int ExplanationReadSeconds { get; set; } = 10;
         public double TotalTimeoutBufferPercentage { get; set; } = 0.5;
 
         /// <summary>

@@ -475,6 +475,7 @@ const CreateQuizForm = ({
                 type: QuestionType.MultipleChoice,
                 text: nq.text,
                 imageUrl: nq.imageUrl,
+                explanation: nq.explanation,
                 answerOptions: nq.answerOptions.map((o) => ({
                   text: o.text,
                   isCorrect: o.isCorrect,
@@ -488,6 +489,7 @@ const CreateQuizForm = ({
                 type: QuestionType.TrueFalse,
                 text: nq.text,
                 imageUrl: nq.imageUrl,
+                explanation: nq.explanation,
                 correctAnswerBoolean: nq.correctAnswer,
               };
             }
@@ -496,6 +498,7 @@ const CreateQuizForm = ({
               type: QuestionType.TypeTheAnswer,
               text: nq.text,
               imageUrl: nq.imageUrl,
+              explanation: nq.explanation,
               correctAnswerText: nq.correctAnswer,
               acceptableAnswers: nq.acceptableAnswers.map((a) => a.value),
               isCaseSensitive: nq.isCaseSensitive,

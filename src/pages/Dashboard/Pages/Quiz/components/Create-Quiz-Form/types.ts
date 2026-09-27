@@ -55,6 +55,8 @@ export interface NewQuestionBase {
   categoryId: number;
   languageId: number;
   imageUrl?: string;
+  /** Optional "why" shown to players after they answer. Empty means none. */
+  explanation?: string;
   type: QuestionType;
 }
 

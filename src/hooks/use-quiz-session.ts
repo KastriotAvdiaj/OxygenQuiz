@@ -252,6 +252,7 @@ export const useQuizSession = ({
         endTime: sessionData.endTime,
         totalScore: sessionData.totalScore,
         isCompleted: sessionData.isCompleted,
+        resultsRevealed: sessionData.resultsRevealed,
         userAnswers: sessionData.userAnswers,
         id: sessionData.id,
         quizTitle: sessionData.quizTitle,
@@ -493,4 +494,4 @@ export const useQuizSession = ({
     handleResumeSession,
     handleAbandonAndRestart,
   };
-};
+};

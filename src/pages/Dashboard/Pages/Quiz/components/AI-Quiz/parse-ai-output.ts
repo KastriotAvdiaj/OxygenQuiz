@@ -11,6 +11,13 @@ import {
 } from "../Create-Quiz-Form/types";
 import { snapToTimeLimit } from "../Create-Quiz-Form/constants";
 import { AI_QUESTION_LIMITS } from "./prompt";
+import { EXPLANATION_MAX_LENGTH } from "@/common/question-explanation";
+import {
+  checkQuoteInSource,
+  createRepeatDetector,
+  findDuplicateOptions,
+  givesAwayAnswer,
+} from "./question-checks";
 
 /**
  * Turns a raw LLM reply into questions the quiz builder can render.
@@ -22,6 +29,9 @@ import { AI_QUESTION_LIMITS } from "./prompt";
  *  - `allowPartialMatch` is ALWAYS false. It's a grading rule the author owns, not content the
  *    model can judge — see docs/quiz/typed-answer-matching.md.
  *  - Invalid questions are dropped with a reason rather than failing the whole import.
+ *  - Questions that fail a quality check (duplicate options, contradictory key, giveaway,
+ *    repeat, a source quote that isn't in the source) are dropped the same way. The checks
+ *    live in `question-checks.ts`; see docs/quiz/ai-question-accuracy-plan.md.
  */
 
 // Single source of truth for valid point systems — the same enum the builder and scoring
@@ -49,6 +59,12 @@ const aiQuestionSchema = z
     // TypeTheAnswer
     acceptableAnswers: z.array(z.string()).optional(),
     isCaseSensitive: z.boolean().optional(),
+    // Source mode only: the sentence the model says proves its answer. Optional and loose on
+    // purpose — a reply from an older prompt, or from Topic mode, simply has none.
+    sourceQuote: z.string().optional().nullable(),
+    // The "why" a player reads after answering (docs/quiz/question-explanations.md). Optional:
+    // replies from older prompts have none, and a question without one is still a question.
+    explanation: z.string().optional().nullable(),
     // `allowPartialMatch` is intentionally absent: the prompt no longer asks for it and the parser
     // never reads it. `.passthrough()` means a model that emits it anyway is not an error — the
     // value is simply ignored. See the assignment in the TypeTheAnswer branch below.
@@ -90,6 +106,16 @@ export interface ParseContext {
   quizDifficultyId: number;
   /** The difficulties that exist in the DB. */
   difficulties: QuestionDifficulty[];
+  /**
+   * The material the questions were generated from, when there was any (Source mode). With it,
+   * a question whose `sourceQuote` is not in this text is dropped. Without it — Topic mode —
+   * the quote check has nothing to compare against and is skipped.
+   *
+   * This is what the user typed, not what the model saw: the server truncates at
+   * `Ai:MaxSourceChars`. A quote from past that point would still be "found" here — harmless,
+   * since a model that never saw the text cannot quote it verbatim by accident.
+   */
+  sourceText?: string | null;
 }
 
 /**
@@ -231,10 +257,29 @@ const resolveSettings = (
 
 type RawQuestion = z.infer<typeof aiQuestionSchema>;
 
+/**
+ * Trimmed, and cut at the stored cap rather than failing the question: the model, not the author,
+ * wrote it, and the author sees it in review. Empty means none — the builder's own convention.
+ * The API does the same cut on import (`QuestionExplanation.NormalizeAndTruncate`).
+ */
+const cleanExplanation = (value: string | null | undefined): string => {
+  const trimmed = value?.trim() ?? "";
+  return trimmed.length <= EXPLANATION_MAX_LENGTH
+    ? trimmed
+    : trimmed.slice(0, EXPLANATION_MAX_LENGTH).trimEnd();
+};
+
 /** Builds the type-specific question, or returns a reason it can't be used. */
 const buildQuestion = (
   raw: RawQuestion,
-  base: { id: number; text: string; categoryId: number; languageId: number; difficultyId: number }
+  base: {
+    id: number;
+    text: string;
+    categoryId: number;
+    languageId: number;
+    difficultyId: number;
+    explanation: string;
+  }
 ): { question: NewAnyQuestion } | { reason: string } => {
   const common = {
     ...base,
@@ -250,6 +295,28 @@ const buildQuestion = (
       }
       if (!options.some((o) => o.isCorrect)) {
         return { reason: "no answer option was marked correct" };
+      }
+      const duplicates = findDuplicateOptions(options);
+      if (duplicates.length > 0) {
+        return { reason: `has the same answer option twice ("${duplicates[0]}")` };
+      }
+      const correct = options.filter((o) => o.isCorrect);
+      // The model said "one answer" and then marked several. We can't tell which statement it
+      // meant, and guessing either way ships a question graded against the wrong key.
+      if (raw.allowMultipleSelections === false && correct.length > 1) {
+        return { reason: "marks more than one option correct but says only one answer is allowed" };
+      }
+      // Only meaningful for a single answer: with several correct options, one of them sitting
+      // in the question text is often just context.
+      if (
+        correct.length === 1 &&
+        givesAwayAnswer(
+          raw.text,
+          correct[0].text,
+          options.filter((o) => !o.isCorrect).map((o) => o.text)
+        )
+      ) {
+        return { reason: "gives the answer away in the question text" };
       }
       const question: NewMultipleChoiceQuestion = {
         ...common,
@@ -288,6 +355,9 @@ const buildQuestion = (
       const answer = raw.correctAnswer;
       if (typeof answer !== "string" || !answer.trim()) {
         return { reason: "correctAnswer must be a non-empty string" };
+      }
+      if (givesAwayAnswer(raw.text, answer)) {
+        return { reason: "gives the answer away in the question text" };
       }
       const question: NewTypeTheAnswerQuestion = {
         ...common,
@@ -341,9 +411,26 @@ export const parseAiOutput = (raw: string, ctx: ParseContext): ParseResult => {
   const questions: ParsedQuestion[] = [];
   const dropped: DroppedQuestion[] = [];
   const difficultyFallbacks: number[] = [];
+  const isRepeat = createRepeatDetector();
+  const sourceText = ctx.sourceText?.trim() || null;
 
   parsed.data.questions.forEach((rawQuestion, index) => {
     const label = rawQuestion.text?.trim() || `Question ${index + 1}`;
+
+    // A missing or too-short quote is tolerated, not dropped: replies from older prompts and
+    // from models that ignore the field would otherwise lose every question. Only a quote that
+    // is present and wrong is evidence of an invented fact.
+    if (sourceText && rawQuestion.sourceQuote) {
+      if (checkQuoteInSource(rawQuestion.sourceQuote, sourceText) === "not-found") {
+        dropped.push({
+          index: index + 1,
+          text: label,
+          reason: "quotes a sentence that isn't in your source material",
+        });
+        return;
+      }
+    }
+
 
     const { id: difficultyId, matched } = resolveDifficultyId(
       rawQuestion.difficulty,
@@ -359,10 +446,18 @@ export const parseAiOutput = (raw: string, ctx: ParseContext): ParseResult => {
       categoryId: ctx.categoryId,
       languageId: ctx.languageId,
       difficultyId,
+      explanation: cleanExplanation(rawQuestion.explanation),
     });
 
     if ("reason" in built) {
       dropped.push({ index: index + 1, text: label, reason: built.reason });
+      return;
+    }
+
+    // Last, so only a question that survived every other check claims its wording: a broken
+    // first copy must not block a good second one.
+    if (isRepeat(rawQuestion.text)) {
+      dropped.push({ index: index + 1, text: label, reason: "repeats an earlier question" });
       return;
     }
 

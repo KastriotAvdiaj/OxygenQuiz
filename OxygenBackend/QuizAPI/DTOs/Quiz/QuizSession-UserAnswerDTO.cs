@@ -112,6 +112,15 @@ namespace QuizAPI.DTOs.Quiz
             public DateTime? EndTime { get; set; }
             public int TotalScore { get; set; }
             public bool IsCompleted { get; set; }
+
+            /// <summary>
+            /// Whether <see cref="TotalScore"/> and each answer's status, score and answer key are
+            /// the real verdict. False while an unfinished session belongs to a quiz without
+            /// instant feedback: the key is null, Correct/Incorrect read as Pending and scores read
+            /// 0, so the network tab can't show results the UI is holding back until the end.
+            /// See <c>QuizSessionMappers.ProjectUserAnswer</c>.
+            /// </summary>
+            public bool ResultsRevealed { get; set; }
             public List<UserAnswerDto> UserAnswers { get; set; } = new();
             public AbandonmentReason? AbandonmentReason { get; set; }
             public DateTime? AbandonedAt { get; set; }
@@ -237,6 +246,12 @@ namespace QuizAPI.DTOs.Quiz
         /// For TypeTheAnswer questions: A list of all other acceptable answers.
         /// </summary>
         public List<string>? AcceptableAnswers { get; set; }
+
+        /// <summary>
+        /// The author's "why", when there is one. Withheld exactly like the answer key — null until
+        /// the session reveals (see <c>QuizSessionMappers.ProjectUserAnswer</c>).
+        /// </summary>
+        public string? Explanation { get; set; }
     }
 
     public class CurrentQuestionDto
@@ -337,6 +352,20 @@ namespace QuizAPI.DTOs.Quiz
         /// questions <see cref="CorrectOptionId"/> is used instead.
         /// </summary>
         public List<int>? CorrectOptionIds { get; set; }
+
+        /// <summary>
+        /// The author's "why", when the question has one. Populated for every instant-feedback
+        /// answer — right, wrong or timed out — and never otherwise.
+        /// </summary>
+        public string? Explanation { get; set; }
+
+        /// <summary>
+        /// Set whenever <see cref="Explanation"/> is: the longest the client may wait on the
+        /// feedback screen before auto-advancing, in seconds. It equals the per-question slack the
+        /// session's deadline grants for reading (<c>QuizSessionOptions.ExplanationReadSeconds</c>),
+        /// so a client that honours it can't run the session out while the player reads.
+        /// </summary>
+        public int? ReadingAllowanceSeconds { get; set; }
 
         /// <summary>
         /// Time spent on the question in seconds.

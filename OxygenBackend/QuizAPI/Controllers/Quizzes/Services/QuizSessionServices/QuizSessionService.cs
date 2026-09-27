@@ -878,11 +878,12 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
         }
 
         public async Task<Result<PagedResponse<QuizSessionSummaryDto>>> GetUserSessionsAsync(
-            Guid userId, int page = 1, int pageSize = DefaultHistoryPageSize)
+            Guid userId, FilterQuery query)
         {
             try
             {
-                pageSize = Math.Clamp(pageSize, 1, MaxHistoryPageSize);
+                // FilterQuery caps at 100 for every list; history keeps its tighter cap.
+                query.PageSize = Math.Min(query.PageSize, MaxHistoryPageSize);
 
                 // Project straight to the summary DTO in SQL (QuizSessionMappers.ProjectSummary) so the
                 // question/answer counts are computed by the database. The previous implementation
@@ -890,13 +891,33 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                 // count them in memory — the cost grew with total play history on each profile view.
                 // Guest sessions are excluded: they're transient and belong to the shared guest
                 // account, never to a real user's history.
-                var query = _context.QuizSessions
+                //
+                // The user/guest/deleted-quiz clamp is applied BEFORE the client's filters, so query
+                // params can only narrow within this user's reachable sessions. Search, facets,
+                // status, date range and sort come from QuizSessionFilterFields (the whitelist);
+                // the default order is newest first.
+                IQueryable<QuizSession> sessions = _context.QuizSessions
                     .AsNoTracking()
-                    .Where(s => s.UserId == userId && !s.IsGuestSession)
-                    .OrderByDescending(s => s.StartTime)
-                    .Select(QuizSessionMappers.ProjectSummary);
+                    // Sessions on a soft-deleted quiz are excluded explicitly. The projection reads
+                    // s.Quiz, and the Quiz global query filter (DeletedAt == null) turns that into an
+                    // INNER JOIN that EF applies *after* the paged subquery's LIMIT - while CountAsync
+                    // doesn't join at all. Left implicit, such rows were counted but silently dropped
+                    // from the page (24 requested, 22 shown, pager promising a page too many). They
+                    // are unreachable anyway: the results endpoint 404s once the quiz is deleted.
+                    // Stats still count them - see docs/quiz/user-stats-history.md.
+                    .Where(s => s.UserId == userId && !s.IsGuestSession && s.Quiz.DeletedAt == null);
 
-                var pagedSessions = await PagedResponse<QuizSessionSummaryDto>.CreateAsync(query, page, pageSize);
+                sessions = FilterEngine.Apply(sessions, query, QuizSessionFilterFields.Fields);
+
+                // FilterEngine always emits an OrderBy (the field set has a default sort), but a
+                // sort on score alone has ties — and ties make paging non-deterministic (a row can
+                // show on two pages, another on none). Newest-first, then id, settles them.
+                if (sessions is IOrderedQueryable<QuizSession> ordered)
+                    sessions = ordered.ThenByDescending(s => s.StartTime).ThenBy(s => s.Id);
+
+                var projected = sessions.Select(QuizSessionMappers.ProjectSummary);
+
+                var pagedSessions = await PagedResponse<QuizSessionSummaryDto>.CreateAsync(projected, query.Page, query.PageSize);
                 return Result<PagedResponse<QuizSessionSummaryDto>>.Success(pagedSessions);
             }
             catch (Exception ex)

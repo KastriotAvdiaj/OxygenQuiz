@@ -59,6 +59,13 @@ export interface InstantFeedbackAnswerResult {
   correctOptionIds?: number[]; // All correct options for multi-select MC questions
   correctAnswer?: string;
   acceptableAnswers?: string[];
+  /** The author's "why". Sent with every instant-feedback result — right or wrong — when there is one. */
+  explanation?: string | null;
+  /**
+   * Sent whenever `explanation` is: the longest the feedback screen may wait before
+   * auto-advancing. It is the reading slack the session's deadline allows, so never exceed it.
+   */
+  readingAllowanceSeconds?: number | null;
   timeSpentInSeconds: number;
 }
 
@@ -71,8 +78,6 @@ export interface UserAnswer {
   id: number;
   status: AnswerStatus;
   score: number;
-
-  // questionExpalanation?: string; // Add in the future
 
   selectedOptionId: number | null; // For MC/T-F questions
   submittedAnswer: string | null;
@@ -92,6 +97,8 @@ export interface UserAnswer {
   correctAnswerText?: string;
   acceptableAnswers?: string[];
 
+  /** The author's "why". Null until results are revealed (see `resultsRevealed`), and when none was written. */
+  explanation?: string | null;
 }
 
 /** One unanswered question, reduced to what the resume catch-up walk reads. */
@@ -138,6 +145,13 @@ export interface QuizSession {
   endTime: string | null; // ISO date string
   totalScore: number;
   isCompleted: boolean;
+  /**
+   * False while an unfinished session belongs to a quiz without instant feedback. Until then the
+   * server withholds the verdict: `totalScore` and every answer's score are 0, Correct/Incorrect
+   * read as Pending, and the answer key fields are null — so the network tab can't show results
+   * the UI holds back until the end. See docs/quiz/quiz-grading.md.
+   */
+  resultsRevealed: boolean;
   userAnswers: UserAnswer[];
 
   abandonmentReason?: AbandonmentReason;

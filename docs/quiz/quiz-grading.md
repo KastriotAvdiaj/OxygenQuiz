@@ -189,11 +189,18 @@ Returned from the submit call for instant-feedback quizzes:
 
 ```
 Status, ScoreAwarded, IsQuizComplete, TimeSpentInSeconds,
-CorrectOptionId, CorrectOptionIds, CorrectAnswer, AcceptableAnswers
+CorrectOptionId, CorrectOptionIds, CorrectAnswer, AcceptableAnswers, Explanation,
+ReadingAllowanceSeconds
 ```
 
+`ReadingAllowanceSeconds` travels with `Explanation`: the longest the client may hold the feedback
+screen, equal to the slack the session's deadline sets aside for reading — see
+[ADR 0016](../adr/0016-the-feedback-screen-cannot-outwait-the-session-deadline.md).
+
 The correct-answer fields are populated **only when the answer was wrong or timed out** (so a
-correct answer never reveals more than needed). For multiple-choice, `CorrectOptionIds` lists
+correct answer never reveals more than needed). `Explanation` is the exception: it is sent with
+every instant-feedback result, right or wrong, because a lucky guess is exactly when the "why" is
+worth reading — see [question-explanations.md](question-explanations.md). For multiple-choice, `CorrectOptionIds` lists
 **every** correct option (used to highlight all of them on multi-select); `CorrectOptionId` is the
 first one, kept for single-answer clients.
 
@@ -201,6 +208,37 @@ For **TrueFalse**, correctness is reported via `CorrectAnswer` (`"True"`/`"False
 `CorrectOptionId`, which is left null for T/F. The client highlights the correct option by matching
 that string against the option text. (Comparing against `CorrectOptionId` was a past bug: it's never
 populated for T/F, so the correct option was never highlighted on a wrong answer.)
+
+## What the session response reveals, and when
+
+The per-question responses above are one half of what a player can see. The other half is the
+**session** — `GET /quizsessions/{id}` (`QuizSessionDto`) and `GET /useranswers/session/{id}` — which
+lists every answer so far and is fetched **mid-quiz** too: the resume screen and the "you already
+have a session for this quiz" path both read it.
+
+Until 2026-09-26 those carried the full answer key (`IsCorrect` on every option,
+`CorrectAnswerBoolean`, `CorrectAnswerText`, `AcceptableAnswers`) and the verdict (`Status`,
+`Score`, `TotalScore`) whatever the session's state. So on a quiz **without** instant feedback — the
+one promising results at the end — the network tab showed which answers were wrong, and why, after
+each question. It never exposed a question the player hadn't answered yet (`CurrentQuestionDto`
+carries no key), so it couldn't be used to score higher; it undid the reveal, not the scoring.
+
+The rule now, in both projections (`QuizSessionMappers.ProjectUserAnswer` and `ProjectSession`):
+
+| Session is… | Answer key | `Status` | `Score` / `TotalScore` |
+|---|---|---|---|
+| completed (incl. abandoned) | full | real | real |
+| unfinished, quiz has instant feedback | full — each verdict was already shown as it was answered | real | real |
+| unfinished, **no** instant feedback | `null` | `Correct`/`Incorrect` read `Pending`; `TimedOut` is left alone | `0` |
+
+`QuizSessionDto.ResultsRevealed` says which case applies, so a client never mistakes a withheld
+verdict for a real `Pending` or a real zero. The condition is written out in every field because
+the projections are translated to SQL, and the two must be changed together — ProjectSession inlines
+its own copy of the user-answer projection. `AnswerKeyRevealTests` pins both.
+
+Anything added to a question that gives the answer away follows the same rule — the question's
+`Explanation` does: `UserAnswerDto.Explanation` is null until the session reveals
+([question-explanations.md](question-explanations.md)).
 
 ## Timeouts & abandonment
 

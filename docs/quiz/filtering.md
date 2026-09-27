@@ -220,7 +220,19 @@ to emit `FilterRule[]` instead of its bespoke per-field reducer — tracked belo
   holds the selections and serializes each facet to one `in` rule
   (`categoryId`/`difficultyId`/`languageId`); `QuizFilterPanel`/`FacetSection` render the
   collapsible checkbox groups with per-facet search and selected options pinned on top.
+  In the sidebar/drawer the groups are an accordion — opening one closes the other
+  (`FacetAccordionContext`), so two stacked lists never overflow the panel into a scrollbar;
+  sections passed through the panel's `children` (history's Status) join it automatically.
+  The compact multiplayer dialog lays facets side by side and keeps them independent.
   See docs/quiz/quiz-discovery.md for how the facets compose with the variety sort.
+
+**Play history** ✅ wired end-to-end (2026-09-26):
+- Backend: `QuizSessionFilterFields` (quiz-title search, `quizId`, the quiz facets read through
+  `s.Quiz`, a computed `status`, `totalScore`, a sort-only computed `accuracy`, `startTime`); `GET /api/quizsessions/user/{userId}`
+  now binds `FilterQuery` (plain `?page=&pageSize=` still works).
+- Frontend: `get-user-sessions.ts` takes a `FilterQuery`; `QuizHistoryList` reuses `QuizToolbar`,
+  `QuizFilterPanel` + `useQuizFilterState` (same facet field names), `DateRangeFilter` and
+  `ActiveFilterPills`. See docs/quiz/user-stats-history.md § Filtering the history.
 
 **Users** ✅ wired end-to-end:
 - Backend: `UserFilterFields` (username/email search, isDeleted, registered/last-login ranges),
@@ -240,7 +252,16 @@ to emit `FilterRule[]` instead of its bespoke per-field reducer — tracked belo
 
 **Shared UI building blocks:** `MultiSelect` (generic over string|number, optional search box),
 `DateRangeFilter`, `TriStateSelect`, `ActiveFilterPills` — all styled to the quiz `form` look and reused
-across every panel.
+across every panel. For user-facing (non-admin) lists, `QuizToolbar` (search + sort, with a
+`sortOptions` map) and `QuizFilterPanel` (facets, with a `children` slot for extra sections) are
+the reusable pair.
+
+**Date ranges: send instants, half-open.** A date input yields `yyyy-mm-dd`; the engine parses a
+bare date as UTC midnight. So `lte:2026-03-31` means "up to 00:00 UTC on the 31st" and silently
+drops that whole day, and every bound is off by the viewer's UTC offset. The history list sends
+`gte:<local midnight of From as ISO>` and `lt:<local midnight of the day after To as ISO>`
+(`localDayStart` in `quiz-history-filters.tsx`). The admin pages still send bare dates with
+`between`/`lte` — tracked in known-issues.
 
 ## Migration path (remaining)
 

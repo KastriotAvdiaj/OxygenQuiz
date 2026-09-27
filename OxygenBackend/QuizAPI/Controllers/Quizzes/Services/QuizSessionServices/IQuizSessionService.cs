@@ -46,13 +46,12 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
         Task<Result<List<MatchPlayerDto>>> GetMatchPlayersAsync(Guid sessionId);
 
         /// <summary>
-        /// Paginated play history (newest first), projected to summaries in SQL and excluding
-        /// guest sessions. Powers the profile history list — see docs/quiz/user-stats-history.md.
+        /// Paginated play history, projected to summaries in SQL and excluding guest sessions and
+        /// sessions on deleted quizzes. Filterable/sortable through <see cref="QuizSessionFilterFields"/>
+        /// (newest first by default). Powers the history list — see docs/quiz/user-stats-history.md.
         /// </summary>
         Task<Result<PagedResponse<QuizSessionSummaryDto>>> GetUserSessionsAsync(
-            Guid userId,
-            int page = 1,
-            int pageSize = QuizSessionService.DefaultHistoryPageSize);
+            Guid userId, FilterQuery query);
         Task<Result<QuizSessionDto>> CompleteSessionAsync(Guid sessionId);
         Task<Result<int>> CleanupAbandonedSessionsAsync();
         Task<Result> DeleteSessionAsync(Guid sessionId);
