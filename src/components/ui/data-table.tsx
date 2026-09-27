@@ -30,10 +30,25 @@ import { cn } from "@/utils/cn";
  */
 export type ColumnPriority = 1 | 2 | 3;
 
+/**
+ * Row height. `"comfortable"` (default) is the original spacious table. `"compact"` tightens
+ * the cell padding and turns headers into small caps — for list pages where the table is the
+ * whole point and a screen should hold more rows (My Quizzes, the play history).
+ */
+export type TableDensity = "comfortable" | "compact";
+
 declare module "@tanstack/react-table" {
   interface ColumnMeta<TData extends RowData, TValue> {
     /** See {@link ColumnPriority}. Omitted means 1 — always visible. */
     priority?: ColumnPriority;
+  }
+  interface TableMeta<TData extends RowData> {
+    /**
+     * The table's {@link TableDensity}, so a cell renderer can size its own content to match
+     * (`table.options.meta?.density`) — padding alone can't shorten a row whose cell holds a
+     * two-line title.
+     */
+    density?: TableDensity;
   }
 }
 
@@ -114,7 +129,35 @@ interface DataTableProps<TData> {
   columns: ColumnDef<TData, any>[];
   data: TData[];
   getRowId?: (row: TData, index: number) => string;
+  /**
+   * Surface and row striping. `"primary"` (default) — a `muted` surface with rows alternating
+   * a primary wash and `muted`, the dashboard tables' look. `"neutral"` — a `background`
+   * surface with rows alternating `muted` and `background`, for a table that sits on a
+   * tinted page and should read as plain content (the play history).
+   */
+  tone?: "primary" | "neutral";
+  /** See {@link TableDensity}. */
+  density?: TableDensity;
 }
+
+const TONES = {
+  primary: { surface: "bg-muted", stripeA: "bg-primary/10", stripeB: "bg-muted" },
+  neutral: { surface: "bg-background", stripeA: "bg-muted", stripeB: "bg-background" },
+} as const;
+
+// Complete literals per density — Tailwind only generates classes it can read verbatim.
+const DENSITIES = {
+  comfortable: {
+    head: "px-4 py-4 text-left text-sm font-semibold text-foreground-lighter/70 tracking-wider",
+    cell: "px-4 py-4 text-sm",
+    expander: "w-10 px-2 py-4",
+  },
+  compact: {
+    head: "h-auto px-3 py-2.5 text-left text-xs font-semibold uppercase text-foreground-lighter/70 tracking-wider",
+    cell: "px-3 py-2 text-sm",
+    expander: "w-9 px-1.5 py-2",
+  },
+} as const;
 
 /**
  * Renders every row it is given, and nothing else — **the caller owns pagination.**
@@ -155,7 +198,15 @@ interface DataTableProps<TData> {
  * That wrapper is also why this component no longer adds an `overflow-x-auto` of its own:
  * two nested scrollers meant the inner one clipped first and the outer never fired.
  */
-export function DataTable<TData>({ columns, data, getRowId }: DataTableProps<TData>) {
+export function DataTable<TData>({
+  columns,
+  data,
+  getRowId,
+  tone = "primary",
+  density = "comfortable",
+}: DataTableProps<TData>) {
+  const palette = TONES[tone];
+  const sizing = DENSITIES[density];
   const { ref: fitRef, priority: fittingPriority } = useFittingPriority();
   const [expandedRows, setExpandedRows] = React.useState<Record<string, boolean>>(
     {}
@@ -181,6 +232,7 @@ export function DataTable<TData>({ columns, data, getRowId }: DataTableProps<TDa
     columns,
     state: { columnVisibility },
     getCoreRowModel: getCoreRowModel(),
+    meta: { density },
     // Fall back to `row.id` if available, otherwise default to index
     getRowId: getRowId ?? ((row: any, index) => row?.id?.toString() ?? index.toString()),
   });
@@ -199,17 +251,17 @@ export function DataTable<TData>({ columns, data, getRowId }: DataTableProps<TDa
 
   return (
     <div className="w-full" ref={fitRef}>
-      <div className="rounded-lg bg-muted shadow-md overflow-hidden">
+      <div className={cn("rounded-lg shadow-md overflow-hidden", palette.surface)}>
         <Table className="w-full">
           {/* Header stays neutral — the primary tint belongs to the rows. */}
-          <TableHeader className="bg-muted">
+          <TableHeader className={palette.surface}>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow
                 key={headerGroup.id}
                 className="border-b border-foreground-lighter/50 hover:bg-transparent"
               >
                 {hasHiddenColumns && (
-                  <TableHead className="w-10 px-2 py-4">
+                  <TableHead className={sizing.expander}>
                     <span className="sr-only">Row details</span>
                   </TableHead>
                 )}
@@ -223,7 +275,7 @@ export function DataTable<TData>({ columns, data, getRowId }: DataTableProps<TDa
                   // lets the row's border paint uniformly across the width.
                   <TableHead
                     key={header.id}
-                    className="px-4 py-4 text-left text-sm font-semibold text-foreground-lighter/70 tracking-wider"
+                    className={sizing.head}
                   >
                     {header.isPlaceholder
                       ? null
@@ -245,7 +297,7 @@ export function DataTable<TData>({ columns, data, getRowId }: DataTableProps<TDa
                 // gets away with `bg-primary/10` on its cards because they sit spaced
                 // out on a neutral background, not stacked edge to edge.
                 // The tint leads, so row 1 separates from the neutral header.
-                const stripe = i % 2 === 0 ? "bg-primary/10" : "bg-muted";
+                const stripe = i % 2 === 0 ? palette.stripeA : palette.stripeB;
                 const isExpanded = Boolean(expandedRows[row.id]);
                 const hiddenCells = hasHiddenColumns
                   ? row
@@ -266,7 +318,7 @@ export function DataTable<TData>({ columns, data, getRowId }: DataTableProps<TDa
                       )}
                     >
                       {hasHiddenColumns && (
-                        <TableCell className="w-10 px-2 py-4 align-top">
+                        <TableCell className={cn(sizing.expander, "align-top")}>
                           <button
                             type="button"
                             onClick={() => toggleRow(row.id)}
@@ -291,9 +343,11 @@ export function DataTable<TData>({ columns, data, getRowId }: DataTableProps<TDa
                       {row.getVisibleCells().map((cell) => (
                         <TableCell
                           key={cell.id}
-                          className={`px-4 py-4 text-sm relative ${
-                            cell.column.id === "actions" ? "text-center" : ""
-                          }`}
+                          className={cn(
+                            sizing.cell,
+                            "relative",
+                            cell.column.id === "actions" && "text-center"
+                          )}
                         >
                           {flexRender(
                             cell.column.columnDef.cell,
@@ -366,7 +420,7 @@ export function DataTable<TData>({ columns, data, getRowId }: DataTableProps<TDa
                 );
               })
             ) : (
-              <TableRow className="border-none bg-muted hover:bg-transparent">
+              <TableRow className={cn("border-none hover:bg-transparent", palette.surface)}>
                 <TableCell
                   colSpan={detailColSpan}
                   className="h-24 text-center text-text-lighter"

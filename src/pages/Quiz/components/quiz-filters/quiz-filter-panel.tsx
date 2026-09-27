@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { X } from "lucide-react";
 import type {
   QuestionCategory,
@@ -6,6 +6,7 @@ import type {
   QuestionLanguage,
 } from "@/types/question-types";
 import { cn } from "@/utils/cn";
+import { FacetAccordionContext } from "./facet-accordion";
 import {
   FacetSection,
   FACET_LIST_MAX_HEIGHT,
@@ -35,6 +36,18 @@ interface QuizFilterPanelProps {
    * scroll as a whole.
    */
   fillHeight?: boolean;
+  /**
+   * Extra sections rendered after the three quiz facets, inside the same divided
+   * column — for lists that filter on more than the quiz itself (the play history
+   * adds status and a date range). Include their selections in `activeCount` and
+   * clear them from `onClearAll`; the panel only renders them.
+   */
+  children?: React.ReactNode;
+  /**
+   * Rendered above the "Filters" header, inside the same card — the dashboard play history
+   * puts its search field here.
+   */
+  leading?: React.ReactNode;
   className?: string;
 }
 
@@ -47,9 +60,10 @@ interface QuizFilterPanelProps {
  * Size contract: the panel's height is bounded by the layout, never by the data.
  * Every facet list caps itself and scrolls internally (`FACET_LIST_MAX_HEIGHT`),
  * so seeding another twenty categories changes what's inside a facet, not the
- * footprint of the panel or the length of the page. The outer dvh cap below is
- * the second line of defence, for when all three facets are open at once on a
- * short viewport.
+ * footprint of the panel or the length of the page. Outside the compact
+ * dialog the facets are an accordion (one open at a time), so at most one
+ * capped list is ever expanded. The outer dvh cap below is the second line of
+ * defence, for a short viewport where even that doesn't fit.
  */
 export function QuizFilterPanel({
   categories,
@@ -61,6 +75,8 @@ export function QuizFilterPanel({
   activeCount,
   variant = "sidebar",
   fillHeight = false,
+  children,
+  leading,
   className,
 }: QuizFilterPanelProps) {
   const categoryOptions = useMemo<FacetOption[]>(
@@ -78,6 +94,12 @@ export function QuizFilterPanel({
 
   const compact = variant === "compact";
 
+  // Sidebar / drawer: one facet open at a time (see FacetAccordionContext). The
+  // compact dialog lays facets out side by side, where independent sections
+  // don't stack and so can stay open together.
+  const [openId, setOpenId] = useState<string | null>(null);
+  const accordion = useMemo(() => ({ openId, setOpenId }), [openId]);
+
   const facets: {
     key: QuizFacetKey;
     title: string;
@@ -89,74 +111,78 @@ export function QuizFilterPanel({
   ];
 
   return (
-    <div
-      className={cn(
-        // Adapts to the viewport: full width inside the mobile drawer, natural
-        // width in the desktop sidebar column. Soft translucent surface so it
-        // reads as a distinct panel without fighting the page background.
-        !compact &&
-          "w-full rounded-xl border border-border bg-card/50 p-5 shadow-sm backdrop-blur-sm lg:w-auto sm:p-6 font-app",
-        // Sidebar: hugs its content when short (collapsed), but never grows past
-        // the viewport — it caps at the page height and scrolls its body
-        // internally, so it can't spill onto the footer.
-        // dvh, not vh: cap against the *visible* viewport (mobile browser chrome
-        // makes 100vh over-measure); the vh class is the older-browser fallback.
-        !compact && fillHeight &&
-          "flex max-h-[calc(100vh-7rem)] supports-[height:100dvh]:max-h-[calc(100dvh-7rem)] flex-col overflow-hidden",
-        className
-      )}
-    >
-      <div className="mb-1 flex shrink-0 items-center justify-between">
-        <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
-          Filters
-        </h3>
-        {activeCount > 0 && (
-          <button
-            type="button"
-            onClick={onClearAll}
-            className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
-          >
-            <X className="h-3 w-3" />
-            Clear all
-          </button>
-        )}
-      </div>
-
+    <FacetAccordionContext.Provider value={compact ? null : accordion}>
       <div
         className={cn(
-          compact
-            ? "sm:grid sm:grid-cols-3 sm:gap-x-6 divide-y divide-border/60 sm:divide-y-0"
-            : "divide-y divide-border/60",
-          // Full-height sidebar: the facet column takes the leftover height and
-          // scrolls the *headers* when several facets are open at once. Each
-          // facet list already caps itself, so this outer scrollbar is a fallback
-          // rather than the primary mechanism — min-h-0 is what lets it shrink
-          // (docs/RESPONSIVE.md), and overscroll-contain stops a flick here from
-          // scrolling the page behind it.
+          // Adapts to the viewport: full width inside the mobile drawer, natural
+          // width in the desktop sidebar column. Soft translucent surface so it
+          // reads as a distinct panel without fighting the page background.
           !compact &&
-            fillHeight &&
-            "-mr-2 flex-1 min-h-0 overflow-y-auto overscroll-contain pr-2 scrollbar-thin"
+            "w-full rounded-xl border border-border bg-card/50 p-5 shadow-sm backdrop-blur-sm lg:w-auto sm:p-6 font-app",
+          // Sidebar: hugs its content when short (collapsed), but never grows past
+          // the viewport — it caps at the page height and scrolls its body
+          // internally, so it can't spill onto the footer.
+          // dvh, not vh: cap against the *visible* viewport (mobile browser chrome
+          // makes 100vh over-measure); the vh class is the older-browser fallback.
+          !compact && fillHeight &&
+            "flex max-h-[calc(100vh-7rem)] supports-[height:100dvh]:max-h-[calc(100dvh-7rem)] flex-col overflow-hidden",
+          className
         )}
       >
-        {facets.map((facet) => (
-          <FacetSection
-            key={facet.key}
-            title={facet.title}
-            options={facet.options}
-            selectedIds={selections[facet.key]}
-            onToggle={(id) => onToggle(facet.key, id)}
-            // Collapsed by default — the panel opens tidy and the user expands
-            // only the facet they want.
-            defaultOpen={false}
-            // Same cap in the sidebar, the mobile drawer and the compact dialog —
-            // one behaviour to reason about, and no variant where a long facet is
-            // allowed to grow without bound.
-            listMaxHeight={
-              compact ? FACET_LIST_MAX_HEIGHT_COMPACT : FACET_LIST_MAX_HEIGHT
-            }
-          />
-        ))}
+        {leading}
+        <div className="mb-1 flex shrink-0 items-center justify-between">
+          <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
+            Filters
+          </h3>
+          {activeCount > 0 && (
+            <button
+              type="button"
+              onClick={onClearAll}
+              className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-xs font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+            >
+              <X className="h-3 w-3" />
+              Clear all
+            </button>
+          )}
+        </div>
+
+        <div
+          className={cn(
+            compact
+              ? "sm:grid sm:grid-cols-3 sm:gap-x-6 divide-y divide-border/60 sm:divide-y-0"
+              : "divide-y divide-border/60",
+            // Full-height sidebar: the facet column takes the leftover height and
+            // scrolls the *headers* on a viewport too short for one open facet. Each
+            // facet list already caps itself, so this outer scrollbar is a fallback
+            // rather than the primary mechanism — min-h-0 is what lets it shrink
+            // (docs/RESPONSIVE.md), and overscroll-contain stops a flick here from
+            // scrolling the page behind it.
+            !compact &&
+              fillHeight &&
+              "-mr-2 flex-1 min-h-0 overflow-y-auto overscroll-contain pr-2 scrollbar-thin"
+          )}
+        >
+          {facets.map((facet) => (
+            <FacetSection
+              key={facet.key}
+              title={facet.title}
+              options={facet.options}
+              selectedIds={selections[facet.key]}
+              onToggle={(id) => onToggle(facet.key, id)}
+              // Collapsed by default — the panel opens tidy and the user expands
+              // only the facet they want.
+              defaultOpen={false}
+              // Same cap in the sidebar, the mobile drawer and the compact dialog —
+              // one behaviour to reason about, and no variant where a long facet is
+              // allowed to grow without bound.
+              listMaxHeight={
+                compact ? FACET_LIST_MAX_HEIGHT_COMPACT : FACET_LIST_MAX_HEIGHT
+              }
+            />
+          ))}
+          {children}
+        </div>
       </div>
-    </div>
+    </FacetAccordionContext.Provider>
   );
 }

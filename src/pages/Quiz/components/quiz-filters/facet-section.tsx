@@ -1,8 +1,9 @@
-import { useMemo, useState } from "react";
+import { useContext, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronDown, Search } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/utils/cn";
+import { FacetAccordionContext } from "./facet-accordion";
 
 export interface FacetOption {
   id: number;
@@ -32,6 +33,7 @@ export const FACET_LIST_MAX_HEIGHT =
 export const FACET_LIST_MAX_HEIGHT_COMPACT =
   "max-h-36 supports-[height:100dvh]:max-h-[min(9rem,26dvh)]";
 
+
 interface FacetSectionProps {
   title: string;
   options: FacetOption[];
@@ -47,6 +49,8 @@ interface FacetSectionProps {
    * an empty string — that uncaps the list (see the constant's note).
    */
   listMaxHeight?: string;
+  /** Identity inside a FacetAccordionContext; defaults to `title`. */
+  accordionId?: string;
 }
 
 /**
@@ -63,8 +67,14 @@ export function FacetSection({
   defaultOpen = true,
   searchThreshold = 8,
   listMaxHeight = FACET_LIST_MAX_HEIGHT,
+  accordionId,
 }: FacetSectionProps) {
-  const [open, setOpen] = useState(defaultOpen);
+  const [ownOpen, setOwnOpen] = useState(defaultOpen);
+  const accordion = useContext(FacetAccordionContext);
+  const id = accordionId ?? title;
+  const open = accordion ? accordion.openId === id : ownOpen;
+  const toggleOpen = () =>
+    accordion ? accordion.setOpenId(open ? null : id) : setOwnOpen((o) => !o);
   const [query, setQuery] = useState("");
 
   const searchable = options.length > searchThreshold;
@@ -86,7 +96,7 @@ export function FacetSection({
     <div>
       <button
         type="button"
-        onClick={() => setOpen((o) => !o)}
+        onClick={toggleOpen}
         aria-expanded={open}
         className="flex w-full items-center justify-between gap-2 py-2.5 text-sm font-semibold text-foreground hover:text-primary transition-colors"
       >

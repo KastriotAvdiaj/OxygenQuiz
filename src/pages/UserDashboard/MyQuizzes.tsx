@@ -165,7 +165,7 @@ export const MyQuizzes = () => {
               </div>
             ) : (
               <>
-                <DataTable data={quizzes} columns={quizColumns} />
+                <DataTable data={quizzes} columns={quizColumns} density="compact" />
                 {/* This page fetches one server page of 10 but had no pager of its own — the
                     only paging control was DataTable's internal one, which never moved past
                     the 10 rows already on screen, so quiz 11 onwards was unreachable. */}

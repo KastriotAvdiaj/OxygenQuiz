@@ -55,8 +55,25 @@ export const quizColumns: ColumnDef<QuizSummaryDTO>[] = [
     id: "quizInfo",
     header: "Quiz Info",
     meta: { priority: 1 },
-    cell: ({ row }) => {
+    cell: ({ row, table }) => {
       const { title, description } = row.original;
+      // Compact tables (My Quizzes) show the title and one clamped line of description —
+      // the "Read more" toggle is what made every row two to four lines tall.
+      if (table.options.meta?.density === "compact") {
+        return (
+          <div className="flex min-w-0 max-w-md flex-col">
+            <span className="truncate font-semibold text-foreground">{title}</span>
+            {description && (
+              <span
+                className="truncate text-xs text-muted-foreground"
+                title={description}
+              >
+                {description}
+              </span>
+            )}
+          </div>
+        );
+      }
       return (
         <TitleWithDescription
           title={title}
@@ -72,7 +89,7 @@ export const quizColumns: ColumnDef<QuizSummaryDTO>[] = [
     meta: { priority: 2 },
     cell: ({ row }) => {
       const date = row.original.createdAt;
-      return formatDate(date);
+      return <span className="whitespace-nowrap">{formatDate(date)}</span>;
     },
   },
   {
@@ -111,27 +128,27 @@ export const quizColumns: ColumnDef<QuizSummaryDTO>[] = [
       const { status, deletedAt } = row.original;
       if (deletedAt) {
         return (
-          <span className="bg-destructive/15 text-destructive border border-destructive/30 py-1 px-3 rounded-full">
+          <span className="inline-flex items-center rounded-full border border-destructive/30 bg-destructive/15 px-2.5 py-0.5 text-xs font-medium text-destructive">
             Deleted
           </span>
         );
       }
       if (status === "Public") {
         return (
-          <span className="bg-primary py-1 px-3 rounded-full text-white">
+          <span className="inline-flex items-center rounded-full bg-primary px-2.5 py-0.5 text-xs font-medium text-white">
             Public
           </span>
         );
       }
       if (status === "Unlisted") {
         return (
-          <span className="bg-amber-400/80 border border-foreground/30 text-foreground py-1 px-3 rounded-full">
+          <span className="inline-flex items-center rounded-full border border-foreground/30 bg-amber-400/80 px-2.5 py-0.5 text-xs font-medium text-foreground">
             Unlisted
           </span>
         );
       }
       return (
-        <span className="bg-gray-300 border border-foreground/30 dark:bg-gray-500 p-1 px-3 rounded-full">
+        <span className="inline-flex items-center rounded-full border border-foreground/30 bg-gray-300 px-2.5 py-0.5 text-xs font-medium dark:bg-gray-500">
           Draft
         </span>
       );
