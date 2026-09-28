@@ -21,14 +21,17 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.UserAnswerSer
         {
             try
             {
-                var answers = await _context.UserAnswers
+                // Projected in SQL, not loaded and mapped: the compiled mapper this used silently
+                // returned `AnswerOptions: []` for every multiple-choice answer, because the query
+                // never included the options (known-issues.md, fixed 2026-09-26). The projection
+                // also applies the answer-key gate, which reads QuizSession → Quiz.
+                var answerDtos = await _context.UserAnswers
                     .AsNoTracking()
-                    .Include(ua => ua.QuizQuestion).ThenInclude(qq => qq.Question)
-                    .Include(ua => ua.AnswerOption)
                     .Where(ua => ua.SessionId == sessionId)
+                    .OrderBy(ua => ua.QuizQuestion.OrderInQuiz)
+                    .Select(QuizSessionMappers.ProjectUserAnswer)
                     .ToListAsync();
 
-                var answerDtos = answers.ToDtoList();
                 return Result<List<UserAnswerDto>>.Success(answerDtos);
             }
             catch (Exception ex)
@@ -38,7 +41,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.UserAnswerSer
             }
         }
 
-        // This method should be protected by an authorization policy (e.g., Admin-only)
+        // Admin-only: enforced by [Authorize(Roles = "Admin,SuperAdmin")] on the controller action.
         public async Task<Result> DeleteAnswerAsync(int answerId)
         {
             try
@@ -72,4 +75,4 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.UserAnswerSer
             }
         }
     }
-}
+}

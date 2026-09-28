@@ -119,6 +119,7 @@ worst case is a wrong-but-real category on a Draft quiz that a human is looking 
 | Own-AI path | `AI-Quiz/own-ai-quiz.tsx` + `own-ai-quiz-view.tsx` | Copy the prompt out, paste the reply back. Its own route — [`ai-quiz-two-paths.md`](./ai-quiz-two-paths.md). |
 | View pieces | `AI-Quiz/components/*.tsx` | One block each: `generation-input`, `advanced-options`, `quota-note`, `generate-error-panel`, `confirm-details-card`, `import-note`, `question-type-options`, `question-count-stepper`. |
 | Limits | `AI-Quiz/prompt.ts` | Numbers only. The prompt text lives in C# (slice 2.1). |
+| Quality checks | `AI-Quiz/question-checks.ts` | Pure checks the parser runs on every question, both paths: duplicate options, contradictory key, giveaway, repeat, source quote not in the material. Plan: [`ai-question-accuracy-plan.md`](./ai-question-accuracy-plan.md). |
 
 ---
 

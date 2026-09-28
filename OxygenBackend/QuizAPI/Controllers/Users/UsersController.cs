@@ -6,6 +6,9 @@ using QuizAPI.DTOs.Quiz;
 using QuizAPI.DTOs.User;
 using QuizAPI.Filtering;
 using QuizAPI.Services.AccountClosure;
+using QuizAPI.Services.AccountIdentity;
+using Microsoft.AspNetCore.RateLimiting;
+using QuizAPI.Middleware;
 using QuizAPI.Services.CurrentUserService;
 using QuizAPI.Services.Interfaces;
 
@@ -21,14 +24,17 @@ namespace QuizAPI.Controllers.Users
         private readonly ICurrentUserService _currentUser;
         private readonly IUserStatsService _userStatsService;
         private readonly IAccountClosureService _accountClosure;
+        private readonly IAccountIdentityService _accountIdentity;
 
         public UsersController(
             IUserService userService,
             IAvatarService avatarService,
             ICurrentUserService currentUser,
             IUserStatsService userStatsService,
-            IAccountClosureService accountClosure)
+            IAccountClosureService accountClosure,
+            IAccountIdentityService accountIdentity)
         {
+            _accountIdentity = accountIdentity;
             _userService = userService;
             _avatarService = avatarService;
             _currentUser = currentUser;
@@ -177,18 +183,14 @@ namespace QuizAPI.Controllers.Users
             return CreatedAtAction(nameof(GetUser), new { id = created.Id }, created);
         }
 
-        [HttpPut("{id:guid}")]
-        [Authorize]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
-        [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> UpdateUser(Guid id, [FromBody] UpdateUserDTO dto, CancellationToken ct)
-        {
-            if (!CanActOnUser(id)) return Forbid();
-
-            await _userService.UpdateUserAsync(id, dto, ct);
-            return NoContent();
-        }
+        // There is deliberately no PUT /Users/{id}. It existed, took { email, profileImageUrl } from
+        // the user themselves or an admin, and wrote both straight in: no uniqueness check, no proof
+        // of the new address (EmailConfirmed stayed true), no audit — and since password resets go to
+        // whatever address is on the row, a stolen session could turn it into a permanent takeover.
+        // Nothing in the frontend called it. Email now changes only through the confirm-link flow
+        // (POST me/email-change → POST /Authentication/confirm-email-change), the avatar only through
+        // the validated upload above, and the username through PUT me/username.
+        // See docs/auth/account-identity-changes.md.
 
         /// <summary>
         /// Replaces a user's role set. Admin/SuperAdmin only, and the SuperAdmin role specifically can
@@ -281,18 +283,65 @@ namespace QuizAPI.Controllers.Users
             return cancelled ? NoContent() : NotFound("No pending account closure.");
         }
 
+        // ── Identity changes (docs/auth/account-identity-changes.md) ─────────────────────────
+        // All "me" endpoints: the caller only ever changes their own account. The id comes from
+        // the token, never from the route, so there is nothing to probe.
+
+        /// <summary>What the Account panel needs to render its Username / Email edit controls.</summary>
+        [HttpGet("me/identity")]
+        [Authorize]
+        [ProducesResponseType(typeof(AccountIdentityDTO), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetMyIdentity(CancellationToken ct)
+        {
+            if (_currentUser.UserId is not Guid userId) return Unauthorized();
+            return Ok(await _accountIdentity.GetIdentityAsync(userId, ct));
+        }
+
         /// <summary>
-        /// True if the caller is acting on their own account, or is an Admin/SuperAdmin.
-        /// Prevents one authenticated user from mutating another user's account (IDOR).
-        ///
-        /// This is a profile-edit guard and nothing more — only UpdateUser uses it. It is
-        /// deliberately NOT enough for destructive actions: it says nothing about the target's own
-        /// privileges, so on the delete endpoint it let an Admin remove a SuperAdmin. Deletion and
-        /// role changes both pass the caller's SuperAdmin claim to the service and let it decide.
+        /// Change the caller's display name. The immutable name never changes; the new name must be
+        /// free in both name columns of every other account (docs/adr/0017-one-namespace-for-names.md)
+        /// and the name can change once per 30 days.
         /// </summary>
-        private bool CanActOnUser(Guid targetUserId) =>
-            _currentUser.UserId == targetUserId
-            || User.IsInRole("Admin")
-            || User.IsInRole("SuperAdmin");
+        [HttpPut("me/username")]
+        [Authorize]
+        [EnableRateLimiting(RateLimitingExtensions.AuthPolicy)]
+        [ProducesResponseType(typeof(AccountIdentityDTO), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
+        public async Task<IActionResult> ChangeMyUsername([FromBody] ChangeUsernameDTO dto, CancellationToken ct)
+        {
+            if (_currentUser.UserId is not Guid userId) return Unauthorized();
+            return Ok(await _accountIdentity.ChangeUsernameAsync(userId, dto.Username, ct));
+        }
+
+        /// <summary>
+        /// Start an email change: mails a confirmation link to the new address. Password-gated and
+        /// rate limited (it sends mail and checks a password). Nothing changes until the link is
+        /// redeemed at POST /Authentication/confirm-email-change.
+        /// </summary>
+        [HttpPost("me/email-change")]
+        [Authorize]
+        [EnableRateLimiting(RateLimitingExtensions.AuthPolicy)]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
+        public async Task<IActionResult> RequestMyEmailChange(
+            [FromBody] RequestEmailChangeDTO dto, CancellationToken ct)
+        {
+            if (_currentUser.UserId is not Guid userId) return Unauthorized();
+            await _accountIdentity.RequestEmailChangeAsync(userId, dto.NewEmail, dto.CurrentPassword, ct);
+            return NoContent();
+        }
+
+        /// <summary>Cancel a pending email change; the link already sent stops working.</summary>
+        [HttpDelete("me/email-change")]
+        [Authorize]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        public async Task<IActionResult> CancelMyEmailChange(CancellationToken ct)
+        {
+            if (_currentUser.UserId is not Guid userId) return Unauthorized();
+            await _accountIdentity.CancelEmailChangeAsync(userId, ct);
+            return NoContent();
+        }
     }
 }

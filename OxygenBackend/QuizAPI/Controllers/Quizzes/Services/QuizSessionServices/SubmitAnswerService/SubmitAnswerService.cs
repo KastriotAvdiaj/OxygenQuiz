@@ -298,6 +298,21 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices.SubmitAnswerS
                 PopulateCorrectAnswerInfo(resultDto, currentQuestion);
             }
 
+            // Sent on a right answer too, unlike the key: a lucky guess is exactly when the player
+            // should read why. Only with instant feedback — otherwise it would reveal the verdict
+            // the quiz is holding back (docs/quiz/quiz-grading.md).
+            if (hasInstantFeedback)
+            {
+                resultDto.Explanation = currentQuestion.Explanation;
+
+                // The longest the client may hold the feedback screen before auto-advancing. Sent
+                // rather than mirrored in the client, because it is exactly the slack the session's
+                // total-time deadline grants this question (SessionTimeouts.ExpectedSeconds) — a
+                // client that waited longer could run the session out while the player reads.
+                if (resultDto.Explanation != null)
+                    resultDto.ReadingAllowanceSeconds = _options.ExplanationReadSeconds;
+            }
+
             return resultDto;
         }
 

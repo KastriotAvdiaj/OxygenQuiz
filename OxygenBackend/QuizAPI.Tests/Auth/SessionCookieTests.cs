@@ -6,6 +6,7 @@ using QuizAPI.Controllers.Authentication;
 using QuizAPI.DTOs.Authentication;
 using QuizAPI.Services.AuthenticationService;
 using QuizAPI.Services.Interfaces;
+using QuizAPI.Services.AccountIdentity;
 using Xunit;
 
 namespace QuizAPI.Tests.Auth;
@@ -48,7 +49,7 @@ public class SessionCookieTests
         if (refreshCookie is not null)
             http.Request.Headers.Cookie = $"refresh_token={refreshCookie}";
 
-        var controller = new AuthenticationController(auth.Object, Mock.Of<IUserService>(), config)
+        var controller = new AuthenticationController(auth.Object, Mock.Of<IUserService>(), Mock.Of<IAccountIdentityService>(), config)
         {
             ControllerContext = new ControllerContext { HttpContext = http },
         };

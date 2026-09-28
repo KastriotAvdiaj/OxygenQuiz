@@ -2,6 +2,7 @@ import { LogOut } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { ConfirmationDialog } from "@/components/ui/dialog";
+import { LiftedButton } from "@/common/LiftedButton";
 
 export interface QuizLeaveButtonProps {
   /** Where the player goes once they confirm. */
@@ -30,7 +31,10 @@ export interface QuizLeaveButtonProps {
  * instead abandon, that is a deliberate product change and needs the abandon call plus different
  * wording — do not let the two drift apart.
  */
-export const QuizLeaveButton = ({ onLeave, disabled = false }: QuizLeaveButtonProps) => (
+export const QuizLeaveButton = ({
+  onLeave,
+  disabled = false,
+}: QuizLeaveButtonProps) => (
   <ConfirmationDialog
     // No icon on purpose: leaving is reversible and the session is kept, so an alert glyph would
     // dress up a routine choice as a warning.
@@ -53,9 +57,13 @@ export const QuizLeaveButton = ({ onLeave, disabled = false }: QuizLeaveButtonPr
       </Button>
     }
     confirmButton={
-      <Button variant="destructive" onClick={onLeave}>
+      <LiftedButton
+        className="bg-red-500 hover:bg-red-600 py-1"
+        liftColor="red"
+        onClick={onLeave}
+      >
         Leave quiz
-      </Button>
+      </LiftedButton>
     }
   />
 );

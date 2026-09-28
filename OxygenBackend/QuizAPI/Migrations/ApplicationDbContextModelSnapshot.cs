@@ -660,6 +660,44 @@ namespace QuizAPI.Migrations
                     b.ToTable("AuditLogs");
                 });
 
+            modelBuilder.Entity("QuizAPI.Models.EmailChangeToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ConsumedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("NewEmail")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique();
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("EmailChangeTokens");
+                });
+
             modelBuilder.Entity("QuizAPI.Models.EmailVerificationToken", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1103,6 +1141,10 @@ namespace QuizAPI.Migrations
 
                     b.Property<int>("DifficultyId")
                         .HasColumnType("integer");
+
+                    b.Property<string>("Explanation")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
 
                     b.Property<string>("ImageUrl")
                         .HasColumnType("text");
@@ -1623,7 +1665,18 @@ namespace QuizAPI.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<DateTime?>("UsernameChangedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("Email")
+                        .IsUnique()
+                        .HasFilter("NOT \"IsDeleted\" OR (\"DeletionRequestedAt\" IS NOT NULL AND \"AnonymisedAt\" IS NULL)");
+
+                    b.HasIndex("ImmutableName")
+                        .IsUnique()
+                        .HasFilter("NOT \"IsDeleted\" OR (\"DeletionRequestedAt\" IS NOT NULL AND \"AnonymisedAt\" IS NULL)");
 
                     b.ToTable("Users");
                 });
@@ -1862,6 +1915,17 @@ namespace QuizAPI.Migrations
                         .IsRequired();
 
                     b.Navigation("Column");
+                });
+
+            modelBuilder.Entity("QuizAPI.Models.EmailChangeToken", b =>
+                {
+                    b.HasOne("QuizAPI.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("QuizAPI.Models.EmailVerificationToken", b =>

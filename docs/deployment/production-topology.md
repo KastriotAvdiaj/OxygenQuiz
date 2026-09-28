@@ -22,8 +22,8 @@ Verified against the live server on 2026-08-29 (`docker ps`, `systemctl status n
       │                                     │
   Cloudflare Workers                   Hetzner VPS
   (worker name: "oxygenquiz")               │
-  SPA built locally, `npm run build`   nginx (host package, systemd)
-  + wrangler deploy                    TLS termination + reverse proxy
+  Git build on push to main:           nginx (host package, systemd)
+  npm run build + wrangler deploy      TLS termination + reverse proxy
                                             │
                                        127.0.0.1:5000
                                             │

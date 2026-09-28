@@ -4,6 +4,7 @@ import { QuestionType } from "@/types/question-types";
 import ImageUpload from "@/utils/Image-Upload";
 import { FieldError } from "react-hook-form";
 import { getQuestionTypeTheme } from "../../question-type-theme";
+import { ExplanationField } from "@/common/QuestionExplanation";
 
 interface BaseQuestionFormCardProps {
   questionText: string;
@@ -20,6 +21,12 @@ interface BaseQuestionFormCardProps {
   showImageUpload?: boolean;
 
   questionTextError?: FieldError;
+
+  // Optional "why" shown to players after they answer (docs/quiz/question-explanations.md).
+  // Rendered below the type-specific content because it is about the answer, not the question.
+  explanation?: string;
+  onExplanationChange?: (explanation: string) => void;
+  explanationError?: FieldError;
 }
 
 export const BaseQuestionFormCard: React.FC<BaseQuestionFormCardProps> = ({
@@ -35,6 +42,9 @@ export const BaseQuestionFormCard: React.FC<BaseQuestionFormCardProps> = ({
   imageUploadEndpoint = "ImageUpload/question",
   showImageUpload = true,
   questionTextError,
+  explanation = "",
+  onExplanationChange,
+  explanationError,
 }) => {
   // Tint this card's minimal inputs (question text, answers) with the question type's hue.
   // `--field-accent` cascades to every minimal input inside — see global.css.
@@ -104,6 +114,15 @@ export const BaseQuestionFormCard: React.FC<BaseQuestionFormCardProps> = ({
 
         {/* Question Type Specific Content */}
         {children}
+
+        {onExplanationChange && (
+          <ExplanationField
+            id={`question-explanation-${questionType ?? "new"}`}
+            value={explanation}
+            onChange={onExplanationChange}
+            error={explanationError}
+          />
+        )}
       </CardContent>
     </Card>
   );

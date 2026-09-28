@@ -23,6 +23,7 @@ namespace QuizAPI.DTOs.Question
         public string? ImageUrl { get; set; }
         public string? MediaUrl { get; set; }
         public string MediaType { get; set; } = "None";
+        public string? Explanation { get; set; }
         public string Visibility { get; set; }
         public string Type { get; set; }
     }
@@ -54,6 +55,8 @@ namespace QuizAPI.DTOs.Question
         public string? ImageUrl { get; set; }
         public string? MediaUrl { get; set; }
         public string MediaType { get; set; } = "None";
+        /// <summary>Optional. Trimmed, blank → null, capped by <see cref="Models.QuestionExplanation"/>.</summary>
+        public string? Explanation { get; set; }
         public int DifficultyId { get; set; }
         public int CategoryId { get; set; }
         public int LanguageId { get; set; }
@@ -87,6 +90,8 @@ namespace QuizAPI.DTOs.Question
         public string? ImageUrl { get; set; }
         public string? MediaUrl { get; set; }
         public string MediaType { get; set; } = "None";
+        /// <summary>Optional. Trimmed, blank → null, capped by <see cref="Models.QuestionExplanation"/>.</summary>
+        public string? Explanation { get; set; }
         public int DifficultyId { get; set; }
         public int CategoryId { get; set; }
         public int LanguageId { get; set; }

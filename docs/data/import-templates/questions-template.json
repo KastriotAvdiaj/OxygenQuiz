@@ -8,7 +8,8 @@
     "Visibility": "Global",
     "Options": "Paris|London|Berlin|Madrid",
     "CorrectOptions": "Paris",
-    "AllowMultipleSelections": false
+    "AllowMultipleSelections": false,
+    "Explanation": "Paris is France's capital and its seat of government."
   },
   {
     "Type": "MultipleChoice",

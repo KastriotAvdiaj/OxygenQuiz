@@ -125,10 +125,10 @@ internal sealed class DuelWorld
     /// <summary>Ana creates the lobby and picks the quiz; Ben joins. Both ready.</summary>
     public async Task<DuelWorld> WithLobby(params string[] extraPlayers)
     {
-        await Sessions.CreateSessionAsync(Room, "Ana's lobby", 4, Ana, "ana-1");
-        await Sessions.AddParticipantAsync(Room, Ben, "ben-1");
+        await Sessions.CreateSessionAsync(Room, "Ana's lobby", 4, UserIds[Ana], Ana, "ana-1");
+        await Sessions.AddParticipantAsync(Room, UserIds[Ben], Ben, "ben-1");
         foreach (var extra in extraPlayers)
-            await Sessions.AddParticipantAsync(Room, extra, $"{extra}-1");
+            await Sessions.AddParticipantAsync(Room, UserIds[extra], extra, $"{extra}-1");
         await Sessions.SetQuizAsync(Room, new SelectedQuizView { Id = QuizId.ToString(), Title = "Oxygen final", Format = "Associations" });
         return this;
     }

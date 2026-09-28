@@ -19,6 +19,12 @@ namespace QuizAPI.Services.Audit
 
         /// <summary>A reset link was redeemed and the password changed.</summary>
         public const string PasswordReset = "PasswordReset";
+
+        // Identity changes (docs/auth/account-identity-changes.md). Requested is logged when the
+        // confirmation link goes to the new address; Changed only when it is redeemed.
+        public const string EmailChangeRequested = "EmailChangeRequested";
+        public const string EmailChanged = "EmailChanged";
+        public const string UsernameChanged = "UsernameChanged";
         public const string UserCreated = "UserCreated";
         public const string UserDeleted = "UserDeleted";
         // Self-service closure, as distinct from UserDeleted above (an admin removing someone).

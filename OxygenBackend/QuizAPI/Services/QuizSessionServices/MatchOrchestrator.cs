@@ -90,13 +90,11 @@ namespace QuizAPI.Services.QuizSessionServices
             session.MatchStartedUtc = DateTime.UtcNow;
             session.RecordedAnswers.Clear();
 
-            using (var scope = _scopeFactory.CreateScope())
-            {
-                var users = scope.ServiceProvider.GetRequiredService<IUserRepository>();
-                var host = await users.GetByUsernameAsync(session.HostUsername)
-                    ?? throw new InvalidOperationException("The host's account could not be found.");
-                session.MatchHostUserId = host.Id;
-            }
+            // By id, from the lobby's own record of who is who — the host's name is a pinned label
+            // that may no longer match their current display name, let alone their ImmutableName.
+            if (!session.PlayerUserIds.TryGetValue(session.HostUsername, out var hostUserId))
+                throw new InvalidOperationException("The host's account could not be found.");
+            session.MatchHostUserId = hostUserId;
 
             // Reset scores/correct counts for everyone currently in the lobby.
             session.PlayerScores.Clear();
@@ -392,13 +390,24 @@ namespace QuizAPI.Services.QuizSessionServices
             using var scope = _scopeFactory.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-            // The match loop knows players by username; the tables know them by id. Resolved in one
-            // query, through the ordinary filter: an account closed or removed mid-match drops out
-            // here rather than being written into a permanent record.
-            var immutableNames = played.Keys.Select(n => n.ToLowerInvariant()).ToList();
-            var userIds = await db.Users
-                .Where(u => immutableNames.Contains(u.ImmutableName))
-                .ToDictionaryAsync(u => u.ImmutableName, u => u.Id);
+            // The match loop keys players by their pinned lobby name; the tables want ids, which the
+            // lobby recorded as each account joined (PlayerUserIds — never pruned, so players who
+            // left still resolve). Then one query through the ordinary filter: an account closed or
+            // removed mid-match drops out here rather than being written into a permanent record.
+            // This used to match lower-cased names against ImmutableName, which silently dropped
+            // anyone whose display name had changed. See docs/auth/account-identity-changes.md.
+            var candidateIds = played.Keys
+                .Where(session.PlayerUserIds.ContainsKey)
+                .Select(n => session.PlayerUserIds[n])
+                .Distinct()
+                .ToList();
+            var liveIds = (await db.Users
+                .Where(u => candidateIds.Contains(u.Id))
+                .Select(u => u.Id)
+                .ToListAsync()).ToHashSet();
+            var userIds = session.PlayerUserIds
+                .Where(kv => liveIds.Contains(kv.Value))
+                .ToDictionary(kv => kv.Key, kv => kv.Value, StringComparer.OrdinalIgnoreCase);
 
             var endedAt = DateTime.UtcNow;
             var winnerUsername = BuildMatchResult(session).WinnerUsername;
@@ -415,7 +424,7 @@ namespace QuizAPI.Services.QuizSessionServices
                 // Null on a tie — BuildMatchResult returns no winner when the top two are level,
                 // and that is the same answer the players were just shown.
                 WinnerUserId = winnerUsername is not null
-                    && userIds.TryGetValue(winnerUsername.ToLowerInvariant(), out var winnerId)
+                    && userIds.TryGetValue(winnerUsername, out var winnerId)
                         ? winnerId
                         : null,
             };
@@ -425,7 +434,7 @@ namespace QuizAPI.Services.QuizSessionServices
 
             foreach (var (username, answers) in played)
             {
-                if (!userIds.TryGetValue(username.ToLowerInvariant(), out var userId))
+                if (!userIds.TryGetValue(username, out var userId))
                     continue;   // account gone mid-match; the other players' rows still land
 
                 var quizSession = new QuizSession

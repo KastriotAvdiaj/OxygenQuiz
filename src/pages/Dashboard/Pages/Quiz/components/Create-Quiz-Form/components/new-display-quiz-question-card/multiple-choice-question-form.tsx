@@ -23,6 +23,7 @@ export const MultipleChoiceFormCard: React.FC<MultipleChoiceFormCardProps> = ({
 }) => {
   const [questionText, setQuestionText] = useState(question.text);
   const [imageUrl, setImageUrl] = useState(question.imageUrl || undefined);
+  const [explanation, setExplanation] = useState(question.explanation ?? "");
   const { updateQuestion, getQuestionErrors, questionErrors } = useQuiz();
 
   // Use validation hook
@@ -38,10 +39,11 @@ export const MultipleChoiceFormCard: React.FC<MultipleChoiceFormCardProps> = ({
     () => ({
       text: questionText,
       imageUrl,
+      explanation,
       allowMultipleSelections,
       answerOptions,
     }),
-    [questionText, imageUrl, allowMultipleSelections, answerOptions],
+    [questionText, imageUrl, explanation, allowMultipleSelections, answerOptions],
   );
 
   const debouncedQuestionState = useDebounce(currentQuestionState, 300);
@@ -56,6 +58,7 @@ export const MultipleChoiceFormCard: React.FC<MultipleChoiceFormCardProps> = ({
       visibility: question.visibility,
       text: debouncedQuestionState.text,
       imageUrl: debouncedQuestionState.imageUrl,
+      explanation: debouncedQuestionState.explanation,
       allowMultipleSelections: debouncedQuestionState.allowMultipleSelections,
       answerOptions: debouncedQuestionState.answerOptions,
     };
@@ -108,7 +111,7 @@ export const MultipleChoiceFormCard: React.FC<MultipleChoiceFormCardProps> = ({
   const errorAwareStyles = getErrorAwareStyles(hasErrors, styles);
 
   // Get general validation errors that don't belong to specific fields
-  const generalErrors = getGeneralErrors(["text", "imageUrl", "answerOptions"]);
+  const generalErrors = getGeneralErrors(["text", "imageUrl", "explanation", "answerOptions"]);
 
   return (
     <div className="relative">
@@ -123,6 +126,9 @@ export const MultipleChoiceFormCard: React.FC<MultipleChoiceFormCardProps> = ({
         onImageRemove={handleImageRemove}
         showImageUpload={true}
         questionTextError={getFieldError("text")}
+        explanation={explanation}
+        onExplanationChange={setExplanation}
+        explanationError={getFieldError("explanation")}
       >
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4 pt-4">

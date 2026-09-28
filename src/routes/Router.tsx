@@ -126,6 +126,9 @@ const Signup = lazy(() => import("../pages/UserRelated/Signup/Signup"));
 const ConfirmEmail = lazy(
   () => import("@/pages/UserRelated/ConfirmEmail/ConfirmEmail"),
 );
+const ConfirmEmailChange = lazy(
+  () => import("@/pages/UserRelated/ConfirmEmailChange/ConfirmEmailChange"),
+);
 const ForgotPassword = lazy(
   () => import("@/pages/UserRelated/PasswordReset/ForgotPassword"),
 );
@@ -364,6 +367,16 @@ const createAppRouter = (queryClient: QueryClient) =>
       element: (
         <HomeLayout headerBehavior={HeaderBehavior.DEFAULT}>
           <ConfirmEmail />
+        </HomeLayout>
+      ),
+    },
+    {
+      // Public for the same reason: the link is opened from the NEW inbox, maybe on a device that
+      // isn't signed in. See docs/auth/account-identity-changes.md.
+      path: "/confirm-email-change",
+      element: (
+        <HomeLayout headerBehavior={HeaderBehavior.DEFAULT}>
+          <ConfirmEmailChange />
         </HomeLayout>
       ),
     },

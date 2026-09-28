@@ -194,19 +194,6 @@ namespace QuizAPI.Services
             return user.ToDto(roles.Select(r => r.Name));
         }
 
-        public async Task UpdateUserAsync(Guid userId, UpdateUserDTO dto, CancellationToken ct = default)
-        {
-            var user = await _userRepository.GetByIdAsync(userId, tracked: true, ct: ct)
-                ?? throw new NotFoundException($"User with ID {userId} not found.");
-
-            // Only whitelisted fields — overposting is impossible here.
-            user.Email = dto.Email.Trim();
-            user.ProfileImageUrl = dto.ProfileImageUrl;
-            user.ConcurrencyStamp = Guid.NewGuid();
-
-            await _userRepository.SaveChangesAsync(ct);
-        }
-
         public async Task SetUserRolesAsync(
             Guid userId, SetUserRolesDTO dto, bool callerIsSuperAdmin, Guid callerId,
             CancellationToken ct = default)

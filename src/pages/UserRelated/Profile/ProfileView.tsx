@@ -227,7 +227,11 @@ export const ProfileView = ({
             value={
               quizStats?.lastPlayedAt ? formatDate(quizStats.lastPlayedAt) : "—"
             }
-            hint={quizStats?.lastPlayedAt ? "Most recent session" : "No sessions yet"}
+            hint={
+              quizStats?.lastPlayedAt
+                ? "Most recent session"
+                : "No sessions yet"
+            }
           />
         </div>
       )}
@@ -262,12 +266,14 @@ export const ProfileView = ({
                     Settings
                   </Button>
                 </Link>
-                <button
-                  disabled
-                  className="w-full rounded-lg border border-foreground/20 py-2 px-4 text-sm text-muted-foreground opacity-70 cursor-not-allowed"
+                {/* The password lives in the account overlay's Account section (a reset link to
+                    your own inbox — see AccountPanel), so this just opens it there. */}
+                <Link
+                  to="/settings/account"
+                  className="w-full rounded-lg border border-foreground/20 py-2 px-4 text-center text-sm text-foreground transition-colors hover:bg-foreground/5"
                 >
-                  Change password (soon)
-                </button>
+                  Change password
+                </Link>
               </div>
             )}
           </CardContent>

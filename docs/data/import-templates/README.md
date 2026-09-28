@@ -37,6 +37,7 @@ The richest list. Fill only the columns relevant to each row's `Type`:
 | `Text` | all | the question text |
 | `CategoryId`, `DifficultyId`, `LanguageId` | all | integer IDs that **must already exist** (export those lists to find them) |
 | `Visibility` | all | `Global` or `Private` |
+| `Explanation` | all | optional — the "why" players see after answering, up to 1000 characters. Leave blank for none. See [`../../quiz/question-explanations.md`](../../quiz/question-explanations.md) |
 | `Options` | MultipleChoice | choices, pipe-separated: `Paris\|London\|Berlin` |
 | `CorrectOptions` | MultipleChoice | which option(s) are correct (subset of `Options`) |
 | `AllowMultipleSelections` | MultipleChoice | true/false |

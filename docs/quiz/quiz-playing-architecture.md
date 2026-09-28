@@ -74,7 +74,10 @@ submit button affects both singleplayer and multiplayer** — verify both when e
 5. It bubbles to `QuizPage.handleSubmitAnswer`, which calls the `useSubmitAnswer` mutation
    (`POST /QuizSessions/answer`).
 6. On success, `useQuizSession` updates; instant feedback shows, then `QuizInterface` auto-advances (or
-   the user clicks Next/Finish).
+   the user clicks Next/Finish). The countdown is 3 s, or longer for a result carrying the question's
+   explanation — scaled to its length and capped by the `readingAllowanceSeconds` the server sent
+   ([question-explanations.md](question-explanations.md),
+   [ADR 0016](../adr/0016-the-feedback-screen-cannot-outwait-the-session-deadline.md)).
 
 Timeouts: `QuestionDisplay.handleTimeUp` submits `onSubmit(null, undefined, true)` once, shows the
 "Time's Up" banner, and suppresses per-option red/green feedback for that question.
@@ -277,7 +280,9 @@ its deps, and both pages hand it a fresh closure every render. That was survivab
 `lastAnswerResult` was nulled immediately; now that the feedback screen stays up for the whole
 fetch, a re-render would re-arm a three-second timer that fires another request. The callback
 lives in a ref and the effect depends on `[answerId, showInstantFeedback, isQuizComplete,
-isFetchingNextQuestion]` — the same rule `quiz-timer.md` argues for the timer.
+isFetchingNextQuestion, advanceSeconds]` — the same rule `quiz-timer.md` argues for the timer.
+`advanceSeconds` is a number derived from the result during render for exactly that reason: the
+result object itself would be a dependency that changes identity on every update.
 
 **Think-time and the clock need no special handling.** The question is visible for its whole
 life now, so `questionShownAtRef` on mount is accurate, and the countdown ticking from mount

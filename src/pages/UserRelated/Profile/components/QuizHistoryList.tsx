@@ -1,158 +1,249 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
-import { Activity, ChevronLeft, ChevronRight, Clock, Target } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { BlobLoader } from "@/components/ui";
+import { forwardRef, useCallback, useState } from "react";
+import { Activity, ListFilter, SearchX } from "lucide-react";
+import { DataTable, BlobLoader } from "@/components/ui";
+import { PaginationControls } from "@/components/ui/pagination-control";
+import { ActiveFilterPills } from "@/components/ui/active-filter-pills";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { pagedResponseToPagination } from "@/lib/pagination-query";
+import { cn } from "@/utils/cn";
 import { useUserSessions } from "@/pages/Quiz/Sessions/api/get-user-sessions";
-import type { QuizSessionSummary } from "@/types/quiz-session-types";
-import formatDate from "@/lib/date-format";
-import { sessionResultsPath } from "@/pages/Quiz/quiz-play-path";
+import { QuizToolbar } from "@/pages/Quiz/components/quiz-header";
+import { useQuestionCategoryData } from "@/pages/Dashboard/Pages/Question/Entities/Categories/api/get-question-categories";
+import { useQuestionDifficultyData } from "@/pages/Dashboard/Pages/Question/Entities/Difficulty/api/get-question-difficulties";
+import { useQuestionLanguageData } from "@/pages/Dashboard/Pages/Question/Entities/Language/api/get-question-language";
+import {
+  HISTORY_SORT_LABELS,
+  QuizHistoryFilterPanel,
+  useQuizHistoryFilters,
+} from "./quiz-history-filters";
+import { quizHistoryColumns } from "./quiz-history-columns";
 
-const PAGE_SIZE = 8;
+// A server page. Twenty rows of a table is one comfortable screen at desk height.
+const PAGE_SIZE = 20;
 
 /**
- * "HH:MM:SS" / "d.HH:MM:SS" (the .NET TimeSpan wire format) → a short human duration.
- * Returns null when the session never finished, so callers can hide the field.
+ * Everything the play history needs — filter state, the lookups its facets and pills label
+ * from, the current server page — with no markup. Two shells render it: `QuizHistoryList`
+ * below (the profile: toolbar + filter drawer) and `MyQuizHistory` (the dashboard: toolbar in
+ * the table card, filters in a sidebar like My Quizzes). See docs/quiz/user-stats-history.md.
  */
-const formatDuration = (duration: string | null): string | null => {
-  if (!duration) return null;
+export function useQuizHistory(userId: string) {
+  const [page, setPage] = useState(1);
+  const resetPage = useCallback(() => setPage(1), []);
 
-  const [clock] = duration.split(".").slice(-1);
-  const parts = clock.split(":").map((p) => Math.floor(Number(p)));
-  if (parts.length < 3 || parts.some(Number.isNaN)) return null;
+  // Option lists for the facets and their pills — the API filters by id, not by name.
+  const { data: categories = [] } = useQuestionCategoryData({});
+  const { data: difficulties = [] } = useQuestionDifficultyData({});
+  const { data: languages = [] } = useQuestionLanguageData({});
+  const lookups = { categories, difficulties, languages };
 
-  const [hours, minutes, seconds] = parts;
-  if (hours > 0) return `${hours}h ${minutes}m`;
-  if (minutes > 0) return `${minutes}m ${seconds}s`;
-  return `${seconds}s`;
-};
+  const filters = useQuizHistoryFilters(lookups, resetPage);
 
-const statusBadge = (session: QuizSessionSummary) => {
-  if (session.abandonmentReason != null)
-    return <Badge variant="outline">Abandoned</Badge>;
-  if (session.isCompleted) return <Badge variant="outline">Completed</Badge>;
-  return <Badge variant="outline">In progress</Badge>;
-};
+  const sessionsQuery = useUserSessions({
+    userId,
+    query: { ...filters.query, page, pageSize: PAGE_SIZE },
+  });
 
-const HistoryRow = ({ session }: { session: QuizSessionSummary }) => {
-  const duration = formatDuration(session.duration);
-  const isBoard = session.format === "Associations";
-  const accuracy =
-    !isBoard && session.totalQuestions > 0
-      ? Math.round((session.correctAnswers / session.totalQuestions) * 100)
-      : null;
+  const { data, isLoading, isError } = sessionsQuery;
+  const sessions = data?.items ?? [];
+  const isFiltering = filters.activeCount > 0;
 
+  return {
+    lookups,
+    filters,
+    sessionsQuery,
+    sessions,
+    setPage,
+    isFiltering,
+    // Someone with no plays at all gets the plain empty state — a search box over nothing is noise.
+    hasNoPlays: !isLoading && !isError && sessions.length === 0 && !isFiltering,
+  };
+}
+
+export type QuizHistoryState = ReturnType<typeof useQuizHistory>;
+
+/** "No quizzes played yet" — shown instead of the toolbar and table, by either shell. */
+export const QuizHistoryEmpty = () => (
+  <div className="flex flex-col items-center justify-center py-10 text-center text-muted-foreground">
+    <Activity className="mb-3 h-8 w-8 opacity-50" />
+    <p className="font-medium">No quizzes played yet</p>
+    <p className="text-sm">Sessions you play will show up here.</p>
+  </div>
+);
+
+/** Search + sort. `filterAction` is the drawer trigger, where the shell has one. */
+export const QuizHistoryToolbar = ({
+  history,
+  filterAction,
+  showSearch = true,
+}: {
+  history: QuizHistoryState;
+  filterAction?: React.ReactNode;
+  /** Off on the dashboard, whose search lives in the filter sidebar (which also clears it). */
+  showSearch?: boolean;
+}) => {
+  const { filters, sessionsQuery } = history;
   return (
-    <Link
-      to={sessionResultsPath(session)}
-      className="flex items-center justify-between gap-4 rounded-lg border border-foreground/10 p-3 transition-colors hover:bg-foreground/5"
-    >
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <span className="truncate font-medium">{session.quizTitle}</span>
-          {isBoard && <Badge variant="secondary">Board</Badge>}
-          {statusBadge(session)}
-        </div>
-        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-          <span>{formatDate(session.startTime)}</span>
-          {/* A board has no questions to count — its score says how it went. */}
-          {!isBoard && (
-            <span className="flex items-center gap-1">
-              <Target className="h-3 w-3" />
-              {session.correctAnswers}/{session.totalQuestions}
-              {accuracy !== null && ` (${accuracy}%)`}
-            </span>
-          )}
-          {duration && (
-            <span className="flex items-center gap-1">
-              <Clock className="h-3 w-3" />
-              {duration}
-            </span>
-          )}
-        </div>
-      </div>
-      <div className="shrink-0 text-right">
-        <div className="text-lg font-bold">{session.totalScore.toLocaleString()}</div>
-        <div className="text-xs text-muted-foreground">points</div>
-      </div>
-    </Link>
+    <QuizToolbar
+      searchQuery={filters.search}
+      onSearchChange={filters.setSearch}
+      searchPlaceholder="Search your history..."
+      sortBy={filters.sort}
+      onSortChange={filters.setSort}
+      sortOptions={HISTORY_SORT_LABELS}
+      resultCount={sessionsQuery.data?.totalItems ?? 0}
+      showCount={false}
+      activeFilterCount={filters.activeCount}
+      onClearFilters={showSearch ? filters.clearAll : undefined}
+      filterAction={filterAction}
+      showSearch={showSearch}
+    />
   );
 };
 
 /**
- * Paginated play history for the signed-in user. Rows link to the existing results page, which
- * already renders the per-question review — no new detail view needed.
+ * The drawer trigger the profile uses — and the dashboard below `lg`, where its sidebar hides.
+ * Forwards ref and props so it works as a Radix `asChild` trigger.
+ */
+export const QuizHistoryFilterButton = forwardRef<
+  HTMLButtonElement,
+  React.ButtonHTMLAttributes<HTMLButtonElement> & { count: number }
+>(({ count, className, ...props }, ref) => (
+  <button
+    ref={ref}
+    type="button"
+    className={cn(
+      "inline-flex h-9 items-center gap-1.5 rounded-lg border border-border bg-background px-3 text-sm font-medium text-foreground shadow-sm transition-colors hover:border-foreground/25",
+      className
+    )}
+    {...props}
+  >
+    <ListFilter className="h-4 w-4 text-muted-foreground" />
+    Filters
+    {count > 0 && (
+      <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[11px] font-bold tabular-nums text-white">
+        {count}
+      </span>
+    )}
+  </button>
+));
+QuizHistoryFilterButton.displayName = "QuizHistoryFilterButton";
+
+/**
+ * Active-filter pills, then the table and pager — or the loading / error / no-match states.
+ * `tone` follows the surface: `"neutral"` on the tinted profile page, `"primary"` inside the
+ * dashboard's card so it matches the My Quizzes table beside it.
+ */
+export const QuizHistoryResults = ({
+  history,
+  tone = "neutral",
+}: {
+  history: QuizHistoryState;
+  tone?: "primary" | "neutral";
+}) => {
+  const { filters, sessionsQuery, sessions, setPage, isFiltering } = history;
+  const { data, isLoading, isError, isPlaceholderData } = sessionsQuery;
+
+  return (
+    <>
+      {isFiltering && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-medium tabular-nums text-muted-foreground">
+            {(data?.totalItems ?? 0).toLocaleString()}{" "}
+            {data?.totalItems === 1 ? "session" : "sessions"}
+          </span>
+          {/* No "Clear all" here — the toolbar's Clear already does that. */}
+          <ActiveFilterPills pills={filters.pills} />
+        </div>
+      )}
+
+      {isLoading ? (
+        <div className="flex justify-center py-10">
+          <BlobLoader size="sm" />
+        </div>
+      ) : isError ? (
+        <p className="py-10 text-center text-sm text-muted-foreground">
+          Your history couldn't be loaded right now.
+        </p>
+      ) : sessions.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-10 text-center text-muted-foreground">
+          <SearchX className="mb-3 h-8 w-8 opacity-50" />
+          <p className="font-medium">No sessions match these filters</p>
+          <button
+            type="button"
+            onClick={filters.clearAll}
+            className="mt-1 text-sm underline underline-offset-4 hover:text-foreground"
+          >
+            Clear filters
+          </button>
+        </div>
+      ) : (
+        <>
+          {/* A table rather than cards: history is for comparing plays — score against score,
+              date against date — and columns line those up. Dimmed while the next result set
+              loads (the previous one stays up — keepPreviousData). */}
+          <div className={isPlaceholderData ? "opacity-60 transition-opacity" : "transition-opacity"}>
+            <DataTable
+              data={sessions}
+              columns={quizHistoryColumns}
+              tone={tone}
+              density="compact"
+            />
+          </div>
+
+          {/* The app's standard pagination; it hides itself when there is only one page. */}
+          <PaginationControls
+            pagination={data ? pagedResponseToPagination(data) : undefined}
+            onPageChange={setPage}
+          />
+        </>
+      )}
+    </>
+  );
+};
+
+/**
+ * Paginated, filterable play history for the profile page, as a `DataTable`
+ * (quiz-history-columns.tsx). Rows link to the existing results page, which already renders the
+ * per-question review — no new detail view needed.
+ *
+ * Filters open in a drawer at every width: the profile has no room for a permanent sidebar.
+ * The dashboard's `/my-dashboard/history` does, and composes the same pieces around one —
+ * see MyQuizHistory.tsx and docs/quiz/user-stats-history.md.
  */
 export const QuizHistoryList = ({ userId }: { userId: string }) => {
-  const [page, setPage] = useState(1);
-  const { data, isLoading, isError } = useUserSessions({
-    userId,
-    page,
-    pageSize: PAGE_SIZE,
-  });
+  const history = useQuizHistory(userId);
 
-  if (isLoading) {
-    return (
-      <div className="flex justify-center py-10">
-        <BlobLoader size="sm" />
-      </div>
-    );
-  }
-
-  if (isError) {
-    return (
-      <p className="py-10 text-center text-sm text-muted-foreground">
-        Your history couldn't be loaded right now.
-      </p>
-    );
-  }
-
-  const sessions = data?.items ?? [];
-
-  if (sessions.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center py-10 text-center text-muted-foreground">
-        <Activity className="mb-3 h-8 w-8 opacity-50" />
-        <p className="font-medium">No quizzes played yet</p>
-        <p className="text-sm">Sessions you play will show up here.</p>
-      </div>
-    );
-  }
+  if (history.hasNoPlays) return <QuizHistoryEmpty />;
 
   return (
     <div className="space-y-3">
-      <div className="space-y-2">
-        {sessions.map((session) => (
-          <HistoryRow key={session.id} session={session} />
-        ))}
-      </div>
-
-      {(data!.hasPreviousPage || data!.hasNextPage) && (
-        <div className="flex items-center justify-between pt-1">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={!data!.hasPreviousPage}
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-          >
-            <ChevronLeft className="h-4 w-4" />
-            Previous
-          </Button>
-          <span className="text-xs text-muted-foreground">
-            Page {data!.page} of {data!.totalPages}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={!data!.hasNextPage}
-            onClick={() => setPage((p) => p + 1)}
-          >
-            Next
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
-      )}
+      <QuizHistoryToolbar
+        history={history}
+        filterAction={
+          <Sheet>
+            <SheetTrigger asChild>
+              <QuizHistoryFilterButton count={history.filters.panelCount} />
+            </SheetTrigger>
+            <SheetContent
+              side="right"
+              className="w-80 max-w-[85vw] overflow-y-auto px-4 pb-4 pt-12"
+            >
+              <SheetHeader className="sr-only">
+                <SheetTitle>Filter history</SheetTitle>
+              </SheetHeader>
+              <QuizHistoryFilterPanel lookups={history.lookups} state={history.filters} />
+            </SheetContent>
+          </Sheet>
+        }
+      />
+      <QuizHistoryResults history={history} />
     </div>
   );
 };

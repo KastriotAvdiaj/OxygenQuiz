@@ -301,8 +301,14 @@ scrollable region.** Not the page's scroll, not the panel's — its own.
   container. Without containment, a flick past the last row chains outward and
   moves the page behind the panel — on touch devices that reads as the app losing
   the user's place.
-- **An outer viewport cap stays as the second line of defence**, for when several
-  capped regions are open at once. It should not be the primary mechanism: it
+- **Stacked collapsible groups open one at a time.** Two expanded lists in the
+  same panel sum their caps, overflow the panel, and bring in a scrollbar that
+  takes a visible strip out of a narrow drawer. `QuizFilterPanel` makes its
+  facets an accordion (`FacetAccordionContext` in `quiz-filters/`); sections
+  passed in as `children` join it. Side-by-side groups (the compact multiplayer
+  variant) don't stack, so they stay independent.
+- **An outer viewport cap stays as the second line of defence**, for a viewport
+  too short for even one open region. It should not be the primary mechanism: it
   yields one long scrollbar over unrelated groups instead of a stable panel.
 - **Keep search/filter controls outside the scroll region.** The whole point of a
   search box on a long list is that it stays reachable while you scroll it.
@@ -328,7 +334,17 @@ To use it, tag the column definitions:
 - **No `priority` means 1.** A table that hasn't opted in renders exactly as before.
 - Priorities are a *content* decision — "which two columns matter" is a claim about what
   someone came to the page to do. Write the reasoning next to the definitions, as
-  `Quiz/components/Data-Table-Columns/columns.tsx` does.
+  `Quiz/components/Data-Table-Columns/columns.tsx` and the play history's
+  `Profile/components/quiz-history-columns.tsx` do.
+- **`tone`** picks the surface: `"primary"` (default — `muted` surface, rows alternating a
+  primary wash and `muted`) for dashboard tables, `"neutral"` (`background` surface, rows
+  alternating `muted` and `background`) for a table sitting on an already-tinted page.
+- **`density`** picks the row height: `"comfortable"` (default — `py-4` cells, sentence-case
+  headers) or `"compact"` (`py-2` cells, small-caps headers) for list pages where more rows
+  per screen is the point — My Quizzes and the play history. Padding alone can't shorten a
+  row whose cell holds a two-line title, so the density is also on `table.options.meta` and a
+  cell renderer can read it (`table.options.meta?.density === "compact"`) to render a
+  one-line version — the quiz title and the history score cell both do.
 
 Three things worth knowing before touching this:
 

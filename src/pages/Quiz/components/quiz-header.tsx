@@ -41,16 +41,26 @@ const SORT_LABELS: Record<SortOption, string> = {
   "title-desc": "Z → A",
 };
 
-interface QuizToolbarProps {
+interface QuizToolbarProps<S extends string = SortOption> {
   searchQuery: string;
   onSearchChange: (value: string) => void;
+
+  /** Placeholder / accessible name for the search box. Defaults to "Search quizzes…". */
+  searchPlaceholder?: string;
 
   /**
    * Sort control — omit both to hide it (e.g. the multiplayer dialog, which
    * always uses the default "variety" sort to save space).
    */
-  sortBy?: SortOption;
-  onSortChange?: (value: SortOption) => void;
+  sortBy?: S;
+  onSortChange?: (value: S) => void;
+
+  /**
+   * The sort menu, as value → label. Defaults to the quiz catalogue's options
+   * (SORT_LABELS); lists that sort something else — the play history sorts
+   * sessions by date and score — pass their own, with `S` inferred from it.
+   */
+  sortOptions?: Record<S, string>;
 
   resultCount: number;
 
@@ -79,24 +89,33 @@ interface QuizToolbarProps {
    * collapsible toggle in the multiplayer dialog).
    */
   filterAction?: React.ReactNode;
+
+  /**
+   * Render the search box (default true). The dashboard's play history turns it off — its
+   * search sits in the filter sidebar, like the other dashboard pages' panels.
+   */
+  showSearch?: boolean;
 }
 
 /**
- * Shared search + sort toolbar for the quiz pickers. The faceted filters
+ * Shared search + sort toolbar for the quiz pickers and the play history. The faceted filters
  * (category/difficulty/language multi-select) live in QuizFilterPanel; this
  * toolbar hosts their trigger via `filterAction`.
  */
-export function QuizToolbar({
+export function QuizToolbar<S extends string = SortOption>({
   searchQuery,
   onSearchChange,
+  searchPlaceholder = "Search quizzes...",
   sortBy,
   onSortChange,
+  sortOptions = SORT_LABELS as Record<S, string>,
   resultCount,
   activeFilterCount = 0,
   showCount = true,
   onClearFilters,
   filterAction,
-}: QuizToolbarProps) {
+  showSearch = true,
+}: QuizToolbarProps<S>) {
   return (
     <div>
       {/* Single toolbar row — search capped on desktop, sort pinned right.
@@ -106,13 +125,14 @@ export function QuizToolbar({
             available room (capped by max-w-md) instead of a hardcoded width, so
             the toolbar breathes on wide/ultra-wide screens and stacks cleanly on
             mobile. Minimal style: hairline border, soft shadow, primary on focus. */}
+        {showSearch && (
         <div className="relative w-full lg:flex-1 lg:max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
           <input
             type="text"
             role="searchbox"
-            aria-label="Search quizzes"
-            placeholder="Search quizzes..."
+            aria-label={searchPlaceholder.replace(/[.…]+$/, "")}
+            placeholder={searchPlaceholder}
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
             className="w-full h-9 pl-9 pr-9 rounded-lg border border-border bg-background text-sm text-foreground placeholder:text-muted-foreground shadow-sm transition-colors duration-150 hover:border-foreground/25 focus:border-primary/50 focus:ring-2 focus:ring-primary/30 focus:outline-none"
@@ -128,6 +148,7 @@ export function QuizToolbar({
             </button>
           )}
         </div>
+        )}
 
         {/* Per-picker filter trigger (mobile drawer / dialog collapsible) */}
         {filterAction}
@@ -151,7 +172,7 @@ export function QuizToolbar({
               <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground hidden sm:block" />
               <Select
                 value={sortBy}
-                onValueChange={(v) => onSortChange(v as SortOption)}
+                onValueChange={(v) => onSortChange(v as S)}
               >
                 <SelectTrigger
                   variant="minimal"
@@ -161,9 +182,9 @@ export function QuizToolbar({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent variant="minimal">
-                  {(Object.keys(SORT_RULES) as SortOption[]).map((option) => (
+                  {(Object.keys(sortOptions) as S[]).map((option) => (
                     <SelectItem variant="minimal" key={option} value={option}>
-                      {SORT_LABELS[option]}
+                      {sortOptions[option]}
                     </SelectItem>
                   ))}
                 </SelectContent>

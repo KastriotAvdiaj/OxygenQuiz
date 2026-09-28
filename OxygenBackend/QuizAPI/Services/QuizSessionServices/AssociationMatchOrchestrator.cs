@@ -1,3 +1,5 @@
+using Microsoft.EntityFrameworkCore;
+using QuizAPI.Data;
 using Microsoft.AspNetCore.SignalR;
 using QuizAPI.DTOs.Quiz;
 using QuizAPI.Hubs;
@@ -127,7 +129,6 @@ namespace QuizAPI.Services.QuizSessionServices
                 var games = scope.ServiceProvider.GetRequiredService<IAssociationGameRepository>();
                 var boards = scope.ServiceProvider.GetRequiredService<IAssociationBoardRepository>();
                 var rulesProvider = scope.ServiceProvider.GetRequiredService<IAssociationRulesProvider>();
-                var users = scope.ServiceProvider.GetRequiredService<IUserRepository>();
 
                 // The pick was authorised at selection (QuizHub.SelectQuiz); this only re-reads it,
                 // for its current version — the Duel is pinned to it, like a Solo game.
@@ -138,9 +139,11 @@ namespace QuizAPI.Services.QuizSessionServices
                 var board = await boards.GetForVersionAsync(quiz.Id, quiz.Version)
                     ?? throw new InvalidOperationException("This quiz has no board to play.");
 
-                // Decided now, while the host is certainly still here (multiplayer.md §7.3).
-                var host = await users.GetByUsernameAsync(session.HostUsername)
-                    ?? throw new InvalidOperationException("The host's account could not be found.");
+                // Decided now, while the host is certainly still here (multiplayer.md §7.3). By id,
+                // from the lobby's own record of who is who: the host's name is a pinned label that
+                // may no longer match their current display name (account-identity-changes.md §4).
+                if (!session.PlayerUserIds.TryGetValue(session.HostUsername, out var hostUserId))
+                    throw new InvalidOperationException("The host's account could not be found.");
 
                 var seats = participants.Select(p => p.Username).ToList();
                 // D12: random, and a rematch between the same two is opened by the other one.
@@ -158,7 +161,7 @@ namespace QuizAPI.Services.QuizSessionServices
                 };
 
                 session.MatchQuizVersion = quiz.Version;
-                session.MatchHostUserId = host.Id;
+                session.MatchHostUserId = hostUserId;
             }
 
             session.LastDuelOpener = duel.Seats[duel.FirstSeat];
@@ -279,14 +282,26 @@ namespace QuizAPI.Services.QuizSessionServices
         {
             using var scope = _scopeFactory.CreateScope();
             var games = scope.ServiceProvider.GetRequiredService<IAssociationGameRepository>();
-            var users = scope.ServiceProvider.GetRequiredService<IUserRepository>();
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
             var game = runner.Game;
             var endedAt = game.EndedAt ?? Now();
 
-            var userIds = new Guid?[runner.Usernames.Count];
-            for (var seat = 0; seat < userIds.Length; seat++)
-                userIds[seat] = (await users.GetByUsernameAsync(runner.Usernames[seat]))?.Id;
+            // Seats are keyed by pinned lobby name; the ids come from the lobby's record of who
+            // joined as whom (PlayerUserIds), then one query through the ordinary filter so an
+            // account closed mid-Duel drops out — the same rule as the Classic loop. Looking the
+            // names up as usernames would miss anyone who renamed while the lobby was open.
+            var candidateIds = runner.Usernames
+                .Select(n => session.PlayerUserIds.TryGetValue(n, out var id) ? id : (Guid?)null)
+                .ToArray();
+            var wanted = candidateIds.OfType<Guid>().ToList();
+            var liveIds = (await db.Users
+                .Where(u => wanted.Contains(u.Id))
+                .Select(u => u.Id)
+                .ToListAsync()).ToHashSet();
+            var userIds = candidateIds
+                .Select(id => id is Guid g && liveIds.Contains(g) ? g : (Guid?)null)
+                .ToArray();
 
             var match = new Match
             {

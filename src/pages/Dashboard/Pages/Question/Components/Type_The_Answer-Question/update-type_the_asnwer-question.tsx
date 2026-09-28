@@ -6,6 +6,7 @@ import { useNotifications } from "@/common/Notifications";
 import { Separator } from "@/components/ui/separator";
 import { LiftedButton } from "@/common/LiftedButton";
 import ImageUpload from "@/utils/Image-Upload";
+import { ExplanationField } from "@/common/QuestionExplanation";
 import { useFieldArray } from "react-hook-form";
 import { DifficultySelect } from "../../Entities/Difficulty/Components/select-question-difficulty";
 import { CategorySelect } from "../../Entities/Categories/Components/select-question-category";
@@ -94,6 +95,7 @@ export const UpdateTypeAnswerQuestionForm: React.FC<
               id: question.id,
               text: question.text,
               imageUrl: question.imageUrl,
+              explanation: question.explanation ?? "",
               correctAnswer: question.correctAnswer,
               categoryId: question.category.id,
               difficultyId: question.difficulty.id,
@@ -359,6 +361,14 @@ export const UpdateTypeAnswerQuestionForm: React.FC<
                     />
                   </div>
                 </div>
+                {/* Optional "why" shown to players after they answer — see
+                    docs/quiz/question-explanations.md. */}
+                <ExplanationField
+                  registration={register("explanation")}
+                  defaultValue={question.explanation}
+                  error={formState.errors["explanation"]}
+                  className="mt-4"
+                />
               </>
             );
           }}

@@ -28,6 +28,13 @@ internal sealed class HubHarness
     /// <summary>Drives the 5-second disconnect grace.</summary>
     public readonly Microsoft.Extensions.Time.Testing.FakeTimeProvider Clock = new();
 
+    /// <summary>
+    /// One account per username. The hub keys players by account id and reads the display name
+    /// from the database (docs/auth/account-identity-changes.md §4), so the same name must stay the
+    /// same account across calls, and that account must exist.
+    /// </summary>
+    private readonly Dictionary<string, Guid> _accounts = new(StringComparer.OrdinalIgnoreCase);
+
     /// <summary>Connection items per connection id — SignalR keeps these per connection, across invocations.</summary>
     private readonly Dictionary<string, ConnectionItems> _items = new();
 
@@ -62,7 +69,7 @@ internal sealed class HubHarness
         var identity = new ClaimsIdentity(new[]
         {
             new Claim("username", username),
-            new Claim(ClaimTypes.NameIdentifier, (userId ?? Guid.NewGuid()).ToString()),
+            new Claim(ClaimTypes.NameIdentifier, Account(username, userId).ToString()),
         }.Concat(roles.Select(r => new Claim(ClaimTypes.Role, r))), "test");
 
         if (!_items.TryGetValue(connectionId, out var items))
@@ -75,6 +82,26 @@ internal sealed class HubHarness
         hub.Context = context.Object;
 
         return hub;
+    }
+
+    /// <summary>The account behind <paramref name="username"/>, created on first use.</summary>
+    public Guid Account(string username, Guid? userId = null)
+    {
+        if (_accounts.TryGetValue(username, out var known))
+            return known;
+
+        var id = userId ?? Guid.NewGuid();
+        _accounts[username] = id;
+        using var scope = Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        db.Users.Add(new QuizAPI.Models.User
+        {
+            Id = id, Username = username, ImmutableName = username.ToLowerInvariant(),
+            Email = $"{username}@example.com", PasswordHash = "x", ProfileImageUrl = string.Empty,
+            EmailConfirmed = true,
+        });
+        db.SaveChanges();
+        return id;
     }
 }
 

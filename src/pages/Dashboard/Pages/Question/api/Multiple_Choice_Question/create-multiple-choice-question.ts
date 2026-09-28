@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
+import { explanationSchema } from "@/common/question-explanation";
 import { apiService } from "@/lib/Api-client";
 import { MutationConfig } from "@/lib/React-query";
 import { answerOptionsSchema } from "../../../Quiz/api/create-quiz";
@@ -19,6 +20,9 @@ export const createMultipleChoiceQuestionInputSchema = z.object({
   categoryId: z.number().int().positive("Choose a category"),
   languageId: z.number().int().positive("Choose a language"),
   imageUrl: z.string().optional(),
+  // Optional "why" shown after answering. The API caps and normalises it too
+  // (QuestionExplanation.Normalize); this is the fast-feedback half.
+  explanation: explanationSchema,
   answerOptions: answerOptionsSchema,
   allowMultipleSelections: z.boolean().default(false),
   visibility: z.string().optional().default("Private"),

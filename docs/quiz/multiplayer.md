@@ -207,7 +207,7 @@ Now:
 - **The client rejoins.** `MultiplayerProvider` remembers the lobby it created or joined
   (`createLobbyMembership` in `context/lobby-rejoin.ts`, forgotten on `LeaveSession`) and binds
   `onreconnected` to re-invoke `JoinSession` for it. `JoinSession` is idempotent for an existing
-  participant: it moves them to the new connection id — so the disconnect check leaves them alone —
+  participant (matched by account id, not name): it moves them to the new connection id — so the disconnect check leaves them alone —
   re-adds the connection to the group, re-stamps `Context.Items`, and sends the catch-up bundle
   (§4.2), including the Duel's `DuelState` if one is on.
 - **The room isn't told.** A rejoin does not broadcast `UserJoined`: the others never saw the player
@@ -396,13 +396,15 @@ that stays correct once trimming starts is "how many have I seen" plus a tail di
 
 ### Hub methods (client → server)
 
-Identity is **never** a parameter. Every method derives the username from the connection.
+Identity is **never** a parameter. Every method derives it from the connection: the account id
+from the token, and — once the connection is in a lobby — the name it plays under there from
+`Context.Items["Username"]`. See the note below the table.
 
 | Method | Parameters | Auth | Notes |
 |---|---|---|---|
 | `CreateSession` | `sessionId, lobbyName, maxPlayers` | any authenticated | Caller becomes host. Throws if the code already exists. |
 | `CheckSession` | `sessionId` | any authenticated | Returns `SessionAvailability` (`canJoin`, `reason`, `message`, `inProgress`, roster counts). Mutates nothing. Pre-flight for the join dialog — advisory, not the gate. |
-| `JoinSession` | `sessionId` | any authenticated | Converts `SessionJoinException` to `HubException` so the client sees the real cause (`not-found` / `full`). Idempotent for an existing participant; adds to the SignalR group only **after** the participant add succeeds. |
+| `JoinSession` | `sessionId` | any authenticated | Converts `SessionJoinException` to `HubException` so the client sees the real cause (`not-found` / `full` / `name-in-use`). Idempotent for an existing participant (matched by account id); adds to the SignalR group only **after** the participant add succeeds. |
 | `LeaveSession` | `sessionId` | participant | Broadcasts `UserLeft`, plus `HostChanged` if the host left. |
 | `ToggleReady` | `sessionId, isReady` | participant | Sets the **caller's** own flag only. |
 | `SelectQuiz` | `sessionId, quiz` | **host** | `quiz` is a `SelectedQuizView`; only `Id` is authorized (`CanHostQuizAsync`), and `Format` is filled by the server. A Board needs an admin host while in preview. |
@@ -413,13 +415,15 @@ Identity is **never** a parameter. Every method derives the username from the co
 | `GuessAssociation` | `sessionId, target, text` | seated Duel player | `target` is `A`–`D` or `Final`. |
 | `PassTurn` | `sessionId` | seated Duel player | After opening a Tile, or in the endgame. |
 
-> **Identity source inconsistency.** `JoinSession`, `LeaveSession`, `ToggleReady` and
-> `SubmitAnswer` read the username from the **JWT** (`GetUsername()`), while `StartMatch`,
-> `SelectQuiz` and `SendLobbyMessage` read it from **`Context.Items["Username"]`**, which is
-> populated by `CreateSession`/`JoinSession`. Both are safe (neither trusts the client), but the
-> `Context.Items` variety is per-connection, so it is empty on a connection that has not joined —
-> which is what surfaces as `"You are not in this lobby."`. A reconnect used to be exactly that
-> connection; the client now rejoins (§3.6).
+> **Identity is the account id; the name is a pinned label** (since 2026-09-27, when display names
+> became changeable — [account-identity-changes.md](../auth/account-identity-changes.md) §4).
+> `CreateSession`/`JoinSession` read the account's current display name from the database and the
+> session manager pins it to the account for the lobby's lifetime (`PlayerUserIds`); every other
+> method reads that pinned name from `Context.Items["Username"]`. The methods used to split
+> between that and the JWT's `username` claim, which lags a rename. `Context.Items` is
+> per-connection, so it is empty on a connection that has not joined — which is what surfaces as
+> `"You are not in this lobby."` (`LeaveSession` on such a connection is a silent no-op). See the
+> reconnect gap in §7.
 
 ### Client events (server → client)
 
@@ -615,12 +619,12 @@ this is the feature-level summary.
   even that with a hardcoded `"The room may not exist."` — so a full lobby was reported as a
   missing one. Now a `SessionJoinException` carrying a `JoinFailureReason`, rethrown as
   `HubException`, and passed through verbatim by the client.
-- **No username uniqueness constraint** within a lobby beyond account identity, and no validation
-  of room-code shape on input.
-- **The Classic match loop has no automated tests.** `MatchPersistenceTests` covers the reads over
-  the rows a match leaves (§7) and `QuizAPI.Tests` covers scoring, grading, auth, versioning and
-  stats — the pieces the loop *calls* — but there is nothing for `MatchOrchestrator`'s round loop
-  itself, and none for the lobby hooks. **The Duel loop is tested** (2026-09-25):
+- **No validation of room-code shape on input.** (Names within a lobby are unique: one account,
+  one pinned name, and a second account under a name the lobby has seen is refused.)
+- **The Classic match loop has no automated tests.** `MatchPersistenceTests` covers the reads over the rows
+  a match leaves (§7) and `QuizAPI.Tests` covers scoring, grading, auth, versioning and stats — the
+  pieces the loop *calls* — but there is nothing for
+  `MatchOrchestrator`'s round loop itself, and none for the lobby hooks. **The Duel loop is tested** (2026-09-25):
   `AssociationMatchOrchestratorTests` runs it on its real background task against a
   `FakeTimeProvider`, with the real session manager and the real lobby reset, and `HubHarness`
   (`QuizAPI.Tests/Multiplayer/`) drives `QuizHub` with SignalR's clients mocked — the pattern to

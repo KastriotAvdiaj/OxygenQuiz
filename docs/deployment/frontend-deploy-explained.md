@@ -199,14 +199,22 @@ active without rebuilding anything.
 There are **two** ways this project can deploy, and they do the same thing:
 
 - **Manual** — you run `npm run build && npx wrangler deploy` from your machine (what we did).
-- **Automatic (CI)** — Cloudflare's "Workers Builds" is connected to the GitHub repo. When commits land
-  on the deploy branch, Cloudflare spins up a temporary build machine, runs `npm run build`, then runs
+- **Automatic (CI)** — Cloudflare's "Workers Builds" is connected to the GitHub repo
+  (`KastriotAvdiaj/OxygenQuiz`, Worker → Settings → Builds). When commits land on **`main`** (the
+  production branch), Cloudflare spins up a temporary build machine, runs `npm run build`, then runs
   `npx wrangler deploy` for you — same commands, just on Cloudflare's computer instead of yours (it
-  authenticates with a built-in token rather than your login).
+  authenticates with a built-in token rather than your login). This is the normal path.
 
-Both promote a new version the same way. **Pick one path per change** so they don't race each other and
-fight over which version is live (noted in `known-issues.md`). If you deploy manually, remember the CI
-build will also fire on your next push.
+**Other branches never go live.** "Builds for non-production branches" is on, but their **Version
+command** is `npx wrangler versions upload`: the branch is built and uploaded as a version you can
+preview, and live traffic is not moved to it. Until 2026-09-28 that command was also `wrangler
+deploy`, so *every* branch push went live — on 2026-09-27 a push of `feature/account-identity`
+replaced the live `main` build (and its landing page and Associations pages), and the next push to
+`main` replaced that in turn. Each deploy is one branch's whole build; nothing is combined on the way.
+
+Both paths promote a new version the same way. **Pick one path per change** so they don't race each
+other and fight over which version is live (noted in `known-issues.md`). If you deploy manually,
+remember the CI build will deploy `main` over it on your next push to `main`.
 
 ---
 
@@ -298,12 +306,14 @@ How to tell a cache issue from a real deploy problem:
 - **A `409` / "triggers failed to deploy" comes back.** Something is trying to re-attach an existing
   custom domain — check that `wrangler.jsonc` still has **no** `routes` block and that the domains are
   only managed in the dashboard.
-- **Two versions fighting / unexpected rollbacks.** You probably deployed manually *and* pushed to the
-  branch the CI build watches. Use one path per change.
+- **Two versions fighting / unexpected rollbacks.** You probably deployed manually *and* pushed to
+  `main`. Use one path per change. If a feature *disappeared* rather than a version flipping back,
+  check which branch the newest deployment came from (Deployments → Version History shows the branch)
+  — it should always be `main`.
 - **Need to undo a bad deploy fast.** Dashboard → Workers & Pages → `oxygenquiz` → Deployments →
   promote a previous version back to active. No rebuild needed.
-- **Deploy the API *before* the frontend when a change spans both.** The frontend is deployed from
-  your machine while the backend ships separately, so it's easy to push a bundle that calls
+- **Deploy the API *before* the frontend when a change spans both.** The frontend deploys on a push
+  to `main` (or from your machine) while the backend ships separately, so it's easy to push a bundle that calls
   endpoints production doesn't have yet. The old-frontend/new-API direction is safe (new endpoints
   simply go unused); the reverse is not. This bit us on 2026-07-28 — a new bundle calling
   `/Authentication/auth-config` against an API that didn't have it yet hung the signup page and

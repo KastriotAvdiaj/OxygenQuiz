@@ -12,6 +12,8 @@ import { startBlockedReason } from "../utils/lobby-start";
 export type { SelectedQuiz };
 
 export interface Participant {
+  /** The account behind the seat — the identity. `username` is only its label in this lobby. */
+  userId?: string;
   username: string;
   isReady: boolean;
   isHost: boolean;
@@ -33,7 +35,7 @@ export const useLobbyConnection = ({ mode = "join" }: UseLobbyConnectionOptions)
   // Identity always comes from the logged-in account — the lobby routes are auth-gated,
   // so `user` is present. The host/participant name is therefore the real account username,
   // never free-typed text.
-  const username = user?.username ?? "";
+  const accountName = user?.username ?? "";
   // The room code can arrive two ways and both must work identically:
   //   • route param  — /multiplayer/lobby/:sessionId  (the Join dialog + create flow navigate here)
   //   • ?code query   — /multiplayer/join?code=...      (the shared invite link)
@@ -50,6 +52,14 @@ export const useLobbyConnection = ({ mode = "join" }: UseLobbyConnectionOptions)
   const [isJoining, setIsJoining] = useState(false);
   const [joinError, setJoinError] = useState<string | null>(null);
   const [selectedQuiz, setSelectedQuiz] = useState<SelectedQuiz | null>(null);
+
+  // The name this account plays under in THIS lobby. The server pins it at first join, so after a
+  // rename it can differ from the account's current display name (someone who renamed and came
+  // back to the same room). Every "is this me?" below compares against it, so it is found by
+  // account id, falling back to the display name until the roster arrives.
+  // See docs/auth/account-identity-changes.md § Multiplayer.
+  const username =
+    participants.find((p) => p.userId === user?.id)?.username ?? accountName;
 
   // Refs to capture latest values for the cleanup effect
   const sessionIdRef = useRef(sessionId);

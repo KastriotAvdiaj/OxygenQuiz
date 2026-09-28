@@ -25,7 +25,7 @@ public class AssociationMatchOrchestratorTests
     public async Task A_duel_needs_exactly_two_players()
     {
         var alone = new DuelWorld();
-        await alone.Sessions.CreateSessionAsync(Room, "Ana's lobby", 4, Ana, "ana-1");
+        await alone.Sessions.CreateSessionAsync(Room, "Ana's lobby", 4, alone.UserIds[Ana], Ana, "ana-1");
         await alone.Sessions.SetQuizAsync(Room, new SelectedQuizView { Id = alone.QuizId.ToString(), Format = "Associations" });
         var one = await Assert.ThrowsAsync<InvalidOperationException>(() => alone.Duels.StartMatchAsync(Room));
         Assert.Equal("An Associations duel is for exactly 2 players.", one.Message);

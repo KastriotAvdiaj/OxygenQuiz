@@ -1,10 +1,10 @@
 # Password reset ("forgot password")
 
-> **Status: implemented, and not deliverable in production yet.** The flow is complete and testable
-> end to end locally, but `IEmailSender` still has exactly one implementation — `LoggingEmailSender`,
-> which writes the message to the log and returns. Until a real provider is wired, a reset link
-> reaches the backend container's stdout and nothing else. This is not new to this feature: email
-> verification has the same gap and shipped with it. See §7.
+> **Status: implemented.** Mail goes out through `BrevoEmailSender` whenever `Email:Brevo:ApiKey`
+> is set; without a key (the development default) `LoggingEmailSender` writes the message to the
+> backend log instead, so a reset link is read from stdout. What remains before production mail is
+> account and DNS setup, not code — see §7. (This header used to say `LoggingEmailSender` was the
+> only implementation; that stopped being true when the Brevo sender landed.)
 
 Companion to [`email-verification.md`](email-verification.md), which this deliberately mirrors.
 

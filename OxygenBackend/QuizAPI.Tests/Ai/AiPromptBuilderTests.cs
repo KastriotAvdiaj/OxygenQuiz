@@ -158,6 +158,50 @@ public class AiPromptBuilderTests
     }
 
     [Fact]
+    public void SourceMode_AsksForAVerbatimQuoteInTheSourcesLanguage()
+    {
+        // parse-ai-output.ts drops a question whose quote isn't in the material, so a translated
+        // or paraphrased quote would be thrown away as invented. The prompt has to say so.
+        var prompt = Builder.Build(SourceRequest());
+
+        Assert.Contains($"\"{AiPromptBuilder.SourceQuoteField}\": string", prompt);
+        Assert.Contains("word for word", prompt);
+        Assert.Contains("even if the questions are in a different language", prompt);
+    }
+
+    [Fact]
+    public void TopicMode_DoesNotAskForAQuote()
+    {
+        // There is no material to quote from, and nothing to check a quote against.
+        Assert.DoesNotContain(AiPromptBuilder.SourceQuoteField, Builder.Build(InferredRequest()));
+    }
+
+    [Fact]
+    public void BothModes_AskForAShortExplanationInTheQuestionsLanguage()
+    {
+        foreach (var prompt in new[] { Builder.Build(InferredRequest()), Builder.Build(SourceRequest()) })
+        {
+            Assert.Contains($"\"{AiPromptBuilder.ExplanationField}\": string", prompt);
+            Assert.Contains($"at most {AiPromptBuilder.ExplanationTargetLength} characters", prompt);
+            Assert.Contains("same language as the question", prompt);
+        }
+
+        // In Source mode the explanation is held to the material, like the questions are.
+        Assert.Contains("Use only facts from the SOURCE MATERIAL", Builder.Build(SourceRequest()));
+    }
+
+    [Fact]
+    public void BothModes_AskForUnambiguousQuestionsThatDontGiveTheAnswerAway()
+    {
+        foreach (var prompt in new[] { Builder.Build(InferredRequest()), Builder.Build(SourceRequest()) })
+        {
+            Assert.Contains("only defensible answer", prompt);
+            Assert.Contains("Never write the answer", prompt);
+            Assert.Contains("All options must be different", prompt);
+        }
+    }
+
+    [Fact]
     public void RequestedCountIsStated()
     {
         Assert.Contains("EXACTLY 8 quiz question(s)", Builder.Build(InferredRequest()));

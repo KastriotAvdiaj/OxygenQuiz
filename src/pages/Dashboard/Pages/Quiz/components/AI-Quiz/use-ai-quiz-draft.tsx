@@ -274,6 +274,9 @@ export const useAiQuizDraft = () => {
       languageId: effectiveLanguageId!,
       quizDifficultyId: effectiveDifficultyId!,
       difficulties,
+      // Lets the parser drop a question whose `sourceQuote` isn't in the material. Topic mode
+      // has no material, so the check is skipped there (question-checks.ts).
+      sourceText: mode === "Source" ? sourceData : null,
     });
   }, [
     payload,
@@ -283,6 +286,8 @@ export const useAiQuizDraft = () => {
     effectiveLanguageId,
     effectiveDifficultyId,
     difficulties,
+    mode,
+    sourceData,
   ]);
 
   /**

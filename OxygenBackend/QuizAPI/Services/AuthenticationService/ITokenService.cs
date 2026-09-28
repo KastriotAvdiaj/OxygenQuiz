@@ -28,6 +28,12 @@ namespace QuizAPI.Services.AuthenticationService
         /// </summary>
         (string rawToken, string tokenHash, DateTime expiresAt) GeneratePasswordResetToken();
 
+        /// <summary>
+        /// Creates a one-time email-change token, mailed to the NEW address. Reset-link lifetime —
+        /// redeeming it moves the account's recovery address.
+        /// </summary>
+        (string rawToken, string tokenHash, DateTime expiresAt) GenerateEmailChangeToken();
+
         /// <summary>SHA-256 hash of a raw token, used to look up the stored row.</summary>
         string HashToken(string rawToken);
 

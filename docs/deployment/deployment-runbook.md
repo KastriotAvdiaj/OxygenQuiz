@@ -108,9 +108,15 @@ git pull
 docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
 ```
 
-### 4b. Frontend change (desktop → Cloudflare, no server)
+### 4b. Frontend change (Cloudflare, no server)
 
-From the repo root on your **desktop**:
+**Normal path: merge to `main` and push.** Cloudflare Workers Builds (connected to the GitHub repo)
+runs `npm run build` + `npx wrangler deploy` for every push to `main`, so that push *is* the deploy.
+Pushes to other branches run `npx wrangler versions upload` instead: a preview version, never live
+(Settings → Builds → Version command; changed from `wrangler deploy` on 2026-09-28, see
+[`known-issues.md`](known-issues.md) → Operations / deployment).
+
+**Manual path** (only to deploy without a push), from the repo root on your **desktop**:
 
 ```powershell
 cd C:\Users\Pc\source\repos\OxygenQuiz
@@ -122,9 +128,9 @@ Then **hard-refresh** `oxygenquiz.com` (Ctrl+Shift+R) — if you still see the o
 always browser cache, not a failed deploy.
 
 - You must `npm run build` **before** deploying; Wrangler ships whatever is already in `dist/`.
-- Also `git commit && git push` so the repo matches what's live. If the Cloudflare **Workers Build** is
-  connected to the repo, a push will *also* deploy — so pick **one** path per change to avoid two
-  deploys racing (see `frontend-deploy-explained.md` §6).
+- A manual deploy stays live only until the next push to `main`, which deploys `main`'s build over
+  it. So deploy manually from an up-to-date `main` only, and push it — pick **one** path per change
+  (see `frontend-deploy-explained.md` §6).
 - Verify: Cloudflare dashboard → Workers & Pages → `oxygenquiz` → **Deployments**; newest should be
   **Active**. Troubleshooting + deploy history: [`known-issues.md`](known-issues.md).
 

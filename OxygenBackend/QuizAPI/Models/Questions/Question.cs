@@ -49,6 +49,14 @@ namespace QuizAPI.Models
         /// <summary>Which kind of media <see cref="MediaUrl"/> points to. None when there is no attachment.</summary>
         public QuestionMediaType MediaType { get; set; } = QuestionMediaType.None;
 
+        /// <summary>
+        /// Optional "why" shown to a player after they answer. Null for every question written
+        /// before it existed, and for any the author leaves blank. It reveals the answer, so it
+        /// follows the answer key's serving rules — see <see cref="QuestionExplanation"/>.
+        /// </summary>
+        [MaxLength(QuestionExplanation.MaxLength)]
+        public string? Explanation { get; set; }
+
         [Required]
         public QuestionVisibility Visibility { get; set; } = QuestionVisibility.Global;
 

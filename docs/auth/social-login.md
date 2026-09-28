@@ -338,7 +338,8 @@ request growth, and the `Login`/`MethodChoice` controls) is what actually identi
 ## 8a. Why the Google button is ours, with GIS's laid over it
 
 `SocialButtons` does not show Google's rendered button. It shows one of ours and puts the real
-GIS button on top at `opacity: 0` to take the click. That looks like someone being clever, so
+GIS button on top, all but invisible (`opacity: 0.01` — see "Hover and cursor" below), to take
+the click. That looks like someone being clever, so
 here is the reasoning, and the four attempts it took to get here.
 
 **GIS's button cannot be styled, only chosen from.** `theme` accepts `outline`, `filled_blue`
@@ -377,18 +378,37 @@ grid, so "just align it" has no implementation.
 **Hence the overlay.** Our button themes, sizes and hovers with the rest of the form; GIS's
 sits invisibly on top and is still the thing that is clicked, still initialized by GIS, still
 returning a real ID token through `onSuccess`. The auth flow is untouched — only the pixels
-are ours. `opacity: 0` is load-bearing: a `display: none` / `visibility: hidden` GIS button
+are ours. Opacity is load-bearing: a `display: none` / `visibility: hidden` GIS button
 does not render or fire.
 
-**The invisible button is scaled up, and that is load-bearing.** GIS sizes its button to its
-own content and treats `width` as a request — the generic "Continue with Google" renders
-narrower than the personalized "Continue as \<name\>". Wherever the real button falls short of
-ours, the pointer sits on our empty overlay instead: the click does nothing, `group-hover`
-never fires, and there is no pointer cursor, because the cursor over a cross-origin iframe is
-set by Google's document and cannot be supplied from outside it. Since nobody sees the GIS
-button, distorting it is free and hit testing follows transforms, so it is scaled 3x from the
-centre to guarantee it covers our whole 300x40 surface at any label width. Do not trim that
-figure to fit — a tight value is another measurement of pixels we do not control.
+**The invisible button has to cover ours.** Wherever the real button falls short of our
+300x40 surface, the pointer sits on our empty overlay instead: the click does nothing and there
+is no pointer cursor, because the cursor over a cross-origin iframe is set by Google's document
+and cannot be supplied from outside it. GIS treats `width` as a request and sizes the button to
+its label. Measured on the live login page (2026-09-26, generic "Continue with Google"): the
+iframe is 320x44 with `margin: -2px -10px`, and the button inside fills our full 300px, so today
+it covers. (An earlier version of this section described scaling the GIS layer 3x to guarantee
+coverage; the code does not do that. If a narrower GIS button ever shows up, that is the fix —
+hit testing follows transforms, and nobody sees the distortion.) The wrapper carries
+`cursor-pointer` so any sliver the iframe misses still reads as clickable.
+
+**Hover and cursor — the "works once, then dead" bug (fixed 2026-09-26).** Hovering the button
+lit it up; after moving away and back it neither lit up again nor showed a pointer cursor. Two
+separate causes, both about the iframe boundary:
+
+- **Our background.** Hover was tracked with React's `onPointerEnter` / `onPointerLeave`. React
+  emulates those from `pointerover` / `pointerout` pairs, and when the pointer left *through*
+  GIS's cross-origin iframe the emulated leave never reached the handler: on the live page the
+  native `pointerleave` fired on the wrapper while React's state stayed `true`. So the button
+  stayed lit, and the next hover changed nothing. Now an Effect attaches **native**
+  `pointerenter` / `pointerleave` listeners to the wrapper, which the browser dispatches itself.
+- **The cursor.** Over the iframe only Google's document can set the cursor, so a missing pointer
+  means events were not reaching Google's iframe. The GIS layer was at `opacity: 0`, and a fully
+  transparent layer can be left out of Chrome's compositor hit-test data for a cross-origin
+  iframe, after which events stop being routed into it. It is now `opacity: 0.01` — 1% of the
+  white fill on our dark page is about two RGB levels, invisible. This one could not be
+  reproduced in an automated browser (it has no real cursor), so it is the most likely cause
+  rather than a proven one: if the pointer still goes missing, check this first.
 
 What it costs, so none of it gets rediscovered as a bug:
 
@@ -401,7 +421,7 @@ What it costs, so none of it gets rediscovered as a bug:
   button, no iframe, but the backend must exchange the code with a client secret instead of
   verifying an ID token (`GoogleIdentityVerifier` today does the latter).
 - **The visual layer is `aria-hidden` and untabbable on purpose.** GIS's button is the real
-  control and keeps its own accessible name and focus behaviour; `opacity: 0` leaves it in the
+  control and keeps its own accessible name and focus behaviour; low opacity leaves it in the
   accessibility tree. Making the visual layer focusable would give one action two tab stops.
 
 **Theme switching still repaints the hidden button** if `theme` is made conditional — it sits
@@ -412,7 +432,7 @@ There is now no reason to: nothing renders it. It is pinned to `outline`.
 no seam at all, which is what made `outline` look borderless. Measure instead:
 
 ```js
-const c = document.querySelector('.group.relative iframe')?.closest('div');
+const c = document.querySelector('iframe[src*="gsi/button"]')?.closest('div');
 const r = c.getBoundingClientRect();
 console.log({ top: r.top, devicePx: r.top * devicePixelRatio,
               onGrid: (r.top * devicePixelRatio) % 1 === 0 });

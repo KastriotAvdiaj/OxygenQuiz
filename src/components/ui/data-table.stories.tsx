@@ -96,6 +96,15 @@ export const SingleRow: Story = {
   args: { data: quizzes.slice(0, 1) },
 };
 
+/**
+ * `tone="neutral"`: a `background` surface with rows alternating `muted` and `background`
+ * instead of the primary wash — for a table that sits on an already-tinted page (the play
+ * history). Check the header divider and the detail panel's tint in both themes.
+ */
+export const NeutralTone: Story = {
+  args: { tone: "neutral" },
+};
+
 /** The empty state fills the row with `muted` so it doesn't read as a broken table. */
 export const Empty: Story = {
   args: { data: [] },

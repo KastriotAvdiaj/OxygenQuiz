@@ -30,6 +30,7 @@ export const TypeTheAnswerFormCard: React.FC<TypeTheAnswerFormCardProps> = ({
 }) => {
   const [questionText, setQuestionText] = useState(question.text);
   const [imageUrl, setImageUrl] = useState(question.imageUrl || undefined);
+  const [explanation, setExplanation] = useState(question.explanation ?? "");
   const [correctAnswer, setCorrectAnswer] = useState(question.correctAnswer);
   const [isCaseSensitive, setIsCaseSensitive] = useState(
     question.isCaseSensitive
@@ -53,6 +54,7 @@ export const TypeTheAnswerFormCard: React.FC<TypeTheAnswerFormCardProps> = ({
     () => ({
       text: questionText,
       imageUrl,
+      explanation,
       correctAnswer,
       isCaseSensitive,
       allowPartialMatch,
@@ -61,6 +63,7 @@ export const TypeTheAnswerFormCard: React.FC<TypeTheAnswerFormCardProps> = ({
     [
       questionText,
       imageUrl,
+      explanation,
       correctAnswer,
       isCaseSensitive,
       allowPartialMatch,
@@ -75,6 +78,7 @@ export const TypeTheAnswerFormCard: React.FC<TypeTheAnswerFormCardProps> = ({
       ...question,
       text: debouncedQuestionState.text,
       imageUrl: debouncedQuestionState.imageUrl,
+      explanation: debouncedQuestionState.explanation,
       correctAnswer: debouncedQuestionState.correctAnswer,
       isCaseSensitive: debouncedQuestionState.isCaseSensitive,
       allowPartialMatch: debouncedQuestionState.allowPartialMatch,
@@ -114,6 +118,7 @@ export const TypeTheAnswerFormCard: React.FC<TypeTheAnswerFormCardProps> = ({
   const generalErrors = getGeneralErrors([
     "text",
     "imageUrl",
+    "explanation",
     "correctAnswer",
     "acceptableAnswers",
   ]);
@@ -131,6 +136,9 @@ export const TypeTheAnswerFormCard: React.FC<TypeTheAnswerFormCardProps> = ({
       onImageRemove={handleImageRemove}
       showImageUpload={true}
       questionTextError={getFieldError("text")}
+      explanation={explanation}
+      onExplanationChange={setExplanation}
+      explanationError={getFieldError("explanation")}
     >
       <div className="space-y-6 p-4">
         {/* Correct answer — the one essential field, kept plain and always visible. */}

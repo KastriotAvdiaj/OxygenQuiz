@@ -18,6 +18,19 @@ Auth-specific enhancements are tracked in [authentication.md](../auth/authentica
 
 ## Security hardening (defense-in-depth — no known active exploit)
 
+- ~~**P1 — `UserAnswersController` had no authorization at all.**~~ **Fixed 2026-09-26.** No
+  `[Authorize]` on the class and no global fallback policy, so `GET /api/useranswers/session/{id}`
+  returned any session's answers *with the answer key* to anyone holding the id, and
+  `DELETE /api/useranswers/{answerId}` let an anonymous caller delete answers from any completed
+  session by walking integer ids. Nothing in the frontend called either route. Now the class needs
+  a signed-in caller, the read is owner-or-admin (404 otherwise, like `QuizSessionsController`), and
+  the delete is `Admin,SuperAdmin` only.
+  → `OxygenBackend/QuizAPI/Controllers/Quizzes/UserAnswersController.cs`
+- ~~**P2 — The session DTO carried the answer key mid-quiz.**~~ **Fixed 2026-09-26.** On a quiz
+  without instant feedback, the network tab showed the key and verdict for every answered question
+  before the end. See [`../quiz/quiz-grading.md`](../quiz/quiz-grading.md), "What the session
+  response reveals, and when".
+  → `OxygenBackend/QuizAPI/Mapping/EntityMappers.cs`
 - ~~**P2 — SVG uploads allowed.**~~ **Fixed.** Dropped `.svg` from `FileService`'s
   image allow-list — uploads are served from the app's own origin, so a crafted
   SVG opened directly would have executed script (stored XSS).
@@ -164,30 +177,26 @@ Auth-specific enhancements are tracked in [authentication.md](../auth/authentica
 - **P3 — Broad CORS.** The policy uses `AllowAnyHeader` + `AllowAnyMethod` with
   credentials. It's origin-restricted, so low risk, but tighten the header/method
   surface if practical. → `OxygenBackend/QuizAPI/Program.cs`
-- **P1 — Question search endpoints are public *and return the answers*.**
-  *(Was P3 "exposing question content/metadata"; raised 2026-09-01 after
-  confirming what the payload actually contains.)* `GET /api/questions/search`
-  and the type-specific variants have no `[Authorize]` — only their `mine/`
-  twins do, and there is no class-level attribute. `SearchMultipleChoice`
-  projects through `QuestionMappers.ProjectMultipleChoice`, whose
-  `AnswerOptionDTO` carries **`IsCorrect`**. So an anonymous caller can read
-  the correct answer for every global multiple-choice question, and
-  `TrueFalseQuestionDTO` / `TypeTheAnswerQuestionDTO` expose
-  `CorrectAnswer` the same way.
-  This is not a browsing-privacy question, it is the scoring model: it makes
-  every quiz score meaningless for anyone willing to open devtools, and it
-  defeats
+- ~~**P1 — Question search endpoints are public *and return the answers*.**~~ **Anonymous half
+  fixed 2026-09-26:** `QuestionsController` carries a class-level `[Authorize]`, so every question
+  read — the searches, the legacy lists, by id, by category/difficulty — needs a signed-in caller,
+  and `QuestionEndpointsAuthTests` fails if an action is ever opened with `[AllowAnonymous]`. The
+  frontend only calls these routes from the dashboards, which are signed-in already.
+  *(Was: `GET /api/questions/search` and the type-specific variants had no `[Authorize]`, and
+  `AnswerOptionDTO.IsCorrect` / `CorrectAnswer` gave anyone the answer to every global question.)*
+- **P2 — Any signed-in user can still read the answers to global questions.** The rest of the
+  finding above: the "all" searches return the full authoring DTOs to every account, so the answer
+  key is one sign-up away rather than one GET away. It still defeats
   [`../adr/0006-answer-order-is-shuffled-at-serve-time.md`](../adr/0006-answer-order-is-shuffled-at-serve-time.md)
-  entirely — shuffling the options is pointless while the answer key is a
-  GET away.
-  _Fix:_ the authoring DTOs and the browsing DTOs need to stop being the same
-  type. Either require auth and filter to owner/admin on these routes, or
-  project a variant without `IsCorrect` / `CorrectAnswer` for callers who are
-  not the question's owner. Note the dashboard's question bank genuinely needs
-  the flags, so a blanket removal will break it.
+  for a determined player.
+  _Fix:_ the authoring DTOs and the browsing DTOs need to stop being the same type — project a
+  variant without `IsCorrect` / `CorrectAnswer` for callers who are neither the question's owner nor
+  an admin. The dashboard's question bank and the quiz builder's question picker (which uses the
+  "all" scope for players too) need to be checked for what they show without the flags.
   → `OxygenBackend/QuizAPI/Controllers/Questions/QuestionsController.cs`,
   `Mapping/EntityMappers.cs` (`ProjectMultipleChoice`),
-  `DTOs/Question/QuestionDTOs.cs` (`AnswerOptionDTO.IsCorrect`)
+  `DTOs/Question/QuestionDTOs.cs` (`AnswerOptionDTO.IsCorrect`),
+  `src/pages/Dashboard/Pages/Quiz/components/Create-Quiz-Form/components/question-select/`
 - **P3 — Image upload allow-list drifted from `FileService`'s.** `ImageUploadController`
   maintains its own separate format allow-list (still includes GIF) rather than
   sharing `FileService`'s. Not a vulnerability on its own, but two allow-lists
@@ -224,7 +233,9 @@ timeLimit` points, i.e. ~33 pts on a 30s question but ~100 pts (10% of base) on 
 
 ## Code quality / cleanup
 
-- **P2 — `UserAnswer.ToDtoList()` silently drops multiple-choice options.** The sibling of the
+- ~~**P2 — `UserAnswer.ToDtoList()` silently drops multiple-choice options.**~~ **Fixed 2026-09-26:**
+  `GetSessionAnswersAsync` now projects in SQL with `ProjectUserAnswer`, and the compiled twin is
+  deleted. Kept below for the reasoning. The sibling of the
   bug fixed on 2026-09-10, and the reason it is still here is that it does not throw.
   `ToDtoList` compiles `QuizSessionMappers.ProjectUserAnswer` — an expression written to be
   translated to SQL — and runs it against loaded entities. Its only caller,
@@ -306,11 +317,8 @@ timeLimit` points, i.e. ~33 pts on a 30s question but ~100 pts (10% of base) on 
   → `OxygenBackend/QuizAPI/Services/Invitations/InviteCodeService.cs`,
   `src/pages/Dashboard/Pages/InviteCodes/InviteCodes.tsx`
 
-- **P3 — `IUserService` is registered twice in `Program.cs`.** Two identical
-  `AddScoped<IUserService, UserService>()` lines. Harmless — the last registration wins and
-  it is the same pair — but it reads as an accident and invites someone to "fix" one of them
-  into something different.
-  → `OxygenBackend/QuizAPI/Program.cs`
+- ~~**P3 — `IUserService` is registered twice in `Program.cs`.**~~ **Already fixed** (found
+  stale 2026-09-26): `Program.cs` has a single `AddScoped<IUserService, UserService>()`.
 
 - **P3 — Multiplayer & singleplayer gameplay UIs diverged (being unified).**
   The live multiplayer match screen (`MultiplayerGame.tsx`) was built with its
@@ -378,14 +386,11 @@ timeLimit` points, i.e. ~33 pts on a 30s question but ~100 pts (10% of base) on 
   _Fix:_ audit those throw sites and use `AppValidationException` (→ 400) where the message is
   meant for the caller. Found while adding the classification checks, which use the right type.
   → `QuizAPI/Middleware/GlobalExceptionHandler.cs`, `QuestionService`, `QuizService`
-- **P3 — `GET /api/Roles` returns full `Role` entities.** The admin role picker
-  (`change-user-role.tsx` → `useRoles`) only needs `{ id, name }`, but the endpoint
-  serialises whole `Role` rows (incl. `ConcurrencyStamp` and empty nav collections).
-  Harmless today — no navigations are loaded, so there's no serialization cycle or
-  permission leak — but a small `RoleDTO` projection would be a tidier, less
-  over-exposed contract now that non-SuperAdmins can read it. See
-  [`docs/auth/user-role-management.md`](../auth/user-role-management.md).
-  → `OxygenBackend/QuizAPI/Controllers/Roles/RolesController.cs`
+- ~~**P3 — `GET /api/Roles` returns full `Role` entities.**~~ **Fixed 2026-09-26.** Both reads
+  (`GET /api/Roles`, `GET /api/Roles/{id}`) return `RoleDTO` — `id`, `name`, `isActive`,
+  `description` — so the concurrency stamp and the navigation collections no longer leave the
+  server. Same JSON field names as before for everything the UI reads. Pinned by
+  `RolesEndpointTests`. See [`docs/auth/user-role-management.md`](../auth/user-role-management.md).
 - **P3 — Build warnings.** ~130 compiler warnings, mostly nullable-reference and
   a couple of duplicate `using` directives (`Program.cs` → `System.Text`;
   `TotalsController.cs` → `QuizAPI.Models`). Chip away incrementally.
@@ -505,10 +510,18 @@ timeLimit` points, i.e. ~33 pts on a 30s question but ~100 pts (10% of base) on 
     block** and set **`workers_dev: true`**. The domains stay attached in the **dashboard** (which serves
     the latest promoted deploy), and the workers.dev URL is the target that lets wrangler promote each
     new version. → `wrangler.jsonc`
-  - **Still worth doing:** pick **one** deploy path (Git-connected build _or_ manual `wrangler`, not
+  - **Still worth doing:** pick **one** deploy path (Git build from `main` _or_ manual `wrangler`, not
     both racing); always `npm run build` before deploying (the API URL is baked in at build time); after
     a deploy, confirm the newest version is **Active** under Workers & Pages → oxygenquiz → Deployments
     and hard-refresh (Ctrl+Shift+R).
+- ~~**P1 — Every branch push deployed to the live site.**~~ **Fixed 2026-09-28.** The Git build's
+  **Version command** (used for non-production branches) was `npx wrangler deploy`, the same as the
+  production deploy command, so a push to any branch replaced the live site with that branch's build.
+  On 2026-09-27 `feature/account-identity` (not merged into `main`) went live and took the landing
+  redesign and the Associations pages off the site; `ui-polish-ai-wizard-and-fixes` and
+  `chore/portfolio-readiness` had gone live the same way earlier. _Fix:_ Version command →
+  `npx wrangler versions upload` (Worker → Settings → Builds). Branches now build as previews only;
+  `main` is the only branch that deploys. See `frontend-deploy-explained.md` §6.
 - **P3 — Stale CORS origins in `appsettings.Production.json`.** Still lists the old
   AWS hosts (`*.cloudfront.net`, `*.amplifyapp.com`) instead of
   `https://oxygenquiz.com`. Prod works because the compose file injects
@@ -1159,6 +1172,79 @@ fixed; these were left.
   → `src/pages/Quiz/Associations/solo/association-game-page.tsx`, `results/association-results-page.tsx`
 - **P3 — Guest play of a Board isn't built** (2026-09-23), deliberately: unreachable while the format
   is admin-only. Built with the release — `associations-plan.md` §8.5; feature doc §9.8.
+
+## Quiz history (2026-09-26 — see docs/quiz/user-stats-history.md)
+
+- ~~**P2 — History pages came back short, and the pager promised pages that were empty.**~~
+  **Fixed.** Sessions on a soft-deleted quiz were counted by `TotalItems` but dropped from
+  `Items`: the `Quiz` global query filter became an INNER JOIN applied after the paged
+  subquery's `LIMIT`. `GetUserSessionsAsync` now filters `s.Quiz.DeletedAt == null` itself, so
+  count and page agree. Regression test: `Playing/SessionHistoryPagingTests.cs`.
+  → `Controllers/Quizzes/Services/QuizSessionServices/QuizSessionService.cs`
+- **P3 — Stats and history disagree for players of deleted quizzes (by design).** Stats still
+  count those plays; history hides them because their results page 404s. If that ever reads as
+  a bug to users, the fix is a "quiz deleted" history row with no link, not dropping the plays
+  from stats.
+  → `Controllers/Users/Services/UserStatsService/UserStatsService.cs`
+- **P3 — Other paged projections may have the same count/page mismatch.** Any
+  `PagedResponse.CreateAsync` over a query whose projection navigates to a soft-deletable
+  entity (`Quiz`, `QuestionBase`, `User`) without filtering on it explicitly will count rows it
+  then drops. Not audited beyond the history list.
+- **P2 — Every other date-range filter drops the whole "to" day and ignores the viewer's
+  timezone.** Admin Quizzes, MyQuizzes, Questions, Categories, Users and Audit log all send the
+  date input's bare `yyyy-mm-dd` with `between`/`lte`. `FilterEngine` parses that as UTC
+  midnight, so "to 31 March" means "before 00:00 UTC on the 31st" — anything created that day is
+  excluded — and both bounds are off by the viewer's offset. The history list does it right
+  (`localDayStart` in `quiz-history-filters.tsx`: `gte` local midnight, `lt` the next local
+  midnight); lifting that helper into `src/lib/filtering` and using it in the six `toFilterQuery`
+  spots fixes all of them. See [`filtering.md`](../quiz/filtering.md) § date ranges.
+  → `pages/Dashboard/Pages/{Quiz/Quizzes,User/Users,AuditLog/AuditLog}.tsx`, `category-view.tsx`,
+  `QuestionsTabContent.tsx`, `search-questions.ts`, `UserDashboard/MyQuizzes.tsx`
+- ~~**P3 — Resuming a quiz could miss the active session.**~~ **Fixed (2026-09-26).**
+  `findActiveSessionForQuiz` scanned the newest 20 history rows client-side; twenty plays of other
+  quizzes pushed the active one off the page. It now asks for `quizId` + `status:InProgress`.
+  → `src/pages/Quiz/Sessions/api/resume-quiz-session.ts`
+
+## Question explanations (2026-09-26 — see docs/quiz/question-explanations.md)
+
+- **P3 — Multiplayer rounds show no explanation.** A round's `QuestionResult` doesn't carry the
+  correct answer at all yet, so there is nowhere to put the explanation; players see it in the
+  results review after the match. Fix with the round reveal, not separately.
+  → `OxygenBackend/QuizAPI/Services/QuizSessionServices/MatchModels.cs`, `MatchOrchestrator.cs`
+- **P3 — The question-preview tester returns no explanation.** `TestQuestionResponse` is right/wrong
+  plus the key. An author previewing a question can't see how the explanation will read.
+  → `OxygenBackend/QuizAPI/DTOs/Question/TestQuestionDTOs.cs`
+- **P3 — Non-instant quizzes play the "wrong" sound on every answer.** Found while adding
+  explanations, not caused by them. `handleAnswerSubmissionSuccess` plays `"correct"` only when
+  `status === Correct`, but without instant feedback the submit response is always `Pending`, so
+  every answer buzzes — which also sounds like a verdict the quiz is meant to withhold. A neutral
+  "answer recorded" sound, or none, when `hasInstantFeedback` is false.
+  → `src/hooks/use-quiz-session.ts`
+
+## Account identity (2026-09-27 — see docs/auth/account-identity-changes.md)
+
+Found while building username and email changes. The unchecked self-service email write
+(`PUT /Users/{id}`), the missing unique indexes, and multiplayer resolving players by name were all
+fixed in that change; these were not.
+
+- **P1 — `GET /api/Users/{id}` and `POST /api/Users/batch` return the full `UserDTO` to any signed-in
+  user.** That includes email, last login, roles and permissions. Both are only `[Authorize]`, with no
+  self-or-admin check, so any account can read any other account's email address by id — and ids are
+  public (profile URLs). Serve `PublicUserProfileDTO` (or a trimmed DTO) to non-admins; check which
+  frontend callers need the full shape first. The new `GET /Users/me/identity` deliberately keeps
+  `hasPassword` off `UserDTO` for this reason.
+  → `OxygenBackend/QuizAPI/Controllers/Users/UsersController.cs` (`GetUser`, `GetUsersByIds`)
+- **P3 — The JWT still carries a `username` claim.** Nothing server-side reads it any more (the hub
+  now reads the name from the database), but it is stale after a rename until the access token
+  refreshes. Drop it, or leave it as display-only and never key anything on it.
+  → `Services/AuthenticationService/TokenService.cs`
+- **P3 — The chat system caches `DisplayName` for its cache lifetime**, so a rename shows there late.
+  It keys by `ImmutableName`, so nothing breaks. Chat is currently disabled (MongoDB off).
+  → `Chat-System/Services/UserSyncService.cs`
+- **P3 — Display names have no character rules** beyond 3–50 characters — same as signup. Look-alike
+  Unicode ("Аlice" with a Cyrillic А) passes the uniqueness check. Consider NFKC normalisation and a
+  confusables check if impersonation ever becomes a real problem.
+  → `DTOs/User/AccountIdentityDTOs.cs`, `DTOs/Authentication/SignupDTO.cs`
 
 ## Documentation debt (2026-08-23)
 

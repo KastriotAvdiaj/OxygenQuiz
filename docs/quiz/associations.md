@@ -629,7 +629,9 @@ the order they happened.
 | | `DuelEnded(view)` — over **and recorded** |
 | | `DuelState(view)` — to a caller joining mid-Duel |
 
-The player is always the signed-in account. A refused move is a `HubException` with the runner's
+The player is always the signed-in account — as the name that account is pinned to in the lobby
+(`Context.Items["Username"]`, set by `JoinSession`; [account-identity-changes.md](../auth/account-identity-changes.md) §4),
+not the token's `username` claim, which lags a rename. A refused move is a `HubException` with the runner's
 sentence — not ignored silently: the other player's UI shouldn't send a move out of turn, and if it
 does, that's worth seeing.
 
@@ -671,7 +673,9 @@ Written once, when it ends, in one save — the shape of Classic's (multiplayer.
   (§7.2 there — a row of blanks would drag down their stats). A Duel player can lose without ever
   having had a turn (the opponent took the Final on the first), that is a real result, and the game
   needs every Seat's row to know who sat where. (A player whose account is gone by the end gets no
-  session and no seat row.)
+  session and no seat row.) Seats are keyed by pinned lobby name; the host and each Seat's user id
+  come from the lobby's `PlayerUserIds`, the same as Classic, so a player who renamed while the
+  lobby was open is still recorded.
 - **The write comes before the final broadcast.** `DuelEnded` carries each player's results link,
   and a link to a row that isn't there yet would 404. If the write fails, the players still get the
   result, without links, and the failure is logged as itself.

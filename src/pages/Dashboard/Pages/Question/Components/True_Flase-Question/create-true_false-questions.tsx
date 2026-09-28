@@ -13,6 +13,7 @@ import {
 } from "../../api/True_False-Question/create-true_false-question";
 import { LiftedButton } from "@/common/LiftedButton";
 import ImageUpload from "@/utils/Image-Upload";
+import { ExplanationField } from "@/common/QuestionExplanation";
 import {
   QuestionCategory,
   QuestionDifficulty,
@@ -211,6 +212,13 @@ export const CreateTrueFalseQuestionForm: React.FC<
                   clearErrors={() => clearErrors("languageId")}
                 />
               </section>
+              {/* Optional "why" shown to players after they answer — see
+                  docs/quiz/question-explanations.md. */}
+              <ExplanationField
+                registration={register("explanation")}
+                error={formState.errors["explanation"]}
+                className="mt-4"
+              />
             </>
           );
         }}

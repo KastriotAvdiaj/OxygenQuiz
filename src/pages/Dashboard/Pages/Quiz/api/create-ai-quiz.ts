@@ -22,6 +22,8 @@ export interface AiImportQuestion {
   text?: string;
   difficultyId: number;
   imageUrl?: string;
+  /** Optional "why". The API cuts an over-long one rather than failing the import. */
+  explanation?: string;
   // per-quiz settings
   pointSystem: string;
   timeLimitInSeconds: number;

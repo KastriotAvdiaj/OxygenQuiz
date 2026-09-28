@@ -61,17 +61,28 @@ curl -i -H "Host: api.oxygenquiz.com" http://localhost:5000/
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
-## Frontend (Cloudflare Workers — desktop only, no VPS)
+## Frontend (Cloudflare Workers — no VPS)
+
+**The normal path is a push to `main`.** Cloudflare Workers Builds is connected to the GitHub repo:
+a push to `main` builds (`npm run build`) and deploys (`npx wrangler deploy`) on Cloudflare's side,
+live on oxygenquiz.com in a couple of minutes. A push to **any other branch** only uploads a preview
+version (`npx wrangler versions upload`) — it never changes the live site.
+
+```powershell
+git push origin main   # builds + deploys live
+```
+
+Manual deploy from the desktop (only when you need to skip the Git build — it replaces whatever
+`main` put live, until the next push to `main` replaces it again):
 
 ```powershell
 npm run build          # tsc + bundle into dist/
 npx wrangler deploy    # ships dist/ live to oxygenquiz.com
-git add -A && git commit -m "message" && git push   # keep repo in sync with what's live
 ```
 
 Then hard-refresh `oxygenquiz.com` (Ctrl+Shift+R) — stale look = browser cache, not a failed deploy.
 
-⚠️ Backend rebuild does NOT deploy frontend changes, and vice-versa. `wrangler deploy` ships whatever is already in `dist/` — always `npm run build` first.
+⚠️ Backend rebuild does NOT deploy frontend changes, and vice-versa — a push to `main` deploys only the frontend; the API still needs the VPS `git pull` + rebuild. A manual `wrangler deploy` ships whatever is already in `dist/` — always `npm run build` first. Every deploy replaces the whole site with one build, so deploy from `main` (with everything merged), never from a feature branch.
 
 ## Quick reference
 

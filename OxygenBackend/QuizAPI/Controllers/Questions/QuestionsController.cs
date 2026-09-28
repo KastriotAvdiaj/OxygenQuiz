@@ -13,6 +13,12 @@ namespace QuizAPI.Controllers.Questions
 {
     [ApiController]
     [Route("api/[controller]")]
+    // Every endpoint needs a signed-in caller: the question DTOs carry the answer key
+    // (AnswerOptionDTO.IsCorrect, CorrectAnswer), and the search routes used to be anonymous —
+    // anyone could read the right answer to every global question with a plain GET
+    // (docs/deployment/known-issues.md). Opening a route up takes an explicit [AllowAnonymous],
+    // which QuestionEndpointsAuthTests refuses.
+    [Authorize]
     public class QuestionsController : BaseApiController
     {
         private readonly IQuestionService _questionService;

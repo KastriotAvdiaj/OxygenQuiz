@@ -92,6 +92,19 @@ namespace QuizAPI.Services.AuthenticationService
             return (rawToken, tokenHash, expiresAt);
         }
 
+        /// <summary>
+        /// Same lifetime as a reset link: redeeming it moves the account's recovery address, which
+        /// is as good as handing the account over.
+        /// </summary>
+        public (string rawToken, string tokenHash, DateTime expiresAt) GenerateEmailChangeToken()
+        {
+            var bytes = RandomNumberGenerator.GetBytes(RefreshTokenBytes); // 256-bit, same strength
+            var rawToken = Base64UrlEncode(bytes);
+            var tokenHash = HashToken(rawToken);
+            var expiresAt = DateTime.UtcNow.AddHours(PasswordResetTokenHours);
+            return (rawToken, tokenHash, expiresAt);
+        }
+
         public string GenerateExternalSignupTicket(ExternalIdentity identity)
         {
             var claims = new List<Claim>

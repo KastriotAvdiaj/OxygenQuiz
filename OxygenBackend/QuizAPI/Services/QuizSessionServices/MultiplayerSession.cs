@@ -20,6 +20,20 @@ namespace QuizAPI.Services.QuizSessionServices
         /// <summary>Convenience accessor for the id alone — what the match loop needs.</summary>
         public string? SelectedQuizId => SelectedQuiz?.Id;
         public string HostUsername { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Every account that has been in this lobby, by the name it plays under here → its user id.
+        /// Added on create/join and never removed, so a player who leaves mid-match still resolves to
+        /// an account when the match is saved, and someone who comes back gets the same name back.
+        ///
+        /// <para>The match state (scores, answers, host) is keyed by that name, but the name is only
+        /// a label: it is PINNED to the account for the lobby's lifetime. Display names can change
+        /// (PUT /Users/me/username); before this map the match resolved players at save time by
+        /// lower-casing the name and matching <c>ImmutableName</c>, which silently dropped the
+        /// results of anyone who had ever renamed. See docs/auth/account-identity-changes.md.</para>
+        /// </summary>
+        public ConcurrentDictionary<string, Guid> PlayerUserIds { get; set; } =
+            new(StringComparer.OrdinalIgnoreCase);
         public List<Participant> Participants { get; set; } = new();
         public QuizState QuizState { get; set; } = QuizState.Lobby;
         public int CurrentQuestionIndex { get; set; } = 0;
@@ -111,6 +125,10 @@ namespace QuizAPI.Services.QuizSessionServices
 
     public class Participant
     {
+        /// <summary>The account behind this participant — the identity. See <see cref="MultiplayerSession.PlayerUserIds"/>.</summary>
+        public Guid UserId { get; set; }
+
+        /// <summary>The name shown and used as the match key; pinned for the lobby's lifetime.</summary>
         public string Username { get; set; } = string.Empty;
         public bool IsReady { get; set; } = false;
         public bool IsHost { get; set; } = false;
@@ -172,6 +190,7 @@ namespace QuizAPI.Services.QuizSessionServices
     {
         public const string NotFound = "not-found";
         public const string Full = "full";
+        public const string NameInUse = "name-in-use";
     }
 
     /// <summary>

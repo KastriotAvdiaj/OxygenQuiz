@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { GoogleLogin, GoogleOAuthProvider } from "@react-oauth/google";
 import { BsMicrosoft } from "react-icons/bs";
 import { FcGoogle } from "react-icons/fc";
@@ -38,6 +38,30 @@ const SocialButtons: React.FC<SocialButtonsProps> = ({ onLoggedIn, onNeedsSignup
   const { mutateAsync: externalLogin, isPending } = useExternalLogin();
   const [msPopupOpen, setMsPopupOpen] = useState(false);
   const [googleHover, setGoogleHover] = useState(false);
+  const googleWrapper = useRef<HTMLDivElement>(null);
+
+  // Hover over the Google button, from NATIVE pointerenter/pointerleave on the wrapper.
+  //
+  // Not React's onPointerEnter/onPointerLeave: React emulates those from pointerover/pointerout
+  // pairs at the root, and when the pointer leaves through GIS's cross-origin iframe the
+  // emulated leave never reached our handler — measured on the live login page (2026-09-26): the
+  // native pointerleave fired on the wrapper while React's state stayed `true`. So the button
+  // lit up once and then stayed lit, and the next hover looked like no hover at all. Native
+  // boundary events on the wrapper are dispatched by the browser itself and do fire correctly.
+  // An Effect is the right tool here: it synchronises with the DOM's event system.
+  const googleEnabled = google.enabled && !!google.clientId;
+  useEffect(() => {
+    const el = googleWrapper.current;
+    if (!el) return;
+    const enter = () => setGoogleHover(true);
+    const leave = () => setGoogleHover(false);
+    el.addEventListener("pointerenter", enter);
+    el.addEventListener("pointerleave", leave);
+    return () => {
+      el.removeEventListener("pointerenter", enter);
+      el.removeEventListener("pointerleave", leave);
+    };
+  }, [googleEnabled]);
 
   if (!google.enabled && !microsoft.enabled) return null;
 
@@ -87,11 +111,11 @@ const SocialButtons: React.FC<SocialButtonsProps> = ({ onLoggedIn, onNeedsSignup
              * with content, zoom and DPI. Three separate "fixes" chased it before this.
              *
              * So the button below is ours — it themes, sizes and hovers with the rest of the
-             * form — and the GIS button sits on top at opacity 0 to take the click. It is the
-             * genuine article, still initialized by GIS and still returning a real ID token
+             * form — and the GIS button sits on top, all but invisible, to take the click. It is
+             * the genuine article, still initialized by GIS and still returning a real ID token
              * through onSuccess, so nothing about the auth flow changes; only the pixels the
              * user sees are ours. opacity (not display/visibility) is load-bearing: a hidden
-             * GIS button does not render or fire.
+             * GIS button does not render or fire. And it is 0.01, not 0 — see the layer below.
              *
              * The costs, so nobody rediscovers them as bugs:
              *  - The label is always generic. GIS's personalized "Continue as <name>" is
@@ -103,18 +127,17 @@ const SocialButtons: React.FC<SocialButtonsProps> = ({ onLoggedIn, onNeedsSignup
              *    (docs/auth/social-login.md §8a).
              *  - The visual layer is aria-hidden and untabbable ON PURPOSE. GIS's button is
              *    the real control and keeps its own accessible name and focus behaviour —
-             *    opacity: 0 leaves it in the accessibility tree. Do not "fix" this by making
+             *    low opacity leaves it in the accessibility tree. Do not "fix" this by making
              *    the div below a focusable button; that produces two tab stops for one action.
              */}
             <div
-              className="relative w-full h-10"
-              // Hover is tracked here rather than with `group-hover`, because the surface
-              // being hovered is a cross-origin iframe and we cannot rely on :hover
-              // propagating out of it to style a sibling. pointerenter/leave fire on THIS
-              // element's boundary — crossing into the iframe is not leaving this element,
-              // so the state stays correct while the pointer is over Google's button.
-              onPointerEnter={() => setGoogleHover(true)}
-              onPointerLeave={() => setGoogleHover(false)}
+              ref={googleWrapper}
+              // Hover is tracked with native listeners on this element (see the Effect above),
+              // not `group-hover`: the surface being hovered is a cross-origin iframe, and
+              // pointerenter/leave on THIS element's boundary are the events that stay correct
+              // while the pointer is over Google's button. cursor-pointer covers any sliver of
+              // this box the iframe doesn't — over the iframe itself, Google's page sets it.
+              className="relative w-full h-10 cursor-pointer"
             >
               <Button
                 type="button"
@@ -133,8 +156,16 @@ const SocialButtons: React.FC<SocialButtonsProps> = ({ onLoggedIn, onNeedsSignup
                 Continue with Google
               </Button>
 
+              {/*
+               * opacity 0.01, NOT 0. At exactly 0 Chrome may leave the layer out of the
+               * compositor's hit-test data for cross-origin iframes, and events then stop being
+               * routed into Google's iframe after the first visit: no pointer cursor (only
+               * Google's page can set it over the iframe) and no hover — the "works once, then
+               * dead" report of 2026-09-26. 1% of GIS's white fill on our dark page is ~2
+               * levels of RGB, which nobody can see. Do not "tidy" this back to opacity-0.
+               */}
               <div
-                className={`absolute inset-0 overflow-hidden opacity-0 ${
+                className={`absolute inset-0 overflow-hidden opacity-[0.01] ${
                   isPending ? "pointer-events-none" : ""
                 }`}
               >

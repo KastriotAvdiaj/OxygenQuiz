@@ -19,6 +19,8 @@ public class InMemoryQuizSessionManager : IQuizSessionManager
         private const string NotFoundMessage =
             "Room code doesn't exist. Check the code, or ask the host for a new invite.";
         private const string FullMessage = "This lobby is full.";
+        private const string NameInUseMessage =
+            "Someone in this lobby is already playing under your name. Try another lobby.";
 
         /// <summary>
         /// How long an empty lobby is kept before it counts as abandoned.
@@ -77,7 +79,7 @@ public class InMemoryQuizSessionManager : IQuizSessionManager
             }
         }
 
-        public Task<Participant> AddParticipantAsync(string sessionId, string username, string connectionId, string? profileImageUrl = null)
+        public Task<Participant> AddParticipantAsync(string sessionId, Guid userId, string username, string connectionId, string? profileImageUrl = null)
         {
             if (!TryGetLiveSession(sessionId, out var session))
             {
@@ -88,7 +90,8 @@ public class InMemoryQuizSessionManager : IQuizSessionManager
 
             lock (session)
             {
-                var participant = session.Participants.FirstOrDefault(p => p.Username == username);
+                // Matched by account, not by name: the name is a pinned label (PlayerUserIds).
+                var participant = session.Participants.FirstOrDefault(p => p.UserId == userId);
                 if (participant == null)
                 {
                     // Enforce max players
@@ -97,11 +100,29 @@ public class InMemoryQuizSessionManager : IQuizSessionManager
                         throw new SessionJoinException(JoinFailureReason.Full, FullMessage);
                     }
 
+                    // Been here before (left, or the host coming back to a lingering lobby)? Then
+                    // they get the name they had — the match state and HostUsername are keyed by it.
+                    var pinned = session.PlayerUserIds.FirstOrDefault(kv => kv.Value == userId).Key;
+                    if (pinned is null)
+                    {
+                        // A name another account already played under in this lobby. Only reachable
+                        // if that account renamed away and this one then took the released name —
+                        // rare, but two players on one key would merge their scores.
+                        if (session.PlayerUserIds.ContainsKey(username))
+                            throw new SessionJoinException(JoinFailureReason.NameInUse, NameInUseMessage);
+                        session.PlayerUserIds[username] = userId;
+                        pinned = username;
+                    }
+
                     participant = new Participant
                     {
-                        Username = username,
+                        UserId = userId,
+                        Username = pinned,
                         ConnectionId = connectionId,
-                        IsHost = false,
+                        // True only for a host returning to their own emptied lobby, whose
+                        // HostUsername was deliberately kept (see RemoveParticipantAsync). This was
+                        // a hard-coded false, so they came back without the host badge.
+                        IsHost = session.HostUsername == pinned,
                         IsReady = false,
                         ProfileImageUrl = profileImageUrl
                     };
@@ -112,7 +133,7 @@ public class InMemoryQuizSessionManager : IQuizSessionManager
                     // Update connection ID on reconnect
                     participant.ConnectionId = connectionId;
                     // Ensure host status is consistent
-                    participant.IsHost = (session.HostUsername == username);
+                    participant.IsHost = (session.HostUsername == participant.Username);
                     // Refresh the avatar (it may have changed since the first join)
                     participant.ProfileImageUrl = profileImageUrl ?? participant.ProfileImageUrl;
                 }
@@ -131,7 +152,7 @@ public class InMemoryQuizSessionManager : IQuizSessionManager
         /// lobby they can't enter. Not an enforcement point — the lobby can fill in the gap between
         /// this call and the join, which is why the same checks stay in AddParticipantAsync.
         /// </summary>
-        public Task<SessionAvailability> CheckSessionAsync(string sessionId, string username)
+        public Task<SessionAvailability> CheckSessionAsync(string sessionId, Guid userId)
         {
             if (!TryGetLiveSession(sessionId, out var session))
             {
@@ -147,7 +168,7 @@ public class InMemoryQuizSessionManager : IQuizSessionManager
             {
                 // Someone already on the roster is rejoining (reconnect / reopened tab), so the
                 // capacity check doesn't apply to them — AddParticipantAsync takes the same branch.
-                var isRejoin = session.Participants.Any(p => p.Username == username);
+                var isRejoin = session.Participants.Any(p => p.UserId == userId);
                 var isFull = !isRejoin
                     && session.MaxPlayers > 0
                     && session.Participants.Count >= session.MaxPlayers;
@@ -251,7 +272,7 @@ public class InMemoryQuizSessionManager : IQuizSessionManager
             return Task.FromResult(false);
         }
 
-        public Task<MultiplayerSession> CreateSessionAsync(string sessionId, string lobbyName, int maxPlayers, string hostUsername, string connectionId, string? hostProfileImageUrl = null)
+        public Task<MultiplayerSession> CreateSessionAsync(string sessionId, string lobbyName, int maxPlayers, Guid hostUserId, string hostUsername, string connectionId, string? hostProfileImageUrl = null)
         {
             // Empty lobbies now outlive their last participant (see AbandonedLobbyGrace), so
             // something has to collect the ones nobody ever comes back to. Here: creating a lobby
@@ -274,8 +295,11 @@ public class InMemoryQuizSessionManager : IQuizSessionManager
             }
 
             // Add host as first participant
+            session.PlayerUserIds[hostUsername] = hostUserId;
+
             var hostParticipant = new Participant
             {
+                UserId = hostUserId,
                 Username = hostUsername,
                 ConnectionId = connectionId,
                 IsHost = true,

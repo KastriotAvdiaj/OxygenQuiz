@@ -94,6 +94,10 @@ The role picker reads `GET /api/Roles`, which was **relaxed from SuperAdmin-only
 `RolesController`: the two read endpoints allow `Admin,SuperAdmin`, while role CRUD
 (`POST`/`PUT`/`DELETE`) stays **SuperAdmin-only**, so the privilege-escalation surface is unchanged.
 
+Because Admins can read them, the two reads return a **`RoleDTO`** (`id`, `name`, `isActive`,
+`description`), not the `Role` entity — no concurrency stamp, no navigation collections
+(2026-09-26, pinned by `RolesEndpointTests`).
+
 ---
 
 ## 3. Backend implementation
@@ -195,10 +199,6 @@ the elevated-role check, so protection is the only thing stopping it) and an unk
 
 ## 7. Known limitations / follow-ups
 
-- **`GET /api/Roles` returns full `Role` entities.** The picker only needs `{ id, name }`, but the
-  endpoint serialises whole rows. Harmless today (no navigations loaded → no cycle or leak), but a
-  small `RoleDTO` projection would be a cleaner contract now that Admins can read it. Tracked in
-  [known-issues.md](../deployment/known-issues.md) (Code quality / cleanup, **P3**).
 - **Role-claim propagation lag.** As noted in §3, a changed user keeps their old role *claims* in the
   current JWT until it refreshes. If an immediate cut-off is ever required (e.g. revoking Admin from a
   compromised account), that needs a token-revocation / "log out everywhere" mechanism — see the
