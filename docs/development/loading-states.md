@@ -113,7 +113,7 @@ never needs a per-page override. If it ever feels wrong in a narrow column, chan
 
 The effect it is based on is the CSS "gooey" trick: `filter: blur() contrast()` plus
 `mix-blend-mode: darken`. That only works as black shapes on an opaque white box, so it can't be
-`primary`, can't sit on the dark theme, and can't sit on the landing page's wave. `BlobLoader`
+`primary`, can't sit on the dark theme, and couldn't sit on the landing page's blue wave (removed 2026-09-28). `BlobLoader`
 does the same thing to the *alpha* channel instead (`feGaussianBlur` then a steep
 `feColorMatrix` threshold), so the loader is transparent and takes its colour from `variant`.
 The blur radius is in px — an SVG filter cannot use percentages — so each size carries its own.

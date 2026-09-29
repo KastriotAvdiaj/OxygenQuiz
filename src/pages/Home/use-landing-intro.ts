@@ -1,13 +1,12 @@
 import { useReducedMotion } from "framer-motion";
 
 /**
- * The entrance's timing, in seconds, in one place (docs/home/landing-page.md): the wave rises
- * in, the pitch follows. Everything moves at a **constant speed** (`linear`) — eased curves
- * read as the page speeding up or slowing down.
+ * The entrance's timing, in seconds, in one place (docs/home/landing-page.md): the pitch rises
+ * in line by line. Everything moves at a **constant speed** (`linear`) — eased curves read as
+ * the page speeding up or slowing down.
  */
 export const INTRO = {
   ease: "linear",
-  wave: { duration: 0.7 },
   text: { delay: 0.25, duration: 0.6 },
   /** Gap between successive pieces of the pitch rising in. */
   stagger: 0.1,
@@ -24,16 +23,6 @@ export function riseIn(intro: boolean, step: number, from = 16) {
       delay: INTRO.text.delay + step * INTRO.stagger,
       ease: INTRO.ease,
     },
-  };
-}
-
-/** Motion props for the wave (and the copy masked to it): fade only — see Home.tsx. */
-export function fadeIn(intro: boolean) {
-  if (!intro) return {};
-  return {
-    initial: { opacity: 0 },
-    animate: { opacity: 1 },
-    transition: { duration: INTRO.wave.duration, ease: INTRO.ease },
   };
 }
 

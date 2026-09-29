@@ -150,8 +150,9 @@ export interface LiftedButtonProps
   liftColor?: LiftColorToken | TailwindPaletteColor | (string & {});
   /**
    * The soft blurred shadow under the face. On by default; pass `false` where it reads as a
-   * glow rather than a shadow — a saturated face (the landing page's yellow Play button) on a
-   * saturated background (the blue wave). The edge layer still gives the button its depth.
+   * glow rather than a shadow — a saturated face on a saturated background (the case it was
+   * added for: the landing page's old yellow Play button on its old blue wave). The edge layer
+   * still gives the button its depth.
    */
   glow?: boolean;
 }
