@@ -4,8 +4,11 @@ import { MemoryRouter } from "react-router-dom";
 import { CreateQuizMethodDialog } from "./create-quiz-method-dialog";
 
 /**
- * The fork users hit when they click "+ Create Quiz", in two steps: build it by hand or with
- * an AI, and then — for the AI branch — what the AI should work from.
+ * The fork users hit when they click "+ Create Quiz", one question per step: what kind of quiz
+ * (Classic or Associations — admins only while Associations is in preview; everyone else starts
+ * on the next step), how to build a Classic one (by hand or with AI), and — for the AI branch —
+ * what the AI should work from. Picking a card that leads on pops the next step's cards out of
+ * it; try it in the `Open` story.
  *
  * Step 2 is the wizard's old tab strip, moved. Every "which way?" decision for quiz creation
  * is made here now, which is what lets the wizard page be a form with one field instead of a
@@ -52,7 +55,8 @@ export const ClosedWithTrigger: Story = {
   args: { open: false },
 };
 
-/** Step 1: the decision that was always here. Pinned open so it can be reviewed directly. */
+/** The first step (for a signed-out Storybook user that is "How do you want to build it?", since
+ * Associations is admin-only). Pinned open so it can be reviewed directly. */
 export const Open: Story = {
   args: { open: true },
 };

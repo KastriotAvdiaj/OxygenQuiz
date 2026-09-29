@@ -263,7 +263,8 @@ target.
 **Implemented (2026-09-23); now in [`associations.md`](./associations.md) §8** (API, validation,
 builder, sample board). Two differences from what this section planned: the builder has **no local
 draft** yet (logged in `known-issues.md`), and the Board is **not** part of the create-quiz
-dialog's second step — it is a third card on the first.
+dialog's second step — it was a third card on the first, and since 2026-09-29 the first step is
+"What kind of quiz?" (Classic or Associations), with Manually / With AI after Classic.
 
 ---
 

@@ -64,16 +64,34 @@ grey, so it reads as a footnote rather than a competing offer.
 ## 2a. The chooser, and why the wizard stopped asking
 
 Every "which way?" decision now happens in `create-quiz-method-dialog.tsx`, before anything is
-typed, in two steps inside one overlay. Both dashboards open it from their **+ Create Quiz**
-button — admin `Quizzes.tsx` and user `MyQuizzes.tsx`, each passing its own route prefix. (Until
-2026-09-19 the user page opened an older title-only dialog that linked straight to the manual
-builder, so the `/my-dashboard` AI routes existed but were unreachable.)
+typed, one question per step inside one overlay. Both dashboards open it from their **+ Create
+Quiz** button — admin `Quizzes.tsx` and user `MyQuizzes.tsx`, each passing its own route prefix —
+and so does the landing page's **Create a quiz**. (Until 2026-09-19 the user page opened an older
+title-only dialog that linked straight to the manual builder, so the `/my-dashboard` AI routes
+existed but were unreachable.)
 
-1. **How do you want to build this quiz?** — Manually / With AI.
-2. **What should the AI work from?** — From a topic / From my material.
+1. **What kind of quiz?** — Classic quiz / Associations. Associations has one way to be built,
+   so it goes straight to the board builder. **Only shown while there is a choice**: Associations
+   is admin-only in preview (`format-access.ts`), so everyone else opens on step 2.
+2. **How do you want to build it?** — Manually / With AI.
+3. **What should the AI work from?** — From a topic / From my material.
 
-Two cards per step, so the dialog doesn't change shape between them. "Use your own AI" is
-deliberately not a third card — see §2 for why it belongs at the foot of the wizard instead.
+Until 2026-09-29 the first step was Manually / With AI / Associations side by side, which offered
+a format as if it were a way of writing questions — Associations can't be made with AI at all.
+
+Two cards per step, so the dialog keeps one width throughout. "Use your own AI" is deliberately
+not a third card — see §2 for why it belongs at the foot of the wizard instead.
+
+**Moving between steps.** The card you pick grows a touch and fades while its sibling shrinks
+away (170ms), then the next step's two cards **pop out of the picked card**: each starts at its
+centre, at half size and transparent, and springs to its own place (`Emerge` in the dialog file —
+imperative `animate` in a layout effect, because the start point depends on where the card
+lands). The Back arrow (inline with the title) goes one step back with a plain fade — returning
+shouldn't look like choosing. Under reduced motion the steps just swap. Afterwards focus goes to
+the new step's first card if the choice was made from the keyboard, or to the cards' grid after
+a click (a card focused by script shows its ring in Chrome even after a mouse click) — never to
+the dialog itself, which would light its border. `ModeCard`'s own entrance is off here
+(`entrance={false}`) so the two don't fight over the transform.
 
 Step 2 replaces the mode tabs that used to head the wizard's card. The reason is arithmetic:
 that card carried the tabs, the Advanced trigger, "Use your own AI instead" and "Create
@@ -152,7 +170,7 @@ param, a "keep what I typed" affordance), not an accident of shared state.
 
 ```
 components/
-  create-quiz-method-dialog.tsx ← the chooser: both steps, and the material flag
+  create-quiz-method-dialog.tsx ← the chooser: its three steps, their animation, and the material flag
                                   (renders pages/Quiz/components/mode-card.tsx, compact)
 AI-Quiz/
   use-ai-quiz-draft.tsx        ← everything both paths share (incl. mode ← route)

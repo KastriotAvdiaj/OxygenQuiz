@@ -90,6 +90,12 @@ export interface ModeCardProps {
   onSelect: () => void;
   /** Entrance stagger, in seconds. */
   delay?: number;
+  /**
+   * Play the card's own fade-and-rise entrance. On by default; the create-quiz chooser turns it
+   * off because it animates its cards in itself (they pop out of the card just picked), and two
+   * entrances on one card fight over its transform.
+   */
+  entrance?: boolean;
 }
 
 /**
@@ -111,6 +117,7 @@ export function ModeCard({
   disabled = false,
   onSelect,
   delay = 0,
+  entrance = true,
 }: ModeCardProps) {
   const colors = CARD_ACCENTS[accent];
   const sizes = CARD_SIZES[size];
@@ -125,7 +132,7 @@ export function ModeCard({
   return (
     <motion.div
       className="h-full"
-      initial={{ opacity: 0, y: 24 }}
+      initial={entrance ? { opacity: 0, y: 24 } : false}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35, delay, ease: "easeOut" }}
     >
