@@ -184,7 +184,7 @@ export const PaginationControls = ({
             type="button"
             variant="secondary"
             size="icon"
-            className="h-10 w-10 hidden sm:flex justify-center disabled:opacity-80 border shadow-sm rounded-lg bg-background"
+            className="h-10 w-10 hidden sm:flex justify-center disabled:opacity-80 border dark:border-foreground/30 shadow-sm rounded-lg bg-background"
             onClick={() => onPageChange(totalPages)}
             disabled={currentPage === totalPages}
             aria-label="Go to last page"
