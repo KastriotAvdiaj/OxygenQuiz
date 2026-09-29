@@ -1,6 +1,7 @@
+import { useState } from "react";
 import { useLocation, useNavigate } from "react-router";
-import type { FieldErrors, UseFormRegister } from "react-hook-form";
-import { ArrowLeft, Brain, Info, Link2 } from "lucide-react";
+import type { FieldErrors, UseFormRegister, UseFormSetValue } from "react-hook-form";
+import { ArrowLeft, Brain, Info, Plus, X } from "lucide-react";
 
 import { Form, Input, Label, Textarea } from "@/components/ui/form";
 import { Separator } from "@/components/ui/separator";
@@ -13,6 +14,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { LiftedButton } from "@/common/LiftedButton";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useNotifications } from "@/common/Notifications";
 import { COLUMN_LETTERS } from "@/types/association-types";
 import type { Quiz, QuizStatus } from "@/types/quiz-types";
@@ -24,8 +31,10 @@ import { isUnspecifiedLookup } from "../../../Question/Entities/lookup-visibilit
 import { useQuizForm } from "../Create-Quiz-Form/use-quiz-form";
 import {
   associationQuizFormSchema,
+  BOARD_MAX_OTHER_SPELLINGS,
   BOARD_SECONDS,
   emptyAssociationQuizFormValues,
+  splitSpellings,
   toAssociationQuizPayload,
   useCreateAssociationQuiz,
   useUpdateAssociationQuiz,
@@ -194,30 +203,15 @@ export const AssociationBoardForm = ({ edit }: AssociationBoardFormProps) => {
                   ))}
                 </div>
 
-                <section className="rounded-xl border-2 border-primary/40 bg-primary/5 p-4">
-                  <div className="mb-3 flex items-center gap-2">
-                    <Link2 className="h-4 w-4 text-primary" />
-                    <h2 className="text-sm font-semibold uppercase tracking-wide text-primary">
-                      Final solution
-                    </h2>
-                  </div>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <Input
-                      variant={errors.finalSolution ? "isIncorrect" : "minimal"}
-                      placeholder="What links the four column solutions"
-                      aria-label="Final solution"
-                      {...register("finalSolution")}
-                      error={errors.finalSolution}
-                    />
-                    <Input
-                      variant={errors.finalOtherSpellings ? "isIncorrect" : "minimal"}
-                      placeholder="Other spellings, comma-separated (optional)"
-                      aria-label="Other accepted spellings of the final solution"
-                      {...register("finalOtherSpellings")}
-                      error={errors.finalOtherSpellings}
-                    />
-                  </div>
-                </section>
+                {/* The four Columns lead into the Final — drawn only when they sit in one row. */}
+                <BoardConnector />
+
+                <FinalSolutionEditor
+                  register={register}
+                  errors={errors}
+                  setValue={setValue}
+                  initialOtherSpellings={watch("finalOtherSpellings")}
+                />
 
                 <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
                   <Info className="mt-0.5 h-3 w-3 shrink-0" />
@@ -229,7 +223,9 @@ export const AssociationBoardForm = ({ edit }: AssociationBoardFormProps) => {
               </div>
 
               {/* ── The quiz ── */}
-              <aside className="min-w-0 space-y-4 rounded-xl border border-border p-4">
+              {/* self-start: sized by its own fields, not stretched to the board's height — the Final's
+                  added spelling rows used to grow it. */}
+              <aside className="min-w-0 space-y-4 self-start rounded-xl border border-border bg-background p-4">
                 <div>
                   <Label htmlFor="title" className="flex items-center gap-1 text-sm font-medium">
                     Title <span className="text-destructive">*</span>
@@ -359,7 +355,7 @@ type ColumnEditorProps = {
 const ColumnEditor = ({ letter, index, register, errors }: ColumnEditorProps) => {
   const columnErrors = errors.columns?.[index];
   return (
-    <section className="flex min-w-0 flex-col gap-2 rounded-xl border border-border bg-card p-3">
+    <section className="flex min-w-0 flex-col gap-2 rounded-xl border border-border bg-background p-3">
       <h2 className="flex items-center gap-2 text-sm font-semibold">
         <span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-primary-foreground">
           {letter}
@@ -379,13 +375,20 @@ const ColumnEditor = ({ letter, index, register, errors }: ColumnEditorProps) =>
       ))}
 
       <div className="mt-1 space-y-2 border-t border-dashed border-primary/40 pt-2">
-        <Input
-          variant={columnErrors?.solution ? "isIncorrect" : "minimal"}
-          placeholder={`${letter} — solution`}
-          aria-label={`Column ${letter} solution`}
-          {...register(`columns.${index}.solution` as const)}
-          error={columnErrors?.solution}
-        />
+        {/* The solution is the answer, so it's marked as one: a green border, a hint of green
+            in the fill and a green underline (global.css, `.board-solution-field` — a Tailwind
+            class can't beat `.minimal-input`). An error still shows as the red underline and
+            message. */}
+        <div className="board-solution-field [--field-accent:var(--quiz-success)]">
+          <Input
+            variant={columnErrors?.solution ? "isIncorrect" : "minimal"}
+            placeholder={`${letter} — solution`}
+            aria-label={`Column ${letter} solution`}
+            className="font-medium"
+            {...register(`columns.${index}.solution` as const)}
+            error={columnErrors?.solution}
+          />
+        </div>
         <Input
           variant={columnErrors?.otherSpellings ? "isIncorrect" : "minimal"}
           placeholder="Other spellings (optional)"
@@ -397,3 +400,178 @@ const ColumnEditor = ({ letter, index, register, errors }: ColumnEditorProps) =>
     </section>
   );
 };
+
+type FinalSolutionEditorProps = {
+  register: UseFormRegister<AssociationQuizFormValues>;
+  errors: FieldErrors<AssociationQuizFormValues>;
+  setValue: UseFormSetValue<AssociationQuizFormValues>;
+  /** The form's value on mount — the edit page's saved spellings, or "" for a new board. */
+  initialOtherSpellings: string;
+};
+
+/**
+ * The Final solution: one input, and a "+" that adds an input per other accepted spelling (up to
+ * {@link BOARD_MAX_OTHER_SPELLINGS}). The form still holds the spellings as one comma-separated
+ * string (`finalOtherSpellings`, parsed by `splitSpellings`), so the schema, the payload mapping
+ * and the edit mapping are unchanged — this component keeps the rows and writes the joined value
+ * back on every change. Blank rows are dropped by `splitSpellings`, so an added-but-empty row
+ * saves nothing.
+ */
+const FinalSolutionEditor = ({
+  register,
+  errors,
+  setValue,
+  initialOtherSpellings,
+}: FinalSolutionEditorProps) => {
+  const [spellings, setSpellings] = useState<string[]>(() => splitSpellings(initialOtherSpellings));
+  const canAdd = spellings.length < BOARD_MAX_OTHER_SPELLINGS;
+
+  // Logic caused by a user action belongs in the handler (CLAUDE.md): each change writes the
+  // form value directly rather than an Effect mirroring the rows.
+  const update = (next: string[]) => {
+    setSpellings(next);
+    setValue("finalOtherSpellings", next.join(", "), { shouldDirty: true });
+  };
+
+  return (
+    <section className="relative rounded-xl border-2 border-primary/40 bg-background p-4 xl:!mt-0">
+      <h2 className="mb-3 text-center text-sm font-semibold uppercase tracking-wide text-primary">
+        Final solution
+      </h2>
+
+      {/* Top right, out of the input's row: the Final is the one answer, the "+" is an extra.
+          The tooltip's trigger is a span so it still explains itself once the button is
+          disabled — a disabled <button> gets no pointer events, so Radix never opens on it. */}
+      <div className="absolute right-3 top-3">
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="inline-flex">
+                {/* type="button": a LiftedButton is a plain <button>, which submits the form by default. */}
+                <LiftedButton
+                  type="button"
+                  variant="icon"
+                  onClick={() => update([...spellings, ""])}
+                  disabled={!canAdd}
+                  aria-label="Add another accepted spelling of the final solution"
+                >
+                  <Plus className="h-4 w-4" />
+                </LiftedButton>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent className="bg-background border-foreground/50">
+              <p>
+                {canAdd
+                  ? "Add another accepted spelling"
+                  : `Up to ${BOARD_MAX_OTHER_SPELLINGS} other spellings`}
+              </p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </div>
+
+      <Input
+        variant={errors.finalSolution ? "isIncorrect" : "minimal"}
+        placeholder="What links the four column solutions"
+        aria-label="Final solution"
+        className="text-center"
+        {...register("finalSolution")}
+        error={errors.finalSolution}
+      />
+
+      {spellings.length > 0 && (
+        <div className="mt-3 space-y-2 pl-3">
+          {spellings.map((spelling, i) => (
+            <div key={i} className="flex items-end gap-2">
+              <div className="min-w-0 flex-1">
+                <Input
+                  variant="minimal"
+                  value={spelling}
+                  // A row the author just added gets the cursor; rows loaded for an edit don't.
+                  autoFocus={spelling === "" && i === spellings.length - 1}
+                  placeholder="Another accepted spelling"
+                  aria-label={`Other accepted spelling ${i + 1} of the final solution`}
+                  onChange={(e) =>
+                    update(spellings.map((s, j) => (j === i ? e.target.value : s)))
+                  }
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => update(spellings.filter((_, j) => j !== i))}
+                aria-label={`Remove spelling ${i + 1}`}
+                className="shrink-0 rounded-md p-2 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive dark:hover:bg-red-500/20 dark:hover:text-red-400"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {errors.finalOtherSpellings && (
+        <p className="mt-2 text-sm text-destructive">{errors.finalOtherSpellings.message}</p>
+      )}
+    </section>
+  );
+};
+
+/**
+ * Four lines from the bottom of each Column into the middle of the Final solution's card — the
+ * board's rule drawn: every Column solution leads to the Final. Only at `xl`, where the Columns
+ * sit in one row; two-and-two or stacked there is no layout for them to describe.
+ *
+ * The SVG stretches to the row (`preserveAspectRatio="none"`), so its x is a percentage of the
+ * width: each line starts at a Column's centre (12.5/37.5/62.5/87.5 — the gaps between Columns
+ * shift the outer ones by a few pixels, which doesn't read) and curves to 50. The strokes use
+ * `non-scaling-stroke` so the stretch doesn't thicken them. Zero top and bottom margin, so the
+ * lines touch the Columns above and the card below (the card drops its own `space-y` margin at
+ * `xl` to match).
+ *
+ * <b>The beam.</b> Each line carries a short bright dash that travels down it into the dot, all
+ * four together, and the dot pulses as they land (`.board-beam` / `.board-beam-dot` in
+ * global.css). `pathLength={100}` makes the dash a fixed share of each line however long the
+ * stretch makes it. Off under reduced motion.
+ *
+ * Pure decoration: `pointer-events-none select-none`, so neither the lines nor the dot can be
+ * selected or get in the way of a click.
+ */
+const BoardConnector = () => (
+  <div
+    aria-hidden="true"
+    className="pointer-events-none relative hidden h-10 select-none xl:!mt-0 xl:block"
+  >
+    <svg
+      className="h-full w-full overflow-visible"
+      viewBox="0 0 100 40"
+      preserveAspectRatio="none"
+    >
+      {[12.5, 37.5, 62.5, 87.5].map((x) => {
+        const d = `M ${x} 0 C ${x} 24, 50 16, 50 40`;
+        return (
+          <g key={x}>
+            <path
+              d={d}
+              fill="none"
+              className="stroke-primary/60"
+              strokeWidth={2}
+              strokeLinecap="round"
+              vectorEffect="non-scaling-stroke"
+            />
+            <path
+              d={d}
+              pathLength={100}
+              fill="none"
+              className="board-beam stroke-primary dark:stroke-white"
+              strokeWidth={2.5}
+              strokeLinecap="round"
+              vectorEffect="non-scaling-stroke"
+            />
+          </g>
+        );
+      })}
+    </svg>
+    {/* Where they meet, on the card's top edge. */}
+    <span className="board-beam-dot absolute bottom-0 left-1/2 z-10 h-2.5 w-2.5 -translate-x-1/2 translate-y-1/2 rounded-full bg-primary" />
+  </div>
+);

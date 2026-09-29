@@ -417,6 +417,79 @@ body {
   opacity: 0;
 }
 
+/* Associations board builder: a Column's solution is an ordinary field marked green — a green
+   border, and a hint of green over the usual muted fill. The hint is the `--field-accent` wash
+   `.minimal-input` already layers (the wrapper sets the accent to --quiz-success, which also
+   turns the underline green); only the border, and a slightly stronger wash, are added here.
+   Scoped by a wrapper class because `.minimal-input` is plain CSS outside Tailwind's layers, so
+   no utility on the input can beat it. A solid green fill was tried first and didn't read as
+   an input. (association-board-form.tsx, docs/quiz/associations.md §8.5) */
+.board-solution-field .minimal-input {
+  border: 1px solid hsl(var(--quiz-success) / 0.7);
+  border-bottom: none;
+  background-image: linear-gradient(
+    hsl(var(--quiz-success) / 0.14),
+    hsl(var(--quiz-success) / 0.14)
+  );
+}
+
+.board-solution-field .minimal-input-wrapper:focus-within .minimal-input {
+  border-color: hsl(var(--quiz-success));
+}
+
+/* Associations board builder: the beam that runs down each connector line into the Final's
+   dot (BoardConnector in association-board-form.tsx). The paths have pathLength=100, so the
+   dash is 14% of a line; the offset runs it from just before the start to just past the end.
+   The dot pulses as the four beams land — same duration, peaking where the beam reaches it. */
+.board-beam {
+  stroke-dasharray: 14 86;
+  animation: board-beam 2.4s cubic-bezier(0.55, 0, 0.75, 1) infinite;
+}
+
+@keyframes board-beam {
+  0% {
+    stroke-dashoffset: 14;
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  80% {
+    stroke-dashoffset: -100;
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: -100;
+    opacity: 0;
+  }
+}
+
+.board-beam-dot {
+  animation: board-beam-dot 2.4s ease-out infinite;
+}
+
+@keyframes board-beam-dot {
+  0%,
+  62% {
+    box-shadow: 0 0 0 0 hsl(var(--primary) / 0);
+  }
+  76% {
+    box-shadow: 0 0 0 4px hsl(var(--primary) / 0.45);
+  }
+  100% {
+    box-shadow: 0 0 0 9px hsl(var(--primary) / 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .board-beam {
+    display: none;
+  }
+  .board-beam-dot {
+    animation: none;
+  }
+}
+
 /* Compact modifier for dense panels — the dashboard filter cards, where the default
    0.75rem padding makes a ~44px control that dwarfs the Select triggers next to it.
    It lives HERE, next to the rule it overrides, for the reason spelled out above

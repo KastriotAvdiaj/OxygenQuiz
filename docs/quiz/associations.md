@@ -346,17 +346,32 @@ builder has no local draft yet — see [`../deployment/known-issues.md`](../depl
 
 `src/pages/Dashboard/Pages/Quiz/components/Association-Board-Form/`:
 
-- **Reached from the create-quiz dialog**, whose first step offers admins three cards: Manually,
-  With AI, and **Associations** (players see the first two — §0) — a different format rather than a different way of writing questions,
-  but still an answer to "how do you want to build this quiz?". Routes:
+- **Reached from the create-quiz dialog**, whose first step for admins is "What kind of quiz?":
+  Classic quiz or **Associations** (players, who can't pick Associations yet, skip that step —
+  §0). Associations goes straight to the builder; Classic goes on to Manually / With AI
+  ([`ai-quiz-two-paths.md`](ai-quiz-two-paths.md) §2a). Routes:
   `/dashboard/quizzes/create-quiz/associations` and `/my-dashboard/quizzes/create/associations`
   (both inside the existing full-width prefixes, so no layout change was needed).
 - **The board first.** The four Columns side by side, as the board is played — each with its four
-  Tiles, then its solution and other spellings under a dashed rule — and the Final solution below
-  them all. The quiz's own fields (title, description, category, difficulty, language, status,
-  board time) are the sidebar. Columns wrap two-and-two under `xl` and stack on a phone.
-- **Other spellings are one comma-separated line** per solution. `splitSpellings` turns it into
-  the list the API takes; the server does the real cleaning.
+  Tiles, then its solution — the usual field with a green (`quiz-success`) border, a hint of green
+  in the fill and a green underline, so the answer is marked as one and still reads as an input
+  (`.board-solution-field` in `global.css`) — and other spellings under a dashed
+  rule — and the Final solution below them all, its title and input centred. At `xl`, where the
+  Columns sit in one row, four lines run from the bottom of each Column into the middle of the
+  Final's card (`BoardConnector`): every Column solution leads to the Final. A short bright beam
+  runs down all four into the meeting dot, which pulses as they land (`.board-beam`, off under
+  reduced motion); lines and dot are unselectable decoration. The quiz's own fields (title,
+  description, category, difficulty, language, status, board time) are the sidebar, sized to its
+  own content (`self-start`) rather than stretched to the board's height. The
+  Columns, the Final's card and the sidebar are all `bg-background`. Columns wrap two-and-two under
+  `xl` (no lines) and stack on a phone.
+- **Other spellings.** A Column's are one comma-separated line. The Final's are one input per
+  spelling: the Final solution is the only input to start with, and a lifted **+** button in the
+  card's top right corner (with the app's tooltip, which still shows once the button is disabled)
+  adds a row, each with a remove ×, up to `BOARD_MAX_OTHER_SPELLINGS` (4) — `FinalSolutionEditor`.
+  Both end up as the same comma-separated form value (`finalOtherSpellings` is joined from the
+  rows), which `splitSpellings` turns into the list the API takes; blank rows are dropped and the
+  server does the real cleaning.
 - **The Public option is disabled** until the classification is real, as in the Classic builder;
   changing a lookup back to Unspecified while Public is selected falls back to Draft — in the
   change handler, not an Effect.
