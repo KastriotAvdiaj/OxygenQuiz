@@ -116,10 +116,10 @@ export function QuizFilterPanel({
         className={cn(
           // Adapts to the viewport: full width inside the mobile drawer, natural
           // width in the desktop sidebar column. An opaque surface: it used to be
-          // translucent (`bg-card/50` + blur), which was fine on a flat page but let
-          // the /choose-quiz background blobs show through the panel as a blurred
-          // blue smear behind the filter text (docs/development/decorative-shapes.md —
-          // text never sits on a shape).
+          // translucent (`bg-card/50` + blur), which let /choose-quiz's background
+          // blobs (removed 2026-09-28) show through as a blue smear behind the filter
+          // text. Kept opaque so any future page decoration can't do that again
+          // (docs/development/decorative-shapes.md — text never sits on a shape).
           !compact &&
             "w-full rounded-xl border border-border bg-background p-5 shadow-sm lg:w-auto sm:p-6 font-app",
           // Sidebar: hugs its content when short (collapsed), but never grows past

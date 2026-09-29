@@ -22,7 +22,6 @@ import { rule, type FilterQuery } from "@/lib/filtering";
 import { pagedResponseToPagination } from "@/lib/pagination-query";
 import { PaginationControls } from "@/components/ui/pagination-control";
 import { BlobLoader } from "@/components/ui";
-import { Blob, BLOB_A, BLOB_B, BLOB_C, BLOB_D } from "@/components/shapes/blob";
 import {
   Sheet,
   SheetContent,
@@ -84,29 +83,6 @@ const itemVariants = {
 // same QuizToolbar + QuizFilterPanel. The old ?mode=multiplayer branch here
 // was dead code.
 
-// Background blob layout — see the comment where they render. Class strings are complete
-// literals so Tailwind can see them (CLAUDE.md).
-const PAGE_BLOBS = [
-  { shape: BLOB_A, className: "-left-[3%] top-[16%] w-[16%] sm:w-[10%] lg:w-[7%]" },
-  { shape: BLOB_B, className: "-right-[4%] top-[24%] w-[18%] sm:top-[12%] sm:w-[11%] lg:w-[8%]" },
-  { shape: BLOB_C, className: "right-[9%] top-[40%] w-[10%] sm:w-[7%] lg:w-[5%]" },
-  { shape: BLOB_D, className: "left-[12%] top-[56%] w-[14%] sm:w-[9%] lg:w-[6%]" },
-  { shape: BLOB_B, className: "left-[24%] top-[36%] hidden lg:block lg:w-[3.5%]" },
-  { shape: BLOB_A, className: "left-[38%] top-[70%] w-[20%] sm:w-[12%] lg:w-[9%]" },
-  { shape: BLOB_B, className: "right-[20%] top-[62%] hidden sm:block sm:w-[8%] lg:w-[6%]" },
-  { shape: BLOB_C, className: "-left-[5%] top-[82%] w-[22%] sm:w-[13%] lg:w-[9%]" },
-  { shape: BLOB_D, className: "right-[4%] top-[86%] w-[14%] sm:w-[9%] lg:w-[7%]" },
-  { shape: BLOB_A, className: "left-[62%] top-[92%] hidden sm:block sm:w-[7%] lg:w-[5%]" },
-  // Added 2026-09-24 with the blur — more of them, since softened they read as light, not shapes.
-  { shape: BLOB_C, className: "left-[3%] top-[4%] w-[12%] sm:w-[8%] lg:w-[6%]" },
-  { shape: BLOB_D, className: "right-[28%] top-[2%] hidden sm:block sm:w-[9%] lg:w-[7%]" },
-  { shape: BLOB_A, className: "right-[2%] top-[48%] w-[16%] sm:w-[10%] lg:w-[8%]" },
-  { shape: BLOB_B, className: "left-[6%] top-[38%] w-[10%] sm:w-[7%] lg:w-[5%]" },
-  { shape: BLOB_C, className: "left-[26%] top-[62%] hidden lg:block lg:w-[7%]" },
-  { shape: BLOB_D, className: "right-[36%] top-[78%] w-[18%] sm:w-[11%] lg:w-[8%]" },
-  { shape: BLOB_B, className: "left-[14%] top-[96%] hidden sm:block sm:w-[8%] lg:w-[6%]" },
-  { shape: BLOB_A, className: "right-[14%] top-[98%] w-[12%] sm:w-[8%] lg:w-[6%]" },
-];
 export function QuizSelection() {
   const navigate = useNavigate();
 
@@ -358,21 +334,7 @@ export function QuizSelection() {
     // min-h-full column (docs/RESPONSIVE.md), so flex-1 fills at least one
     // screen while staying free to grow taller — percentage heights were what
     // pinned this page to one viewport and broke scrolling on mobile.
-    <div className="relative flex-1 font-app tracking-normal text-foreground bg-muted">
-      {/* Background blobs (docs/development/decorative-shapes.md). First child, so the
-          `relative` content wrapper below paints over them: quiz cards sit on top, and the
-          gaps between cards show the blobs through. Kept out of the upper middle of the
-          results area (x ≈ 32–76%, y ≈ 10–52%) — the loader (primary: it would vanish) and
-          "No quizzes found" (muted text) both render there — and off the toolbar row.
-          Positions are % of the page, which grows with the results; sizes are % of its
-          width, stepping down as the screen widens. The layer clips anything past its edges.
-          The whole layer is blurred and faded (one filter on the layer, not one per blob — a
-          single compositing pass), so the shapes read as soft light behind the cards. */}
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden opacity-60 blur-2xl">
-        {PAGE_BLOBS.map(({ shape, className }, i) => (
-          <Blob key={i} shape={shape} className={className} />
-        ))}
-      </div>
+    <div className="flex-1 font-app tracking-normal text-foreground bg-muted">
       {/* Wide-but-capped layout: the sidebar + grid want more room than the
           default `container` (1280–1536px), but full-bleed reads sparse on
           very large monitors — 1700px is the sweet spot. */}
