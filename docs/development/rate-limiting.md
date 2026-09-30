@@ -21,7 +21,8 @@ attack still overwhelms the box. Keep the origin firewalled to Cloudflare's IP r
 ## What's configured
 
 All of it lives in [`Middleware/RateLimitingExtensions.cs`](../../OxygenBackend/QuizAPI/Middleware/RateLimitingExtensions.cs),
-wired up in `Program.cs` (`AddOxygenRateLimiting()` + `app.UseRateLimiter()`).
+wired up in `Program.cs` (`AddOxygenRateLimiting(builder.Configuration)` + `app.UseRateLimiter()`).
+Switched by `RateLimiting:Enabled` (default on; off in Development — see "In development").
 
 | Scope | Limit | Window | Applies to |
 |---|---|---|---|
@@ -106,6 +107,19 @@ extension):
 This is also why we read the header manually instead of trusting `X-Forwarded-For` globally via
 `ForwardedHeaders` middleware — we want one explicit, auditable place that knows about Cloudflare.
 
+## In development
+
+**All of it is off in Development** (2026-09-30): `appsettings.Development.json` sets
+`"RateLimiting": { "Enabled": false }`. Local work — hot reload, refreshing a page twenty times,
+clicking through the showcase flows — kept tripping the `auth` and global limits, and every local
+request shares one IP, so they all land in one bucket. With the switch off there is no global cap
+and every named policy is a no-op (the policies still exist, because `[EnableRateLimiting]` asks for
+them by name and an unknown name throws).
+
+The key **defaults to on** when missing, so Production (and any environment that doesn't say
+otherwise) keeps every limit. To test the limits locally, set it to `true` — for one run,
+`RateLimiting__Enabled=true dotnet run`, or in user-secrets.
+
 ## Tuning
 
 The numbers above are sensible starting points, not law. Adjust in `RateLimitingExtensions.cs`:
@@ -119,7 +133,7 @@ The numbers above are sensible starting points, not law. Adjust in `RateLimiting
 
 ## Testing it
 
-- **Locally:** `curl` a limited endpoint in a loop and confirm the 11th call within a minute returns 429:
+- **Locally:** turn the limits on first (see "In development"), then `curl` a limited endpoint in a loop and confirm the 11th call within a minute returns 429:
   ```bash
   for i in $(seq 1 12); do curl -s -o /dev/null -w "%{http_code}\n" \
     -X POST https://localhost:7153/api/Authentication/login \

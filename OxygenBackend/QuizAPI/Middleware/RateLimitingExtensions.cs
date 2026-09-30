@@ -33,11 +33,33 @@ namespace QuizAPI.Middleware
         /// </summary>
         public const string AiPolicy = "ai";
 
-        public static IServiceCollection AddOxygenRateLimiting(this IServiceCollection services)
+        /// <summary>
+        /// Config key that turns every limit here off (<c>false</c>). Missing means on, so a
+        /// production box can never lose its limits to a forgotten setting;
+        /// <c>appsettings.Development.json</c> sets it to <c>false</c>, because local work (hot
+        /// reload, a page refreshed twenty times, running the showcase flows) trips the auth and
+        /// global limits constantly. See docs/development/rate-limiting.md § "In development".
+        /// </summary>
+        public const string EnabledKey = "RateLimiting:Enabled";
+
+        public static IServiceCollection AddOxygenRateLimiting(this IServiceCollection services, IConfiguration configuration)
         {
+            var enabled = configuration.GetValue(EnabledKey, defaultValue: true);
+
             services.AddRateLimiter(options =>
             {
                 options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+                if (!enabled)
+                {
+                    // Off: no global cap, and every named policy still exists (the endpoints ask
+                    // for them by name, and an unknown policy name throws) but never limits.
+                    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(
+                        _ => RateLimitPartition.GetNoLimiter("disabled"));
+                    foreach (var policy in new[] { AuthPolicy, GuestPolicy, AiPolicy })
+                        options.AddPolicy(policy, _ => RateLimitPartition.GetNoLimiter("disabled"));
+                    return;
+                }
 
                 // Safety-net cap on every request from a single client. Generous on purpose — normal
                 // quiz play (loading questions, submitting answers) must never trip it; this only

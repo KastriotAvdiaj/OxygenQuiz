@@ -399,7 +399,7 @@ builder.Services.AddAuthentication(options =>
 });
 
 // --- Rate limiting (app-level, behind Cloudflare) — see docs/development/rate-limiting.md ---
-builder.Services.AddOxygenRateLimiting();
+builder.Services.AddOxygenRateLimiting(builder.Configuration);
 
 // --- Controllers & Swagger ---
 builder.Services.AddControllers();
