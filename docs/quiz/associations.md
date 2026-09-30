@@ -330,7 +330,8 @@ The gate is `AssociationBoardValidator` (the builder's zod schema mirrors it for
 - other spellings: trimmed, blanks and duplicates (of each other or of the solution,
   case-insensitively — Guesses are matched that way) dropped, **at most 4** per solution;
 - board time within `SoloMinBoardSeconds`–`SoloMaxBoardSeconds` (60–600 by default — the
-  configured rules, §5);
+  configured rules, §5). The refusal names the range **in minutes** ("between 1 and 10
+  minutes"), because that is the unit the builder asks for (§8.5); the API itself takes seconds;
 - and the quiz-level rules Classic already has, reused rather than restated: the category,
   language and difficulty must exist, and **Public needs a real classification**
   (`QuizService.EnsurePublishableAsync`, now on `IQuizService` so both formats call the same gate).
@@ -372,6 +373,12 @@ builder has no local draft yet — see [`../deployment/known-issues.md`](../depl
   Both end up as the same comma-separated form value (`finalOtherSpellings` is joined from the
   rows), which `splitSpellings` turns into the list the API takes; blank rows are dropped and the
   server does the real cleaning.
+- **Board time is typed in minutes** (1–10, in half-minute steps), not seconds (2026-09-30:
+  "240" made the author do the arithmetic). Only the form speaks minutes: the form value is
+  `boardTimeInMinutes`, `toAssociationQuizPayload` sends `boardTimeInSeconds` rounded to the
+  second and `toAssociationQuizFormValues` divides a stored board's seconds back, so the wire,
+  the rules (§5) and the clock (§9.4) stay in seconds. `BOARD_MINUTES` is derived from
+  `BOARD_SECONDS`, the mirror of the rules' defaults.
 - **The Public option is disabled** until the classification is real, as in the Classic builder;
   changing a lookup back to Unspecified while Public is selected falls back to Draft — in the
   change handler, not an Effect.
@@ -560,21 +567,40 @@ routes, the one-free-quiz cookie, and deletion after the results — the deletio
 | Route | Screen |
 |---|---|
 | `/associations/:quizId/play` (`?shareToken=`) | `AssociationStartRoute`: starts the game (once — a ref guards StrictMode's double mount) and **replaces** itself with the game's URL, so refresh and Back land on the game instead of starting another. |
-| `/associations/play/:sessionId` | `AssociationGamePage`: score, clock, the board, the guess box, Give up (two clicks). Hands over to the results the moment the view says the game is over. |
+| `/associations/play/:sessionId` | `AssociationGamePage`: score, clock, the board with its guess slots, Give up (two clicks). Hands over to the results the moment the view says the game is over. |
 | `/associations/results/:sessionId` | `AssociationResultsPage`: the end reason, the score, the fully revealed board, the score line by line, the move timeline, Play again (restart) and Back. A results link to a game still running goes to the game. |
 
 All three are signed-in routes (`userAuthLoader`). **Play** in the catalogue's start dialog goes
 through `quizPlayPath` (`src/pages/Quiz/quiz-play-path.ts`), which picks the play screen by format;
 the dialog shows "Associations board" where a Classic quiz shows its question count.
 
-**The game page** (2026-09-24, after the first playtest): the board sits in the middle of the
-screen; the clock is large, with a bar that empties with it and turns red in the last 30 seconds
-(`BoardTimer`) — the first build had only a small chip in the corner, which read as no timer at
-all. One line above the board says what to do next ("Open a tile to earn a guess.", "Pick a column
-or the final solution…", "Every tile is open — 2 wrong guesses left."). **Nothing is pre-selected**:
-a pre-aimed Column read as "you must guess this one". When a Guess is earned the open solution
-slots outline themselves to ask to be picked; picking one focuses the guess box; after every
-Guess the aim clears again.
+**The game page** (2026-09-24, after the first playtest; reworked 2026-09-30): the board sits in
+the middle of the screen, under the clock.
+
+- **The clock is the same ring a Classic question uses** — `BoardTimer` draws `CountdownRing`
+  (`src/pages/Quiz/components/countdown-ring.tsx`), which `QuizTimer` draws too, so the two formats
+  can't drift apart ([`quiz-timer.md`](./quiz-timer.md)). It reads "3:05 min" from a minute up and
+  "42 sec" under one, turns to the warning colour under a quarter of the time, and red and pulsing in
+  the last 30 seconds. (The first build had only a small chip in the corner, which read as no timer
+  at all; the second a number and a bar.)
+- **One line above the board says what to do next** ("Open a tile to earn a guess.", "Type a guess
+  into any column or the final — or open another tile.", "Every tile is open — 2 wrong guesses
+  left.").
+- **A Guess is typed into the slot it is for.** Every unsolved solution slot — each Column's and the
+  Final's — is its own input, sent with Enter or its arrow. This replaced "pick a slot, then type in
+  the box under the board": that was two steps for one intent, and the separate box was the thing
+  first-time players didn't find. The target is where the text is, so it can't be aimed wrong, and
+  it still names its target exactly as §3.1 requires. The inputs are live (outlined) only while a
+  Guess is earned; otherwise they are disabled and dashed. **Nothing is pre-focused**, for the
+  reason the first build learned: a pre-aimed Column read as "you must guess this one". A wrong
+  Guess shakes its slot; the line under the board says what happened.
+- **Opening a Tile turns it over** — a card flip from its name (B2) to its word
+  (`.board-tile-card` in `global.css`). Solving a Column turns its remaining Tiles the same way,
+  and in a Duel the Tiles nobody opened turn when it ends. It is a CSS transition on the view
+  changing, so a Tile that arrives open (resume, results) is drawn face up; reduced motion drops it.
+- **Give up is an outlined button**, and pressing it springs the two choices — Give up and Keep
+  playing — out of where it stood (`GiveUpControl`, `solo/give-up-control.tsx`); Keep playing folds
+  them back. Under reduced motion they just appear.
 
 **In the catalogue** (`/choose-quiz`), a board's card carries a "Board" label and a small 4×4 of
 tiles in the quiz's colour ([`quiz-card.md`](./quiz-card.md)), and — for whoever can see boards,
@@ -585,9 +611,38 @@ admins while §0 holds — an **All / Quizzes / Boards** control filters the gri
 `AssociationBoard` (`src/pages/Quiz/Associations/board/`) is the one board component — Solo play,
 the results review and the Duel (§10.7) — and it never calls the API: a Tile click and a
 target choice go up as callbacks, the new view comes down
-([`quiz-playing-architecture.md`](./quiz-playing-architecture.md) §1). The guess box aims at the
-solution slot the player picked, or else the first unsolved one. Each move writes the returned view
-straight into the React Query cache (`useAssociationMoves`); nothing is refetched after a move.
+([`quiz-playing-architecture.md`](./quiz-playing-architecture.md) §1). The guess inputs are its
+own — each slot keeps what is typed in it — and a Guess goes up as `onGuess(target, text)`, whose
+answer (right, wrong, too late, or refused) tells the slot whether to clear or shake; a refused
+Guess keeps the text. Each move writes the returned view straight into the React Query cache
+(`useAssociationMoves`); nothing is refetched after a move.
+
+### 9.10 The first-play guide
+
+A player who has never seen a Board doesn't know it starts with a Tile. The first time one plays in
+a browser, the Solo game page draws a two-step guide over the board (`BoardCoach`,
+`board/board-coach.tsx`): a ring around one element, a short note beside it, and a curved arrow
+from the note to it.
+
+1. **Before any Tile is opened** — around the first closed Tile: "Start here — open a tile. Every
+   tile you open earns you one guess."
+2. **Once one is open and a Guess is earned** — around the solution slot of that Tile's Column (or
+   the next open target, if that Column is solved): "Type what links this column's tiles here and
+   press Enter — or open another tile for another clue."
+
+Which step shows is **derived from the view** (`coachStep` in `board-model.ts`: the moves so far,
+`canOpen` / `canGuess`), never stored, so a resumed game picks up at the right step. The guide ends
+at the first Guess, right or wrong, or with its Skip / Got it button, and the page then remembers it
+in `localStorage` (`board/coach-storage.ts`). That is a per-browser convenience on purpose — the
+worst case of forgetting is seeing two notes again — so it is not per account and not on the
+server. The note sits beside the target, towards the roomier side, below it in the top half of the
+board and above it in the bottom half, so it covers closed Tiles rather than the Column being
+guessed; the overlay passes clicks through, so the Tile in the ring is clicked as usual. It
+measures the board to place itself — the one Effect in it, and a DOM measurement.
+
+**Solo only**, for now. A Duel is turn-based and timed at 30 seconds a turn; a note on the
+opponent's turn would point at things the player can't do. `coachStep` and `BoardCoach` take a view
+and nothing Solo-specific, so the Duel can adopt them when it's wanted.
 
 ## 10. Playing — Duel
 
@@ -722,10 +777,13 @@ Everything is in `src/pages/Quiz/Associations/duel/`, beside `solo/`:
 - **`DuelGame`** — rendered by `MultiplayerLobbyPage` in place of the lobby while a Duel is on
   (with the leave dialog, whose copy says leaving forfeits). "Get ready…" during the countdown;
   then both Seats with their scores (the one whose turn it is outlined), the **turn clock**
-  (`BoardTimer`, red for the last 10 seconds, counting to the server's deadline corrected by
-  `serverNow` — `useBoardClock`), one line saying whose turn it is and what it allows, the shared
-  `AssociationBoard` (clickable only on your turn, and only what the turn allows), the guess box
-  with **Pass**, the last move from either side in one line, and the recent moves. At the end:
+  (`BoardTimer` — the same ring as Solo, red for the last 10 seconds, counting to the server's
+  deadline corrected by `serverNow` — `useBoardClock`), one line saying whose turn it is and what it
+  allows, the shared `AssociationBoard` (clickable only on your turn, and only what the turn
+  allows — its guess slots are live only then), **Pass**, the last move from either side in one
+  line, and the recent moves. Right or wrong arrives as the next view (`DuelUpdated`), not as the
+  hub call's answer, so a Duel slot clears once its Guess is accepted and the line under the board
+  says how it went. At the end:
   who won, the whole Board, **Review the duel** (the results page, in a new tab so the lobby
   stays) and **Back to lobby** for a rematch.
 - **`duel-model.ts`** — the pure helpers (whose turn, the prompt, the outcome from the reader's
@@ -759,4 +817,4 @@ removed anyone (multiplayer.md §3.5).
 | Classic machinery for Board sessions | `SessionAbandonmentService` (format branch), `QuizSessionService` (delete / discard), `UserStatsService`, `ReportService` |
 | Tests | `QuizAPI.Tests/Associations/*` (incl. `AssociationPlayServiceTests`, `AssociationViewSecrecyTests`, `AssociationLifecycleTests`, `AssociationDuelTests`), `QuizAPI.Tests/Multiplayer/*` (`AssociationMatchOrchestratorTests`, `QuizHubDuelTests`, `QuizHubRejoinTests`, `DuelReviewTests`), `QuizAPI.Tests/Formats/ClassicEntryPointGuardTests.cs`, `PreviewFormatAccessTests.cs`, `Stats/UserStatsServiceTests.cs`; frontend `api/__tests__/association-quiz.test.ts`, `quiz-card/__tests__/card-model.test.ts`, `Associations/board/__tests__/board-model.test.ts`, `Associations/duel/__tests__/duel-model.test.ts`, `Multiplayer/utils/__tests__/lobby-start.test.ts`, `context/__tests__/lobby-rejoin.test.ts`, `Quiz/__tests__/quiz-play-path.test.ts` |
 | Frontend — authoring | `QuizFormat` in `src/types/quiz-types.ts`; `src/types/association-types.ts`; `quizSizeLabel` in `quiz-card/card-model.ts`; `api/association-quiz.ts`; `components/Association-Board-Form/`; `quiz-paths.ts`; `components/quiz-view/association-board-preview.tsx` |
-| Frontend — play | `src/pages/Quiz/Associations/` (`api/association-play.ts`, `board/`, `solo/`, `duel/`, `results/`); `src/pages/Quiz/Multiplayer/utils/lobby-start.ts`; `src/context/lobby-rejoin.ts`; `src/pages/Quiz/quiz-play-path.ts`; routes in `src/routes/Router.tsx` |
+| Frontend — play | `src/pages/Quiz/Associations/` (`api/association-play.ts`, `board/` — incl. `board-coach.tsx` and `coach-storage.ts` (§9.10) — `solo/` — incl. `give-up-control.tsx` — `duel/`, `results/`); `src/pages/Quiz/components/countdown-ring.tsx` (the clock, shared with Classic); `src/pages/Quiz/Multiplayer/utils/lobby-start.ts`; `src/context/lobby-rejoin.ts`; `src/pages/Quiz/quiz-play-path.ts`; routes in `src/routes/Router.tsx` |

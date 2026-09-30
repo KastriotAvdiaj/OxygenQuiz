@@ -34,6 +34,16 @@ export function formatClock(ms: number): string {
   return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 }
 
+/**
+ * The ring's readout: whole seconds under a minute, as a Classic question shows them ("42" sec),
+ * and minutes and seconds above ("3:05" min). Rounded up like `formatClock`.
+ */
+export function clockReadout(ms: number): { value: string; unit: "sec" | "min" } {
+  return Math.ceil(ms / 1000) < 60
+    ? { value: String(Math.ceil(ms / 1000)), unit: "sec" }
+    : { value: formatClock(ms), unit: "min" };
+}
+
 /** "B3" — a Tile's name on the board: its Column's letter and its 1-based position. */
 export function tileLabel(view: Pick<AssociationBoardView, "columns">, tileId: number): string {
   for (const column of view.columns) {
@@ -126,3 +136,30 @@ export function elapsedLabel(view: AssociationGameView, at: string): string {
 }
 
 export const COLUMN_TARGETS: ColumnLetter[] = ["A", "B", "C", "D"];
+
+/** Where the first-play guide points: a Tile to open, or the solution slot to type a Guess into. */
+export type CoachStep = { kind: "tile"; tileId: number } | { kind: "guess"; target: GuessTarget } | null;
+
+/**
+ * The first-play guide's step, from the view alone (docs/quiz/associations.md §9.10). Before any
+ * Tile is opened it points at the first closed Tile of Column A; once one is open and a Guess is
+ * earned, at the solution slot of the Column that Tile belongs to. The first Guess — right or
+ * wrong — ends it, as does the game ending or the player dismissing it.
+ */
+export function coachStep(view: AssociationGameView, dismissed: boolean): CoachStep {
+  if (dismissed || view.isOver) return null;
+  if (view.moves.some((move) => move.kind === "Guess")) return null;
+
+  const lastOpened = [...view.moves].reverse().find((move) => move.kind === "OpenTile");
+  if (!lastOpened) {
+    if (!view.canOpen) return null;
+    const firstClosed = view.columns.flatMap((column) => column.tiles).find((tile) => !tile.isOpen);
+    return firstClosed ? { kind: "tile", tileId: firstClosed.id } : null;
+  }
+
+  if (!view.canGuess) return null;
+  const column = view.columns.find((c) => c.tiles.some((tile) => tile.id === lastOpened.tileId));
+  const target: GuessTarget | undefined =
+    column && !column.solved ? column.letter : [...COLUMN_TARGETS, "Final" as const].find((t) => isOpenTarget(view, t));
+  return target ? { kind: "guess", target } : null;
+}

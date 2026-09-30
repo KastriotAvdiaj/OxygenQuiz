@@ -35,7 +35,7 @@ export function turnPrompt(view: DuelView, mySeat: number | null): string | null
       ? `Every tile is open — guess or pass. ${left} more ${left === 1 ? "turn" : "turns"} after this one.`
       : "Every tile is open — guess or pass. This is your last turn.";
   }
-  return "Guess any column or the final — or pass.";
+  return "Type a guess into any column or the final — or pass.";
 }
 
 /** The headline once it's over, from the reader's side. */

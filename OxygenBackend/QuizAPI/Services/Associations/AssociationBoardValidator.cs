@@ -1,3 +1,4 @@
+using System.Globalization;
 using QuizAPI.DTOs.Quiz;
 using QuizAPI.Exceptions;
 using QuizAPI.Models;
@@ -19,13 +20,17 @@ namespace QuizAPI.Services.Associations
     {
         private static readonly string[] Letters = { "A", "B", "C", "D" };
 
+        /// <summary>90 → "1.5". Invariant, so the message doesn't change with the server's locale.</summary>
+        private static string Minutes(int seconds) => (seconds / 60.0).ToString("0.##", CultureInfo.InvariantCulture);
+
         /// <summary>Throws <see cref="AppValidationException"/> naming every problem, or returns the cleaned Board.</summary>
         public static AssociationBoardInput ValidateAndClean(AssociationBoardInput? input, int boardSeconds, AssociationRules rules)
         {
             var errors = new List<string>();
 
             if (boardSeconds < rules.SoloMinBoardSeconds || boardSeconds > rules.SoloMaxBoardSeconds)
-                errors.Add($"Board time must be between {rules.SoloMinBoardSeconds} and {rules.SoloMaxBoardSeconds} seconds.");
+                // In minutes: the builder asks for minutes (docs/quiz/associations.md §8.5).
+                errors.Add($"Board time must be between {Minutes(rules.SoloMinBoardSeconds)} and {Minutes(rules.SoloMaxBoardSeconds)} minutes.");
 
             if (input is null)
                 throw new AppValidationException(string.Join(" ", errors.Append("The board is missing.")));

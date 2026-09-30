@@ -32,7 +32,7 @@ import { useQuizForm } from "../Create-Quiz-Form/use-quiz-form";
 import {
   associationQuizFormSchema,
   BOARD_MAX_OTHER_SPELLINGS,
-  BOARD_SECONDS,
+  BOARD_MINUTES,
   emptyAssociationQuizFormValues,
   splitSpellings,
   toAssociationQuizPayload,
@@ -322,17 +322,18 @@ export const AssociationBoardForm = ({ edit }: AssociationBoardFormProps) => {
 
                 <div>
                   <Label htmlFor="boardTime" className="text-xs font-medium">
-                    Board time (seconds, solo play)
+                    Board time (minutes, solo play)
                   </Label>
                   <Input
-                    variant={errors.boardTimeInSeconds ? "isIncorrect" : "minimal"}
+                    variant={errors.boardTimeInMinutes ? "isIncorrect" : "minimal"}
                     id="boardTime"
                     type="number"
-                    min={BOARD_SECONDS.min}
-                    max={BOARD_SECONDS.max}
+                    min={BOARD_MINUTES.min}
+                    max={BOARD_MINUTES.max}
+                    step={BOARD_MINUTES.step}
                     className="mt-1"
-                    {...register("boardTimeInSeconds", { valueAsNumber: true })}
-                    error={errors.boardTimeInSeconds}
+                    {...register("boardTimeInMinutes", { valueAsNumber: true })}
+                    error={errors.boardTimeInMinutes}
                   />
                 </div>
               </aside>

@@ -21,7 +21,7 @@ const filled = (): AssociationQuizFormValues => ({
   languageId: 2,
   difficultyId: 3,
   status: "Draft",
-  boardTimeInSeconds: 240,
+  boardTimeInMinutes: 4,
   columns: ["A", "B", "C", "D"].map((letter) => ({
     tiles: [1, 2, 3, 4].map((i) => ` ${letter}${i} `),
     solution: ` ${letter} `,
@@ -48,6 +48,11 @@ describe("toAssociationQuizPayload", () => {
     expect(payload.board.columns[2].tiles).toEqual(["C1", "C2", "C3", "C4"]);
     expect(payload.board.finalAcceptableSolutions).toEqual(["Italia", "Italien"]);
     expect(payload.boardTimeInSeconds).toBe(240);
+  });
+
+  test("the author's minutes go to the API as whole seconds", () => {
+    expect(toAssociationQuizPayload({ ...filled(), boardTimeInMinutes: 1.5 }).boardTimeInSeconds).toBe(90);
+    expect(toAssociationQuizPayload({ ...filled(), boardTimeInMinutes: 2.254 }).boardTimeInSeconds).toBe(135);
   });
 });
 
@@ -79,7 +84,7 @@ describe("toAssociationQuizFormValues", () => {
 
     expect(values.columns[0].tiles).toEqual(["A1", "A2", "A3", "A4"]);
     expect(values.columns[0].otherSpellings).toBe("Roma, Rom");
-    expect(values.boardTimeInSeconds).toBe(300);
+    expect(values.boardTimeInMinutes).toBe(5);
     expect(values.status).toBe("Unlisted");
     // And it survives the trip back.
     expect(toAssociationQuizPayload(values).board.columns[0].acceptableSolutions).toEqual(["Roma", "Rom"]);
@@ -107,9 +112,10 @@ describe("associationQuizFormSchema (mirror of the API's rules)", () => {
     }
   });
 
-  test("board time outside 60–600 is refused", () => {
-    expect(associationQuizFormSchema.safeParse({ ...filled(), boardTimeInSeconds: 30 }).success).toBe(false);
-    expect(associationQuizFormSchema.safeParse({ ...filled(), boardTimeInSeconds: 601 }).success).toBe(false);
+  test("board time outside 1–10 minutes (the API's 60–600s) is refused", () => {
+    expect(associationQuizFormSchema.safeParse({ ...filled(), boardTimeInMinutes: 0.5 }).success).toBe(false);
+    expect(associationQuizFormSchema.safeParse({ ...filled(), boardTimeInMinutes: 10.5 }).success).toBe(false);
+    expect(associationQuizFormSchema.safeParse({ ...filled(), boardTimeInMinutes: 1.5 }).success).toBe(true);
   });
 
   test("more than four other spellings is refused", () => {

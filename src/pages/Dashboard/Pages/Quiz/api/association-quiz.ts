@@ -18,6 +18,10 @@ import type { AssociationBoardDTO } from "@/types/association-types";
  * `AssociationBoardValidator` on the server (and `AssociationRules` for the board time, which
  * is configurable there — the 60–600s here are the documented defaults). This is fast feedback
  * while typing (CLAUDE.md, "Client validation mirrors an API rule").
+ *
+ * <b>The author types minutes; the API takes seconds.</b> A board runs for minutes, and "240"
+ * made the author do the arithmetic. The form holds `boardTimeInMinutes` and the two mappings
+ * below convert, so seconds stay the one unit on the wire and in the rules.
  */
 
 /** Mirrors `AssociationBoardLimits.MaxTextLength`. */
@@ -26,6 +30,13 @@ export const BOARD_TEXT_MAX = 100;
 export const BOARD_MAX_OTHER_SPELLINGS = 4;
 /** Mirror `AssociationRules` defaults (SoloMin/Max/DefaultBoardSeconds). The API enforces the configured values. */
 export const BOARD_SECONDS = { min: 60, max: 600, default: 240 } as const;
+/** The same range in the builder's unit. Half minutes are allowed (`step`), so 90s is sayable. */
+export const BOARD_MINUTES = {
+  min: BOARD_SECONDS.min / 60,
+  max: BOARD_SECONDS.max / 60,
+  default: BOARD_SECONDS.default / 60,
+  step: 0.5,
+} as const;
 
 const boardText = (what: string) =>
   z
@@ -51,11 +62,10 @@ export const associationQuizFormSchema = z.object({
   languageId: z.number().int().positive({ message: "Language is required" }),
   difficultyId: z.number().int().positive({ message: "Difficulty is required" }),
   status: z.enum(["Draft", "Unlisted", "Public"]).default("Draft"),
-  boardTimeInSeconds: z
+  boardTimeInMinutes: z
     .number({ invalid_type_error: "Board time is required" })
-    .int()
-    .min(BOARD_SECONDS.min, `At least ${BOARD_SECONDS.min} seconds`)
-    .max(BOARD_SECONDS.max, `At most ${BOARD_SECONDS.max} seconds`),
+    .min(BOARD_MINUTES.min, `At least ${BOARD_MINUTES.min} minute`)
+    .max(BOARD_MINUTES.max, `At most ${BOARD_MINUTES.max} minutes`),
   columns: z
     .array(
       z.object({
@@ -104,7 +114,8 @@ export function toAssociationQuizPayload(values: AssociationQuizFormValues): Ass
     languageId: values.languageId,
     difficultyId: values.difficultyId,
     status: values.status,
-    boardTimeInSeconds: values.boardTimeInSeconds,
+    // Rounded to the second: the API takes whole seconds, and 2.25 minutes is 135 of them.
+    boardTimeInSeconds: Math.round(values.boardTimeInMinutes * 60),
     board: {
       columns: values.columns.map((column) => ({
         tiles: column.tiles.map((tile) => tile.trim()),
@@ -129,7 +140,7 @@ export function toAssociationQuizFormValues(
     languageId: quiz.language.id,
     difficultyId: quiz.difficulty.id,
     status: quiz.status,
-    boardTimeInSeconds: board.boardTimeInSeconds,
+    boardTimeInMinutes: board.boardTimeInSeconds / 60,
     columns: board.columns.map((column) => ({
       tiles: [...column.tiles].sort((a, b) => a.position - b.position).map((t) => t.text),
       solution: column.solution,
@@ -145,7 +156,7 @@ export const emptyAssociationQuizFormValues = (): Partial<AssociationQuizFormVal
   title: "",
   description: "",
   status: "Draft",
-  boardTimeInSeconds: BOARD_SECONDS.default,
+  boardTimeInMinutes: BOARD_MINUTES.default,
   columns: Array.from({ length: 4 }, () => ({ tiles: ["", "", "", ""], solution: "", otherSpellings: "" })),
   finalSolution: "",
   finalOtherSpellings: "",

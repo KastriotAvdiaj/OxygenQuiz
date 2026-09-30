@@ -8,6 +8,13 @@ by both modes:
 | Singleplayer | `question-display.tsx` | `question.timeRemainingInSeconds` (server, per fetch) |
 | Multiplayer | `multiplayer-question-view.tsx` | derived from the round's `deadlineUtc` (server, per round) |
 
+**What it draws is `CountdownRing`** (`src/pages/Quiz/components/countdown-ring.tsx`), since
+2026-09-30 — the arc, its colours and the readout, split out so the Associations board clock
+(`BoardTimer`, which counts with `useBoardClock` instead) is the same ring rather than a copy
+([`associations.md`](./associations.md) §9.9). The ring only draws; everything below — the anchored
+deadline, the two rules — is `QuizTimer`'s and stays there. Its colours are theme tokens (`primary`,
+`quiz-warning`) and the palette's red-500 for the critical tone, not the hex values it used to carry.
+
 It is a **display**. It has never been the authority on whether an answer was in time, and must
 never become one: singleplayer grades against `CurrentQuestionStartTime` in `SubmitAnswerService`,
 and multiplayer against `session.QuestionDeadlineUtc` in `QuizHub.SubmitAnswer`. Everything below is

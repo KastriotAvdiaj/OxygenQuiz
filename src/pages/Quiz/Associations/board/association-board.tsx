@@ -1,3 +1,6 @@
+import { useState } from "react";
+import { useAnimate } from "framer-motion";
+import { Send } from "lucide-react";
 import { cn } from "@/utils/cn";
 import type {
   AssociationBoardView,
@@ -6,34 +9,42 @@ import type {
   GuessTarget,
 } from "@/types/association-types";
 
+/** Guess length. Mirrors the API's AssociationGameLimits.MaxGuessLength (a longer guess is refused, not cut). */
+const MAX_GUESS_LENGTH = 200;
+
+/**
+ * What a Guess came to: right, wrong, `null` when it arrived too late to count, `undefined` when
+ * it was refused or failed — then the typed text is kept so the player can send it again.
+ */
+export type GuessOutcome = boolean | null | undefined;
+
 /**
  * The Associations board, drawn from a server view — used by Solo play, the Duel and the results
- * review. It never calls the API: a click on a closed Tile or on a
- * solution slot goes up through a callback, and the new view comes back down (the play stack's
- * golden rule, docs/quiz/quiz-playing-architecture.md §1).
+ * review. It never calls the API: a click on a closed Tile and a Guess typed into a solution slot
+ * go up through callbacks, and the new view comes back down (the play stack's golden rule,
+ * docs/quiz/quiz-playing-architecture.md §1).
  *
- * Read-only when `onOpenTile` is absent. What it can show is only what the view carries: a closed
- * Tile has no text to show (docs/quiz/associations.md, "What the client sees").
+ * <b>Every unsolved solution slot is its own guess input</b> — the Column's or the Final's — so a
+ * Guess names its target by where it is typed (docs/quiz/associations.md §9.9). The inputs are
+ * live only while `onGuess` is given, which the page does only while a Guess is earned.
+ *
+ * Read-only when neither callback is given. What it can show is only what the view carries: a
+ * closed Tile has no text to show (docs/quiz/associations.md, "What the client sees").
  */
 export type AssociationBoardProps = {
   view: AssociationBoardView;
-  /** The solution slot the guess box is aimed at — outlined. */
-  target?: GuessTarget | null;
   onOpenTile?: (tileId: number) => void;
-  onSelectTarget?: (target: GuessTarget) => void;
-  /** A move is in flight: nothing is clickable until it lands. */
+  onGuess?: (target: GuessTarget, text: string) => Promise<GuessOutcome>;
+  /** A move is in flight: no Tile is clickable until it lands. */
   busy?: boolean;
-  /**
-   * A Guess is earned but not aimed yet: the open solution slots are outlined to say "pick one".
-   * Only the slots are clickable for a target when `onSelectTarget` is given, which the page does
-   * only while a Guess is earned (docs/quiz/associations.md §3.2).
-   */
-  beckon?: boolean;
 };
 
-export const AssociationBoard = ({ view, target, onOpenTile, onSelectTarget, busy = false, beckon = false }: AssociationBoardProps) => {
+export const AssociationBoard = ({ view, onOpenTile, onGuess, busy = false }: AssociationBoardProps) => {
   const playable = !view.isOver && !!onOpenTile && !busy;
-  const canAim = !view.isOver && !!onSelectTarget && !busy;
+  // Not gated on `busy`: disabling the inputs while a Guess is in flight would drop the focus the
+  // player needs for the next one. Each input waits for its own Guess; the page refuses a move
+  // while another is in flight.
+  const guess = !view.isOver ? onGuess : undefined;
 
   return (
     <div className="space-y-3">
@@ -43,24 +54,20 @@ export const AssociationBoard = ({ view, target, onOpenTile, onSelectTarget, bus
             key={column.letter}
             column={column}
             over={view.isOver}
-            playable={playable}
-            selected={target === column.letter}
-            onOpenTile={onOpenTile}
-            beckon={beckon}
-            onSelect={canAim ? () => onSelectTarget!(column.letter) : undefined}
+            onOpenTile={playable ? onOpenTile : undefined}
+            onGuess={guess}
           />
         ))}
       </div>
 
       <SolutionSlot
+        target="Final"
         label="Final solution"
         solved={view.final.solved}
         solution={view.final.solution}
         points={view.final.points}
         over={view.isOver}
-        selected={target === "Final"}
-        beckon={beckon}
-        onSelect={canAim && !view.final.solved ? () => onSelectTarget!("Final") : undefined}
+        onGuess={guess}
         emphasis
       />
     </div>
@@ -70,19 +77,13 @@ export const AssociationBoard = ({ view, target, onOpenTile, onSelectTarget, bus
 const BoardColumn = ({
   column,
   over,
-  playable,
-  selected,
-  beckon,
   onOpenTile,
-  onSelect,
+  onGuess,
 }: {
   column: AssociationColumnView;
   over: boolean;
-  playable: boolean;
-  selected: boolean;
-  beckon: boolean;
   onOpenTile?: (tileId: number) => void;
-  onSelect?: () => void;
+  onGuess?: AssociationBoardProps["onGuess"];
 }) => (
   <section aria-label={`Column ${column.letter}`} className="flex flex-col gap-1.5 sm:gap-2">
     {column.tiles.map((tile) => (
@@ -91,23 +92,28 @@ const BoardColumn = ({
         letter={column.letter}
         tile={tile}
         over={over}
-        onOpen={playable && !tile.isOpen && onOpenTile ? () => onOpenTile(tile.id) : undefined}
+        onOpen={onOpenTile && !tile.isOpen ? () => onOpenTile(tile.id) : undefined}
       />
     ))}
     <SolutionSlot
+      target={column.letter}
       label={`Column ${column.letter}`}
       solved={column.solved}
       solution={column.solution}
       points={column.points}
       viaFinal={column.viaFinal}
       over={over}
-      selected={selected}
-      beckon={beckon}
-      onSelect={onSelect && !column.solved ? onSelect : undefined}
+      onGuess={onGuess}
     />
   </section>
 );
 
+/**
+ * A Tile is a card with two faces: its name (A1) on the front, its word on the back. Opening it
+ * — or solving its Column, or the game ending — turns the card over (`.board-tile-card` in
+ * global.css). The flip is a CSS transition on the view changing, so a Tile that arrives already
+ * open (a resumed game, the results page) is simply drawn face up, with no animation.
+ */
 const BoardTile = ({
   letter,
   tile,
@@ -120,58 +126,66 @@ const BoardTile = ({
   onOpen?: () => void;
 }) => {
   const name = `${letter}${tile.position + 1}`;
-
-  if (tile.isOpen) {
-    return (
-      <div className="flex min-h-12 items-center justify-center rounded-md border border-border bg-card px-2 py-2 text-center text-sm font-medium break-words sm:min-h-14 sm:text-base">
-        {tile.text}
-      </div>
-    );
-  }
-
-  // Over, never opened: shown for the review, but visibly not something the player saw in play.
-  if (over) {
-    return (
-      <div className="flex min-h-12 items-center justify-center rounded-md border border-dashed border-border px-2 py-2 text-center text-sm text-muted-foreground break-words sm:min-h-14">
-        {tile.text}
-      </div>
-    );
-  }
+  // Over and never opened: turned for the review, but visibly not something the player saw in play.
+  const revealed = tile.isOpen || over;
 
   return (
-    <button
-      type="button"
-      onClick={onOpen}
-      disabled={!onOpen}
-      aria-label={`Open tile ${name}`}
-      className="flex min-h-12 items-center justify-center rounded-md border border-primary/30 bg-primary/10 text-sm font-semibold tabular-nums text-primary transition-colors hover:bg-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-default disabled:hover:bg-primary/10 sm:min-h-14"
-    >
-      {name}
-    </button>
+    <div className="board-tile">
+      <div className={cn("board-tile-card", revealed && "is-flipped")}>
+        {revealed ? (
+          <div
+            aria-hidden
+            className="flex min-h-12 items-center justify-center rounded-md border border-primary/30 bg-primary/10 text-sm font-semibold tabular-nums text-primary sm:min-h-14"
+          >
+            {name}
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={onOpen}
+            disabled={!onOpen}
+            aria-label={`Open tile ${name}`}
+            data-coach-tile={tile.id}
+            className="flex min-h-12 items-center justify-center rounded-md border border-primary/30 bg-primary/10 text-sm font-semibold tabular-nums text-primary transition-colors hover:bg-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-default disabled:hover:bg-primary/10 sm:min-h-14"
+          >
+            {name}
+          </button>
+        )}
+        <div
+          aria-hidden={!revealed}
+          className={cn(
+            "board-tile-back flex min-h-12 items-center justify-center rounded-md px-2 py-2 text-center text-sm break-words sm:min-h-14",
+            tile.isOpen
+              ? "border border-border bg-card font-medium sm:text-base"
+              : "border border-dashed border-border bg-background text-muted-foreground"
+          )}
+        >
+          {tile.text}
+        </div>
+      </div>
+    </div>
   );
 };
 
 const SolutionSlot = ({
+  target,
   label,
   solved,
   solution,
   points,
   viaFinal = false,
   over,
-  selected,
-  beckon = false,
-  onSelect,
+  onGuess,
   emphasis = false,
 }: {
+  target: GuessTarget;
   label: string;
   solved: boolean;
   solution: string | null;
   points: number | null;
   viaFinal?: boolean;
   over: boolean;
-  selected: boolean;
-  beckon?: boolean;
-  onSelect?: () => void;
+  onGuess?: AssociationBoardProps["onGuess"];
   emphasis?: boolean;
 }) => {
   if (solved) {
@@ -193,25 +207,82 @@ const SolutionSlot = ({
     );
   }
 
+  return <GuessInput target={target} label={label} onGuess={onGuess} emphasis={emphasis} />;
+};
+
+/**
+ * An unsolved solution slot, as the place its Guess is typed. Enter or the arrow sends it. A
+ * wrong Guess shakes the slot — started from the submit handler, where the answer arrives, not
+ * from an Effect watching for it.
+ */
+const GuessInput = ({
+  target,
+  label,
+  onGuess,
+  emphasis,
+}: {
+  target: GuessTarget;
+  label: string;
+  onGuess?: AssociationBoardProps["onGuess"];
+  emphasis: boolean;
+}) => {
+  const [text, setText] = useState("");
+  const [sending, setSending] = useState(false);
+  const [scope, animate] = useAnimate<HTMLFormElement>();
+  const live = !!onGuess && !sending;
+  const trimmed = text.trim();
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!onGuess || !trimmed || sending) return;
+    setSending(true);
+    try {
+      const outcome = await onGuess(target, trimmed);
+      if (outcome !== undefined) setText("");
+      if (outcome === false && scope.current) {
+        void animate(scope.current, { x: [0, -8, 8, -5, 5, 0] }, { duration: 0.4 });
+      }
+    } finally {
+      setSending(false);
+    }
+  };
+
   return (
-    <button
-      type="button"
-      onClick={onSelect}
-      disabled={!onSelect}
-      aria-pressed={selected}
-      aria-label={`Guess ${label.toLowerCase()}`}
+    <form
+      ref={scope}
+      onSubmit={handleSubmit}
+      data-coach-target={target}
       className={cn(
-        "flex min-h-12 w-full items-center justify-center rounded-md border-2 px-3 py-2 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-default sm:min-h-14",
-        selected
-          ? "border-primary bg-primary/15 text-primary"
-          : beckon && onSelect
-            // Asking to be picked: solid primary outline instead of the resting dashed one.
-            ? "border-primary/70 bg-primary/5 text-foreground hover:bg-primary/10"
-            : "border-dashed border-border text-muted-foreground hover:border-primary/60",
-        emphasis && "sm:text-base"
+        "flex min-h-12 w-full items-center gap-1 rounded-md border-2 bg-background pl-3 pr-1 transition-colors focus-within:border-primary sm:min-h-14",
+        // A Guess is earned: the slots ask to be typed into.
+        live ? "border-primary/70 bg-primary/5" : "border-dashed border-border"
       )}
     >
-      {label} ?
-    </button>
+      <input
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        disabled={!onGuess}
+        maxLength={MAX_GUESS_LENGTH}
+        autoComplete="off"
+        spellCheck={false}
+        aria-label={`Guess ${label.toLowerCase()}`}
+        placeholder={`${label} ?`}
+        // text-base on phones: anything smaller and iOS Safari zooms on focus (docs/RESPONSIVE.md).
+        className={cn(
+          "min-w-0 flex-1 bg-transparent py-2 text-base font-semibold outline-none placeholder:font-semibold placeholder:text-muted-foreground disabled:cursor-default sm:text-sm",
+          emphasis && "sm:text-base"
+        )}
+      />
+      {live && (
+        <button
+          type="submit"
+          disabled={!trimmed}
+          aria-label={`Send guess for ${label.toLowerCase()}`}
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-primary transition-colors hover:bg-primary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:text-muted-foreground disabled:hover:bg-transparent"
+        >
+          <Send className="h-4 w-4" />
+        </button>
+      )}
+    </form>
   );
 };

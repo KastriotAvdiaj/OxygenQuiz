@@ -490,6 +490,40 @@ body {
   }
 }
 
+/* Associations board: a Tile is a card that turns over when it is opened (BoardTile in
+   association-board.tsx). Both faces sit in one grid cell, so the card is as tall as the taller
+   face — a long word on the back wraps and the front grows with it. The flip is a transition on
+   the class, so a Tile drawn already open (resume, results) doesn't animate. */
+.board-tile {
+  perspective: 800px;
+}
+
+.board-tile-card {
+  display: grid;
+  transform-style: preserve-3d;
+  transition: transform 0.55s cubic-bezier(0.3, 1.25, 0.5, 1);
+}
+
+.board-tile-card > * {
+  grid-area: 1 / 1;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+.board-tile-card > .board-tile-back {
+  transform: rotateY(180deg);
+}
+
+.board-tile-card.is-flipped {
+  transform: rotateY(180deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .board-tile-card {
+    transition: none;
+  }
+}
+
 /* Compact modifier for dense panels — the dashboard filter cards, where the default
    0.75rem padding makes a ~44px control that dwarfs the Select triggers next to it.
    It lives HERE, next to the rule it overrides, for the reason spelled out above

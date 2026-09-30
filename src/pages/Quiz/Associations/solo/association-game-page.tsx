@@ -7,9 +7,8 @@ import {
   useParams,
 } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, ArrowLeft, Flag, Send } from "lucide-react";
+import { AlertCircle, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/form";
 import { cn } from "@/utils/cn";
 import { QuizLoadingView } from "@/pages/Quiz/Sessions/components/quiz-loading-view";
 import type {
@@ -22,18 +21,18 @@ import {
   useAssociationGame,
   useAssociationMoves,
 } from "../api/association-play";
-import { AssociationBoard } from "../board/association-board";
-import { isOpenTarget, targetLabel } from "../board/board-model";
+import { AssociationBoard, type GuessOutcome } from "../board/association-board";
+import { BoardCoach } from "../board/board-coach";
+import { coachStep, targetLabel } from "../board/board-model";
 import { BoardTimer } from "../board/board-timer";
+import { hasSeenBoardCoach, markBoardCoachSeen } from "../board/coach-storage";
 import { useBoardClock } from "../board/use-board-clock";
-
-/** Guess-box length. Mirrors the API's AssociationGameLimits.MaxGuessLength (a longer guess is refused, not cut). */
-const MAX_GUESS_LENGTH = 200;
+import { GiveUpControl } from "./give-up-control";
 
 /**
  * `/associations/play/:sessionId` — a Solo game in progress (docs/quiz/associations.md,
- * "Playing"). Open any Tile, guess any Column or the Final, as often as you like, before the
- * board clock runs out. Everything shown comes from the server's view; when the game is over
+ * "Playing"). A Tile earns a Guess; a Guess is typed straight into the Column's or the Final's
+ * solution slot; the board clock runs out on the server's deadline. Everything shown comes from the server's view; when the game is over
  * the page hands over to the results.
  */
 export const AssociationGamePage = () => {
@@ -89,24 +88,22 @@ const SoloBoard = ({
   const queryClient = useQueryClient();
   const { open, guess, giveUp } = useAssociationMoves(view.sessionId);
 
-  // The guess box's aim. No default: the player picks a Column or the Final each time — a
-  // pre-selected Column read as "you must guess this one". Kept only while it still points at
-  // something open and a Guess is earned (derived, not synced).
-  const [chosenTarget, setChosenTarget] = useState<GuessTarget | null>(null);
-  const target =
-    view.canGuess && chosenTarget && isOpenTarget(view, chosenTarget)
-      ? chosenTarget
-      : null;
-
-  const [text, setText] = useState("");
   const [feedback, setFeedback] = useState<Feedback>(null);
-  const [confirmGiveUp, setConfirmGiveUp] = useState(false);
 
   // "You already had this board going" — shown on arrival from a resumed start, until the
   // player's first move says they've chosen to carry on.
   const resumed =
     (location.state as { resumed?: boolean } | null)?.resumed === true;
   const [carriedOn, setCarriedOn] = useState(false);
+
+  // The first-play guide (docs/quiz/associations.md §9.10): which step is derived from the view;
+  // only whether this browser has already been through it is kept.
+  const [coachDismissed, setCoachDismissed] = useState(hasSeenBoardCoach);
+  const coach = coachStep(view, coachDismissed);
+  const dismissCoach = () => {
+    markBoardCoachSeen();
+    setCoachDismissed(true);
+  };
 
   const remaining = useBoardClock(
     view.deadlineUtc,
@@ -124,11 +121,9 @@ const SoloBoard = ({
     ? "Open a tile to earn a guess."
     : view.inEndgame
       ? `Every tile is open — ${view.endgameTriesLeft} wrong ${view.endgameTriesLeft === 1 ? "guess" : "guesses"} left.`
-      : !target
-        ? view.canOpen
-          ? "Pick a column or the final solution to guess — or open another tile."
-          : "Pick a column or the final solution to guess."
-        : `Guess ${targetLabel(target)}.`;
+      : view.canOpen
+        ? "Type a guess into any column or the final — or open another tile."
+        : "Type a guess into any column or the final.";
 
   const restart = useMutation({
     mutationFn: () => restartAssociationGame(view.sessionId),
@@ -147,46 +142,38 @@ const SoloBoard = ({
     open.mutate(tileId);
   };
 
-  const handleSelectTarget = (next: GuessTarget) => {
-    setChosenTarget(next);
-    setFeedback(null);
-    // Straight to typing: picking the target is the step before it.
-    requestAnimationFrame(() =>
-      document.getElementById("association-guess")?.focus(),
-    );
-  };
-
-  const handleGuess = (event: React.FormEvent) => {
-    event.preventDefault();
-    const trimmed = text.trim();
-    if (!target || !trimmed || busy) return;
+  const handleGuess = async (
+    target: GuessTarget,
+    text: string,
+  ): Promise<GuessOutcome> => {
+    if (busy) return undefined;
     setCarriedOn(true);
-    guess.mutate(
-      { target, text: trimmed },
-      {
-        onSuccess: (result) => {
-          if (result.isCorrect === null) {
-            setFeedback({
-              tone: "info",
-              text: "Time ran out before that guess counted.",
-            });
-            return;
-          }
-          setText("");
-          setChosenTarget(null);
-          setFeedback(
-            result.isCorrect
-              ? {
-                  tone: "right",
-                  text: result.finalSolved
-                    ? `The final! +${result.points}`
-                    : `Right! +${result.points} — you've earned another guess.`,
-                }
-              : { tone: "wrong", text: `Not ${targetLabel(target)}.` },
-          );
-        },
-      },
-    );
+    // The first Guess is the end of the guide, whatever it scores.
+    markBoardCoachSeen();
+    try {
+      const result = await guess.mutateAsync({ target, text });
+      if (result.isCorrect === null) {
+        setFeedback({
+          tone: "info",
+          text: "Time ran out before that guess counted.",
+        });
+        return null;
+      }
+      setFeedback(
+        result.isCorrect
+          ? {
+              tone: "right",
+              text: result.finalSolved
+                ? `The final! +${result.points}`
+                : `Right! +${result.points} — you've earned another guess.`,
+            }
+          : { tone: "wrong", text: `Not ${targetLabel(target)}.` },
+      );
+      return result.isCorrect;
+    } catch {
+      // The shared interceptor has already told the player why; keep what they typed.
+      return undefined;
+    }
   };
 
   return (
@@ -213,10 +200,12 @@ const SoloBoard = ({
         </header>
 
         {remaining !== null && (
-          <BoardTimer
-            remainingMs={remaining}
-            totalSeconds={view.boardSeconds}
-          />
+          <div className="flex justify-center">
+            <BoardTimer
+              remainingMs={remaining}
+              totalSeconds={view.boardSeconds}
+            />
+          </div>
         )}
 
         {resumed && !carriedOn && (
@@ -243,42 +232,22 @@ const SoloBoard = ({
           {prompt}
         </p>
 
-        <AssociationBoard
-          view={view}
-          target={target}
-          onOpenTile={view.canOpen ? handleOpen : undefined}
-          onSelectTarget={view.canGuess ? handleSelectTarget : undefined}
-          beckon={view.canGuess && !target}
-          busy={busy}
-        />
-
-        <form
-          onSubmit={handleGuess}
-          className="flex flex-col gap-2 sm:flex-row sm:items-center"
-        >
-          <div className="flex-1">
-            <Input
-              id="association-guess"
-              aria-label={target ? `Guess ${targetLabel(target)}` : "Guess"}
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              maxLength={MAX_GUESS_LENGTH}
-              autoComplete="off"
-              placeholder={
-                target
-                  ? `Your guess for ${targetLabel(target)}`
-                  : "Pick a column or the final first"
-              }
-              disabled={!target}
-              variant="settings"
+        <div className="relative">
+          <AssociationBoard
+            view={view}
+            onOpenTile={view.canOpen ? handleOpen : undefined}
+            onGuess={view.canGuess ? handleGuess : undefined}
+            busy={busy}
+          />
+          {coach && (
+            <BoardCoach
+              step={coach}
+              onDismiss={dismissCoach}
             />
-          </div>
-          <Button type="submit" disabled={!target || !text.trim() || busy}>
-            <Send className="mr-1 h-4 w-4" /> Guess
-          </Button>
-        </form>
+          )}
+        </div>
 
-        <div className="flex min-h-6 flex-wrap items-center justify-between gap-2">
+        <div className="flex min-h-9 flex-wrap items-center justify-between gap-2">
           <p
             aria-live="polite"
             className={cn(
@@ -290,36 +259,7 @@ const SoloBoard = ({
           >
             {feedback?.text}
           </p>
-          {confirmGiveUp ? (
-            <div className="flex items-center gap-2 text-sm">
-              <span className="text-muted-foreground">
-                Reveal the board and end the game?
-              </span>
-              <Button
-                size="sm"
-                variant="destructive"
-                onClick={() => giveUp.mutate()}
-                disabled={busy}
-              >
-                Give up
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => setConfirmGiveUp(false)}
-              >
-                Keep playing
-              </Button>
-            </div>
-          ) : (
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => setConfirmGiveUp(true)}
-            >
-              <Flag className="mr-1 h-4 w-4" /> Give up
-            </Button>
-          )}
+          <GiveUpControl onGiveUp={() => giveUp.mutate()} disabled={busy} />
         </div>
       </div>
     </div>

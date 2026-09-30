@@ -1,19 +1,14 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Crown, Send, SkipForward } from "lucide-react";
+import { ArrowLeft, Crown, SkipForward } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/form";
 import { cn } from "@/utils/cn";
 import type { DuelUpdate, DuelView, GuessTarget } from "@/types/association-types";
-import { AssociationBoard } from "../board/association-board";
-import { isOpenTarget, targetLabel } from "../board/board-model";
+import { AssociationBoard, type GuessOutcome } from "../board/association-board";
 import { BoardTimer } from "../board/board-timer";
 import { useBoardClock } from "../board/use-board-clock";
 import { DUEL_END_REASON_TEXT, describeDuelMove, duelOutcome, turnPrompt } from "./duel-model";
 import type { DuelPhase } from "./use-association-match";
-
-/** Guess-box length. Mirrors the API's AssociationGameLimits.MaxGuessLength (a longer guess is refused, not cut). */
-const MAX_GUESS_LENGTH = 200;
 
 export type DuelGameProps = {
   phase: DuelPhase;
@@ -75,11 +70,6 @@ const DuelBoard = ({
   const canGuess = myTurn && view.canGuess;
   const canPass = myTurn && view.canPass;
 
-  // The guess box's aim — no default, as in Solo. Kept only while it still points at something
-  // open and a Guess is allowed (derived, not synced).
-  const [chosenTarget, setChosenTarget] = useState<GuessTarget | null>(null);
-  const target = canGuess && chosenTarget && isOpenTarget(view, chosenTarget) ? chosenTarget : null;
-  const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [refusal, setRefusal] = useState<string | null>(null);
 
@@ -112,20 +102,11 @@ const DuelBoard = ({
     }
   };
 
-  const handleSelectTarget = (next: GuessTarget) => {
-    setChosenTarget(next);
-    setRefusal(null);
-    requestAnimationFrame(() => document.getElementById("duel-guess")?.focus());
-  };
-
-  const handleGuess = async (event: React.FormEvent) => {
-    event.preventDefault();
-    const trimmed = text.trim();
-    if (!target || !trimmed || busy) return;
-    if (await act(() => onGuess(target, trimmed))) {
-      setText("");
-      setChosenTarget(null);
-    }
+  // Right or wrong arrives as the next view (`lastUpdate`), not as the invoke's answer, so the
+  // slot learns only that the Guess went through: it clears, and the feedback line says the rest.
+  const handleGuess = async (target: GuessTarget, text: string): Promise<GuessOutcome> => {
+    if (busy) return undefined;
+    return (await act(() => onGuess(target, text))) ? null : undefined;
   };
 
   const prompt = turnPrompt(view, mySeat);
@@ -169,7 +150,9 @@ const DuelBoard = ({
         ) : (
           <>
             {remaining !== null && (
-              <BoardTimer remainingMs={remaining} totalSeconds={view.turnSeconds} lowAtMs={10_000} label="Time left in this turn" />
+              <div className="flex justify-center">
+                <BoardTimer remainingMs={remaining} totalSeconds={view.turnSeconds} lowAtMs={10_000} label="Time left in this turn" />
+              </div>
             )}
             <p aria-live="polite" className="text-center text-sm font-medium text-muted-foreground">
               {prompt}
@@ -179,43 +162,17 @@ const DuelBoard = ({
 
         <AssociationBoard
           view={view}
-          target={target}
           onOpenTile={canOpen ? (tileId) => void act(() => onOpenTile(tileId)) : undefined}
-          onSelectTarget={canGuess ? handleSelectTarget : undefined}
-          beckon={canGuess && !target}
+          onGuess={canGuess ? handleGuess : undefined}
           busy={busy}
         />
 
         {!view.isOver && (
-          <form onSubmit={handleGuess} className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <div className="flex-1">
-              <Input
-                id="duel-guess"
-                aria-label={target ? `Guess ${targetLabel(target)}` : "Guess"}
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                maxLength={MAX_GUESS_LENGTH}
-                autoComplete="off"
-                placeholder={
-                  !myTurn
-                    ? "Wait for your turn"
-                    : target
-                      ? `Your guess for ${targetLabel(target)}`
-                      : canGuess
-                        ? "Pick a column or the final first"
-                        : "Open a tile first"
-                }
-                disabled={!target}
-                variant="settings"
-              />
-            </div>
-            <Button type="submit" disabled={!target || !text.trim() || busy}>
-              <Send className="mr-1 h-4 w-4" /> Guess
-            </Button>
-            <Button type="button" variant="outline" disabled={!canPass || busy} onClick={() => void act(onPass)}>
+          <div className="flex justify-end">
+            <Button type="button" variant="outline" size="sm" disabled={!canPass || busy} onClick={() => void act(onPass)}>
               <SkipForward className="mr-1 h-4 w-4" /> Pass
             </Button>
-          </form>
+          </div>
         )}
 
         <p

@@ -72,7 +72,7 @@ describe("turnPrompt", () => {
   test("on your turn it says what the turn allows", () => {
     expect(turnPrompt(view(), 0)).toBe("Your turn — open a tile.");
     expect(turnPrompt(view({ canOpen: false, canGuess: true, canPass: true }), 0)).toBe(
-      "Guess any column or the final — or pass.",
+      "Type a guess into any column or the final — or pass.",
     );
   });
 

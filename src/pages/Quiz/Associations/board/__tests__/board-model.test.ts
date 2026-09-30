@@ -1,5 +1,7 @@
-import type { AssociationGameView } from "@/types/association-types";
+import type { AssociationGameView, AssociationMoveView } from "@/types/association-types";
 import {
+  clockReadout,
+  coachStep,
   describeMove,
   elapsedLabel,
   formatClock,
@@ -84,6 +86,15 @@ describe("formatClock", () => {
   });
 });
 
+describe("clockReadout", () => {
+  test("minutes and seconds from a minute up, plain seconds under it — as a Classic question shows them", () => {
+    expect(clockReadout(240_000)).toEqual({ value: "4:00", unit: "min" });
+    expect(clockReadout(59_001)).toEqual({ value: "1:00", unit: "min" });
+    expect(clockReadout(59_000)).toEqual({ value: "59", unit: "sec" });
+    expect(clockReadout(0)).toEqual({ value: "0", unit: "sec" });
+  });
+});
+
 describe("labels", () => {
   test("a tile is named by its column and 1-based position", () => {
     expect(tileLabel(view(), 7)).toBe("B3");
@@ -128,5 +139,46 @@ describe("scoreBreakdown", () => {
 
     expect(rows.map((r) => r.how)).toEqual(["guessed", "with the final", "with the final", "with the final", "guessed"]);
     expect(rows.filter((r) => r.countsTowardScore).reduce((sum, r) => sum + r.points, 0)).toBe(v.score);
+  });
+});
+
+describe("coachStep", () => {
+  const move = (seq: number, overrides: Partial<AssociationMoveView>): AssociationMoveView => ({
+    seq,
+    seat: 0,
+    kind: "OpenTile",
+    tileId: null,
+    target: null,
+    guessText: null,
+    isCorrect: null,
+    points: 0,
+    at: "2026-09-23T12:00:10Z",
+    ...overrides,
+  });
+
+  test("before any tile is opened it points at the first closed tile", () => {
+    expect(coachStep(view(), false)).toEqual({ kind: "tile", tileId: 1 });
+  });
+
+  test("once a tile is open and a guess earned, it points at that tile's column", () => {
+    const v = view({ canGuess: true, moves: [move(1, { tileId: 6 })] });
+    v.columns[1].tiles[1] = { ...v.columns[1].tiles[1], isOpen: true, text: "Colosseum" };
+    expect(coachStep(v, false)).toEqual({ kind: "guess", target: "B" });
+  });
+
+  test("a solved column sends it to the next open target", () => {
+    const v = view({ canGuess: true, moves: [move(1, { tileId: 1 })] });
+    v.columns[0].solved = true;
+    expect(coachStep(v, false)).toEqual({ kind: "guess", target: "B" });
+  });
+
+  test("the first guess, a dismissal or the end of the game ends it", () => {
+    const guessed = view({
+      canGuess: true,
+      moves: [move(1, { tileId: 1 }), move(2, { kind: "Guess", target: "A", guessText: "x", isCorrect: false })],
+    });
+    expect(coachStep(guessed, false)).toBeNull();
+    expect(coachStep(view(), true)).toBeNull();
+    expect(coachStep(view({ isOver: true }), false)).toBeNull();
   });
 });
