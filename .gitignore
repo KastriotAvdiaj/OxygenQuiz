@@ -85,3 +85,8 @@ graphify-out/
 *.user
 # Cloudflare Wrangler local state and temp build output
 .wrangler/
+
+# Visual Studio state under OxygenBackend/ (the solution-level .vs/), and user-uploaded
+# images: runtime data, not source. The csproj's <Folder> entry keeps wwwroot/uploads existing.
+/OxygenBackend/.vs/
+/OxygenBackend/QuizAPI/wwwroot/uploads/

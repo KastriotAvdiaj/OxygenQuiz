@@ -1,5 +1,4 @@
 ﻿using QuizAPI.DTOs.Question;
-using QuizAPI.DTOs.Shared;
 using QuizAPI.Filtering;
 using QuizAPI.Models;
 
