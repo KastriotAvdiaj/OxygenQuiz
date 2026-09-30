@@ -299,7 +299,7 @@ admin area's 404s). The root is the floor, not a ceiling.
 |---|---|
 | Stale chunk (`ChunkLoadError`, "failed to fetch dynamically imported module") | "A new version is available" + Reload |
 | `isRouteErrorResponse` 404 | The app's not-found page |
-| Anything else | `MainErrorFallback` — "Something went wrong", Refresh / Go Home |
+| Anything else | `MainErrorFallback` — "Something went wrong", Refresh / Go home |
 
 The stale-chunk case earns its own branch because it's the most common error right after
 a deploy: a user with an old tab open requests a hashed bundle that no longer exists. It
@@ -307,7 +307,7 @@ is entirely fixed by reloading, so telling them that beats a generic apology.
 
 ### Error details: hidden from users, reachable on demand
 
-Normal users never see the underlying error — it's noise at best and a leak at worst. The card
+Normal users never see the underlying error — it's noise at best and a leak at worst. The screen
 shows the friendly copy and nothing else.
 
 But the console is unreachable on a phone, and on iOS the only official way in is Safari Web
@@ -328,13 +328,39 @@ frames, and the current URL. No request bodies, no user object, no tokens. `desc
 normalises whatever was thrown — route errors are typed `unknown`, so a `Response`, a string or
 a plain object all have to render as something better than `[object Object]`.
 
-### Sizing
+### The error screens
 
-All three error screens (`MainErrorFallback`, `StaleVersionNotice`, `NotFoundContent`) share one
-scale: `max-w-xs` and reduced type on phones, stepping up to `max-w-md` and full size at `sm`.
-They're rendered in the display font (`getErrorFontClass`), which is large and wide — at full
-desktop sizing on a phone the card ran edge to edge and read as a broken page rather than a
-message. Keep the three in step if you restyle one.
+Every error screen shares one layout, `ErrorScreen` (`src/pages/UtilityPages/Error-Screen.tsx`),
+since 2026-09-30 — **no card**: the page itself is the message. A hero on top, a large title
+(`text-3xl` → `sm:text-5xl` → `lg:text-6xl`, `text-balance`), a muted line of explanation
+(`text-base` → `lg:text-xl`), then the actions (`ErrorAction`: a `LiftedButton`, or the muted
+secondary one the landing page also uses). Everything is centred and rises in with a short
+stagger (none under reduced motion). The font is the error font zone (`getErrorFontClass`).
+
+| Screen | Hero | Actions |
+|---|---|---|
+| 404 (`NotFoundRoute`) | "404" with a spinning desk globe as the 0 (`FourOhFour`) | Back home · Browse quizzes |
+| Dashboard not-found (`DashboardErrorElement`) | the same "404" | Go to Dashboard |
+| Crash (`MainErrorFallback`) | `ErrorBadge` with a bug | Refresh page · Go home, then the error details |
+| Stale version (`StaleVersionNotice`) | `ErrorBadge` with a sparkle — it's good news | Reload |
+| Access denied (`AccessDeniedPage`) | `ErrorBadge` with a lock | Back home |
+
+- **`ErrorBadge`** is a big tilted icon chip with the `--primary-edge` ledge the app's pushable
+  surfaces use (`ModeCard` chips, `LiftedButton`), floating gently.
+- **The 404 globe** (`src/components/globe/desk-globe.tsx`) is a flat desk globe — primary ocean,
+  lighter land, deep-blue ring and stand, a halo — spun with d3-geo over the shared land data
+  (`src/components/globe/land.ts`, also used by the landing page's globe). It is lazy and never
+  fatal: until it loads, and if its chunk can't load at all (a stale tab after a deploy), the "0"
+  is a plain 0. The digits are `clamp(6.5rem, 30vw, 17rem)`; the globe is sized in `em` against
+  them.
+- **`ErrorScreen` is router-free.** `MainErrorFallback` also renders from the top-level
+  `ErrorBoundary` in `Provider.tsx`, outside `RouterProvider`, so nothing in the shared layout may
+  use a router hook or `<Link>`; screens that are inside the router pass `<Link>`s in `actions`.
+- `fullViewport` (default) makes the screen its own scroll container (`app-shell-viewport`); the
+  dashboard's not-found passes `false`, since the dashboard layout already scrolls.
+
+Until 2026-09-30 each screen was a small centred card (`max-w-xs` → `max-w-md`) with reduced
+type on phones.
 
 ## What error boundaries do *not* catch
 
@@ -366,7 +392,9 @@ throwing.
 | The `AppException` family | `OxygenBackend/QuizAPI/Exeptions/AppExceptions.cs` |
 | Legacy `{ message, isCustomMessage }` shape | `OxygenBackend/QuizAPI/Controllers/BaseApiController.cs` |
 | Root route error element | `src/pages/UtilityPages/Error/Route-Error-Element.tsx` |
-| Friendly crash card | `src/pages/UtilityPages/Error/Main-Error-Boundary.tsx` |
+| Friendly crash screen | `src/pages/UtilityPages/Error/Main-Error-Boundary.tsx` |
+| Shared error-screen layout (`ErrorScreen`, `ErrorBadge`, `ErrorAction`) | `src/pages/UtilityPages/Error-Screen.tsx` |
+| The 404 and its globe | `src/pages/UtilityPages/NotFound/`, `src/components/globe/desk-globe.tsx` |
 | Dashboard-specific overrides | `src/pages/UtilityPages/Error/Dashboard-Error-Element.tsx` |
 | Non-router boundary | `src/Provider.tsx` |
 | Route tree / root wrapper | `src/routes/Router.tsx` |

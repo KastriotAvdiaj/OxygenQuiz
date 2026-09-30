@@ -1,42 +1,55 @@
 import { Link } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { LiftedButton } from "@/common/LiftedButton";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, FolderOpen } from "lucide-react";
+import { ErrorAction, ErrorScreen } from "../Error-Screen";
+import { FourOhFour } from "./Four-Oh-Four";
 
 interface NotFoundContentProps {
   title?: string;
   message?: string;
   linkText?: string;
   linkTo?: string;
+  /** A second, quieter way out — the public 404 offers the quiz list. */
+  secondary?: { text: string; to: string };
+  /** Standalone page (its own scroll container) or inside a layout that has one. */
+  fullViewport?: boolean;
 }
 
-// This is the reusable UI for any "Not Found" scenario
+/**
+ * Every "not found": the globe "404" (`FourOhFour`), a title, a line of explanation and a way
+ * back. Used by the app's 404 route (`NotFoundRoute`) and by the dashboard's resource-not-found
+ * (`DashboardErrorElement`). Layout from `ErrorScreen` — no card.
+ */
 export const NotFoundContent = ({
-  title = "404 - Not Found",
+  title = "Page not found",
   message = "Sorry, the page or resource you're looking for doesn't exist.",
   linkText = "Go back to a safe place",
   linkTo = "/",
-}: NotFoundContentProps) => {
-  // Sizing matches the other error screens (MainErrorFallback, StaleVersionNotice): a compact
-  // card on phones rather than a full-width block of oversized display type.
-  return (
-    <Card className="w-full max-w-xs text-center shadow-lg font-quiz sm:max-w-md">
-      <CardHeader className="p-4 pb-2 sm:p-6 sm:pb-4">
-        <CardTitle className="text-lg font-bold leading-tight sm:text-3xl">
-          {title}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4 p-4 pt-0 sm:space-y-6 sm:p-6 sm:pt-0">
-        <p className="text-xs leading-relaxed text-muted-foreground sm:text-sm mb-6">
-          {message}
-        </p>
-        <Link to={linkTo}>
-          <LiftedButton className="w-full text-sm sm:text-base">
-            <ArrowLeft className="h-3.5 w-3.5 transition-transform group-hover:-translate-x-0.5" />
+  secondary,
+  fullViewport = true,
+}: NotFoundContentProps) => (
+  <ErrorScreen
+    fullViewport={fullViewport}
+    hero={<FourOhFour />}
+    title={title}
+    message={message}
+    actions={
+      <>
+        {/* tabIndex -1 on the links: the button inside is the focus stop, not both. */}
+        <Link to={linkTo} tabIndex={-1}>
+          <ErrorAction>
+            <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
             {linkText}
-          </LiftedButton>
+          </ErrorAction>
         </Link>
-      </CardContent>
-    </Card>
-  );
-};
+        {secondary && (
+          <Link to={secondary.to} tabIndex={-1}>
+            <ErrorAction secondary>
+              <FolderOpen className="h-4 w-4 sm:h-5 sm:w-5" />
+              {secondary.text}
+            </ErrorAction>
+          </Link>
+        )}
+      </>
+    }
+  />
+);

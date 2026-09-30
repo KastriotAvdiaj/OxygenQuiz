@@ -1,15 +1,12 @@
 import { NotFoundContent } from "./Not-Found-Content";
-import { getErrorFontClass } from "../errorFontZone";
 
-export const NotFoundRoute = () => {
-  return (
-    <div
-      className={`${getErrorFontClass()} app-shell-viewport flex items-center justify-center bg-background p-6 sm:p-8`}>
-      <NotFoundContent
-        message="Oops! The page you're looking for doesn't exist. It might have been moved or deleted."
-        linkText="Go back to Home Page"
-        linkTo="/"
-      />
-    </div>
-  );
-};
+/** The app's 404 route: unmatched URLs, and thrown 404 responses (RouteErrorElement). */
+export const NotFoundRoute = () => (
+  <NotFoundContent
+    title="Page not found"
+    message="We looked everywhere — even the other side of the world. This page may have moved, or it never existed."
+    linkText="Back home"
+    linkTo="/"
+    secondary={{ text: "Browse quizzes", to: "/choose-quiz" }}
+  />
+);

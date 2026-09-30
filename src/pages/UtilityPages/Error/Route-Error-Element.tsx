@@ -1,10 +1,8 @@
 import { useRouteError, isRouteErrorResponse } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { RefreshCcw } from "lucide-react";
-import { LiftedButton } from "@/common/LiftedButton";
+import { RefreshCcw, Sparkles } from "lucide-react";
 import { NotFoundRoute } from "../NotFound/Not-Found";
 import { MainErrorFallback } from "./Main-Error-Boundary";
-import { getErrorFontClass } from "../errorFontZone";
+import { ErrorAction, ErrorBadge, ErrorScreen } from "../Error-Screen";
 
 /**
  * The app-wide route error element.
@@ -33,33 +31,20 @@ const isChunkLoadError = (error: unknown): boolean => {
   );
 };
 
-// Sizing mirrors MainErrorFallback so the two error screens feel like one family on a phone:
-// a compact card with room around it, not a full-bleed page. See that file for the reasoning.
+// Good news rather than a failure, so a sparkle rather than a warning.
 const StaleVersionNotice = () => (
-  <div
-    className={`${getErrorFontClass()} app-shell-viewport flex w-full items-center justify-center bg-background p-6 sm:p-8`}
+  <ErrorScreen
     role="alert"
-  >
-    <Card className="w-full max-w-xs border bg-background text-center shadow-lg sm:max-w-md dark:border-muted dark:bg-primary/10">
-      <CardHeader className="p-4 pb-2 sm:p-6 sm:pb-4">
-        <CardTitle className="text-lg font-bold leading-tight sm:text-2xl">
-          A new version is available
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3 p-4 pt-0 sm:space-y-4 sm:p-6 sm:pt-0">
-        <p className="text-xs leading-relaxed text-muted-foreground sm:text-sm">
-          The app was updated while this tab was open. Reload to get the latest version —
-          your progress is saved.
-        </p>
-        <div className="mx-auto w-fit pt-1 sm:pt-2">
-          <LiftedButton onClick={() => window.location.reload()} className="text-sm sm:text-base">
-            <RefreshCcw className="mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
-            Reload
-          </LiftedButton>
-        </div>
-      </CardContent>
-    </Card>
-  </div>
+    hero={<ErrorBadge icon={Sparkles} />}
+    title="A new version is available"
+    message="The app was updated while this tab was open. Reload to get the latest version — your progress is saved."
+    actions={
+      <ErrorAction onClick={() => window.location.reload()}>
+        <RefreshCcw className="h-4 w-4 sm:h-5 sm:w-5" />
+        Reload
+      </ErrorAction>
+    }
+  />
 );
 
 export const RouteErrorElement = () => {
@@ -70,7 +55,7 @@ export const RouteErrorElement = () => {
   // A thrown Response (loader `throw new Response(...)`) or an unmatched URL.
   if (isRouteErrorResponse(error) && error.status === 404) return <NotFoundRoute />;
 
-  // Everything else: the friendly "Something went wrong" card. It already hides the
+  // Everything else: the friendly "Something went wrong" screen. It already hides the
   // stack outside development and offers Refresh / Go Home.
   return (
     <MainErrorFallback

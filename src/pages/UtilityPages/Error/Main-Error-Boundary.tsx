@@ -1,9 +1,7 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FallbackProps } from "react-error-boundary";
-import { Check, ChevronDown, Copy, Home, RefreshCcw } from "lucide-react";
-import { LiftedButton } from "@/common/LiftedButton";
-import { getErrorFontClass } from "../errorFontZone";
+import { Bug, Check, ChevronDown, Copy, Home, RefreshCcw } from "lucide-react";
+import { ErrorAction, ErrorBadge, ErrorScreen } from "../Error-Screen";
 
 const isDevelopment = import.meta.env.DEV;
 
@@ -89,96 +87,81 @@ export const MainErrorFallback: React.FC<FallbackProps> = ({
     }
   };
 
+  // Rendered by the app's top-level ErrorBoundary too, outside the router: plain buttons and
+  // window.location, never <Link>.
   return (
-    <div
-      className={`${getErrorFontClass()} app-shell-viewport flex w-full items-center justify-center bg-background p-6 sm:p-8`}
+    <ErrorScreen
       role="alert"
+      hero={<ErrorBadge icon={Bug} />}
+      title="Something went wrong"
+      message="We're sorry — something unexpected happened on our side. Reloading usually fixes it."
+      actions={
+        <>
+          <ErrorAction
+            onClick={() => {
+              resetErrorBoundary();
+              window.location.reload();
+            }}
+          >
+            <RefreshCcw className="h-4 w-4 sm:h-5 sm:w-5" />
+            Refresh page
+          </ErrorAction>
+          <ErrorAction secondary onClick={() => (window.location.href = "/")}>
+            <Home className="h-4 w-4 sm:h-5 sm:w-5" />
+            Go home
+          </ErrorAction>
+        </>
+      }
     >
-      {/* max-w-xs on phones: the card should read as a card, not a full-bleed page. The step up
-          to max-w-md only once there's room for it keeps the measure comfortable at both ends. */}
-      <Card className="w-full max-w-xs sm:max-w-md text-center border shadow-lg bg-background dark:border-muted dark:bg-primary/10">
-        <CardHeader className="p-4 pb-2 sm:p-6 sm:pb-4">
-          <CardTitle className="mt-3 text-lg font-bold leading-tight sm:mt-4 sm:text-2xl">
-            Something went wrong
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3 p-4 pt-0 sm:space-y-4 sm:p-6 sm:pt-0">
-          <p className="text-xs leading-relaxed text-muted-foreground sm:text-sm">
-            We're sorry — something unexpected happened. Reloading usually
-            helps.
-          </p>
+      {showDetailsAffordance && (
+        <div className="text-left">
+          <button
+            type="button"
+            onClick={() => setShowDetails((prev) => !prev)}
+            aria-expanded={showDetails}
+            className="flex w-full items-center justify-between gap-2 rounded-md px-1 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground sm:text-sm"
+          >
+            <span>{showDetails ? "Hide" : "Show"} error details</span>
+            <ChevronDown
+              className={`h-3.5 w-3.5 shrink-0 transition-transform ${showDetails ? "rotate-180" : ""}`}
+            />
+          </button>
 
-          {showDetailsAffordance && (
-            <div className="text-left">
+          {showDetails && (
+            <div className="mt-1 space-y-2">
+              <div className="rounded-md bg-red-50 p-2.5 dark:bg-red-950">
+                <p className="break-words font-mono text-xs leading-relaxed text-red-800 dark:text-red-200">
+                  {message}
+                </p>
+              </div>
+
+              {trimmedStack && (
+                <pre className="overflow-x-auto rounded-md bg-red-50 p-2.5 font-mono text-[11px] leading-relaxed text-red-800 dark:bg-red-950 dark:text-red-200">
+                  {trimmedStack}
+                </pre>
+              )}
+
+              {/* Selecting text is painful on a phone, and this is exactly the text you want
+                  to send yourself when the crash only reproduces on mobile. */}
               <button
                 type="button"
-                onClick={() => setShowDetails((prev) => !prev)}
-                aria-expanded={showDetails}
-                className="flex w-full items-center justify-between gap-2 rounded-md px-1 py-1.5 text-[11px] font-semibold text-muted-foreground transition-colors hover:text-foreground sm:text-xs"
+                onClick={handleCopy}
+                className="flex items-center gap-1.5 rounded-md px-1 py-1 text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground"
               >
-                <span>{showDetails ? "Hide" : "Show"} error details</span>
-                <ChevronDown
-                  className={`h-3.5 w-3.5 shrink-0 transition-transform ${showDetails ? "rotate-180" : ""}`}
-                />
+                {copied ? (
+                  <>
+                    <Check className="h-3 w-3" /> Copied
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-3 w-3" /> Copy details
+                  </>
+                )}
               </button>
-
-              {showDetails && (
-                <div className="mt-1 space-y-2">
-                  <div className="rounded-md bg-red-50 p-2.5 dark:bg-red-950">
-                    <p className="break-words font-mono text-[11px] leading-relaxed text-red-800 dark:text-red-200">
-                      {message}
-                    </p>
-                  </div>
-
-                  {trimmedStack && (
-                    <pre className="overflow-x-auto rounded-md bg-red-50 p-2.5 font-mono text-[10px] leading-relaxed text-red-800 dark:bg-red-950 dark:text-red-200">
-                      {trimmedStack}
-                    </pre>
-                  )}
-
-                  {/* Selecting text is painful on a phone, and this is exactly the text you want
-                      to send yourself when the crash only reproduces on mobile. */}
-                  <button
-                    type="button"
-                    onClick={handleCopy}
-                    className="flex items-center gap-1.5 rounded-md px-1 py-1 text-[11px] font-semibold text-muted-foreground transition-colors hover:text-foreground"
-                  >
-                    {copied ? (
-                      <>
-                        <Check className="h-3 w-3" /> Copied
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="h-3 w-3" /> Copy details
-                      </>
-                    )}
-                  </button>
-                </div>
-              )}
             </div>
           )}
-
-          <div className="mx-auto flex w-full flex-col gap-2 pt-1 sm:gap-3 sm:pt-2">
-            <LiftedButton
-              onClick={() => {
-                resetErrorBoundary();
-                window.location.reload();
-              }}
-              className="w-full text-sm sm:text-base"
-            >
-              <RefreshCcw className="mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              Refresh Page
-            </LiftedButton>
-            <LiftedButton
-              onClick={() => (window.location.href = "/")}
-              className="w-full bg-background border border-foreground/30 text-sm text-foreground sm:text-base"
-              liftColor="muted"
-            >
-              <Home className="mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" /> Go Home
-            </LiftedButton>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+        </div>
+      )}
+    </ErrorScreen>
   );
 };

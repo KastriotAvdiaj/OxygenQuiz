@@ -1,8 +1,8 @@
 import { useEffect, useRef } from "react";
 import { geoGraticule10, geoOrthographic, geoPath } from "d3-geo";
-import { feature } from "topojson-client";
 import { useReducedMotion } from "framer-motion";
 import { cn } from "@/utils/cn";
+import { loadLand } from "@/components/globe/land";
 import { createConnections, type VisibleBox } from "./globe-connections";
 
 /** The drawing's own coordinate space; the element is sized by `className`. */
@@ -87,9 +87,8 @@ export default function LineGlobe({
     const path = geoPath(projection);
     const graticule = geoGraticule10();
 
-    import("world-atlas/land-110m.json").then(({ default: atlas }) => {
+    loadLand().then((land) => {
       if (cancelled) return;
-      const land = feature(atlas, atlas.objects.land);
 
       const draw = (longitude: number) => {
         projection.rotate([longitude, TILT, 0]);

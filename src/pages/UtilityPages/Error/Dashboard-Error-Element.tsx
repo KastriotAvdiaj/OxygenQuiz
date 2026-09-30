@@ -2,7 +2,6 @@ import { useRouteError, isRouteErrorResponse } from "react-router-dom";
 import { NotFoundContent } from "../NotFound/Not-Found-Content";
 import { NotFoundRoute } from "../NotFound/Not-Found";
 import { MainErrorFallback } from "./Main-Error-Boundary";
-import { getErrorFontClass } from "../errorFontZone";
 
 export const DashboardErrorElement = () => {
   const error = useRouteError();
@@ -16,14 +15,13 @@ export const DashboardErrorElement = () => {
 
   if (isRouteErrorResponse(error) && error.status === 404) {
     return (
-      <div className={`${getErrorFontClass()} flex h-full w-full items-center justify-center p-4`}>
-        <NotFoundContent
-          title="Resource Not Found"
-          message={`"The item you are looking for (e.g., a quiz or question) could not be found. It may have been deleted." ${error.statusText}`}
-          linkText="Go to Dashboard"
-          linkTo="/dashboard"
-        />
-      </div>
+      <NotFoundContent
+        fullViewport={false}
+        title="Not found"
+        message="The quiz or question you're looking for couldn't be found. It may have been deleted."
+        linkText="Go to Dashboard"
+        linkTo="/dashboard"
+      />
     );
   }
 
