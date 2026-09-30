@@ -23,4 +23,14 @@ export default tseslint.config({
       { allowConstantExport: true },
     ],
   },
+}, {
+  // The Playwright suite runs in Node, not React. Its fixtures receive a callback named `use`,
+  // which the hooks rule mistakes for React's `use()` hook.
+  files: ['e2e/**/*.ts', 'playwright.config.ts'],
+  languageOptions: {
+    globals: globals.node,
+  },
+  rules: {
+    'react-hooks/rules-of-hooks': 'off',
+  },
 })

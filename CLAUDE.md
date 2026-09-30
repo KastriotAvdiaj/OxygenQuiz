@@ -108,6 +108,22 @@ Full version, including the two failure modes this project has actually hit:
 - **Validate lookups after the ownership lookup, not before,** for the same reason: failing
   on a bad category id before checking ownership leaks whether the question exists.
 
+## Tests
+
+Three suites: backend xUnit, frontend Vitest (`--project unit`), and Playwright end-to-end in
+`e2e/`. Which one a test belongs in, and how each is written: [`docs/development/testing.md`](docs/development/testing.md)
+and [`docs/development/e2e-testing.md`](docs/development/e2e-testing.md).
+
+- **E2E tests are for the seams** — SPA ↔ API, cookies, route guards, whole journeys. A branch of
+  one function's logic is a unit test. One E2E test per journey, not per edge case.
+- **E2E tests make their own data through the API** (`e2e/support/api.ts` fixtures), under unique
+  names, and never touch the database. The E2E stack has its own ports and database; settings it
+  needs go in `e2e/support/stack.ts`, never a local appsettings or user-secrets.
+- **Locators are what a user sees** — role and name, then label, placeholder, text. No CSS classes,
+  no positions (answer options are shuffled), no `waitForTimeout`.
+- **A new test has failed at least once** with the behaviour it protects broken, and passed
+  `--repeat-each 5 --workers 4`. Add its row to the inventory in the doc in the same change.
+
 ## graphify
 
 This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.

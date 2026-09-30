@@ -86,6 +86,13 @@ graphify-out/
 # Cloudflare Wrangler local state and temp build output
 .wrangler/
 
+# Playwright end-to-end runs (docs/development/e2e-testing.md): the HTML report, traces and
+# screenshots of the last run, and the PEM export of the dev certificate the E2E SPA serves.
+/playwright-report/
+/test-results/
+/playwright/.cache/
+/e2e/.tls/
+
 # Visual Studio state under OxygenBackend/ (the solution-level .vs/), and user-uploaded
 # images: runtime data, not source. The csproj's <Folder> entry keeps wwwroot/uploads existing.
 /OxygenBackend/.vs/
