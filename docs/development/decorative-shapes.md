@@ -1,18 +1,28 @@
 # Decorative shapes
 
 Flat shapes in the theme's primary colour behind the content of player-facing pages — the
-landing page's wave was the first. **None are in use now**: the wave was removed on 2026-09-28
-([`../home/landing-page.md`](../home/landing-page.md), "How it got here" §4), the same day as the
-last `Blob`s below. This page keeps what they taught, for the next one.
+landing page's wave was the first. The wave and the `Blob`s below were both removed on 2026-09-28
+([`../home/landing-page.md`](../home/landing-page.md), "How it got here" §4); the landing page's
+**line globe** (2026-09-29) is the one in use now. This page keeps what they taught.
 They live in `src/components/shapes/`, one component per shape. Each one is decoration only:
 `aria-hidden`, `pointer-events-none`, never carrying information, and **text never sits on
 it** — muted or foreground text on primary is unreadable in both themes.
 
 ## Where they are
 
-None. `/` and `/choose-quiz` sit on their plain page backgrounds, and `src/components/shapes/`
-is gone — the last shared shape, `Blob`, was retired on 2026-09-28 (below). The landing wave's
-files are in `_to_delete/wave/`.
+| Page | Shape | How |
+|---|---|---|
+| `/` | The line globe, risen over the bottom edge behind the secondary buttons | `pages/Home/hero/line-globe.tsx`, placed by `Home.tsx` — see [`landing-page.md`](../home/landing-page.md#the-globe) |
+
+`/choose-quiz` sits on its plain page background, and `src/components/shapes/` is gone — the last
+shared shape, `Blob`, was retired on 2026-09-28 (below). The landing wave's files are in
+`_to_delete/wave/`.
+
+The globe keeps the rules below: it is out of flow and under the content (`z-0` against the
+pitch's `z-10`), its land is a 45% tint rather than solid primary, and the only things that sit
+over its top edge are the secondary buttons — opaque surfaces — and the small "or" divider. (The
+404 page's desk globe is a picture, not a background shape: it *is* the "0" — see
+[`error-handling.md`](./error-handling.md), "The error screens".)
 
 ## `Blob` (retired 2026-09-28)
 

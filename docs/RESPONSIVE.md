@@ -610,7 +610,7 @@ freshly fetched question.
 | `ui/dialog/dialog.tsx` | `w-full` → `w-[calc(100%-2rem)] sm:w-full`; `sm:rounded-lg` → `rounded-lg`; added dvh height cap + `overflow-y-auto` | Dialogs were full-bleed square rectangles on phones |
 | `Login.tsx`, `Signup.tsx` | `px-5` → `px-6` on phones | Form ran almost edge to edge; now matches the dialog gutter |
 | `Login.tsx`, `Signup.tsx` | Branding hero `hidden sm:flex` + `sm:h-[30vh]` → `hidden lg:flex` | The panel only sits *beside* the form at lg. Below that the parent is `flex-col`, so it stacked on top as a 30vh band, pushing the form down and eating the vertical space the form needed — worst on short landscape tablets. Branding that has to shove the form off-screen to introduce itself is not earning its place, so it is dropped rather than shrunk. Both auth pages now have exactly one breakpoint: < lg is a single centered form, lg+ is the two-column layout — the same lg the control row already switched on |
-| `UtilityPages/Error/*`, `NotFound-Content` | `max-w-xs sm:max-w-md`, reduced type/padding below `sm` | Rendered in the display font at desktop sizing, the error card filled a phone screen and read as a broken page |
+| `UtilityPages/Error/*`, `NotFound-Content` | `max-w-xs sm:max-w-md`, reduced type/padding below `sm` | Rendered in the display font at desktop sizing, the error card filled a phone screen and read as a broken page. *(Superseded 2026-09-30: the error screens have no card now — fluid type that steps up with the screen, see [`development/error-handling.md`](development/error-handling.md), "The error screens".)* |
 
 ## What changed in the Aug 2 2026 pass
 

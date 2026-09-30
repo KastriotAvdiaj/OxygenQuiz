@@ -130,10 +130,11 @@ module.exports = {
   			'quiz-text-primary': 'hsl(var(--quiz-text-primary))',
   			'quiz-text-secondary': 'hsl(var(--quiz-text-secondary))',
   			'quiz-shadow': 'hsl(var(--quiz-shadow))',
-  			// The landing page's accent (src/pages/Home): the amber "answers." turns on the blue
-  			// wave. Warm, so it stands out against the blue, and one value for both themes —
-  			// it sits on the wave, which doesn't change with the theme either. It was the Play
-  			// button's colour too until 2026-09-22; see docs/home/landing-page.md.
+  			// The landing page's accent (src/pages/Home): the amber connection arcs on the globe.
+  			// Warm, so it stands out against the blue land, and one value for both themes — it
+  			// sits on the globe's primary tint in either. Earlier it was "answers." on the blue
+  			// wave (gone 2026-09-28) and the Play button (until 2026-09-22); see
+  			// docs/home/landing-page.md.
   			cta: {
   				DEFAULT: '#fbbf24'
   			}

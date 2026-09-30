@@ -73,7 +73,7 @@ the **manual** builder's questions-first path, which is deliberately non-atomic 
 
 | File | Responsibility | Must NOT do |
 |---|---|---|
-| `create-quiz-method-dialog.tsx` | Offer the manual/AI fork; route-agnostic (paths are props) | Any AI logic; hard-code a dashboard prefix |
+| `create-quiz-method-dialog.tsx` | Ask what kind of quiz, then manual or AI, then the AI's source (ai-quiz-two-paths.md §2a); route-agnostic (paths are props) | Any AI logic; hard-code a dashboard prefix |
 | `AI-Quiz/prompt.ts` | Build the copy-only prompt string | Render prompt to screen; include entity IDs |
 | `AI-Quiz/parse-ai-output.ts` | Extract + validate + resolve AI JSON into builder types | Any network/DB call; create entities |
 | `AI-Quiz/use-ai-quiz-draft.tsx` | The half both AI paths share: queries, request state, reply → parse → prefilled `builderSlot` | Know which path is rendering it; own a generate call or a clipboard |

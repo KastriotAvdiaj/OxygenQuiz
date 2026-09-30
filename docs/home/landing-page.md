@@ -55,8 +55,8 @@ flat pill that was always the inverse of the secondaries (navy/white in light, w
 `LiftedButton` draws its edge by darkening its own colour, which works for the theme blue but not
 for a near-black or white face. Before that it was amber (`cta`) with a white label (~1.7:1,
 held up by a text shadow). With the wave gone, a blue `LiftedButton` reads fine, so the owner
-asked for the old Explore look back, and the secondaries followed it. The `cta` token is
-unused now.
+asked for the old Explore look back, and the secondaries followed it. The `cta` amber now colours
+only the globe's connection arcs (below).
 
 ## The globe
 
@@ -78,6 +78,16 @@ Decoration only: `aria-hidden`, no pointer events, unselectable.
   that decays into a slow, endless drift of 6°/second. The view is centred at 15°S so the visible
   top band is the land-heavy northern mid-latitudes. Under reduced motion it is drawn once and
   never moves.
+- **Games across the world** (`globe-connections.ts`): amber (`cta`) arcs between ~30 real cities
+  (Prishtina among them). Every 1.2s a new one is tried, at most three at a time: it lifts off the
+  surface between two cities (higher the further apart), draws over ~1.1s with a travelling dot,
+  lands with a small pulse, holds, and fades out by 3.2s. Both ends must be on the visible part of
+  the globe — facing the viewer and inside the box `Home.tsx` reports as on-screen (`visible`: the
+  top share above the fold, and on a phone only the middle, since the globe is wider than the page)
+  — so an arc never runs off-screen. Dot and pulse sizes are in pixels, converted from the
+  drawing's units each frame. Arcs start only after the pop-in and never under reduced motion.
+  Chosen over "a rocket orbiting it": the arcs say multiplayer; an orbit would be mostly hidden
+  below the fold.
 - **Drawn with d3-geo** (`geoOrthographic`) from Natural Earth's 1:110m land outlines
   (`world-atlas/land-110m.json`, ~55KB TopoJSON, turned into GeoJSON by `topojson-client`), loaded
   and cached by `src/components/globe/land.ts` — shared with the 404 page's globe.
