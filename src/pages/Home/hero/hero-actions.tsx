@@ -21,7 +21,8 @@ export function HeroActions() {
 
       <OrDivider className="text-muted-foreground" />
 
-      <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4">
+      {/* data-globe-anchor: the background globe (Home.tsx) is sized so its top reaches this row. */}
+      <div data-globe-anchor className="flex flex-wrap items-center justify-center gap-3 sm:gap-4">
         {/* Multiplayer needs an account (docs/auth/guest-play.md); the lobby screen handles
             the login prompt. */}
         <Link to="/multiplayer-menu" tabIndex={-1}>

@@ -12,6 +12,12 @@ export const INTRO = {
   stagger: 0.1,
 } as const;
 
+/**
+ * When the last piece of the pitch (the actions, step 2) has finished rising in, in seconds from
+ * mount. The background globe waits for this before it appears.
+ */
+export const PITCH_SETTLED_SECONDS = INTRO.text.delay + 2 * INTRO.stagger + INTRO.text.duration;
+
 /** Motion props for one piece of the entrance: fade + rise, or nothing once the intro is done. */
 export function riseIn(intro: boolean, step: number, from = 16) {
   if (!intro) return {};

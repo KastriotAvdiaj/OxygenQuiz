@@ -7,6 +7,11 @@ screen, a subtitle and the actions, on the plain page background. Reworked into 
 
 ## What's on it
 
+**The whole page is DynaPuff**, regardless of the font a user picked in their settings
+(`src/lib/fonts.ts`): `Home.tsx` pins `--font-app` and `--font-quiz` to DynaPuff on its root and
+sets `font-quiz` there. The header, and dialogs opened from the page (they portal out of it), keep
+the user's own fonts.
+
 - **The headline**, two lines, **each kept on one line** (`whitespace-nowrap`) — the second
   ("Breathe out answers.") a step smaller, at `0.72em`. Below `lg` it is sized so the longer
   line (~10.6× the font size) fits the viewport minus its padding; from `lg`, sized off the viewport (`clamp`, capped for ultra-wide screens)
@@ -41,6 +46,8 @@ screen, a subtitle and the actions, on the plain page background. Reworked into 
       — same words, but this one is still and anchored to the button by its tail.
   Size and colour carry the hierarchy: one big blue button, two small ones in quieter colours.
 
+- **The globe** (`hero/line-globe.tsx`), a background rising behind the secondary buttons — see below.
+
 ### Why Play was flat for a week (2026-09-22 → 09-28)
 
 With the wave behind the page, Play had to read on blue as well as on the page, so it became a
@@ -50,6 +57,41 @@ for a near-black or white face. Before that it was amber (`cta`) with a white la
 held up by a text shadow). With the wave gone, a blue `LiftedButton` reads fine, so the owner
 asked for the old Explore look back, and the secondaries followed it. The `cta` token is
 unused now.
+
+## The globe
+
+A line drawing of the Earth behind the bottom of the page: its outline, a faint 10° grid, and the
+land filled with the primary colour at 45% (`LAND_FILL_OPACITY`) with a slightly stronger coastline.
+It is a **background**: out of flow (`absolute`, `z-0`, the pitch sits in a `z-10` wrapper), so it
+never moves anything, and the page root's `overflow-hidden` clips what falls below the fold.
+Decoration only: `aria-hidden`, no pointer events, unselectable.
+
+- **Placement** (`Home.tsx`): the top of its circle meets the middle of the secondary buttons'
+  row (`data-globe-anchor` in `hero-actions.tsx`, measured from layout offsets so the pitch's
+  rise-in transform doesn't skew it). Its diameter is the larger of 2.3× the room below that row
+  and 60% of the page's width, within 360–1100px — so on a phone roughly half of it shows, and on
+  a wide, short screen it is a broad dome. Re-measured on resize. Strokes are
+  `non-scaling-stroke`, so they stay a pixel or so thick at any size.
+- **Motion**: it waits until the pitch has finished rising in (`PITCH_SETTLED_SECONDS`, ~1.05s)
+  — while the buttons fade in they are see-through, and a globe popping in behind them looked as
+  if it were on top of them. Then it pops in (60% → full size over 0.6s) with a half-turn spin
+  that decays into a slow, endless drift of 6°/second. The view is centred at 15°S so the visible
+  top band is the land-heavy northern mid-latitudes. Under reduced motion it is drawn once and
+  never moves.
+- **Drawn with d3-geo** (`geoOrthographic`) from Natural Earth's 1:110m land outlines
+  (`world-atlas/land-110m.json`, ~55KB TopoJSON, turned into GeoJSON by `topojson-client`).
+  Each frame writes the two paths' `d` straight onto the DOM — no React state per frame.
+- **Loaded after the pitch.** `pitch.tsx` imports the component with `React.lazy`, and the map
+  data is a dynamic import of its own, so the headline and buttons never wait on them. A
+  same-sized placeholder holds its space while it loads, and the outline circle draws before the
+  coastlines arrive.
+- **Why this one** (2026-09-29): three were prototyped side by side — a book that opened and
+  turned three pages, a flat blue-and-green desk globe on a stand, and this line globe. The book
+  didn't read well; the owner picked the line globe as the most minimal. Lottie files were
+  considered and passed over: a player library plus an illustrated style that can't follow the
+  theme or dark mode.
+- `world-atlas.d.ts` declares the JSON import, since the app's tsconfig has no
+  `resolveJsonModule`.
 
 ## Entrance
 
@@ -73,7 +115,8 @@ for the first 140ms, so a fast answer shows nothing; a slow API shows "Signing y
 |---|---|
 | `src/pages/Home/Home.tsx` | Composition: the pitch on the page background |
 | `src/pages/Home/hero/pitch.tsx` | Headline, subtitle, actions |
-| `src/pages/Home/hero/hero-actions.tsx` | Play / or / Host a lobby / Create a quiz + "AI" tag |
+| `src/pages/Home/hero/hero-actions.tsx` | Play / or / Host a lobby / Create a quiz + "With AI" bubble |
+| `src/pages/Home/hero/line-globe.tsx` | The line globe (d3-geo, lazy) and `world-atlas.d.ts` for its data |
 | `src/pages/Home/use-landing-intro.ts` | `INTRO` timings, `riseIn`, reduced-motion check |
 
 ## How it got here
