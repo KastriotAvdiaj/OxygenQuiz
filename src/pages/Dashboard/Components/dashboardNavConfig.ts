@@ -12,6 +12,8 @@ import {
   Signal,
   Languages,
   GraduationCap,
+  Presentation,
+  School,
 } from "lucide-react";
 
 export type DashboardNavItem = {
@@ -165,5 +167,27 @@ export const userDashboardNavButtons: DashboardNavItem[] = [
     icon: History,
     group: "Overview",
     island: true,
+  },
+  // Teachers only (docs/quiz/classroom.md). Hosting starts here or from a board's start dialog.
+  {
+    id: "host",
+    label: "Host a board",
+    icon: Presentation,
+    roles: ["Teacher"],
+    group: "Classroom",
+  },
+  {
+    id: "hosted-games",
+    label: "Hosted games",
+    icon: History,
+    roles: ["Teacher"],
+    group: "Classroom",
+  },
+  {
+    id: "classes",
+    label: "Classes",
+    icon: School,
+    roles: ["Teacher"],
+    group: "Classroom",
   },
 ];

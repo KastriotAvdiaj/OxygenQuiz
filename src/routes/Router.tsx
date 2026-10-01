@@ -681,6 +681,15 @@ const createAppRouter = (queryClient: QueryClient) =>
           },
         },
         {
+          // Classroom (docs/quiz/classroom.md). Teacher-only: the API refuses everyone else, and
+          // the nav only offers these to Teachers.
+          path: "classes",
+          lazy: async () => {
+            const { ClassesPage } = await import("../pages/Classroom/ClassesPage");
+            return { Component: ClassesPage };
+          },
+        },
+        {
           // Reports left the player dashboard — it's an operator concern and it isn't
           // finished (docs/quiz/reports.md). Redirected rather than 404'd so existing
           // links and bookmarks land somewhere real.

@@ -83,6 +83,8 @@ namespace QuizAPI.Data
 
         // Classroom (docs/quiz/classroom-plan.md)
         public DbSet<Models.Classroom.TeacherAccessRequest> TeacherAccessRequests { get; set; }
+        public DbSet<Models.Classroom.Class> Classes { get; set; }
+        public DbSet<Models.Classroom.ClassStudent> ClassStudents { get; set; }
 
 
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options, ICurrentUserService current) : base(options)
@@ -620,6 +622,12 @@ namespace QuizAPI.Data
             request.HasOne(r => r.User).WithMany().HasForeignKey(r => r.UserId).OnDelete(DeleteBehavior.Cascade);
             request.HasIndex(r => new { r.UserId, r.CreatedAt });
             request.HasIndex(r => r.Status);
+
+            var @class = modelBuilder.Entity<Models.Classroom.Class>();
+            // Cascade: a Class is the Teacher's own notes. Account anonymisation removes it too.
+            @class.HasOne(c => c.Owner).WithMany().HasForeignKey(c => c.OwnerUserId).OnDelete(DeleteBehavior.Cascade);
+            @class.HasIndex(c => c.OwnerUserId);
+            @class.HasMany(c => c.Students).WithOne(s => s.Class).HasForeignKey(s => s.ClassId).OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

@@ -80,7 +80,7 @@ _Avoid_: match (a Match is the multiplayer record a Duel belongs to), round
 ## Classroom
 
 Words for teachers playing Associations with a class. Being settled in
-[`classroom-plan.md`](./classroom-plan.md); a term here is decided, the behaviour may not be built.
+[`classroom-plan.md`](./classroom-plan.md) and [`classroom.md`](./classroom.md); a term here is decided, the behaviour may not be built yet.
 
 **Teacher**:
 A role, alongside `User`, `Admin` and `SuperAdmin`, that lets an account host a board for a class
