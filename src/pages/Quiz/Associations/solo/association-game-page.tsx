@@ -188,17 +188,29 @@ const SoloBoard = ({
     // Vertically centred in the viewport column: my-auto on the inner block, so a short board
     // sits in the middle and a tall one (phones) still starts at the top and scrolls.
     <div className="flex w-full flex-1 flex-col px-4 py-4 sm:py-6">
+      {/* Top left of the page, not of the centred block: the way out is where it always is,
+          however tall the board is (docs/quiz/associations.md §9.9). */}
+      <Link
+        to="/choose-quiz"
+        className="inline-flex items-center gap-1 self-start text-sm text-muted-foreground hover:text-foreground"
+      >
+        <ArrowLeft className="h-4 w-4" /> Leave
+      </Link>
       <div className="mx-auto my-auto flex w-full max-w-5xl flex-col gap-4">
-        <header className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
-          <Link
-            to="/choose-quiz"
-            className="inline-flex items-center gap-1 justify-self-start text-sm text-muted-foreground hover:text-foreground"
-          >
-            <ArrowLeft className="h-4 w-4" /> Leave
-          </Link>
-          <h1 className="min-w-0 truncate text-center text-base font-semibold sm:text-lg">
-            {view.quizTitle}
-          </h1>
+        {/* The clock in the middle, the score on its right. The board's title is not shown: it
+            hints at the Final (docs/quiz/associations.md §9.9). */}
+        <h1 className="sr-only">Associations board</h1>
+        <header className="mb-10 grid grid-cols-[1fr_auto_1fr] items-start gap-3 sm:mb-20">
+          {/* Leave is pinned to the page's corner, above; this keeps the clock centred. */}
+          <span aria-hidden />
+          <div className="flex justify-center">
+            {!over && remaining !== null && (
+              <BoardTimer
+                remainingMs={remaining}
+                totalSeconds={view.boardSeconds}
+              />
+            )}
+          </div>
           <span
             aria-label="Score"
             className="justify-self-end text-sm font-semibold tabular-nums sm:text-base"
@@ -206,15 +218,6 @@ const SoloBoard = ({
             {view.score} pts
           </span>
         </header>
-
-        {!over && remaining !== null && (
-          <div className="flex justify-center">
-            <BoardTimer
-              remainingMs={remaining}
-              totalSeconds={view.boardSeconds}
-            />
-          </div>
-        )}
 
         {!over && resumed && !carriedOn && (
           <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border bg-muted/50 px-3 py-2 text-sm">

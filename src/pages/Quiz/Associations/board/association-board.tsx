@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAnimate } from "framer-motion";
-import { Send } from "lucide-react";
+import { PencilLine, Send } from "lucide-react";
 import { cn } from "@/utils/cn";
 import type {
   AssociationBoardView,
@@ -102,7 +102,8 @@ export const AssociationBoard = ({
   const guess = !view.isOver ? onGuess : undefined;
 
   return (
-    <div className="space-y-3">
+    // The Final stands apart from the Columns: it answers all four, not a fifth one.
+    <div className="space-y-5 sm:space-y-7">
       <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
         {view.columns.map((column) => (
           <BoardColumn
@@ -176,7 +177,8 @@ const BoardColumn = ({
 );
 
 /**
- * A Tile is a card with two faces: its name (A1) on the front, its word on the back. Opening it
+ * A Tile is a card with two faces: its name (A1) on the front — solid primary, a button to press,
+ * so it can't be mistaken for the guess inputs under it — and its word on the back. Opening it
  * — or solving its Column, or the game ending — turns the card over (`.board-tile-card` in
  * global.css). The flip is a CSS transition on the view changing, so a Tile that arrives already
  * open (a resumed game, the results page) is simply drawn face up, with no animation. In the
@@ -209,7 +211,7 @@ const BoardTile = ({
         {revealed ? (
           <div
             aria-hidden
-            className="flex min-h-12 items-center justify-center rounded-md border border-primary/30 bg-primary/10 text-sm font-semibold tabular-nums text-primary sm:min-h-14"
+            className="flex min-h-12 items-center justify-center rounded-md bg-primary text-sm font-semibold tabular-nums text-primary-foreground shadow-[0_3px_0_0_hsl(var(--quiz-primary-dark))] sm:min-h-14"
           >
             {name}
           </div>
@@ -220,7 +222,7 @@ const BoardTile = ({
             disabled={!onOpen}
             aria-label={`Open tile ${name}`}
             data-coach-tile={tile.id}
-            className="flex min-h-12 items-center justify-center rounded-md border border-primary/30 bg-primary/10 text-sm font-semibold tabular-nums text-primary transition-colors hover:bg-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-default disabled:hover:bg-primary/10 sm:min-h-14"
+            className="flex min-h-12 items-center justify-center rounded-md bg-primary text-sm font-semibold tabular-nums text-primary-foreground shadow-[0_3px_0_0_hsl(var(--quiz-primary-dark))] transition-[filter,transform,box-shadow] hover:brightness-110 active:translate-y-[3px] active:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-default disabled:hover:brightness-100 disabled:active:translate-y-0 disabled:active:shadow-[0_3px_0_0_hsl(var(--quiz-primary-dark))] sm:min-h-14"
           >
             {name}
           </button>
@@ -229,8 +231,11 @@ const BoardTile = ({
           aria-hidden={!revealed}
           className={cn(
             "board-tile-back flex min-h-12 items-center justify-center rounded-md px-2 py-2 text-center text-sm break-words sm:min-h-14",
+            // Uppercase, as the show writes them; an opened Tile keeps a faint shade of the
+            // primary it was, so the board still reads as one grid of Tiles.
+            "uppercase tracking-wide",
             tile.isOpen
-              ? "border border-border bg-card font-medium sm:text-base"
+              ? "border border-primary/30 bg-primary/20 font-semibold"
               : "border border-dashed border-border bg-background text-muted-foreground"
           )}
         >
@@ -349,11 +354,20 @@ const GuessInput = ({
       onSubmit={handleSubmit}
       data-coach-target={target}
       className={cn(
-        "flex min-h-12 w-full items-center gap-1 rounded-md border-2 bg-background pl-3 pr-1 transition-colors focus-within:border-primary sm:min-h-14",
-        // A Guess is earned: the slots ask to be typed into.
-        live ? "border-primary/70 bg-primary/5" : "border-dashed border-border"
+        "flex min-h-12 w-full items-center gap-2 rounded-md border-2 pl-3 pr-1 transition-[border-color,box-shadow,background-color] sm:min-h-14",
+        // Always dashed. A Guess is earned: a primary border and a white field, solid while typing
+        // in — the state is what gets the colour (docs/quiz/question-type-color-schema.md).
+        // Otherwise grey on grey.
+        live
+          ? "cursor-text border-dashed border-primary bg-background focus-within:border-solid"
+          : "border-dashed border-border bg-muted/40"
       )}
+      onClick={(e) => {
+        // The whole field is the target, like an input, not only the text inside it.
+        if (live && e.target === e.currentTarget) e.currentTarget.querySelector("input")?.focus();
+      }}
     >
+      {live && <PencilLine aria-hidden className="h-4 w-4 shrink-0 text-primary" />}
       <input
         value={text}
         onChange={(e) => setText(e.target.value)}
@@ -362,10 +376,11 @@ const GuessInput = ({
         autoComplete="off"
         spellCheck={false}
         aria-label={`Guess ${label.toLowerCase()}`}
-        placeholder={`${label} ?`}
+        // A live slot says it is typed into; an idle one only names itself.
+        placeholder={live ? `Guess ${label}…` : `${label} ?`}
         // text-base on phones: anything smaller and iOS Safari zooms on focus (docs/RESPONSIVE.md).
         className={cn(
-          "min-w-0 flex-1 bg-transparent py-2 text-base font-semibold outline-none placeholder:font-semibold placeholder:text-muted-foreground disabled:cursor-default sm:text-sm",
+          "min-w-0 flex-1 bg-transparent py-2 text-base font-semibold outline-none placeholder:font-medium placeholder:text-muted-foreground disabled:cursor-default sm:text-sm",
           emphasis && "sm:text-base"
         )}
       />

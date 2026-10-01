@@ -235,9 +235,17 @@ export const AssociationBoardForm = ({ edit }: AssociationBoardFormProps) => {
                     id="title"
                     placeholder="Name this board"
                     className="mt-1"
+                    aria-describedby="title-hint"
                     {...register("title")}
                     error={errors.title}
                   />
+                  {/* The title is in the catalogue and the start dialog, so a player reads it before
+                      the first Tile — and the game screen deliberately doesn't show it
+                      (docs/quiz/associations.md §8.5). */}
+                  <p id="title-hint" className="mt-1 text-xs text-muted-foreground">
+                    Players see the title before they start. Keep the Final out of it — &ldquo;Italian
+                    cities&rdquo; gives away &ldquo;Italy&rdquo;.
+                  </p>
                 </div>
                 <div>
                   <Label htmlFor="description" className="text-sm font-medium">
@@ -246,7 +254,7 @@ export const AssociationBoardForm = ({ edit }: AssociationBoardFormProps) => {
                   <Textarea
                     variant="minimal"
                     id="description"
-                    placeholder="Optional"
+                    placeholder="Optional — also shown before play"
                     className="mt-1 min-h-[70px] resize-none"
                     {...register("description")}
                     error={errors.description}

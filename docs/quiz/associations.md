@@ -363,7 +363,10 @@ builder has no local draft yet — see [`../deployment/known-issues.md`](../depl
   runs down all four into the meeting dot, which pulses as they land (`.board-beam`, off under
   reduced motion); lines and dot are unselectable decoration. The quiz's own fields (title,
   description, category, difficulty, language, status, board time) are the sidebar, sized to its
-  own content (`self-start`) rather than stretched to the board's height. The
+  own content (`self-start`) rather than stretched to the board's height. Under the title a hint
+  says players see it before they start, so it must not give the Final away (2026-10-01): the
+  title is in the catalogue and the start dialog, though the game screen no longer shows it (§9.9).
+  The description's placeholder says the same. The
   Columns, the Final's card and the sidebar are all `bg-background`. Columns wrap two-and-two under
   `xl` (no lines) and stack on a phone.
 - **Other spellings.** A Column's are one comma-separated line. The Final's are one input per
@@ -568,14 +571,21 @@ routes, the one-free-quiz cookie, and deletion after the results — the deletio
 |---|---|
 | `/associations/:quizId/play` (`?shareToken=`) | `AssociationStartRoute`: starts the game (once — a ref guards StrictMode's double mount) and **replaces** itself with the game's URL, so refresh and Back land on the game instead of starting another. |
 | `/associations/play/:sessionId` | `AssociationGamePage`: score, clock, the board with its guess slots, Give up (two clicks). When the game ends while you play it stays on the board: the clock, prompt and Give up give way to a finish banner (a won Final in large green letters with the total, or "Time's up" / "Here's the board"), the board plays its reveal, and a **See results** button fades in. Opening a game that was already over goes straight to the results. |
-| `/associations/results/:sessionId` | `AssociationResultsPage`: the end reason, the score, the fully revealed board (each slot shows its points), Play again (primary `LiftedButton`, restarts) and Back to quizzes (muted `LiftedButton`). No score table or move list — the board already carries the points, and the moves matter only to a future history view (`scoreBreakdown`, `describeMove`, `elapsedLabel` stay in `board-model.ts`, tested, for that). A results link to a game still running goes to the game. |
+| `/associations/results/:sessionId` | `AssociationResultsPage`, vertically centred like the game page: the end reason, the score, the fully revealed board (each slot shows its points), Play again (primary `LiftedButton`, restarts) and Back to quizzes (muted `LiftedButton`). No score table or move list — the board already carries the points, and the moves matter only to a future history view (`scoreBreakdown`, `describeMove`, `elapsedLabel` stay in `board-model.ts`, tested, for that). A results link to a game still running goes to the game. |
 
 All three are signed-in routes (`userAuthLoader`). **Play** in the catalogue's start dialog goes
 through `quizPlayPath` (`src/pages/Quiz/quiz-play-path.ts`), which picks the play screen by format;
 the dialog shows "Associations board" where a Classic quiz shows its question count.
 
-**The game page** (2026-09-24, after the first playtest; reworked 2026-09-30): the board sits in
-the middle of the screen, under the clock.
+**The game page** (2026-09-24, after the first playtest; reworked 2026-09-30 and 2026-10-01): the
+board sits in the middle of the screen, under the clock, with the score to the clock's right and a wide gap between the clock and the board.
+**Leave is pinned to the page's top-left corner** — outside the vertically centred block, so it
+doesn't drift down the page with a short board.
+
+- **The board's title is not shown while it is played** — Solo or Duel (2026-10-01). A title like
+  "Italian cities" all but names the Final, and the show plays its boards cold. It stays in the
+  catalogue, the start dialog and the results page; the builder warns authors that players see it
+  first (§8.5).
 
 - **The clock is the same ring a Classic question uses** — `BoardTimer` draws `CountdownRing`
   (`src/pages/Quiz/components/countdown-ring.tsx`), which `QuizTimer` draws too, so the two formats
@@ -590,10 +600,19 @@ the middle of the screen, under the clock.
   Final's — is its own input, sent with Enter or its arrow. This replaced "pick a slot, then type in
   the box under the board": that was two steps for one intent, and the separate box was the thing
   first-time players didn't find. The target is where the text is, so it can't be aimed wrong, and
-  it still names its target exactly as §3.1 requires. The inputs are live (outlined) only while a
-  Guess is earned; otherwise they are disabled and dashed. **Nothing is pre-focused**, for the
+  it still names its target exactly as §3.1 requires. The inputs are live only while a Guess is
+  earned — then they read as text fields: a white field with a dashed primary border (solid while
+  typing in it), a pencil icon and a "Guess Column A…" placeholder, and a click anywhere on the
+  slot focuses it. Otherwise they are disabled, dashed and grey. The Final sits further below the
+  Columns than the Columns' rows sit from each other: it answers all four. **Nothing is pre-focused**, for the
   reason the first build learned: a pre-aimed Column read as "you must guess this one". A wrong
   Guess shakes its slot; the line under the board says what happened.
+- **A closed Tile is a solid primary button** with a pressed-down lift, so it can't be confused
+  with the guess slots under it — the Tiles are what you press, the slots what you type into
+  (2026-10-01; before, both were the same pale blue and a first-time player in the guess step
+  couldn't tell them apart).
+- **An opened Tile shows its word in capitals** on a faint primary shade (`bg-primary/20`), so
+  the board still reads as one grid after the flip.
 - **Opening a Tile turns it over** — a card flip from its name (B2) to its word
   (`.board-tile-card` in `global.css`). Solving a Column turns its remaining Tiles the same way,
   and in a Duel the Tiles nobody opened turn when it ends. It is a CSS transition on the view
@@ -628,8 +647,9 @@ solved a slot after its points.
 
 A player who has never seen a Board doesn't know it starts with a Tile. The first time one plays in
 a browser, the Solo game page draws a two-step guide over the board (`BoardCoach`,
-`board/board-coach.tsx`): a ring around one element, a short note beside it, and a curved arrow
-from the note to it.
+`board/board-coach.tsx`): the rest of the board dimmed and blurred, a ring around one
+element, a short note beside it (with a `foreground` border), and a curved arrow from the note to the
+middle of the side of the element that faces the note.
 
 1. **Before any Tile is opened** — around the first closed Tile: "Start here — open a tile. Every
    tile you open earns you one guess."
@@ -642,10 +662,16 @@ Which step shows is **derived from the view** (`coachStep` in `board-model.ts`: 
 at the first Guess, right or wrong, or with its Skip / Got it button, and the page then remembers it
 in `localStorage` (`board/coach-storage.ts`). That is a per-browser convenience on purpose — the
 worst case of forgetting is seeing two notes again — so it is not per account and not on the
-server. The note sits beside the target, towards the roomier side, below it in the top half of the
+server. **In development** (`npm run dev`, `import.meta.env.DEV`) the flag is ignored and the
+guide shows on every new game; Skip still hides it for the rest of that game. The note sits beside the target, towards the roomier side, below it in the top half of the
 board and above it in the bottom half, so it covers closed Tiles rather than the Column being
 guessed; the overlay passes clicks through, so the Tile in the ring is clicked as usual. It
-measures the board to place itself — the one Effect in it, and a DOM measurement.
+The blur covers **the board only** — the clock and the prompt above it stay sharp, since the clock
+is running. It is one layer with a window cut out (`clip-path`), running 12px past the board and fading out
+over that edge (a mask) so it has no hard border; on dark the arrow is `foreground`, not primary,
+which vanished against the blue Tiles; in step 2 the window is the whole
+Column, not just its slot, because the opened Tile is the clue being guessed from. Clicks pass
+through the blur — the guide points, it doesn't block. It measures the board to place itself — the one Effect in it, and a DOM measurement.
 
 **Solo only**, for now. A Duel is turn-based and timed at 30 seconds a turn; a note on the
 opponent's turn would point at things the player can't do. `coachStep` and `BoardCoach` take a view

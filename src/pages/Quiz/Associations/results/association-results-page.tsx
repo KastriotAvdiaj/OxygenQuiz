@@ -63,47 +63,51 @@ const Results = ({ view }: { view: AssociationGameView }) => {
 
   return (
     // The top padding clears the OVERLAY header this route uses, as the Classic results page does.
-    <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 pb-6 pt-[calc(var(--header-height,4rem)+1.5rem)]">
-      <header className="space-y-1 text-center">
-        <p className="text-sm text-muted-foreground">{view.quizTitle}</p>
-        {isDuel ? (
-          <>
-            <h1 className="text-2xl font-bold">{duelOutcome(view, view.mySeat)}</h1>
-            <p className="text-sm text-muted-foreground">
-              {(view.endReason && DUEL_END_REASON_TEXT[view.endReason]) ?? "Game over"}
-            </p>
-            <p className="text-2xl font-extrabold tabular-nums">
-              {view.seats.map((seat, i) => (
-                <span key={seat.seat} className={cn(seat.seat === view.mySeat && "text-primary")}>
-                  {i > 0 && <span className="px-2 text-muted-foreground">·</span>}
-                  {seat.username} {seat.score}
-                </span>
-              ))}
-            </p>
-          </>
-        ) : (
-          <>
-            <h1 className="text-2xl font-bold">{view.endReason ? END_REASON_TEXT[view.endReason] : "Game over"}</h1>
-            <p className="text-4xl font-extrabold tabular-nums text-primary">{view.score} pts</p>
-          </>
-        )}
-      </header>
+    // Vertically centred like the game page: my-auto on the inner block, so the results sit in the
+    // middle of a tall screen and a taller-than-screen board (phones) still starts at the top.
+    <div className="flex w-full flex-1 flex-col px-4 pb-6 pt-[calc(var(--header-height,4rem)+1.5rem)]">
+      <div className="mx-auto my-auto flex w-full max-w-5xl flex-col gap-6">
+        <header className="space-y-1 text-center">
+          <p className="text-sm text-muted-foreground">{view.quizTitle}</p>
+          {isDuel ? (
+            <>
+              <h1 className="text-2xl font-bold">{duelOutcome(view, view.mySeat)}</h1>
+              <p className="text-sm text-muted-foreground">
+                {(view.endReason && DUEL_END_REASON_TEXT[view.endReason]) ?? "Game over"}
+              </p>
+              <p className="text-2xl font-extrabold tabular-nums">
+                {view.seats.map((seat, i) => (
+                  <span key={seat.seat} className={cn(seat.seat === view.mySeat && "text-primary")}>
+                    {i > 0 && <span className="px-2 text-muted-foreground">·</span>}
+                    {seat.username} {seat.score}
+                  </span>
+                ))}
+              </p>
+            </>
+          ) : (
+            <>
+              <h1 className="text-2xl font-bold">{view.endReason ? END_REASON_TEXT[view.endReason] : "Game over"}</h1>
+              <p className="text-4xl font-extrabold tabular-nums text-primary">{view.score} pts</p>
+            </>
+          )}
+        </header>
 
-      <AssociationBoard view={view} solverName={isDuel ? nameOf : undefined} />
+        <AssociationBoard view={view} solverName={isDuel ? nameOf : undefined} />
 
-      <div className="flex flex-wrap justify-center gap-3">
-        {/* "Play again" restarts a Solo game; a Duel's rematch is in its lobby. */}
-        {!isDuel && (
-          <LiftedButton onClick={() => playAgain.mutate()} isPending={playAgain.isPending}>
-            <RotateCcw className="mr-1 h-4 w-4" /> Play again
-          </LiftedButton>
-        )}
-        <Link to="/choose-quiz" tabIndex={-1}>
-          <LiftedButton className="bg-muted text-foreground hover:bg-muted" liftColor="muted-foreground">
-            <FolderIcon className="mr-1 h-4 w-4" />
-            Back to quizzes
-          </LiftedButton>
-        </Link>
+        <div className="flex flex-wrap justify-center gap-3">
+          {/* "Play again" restarts a Solo game; a Duel's rematch is in its lobby. */}
+          {!isDuel && (
+            <LiftedButton onClick={() => playAgain.mutate()} isPending={playAgain.isPending}>
+              <RotateCcw className="mr-1 h-4 w-4" /> Play again
+            </LiftedButton>
+          )}
+          <Link to="/choose-quiz" tabIndex={-1}>
+            <LiftedButton className="bg-muted text-foreground hover:bg-muted" liftColor="muted-foreground">
+              <FolderIcon className="mr-1 h-4 w-4" />
+              Back to quizzes
+            </LiftedButton>
+          </Link>
+        </div>
       </div>
     </div>
   );

@@ -7,6 +7,9 @@
 const KEY = "oxygenquiz:associations:coach-seen";
 
 export function hasSeenBoardCoach(): boolean {
+  // In development (`npm run dev`) the guide shows on every new game, so it can be worked on
+  // without clearing storage. Vite replaces the flag at build time; production never sees it.
+  if (import.meta.env.DEV) return false;
   try {
     return window.localStorage.getItem(KEY) === "1";
   } catch {

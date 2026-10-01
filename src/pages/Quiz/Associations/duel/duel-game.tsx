@@ -116,7 +116,8 @@ const DuelBoard = ({
   return (
     <div className="flex w-full flex-1 flex-col px-4 py-4 sm:py-6">
       <div className="mx-auto my-auto flex w-full max-w-5xl flex-col gap-4">
-        <h1 className="truncate text-center text-base font-semibold sm:text-lg">{view.quizTitle}</h1>
+        {/* Not on screen: the title hints at the Final (docs/quiz/associations.md §9.9). */}
+        <h1 className="sr-only">Associations duel</h1>
 
         {/* The two Seats: name and score, the one whose turn it is marked. */}
         <div className="grid grid-cols-2 gap-2 sm:gap-3">
