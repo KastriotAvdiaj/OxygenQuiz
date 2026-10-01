@@ -1,20 +1,21 @@
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, RotateCcw } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { AlertCircle, FolderIcon, RotateCcw } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { QuizLoadingView } from "@/pages/Quiz/Sessions/components/quiz-loading-view";
 import type { AssociationGameView } from "@/types/association-types";
 import { associationGameKeys, restartAssociationGame, useAssociationGame } from "../api/association-play";
 import { AssociationBoard } from "../board/association-board";
-import { END_REASON_TEXT, describeMove, elapsedLabel, scoreBreakdown } from "../board/board-model";
-import { DUEL_END_REASON_TEXT, describeDuelMove, duelOutcome } from "../duel/duel-model";
+import { END_REASON_TEXT } from "../board/board-model";
+import { DUEL_END_REASON_TEXT, duelOutcome } from "../duel/duel-model";
+import { LiftedButton } from "@/common/LiftedButton";
 
 /**
- * `/associations/results/:sessionId` — a finished game: the whole Board revealed, the score line
- * by line, and every move in order. All three come from the same view the game page drew, rebuilt
- * by the server from the move log (docs/quiz/associations.md §9.9). A Duel is reviewed here too,
- * from the reader's own Seat (§10.6): both scores, who won, and who did what.
+ * `/associations/results/:sessionId` — a finished game: the whole Board revealed, each slot
+ * carrying its points, from the same view the game page drew, rebuilt by the server from the move
+ * log (docs/quiz/associations.md §9.9). No score table or move list: the board already says it.
+ * A Duel is reviewed here too, from the reader's own Seat (§10.6): both scores, who won, and who
+ * solved each slot.
  */
 export const AssociationResultsPage = () => {
   const { sessionId = "" } = useParams<{ sessionId: string }>();
@@ -28,9 +29,12 @@ export const AssociationResultsPage = () => {
         <div className="max-w-md space-y-5 text-center">
           <AlertCircle className="mx-auto h-12 w-12 text-destructive" />
           <h2 className="text-xl font-bold">These results aren&apos;t available</h2>
-          <Button asChild variant="outline">
-            <Link to="/choose-quiz">Back to quizzes</Link>
-          </Button>
+          <Link to="/choose-quiz" tabIndex={-1} className="inline-block">
+            <LiftedButton className="bg-muted text-foreground" liftColor="muted-foreground">
+            <FolderIcon className="mr-1 h-4 w-4" />
+              Back to quizzes
+            </LiftedButton>
+          </Link>
         </div>
       </div>
     );
@@ -54,9 +58,8 @@ const Results = ({ view }: { view: AssociationGameView }) => {
     },
   });
 
-  const rows = scoreBreakdown(view);
   const isDuel = view.playStyle === "Duel";
-  const nameOf = (seat: number | null) => view.seats.find((s) => s.seat === seat)?.username;
+  const nameOf = (seat: number) => view.seats.find((s) => s.seat === seat)?.username;
 
   return (
     // The top padding clears the OVERLAY header this route uses, as the Classic results page does.
@@ -86,67 +89,21 @@ const Results = ({ view }: { view: AssociationGameView }) => {
         )}
       </header>
 
-      <AssociationBoard view={view} />
-
-      <div className="grid gap-6 md:grid-cols-2">
-        <section aria-labelledby="breakdown-heading" className="space-y-2">
-          <h2 id="breakdown-heading" className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-            Score
-          </h2>
-          <ul className="divide-y divide-border rounded-md border border-border">
-            {rows.map((row) => (
-              <li key={row.label} className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
-                <span className="min-w-0">
-                  <span className="font-medium">{row.label}</span>
-                  <span className="text-muted-foreground"> · {row.solution}</span>
-                  {isDuel && row.bySeat !== null && <span className="text-muted-foreground"> · {nameOf(row.bySeat)}</span>}
-                </span>
-                <span
-                  className={cn(
-                    "shrink-0 tabular-nums",
-                    row.how === "unsolved" && "text-muted-foreground",
-                    row.how === "guessed" && "font-semibold text-quiz-success",
-                    row.how === "with the final" && "text-muted-foreground"
-                  )}
-                >
-                  {row.how === "unsolved" ? "—" : row.how === "with the final" ? `${row.points} in the final` : `+${row.points}`}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </section>
-
-        <section aria-labelledby="moves-heading" className="space-y-2">
-          <h2 id="moves-heading" className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-            Moves
-          </h2>
-          {view.moves.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No moves were made.</p>
-          ) : (
-            <ol className="max-h-80 space-y-1 overflow-y-auto rounded-md border border-border p-2 text-sm">
-              {view.moves.map((move) => (
-                <li key={move.seq} className="flex gap-3">
-                  <span className="w-10 shrink-0 tabular-nums text-muted-foreground">{elapsedLabel(view, move.at)}</span>
-                  <span className={cn(move.isCorrect === true && "text-quiz-success", move.isCorrect === false && "text-muted-foreground")}>
-                    {isDuel ? describeDuelMove(view, move) : describeMove(view, move)}
-                  </span>
-                </li>
-              ))}
-            </ol>
-          )}
-        </section>
-      </div>
+      <AssociationBoard view={view} solverName={isDuel ? nameOf : undefined} />
 
       <div className="flex flex-wrap justify-center gap-3">
         {/* "Play again" restarts a Solo game; a Duel's rematch is in its lobby. */}
         {!isDuel && (
-          <Button onClick={() => playAgain.mutate()} disabled={playAgain.isPending}>
+          <LiftedButton onClick={() => playAgain.mutate()} isPending={playAgain.isPending}>
             <RotateCcw className="mr-1 h-4 w-4" /> Play again
-          </Button>
+          </LiftedButton>
         )}
-        <Button asChild variant="outline">
-          <Link to="/choose-quiz">Back to quizzes</Link>
-        </Button>
+        <Link to="/choose-quiz" tabIndex={-1}>
+          <LiftedButton className="bg-muted text-foreground hover:bg-muted" liftColor="muted-foreground">
+            <FolderIcon className="mr-1 h-4 w-4" />
+            Back to quizzes
+          </LiftedButton>
+        </Link>
       </div>
     </div>
   );

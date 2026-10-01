@@ -230,6 +230,19 @@ timeLimit` points, i.e. ~33 pts on a 30s question but ~100 pts (10% of base) on 
   reasoning in [ADR 0019](../adr/0019-quiz-visibility-is-enforced-at-each-entry-point.md);
   `QuizAPI.Tests/Visibility/QuizQueryFilterTests.cs` fails if a visibility filter is added back.
   → `OxygenBackend/QuizAPI/Data/ApplicationDbContext.cs`
+- **P3 — Hidden admin pages still call the API before they 404.** Found 2026-09-30 by the
+  end-to-end suite. `/dashboard/*` is meant to be indistinguishable from a page that doesn't exist
+  for a non-admin (`adminAuthLoader`, `notFoundOnDenied`). The page does end on the 404 — but React
+  Router runs a child route's loader **in parallel** with its parent's, so `/dashboard/users`' own
+  loader runs alongside the admin gate. It gates itself on the `user:view` *permission*, which the
+  plain User role holds (`PermissionSeeder`), so it goes on to `GET /api/users`, gets a 403, and the
+  global error toast says "Request failed with status code 403" over the 404. Not a data leak (the
+  API refuses), but it tells a player the page exists, which is what the 404 is for. Any other
+  child loader that fetches will do the same.
+  _Fix:_ make each child loader wait for the parent's gate (or repeat the role check, not a
+  permission check, before fetching). `e2e/access-control.spec.ts` has the failing test, marked
+  `test.fixme` — remove the `fixme` with the fix.
+  → `src/routes/Router.tsx` (the `users` child of `/dashboard/*`), `src/lib/Auth.tsx`
 
 ## Code quality / cleanup
 

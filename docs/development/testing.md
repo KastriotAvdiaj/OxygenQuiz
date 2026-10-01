@@ -13,12 +13,17 @@ grading and authentication — and is built to grow.
 | Backend (.NET 8) | xUnit, Moq, EF Core InMemory | `OxygenBackend/QuizAPI.Tests/` |
 | Frontend unit | Vitest + Testing Library (jsdom) | `src/**/__tests__/` |
 | Frontend visual | Storybook + Chromatic | `src/**/*.stories.tsx` |
+| End-to-end | Playwright, real API + PostgreSQL | `e2e/*.spec.ts` — see [`e2e-testing.md`](e2e-testing.md) |
 
 The frontend uses a Vitest **workspace** (`vitest.workspace.ts`) with two projects:
 
 - **`unit`** — fast jsdom tests (configured in `vite.config.ts`). This is the deploy gate.
 - **`storybook`** — runs component stories in a real browser via Playwright. Visual /
   interaction coverage, **not** part of the deploy gate.
+
+The end-to-end suite is a separate thing with its own runner (`@playwright/test`, not Vitest),
+its own config (`playwright.config.ts`) and its own guide: [`e2e-testing.md`](e2e-testing.md).
+Vitest is told to ignore `e2e/` (`vite.config.ts`), since its specs are `*.spec.ts` too.
 
 ### What these tools are
 
@@ -216,11 +221,22 @@ npm run storybook                   # browse component stories
 > `npm test` runs `vitest` across **all** workspace projects, including `storybook`,
 > which needs a Playwright browser. For day-to-day work use `--project unit`.
 
+### End-to-end
+
+Requires PostgreSQL on localhost:5433 (`docker compose -f docker-compose.dev.yml up -d`), the
+.NET 8 SDK and `npx playwright install chromium` once. Full guide: [`e2e-testing.md`](e2e-testing.md).
+
+```bash
+npm run test:e2e                    # starts the API and the SPA on their own ports, runs, stops
+npm run test:e2e:ui                 # Playwright UI mode
+```
+
 ### Everything (as CI sees it)
 
 ```bash
 dotnet test OxygenBackend/QuizAPI.Tests/QuizAPI.Tests.csproj
 npm ci && npx vitest run --project unit
+npm run typecheck:e2e && npm run test:e2e
 ```
 
 ---
@@ -341,6 +357,10 @@ testing the mock.
 2. Pure logic → plain Vitest; hook → `renderHook`; component → Testing Library.
 3. Run `npx vitest --project unit` in watch mode. CI picks it up automatically.
 
+**End-to-end (Playwright):** first check it belongs there — a claim about the seams between the
+SPA, the API and the browser, or a whole journey. Then follow the step-by-step recipe and checklist
+in [`e2e-testing.md`](e2e-testing.md) §6 and §12.
+
 **Good next targets:** `QuizSessionService`, `SubmitAnswerService`,
 `SessionAbandonmentService` on the backend; the zod schemas in the `api/` folders and
 the filtering helpers (`src/lib/filtering`) on the frontend.
@@ -349,8 +369,10 @@ the filtering helpers (`src/lib/filtering`) on the frontend.
 
 ## 6. CI & the deploy gate
 
-`.github/workflows/tests.yml` runs both suites on every push and pull request to `main`
-(`backend-tests` and `frontend-tests` jobs). A red suite fails the check.
+`.github/workflows/tests.yml` runs all three suites on every push and pull request to `main`
+(`backend-tests`, `frontend-tests` and `e2e-tests` jobs). A red suite fails the check. The E2E job
+runs PostgreSQL as a service and uploads the Playwright report as an artifact —
+[`e2e-testing.md`](e2e-testing.md) §5.
 
 To make tests **block deploys**:
 
@@ -360,11 +382,12 @@ To make tests **block deploys**:
    ```yaml
    jobs:
      build-and-push-frontend:
-       needs: [frontend-tests, backend-tests]
+       needs: [frontend-tests, backend-tests, e2e-tests]
    ```
 
 3. Optionally protect `main` (GitHub → Settings → Branches) and mark
-   **Backend (.NET) tests** and **Frontend (Vitest) tests** as required status checks.
+   **Backend (.NET) tests**, **Frontend (Vitest) tests** and **End-to-end (Playwright) tests** as
+   required status checks.
 
 ---
 
@@ -397,5 +420,8 @@ To make tests **block deploys**:
   command for everyday work and every recipe above says `--project unit`. Decide deliberately
   whether the story run belongs in CI; today nothing asserts on it.
 
-- **Out of scope this pass.** End-to-end flows (login → take a quiz → results) and the Classic multiplayer match loop have no automated tests yet (the hub and the Associations Duel loop do — `QuizAPI.Tests/Multiplayer/`). Playwright is
-  already a dependency if you want to add browser-level E2E later.
+- **Out of scope this pass.** The Classic multiplayer match loop has no automated tests yet (the
+  hub and the Associations Duel loop do — `QuizAPI.Tests/Multiplayer/`), and the E2E suite
+  doesn't play multiplayer either. Sign-in, signup, route guards, Classic and guest play are
+  covered end to end since 2026-09-30 — [`e2e-testing.md`](e2e-testing.md) §3 lists what is and
+  isn't.

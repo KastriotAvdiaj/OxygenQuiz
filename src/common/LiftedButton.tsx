@@ -232,7 +232,7 @@ export const LiftedButton = React.forwardRef<
           "group relative border-none bg-transparent p-0 font-thin outline-offset-4 transition-[filter] [transition-duration:250ms]",
           "focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary",
           // brightness-110 reads as a "shine" — keep it in light mode only
-          !isDisabled && "cursor-pointer hover:brightness-110 dark:hover:brightness-100",
+          !isDisabled && "cursor-pointer",
           // Disabled keeps the exact resting appearance — only the interactions
           // drop away. Dimming individual layers would let the darker edge and
           // shadow bleed through the front face, which reads as a rendering bug.

@@ -1,0 +1,20 @@
+{
+  // The end-to-end suite and its config run in Node under Playwright, not in the browser bundle,
+  // so they get their own project: node types, no DOM, no `@/` alias. Checked by
+  // `npm run typecheck:e2e`; deliberately not referenced from the root tsconfig.json, so
+  // `npm run build` (and the production image) never needs @playwright/test.
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2023"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "types": ["node"],
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "isolatedModules": true
+  },
+  "include": ["./**/*.ts", "../playwright.config.ts"]
+}

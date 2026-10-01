@@ -30,6 +30,7 @@ import {
   QuizPanel,
   TypographyPanel,
 } from "./panels/SettingsPanels";
+import { LiftedButton } from "@/common/LiftedButton";
 
 const sectionLabel = (id: OverlaySectionId) =>
   ACCOUNT_OVERLAY_SECTIONS.find((s) => s.id === id)?.label ?? "";
@@ -359,16 +360,16 @@ export const AccountOverlay = () => {
                       You have unsaved changes
                     </span>
                     <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
+                      <LiftedButton
                         size="sm"
-                        className="flex-1 sm:flex-none"
+                        className="flex-1 sm:flex-none bg-muted"
+                        liftColor="muted"
                         onClick={settings.discard}
                       >
                         <Undo2 className="h-4 w-4" />
                         Discard
-                      </Button>
-                      <Button
+                      </LiftedButton>
+                      <LiftedButton
                         size="sm"
                         className="flex-1 text-white sm:flex-none"
                         isPending={settings.isSaving}
@@ -376,7 +377,7 @@ export const AccountOverlay = () => {
                       >
                         <Save className="h-4 w-4" />
                         Save changes
-                      </Button>
+                      </LiftedButton>
                     </div>
                   </div>
                 </motion.div>

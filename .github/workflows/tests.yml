@@ -1,8 +1,8 @@
 name: Tests
 
-# Deploy gate: runs the backend and frontend test suites on every push and pull
+# Deploy gate: runs the backend, frontend and end-to-end test suites on every push and pull
 # request to main. Re-enable the deploy workflows in .github/workflows.disabled and
-# add `needs: [backend-tests, frontend-tests]` to their jobs so a red suite blocks a
+# add `needs: [backend-tests, frontend-tests, e2e-tests]` to their jobs so a red suite blocks a
 # deploy. See docs/development/testing.md.
 
 on:
@@ -52,3 +52,62 @@ jobs:
 
       - name: Run unit tests
         run: npx vitest run --project unit
+
+  e2e-tests:
+    name: End-to-end (Playwright) tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # The suite's stack (e2e/support/stack.ts) expects PostgreSQL where docker-compose.dev.yml puts
+    # it: localhost:5433, postgres/123. The API creates and migrates OxygenQuiz_E2E on startup.
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: '123'
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type-check the suite
+        run: npm run typecheck:e2e
+
+      # Kestrel and the Vite dev server both serve the ASP.NET development certificate. The
+      # suite's web server command would create it too; doing it here keeps a failure obvious.
+      - name: Create the development certificate
+        run: dotnet dev-certs https
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      # Playwright starts the API (dotnet run) and the SPA (vite) itself — see playwright.config.ts.
+      - name: Run end-to-end tests
+        run: npm run test:e2e
+
+      - name: Upload the Playwright report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14

@@ -7,9 +7,11 @@ import {
   useParams,
 } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, ArrowLeft } from "lucide-react";
+import { motion } from "framer-motion";
+import { AlertCircle, ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/utils/cn";
+import { LiftedButton } from "@/common/LiftedButton";
 import { QuizLoadingView } from "@/pages/Quiz/Sessions/components/quiz-loading-view";
 import type {
   AssociationGameView,
@@ -32,12 +34,17 @@ import { GiveUpControl } from "./give-up-control";
 /**
  * `/associations/play/:sessionId` — a Solo game in progress (docs/quiz/associations.md,
  * "Playing"). A Tile earns a Guess; a Guess is typed straight into the Column's or the Final's
- * solution slot; the board clock runs out on the server's deadline. Everything shown comes from the server's view; when the game is over
+ * solution slot; the board clock runs out on the server's deadline. A game that ends while you
+ * play stays on the board for the reveal and a "See results" button; arriving at one that was
+ * already over goes straight to the results. Everything shown comes from the server's view; when the game is over
  * the page hands over to the results.
  */
 export const AssociationGamePage = () => {
   const { sessionId = "" } = useParams<{ sessionId: string }>();
   const game = useAssociationGame(sessionId);
+  // Seen in play: the ending then plays out on the board instead of jumping to the results.
+  const [live, setLive] = useState(false);
+  if (game.data && !game.data.isOver && !live) setLive(true);
 
   if (game.isLoading) return <QuizLoadingView label="Loading the board" />;
 
@@ -60,7 +67,7 @@ export const AssociationGamePage = () => {
   }
 
   // Finished — by the Final, by giving up, or by the clock (the server settles that on read).
-  if (game.data.isOver)
+  if (game.data.isOver && !live)
     return <Navigate to={`/associations/results/${sessionId}`} replace />;
 
   return (
@@ -114,6 +121,7 @@ const SoloBoard = ({
   );
 
   const busy = open.isPending || guess.isPending || giveUp.isPending;
+  const over = view.isOver;
 
   // What to do next, in one sentence — the rule of the turn, said where the eye already is
   // (docs/quiz/associations.md §3.2). Derived from the server's view, never from local guesses.
@@ -199,7 +207,7 @@ const SoloBoard = ({
           </span>
         </header>
 
-        {remaining !== null && (
+        {!over && remaining !== null && (
           <div className="flex justify-center">
             <BoardTimer
               remainingMs={remaining}
@@ -208,7 +216,7 @@ const SoloBoard = ({
           </div>
         )}
 
-        {resumed && !carriedOn && (
+        {!over && resumed && !carriedOn && (
           <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border bg-muted/50 px-3 py-2 text-sm">
             <span>
               You already had this board going — here it is, with the clock
@@ -225,12 +233,16 @@ const SoloBoard = ({
           </div>
         )}
 
-        <p
-          aria-live="polite"
-          className="text-center text-sm font-medium text-muted-foreground"
-        >
-          {prompt}
-        </p>
+        {over ? (
+          <FinishBanner view={view} />
+        ) : (
+          <p
+            aria-live="polite"
+            className="text-center text-sm font-medium text-muted-foreground"
+          >
+            {prompt}
+          </p>
+        )}
 
         <div className="relative">
           <AssociationBoard
@@ -238,6 +250,7 @@ const SoloBoard = ({
             onOpenTile={view.canOpen ? handleOpen : undefined}
             onGuess={view.canGuess ? handleGuess : undefined}
             busy={busy}
+            reveal={over}
           />
           {coach && (
             <BoardCoach
@@ -247,21 +260,80 @@ const SoloBoard = ({
           )}
         </div>
 
-        <div className="flex min-h-9 flex-wrap items-center justify-between gap-2">
-          <p
-            aria-live="polite"
-            className={cn(
-              "text-sm font-medium",
-              feedback?.tone === "right" && "text-quiz-success",
-              feedback?.tone === "wrong" && "text-destructive",
-              feedback?.tone === "info" && "text-muted-foreground",
-            )}
+        {over ? (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1.6, duration: 0.35 }}
+            className="flex justify-center pt-2"
           >
-            {feedback?.text}
-          </p>
-          <GiveUpControl onGiveUp={() => giveUp.mutate()} disabled={busy} />
-        </div>
+            <LiftedButton
+              onClick={() =>
+                navigate(`/associations/results/${view.sessionId}`, {
+                  replace: true,
+                })
+              }
+            >
+              See results <ArrowRight className="ml-1 h-4 w-4" />
+            </LiftedButton>
+          </motion.div>
+        ) : (
+          <div className="flex min-h-9 flex-wrap items-center justify-between gap-2">
+            <p
+              aria-live="polite"
+              className={cn(
+                "text-sm font-medium",
+                feedback?.tone === "right" && "text-quiz-success",
+                feedback?.tone === "wrong" && "text-destructive",
+                feedback?.tone === "info" && "text-muted-foreground",
+              )}
+            >
+              {feedback?.text}
+            </p>
+            <GiveUpControl onGiveUp={() => giveUp.mutate()} disabled={busy} />
+          </div>
+        )}
       </div>
     </div>
+  );
+};
+
+/**
+ * The ending, said above the revealed board: a won Final in big letters with the total, or why
+ * the game stopped. Replaces the prompt; the timer, the guide and Give up are gone by now.
+ */
+const FinishBanner = ({ view }: { view: AssociationGameView }) => {
+  const won = view.endReason === "FinalSolved";
+  return (
+    <motion.div
+      role="status"
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ type: "spring", stiffness: 260, damping: 18 }}
+      className="text-center"
+    >
+      {won ? (
+        <>
+          <p className="text-sm font-medium text-muted-foreground">
+            You solved the final
+          </p>
+          <p className="text-2xl font-bold text-quiz-success break-words sm:text-3xl">
+            {view.final.solution}
+          </p>
+          <p className="text-sm font-semibold tabular-nums">
+            {view.score} pts
+          </p>
+        </>
+      ) : (
+        <>
+          <p className="text-xl font-bold sm:text-2xl">
+            {view.endReason === "TimeUp" ? "Time's up" : "Here's the board"}
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Everything you didn&apos;t open, revealed · {view.score} pts
+          </p>
+        </>
+      )}
+    </motion.div>
   );
 };
