@@ -7,10 +7,12 @@ import {
   useParams,
 } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, ArrowLeft, Flag, Send } from "lucide-react";
+import { motion } from "framer-motion";
+import { AlertCircle, ArrowLeft, ArrowRight, Flag, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/form";
 import { cn } from "@/utils/cn";
+import { LiftedButton } from "@/common/LiftedButton";
 import { QuizLoadingView } from "@/pages/Quiz/Sessions/components/quiz-loading-view";
 import type {
   AssociationGameView,
@@ -33,12 +35,16 @@ const MAX_GUESS_LENGTH = 200;
 /**
  * `/associations/play/:sessionId` — a Solo game in progress (docs/quiz/associations.md,
  * "Playing"). Open any Tile, guess any Column or the Final, as often as you like, before the
- * board clock runs out. Everything shown comes from the server's view; when the game is over
- * the page hands over to the results.
+ * board clock runs out. Everything shown comes from the server's view. A game that ends while
+ * you play stays on the board for the reveal and a "See results" button; arriving at one that was
+ * already over goes straight to the results.
  */
 export const AssociationGamePage = () => {
   const { sessionId = "" } = useParams<{ sessionId: string }>();
   const game = useAssociationGame(sessionId);
+  // Seen in play: the ending then plays out on the board instead of jumping to the results.
+  const [live, setLive] = useState(false);
+  if (game.data && !game.data.isOver && !live) setLive(true);
 
   if (game.isLoading) return <QuizLoadingView label="Loading the board" />;
 
@@ -61,7 +67,7 @@ export const AssociationGamePage = () => {
   }
 
   // Finished — by the Final, by giving up, or by the clock (the server settles that on read).
-  if (game.data.isOver)
+  if (game.data.isOver && !live)
     return <Navigate to={`/associations/results/${sessionId}`} replace />;
 
   return (
@@ -117,6 +123,7 @@ const SoloBoard = ({
   );
 
   const busy = open.isPending || guess.isPending || giveUp.isPending;
+  const over = view.isOver;
 
   // What to do next, in one sentence — the rule of the turn, said where the eye already is
   // (docs/quiz/associations.md §3.2). Derived from the server's view, never from local guesses.
@@ -212,14 +219,14 @@ const SoloBoard = ({
           </span>
         </header>
 
-        {remaining !== null && (
+        {!over && remaining !== null && (
           <BoardTimer
             remainingMs={remaining}
             totalSeconds={view.boardSeconds}
           />
         )}
 
-        {resumed && !carriedOn && (
+        {!over && resumed && !carriedOn && (
           <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border bg-muted/50 px-3 py-2 text-sm">
             <span>
               You already had this board going — here it is, with the clock
@@ -236,12 +243,16 @@ const SoloBoard = ({
           </div>
         )}
 
-        <p
-          aria-live="polite"
-          className="text-center text-sm font-medium text-muted-foreground"
-        >
-          {prompt}
-        </p>
+        {over ? (
+          <FinishBanner view={view} />
+        ) : (
+          <p
+            aria-live="polite"
+            className="text-center text-sm font-medium text-muted-foreground"
+          >
+            {prompt}
+          </p>
+        )}
 
         <AssociationBoard
           view={view}
@@ -250,78 +261,140 @@ const SoloBoard = ({
           onSelectTarget={view.canGuess ? handleSelectTarget : undefined}
           beckon={view.canGuess && !target}
           busy={busy}
+          reveal={over}
         />
 
-        <form
-          onSubmit={handleGuess}
-          className="flex flex-col gap-2 sm:flex-row sm:items-center"
-        >
-          <div className="flex-1">
-            <Input
-              id="association-guess"
-              aria-label={target ? `Guess ${targetLabel(target)}` : "Guess"}
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              maxLength={MAX_GUESS_LENGTH}
-              autoComplete="off"
-              placeholder={
-                target
-                  ? `Your guess for ${targetLabel(target)}`
-                  : "Pick a column or the final first"
-              }
-              disabled={!target}
-              variant="settings"
-            />
-          </div>
-          <Button type="submit" disabled={!target || !text.trim() || busy}>
-            <Send className="mr-1 h-4 w-4" /> Guess
-          </Button>
-        </form>
-
-        <div className="flex min-h-6 flex-wrap items-center justify-between gap-2">
-          <p
-            aria-live="polite"
-            className={cn(
-              "text-sm font-medium",
-              feedback?.tone === "right" && "text-quiz-success",
-              feedback?.tone === "wrong" && "text-destructive",
-              feedback?.tone === "info" && "text-muted-foreground",
-            )}
+        {over ? (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1.6, duration: 0.35 }}
+            className="flex justify-center pt-2"
           >
-            {feedback?.text}
-          </p>
-          {confirmGiveUp ? (
-            <div className="flex items-center gap-2 text-sm">
-              <span className="text-muted-foreground">
-                Reveal the board and end the game?
-              </span>
-              <Button
-                size="sm"
-                variant="destructive"
-                onClick={() => giveUp.mutate()}
-                disabled={busy}
-              >
-                Give up
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => setConfirmGiveUp(false)}
-              >
-                Keep playing
-              </Button>
-            </div>
-          ) : (
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => setConfirmGiveUp(true)}
+            <LiftedButton
+              onClick={() =>
+                navigate(`/associations/results/${view.sessionId}`, {
+                  replace: true,
+                })
+              }
             >
-              <Flag className="mr-1 h-4 w-4" /> Give up
-            </Button>
-          )}
-        </div>
+              See results <ArrowRight className="ml-1 h-4 w-4" />
+            </LiftedButton>
+          </motion.div>
+        ) : (
+          <>
+            <form
+              onSubmit={handleGuess}
+              className="flex flex-col gap-2 sm:flex-row sm:items-center"
+            >
+              <div className="flex-1">
+                <Input
+                  id="association-guess"
+                  aria-label={target ? `Guess ${targetLabel(target)}` : "Guess"}
+                  value={text}
+                  onChange={(e) => setText(e.target.value)}
+                  maxLength={MAX_GUESS_LENGTH}
+                  autoComplete="off"
+                  placeholder={
+                    target
+                      ? `Your guess for ${targetLabel(target)}`
+                      : "Pick a column or the final first"
+                  }
+                  disabled={!target}
+                  variant="settings"
+                />
+              </div>
+              <Button type="submit" disabled={!target || !text.trim() || busy}>
+                <Send className="mr-1 h-4 w-4" /> Guess
+              </Button>
+            </form>
+
+            <div className="flex min-h-6 flex-wrap items-center justify-between gap-2">
+              <p
+                aria-live="polite"
+                className={cn(
+                  "text-sm font-medium",
+                  feedback?.tone === "right" && "text-quiz-success",
+                  feedback?.tone === "wrong" && "text-destructive",
+                  feedback?.tone === "info" && "text-muted-foreground",
+                )}
+              >
+                {feedback?.text}
+              </p>
+              {confirmGiveUp ? (
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="text-muted-foreground">
+                    Reveal the board and end the game?
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => giveUp.mutate()}
+                    disabled={busy}
+                  >
+                    Give up
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setConfirmGiveUp(false)}
+                  >
+                    Keep playing
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setConfirmGiveUp(true)}
+                >
+                  <Flag className="mr-1 h-4 w-4" /> Give up
+                </Button>
+              )}
+            </div>
+          </>
+        )}
       </div>
     </div>
+  );
+};
+
+/**
+ * The ending, said above the revealed board: a won Final in big letters with the total, or why
+ * the game stopped. Replaces the prompt; the timer and guess box are gone by now.
+ */
+const FinishBanner = ({ view }: { view: AssociationGameView }) => {
+  const won = view.endReason === "FinalSolved";
+  return (
+    <motion.div
+      role="status"
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ type: "spring", stiffness: 260, damping: 18 }}
+      className="text-center"
+    >
+      {won ? (
+        <>
+          <p className="text-sm font-medium text-muted-foreground">
+            You solved the final
+          </p>
+          <p className="text-2xl font-bold text-quiz-success break-words sm:text-3xl">
+            {view.final.solution}
+          </p>
+          <p className="text-sm font-semibold tabular-nums">
+            {view.score} pts
+          </p>
+        </>
+      ) : (
+        <>
+          <p className="text-xl font-bold sm:text-2xl">
+            {view.endReason === "TimeUp" ? "Time's up" : "Here's the board"}
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Everything you didn&apos;t open, revealed · {view.score} pts
+          </p>
+        </>
+      )}
+    </motion.div>
   );
 };

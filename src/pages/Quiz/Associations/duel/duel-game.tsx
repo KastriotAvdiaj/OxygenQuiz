@@ -184,6 +184,8 @@ const DuelBoard = ({
           onSelectTarget={canGuess ? handleSelectTarget : undefined}
           beckon={canGuess && !target}
           busy={busy}
+          reveal={view.isOver}
+          solverName={(seat) => view.seats.find((s) => s.seat === seat)?.username}
         />
 
         {!view.isOver && (

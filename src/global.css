@@ -490,6 +490,59 @@ body {
   }
 }
 
+/* Associations end-of-game reveal (AssociationBoard `reveal`, docs/quiz/associations.md §9.9):
+   every Tile and solution the player hadn't seen flips down into place, each with its own
+   animation-delay set inline. A won Final pops in first and glows twice. `both` keeps an element
+   hidden until its turn. */
+.board-reveal {
+  animation: board-reveal 0.45s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+  transform-origin: top center;
+}
+
+@keyframes board-reveal {
+  from {
+    opacity: 0;
+    transform: perspective(600px) rotateX(-75deg);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.board-final-win {
+  animation:
+    board-final-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both,
+    board-final-glow 1.1s ease-out 0.35s 2;
+}
+
+@keyframes board-final-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes board-final-glow {
+  0% {
+    box-shadow: 0 0 0 0 hsl(var(--quiz-success) / 0.55);
+  }
+  100% {
+    box-shadow: 0 0 0 14px hsl(var(--quiz-success) / 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .board-reveal,
+  .board-final-win {
+    animation: none;
+  }
+}
+
 /* Compact modifier for dense panels — the dashboard filter cards, where the default
    0.75rem padding makes a ~44px control that dwarfs the Select triggers next to it.
    It lives HERE, next to the rule it overrides, for the reason spelled out above

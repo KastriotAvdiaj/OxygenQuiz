@@ -560,8 +560,8 @@ routes, the one-free-quiz cookie, and deletion after the results — the deletio
 | Route | Screen |
 |---|---|
 | `/associations/:quizId/play` (`?shareToken=`) | `AssociationStartRoute`: starts the game (once — a ref guards StrictMode's double mount) and **replaces** itself with the game's URL, so refresh and Back land on the game instead of starting another. |
-| `/associations/play/:sessionId` | `AssociationGamePage`: score, clock, the board, the guess box, Give up (two clicks). Hands over to the results the moment the view says the game is over. |
-| `/associations/results/:sessionId` | `AssociationResultsPage`: the end reason, the score, the fully revealed board, the score line by line, the move timeline, Play again (restart) and Back. A results link to a game still running goes to the game. |
+| `/associations/play/:sessionId` | `AssociationGamePage`: score, clock, the board, the guess box, Give up (two clicks). When the game ends while you play it stays on the board: the clock, prompt and guess box give way to a finish banner (a won Final in large green letters with the total, or "Time's up" / "Here's the board"), the board plays its reveal, and a **See results** button fades in. Opening a game that was already over goes straight to the results. |
+| `/associations/results/:sessionId` | `AssociationResultsPage`: the end reason, the score, the fully revealed board (each slot shows its points), Play again (primary `LiftedButton`, restarts) and Back to quizzes (muted `LiftedButton`). No score table or move list — the board already carries the points, and the moves matter only to a future history view (`scoreBreakdown`, `describeMove`, `elapsedLabel` stay in `board-model.ts`, tested, for that). A results link to a game still running goes to the game. |
 
 All three are signed-in routes (`userAuthLoader`). **Play** in the catalogue's start dialog goes
 through `quizPlayPath` (`src/pages/Quiz/quiz-play-path.ts`), which picks the play screen by format;
@@ -585,8 +585,11 @@ admins while §0 holds — an **All / Quizzes / Boards** control filters the gri
 `AssociationBoard` (`src/pages/Quiz/Associations/board/`) is the one board component — Solo play,
 the results review and the Duel (§10.7) — and it never calls the API: a Tile click and a
 target choice go up as callbacks, the new view comes down
-([`quiz-playing-architecture.md`](./quiz-playing-architecture.md) §1). The guess box aims at the
-solution slot the player picked, or else the first unsolved one. Each move writes the returned view
+([`quiz-playing-architecture.md`](./quiz-playing-architecture.md) §1). The guess box aims only at the
+solution slot the player picked. With `reveal`, a finished board flips in everything the player
+hadn't seen — unopened Tiles and unsolved or via-Final solutions, column by column (`.board-reveal`
+in `global.css`) — after a won Final pops in first and glows (`.board-final-win`); both are off
+under `prefers-reduced-motion`. `solverName` (Duel) adds who solved a slot after its points. Each move writes the returned view
 straight into the React Query cache (`useAssociationMoves`); nothing is refetched after a move.
 
 ## 10. Playing — Duel
@@ -708,7 +711,7 @@ scores) and `winnerSeat` (from the `Match`). A Seat whose player later deleted t
 its score and is shown as "(player left)". A Duel session takes no moves over HTTP ("This game is
 already over."). While the format is in preview, a non-admin opponent can still read their own
 Duel here (§0). The page shows both scores and who won instead of one score, names who solved
-each line of the breakdown and who made each move, and has no "Play again" — a rematch is in the
+each slot on the board itself (no breakdown or move list, §9.9), and has no "Play again" — a rematch is in the
 lobby. Pinned by `DuelReviewTests`.
 
 ### 10.7 The screens
@@ -726,7 +729,7 @@ Everything is in `src/pages/Quiz/Associations/duel/`, beside `solo/`:
   `serverNow` — `useBoardClock`), one line saying whose turn it is and what it allows, the shared
   `AssociationBoard` (clickable only on your turn, and only what the turn allows), the guess box
   with **Pass**, the last move from either side in one line, and the recent moves. At the end:
-  who won, the whole Board, **Review the duel** (the results page, in a new tab so the lobby
+  who won, the whole Board playing the same reveal as Solo, with who solved each slot, **Review the duel** (the results page, in a new tab so the lobby
   stays) and **Back to lobby** for a rematch.
 - **`duel-model.ts`** — the pure helpers (whose turn, the prompt, the outcome from the reader's
   side, a move in words), tested in `duel-model.test.ts`.
