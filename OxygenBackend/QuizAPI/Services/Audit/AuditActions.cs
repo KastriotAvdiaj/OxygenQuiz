@@ -72,5 +72,10 @@ namespace QuizAPI.Services.Audit
         // Permissions (role ↔ permission assignments, edited from the Permissions page).
         public const string RolePermissionGranted = "RolePermissionGranted";
         public const string RolePermissionRevoked = "RolePermissionRevoked";
+
+        // Teacher access (docs/auth/teacher-role.md). The role itself is granted by UserRolesChanged.
+        public const string TeacherAccessRequested = "TeacherAccessRequested";
+        public const string TeacherAccessApproved = "TeacherAccessApproved";
+        public const string TeacherAccessDeclined = "TeacherAccessDeclined";
     }
 }

@@ -252,7 +252,7 @@ off the validated JWT and passes it down; the **service** owns the decision and 
 `Services/Roles/RoleRules.cs` — because two copies of "which roles are privileged" is exactly the
 pair that drifts apart and leaves the forgotten copy open.
 
-| Caller | May mint `User` codes | May mint `Admin` codes | May mint `SuperAdmin` codes |
+| Caller | May mint `User` / `Teacher` codes | May mint `Admin` codes | May mint `SuperAdmin` codes |
 |---|---|---|---|
 | **Admin** | ✅ | ✅ | ❌ → `403` |
 | **SuperAdmin** | ✅ | ✅ | ✅ |
@@ -268,6 +268,11 @@ unless all three hold:
 | **`count` must be 1** | You mint 200 tester codes; you never mint 200 Admin invites. |
 | **`expiresAt` required** | A leaked elevated code has to stop working on its own. |
 | **`intendedEmail` required** | Binds it to one address, so a leaked code is useless to whoever finds it. |
+
+"Elevated" is `RoleRules.IsElevated` — Admin or SuperAdmin. **A Teacher code carries no rails**: it
+may be minted in bulk, unbound and without expiry, so a school can be onboarded with one batch. The
+worst case of a leaked one is a stranger who can host boards — no authority over anyone
+([`teacher-role.md`](teacher-role.md)).
 
 Two rules apply to every code, elevated or not: an `expiresAt` in the past is rejected (minting
 something already dead is never what was meant), and `intendedEmail` with `count > 1` is rejected

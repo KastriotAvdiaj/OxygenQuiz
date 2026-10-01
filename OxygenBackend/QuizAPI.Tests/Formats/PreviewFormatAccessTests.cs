@@ -76,6 +76,12 @@ public class PreviewFormatAccessTests
                 NullLogger<QuizService>.Instance, new Mock<IImageService>().Object,
                 new TestCurrentUserService { UserId = admin ? AdminId : PlayerId, IsAdmin = admin, IsAuthenticated = true });
 
+        /// <summary>A Teacher: not an admin, but may see formats in preview (docs/auth/teacher-role.md §2.3).</summary>
+        public QuizService TeacherService(ApplicationDbContext ctx) =>
+            new(new QuizRepository(ctx), new Mock<IQuestionRepository>().Object,
+                NullLogger<QuizService>.Instance, new Mock<IImageService>().Object,
+                new TestCurrentUserService { UserId = PlayerId, IsAdmin = false, IsTeacher = true, IsAuthenticated = true });
+
         public string TokenOf(int id)
         {
             using var ctx = Context();
@@ -86,9 +92,25 @@ public class PreviewFormatAccessTests
     [Fact]
     public void AssociationsIsInPreview_ClassicIsNot()
     {
-        Assert.False(QuizFormatAccess.IsAvailableTo(QuizFormat.Associations, isAdmin: false));
-        Assert.True(QuizFormatAccess.IsAvailableTo(QuizFormat.Associations, isAdmin: true));
-        Assert.True(QuizFormatAccess.IsAvailableTo(QuizFormat.Classic, isAdmin: false));
+        Assert.False(QuizFormatAccess.IsAvailableTo(QuizFormat.Associations, canSeePreview: false));
+        Assert.True(QuizFormatAccess.IsAvailableTo(QuizFormat.Associations, canSeePreview: true));
+        Assert.True(QuizFormatAccess.IsAvailableTo(QuizFormat.Classic, canSeePreview: false));
+    }
+
+    [Fact]
+    public async Task ATeacher_SeesTheBoard_InTheCatalogue_SearchAndById()
+    {
+        var world = new World();
+        await using var ctx = world.Context();
+        var service = world.TeacherService(ctx);
+
+        var page = await service.GetPublicQuizzesAsync(new QuizFilterParams());
+        var search = await service.SearchQuizzesAsync(new FilterQuery(), publicOnly: true);
+        var byId = await service.GetQuizByIdAsync(world.BoardId, PlayerId);
+
+        Assert.Contains("Italian cities", page.Items.Select(q => q.Title));
+        Assert.Equal(2, search.Items.Count());
+        Assert.NotNull(byId);
     }
 
     [Theory]

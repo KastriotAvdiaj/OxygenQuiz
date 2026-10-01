@@ -69,6 +69,10 @@ public class QuizHub : Hub<IQuizClient>
     private bool IsAdmin() =>
         Context.User?.IsInRole("Admin") == true || Context.User?.IsInRole("SuperAdmin") == true;
 
+    /// <summary>Admin, SuperAdmin or Teacher — who may see a format in preview (QuizFormatAccess).</summary>
+    private bool CanSeePreviewFormats() =>
+        IsAdmin() || Context.User?.IsInRole(QuizAPI.Services.Roles.RoleRules.Teacher) == true;
+
     /// <summary>
     /// The authenticated account's current display name and avatar, read from the database once
     /// per join/create — not from the token, whose name claim lags a rename until it refreshes.
@@ -452,7 +456,7 @@ public class QuizHub : Hub<IQuizClient>
             // can't host at all, so a player learns nothing about what the id is
             // (docs/quiz/associations.md §0).
             var format = await quizService.GetFormatAsync(parsedQuizId) ?? QuizAPI.Models.Quiz.QuizFormat.Classic;
-            if (!QuizAPI.Common.QuizFormatAccess.IsAvailableTo(format, IsAdmin()))
+            if (!QuizAPI.Common.QuizFormatAccess.IsAvailableTo(format, CanSeePreviewFormats()))
                 throw new HubException("You can't host this quiz.");
 
             // The format is the server's, whatever the payload said: the lobby's rules follow from

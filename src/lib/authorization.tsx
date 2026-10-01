@@ -7,6 +7,8 @@ export enum ROLES {
   Admin = "Admin",
   SuperAdmin = "SuperAdmin",
   User = "User",
+  /** Hosts boards for a class (docs/auth/teacher-role.md). Not an admin role. */
+  Teacher = "Teacher",
 }
 
 // ── primitives ─────────────────────────────────────────────

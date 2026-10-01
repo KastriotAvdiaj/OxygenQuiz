@@ -88,7 +88,7 @@ namespace QuizAPI.Services.Invitations
             var name = requested?.Trim();
 
             // Null, blank, or an explicit "User" all mean the same thing: grant nothing extra.
-            if (!RoleRules.IsElevated(name)) return null;
+            if (!RoleRules.IsExtraRole(name)) return null;
 
             var role = await _roleRepository.GetByNameAsync(name!, ct)
                 ?? throw new ConflictException($"Unknown role: {name}");
@@ -117,7 +117,9 @@ namespace QuizAPI.Services.Invitations
                 throw new AppValidationException(
                     "A code bound to an email address is minted one at a time.");
 
-            if (grantedRole is null) return;
+            // A Teacher code is a capability for a school, not authority over accounts: it may be
+            // minted in bulk and left unbound, like a plain invite (docs/auth/teacher-role.md).
+            if (grantedRole is null || !RoleRules.IsElevated(grantedRole.Name)) return;
 
             if (dto.Count != 1)
                 throw new AppValidationException(

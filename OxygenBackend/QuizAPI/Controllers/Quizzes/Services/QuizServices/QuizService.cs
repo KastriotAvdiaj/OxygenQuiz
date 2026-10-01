@@ -102,7 +102,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
         {
             try
             {
-                var quizQuery = ApplyQuizFilters(_quizzes.Query().VisibleTo(_current.IsAdmin), filterParams);
+                var quizQuery = ApplyQuizFilters(_quizzes.Query().VisibleTo(_current.CanSeePreviewFormats), filterParams);
                 return await ToSummaryPageAsync(quizQuery, filterParams);
             }
             catch (Exception ex)
@@ -130,7 +130,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
             bool includeDeleted = false,
             CancellationToken ct = default)
         {
-            IQueryable<Quiz> q = _quizzes.Query(includeDeleted).VisibleTo(_current.IsAdmin);
+            IQueryable<Quiz> q = _quizzes.Query(includeDeleted).VisibleTo(_current.CanSeePreviewFormats);
 
             if (restrictToUserId is { } uid)
                 q = q.Where(x => x.UserId == uid);
@@ -157,7 +157,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
         {
             try
             {
-                var quizQuery = _quizzes.Query().VisibleTo(_current.IsAdmin).Where(q => q.Status == QuizStatus.Public);
+                var quizQuery = _quizzes.Query().VisibleTo(_current.CanSeePreviewFormats).Where(q => q.Status == QuizStatus.Public);
                 quizQuery = ApplyQuizFilters(quizQuery, filterParams);
                 return await ToSummaryPageAsync(quizQuery, filterParams);
             }
@@ -172,7 +172,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
         {
             try
             {
-                var quizQuery = _quizzes.Query().VisibleTo(_current.IsAdmin).Where(q => q.UserId == userId);
+                var quizQuery = _quizzes.Query().VisibleTo(_current.CanSeePreviewFormats).Where(q => q.UserId == userId);
                 quizQuery = ApplyQuizFilters(quizQuery, filterParams);
                 return await ToSummaryPageAsync(quizQuery, filterParams);
             }
@@ -188,7 +188,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
             try
             {
                 var quiz = await _quizzes.GetByIdAsync(id);
-                if (quiz == null || !QuizFormatAccess.IsAvailableTo(quiz.Format, _current.IsAdmin))
+                if (quiz == null || !QuizFormatAccess.IsAvailableTo(quiz.Format, _current.CanSeePreviewFormats))
                     return null;
 
                 var dto = quiz.ToDto();
@@ -219,7 +219,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                 // link even if a token somehow exists.
                 var quiz = await _quizzes.GetByShareTokenAsync(shareToken);
                 if (quiz == null || quiz.Status == QuizStatus.Draft
-                    || !QuizFormatAccess.IsAvailableTo(quiz.Format, _current.IsAdmin))
+                    || !QuizFormatAccess.IsAvailableTo(quiz.Format, _current.CanSeePreviewFormats))
                     return null;
 
                 return quiz.ToDto();
@@ -236,7 +236,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
             try
             {
                 var format = await GetFormatAsync(id);
-                if (format is null || !QuizFormatAccess.IsAvailableTo(format.Value, _current.IsAdmin))
+                if (format is null || !QuizFormatAccess.IsAvailableTo(format.Value, _current.CanSeePreviewFormats))
                     return null;
 
                 var quizQuestions = await _quizzes.GetQuizQuestionsAsync(id);

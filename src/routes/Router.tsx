@@ -586,6 +586,14 @@ const createAppRouter = (queryClient: QueryClient) =>
           },
         },
         {
+          path: "teacher-requests",
+          lazy: async () => {
+            const { TeacherRequests } =
+              await import("../pages/Dashboard/Pages/TeacherRequests/TeacherRequests");
+            return { Component: TeacherRequests };
+          },
+        },
+        {
           path: "audit-logs",
           lazy: async () => {
             const { AuditLog } =

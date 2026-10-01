@@ -14,6 +14,19 @@ namespace QuizAPI.Services.Roles
         /// <summary>The role every account gets. Signup fails loudly if it isn't seeded.</summary>
         public const string DefaultRole = "User";
 
+        public const string Admin = "Admin";
+        public const string SuperAdmin = "SuperAdmin";
+
+        /// <summary>
+        /// Hosts boards for a class and keeps Classes (docs/auth/teacher-role.md). A capability, not
+        /// authority over other accounts — so it is <i>not</i> <see cref="IsElevated"/>.
+        /// </summary>
+        public const string Teacher = "Teacher";
+
+        /// <summary>Roles that may see a quiz format still in preview (<c>QuizFormatAccess</c>).</summary>
+        public static readonly HashSet<string> PreviewFormatRoles =
+            new(StringComparer.OrdinalIgnoreCase) { Admin, SuperAdmin, Teacher };
+
         /// <summary>
         /// Roles only a SuperAdmin may hand out — whether by changing a user's roles or by minting
         /// an invite code that grants one. Compared case-insensitively.
@@ -22,11 +35,21 @@ namespace QuizAPI.Services.Roles
             new(StringComparer.OrdinalIgnoreCase) { "SuperAdmin" };
 
         /// <summary>
-        /// True for any role above <see cref="DefaultRole"/>. Elevated grants carry the extra rails
-        /// (mandatory expiry, single code, bound to one email) that a plain tester invite doesn't need.
+        /// True for a role with authority over other accounts — Admin and SuperAdmin. Elevated grants
+        /// carry the extra rails (mandatory expiry, single code, bound to one email) that a plain
+        /// invite doesn't need, and only a SuperAdmin may delete an account holding one.
+        ///
+        /// <para>Named explicitly rather than "anything but User": that was the definition until
+        /// Teacher existed, and it would have made a Teacher undeletable by an Admin and a school's
+        /// Teacher invite code impossible to mint in bulk — neither of which a Teacher warrants.</para>
         /// </summary>
         public static bool IsElevated(string? roleName) =>
+            Admin.Equals(roleName, StringComparison.OrdinalIgnoreCase) ||
+            SuperAdmin.Equals(roleName, StringComparison.OrdinalIgnoreCase);
+
+        /// <summary>True for any real role other than <see cref="DefaultRole"/> — something a grant adds.</summary>
+        public static bool IsExtraRole(string? roleName) =>
             !string.IsNullOrWhiteSpace(roleName) &&
-            !DefaultRole.Equals(roleName, StringComparison.OrdinalIgnoreCase);
+            !DefaultRole.Equals(roleName.Trim(), StringComparison.OrdinalIgnoreCase);
     }
 }

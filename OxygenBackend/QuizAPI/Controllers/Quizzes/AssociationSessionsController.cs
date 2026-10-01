@@ -35,7 +35,7 @@ namespace QuizAPI.Controllers.Quizzes
         }
 
         private bool MayUseAssociations =>
-            QuizFormatAccess.IsAvailableTo(QuizFormat.Associations, _currentUser.IsAdmin);
+            QuizFormatAccess.IsAvailableTo(QuizFormat.Associations, _currentUser.CanSeePreviewFormats);
 
         // [Authorize] guarantees a user; the id is always the JWT's, never the request's.
         private Guid GetCurrentUserId() =>

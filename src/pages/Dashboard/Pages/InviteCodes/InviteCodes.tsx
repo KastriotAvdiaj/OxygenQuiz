@@ -53,6 +53,8 @@ const deriveStatus = (c: InviteCodeStatus): Derived => {
 // The default role every account gets; picking it here means "grant nothing extra".
 // Mirrors RoleRules.DefaultRole / RoleRules.SuperAdminOnlyRoles on the backend.
 const PLAIN_ROLE = "User";
+// Mirrors RoleRules.IsElevated: authority over other accounts, so the code gets the rails.
+const ELEVATED_ROLES = ["Admin", "SuperAdmin"];
 const SUPERADMIN = "SuperAdmin";
 
 export const InviteCodes = () => {
@@ -73,7 +75,9 @@ export const InviteCodes = () => {
   // A code that grants a role is a far more valuable bearer secret than a tester invite, so the
   // API forces it to be single, expiring and bound to one address. Deriving this during render
   // (rather than storing it) keeps the form from ever disagreeing with the role that's selected.
-  const isElevated = role !== PLAIN_ROLE;
+  // Only Admin and SuperAdmin carry the rails — mirrors RoleRules.IsElevated. A Teacher code is
+  // a capability for a school, minted in bulk like a plain invite (docs/auth/teacher-role.md).
+  const isElevated = ELEVATED_ROLES.includes(role);
 
   // Binding an address also forces a batch of one, for a plainer reason: only the first of ten
   // codes bound to one email could ever be redeemed, so the other nine would be born dead. The
@@ -173,7 +177,7 @@ export const InviteCodes = () => {
       count: effectiveCount,
       label: label.trim() || undefined,
       expiresAt: expiresAt ? new Date(expiresAt).toISOString() : undefined,
-      role: isElevated ? role : undefined,
+      role: role !== PLAIN_ROLE ? role : undefined,
       intendedEmail: intendedEmail.trim() || undefined,
     });
   };
@@ -401,7 +405,9 @@ export const InviteCodes = () => {
                 <p className="text-xs text-muted-foreground">
                   {isElevated
                     ? `Whoever redeems this code becomes a ${role}. One code, expiring, for one named address.`
-                    : "A normal account. Hand these out freely."}
+                    : role !== PLAIN_ROLE
+                      ? `Whoever redeems one becomes a ${role}. Hand these out to a school freely.`
+                      : "A normal account. Hand these out freely."}
                 </p>
               </div>
 

@@ -6,6 +6,7 @@ import { useUser } from "@/lib/Auth";
 import formatDate from "@/lib/date-format";
 import { useRequestPasswordReset } from "@/pages/UserRelated/PasswordReset/api/password-reset";
 import { CloseAccountSection } from "./CloseAccountSection";
+import { TeacherAccessSection } from "./TeacherAccessSection";
 import { useAccountIdentity } from "../api/account-identity";
 import { EmailEditor, PendingEmailNotice, UsernameEditor } from "./IdentityEditors";
 
@@ -189,6 +190,8 @@ export const AccountPanel = () => {
           <PasswordRow email={user?.email} />
         </div>
       </section>
+
+      <TeacherAccessSection />
 
       {/* Last, and visually separated by its destructive border. The only way to leave —
           the Users dashboard refuses self-deletion on purpose (ADR 0011), which makes this

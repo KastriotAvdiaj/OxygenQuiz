@@ -11,6 +11,7 @@ import {
   Tag,
   Signal,
   Languages,
+  GraduationCap,
 } from "lucide-react";
 
 export type DashboardNavItem = {
@@ -94,6 +95,13 @@ export const adminDashboardNavButtons: DashboardNavItem[] = [
     id: "invite-codes",
     label: "Invite Codes",
     icon: Ticket,
+    roles: ["Admin", "SuperAdmin"],
+    group: "Access",
+  },
+  {
+    id: "teacher-requests",
+    label: "Teacher Requests",
+    icon: GraduationCap,
     roles: ["Admin", "SuperAdmin"],
     group: "Access",
   },

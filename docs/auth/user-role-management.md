@@ -49,14 +49,16 @@ role rules do, and until ADR 0011 there were none: the endpoint was a bare `[Aut
 `CanActOnUser`, which resolves to *self OR Admin OR SuperAdmin*. An Admin could delete every
 SuperAdmin.
 
-| Caller | Plain `User` | `Admin` / `SuperAdmin` | Protected account | Themselves |
+| Caller | Plain `User` / `Teacher` | `Admin` / `SuperAdmin` | Protected account | Themselves |
 |---|---|---|---|---|
 | **Admin** | ✅ | ❌ `403` | ❌ `403` | ❌ `403` |
 | **SuperAdmin** | ✅ | ✅ | ❌ `403` | ❌ `403` |
 
-"Elevated" is `RoleRules.IsElevated` — anything that is not the default `User` role — the same
-shared definition the invite-code mint guard uses, so the delete rule cannot drift from the
-role-granting rule.
+"Elevated" is `RoleRules.IsElevated` — **Admin or SuperAdmin**, the roles with authority over other
+accounts — the same shared definition the invite-code rails use, so the delete rule cannot drift
+from the role-granting rule. Until 2026-10-01 it was "anything that is not `User`"; it was narrowed
+when **Teacher** arrived, which is a capability, not authority: an Admin may delete a Teacher and
+grant or remove the role like `User` ([`teacher-role.md`](teacher-role.md)).
 
 Self-deletion is refused because this endpoint is the *administrative* tool. Closing your own
 account is a separate self-service flow with its own 30-day grace period —

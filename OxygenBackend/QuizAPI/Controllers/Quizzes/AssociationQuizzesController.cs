@@ -93,7 +93,7 @@ namespace QuizAPI.Controllers.Quizzes
         }
 
         private bool MayUseAssociations =>
-            QuizFormatAccess.IsAvailableTo(Models.Quiz.QuizFormat.Associations, _currentUser.IsAdmin);
+            QuizFormatAccess.IsAvailableTo(Models.Quiz.QuizFormat.Associations, _currentUser.CanSeePreviewFormats);
 
         // [Authorize] guarantees a user; a missing id is a server fault, not a client one.
         private Guid GetCurrentUserId() =>

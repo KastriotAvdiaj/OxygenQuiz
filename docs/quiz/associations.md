@@ -16,11 +16,13 @@ in [`glossary.md`](./glossary.md); why a format is its own system rather than a 
 
 ---
 
-## 0. Admins only, for now
+## 0. Admins and Teachers only, for now
 
-**Associations is in preview: only admins (Admin / SuperAdmin) can see or use it.** Decided
-2026-09-23, so the format can be tested on the live site without players meeting a half-built
-feature.
+**Associations is in preview: only admins (Admin / SuperAdmin) and Teachers can see or use it.**
+Decided 2026-09-23, so the format can be tested on the live site without players meeting a
+half-built feature; Teachers added 2026-10-01, since hosting a board for a class is what they are
+for ([`../auth/teacher-role.md`](../auth/teacher-role.md) §3). In code the flag is
+`ICurrentUserService.CanSeePreviewFormats` (`RoleRules.PreviewFormatRoles`), not `IsAdmin`.
 
 - **Server (the rule).** `QuizFormatAccess.PreviewFormats` lists the formats in preview. For a
   non-admin, `QuizService` leaves those quizzes out of every read — catalogue, search, "my
