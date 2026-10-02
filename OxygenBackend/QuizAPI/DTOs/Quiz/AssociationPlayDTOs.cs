@@ -157,6 +157,8 @@ namespace QuizAPI.DTOs.Quiz
         public bool? IsCorrect { get; set; }
         public int Points { get; set; }
         public DateTime At { get; set; }
+        /// <summary>Host mode, an Undo: the move it took back.</summary>
+        public int? CancelsSeq { get; set; }
     }
 
     /// <summary>The answer to a move: the new view, and what the move itself did.</summary>

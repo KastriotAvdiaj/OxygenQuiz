@@ -281,6 +281,10 @@ namespace QuizAPI.Services.AccountClosure
             // personal data, kept only for this account (docs/quiz/classroom.md, "Classes").
             _db.Classes.RemoveRange(
                 await _db.Classes.Include(c => c.Students).Where(c => c.OwnerUserId == user.Id).ToListAsync(ct));
+            // Their hosted games stay as a record, like a player's history — minus the students'
+            // names, for the same reason as the Classes.
+            foreach (var team in await _db.HostedTeams.Where(t => t.Game.HostUserId == user.Id).ToListAsync(ct))
+                team.StudentsJson = "[]";
 
             await _db.SaveChangesAsync(ct);
 

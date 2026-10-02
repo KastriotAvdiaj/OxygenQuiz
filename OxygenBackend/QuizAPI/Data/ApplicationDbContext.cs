@@ -29,6 +29,7 @@ namespace QuizAPI.Data
         public DbSet<QuizAPI.Models.Associations.AssociationGame> AssociationGames { get; set; }
         public DbSet<QuizAPI.Models.Associations.AssociationGamePlayer> AssociationGamePlayers { get; set; }
         public DbSet<QuizAPI.Models.Associations.AssociationGameMove> AssociationGameMoves { get; set; }
+        public DbSet<QuizAPI.Models.Associations.HostedTeam> HostedTeams { get; set; }
 
         public DbSet<Quiz> Quizzes { get; set; }
 
@@ -612,6 +613,14 @@ namespace QuizAPI.Data
             // The backstop against a double click: two requests that both read Seq n and append n+1
             // can't both commit. The service turns the violation into a 409.
             move.HasIndex(m => new { m.GameId, m.Seq }).IsUnique();
+
+            // Host mode (ADR 0023). Teams go with their game.
+            var team = modelBuilder.Entity<QuizAPI.Models.Associations.HostedTeam>();
+            team.HasKey(t => new { t.GameId, t.Seat });
+            team.HasOne(t => t.Game).WithMany(g => g.Teams).HasForeignKey(t => t.GameId).OnDelete(DeleteBehavior.Cascade);
+            game.HasIndex(g => g.HostUserId);
+            // A Display finds its game by code; codes are unique while they exist.
+            game.HasIndex(g => g.ScreenCode).IsUnique().HasFilter($"\"{nameof(QuizAPI.Models.Associations.AssociationGame.ScreenCode)}\" IS NOT NULL");
         }
 
         /// <summary>Teacher access requests, Classes and hosted games (docs/quiz/classroom-plan.md §4).</summary>

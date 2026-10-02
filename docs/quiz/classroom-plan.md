@@ -45,7 +45,7 @@ the docs say what is now true.
 |---|---|---|---|
 | **1 — Teacher role** *(done 2026-10-01)* | The `Teacher` role (seeded); not "elevated" (§2.1); grant/remove from the Users table; Teacher invite codes; the request flow (§2.2); Teachers see Associations during the preview (§2.3). | Role seeding; an Admin can grant/remove Teacher and delete a Teacher; an Admin can mint a Teacher code; request → approve/decline, one open request, the 30-day wait, notifications; a Teacher sees boards in every read `VisibleTo` covers, a plain User still doesn't (extend `PreviewFormatAccessTests`). Frontend: the request button's states. | `../auth/teacher-role.md` (new); `user-role-management.md`, `invite-code-system.md`, `associations.md` §0. |
 | **2 — Classes** *(done 2026-10-01)* | `Class` + `ClassStudent`, CRUD API owned by the Teacher, the Classes page. | Ownership (a Teacher can't read or edit another's Class), the 40-name cap, name validation, Teacher-only. | `classroom.md` (new) §Classes. |
-| **3 — Hosted games: engine and API** | `PlayStyle.Hosted`, `HostedTeam`, the game's clock columns, `MoveKind.Undo` and `TurnTimedOut` handling, the service and REST API for the Controller (§4–§5). No UI yet. | Engine: Duel rules with 2/3/4 Seats; Undo in every allowed position and refused elsewhere; replay with Undo. Service: start (board access per C10, team count, clock combinations), every move, turn time-out, the game clock finishing the round, pause/resume (clocks frozen), end game, the 7-day abandonment. Secrecy: the Controller view without a Display has no answers. | `classroom.md` §Host mode; `associations.md` §3 (a pointer), ADRs 0023/0025 checked against what was built. |
+| **3 — Hosted games: engine and API** *(done 2026-10-02)* | `PlayStyle.Hosted`, `HostedTeam`, the game's clock columns, `MoveKind.Undo` and `TurnTimedOut` handling, the service and REST API for the Controller (§4–§5). No UI yet. | Engine: Duel rules with 2/3/4 Seats; Undo in every allowed position and refused elsewhere; replay with Undo. Service: start (board access per C10, team count, clock combinations), every move, turn time-out, the game clock finishing the round, pause/resume (clocks frozen), end game, the 7-day abandonment. Secrecy: the Controller view without a Display has no answers. | `classroom.md` §Host mode; `associations.md` §3 (a pointer), ADRs 0023/0025 checked against what was built. |
 | **4 — Controller UI** | Host setup (Board, Class, Teams, clocks), the Controller screen, pause/end/undo, the Answer key toggle (inert until Phase 5). | Unit: the setup model (shuffle, team limits), the Controller's prompt per state. E2E: one hosted game start to finish against the real API. | `classroom.md` §Screens. |
 | **5 — Displays** | Screen codes, the `/screen` page, the SignalR group per hosted game, live updates, disconnect-all, the Answer key gated on a connected Display. | Code: issue, expiry when the game ends, replacement on disconnect-all, the 3-Display cap, rate-limited attempts. Secrecy test over the Display payload (ADR 0024). E2E: a Controller and a Display in two browser contexts, a move on one appearing on the other. | `classroom.md` §Displays; `multiplayer.md` (the new hub group). |
 | **6 — Afterwards** | Hosted games list, results screen, Play again, the abandonment sweep wired in. | Listing is per Teacher; results ranking and ties; Play again rotates the first Team; abandonment after 7 idle days. | `classroom.md` §Afterwards; fold this plan. |
@@ -138,12 +138,13 @@ Every ending plays the reveal.
 | `HostedTeam` (new) | `GameId`, `Seat`, `Name` (≤ 30), `Colour`, `StudentsJson` | Students as they were that day — editing the Class later doesn't rewrite a past game. |
 | `AssociationGameMove` | `CancelsSeq?` | Set on an `Undo` move. |
 | `Class`, `ClassStudent` (new) | Class: `OwnerUserId`, `Name` (≤ 40); Student: `ClassId`, `Name` (≤ 30), `Order` | Max 40 students. Deleted with the owner's account (anonymisation path). |
-| `ScreenCode` (new) | `Code`, `GameId`, `CreatedAt`, `RevokedAt?` | One live code per game. |
+| (on `AssociationGame`) | `ScreenCode` (unique, filtered) | One live code per game. Built as a column, not a table: a code has no life of its own. |
 | `TeacherAccessRequest` (new) | §2.2 | |
 
-Account deletion: a Teacher's Classes, hosted games and Teams are theirs and go with the account
-(the anonymisation sweeper, `docs/auth/account-closure.md`) — students' first names are the only
-personal data, and they leave with it.
+Account deletion: anonymisation removes a Teacher's Classes and blanks the students' names on their
+hosted games' Teams; the games stay as a record, like a player's history (built 2026-10-02 —
+changed from "the games go too", which would have been the only place a closed account's history
+is deleted rather than kept).
 
 ---
 

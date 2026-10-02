@@ -134,6 +134,10 @@ builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
 builder.Services.AddScoped<ITeacherAccessRequestRepository, TeacherAccessRequestRepository>();
 builder.Services.AddScoped<IClassRepository, ClassRepository>();
 builder.Services.AddScoped<QuizAPI.Services.Classroom.IClassService, QuizAPI.Services.Classroom.ClassService>();
+builder.Services.AddScoped<IHostedGameRepository, HostedGameRepository>();
+builder.Services.AddScoped<QuizAPI.Services.Classroom.IHostedGameService, QuizAPI.Services.Classroom.HostedGameService>();
+builder.Services.AddSingleton<QuizAPI.Services.Classroom.IHostedDisplayRegistry, QuizAPI.Services.Classroom.HostedDisplayRegistry>();
+builder.Services.AddSingleton<QuizAPI.Services.Classroom.IHostedGameNotifier, QuizAPI.Hubs.HostedGameNotifier>();
 builder.Services.AddScoped<QuizAPI.Services.Classroom.ITeacherAccessService, QuizAPI.Services.Classroom.TeacherAccessService>();
 builder.Services.AddScoped<IQuestionRepository, QuestionRepository>();
 builder.Services.AddScoped<IQuizRepository, QuizRepository>();
@@ -393,7 +397,8 @@ builder.Services.AddAuthentication(options =>
             var accessToken = context.Request.Query["access_token"];
             var path = context.HttpContext.Request.Path;
             if (!string.IsNullOrEmpty(accessToken) &&
-                (path.StartsWithSegments("/notificationHub") || path.StartsWithSegments("/quizHub")))
+                (path.StartsWithSegments("/notificationHub") || path.StartsWithSegments("/quizHub")
+                 || path.StartsWithSegments("/hostedGameHub")))
             {
                 context.Token = accessToken;
             }
@@ -582,6 +587,8 @@ if (!environment.IsProduction())
 app.MapControllers();
 app.MapHub<QuizAPI.Hubs.QuizHub>("/quizHub");
 app.MapHub<QuizAPI.Hubs.NotificationHub>("/notificationHub");
+// Host mode's screens (docs/quiz/classroom.md). Anonymous for Displays; the Controller sends its JWT.
+app.MapHub<QuizAPI.Hubs.HostedGameHub>("/hostedGameHub");
 
 // Cron has no "every N minutes" that spans an hour boundary: "*/90 * * * *" is not 90 minutes, it
 // is nothing. So anything an hour or longer becomes hourly — the only interval in that range this

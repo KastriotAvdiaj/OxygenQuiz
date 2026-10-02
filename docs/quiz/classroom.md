@@ -5,8 +5,8 @@ What exists **today** for Teachers playing Associations with a class. The words 
 [`classroom-plan.md`](./classroom-plan.md), and moves here as it lands. The role itself is
 [`../auth/teacher-role.md`](../auth/teacher-role.md).
 
-> **Status (2026-10-01):** the Teacher role and Classes are built. Host mode is being built
-> (plan phases 3–6).
+> **Status (2026-10-02):** the Teacher role, Classes and Host mode's server side (game, clocks,
+> Undo, screens, abandonment) are built. Its screens are being built (plan phases 4–6).
 
 ---
 
@@ -36,3 +36,107 @@ Tables: `Classes` (`OwnerUserId` → Users, cascade), `ClassStudents` (`ClassId`
 `Order`). Migration `AddClasses`.
 
 Tests: `QuizAPI.Tests/Classroom/ClassServiceTests.cs`, `src/pages/Classroom/api/__tests__/classes.test.ts`.
+
+---
+
+## 2. Host mode — the game
+
+A Teacher hosts one Board for **2–4 Teams** on one screen, making every move for them. Nobody
+joins. The rules are the **Duel's** (`associations.md` §3.3) with one Seat per Team
+([ADR 0023](../adr/0023-a-hosted-team-is-a-seat.md)):
+
+1. A turn opens exactly one closed Tile, then may Guess any unsolved Column or the Final.
+2. Correct → scored to that Team; it may Guess again (not open). Wrong, or **Pass** → next Team.
+3. Endgame: from the first turn that begins with no closed Tile, each Team gets
+   `EndgameTurnsPerSeat` (2) guess-only turns. Scoring is the Duel's.
+4. Turn order `(seat + 1) % teams`; the first Team is random; **Play again** keeps the Teams and
+   the next Team starts.
+
+### 2.1 The game record
+
+`AssociationGame` with `PlayStyle.Hosted`, `HostUserId` and one `HostedTeam` per Seat (name,
+colour, the students' names *as they were that day* — editing the Class later doesn't rewrite a
+past game). **No `QuizSession`**, so nothing in stats, history, streaks or reports counts it as the
+Teacher playing (C12). Saved **move by move** and replayed on every read (ADR 0020), like Solo.
+
+### 2.2 Clocks
+
+- **No time limit** — no clocks. Ends by the Final, the endgame, or End game.
+- **Timed** — `GameSeconds` 300–3600 and `TurnSeconds` 30/60/90/120, both required.
+  - A turn that runs out is recorded as `TurnExpired` and passes — the server's decision, not the
+    engine's: in Host mode the engine enforces no clock (`ApplyDuel`'s `clocked` is Duel-only),
+    because Host mode's clocks **pause**.
+  - The game clock running out starts the **last round** (`LastRound`): play continues until the
+    turn would come back to the Team that started, then ends `TimeUp`. Every Team gets as many
+    turns (C6).
+  - A correct Guess or a new turn restarts the turn clock.
+- **The clocks live on the game row** (`GameDeadlineUtc`, `TurnDeadlineUtc`) while running.
+  **Pause** stores `PausedAt` and freezes them; **Resume** pushes both back by the pause's length.
+  Moves are refused while paused.
+- **Settling.** Every read and move first brings a running game up to now
+  (`HostedGameService.Settle`): each turn that ran out is recorded at its own deadline, in order,
+  interleaved with the game clock. So a game nobody looked at for three turns shows three
+  `TurnExpired`s at the right times. The Controller re-reads when its countdown hits zero, which is
+  what moves the screens on time.
+- A move that arrives after its turn ran out is refused — "Time ran out — it's Blue's turn" — and
+  the Controller keeps the typed text.
+
+### 2.3 Undo
+
+The Teacher may take back **the latest move** — an Open, a Guess or a Pass — with a confirm step
+([ADR 0025](../adr/0025-undo-is-a-move.md)). It appends `MoveKind.Undo` with `CancelsSeq`;
+`AssociationEngine.Replay` skips both. An Undo can't itself be undone, nothing can be undone once the
+game is over or while paused, and the clock doesn't give time back. The view's `undoLabel` says what
+would be undone ("Blue opened B2"). A Tile opened by mistake closes again on the board; the review's
+move list still shows both.
+
+### 2.4 Ending
+
+`FinalSolved`, `EndgameOver`, `TimeUp` (after the last round), **`EndedByHost`** (End game), and
+`Abandoned` — a game with no move, pause or resume for **7 days** (`LastActivityAt`) is ended by the
+existing abandonment sweep (`AbandonedSessionSweeper` → `EndIdleGamesAsync`), scores kept.
+
+## 3. Screens: the Controller and Displays
+
+The Teacher's device is the **Controller**; it alone moves. **Displays** are optional read-only
+screens ([ADR 0024](../adr/0024-a-display-needs-no-login.md)):
+
+- **Screen code** — 8 characters from an alphabet without look-alikes (no 0/O, 1/I/L), stored on the
+  game (`ScreenCode`, unique). Issued on request, stable until **disconnect all screens** replaces it,
+  and dead once the game ends. Typed in any case, with or without separators.
+- **`HostedGameHub`** at `/hostedGameHub`, one group per game. A Display calls
+  `JoinAsDisplay(code)` — **no login**, at most **3** per game (`HostedDisplayRegistry`), 5 wrong codes
+  per connection. The Controller calls `JoinAsController(gameId)` with its JWT. Every change sends
+  the **Display view** (`HostedGameUpdated`) to the group; the Controller gets its own view from the
+  REST answer.
+- **The Answer key** (`answerKey`, every solution) is in the Controller's view **only while a Display
+  is connected** (C8), so the Controller isn't the projected screen. Never in a Display view.
+- **Secrecy:** both views are built by `AssociationViews.BuildHosted`; the Display one carries no
+  code, no key, no undo label, and the same hiding as a player's view.
+  `HostedGameServiceTests.TheDisplayView_CarriesNothingHidden_EvenWithADisplayConnected` searches
+  the whole JSON, pushed and read.
+- **Closing the Controller pauses the game**: when the last Controller connection drops and stays
+  gone for 5 s (the lobby's grace), `PauseIfRunningAsync` runs in a fresh scope.
+
+## 4. API
+
+`/api/hosted-games` — `[Authorize(Roles = "Teacher")]` and the Associations preview gate; every id
+is clamped to its host (another Teacher's game is 404).
+
+| | |
+|---|---|
+| `POST` | start: `quizId`, `shareToken?`, `teams[]` (`name`, `colour?`, `students[]`), `gameSeconds?`, `turnSeconds?` |
+| `GET` / `GET {id}` | the Teacher's hosted games / one game (settled first) |
+| `POST {id}/open \| guess \| pass` | moves (`{ tileId }`, `{ target, text }`) |
+| `POST {id}/undo \| pause \| resume \| end` | |
+| `POST {id}/again` | same Teams, same or another Board (`quizId?`) |
+| `POST {id}/screen-code`, `DELETE {id}/screens` | issue the code / disconnect all and replace it |
+
+Boards a Teacher may host: any they could play — Public, Unlisted with its token, **and their own
+in any status** (C10; `QuizPlayAccess.IsPlayAuthorized` already allows an owner).
+
+Account anonymisation blanks the students' names on a Teacher's hosted games and keeps the games.
+
+Tests: `QuizAPI.Tests/Classroom/HostedGameServiceTests.cs` (start and its validation, access, turns,
+Undo, each clock rule, pause, ending, Play again, abandonment, screens, the Answer key, secrecy),
+`TeacherAccountClosureTests.cs`. Migration `AddHostedGames`.
