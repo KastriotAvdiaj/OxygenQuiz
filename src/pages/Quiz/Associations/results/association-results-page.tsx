@@ -30,7 +30,7 @@ export const AssociationResultsPage = () => {
           <AlertCircle className="mx-auto h-12 w-12 text-destructive" />
           <h2 className="text-xl font-bold">These results aren&apos;t available</h2>
           <Link to="/choose-quiz" tabIndex={-1} className="inline-block">
-            <LiftedButton className="bg-muted text-foreground" liftColor="muted-foreground">
+            <LiftedButton className="bg-background text-foreground" liftColor="#e5e7eb">
             <FolderIcon className="mr-1 h-4 w-4" />
               Back to quizzes
             </LiftedButton>
@@ -95,18 +95,19 @@ const Results = ({ view }: { view: AssociationGameView }) => {
         <AssociationBoard view={view} solverName={isDuel ? nameOf : undefined} />
 
         <div className="flex flex-wrap justify-center gap-3">
+          <Link to="/choose-quiz" tabIndex={-1}>
+            <LiftedButton className="bg-background text-foreground hover:bg-background border" liftColor="#e5e7eb">
+              <FolderIcon className="mr-1 h-4 w-4" />
+              Back to quizzes
+            </LiftedButton>
+          </Link>
           {/* "Play again" restarts a Solo game; a Duel's rematch is in its lobby. */}
           {!isDuel && (
             <LiftedButton onClick={() => playAgain.mutate()} isPending={playAgain.isPending}>
               <RotateCcw className="mr-1 h-4 w-4" /> Play again
             </LiftedButton>
           )}
-          <Link to="/choose-quiz" tabIndex={-1}>
-            <LiftedButton className="bg-muted text-foreground hover:bg-muted" liftColor="muted-foreground">
-              <FolderIcon className="mr-1 h-4 w-4" />
-              Back to quizzes
-            </LiftedButton>
-          </Link>
+          
         </div>
       </div>
     </div>
