@@ -5,7 +5,9 @@ shared Board — **Host mode**. A later phase, **Live classroom**, lets students
 devices. The words are in [`glossary.md`](./glossary.md) ("Classroom"); the rules this builds on are
 [`associations.md`](./associations.md).
 
-> **Status: planned (2026-10-01), nothing built.** Branch `feature/classroom-host-mode`. This is a
+> **Status (2026-10-02): phases 1–6 built** — see [`classroom.md`](./classroom.md). Left: the
+> Playwright tests of phases 4–5 and a try in a real class; then this plan is folded and deleted.
+> Was: **planned (2026-10-01).** Branch `feature/classroom-host-mode`. This is a
 > plan: as each phase lands, what is true moves into a feature doc (`classroom.md`,
 > `../auth/teacher-role.md`) and the phase is marked done here. When all of Host mode has landed the
 > plan is folded and deleted (docs/development/documenting-changes.md).
@@ -46,9 +48,9 @@ the docs say what is now true.
 | **1 — Teacher role** *(done 2026-10-01)* | The `Teacher` role (seeded); not "elevated" (§2.1); grant/remove from the Users table; Teacher invite codes; the request flow (§2.2); Teachers see Associations during the preview (§2.3). | Role seeding; an Admin can grant/remove Teacher and delete a Teacher; an Admin can mint a Teacher code; request → approve/decline, one open request, the 30-day wait, notifications; a Teacher sees boards in every read `VisibleTo` covers, a plain User still doesn't (extend `PreviewFormatAccessTests`). Frontend: the request button's states. | `../auth/teacher-role.md` (new); `user-role-management.md`, `invite-code-system.md`, `associations.md` §0. |
 | **2 — Classes** *(done 2026-10-01)* | `Class` + `ClassStudent`, CRUD API owned by the Teacher, the Classes page. | Ownership (a Teacher can't read or edit another's Class), the 40-name cap, name validation, Teacher-only. | `classroom.md` (new) §Classes. |
 | **3 — Hosted games: engine and API** *(done 2026-10-02)* | `PlayStyle.Hosted`, `HostedTeam`, the game's clock columns, `MoveKind.Undo` and `TurnTimedOut` handling, the service and REST API for the Controller (§4–§5). No UI yet. | Engine: Duel rules with 2/3/4 Seats; Undo in every allowed position and refused elsewhere; replay with Undo. Service: start (board access per C10, team count, clock combinations), every move, turn time-out, the game clock finishing the round, pause/resume (clocks frozen), end game, the 7-day abandonment. Secrecy: the Controller view without a Display has no answers. | `classroom.md` §Host mode; `associations.md` §3 (a pointer), ADRs 0023/0025 checked against what was built. |
-| **4 — Controller UI** | Host setup (Board, Class, Teams, clocks), the Controller screen, pause/end/undo, the Answer key toggle (inert until Phase 5). | Unit: the setup model (shuffle, team limits), the Controller's prompt per state. E2E: one hosted game start to finish against the real API. | `classroom.md` §Screens. |
-| **5 — Displays** | Screen codes, the `/screen` page, the SignalR group per hosted game, live updates, disconnect-all, the Answer key gated on a connected Display. | Code: issue, expiry when the game ends, replacement on disconnect-all, the 3-Display cap, rate-limited attempts. Secrecy test over the Display payload (ADR 0024). E2E: a Controller and a Display in two browser contexts, a move on one appearing on the other. | `classroom.md` §Displays; `multiplayer.md` (the new hub group). |
-| **6 — Afterwards** | Hosted games list, results screen, Play again, the abandonment sweep wired in. | Listing is per Teacher; results ranking and ties; Play again rotates the first Team; abandonment after 7 idle days. | `classroom.md` §Afterwards; fold this plan. |
+| **4 — Controller UI** *(done 2026-10-02; the E2E test is still to write)* | Host setup (Board, Class, Teams, clocks), the Controller screen, pause/end/undo, the Answer key toggle (inert until Phase 5). | Unit: the setup model (shuffle, team limits), the Controller's prompt per state. E2E: one hosted game start to finish against the real API. | `classroom.md` §Screens. |
+| **5 — Displays** *(done 2026-10-02; the two-browser E2E test is still to write)* | Screen codes, the `/screen` page, the SignalR group per hosted game, live updates, disconnect-all, the Answer key gated on a connected Display. | Code: issue, expiry when the game ends, replacement on disconnect-all, the 3-Display cap, rate-limited attempts. Secrecy test over the Display payload (ADR 0024). E2E: a Controller and a Display in two browser contexts, a move on one appearing on the other. | `classroom.md` §Displays; `multiplayer.md` (the new hub group). |
+| **6 — Afterwards** *(done 2026-10-02, except folding this plan)* | Hosted games list, results screen, Play again, the abandonment sweep wired in. | Listing is per Teacher; results ranking and ties; Play again rotates the first Team; abandonment after 7 idle days. | `classroom.md` §Afterwards; fold this plan. |
 
 ---
 
@@ -170,10 +172,10 @@ is deleted rather than kept).
 
 ## 6. Screens
 
-- **Host setup** (`/classroom/host/:quizId`): Board summary, Class picker (optional), number of
+- **Host setup** (built at `/my-dashboard/host?quizId=`): Board summary, Class picker (optional), number of
   Teams (2–4), Shuffle into teams, drag students between Teams, rename Teams, clocks ("No time
   limit" or minutes + turn seconds), Start.
-- **Controller** (`/classroom/games/:id`): the shared `AssociationBoard` with Open and the guess
+- **Controller** (built at `/host/:id`): the shared `AssociationBoard` with Open and the guess
   slots live only for the current Team's phase; Teams strip with scores and whose turn; both clocks;
   Pass, Undo (the last move named: "Undo: opened B2"), Pause, End game; "Show on a screen" (the code
   and the connected-screens count); Answer key (only with a Display). Fits a phone.

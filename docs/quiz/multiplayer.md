@@ -19,6 +19,9 @@ scoring, and clients only render what they are told.
 
 ---
 
+> **Not this hub:** Host mode's screens use their own `HostedGameHub` (`/hostedGameHub`) — no lobby,
+> and Displays are anonymous. See [`classroom.md`](./classroom.md) §3.
+
 ## 1. Architecture
 
 ### Backend (ASP.NET Core, `OxygenBackend/QuizAPI`)

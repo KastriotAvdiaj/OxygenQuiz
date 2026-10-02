@@ -79,6 +79,12 @@ const AssociationGamePage = lazy(() =>
     (module) => ({ default: module.AssociationGamePage }),
   ),
 );
+const HostController = lazy(() =>
+  import("../pages/Classroom/host/ControllerPage").then((module) => ({ default: module.ControllerPage })),
+);
+const HostDisplay = lazy(() =>
+  import("../pages/Classroom/host/DisplayPage").then((module) => ({ default: module.DisplayPage })),
+);
 const AssociationResultsPage = lazy(() =>
   import("@/pages/Quiz/Associations/results/association-results-page").then(
     (module) => ({ default: module.AssociationResultsPage }),
@@ -308,6 +314,18 @@ const createAppRouter = (queryClient: QueryClient) =>
       element: (
         <HomeLayout headerBehavior={HeaderBehavior.HIDDEN} children={<AssociationStartRoute />} />
       ),
+    },
+    {
+      // Host mode's Controller (docs/quiz/classroom.md): no header, every pixel for the board.
+      path: "/host/:gameId",
+      loader: userAuthLoader(queryClient),
+      errorElement: <DashboardErrorElement />,
+      element: <HomeLayout headerBehavior={HeaderBehavior.HIDDEN} children={<HostController />} />,
+    },
+    {
+      // A Display (ADR 0024): no sign-in, no header — a projector shows only the game.
+      path: "/screen",
+      element: <HomeLayout headerBehavior={HeaderBehavior.HIDDEN} children={<HostDisplay />} />,
     },
     {
       path: "/associations/play/:sessionId",
@@ -678,6 +696,20 @@ const createAppRouter = (queryClient: QueryClient) =>
             const { MyQuizHistory } =
               await import("../pages/UserDashboard/MyQuizHistory");
             return { Component: MyQuizHistory };
+          },
+        },
+        {
+          path: "host",
+          lazy: async () => {
+            const { HostSetupPage } = await import("../pages/Classroom/host/HostSetupPage");
+            return { Component: HostSetupPage };
+          },
+        },
+        {
+          path: "hosted-games",
+          lazy: async () => {
+            const { HostedGamesPage } = await import("../pages/Classroom/HostedGamesPage");
+            return { Component: HostedGamesPage };
           },
         },
         {

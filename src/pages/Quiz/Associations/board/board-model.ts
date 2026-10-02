@@ -71,6 +71,7 @@ export const END_REASON_TEXT: Record<AssociationEndReason, string> = {
   EndgameOver: "The endgame is over",
   Forfeit: "Forfeited",
   Abandoned: "Abandoned",
+  EndedByHost: "Ended by the teacher",
 };
 
 export type BreakdownRow = {
@@ -126,6 +127,8 @@ export function describeMove(view: AssociationGameView, move: AssociationMoveVie
       return "Passed";
     case "TurnExpired":
       return "Ran out of time for the turn";
+    case "Undo":
+      return "Took back the last move";
   }
 }
 

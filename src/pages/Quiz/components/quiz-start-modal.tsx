@@ -7,7 +7,11 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { HelpCircle, Clock, User, Calendar, Play } from "lucide-react";
+import { HelpCircle, Clock, User, Calendar, Play, Presentation } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { useUser } from "@/lib/Auth";
+import { ROLES } from "@/lib/authorization";
 import type { QuizSummaryDTO } from "@/types/quiz-types";
 import { secondsToMinutes } from "./quiz-duration";
 import { parseQuizPalette, quizEdgeColor, readableTextColor } from "./quiz-palette";
@@ -41,6 +45,11 @@ export function QuizStartModal({
   // The dialog's depth layer. Set as a custom property rather than a class because the
   // colour is a runtime value — Tailwind's JIT only emits classes it can read in source.
   const edgeColor = useMemo(() => quizEdgeColor(primaryColor), [primaryColor]);
+
+  // Teachers may host a board for a class (docs/quiz/classroom.md, C16).
+  const navigate = useNavigate();
+  const { data: user } = useUser();
+  const canHost = quiz.format === "Associations" && (user?.roles?.includes(ROLES.Teacher) ?? false);
 
   const handleStartQuiz = () => {
     onStartQuiz(quiz.id);
@@ -202,6 +211,19 @@ export function QuizStartModal({
               <Play className="h-4 w-4 fill-current" />
               Start Quiz
             </LiftedButton>
+            {canHost && (
+              <Button
+                type="button"
+                variant="outline"
+                className="ml-3 h-11 gap-2"
+                onClick={() => {
+                  onClose();
+                  navigate(`/my-dashboard/host?quizId=${quiz.id}`);
+                }}
+              >
+                <Presentation className="h-4 w-4" /> Host for a class
+              </Button>
+            )}
           </div>
         </div>
       </DialogContent>

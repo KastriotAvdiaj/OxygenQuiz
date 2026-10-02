@@ -5,8 +5,9 @@ What exists **today** for Teachers playing Associations with a class. The words 
 [`classroom-plan.md`](./classroom-plan.md), and moves here as it lands. The role itself is
 [`../auth/teacher-role.md`](../auth/teacher-role.md).
 
-> **Status (2026-10-02):** the Teacher role, Classes and Host mode's server side (game, clocks,
-> Undo, screens, abandonment) are built. Its screens are being built (plan phases 4–6).
+> **Status (2026-10-02):** built — the Teacher role, Classes, and Host mode end to end: setup,
+> the Controller, Displays, Hosted games and results. Not yet: an end-to-end (Playwright) test of
+> a hosted game, and a run in a real classroom ([`classroom-plan.md`](./classroom-plan.md) §1).
 
 ---
 
@@ -118,7 +119,35 @@ screens ([ADR 0024](../adr/0024-a-display-needs-no-login.md)):
 - **Closing the Controller pauses the game**: when the last Controller connection drops and stays
   gone for 5 s (the lobby's grace), `PauseIfRunningAsync` runs in a fresh scope.
 
-## 4. API
+## 4. The screens (frontend)
+
+Everything is in `src/pages/Classroom/`; pure helpers are `host/hosted-model.ts` and
+`host/setup-model.ts` (tested in `__tests__/`).
+
+- **Entry points (C16):** *My dashboard → Classroom* (`Host a board`, `Hosted games`, `Classes`, shown
+  to Teachers only), and **Host for a class** beside Start in a board's start dialog
+  (`quiz-start-modal.tsx`, Teachers and Associations only).
+- **Setup** — `/my-dashboard/host` (`HostSetupPage`): pick a board (yours, drafts included, or
+  public), or arrive with `?quizId=`; pick a Class (optional), 2–4 Teams, **Shuffle into teams**,
+  move students by dragging a name, or with the small menu on each name (touch and keyboard);
+  rename Teams; **No time limit** or **Timed** (minutes + turn seconds). Start opens the Controller.
+- **Controller** — `/host/:gameId` (`ControllerPage`, header hidden): Teams strip (whose turn
+  outlined in its colour), the turn clock as the board ring (red in the last 10 s) with the game
+  time under it ("Last round" once it's up), one prompt line, the shared `AssociationBoard` (live
+  only for what the turn allows), the last Guess in words, **Pass**, **Undo** (confirm, naming the
+  move), **Pause/Resume**, **End game** (confirm), **Show on a screen** (the code, the connected
+  count, disconnect all), and the **Answer key** (tap per solution) while a Display is connected.
+  When its turn clock reaches zero it re-reads the game, which is what records the expiry. Over:
+  the ranking (ties as ties), the revealed board with each slot's Team, **Play again, same teams**,
+  **Host another board**.
+- **Display** — `/screen` (`DisplayPage`, no sign-in, header hidden): a code box, then the same
+  board large with the Teams and scores, whose turn, the clocks, the last Guess, and at the end the
+  ranking. Joins over `useDisplayHub`; if the host disconnects the screens it returns to the code
+  box; on reconnect it rejoins with the same code.
+- **Hosted games** — `/my-dashboard/hosted-games` (`HostedGamesPage`): newest first, each with its
+  Teams and scores and Running / Paused / the winner; a row opens the Controller.
+
+## 5. API
 
 `/api/hosted-games` — `[Authorize(Roles = "Teacher")]` and the Associations preview gate; every id
 is clamped to its host (another Teacher's game is 404).

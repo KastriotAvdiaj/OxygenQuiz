@@ -47,7 +47,9 @@ export type AssociationEndReason =
   | "GaveUp"
   | "EndgameOver"
   | "Forfeit"
-  | "Abandoned";
+  | "Abandoned"
+  /** Host mode: the Teacher pressed End game (docs/quiz/classroom.md). */
+  | "EndedByHost";
 
 export type AssociationTileView = {
   id: number;
@@ -81,13 +83,15 @@ export type AssociationFinalView = {
 export type AssociationMoveView = {
   seq: number;
   seat: number;
-  kind: "OpenTile" | "Guess" | "Pass" | "TurnExpired" | "GiveUp";
+  kind: "OpenTile" | "Guess" | "Pass" | "TurnExpired" | "GiveUp" | "Undo";
   tileId: number | null;
   target: GuessTarget | null;
   guessText: string | null;
   isCorrect: boolean | null;
   points: number;
   at: string;
+  /** Host mode, an Undo: the move it took back (ADR 0025). */
+  cancelsSeq?: number | null;
 };
 
 export type AssociationGameView = {
