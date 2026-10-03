@@ -9,6 +9,7 @@ import { GoBackButton } from "@/common/Go-Back-Button";
 import { useSearchParams } from "react-router-dom";
 import { O2Button } from "@/common/O2Button";
 import { useNotifications } from "@/common/Notifications";
+import { safeRedirectPath } from "@/lib/safe-redirect";
 import OxygenBackground from "/assets/oxygenquiz2.jpg";
 
 
@@ -31,7 +32,7 @@ const Login: React.FC = () => {
       title: "Success",
       message: "Logged in successfully!",
     });
-    const redirectTo = searchParams.get("redirectTo");
+    const redirectTo = safeRedirectPath(searchParams.get("redirectTo"));
     if (redirectTo) navigate(redirectTo, { replace: true });
     else navigate("/", { replace: true });
   };
@@ -47,7 +48,7 @@ const Login: React.FC = () => {
               title: "Success",
               message: "Logged in successfully!",
             });
-            const redirectTo = searchParams.get("redirectTo");
+            const redirectTo = safeRedirectPath(searchParams.get("redirectTo"));
             if (redirectTo) {
               navigate(redirectTo, { replace: true });
             } else {

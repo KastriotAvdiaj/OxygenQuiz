@@ -550,10 +550,18 @@ timeLimit` points, i.e. ~33 pts on a 30s question but ~100 pts (10% of base) on 
   can't be horizontally scaled and a deploy/restart drops in-flight matches.
   Acceptable at current scale. _Path when needed:_ SignalR Redis backplane +
   shared session store; move uploads to object storage.
-- **P3 — Frontend dev-dependency vulnerabilities.** The npm advisories are all in
-  `devDependencies` (storybook / vitest tooling) and never ship in the production
-  bundle. Clearing them needs a deliberate major storybook/vitest upgrade, which
-  is breaking — do it as its own task, not under time pressure.
+- **P3 — Frontend dependency vulnerabilities (21 left after `npm audit fix`, 2026-10-03).**
+  `npm audit fix` cleared the non-breaking ones, `axios` (which ships) among them. What is left needs
+  a major upgrade each, so do it as its own task, not with `--force`:
+  - **Shipped: `react-router-dom` 6** — open redirect via a backslash in `<Link>`/`navigate`
+    (GHSA-wrjc-x8rr-h8h6); fixed only in v7. **Mitigated in our code**: every `?redirectTo=` goes
+    through `safeRedirectPath` ([`../auth/authentication.md`](../auth/authentication.md)), the only
+    place the app navigates to a URL from the query string. Upgrading to v7 is the real fix.
+  - **Dev tooling only, never in the bundle:** Vite ≤ 6 / its esbuild (dev server readable by other
+    sites), Vitest ≤ 4 (`@vitest/mocker`, `@vitest/browser`, `@vitest/coverage-v8`, Storybook's
+    `experimental-addon-test`), Tailwind 3's watcher chain (`chokidar` → `braces`/`micromatch`/
+    `fast-glob`), Storybook 8 add-ons (`uuid`), `eslint-plugin-storybook`. Fixes: Vite 8, Vitest 5,
+    Tailwind 4, Storybook 9. Risk is a dev server reachable by untrusted people.
 
 ## Multiplayer / Game State
 
