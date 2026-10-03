@@ -25,6 +25,17 @@ foreign key — this is deliberate, so the store doesn't need to know about ever
 table. The trade-off is no database-level referential integrity (acceptable for loosely
 coupled attachments).
 
+### On disk: `wwwroot/uploads`
+
+Uploaded files are written under `OxygenBackend/QuizAPI/wwwroot/uploads/` and served by
+`UseStaticFiles()`. They are runtime data, so git ignores everything in that folder **except
+`uploads/.gitkeep`**, which is what makes the folder — and `wwwroot` itself — exist in a fresh clone.
+Without it (2026-09-30 to 2026-10-03) a new checkout had no `wwwroot`, and the API stopped at
+startup with `DirectoryNotFoundException: …\QuizAPI\wwwroot\`. The csproj's
+`<Folder Include="wwwroot\uploads\" />` doesn't help: it only shows the folder in Visual Studio. In
+Docker the image creates `/app/wwwroot/uploads` itself and mounts a volume there
+([`../deployment/infrastructure.md`](../deployment/infrastructure.md) §9).
+
 ### `FileRecord` schema (table `Files`)
 
 | Column | Type | Notes |

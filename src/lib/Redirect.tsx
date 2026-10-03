@@ -1,5 +1,6 @@
 import { Navigate, useSearchParams } from "react-router-dom";
 import { useUser } from "./Auth";
+import { safeRedirectPath } from "./safe-redirect";
 
 export const RedirectIfLoggedIn = ({
   component,
@@ -12,7 +13,8 @@ export const RedirectIfLoggedIn = ({
   if (user?.data) {
     const { roles } = user.data;
 
-    const redirectTo = searchParams.get("redirectTo");
+    // Only a path on this site (safe-redirect.ts): the parameter is anyone's to write.
+    const redirectTo = safeRedirectPath(searchParams.get("redirectTo"));
     if (redirectTo) {
       return <Navigate to={redirectTo} replace />;
     }
