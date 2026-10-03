@@ -63,6 +63,18 @@ routine outcome should not be signalled with an exception on a hot path.**
 ### Route protection
 `createAuthLoader` (`Auth.tsx`) runs before protected routes: it resolves the user (from the React Query cache, else via `getUser`), redirects to `/login?redirectTo=…` if unauthenticated, and enforces role/permission gates. **SuperAdmin bypasses all gates.** Helpers: `adminAuthLoader`, `superAdminAuthLoader`, `permissionAuthLoader`.
 
+### `?redirectTo=` only goes to a page on this site
+After signing in (`Login.tsx`) or on arriving at a guest-only page while signed in
+(`RedirectIfLoggedIn`, `Redirect.tsx`), the app follows `?redirectTo=`. That parameter is in a URL
+anyone can write, so it is passed through **`safeRedirectPath`** (`src/lib/safe-redirect.ts`) first:
+only a path starting with a single `/` is followed. `//host`, `/\host` (browsers read a backslash as
+a slash), absolute URLs, `javascript:`, relative paths, backslashes anywhere and control characters
+are dropped, and the page goes to its normal destination instead. Without it this was an open
+redirect — `/login?redirectTo=/\evil.example` signed someone in on our page and sent them to another.
+React Router ≤ 7.17 doesn't guard against the backslash form (GHSA-wrjc-x8rr-h8h6) and its fix isn't
+in v6, so the check is ours and stays correct after an upgrade. Any new place that navigates to a URL
+taken from the query string goes through the same function. Tests: `src/lib/__tests__/safe-redirect.test.ts`.
+
 ## Main functions / files
 
 | Concern | File |
