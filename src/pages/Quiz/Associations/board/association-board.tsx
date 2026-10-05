@@ -355,12 +355,12 @@ const GuessInput = ({
       data-coach-target={target}
       className={cn(
         "flex min-h-12 w-full items-center gap-2 rounded-md border-2 pl-3 pr-1 transition-[border-color,box-shadow,background-color] sm:min-h-14",
-        // Always dashed. A Guess is earned: a primary border and a white field, solid while typing
-        // in — the state is what gets the colour (docs/quiz/question-type-color-schema.md).
-        // Otherwise grey on grey.
+        // Solid, never dashed: five dashed slots made the board busy. A Guess is earned: a white
+        // field with a quiet primary border that goes full primary while typing in it — the state
+        // is what gets the colour (docs/quiz/question-type-color-schema.md). Otherwise grey on grey.
         live
-          ? "cursor-text border-dashed border-primary bg-background focus-within:border-solid"
-          : "border-dashed border-border bg-muted/40"
+          ? "cursor-text border-primary/30 bg-background hover:border-primary/60 focus-within:border-primary"
+          : "border-border bg-muted/40"
       )}
       onClick={(e) => {
         // The whole field is the target, like an input, not only the text inside it.
@@ -389,7 +389,9 @@ const GuessInput = ({
           type="submit"
           disabled={!trimmed}
           aria-label={`Send guess for ${label.toLowerCase()}`}
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-primary transition-colors hover:bg-primary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:text-muted-foreground disabled:hover:bg-transparent"
+          // Filled once there's text: a solid primary button says "send this", for anyone who
+          // wouldn't think of Enter. Empty, it's a quiet grey icon.
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 disabled:bg-transparent disabled:text-muted-foreground disabled:shadow-none"
         >
           <Send className="h-4 w-4" />
         </button>

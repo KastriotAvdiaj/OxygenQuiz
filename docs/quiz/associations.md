@@ -603,9 +603,12 @@ doesn't drift down the page with a short board.
   the box under the board": that was two steps for one intent, and the separate box was the thing
   first-time players didn't find. The target is where the text is, so it can't be aimed wrong, and
   it still names its target exactly as §3.1 requires. The inputs are live only while a Guess is
-  earned — then they read as text fields: a white field with a dashed primary border (solid while
-  typing in it), a pencil icon and a "Guess Column A…" placeholder, and a click anywhere on the
-  slot focuses it. Otherwise they are disabled, dashed and grey. The Final sits further below the
+  earned — then they read as text fields: a white field with a faint primary border (`primary/30`,
+  full primary while typing in it), a pencil icon and a "Guess Column A…" placeholder, and a click
+  anywhere on the slot focuses it. The send button is a grey icon until there's text, then a filled
+  primary button, so it reads as the way to send for anyone who doesn't press Enter. Otherwise the
+  slots are disabled and grey. Never dashed: five dashed slots made the board look busy
+  (2026-10-03). The Final sits further below the
   Columns than the Columns' rows sit from each other: it answers all four. **Nothing is pre-focused**, for the
   reason the first build learned: a pre-aimed Column read as "you must guess this one". A wrong
   Guess shakes its slot; the line under the board says what happened.
