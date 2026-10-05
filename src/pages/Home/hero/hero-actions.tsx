@@ -58,11 +58,11 @@ function PlayButton() {
     <Link to="/choose-quiz" tabIndex={-1}>
       <LiftedButton
         outerClassName="rounded-none p-2"
-        className="gap-2 rounded-none px-8 py-2 text-xl sm:gap-3 sm:px-12 sm:py-4 sm:text-3xl md:text-4xl lg:gap-4 lg:px-16 lg:text-5xl"
+        className="gap-2 rounded-none px-8 py-2 text-xl sm:gap-3 sm:px-12 sm:py-4 sm:text-3xl md:text-4xl lg:gap-4 lg:px-16 lg:text-5xl lg:short:py-3 lg:short:text-4xl"
         disabled={isLoading}
       >
         <Play
-          className="h-5 w-5 fill-current sm:h-7 sm:w-7 md:h-8 md:w-8 lg:h-10 lg:w-10"
+          className="h-5 w-5 fill-current sm:h-7 sm:w-7 md:h-8 md:w-8 lg:h-10 lg:w-10 lg:short:h-8 lg:short:w-8"
           aria-hidden="true"
         />
         Play
@@ -143,7 +143,7 @@ function OrDivider({ className }: { className: string }) {
   return (
     <div
       className={cn(
-        "my-5 flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.2em] sm:my-7 lg:my-9",
+        "my-5 flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.2em] sm:my-7 lg:my-9 short:my-5",
         className,
       )}
     >

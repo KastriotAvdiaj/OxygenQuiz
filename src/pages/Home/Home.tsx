@@ -7,14 +7,17 @@ const LineGlobe = lazy(() => import("./hero/line-globe"));
 
 /** Bounds on the globe's diameter, in px, whatever the page's proportions. */
 const GLOBE_MIN = 360;
-const GLOBE_MAX = 1100;
+const GLOBE_MAX = 1300;
 /**
- * How big the globe is: whichever is larger of (a) a bit more than twice the room below the
- * secondary buttons — about half of it showing, a little less — and (b) 60% of the page's width,
+ * How big the globe is: whichever is larger of (a) about 2.7× the room below the
+ * globe's top — a bit over a third of it showing — and (b) 70% of the page's width,
  * so a wide, short screen gets a broad dome rather than a small one.
  */
-const GLOBE_REACH_FACTOR = 2.3;
-const GLOBE_WIDTH_SHARE = 0.6;
+const GLOBE_REACH_FACTOR = 2.7;
+const GLOBE_WIDTH_SHARE = 0.7;
+/** How far above the middle of the secondary buttons the top of the globe's circle sits, in px:
+ *  the dome rises a little behind the "or" divider rather than starting at the buttons. */
+const GLOBE_LIFT = 32;
 /** The globe's circle is inset in its drawing box (radius 76 of 170): this share of the box's
  *  size sits above the circle's top edge. */
 const GLOBE_TOP_INSET = (85 - 76) / 170;
@@ -53,16 +56,17 @@ export const Home = () => {
     visible: { left: number; right: number; bottom: number };
   } | null>(null);
 
-  // Place the globe so the top of its circle meets the middle of the secondary buttons, and size
-  // it from the room below them and the page's width (see GLOBE_REACH_FACTOR). The page clips
-  // whatever falls below its bottom edge. Re-measured whenever the page resizes (window, fonts
+  // Place the globe so the top of its circle sits GLOBE_LIFT above the middle of the secondary
+  // buttons, and size it from the room below that point and the page's width (see
+  // GLOBE_REACH_FACTOR). The page clips whatever falls below its bottom edge. Re-measured whenever the page resizes (window, fonts
   // arriving, the header changing height).
   useLayoutEffect(() => {
     const root = rootRef.current;
     if (!root) return;
     const measure = () => {
-      const y = anchorY(root);
-      if (y === null) return;
+      const anchor = anchorY(root);
+      if (anchor === null) return;
+      const y = anchor - GLOBE_LIFT;
       const reach = root.offsetHeight - y;
       const size = Math.round(
         Math.min(

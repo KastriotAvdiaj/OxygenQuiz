@@ -26,13 +26,13 @@ const DRIFT = 6;
  */
 const LAND_FILL_OPACITY = 0.45;
 const FULL_BOX: VisibleBox = { left: 0, right: 1, bottom: 1 };
-/** The pop-in: grows from 60% to full size over this long (seconds). */
+/** The fade-in: from transparent to full opacity over this long (seconds). Size never changes. */
 const POP_SECONDS = 0.6;
 
 /**
  * The landing page's line globe (docs/home/landing-page.md, "The globe"): an outline of the
  * Earth — grid lines and coastlines in the theme blue, no fill — as the page's background, half
- * risen over its bottom edge (Home.tsx places and sizes it). It pops in with a quick spin that
+ * risen over its bottom edge (Home.tsx places and sizes it). It fades in, at full size, with a quick spin that
  * eases into a slow, endless turn.
  *
  * It is drawn in a fixed 170-unit box and scaled to whatever size Home gives it, so every stroke
@@ -55,7 +55,7 @@ export default function LineGlobe({
   visible = FULL_BOX,
 }: {
   className?: string;
-  /** Seconds to wait, after the map data arrives, before the pop-in starts. */
+  /** Seconds to wait, after the map data arrives, before the fade-in starts. */
   delay?: number;
   /**
    * The part of the globe's box that is on the page, as fractions of the box (0–1). The page
@@ -117,7 +117,7 @@ export default function LineGlobe({
         // A fast spin that decays exponentially, on top of the steady drift it leaves behind.
         draw(START_LONGITUDE + DRIFT * t + INTRO_SPIN * (1 - Math.exp(-t * INTRO_DECAY)));
 
-        // Arcs begin once the globe has popped in.
+        // Arcs begin once the globe has faded in.
         const width = svgRef.current?.clientWidth ?? 0;
         if (links && t > POP_SECONDS && width > 0) {
           const v = visibleRef.current;
@@ -128,7 +128,6 @@ export default function LineGlobe({
         const eased = 1 - Math.pow(1 - k, 3);
         const pop = popRef.current;
         if (pop) {
-          pop.style.transform = `scale(${0.6 + 0.4 * eased})`;
           pop.style.opacity = String(eased);
         }
         frame = requestAnimationFrame(tick);
@@ -154,9 +153,9 @@ export default function LineGlobe({
     >
       <g
         ref={popRef}
-        // Scales about the globe's centre. Starts hidden unless motion is reduced, so the first
-        // animated frame is the one that shows it.
-        style={{ transformOrigin: "50% 50%", opacity: reduceMotion ? 1 : 0 }}
+        // Fades in at full size. Starts hidden unless motion is reduced, so the first animated
+        // frame is the one that shows it.
+        style={{ opacity: reduceMotion ? 1 : 0 }}
         fill="none"
         stroke="currentColor"
       >
