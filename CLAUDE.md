@@ -70,6 +70,22 @@ Full version, including the two failure modes this project has actually hit:
   a quiz's category palette — reaches the element as an inline custom property (`--edge`,
   `--face` on the start modal). Theme token first, palette entry second, raw color last: only
   the first follows the theme into dark mode.
+- **Inside a dashboard, a card is `bg-card border dark:border-foreground/30`.** The dashboard's
+  `main` is `bg-muted`, and a plain `<Card>` is *also* `bg-muted` in dark mode — so it vanishes
+  into the page, leaving floating text. Applies to anything under `/dashboard` or
+  `/my-dashboard`: cards, empty states, and clickable list rows (`bg-card` on the row). Outside a
+  dashboard the page is `bg-background` and a plain `<Card>` is right. See
+  `docs/RESPONSIVE.md`, "Surfaces inside a dashboard".
+- **Dialogs are `bg-background`** — the shared `DialogContent` default. Don't give one
+  `bg-muted`: a muted dialog over a muted dashboard is the same vanishing act as above.
+- **Dialog footers use `ConfirmationDialog`'s buttons:** the action first as a `LiftedButton`
+  (default blue; destructive is `bg-red-600 text-white … liftColor="red-700"`), then Cancel as
+  a lifted outline (`bg-background border border-foreground/30 … liftColor="muted"`). Not the
+  flat `Button` ghost/destructive pair — a form dialog's footer copies the same two.
+- **A page header is the h1 and its actions — no description paragraph under it.** A sentence
+  of grey text explaining what the page is reads as filler and pushes the content down; the
+  title, the empty state and the controls carry that. Put a needed explanation where it's
+  needed (an empty state, a field hint), not under the title.
 
 ## Backend conventions (C#)
 

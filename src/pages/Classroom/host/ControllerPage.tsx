@@ -123,9 +123,15 @@ const Controller = ({
                   </Button>
                 }
                 confirmButton={
-                  <Button variant="destructive" onClick={() => actions.end.mutate()} disabled={actions.end.isPending}>
+                  <LiftedButton
+                    className="bg-red-600 text-white hover:bg-red-700 focus:ring-red-500 py-1"
+                    liftColor="red-700"
+                    type="button"
+                    isPending={actions.end.isPending}
+                    onClick={() => actions.end.mutate()}
+                  >
                     End game
-                  </Button>
+                  </LiftedButton>
                 }
               />
             </div>
@@ -189,9 +195,14 @@ const Controller = ({
                     </Button>
                   }
                   confirmButton={
-                    <Button onClick={() => actions.undo.mutate(undefined, { onSuccess: () => setFeedback(null) })} disabled={actions.undo.isPending}>
+                    <LiftedButton
+                      className="py-1"
+                      type="button"
+                      isPending={actions.undo.isPending}
+                      onClick={() => actions.undo.mutate(undefined, { onSuccess: () => setFeedback(null) })}
+                    >
                       Undo
-                    </Button>
+                    </LiftedButton>
                   }
                 />
               )}
@@ -262,14 +273,20 @@ const ScreenDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      {/* font-quiz: the user's quiz font (DynaPuff unless they picked another) — the dialog portals
+          out of the page, so it doesn't inherit it. */}
+      <DialogContent className="sm:max-w-md font-quiz">
         <DialogHeader>
           <DialogTitle>Show the game on a screen</DialogTitle>
           <DialogDescription>
             On the projector or smartboard, open <span className="font-semibold">{url}</span> and type this code. No sign-in needed.
           </DialogDescription>
         </DialogHeader>
-        <p className="py-4 text-center font-mono text-4xl font-bold tracking-[0.2em]">{pretty}</p>
+        {/* The one thing to read off this dialog from across a room: big, primary, on a tinted
+            panel. Tabular figures keep the characters evenly spaced without a monospace face. */}
+        <p className="my-2 rounded-xl border-2 border-primary/30 bg-primary/10 px-4 py-5 text-center text-4xl font-bold tabular-nums tracking-[0.15em] text-primary sm:text-5xl">
+          {pretty}
+        </p>
         <p className="text-center text-sm text-muted-foreground">
           {view.displaysConnected > 0
             ? `${view.displaysConnected} screen${view.displaysConnected === 1 ? "" : "s"} connected — up to 3. The answer key is now on this device.`

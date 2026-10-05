@@ -122,7 +122,9 @@ screens ([ADR 0024](../adr/0024-a-display-needs-no-login.md)):
 ## 4. The screens (frontend)
 
 Everything is in `src/pages/Classroom/`; pure helpers are `host/hosted-model.ts` and
-`host/setup-model.ts` (tested in `__tests__/`).
+`host/setup-model.ts` (tested in `__tests__/`). Classes, Hosted games and Setup sit inside the
+user dashboard, so their cards and list rows are `bg-card` with a border, not plain `<Card>`s
+([`../RESPONSIVE.md`](../RESPONSIVE.md), "Surfaces inside a dashboard").
 
 - **Entry points (C16):** *My dashboard → Classroom* (`Host a board`, `Hosted games`, `Classes`, shown
   to Teachers only), and **Host for a class** beside Start in a board's start dialog

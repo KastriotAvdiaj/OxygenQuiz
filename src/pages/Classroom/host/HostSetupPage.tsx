@@ -26,9 +26,6 @@ export const HostSetupPage = () => {
     <div className="container mx-auto py-8 px-4 md:px-0">
       <div className="mb-6">
         <h1 className="text-3xl font-bold">Host a board</h1>
-        <p className="mt-1 text-muted-foreground">
-          Play an Associations board with your class on one screen. You make the moves; the teams take turns.
-        </p>
       </div>
       {quizId ? (
         <Setup quizId={quizId} shareToken={params.get("shareToken")} onChangeBoard={() => setParams({})} />
@@ -78,7 +75,7 @@ const BoardPicker = ({ onPick }: { onPick: (quizId: number) => void }) => {
   );
 
   return (
-    <Card className="space-y-5 p-5">
+    <Card className="space-y-5 p-5 bg-card border dark:border-foreground/30">
       <Input variant="minimal" placeholder="Search boards" value={search} onChange={(e) => setSearch(e.target.value)} />
       {list("Your boards", mine.data?.items, mine.isLoading, "You haven't made a board yet — your drafts can be hosted too.")}
       {list("Public boards", others.data?.items, others.isLoading, "No public boards match.")}
@@ -114,7 +111,7 @@ const Setup = ({ quizId, shareToken, onChangeBoard }: { quizId: number; shareTok
         });
       }}
     >
-      <Card className="flex flex-wrap items-center justify-between gap-3 p-4">
+      <Card className="flex flex-wrap items-center justify-between gap-3 p-4 bg-card border dark:border-foreground/30">
         <p className="text-sm">
           Board <span className="font-semibold">#{quizId}</span> — its title isn&apos;t shown while you play.
         </p>
@@ -123,7 +120,7 @@ const Setup = ({ quizId, shareToken, onChangeBoard }: { quizId: number; shareTok
         </Button>
       </Card>
 
-      <Card className="space-y-4 p-5">
+      <Card className="space-y-4 p-5 bg-card border dark:border-foreground/30">
         <div className="flex flex-wrap items-end gap-4">
           <div className="space-y-1.5">
             <Label htmlFor="host-class">Class</Label>
@@ -211,7 +208,7 @@ const Setup = ({ quizId, shareToken, onChangeBoard }: { quizId: number; shareTok
         </div>
       </Card>
 
-      <Card className="space-y-4 p-5">
+      <Card className="space-y-4 p-5 bg-card border dark:border-foreground/30">
         <SegmentedControl
           aria-label="Time limit"
           value={clocks.timed ? "timed" : "none"}

@@ -55,7 +55,7 @@ const CodeForm = ({ onJoin, joining, error }: { onJoin: (code: string) => void; 
         maxLength={12}
         value={code}
         onChange={(e) => setCode(e.target.value.toUpperCase())}
-        className="text-center font-mono text-2xl tracking-[0.2em]"
+        className="text-center font-quiz text-2xl font-bold tracking-[0.15em]"
       />
       {error && <p className="text-sm text-destructive">{error}</p>}
       <Button type="submit" className="w-full" disabled={joining || code.replace(/[^A-Za-z0-9]/g, "").length < 8}>

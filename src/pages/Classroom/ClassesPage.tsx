@@ -32,13 +32,8 @@ export const ClassesPage = () => {
 
   return (
     <div className="container mx-auto py-8 px-4 md:px-0">
-      <div className="mb-6 flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold">Classes</h1>
-          <p className="mt-1 text-muted-foreground">
-            Your students&apos; first names, saved per class, so you can split them into teams when you host a board.
-          </p>
-        </div>
+      <div className="mb-6 flex items-center justify-between gap-4">
+        <h1 className="text-3xl font-bold">Classes</h1>
         <LiftedButton onClick={() => setEditing("new")} className="flex items-center gap-2 text-sm">
           <Plus className="h-4 w-4" /> New class
         </LiftedButton>
@@ -49,7 +44,7 @@ export const ClassesPage = () => {
           <Spinner size="lg" />
         </div>
       ) : !classes.data?.length ? (
-        <Card className="flex flex-col items-center gap-3 p-10 text-center">
+        <Card className="flex flex-col items-center gap-3 p-10 text-center bg-card border dark:border-foreground/30">
           <Users className="h-8 w-8 text-muted-foreground" />
           <p className="text-muted-foreground">No classes yet. A class is optional — you can host with team names alone.</p>
         </Card>
@@ -75,7 +70,7 @@ export const ClassesPage = () => {
 const ClassCard = ({ roster, onEdit }: { roster: ClassRoster; onEdit: () => void }) => {
   const remove = useDeleteClass();
   return (
-    <Card className="flex flex-col gap-2 p-4">
+    <Card className="flex flex-col gap-2 p-4 bg-card border dark:border-foreground/30">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <h2 className="truncate text-lg font-semibold">{roster.name}</h2>
@@ -98,9 +93,15 @@ const ClassCard = ({ roster, onEdit }: { roster: ClassRoster; onEdit: () => void
               </Button>
             }
             confirmButton={
-              <Button variant="destructive" disabled={remove.isPending} onClick={() => remove.mutate(roster.id)}>
+              <LiftedButton
+                className="bg-red-600 text-white hover:bg-red-700 focus:ring-red-500 py-1"
+                liftColor="red-700"
+                isPending={remove.isPending}
+                type="button"
+                onClick={() => remove.mutate(roster.id)}
+              >
                 Delete
-              </Button>
+              </LiftedButton>
             }
           />
         </div>
@@ -172,13 +173,25 @@ const ClassEditor = ({ roster, onClose }: { roster: ClassRoster | null; onClose:
                   : `${students.length} of ${CLASS_LIMITS.students}. First names are enough; nobody gets an account.`}
             </p>
           </div>
+          {/* The confirmation dialog's pair (ConfirmationDialog): the action first, lifted in its
+              colour, then Cancel as a lifted outline on the dialog's background. */}
           <DialogFooter>
-            <Button type="button" variant="ghost" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={!name.trim() || tooMany || !!tooLong || save.isPending}>
+            <LiftedButton
+              type="submit"
+              className="py-1"
+              disabled={!name.trim() || tooMany || !!tooLong}
+              isPending={save.isPending}
+            >
               Save
-            </Button>
+            </LiftedButton>
+            <LiftedButton
+              type="button"
+              className="bg-background border border-foreground/30 text-sm text-foreground sm:text-base py-1"
+              liftColor="muted"
+              onClick={onClose}
+            >
+              Cancel
+            </LiftedButton>
           </DialogFooter>
         </form>
       </DialogContent>

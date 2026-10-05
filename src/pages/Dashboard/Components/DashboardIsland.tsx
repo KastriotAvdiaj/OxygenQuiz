@@ -71,11 +71,11 @@ export const DashboardIsland: React.FC<DashboardIslandProps> = ({
         aria-label="Dashboard"
         className={cn(
           "pointer-events-auto flex items-center gap-1 rounded-full p-1.5",
-          // Translucent + blurred so the content scrolling underneath stays legible as
-          // texture rather than as competing detail. The border keeps the edge defined on a
-          // busy background, where the shadow alone disappears.
-          "border border-border bg-background/80 shadow-lg backdrop-blur-md",
-          "supports-[backdrop-filter]:bg-background/60",
+          // Solid bg-background: it was translucent and blurred, and over the dashboard's muted
+          // page the content scrolling underneath showed through as a grey smear (2026-10-03).
+          // The border keeps the edge defined on a busy background, where the shadow alone
+          // disappears.
+          "border border-border bg-background shadow-lg",
         )}
       >
         <Tabs

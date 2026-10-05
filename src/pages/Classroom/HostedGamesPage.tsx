@@ -18,11 +18,8 @@ export const HostedGamesPage = () => {
 
   return (
     <div className="container mx-auto py-8 px-4 md:px-0">
-      <div className="mb-6 flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold">Hosted games</h1>
-          <p className="mt-1 text-muted-foreground">Boards you&apos;ve played with a class. Unfinished ones pick up where you left them.</p>
-        </div>
+      <div className="mb-6 flex items-center justify-between gap-4">
+        <h1 className="text-3xl font-bold">Hosted games</h1>
         <Link to="/my-dashboard/host" tabIndex={-1}>
           <LiftedButton className="flex items-center gap-2 text-sm">
             <Plus className="h-4 w-4" /> Host a board
@@ -35,7 +32,7 @@ export const HostedGamesPage = () => {
           <Spinner size="lg" />
         </div>
       ) : !games.data?.length ? (
-        <Card className="flex flex-col items-center gap-3 p-10 text-center">
+        <Card className="flex flex-col items-center gap-3 p-10 text-center bg-card border dark:border-foreground/30">
           <Trophy className="h-8 w-8 text-muted-foreground" />
           <p className="text-muted-foreground">No hosted games yet.</p>
         </Card>
@@ -45,7 +42,7 @@ export const HostedGamesPage = () => {
             <li key={game.id}>
               <Link
                 to={`/host/${game.id}`}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border p-4 transition-colors hover:border-primary"
+                className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card p-4 transition-colors hover:border-primary dark:border-foreground/30"
               >
                 <div className="min-w-0 space-y-1">
                   <p className="truncate font-semibold">{game.quizTitle || "Board"}</p>
