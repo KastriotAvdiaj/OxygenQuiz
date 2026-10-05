@@ -9,7 +9,11 @@ import {
 } from "@/pages/Classroom/api/teacher-access";
 
 const formatDay = (iso: string) =>
-  new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" });
+  new Date(iso).toLocaleDateString(undefined, {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
 
 /**
  * "Teacher access" in the account panel (docs/auth/teacher-role.md §2.2): ask for the role, see
@@ -28,32 +32,43 @@ export const TeacherAccessSection = () => {
   return (
     <section className="rounded-xl border border-border bg-card px-4 py-4">
       <div className="flex items-start gap-3">
-        <GraduationCap aria-hidden className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+        <GraduationCap
+          aria-hidden
+          className="mt-0.5 h-5 w-5 shrink-0 text-primary"
+        />
         <div className="min-w-0 flex-1 space-y-2">
           <h3 className="text-sm font-semibold">Teacher access</h3>
 
           {isTeacher ? (
             <p className="text-sm text-muted-foreground">
-              You&apos;re a Teacher: you can host boards for your class from the Classroom section of your dashboard.
+              You&apos;re a Teacher: you can host boards for your class from the
+              Classroom section of your dashboard.
             </p>
           ) : latest?.status === "Pending" ? (
             <p className="text-sm text-muted-foreground">
-              Your request from {formatDay(latest.createdAt)} is waiting for an admin. You&apos;ll get a notification when it&apos;s answered.
+              Your request from {formatDay(latest.createdAt)} is waiting for an
+              admin. You&apos;ll get a notification when it&apos;s answered.
             </p>
           ) : (
             <>
               <p className="text-sm text-muted-foreground">
-                Teachers host Associations boards for a class on one screen, with the class split into teams.
+                Teachers host Associations boards for a class on one screen,
+                with the class split into teams.
               </p>
               {latest?.status === "Declined" && (
                 <p className="text-sm">
                   Your last request was declined
                   {latest.declineReason ? `: ${latest.declineReason}` : "."}
-                  {canRequestAgainAt && ` You can ask again from ${formatDay(canRequestAgainAt)}.`}
+                  {canRequestAgainAt &&
+                    ` You can ask again from ${formatDay(canRequestAgainAt)}.`}
                 </p>
               )}
               {canRequest && !open && (
-                <Button size="sm" variant="outline" onClick={() => setOpen(true)}>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setOpen(true)}
+                >
                   Request teacher access
                 </Button>
               )}
@@ -75,10 +90,19 @@ export const TeacherAccessSection = () => {
                     className="min-h-[70px] resize-none"
                   />
                   <div className="flex gap-2">
-                    <Button size="sm" type="submit" disabled={request.isPending}>
+                    <Button
+                      size="sm"
+                      type="submit"
+                      disabled={request.isPending}
+                    >
                       Send request
                     </Button>
-                    <Button size="sm" type="button" variant="ghost" onClick={() => setOpen(false)}>
+                    <Button
+                      size="sm"
+                      type="button"
+                      variant="outline"
+                      onClick={() => setOpen(false)}
+                    >
                       Cancel
                     </Button>
                   </div>
