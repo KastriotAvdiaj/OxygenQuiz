@@ -11,8 +11,13 @@ the rules is that something is missing.
 |---|---|---|
 | At least `Auth:MinPasswordLength` characters — **8** in production, **4** in development | `MinPasswordLengthAttribute` | Signup + reset |
 | At most 128 characters | `[MaxLength(128)]` | Signup + reset |
-| Not in the local common-password list (78 entries), and not a single repeated character | `NotACommonPasswordAttribute` | Signup + reset |
-| Not in Have I Been Pwned's breached corpus (~850M) | `PwnedPasswordsChecker` | Signup + reset |
+| Not in the local common-password list (78 entries), and not a single repeated character — **off in development** (`Auth:CommonPasswordCheck:Enabled`) | `NotACommonPasswordAttribute` | Signup + reset |
+| Not in Have I Been Pwned's breached corpus (~850M) — **off in development** (`Auth:BreachedPasswordCheck:Enabled`) | `PwnedPasswordsChecker` | Signup + reset |
+
+**In development only the length rule applies**, so a test account can be `admin` or `12345`.
+`appsettings.Development.json` turns both screens off; `appsettings.json` keeps them on, both
+settings default to on when missing, and in Production the API logs an error at startup if either
+is off.
 
 **That is the whole list.** No required capital, no required digit, no required symbol. This is
 deliberate, it is the current standard rather than a shortcut, and it is the part most likely to be
@@ -99,7 +104,8 @@ docker compose -f docker-compose.prod.yml logs backend | grep '\[PwnedPasswords\
 ```
 
 `Auth:BreachedPasswordCheck:Enabled=false` switches it off entirely, for environments with no
-outbound network where every signup would otherwise wait out the timeout first.
+outbound network where every signup would otherwise wait out the timeout first — and in
+development, where it is off along with the local list (§1).
 
 ## 6. What the user is told
 

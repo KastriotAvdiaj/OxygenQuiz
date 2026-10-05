@@ -111,9 +111,9 @@ const loginWithEmailAndPassword = (data: LoginInput): Promise<AuthResponse> => {
 // 8 in production and lower in development) and reaches the client through
 // /Authentication/auth-config — see `useAuthConfig().minPasswordLength`, which the signup and
 // reset forms use. A hard-coded floor in this schema would be a fourth copy of the number and the
-// one nobody would remember to change. The backend also rejects common/breached passwords
-// (NotACommonPassword); that check can only run server-side, so a weak password may still come
-// back as a 400.
+// one nobody would remember to change. Outside development the backend also rejects
+// common/breached passwords (NotACommonPassword, Have I Been Pwned); that check can only run
+// server-side, so a weak password may still come back as a 400.
 export const registerInputSchema = z.object({
   email: z.string().min(1, "Required").email("Invalid email"),
   username: z

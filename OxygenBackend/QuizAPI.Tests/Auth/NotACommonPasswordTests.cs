@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Microsoft.Extensions.Configuration;
 using QuizAPI.DTOs.Authentication;
 using Xunit;
 
@@ -10,11 +11,41 @@ namespace QuizAPI.Tests.Auth;
 /// </summary>
 public class NotACommonPasswordTests
 {
-    private static bool IsValid(string? password)
+    private static bool IsValid(string? password, IConfiguration? configuration = null)
     {
-        var result = new NotACommonPasswordAttribute()
-            .GetValidationResult(password, new ValidationContext(new object()));
+        var context = new ValidationContext(
+            new object(), configuration is null ? null : new ConfigProvider(configuration), null);
+        var result = new NotACommonPasswordAttribute().GetValidationResult(password, context);
         return result == ValidationResult.Success; // Success is represented by null
+    }
+
+    private static IConfiguration Config(string? enabled) =>
+        new ConfigurationBuilder()
+            .AddInMemoryCollection(enabled is null
+                ? new Dictionary<string, string?>()
+                : new Dictionary<string, string?> { ["Auth:CommonPasswordCheck:Enabled"] = enabled })
+            .Build();
+
+    private sealed class ConfigProvider(IConfiguration configuration) : IServiceProvider
+    {
+        public object? GetService(Type serviceType) =>
+            serviceType == typeof(IConfiguration) ? configuration : null;
+    }
+
+    [Fact]
+    public void SwitchedOff_AcceptsACommonPassword()
+    {
+        // appsettings.Development.json: test accounts may be "admin" or "password".
+        Assert.True(IsValid("password", Config("false")));
+        Assert.True(IsValid("aaaa", Config("false")));
+    }
+
+    [Theory]
+    [InlineData("true")]
+    [InlineData(null)]   // no setting at all: the rule stays on
+    public void SwitchedOnOrUnset_StillRejects(string? enabled)
+    {
+        Assert.False(IsValid("password", Config(enabled)));
     }
 
     [Theory]
