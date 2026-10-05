@@ -11,6 +11,15 @@ namespace QuizAPI.Repositories
 
         public UserRepository(ApplicationDbContext context) => _context = context;
 
+        /// <summary>
+        /// The rows that own their email and name: live accounts, and accounts in their closure
+        /// grace period. Admin-deleted and anonymised rows don't (docs/adr/0013-...). The partial
+        /// unique indexes in ApplicationDbContext use the same filter, so at most ONE row matches an
+        /// address under it — which is what lets the email lookups below use SingleOrDefault.
+        /// </summary>
+        private static readonly System.Linq.Expressions.Expression<Func<User, bool>> HoldsItsAddress =
+            u => !u.IsDeleted || (u.DeletionRequestedAt != null && u.AnonymisedAt == null);
+
         // Single place that defines how a "full" user is loaded.
         private IQueryable<User> WithRoles() =>
             _context.Users
@@ -62,11 +71,18 @@ namespace QuizAPI.Repositories
         /// (docs/adr/0012-...). LoginAsync then decides which kind of deleted row it has: a closure
         /// in its grace period lets the person in and cancels, an ADMIN deletion does not — so
         /// widening the lookup here does not widen who can log in.
+        ///
+        /// <para>Widened only as far as <see cref="HoldsItsAddress"/>: a closing account, never an
+        /// admin-deleted one. An admin-deleted row releases its address, so someone can sign up
+        /// again with it, and then two rows share the email — looking past the filter entirely made
+        /// this <c>SingleOrDefault</c> throw "Sequence contains more than one element" on every
+        /// login to the new account. An admin-deleted row could never sign in anyway
+        /// (<c>AdmitOrRejectDeletedAsync</c>), so leaving it out changes no outcome.</para>
         /// </summary>
         public async Task<User?> GetByEmailIncludingDeletedAsync(
             string email, bool tracked = false, CancellationToken ct = default)
         {
-            var query = WithRolesAndPermissions().IgnoreQueryFilters();
+            var query = WithRolesAndPermissions().IgnoreQueryFilters().Where(HoldsItsAddress);
             if (!tracked) query = query.AsNoTracking();
             return await query.SingleOrDefaultAsync(u => u.Email == email, ct);
         }
@@ -124,10 +140,8 @@ namespace QuizAPI.Repositories
         /// it grants nothing: the new account is a new row, never the old one.</para>
         /// </summary>
         public Task<bool> EmailExistsAsync(string email, CancellationToken ct = default) =>
-            _context.Users.IgnoreQueryFilters()
-                .AnyAsync(u => u.Email == email &&
-                               (!u.IsDeleted ||
-                                (u.DeletionRequestedAt != null && u.AnonymisedAt == null)), ct);
+            _context.Users.IgnoreQueryFilters().Where(HoldsItsAddress)
+                .AnyAsync(u => u.Email == email, ct);
 
         public async Task AddAsync(User user, CancellationToken ct = default) =>
             await _context.Users.AddAsync(user, ct);
