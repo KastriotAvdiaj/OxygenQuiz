@@ -13,7 +13,7 @@ from).
 ```
 src/pages/Quiz/components/quiz-card/
 ├── quiz-card.tsx    layout — what is shown, in what order, in what colour
-├── card-parts.tsx   the frame, the difficulty meter, the (unused) creator avatar
+├── card-parts.tsx   the frame, the difficulty meter, the creator avatar
 ├── card-model.ts    derived data — palette, duration, difficulty rank
 └── index.ts         public surface: `QuizCard`
 ```
@@ -28,7 +28,7 @@ breaks with any change that assumes real API data.**
 
 ```
 ┌──────────────────────────────┐
-│ [≡]                  ● ● ● ● │   format chip (accent) · palette dots — or "BOARD"
+│ ● ● ● ●                 (KA) │   palette dots — or a board's ▦ (BoardGlyph) · ["BOARD"] creator
 │                              │
 │  Shkrimtarët                 │   title — font-quiz, display size
 │  shqiptarë                   │
@@ -41,15 +41,17 @@ breaks with any change that assumes real API data.**
 
 **Built like the mode cards** on `/choose-mode` (`mode-card.tsx`) since 2026-09-24, so the two
 steps of choosing a game look like one app: a 2px border, `rounded-2xl`, a solid 4px edge under
-the card that grows on hover (the card lifts) and shrinks on click (it presses), a chip that tilts
-on hover, and a bare arrow that travels. The mode cards have fixed accents; this card uses the
+the card that grows on hover (the card lifts) and shrinks on click (it presses), and a bare arrow
+that travels. (The mode cards' icon chip was dropped from this card on 2026-10-06 — see below.) The mode cards have fixed accents; this card uses the
 quiz's own (`--edge` is `color-mix(in srgb, var(--accent), black 25%)`, set on the frame).
 
 Top to bottom, and each line is a decision:
 
-- **The chip is the format**, filled with the accent: a list icon for Classic, a grid for an
-  Associations board. Its icon colour is `onAccent` (`readableTextColor`), not white, because
-  palettes run from navy to pale yellow.
+- **The format is told by shape, not by an icon** (2026-10-06). Both formats used to open on an
+  accent-filled chip — a list icon or a grid icon in the same coloured square — and in a grid of
+  cards the two were indistinguishable. Now a Classic card opens on its palette dots, and a board
+  opens on `BoardGlyph`: a miniature of the board, four columns of four tiles (a tint of the
+  accent) with the Final as a solid bar under them. It tilts on hover, as the chip did.
 
 - **The dots are the category's palette**, in order, dominant first. A palette is 2–5 colours,
   and all of them show: this is the only place in the app the whole palette is visible rather
@@ -71,9 +73,15 @@ Top to bottom, and each line is a decision:
   read "0 questions". `quizSizeLabel` in `card-model.ts` decides it, and the frame's `aria-label`
   uses the same function so the spoken and the visible line never disagree
   ([`associations.md`](./associations.md) §1).
-- **A board is marked at a glance**: the grid chip, and a "Board" label (`BoardMark`) where a
+- **A board is marked at a glance**: `BoardGlyph` and a "Board" label (`BoardMark`) where a
   Classic card shows its palette dots — so boards stand out in a mixed grid before anyone reads
   the footer. Accent as an inline `color-mix`, like the dots, never a built class name.
+- **The creator sits in the top-right corner**: `CreatorAvatar` — their photo
+  (`userProfileImageUrl`) or initials (`initials` in `card-model.ts`) on a hairline ring, with the
+  full name on hover. On a board the "Board" label sits just left of it. Dropped in the
+  2026-09-24 redesign, back on 2026-10-06. The name pops up *below* the avatar because the frame
+  is `overflow-hidden` and a popup above would be clipped.
+  Hover only — on touch there is no name, but the start dialog shows it.
 - **No description on the card.** It is read in the start dialog the card opens (which is sized
   for it, `sm:max-w-lg`); the card stays a poster (2026-09-24).
 
@@ -81,7 +89,7 @@ Top to bottom, and each line is a decision:
 
 Following [`../RESPONSIVE.md`](../RESPONSIVE.md) — width scales layout and display type, not the
 text you read inside a control. Below `sm` (one card per row) the card steps down its **layout
-and display type**: padding `p-4` (from `p-5`), the chip `h-9` (from `h-10`), the title `text-xl`
+and display type**: padding `p-4` (from `p-5`), the board glyph's tiles `6px` (from `7px`), the title `text-xl`
 (from `1.6rem`), and the poster spacer `1.25rem` (from `3.25rem`) — a full-width poster-tall card
 showed barely three quizzes per screen. The same steps the mode cards take (`mode-card.tsx`). The
 category and footer text don't change: they're already at their smallest readable size.
@@ -95,7 +103,8 @@ consequences that are easy to undo:
   HTML and the inner one would steal both the click and the tab stop. It carries `aria-hidden`
   and exists only to say "this opens something".
 - **The `aria-label` carries what the visuals encode** — title, category, difficulty, question
-  count — because the dots, the colour and the meter say none of it out loud.
+  count, creator ("…, by <name>") — because the dots, the colour, the meter and the avatar say
+  none of it out loud. The avatar itself is `aria-hidden`.
 
 ## 4. Two numbers that are not theme tokens
 
@@ -127,9 +136,6 @@ See `CLAUDE.md` § Styling and `../entities/category-palettes.md` § 1 for the g
 
 ## 6. What the card does not show
 
-- **No creator.** The card has no author slot. `CreatorAvatar` still exists in `card-parts.tsx`
-  and `initials` is still derived in `card-model.ts`, because attribution is a decision that gets
-  revisited — but nothing renders them today. If it stays out, delete both together.
 - **No description, no image, no `gradient`.** `QuizSummaryDTO` carries all three; the description
   is shown in the start dialog instead.
   `gradient` is [stored but never rendered anywhere in the app](../deployment/known-issues.md).
