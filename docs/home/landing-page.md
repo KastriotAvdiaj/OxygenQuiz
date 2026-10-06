@@ -29,10 +29,11 @@ the user's own fonts.
   (`p-2` on the outer button), restored on 2026-09-28. The original was
   `components/choose-quiz-dialog.tsx`, deleted on 2026-09-21:
   `git show c7ef0452^:src/pages/Home/components/choose-quiz-dialog.tsx`.
-  - **Play** (→ `/choose-quiz`), big and in the theme blue, with a filled ▶. Fluid size, `text-xl`
-    on a phone up to `text-5xl` at `lg` (a fixed `text-5xl` dwarfed phones — docs/RESPONSIVE.md),
-    and wider than Explore was (`px-8` → `lg:px-16`). Like Explore, it greys out while the quiz
-    list is loading.
+  - **Play** (→ `/choose-mode`, since 2026-10-06 — single player or multiplayer first, like the
+    header's Play), big and in the theme blue, with a filled ▶. Fluid size, `text-xl` on a phone
+    up to `text-5xl` at `lg` (a fixed `text-5xl` dwarfed phones — docs/RESPONSIVE.md), and wider
+    than Explore was (`px-8` → `lg:px-16`). The mode screen has no loader, so it has no loading
+    state.
   - An **"or"** divider, then the same button **a size down** (`SecondaryButton`: `p-1` frame,
     `text-sm`/`sm:text-base`), each with an icon:
     - **Host a lobby** → `/multiplayer-menu`, in **muted greys** (`bg-muted` face,

@@ -28,8 +28,8 @@ same defaults:
   both singleplayer and multiplayer. Not "choose mode" + "select quiz": those are two steps of
   one flow, and the header runs out of room at 360px, which is this app's narrowest supported
   width (`RESPONSIVE.md`).
-- The landing page's **Choose a quiz** button goes straight to `/choose-quiz`, skipping the mode
-  screen — that page is about playing solo ([`../home/landing-page.md`](../home/landing-page.md)).
+- The landing page's **Play** button also goes to `/choose-mode` (since 2026-10-06; it used to
+  skip straight to `/choose-quiz`) — see [`../home/landing-page.md`](../home/landing-page.md).
 
 ### Opening the list on one category: `?category=<name>`
 

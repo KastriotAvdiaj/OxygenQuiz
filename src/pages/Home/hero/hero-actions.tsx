@@ -1,4 +1,4 @@
-import { Link, useNavigation } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { PencilLine, Play, Users } from "lucide-react";
 import { forwardRef } from "react";
 import { LiftedButton, type LiftedButtonProps } from "@/common/LiftedButton";
@@ -42,24 +42,19 @@ export function HeroActions() {
 }
 
 /**
- * **Play** → `/choose-quiz`. The old "Explore" button (`components/choose-quiz-dialog.tsx`,
+ * **Play** → `/choose-mode`, the same first step as the header's Play link: single player or
+ * multiplayer, then the quiz. The old "Explore" button (`components/choose-quiz-dialog.tsx`,
  * removed 2026-09-21 — `git show c7ef0452^:src/pages/Home/components/choose-quiz-dialog.tsx`):
  * square face, and a fluid size, since a fixed text-5xl dwarfed phone screens
- * (docs/RESPONSIVE.md). Wider than Explore was, with a ▶ that scales with the label. Like
- * Explore it greys out while the quiz list is loading, so a second press can't queue.
+ * (docs/RESPONSIVE.md). Wider than Explore was, with a ▶ that scales with the label. No
+ * loading state: the mode screen has no loader, so there is nothing to wait for.
  */
 function PlayButton() {
-  const navigation = useNavigation();
-  const isLoading =
-    navigation.state === "loading" &&
-    navigation.location?.pathname?.startsWith("/choose-quiz");
-
   return (
-    <Link to="/choose-quiz" tabIndex={-1}>
+    <Link to="/choose-mode" tabIndex={-1}>
       <LiftedButton
         outerClassName="rounded-none p-2"
         className="gap-2 rounded-none px-8 py-2 text-xl sm:gap-3 sm:px-12 sm:py-4 sm:text-3xl md:text-4xl lg:gap-4 lg:px-16 lg:text-5xl lg:short:py-3 lg:short:text-4xl"
-        disabled={isLoading}
       >
         <Play
           className="h-5 w-5 fill-current sm:h-7 sm:w-7 md:h-8 md:w-8 lg:h-10 lg:w-10 lg:short:h-8 lg:short:w-8"
