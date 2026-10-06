@@ -14,9 +14,18 @@ const RADIUS = 76;
  * mid-latitudes. Centring it further north put the Arctic Ocean — empty — at the top.
  */
 const TILT = 15;
-/** Where the globe starts facing, and how far the intro spin carries it (degrees). */
-const START_LONGITUDE = -20;
+/**
+ * The longitude (degrees east) the globe faces when the intro spin ends — the first view people
+ * actually take in. 25°E puts Europe, Africa and the Middle East up front (the Balkans near the
+ * centre); the slow drift then carries it west. The spin starts `INTRO_SPIN` degrees earlier so
+ * it *lands* here: it used to start here instead, and the half-turn left the Pacific facing out.
+ * Under reduced motion this is the one view drawn.
+ */
+const SETTLE_LONGITUDE = 25;
+/** How far the intro spin carries the globe before it settles (degrees). */
 const INTRO_SPIN = 180;
+/** d3's rotation is the negated centre longitude: rotate λ = -lon faces `lon`. */
+const SETTLE_ROTATION = -SETTLE_LONGITUDE;
 /** How fast the intro spin dies away, and the slow drift it settles into (degrees/second). */
 const INTRO_DECAY = 1.6;
 const DRIFT = 6;
@@ -33,7 +42,7 @@ const POP_SECONDS = 0.6;
  * The landing page's line globe (docs/home/landing-page.md, "The globe"): an outline of the
  * Earth — grid lines and coastlines in the theme blue, no fill — as the page's background, half
  * risen over its bottom edge (Home.tsx places and sizes it). It fades in, at full size, with a quick spin that
- * eases into a slow, endless turn.
+ * eases into a slow, endless turn, landing on Europe and Africa (`SETTLE_LONGITUDE`).
  *
  * It is drawn in a fixed 170-unit box and scaled to whatever size Home gives it, so every stroke
  * is `non-scaling-stroke`: at 1000px wide the lines stay a pixel or so thick instead of growing
@@ -46,7 +55,7 @@ const POP_SECONDS = 0.6;
  * coastlines join it when the data arrives.
  *
  * Each frame sets the two paths' `d` directly on the DOM — no React state per frame. Under
- * reduced motion it draws once, facing the start longitude, and never animates. `requestAnimationFrame`
+ * reduced motion it draws once, facing `SETTLE_LONGITUDE`, and never animates. `requestAnimationFrame`
  * stops by itself in a background tab.
  */
 export default function LineGlobe({
@@ -97,7 +106,7 @@ export default function LineGlobe({
       };
 
       if (reduceMotion) {
-        draw(START_LONGITUDE);
+        draw(SETTLE_ROTATION);
         return;
       }
 
@@ -115,7 +124,10 @@ export default function LineGlobe({
         }
         const t = (now - start) / 1000;
         // A fast spin that decays exponentially, on top of the steady drift it leaves behind.
-        draw(START_LONGITUDE + DRIFT * t + INTRO_SPIN * (1 - Math.exp(-t * INTRO_DECAY)));
+        // Starts a half-turn back and eases into SETTLE_ROTATION, then drifts on from there.
+        draw(
+          SETTLE_ROTATION - INTRO_SPIN + DRIFT * t + INTRO_SPIN * (1 - Math.exp(-t * INTRO_DECAY)),
+        );
 
         // Arcs begin once the globe has faded in.
         const width = svgRef.current?.clientWidth ?? 0;

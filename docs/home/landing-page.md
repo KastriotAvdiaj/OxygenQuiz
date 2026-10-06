@@ -84,9 +84,11 @@ Decoration only: `aria-hidden`, no pointer events, unselectable.
 - **Motion**: it waits until the pitch has finished rising in (`PITCH_SETTLED_SECONDS`, ~1.05s)
   — while the buttons fade in they are see-through, and a globe popping in behind them looked as
   if it were on top of them. Then it fades in at full size (opacity 0 → 1 over 0.6s, no scaling) with a half-turn spin
-  that decays into a slow, endless drift of 6°/second. The view is centred at 15°S so the visible
-  top band is the land-heavy northern mid-latitudes. Under reduced motion it is drawn once and
-  never moves.
+  that decays into a slow, endless drift of 6°/second. The spin **lands** on `SETTLE_LONGITUDE`
+  (25°E — Europe, Africa and the Middle East, the Balkans near the centre) by starting a half-turn
+  before it; until 2026-10-06 it started there instead and settled facing the Pacific. The view is
+  centred at 15°S so the visible top band is the land-heavy northern mid-latitudes. Under reduced
+  motion it is drawn once, facing `SETTLE_LONGITUDE`, and never moves.
 - **Games across the world** (`globe-connections.ts`): amber (`cta`) arcs between ~30 real cities
   (Prishtina among them). Every 1.2s a new one is tried, at most three at a time: it lifts off the
   surface between two cities (higher the further apart), draws over ~1.1s with a travelling dot,
