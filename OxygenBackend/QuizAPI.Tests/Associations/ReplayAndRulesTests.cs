@@ -92,7 +92,7 @@ public class ReplayAndRulesTests
     public void TheDefaults_AreTheDocumentedOnes()
     {
         var d = AssociationRules.Default;
-        Assert.Equal((5, 1, 10, 30, 2, 240, 60, 600),
+        Assert.Equal((5, 1, 10, 30, 2, 240, 60, 1800),
             (d.ColumnBase, d.PerClosedTile, d.FinalBase, d.DuelTurnSeconds, d.EndgameTurnsPerSeat,
              d.SoloDefaultBoardSeconds, d.SoloMinBoardSeconds, d.SoloMaxBoardSeconds));
         Assert.Empty(d.Validate());

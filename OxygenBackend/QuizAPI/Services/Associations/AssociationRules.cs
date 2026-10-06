@@ -45,7 +45,7 @@ namespace QuizAPI.Services.Associations
         public int SoloMinBoardSeconds { get; init; } = 60;
 
         /// <summary>Longest board time an author may set.</summary>
-        public int SoloMaxBoardSeconds { get; init; } = 600;
+        public int SoloMaxBoardSeconds { get; init; } = 1800;
 
         /// <summary>The defaults, as documented. What a game gets when nothing is configured.</summary>
         public static AssociationRules Default { get; } = new();

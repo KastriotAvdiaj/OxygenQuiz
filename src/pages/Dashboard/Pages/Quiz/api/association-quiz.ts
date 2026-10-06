@@ -16,7 +16,7 @@ import type { AssociationBoardDTO } from "@/types/association-types";
  *
  * <b>The schema mirrors the API; it is not the rule.</b> The gate is
  * `AssociationBoardValidator` on the server (and `AssociationRules` for the board time, which
- * is configurable there — the 60–600s here are the documented defaults). This is fast feedback
+ * is configurable there — the 60–1800s here are the documented defaults). This is fast feedback
  * while typing (CLAUDE.md, "Client validation mirrors an API rule").
  *
  * <b>The author types minutes; the API takes seconds.</b> A board runs for minutes, and "240"
@@ -29,7 +29,7 @@ export const BOARD_TEXT_MAX = 100;
 /** Mirrors `AssociationBoardLimits.MaxAcceptableSolutions`. */
 export const BOARD_MAX_OTHER_SPELLINGS = 4;
 /** Mirror `AssociationRules` defaults (SoloMin/Max/DefaultBoardSeconds). The API enforces the configured values. */
-export const BOARD_SECONDS = { min: 60, max: 600, default: 240 } as const;
+export const BOARD_SECONDS = { min: 60, max: 1800, default: 240 } as const;
 /** The same range in the builder's unit. Half minutes are allowed (`step`), so 90s is sayable. */
 export const BOARD_MINUTES = {
   min: BOARD_SECONDS.min / 60,

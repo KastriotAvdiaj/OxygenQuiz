@@ -214,7 +214,7 @@ No number in §3–§4 is written in the engine or the scoring code. They are al
 | `DuelTurnSeconds` | 30 | a Duel turn; restarts after each correct Guess |
 | `EndgameTurnsPerSeat` | 2 | guess-only turns each player gets once every Tile is open |
 | `SoloDefaultBoardSeconds` | 240 | the board time the builder proposes |
-| `SoloMinBoardSeconds` / `SoloMaxBoardSeconds` | 60 / 600 | the range an author may choose |
+| `SoloMinBoardSeconds` / `SoloMaxBoardSeconds` | 60 / 1800 | the range an author may choose |
 
 - **Configured in `Associations:Rules`** (`appsettings.json`; every key optional — a missing one
   takes its default). The values are validated at startup (`AssociationRules.Validate`, wired with
@@ -331,7 +331,7 @@ The gate is `AssociationBoardValidator` (the builder's zod schema mirrors it for
   after trimming, at most 100 characters;
 - other spellings: trimmed, blanks and duplicates (of each other or of the solution,
   case-insensitively — Guesses are matched that way) dropped, **at most 4** per solution;
-- board time within `SoloMinBoardSeconds`–`SoloMaxBoardSeconds` (60–600 by default — the
+- board time within `SoloMinBoardSeconds`–`SoloMaxBoardSeconds` (60–1800 by default — the
   configured rules, §5). The refusal names the range **in minutes** ("between 1 and 10
   minutes"), because that is the unit the builder asks for (§8.5); the API itself takes seconds;
 - and the quiz-level rules Classic already has, reused rather than restated: the category,
