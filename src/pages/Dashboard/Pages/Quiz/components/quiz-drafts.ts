@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { QuestionType } from "@/types/question-types";
 
+import type { AssociationQuizFormValues } from "../api/association-quiz";
 import { CreateQuizInput, createQuizInputSchema } from "../api/create-quiz";
 
 import type { QuestionSettings, QuizQuestion } from "./Create-Quiz-Form/types";
@@ -42,6 +43,8 @@ export const QUIZ_DRAFT_SLOTS = {
   manual: "quiz-create",
   aiTopic: "quiz-ai-topic",
   aiOwn: "quiz-ai-own",
+  /** The Associations board builder — its own shape, so its own slot and its own version. */
+  associations: "quiz-associations",
 } as const;
 
 const hasText = (value: string | null | undefined): boolean =>
@@ -110,7 +113,9 @@ export const parseManualQuizDraft = (raw: unknown): ManualQuizDraft | null => {
  * work nobody did — the fastest way to teach someone to ignore the notice. Defaulted fields
  * (status, time limit, the switches) don't count for the same reason: nobody chose them.
  */
-export const isManualQuizDraftWorthKeeping = (draft: ManualQuizDraft): boolean =>
+export const isManualQuizDraftWorthKeeping = (
+  draft: ManualQuizDraft,
+): boolean =>
   draft.questions.length > 0 ||
   hasText(draft.form.title) ||
   hasText(draft.form.description) ||
@@ -185,3 +190,78 @@ export const parseAiQuizDraft = (raw: unknown): AiQuizDraft | null => {
  */
 export const isAiQuizDraftWorthKeeping = (draft: AiQuizDraft): boolean =>
   draft.payload !== null || hasText(draft.pastedReply);
+
+// ── The Associations board builder ─────────────────────────────────────────────────────
+
+/**
+ * Its own version, not {@link QUIZ_DRAFT_VERSION}: a board is a different shape from a Classic
+ * quiz, and a change to one must not throw away drafts of the other.
+ */
+export const ASSOCIATION_DRAFT_VERSION = 1;
+
+/**
+ * The board builder's form values, as they stood. This is exactly what `AssociationBoardForm`
+ * takes as `defaultValues`, so restoring is a mount with a different seed — the same seam edit
+ * mode already uses — not a new hydration path.
+ *
+ * Every field is optional because a half-typed board is the whole point: no category picked yet,
+ * the board-time input cleared. `boardTimeInMinutes` is left out of a snapshot when the input
+ * holds no number (react-hook-form's `valueAsNumber` gives `NaN`, which JSON can't carry), so a
+ * restore falls back to the default rather than seeding `null` into a number field.
+ */
+export type AssociationBoardDraft = Partial<AssociationQuizFormValues>;
+
+const draftColumnSchema = z.object({
+  tiles: z.array(z.string()).length(4),
+  solution: z.string(),
+  otherSpellings: z.string(),
+});
+
+/**
+ * Shape only — lengths and required-ness stay with `associationQuizFormSchema`, which still runs
+ * on submit, and the API (`AssociationBoardValidator`) is still the gate. The one structural
+ * check that matters here is four Columns of four Tiles: the builder renders by index, and a
+ * board of any other shape would leave inputs bound to nothing.
+ */
+const associationBoardDraftSchema = z.object({
+  title: z.string().optional(),
+  description: z.string().nullable().optional(),
+  categoryId: z.number().optional(),
+  languageId: z.number().optional(),
+  difficultyId: z.number().optional(),
+  status: z.enum(["Draft", "Unlisted", "Public"]).optional(),
+  boardTimeInMinutes: z.number().optional(),
+  columns: z.array(draftColumnSchema).length(4).optional(),
+  finalSolution: z.string().optional(),
+  finalOtherSpellings: z.string().optional(),
+});
+
+export const parseAssociationBoardDraft = (
+  raw: unknown,
+): AssociationBoardDraft | null => {
+  const result = associationBoardDraftSchema.safeParse(raw);
+  return result.success ? result.data : null;
+};
+
+/**
+ * Is there anything on this board the user would mind losing?
+ *
+ * Any typed text counts — a Tile, a solution, a spelling, the title — and so does a picked lookup.
+ * The status and the board time don't: the builder opens with both set, and nobody chose them.
+ */
+export const isAssociationBoardDraftWorthKeeping = (
+  draft: AssociationBoardDraft,
+): boolean =>
+  hasText(draft.title) ||
+  hasText(draft.description) ||
+  hasText(draft.finalSolution) ||
+  hasText(draft.finalOtherSpellings) ||
+  draft.categoryId != null ||
+  draft.languageId != null ||
+  draft.difficultyId != null ||
+  (draft.columns ?? []).some(
+    (column) =>
+      hasText(column.solution) ||
+      hasText(column.otherSpellings) ||
+      column.tiles.some((tile) => hasText(tile)),
+  );

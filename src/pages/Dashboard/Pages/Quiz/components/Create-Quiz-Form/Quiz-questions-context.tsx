@@ -75,18 +75,6 @@ interface QuizContextType {
   activeTab: string;
   setActiveTab: (tab: string) => void;
 
-  /**
-   * Empties the builder: every added question, its settings, its validation state and the
-   * question on screen.
-   *
-   * One caller — "Start fresh" on a restored draft. Discarding the stored snapshot has to
-   * empty what was hydrated from it, and the usual way to reset a subtree (remount it with a
-   * new `key`) can't be used here: this provider sits *above* the form, so remounting it
-   * would take the react-hook-form fields with it and the two resets would have to stay in
-   * step forever. See docs/quiz/quiz-draft-persistence.md.
-   */
-  clearQuiz: () => void;
-
   // Function to update ("NEW") questions
   updateQuestion: (questionId: number, updatedQuestion: QuizQuestion) => void;
 
@@ -588,17 +576,6 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
     }));
   }, [addedQuestions, questionSettings]);
 
-  const clearQuiz = useCallback(() => {
-    setAddedQuestions([]);
-    setQuestionSettings({});
-    setDisplayQuestion(null);
-    setValidatedQuestions(new Set());
-    setQuestionErrorsState(new Map());
-    // Back to where a fresh builder opens, so "Start fresh" leaves no trace of the draft —
-    // including a Question tab that now has nothing to show.
-    setActiveTab("quiz");
-  }, []);
-
   const contextValue: QuizContextType = {
     // Permanent selections
     addedQuestions,
@@ -634,7 +611,6 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
     getQuestionsWithSettings,
     activeTab,
     setActiveTab,
-    clearQuiz,
 
     // Method for updating "NEW" question
     updateQuestion,

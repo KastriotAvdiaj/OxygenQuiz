@@ -341,9 +341,9 @@ The gate is `AssociationBoardValidator` (the builder's zod schema mirrors it for
 Every problem is reported at once, each naming its place ("Tile C4 is empty. Column D needs a
 solution."), because the builder shows the message to the author.
 
-**A Board is always complete when saved, even as a Draft.** Unlike the Classic builder, the board
-builder has no local draft yet — see [`../deployment/known-issues.md`](../deployment/known-issues.md)
-§ "Associations".
+**A Board is always complete when saved, even as a Draft.** An unfinished board lives only in the
+browser: the builder autosaves it locally and guards the exit, exactly like the Classic builder
+([`quiz-draft-persistence.md`](quiz-draft-persistence.md)).
 
 ### 8.5 The board builder
 

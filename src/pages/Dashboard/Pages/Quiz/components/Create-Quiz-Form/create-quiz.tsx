@@ -10,6 +10,7 @@ import {
   Info,
   MessageSquareText,
   Plus,
+  ArrowRight,
 } from "lucide-react";
 import {
   Popover,
@@ -75,33 +76,14 @@ import { useCreateAiQuiz, AiImportQuestion } from "../../api/create-ai-quiz";
 import { Quiz } from "@/types/quiz-types";
 import { useUser } from "@/lib/Auth";
 import { useDraftAutosave } from "@/hooks/use-draft-autosave";
-import { DraftSavedIndicator, RestoredDraftNotice } from "../draft-notices";
+import { useNavigationGuard } from "@/hooks/use-navigation-guard";
+import { DraftSavedIndicator, LeaveUnfinishedQuizDialog } from "../draft-notices";
 import {
   ManualQuizDraft,
   QUIZ_DRAFT_SLOTS,
   QUIZ_DRAFT_VERSION,
   isManualQuizDraftWorthKeeping,
 } from "../quiz-drafts";
-
-/**
- * What an empty create form looks like, so that "Start fresh" on a restored draft puts the
- * fields back exactly where a first visit would find them. Spelled out rather than passing
- * `reset()` nothing: `reset(undefined)` restores the form's *defaultValues*, which on this
- * route are the restored draft — it would put the draft straight back.
- */
-const EMPTY_QUIZ_FORM_VALUES = {
-  title: "",
-  description: "",
-  categoryId: undefined,
-  languageId: undefined,
-  difficultyId: undefined,
-  imageUrl: "",
-  timeLimitInSeconds: 0,
-  showFeedbackImmediately: false,
-  status: "Draft" as const,
-  shuffleQuestions: false,
-  questions: [],
-};
 
 interface CreateQuizFormProps {
   /**
@@ -123,13 +105,6 @@ interface CreateQuizFormProps {
    */
   aiImportMode?: boolean;
   /**
-   * When this form was seeded from a stored draft, the moment that draft was written — it
-   * drives the "picked up where you left off" notice. `null` on a fresh start.
-   * `create-quiz-route.tsx` is what reads the draft; this form only reports it and keeps it
-   * up to date.
-   */
-  restoredDraftSavedAt?: number | null;
-  /**
    * Called once the quiz has been written to the server, before the redirect.
    *
    * The AI wizard uses it to drop the draft it is keeping: the builder it renders in review
@@ -143,7 +118,6 @@ const CreateQuizForm = ({
   editQuiz,
   initialValues,
   aiImportMode = false,
-  restoredDraftSavedAt = null,
   onSaved,
 }: CreateQuizFormProps = {}) => {
   const isEditMode = editQuiz != null;
@@ -159,7 +133,6 @@ const CreateQuizForm = ({
     resetAllValidationStates,
     activeTab,
     setActiveTab,
-    clearQuiz,
   } = useQuiz();
   const { addNotification } = useNotifications();
   const navigate = useNavigate();
@@ -178,17 +151,15 @@ const CreateQuizForm = ({
   const draftsEnabled = !editQuiz && !aiImportMode;
 
   /**
-   * The autosave hook lives inside the `<Form>` render prop, because that is where the form's
-   * values are — but the mutation callbacks below are defined out here. This is the wire
-   * between them: it is assigned during render and called on a successful create, so a quiz
-   * that has been saved for real stops being offered back as an unfinished draft.
+   * The autosave and leave-guard hooks live inside the `<Form>` render prop, because that is
+   * where the form's values are — but the mutation callbacks below are defined out here. These
+   * are the wires between them, assigned during render and called on a successful create: a quiz
+   * that has been saved for real stops being offered back as an unfinished draft, and the
+   * redirect to the list isn't stopped by the guard.
    */
   const discardDraftRef = useRef<() => void>(() => {});
+  const allowNavigationRef = useRef<() => void>(() => {});
 
-  /** Drives the restore notice. Local state so "Start fresh" can take it away. */
-  const [restoredNoticeAt, setRestoredNoticeAt] = useState<number | null>(
-    draftsEnabled ? restoredDraftSavedAt : null,
-  );
   // This form is mounted under both the admin dashboard (/dashboard/...) and the
   // personal dashboard (/my-dashboard/...). Redirect back into whichever section
   // the user is actually in — a normal user has no access to /dashboard and would
@@ -282,6 +253,7 @@ const CreateQuizForm = ({
         // it still has pending, which would otherwise land during the navigation below and
         // resurrect the draft a moment after the quiz was created.
         discardDraftRef.current();
+        allowNavigationRef.current();
         onSaved?.();
         addNotification({
           type: "success",
@@ -681,7 +653,7 @@ const CreateQuizForm = ({
             : undefined,
       }}
     >
-      {({ register, formState, setValue, watch, clearErrors, reset }) => {
+      {({ register, formState, setValue, watch, clearErrors }) => {
         useEffect(() => {
           const questions = addedQuestions.map(
             (q: QuizQuestion, index: number) => ({
@@ -762,6 +734,9 @@ const CreateQuizForm = ({
           questions: getQuestionsWithSettings(),
         };
 
+        const hasUnsavedWork =
+          draftsEnabled && isManualQuizDraftWorthKeeping(draftCandidate);
+
         const { savedAt: draftSavedAt, discard: discardDraft } =
           useDraftAutosave<ManualQuizDraft>({
             slot: QUIZ_DRAFT_SLOTS.manual,
@@ -778,13 +753,16 @@ const CreateQuizForm = ({
 
         discardDraftRef.current = discardDraft;
 
-        /** "Start fresh": drop the stored draft and empty both halves of the builder. */
-        const handleDiscardDraft = () => {
-          discardDraft();
-          reset(EMPTY_QUIZ_FORM_VALUES);
-          clearQuiz();
-          setRestoredNoticeAt(null);
-        };
+        // Leaving with typed work asks first. Armed only while there is something worth
+        // keeping, so an untouched builder never prompts; off in edit mode and AI review, which
+        // keep no draft here.
+        const {
+          showLeaveDialog,
+          confirmNavigation,
+          cancelNavigation,
+          allowNavigation,
+        } = useNavigationGuard(hasUnsavedWork);
+        allowNavigationRef.current = allowNavigation;
 
         const { errors } = formState;
 
@@ -828,25 +806,17 @@ const CreateQuizForm = ({
 
         return (
           <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-3 lg:h-full lg:min-h-0">
-            {/* Above the builder rather than over it: the draft is already restored, so this
-                reports what happened and offers the way out. It is not a gate asking
-                permission to do something that has been done. See ADR 0009. */}
-            {restoredNoticeAt !== null && (
-              <RestoredDraftNotice
-                className="flex-none"
-                savedAt={restoredNoticeAt}
-                onDiscard={handleDiscardDraft}
-                summary={
-                  addedQuestions.length > 0
-                    ? `${addedQuestions.length} question${
-                        addedQuestions.length === 1 ? "" : "s"
-                      }`
-                    : undefined
-                }
-              />
-            )}
+            <LeaveUnfinishedQuizDialog
+              isOpen={showLeaveDialog}
+              onConfirm={confirmNavigation}
+              onCancel={cancelNavigation}
+              draftSaved={draftSavedAt !== null}
+            />
 
-            <div className="grid grid-cols-1 lg:grid-cols-5 gap-3 sm:gap-4 items-start lg:min-h-0 lg:flex-1 lg:overflow-hidden">
+            {/* Side columns get a 15rem floor. As fifths of the row they were ~180px on a 1024px
+                window beside the nav rail — narrower than the 200px selects and the two tabs,
+                which overflowed the card (docs/RESPONSIVE.md, "measure the container"). */}
+            <div className="grid grid-cols-1 lg:grid-cols-[minmax(15rem,1fr)_minmax(0,3fr)_minmax(15rem,1fr)] gap-3 sm:gap-4 items-start lg:min-h-0 lg:flex-1 lg:overflow-hidden">
               {/* Quiz Details Sidebar */}
               <Card className="md:text-xs lg:text-sm h-fit lg:h-full lg:col-span-1 bg-background border-2 border-primary/30 flex flex-col lg:overflow-hidden">
                 <Tabs
@@ -855,19 +825,19 @@ const CreateQuizForm = ({
                   className="flex flex-1 flex-col min-h-0"
                 >
                   <CardHeader className="w-full relative bg-primary/10 text-center border-b border-primary/30 px-2 py-3 flex-none">
-                    <TabsList className="w-full border-none bg-none shadow-none rounded-md">
+                    <TabsList className="w-full gap-1.5 border-none bg-none shadow-none rounded-md">
                       <TabsTrigger
                         value="quiz"
                         activeClassName={
                           quizTabErrorCount > 0 ? "bg-red-500" : undefined
                         }
-                        className={`rounded-xl ${
+                        className={`min-w-0 rounded-xl px-2 ${
                           quizTabErrorCount > 0
                             ? "ring-2 ring-red-500 ring-offset-1 ring-offset-background data-[state=active]:text-white data-[state=inactive]:bg-red-500/10 data-[state=inactive]:text-red-500 data-[state=inactive]:hover:bg-red-500/15"
                             : ""
                         }`}
                       >
-                        <p className="flex gap-2 px-4 items-center text-sm">
+                        <p className="flex min-w-0 items-center gap-1.5 text-sm">
                           <Folder
                             className={`h-4 w-4 ${
                               activeTab === "quiz"
@@ -890,8 +860,8 @@ const CreateQuizForm = ({
                           )}
                         </p>
                       </TabsTrigger>
-                      <TabsTrigger value="questions" className="rounded-xl">
-                        <p className="flex gap-2 px-4 items-center text-sm">
+                      <TabsTrigger value="questions" className="min-w-0 rounded-xl px-2">
+                        <p className="flex min-w-0 items-center gap-1.5 text-sm">
                           <MessageSquareText
                             className={`h-4 w-4 ${
                               activeTab === "questions"
@@ -1152,7 +1122,7 @@ const CreateQuizForm = ({
               </Card>
 
               {/* Main Quiz Creator Area */}
-              <Card className="bg-background border-2 border-primary/30 rounded-xl shadow-lg flex flex-col items-center w-full lg:col-span-3 lg:h-full lg:overflow-hidden">
+              <Card className="bg-background border-2 border-primary/30 rounded-xl shadow-lg flex flex-col items-center w-full min-w-0 lg:h-full lg:overflow-hidden">
                 <CardHeader className="w-full relative bg-primary/10 p-3 text-center border-b border-primary/30 flex-none">
                   <section className="flex justify-center rounded-lg">
                     {/* Blurred backdrop while the add-question menu is open. */}
@@ -1335,12 +1305,21 @@ const CreateQuizForm = ({
                             isSubmitting ? "visible" : "invisible"
                           }`}
                         />
-                        <span className={isSubmitting ? "invisible" : "visible"}>
+                        <span
+                          className={`flex items-center gap-1.5 ${
+                            isSubmitting ? "invisible" : "visible"
+                          }`}
+                        >
                           {isCreatingQuestions
                             ? "Creating Questions..."
                             : isEditMode
                               ? "Save Changes"
                               : "Finish"}
+                          {/* Only on Finish: it's the step forward out of the builder. Save
+                              Changes keeps you where you are, so an arrow would overpromise. */}
+                          {!isCreatingQuestions && !isEditMode && (
+                            <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                          )}
                         </span>
                       </div>
                     </LiftedButton>

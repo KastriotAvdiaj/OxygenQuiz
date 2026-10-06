@@ -1,7 +1,7 @@
 # 9. A restored draft is announced, not asked about
 
 Date: 2026-09-10
-Status: Accepted
+Status: Accepted — partly superseded by [ADR 0019](0019-unfinished-builders-restore-silently-and-guard-the-exit.md) (2026-10-06): the manual and board builders no longer show the notice. The AI wizard still does.
 
 ## Context
 

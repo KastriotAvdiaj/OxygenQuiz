@@ -1165,12 +1165,9 @@ fixed; these were left.
 
 ## Associations (2026-09-23 — see docs/quiz/associations.md)
 
-- **P3 — The board builder has no local draft.** The Classic builder autosaves an unfinished quiz
-  to the browser (`useDraftAutosave`, docs/quiz/quiz-draft-persistence.md); the board builder
-  doesn't, so closing the tab mid-way loses the Board. The server rule stays "a Board is complete
-  when saved", so the fix is client-only: wire `useDraftAutosave` into `AssociationBoardForm` with a
-  board-shaped draft. Deferred to keep Phase 3 to authoring itself.
-  → `src/pages/Dashboard/Pages/Quiz/components/Association-Board-Form/association-board-form.tsx`
+- ~~**P3 — The board builder has no local draft.**~~ **Fixed 2026-10-06.** `AssociationBoardForm`
+  autosaves to the `quiz-associations` slot and guards the exit, like the Classic builder
+  (docs/quiz/quiz-draft-persistence.md, ADR 0019).
 - ~~**P3 — Quizzes (both formats) could only be edited from the admin dashboard.**~~ **Fixed
   2026-09-23.** The player dashboard mounts the editors at `/my-dashboard/quizzes/edit/:id` (and
   `…/board`); the shared table links within its own dashboard (`useQuizEditPath`). Only an owner
