@@ -155,7 +155,7 @@ public class AssociationBoardServiceTests
 
     [Theory]
     [InlineData(59)]
-    [InlineData(601)]
+    [InlineData(1801)] // SoloMaxBoardSeconds is 1800
     public async Task Create_RefusesABoardTimeOutsideTheConfiguredRange(int seconds)
     {
         using var db = new Db();

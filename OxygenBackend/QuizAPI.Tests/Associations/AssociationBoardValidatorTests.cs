@@ -83,8 +83,10 @@ public class AssociationBoardValidatorTests
     [Fact]
     public void BoardTimeFollowsTheRules()
     {
-        var wider = Rules with { SoloMaxBoardSeconds = 900 };
-        AssociationBoardValidator.ValidateAndClean(Valid(), 900, wider);
-        Assert.Throws<AppValidationException>(() => AssociationBoardValidator.ValidateAndClean(Valid(), 900, Rules));
+        // Derived from the default so raising the limit doesn't turn this into a no-op.
+        var tooLong = Rules.SoloMaxBoardSeconds + 1;
+        var wider = Rules with { SoloMaxBoardSeconds = tooLong };
+        AssociationBoardValidator.ValidateAndClean(Valid(), tooLong, wider);
+        Assert.Throws<AppValidationException>(() => AssociationBoardValidator.ValidateAndClean(Valid(), tooLong, Rules));
     }
 }

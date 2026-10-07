@@ -118,7 +118,7 @@ public class ReplayAndRulesTests
     [InlineData("EndgameTurnsPerSeat", 0)]
     [InlineData("DuelTurnSeconds", 2)]
     [InlineData("SoloMaxBoardSeconds", 30)]
-    [InlineData("SoloDefaultBoardSeconds", 1000)]
+    [InlineData("SoloDefaultBoardSeconds", 5000)]
     public void InvalidSettings_AreReported(string setting, int value)
     {
         var options = new AssociationRulesOptions();
