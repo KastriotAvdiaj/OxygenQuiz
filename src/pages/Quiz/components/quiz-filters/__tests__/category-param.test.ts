@@ -32,7 +32,7 @@ describe("findCategoryByName", () => {
 describe("categoryListPath", () => {
   test("encodes the name so & and spaces survive the round trip", () => {
     const path = categoryListPath("Food & Drink");
-    expect(path).toBe("/choose-quiz?category=Food%20%26%20Drink");
+    expect(path).toBe("/choose-quiz/all?category=Food%20%26%20Drink");
     const params = new URL(path, "https://x.test").searchParams;
     expect(params.get(CATEGORY_PARAM)).toBe("Food & Drink");
   });

@@ -23,6 +23,7 @@ import { Navigate, Outlet } from "react-router-dom";
 import { quizLoader } from "@/loaders/quiz.loader";
 import { dashboardEntryLoader } from "@/loaders/dashboardEntryLoader";
 import { quizSelectionLoader } from "@/loaders/quiz-selection.loader";
+import { featuredQuizzesLoader } from "@/loaders/featured-quizzes.loader";
 import {
   guestQuizResultsLoader,
   quizResultsLoader,
@@ -40,6 +41,11 @@ const AppRoot = lazy(() =>
 const QuizSelection = lazy(() =>
   import("@/pages/Quiz/Quiz-Selection").then((module) => ({
     default: module.QuizSelection,
+  })),
+);
+const FeaturedQuizzes = lazy(() =>
+  import("@/pages/Quiz/Featured/Featured-Quizzes").then((module) => ({
+    default: module.FeaturedQuizzes,
   })),
 );
 const GameModeSelection = lazy(() =>
@@ -200,8 +206,24 @@ const createAppRouter = (queryClient: QueryClient) =>
         </>
       ),
     },
+    // The quiz home page: four category panels of featured quizzes, for first-time visitors
+    // above all (docs/quiz/featured-quizzes.md). The full catalogue moved to /choose-quiz/all
+    // on 2026-10-07; its old ?category= and ?shared= links are redirected there by the loader.
     {
       path: "/choose-quiz",
+      loader: featuredQuizzesLoader(queryClient),
+      errorElement: <DashboardErrorElement />,
+      element: (
+        <>
+          <HomeLayout
+            headerBehavior={HeaderBehavior.DEFAULT}
+            children={<FeaturedQuizzes />}
+          />
+        </>
+      ),
+    },
+    {
+      path: "/choose-quiz/all",
       loader: quizSelectionLoader(queryClient),
       errorElement: <DashboardErrorElement />,
       element: (

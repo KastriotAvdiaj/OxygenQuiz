@@ -46,6 +46,11 @@ export type QuizSummaryDTO = {
   userProfileImageUrl?: string;
   /** Soft-delete timestamp. Only populated in admin (includeDeleted) reads; null/absent = live. */
   deletedAt?: string | null;
+  /**
+   * The quiz home page slot this quiz fills (`geography-easy`…), or null for any other quiz.
+   * See docs/quiz/featured-quizzes.md.
+   */
+  featuredKey?: string | null;
 };
 
 /**

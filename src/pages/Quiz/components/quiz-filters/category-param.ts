@@ -1,5 +1,7 @@
 /**
- * `/choose-quiz?category=<name>` — open the quiz list already filtered to one category.
+ * `/choose-quiz/all?category=<name>` — open the quiz list already filtered to one category.
+ * (`/choose-quiz?category=` still works: since the featured page took `/choose-quiz` on
+ * 2026-10-07, its loader passes any such link on to the list.)
  *
  * By **name**, not id: ids are database-generated and differ between dev and live, while the
  * names are the shared vocabulary. Nothing links with it today (the landing page that did was
@@ -26,4 +28,4 @@ export function findCategoryByName<T extends { name: string }>(
 
 /** The link, built in one place so callers can't disagree on encoding. */
 export const categoryListPath = (name: string) =>
-  `/choose-quiz?${CATEGORY_PARAM}=${encodeURIComponent(name)}`;
+  `/choose-quiz/all?${CATEGORY_PARAM}=${encodeURIComponent(name)}`;

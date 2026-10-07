@@ -28,6 +28,11 @@ export const myQuestionKeys = {
   ) => [...myQuestionKeys.all, type, params] as const,
 };
 
+/** The quiz home page's featured quizzes (docs/quiz/featured-quizzes.md) — ["featuredQuizzes"]. */
+export const featuredQuizKeys = {
+  all: ["featuredQuizzes"] as const,
+};
+
 /** Questions as they appear inside a quiz — ["quizQuestions", quizId]. */
 export const quizQuestionKeys = {
   all: ["quizQuestions"] as const,

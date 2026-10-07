@@ -75,7 +75,7 @@ export const SharedQuizRouteWrapper = () => {
 
   // Hand off to the catalogue, which opens the start dialog for this quiz. `replace` so Back
   // returns wherever the recipient came from rather than bouncing through this resolver again.
-  return <Navigate to={`/choose-quiz?shared=${encodeURIComponent(token)}`} replace />;
+  return <Navigate to={`/choose-quiz/all?shared=${encodeURIComponent(token)}`} replace />;
 };
 
 const BadLinkScreen = () => (

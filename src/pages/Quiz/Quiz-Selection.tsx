@@ -342,12 +342,13 @@ export function QuizSelection() {
         {/* Low-profile "Back" chip — the page title was dropped in favour of a
             cleaner, content-first header. */}
         <div className="mb-5 sm:mb-6">
+          {/* Back to the featured page, which is where "Browse all" / "Explore more" came from. */}
           <button
-            onClick={() => navigate("/choose-mode")}
+            onClick={() => navigate("/choose-quiz")}
             className="group inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-foreground/20 hover:text-foreground"
           >
             <ArrowLeft className="h-3.5 w-3.5 transition-transform group-hover:-translate-x-0.5" />
-            <span className="hidden sm:inline">Back to Mode Selection</span>
+            <span className="hidden sm:inline">Back to featured quizzes</span>
             <span className="sm:hidden">Back</span>
           </button>
         </div>
