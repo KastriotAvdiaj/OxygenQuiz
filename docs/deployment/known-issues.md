@@ -565,13 +565,12 @@ timeLimit` points, i.e. ~33 pts on a 30s question but ~100 pts (10% of base) on 
 
 ## Multiplayer / Game State
 
-- **P2 — The lobby's player cap is only enforced by the client.** `QuizHub.CreateSession` passes
-  the caller's `maxPlayers` straight to `InMemoryQuizSessionManager`, which only refuses joins when
-  `MaxPlayers > 0`. So a crafted hub call with `0` (or any negative number) makes a lobby with no
-  cap, and a large number skips the dialog's 2–10 clamp. Clamp it in the hub. This becomes a must
-  if lobby size is ever a paid limit — see
-  [`proposals/paid-plans-and-payments.md`](../proposals/paid-plans-and-payments.md) §1.
-  → `OxygenBackend/QuizAPI/Hubs/QuizHub.cs`
+- ~~**P2 — The lobby's player cap was only enforced by the client.**~~ **Fixed (2026-10-07).**
+  `QuizHub.CreateSession` passed the caller's `maxPlayers` straight to `InMemoryQuizSessionManager`,
+  which only refuses joins when `MaxPlayers > 0`, so a crafted hub call with `0` made a lobby with
+  no cap and a large number skipped the dialog's 2–10 clamp. The hub now clamps to
+  `[MinLobbyPlayers, MaxLobbyPlayers]` (2–10) — clamped, not refused, since the dialog never sends
+  anything else. → `OxygenBackend/QuizAPI/Hubs/QuizHub.cs`, `QuizHubLobbyCapTests.cs`
 
 - ~~**P2 — Clicking a header link during a match froze the question timer.**~~ **Fixed
   (2026-08-02).** Three faults in a line, none of which looks like a timer bug on its own.

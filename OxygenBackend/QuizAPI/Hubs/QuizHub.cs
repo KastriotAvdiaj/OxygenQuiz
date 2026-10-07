@@ -396,8 +396,17 @@ public class QuizHub : Hub<IQuizClient>
         await Clients.Group(sessionId).PlayerReadyChanged(username, isReady);
     }
 
+    /// <summary>
+    /// The lobby size the create dialog offers. The dialog's clamp is only feedback: a crafted call
+    /// with 0 used to make a lobby with no cap at all, because the join check reads 0 as "unlimited".
+    /// </summary>
+    public const int MinLobbyPlayers = 2;
+    public const int MaxLobbyPlayers = 10;
+
     public async Task CreateSession(string sessionId, string lobbyName, int maxPlayers)
     {
+        // Mirrors create-lobby-dialog.tsx; this is the rule, the dialog is fast feedback.
+        maxPlayers = Math.Clamp(maxPlayers, MinLobbyPlayers, MaxLobbyPlayers);
         var (username, profileImageUrl) = await GetAccountAsync();
         try
         {

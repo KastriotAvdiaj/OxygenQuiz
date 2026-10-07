@@ -234,6 +234,8 @@ and rejoins as a new arrival (and a Duel is already forfeited). Pinned by `QuizH
 
 1. `/multiplayer-menu` → "Create Lobby" opens `CreateLobbyDialog`.
 2. The host picks a max-player count (2–10). Identity is the logged-in account — nothing is typed.
+   The hub clamps the count to the same range (`QuizHub.MinLobbyPlayers` / `MaxLobbyPlayers`), so
+   the dialog's limits are feedback, not the rule.
 3. The dialog generates the room code **client-side**
    (`Math.random().toString(36).substring(2, 8).toUpperCase()`) and invokes
    `CreateSession(sessionId, lobbyName, maxPlayers)`. `lobbyName` is derived as
@@ -405,7 +407,7 @@ from the token, and — once the connection is in a lobby — the name it plays 
 
 | Method | Parameters | Auth | Notes |
 |---|---|---|---|
-| `CreateSession` | `sessionId, lobbyName, maxPlayers` | any authenticated | Caller becomes host. Throws if the code already exists. |
+| `CreateSession` | `sessionId, lobbyName, maxPlayers` | any authenticated | Caller becomes host. Throws if the code already exists. `maxPlayers` is clamped to 2–10. |
 | `CheckSession` | `sessionId` | any authenticated | Returns `SessionAvailability` (`canJoin`, `reason`, `message`, `inProgress`, roster counts). Mutates nothing. Pre-flight for the join dialog — advisory, not the gate. |
 | `JoinSession` | `sessionId` | any authenticated | Converts `SessionJoinException` to `HubException` so the client sees the real cause (`not-found` / `full` / `name-in-use`). Idempotent for an existing participant (matched by account id); adds to the SignalR group only **after** the participant add succeeds. |
 | `LeaveSession` | `sessionId` | participant | Broadcasts `UserLeft`, plus `HostChanged` if the host left. |

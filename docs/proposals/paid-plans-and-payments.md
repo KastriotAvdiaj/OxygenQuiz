@@ -46,20 +46,18 @@ Everything else a plan might limit has no seam yet:
 | Questions per AI generation | `Ai:MaxQuestionsPerGeneration` = 15 (global) | Yes |
 | AI spend | `Ai:DailyBudgetUsd` = 2, `Ai:MonthlyBudgetUsd` = 25, **global across all users** | Yes |
 | Quizzes a user may own | **No limit** | — |
-| Lobby size | [`create-lobby-dialog.tsx`](../../src/pages/Quiz/Multiplayer/components/create-lobby-dialog.tsx) clamps 2–10 | **No** — see below |
+| Lobby size | `QuizHub.CreateSession` clamps 2–10 (`MinLobbyPlayers` / `MaxLobbyPlayers`) | Yes, as constants |
 | Hosting a board, Classes | `RoleRules.HostRoles` (Teacher, SuperAdmin), role granted on approval | Yes, as a role |
 | Students per Class | `Class.MaxStudents` = 40 in [`ClassService`](../../OxygenBackend/QuizAPI/Services/Classroom/ClassService.cs) | Yes |
 | Classes per Teacher | No limit | — |
 | Upload sizes | Constants in `FileService` (image 5 MB, audio 20 MB, video 100 MB) | Yes |
 | Signup | `Signup:RequireInviteCode` = **true** in `appsettings.json` | Yes |
 
-**The lobby cap is a client-side suggestion.**
-[`QuizHub.CreateSession`](../../OxygenBackend/QuizAPI/Hubs/QuizHub.cs) passes the caller's
-`maxPlayers` straight into the session manager. The only check is in
-[`InMemoryQuizSessionManager`](../../OxygenBackend/QuizAPI/Services/QuizSessionServices/InMemoryQuizSessionManager.cs):
-`session.MaxPlayers > 0 && Participants.Count >= MaxPlayers`. So a crafted hub call with `0`
-makes a lobby with no limit at all. Under a paid plan this becomes "lobby size is a paid feature
-anyone can take for free". Fix it first (also logged in `known-issues.md`).
+**The lobby cap was a client-side suggestion — fixed 2026-10-07.**
+[`QuizHub.CreateSession`](../../OxygenBackend/QuizAPI/Hubs/QuizHub.cs) used to pass the caller's
+`maxPlayers` straight into the session manager, whose only check reads `0` as "no cap", so a
+crafted hub call made an unlimited lobby. The hub now clamps to `[2, 10]`; a paid plan replaces the
+upper constant with the entitlement (§4).
 
 **Quiz creation has one chokepoint.** Three paths create a quiz:
 `QuizService.CreateQuizAsync` (manual), `QuizService.CreateAiQuizAsync` (AI import), and
@@ -409,8 +407,8 @@ suite exercise the real entitlement logic with no Paddle account. Following
 
 ### Phase 0 — fixes that stand on their own (≈1 day)
 
-- [ ] `QuizHub.CreateSession`: clamp `maxPlayers` to `[2, 10]` (later `[2, MaxLobbyPlayers]`); unit test for `0`, `-1`, `1000`
-- [ ] Remove the `known-issues.md` entry for it
+- [x] `QuizHub.CreateSession`: clamp `maxPlayers` to `[2, 10]` (later `[2, MaxLobbyPlayers]`); unit test for `0`, `-1`, `1000` — done 2026-10-07 (`QuizHubLobbyCapTests`)
+- [x] Mark the `known-issues.md` entry fixed
 
 ### Phase 1 — entitlements, no money (≈4–6 days)
 

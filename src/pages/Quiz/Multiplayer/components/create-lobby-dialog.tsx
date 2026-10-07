@@ -20,6 +20,7 @@ export const CreateLobbyDialog = ({ open, onOpenChange }: CreateLobbyDialogProps
   const { addNotification } = useNotifications();
   const { data: user } = useUser();
 
+  // 2–10 here is fast feedback; QuizHub.CreateSession clamps to the same range (MinLobbyPlayers/MaxLobbyPlayers).
   const [maxPlayers, setMaxPlayers] = useState(4);
   const [isCreating, setIsCreating] = useState(false);
 
