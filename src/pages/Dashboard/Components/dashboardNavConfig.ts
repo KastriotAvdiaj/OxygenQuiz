@@ -168,26 +168,27 @@ export const userDashboardNavButtons: DashboardNavItem[] = [
     group: "Overview",
     island: true,
   },
-  // Teachers only (docs/quiz/classroom.md). Hosting starts here or from a board's start dialog.
+  // Teachers and SuperAdmins — HOST_ROLES (docs/auth/teacher-role.md §1.1). Hosting starts here
+  // or from a board's start dialog.
   {
     id: "host",
     label: "Host a board",
     icon: Presentation,
-    roles: ["Teacher"],
+    roles: ["Teacher", "SuperAdmin"],
     group: "Classroom",
   },
   {
     id: "hosted-games",
     label: "Hosted games",
     icon: History,
-    roles: ["Teacher"],
+    roles: ["Teacher", "SuperAdmin"],
     group: "Classroom",
   },
   {
     id: "classes",
     label: "Classes",
     icon: School,
-    roles: ["Teacher"],
+    roles: ["Teacher", "SuperAdmin"],
     group: "Classroom",
   },
 ];

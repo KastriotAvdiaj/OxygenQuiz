@@ -78,7 +78,7 @@ namespace QuizAPI.Hubs
         {
             var user = Context.User;
             var raw = user?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-            if (user?.IsInRole(RoleRules.Teacher) != true || !Guid.TryParse(raw, out var userId) || !await _games.IsHostAsync(gameId, userId))
+            if (!RoleRules.CanHost(user) || !Guid.TryParse(raw, out var userId) || !await _games.IsHostAsync(gameId, userId))
                 throw new HubException("Game not found.");
 
             _screens.AddController(gameId, Context.ConnectionId);

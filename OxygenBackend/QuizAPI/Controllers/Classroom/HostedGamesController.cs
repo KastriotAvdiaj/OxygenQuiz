@@ -5,17 +5,19 @@ using QuizAPI.DTOs.Classroom;
 using QuizAPI.Models.Quiz;
 using QuizAPI.Services.Classroom;
 using QuizAPI.Services.CurrentUserService;
+using QuizAPI.Services.Roles;
 
 namespace QuizAPI.Controllers.Classroom
 {
     /// <summary>
-    /// Host mode (docs/quiz/classroom.md): the Controller's API. Teacher-only; every game is
+    /// Host mode (docs/quiz/classroom.md): the Controller's API. Teacher or SuperAdmin
+    /// (<see cref="RoleRules.HostRoles"/>); every game is
     /// clamped to its host in the repository, so another Teacher's id is a 404. The Associations
     /// preview gate applies too — a Teacher can see the format, but the rule stays in one place.
     /// Live updates to Displays go over <c>HostedGameHub</c>.
     /// </summary>
     [ApiController]
-    [Authorize(Roles = "Teacher")]
+    [Authorize(Roles = RoleRules.HostRoles)]
     [Route("api/hosted-games")]
     public class HostedGamesController : ControllerBase
     {

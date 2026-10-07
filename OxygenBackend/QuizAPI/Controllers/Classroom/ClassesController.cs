@@ -3,15 +3,17 @@ using Microsoft.AspNetCore.Mvc;
 using QuizAPI.DTOs.Classroom;
 using QuizAPI.Services.Classroom;
 using QuizAPI.Services.CurrentUserService;
+using QuizAPI.Services.Roles;
 
 namespace QuizAPI.Controllers.Classroom
 {
     /// <summary>
-    /// A Teacher's Classes (docs/quiz/classroom.md, "Classes"). Teacher-only; every call is clamped
+    /// A Teacher's Classes (docs/quiz/classroom.md, "Classes"). Teacher or SuperAdmin
+    /// (<see cref="RoleRules.HostRoles"/>); every call is clamped
     /// to the caller's own Classes in the repository, so another Teacher's id is a 404.
     /// </summary>
     [ApiController]
-    [Authorize(Roles = "Teacher")]
+    [Authorize(Roles = RoleRules.HostRoles)]
     [Route("api/classes")]
     public class ClassesController : ControllerBase
     {

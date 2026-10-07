@@ -23,6 +23,23 @@ namespace QuizAPI.Services.Roles
         /// </summary>
         public const string Teacher = "Teacher";
 
+        /// <summary>
+        /// Who may host a board and keep Classes (docs/auth/teacher-role.md §1.1): a Teacher, and a
+        /// SuperAdmin without needing the role. Not an Admin — Admin moderates, it doesn't host. A
+        /// const so <c>[Authorize(Roles = RoleRules.HostRoles)]</c> can use it; comma-separated, as
+        /// that attribute expects.
+        /// </summary>
+        public const string HostRoles = Teacher + "," + SuperAdmin;
+
+        /// <summary>True when <paramref name="user"/> holds one of <see cref="HostRoles"/>.</summary>
+        public static bool CanHost(System.Security.Claims.ClaimsPrincipal? user) =>
+            user is not null && (user.IsInRole(Teacher) || user.IsInRole(SuperAdmin));
+
+        /// <summary>The same rule over role names — for a <c>User</c> loaded from the database.</summary>
+        public static bool CanHost(IEnumerable<string?> roleNames) =>
+            roleNames.Any(r => Teacher.Equals(r, StringComparison.OrdinalIgnoreCase) ||
+                               SuperAdmin.Equals(r, StringComparison.OrdinalIgnoreCase));
+
         /// <summary>Roles that may see a quiz format still in preview (<c>QuizFormatAccess</c>).</summary>
         public static readonly HashSet<string> PreviewFormatRoles =
             new(StringComparer.OrdinalIgnoreCase) { Admin, SuperAdmin, Teacher };

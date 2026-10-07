@@ -78,6 +78,22 @@ Full version, including the two failure modes this project has actually hit:
   `docs/RESPONSIVE.md`, "Surfaces inside a dashboard".
 - **Dialogs are `bg-background`** — the shared `DialogContent` default. Don't give one
   `bg-muted`: a muted dialog over a muted dashboard is the same vanishing act as above.
+- **User-facing buttons are `LiftedButton`s** (`src/common/LiftedButton.tsx`) — any button a
+  player, teacher or quiz author presses on a page or in a dialog. The flat `Button`
+  (`components/ui/button`) is for dense tooling only: table row actions, icon-only toggles,
+  the admin dashboard's controls. Pick the colour by the action's rank:
+  - **Primary** (the one thing to do here): default blue, or the screen's own accent (a quiz's
+    `--face` on the start modal).
+  - **Secondary** (a real alternative beside the primary): **muted** —
+    `className="bg-muted text-foreground"` with `liftColor="muted-foreground"`, as *Host a
+    lobby* on the home hero and *Host for a class* in the quiz start modal. Never a second
+    coloured button: two loud buttons side by side means neither is the obvious one.
+  - **Cancel / back out**: a lifted outline — `bg-background border border-foreground/30
+    text-foreground` with `liftColor="muted"` (see the dialog footer rule below).
+  - **Destructive**: `bg-red-600 text-white` with `liftColor="red-700"`.
+
+  Spacing and width go on `outerClassName` (the outer `<button>`); colour and padding on
+  `className` (the face). A `className` margin lands on the face and shifts it off its edge.
 - **Dialog footers use `ConfirmationDialog`'s buttons:** the action first as a `LiftedButton`
   (default blue; destructive is `bg-red-600 text-white … liftColor="red-700"`), then Cancel as
   a lifted outline (`bg-background border border-foreground/30 … liftColor="muted"`). Not the

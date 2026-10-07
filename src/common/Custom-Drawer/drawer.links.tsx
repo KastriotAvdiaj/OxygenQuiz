@@ -8,6 +8,7 @@ import {
   Settings,
   LayoutDashboard,
   ShieldCheck,
+  Presentation,
 } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { useAccountOverlay } from "@/pages/UserRelated/AccountOverlay/use-account-overlay";
@@ -79,9 +80,12 @@ const DrawerNavLink = ({
 export const DrawerLinks = ({
   close,
   isAdmin,
+  canHost,
 }: {
   close: () => void;
   isAdmin: boolean;
+  /** Teacher or SuperAdmin — HOST_ROLES (docs/auth/teacher-role.md §1.1). */
+  canHost: boolean;
 }) => {
   const { open: openAccountOverlay } = useAccountOverlay();
 
@@ -131,6 +135,17 @@ export const DrawerLinks = ({
       close={close}
       end
     />
+
+    {/* Hosts get a shortcut straight to host setup — the one Classroom action worth a
+        top-level row. Hosted games and Classes stay in the dashboard's Classroom group. */}
+    {canHost && (
+      <DrawerNavLink
+        to="/my-dashboard/host"
+        icon={Presentation}
+        label="Host a board"
+        close={close}
+      />
+    )}
 
     {/* Admins additionally get the admin dashboard. */}
     {isAdmin && (

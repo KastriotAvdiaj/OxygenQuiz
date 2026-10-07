@@ -11,6 +11,15 @@ export enum ROLES {
   Teacher = "Teacher",
 }
 
+/**
+ * Who may host a board and keep Classes: a Teacher, and a SuperAdmin without the role — not an
+ * Admin. Mirrors `RoleRules.HostRoles` on the server (docs/auth/teacher-role.md §1.1).
+ */
+export const HOST_ROLES: readonly ROLES[] = [ROLES.Teacher, ROLES.SuperAdmin];
+
+export const canHost = (roles: readonly string[] | undefined): boolean =>
+  roles?.some((r) => (HOST_ROLES as readonly string[]).includes(r)) ?? false;
+
 // ── primitives ─────────────────────────────────────────────
 const hasRole = (user: User, ...roles: string[]) =>
   user.roles?.some((r) => roles.includes(r)) ?? false;

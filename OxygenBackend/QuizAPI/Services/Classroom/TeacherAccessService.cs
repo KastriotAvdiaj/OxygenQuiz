@@ -58,6 +58,8 @@ namespace QuizAPI.Services.Classroom
             var user = await _users.GetByIdAsync(userId, ct: ct)
                 ?? throw new NotFoundException("User not found.");
             var isTeacher = HasTeacherRole(user);
+            // A SuperAdmin hosts without the role (RoleRules.HostRoles): nothing to ask for.
+            var canHost = RoleRules.CanHost(user.UserRoles.Select(ur => ur.Role?.Name));
             var latest = await _requests.GetLatestForUserAsync(userId, ct);
 
             DateTime? againAt = latest is { Status: TeacherAccessRequestStatus.Declined, DecidedAt: { } decided }
@@ -70,7 +72,7 @@ namespace QuizAPI.Services.Classroom
                 IsTeacher = isTeacher,
                 Latest = latest is null ? null : ToDto(latest, user.Username, user.Email),
                 CanRequestAgainAt = againAt,
-                CanRequest = !isTeacher && latest?.Status != TeacherAccessRequestStatus.Pending && againAt is null,
+                CanRequest = !canHost && latest?.Status != TeacherAccessRequestStatus.Pending && againAt is null,
             };
         }
 
@@ -83,6 +85,8 @@ namespace QuizAPI.Services.Classroom
                 throw new ConflictException("You already have a request waiting for an answer.");
             if (mine.CanRequestAgainAt is { } at)
                 throw new ConflictException($"You can ask again from {at:yyyy-MM-dd}.");
+            if (!mine.CanRequest) // the one reason left: a SuperAdmin, who hosts without the role
+                throw new ConflictException("You can already host boards.");
 
             var note = string.IsNullOrWhiteSpace(dto.Note) ? null : dto.Note.Trim();
             if (note?.Length > TeacherAccessRequest.MaxNoteLength)

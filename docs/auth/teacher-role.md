@@ -1,7 +1,8 @@
 # The Teacher role
 
 > **What it is:** a role, on top of `User`, for people who play Associations with a class: it lets
-> them host a board on one screen for 2–4 Teams and keep Classes
+> them host a board on one screen for 2–4 Teams and keep Classes — something a SuperAdmin can also
+> do without the role (§1.1)
 > ([`../quiz/classroom-plan.md`](../quiz/classroom-plan.md)). It gives **no authority over other
 > accounts** — no admin dashboard, no role or user management.
 
@@ -17,6 +18,23 @@
   The old definition — "anything but `User`" — would have made a Teacher undeletable by an Admin.
 - `RoleRules.IsExtraRole` is the other question: "does a grant of this add anything?" — every role
   but `User`. Invite codes use it to decide whether a code carries a role at all.
+
+### 1.1 Who may host: Teacher or SuperAdmin, not Admin
+
+Hosting and Classes are open to **`RoleRules.HostRoles` — Teacher and SuperAdmin**. A SuperAdmin
+hosts without holding Teacher; an **Admin does not**, and has to be granted Teacher like anyone else
+(decided 2026-10-05). Admin is a moderation role, and hosting stays a capability a person is given,
+not something that comes with moderating.
+
+- **Server:** `ClassesController` and `HostedGamesController` are
+  `[Authorize(Roles = RoleRules.HostRoles)]`; `HostedGameHub.JoinAsController` uses
+  `RoleRules.CanHost(ClaimsPrincipal)`. Ownership is unchanged — a SuperAdmin sees only their own
+  Classes and games, never a Teacher's.
+- **Client:** `HOST_ROLES` / `canHost` in `src/lib/authorization.tsx` mirror it — the Classroom nav
+  items, **Host a board** in the account drawer, and **Host for a class** in the start dialog.
+- **Nothing to ask for:** a SuperAdmin's `/api/teacher-access/mine` has `canRequest: false`, a
+  request is `409` ("You can already host boards."), and the account panel hides *Teacher access*
+  for them. `isTeacher` still means "holds the role", so it stays false.
 
 ## 2. Getting it
 
@@ -54,7 +72,8 @@ can't host a board they can't see. One flag, `ICurrentUserService.CanSeePreviewF
 
 ## 4. Tests
 
-`QuizAPI.Tests/Classroom/TeacherRoleTests.cs` — Teacher is not elevated, an Admin may delete one,
+`QuizAPI.Tests/Classroom/TeacherRoleTests.cs` — who may host (Teacher and SuperAdmin, not Admin
+or User; a SuperAdmin can't ask for the role), Teacher is not elevated, an Admin may delete one,
 Teacher codes mint in bulk without rails, the request lifecycle (one open request, approval keeps
 other roles and notifies, the 30-day wait, a Teacher can't ask, the admin list order).
 `PreviewFormatAccessTests.ATeacher_SeesTheBoard_InTheCatalogue_SearchAndById`.

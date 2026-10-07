@@ -9,9 +9,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { HelpCircle, Clock, User, Calendar, Play, Presentation } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
 import { useUser } from "@/lib/Auth";
-import { ROLES } from "@/lib/authorization";
+import { canHost as hasHostRole } from "@/lib/authorization";
 import type { QuizSummaryDTO } from "@/types/quiz-types";
 import { secondsToMinutes } from "./quiz-duration";
 import { parseQuizPalette, quizEdgeColor, readableTextColor } from "./quiz-palette";
@@ -46,10 +45,10 @@ export function QuizStartModal({
   // colour is a runtime value — Tailwind's JIT only emits classes it can read in source.
   const edgeColor = useMemo(() => quizEdgeColor(primaryColor), [primaryColor]);
 
-  // Teachers may host a board for a class (docs/quiz/classroom.md, C16).
+  // Teachers and SuperAdmins may host a board for a class (docs/quiz/classroom.md, C16).
   const navigate = useNavigate();
   const { data: user } = useUser();
-  const canHost = quiz.format === "Associations" && (user?.roles?.includes(ROLES.Teacher) ?? false);
+  const canHost = quiz.format === "Associations" && hasHostRole(user?.roles);
 
   const handleStartQuiz = () => {
     onStartQuiz(quiz.id);
@@ -212,17 +211,20 @@ export function QuizStartModal({
               Start Quiz
             </LiftedButton>
             {canHost && (
-              <Button
+              // Secondary action beside the CTA: same lifted shape, muted so Start Quiz stays
+              // the one coloured button (CLAUDE.md, "User-facing buttons are LiftedButtons").
+              <LiftedButton
                 type="button"
-                variant="outline"
-                className="ml-3 h-11 gap-2"
+                outerClassName="ml-3"
+                className="h-11 gap-2 bg-muted text-foreground"
+                liftColor="muted-foreground"
                 onClick={() => {
                   onClose();
                   navigate(`/my-dashboard/host?quizId=${quiz.id}`);
                 }}
               >
                 <Presentation className="h-4 w-4" /> Host for a class
-              </Button>
+              </LiftedButton>
             )}
           </div>
         </div>

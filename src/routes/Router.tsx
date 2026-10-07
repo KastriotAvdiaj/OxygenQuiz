@@ -713,8 +713,8 @@ const createAppRouter = (queryClient: QueryClient) =>
           },
         },
         {
-          // Classroom (docs/quiz/classroom.md). Teacher-only: the API refuses everyone else, and
-          // the nav only offers these to Teachers.
+          // Classroom (docs/quiz/classroom.md). Teacher or SuperAdmin (HOST_ROLES): the API refuses
+          // everyone else, and the nav only offers these to them.
           path: "classes",
           lazy: async () => {
             const { ClassesPage } = await import("../pages/Classroom/ClassesPage");
