@@ -123,6 +123,20 @@ public class HostedGameServiceTests
     }
 
     [Fact]
+    public async Task Start_RefusesAClassGame_WithAnEmptyTeam_ButAllowsTeamsWithNoStudentsAtAll()
+    {
+        var world = new HostWorld();
+        var uneven = Request(world.QuizId, 4);
+        uneven.Teams[3].Students = new();
+        await Assert.ThrowsAsync<AppValidationException>(() => world.Call(s => s.StartAsync(Teacher, uneven)));
+
+        var namesOnly = Request(world.QuizId, 4);
+        namesOnly.Teams.ForEach(t => t.Students = new());
+        var view = await world.Call(s => s.StartAsync(Teacher, namesOnly));
+        Assert.Equal(4, view.Teams.Count);
+    }
+
+    [Fact]
     public async Task ATeacher_HostsTheirOwnDraft_ButNotSomeoneElses()
     {
         var world = new HostWorld(QuizStatus.Draft);

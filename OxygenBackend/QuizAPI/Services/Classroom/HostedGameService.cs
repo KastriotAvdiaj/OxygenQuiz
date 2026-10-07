@@ -159,6 +159,7 @@ namespace QuizAPI.Services.Classroom
 
             var result = new List<HostedTeam>();
             var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var teamsWithStudents = 0;
             for (var seat = 0; seat < teams.Count; seat++)
             {
                 var name = ClassService.Clean(teams[seat].Name);
@@ -179,10 +180,17 @@ namespace QuizAPI.Services.Classroom
                 if (students.Any(s => s.Length > Models.Classroom.ClassStudent.MaxNameLength))
                     throw new AppValidationException($"A student's name can be at most {Models.Classroom.ClassStudent.MaxNameLength} characters.");
 
+                if (students.Count > 0) teamsWithStudents++;
                 result.Add(new HostedTeam { Seat = seat, Name = name, Colour = colour, StudentsJson = JsonSerializer.Serialize(students) });
             }
             if (result.Select(t => t.Colour).Distinct().Count() != result.Count)
                 throw new AppValidationException("Each team needs its own colour.");
+            // Students on every team, or on none. "None" is a game without a Class — teams are just
+            // names. "Some" is a Class split unevenly, and an empty team would take turns with
+            // nobody to play them. The request carries no class id, so this is the rule the
+            // server can see; the setup form also stops more teams than students.
+            if (teamsWithStudents > 0 && teamsWithStudents < result.Count)
+                throw new AppValidationException("Every team needs at least one student.");
             return result;
         }
 
