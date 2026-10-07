@@ -94,6 +94,9 @@ graphify-out/
 /e2e/.tls/
 
 # Visual Studio state under OxygenBackend/ (the solution-level .vs/), and user-uploaded
-# images: runtime data, not source. The csproj's <Folder> entry keeps wwwroot/uploads existing.
+# images: runtime data, not source. The folder itself is kept by a tracked .gitkeep — the
+# csproj's <Folder> entry only shows it in Visual Studio and creates nothing on disk, so a fresh
+# clone had no wwwroot at all and the API failed to start (docs/media/file-storage.md).
 /OxygenBackend/.vs/
-/OxygenBackend/QuizAPI/wwwroot/uploads/
+/OxygenBackend/QuizAPI/wwwroot/uploads/*
+!/OxygenBackend/QuizAPI/wwwroot/uploads/.gitkeep
