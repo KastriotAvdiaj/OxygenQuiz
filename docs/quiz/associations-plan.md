@@ -36,7 +36,7 @@ be made of questions. The *why* behind the overall shape is
 | D11 | Names: **Solo** and **Duel**. *(was Q8)* |
 | D12 | The server picks who opens first in a Duel at random; a rematch alternates. *(was Q2)* |
 | D13 | ~~Wrong Guesses in Solo are free and unlimited.~~ *(was Q4)* **Superseded by D18.** |
-| D14 | Solo board time is author-set, 60–600s, default 240s. *(was Q6)* |
+| D14 | Solo board time is author-set, 60–1800s (raised from 600s on 2026-10-06), default 240s. *(was Q6)* |
 | D15 | The opponent sees the text of every Guess in a Duel, right or wrong. *(was Q9)* |
 | D16 | Scoring starts at 5 per Column solution, +1 per closed Tile, 10 for the Final solution — **but none of these is a constant in code**. Every tunable number is a named setting read from configuration, designed so it can later become per-quiz and author-editable, and each game stores the values it was played with (§2.1). *(was Q10)* |
 | D18 | **Solo follows the Duel's rhythm** (2026-09-24, after playing the first build): a Tile earns one Guess; a correct Guess earns another at any target; a wrong one means the next Guess needs a Tile; opening a Tile without guessing is allowed; once every Tile is open, a wrong Guess starts the endgame countdown (`EndgameTurnsPerSeat`). Wrong Guesses still cost no points. Feature doc §3.2. |

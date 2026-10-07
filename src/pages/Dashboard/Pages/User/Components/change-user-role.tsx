@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { UserRoundCog } from "lucide-react";
+import { SaveIcon, UserRoundCog } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -16,6 +16,7 @@ import { useNotifications } from "@/common/Notifications";
 import { useUser } from "@/lib/Auth";
 import { useRoles } from "../api/get-roles";
 import { useUpdateUserRoles } from "../api/update-user-roles";
+import { LiftedButton } from "@/common/LiftedButton";
 
 // The one role whose grant/removal is restricted to a SuperAdmin caller (mirrors the backend).
 const SUPERADMIN = "SuperAdmin";
@@ -140,18 +141,18 @@ export const ChangeUserRole = ({
         </div>
 
         <DialogFooter>
-          <Button
-            variant="addSave"
-            className="rounded-sm text-white"
+          <LiftedButton
+            className="text-white text-sm"
             isPending={mutation.isPending}
             disabled={mutation.isPending || unchanged || noneSelected}
             onClick={() => mutation.mutate({ userId: user.id, roles: selected })}
           >
+            <SaveIcon className="h-4 w-4" aria-hidden="true" />
             Save
-          </Button>
-          <Button variant="outline" onClick={close}>
+          </LiftedButton>
+          <LiftedButton className="text-sm bg-muted border border-input text-foreground" liftColor="muted-foreground" onClick={close}>
             Cancel
-          </Button>
+          </LiftedButton>
         </DialogFooter>
       </DialogContent>
     </Dialog>

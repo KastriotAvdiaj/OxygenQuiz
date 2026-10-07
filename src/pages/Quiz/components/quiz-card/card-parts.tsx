@@ -50,7 +50,7 @@ export function QuizCardFrame({
       type="button"
       onClick={onSelect}
       style={accentVars}
-      aria-label={`${quiz.title} — ${quiz.category}, ${quiz.difficulty}, ${sizeText(quiz)}`}
+      aria-label={`${quiz.title} — ${quiz.category}, ${quiz.difficulty}, ${sizeText(quiz)}, by ${quiz.user}`}
       className={cn(
         "group h-full w-full cursor-pointer text-left font-app",
         "rounded-2xl focus-visible:outline-none focus-visible:ring-2",
@@ -77,12 +77,12 @@ export function QuizCardFrame({
 }
 
 /**
- * The quiz creator: a round avatar in the corner of the card, revealing the full name on
- * hover.
+ * The quiz creator: a round avatar in the card's top-right corner, revealing the full name on
+ * hover. Dropped in the 2026-09-24 redesign and brought back on 2026-10-06.
  *
- * Not rendered by the current layout — the redesigned card has no author slot — but kept
- * because the data (`initials` in `card-model.ts`) is still derived and attribution is a
- * decision that gets revisited. Delete both together if it stays out.
+ * The name pops up *below* the avatar: the card's frame is `overflow-hidden` and the avatar sits
+ * on its top row, so a popup above would be clipped. Decorative for screen readers — the
+ * frame's `aria-label` ends "by <name>".
  *
  * No fill of its own — just a muted hairline. A solid background would compete with the
  * palette stripe for attention, and it would box in creator photos that already have their
@@ -101,7 +101,7 @@ export function CreatorAvatar({
   className?: string;
 }) {
   return (
-    <div className="group/author relative shrink-0">
+    <div aria-hidden="true" className="group/author relative shrink-0">
       <Avatar
         className={cn("h-6 w-6 rounded-full border border-border", className)}
       >

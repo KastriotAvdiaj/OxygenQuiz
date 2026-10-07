@@ -11,6 +11,9 @@ import {
   Tag,
   Signal,
   Languages,
+  GraduationCap,
+  Presentation,
+  School,
 } from "lucide-react";
 
 export type DashboardNavItem = {
@@ -98,6 +101,13 @@ export const adminDashboardNavButtons: DashboardNavItem[] = [
     group: "Access",
   },
   {
+    id: "teacher-requests",
+    label: "Teacher Requests",
+    icon: GraduationCap,
+    roles: ["Admin", "SuperAdmin"],
+    group: "Access",
+  },
+  {
     id: "audit-logs",
     label: "Audit Log",
     icon: History,
@@ -157,5 +167,28 @@ export const userDashboardNavButtons: DashboardNavItem[] = [
     icon: History,
     group: "Overview",
     island: true,
+  },
+  // Teachers and SuperAdmins — HOST_ROLES (docs/auth/teacher-role.md §1.1). Hosting starts here
+  // or from a board's start dialog.
+  {
+    id: "host",
+    label: "Host a board",
+    icon: Presentation,
+    roles: ["Teacher", "SuperAdmin"],
+    group: "Classroom",
+  },
+  {
+    id: "hosted-games",
+    label: "Hosted games",
+    icon: History,
+    roles: ["Teacher", "SuperAdmin"],
+    group: "Classroom",
+  },
+  {
+    id: "classes",
+    label: "Classes",
+    icon: School,
+    roles: ["Teacher", "SuperAdmin"],
+    group: "Classroom",
   },
 ];

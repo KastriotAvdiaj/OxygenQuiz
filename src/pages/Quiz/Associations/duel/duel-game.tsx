@@ -168,6 +168,7 @@ const DuelBoard = ({
           busy={busy}
           reveal={view.isOver}
           solverName={(seat) => view.seats.find((s) => s.seat === seat)?.username}
+          openBlockedHint={myTurn ? "Guess a column or the final — or pass." : "It's not your turn."}
         />
 
         {!view.isOver && (

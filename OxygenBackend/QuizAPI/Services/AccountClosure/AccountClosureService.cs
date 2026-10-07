@@ -265,7 +265,7 @@ namespace QuizAPI.Services.AccountClosure
 
             // Auth material is hard-deleted rather than scrubbed: none of it has any value once the
             // account can't be signed into, and a stale token row is a liability, not a record.
-            // One SaveChanges covers the scrub and all five deletions, so an account is never left
+            // One SaveChanges covers the scrub and every deletion, so an account is never left
             // half-anonymised — with its identity gone but a live refresh token still outstanding.
             _db.RefreshTokens.RemoveRange(
                 await _db.RefreshTokens.Where(t => t.UserId == user.Id).ToListAsync(ct));
@@ -277,6 +277,14 @@ namespace QuizAPI.Services.AccountClosure
                 await _db.EmailVerificationTokens.Where(t => t.UserId == user.Id).ToListAsync(ct));
             _db.UserSettings.RemoveRange(
                 await _db.UserSettings.Where(s => s.UserId == user.Id).ToListAsync(ct));
+            // A Teacher's Classes are lists of their students' first names — other people's
+            // personal data, kept only for this account (docs/quiz/classroom.md, "Classes").
+            _db.Classes.RemoveRange(
+                await _db.Classes.Include(c => c.Students).Where(c => c.OwnerUserId == user.Id).ToListAsync(ct));
+            // Their hosted games stay as a record, like a player's history — minus the students'
+            // names, for the same reason as the Classes.
+            foreach (var team in await _db.HostedTeams.Where(t => t.Game.HostUserId == user.Id).ToListAsync(ct))
+                team.StudentsJson = "[]";
 
             await _db.SaveChangesAsync(ct);
 

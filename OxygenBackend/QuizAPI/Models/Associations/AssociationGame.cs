@@ -72,6 +72,72 @@ namespace QuizAPI.Models.Associations
 
         public ICollection<AssociationGamePlayer> Players { get; set; } = new List<AssociationGamePlayer>();
         public ICollection<AssociationGameMove> Moves { get; set; } = new List<AssociationGameMove>();
+
+        // ── Host mode only (PlayStyle.Hosted — docs/quiz/classroom.md, ADR 0023) ──────────
+        // A hosted game has no sessions: its Seats are Teams, and the game is its host's.
+
+        /// <summary>The Teacher who hosts it. Null for Solo and Duel.</summary>
+        public Guid? HostUserId { get; set; }
+        public ICollection<HostedTeam> Teams { get; set; } = new List<HostedTeam>();
+
+        /// <summary>The game clock, in seconds; null for "No time limit" (then <see cref="TurnSeconds"/> is null too).</summary>
+        public int? GameSeconds { get; set; }
+        /// <summary>The turn clock: 30, 60, 90 or 120 seconds, required with <see cref="GameSeconds"/>.</summary>
+        public int? TurnSeconds { get; set; }
+
+        /// <summary>
+        /// When the game clock runs out, while the game is running. Clocks are deadlines while
+        /// running and are pushed back by the length of a pause on resume, so a paused game loses
+        /// no time. Unlike a Duel's turn clock these live here, not in the engine: a pause, a
+        /// restart or next week's lesson must not lose them.
+        /// </summary>
+        public DateTime? GameDeadlineUtc { get; set; }
+        /// <summary>When the current Team's turn runs out.</summary>
+        public DateTime? TurnDeadlineUtc { get; set; }
+        /// <summary>Set while paused. Both deadlines are frozen meanwhile.</summary>
+        public DateTime? PausedAt { get; set; }
+
+        /// <summary>
+        /// The game clock has run out and this is the last round: the game ends when the turn would
+        /// come back to <see cref="FirstSeat"/>, so every Team has had the same number of turns.
+        /// </summary>
+        public bool LastRound { get; set; }
+
+        /// <summary>The last move, pause or resume — what the 7-day abandonment counts from.</summary>
+        public DateTime? LastActivityAt { get; set; }
+
+        /// <summary>
+        /// The live Screen code, or null when none has been issued. Valid while the game is
+        /// unfinished; replaced by "disconnect all screens" (ADR 0024).
+        /// </summary>
+        [MaxLength(HostedTeam.ScreenCodeLength)]
+        public string? ScreenCode { get; set; }
+    }
+
+    /// <summary>
+    /// One Team of a hosted game: the Seat it takes, its name and colour, and its students as they
+    /// were that day — a copy, so editing the Class later doesn't rewrite a past game.
+    /// </summary>
+    public class HostedTeam
+    {
+        public const int MaxNameLength = 30;
+        public const int ScreenCodeLength = 8;
+
+        public Guid GameId { get; set; }
+        [ForeignKey(nameof(GameId))]
+        public AssociationGame Game { get; set; } = null!;
+
+        public int Seat { get; set; }
+
+        [MaxLength(MaxNameLength)]
+        public string Name { get; set; } = string.Empty;
+
+        /// <summary>A palette name the client knows ("red", "blue", "green", "yellow").</summary>
+        [MaxLength(20)]
+        public string Colour { get; set; } = string.Empty;
+
+        /// <summary>The students' first names, as a JSON array.</summary>
+        public string StudentsJson { get; set; } = "[]";
     }
 
     /// <summary>
@@ -136,6 +202,9 @@ namespace QuizAPI.Models.Associations
 
         /// <summary>Server clock.</summary>
         public DateTime At { get; set; }
+
+        /// <summary><c>Undo</c> only: the <see cref="Seq"/> of the move it cancels (ADR 0025).</summary>
+        public int? CancelsSeq { get; set; }
     }
 
     public static class AssociationGameLimits

@@ -1,10 +1,16 @@
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useRef } from "react";
 import { useBlocker } from "react-router-dom";
 
 interface UseNavigationGuardReturn {
   showLeaveDialog: boolean;
   confirmNavigation: () => void;
   cancelNavigation: () => void;
+  /**
+   * Lets every navigation from here on through without asking. Call it right before a
+   * navigation the screen itself makes once the work is safe — the redirect after a quiz is
+   * created — or the guard would stop the user on their own success.
+   */
+  allowNavigation: () => void;
 }
 
 /**
@@ -32,15 +38,27 @@ interface UseNavigationGuardReturn {
  * @param shouldBlock - Whether navigation should currently be blocked.
  */
 export const useNavigationGuard = (
-  shouldBlock: boolean
+  shouldBlock: boolean,
 ): UseNavigationGuardReturn => {
-  const blocker = useBlocker(shouldBlock);
+  /**
+   * The blocker reads these at navigation time rather than at render time, so that
+   * `allowNavigation()` followed by `navigate()` in the same handler goes through — a boolean
+   * passed to `useBlocker` would still hold the value from the last render.
+   */
+  const shouldBlockRef = useRef(shouldBlock);
+  shouldBlockRef.current = shouldBlock;
+  const allowedRef = useRef(false);
+
+  const blocker = useBlocker(
+    useCallback(() => shouldBlockRef.current && !allowedRef.current, []),
+  );
 
   // Block hard navigations (refresh / tab close) with the native prompt
   useEffect(() => {
     if (!shouldBlock) return;
 
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (allowedRef.current) return;
       e.preventDefault();
     };
 
@@ -60,9 +78,14 @@ export const useNavigationGuard = (
     }
   }, [blocker]);
 
+  const allowNavigation = useCallback(() => {
+    allowedRef.current = true;
+  }, []);
+
   return {
     showLeaveDialog: blocker.state === "blocked",
     confirmNavigation,
     cancelNavigation,
+    allowNavigation,
   };
 };

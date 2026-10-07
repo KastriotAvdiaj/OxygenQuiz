@@ -1,7 +1,7 @@
 import { useCallback, useMemo } from "react";
-import { ArrowRight, Grid3x3, ListChecks } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import type { QuizSummaryDTO } from "@/types/quiz-types";
-import { DifficultyMeter, QuizCardFrame } from "./card-parts";
+import { CreatorAvatar, DifficultyMeter, QuizCardFrame } from "./card-parts";
 import { useQuizCardModel } from "./card-model";
 
 interface QuizCardProps {
@@ -13,14 +13,17 @@ interface QuizCardProps {
  * A single quiz in the picker grid.
  *
  * Built like the mode cards on /choose-mode (`mode-card.tsx`) so the two pages read as one app
- * (2026-09-24): an icon chip, a display title, a foot row ending in an arrow, and the pushable
- * 3D edge (`card-parts.tsx`). No description — the start dialog shows it. Where a mode card has a
- * fixed accent, this one uses the quiz's own — derived from its category palette, never hardcoded
- * (`quiz-palette.ts`) — for the chip, the edge, the category label, the difficulty meter and the
- * arrow. The chip's icon is the format: a list for Classic, a grid for an Associations board.
+ * (2026-09-24): a display title, a foot row ending in an arrow, and the pushable 3D edge
+ * (`card-parts.tsx`). No description — the start dialog shows it. Where a mode card has a fixed
+ * accent, this one uses the quiz's own — derived from its category palette, never hardcoded
+ * (`quiz-palette.ts`) — for the edge, the category label, the difficulty meter and the arrow.
  *
- * A Classic card still shows the *whole* palette as the dot row (however many colours the
- * category has, not a fixed four — see `useDots`); a board shows its "Board" label there.
+ * <b>The format is told by shape, not by an icon</b> (2026-10-06). The two formats used to share
+ * an accent-filled icon chip — a list or a grid in the same coloured square — which didn't tell
+ * them apart at a glance. Now a Classic card opens on the *whole* palette as a dot row (however
+ * many colours the category has — see `useDots`), and a board opens on a miniature of the board
+ * itself (`BoardGlyph`): four columns of four tiles and the Final under them, plus its "Board"
+ * label.
  *
  * The title carries the personality: `font-quiz` (DynaPuff by default, user-swappable via
  * `--font-quiz`) at display size, the same face the quiz itself is played in, so the card
@@ -28,7 +31,6 @@ interface QuizCardProps {
  * as metadata.
  *
  * Details that are easy to undo by accident:
- *  - The chip's icon colour is `onAccent`, not white: palettes run from navy to pale yellow.
  *  - The frame is a `<button>` (see `card-parts.tsx`), so the card is keyboard-reachable
  *    and gets a real focus ring. The arrow is therefore decorative, never a nested `<button>`.
  *  - Fully fluid (`h-full w-full`, no fixed widths) — the parent grid decides the columns
@@ -65,11 +67,10 @@ function useDots(colors: string[]): string[] {
 }
 
 export function QuizCard({ quiz, onClick }: QuizCardProps) {
-  const { colors, accent, onAccent, sizeLabel, duration, difficultyRank } =
+  const { colors, accent, onAccent, initials, sizeLabel, duration, difficultyRank } =
     useQuizCardModel(quiz);
   const dots = useDots(colors);
   const isBoard = quiz.format === "Associations";
-  const FormatIcon = isBoard ? Grid3x3 : ListChecks;
 
   const handleSelect = useCallback(() => {
     onClick?.(quiz);
@@ -79,23 +80,12 @@ export function QuizCard({ quiz, onClick }: QuizCardProps) {
     <QuizCardFrame quiz={quiz} accent={accent} onAccent={onAccent} onSelect={handleSelect}>
       <div className="flex flex-1 flex-col p-4 sm:p-5">
         <div className="flex shrink-0 items-center gap-3">
-          {/* The chip of the mode cards, in the quiz's accent — and the format's shape: a list
-              for a quiz of questions, a grid for a board. Text/icon colour flips with the accent
-              (onAccent), because palettes run from navy to pale yellow. */}
-          <span
-            aria-hidden="true"
-            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg sm:h-10 sm:w-10 sm:rounded-xl shadow-[0_3px_0_0_var(--edge)] transition-transform duration-200 group-hover:-rotate-6"
-            style={{ backgroundColor: accent, color: onAccent }}
-          >
-            <FormatIcon className="h-4 w-4 sm:h-5 sm:w-5" />
-          </span>
-
           {isBoard ? (
-            <BoardMark accent={accent} />
+            <BoardGlyph accent={accent} />
           ) : (
             /* aria-hidden: decorative. The category name below already carries the meaning
                the colour is standing in for. */
-            <span aria-hidden="true" className="ml-auto flex items-center gap-1.5">
+            <span aria-hidden="true" className="flex items-center gap-1.5">
               {dots.map((color, index) => (
                 <span
                   key={`${color}-${index}`}
@@ -105,6 +95,17 @@ export function QuizCard({ quiz, onClick }: QuizCardProps) {
               ))}
             </span>
           )}
+
+          {/* Top-right corner: who made it — initials or their photo, the full name on hover —
+              with a board's "Board" label beside it. */}
+          <span className="ml-auto flex items-center gap-2">
+            {isBoard && <BoardMark accent={accent} />}
+            <CreatorAvatar
+              name={quiz.user}
+              imageUrl={quiz.userProfileImageUrl}
+              initials={initials}
+            />
+          </span>
         </div>
 
         <h3 className="mt-3 font-quiz text-xl sm:mt-4 sm:text-[1.6rem] font-bold leading-[1.12] tracking-wide text-foreground line-clamp-2">
@@ -170,14 +171,41 @@ export function QuizCard({ quiz, onClick }: QuizCardProps) {
 }
 
 /**
- * Says "Board" on an Associations card, where a Classic card shows its palette dots. With the
- * grid chip beside it, a board reads as a different kind of thing before anyone reads the
- * footer; the size line ("Associations board") says the same in words (card-model.ts).
+ * A board in miniature: four columns of four tiles, and the Final as a bar across the bottom —
+ * the shape of the game the card opens, so a board reads as a different kind of thing from a
+ * Classic quiz before anyone reads a word. Tiles are a tint of the accent and the Final is solid,
+ * the way the game builds up to it. Tilts on hover, like the chip it replaced.
+ *
+ * Decorative (`aria-hidden`): the frame's `aria-label` already says "Associations board".
+ */
+function BoardGlyph({ accent }: { accent: string }) {
+  return (
+    <span
+      aria-hidden="true"
+      className="flex shrink-0 flex-col gap-[3px] transition-transform duration-200 group-hover:-rotate-6"
+    >
+      <span className="grid grid-cols-4 gap-[3px]">
+        {Array.from({ length: 16 }, (_, i) => (
+          <span
+            key={i}
+            className="h-1.5 w-1.5 rounded-[1.5px] sm:h-[7px] sm:w-[7px]"
+            style={{ backgroundColor: `color-mix(in srgb, ${accent} 40%, transparent)` }}
+          />
+        ))}
+      </span>
+      <span className="h-[5px] w-full rounded-[1.5px]" style={{ backgroundColor: accent }} />
+    </span>
+  );
+}
+
+/**
+ * Says "Board" on an Associations card, beside its `BoardGlyph`; the size line ("Associations
+ * board") says the same in words (card-model.ts).
  */
 function BoardMark({ accent }: { accent: string }) {
   return (
     <span
-      className="ml-auto rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest"
+      className="rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest"
       style={{ borderColor: `color-mix(in srgb, ${accent} 45%, transparent)`, color: accent }}
     >
       Board

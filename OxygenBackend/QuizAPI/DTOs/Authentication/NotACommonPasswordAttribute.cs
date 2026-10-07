@@ -13,6 +13,11 @@ namespace QuizAPI.DTOs.Authentication
     /// and self-contained (no network call, no large dataset shipped); if stronger coverage is ever
     /// needed, swap this check for a lookup against the full "Have I Been Pwned" Pwned Passwords
     /// dataset (local copy or its k-anonymity range API) — see docs/deployment/known-issues.md.
+    ///
+    /// <para><b>Switched by <c>Auth:CommonPasswordCheck:Enabled</c></b>, read at validation time
+    /// like <see cref="MinPasswordLengthAttribute"/>. On unless configuration says otherwise, so a
+    /// missing or unreadable setting keeps the rule; only appsettings.Development.json turns it off,
+    /// so a throwaway local account can be "admin" or "12345". See docs/auth/password-policy.md.</para>
     /// </summary>
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Parameter)]
     public sealed class NotACommonPasswordAttribute : ValidationAttribute
@@ -36,12 +41,19 @@ namespace QuizAPI.DTOs.Authentication
             "11111111", "00000000", "aaaaaa", "123qwe", "qwertyu", "1234qwer",
         };
 
+        /// <summary>Whether the check runs. Defaults to on: a misread config never drops the rule.</summary>
+        public static bool IsEnabled(IConfiguration? configuration) =>
+            configuration?.GetValue<bool?>("Auth:CommonPasswordCheck:Enabled") ?? true;
+
         // Override the ValidationContext form (not the bool one) so we can return a per-failure
         // message without mutating the shared attribute instance's ErrorMessage across requests.
         protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
         {
             if (value is not string password || string.IsNullOrEmpty(password))
                 return ValidationResult.Success; // [Required]/[MinLength] own the empty case.
+
+            if (!IsEnabled(validationContext.GetService(typeof(IConfiguration)) as IConfiguration))
+                return ValidationResult.Success;
 
             // A single character repeated (e.g. "aaaaaaaaaaaa") or a known common/breached password.
             if (password.Distinct().Count() == 1 || CommonPasswords.Contains(password))

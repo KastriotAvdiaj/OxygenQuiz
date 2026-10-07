@@ -1,8 +1,8 @@
 # Quiz draft persistence
 
 Unfinished quiz creation survives a refresh, a closed tab and a crashed browser. Everything a
-user has typed into the manual builder or the AI wizard is written to `localStorage` as they
-work, and read back before the form's first paint.
+user has typed into the manual builder, the Associations board builder or the AI wizard is
+written to `localStorage` as they work, and read back before the form's first paint.
 
 This is deliberately the **local half** of a two-layer design. The server half is not built;
 [what it would look like](#the-server-half-not-built) is at the bottom, along with the reason
@@ -13,6 +13,7 @@ a draft is not a `Quiz` row.
 | Screen | Slot | Contents |
 |---|---|---|
 | Manual builder (`/quizzes/create-quiz`, `/quizzes/create`) | `quiz-create` | Quiz-level fields, plus every added question with its per-question settings |
+| Board builder (`.../create-quiz/associations`, `.../create/associations`) | `quiz-associations` | The whole board form — sixteen Tiles, four solutions, the Final, spellings and quiz fields. Versioned on its own (`ASSOCIATION_DRAFT_VERSION`) |
 | AI wizard, generate path (`.../ai/topic`) | `quiz-ai-topic` | **The model's reply**, and the topic and Advanced options that produced it |
 | AI wizard, bring-your-own (`.../ai/own`) | `quiz-ai-own` | The same, plus the reply pasted into the box before it has been imported |
 
@@ -39,7 +40,7 @@ one builder for one person, so a draft started behind either is offered behind b
 
 ## What is not kept, and why
 
-- **Edit mode.** The quiz already exists on the server and has an optimistic-concurrency story
+- **Edit mode** (both builders). The quiz already exists on the server and has an optimistic-concurrency story
   to go with it ([`quiz-editing.md`](quiz-editing.md)). A local copy of a half-edited quiz
   would race the 409 that protects changes made elsewhere.
 - **The builder rendered inside AI review.** The wizard above it already persists the payload
@@ -61,8 +62,9 @@ one builder for one person, so a draft started behind either is offered behind b
 | `lib/drafts/draft-storage.ts` | Reads and writes `localStorage`. Owns the three rules below. |
 | `hooks/use-draft-autosave.ts` | The write half: debounce, flush, discard. |
 | `pages/…/Quiz/components/quiz-drafts.ts` | The snapshot shapes, their zod guards, and "is this worth keeping". |
-| `pages/…/Quiz/components/draft-notices.tsx` | `RestoredDraftNotice` and `DraftSavedIndicator`. |
+| `pages/…/Quiz/components/draft-notices.tsx` | `RestoredDraftNotice` (AI wizard only), `DraftSavedIndicator`, `LeaveUnfinishedQuizDialog`. |
 | `pages/…/Create-Quiz-Form/create-quiz-route.tsx` | Reads the manual draft and seeds the builder with it. |
+| `pages/…/Association-Board-Form/association-board-routes.tsx` | Reads the board draft and seeds the board builder with it. |
 | `pages/…/AI-Quiz/use-ai-quiz-draft.tsx` | Does both halves for the AI screens. |
 
 ## Three rules, in `draft-storage.ts` and nowhere else
@@ -127,9 +129,9 @@ closing — so the pending write is also flushed synchronously on:
 - `pagehide`, which covers unload and the back/forward cache,
 - unmount.
 
-**`beforeunload` is deliberately not used here.** Browsers ignore its message, it does not fire
-reliably on mobile, and `use-navigation-guard.ts` already owns it for the opposite job:
-warning about work that *cannot* be saved.
+**`beforeunload` is deliberately not used by the autosave.** Browsers ignore its message, it
+does not fire reliably on mobile, and `use-navigation-guard.ts` owns it — for the leave prompt
+below, not for saving.
 
 **"Not this form's slot" is not the same as "nothing worth keeping".** A slot is shared by
 every mount of a form, and `CreateQuizForm` also renders in edit mode and inside AI review,
@@ -140,15 +142,26 @@ that owns this slot has nothing worth keeping, and only then does the slot get c
 
 The draft is cleared when the quiz is really created (through the hook, so the pending write is
 cancelled too — otherwise it lands during the redirect and resurrects the draft a moment after
-the quiz exists), when the user clicks **Start fresh**, and when a read finds it expired or
-unreadable.
+the quiz exists), when the user empties the form back out, when they click **Start fresh** (AI
+wizard only), and when a read finds it expired or unreadable.
 
 ## What the user sees
 
-Hydrate first, then say so: `RestoredDraftNotice` above the builder, **Start fresh** beside it,
-and a quiet "Draft saved" by the submit button.
-[ADR 0009](../adr/0009-a-restored-draft-is-announced-not-asked-about.md) is the argument for
-announcing rather than asking, and for the three constraints that make it safe.
+**Manual and board builders** ([ADR 0019](../adr/0019-unfinished-builders-restore-silently-and-guard-the-exit.md)):
+the draft is restored silently — the half-built quiz is its own explanation — with a quiet
+"Draft saved" by the submit button. Leaving while the builder holds work worth keeping asks
+first: `useNavigationGuard` opens `LeaveUnfinishedQuizDialog` for in-app navigation, and the
+browser's own prompt covers a reload or tab close. The dialog's second line follows the
+builder's `savedAt`, which only a successful write sets: "saved in this browser for 7 days"
+when the draft is there, and "couldn't be saved … leaving now will lose it" when it isn't
+(private mode, blocked site data, a full store). A reassurance that might be false is worse than
+none. One gap: a change made inside the 400ms debounce hasn't been written yet, so leaving within
+that window reads as the last successful save. The redirect after a successful create calls
+`allowNavigation()` so the guard doesn't stop it. An untouched builder never prompts.
+
+**AI wizard:** hydrate first, then say so — `RestoredDraftNotice` with **Start fresh**, per
+[ADR 0009](../adr/0009-a-restored-draft-is-announced-not-asked-about.md). Its guard stays armed
+only while a generation is in flight.
 
 ## Limits worth knowing
 
@@ -198,4 +211,5 @@ is free:
   unmount, the discard that must not be undone by the write it still had pending, and the
   `enabled: false` mount that must leave someone else's slot alone.
 - `pages/…/Quiz/components/__tests__/quiz-drafts.test.ts` — "worth keeping" against a form
-  holding only its defaults, and the parsers against wrong shapes.
+  holding only its defaults, and the parsers against wrong shapes — for the manual, AI and
+  board drafts.

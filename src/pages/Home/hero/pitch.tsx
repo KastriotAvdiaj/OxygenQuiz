@@ -6,16 +6,19 @@ import { HeroActions } from "./hero-actions";
 /** The pitch: headline, subtitle, actions. */
 export function Pitch({ intro }: { intro: boolean }) {
   return (
-    <div className="relative flex flex-1 flex-col items-center justify-center px-4 pb-16 pt-[calc(var(--header-height,3rem)+2rem)] text-center sm:pt-[calc(var(--header-height,4rem)+2.5rem)]">
+    <div className="relative flex flex-1 flex-col items-center justify-center px-4 pb-16 pt-[calc(var(--header-height,3rem)+2rem)] text-center sm:pt-[calc(var(--header-height,4rem)+2.5rem)] short:pb-8 short:pt-[calc(var(--header-height,4rem)+1rem)]">
       <motion.h1
         {...riseIn(intro, 0)}
         className={cn(
           // Two lines, each kept on one line (`whitespace-nowrap`). Sized so the longer one,
           // "Breathe in questions." (~10.6× the font size wide), always fits: below lg that's
           // the viewport minus the 2rem side padding; from lg, a viewport clamp with room to
-          // spare, capped for ultra-wide screens.
+          // spare, capped for ultra-wide screens. On a wide-but-short screen (a laptop) the
+          // viewport's height caps it too (`13dvh`): sized off the width alone, the headline took
+          // so much of the height that the actions ran below the fold (docs/RESPONSIVE.md,
+          // "Short viewports").
           "whitespace-nowrap font-quiz font-bold leading-[1.02] tracking-tight",
-          "text-[min(6rem,calc((100vw_-_2rem)/10.6))] lg:text-[clamp(5rem,7.4vw,8.5rem)]",
+          "text-[min(6rem,calc((100vw_-_2rem)/10.6))] lg:text-[clamp(5rem,7.4vw,8.5rem)] lg:short:text-[clamp(3.5rem,min(7.4vw,13dvh),8.5rem)]",
           "text-foreground",
         )}
       >
@@ -35,14 +38,14 @@ export function Pitch({ intro }: { intro: boolean }) {
       <motion.p
         {...riseIn(intro, 1)}
         className={cn(
-          "-mb-[0.2em] mt-4 w-fit bg-gradient-to-br bg-clip-text pb-[0.2em] text-lg font-medium leading-snug text-transparent sm:mt-6 sm:text-2xl md:text-[1.75rem] lg:text-[2.25rem]",
+          "-mb-[0.2em] mt-4 w-fit bg-gradient-to-br bg-clip-text pb-[0.2em] text-lg font-medium leading-snug text-transparent sm:mt-6 sm:text-2xl md:text-[1.75rem] lg:text-[2.25rem] short:mt-3 lg:short:text-[1.75rem]",
           "from-foreground/85 via-muted-foreground to-muted-foreground/60",
         )}
       >
         Challenge yourself with a variety of quizzes.
       </motion.p>
 
-      <motion.div {...riseIn(intro, 2)} className="mt-10 sm:mt-12 lg:mt-16">
+      <motion.div {...riseIn(intro, 2)} className="mt-10 sm:mt-12 lg:mt-16 short:mt-8">
         <HeroActions />
       </motion.div>
     </div>

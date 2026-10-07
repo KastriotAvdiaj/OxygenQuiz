@@ -2,9 +2,13 @@ import { describe, expect, it } from "vitest";
 
 import { QuestionType } from "@/types/question-types";
 
+import { emptyAssociationQuizFormValues } from "../../api/association-quiz";
 import {
   AiQuizDraft,
+  AssociationBoardDraft,
   ManualQuizDraft,
+  isAssociationBoardDraftWorthKeeping,
+  parseAssociationBoardDraft,
   isAiQuizDraftWorthKeeping,
   isManualQuizDraftWorthKeeping,
   parseAiQuizDraft,
@@ -106,7 +110,10 @@ describe("is an AI quiz draft worth keeping", () => {
   // over a form pre-filled with something the user had already walked away from.
   it("says no to a typed topic with no reply behind it", () => {
     expect(
-      isAiQuizDraftWorthKeeping({ ...untouchedAiDraft(), topic: "Photosynthesis" }),
+      isAiQuizDraftWorthKeeping({
+        ...untouchedAiDraft(),
+        topic: "Photosynthesis",
+      }),
     ).toBe(false);
   });
 
@@ -198,7 +205,9 @@ describe("parsing stored drafts", () => {
   });
 
   it("refuses a manual draft whose quiz fields are the wrong type", () => {
-    expect(parseManualQuizDraft({ form: { title: 7 }, questions: [] })).toBeNull();
+    expect(
+      parseManualQuizDraft({ form: { title: 7 }, questions: [] }),
+    ).toBeNull();
   });
 
   it("round-trips an AI draft, payload included", () => {
@@ -215,6 +224,68 @@ describe("parsing stored drafts", () => {
   it("refuses an AI draft naming a question type that does not exist", () => {
     expect(
       parseAiQuizDraft({ ...untouchedAiDraft(), allowedTypes: ["Telepathy"] }),
+    ).toBeNull();
+  });
+});
+
+describe("the Associations board draft", () => {
+  /** The builder as it opens: Draft status, the default board time, sixteen empty Tiles. */
+  const untouchedBoard = (): AssociationBoardDraft =>
+    emptyAssociationQuizFormValues();
+
+  it("keeps nothing for a board nobody has typed into", () => {
+    expect(isAssociationBoardDraftWorthKeeping(untouchedBoard())).toBe(false);
+  });
+
+  it("does not count the defaults it opens with, or whitespace", () => {
+    const draft = untouchedBoard();
+    draft.status = "Unlisted";
+    draft.boardTimeInMinutes = 5;
+    draft.columns![2].tiles[1] = "   ";
+    expect(isAssociationBoardDraftWorthKeeping(draft)).toBe(false);
+  });
+
+  it.each<[string, (d: AssociationBoardDraft) => void]>([
+    ["a single Tile", (d) => (d.columns![3].tiles[2] = "Tirana")],
+    ["a Column solution", (d) => (d.columns![0].solution = "Capitals")],
+    [
+      "a Column's other spelling",
+      (d) => (d.columns![1].otherSpellings = "Roma"),
+    ],
+    ["the Final solution", (d) => (d.finalSolution = "Europe")],
+    ["the title", (d) => (d.title = "Cities")],
+    ["a picked category", (d) => (d.categoryId = 3)],
+  ])("keeps a board with %s", (_, edit) => {
+    const draft = untouchedBoard();
+    edit(draft);
+    expect(isAssociationBoardDraftWorthKeeping(draft)).toBe(true);
+  });
+
+  it("reads back what it wrote", () => {
+    const draft = untouchedBoard();
+    draft.columns![0].tiles[0] = "Prishtina";
+    draft.categoryId = 2;
+    expect(
+      parseAssociationBoardDraft(JSON.parse(JSON.stringify(draft))),
+    ).toEqual(draft);
+  });
+
+  it("rejects a board that isn't four Columns of four Tiles", () => {
+    const three = {
+      ...untouchedBoard(),
+      columns: untouchedBoard().columns!.slice(0, 3),
+    };
+    const shortColumn = untouchedBoard();
+    shortColumn.columns![1].tiles = ["a", "b", "c"];
+
+    expect(parseAssociationBoardDraft(three)).toBeNull();
+    expect(parseAssociationBoardDraft(shortColumn)).toBeNull();
+    expect(parseAssociationBoardDraft("not a board")).toBeNull();
+  });
+
+  it("rejects a status the builder doesn't offer", () => {
+    expect(
+      parseAssociationBoardDraft({ ...untouchedBoard(), status: "Archived" }),
     ).toBeNull();
   });
 });

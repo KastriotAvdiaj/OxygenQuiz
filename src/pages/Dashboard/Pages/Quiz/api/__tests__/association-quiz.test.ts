@@ -112,9 +112,10 @@ describe("associationQuizFormSchema (mirror of the API's rules)", () => {
     }
   });
 
-  test("board time outside 1–10 minutes (the API's 60–600s) is refused", () => {
+  test("board time outside 1–30 minutes (the API's 60–1800s) is refused", () => {
     expect(associationQuizFormSchema.safeParse({ ...filled(), boardTimeInMinutes: 0.5 }).success).toBe(false);
-    expect(associationQuizFormSchema.safeParse({ ...filled(), boardTimeInMinutes: 10.5 }).success).toBe(false);
+    expect(associationQuizFormSchema.safeParse({ ...filled(), boardTimeInMinutes: 30.5 }).success).toBe(false);
+    expect(associationQuizFormSchema.safeParse({ ...filled(), boardTimeInMinutes: 30 }).success).toBe(true);
     expect(associationQuizFormSchema.safeParse({ ...filled(), boardTimeInMinutes: 1.5 }).success).toBe(true);
   });
 

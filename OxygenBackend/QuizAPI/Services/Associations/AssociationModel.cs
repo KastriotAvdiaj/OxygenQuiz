@@ -13,7 +13,17 @@ namespace QuizAPI.Services.Associations
     public enum GuessTarget { A = 0, B = 1, C = 2, D = 3, Final = 4 }
 
     /// <summary>How the game is played. Named to avoid "mode", which <c>QuizSessionMode</c> already means.</summary>
-    public enum PlayStyle { Solo = 0, Duel = 1 }
+    public enum PlayStyle
+    {
+        Solo = 0,
+        Duel = 1,
+        /// <summary>
+        /// Host mode: a Teacher plays for 2–4 Teams on one screen, under the Duel's turn rules
+        /// (docs/quiz/classroom.md, ADR 0023). The engine enforces no clock here — the service
+        /// owns pausable clocks and records <see cref="MoveKind.TurnExpired"/> itself.
+        /// </summary>
+        Hosted = 2,
+    }
 
     public enum MoveKind
     {
@@ -25,6 +35,12 @@ namespace QuizAPI.Services.Associations
         TurnExpired = 3,
         /// <summary>Solo: stop and reveal the board.</summary>
         GiveUp = 4,
+        /// <summary>
+        /// Host mode: cancels the move named by <see cref="AssociationMove.Cancels"/> (ADR 0025).
+        /// Never applied by <see cref="AssociationEngine.Apply"/>: <see cref="AssociationEngine.Replay"/>
+        /// skips both it and the move it cancels, so the log stays append-only.
+        /// </summary>
+        Undo = 5,
     }
 
     /// <summary>Where a Duel turn is. A turn opens exactly one Tile, then may Guess.</summary>
@@ -42,6 +58,8 @@ namespace QuizAPI.Services.Associations
         /// <summary>Duel: a player left. The Seat still there wins.</summary>
         Forfeit = 4,
         Abandoned = 5,
+        /// <summary>Host mode: the Teacher pressed End game.</summary>
+        EndedByHost = 6,
     }
 
     /// <summary>A solution and the other spellings that also count.</summary>
@@ -103,13 +121,16 @@ namespace QuizAPI.Services.Associations
         DateTime At,
         int? TileId = null,
         GuessTarget? Target = null,
-        string? GuessText = null)
+        string? GuessText = null,
+        int? Cancels = null)
     {
         public static AssociationMove Open(int seat, int tileId, DateTime at) => new(seat, MoveKind.OpenTile, at, TileId: tileId);
         public static AssociationMove Guess(int seat, GuessTarget target, string text, DateTime at) => new(seat, MoveKind.Guess, at, Target: target, GuessText: text);
         public static AssociationMove Pass(int seat, DateTime at) => new(seat, MoveKind.Pass, at);
         public static AssociationMove TurnExpired(int seat, DateTime at) => new(seat, MoveKind.TurnExpired, at);
         public static AssociationMove GiveUp(int seat, DateTime at) => new(seat, MoveKind.GiveUp, at);
+        /// <param name="cancels">The 1-based position in the log of the move this one cancels.</param>
+        public static AssociationMove Undo(int seat, int cancels, DateTime at) => new(seat, MoveKind.Undo, at, Cancels: cancels);
     }
 
     /// <summary>A solved Column: who got it, and what it was worth to them.</summary>

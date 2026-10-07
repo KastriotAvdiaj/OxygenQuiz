@@ -16,11 +16,13 @@ in [`glossary.md`](./glossary.md); why a format is its own system rather than a 
 
 ---
 
-## 0. Admins only, for now
+## 0. Admins and Teachers only, for now
 
-**Associations is in preview: only admins (Admin / SuperAdmin) can see or use it.** Decided
-2026-09-23, so the format can be tested on the live site without players meeting a half-built
-feature.
+**Associations is in preview: only admins (Admin / SuperAdmin) and Teachers can see or use it.**
+Decided 2026-09-23, so the format can be tested on the live site without players meeting a
+half-built feature; Teachers added 2026-10-01, since hosting a board for a class is what they are
+for ([`../auth/teacher-role.md`](../auth/teacher-role.md) §3). In code the flag is
+`ICurrentUserService.CanSeePreviewFormats` (`RoleRules.PreviewFormatRoles`), not `IsAdmin`.
 
 - **Server (the rule).** `QuizFormatAccess.PreviewFormats` lists the formats in preview. For a
   non-admin, `QuizService` leaves those quizzes out of every read — catalogue, search, "my
@@ -212,7 +214,7 @@ No number in §3–§4 is written in the engine or the scoring code. They are al
 | `DuelTurnSeconds` | 30 | a Duel turn; restarts after each correct Guess |
 | `EndgameTurnsPerSeat` | 2 | guess-only turns each player gets once every Tile is open |
 | `SoloDefaultBoardSeconds` | 240 | the board time the builder proposes |
-| `SoloMinBoardSeconds` / `SoloMaxBoardSeconds` | 60 / 600 | the range an author may choose |
+| `SoloMinBoardSeconds` / `SoloMaxBoardSeconds` | 60 / 1800 | the range an author may choose |
 
 - **Configured in `Associations:Rules`** (`appsettings.json`; every key optional — a missing one
   takes its default). The values are validated at startup (`AssociationRules.Validate`, wired with
@@ -329,7 +331,7 @@ The gate is `AssociationBoardValidator` (the builder's zod schema mirrors it for
   after trimming, at most 100 characters;
 - other spellings: trimmed, blanks and duplicates (of each other or of the solution,
   case-insensitively — Guesses are matched that way) dropped, **at most 4** per solution;
-- board time within `SoloMinBoardSeconds`–`SoloMaxBoardSeconds` (60–600 by default — the
+- board time within `SoloMinBoardSeconds`–`SoloMaxBoardSeconds` (60–1800 by default — the
   configured rules, §5). The refusal names the range **in minutes** ("between 1 and 10
   minutes"), because that is the unit the builder asks for (§8.5); the API itself takes seconds;
 - and the quiz-level rules Classic already has, reused rather than restated: the category,
@@ -339,9 +341,9 @@ The gate is `AssociationBoardValidator` (the builder's zod schema mirrors it for
 Every problem is reported at once, each naming its place ("Tile C4 is empty. Column D needs a
 solution."), because the builder shows the message to the author.
 
-**A Board is always complete when saved, even as a Draft.** Unlike the Classic builder, the board
-builder has no local draft yet — see [`../deployment/known-issues.md`](../deployment/known-issues.md)
-§ "Associations".
+**A Board is always complete when saved, even as a Draft.** An unfinished board lives only in the
+browser: the builder autosaves it locally and guards the exit, exactly like the Classic builder
+([`quiz-draft-persistence.md`](quiz-draft-persistence.md)).
 
 ### 8.5 The board builder
 
@@ -571,7 +573,7 @@ routes, the one-free-quiz cookie, and deletion after the results — the deletio
 |---|---|
 | `/associations/:quizId/play` (`?shareToken=`) | `AssociationStartRoute`: starts the game (once — a ref guards StrictMode's double mount) and **replaces** itself with the game's URL, so refresh and Back land on the game instead of starting another. |
 | `/associations/play/:sessionId` | `AssociationGamePage`: score, clock, the board with its guess slots, Give up (two clicks). When the game ends while you play it stays on the board: the clock, prompt and Give up give way to a finish banner (a won Final in large green letters with the total, or "Time's up" / "Here's the board"), the board plays its reveal, and a **See results** button fades in. Opening a game that was already over goes straight to the results. |
-| `/associations/results/:sessionId` | `AssociationResultsPage`, vertically centred like the game page: the end reason, the score, the fully revealed board (each slot shows its points), Play again (primary `LiftedButton`, restarts) and Back to quizzes (muted `LiftedButton`). No score table or move list — the board already carries the points, and the moves matter only to a future history view (`scoreBreakdown`, `describeMove`, `elapsedLabel` stay in `board-model.ts`, tested, for that). A results link to a game still running goes to the game. |
+| `/associations/results/:sessionId` | `AssociationResultsPage`, vertically centred like the game page: the end reason, the score, the fully revealed board (each slot shows its points), Back to quizzes (an outlined `LiftedButton`, first) and Play again (primary `LiftedButton`, restarts). No score table or move list — the board already carries the points, and the moves matter only to a future history view (`scoreBreakdown`, `describeMove`, `elapsedLabel` stay in `board-model.ts`, tested, for that). A results link to a game still running goes to the game. |
 
 All three are signed-in routes (`userAuthLoader`). **Play** in the catalogue's start dialog goes
 through `quizPlayPath` (`src/pages/Quiz/quiz-play-path.ts`), which picks the play screen by format;
@@ -601,9 +603,12 @@ doesn't drift down the page with a short board.
   the box under the board": that was two steps for one intent, and the separate box was the thing
   first-time players didn't find. The target is where the text is, so it can't be aimed wrong, and
   it still names its target exactly as §3.1 requires. The inputs are live only while a Guess is
-  earned — then they read as text fields: a white field with a dashed primary border (solid while
-  typing in it), a pencil icon and a "Guess Column A…" placeholder, and a click anywhere on the
-  slot focuses it. Otherwise they are disabled, dashed and grey. The Final sits further below the
+  earned — then they read as text fields: a white field with a faint primary border (`primary/30`,
+  full primary while typing in it), a pencil icon and a "Guess Column A…" placeholder, and a click
+  anywhere on the slot focuses it. The send button is a grey icon until there's text, then a filled
+  primary button, so it reads as the way to send for anyone who doesn't press Enter. Otherwise the
+  slots are disabled and grey. Never dashed: five dashed slots made the board look busy
+  (2026-10-03). The Final sits further below the
   Columns than the Columns' rows sit from each other: it answers all four. **Nothing is pre-focused**, for the
   reason the first build learned: a pre-aimed Column read as "you must guess this one". A wrong
   Guess shakes its slot; the line under the board says what happened.
@@ -635,6 +640,16 @@ own — each slot keeps what is typed in it — and a Guess goes up as `onGuess(
 answer (right, wrong, too late, or refused) tells the slot whether to clear or shake; a refused
 Guess keeps the text. Each move writes the returned view straight into the React Query cache
 (`useAssociationMoves`); nothing is refetched after a move.
+
+**A Tile that can't be opened explains itself.** With `openBlockedHint`, clicking a closed Tile
+while opening isn't allowed (one Tile per turn, or not your turn) shakes that Tile and shows the
+hint over it for a moment, instead of the click doing nothing. Each page words it from its own
+rules: Solo "Guess a column or the final first.", the Duel "…— or pass." / "It's not your turn.",
+Host mode "<Team>: guess a column or the final — or pass." (or "Resume the game…" while paused).
+The Tile stays a real button (`aria-disabled`). The hint is portalled to `<body>` at a fixed
+position from the Tile's rect — the Tiles are 3D flip cards that paint over anything inside the
+board regardless of z-index — one line, clamped inside the window. Omit the prop and a blocked
+Tile is inert, as before. No shake under reduced motion.
 
 **The end-of-game reveal.** With `reveal`, a finished board shows everything the player hadn't
 seen, one after another, column by column: unopened Tiles turn over on the same card flip as an

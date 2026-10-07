@@ -15,7 +15,9 @@ the user's own fonts.
 - **The headline**, two lines, **each kept on one line** (`whitespace-nowrap`) — the second
   ("Breathe out answers.") a step smaller, at `0.72em`. Below `lg` it is sized so the longer
   line (~10.6× the font size) fits the viewport minus its padding; from `lg`, sized off the viewport (`clamp`, capped for ultra-wide screens)
-  so it runs most of the width. "answers." is the theme blue. The line plays on the name —
+  so it runs most of the width — and on a wide-but-short screen (`lg:short:`, height ≤ 860px) also
+  capped at `13dvh`, since sized off the width alone it pushed the actions below the fold on a
+  laptop. "answers." is the theme blue. The line plays on the name —
   Oxygen, breathing. It replaced the rotating "Sharpen your ___": a single, fixed line reads
   bolder at this size.
 - **The subtitle**, in a muted diagonal gradient clipped to the text.
@@ -27,10 +29,11 @@ the user's own fonts.
   (`p-2` on the outer button), restored on 2026-09-28. The original was
   `components/choose-quiz-dialog.tsx`, deleted on 2026-09-21:
   `git show c7ef0452^:src/pages/Home/components/choose-quiz-dialog.tsx`.
-  - **Play** (→ `/choose-quiz`), big and in the theme blue, with a filled ▶. Fluid size, `text-xl`
-    on a phone up to `text-5xl` at `lg` (a fixed `text-5xl` dwarfed phones — docs/RESPONSIVE.md),
-    and wider than Explore was (`px-8` → `lg:px-16`). Like Explore, it greys out while the quiz
-    list is loading.
+  - **Play** (→ `/choose-mode`, since 2026-10-06 — single player or multiplayer first, like the
+    header's Play), big and in the theme blue, with a filled ▶. Fluid size, `text-xl` on a phone
+    up to `text-5xl` at `lg` (a fixed `text-5xl` dwarfed phones — docs/RESPONSIVE.md), and wider
+    than Explore was (`px-8` → `lg:px-16`). The mode screen has no loader, so it has no loading
+    state.
   - An **"or"** divider, then the same button **a size down** (`SecondaryButton`: `p-1` frame,
     `text-sm`/`sm:text-base`), each with an icon:
     - **Host a lobby** → `/multiplayer-menu`, in **muted greys** (`bg-muted` face,
@@ -45,6 +48,11 @@ the user's own fonts.
       a rotated, bobbing "With AI" bubble that read as a notification floating above the button
       — same words, but this one is still and anchored to the button by its tail.
   Size and colour carry the hierarchy: one big blue button, two small ones in quieter colours.
+
+- **Short screens** (`short:`, height ≤ 860px — a laptop): the whole pitch must fit above the fold
+  with no scrollbar. Besides the headline cap, the top/bottom padding, the subtitle (and its
+  size from `lg`), the gap above the actions, Play (`text-4xl` from `lg`) and the "or" divider all
+  take a step down. Tall screens (a 27" monitor) are unchanged.
 
 - **The globe** (`hero/line-globe.tsx`), a background rising behind the secondary buttons — see below.
 
@@ -66,18 +74,21 @@ It is a **background**: out of flow (`absolute`, `z-0`, the pitch sits in a `z-1
 never moves anything, and the page root's `overflow-hidden` clips what falls below the fold.
 Decoration only: `aria-hidden`, no pointer events, unselectable.
 
-- **Placement** (`Home.tsx`): the top of its circle meets the middle of the secondary buttons'
-  row (`data-globe-anchor` in `hero-actions.tsx`, measured from layout offsets so the pitch's
-  rise-in transform doesn't skew it). Its diameter is the larger of 2.3× the room below that row
-  and 60% of the page's width, within 360–1100px — so on a phone roughly half of it shows, and on
+- **Placement** (`Home.tsx`): the top of its circle sits 32px (`GLOBE_LIFT`) above the middle of
+  the secondary buttons' row (`data-globe-anchor` in `hero-actions.tsx`, measured from layout offsets so the pitch's
+  rise-in transform doesn't skew it). Raised from exactly mid-row on 2026-10-03, so more of the
+  dome shows. Its diameter is the larger of 2.7× the room below that point
+  and 70% of the page's width, within 360–1300px (enlarged from 2.3× / 60% / 1100px on 2026-10-03) — so on a phone roughly half of it shows, and on
   a wide, short screen it is a broad dome. Re-measured on resize. Strokes are
   `non-scaling-stroke`, so they stay a pixel or so thick at any size.
 - **Motion**: it waits until the pitch has finished rising in (`PITCH_SETTLED_SECONDS`, ~1.05s)
   — while the buttons fade in they are see-through, and a globe popping in behind them looked as
-  if it were on top of them. Then it pops in (60% → full size over 0.6s) with a half-turn spin
-  that decays into a slow, endless drift of 6°/second. The view is centred at 15°S so the visible
-  top band is the land-heavy northern mid-latitudes. Under reduced motion it is drawn once and
-  never moves.
+  if it were on top of them. Then it fades in at full size (opacity 0 → 1 over 0.6s, no scaling) with a half-turn spin
+  that decays into a slow, endless drift of 6°/second. The spin **lands** on `SETTLE_LONGITUDE`
+  (25°E — Europe, Africa and the Middle East, the Balkans near the centre) by starting a half-turn
+  before it; until 2026-10-06 it started there instead and settled facing the Pacific. The view is
+  centred at 15°S so the visible top band is the land-heavy northern mid-latitudes. Under reduced
+  motion it is drawn once, facing `SETTLE_LONGITUDE`, and never moves.
 - **Games across the world** (`globe-connections.ts`): amber (`cta`) arcs between ~30 real cities
   (Prishtina among them). Every 1.2s a new one is tried, at most three at a time: it lifts off the
   surface between two cities (higher the further apart), draws over ~1.1s with a travelling dot,
@@ -85,7 +96,7 @@ Decoration only: `aria-hidden`, no pointer events, unselectable.
   the globe — facing the viewer and inside the box `Home.tsx` reports as on-screen (`visible`: the
   top share above the fold, and on a phone only the middle, since the globe is wider than the page)
   — so an arc never runs off-screen. Dot and pulse sizes are in pixels, converted from the
-  drawing's units each frame. Arcs start only after the pop-in and never under reduced motion.
+  drawing's units each frame. Arcs start only after the fade-in and never under reduced motion.
   Chosen over "a rocket orbiting it": the arcs say multiplayer; an orbit would be mostly hidden
   below the fold.
 - **Drawn with d3-geo** (`geoOrthographic`) from Natural Earth's 1:110m land outlines

@@ -565,6 +565,14 @@ timeLimit` points, i.e. ~33 pts on a 30s question but ~100 pts (10% of base) on 
 
 ## Multiplayer / Game State
 
+- **P2 — The lobby's player cap is only enforced by the client.** `QuizHub.CreateSession` passes
+  the caller's `maxPlayers` straight to `InMemoryQuizSessionManager`, which only refuses joins when
+  `MaxPlayers > 0`. So a crafted hub call with `0` (or any negative number) makes a lobby with no
+  cap, and a large number skips the dialog's 2–10 clamp. Clamp it in the hub. This becomes a must
+  if lobby size is ever a paid limit — see
+  [`proposals/paid-plans-and-payments.md`](../proposals/paid-plans-and-payments.md) §1.
+  → `OxygenBackend/QuizAPI/Hubs/QuizHub.cs`
+
 - ~~**P2 — Clicking a header link during a match froze the question timer.**~~ **Fixed
   (2026-08-02).** Three faults in a line, none of which looks like a timer bug on its own.
   `useNavigationGuard` is armed for the whole session, but `<LeaveLobbyDialog>` was rendered only
@@ -1165,12 +1173,9 @@ fixed; these were left.
 
 ## Associations (2026-09-23 — see docs/quiz/associations.md)
 
-- **P3 — The board builder has no local draft.** The Classic builder autosaves an unfinished quiz
-  to the browser (`useDraftAutosave`, docs/quiz/quiz-draft-persistence.md); the board builder
-  doesn't, so closing the tab mid-way loses the Board. The server rule stays "a Board is complete
-  when saved", so the fix is client-only: wire `useDraftAutosave` into `AssociationBoardForm` with a
-  board-shaped draft. Deferred to keep Phase 3 to authoring itself.
-  → `src/pages/Dashboard/Pages/Quiz/components/Association-Board-Form/association-board-form.tsx`
+- ~~**P3 — The board builder has no local draft.**~~ **Fixed 2026-10-06.** `AssociationBoardForm`
+  autosaves to the `quiz-associations` slot and guards the exit, like the Classic builder
+  (docs/quiz/quiz-draft-persistence.md, ADR 0019).
 - ~~**P3 — Quizzes (both formats) could only be edited from the admin dashboard.**~~ **Fixed
   2026-09-23.** The player dashboard mounts the editors at `/my-dashboard/quizzes/edit/:id` (and
   `…/board`); the shared table links within its own dashboard (`useQuizEditPath`). Only an owner
@@ -1266,6 +1271,17 @@ fixed in that change; these were not.
   Unicode ("Аlice" with a Cyrillic А) passes the uniqueness check. Consider NFKC normalisation and a
   confusables check if impersonation ever becomes a real problem.
   → `DTOs/User/AccountIdentityDTOs.cs`, `DTOs/Authentication/SignupDTO.cs`
+
+## Paid plans and launch compliance (2026-10-07 — proposals only)
+
+- **P3 — No paid plans and no way to take payment.** Tiers, prices, Paddle as Merchant of Record
+  (Stripe does not serve Kosovo-based businesses), and the entitlement design are written up in
+  [`proposals/paid-plans-and-payments.md`](../proposals/paid-plans-and-payments.md). Provider
+  decided (Paddle, 2026-10-07); tiers and prices open.
+- **P2 — No Terms, Privacy Policy, refund or contact page; Google Fonts load from Google's
+  servers.** Required before a public or paid launch, and before Paddle approves checkout. No
+  cookie banner is needed today (all storage is essential or user-chosen). Write-up:
+  [`proposals/legal-and-compliance-for-launch.md`](../proposals/legal-and-compliance-for-launch.md).
 
 ## Documentation debt (2026-08-23)
 

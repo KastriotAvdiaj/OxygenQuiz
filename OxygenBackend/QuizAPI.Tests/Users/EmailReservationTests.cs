@@ -105,6 +105,26 @@ public class EmailReservationTests
     }
 
     /// <summary>
+    /// The other half of releasing the address: once someone has signed up again with it, login's
+    /// lookup (which looks past the soft-delete filter) must find the NEW account. It used to see
+    /// both rows and throw "Sequence contains more than one element", so the new account could
+    /// never sign in.
+    /// </summary>
+    [Fact]
+    public async Task AfterAnAdminDeletion_LoginFindsTheNewAccountOnTheSameAddress()
+    {
+        using var ctx = NewContext();
+        var old = AddUser(ctx);
+        old.IsDeleted = true;   // admin deletion
+        await ctx.SaveChangesAsync();
+        var current = AddUser(ctx);
+
+        var found = await new UserRepository(ctx).GetByEmailIncludingDeletedAsync(Address);
+
+        Assert.Equal(current.Id, found?.Id);
+    }
+
+    /// <summary>
     /// The hold is bounded without a release step: the scrub rewrites the address, so the original
     /// stops matching anything the moment the grace period is served.
     /// </summary>

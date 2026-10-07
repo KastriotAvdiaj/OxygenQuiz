@@ -29,6 +29,7 @@ namespace QuizAPI.Data
         public DbSet<QuizAPI.Models.Associations.AssociationGame> AssociationGames { get; set; }
         public DbSet<QuizAPI.Models.Associations.AssociationGamePlayer> AssociationGamePlayers { get; set; }
         public DbSet<QuizAPI.Models.Associations.AssociationGameMove> AssociationGameMoves { get; set; }
+        public DbSet<QuizAPI.Models.Associations.HostedTeam> HostedTeams { get; set; }
 
         public DbSet<Quiz> Quizzes { get; set; }
 
@@ -80,6 +81,11 @@ namespace QuizAPI.Data
 
         /// <summary>AI generation quota + cost ledger. See docs/quiz/ai-quiz-generation-flow.md §4.</summary>
         public DbSet<Models.Ai.AiGenerationUsage> AiGenerationUsages { get; set; }
+
+        // Classroom (docs/quiz/classroom-plan.md)
+        public DbSet<Models.Classroom.TeacherAccessRequest> TeacherAccessRequests { get; set; }
+        public DbSet<Models.Classroom.Class> Classes { get; set; }
+        public DbSet<Models.Classroom.ClassStudent> ClassStudents { get; set; }
 
 
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options, ICurrentUserService current) : base(options)
@@ -519,6 +525,7 @@ namespace QuizAPI.Data
 
             ConfigureAssociationBoards(modelBuilder);
             ConfigureAssociationGames(modelBuilder);
+            ConfigureClassroom(modelBuilder);
 
             modelBuilder.Entity<TypeTheAnswerQuestion>()
                 .Property(e => e.AcceptableAnswers)
@@ -606,6 +613,30 @@ namespace QuizAPI.Data
             // The backstop against a double click: two requests that both read Seq n and append n+1
             // can't both commit. The service turns the violation into a 409.
             move.HasIndex(m => new { m.GameId, m.Seq }).IsUnique();
+
+            // Host mode (ADR 0023). Teams go with their game.
+            var team = modelBuilder.Entity<QuizAPI.Models.Associations.HostedTeam>();
+            team.HasKey(t => new { t.GameId, t.Seat });
+            team.HasOne(t => t.Game).WithMany(g => g.Teams).HasForeignKey(t => t.GameId).OnDelete(DeleteBehavior.Cascade);
+            game.HasIndex(g => g.HostUserId);
+            // A Display finds its game by code; codes are unique while they exist.
+            game.HasIndex(g => g.ScreenCode).IsUnique().HasFilter($"\"{nameof(QuizAPI.Models.Associations.AssociationGame.ScreenCode)}\" IS NOT NULL");
+        }
+
+        /// <summary>Teacher access requests, Classes and hosted games (docs/quiz/classroom-plan.md §4).</summary>
+        private static void ConfigureClassroom(ModelBuilder modelBuilder)
+        {
+            var request = modelBuilder.Entity<Models.Classroom.TeacherAccessRequest>();
+            // Cascade: a request is about its user and means nothing without them.
+            request.HasOne(r => r.User).WithMany().HasForeignKey(r => r.UserId).OnDelete(DeleteBehavior.Cascade);
+            request.HasIndex(r => new { r.UserId, r.CreatedAt });
+            request.HasIndex(r => r.Status);
+
+            var @class = modelBuilder.Entity<Models.Classroom.Class>();
+            // Cascade: a Class is the Teacher's own notes. Account anonymisation removes it too.
+            @class.HasOne(c => c.Owner).WithMany().HasForeignKey(c => c.OwnerUserId).OnDelete(DeleteBehavior.Cascade);
+            @class.HasIndex(c => c.OwnerUserId);
+            @class.HasMany(c => c.Students).WithOne(s => s.Class).HasForeignKey(s => s.ClassId).OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

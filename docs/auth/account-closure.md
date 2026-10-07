@@ -204,6 +204,11 @@ Three consequences worth keeping straight:
 - **An admin-deleted row does NOT hold its address**, deliberately. Nothing ever anonymises those,
   so counting them would burn the address permanently — and re-registering it grants nothing, since
   the new account is a new row with none of the old one's history or roles.
+  The lookups that look past the soft-delete filter (login's `GetByEmailIncludingDeletedAsync`, and
+  first-time external sign-in) skip admin-deleted rows for the same reason, through the shared
+  `HoldsItsAddress` filter in `UserRepository`. Until 2026-10-03 login didn't, so once an address
+  had been re-registered it matched two rows and every sign-in to the new account failed with
+  "Sequence contains more than one element".
 - **Signup says one thing for both cases**: *"Email is already in use. If this is your account, log
   in to recover it."* ("log in", not "sign in" — next to a **Sign up** button the two read as the
   same word.) Naming the closing case would turn signup into an "is X leaving?" oracle for

@@ -642,6 +642,8 @@ dialog, a hand-rolled spinner.
 | `Question/Questions.tsx`, `UserDashboard/MyQuestions.tsx` | Question-type dialog `w-fit` → `sm:max-w-sm` | `w-fit` fought the shared phone gutter and resolved back to `max-w-lg` anyway (the children are full-width), so a three-button chooser rendered 512px wide |
 | `Create-Quiz-Form/create-quiz.tsx` | Question-type chooser `flex gap-4` → `grid grid-cols-1 gap-3 sm:grid-cols-3`; buttons get `outerClassName="w-full"` + `className="h-full w-full text-sm leading-tight"` | At ~500px the three buttons didn't scale down, they deformed: flex shrank their content boxes while the padding stayed, so labels wrapped mid-phrase at three different widths. Grid columns give one width for all three and stack below `sm`. See "Rows of buttons" above |
 | `Create-Quiz-Form/create-quiz.tsx` | Hand-rolled `animate-spin rounded-full border-b-2` → shared `<Spinner size="lg" />` | A 64px circle with one 2px arc reads as a rendering glitch, and matched no other loader in the app |
+| `Create-Quiz-Form/create-quiz.tsx` | Grid `lg:grid-cols-5` → `lg:grid-cols-[minmax(15rem,1fr)_minmax(0,3fr)_minmax(15rem,1fr)]`; the Quiz/Question tabs lose their inner `px-4` and gap down to `gap-1.5` | As fifths, the side columns were ~180px at a 1024px window beside the nav rail. The tabs and the 200px selects overflowed the details card. The breakpoint described the window, not the column |
+| `select-question-category/difficulty/language.tsx` | Form-mode trigger `min-w-[200px]` → `min-w-0` (filter mode keeps its 200px) | In a form the field should fill its column, not push past it. A floor belongs to a filter bar, where the select sits in a row |
 | `ui/data-table.tsx` | Rows alternate `bg-primary/10` / `bg-muted` (was `bg-muted` / `bg-background/50`); header stays `bg-muted` | Borrows the Questions page's card tint so the quiz/user tables aren't pure greyscale. Tinting *every* row — two steps of the wash, the first attempt — was too much blue on pages whose only content is the table: spaced-out cards can carry a tint edge-to-edge rows can't |
 | `ui/data-table.tsx` | Removed `position: relative` from header cells (was applied to every column except the first) | In a `border-collapse: collapse` table a positioned cell paints its own background **over** the row's collapsed border, so the header divider was crisp under column 1 and washed out under the rest. Nothing in a header cell is absolutely positioned — the class was vestigial. **General rule: don't put `relative` on a `th`/`td` whose row draws a border, unless a child actually needs it** |
 
@@ -668,6 +670,46 @@ after the shell, which had never been looked at.
 Deliberately **not** done, again: hiding fields or collapsing the details form. That is
 now a recorded decision rather than a preference —
 [`adr/0001-ai-generation-options-stay-visible.md`](adr/0001-ai-generation-options-stay-visible.md).
+
+## Surfaces inside a dashboard
+
+Both dashboards (`DashboardLayout`, `/dashboard` and `/my-dashboard`) paint their `main` with
+**`bg-muted`**. The shared `<Card>` is `bg-card border` in light mode but **`bg-muted`, borderless**
+in dark mode (`components/ui/card.tsx`) — built for pages on `bg-background`, where muted reads as
+a raised panel. Inside a dashboard, in dark mode, that is the page's own colour: the card
+disappears and its contents float on nothing. The Classroom pages shipped this way (2026-10-03).
+
+**Every card inside a dashboard says its surface:**
+
+```tsx
+<Card className="p-6 bg-card border dark:border-foreground/30">…</Card>
+```
+
+The same goes for an empty-state card, and for list rows drawn as bordered boxes rather than
+`<Card>`s (`bg-card … dark:border-foreground/30` on the row — Hosted games). Elements *inside* a
+card (inputs, chips) can stay `bg-background`. This is the existing house pattern (Audit log,
+Invite codes, Teacher requests); `<Card>` itself is not changed because every page outside a
+dashboard relies on its dark `bg-muted`.
+
+Check a new dashboard page in **dark mode**: a card you can't see the edge of is this bug.
+
+**Dialogs are `bg-background`.** `DialogContent` (`components/ui/dialog/dialog.tsx`) defaults to it
+since 2026-10-03 — it was `bg-muted`, which most dialogs were already overriding, and the ones
+that didn't sat as muted-on-muted over a dashboard. Don't pass `bg-muted` to one.
+
+**Dialog buttons are the `ConfirmationDialog` pair** (`components/ui/dialog/confirmation-dialog`):
+the action first, a `LiftedButton` in its colour (default blue, or red — `bg-red-600 text-white
+hover:bg-red-700 py-1`, `liftColor="red-700"` — for a destructive one, as Delete User does), then
+**Cancel** as a lifted outline (`bg-background border border-foreground/30 text-sm text-foreground
+sm:text-base py-1`, `liftColor="muted"`). A form in its own `Dialog` copies the same two into its
+`DialogFooter` (Classes' New/Edit dialog). The flat `Button` ghost + primary pair the Classroom
+dialogs first shipped with looked like a different app.
+
+**No description paragraph under a page's h1.** The header is the title and the page's actions
+(see "Dashboard list pages"). The Classroom pages each had a sentence of muted text under the
+title ("Your students' first names, saved per class, so you can…"); they read as filler and were
+removed (2026-10-03). If the page needs explaining, say it where it's needed — the empty state,
+a field hint — not as a subtitle.
 
 ## Checklist for new pages/components
 
@@ -711,3 +753,7 @@ now a recorded decision rather than a preference —
    in `ai-quiz-wizard-view.stories.tsx` is the reference: a story pinned to the
    target viewport with a play function measuring the primary action's headroom.
    Height is the one property that regresses without producing an error.
+14. A card or bordered row on a dashboard page? `bg-card border dark:border-foreground/30` —
+   the dashboard is `bg-muted`, and so is a plain `<Card>` in dark mode. Look at it in dark
+   mode. See "Surfaces inside a dashboard". Dialogs stay on the `bg-background` default, and
+   the page header is the h1 and its actions — no description paragraph under it.

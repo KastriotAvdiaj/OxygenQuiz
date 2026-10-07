@@ -6,7 +6,7 @@ namespace QuizAPI.Services
     /// <summary>
     /// Model-based (HasData) seeding for the fixed role set. These IDs are referenced
     /// directly by <see cref="PermissionSeeder"/>'s RolePermission rows, so they must stay stable:
-    /// Admin = 1, User = 2, SuperAdmin = 3.
+    /// Admin = 1, User = 2, SuperAdmin = 3, Teacher = 4.
     ///
     /// ConcurrencyStamp uses hardcoded GUIDs on purpose — a non-deterministic value
     /// (Guid.NewGuid()) would make EF think the seed changed on every build and emit a
@@ -40,6 +40,14 @@ namespace QuizAPI.Services
                     isActive = true,
                     Description = "Super Administrator",
                     ConcurrencyStamp = Guid.Parse("33333333-3333-3333-3333-333333333333")
+                },
+                new Role
+                {
+                    Id = 4,
+                    Name = "Teacher",
+                    isActive = true,
+                    Description = "Hosts boards for a class",
+                    ConcurrencyStamp = Guid.Parse("44444444-4444-4444-4444-444444444444")
                 }
             );
         }

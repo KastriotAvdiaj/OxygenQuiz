@@ -1,22 +1,51 @@
+import { useState } from "react";
 import { Navigate, useLocation, useParams } from "react-router";
 import { Brain } from "lucide-react";
 import { Spinner } from "@/components/ui";
+import { useUser } from "@/lib/Auth";
+import { readDraft } from "@/lib/drafts/draft-storage";
 import { useQuizData } from "../../api/get-quiz";
-import { toAssociationQuizFormValues, useAssociationBoard } from "../../api/association-quiz";
+import {
+  toAssociationQuizFormValues,
+  useAssociationBoard,
+} from "../../api/association-quiz";
 import { dashboardBaseOf, useQuizEditPath } from "../../quiz-paths";
 import { useFormatAvailable } from "../../format-access";
+import {
+  ASSOCIATION_DRAFT_VERSION,
+  QUIZ_DRAFT_SLOTS,
+  parseAssociationBoardDraft,
+  type AssociationBoardDraft,
+} from "../quiz-drafts";
 import { AssociationBoardForm } from "./association-board-form";
 
 /**
  * `…/create-quiz/associations` (admin) and `…/create/associations` (player dashboard).
  * While the format is in preview a non-admin who types the URL is sent back to their quiz list —
  * the API would refuse the save anyway (format-access.ts).
+ *
+ * <b>Draft.</b> Reads any unfinished board *before* the builder mounts and seeds it as the form's
+ * defaults, the same way `create-quiz-route.tsx` does for the Classic builder — read once in a
+ * `useState` initializer, so the first render already holds the author's work
+ * (docs/quiz/quiz-draft-persistence.md).
  */
 export const CreateAssociationQuizRoute = () => {
   const available = useFormatAvailable("Associations");
   const { pathname } = useLocation();
-  if (!available) return <Navigate to={`${dashboardBaseOf(pathname)}/quizzes`} replace />;
-  return <AssociationBoardForm />;
+  const { data: user } = useUser();
+
+  const [restored] = useState(() =>
+    readDraft<AssociationBoardDraft>({
+      slot: QUIZ_DRAFT_SLOTS.associations,
+      userId: user?.id,
+      version: ASSOCIATION_DRAFT_VERSION,
+      parse: parseAssociationBoardDraft,
+    }),
+  );
+
+  if (!available)
+    return <Navigate to={`${dashboardBaseOf(pathname)}/quizzes`} replace />;
+  return <AssociationBoardForm restoredDraft={restored} />;
 };
 
 /**
@@ -31,7 +60,10 @@ export const EditAssociationQuizRoute = () => {
   const editPath = useQuizEditPath();
   const quizQuery = useQuizData({ quizId });
   const isBoard = quizQuery.data?.format === "Associations";
-  const boardQuery = useAssociationBoard({ quizId, queryConfig: { enabled: isBoard } });
+  const boardQuery = useAssociationBoard({
+    quizId,
+    queryConfig: { enabled: isBoard },
+  });
 
   if (quizQuery.isLoading || (isBoard && boardQuery.isLoading)) {
     return (
@@ -58,7 +90,11 @@ export const EditAssociationQuizRoute = () => {
   return (
     <AssociationBoardForm
       key={`${quiz.id}-v${board.version}`}
-      edit={{ quiz, values: toAssociationQuizFormValues(quiz, board), version: board.version }}
+      edit={{
+        quiz,
+        values: toAssociationQuizFormValues(quiz, board),
+        version: board.version,
+      }}
     />
   );
 };

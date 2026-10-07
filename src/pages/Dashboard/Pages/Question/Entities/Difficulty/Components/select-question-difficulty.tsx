@@ -136,7 +136,7 @@ export const DifficultySelect: React.FC<DifficultySelectProps> = (props) => {
           clearErrors?.();
         }}
       >
-        <SelectTrigger variant={variant} className="min-w-[200px]">
+        <SelectTrigger variant={variant} className="min-w-0">
           <SelectValue placeholder={placeholder ?? "Select difficulty"} />
         </SelectTrigger>
         <SelectContent variant={variant} className="min-w-[200px]">

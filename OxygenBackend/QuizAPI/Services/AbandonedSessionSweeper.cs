@@ -42,13 +42,16 @@ namespace QuizAPI.Services
     public sealed class AbandonedSessionSweeper
     {
         private readonly ISessionAbandonmentService _abandonment;
+        private readonly QuizAPI.Services.Classroom.IHostedGameService _hosted;
         private readonly ILogger<AbandonedSessionSweeper> _logger;
 
         public AbandonedSessionSweeper(
             ISessionAbandonmentService abandonment,
+            QuizAPI.Services.Classroom.IHostedGameService hosted,
             ILogger<AbandonedSessionSweeper> logger)
         {
             _abandonment = abandonment;
+            _hosted = hosted;
             _logger = logger;
         }
 
@@ -61,6 +64,14 @@ namespace QuizAPI.Services
             if (swept > 0)
             {
                 _logger.LogInformation("Swept {Count} abandoned quiz session(s).", swept);
+            }
+
+            // Hosted games have no sessions (ADR 0023), so they have their own rule: untouched for
+            // seven days, ended as Abandoned with their scores (docs/quiz/classroom.md, C13).
+            var hosted = await _hosted.EndIdleGamesAsync();
+            if (hosted > 0)
+            {
+                _logger.LogInformation("Ended {Count} idle hosted game(s).", hosted);
             }
         }
     }

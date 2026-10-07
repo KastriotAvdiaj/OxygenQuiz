@@ -131,6 +131,14 @@ builder.Services.AddScoped<IExternalLoginRepository, ExternalLoginRepository>();
 builder.Services.AddScoped<IFileRepository, FileRepository>();
 builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
 builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
+builder.Services.AddScoped<ITeacherAccessRequestRepository, TeacherAccessRequestRepository>();
+builder.Services.AddScoped<IClassRepository, ClassRepository>();
+builder.Services.AddScoped<QuizAPI.Services.Classroom.IClassService, QuizAPI.Services.Classroom.ClassService>();
+builder.Services.AddScoped<IHostedGameRepository, HostedGameRepository>();
+builder.Services.AddScoped<QuizAPI.Services.Classroom.IHostedGameService, QuizAPI.Services.Classroom.HostedGameService>();
+builder.Services.AddSingleton<QuizAPI.Services.Classroom.IHostedDisplayRegistry, QuizAPI.Services.Classroom.HostedDisplayRegistry>();
+builder.Services.AddSingleton<QuizAPI.Services.Classroom.IHostedGameNotifier, QuizAPI.Hubs.HostedGameNotifier>();
+builder.Services.AddScoped<QuizAPI.Services.Classroom.ITeacherAccessService, QuizAPI.Services.Classroom.TeacherAccessService>();
 builder.Services.AddScoped<IQuestionRepository, QuestionRepository>();
 builder.Services.AddScoped<IQuizRepository, QuizRepository>();
 builder.Services.AddScoped<IQuestionCategoryRepository, QuestionCategoryRepository>();
@@ -389,7 +397,8 @@ builder.Services.AddAuthentication(options =>
             var accessToken = context.Request.Query["access_token"];
             var path = context.HttpContext.Request.Path;
             if (!string.IsNullOrEmpty(accessToken) &&
-                (path.StartsWithSegments("/notificationHub") || path.StartsWithSegments("/quizHub")))
+                (path.StartsWithSegments("/notificationHub") || path.StartsWithSegments("/quizHub")
+                 || path.StartsWithSegments("/hostedGameHub")))
             {
                 context.Token = accessToken;
             }
@@ -427,6 +436,18 @@ else
     app.Logger.LogInformation(
         "[Email] No provider configured — messages are logged, not sent. This is the expected " +
         "development setup; the confirmation and reset links appear in this log.");
+
+// Password screening off is a development convenience (appsettings.Development.json); in
+// Production it would quietly accept "password", so it is said loudly, once.
+if (app.Environment.IsProduction())
+{
+    if (!QuizAPI.DTOs.Authentication.NotACommonPasswordAttribute.IsEnabled(configuration))
+        app.Logger.LogError(
+            "[Auth] Auth:CommonPasswordCheck:Enabled is false — common passwords are being accepted.");
+    if (!configuration.GetValue("Auth:BreachedPasswordCheck:Enabled", true))
+        app.Logger.LogError(
+            "[Auth] Auth:BreachedPasswordCheck:Enabled is false — breached passwords are being accepted.");
+}
 
 foreach (var aiWarning in aiConfig.Warnings)
     app.Logger.LogWarning("[AI] {Warning}", aiWarning);
@@ -578,6 +599,8 @@ if (!environment.IsProduction())
 app.MapControllers();
 app.MapHub<QuizAPI.Hubs.QuizHub>("/quizHub");
 app.MapHub<QuizAPI.Hubs.NotificationHub>("/notificationHub");
+// Host mode's screens (docs/quiz/classroom.md). Anonymous for Displays; the Controller sends its JWT.
+app.MapHub<QuizAPI.Hubs.HostedGameHub>("/hostedGameHub");
 
 // Cron has no "every N minutes" that spans an hour boundary: "*/90 * * * *" is not 90 minutes, it
 // is nothing. So anything an hour or longer becomes hourly — the only interval in that range this

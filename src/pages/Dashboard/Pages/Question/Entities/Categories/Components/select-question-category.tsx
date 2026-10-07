@@ -151,7 +151,7 @@ export const CategorySelect: React.FC<CategorySelectProps> = (props) => {
           clearErrors?.();
         }}
       >
-        <SelectTrigger variant={variant} className="min-w-[200px]">
+        <SelectTrigger variant={variant} className="min-w-0">
           <SelectValue
             className="text-foreground"
             placeholder={

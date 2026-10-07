@@ -4,7 +4,8 @@ namespace QuizAPI.Common
 {
     /// <summary>
     /// Which quiz formats a caller may see at all. A format in <see cref="PreviewFormats"/> is
-    /// being built and tested: it exists only for admins (Admin / SuperAdmin). For everyone else —
+    /// being built and tested: it exists only for admins (Admin / SuperAdmin) and Teachers, who host
+    /// boards for a class (docs/auth/teacher-role.md). For everyone else —
     /// signed-in players and guests — its quizzes are simply absent: not in the catalogue, search,
     /// "my quizzes", the lobby's picker, a read by id or a share link, and the authoring endpoints
     /// answer 404.
@@ -18,16 +19,17 @@ namespace QuizAPI.Common
     /// </summary>
     public static class QuizFormatAccess
     {
-        /// <summary>Formats visible to admins only. Associations: added 2026-09-23, in testing.</summary>
+        /// <summary>Formats visible to admins and Teachers only. Associations: added 2026-09-23, in testing.</summary>
         public static readonly QuizFormat[] PreviewFormats = { QuizFormat.Associations };
 
-        public static bool IsAvailableTo(QuizFormat format, bool isAdmin) =>
-            isAdmin || Array.IndexOf(PreviewFormats, format) < 0;
+        /// <param name="canSeePreview">Admin, SuperAdmin or Teacher — <c>ICurrentUserService.CanSeePreviewFormats</c>.</param>
+        public static bool IsAvailableTo(QuizFormat format, bool canSeePreview) =>
+            canSeePreview || Array.IndexOf(PreviewFormats, format) < 0;
 
         /// <summary>The quizzes of formats this caller may see. Translates to SQL (<c>NOT … = ANY</c>).</summary>
-        public static IQueryable<Quiz> VisibleTo(this IQueryable<Quiz> quizzes, bool isAdmin)
+        public static IQueryable<Quiz> VisibleTo(this IQueryable<Quiz> quizzes, bool canSeePreview)
         {
-            if (isAdmin) return quizzes;
+            if (canSeePreview) return quizzes;
             var preview = PreviewFormats;
             return quizzes.Where(q => !preview.Contains(q.Format));
         }

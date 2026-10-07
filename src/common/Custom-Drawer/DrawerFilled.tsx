@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/drawer";
 import { useUser } from "@/lib/Auth";
 import { useLogout } from "@/lib/Auth";
+import { canHost } from "@/lib/authorization";
 import { useDisclosure } from "@/hooks/use-disclosure";
 import { ProfileButton } from "./profile-button";
 import { DrawerHeaderContent } from "./drawer-header";
@@ -20,6 +21,7 @@ export const DrawerFilled = () => {
   const { data: user } = useUser();
   const isAdmin =
     user?.roles?.some((r) => r === "Admin" || r === "SuperAdmin") ?? false;
+  const isHost = canHost(user?.roles);
   const logout = useLogout();
   const { isOpen, close, toggle } = useDisclosure();
 
@@ -36,7 +38,7 @@ export const DrawerFilled = () => {
           <DrawerContent className="bg-background text-foreground w-56 flex flex-col justify-between">
             <DrawerHeader className="space-y-0 p-0">
               <DrawerHeaderContent />
-              <DrawerLinks close={close} isAdmin={isAdmin} />
+              <DrawerLinks close={close} isAdmin={isAdmin} canHost={isHost} />
             </DrawerHeader>
             <DrawerFooter className="p-0">
               <DrawerClose asChild>

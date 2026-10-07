@@ -110,6 +110,20 @@ namespace QuizAPI.Services.Associations
         }
 
         /// <param name="firstSeat">Who opens first. Chosen by the caller (at random; a rematch alternates) so the engine stays deterministic.</param>
+        /// <summary>
+        /// Host mode (docs/quiz/classroom.md): the Duel's turns for 2–4 Teams, one Seat each. No
+        /// clock is enforced by the engine — see <see cref="PlayStyle.Hosted"/>.
+        /// </summary>
+        public static AssociationState StartHosted(DateTime startedAt, int seatCount, int firstSeat)
+        {
+            if (seatCount is < MinHostedSeats or > MaxHostedSeats)
+                throw new ArgumentOutOfRangeException(nameof(seatCount), $"A hosted game has {MinHostedSeats}–{MaxHostedSeats} teams.");
+            return StartDuel(startedAt, seatCount, firstSeat) with { Style = PlayStyle.Hosted };
+        }
+
+        public const int MinHostedSeats = 2;
+        public const int MaxHostedSeats = 4;
+
         public static AssociationState StartDuel(DateTime startedAt, int seatCount, int firstSeat)
         {
             if (seatCount < 2) throw new ArgumentOutOfRangeException(nameof(seatCount), "A duel needs at least two seats.");
@@ -134,6 +148,8 @@ namespace QuizAPI.Services.Associations
         {
             if (state.IsOver) return MoveOutcome.Reject(state, MoveRejection.GameOver);
             if (move.Seat < 0 || move.Seat >= state.SeatCount) return MoveOutcome.Reject(state, MoveRejection.UnknownSeat);
+            // An Undo is resolved by Replay, never applied as a move of its own (ADR 0025).
+            if (move.Kind == MoveKind.Undo) return MoveOutcome.Reject(state, MoveRejection.NotInThisStyle);
 
             return state.Style == PlayStyle.Solo
                 ? ApplySolo(state, board, rules, move)
@@ -181,15 +197,18 @@ namespace QuizAPI.Services.Associations
             if (move.Kind == MoveKind.GiveUp) return MoveOutcome.Reject(state, MoveRejection.NotInThisStyle);
             if (move.Seat != state.CurrentSeat) return MoveOutcome.Reject(state, MoveRejection.NotYourTurn);
 
+            // A Duel's turn clock is part of its rules. Host mode's clocks can be paused, so the
+            // service keeps them and decides when a turn has run out; the engine trusts it.
+            var clocked = state.Style == PlayStyle.Duel;
             var deadline = state.TurnDeadline(rules);
 
             if (move.Kind == MoveKind.TurnExpired)
             {
-                if (move.At < deadline) return MoveOutcome.Reject(state, MoveRejection.TurnNotOver);
+                if (clocked && move.At < deadline) return MoveOutcome.Reject(state, MoveRejection.TurnNotOver);
                 return PassTurn(Next(state), rules, move.At, Committed(state, move));
             }
 
-            if (move.At > deadline) return MoveOutcome.Reject(state, MoveRejection.TurnTimeUp);
+            if (clocked && move.At > deadline) return MoveOutcome.Reject(state, MoveRejection.TurnTimeUp);
 
             switch (move.Kind)
             {
@@ -395,11 +414,24 @@ namespace QuizAPI.Services.Associations
             IEnumerable<AssociationMove> moves,
             GameEndReason? serverEndReason = null)
         {
+            var log = moves.ToList();
+
+            // Undo (ADR 0025): an Undo names the 1-based position of the move it cancels. Both are
+            // skipped, so the state is as if the cancelled move had never been made.
+            var cancelled = new HashSet<int>();
+            for (var i = 0; i < log.Count; i++)
+            {
+                if (log[i].Kind != MoveKind.Undo) continue;
+                if (log[i].Cancels is not int target || target < 1 || target > i || log[target - 1].Kind == MoveKind.Undo || !cancelled.Add(target))
+                    throw new InvalidOperationException($"Move {i + 1} is an Undo of nothing that can be undone.");
+            }
+
             var state = start;
             var index = 0;
-            foreach (var move in moves)
+            foreach (var move in log)
             {
                 index++;
+                if (move.Kind == MoveKind.Undo || cancelled.Contains(index)) continue;
                 var outcome = Apply(state, board, rules, move);
                 if (!outcome.Accepted)
                     throw new InvalidOperationException($"Move {index} ({move.Kind} by seat {move.Seat}) is not legal: {outcome.Rejection}.");

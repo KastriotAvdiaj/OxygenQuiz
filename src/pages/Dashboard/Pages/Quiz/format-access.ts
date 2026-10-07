@@ -3,7 +3,7 @@ import { ROLES } from "@/lib/authorization";
 import type { QuizFormat } from "@/types/quiz-types";
 
 /**
- * Formats in preview — admins only. Mirrors `QuizFormatAccess.PreviewFormats` on the server,
+ * Formats in preview — admins and Teachers only (docs/auth/teacher-role.md §2.3). Mirrors `QuizFormatAccess.PreviewFormats` on the server,
  * which is the rule: for a non-admin the API leaves these quizzes out of every read and answers
  * 404 from their authoring endpoints. This copy only decides what to *offer* (the create card,
  * the create route), so a player isn't shown a door that leads to a 404.
@@ -18,5 +18,9 @@ export const useFormatAvailable = (format: QuizFormat): boolean => {
   const user = useUser();
   if (!PREVIEW_FORMATS.includes(format)) return true;
   const roles = user.data?.roles ?? [];
-  return roles.includes(ROLES.Admin) || roles.includes(ROLES.SuperAdmin);
+  return (
+    roles.includes(ROLES.Admin) ||
+    roles.includes(ROLES.SuperAdmin) ||
+    roles.includes(ROLES.Teacher)
+  );
 };

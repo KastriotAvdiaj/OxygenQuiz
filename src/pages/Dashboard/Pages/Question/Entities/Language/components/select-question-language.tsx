@@ -145,7 +145,7 @@ export const LanguageSelect: React.FC<LanguageSelectProps> = (props) => {
           clearErrors?.();
         }}
       >
-        <SelectTrigger variant={variant} className="min-w-[200px]">
+        <SelectTrigger variant={variant} className="min-w-0">
           <SelectValue placeholder={placeholder ?? "Select language"} />
         </SelectTrigger>
         <SelectContent variant={variant} className="min-w-[200px]">

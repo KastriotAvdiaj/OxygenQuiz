@@ -13,4 +13,6 @@ public sealed class TestCurrentUserService : ICurrentUserService
     public Guid? UserId { get; init; } = Guid.NewGuid();
     public bool IsAuthenticated { get; init; } = true;
     public bool IsAdmin { get; init; } = true;
+    public bool IsTeacher { get; init; }
+    public bool CanSeePreviewFormats => IsAdmin || IsTeacher;
 }

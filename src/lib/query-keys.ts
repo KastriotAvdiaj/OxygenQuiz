@@ -33,3 +33,13 @@ export const quizQuestionKeys = {
   all: ["quizQuestions"] as const,
   byQuiz: (quizId: number) => [...quizQuestionKeys.all, quizId] as const,
 };
+
+/** Teacher access, Classes and hosted games (docs/quiz/classroom-plan.md) — ["classroom", …]. */
+export const classroomKeys = {
+  all: ["classroom"] as const,
+  myTeacherAccess: () => [...classroomKeys.all, "teacher-access", "mine"] as const,
+  teacherRequests: () => [...classroomKeys.all, "teacher-requests"] as const,
+  classes: () => [...classroomKeys.all, "classes"] as const,
+  hostedGames: () => [...classroomKeys.all, "hosted-games"] as const,
+  hostedGame: (id: string) => [...classroomKeys.all, "hosted-games", id] as const,
+};

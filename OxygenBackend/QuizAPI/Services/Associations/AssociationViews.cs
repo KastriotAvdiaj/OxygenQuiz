@@ -1,3 +1,5 @@
+using System.Text.Json;
+using QuizAPI.DTOs.Classroom;
 using QuizAPI.DTOs.Quiz;
 using QuizAPI.Models.Associations;
 
@@ -125,15 +127,98 @@ namespace QuizAPI.Services.Associations
             };
         }
 
+        /// <summary>
+        /// A hosted game (docs/quiz/classroom.md). <paramref name="forController"/> adds what only
+        /// the Teacher's own device may carry — the Screen code, the Undo label, and the Answer key
+        /// while a Display is connected. A Display's view is built with it false and is exactly as
+        /// secret as a player's (ADR 0024, pinned by HostedViewSecrecyTests).
+        /// </summary>
+        public static HostedGameViewDTO BuildHosted(
+            AssociationGame game,
+            AssociationBoard board,
+            AssociationState state,
+            AssociationRules rules,
+            DateTime now,
+            bool forController,
+            int displaysConnected,
+            string? undoLabel)
+        {
+            var over = state.IsOver;
+            var tileCount = board.Columns.Sum(c => c.Tiles.Count);
+            var paused = !over && game.PausedAt is not null;
+            var mayGuess = !over && !paused && state.Phase == TurnPhase.MayGuess;
+            var timed = game.GameSeconds is not null;
+
+            int? Left(DateTime? deadline) =>
+                deadline is DateTime d && game.PausedAt is DateTime p ? Math.Max(0, (int)Math.Ceiling((d - p).TotalSeconds)) : null;
+
+            var view = new HostedGameViewDTO
+            {
+                Id = game.Id,
+                QuizId = board.QuizId,
+                FirstSeat = game.FirstSeat,
+                Teams = game.Teams.OrderBy(t => t.Seat).Select(t => new HostedTeamDTO
+                {
+                    Seat = t.Seat,
+                    Name = t.Name,
+                    Colour = t.Colour,
+                    Students = JsonSerializer.Deserialize<List<string>>(t.StudentsJson) ?? new(),
+                    Score = t.Seat < state.Scores.Length ? state.Scores[t.Seat] : 0,
+                    EndgameTurnsLeft = !over && state.InEndgame
+                        ? Math.Max(0, rules.EndgameTurnsPerSeat - state.EndgameTurnsTaken[t.Seat])
+                        : null,
+                }).ToList(),
+                CurrentSeat = over ? null : state.CurrentSeat,
+                CanOpen = !over && !paused && state.Phase == TurnPhase.MustOpen && state.OpenTiles.Count < tileCount,
+                CanGuess = mayGuess,
+                CanPass = mayGuess,
+                InEndgame = !over && state.InEndgame,
+                IsOver = over,
+                EndReason = state.EndReason?.ToString(),
+                Timed = timed,
+                GameSeconds = game.GameSeconds,
+                TurnSeconds = game.TurnSeconds,
+                GameDeadlineUtc = over || paused ? null : game.GameDeadlineUtc,
+                TurnDeadlineUtc = over || paused ? null : game.TurnDeadlineUtc,
+                IsPaused = paused,
+                GameSecondsLeft = paused && !game.LastRound ? Left(game.GameDeadlineUtc) : null,
+                TurnSecondsLeft = paused ? Left(game.TurnDeadlineUtc) : null,
+                LastRound = !over && game.LastRound,
+                ServerNow = now,
+                Columns = BuildColumns(game, board, state),
+                Final = BuildFinal(board, state),
+                Moves = game.Moves.OrderBy(m => m.Seq).Select(BuildMove).ToList(),
+            };
+
+            if (forController)
+            {
+                view.UndoLabel = undoLabel;
+                view.ScreenCode = over ? null : game.ScreenCode;
+                view.DisplaysConnected = displaysConnected;
+                // Only with a Display connected: then the Controller isn't the projected screen (C8).
+                if (displaysConnected > 0)
+                {
+                    view.AnswerKey = board.Columns.OrderBy(c => c.Position)
+                        .Select(c => new AnswerKeyEntryDTO { Target = Letters[c.Position], Solution = c.Solution })
+                        .Append(new AnswerKeyEntryDTO { Target = "Final", Solution = board.FinalSolution })
+                        .ToList();
+                }
+            }
+            return view;
+        }
+
         // ── The pieces both views share: what is hidden is decided here and only here ──
 
         private static List<AssociationColumnViewDTO> BuildColumns(AssociationGame game, AssociationBoard board, AssociationState state)
         {
             var over = state.IsOver;
 
-            // Who opened a Tile by hand. Tiles a solve revealed have no opener.
+            // Who opened a Tile by hand. Tiles a solve revealed have no opener; a move a later Undo
+            // cancelled (Host mode, ADR 0025) opened nothing.
+            var cancelled = game.Moves.Where(m => m.Kind == MoveKind.Undo && m.CancelsSeq is not null)
+                .Select(m => m.CancelsSeq!.Value).ToHashSet();
             var openedBy = game.Moves
-                .Where(m => m.Kind == MoveKind.OpenTile && m.TileId is not null)
+                .Where(m => m.Kind == MoveKind.OpenTile && m.TileId is not null && !cancelled.Contains(m.Seq))
                 .GroupBy(m => m.TileId!.Value)
                 .ToDictionary(g => g.Key, g => g.First().Seat);
 
@@ -185,6 +270,7 @@ namespace QuizAPI.Services.Associations
             IsCorrect = m.IsCorrect,
             Points = m.Points,
             At = m.At,
+            CancelsSeq = m.CancelsSeq,
         };
     }
 }

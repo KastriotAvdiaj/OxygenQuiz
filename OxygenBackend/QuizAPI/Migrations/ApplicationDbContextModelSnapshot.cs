@@ -496,8 +496,26 @@ namespace QuizAPI.Migrations
                     b.Property<int>("FirstSeat")
                         .HasColumnType("integer");
 
+                    b.Property<DateTime?>("GameDeadlineUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("GameSeconds")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("HostUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("LastActivityAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("LastRound")
+                        .HasColumnType("boolean");
+
                     b.Property<Guid?>("MatchId")
                         .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("PausedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("PlayStyle")
                         .HasColumnType("integer");
@@ -506,17 +524,33 @@ namespace QuizAPI.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("ScreenCode")
+                        .HasMaxLength(8)
+                        .HasColumnType("character varying(8)");
+
                     b.Property<int>("SeatCount")
                         .HasColumnType("integer");
 
                     b.Property<DateTime>("StartedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<DateTime?>("TurnDeadlineUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("TurnSeconds")
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
 
                     b.HasIndex("BoardId");
 
+                    b.HasIndex("HostUserId");
+
                     b.HasIndex("MatchId");
+
+                    b.HasIndex("ScreenCode")
+                        .IsUnique()
+                        .HasFilter("\"ScreenCode\" IS NOT NULL");
 
                     b.ToTable("AssociationGames");
                 });
@@ -531,6 +565,9 @@ namespace QuizAPI.Migrations
 
                     b.Property<DateTime>("At")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("CancelsSeq")
+                        .HasColumnType("integer");
 
                     b.Property<Guid>("GameId")
                         .HasColumnType("uuid");
@@ -614,6 +651,33 @@ namespace QuizAPI.Migrations
                     b.ToTable("AssociationTiles");
                 });
 
+            modelBuilder.Entity("QuizAPI.Models.Associations.HostedTeam", b =>
+                {
+                    b.Property<Guid>("GameId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Seat")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Colour")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<string>("StudentsJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("GameId", "Seat");
+
+                    b.ToTable("HostedTeams");
+                });
+
             modelBuilder.Entity("QuizAPI.Models.AuditLog", b =>
                 {
                     b.Property<Guid>("Id")
@@ -658,6 +722,101 @@ namespace QuizAPI.Migrations
                     b.HasIndex("Entity", "EntityId");
 
                     b.ToTable("AuditLogs");
+                });
+
+            modelBuilder.Entity("QuizAPI.Models.Classroom.Class", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)");
+
+                    b.Property<Guid>("OwnerUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OwnerUserId");
+
+                    b.ToTable("Classes");
+                });
+
+            modelBuilder.Entity("QuizAPI.Models.Classroom.ClassStudent", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ClassId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)");
+
+                    b.Property<int>("Order")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClassId");
+
+                    b.ToTable("ClassStudents");
+                });
+
+            modelBuilder.Entity("QuizAPI.Models.Classroom.TeacherAccessRequest", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DecidedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("DecidedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("DeclineReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("UserId", "CreatedAt");
+
+                    b.ToTable("TeacherAccessRequests");
                 });
 
             modelBuilder.Entity("QuizAPI.Models.EmailChangeToken", b =>
@@ -1582,6 +1741,14 @@ namespace QuizAPI.Migrations
                             Description = "Super Administrator",
                             Name = "SuperAdmin",
                             isActive = true
+                        },
+                        new
+                        {
+                            Id = 4,
+                            ConcurrencyStamp = new Guid("44444444-4444-4444-4444-444444444444"),
+                            Description = "Hosts boards for a class",
+                            Name = "Teacher",
+                            isActive = true
                         });
                 });
 
@@ -1917,6 +2084,50 @@ namespace QuizAPI.Migrations
                     b.Navigation("Column");
                 });
 
+            modelBuilder.Entity("QuizAPI.Models.Associations.HostedTeam", b =>
+                {
+                    b.HasOne("QuizAPI.Models.Associations.AssociationGame", "Game")
+                        .WithMany("Teams")
+                        .HasForeignKey("GameId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Game");
+                });
+
+            modelBuilder.Entity("QuizAPI.Models.Classroom.Class", b =>
+                {
+                    b.HasOne("QuizAPI.Models.User", "Owner")
+                        .WithMany()
+                        .HasForeignKey("OwnerUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Owner");
+                });
+
+            modelBuilder.Entity("QuizAPI.Models.Classroom.ClassStudent", b =>
+                {
+                    b.HasOne("QuizAPI.Models.Classroom.Class", "Class")
+                        .WithMany("Students")
+                        .HasForeignKey("ClassId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Class");
+                });
+
+            modelBuilder.Entity("QuizAPI.Models.Classroom.TeacherAccessRequest", b =>
+                {
+                    b.HasOne("QuizAPI.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("QuizAPI.Models.EmailChangeToken", b =>
                 {
                     b.HasOne("QuizAPI.Models.User", "User")
@@ -2228,6 +2439,13 @@ namespace QuizAPI.Migrations
                     b.Navigation("Moves");
 
                     b.Navigation("Players");
+
+                    b.Navigation("Teams");
+                });
+
+            modelBuilder.Entity("QuizAPI.Models.Classroom.Class", b =>
+                {
+                    b.Navigation("Students");
                 });
 
             modelBuilder.Entity("QuizAPI.Models.Permission", b =>

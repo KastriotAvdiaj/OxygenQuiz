@@ -76,3 +76,65 @@ One Board being played — by one player (Solo) or by two taking turns (Duel). S
 ([ADR 0020](../adr/0020-an-associations-game-is-its-move-log.md)). Each player's side of it is an
 ordinary quiz session.
 _Avoid_: match (a Match is the multiplayer record a Duel belongs to), round
+
+## Classroom
+
+Words for teachers playing Associations with a class. Being settled in
+[`classroom-plan.md`](./classroom-plan.md) and [`classroom.md`](./classroom.md); a term here is decided, the behaviour may not be built yet.
+
+**Teacher**:
+A role, alongside `User`, `Admin` and `SuperAdmin`, that lets an account host a board for a class
+and save Classes.
+_Avoid_: instructor, educator, host (the Host is what a Teacher does, not who they are)
+
+**Host** (verb):
+To run a Board on one screen in front of a class, the Teacher making every move on the Teams'
+behalf.
+_Avoid_: present, run, moderate
+
+**Host mode**:
+The way of playing a Board where one Teacher hosts it for several Teams taking turns on one shared
+Board, on one screen. Nobody else joins.
+_Avoid_: teacher mode, manual mode, offline mode
+
+**Live classroom**:
+The later way of playing where students join on their own devices, in Teams, and the Teacher
+watches. Not built yet.
+_Avoid_: classroom mode (ambiguous with Host mode), lobby (a Lobby is the multiplayer room)
+
+**Class**:
+A Teacher's saved, named list of students — first names only, not accounts — that Teams are formed
+from.
+_Avoid_: classroom (the room), group, roster (fine in prose)
+
+**Team**:
+The students who play together and take one Seat in a hosted game.
+_Avoid_: group (ambiguous next to Column), squad, side
+
+**Captain**:
+The one member of a Team who submits its moves. Meaningful only in a Live classroom.
+_Avoid_: leader, team lead
+
+**Controller**:
+The Teacher's signed-in device in Host mode — phone or laptop — where every move is made. Without a
+Display it is also the screen the class sees.
+_Avoid_: remote, host screen, admin view
+
+**Display**:
+A read-only screen showing a hosted game to the class, connected by a Screen code. It needs no
+login and only ever shows what the room may see.
+_Avoid_: projector view, student screen, viewer, spectator
+
+**Screen code**:
+The short code a Controller hands out so a Display can connect to its game.
+_Avoid_: join code, invite code (an invite code grants an account a role), PIN
+
+**Answer key**:
+The board's solutions, shown on the Controller one tap at a time — and only while a Display is
+connected, so the Controller isn't the projected screen.
+_Avoid_: cheat sheet, solutions view
+
+**Undo**:
+The Teacher taking back the most recent move of a hosted game. It is itself recorded, so a review
+shows it happened.
+_Avoid_: revert, rollback, delete move

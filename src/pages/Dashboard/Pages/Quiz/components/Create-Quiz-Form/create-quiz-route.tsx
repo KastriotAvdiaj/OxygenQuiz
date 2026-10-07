@@ -54,10 +54,7 @@ export const CreateQuizRoute = () => {
 
   return (
     <QuizQuestionProvider initialQuestions={restored?.data.questions}>
-      <CreateQuizForm
-        initialValues={restored?.data.form}
-        restoredDraftSavedAt={restored?.savedAt ?? null}
-      />
+      <CreateQuizForm initialValues={restored?.data.form} />
     </QuizQuestionProvider>
   );
 };

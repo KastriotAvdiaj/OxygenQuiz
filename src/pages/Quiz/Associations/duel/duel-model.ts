@@ -64,5 +64,7 @@ export function describeDuelMove(view: Pick<DuelView, "seats" | "columns">, move
       return `${who} ran out of time`;
     case "GiveUp":
       return `${who} gave up`;
+    case "Undo":
+      return `${who}'s last move was taken back`;
   }
 }
