@@ -1250,10 +1250,10 @@
         },
         {
           "type": "TrueFalse",
-          "text": "Diamond and graphite are both made of pure carbon.",
+          "text": "Diamond and graphite are both forms of carbon.",
           "answer": true,
           "seconds": 30,
-          "explanation": "Both are carbon. Their atoms are just arranged differently — a rigid 3-D lattice in diamond, sliding sheets in graphite."
+          "explanation": "Both are made of carbon atoms, just arranged differently — a rigid 3-D lattice in diamond, sliding sheets in graphite."
         },
         {
           "type": "MultipleChoice",
@@ -1574,10 +1574,10 @@
         },
         {
           "type": "TrueFalse",
-          "text": "The Great Wall of China was built in a single year.",
-          "answer": false,
+          "text": "The Eiffel Tower was built for the 1889 World's Fair in Paris.",
+          "answer": true,
           "seconds": 20,
-          "explanation": "It was built, rebuilt and extended over many centuries by different dynasties."
+          "explanation": "It was the entrance arch to the 1889 Exposition Universelle, held for the centenary of the French Revolution."
         },
         {
           "type": "MultipleChoice",
