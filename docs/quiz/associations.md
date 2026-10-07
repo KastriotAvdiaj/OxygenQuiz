@@ -641,6 +641,16 @@ answer (right, wrong, too late, or refused) tells the slot whether to clear or s
 Guess keeps the text. Each move writes the returned view straight into the React Query cache
 (`useAssociationMoves`); nothing is refetched after a move.
 
+**A Tile that can't be opened explains itself.** With `openBlockedHint`, clicking a closed Tile
+while opening isn't allowed (one Tile per turn, or not your turn) shakes that Tile and shows the
+hint over it for a moment, instead of the click doing nothing. Each page words it from its own
+rules: Solo "Guess a column or the final first.", the Duel "…— or pass." / "It's not your turn.",
+Host mode "<Team>: guess a column or the final — or pass." (or "Resume the game…" while paused).
+The Tile stays a real button (`aria-disabled`). The hint is portalled to `<body>` at a fixed
+position from the Tile's rect — the Tiles are 3D flip cards that paint over anything inside the
+board regardless of z-index — one line, clamped inside the window. Omit the prop and a blocked
+Tile is inert, as before. No shake under reduced motion.
+
 **The end-of-game reveal.** With `reveal`, a finished board shows everything the player hadn't
 seen, one after another, column by column: unopened Tiles turn over on the same card flip as an
 opened one, each with its own `transition-delay`, and unsolved or via-Final solutions flip down

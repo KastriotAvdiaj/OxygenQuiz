@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Pencil, Plus, Trash2, Users } from "lucide-react";
+import { Pencil, Plus, Save, Trash2, Users } from "lucide-react";
 import { Button, Card, Spinner } from "@/components/ui";
 import {
   ConfirmationDialog,
@@ -182,7 +182,11 @@ const ClassEditor = ({ roster, onClose }: { roster: ClassRoster | null; onClose:
               disabled={!name.trim() || tooMany || !!tooLong}
               isPending={save.isPending}
             >
-              Save
+              <span className="flex items-center gap-1.5">
+                {/* While saving, LiftedButton's own spinner takes this spot. */}
+                {!save.isPending && <Save className="h-4 w-4" aria-hidden="true" />}
+                Save
+              </span>
             </LiftedButton>
             <LiftedButton
               type="button"

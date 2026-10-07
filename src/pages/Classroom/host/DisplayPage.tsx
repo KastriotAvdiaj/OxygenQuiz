@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/form";
 import { AssociationBoard } from "@/pages/Quiz/Associations/board/association-board";
 import type { HostedGameView } from "../api/hosted-games";
 import { endLine, hostedPrompt, lastGuessLine, teamName } from "./hosted-model";
-import { HostedClocks, HostedRanking, TeamsStrip } from "./hosted-parts";
+import { BoardCard, HostedClocks, HostedRanking, TeamsStrip } from "./hosted-parts";
 import { useHostedClocks } from "./use-hosted-clocks";
 import { useDisplayHub } from "./use-hosted-game-hub";
 
@@ -83,7 +83,9 @@ const Display = ({ view, receivedAtMs }: { view: HostedGameView; receivedAtMs: n
             <p className="text-center text-xl font-semibold sm:text-2xl">{hostedPrompt(view)}</p>
           </>
         )}
-        <AssociationBoard view={view} reveal={view.isOver} solverName={(seat) => teamName(view, seat)} />
+        <BoardCard>
+          <AssociationBoard view={view} reveal={view.isOver} solverName={(seat) => teamName(view, seat)} />
+        </BoardCard>
         {!view.isOver && <p className="min-h-6 text-center text-lg font-medium">{lastGuessLine(view)}</p>}
       </div>
     </div>

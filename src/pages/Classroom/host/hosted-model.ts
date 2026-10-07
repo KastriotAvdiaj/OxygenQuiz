@@ -11,11 +11,48 @@ import type { HostedGameView, HostedTeam, TeamColour } from "../api/hosted-games
  * accent per Team, loud only for whose turn it is — the colour schema's rule
  * (docs/quiz/question-type-color-schema.md): colour encodes identity quietly, state gets loud.
  */
-export const TEAM_THEME: Record<TeamColour, { dot: string; text: string; active: string; soft: string }> = {
-  red: { dot: "bg-red-500", text: "text-red-600 dark:text-red-400", active: "border-red-500 ring-2 ring-red-500/30", soft: "bg-red-500/10" },
-  blue: { dot: "bg-blue-500", text: "text-blue-600 dark:text-blue-400", active: "border-blue-500 ring-2 ring-blue-500/30", soft: "bg-blue-500/10" },
-  green: { dot: "bg-green-500", text: "text-green-600 dark:text-green-400", active: "border-green-500 ring-2 ring-green-500/30", soft: "bg-green-500/10" },
-  yellow: { dot: "bg-yellow-400", text: "text-yellow-700 dark:text-yellow-300", active: "border-yellow-400 ring-2 ring-yellow-400/30", soft: "bg-yellow-400/10" },
+/**
+ * `fill` is the Setup screen's Team card: the ModeCard shape (border-2, rounded-xl, a solid 4px
+ * "edge" under it) filled with the Team's colour at ~75%, bordered in the full colour, the edge a
+ * shade darker. `onFill` is the text colour that reads on that fill — white everywhere except
+ * yellow, where white fails contrast. Full literals only (Tailwind can't see built strings).
+ */
+export const TEAM_THEME: Record<
+  TeamColour,
+  { dot: string; text: string; active: string; soft: string; fill: string; onFill: string }
+> = {
+  red: {
+    dot: "bg-red-500",
+    text: "text-red-600 dark:text-red-400",
+    active: "border-red-500 ring-2 ring-red-500/30",
+    soft: "bg-red-500/10",
+    fill: "border-red-500 bg-red-500/75 shadow-[0_4px_0_0_theme(colors.red.700)]",
+    onFill: "text-white",
+  },
+  blue: {
+    dot: "bg-blue-500",
+    text: "text-blue-600 dark:text-blue-400",
+    active: "border-blue-500 ring-2 ring-blue-500/30",
+    soft: "bg-blue-500/10",
+    fill: "border-blue-500 bg-blue-500/75 shadow-[0_4px_0_0_theme(colors.blue.700)]",
+    onFill: "text-white",
+  },
+  green: {
+    dot: "bg-green-500",
+    text: "text-green-600 dark:text-green-400",
+    active: "border-green-500 ring-2 ring-green-500/30",
+    soft: "bg-green-500/10",
+    fill: "border-green-600 bg-green-600/75 shadow-[0_4px_0_0_theme(colors.green.800)]",
+    onFill: "text-white",
+  },
+  yellow: {
+    dot: "bg-yellow-400",
+    text: "text-yellow-700 dark:text-yellow-300",
+    active: "border-yellow-400 ring-2 ring-yellow-400/30",
+    soft: "bg-yellow-400/10",
+    fill: "border-yellow-400 bg-yellow-400/80 shadow-[0_4px_0_0_theme(colors.yellow.600)]",
+    onFill: "text-yellow-950",
+  },
 };
 
 export type RankedTeam = HostedTeam & { rank: number; tied: boolean };

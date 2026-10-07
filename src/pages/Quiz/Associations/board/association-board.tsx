@@ -1,6 +1,7 @@
-import { useState } from "react";
-import { useAnimate } from "framer-motion";
-import { PencilLine, Send } from "lucide-react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { AnimatePresence, motion, useAnimate } from "framer-motion";
+import { Info, PencilLine, Send } from "lucide-react";
 import { cn } from "@/utils/cn";
 import type {
   AssociationBoardView,
@@ -32,6 +33,14 @@ export type GuessOutcome = boolean | null | undefined;
  * and solutions in one by one (docs/quiz/associations.md §9.9). What it can show is only what the view carries: a
  * closed Tile has no text to show (docs/quiz/associations.md, "What the client sees").
  */
+/**
+ * Put these on a wrapper to sit the board on a `bg-muted` card (the Host Controller and Display).
+ * `border-border` and `bg-muted/40` are the same tone as `muted`, so the slots that rely on them
+ * read as nothing there; inside this wrapper they take a `bg-background` fill instead. Opt-in by
+ * wrapper, not a prop, so the solo and Duel boards on the plain page are unchanged.
+ */
+export const MUTED_SURFACE = { "data-surface": "muted", className: "group/surface" } as const;
+
 export type AssociationBoardProps = {
   view: AssociationBoardView;
   onOpenTile?: (tileId: number) => void;
@@ -46,7 +55,17 @@ export type AssociationBoardProps = {
   reveal?: boolean;
   /** Duel: who solved a slot, shown after its points. */
   solverName?: (seat: number) => string | undefined;
+  /**
+   * What to tell someone who clicks a closed Tile they can't open right now — "Guess a column or
+   * the final — or pass.", "It's not your turn." Given, a blocked click shakes that Tile and shows
+   * this over the board for a moment, instead of the click doing nothing. Each page words it from
+   * its own rules (solo has no Pass; the Duel has turns). Omit it and a blocked Tile stays inert.
+   */
+  openBlockedHint?: string;
 };
+
+/** How long the blocked-open hint stays up. */
+const HINT_MS = 2600;
 
 /** Seconds between two flips in the reveal. */
 const REVEAL_STEP = 0.07;
@@ -92,8 +111,21 @@ export const AssociationBoard = ({
   busy = false,
   reveal = false,
   solverName,
+  openBlockedHint,
 }: AssociationBoardProps) => {
   const playable = !view.isOver && !!onOpenTile && !busy;
+  // A blocked click only counts when the board is otherwise live: not over, nothing in flight.
+  const blockable = !view.isOver && !onOpenTile && !busy && !!openBlockedHint;
+  const [hint, setHint] = useState<{ tileId: number; key: number } | null>(null);
+  const hintTimer = useRef<number>();
+  useEffect(() => () => window.clearTimeout(hintTimer.current), []);
+  const showHint = (tileId: number) => {
+    if (!openBlockedHint) return;
+    // A fresh key re-announces it and restarts the fade on a second click.
+    setHint({ tileId, key: Date.now() });
+    window.clearTimeout(hintTimer.current);
+    hintTimer.current = window.setTimeout(() => setHint(null), HINT_MS);
+  };
   const timing = reveal && view.isOver ? revealTiming(view) : null;
   const by = (seat: number | null) => (seat === null || !solverName ? undefined : solverName(seat));
   // Not gated on `busy`: disabling the inputs while a Guess is in flight would drop the focus the
@@ -111,6 +143,8 @@ export const AssociationBoard = ({
             column={column}
             over={view.isOver}
             onOpenTile={playable ? onOpenTile : undefined}
+            onBlockedOpen={blockable ? showHint : undefined}
+            hint={hint && openBlockedHint ? { ...hint, text: openBlockedHint } : null}
             onGuess={guess}
             revealAt={timing?.columns[column.letter]}
             by={by(column.solvedBySeat)}
@@ -139,6 +173,8 @@ const BoardColumn = ({
   column,
   over,
   onOpenTile,
+  onBlockedOpen,
+  hint,
   onGuess,
   revealAt,
   by,
@@ -146,6 +182,8 @@ const BoardColumn = ({
   column: AssociationColumnView;
   over: boolean;
   onOpenTile?: (tileId: number) => void;
+  onBlockedOpen?: (tileId: number) => void;
+  hint: { tileId: number; key: number; text: string } | null;
   onGuess?: AssociationBoardProps["onGuess"];
   revealAt?: { tiles: Record<number, number>; solution: number };
   by?: string;
@@ -159,6 +197,8 @@ const BoardColumn = ({
         over={over}
         revealDelay={revealAt?.tiles[tile.id]}
         onOpen={onOpenTile && !tile.isOpen ? () => onOpenTile(tile.id) : undefined}
+        onBlocked={onBlockedOpen ? () => onBlockedOpen(tile.id) : undefined}
+        hint={hint?.tileId === tile.id ? hint : null}
       />
     ))}
     <SolutionSlot
@@ -189,20 +229,39 @@ const BoardTile = ({
   tile,
   over,
   onOpen,
+  onBlocked,
+  hint,
   revealDelay,
 }: {
   letter: string;
   tile: AssociationTileView;
   over: boolean;
   onOpen?: () => void;
+  /** Clicked while it can't be opened: shake, and let the board say why. */
+  onBlocked?: () => void;
+  /** The blocked-open hint, when it's this Tile that was clicked. */
+  hint: { key: number; text: string } | null;
   revealDelay?: number;
 }) => {
+  const [scope, animate] = useAnimate<HTMLDivElement>();
+  // Not focusable-but-dead: with a hint to give, the Tile stays a real button (aria-disabled, so
+  // it still reads as unavailable) and the click explains itself. Without one it's disabled.
+  const blocked = !onOpen && !!onBlocked;
+  const handleClick = () => {
+    if (onOpen) return onOpen();
+    if (!onBlocked) return;
+    onBlocked();
+    // The wrapper shakes, not the card: the card owns the 3D flip transform.
+    if (scope.current && !window.matchMedia("(prefers-reduced-motion: reduce)").matches)
+      void animate(scope.current, { x: [0, -6, 6, -4, 4, 0] }, { duration: 0.35 });
+  };
   const name = `${letter}${tile.position + 1}`;
   // Over and never opened: turned for the review, but visibly not something the player saw in play.
   const revealed = tile.isOpen || over;
 
   return (
-    <div className="board-tile">
+    <div ref={scope} className="board-tile">
+      <BlockedHint anchor={scope} hint={hint} />
       <div
         className={cn("board-tile-card", revealed && "is-flipped")}
         // A runtime delay is a style, not a class (CLAUDE.md: class strings stay literal).
@@ -218,11 +277,12 @@ const BoardTile = ({
         ) : (
           <button
             type="button"
-            onClick={onOpen}
-            disabled={!onOpen}
+            onClick={handleClick}
+            disabled={!onOpen && !blocked}
+            aria-disabled={blocked || undefined}
             aria-label={`Open tile ${name}`}
             data-coach-tile={tile.id}
-            className="flex min-h-12 items-center justify-center rounded-md bg-primary text-sm font-semibold tabular-nums text-primary-foreground shadow-[0_3px_0_0_hsl(var(--quiz-primary-dark))] transition-[filter,transform,box-shadow] hover:brightness-110 active:translate-y-[3px] active:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-default disabled:hover:brightness-100 disabled:active:translate-y-0 disabled:active:shadow-[0_3px_0_0_hsl(var(--quiz-primary-dark))] sm:min-h-14"
+            className="flex min-h-12 items-center justify-center rounded-md bg-primary text-sm font-semibold tabular-nums text-primary-foreground shadow-[0_3px_0_0_hsl(var(--quiz-primary-dark))] transition-[filter,transform,box-shadow] hover:brightness-110 active:translate-y-[3px] active:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-default disabled:hover:brightness-100 disabled:active:translate-y-0 disabled:active:shadow-[0_3px_0_0_hsl(var(--quiz-primary-dark))] aria-disabled:cursor-default aria-disabled:hover:brightness-100 aria-disabled:active:translate-y-0 aria-disabled:active:shadow-[0_3px_0_0_hsl(var(--quiz-primary-dark))] sm:min-h-14"
           >
             {name}
           </button>
@@ -243,6 +303,69 @@ const BoardTile = ({
         </div>
       </div>
     </div>
+  );
+};
+
+/**
+ * The blocked-open hint, over the Tile that was clicked. Portalled to `<body>` and placed with
+ * `position: fixed` from the Tile's rect: every Tile is a 3D flip card (`preserve-3d`), and those
+ * paint over anything in the board's own stacking order — z-index included — so a hint drawn
+ * inside the board went under the neighbouring Tiles. Dark neutral, not red: it's guidance, not
+ * a wrong answer, and red is a Team's colour in Host mode.
+ */
+const BlockedHint = ({
+  anchor,
+  hint,
+}: {
+  anchor: React.RefObject<HTMLDivElement>;
+  hint: { key: number; text: string } | null;
+}) => {
+  const [at, setAt] = useState<{ x: number; y: number } | null>(null);
+  const box = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    if (!hint || !anchor.current) return;
+    const rect = anchor.current.getBoundingClientRect();
+    setAt({ x: rect.left + rect.width / 2, y: rect.top });
+  }, [hint, anchor]);
+  // One line, centred over the Tile — then nudged back inside the window when that would run off
+  // an edge (a D Tile with the screen ending right after it). Measured before paint, so it never
+  // flashes in the wrong place. It only wraps when it's wider than the window itself.
+  useLayoutEffect(() => {
+    const node = box.current;
+    if (!node || !at) return;
+    const margin = 8;
+    const width = node.offsetWidth;
+    const left = Math.min(Math.max(at.x - width / 2, margin), window.innerWidth - width - margin);
+    node.style.left = `${Math.max(left, margin)}px`;
+  }, [at, hint]);
+
+  if (typeof document === "undefined") return null;
+  return createPortal(
+    <AnimatePresence>
+      {hint && at && (
+        // Two layers: the outer one is placed (left set above, lifted with a Tailwind translate),
+        // the inner one is animated — framer writes an inline `transform` that would replace it.
+        <div
+          key={hint.key}
+          ref={box}
+          className="pointer-events-none fixed z-[60] -translate-y-full pb-1.5"
+          style={{ left: at.x, top: at.y }}
+        >
+          <motion.p
+            role="status"
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className="flex w-max max-w-[calc(100vw-1rem)] items-center gap-1.5 rounded-md bg-foreground px-2.5 py-1.5 text-xs font-semibold text-background shadow-lg sm:text-sm"
+          >
+            <Info className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+            {hint.text}
+          </motion.p>
+        </div>
+      )}
+    </AnimatePresence>,
+    document.body,
   );
 };
 
@@ -300,6 +423,9 @@ const SolutionSlot = ({
         style={flip.style}
         className={cn(
           "flex min-h-12 w-full items-center rounded-md border-2 border-dashed border-border px-3 py-2 text-sm text-muted-foreground break-words sm:min-h-14",
+          // On a muted surface (see MUTED_SURFACE) the dashed `border-border` is the same tone as
+          // the card and disappears — a background fill keeps the slot visible.
+          "group-data-[surface=muted]/surface:bg-background",
           flip.className
         )}
       >
@@ -360,7 +486,7 @@ const GuessInput = ({
         // is what gets the colour (docs/quiz/question-type-color-schema.md). Otherwise grey on grey.
         live
           ? "cursor-text border-primary/30 bg-background hover:border-primary/60 focus-within:border-primary"
-          : "border-border bg-muted/40"
+          : "border-border bg-muted/40 group-data-[surface=muted]/surface:bg-background"
       )}
       onClick={(e) => {
         // The whole field is the target, like an input, not only the text inside it.

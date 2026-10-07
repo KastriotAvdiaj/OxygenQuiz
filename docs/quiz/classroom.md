@@ -22,7 +22,8 @@ that Teams are formed from when hosting. It is optional: a Teacher can host with
   in one class happens, and the Teacher tells them apart.
 - **Ownership:** every read and write goes through `IClassRepository` with the Teacher's id, so
   another Teacher's Class is a 404, never a 403 that confirms it exists. `ClassesController` is
-  `[Authorize(Roles = "Teacher")]`.
+  `[Authorize(Roles = RoleRules.HostRoles)]` — Teacher or SuperAdmin
+  ([`../auth/teacher-role.md`](../auth/teacher-role.md) §1.1).
 - **Saving replaces the whole list**, in the order given.
 - **Account anonymisation removes a Teacher's Classes** (`AccountClosureService.AnonymiseAsync`):
   they are other people's personal data, kept only for that account.
@@ -127,15 +128,40 @@ user dashboard, so their cards and list rows are `bg-card` with a border, not pl
 ([`../RESPONSIVE.md`](../RESPONSIVE.md), "Surfaces inside a dashboard").
 
 - **Entry points (C16):** *My dashboard → Classroom* (`Host a board`, `Hosted games`, `Classes`, shown
-  to Teachers only), and **Host for a class** beside Start in a board's start dialog
-  (`quiz-start-modal.tsx`, Teachers and Associations only).
+  to Teachers and SuperAdmins), **Host a board** in the header's account drawer
+  (`common/Custom-Drawer/drawer.links.tsx`, same roles, straight to Setup), and **Host for a class** beside Start in a board's start dialog
+  (`quiz-start-modal.tsx`, Teachers and SuperAdmins, Associations only). Both read `HOST_ROLES` /
+  `canHost` in `lib/authorization.tsx`.
 - **Setup** — `/my-dashboard/host` (`HostSetupPage`): pick a board (yours, drafts included, or
-  public), or arrive with `?quizId=`; pick a Class (optional), 2–4 Teams, **Shuffle into teams**,
-  move students by dragging a name, or with the small menu on each name (touch and keyboard);
-  rename Teams; **No time limit** or **Timed** (minutes + turn seconds). Start opens the Controller.
-- **Controller** — `/host/:gameId` (`ControllerPage`, header hidden): Teams strip (whose turn
-  outlined in its colour), the turn clock as the board ring (red in the last 10 s) with the game
-  time under it ("Last round" once it's up), one prompt line, the shared `AssociationBoard` (live
+  public — one card: a search field (searches as you type), then *Your boards* and *Public boards* each in
+  a muted well, split by a separator; each board is a `BoardChoice` row with a chip in its category
+  colour, a Draft tag, and an arrow; picking slides into Setup), or arrive with `?quizId=`; pick a Class (optional), 2–4 Teams, **Shuffle into teams**,
+  move students by dragging a name, or with the ⇄ button on each name (touch and keyboard) —
+  with two Teams it moves the name straight across, with three or four it opens a *Move to* menu;
+  rename Teams. **With a Class, every Team needs a student:** the Teams control greys out counts
+  above the class size (and picking a smaller Class drops the extra Teams before shuffling), and
+  an empty Team can't start. **Start** stays pressable so it can show why: pressing it with an
+  empty Team shakes that card (`useAnimate`, skipped under reduced motion) and swaps its "No
+  students yet" line for a red *Needs at least one student* chip in the card itself. Any other
+  problem (duplicate names, game time) appears as a red alert beside Start. Nothing is flagged
+  before the first press — a fresh form isn't wrong yet. Without a Class, Teams are just names and may all be empty. The API
+  enforces the part it can see — students on every Team or on none — since the start request
+  carries no Class id (`setupProblem` / `maxTeamsFor` in `setup-model.ts`). **Format**: **No time limit** or **Timed** (turn seconds beside it, game minutes
+  under it on a −/+ stepper that steps by 5 and clamps to `HOSTED_LIMITS`). Each Team is a
+  ModeCard-shaped card (`border-2`, `rounded-xl`, a solid 4px edge) filled with its colour at
+  ~75% — `TEAM_THEME[colour].fill` / `.onFill` in `hosted-model.ts` — with the name in a solid
+  `bg-background` field and the students as `bg-background` chips, so both read on any of the
+  four colours (yellow takes dark text, the rest white). Start opens the Controller.
+- **Controller** — `/host/:gameId` (`ControllerPage`, header hidden): a top bar pinned above the
+  play area — *Hosted games* on the far left, *Show on a screen* / *Pause* / *End game* centred —
+  then **Undo** and **Pass** on the board's top-right corner; Teams strip (the Setup
+  screen's filled Team cards, one column per Team so 2–4 always span the width evenly; the Team in play at full strength and lifted, the rest at half —
+  the Displays use the same strip), centred in the window; on `2xl` and ≥1920px screens the
+  play area (Teams, prompt, board) scales up with `zoom` while the header and buttons keep their
+  normal size and the column widens to match, the turn clock as the board ring (red in the last 10 s) with the game
+  time under it ("Last round" once it's up), one prompt line, the shared `AssociationBoard` on a `bg-muted` card (`BoardCard` in
+  `hosted-parts.tsx`; the board's `MUTED_SURFACE` wrapper gives its dashed and grey slots a
+  `bg-background` fill there, since `border-border` matches `muted`) (live
   only for what the turn allows), the last Guess in words, **Pass**, **Undo** (confirm, naming the
   move), **Pause/Resume**, **End game** (confirm), **Show on a screen** (the code, the connected
   count, disconnect all), and the **Answer key** (tap per solution) while a Display is connected.
@@ -151,7 +177,8 @@ user dashboard, so their cards and list rows are `bg-card` with a border, not pl
 
 ## 5. API
 
-`/api/hosted-games` — `[Authorize(Roles = "Teacher")]` and the Associations preview gate; every id
+`/api/hosted-games` — `[Authorize(Roles = RoleRules.HostRoles)]` (Teacher or SuperAdmin) and the
+Associations preview gate; `HostedGameHub.JoinAsController` checks the same rule (`RoleRules.CanHost`); every id
 is clamped to its host (another Teacher's game is 404).
 
 | | |

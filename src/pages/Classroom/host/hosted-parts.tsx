@@ -1,6 +1,7 @@
 import { Pause } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { BoardTimer } from "@/pages/Quiz/Associations/board/board-timer";
+import { MUTED_SURFACE } from "@/pages/Quiz/Associations/board/association-board";
 import { formatClock } from "@/pages/Quiz/Associations/board/board-model";
 import type { HostedGameView } from "../api/hosted-games";
 import { TEAM_THEME, rankTeams, teamName, winnerLine } from "./hosted-model";
@@ -10,30 +11,54 @@ import { TEAM_THEME, rankTeams, teamName, winnerLine } from "./hosted-model";
  * draw the server's view — whose turn, the clocks, the ranking — and decide nothing.
  */
 
+/** The board on a muted card — see `MUTED_SURFACE`. Shared by the Controller and the Displays. */
+export const BoardCard = ({ children }: { children: React.ReactNode }) => (
+  <div {...MUTED_SURFACE} className={cn(MUTED_SURFACE.className, "rounded-2xl bg-muted p-3 sm:p-5")}>
+    {children}
+  </div>
+);
+
+/**
+ * The Teams as the Setup screen draws them: ModeCard-shaped cards filled with each Team's colour
+ * (`TEAM_THEME[colour].fill` / `.onFill`). Whose turn it is reads from the fill itself — the
+ * Team in play is at full strength and lifted a touch, the others step back to half — so it
+ * carries across a classroom, where a thin outline didn't.
+ */
 export const TeamsStrip = ({ view, large = false }: { view: HostedGameView; large?: boolean }) => (
-  <div className={cn("grid gap-2", view.teams.length > 2 ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-2")}>
+  // One column per Team so the strip always spans the width evenly — three Teams in a four-column
+  // grid left a hole on the right and the strip sat off-centre.
+  <div
+    className={cn(
+      "grid gap-3 pb-1",
+      view.teams.length === 2 && "grid-cols-2",
+      view.teams.length === 3 && "grid-cols-1 sm:grid-cols-3",
+      view.teams.length === 4 && "grid-cols-2 sm:grid-cols-4",
+    )}
+  >
     {view.teams.map((team) => {
       const theme = TEAM_THEME[team.colour];
       const active = !view.isOver && view.currentSeat === team.seat;
+      // At the end every Team is shown at full strength — nobody is "in play" any more.
+      const dimmed = !view.isOver && !active;
       return (
         <div
           key={team.seat}
           aria-current={active ? "true" : undefined}
           className={cn(
-            "flex items-center justify-between gap-2 rounded-lg border-2 px-3 py-2 transition-colors",
-            active ? cn(theme.active, theme.soft) : "border-border",
+            "flex items-center justify-between gap-2 rounded-xl border-2 px-4 py-3 transition-[opacity,transform] duration-200",
+            theme.fill,
+            theme.onFill,
+            dimmed && "opacity-50",
+            active && "-translate-y-0.5",
           )}
         >
-          <span className="flex min-w-0 items-center gap-2">
-            <span aria-hidden className={cn("h-3 w-3 shrink-0 rounded-full", theme.dot)} />
-            <span className={cn("truncate font-semibold", large ? "text-lg sm:text-xl" : "text-sm sm:text-base")}>
-              {team.name}
-            </span>
+          <span className={cn("truncate font-semibold", large ? "text-lg sm:text-xl" : "text-sm sm:text-base")}>
+            {team.name}
           </span>
-          <span className={cn("shrink-0 font-bold tabular-nums", large ? "text-xl sm:text-2xl" : "text-base")}>
+          <span className={cn("shrink-0 font-bold tabular-nums", large ? "text-xl sm:text-2xl" : "text-lg")}>
             {team.score}
             {team.endgameTurnsLeft != null && (
-              <span className="ml-1 text-xs font-medium text-muted-foreground">· {team.endgameTurnsLeft} left</span>
+              <span className="ml-1 text-xs font-medium opacity-80">· {team.endgameTurnsLeft} left</span>
             )}
           </span>
         </div>

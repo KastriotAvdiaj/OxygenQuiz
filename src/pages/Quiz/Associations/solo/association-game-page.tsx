@@ -254,6 +254,7 @@ const SoloBoard = ({
             onGuess={view.canGuess ? handleGuess : undefined}
             busy={busy}
             reveal={over}
+            openBlockedHint="Guess a column or the final first."
           />
           {coach && (
             <BoardCoach

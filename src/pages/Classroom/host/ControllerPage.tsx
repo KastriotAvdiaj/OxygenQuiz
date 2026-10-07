@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Eye, EyeOff, MonitorSmartphone, Pause, Play, Square, Undo2 } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff, MonitorSmartphone, Pause, Play, Presentation, RotateCcw, SkipForward, Square, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   ConfirmationDialog,
@@ -17,7 +17,7 @@ import { AssociationBoard, type GuessOutcome } from "@/pages/Quiz/Associations/b
 import type { GuessTarget } from "@/types/association-types";
 import { useHostedActions, useHostedGame, type HostedGameView } from "../api/hosted-games";
 import { endLine, hostedPrompt, lastGuessLine, teamName } from "./hosted-model";
-import { HostedClocks, HostedRanking, TeamsStrip } from "./hosted-parts";
+import { BoardCard, HostedClocks, HostedRanking, TeamsStrip } from "./hosted-parts";
 import { useHostedClocks } from "./use-hosted-clocks";
 import { useControllerHub } from "./use-hosted-game-hub";
 
@@ -79,110 +79,103 @@ const Controller = ({
     }
   };
 
+  // The game-time zoom, on the play area only (Teams + prompt, and the board). Buttons stay out of
+  // it and keep LiftedButton's own size — zooming them made "Play again" twice the size of every
+  // other button in the app. The tiles are fixed-height, so width alone would stretch them flat.
+  const zoomed = "2xl:[zoom:1.15] min-[1920px]:[zoom:1.3]";
+  // The column widens by the same factor, so the unzoomed header and buttons line up with it.
+  const column = "mx-auto w-full max-w-5xl 2xl:max-w-[73.6rem] min-[1920px]:max-w-[83.2rem]";
+
   return (
-    <div className="flex w-full flex-1 flex-col px-3 py-3 sm:px-4 sm:py-5">
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-4">
-        <header className="flex flex-wrap items-center justify-between gap-2">
-          <Link
-            to="/my-dashboard/hosted-games"
-            className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-          >
-            <ArrowLeft className="h-4 w-4" /> Hosted games
-          </Link>
-          {!view.isOver && (
-            <div className="flex flex-wrap items-center gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  // The code is issued when it's first asked for, not with every game.
-                  if (!view.screenCode) actions.screenCode.mutate();
-                  setScreenOpen(true);
-                }}
-              >
-                <MonitorSmartphone className="mr-1 h-4 w-4" />
-                {view.displaysConnected > 0 ? `${view.displaysConnected} screen${view.displaysConnected === 1 ? "" : "s"}` : "Show on a screen"}
-              </Button>
-              {view.isPaused ? (
-                <Button size="sm" onClick={() => actions.resume.mutate()} disabled={actions.resume.isPending}>
-                  <Play className="mr-1 h-4 w-4" /> Resume
-                </Button>
-              ) : (
-                <Button size="sm" variant="outline" onClick={() => actions.pause.mutate()} disabled={actions.pause.isPending}>
-                  <Pause className="mr-1 h-4 w-4" /> Pause
-                </Button>
-              )}
-              <ConfirmationDialog
-                icon="danger"
-                title="End the game now?"
-                body="The game ends with the scores as they are, and the whole board is revealed."
-                isDone={actions.end.isSuccess}
-                triggerButton={
-                  <Button size="sm" variant="outline">
-                    <Square className="mr-1 h-4 w-4" /> End game
-                  </Button>
-                }
-                confirmButton={
-                  <LiftedButton
-                    className="bg-red-600 text-white hover:bg-red-700 focus:ring-red-500 py-1"
-                    liftColor="red-700"
-                    type="button"
-                    isPending={actions.end.isPending}
-                    onClick={() => actions.end.mutate()}
-                  >
-                    End game
-                  </LiftedButton>
-                }
-              />
-            </div>
-          )}
-        </header>
-
-        <TeamsStrip view={view} />
-
+    <div className="flex w-full flex-1 flex-col gap-4 px-3 py-3 sm:px-4 sm:py-5">
+      {/* Pinned to the top, outside the centred play area so the controls don't mix with the
+          board: the way out on the far left, the game's controls (screens, Pause, End) in the
+          middle. A three-column grid with an empty right column keeps that group truly centred. */}
+      <header className={cn(column, "flex flex-wrap items-center justify-between gap-2 sm:grid sm:grid-cols-[1fr_auto_1fr]")}>
+        <Link
+          to="/my-dashboard/hosted-games"
+          className="inline-flex items-center gap-1 justify-self-start text-sm text-muted-foreground hover:text-foreground"
+        >
+          <ArrowLeft className="h-4 w-4" /> Hosted games
+        </Link>
         {view.isOver ? (
-          <div className="space-y-1 pt-2 text-center">
-            <p className="text-sm font-medium text-muted-foreground">{endLine(view)}</p>
-            <HostedRanking view={view} />
-          </div>
+          <span aria-hidden />
         ) : (
-          <>
-            <HostedClocks view={view} turn={turn} game={game} />
-            <p aria-live="polite" className="text-center text-sm font-medium text-muted-foreground sm:text-base">
-              {hostedPrompt(view)}
-            </p>
-          </>
-        )}
-
-        <AssociationBoard
-          view={view}
-          onOpenTile={view.canOpen ? (tileId) => { setFeedback(null); actions.open.mutate(tileId); } : undefined}
-          onGuess={view.canGuess ? handleGuess : undefined}
-          busy={busy}
-          reveal={view.isOver}
-          solverName={(seat) => teamName(view, seat)}
-        />
-
-        {view.isOver ? (
-          <div className="flex flex-wrap justify-center gap-3 pt-2">
-            <LiftedButton
-              onClick={() => actions.again.mutate(undefined, { onSuccess: (next) => navigate(`/host/${next.id}`, { replace: true }) })}
-              isPending={actions.again.isPending}
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                // The code is issued when it's first asked for, not with every game.
+                if (!view.screenCode) actions.screenCode.mutate();
+                setScreenOpen(true);
+              }}
             >
-              Play again, same teams
-            </LiftedButton>
-            <Link to="/my-dashboard/host" tabIndex={-1}>
-              <LiftedButton className="bg-muted text-foreground hover:bg-muted" liftColor="muted-foreground">
-                Host another board
-              </LiftedButton>
-            </Link>
+              <MonitorSmartphone className="mr-1 h-4 w-4" />
+              {view.displaysConnected > 0 ? `${view.displaysConnected} screen${view.displaysConnected === 1 ? "" : "s"}` : "Show on a screen"}
+            </Button>
+            {view.isPaused ? (
+              <Button size="sm" onClick={() => actions.resume.mutate()} disabled={actions.resume.isPending}>
+                <Play className="mr-1 h-4 w-4" /> Resume
+              </Button>
+            ) : (
+              <Button size="sm" variant="outline" onClick={() => actions.pause.mutate()} disabled={actions.pause.isPending}>
+                <Pause className="mr-1 h-4 w-4" /> Pause
+              </Button>
+            )}
+            <ConfirmationDialog
+              icon="danger"
+              title="End the game now?"
+              body="The game ends with the scores as they are, and the whole board is revealed."
+              isDone={actions.end.isSuccess}
+              triggerButton={
+                <Button size="sm" variant="outline">
+                  <Square className="mr-1 h-4 w-4" /> End game
+                </Button>
+              }
+              confirmButton={
+                <LiftedButton
+                  className="bg-red-600 text-white hover:bg-red-700 focus:ring-red-500 py-1"
+                  liftColor="red-700"
+                  type="button"
+                  isPending={actions.end.isPending}
+                  onClick={() => actions.end.mutate()}
+                >
+                  End game
+                </LiftedButton>
+              }
+            />
           </div>
-        ) : (
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <p aria-live="polite" className="min-h-5 text-sm font-medium">
-              {feedback ?? lastGuessLine(view)}
-            </p>
-            <div className="flex gap-2">
+        )}
+        <span aria-hidden className="hidden sm:block" />
+      </header>
+
+      {/* m-auto centres the play area in the height that's left — margins, not justify-center, so
+          a board taller than the window scrolls from its top instead of being clipped. */}
+      <div className={cn(column, "my-auto flex flex-col gap-4")}>
+        <div className={cn("flex flex-col gap-4", zoomed)}>
+          <TeamsStrip view={view} />
+
+          {view.isOver ? (
+            <div className="space-y-1 pt-2 text-center">
+              <p className="text-sm font-medium text-muted-foreground">{endLine(view)}</p>
+              <HostedRanking view={view} />
+            </div>
+          ) : (
+            <>
+              <HostedClocks view={view} turn={turn} game={game} />
+              <p aria-live="polite" className="text-center text-sm font-medium text-muted-foreground sm:text-base">
+                {hostedPrompt(view)}
+              </p>
+            </>
+          )}
+        </div>
+
+        <div className="flex flex-col gap-2">
+          {/* Undo and Pass on the board's top-right corner — next to what they act on. The row
+              keeps its height when both are hidden, so the board doesn't jump between turns. */}
+          {!view.isOver && (
+            <div className="flex min-h-8 justify-end gap-2">
               {view.undoLabel && (
                 <ConfirmationDialog
                   icon="info"
@@ -208,11 +201,48 @@ const Controller = ({
               )}
               {view.canPass && (
                 <Button size="sm" variant="outline" disabled={busy} onClick={() => { setFeedback(null); actions.pass.mutate(); }}>
-                  Pass
+                  <SkipForward className="mr-1 h-4 w-4" /> Pass
                 </Button>
               )}
             </div>
+          )}
+
+          <div className={zoomed}>
+            <BoardCard>
+              <AssociationBoard
+                view={view}
+                onOpenTile={view.canOpen ? (tileId) => { setFeedback(null); actions.open.mutate(tileId); } : undefined}
+                onGuess={view.canGuess ? handleGuess : undefined}
+                busy={busy}
+                reveal={view.isOver}
+                solverName={(seat) => teamName(view, seat)}
+                // A second Tile in one turn isn't allowed: say what is, on the Tile they clicked.
+                openBlockedHint={view.isPaused ? "Resume the game to keep playing." : `${team}: guess a column or the final — or pass.`}
+              />
+            </BoardCard>
           </div>
+        </div>
+
+        {view.isOver ? (
+          <div className="flex flex-wrap justify-center gap-3 pt-2">
+            <LiftedButton
+              onClick={() => actions.again.mutate(undefined, { onSuccess: (next) => navigate(`/host/${next.id}`, { replace: true }) })}
+              isPending={actions.again.isPending}
+            >
+              <RotateCcw className="h-4 w-4" aria-hidden="true" />
+              Play again, same teams
+            </LiftedButton>
+            <Link to="/my-dashboard/host" tabIndex={-1}>
+              <LiftedButton className="bg-muted text-foreground hover:bg-muted" liftColor="muted-foreground">
+                <Presentation className="h-4 w-4" aria-hidden="true" />
+                Host another board
+              </LiftedButton>
+            </Link>
+          </div>
+        ) : (
+          <p aria-live="polite" className="min-h-5 text-center text-sm font-medium">
+            {feedback ?? lastGuessLine(view)}
+          </p>
         )}
 
         {view.answerKey && !view.isOver && <AnswerKey entries={view.answerKey} />}
