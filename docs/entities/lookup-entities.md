@@ -124,7 +124,9 @@ return the request model, so the caller never learned the new row's id.
 
 ## 6b. One row in each table is a system default
 
-`DbSeeder` inserts an **"Unspecified"** row into all three tables. It is not content: it is the
+`DbSeeder` (through `FeaturedQuizSeeder`, in every environment — see
+[`../quiz/featured-quizzes.md`](../quiz/featured-quizzes.md) §2) inserts an **"Unspecified"** row
+into all three tables. It is not content: it is the
 value the app assigns while something is being drafted, and two rules exist to stop it surviving —
 a question may never be *stored* as Unspecified in category or language, and a quiz may not be
 *published* while any of its three lookups is. Both live in the services, both are matched **by

@@ -21,7 +21,8 @@
 | Route | Component | Loader | Gated? |
 |-------|-----------|--------|--------|
 | `/choose-mode`, `/multiplayer-menu` | menus | — | public (fine — just browsing) |
-| `/choose-quiz` | `QuizSelection` | `quizSelectionLoader` (data only) | public |
+| `/choose-quiz` | `FeaturedQuizzes` — the quiz home page ([`featured-quizzes.md`](../quiz/featured-quizzes.md)) | `featuredQuizzesLoader` (prefetch; redirects `?category=`/`?shared=` to the catalogue) | public |
+| `/choose-quiz/all` | `QuizSelection` — the catalogue | `quizSelectionLoader` (data only) | public |
 | `/quiz/:quizId/play` | `QuizPageRouteWrapper` | — (no loader) | ⚠️ logged-in users get the real flow; signed-out visitors get one free guest attempt — see [`guest-play.md`](guest-play.md). The component itself decides, not the loader. |
 | `/play/shared/:token` | shared-quiz play | — | **Planned client wiring.** Backend ready (`GET /api/quiz/shared/{token}` + `QuizSessionCM.ShareToken`); login required, resolves an Unlisted quiz from its share token (the token is the access grant). See [`quiz-visibility.md`](../quiz/quiz-visibility.md). |
 | `/quiz/results/:sessionId[/review]` | results | **`userAuthLoader`** | ✅ gated (real sessions only) |

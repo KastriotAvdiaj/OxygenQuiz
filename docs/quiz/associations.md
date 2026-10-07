@@ -626,7 +626,7 @@ doesn't drift down the page with a short board.
   playing — out of where it stood (`GiveUpControl`, `solo/give-up-control.tsx`); Keep playing folds
   them back. Under reduced motion they just appear.
 
-**In the catalogue** (`/choose-quiz`), a board's card carries a "Board" label and a small 4×4 of
+**In the catalogue** (`/choose-quiz/all`), a board's card carries a "Board" label and a small 4×4 of
 tiles in the quiz's colour ([`quiz-card.md`](./quiz-card.md)), and — for whoever can see boards,
 admins while §0 holds — an **All / Quizzes / Boards** control filters the grid server-side
 (`format` is a whitelisted filter field in `QuizFilterFields`; it filters only within what

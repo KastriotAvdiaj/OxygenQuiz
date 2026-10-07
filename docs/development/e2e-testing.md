@@ -79,8 +79,10 @@ The API is started with environment variables, which beat both `appsettings*.jso
 - **blank every third-party secret** (Brevo, AI) and switch off the breached-password lookup and
   Google/Microsoft sign-in. A test run must not send email, spend AI budget, or depend on
   someone else's service being up. Emails are written to the API log instead.
-- keep `ASPNETCORE_ENVIRONMENT=Development`, so `DbSeeder` adds the sample lookups the tests
-  build quizzes from (Science, English, Easy).
+- keep `ASPNETCORE_ENVIRONMENT=Development`, for the relaxed password minimum and the dev sample
+  data. (The lookups the tests build quizzes from — Science, English, Easy — and the sixteen
+  featured quizzes are seeded in every environment since 2026-10-07; see
+  [`../quiz/featured-quizzes.md`](../quiz/featured-quizzes.md).)
 
 If a feature you're testing needs a new setting, add it to `apiServerEnv()` in `stack.ts` — never
 rely on `appsettings.Development.json` or your user-secrets, which CI doesn't have.
@@ -118,6 +120,7 @@ The next run recreates and migrates it.
 | `e2e/access-control.spec.ts` | Signed out → a protected page sends you to `/login?redirectTo=…` and signing in lands you back on it. The admin dashboard, to a signed-in player, is **indistinguishable from a URL that doesn't exist** (same 404 screen, compared against a real unknown URL rather than hard-coded text) and opens for the admin. A `fixme` test for the known issue below. |
 | `e2e/classic-play.spec.ts` | A player answers all three Classic question types (one on purpose wrong) with instant feedback; the result shows 2 correct / 1 incorrect / 67, the review shows the answers, and the attempt is in Quiz History linking to that result. A quiz left after one answer is offered back on **Session In Progress** and resumes at question two. |
 | `e2e/guest-play.spec.ts` | A signed-out visitor plays one free quiz and sees the "won't be saved" result; the second attempt goes through `/login?…&guestUsed=1`, and signing in there returns to the quiz. |
+| `e2e/featured-quizzes.spec.ts` | The quiz home page: a signed-out visitor picks Geography · Easy from its panel, starts it from the dialog and lands on its first question — the whole chain from the seeder through `GET /quiz/featured` to guest play. **Explore more quizzes** reaches the catalogue, and an old `/choose-quiz?category=` link is redirected there. |
 
 **Known issue, pinned by a `fixme` test:** a player who opens `/dashboard/users` does get the 404,
 but only after the page's own loader has called `GET /api/users` and shown a 403 toast.
@@ -549,6 +552,6 @@ A new spec file needs no CI change — `playwright.config.ts` picks up every `e2
 | `Process from config.webServer was not able to start` | Its own output is printed above the error. For the API it's almost always PostgreSQL not running on 5433. |
 | The API never becomes ready | Run the `dotnet run` command from `playwright.config.ts` by hand with the same environment to see its log. |
 | Backend change has no effect | A reused API is still running the old build (§1). |
-| `the seeded QuestionCategories "Science"` assertion | The API isn't running in `Development`, so the sample lookups weren't seeded. |
+| `the seeded QuestionCategories "Science"` assertion | The seeder didn't run, or someone renamed the category in the E2E database. Drop it (§2). |
 | Every test fails on the first `goto` with a TLS error | `ignoreHTTPSErrors` was dropped from the config, or a new context was created with explicit options that leave it out. |
 | Vitest suddenly runs `*.spec.ts` from `e2e/` | The `exclude` in `vite.config.ts`'s `test` block was removed. |

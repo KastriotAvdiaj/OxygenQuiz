@@ -18,7 +18,8 @@ src/pages/Quiz/components/quiz-card/
 └── index.ts         public surface: `QuizCard`
 ```
 
-Rendered by `Quiz-Selection.tsx` at `/choose-quiz`, in a grid with `auto-rows-fr` — every card
+Rendered by `Quiz-Selection.tsx` at `/choose-quiz/all` (the catalogue; `/choose-quiz` itself is
+the featured page, which has its own tiles — [`featured-quizzes.md`](./featured-quizzes.md)), in a grid with `auto-rows-fr` — every card
 in a row is the height of the tallest. It is also rendered, with fake data, as the live preview
 in `color-palette-input.tsx`, which is the only place a palette edit can be judged before it is
 saved. **That preview is a real `QuizCard`, so it follows any change made here for free — and

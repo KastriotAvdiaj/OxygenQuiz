@@ -240,6 +240,12 @@ be treated as "free quiz already spent" — that would silently send a first-tim
 in as if they'd used a quiz they never played. On error the wrapper renders a retry/login screen
 instead. (`QuizPageRouteWrapper` → `CantCheckGuestScreen`.)
 
+**The quiz home page asks first.** On `/choose-quiz` (the featured quizzes,
+[`../quiz/featured-quizzes.md`](../quiz/featured-quizzes.md)) the same `can-play` answer decides
+what picking a quiz does: a guest with their free quiz unspent gets the normal start dialog; one
+who has spent it gets "Sign up to play the rest of the ladder" (`SignUpForMoreDialog`) instead of
+being bounced to the login page by the redirect above. Its Log in returns to the picked quiz.
+
 Results live on **two different routes**, so there is never ambiguity about which backend a given
 session id belongs to:
 

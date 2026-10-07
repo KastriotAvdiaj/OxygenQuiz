@@ -1165,7 +1165,7 @@ fixed; these were left.
 
 ## Landing page & quiz list (2026-09-19 — see docs/home/landing-page.md)
 
-- **P2 — `/choose-quiz` breaks when `GET /questionCategories` fails.** Found while testing
+- **P2 — The catalogue (`/choose-quiz/all`, `/choose-quiz` until 2026-10-07) breaks when `GET /questionCategories` fails.** Found while testing
   `?category=`: with the categories endpoint returning 500, the page shows no quizzes at all —
   with or without the param, so it predates it. The quiz grid should not depend on the filter
   panel's lookup data. → `src/pages/Quiz/Quiz-Selection.tsx`
@@ -1270,6 +1270,17 @@ fixed in that change; these were not.
   Unicode ("Аlice" with a Cyrillic А) passes the uniqueness check. Consider NFKC normalisation and a
   confusables check if impersonation ever becomes a real problem.
   → `DTOs/User/AccountIdentityDTOs.cs`, `DTOs/Authentication/SignupDTO.cs`
+
+## Featured quizzes (2026-10-07 — see docs/quiz/featured-quizzes.md)
+
+- **P3 — A featured quiz's tile doesn't show whether you've played it.** "Played · best 8/10" on
+  the quiz home page was designed and deliberately left out of the first version: it needs a
+  per-user read beside the anonymous `GET /quiz/featured`, and the page works without it.
+  → `src/pages/Quiz/Featured/category-panel.tsx`
+- **P3 — Production's category colours are the old ones until set by hand.** The seeder never
+  updates an existing category (ADR 0026), so Geography, Science and History on oxygenquiz.com
+  keep their palettes until the values in `featured-quizzes.md` §6 are entered in the admin
+  category editor. General Knowledge, created by the seeder, already has its new one.
 
 ## Paid plans and launch compliance (2026-10-07 — proposals only)
 

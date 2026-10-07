@@ -77,6 +77,29 @@ One Board being played — by one player (Solo) or by two taking turns (Duel). S
 ordinary quiz session.
 _Avoid_: match (a Match is the multiplayer record a Duel belongs to), round
 
+## Quiz home page
+
+The page at `/choose-quiz` — see [`featured-quizzes.md`](./featured-quizzes.md).
+
+**Featured quiz**:
+One of the sixteen quizzes the app ships with and seeds into every database, marked by a
+`FeaturedKey` such as `geography-easy`.
+_Avoid_: official quiz, starter quiz, default quiz, sample quiz (the Development seed's sample
+questions are something else)
+
+**Category panel**:
+One category's card on the quiz home page: its photo, its tab and its ladder of featured quizzes.
+_Avoid_: category card (a quiz card is a different component), shelf, section, banner
+
+**Tab**:
+The part of a Category panel's outline that rises from its top-right edge and carries the category
+name.
+_Avoid_: bulge, label, header, notch
+
+**Ladder**:
+A category's featured quizzes in difficulty order, Easy → Medium → Hard → Expert.
+_Avoid_: levels, tiers (a tier is a paid plan in the payments proposal), set
+
 ## Classroom
 
 Words for teachers playing Associations with a class. Being settled in
