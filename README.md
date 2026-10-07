@@ -22,10 +22,10 @@ real-time play, in production on a Hetzner VPS behind Cloudflare.
 | **Permission model** | Role-based access with `resource:action` permissions (`question:create`), cached per user. The controller decides *whether* a caller may act; the repository decides *on which rows*. | [user-role-management.md](docs/auth/user-role-management.md) |
 | **AI with guardrails** | Quiz generation behind one provider interface, with reserve/commit quota, daily and spend caps, a per-attempt cost ledger and a kill switch. Model output is only ever a proposal: a strict parser drops bad questions with a reason and never lets the model choose grading rules. | [ai-quiz-architecture.md](docs/quiz/ai-quiz-architecture.md) |
 | **Auth** | Short-lived JWT held in memory, and a refresh token rotated on every use in an HttpOnly cookie. Also Google sign-in, email verification, password policy and invite-gated signup. | [authentication.md](docs/auth/authentication.md) |
-| **Data** | PostgreSQL through EF Core with 25 migrations, applied and seeded on startup. Hangfire runs background jobs such as the abandoned-session sweep. | [session-lifecycle.md](docs/quiz/session-lifecycle.md) |
+| **Data** | PostgreSQL through EF Core with 33 migrations, applied and seeded on startup. Hangfire runs background jobs such as the abandoned-session sweep. | [session-lifecycle.md](docs/quiz/session-lifecycle.md) |
 | **Tests & CI** | About 630 backend tests (xUnit, Moq, EF InMemory), a Vitest unit suite, and a Playwright end-to-end suite that drives a real browser against the real API and PostgreSQL — all three gating `main` in GitHub Actions. Storybook + Chromatic cover the UI states that are hard to reach by hand. | [testing.md](docs/development/testing.md), [e2e-testing.md](docs/development/e2e-testing.md) |
 | **Production** | Frontend on Cloudflare Workers. API and Postgres run in Docker on a VPS behind nginx. Secrets fail fast at startup, and the app has rate limiting and security headers. | [production-topology.md](docs/deployment/production-topology.md) |
-| **Decisions on record** | 15 architecture decision records (ADRs) explain why the non-obvious choices were made. | [docs/adr](docs/adr) |
+| **Decisions on record** | 28 architecture decision records (ADRs) explain why the non-obvious choices were made. | [docs/adr](docs/adr) |
 
 ## Run it
 
