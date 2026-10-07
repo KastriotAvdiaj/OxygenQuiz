@@ -100,3 +100,8 @@ graphify-out/
 /OxygenBackend/.vs/
 /OxygenBackend/QuizAPI/wwwroot/uploads/*
 !/OxygenBackend/QuizAPI/wwwroot/uploads/.gitkeep
+
+# Vite bundles vite.config.ts to a temp vite.config.ts.timestamp-<ms>-<hash>.mjs, imports it, then
+# deletes it. If the process is killed mid-start, or can't delete in the folder (a sandboxed agent
+# shell), the file is left behind. Pure build debris — never commit it.
+*.timestamp-*.mjs
