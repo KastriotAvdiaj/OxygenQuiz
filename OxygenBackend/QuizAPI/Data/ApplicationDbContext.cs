@@ -111,6 +111,14 @@ namespace QuizAPI.Data
                 .IsUnique()
                 .HasFilter($"\"{nameof(Quiz.ShareToken)}\" IS NOT NULL");
 
+            // One quiz per featured slot, deleted ones included: the seeder treats a soft-deleted
+            // featured quiz as "still there" (docs/quiz/featured-quizzes.md), so a second row with the
+            // same key would be a bug, not a replacement.
+            modelBuilder.Entity<Quiz>()
+                .HasIndex(q => q.FeaturedKey)
+                .IsUnique()
+                .HasFilter($"\"{nameof(Quiz.FeaturedKey)}\" IS NOT NULL");
+
             //GLOBAL QUERY FILTERS
             // There is deliberately NO visibility filter on Quiz. The only Quiz filter is soft delete
             // (declared further down). Draft / Unlisted / ownership are enforced explicitly at each

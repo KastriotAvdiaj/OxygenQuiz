@@ -9,6 +9,7 @@ using QuizAPI.ManyToManyTables;
 using QuizAPI.Models;
 using QuizAPI.Models.Quiz;
 using QuizAPI.Repositories.Interfaces;
+using QuizAPI.Services.FeaturedQuizzes;
 
 namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
 {
@@ -123,6 +124,19 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
         ///   - <paramref name="publicOnly"/>: only active + published quizzes (public catalogue).
         ///   - <paramref name="includeDeleted"/>: admin-only; also returns soft-deleted quizzes.
         /// </summary>
+        public async Task<List<QuizSummaryDTO>> GetFeaturedQuizzesAsync(CancellationToken ct = default)
+        {
+            // Same gate as the catalogue: Public only, and formats in preview only for those who
+            // may see them. A missing or unpublished featured quiz simply isn't returned — the page
+            // hides its tile rather than show a broken one.
+            var rows = await _quizzes.Query()
+                .VisibleTo(_current.CanSeePreviewFormats)
+                .Where(q => q.FeaturedKey != null && q.Status == QuizStatus.Public)
+                .OrderBy(q => q.FeaturedKey)
+                .ToListAsync(ct);
+            return rows.ToSummaryDtoList();
+        }
+
         public async Task<PagedResponse<QuizSummaryDTO>> SearchQuizzesAsync(
             FilterQuery query,
             Guid? restrictToUserId = null,
@@ -507,12 +521,20 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                 if (quiz == null)
                     return null;
 
-                if (quiz.UserId != userId)
+                // A featured quiz belongs to the OxygenQuiz account, which nobody signs in as, so
+                // admins edit its content in the owner's place (docs/quiz/featured-quizzes.md).
+                var editingFeatured = quiz.FeaturedKey != null && _current.IsAdmin;
+                if (quiz.UserId != userId && !editingFeatured)
                 {
                     _logger.LogWarning("User {UserId} attempted to update quiz {QuizId} owned by {OwnerId}",
                         userId, quizUM.Id, quiz.UserId);
                     return null;
                 }
+
+                // Unpublishing one takes it off the quiz home page, so that stays SuperAdmin-only
+                // even through the full update.
+                if (quiz.FeaturedKey != null && QuizMappers.ParseStatus(quizUM.Status) != quiz.Status)
+                    FeaturedQuizRules.EnsureCanChangeStatus(_current.IsSuperAdmin);
 
                 // This update is Classic-shaped: it recomputes TimeLimitInSeconds as the sum of the
                 // incoming questions, which for a board (no questions) would silently zero its time.
@@ -584,7 +606,12 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                 if (quiz == null)
                     return null;
 
-                if (quiz.UserId != userId)
+                if (quiz.FeaturedKey != null)
+                {
+                    // Owned by the OxygenQuiz account; only a SuperAdmin changes whether it's live.
+                    FeaturedQuizRules.EnsureCanChangeStatus(_current.IsSuperAdmin);
+                }
+                else if (quiz.UserId != userId)
                 {
                     _logger.LogWarning("User {UserId} attempted to change status of quiz {QuizId} owned by {OwnerId}",
                         userId, quizId, quiz.UserId);
@@ -680,6 +707,10 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                         userId, quizId, quiz.UserId);
                     return false;
                 }
+
+                // ...except a featured one, which only a SuperAdmin may remove from the quiz home page.
+                if (quiz.FeaturedKey != null)
+                    FeaturedQuizRules.EnsureCanDelete(_current.IsSuperAdmin);
 
                 // Soft delete: stamp DeletedAt instead of removing the row. The quiz disappears from
                 // every list (global query filter) while its QuizSessions / UserAnswers — i.e. the

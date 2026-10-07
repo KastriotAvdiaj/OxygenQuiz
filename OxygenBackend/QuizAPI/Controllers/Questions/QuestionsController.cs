@@ -336,6 +336,10 @@ namespace QuizAPI.Controllers.Questions
             if (!await _permissionService.CanActOnResourceAsync(userId.Value, ownerId.Value, "question", "delete"))
                 return Forbid();
 
+            // The OxygenQuiz account's questions back the featured quizzes (docs/quiz/featured-quizzes.md).
+            QuizAPI.Services.FeaturedQuizzes.FeaturedQuizRules.EnsureCanDeleteQuestion(
+                ownerId.Value, _currentUserService.IsSuperAdmin);
+
             var canDeleteAny = await _permissionService.HasPermissionAsync(userId.Value, "question:delete:any");
             var (success, errorMessage, isCustomMessage) = await _questionService.DeleteQuestionAsync(id, userId.Value, canDeleteAny);
 

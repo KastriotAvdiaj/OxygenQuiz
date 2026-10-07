@@ -71,6 +71,7 @@ builder.Services.AddCors(options =>
 
 // --- Seeder Registration ---
 builder.Services.AddScoped<QuizAPI.Services.DbSeeder>();
+builder.Services.AddScoped<QuizAPI.Services.FeaturedQuizzes.FeaturedQuizSeeder>();
 
 // --- Hangfire ---
 builder.Services.AddHangfire(config =>

@@ -30,6 +30,8 @@ namespace QuizAPI.Services.CurrentUserService
         public bool IsAdmin => _httpContextAccessor.HttpContext?.User?.IsInRole("Admin") == true
                             || _httpContextAccessor.HttpContext?.User?.IsInRole("SuperAdmin") == true;
 
+        public bool IsSuperAdmin => _httpContextAccessor.HttpContext?.User?.IsInRole("SuperAdmin") == true;
+
         public bool IsTeacher => _httpContextAccessor.HttpContext?.User?.IsInRole(QuizAPI.Services.Roles.RoleRules.Teacher) == true;
 
         public bool CanSeePreviewFormats => IsAdmin || IsTeacher;

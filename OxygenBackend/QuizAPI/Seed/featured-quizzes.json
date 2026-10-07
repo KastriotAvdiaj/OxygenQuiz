@@ -1,0 +1,1974 @@
+{
+  "quizzes": [
+    {
+      "key": "geography-easy",
+      "category": "Geography",
+      "difficulty": "Easy",
+      "title": "Capitals & Continents",
+      "description": "Start here: capitals, oceans and the big shapes on the map.",
+      "questions": [
+        {
+          "type": "MultipleChoice",
+          "text": "What is the capital of Japan?",
+          "options": [
+            "Kyoto",
+            "Tokyo",
+            "Osaka",
+            "Seoul"
+          ],
+          "correct": 1,
+          "seconds": 20,
+          "explanation": "Tokyo has been Japan's capital since 1868, when the imperial court moved there from Kyoto."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "Which is the largest ocean on Earth?",
+          "options": [
+            "Atlantic Ocean",
+            "Indian Ocean",
+            "Pacific Ocean",
+            "Arctic Ocean"
+          ],
+          "correct": 2,
+          "seconds": 20,
+          "explanation": "The Pacific covers roughly a third of Earth's surface — more than all the land combined."
+        },
+        {
+          "type": "TrueFalse",
+          "text": "The Sahara Desert is in Africa.",
+          "answer": true,
+          "seconds": 20,
+          "explanation": "The Sahara stretches across much of North Africa and is the largest hot desert in the world."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "On which continent is Brazil?",
+          "options": [
+            "Africa",
+            "Europe",
+            "Asia",
+            "South America"
+          ],
+          "correct": 3,
+          "seconds": 20,
+          "explanation": "Brazil is the largest country in South America, covering nearly half of the continent."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "What is the capital of Italy?",
+          "options": [
+            "Rome",
+            "Milan",
+            "Venice",
+            "Naples"
+          ],
+          "correct": 0,
+          "seconds": 20,
+          "explanation": "Rome has been Italy's capital since 1871, a decade after the country was unified."
+        },
+        {
+          "type": "TrueFalse",
+          "text": "The Nile flows into the Mediterranean Sea.",
+          "answer": true,
+          "seconds": 20,
+          "explanation": "The Nile runs north through Egypt and empties into the Mediterranean through its delta near Alexandria."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "Mount Everest sits on the border between Nepal and which country?",
+          "options": [
+            "India",
+            "China",
+            "Bhutan",
+            "Pakistan"
+          ],
+          "correct": 1,
+          "seconds": 25,
+          "explanation": "Everest's summit lies on the border between Nepal and the Tibet region of China."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "What is the capital of Egypt?",
+          "options": [
+            "Alexandria",
+            "Giza",
+            "Cairo",
+            "Luxor"
+          ],
+          "correct": 2,
+          "seconds": 20,
+          "explanation": "Cairo, on the Nile, is Egypt's capital and its largest city."
+        },
+        {
+          "type": "TrueFalse",
+          "text": "Canada is the largest country in the world by area.",
+          "answer": false,
+          "seconds": 20,
+          "explanation": "Russia is the largest, at almost twice Canada's size. Canada is second."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "How many continents are there in the model most commonly taught in English-speaking countries?",
+          "options": [
+            "5",
+            "6",
+            "8",
+            "7"
+          ],
+          "correct": 3,
+          "seconds": 25,
+          "explanation": "Africa, Antarctica, Asia, Australia, Europe, North America and South America. Some countries teach fewer by joining the Americas, or Europe and Asia."
+        }
+      ]
+    },
+    {
+      "key": "geography-medium",
+      "category": "Geography",
+      "difficulty": "Medium",
+      "title": "Rivers & Ranges",
+      "description": "Mountains, rivers, straits and the lakes between them.",
+      "questions": [
+        {
+          "type": "MultipleChoice",
+          "text": "Which mountain range runs along the western edge of South America?",
+          "options": [
+            "The Rockies",
+            "The Alps",
+            "The Andes",
+            "The Atlas Mountains"
+          ],
+          "correct": 2,
+          "seconds": 25,
+          "explanation": "The Andes are the longest continental mountain range in the world, at about 7,000 km."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "Which river flows through Baghdad?",
+          "options": [
+            "Euphrates",
+            "Jordan",
+            "Nile",
+            "Tigris"
+          ],
+          "correct": 3,
+          "seconds": 25,
+          "explanation": "Baghdad is built on the Tigris. The Euphrates runs parallel to it further west."
+        },
+        {
+          "type": "TrueFalse",
+          "text": "The Danube flows through more countries than any other river.",
+          "answer": true,
+          "seconds": 25,
+          "explanation": "The Danube passes through ten countries, from Germany to Ukraine, before reaching the Black Sea."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "What is the capital of Canada?",
+          "options": [
+            "Ottawa",
+            "Toronto",
+            "Montreal",
+            "Vancouver"
+          ],
+          "correct": 0,
+          "seconds": 25,
+          "explanation": "Ottawa was chosen by Queen Victoria in 1857, partly as a compromise between English- and French-speaking Canada."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "Not counting Australia, which is the largest island in the world?",
+          "options": [
+            "New Guinea",
+            "Greenland",
+            "Borneo",
+            "Madagascar"
+          ],
+          "correct": 1,
+          "seconds": 25,
+          "explanation": "Greenland covers about 2.1 million km². Australia is counted as a continent rather than an island."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "Which desert covers much of southern Mongolia and northern China?",
+          "options": [
+            "Kalahari",
+            "Atacama",
+            "Gobi",
+            "Thar"
+          ],
+          "correct": 2,
+          "seconds": 25,
+          "explanation": "The Gobi is a cold desert: winters there regularly drop below −30 °C."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "Lake Titicaca lies on the border between Peru and which country?",
+          "options": [
+            "Chile",
+            "Ecuador",
+            "Argentina",
+            "Bolivia"
+          ],
+          "correct": 3,
+          "seconds": 25,
+          "explanation": "At about 3,800 m, Titicaca is often called the highest navigable lake in the world."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "Oslo is the capital of which country?",
+          "options": [
+            "Norway",
+            "Sweden",
+            "Denmark",
+            "Finland"
+          ],
+          "correct": 0,
+          "seconds": 25,
+          "explanation": "Oslo sits at the head of the Oslofjord in southern Norway."
+        },
+        {
+          "type": "TrueFalse",
+          "text": "Istanbul is the capital of Turkey.",
+          "answer": false,
+          "seconds": 25,
+          "explanation": "Ankara has been Turkey's capital since 1923. Istanbul is its largest city."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "The Strait of Gibraltar separates Spain from which country?",
+          "options": [
+            "Algeria",
+            "Morocco",
+            "Tunisia",
+            "Portugal"
+          ],
+          "correct": 1,
+          "seconds": 25,
+          "explanation": "At its narrowest the strait is about 14 km wide, between Europe and Africa."
+        }
+      ]
+    },
+    {
+      "key": "geography-hard",
+      "category": "Geography",
+      "difficulty": "Hard",
+      "title": "Borders & Islands",
+      "description": "Neighbours, coastlines and the places that are easy to mix up.",
+      "questions": [
+        {
+          "type": "MultipleChoice",
+          "text": "Which country has the longest coastline in the world?",
+          "options": [
+            "Norway",
+            "Indonesia",
+            "Russia",
+            "Canada"
+          ],
+          "correct": 3,
+          "seconds": 30,
+          "explanation": "Counting its thousands of Arctic islands, Canada's coastline is over 200,000 km long."
+        },
+        {
+          "type": "TypeTheAnswer",
+          "text": "What is the capital of Australia?",
+          "answer": "Canberra",
+          "seconds": 35,
+          "explanation": "Canberra was purpose-built as the capital, as a compromise between rivals Sydney and Melbourne."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "Which of these South American countries is landlocked?",
+          "options": [
+            "Bolivia",
+            "Peru",
+            "Chile",
+            "Ecuador"
+          ],
+          "correct": 0,
+          "seconds": 30,
+          "explanation": "Bolivia lost its coastline to Chile in the War of the Pacific (1879–1884)."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "Which is the largest country in Africa by area?",
+          "options": [
+            "DR Congo",
+            "Algeria",
+            "Sudan",
+            "Libya"
+          ],
+          "correct": 1,
+          "seconds": 30,
+          "explanation": "Algeria became Africa's largest country in 2011, when South Sudan split from Sudan."
+        },
+        {
+          "type": "TrueFalse",
+          "text": "The Caspian Sea is the largest lake in the world by surface area.",
+          "answer": true,
+          "seconds": 30,
+          "explanation": "Despite its name, the Caspian is usually classed as a lake. It covers about 370,000 km² and borders five countries."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "Which strait separates Asia from North America?",
+          "options": [
+            "Davis Strait",
+            "Hudson Strait",
+            "Bering Strait",
+            "Torres Strait"
+          ],
+          "correct": 2,
+          "seconds": 30,
+          "explanation": "The Bering Strait between Russia and Alaska is about 82 km wide at its narrowest."
+        },
+        {
+          "type": "TypeTheAnswer",
+          "text": "Apart from Vatican City, which independent country is completely surrounded by Italy?",
+          "answer": "San Marino",
+          "seconds": 35,
+          "explanation": "San Marino, on Mount Titano, is one of the oldest surviving republics in the world."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "Which is the longest river in Europe?",
+          "options": [
+            "Danube",
+            "Dnieper",
+            "Ural",
+            "Volga"
+          ],
+          "correct": 3,
+          "seconds": 30,
+          "explanation": "The Volga runs about 3,500 km through Russia to the Caspian Sea. The Danube is second."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "In which country is Mount Kilimanjaro?",
+          "options": [
+            "Tanzania",
+            "Kenya",
+            "Uganda",
+            "Ethiopia"
+          ],
+          "correct": 0,
+          "seconds": 30,
+          "explanation": "Kilimanjaro is in northern Tanzania, close to the Kenyan border — which is why Kenya is the usual wrong answer."
+        },
+        {
+          "type": "TrueFalse",
+          "text": "Lesotho is completely surrounded by South Africa.",
+          "answer": true,
+          "seconds": 30,
+          "explanation": "Lesotho is one of only three countries entirely surrounded by another, with San Marino and Vatican City."
+        }
+      ]
+    },
+    {
+      "key": "geography-expert",
+      "category": "Geography",
+      "difficulty": "Expert",
+      "title": "Map Masters",
+      "description": "For people who read atlases for fun.",
+      "questions": [
+        {
+          "type": "MultipleChoice",
+          "text": "Which of these capital cities lies furthest north?",
+          "options": [
+            "Reykjavík",
+            "Helsinki",
+            "Oslo",
+            "Tallinn"
+          ],
+          "correct": 0,
+          "seconds": 35,
+          "explanation": "Reykjavík is at about 64°N — the northernmost capital of a sovereign state. Helsinki, Oslo and Tallinn are all near 60°N."
+        },
+        {
+          "type": "TypeTheAnswer",
+          "text": "Which African river crosses the equator twice?",
+          "answer": "Congo",
+          "accept": [
+            "Congo River",
+            "Zaire",
+            "Zaire River"
+          ],
+          "seconds": 40,
+          "explanation": "The Congo's great arc takes it north across the equator and back south again on its way to the Atlantic."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "Which of these countries does NOT border Brazil?",
+          "options": [
+            "Peru",
+            "Chile",
+            "Bolivia",
+            "Colombia"
+          ],
+          "correct": 1,
+          "seconds": 35,
+          "explanation": "Chile and Ecuador are the only South American countries that don't share a border with Brazil."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "The Atacama Desert lies mainly in which country?",
+          "options": [
+            "Peru",
+            "Bolivia",
+            "Chile",
+            "Argentina"
+          ],
+          "correct": 2,
+          "seconds": 35,
+          "explanation": "The Atacama, in northern Chile, is one of the driest places on Earth."
+        },
+        {
+          "type": "TypeTheAnswer",
+          "text": "What is the capital of Bhutan?",
+          "answer": "Thimphu",
+          "seconds": 40,
+          "explanation": "Thimphu is one of the few capital cities in the world without traffic lights."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "Which is the largest country lying entirely within Europe?",
+          "options": [
+            "France",
+            "Spain",
+            "Sweden",
+            "Ukraine"
+          ],
+          "correct": 3,
+          "seconds": 35,
+          "explanation": "Ukraine covers about 600,000 km². Russia is larger but spans Europe and Asia."
+        },
+        {
+          "type": "TypeTheAnswer",
+          "text": "What is the deepest lake in the world?",
+          "answer": "Lake Baikal",
+          "accept": [
+            "Baikal"
+          ],
+          "seconds": 40,
+          "explanation": "Lake Baikal in Siberia is over 1,600 m deep and holds about a fifth of the world's unfrozen fresh surface water."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "How many countries share a land border with Germany?",
+          "options": [
+            "9",
+            "8",
+            "10",
+            "11"
+          ],
+          "correct": 0,
+          "seconds": 35,
+          "explanation": "Denmark, Poland, Czechia, Austria, Switzerland, France, Luxembourg, Belgium and the Netherlands."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "The Strait of Malacca separates the Malay Peninsula from which island?",
+          "options": [
+            "Borneo",
+            "Sumatra",
+            "Java",
+            "Sulawesi"
+          ],
+          "correct": 1,
+          "seconds": 35,
+          "explanation": "The Strait of Malacca is one of the busiest shipping lanes in the world."
+        },
+        {
+          "type": "TypeTheAnswer",
+          "text": "Which is the only country whose national flag is not a rectangle?",
+          "answer": "Nepal",
+          "seconds": 40,
+          "explanation": "Nepal's flag is made of two stacked triangular pennants, bordered in blue."
+        }
+      ]
+    },
+    {
+      "key": "general-knowledge-easy",
+      "category": "General Knowledge",
+      "difficulty": "Easy",
+      "title": "Everyday Know-How",
+      "description": "The things everyone half-remembers from school.",
+      "questions": [
+        {
+          "type": "MultipleChoice",
+          "text": "How many days are there in a leap year?",
+          "options": [
+            "364",
+            "366",
+            "365",
+            "367"
+          ],
+          "correct": 1,
+          "seconds": 20,
+          "explanation": "A leap year adds 29 February, almost every four years, to keep the calendar in step with Earth's orbit."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "How many sides does a hexagon have?",
+          "options": [
+            "5",
+            "7",
+            "6",
+            "8"
+          ],
+          "correct": 2,
+          "seconds": 20,
+          "explanation": "'Hex' comes from the Greek for six — think of the cells in a honeycomb."
+        },
+        {
+          "type": "TrueFalse",
+          "text": "A dozen means twelve.",
+          "answer": true,
+          "seconds": 20,
+          "explanation": "A dozen is twelve; a 'baker's dozen' is thirteen."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "What colour do you get by mixing blue and yellow paint?",
+          "options": [
+            "Purple",
+            "Orange",
+            "Brown",
+            "Green"
+          ],
+          "correct": 3,
+          "seconds": 20,
+          "explanation": "Blue and yellow paint make green. Red and blue make purple; red and yellow make orange."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "Which instrument has 88 keys on a standard modern model?",
+          "options": [
+            "Piano",
+            "Organ",
+            "Accordion",
+            "Harpsichord"
+          ],
+          "correct": 0,
+          "seconds": 20,
+          "explanation": "A standard modern piano has 52 white keys and 36 black ones."
+        },
+        {
+          "type": "TrueFalse",
+          "text": "The Summer Olympic Games are normally held every four years.",
+          "answer": true,
+          "seconds": 20,
+          "explanation": "The Summer and Winter Games each come round every four years, two years apart. Tokyo 2020 was the rare exception, held in 2021."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "In which country did the ancient Olympic Games begin?",
+          "options": [
+            "Italy",
+            "Greece",
+            "Egypt",
+            "Turkey"
+          ],
+          "correct": 1,
+          "seconds": 20,
+          "explanation": "The ancient Games were held at Olympia, in Greece, from the 8th century BC."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "How many minutes are there in two hours?",
+          "options": [
+            "100",
+            "110",
+            "120",
+            "140"
+          ],
+          "correct": 2,
+          "seconds": 20,
+          "explanation": "Sixty minutes an hour, times two."
+        },
+        {
+          "type": "TrueFalse",
+          "text": "A spider has six legs.",
+          "answer": false,
+          "seconds": 20,
+          "explanation": "Spiders have eight legs. Insects have six — spiders aren't insects."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "Which language has the most native speakers in the world?",
+          "options": [
+            "English",
+            "Spanish",
+            "Hindi",
+            "Mandarin Chinese"
+          ],
+          "correct": 3,
+          "seconds": 20,
+          "explanation": "Mandarin has the most native speakers. English has the most speakers overall once second-language speakers are counted."
+        }
+      ]
+    },
+    {
+      "key": "general-knowledge-medium",
+      "category": "General Knowledge",
+      "difficulty": "Medium",
+      "title": "Pub Quiz Classics",
+      "description": "The questions that turn up at every quiz night.",
+      "questions": [
+        {
+          "type": "MultipleChoice",
+          "text": "Who painted the Mona Lisa?",
+          "options": [
+            "Michelangelo",
+            "Raphael",
+            "Leonardo da Vinci",
+            "Botticelli"
+          ],
+          "correct": 2,
+          "seconds": 25,
+          "explanation": "Leonardo began it around 1503. Today it hangs in the Louvre in Paris."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "Who wrote 'Romeo and Juliet'?",
+          "options": [
+            "Christopher Marlowe",
+            "Charles Dickens",
+            "Geoffrey Chaucer",
+            "William Shakespeare"
+          ],
+          "correct": 3,
+          "seconds": 25,
+          "explanation": "Shakespeare wrote it in the mid-1590s, early in his career."
+        },
+        {
+          "type": "TrueFalse",
+          "text": "In chess, the bishop can only move diagonally.",
+          "answer": true,
+          "seconds": 25,
+          "explanation": "A bishop moves any number of squares diagonally, so it stays on squares of one colour for the whole game."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "What is the currency of Japan?",
+          "options": [
+            "Yen",
+            "Won",
+            "Yuan",
+            "Ringgit"
+          ],
+          "correct": 0,
+          "seconds": 25,
+          "explanation": "The yen. The won is South Korea's currency and the yuan is China's."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "How many players does a football (soccer) team have on the pitch at once?",
+          "options": [
+            "9",
+            "11",
+            "10",
+            "12"
+          ],
+          "correct": 1,
+          "seconds": 25,
+          "explanation": "Eleven, including the goalkeeper."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "Who composed the 'Moonlight Sonata'?",
+          "options": [
+            "Wolfgang Amadeus Mozart",
+            "Frédéric Chopin",
+            "Ludwig van Beethoven",
+            "Johann Sebastian Bach"
+          ],
+          "correct": 2,
+          "seconds": 25,
+          "explanation": "Beethoven wrote it in 1801. The nickname 'Moonlight' was given by a critic after his death."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "In Greek mythology, who is the king of the gods?",
+          "options": [
+            "Poseidon",
+            "Hades",
+            "Apollo",
+            "Zeus"
+          ],
+          "correct": 3,
+          "seconds": 25,
+          "explanation": "Zeus ruled from Mount Olympus. His Roman counterpart is Jupiter."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "In which city are the headquarters of the United Nations?",
+          "options": [
+            "New York",
+            "Geneva",
+            "Paris",
+            "Brussels"
+          ],
+          "correct": 0,
+          "seconds": 25,
+          "explanation": "The UN headquarters is in New York. Geneva hosts its largest office outside it."
+        },
+        {
+          "type": "TrueFalse",
+          "text": "'Hola' is Italian for 'hello'.",
+          "answer": false,
+          "seconds": 25,
+          "explanation": "'Hola' is Spanish. In Italian you'd say 'ciao' or 'buongiorno'."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "How many strings does a standard violin have?",
+          "options": [
+            "5",
+            "4",
+            "6",
+            "3"
+          ],
+          "correct": 1,
+          "seconds": 25,
+          "explanation": "Four, tuned G, D, A and E."
+        }
+      ]
+    },
+    {
+      "key": "general-knowledge-hard",
+      "category": "General Knowledge",
+      "difficulty": "Hard",
+      "title": "Curious Facts",
+      "description": "Trivia with a twist — the answers you'd swear were different.",
+      "questions": [
+        {
+          "type": "MultipleChoice",
+          "text": "Which is the only letter that doesn't appear in any U.S. state name?",
+          "options": [
+            "J",
+            "X",
+            "Z",
+            "Q"
+          ],
+          "correct": 3,
+          "seconds": 30,
+          "explanation": "J is in New Jersey, X in Texas and Z in Arizona — but no state name contains a Q."
+        },
+        {
+          "type": "TrueFalse",
+          "text": "The Great Wall of China can be seen from the Moon with the naked eye.",
+          "answer": false,
+          "seconds": 30,
+          "explanation": "It's far too narrow to see from the Moon — Apollo astronauts confirmed it. It is hard to spot even from low orbit."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "Which author created the detective Hercule Poirot?",
+          "options": [
+            "Agatha Christie",
+            "Dorothy L. Sayers",
+            "Arthur Conan Doyle",
+            "P. D. James"
+          ],
+          "correct": 0,
+          "seconds": 30,
+          "explanation": "Poirot first appeared in 'The Mysterious Affair at Styles' (1920). Conan Doyle created Sherlock Holmes."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "Who painted 'The Persistence of Memory', with its melting clocks?",
+          "options": [
+            "René Magritte",
+            "Salvador Dalí",
+            "Max Ernst",
+            "Joan Miró"
+          ],
+          "correct": 1,
+          "seconds": 30,
+          "explanation": "Dalí painted it in 1931. All four were surrealists, which is what makes this one tricky."
+        },
+        {
+          "type": "TrueFalse",
+          "text": "Botanically, bananas are berries.",
+          "answer": true,
+          "seconds": 30,
+          "explanation": "A banana grows from a single flower with one ovary — the botanical definition of a berry. Strawberries, oddly, aren't."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "How many players are on the field for each team in rugby union?",
+          "options": [
+            "13",
+            "11",
+            "15",
+            "12"
+          ],
+          "correct": 2,
+          "seconds": 30,
+          "explanation": "Rugby union has 15 a side. Rugby league has 13."
+        },
+        {
+          "type": "TypeTheAnswer",
+          "text": "In which city were the first modern Olympic Games held, in 1896?",
+          "answer": "Athens",
+          "seconds": 35,
+          "explanation": "The 1896 Games were held in Athens, honouring the ancient Games' Greek origins."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "Who composed the opera 'La traviata'?",
+          "options": [
+            "Giacomo Puccini",
+            "Gioachino Rossini",
+            "Gaetano Donizetti",
+            "Giuseppe Verdi"
+          ],
+          "correct": 3,
+          "seconds": 30,
+          "explanation": "Verdi's 'La traviata' premiered in Venice in 1853."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "What is the collective noun for a group of crows?",
+          "options": [
+            "A murder",
+            "A parliament",
+            "An unkindness",
+            "A conspiracy"
+          ],
+          "correct": 0,
+          "seconds": 30,
+          "explanation": "A murder of crows. A parliament is owls, and both an unkindness and a conspiracy are ravens."
+        },
+        {
+          "type": "TypeTheAnswer",
+          "text": "How many sides does a dodecagon have?",
+          "answer": "12",
+          "accept": [
+            "twelve"
+          ],
+          "seconds": 35,
+          "explanation": "'Dodeca' is Greek for twelve."
+        }
+      ]
+    },
+    {
+      "key": "general-knowledge-expert",
+      "category": "General Knowledge",
+      "difficulty": "Expert",
+      "title": "Polymath",
+      "description": "Books, music, art and ideas — for the all-rounder.",
+      "questions": [
+        {
+          "type": "MultipleChoice",
+          "text": "Which philosopher wrote 'The Republic'?",
+          "options": [
+            "Plato",
+            "Aristotle",
+            "Socrates",
+            "Epictetus"
+          ],
+          "correct": 0,
+          "seconds": 35,
+          "explanation": "Plato wrote it around 375 BC. Socrates is its main speaker but wrote nothing himself."
+        },
+        {
+          "type": "TypeTheAnswer",
+          "text": "Which Russian author wrote 'War and Peace'?",
+          "answer": "Leo Tolstoy",
+          "accept": [
+            "Tolstoy",
+            "Lev Tolstoy"
+          ],
+          "seconds": 40,
+          "explanation": "Tolstoy published it in instalments between 1865 and 1869."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "How many hearts does an octopus have?",
+          "options": [
+            "2",
+            "3",
+            "1",
+            "4"
+          ],
+          "correct": 1,
+          "seconds": 35,
+          "explanation": "Two hearts pump blood through the gills and a third pumps it round the body."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "Which novel begins with the line 'Call me Ishmael.'?",
+          "options": [
+            "Treasure Island",
+            "The Old Man and the Sea",
+            "Moby-Dick",
+            "Robinson Crusoe"
+          ],
+          "correct": 2,
+          "seconds": 35,
+          "explanation": "Herman Melville's 'Moby-Dick' was published in 1851."
+        },
+        {
+          "type": "TypeTheAnswer",
+          "text": "How many semitones are there in an octave?",
+          "answer": "12",
+          "accept": [
+            "twelve"
+          ],
+          "seconds": 40,
+          "explanation": "An octave spans twelve semitones — every key, white and black, from one C to the next."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "In which museum is the Rosetta Stone displayed?",
+          "options": [
+            "The Louvre",
+            "The Egyptian Museum, Cairo",
+            "The Metropolitan Museum of Art",
+            "The British Museum"
+          ],
+          "correct": 3,
+          "seconds": 35,
+          "explanation": "It has been in the British Museum in London since 1802."
+        },
+        {
+          "type": "TypeTheAnswer",
+          "text": "Which painter cut off part of his own ear in 1888?",
+          "answer": "Vincent van Gogh",
+          "accept": [
+            "Van Gogh"
+          ],
+          "seconds": 40,
+          "explanation": "Van Gogh did it in Arles in December 1888, after a quarrel with Paul Gauguin."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "In which athletics event would you perform the 'Fosbury Flop'?",
+          "options": [
+            "High jump",
+            "Pole vault",
+            "Long jump",
+            "Triple jump"
+          ],
+          "correct": 0,
+          "seconds": 35,
+          "explanation": "Dick Fosbury won Olympic gold with the backwards technique in 1968; nearly every high jumper now uses it."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "What is the currency of Switzerland?",
+          "options": [
+            "Euro",
+            "Swiss franc",
+            "Swiss mark",
+            "Krone"
+          ],
+          "correct": 1,
+          "seconds": 35,
+          "explanation": "Switzerland isn't in the EU and has kept the Swiss franc."
+        },
+        {
+          "type": "TypeTheAnswer",
+          "text": "Which Shakespeare play features the moneylender Shylock?",
+          "answer": "The Merchant of Venice",
+          "accept": [
+            "Merchant of Venice"
+          ],
+          "seconds": 40,
+          "explanation": "Shylock's demand for 'a pound of flesh' is the heart of 'The Merchant of Venice'."
+        }
+      ]
+    },
+    {
+      "key": "science-easy",
+      "category": "Science",
+      "difficulty": "Easy",
+      "title": "Science Starters",
+      "description": "Planets, plants and the basics of how things work.",
+      "questions": [
+        {
+          "type": "MultipleChoice",
+          "text": "Which planet is known as the Red Planet?",
+          "options": [
+            "Venus",
+            "Jupiter",
+            "Mercury",
+            "Mars"
+          ],
+          "correct": 3,
+          "seconds": 20,
+          "explanation": "Iron oxide — rust — in Mars's soil gives it its red colour."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "Which gas do plants take in from the air to make their food?",
+          "options": [
+            "Carbon dioxide",
+            "Oxygen",
+            "Nitrogen",
+            "Hydrogen"
+          ],
+          "correct": 0,
+          "seconds": 20,
+          "explanation": "In photosynthesis, plants turn carbon dioxide and water into sugar using sunlight, releasing oxygen."
+        },
+        {
+          "type": "TrueFalse",
+          "text": "At sea level, water boils at 100 °C.",
+          "answer": true,
+          "seconds": 20,
+          "explanation": "At sea level, pure water boils at 100 °C. Higher up, where air pressure is lower, it boils at a lower temperature."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "What is the closest star to Earth?",
+          "options": [
+            "Proxima Centauri",
+            "The Sun",
+            "Sirius",
+            "Polaris"
+          ],
+          "correct": 1,
+          "seconds": 20,
+          "explanation": "The Sun is a star. The next closest, Proxima Centauri, is over four light-years away."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "How many planets are in our Solar System?",
+          "options": [
+            "7",
+            "9",
+            "8",
+            "10"
+          ],
+          "correct": 2,
+          "seconds": 20,
+          "explanation": "Eight. Pluto was reclassified as a dwarf planet in 2006."
+        },
+        {
+          "type": "TrueFalse",
+          "text": "Sound travels faster than light.",
+          "answer": false,
+          "seconds": 20,
+          "explanation": "Light is almost a million times faster — it's why you see lightning before you hear the thunder."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "Which organ pumps blood around the body?",
+          "options": [
+            "Lungs",
+            "Liver",
+            "Kidneys",
+            "Heart"
+          ],
+          "correct": 3,
+          "seconds": 20,
+          "explanation": "An adult heart beats around 100,000 times a day."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "What is H₂O more commonly called?",
+          "options": [
+            "Water",
+            "Salt",
+            "Hydrogen peroxide",
+            "Oxygen"
+          ],
+          "correct": 0,
+          "seconds": 20,
+          "explanation": "Two hydrogen atoms and one oxygen atom make a water molecule. Hydrogen peroxide is H₂O₂."
+        },
+        {
+          "type": "TrueFalse",
+          "text": "The Moon makes its own light.",
+          "answer": false,
+          "seconds": 20,
+          "explanation": "Moonlight is sunlight reflected off the Moon's surface."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "Which force keeps us on the ground?",
+          "options": [
+            "Magnetism",
+            "Gravity",
+            "Friction",
+            "Electricity"
+          ],
+          "correct": 1,
+          "seconds": 20,
+          "explanation": "Earth's gravity pulls everything towards its centre."
+        }
+      ]
+    },
+    {
+      "key": "science-medium",
+      "category": "Science",
+      "difficulty": "Medium",
+      "title": "Body & Planet",
+      "description": "How the human body and planet Earth work.",
+      "questions": [
+        {
+          "type": "MultipleChoice",
+          "text": "How many bones are in the adult human body?",
+          "options": [
+            "206",
+            "186",
+            "226",
+            "306"
+          ],
+          "correct": 0,
+          "seconds": 25,
+          "explanation": "Babies are born with around 300 bones; many fuse together as they grow."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "Which is the largest planet in the Solar System?",
+          "options": [
+            "Saturn",
+            "Jupiter",
+            "Neptune",
+            "Uranus"
+          ],
+          "correct": 1,
+          "seconds": 25,
+          "explanation": "Jupiter is more than twice as massive as all the other planets combined."
+        },
+        {
+          "type": "TrueFalse",
+          "text": "Humans and non-avian dinosaurs lived at the same time.",
+          "answer": false,
+          "seconds": 25,
+          "explanation": "Non-avian dinosaurs died out about 66 million years ago; modern humans appeared only about 300,000 years ago."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "What is the chemical symbol for sodium?",
+          "options": [
+            "So",
+            "Sd",
+            "Na",
+            "S"
+          ],
+          "correct": 2,
+          "seconds": 25,
+          "explanation": "Na comes from 'natrium', its Latin name. S is sulfur."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "Which blood cells fight infection?",
+          "options": [
+            "Red blood cells",
+            "Platelets",
+            "Plasma",
+            "White blood cells"
+          ],
+          "correct": 3,
+          "seconds": 25,
+          "explanation": "White blood cells are the immune system's defenders. Red cells carry oxygen and platelets help blood clot."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "What is the most abundant gas in Earth's atmosphere?",
+          "options": [
+            "Nitrogen",
+            "Oxygen",
+            "Carbon dioxide",
+            "Argon"
+          ],
+          "correct": 0,
+          "seconds": 25,
+          "explanation": "Nitrogen makes up about 78% of the air, oxygen about 21%."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "Which organ produces insulin?",
+          "options": [
+            "Liver",
+            "Pancreas",
+            "Kidney",
+            "Spleen"
+          ],
+          "correct": 1,
+          "seconds": 25,
+          "explanation": "Insulin is made in the pancreas, by clusters of cells called the islets of Langerhans."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "At sea level, at what temperature in Fahrenheit does water boil?",
+          "options": [
+            "100 °F",
+            "180 °F",
+            "212 °F",
+            "200 °F"
+          ],
+          "correct": 2,
+          "seconds": 25,
+          "explanation": "212 °F, which is 100 °C. Water freezes at 32 °F."
+        },
+        {
+          "type": "TrueFalse",
+          "text": "Venus is the hottest planet in the Solar System.",
+          "answer": true,
+          "seconds": 25,
+          "explanation": "Venus's thick carbon dioxide atmosphere traps heat, keeping its surface at about 465 °C — hotter than Mercury."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "What is the largest organ of the human body?",
+          "options": [
+            "Liver",
+            "Brain",
+            "Lungs",
+            "Skin"
+          ],
+          "correct": 3,
+          "seconds": 25,
+          "explanation": "Skin covers about 2 m² on an adult. The liver is the largest internal organ."
+        }
+      ]
+    },
+    {
+      "key": "science-hard",
+      "category": "Science",
+      "difficulty": "Hard",
+      "title": "Elements & Forces",
+      "description": "Atoms, particles and the physics that ties them together.",
+      "questions": [
+        {
+          "type": "MultipleChoice",
+          "text": "What is the atomic number of carbon?",
+          "options": [
+            "12",
+            "6",
+            "8",
+            "14"
+          ],
+          "correct": 1,
+          "seconds": 30,
+          "explanation": "Carbon has six protons. 12 is the mass number of its most common isotope."
+        },
+        {
+          "type": "TrueFalse",
+          "text": "Diamond and graphite are both made of pure carbon.",
+          "answer": true,
+          "seconds": 30,
+          "explanation": "Both are carbon. Their atoms are just arranged differently — a rigid 3-D lattice in diamond, sliding sheets in graphite."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "Which of these particles has a negative charge?",
+          "options": [
+            "Proton",
+            "Neutron",
+            "Electron",
+            "Positron"
+          ],
+          "correct": 2,
+          "seconds": 30,
+          "explanation": "The electron is negative. The positron is its antimatter twin with a positive charge."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "What is the SI unit of electrical resistance?",
+          "options": [
+            "Volt",
+            "Ampere",
+            "Watt",
+            "Ohm"
+          ],
+          "correct": 3,
+          "seconds": 30,
+          "explanation": "The ohm (Ω) is named after the German physicist Georg Ohm."
+        },
+        {
+          "type": "TrueFalse",
+          "text": "An object's mass changes when it is taken to the Moon.",
+          "answer": false,
+          "seconds": 30,
+          "explanation": "Its weight drops to about a sixth, because the Moon's gravity is weaker. Its mass stays the same."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "Roughly how long does sunlight take to reach Earth?",
+          "options": [
+            "About 8 minutes",
+            "About 8 seconds",
+            "About 80 minutes",
+            "About 8 hours"
+          ],
+          "correct": 0,
+          "seconds": 30,
+          "explanation": "Light crosses the 150 million km in about 8 minutes 20 seconds."
+        },
+        {
+          "type": "TypeTheAnswer",
+          "text": "What is the most common element in the universe?",
+          "answer": "Hydrogen",
+          "seconds": 35,
+          "explanation": "Hydrogen makes up roughly three-quarters of the ordinary matter in the universe."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "Which element has the chemical symbol Fe?",
+          "options": [
+            "Fluorine",
+            "Iron",
+            "Francium",
+            "Fermium"
+          ],
+          "correct": 1,
+          "seconds": 30,
+          "explanation": "Fe comes from 'ferrum', the Latin for iron. Fluorine is F."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "Which planet has the shortest year?",
+          "options": [
+            "Venus",
+            "Mars",
+            "Mercury",
+            "Earth"
+          ],
+          "correct": 2,
+          "seconds": 30,
+          "explanation": "Mercury orbits the Sun in about 88 Earth days."
+        },
+        {
+          "type": "TypeTheAnswer",
+          "text": "What is the chemical symbol for gold?",
+          "answer": "Au",
+          "seconds": 35,
+          "explanation": "Au comes from 'aurum', the Latin for gold."
+        }
+      ]
+    },
+    {
+      "key": "science-expert",
+      "category": "Science",
+      "difficulty": "Expert",
+      "title": "Lab Legends",
+      "description": "Deep cuts from physics, chemistry, biology and space.",
+      "questions": [
+        {
+          "type": "MultipleChoice",
+          "text": "What is the speed of light in a vacuum, to the nearest round figure?",
+          "options": [
+            "About 150,000 km/s",
+            "About 3,000,000 km/s",
+            "About 300,000 km/s",
+            "About 30,000 km/s"
+          ],
+          "correct": 2,
+          "seconds": 35,
+          "explanation": "It's exactly 299,792.458 km/s — the metre is defined from it."
+        },
+        {
+          "type": "TypeTheAnswer",
+          "text": "Which scientist formulated the three laws of motion?",
+          "answer": "Isaac Newton",
+          "accept": [
+            "Newton",
+            "Sir Isaac Newton"
+          ],
+          "seconds": 40,
+          "explanation": "Newton published them in his 'Principia' in 1687."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "Which of these is a noble gas?",
+          "options": [
+            "Nitrogen",
+            "Chlorine",
+            "Fluorine",
+            "Argon"
+          ],
+          "correct": 3,
+          "seconds": 35,
+          "explanation": "Argon is a noble gas, and it makes up almost 1% of the air."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "What is the pH of pure water at 25 °C?",
+          "options": [
+            "7",
+            "0",
+            "14",
+            "1"
+          ],
+          "correct": 0,
+          "seconds": 35,
+          "explanation": "Pure water is neutral, with a pH of 7. Lower is acidic, higher is alkaline."
+        },
+        {
+          "type": "TypeTheAnswer",
+          "text": "Which part of the cell produces most of its energy, in the form of ATP?",
+          "answer": "Mitochondrion",
+          "accept": [
+            "Mitochondria"
+          ],
+          "seconds": 40,
+          "explanation": "Mitochondria carry out cellular respiration, and they have their own DNA."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "Who discovered penicillin in 1928?",
+          "options": [
+            "Louis Pasteur",
+            "Alexander Fleming",
+            "Joseph Lister",
+            "Robert Koch"
+          ],
+          "correct": 1,
+          "seconds": 35,
+          "explanation": "Fleming noticed mould killing bacteria on a culture plate he had left out in his London laboratory."
+        },
+        {
+          "type": "TypeTheAnswer",
+          "text": "What is the nearest large spiral galaxy to the Milky Way?",
+          "answer": "Andromeda",
+          "accept": [
+            "Andromeda Galaxy",
+            "M31"
+          ],
+          "seconds": 40,
+          "explanation": "Andromeda is about 2.5 million light-years away, and the two galaxies are slowly moving towards each other."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "Which planet spins on its side, with an axial tilt of about 98°?",
+          "options": [
+            "Neptune",
+            "Saturn",
+            "Uranus",
+            "Venus"
+          ],
+          "correct": 2,
+          "seconds": 35,
+          "explanation": "Uranus was probably knocked over by a huge collision early in its history."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "What holds the two strands of a DNA double helix together?",
+          "options": [
+            "Ionic bonds",
+            "Covalent bonds",
+            "Metallic bonds",
+            "Hydrogen bonds"
+          ],
+          "correct": 3,
+          "seconds": 35,
+          "explanation": "Hydrogen bonds join the base pairs — A with T, and C with G. Weak enough to unzip when DNA is copied."
+        },
+        {
+          "type": "TypeTheAnswer",
+          "text": "What is the SI unit of force?",
+          "answer": "Newton",
+          "accept": [
+            "Newtons",
+            "N"
+          ],
+          "seconds": 40,
+          "explanation": "One newton is the force needed to accelerate 1 kg at 1 m/s²."
+        }
+      ]
+    },
+    {
+      "key": "history-easy",
+      "category": "History",
+      "difficulty": "Easy",
+      "title": "Famous Firsts",
+      "description": "The firsts, the founders and the moments everyone knows.",
+      "questions": [
+        {
+          "type": "MultipleChoice",
+          "text": "Who was the first President of the United States?",
+          "options": [
+            "Thomas Jefferson",
+            "Abraham Lincoln",
+            "John Adams",
+            "George Washington"
+          ],
+          "correct": 3,
+          "seconds": 20,
+          "explanation": "Washington took office in 1789 and served two terms."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "Which ancient civilisation built the pyramids of Giza?",
+          "options": [
+            "The Egyptians",
+            "The Romans",
+            "The Greeks",
+            "The Maya"
+          ],
+          "correct": 0,
+          "seconds": 20,
+          "explanation": "They were built as royal tombs about 4,500 years ago."
+        },
+        {
+          "type": "TrueFalse",
+          "text": "Neil Armstrong was the first person to walk on the Moon.",
+          "answer": true,
+          "seconds": 20,
+          "explanation": "He stepped onto the Moon on 20 July 1969, during the Apollo 11 mission."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "In which year did World War II end?",
+          "options": [
+            "1918",
+            "1945",
+            "1939",
+            "1950"
+          ],
+          "correct": 1,
+          "seconds": 20,
+          "explanation": "It ended in Europe in May 1945 and in Asia in September 1945."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "Who was the first person to travel into space?",
+          "options": [
+            "Neil Armstrong",
+            "Buzz Aldrin",
+            "Yuri Gagarin",
+            "John Glenn"
+          ],
+          "correct": 2,
+          "seconds": 20,
+          "explanation": "Gagarin orbited Earth in Vostok 1 on 12 April 1961."
+        },
+        {
+          "type": "TrueFalse",
+          "text": "The Titanic sank on its first voyage.",
+          "answer": true,
+          "seconds": 20,
+          "explanation": "It struck an iceberg on its maiden voyage in April 1912."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "In which country did the Renaissance begin?",
+          "options": [
+            "France",
+            "England",
+            "Spain",
+            "Italy"
+          ],
+          "correct": 3,
+          "seconds": 20,
+          "explanation": "It began in Italian cities such as Florence in the 14th century."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "Which explorer reached the Americas in 1492?",
+          "options": [
+            "Christopher Columbus",
+            "Vasco da Gama",
+            "Ferdinand Magellan",
+            "James Cook"
+          ],
+          "correct": 0,
+          "seconds": 20,
+          "explanation": "Columbus landed in the Bahamas, sailing for the Spanish crown."
+        },
+        {
+          "type": "TrueFalse",
+          "text": "The Great Wall of China was built in a single year.",
+          "answer": false,
+          "seconds": 20,
+          "explanation": "It was built, rebuilt and extended over many centuries by different dynasties."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "Who was the first woman to win a Nobel Prize?",
+          "options": [
+            "Florence Nightingale",
+            "Marie Curie",
+            "Ada Lovelace",
+            "Rosalind Franklin"
+          ],
+          "correct": 1,
+          "seconds": 20,
+          "explanation": "Marie Curie shared the 1903 Physics prize, and won Chemistry alone in 1911."
+        }
+      ]
+    },
+    {
+      "key": "history-medium",
+      "category": "History",
+      "difficulty": "Medium",
+      "title": "Empires & Revolutions",
+      "description": "Rising empires, falling kings and the revolutions in between.",
+      "questions": [
+        {
+          "type": "MultipleChoice",
+          "text": "In which year did the French Revolution begin?",
+          "options": [
+            "1789",
+            "1776",
+            "1815",
+            "1848"
+          ],
+          "correct": 0,
+          "seconds": 25,
+          "explanation": "It began in 1789; the storming of the Bastille on 14 July is now France's national day."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "Who was crowned the first Emperor of the French in 1804?",
+          "options": [
+            "Louis XIV",
+            "Napoleon Bonaparte",
+            "Charlemagne",
+            "Napoleon III"
+          ],
+          "correct": 1,
+          "seconds": 25,
+          "explanation": "Napoleon crowned himself Emperor at Notre-Dame in December 1804."
+        },
+        {
+          "type": "TrueFalse",
+          "text": "The Berlin Wall fell in 1989.",
+          "answer": true,
+          "seconds": 25,
+          "explanation": "The border opened on 9 November 1989, and Germany reunified the following year."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "Which empire was founded by Genghis Khan?",
+          "options": [
+            "The Ottoman Empire",
+            "The Persian Empire",
+            "The Mongol Empire",
+            "The Roman Empire"
+          ],
+          "correct": 2,
+          "seconds": 25,
+          "explanation": "The Mongol Empire went on to become the largest land empire in history."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "Which Roman emperor ordered a wall built across northern Britain in AD 122?",
+          "options": [
+            "Nero",
+            "Augustus",
+            "Trajan",
+            "Hadrian"
+          ],
+          "correct": 3,
+          "seconds": 25,
+          "explanation": "Hadrian's Wall ran about 117 km, from coast to coast."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "Which civilisation built Machu Picchu?",
+          "options": [
+            "The Inca",
+            "The Aztecs",
+            "The Maya",
+            "The Olmecs"
+          ],
+          "correct": 0,
+          "seconds": 25,
+          "explanation": "The Inca built it in the 15th century, high in the Andes of Peru."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "Which ship carried the Pilgrims to America in 1620?",
+          "options": [
+            "Santa María",
+            "Mayflower",
+            "Endeavour",
+            "Victory"
+          ],
+          "correct": 1,
+          "seconds": 25,
+          "explanation": "The Mayflower landed near Cape Cod and its passengers founded Plymouth Colony."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "Who was the British Prime Minister for most of World War II?",
+          "options": [
+            "Neville Chamberlain",
+            "Clement Attlee",
+            "Winston Churchill",
+            "Anthony Eden"
+          ],
+          "correct": 2,
+          "seconds": 25,
+          "explanation": "Churchill took over from Chamberlain in May 1940 and led until July 1945."
+        },
+        {
+          "type": "TrueFalse",
+          "text": "The United States Declaration of Independence was adopted in 1776.",
+          "answer": true,
+          "seconds": 25,
+          "explanation": "The Continental Congress adopted it on 4 July 1776."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "In which year did the Ottoman Empire capture Constantinople?",
+          "options": [
+            "1492",
+            "1299",
+            "1571",
+            "1453"
+          ],
+          "correct": 3,
+          "seconds": 25,
+          "explanation": "Sultan Mehmed II took the city in 1453, ending the Byzantine Empire."
+        }
+      ]
+    },
+    {
+      "key": "history-hard",
+      "category": "History",
+      "difficulty": "Hard",
+      "title": "Turning Points",
+      "description": "Battles, treaties and the dates that changed everything.",
+      "questions": [
+        {
+          "type": "MultipleChoice",
+          "text": "In which year was the Battle of Hastings fought?",
+          "options": [
+            "1067",
+            "1066",
+            "1056",
+            "1076"
+          ],
+          "correct": 1,
+          "seconds": 30,
+          "explanation": "William of Normandy defeated King Harold II in October 1066."
+        },
+        {
+          "type": "TrueFalse",
+          "text": "Cleopatra lived closer in time to the Moon landing than to the building of the Great Pyramid of Giza.",
+          "answer": true,
+          "seconds": 30,
+          "explanation": "The Great Pyramid was built around 2560 BC and Cleopatra died in 30 BC — about 2,500 years apart. The Moon landing came about 2,000 years after her."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "Which treaty ended World War I between the Allies and Germany?",
+          "options": [
+            "Treaty of Trianon",
+            "Treaty of Paris",
+            "Treaty of Versailles",
+            "Treaty of Brest-Litovsk"
+          ],
+          "correct": 2,
+          "seconds": 30,
+          "explanation": "Versailles was signed with Germany in 1919. Trianon was Hungary's treaty, and Brest-Litovsk took Russia out of the war in 1918."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "Who was the last Tsar of Russia?",
+          "options": [
+            "Alexander III",
+            "Alexander II",
+            "Peter III",
+            "Nicholas II"
+          ],
+          "correct": 3,
+          "seconds": 30,
+          "explanation": "Nicholas II abdicated in 1917 and was killed with his family in 1918."
+        },
+        {
+          "type": "TrueFalse",
+          "text": "The Hundred Years' War lasted exactly one hundred years.",
+          "answer": false,
+          "seconds": 30,
+          "explanation": "It ran from 1337 to 1453 — 116 years, with long truces in between."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "In which year was Magna Carta sealed?",
+          "options": [
+            "1215",
+            "1216",
+            "1225",
+            "1265"
+          ],
+          "correct": 0,
+          "seconds": 30,
+          "explanation": "King John sealed it at Runnymede in June 1215. It was reissued in 1216 and 1225."
+        },
+        {
+          "type": "TypeTheAnswer",
+          "text": "In which city was the U.S. Declaration of Independence adopted?",
+          "answer": "Philadelphia",
+          "seconds": 35,
+          "explanation": "The Continental Congress met at what is now Independence Hall in Philadelphia."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "Which Persian empire did Cyrus the Great found?",
+          "options": [
+            "Seleucid",
+            "Achaemenid",
+            "Parthian",
+            "Sasanian"
+          ],
+          "correct": 1,
+          "seconds": 30,
+          "explanation": "Cyrus founded the Achaemenid Empire in the 6th century BC."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "Whose assassination in Sarajevo in 1914 triggered World War I?",
+          "options": [
+            "Emperor Franz Joseph",
+            "Crown Prince Rudolf",
+            "Archduke Franz Ferdinand",
+            "Emperor Karl I"
+          ],
+          "correct": 2,
+          "seconds": 30,
+          "explanation": "Franz Ferdinand was heir to the Austro-Hungarian throne. Franz Joseph was the Emperor, his uncle."
+        },
+        {
+          "type": "TypeTheAnswer",
+          "text": "Which Carthaginian general crossed the Alps with war elephants to invade Italy?",
+          "answer": "Hannibal",
+          "accept": [
+            "Hannibal Barca"
+          ],
+          "seconds": 35,
+          "explanation": "Hannibal crossed the Alps in 218 BC, during the Second Punic War."
+        }
+      ]
+    },
+    {
+      "key": "history-expert",
+      "category": "History",
+      "difficulty": "Expert",
+      "title": "Deep Archives",
+      "description": "Ancient scripts, forgotten emperors and the fine print of history.",
+      "questions": [
+        {
+          "type": "MultipleChoice",
+          "text": "In which year was Romulus Augustulus deposed, marking the end of the Western Roman Empire?",
+          "options": [
+            "410",
+            "455",
+            "476",
+            "493"
+          ],
+          "correct": 2,
+          "seconds": 35,
+          "explanation": "Odoacer deposed him in 476. Rome was sacked by the Visigoths in 410 and the Vandals in 455."
+        },
+        {
+          "type": "TypeTheAnswer",
+          "text": "Which Byzantine emperor built the Hagia Sophia, completed in 537?",
+          "answer": "Justinian I",
+          "accept": [
+            "Justinian",
+            "Justinian the Great"
+          ],
+          "seconds": 40,
+          "explanation": "Justinian I rebuilt it after riots destroyed the earlier church in 532."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "Who was crowned Emperor of the Romans by Pope Leo III on Christmas Day, 800?",
+          "options": [
+            "Otto I",
+            "Pepin the Short",
+            "Louis the Pious",
+            "Charlemagne"
+          ],
+          "correct": 3,
+          "seconds": 35,
+          "explanation": "Charlemagne's coronation revived the title of emperor in the West. Otto I was crowned in 962."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "Which war did the Peace of Westphalia end in 1648?",
+          "options": [
+            "The Thirty Years' War",
+            "The Hundred Years' War",
+            "The War of the Spanish Succession",
+            "The Seven Years' War"
+          ],
+          "correct": 0,
+          "seconds": 35,
+          "explanation": "The Thirty Years' War devastated central Europe from 1618 to 1648."
+        },
+        {
+          "type": "TypeTheAnswer",
+          "text": "On which ship did Charles Darwin sail around the world?",
+          "answer": "HMS Beagle",
+          "accept": [
+            "Beagle",
+            "The Beagle"
+          ],
+          "seconds": 40,
+          "explanation": "Darwin's five-year voyage on the Beagle (1831–1836) gave him the observations behind his theory of evolution."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "Which dynasty built most of the Great Wall of China as it stands today?",
+          "options": [
+            "Qin",
+            "Ming",
+            "Han",
+            "Tang"
+          ],
+          "correct": 1,
+          "seconds": 35,
+          "explanation": "Most of the surviving brick-and-stone wall was built under the Ming (1368–1644). The Qin built earlier walls."
+        },
+        {
+          "type": "TypeTheAnswer",
+          "text": "Which Babylonian king issued one of the earliest written law codes?",
+          "answer": "Hammurabi",
+          "accept": [
+            "Hammurapi"
+          ],
+          "seconds": 40,
+          "explanation": "The Code of Hammurabi, from about 1750 BC, was carved on a stone stele now in the Louvre."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "The Battle of Kosovo in 1389 was fought between Serbian-led forces and which empire?",
+          "options": [
+            "The Byzantine Empire",
+            "The Mongol Empire",
+            "The Ottoman Empire",
+            "The Habsburg Monarchy"
+          ],
+          "correct": 2,
+          "seconds": 35,
+          "explanation": "Both the Serbian prince Lazar and the Ottoman sultan Murad I died in the battle."
+        },
+        {
+          "type": "MultipleChoice",
+          "text": "Which civilisation wrote in the script known as Linear B?",
+          "options": [
+            "The Minoans",
+            "The Hittites",
+            "The Phoenicians",
+            "The Mycenaean Greeks"
+          ],
+          "correct": 3,
+          "seconds": 35,
+          "explanation": "Linear B records an early form of Greek. The older Linear A was used by the Minoans and is still undeciphered."
+        },
+        {
+          "type": "TypeTheAnswer",
+          "text": "The Rosetta Stone was the key to deciphering which ancient writing system?",
+          "answer": "Egyptian hieroglyphs",
+          "accept": [
+            "Hieroglyphs",
+            "Hieroglyphics",
+            "Egyptian hieroglyphics"
+          ],
+          "seconds": 40,
+          "explanation": "Its same text in Greek, Demotic and hieroglyphs let Jean-François Champollion crack hieroglyphs in 1822."
+        }
+      ]
+    }
+  ]
+}

@@ -69,6 +69,12 @@ namespace QuizAPI.DTOs.Quiz
 
         public bool Gradient {  get; set; } = false;
 
+        /// <summary>
+        /// Which slot on the quiz home page this quiz fills (<c>geography-easy</c>…), or null for any
+        /// other quiz. See docs/quiz/featured-quizzes.md.
+        /// </summary>
+        public string? FeaturedKey { get; set; }
+
         // Soft-delete timestamp. Null = live. Only ever non-null in admin (includeDeleted) reads;
         // the frontend uses it to badge a row as deleted.
         public DateTime? DeletedAt { get; set; }

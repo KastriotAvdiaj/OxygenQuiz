@@ -17,6 +17,12 @@
         /// </summary>
         bool IsAdmin { get; }
 
+        /// <summary>
+        /// Holds SuperAdmin. Needed where Admin is not enough — deleting or unpublishing a
+        /// featured quiz (docs/quiz/featured-quizzes.md).
+        /// </summary>
+        bool IsSuperAdmin { get; }
+
         /// <summary>Holds the Teacher role (docs/auth/teacher-role.md).</summary>
         bool IsTeacher { get; }
 

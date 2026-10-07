@@ -94,6 +94,17 @@ namespace QuizAPI.Models.Quiz
         [MaxLength(64)]
         public string? ShareToken { get; set; }
 
+        /// <summary>
+        /// Marks one of the featured quizzes on the quiz home page — <c>geography-easy</c> and so on —
+        /// and is how the page and the seeder find it in any database, since ids differ between
+        /// environments. Null for every other quiz. A featured quiz may only be deleted or have its
+        /// status changed by a SuperAdmin. See docs/quiz/featured-quizzes.md and
+        /// docs/adr/0026-featured-quizzes-are-seeded-once-and-protected.md.
+        /// Unique when present (filtered index in <see cref="Data.ApplicationDbContext"/>).
+        /// </summary>
+        [MaxLength(64)]
+        public string? FeaturedKey { get; set; }
+
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
 

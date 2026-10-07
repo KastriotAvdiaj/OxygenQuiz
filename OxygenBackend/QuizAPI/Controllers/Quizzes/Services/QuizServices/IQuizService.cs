@@ -17,6 +17,12 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
 
         // Reference implementation of the shared filtering framework (operators + search +
         // sort + body-envelope pagination). See docs/quiz/filtering.md.
+        /// <summary>
+        /// The featured quizzes for the quiz home page: Public, not deleted, visible to the caller.
+        /// Guests included. See docs/quiz/featured-quizzes.md.
+        /// </summary>
+        Task<List<QuizSummaryDTO>> GetFeaturedQuizzesAsync(CancellationToken ct = default);
+
         Task<PagedResponse<QuizSummaryDTO>> SearchQuizzesAsync(
             FilterQuery query,
             Guid? restrictToUserId = null,

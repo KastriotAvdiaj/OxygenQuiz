@@ -11,7 +11,10 @@ namespace QuizAPI.Services
     /// Runtime (startup) seeding for data that can't live in migrations:
     ///  - the admin/superadmin account, whose BCrypt hash is non-deterministic and whose
     ///    password must come from configuration/secrets (never source control);
-    ///  - Development-only sample lookups and questions, so a fresh dev DB isn't empty.
+    ///  - the guest-play placeholder account;
+    ///  - the baseline lookups, the OxygenQuiz account and the featured quizzes, in every
+    ///    environment (<see cref="FeaturedQuizzes.FeaturedQuizSeeder"/>);
+    ///  - Development-only extra lookups and sample questions, so a fresh dev DB isn't empty.
     ///
     /// Static reference data (roles, permissions) is seeded via HasData in the model and is
     /// NOT handled here. Every step is idempotent (check-then-insert), so running it on every
@@ -25,23 +28,30 @@ namespace QuizAPI.Services
         private readonly IConfiguration _config;
         private readonly IHostEnvironment _env;
         private readonly ILogger<DbSeeder> _logger;
+        private readonly FeaturedQuizzes.FeaturedQuizSeeder _featured;
 
         public DbSeeder(
             ApplicationDbContext db,
             IConfiguration config,
             IHostEnvironment env,
-            ILogger<DbSeeder> logger)
+            ILogger<DbSeeder> logger,
+            FeaturedQuizzes.FeaturedQuizSeeder featured)
         {
             _db = db;
             _config = config;
             _env = env;
             _logger = logger;
+            _featured = featured;
         }
 
         public async Task SeedAsync(CancellationToken ct = default)
         {
             var admin = await EnsureAdminAsync(ct);
             await EnsureGuestAccountAsync(ct);
+
+            // Every environment: the baseline lookups, the OxygenQuiz account and the featured
+            // quizzes the quiz home page is built from (docs/quiz/featured-quizzes.md).
+            await _featured.SeedAsync(ct);
 
             if (_env.IsDevelopment())
             {
@@ -151,45 +161,27 @@ namespace QuizAPI.Services
         }
 
         /// <summary>
-        /// Development-only sample content: lookups (languages/difficulties/categories) and a few
-        /// questions. Each block is guarded so re-running never duplicates rows.
+        /// Development-only sample content: a few extra lookups and sample questions. Each block is
+        /// guarded so re-running never duplicates rows.
         /// </summary>
         private async Task EnsureSampleDataAsync(Guid adminUserId, CancellationToken ct)
         {
-            if (!await _db.QuestionLanguages.IgnoreQueryFilters().AnyAsync(ct))
-            {
-                _db.QuestionLanguages.AddRange(
-                    new QuestionLanguage { Language = "Unspecified", UserId = adminUserId, CreatedAt = DateTime.UtcNow },
-                    new QuestionLanguage { Language = "English", UserId = adminUserId, CreatedAt = DateTime.UtcNow },
-                    new QuestionLanguage { Language = "Spanish", UserId = adminUserId, CreatedAt = DateTime.UtcNow },
-                    new QuestionLanguage { Language = "German", UserId = adminUserId, CreatedAt = DateTime.UtcNow },
-                    new QuestionLanguage { Language = "French", UserId = adminUserId, CreatedAt = DateTime.UtcNow });
-                await _db.SaveChangesAsync(ct);
-            }
+            // The baseline (Unspecified, English, the five difficulties, the four featured
+            // categories) is already there — FeaturedQuizSeeder runs first in every environment.
+            // Development only adds a few extras, by name, so they appear even on a database that
+            // predates this split.
+            var languages = await _db.QuestionLanguages.Select(l => l.Language).ToListAsync(ct);
+            foreach (var language in new[] { "Spanish", "German", "French" }.Except(languages))
+                _db.QuestionLanguages.Add(new QuestionLanguage { Language = language, UserId = adminUserId, CreatedAt = DateTime.UtcNow });
 
-            if (!await _db.QuestionDifficulties.IgnoreQueryFilters().AnyAsync(ct))
-            {
-                _db.QuestionDifficulties.AddRange(
-                    new QuestionDifficulty { Level = "Unspecified", Weight = 0, UserId = adminUserId, CreatedAt = DateTime.UtcNow },
-                    new QuestionDifficulty { Level = "Easy", Weight = 1, UserId = adminUserId, CreatedAt = DateTime.UtcNow },
-                    new QuestionDifficulty { Level = "Medium", Weight = 2, UserId = adminUserId, CreatedAt = DateTime.UtcNow },
-                    new QuestionDifficulty { Level = "Hard", Weight = 3, UserId = adminUserId, CreatedAt = DateTime.UtcNow },
-                    new QuestionDifficulty { Level = "Expert", Weight = 4, UserId = adminUserId, CreatedAt = DateTime.UtcNow });
-                await _db.SaveChangesAsync(ct);
-            }
+            if (!await _db.QuestionCategories.AnyAsync(c => c.Name == "Technology", ct))
+                _db.QuestionCategories.Add(new QuestionCategory { Name = "Technology", UserId = adminUserId, CreatedAt = DateTime.UtcNow, ColorPaletteJson = JsonSerializer.Serialize(new[] { "#455A64", "#CFD8DC" }), Gradient = true });
 
-            if (!await _db.QuestionCategories.IgnoreQueryFilters().AnyAsync(ct))
-            {
-                _db.QuestionCategories.AddRange(
-                    new QuestionCategory { Name = "Unspecified", UserId = adminUserId, CreatedAt = DateTime.UtcNow },
-                    new QuestionCategory { Name = "Science", UserId = adminUserId, CreatedAt = DateTime.UtcNow, ColorPaletteJson = JsonSerializer.Serialize(new[] { "#2196F3", "#BBDEFB" }), Gradient = true },
-                    new QuestionCategory { Name = "History", UserId = adminUserId, CreatedAt = DateTime.UtcNow, ColorPaletteJson = JsonSerializer.Serialize(new[] { "#A1887F", "#D7CCC8" }) },
-                    new QuestionCategory { Name = "Technology", UserId = adminUserId, CreatedAt = DateTime.UtcNow, ColorPaletteJson = JsonSerializer.Serialize(new[] { "#455A64", "#CFD8DC" }), Gradient = true },
-                    new QuestionCategory { Name = "Geography", UserId = adminUserId, CreatedAt = DateTime.UtcNow, ColorPaletteJson = JsonSerializer.Serialize(new[] { "#4CAF50", "#C8E6C9" }) });
-                await _db.SaveChangesAsync(ct);
-            }
+            await _db.SaveChangesAsync(ct);
 
-            if (!await _db.Questions.IgnoreQueryFilters().AnyAsync(ct))
+            // Keyed on the admin's own questions: the featured quizzes' questions (owned by the
+            // OxygenQuiz account) already exist by now and must not count as "sample seeded".
+            if (!await _db.Questions.IgnoreQueryFilters().AnyAsync(q => q.UserId == adminUserId, ct))
             {
                 var englishLangId = await _db.QuestionLanguages.IgnoreQueryFilters().Where(l => l.Language == "English").Select(l => l.Id).FirstAsync(ct);
                 var easyDiffId = await _db.QuestionDifficulties.IgnoreQueryFilters().Where(d => d.Level == "Easy").Select(d => d.ID).FirstAsync(ct);

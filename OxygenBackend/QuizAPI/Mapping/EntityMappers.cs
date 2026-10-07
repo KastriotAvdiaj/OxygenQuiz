@@ -451,6 +451,7 @@ namespace QuizAPI.Mapping
                 UserProfileImageUrl = q.User == null ? null : q.User.ProfileImageUrl,
                 Status = q.Status.ToString(),
                 Format = q.Format == QuizFormat.Associations ? FormatNames.Associations : FormatNames.Classic,
+                FeaturedKey = q.FeaturedKey,
                 DeletedAt = q.DeletedAt
             };
 

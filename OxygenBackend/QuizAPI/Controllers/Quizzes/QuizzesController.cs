@@ -143,6 +143,18 @@ namespace QuizAPI.Controllers.Quizzes
             return Ok(result);
         }
 
+        /// <summary>
+        /// The featured quizzes for the quiz home page (<c>/choose-quiz</c>). Anonymous, because the
+        /// page is a guest's first stop. See docs/quiz/featured-quizzes.md.
+        /// </summary>
+        [HttpGet("featured")]
+        [AllowAnonymous]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetFeaturedQuizzes(CancellationToken ct)
+        {
+            return Ok(await _quizService.GetFeaturedQuizzesAsync(ct));
+        }
+
         [HttpGet("mine/search")]
         [Authorize]
         [ProducesResponseType(StatusCodes.Status200OK)]

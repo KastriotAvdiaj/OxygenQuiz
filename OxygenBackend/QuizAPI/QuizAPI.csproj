@@ -41,6 +41,12 @@
     <Folder Include="wwwroot\uploads\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- The featured quizzes' content (docs/quiz/featured-quizzes.md). Embedded rather than copied,
+         so it can't go missing from a publish folder. -->
+    <EmbeddedResource Include="Seed\featured-quizzes.json" LogicalName="QuizAPI.Seed.featured-quizzes.json" />
+  </ItemGroup>
+
 
   <ItemGroup>
     <!-- PwnedPasswordsChecker deliberately keeps its hash-splitting and response-parsing helpers

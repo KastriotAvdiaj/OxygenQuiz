@@ -14,5 +14,6 @@ public sealed class TestCurrentUserService : ICurrentUserService
     public bool IsAuthenticated { get; init; } = true;
     public bool IsAdmin { get; init; } = true;
     public bool IsTeacher { get; init; }
+    public bool IsSuperAdmin { get; init; }
     public bool CanSeePreviewFormats => IsAdmin || IsTeacher;
 }
