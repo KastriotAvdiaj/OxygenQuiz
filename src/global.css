@@ -69,12 +69,6 @@ html, body {
   padding-right: env(safe-area-inset-right);
 }
 
-@font-face {
-  font-family: "Quiz-Card-Font";
-  src: url(/public/assets/GordQucik-Black.woff2) format("woff2");
-  font-weight: normal;
-  font-style: normal;
-}
 
 body {
   background-size: cover;
