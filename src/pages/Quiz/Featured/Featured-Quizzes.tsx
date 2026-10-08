@@ -14,6 +14,7 @@ import { useFeaturedQuizzes } from "./api/get-featured-quizzes";
 import { CATEGORY_PANELS, fillPanels } from "./featured-catalogue";
 import { CategoryPanel } from "./category-panel";
 import { SignUpForMoreDialog } from "./sign-up-for-more-dialog";
+import { PlayWithFriendsCard, TryAssociationsCard } from "./side-promos";
 
 /** Where "Browse all" goes: the full, filterable catalogue. */
 export const CATALOGUE_PATH = "/choose-quiz/all";
@@ -67,7 +68,7 @@ export function FeaturedQuizzes() {
         initial="hidden"
         animate="shown"
         variants={pageVariants}
-        className="mx-auto w-full max-w-6xl px-4 pb-12 pt-4 sm:px-6 sm:pb-16 sm:pt-5"
+        className="relative mx-auto w-full max-w-6xl px-4 pb-12 pt-4 sm:px-6 sm:pb-16 sm:pt-5"
       >
         {/* One row: Back at the left edge, the heading centred, Browse all at the right edge. The
             outer columns are equal (1fr each), so the heading stays centred whatever the buttons'
@@ -98,13 +99,31 @@ export function FeaturedQuizzes() {
 
           <Link to={CATALOGUE_PATH} tabIndex={-1} className="justify-self-end">
             {/* Primary, with an arrow: the one way on from here, to a page of its own. */}
-            <LiftedButton size="sm" className="gap-1.5" aria-label="Browse all quizzes">
+            <LiftedButton
+              size="sm"
+              className="gap-1.5"
+              aria-label="Browse all quizzes"
+            >
               <span className="hidden sm:inline">Browse all</span>
               <span className="sm:hidden">All</span>
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </LiftedButton>
           </Link>
         </motion.header>
+
+        {/* Beside the panels, in the page's side margins — only where the screen leaves room for
+            them (1640px: the 72rem column plus a 13rem card and gap on each side). They stay in
+            view while the panels scroll past. */}
+        <aside className="absolute inset-y-0 right-full hidden w-52 min-[1640px]:block">
+          <div className="sticky top-6 mr-6 mt-[4.5rem]">
+            <TryAssociationsCard signedOut={signedOut} />
+          </div>
+        </aside>
+        <aside className="absolute inset-y-0 left-full hidden w-52 min-[1640px]:block">
+          <div className="sticky top-6 ml-6 mt-[4.5rem]">
+            <PlayWithFriendsCard />
+          </div>
+        </aside>
 
         <motion.div
           variants={pageVariants}
@@ -137,6 +156,12 @@ export function FeaturedQuizzes() {
             </p>
           )}
         </motion.div>
+
+        {/* Narrower screens: the same two cards, under the panels. */}
+        <div className="mt-6 grid gap-4 sm:grid-cols-2 min-[1640px]:hidden">
+          <TryAssociationsCard signedOut={signedOut} />
+          <PlayWithFriendsCard />
+        </div>
 
         {picked && (
           <QuizStartModal
