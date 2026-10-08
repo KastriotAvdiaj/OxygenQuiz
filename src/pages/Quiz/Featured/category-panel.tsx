@@ -156,6 +156,7 @@ export function CategoryPanel({
   );
 }
 
+/** A solid tile on the photo — no transparency, so the text never competes with the picture. */
 function FeaturedTile({
   slot,
   onPick,
@@ -169,7 +170,7 @@ function FeaturedTile({
       type="button"
       onClick={() => onPick(quiz)}
       aria-label={`${quiz.title}, ${level.label}, ${quiz.questionCount} questions`}
-      className="group flex h-full min-h-[92px] w-full flex-col gap-1.5 rounded-xl bg-background/90 p-3 text-left text-foreground shadow-[0_4px_0_var(--panel-edge)] backdrop-blur-sm transition-transform duration-150 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--panel)] active:translate-y-0.5 active:shadow-[0_1px_0_var(--panel-edge)] sm:min-h-[110px] sm:p-3.5 dark:bg-background/85"
+      className="group flex h-full min-h-[92px] w-full flex-col gap-1.5 rounded-xl bg-background p-3 text-left text-foreground shadow-[0_4px_0_var(--panel-edge)] transition-transform duration-150 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--panel)] active:translate-y-0.5 active:shadow-[0_1px_0_var(--panel-edge)] sm:min-h-[110px] sm:p-3.5"
     >
       <span className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-[var(--panel)] dark:text-[var(--panel-light)] sm:text-xs">
         <DifficultyPips rank={level.rank} />

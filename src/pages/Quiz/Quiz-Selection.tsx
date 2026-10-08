@@ -342,7 +342,7 @@ export function QuizSelection() {
         {/* Low-profile "Back" chip — the page title was dropped in favour of a
             cleaner, content-first header. */}
         <div className="mb-5 sm:mb-6">
-          {/* Back to the featured page, which is where "Browse all" / "Explore more" came from. */}
+          {/* Back to the featured page, which is where "Browse all" came from. */}
           <button
             onClick={() => navigate("/choose-quiz")}
             className="group inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-foreground/20 hover:text-foreground"

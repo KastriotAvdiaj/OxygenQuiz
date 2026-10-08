@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { MotionConfig, motion, type Variants } from "framer-motion";
-import { ArrowLeft, ArrowRight, LayoutGrid } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { LiftedButton } from "@/common/LiftedButton";
 import { cn } from "@/utils/cn";
 import { useUser } from "@/lib/Auth";
@@ -15,12 +15,12 @@ import { CATEGORY_PANELS, fillPanels } from "./featured-catalogue";
 import { CategoryPanel } from "./category-panel";
 import { SignUpForMoreDialog } from "./sign-up-for-more-dialog";
 
-/** Where "Browse all" and "Explore more quizzes" go: the full, filterable catalogue. */
+/** Where "Browse all" goes: the full, filterable catalogue. */
 export const CATALOGUE_PATH = "/choose-quiz/all";
 
 /**
  * The page's entrance: the header drops in, then the panels rise one after another (each panel
- * then brings in its own title and tiles — category-panel.tsx), then the Explore button. Short and
+ * then brings in its own title and tiles — category-panel.tsx). Short and
  * staggered so the page feels alive without making anyone wait to click. Turned off for players
  * who ask their system for reduced motion (MotionConfig below).
  */
@@ -32,11 +32,6 @@ const pageVariants: Variants = {
 const fadeDown: Variants = {
   hidden: { opacity: 0, y: -10 },
   shown: { opacity: 1, y: 0, transition: { duration: 0.35, ease: "easeOut" } },
-};
-
-const fadeUp: Variants = {
-  hidden: { opacity: 0, y: 16 },
-  shown: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" } },
 };
 
 /**
@@ -91,19 +86,16 @@ export function FeaturedQuizzes() {
           <h1
             className={cn(
               "text-3xl font-bold leading-none transition-opacity duration-200 sm:text-4xl",
-              isUserLoading ? "opacity-0" : "opacity-100"
+              isUserLoading ? "opacity-0" : "opacity-100",
             )}
           >
             {signedOut ? "Pick your first quiz" : "Pick a quiz"}
           </h1>
           <Link to={CATALOGUE_PATH} tabIndex={-1} className="shrink-0">
-            <LiftedButton
-              size="sm"
-              className="gap-1.5 bg-muted text-foreground"
-              liftColor="muted-foreground"
-            >
-              <LayoutGrid className="h-4 w-4" aria-hidden="true" />
+            {/* Primary, with an arrow: the one way on from here, to a page of its own. */}
+            <LiftedButton size="sm" className="gap-1.5">
               Browse all
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </LiftedButton>
           </Link>
         </motion.header>
@@ -138,18 +130,6 @@ export function FeaturedQuizzes() {
               is one click away.
             </p>
           )}
-        </motion.div>
-
-        <motion.div variants={fadeUp}>
-          <Link to={CATALOGUE_PATH} tabIndex={-1} className="mt-10 block">
-            <LiftedButton
-              outerClassName="w-full"
-              className="w-full gap-2 py-3 text-lg font-semibold sm:text-xl"
-            >
-              Explore more quizzes
-              <ArrowRight className="h-5 w-5" aria-hidden="true" />
-            </LiftedButton>
-          </Link>
         </motion.div>
 
         {picked && (

@@ -10,7 +10,7 @@ it is the first real screen of the app. It used to be the full catalogue: a sear
 sidebar and a grid of whatever had been published lately. It is now the **quiz home page**: four
 **category panels** — Geography, General Knowledge, Science, History — each a photo-backed card
 holding a ladder of four **featured quizzes**, Easy, Medium, Hard and Expert. Anyone who wants more
-presses **Browse all** or **Explore more quizzes** and gets the old catalogue.
+presses **Browse all** and gets the old catalogue.
 
 The sixteen quizzes are part of the app, not of anyone's data: the API seeds them into every
 database on startup, so the page looks the same on a laptop, in CI and on oxygenquiz.com.
@@ -134,12 +134,13 @@ A refusal is a `ForbiddenException` → 403 with a sentence saying who can.
 ## 5. The page
 
 `/choose-quiz` → `FeaturedQuizzes`. A Back chip to `/choose-mode`; the h1 and its action; the four
-panels; a full-width **Explore more quizzes** button for whoever scrolled past all of them.
+panels. (A full-width "Explore more quizzes" button under the panels was removed on 2026-10-08 —
+one way to the catalogue, at the top, is enough.)
 
 - **The h1 speaks to the visitor:** "Pick your first quiz" signed out, "Pick a quiz" signed in.
   No description paragraph (CLAUDE.md, page headers).
-- **Browse all** (secondary, muted `LiftedButton`) and **Explore more quizzes** (primary) both go
-  to `/choose-quiz/all`. The catalogue's Back chip returns here.
+- **Browse all** — a primary `LiftedButton` with an arrow, because it leads to a page of its own —
+  goes to `/choose-quiz/all`. The catalogue's Back chip returns here.
 - **Picking a tile opens the usual `QuizStartModal`**, and **Start Quiz** goes to
   `quizPlayPath` — the same play flow as the catalogue, guest play included.
 - **A guest who has spent their free quiz** ([`guest-play.md`](../auth/guest-play.md)) gets
@@ -155,7 +156,7 @@ The layout comes from a fixed list in the code (`CATEGORY_PANELS` × `FEATURED_L
 
 - a slot with no quiz (deleted, unpublished, never seeded) is **left out**, and the row closes up;
 - a panel with no quizzes at all is left out;
-- if the request fails or nothing is featured, a short message sits above **Explore more**.
+- if the request fails or nothing is featured, a short message points to **Browse all**.
 
 So a missing quiz is never a broken tile, and the page never depends on what order or how many
 the API returns.
@@ -173,6 +174,9 @@ its four tiles centred below, with equal photo showing above and below.
 - **The photo stays clean.** No blur and no colour wash across it (both were tried, 2026-10-07/08,
   and made the photos look muddy); only saturation 0.9. The category colour is **only at the edges**,
   an inset `box-shadow` glow round the frame, plus the card's lifted bottom edge.
+- **The tiles are solid** `bg-background`. They were 90% opaque with a light backdrop blur at
+  first, which let the photo faintly show through and muddy the text; a frosted-glass version was
+  considered too. Solid reads cleanest against a sharp photo.
 - **The font is the player's.** Nothing on the page sets a font family: it inherits `font-quiz` from
   the layout — the quiz font chosen in Settings, DynaPuff by default — like every other play screen.
 
@@ -193,8 +197,7 @@ tab if the idea comes back.
   quarter of what a desktop does; the first panel loads eagerly at high priority, the rest lazily.
   Each photo fades and settles in once it has actually loaded, instead of painting in strips.
 - **The entrance** (framer-motion variants): the header drops in, the panels rise one after another,
-  each panel slides its title in and pops its tiles in left to right, then the Explore button
-  appears. Everything is short (under half a second per step) so nobody waits to click. All of it is
+  each panel slides its title in and pops its tiles in left to right. Everything is short (under half a second per step) so nobody waits to click. All of it is
   skipped for players whose system asks for reduced motion (`MotionConfig reducedMotion="user"`).
 - **The h1 waits for sign-in status** before showing, so a guest never sees "Pick a quiz" flip to
   "Pick your first quiz".
@@ -252,7 +255,7 @@ Only single player changed. The multiplayer lobby still picks from its own dialo
 | Backend | `Featured/FeaturedQuizSeederTests.cs` | A fresh database gets the 16 quizzes, 160 Global questions with explanations and four options, the lookups and palettes, a protected owner; a second run adds nothing; an existing category, an edited quiz and a deleted quiz are left alone; a hard-deleted one is recreated; a name clash falls back. |
 | Backend | `Featured/FeaturedQuizRulesTests.cs` | Admin can't delete or unpublish (either route), SuperAdmin can; admin gets past the owner check to edit, a player doesn't; OxygenQuiz's questions are SuperAdmin-only; the page read returns only live, published, featured quizzes. |
 | Unit | `Featured/__tests__/featured-catalogue.test.ts`, `loaders/__tests__/featured-quizzes.loader.test.ts` | Slot placement and the missing-slot rules; which URLs redirect. |
-| E2E | `e2e/featured-quizzes.spec.ts` | A guest picks Geography · Easy on the home page and lands on its first question; Explore more reaches the catalogue and an old `?category=` link is redirected. |
+| E2E | `e2e/featured-quizzes.spec.ts` | A guest picks Geography · Easy on the home page and lands on its first question; Browse all reaches the catalogue and an old `?category=` link is redirected. |
 
 ## 9. Not done yet
 

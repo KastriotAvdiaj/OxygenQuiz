@@ -19,8 +19,7 @@ same defaults:
 - **Single player** — `/choose-quiz/all` (`src/pages/Quiz/Quiz-Selection.tsx`);
   the panel renders as a left sidebar on desktop and a slide-in drawer on mobile. Until
   2026-10-07 this lived at `/choose-quiz`, which is now the quiz home page of featured quizzes
-  ([`featured-quizzes.md`](./featured-quizzes.md)); its **Browse all** and **Explore more
-  quizzes** lead here, and this page's Back chip leads back there
+  ([`featured-quizzes.md`](./featured-quizzes.md)); its **Browse all** leads here, and this page's Back chip leads back there
 - **Multiplayer** — the lobby's quiz picker dialog
   (`src/pages/Quiz/Multiplayer/components/lobby/quiz-selection-dialog.tsx`);
   the panel sits behind a "Filters" toggle in its compact variant
@@ -34,7 +33,7 @@ same defaults:
 - The landing page's **Play** button also goes to `/choose-mode` (since 2026-10-06; it used to
   skip straight to `/choose-quiz`) — see [`../home/landing-page.md`](../home/landing-page.md).
 - Single player on `/choose-mode` opens the quiz home page (`/choose-quiz`), and the catalogue is
-  one step further, behind **Browse all** / **Explore more quizzes**.
+  one step further, behind **Browse all**.
 
 ### Opening the list on one category: `?category=<name>`
 
