@@ -1,4 +1,5 @@
-import type { CSSProperties } from "react";
+import { useCallback, useState, type CSSProperties } from "react";
+import { motion, type Variants } from "framer-motion";
 import { cn } from "@/utils/cn";
 import type { QuizSummaryDTO } from "@/types/quiz-types";
 import { parseQuizPalette, quizEdgeColor } from "../components/quiz-palette";
@@ -6,23 +7,73 @@ import type { CategoryPanelSpec, FeaturedSlot } from "./featured-catalogue";
 import { FEATURED_LEVELS } from "./featured-catalogue";
 
 /**
- * One category on the quiz home page: its name, then a card of the category's photo holding its
- * Easy → Expert ladder (docs/quiz/featured-quizzes.md, "The panel").
+ * One category on the quiz home page: a card of the category's photo with its name in 3D letters
+ * and its Easy → Expert ladder in the middle (docs/quiz/featured-quizzes.md, "The panel").
  *
  * No font is set anywhere here: the page inherits the player's chosen quiz font (`font-quiz` on
- * the layout, DynaPuff by default), like every other play screen.
+ * the layout, DynaPuff by default), like every other play screen — the 3D is a text-shadow, so it
+ * works with whichever font that is.
  *
  * `slots` is undefined while the quizzes load — the panel still draws, with placeholder tiles, so
  * the page doesn't jump when they arrive.
  */
+
+/** The panel rises in; its children follow one after another (orchestrated by the page). */
+const panelVariants: Variants = {
+  hidden: { opacity: 0, y: 24 },
+  shown: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.45,
+      ease: [0.22, 1, 0.36, 1],
+      when: "beforeChildren",
+      staggerChildren: 0.06,
+    },
+  },
+};
+
+const titleVariants: Variants = {
+  hidden: { opacity: 0, x: -16 },
+  shown: { opacity: 1, x: 0, transition: { duration: 0.35, ease: "easeOut" } },
+};
+
+const tileVariants: Variants = {
+  hidden: { opacity: 0, y: 14, scale: 0.96 },
+  shown: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { type: "spring", stiffness: 380, damping: 28 },
+  },
+};
+
+/**
+ * Extruded letters: a stack of 1px shadows in the category's darker edge colour, then a soft drop
+ * shadow, so white text reads on any part of the photo.
+ */
+const TITLE_3D: CSSProperties = {
+  textShadow: [
+    "0 1px 0 var(--panel-edge)",
+    "0 2px 0 var(--panel-edge)",
+    "0 3px 0 var(--panel-edge)",
+    "0 4px 0 var(--panel-edge)",
+    "0 5px 0 var(--panel-edge)",
+    "0 7px 10px rgba(0,0,0,.35)",
+  ].join(", "),
+};
+
 export function CategoryPanel({
   panel,
   slots,
   onPick,
+  priority = false,
 }: {
   panel: CategoryPanelSpec;
   slots?: FeaturedSlot[];
   onPick: (quiz: QuizSummaryDTO) => void;
+  /** The first panel's photo is above the fold: fetch it first instead of lazily. */
+  priority?: boolean;
 }) {
   // The category's own palette, so an admin's change to it reaches the panel too; the spec's copy
   // only covers the moment before the quizzes load.
@@ -35,40 +86,64 @@ export function CategoryPanel({
     "--panel-edge": quizEdgeColor(main),
   } as CSSProperties;
 
+  // The photo fades in once it has actually arrived, rather than painting in strips.
+  const [photoLoaded, setPhotoLoaded] = useState(false);
+  // A cached photo can finish before React attaches onLoad; the ref catches that case.
+  const photoRef = useCallback((img: HTMLImageElement | null) => {
+    if (img?.complete) setPhotoLoaded(true);
+  }, []);
+
   return (
-    <section aria-labelledby={`panel-${panel.slug}`} style={colours}>
-      <h2
-        id={`panel-${panel.slug}`}
-        className="mb-2.5 flex items-center gap-2.5 text-xl font-bold sm:mb-3 sm:text-2xl"
-      >
-        <span aria-hidden="true" className="h-3.5 w-3.5 shrink-0 rounded-[4px] bg-[var(--panel)]" />
-        {panel.name}
-      </h2>
+    <motion.section
+      aria-labelledby={`panel-${panel.slug}`}
+      style={colours}
+      variants={panelVariants}
+      className="relative isolate overflow-hidden rounded-2xl bg-[var(--panel)] shadow-[0_6px_0_var(--panel-edge)]"
+    >
+      <img
+        ref={photoRef}
+        src={panel.image}
+        srcSet={`${panel.imageSmall} 800w, ${panel.image} 1600w`}
+        sizes="(min-width: 1152px) 1104px, 100vw"
+        alt=""
+        aria-hidden="true"
+        decoding="async"
+        loading={priority ? "eager" : "lazy"}
+        {...(priority ? { fetchpriority: "high" } : {})}
+        onLoad={() => setPhotoLoaded(true)}
+        className={cn(
+          "absolute inset-0 -z-10 h-full w-full object-cover saturate-[.9] transition-[opacity,transform] duration-700 ease-out motion-reduce:transition-none",
+          photoLoaded ? "scale-100 opacity-100" : "scale-[1.04] opacity-0",
+        )}
+        style={{ objectPosition: panel.imagePosition }}
+      />
+      {/* The category colour only at the edges — a glow round the frame, the photo clean inside. */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 -z-10 rounded-2xl"
+        style={{
+          boxShadow:
+            "inset 0 0 48px 6px color-mix(in srgb, var(--panel) 75%, transparent)",
+        }}
+      />
 
-      <div className="relative overflow-hidden rounded-2xl shadow-[0_6px_0_var(--panel-edge)]">
-        {/* The photo, softened so it reads as a backdrop: a light blur, a little less colour.
-            Inset past the edges because a blur fades its own border. */}
-        <div
-          aria-hidden="true"
-          className="absolute -inset-2 scale-[1.03] bg-cover blur-[2px] saturate-[.85] brightness-[.92]"
-          style={{ backgroundImage: `url(${panel.image})`, backgroundPosition: panel.imagePosition }}
-        />
-        {/* Clear at the top so the photo shows, the category colour behind the tiles. */}
-        <div
-          aria-hidden="true"
-          className="absolute inset-0"
-          style={{
-            background:
-              "linear-gradient(180deg, color-mix(in srgb, var(--panel) 10%, transparent) 0%, color-mix(in srgb, var(--panel) 15%, transparent) 30%, color-mix(in srgb, var(--panel) 80%, transparent) 72%, color-mix(in srgb, var(--panel) 92%, #000 8%) 100%)",
-          }}
-        />
+      {/* Title and tiles as one block, centred with equal photo above and below. */}
+      <div className="px-3 py-8 sm:px-5 sm:py-12">
+        <motion.h2
+          id={`panel-${panel.slug}`}
+          variants={titleVariants}
+          className="mb-4 text-3xl font-bold leading-none tracking-wide text-white sm:mb-5 sm:text-5xl"
+          style={TITLE_3D}
+        >
+          {panel.name}
+        </motion.h2>
 
-        <ul className="relative grid grid-cols-2 gap-2.5 px-3 pb-3 pt-20 sm:grid-cols-4 sm:gap-3 sm:px-5 sm:pb-5 sm:pt-28">
+        <ul className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-3">
           {slots
             ? slots.map((slot) => (
-                <li key={slot.level.level}>
+                <motion.li key={slot.level.level} variants={tileVariants}>
                   <FeaturedTile slot={slot} onPick={onPick} />
-                </li>
+                </motion.li>
               ))
             : FEATURED_LEVELS.map((level) => (
                 <li key={level.level} aria-hidden="true">
@@ -77,11 +152,17 @@ export function CategoryPanel({
               ))}
         </ul>
       </div>
-    </section>
+    </motion.section>
   );
 }
 
-function FeaturedTile({ slot, onPick }: { slot: FeaturedSlot; onPick: (quiz: QuizSummaryDTO) => void }) {
+function FeaturedTile({
+  slot,
+  onPick,
+}: {
+  slot: FeaturedSlot;
+  onPick: (quiz: QuizSummaryDTO) => void;
+}) {
   const { level, quiz } = slot;
   return (
     <button
@@ -94,8 +175,12 @@ function FeaturedTile({ slot, onPick }: { slot: FeaturedSlot; onPick: (quiz: Qui
         <DifficultyPips rank={level.rank} />
         {level.label}
       </span>
-      <span className="text-[15px] font-bold leading-tight sm:text-lg">{quiz.title}</span>
-      <span className="mt-auto text-xs text-muted-foreground">{quiz.questionCount} questions</span>
+      <span className="text-[15px] font-bold leading-tight sm:text-lg">
+        {quiz.title}
+      </span>
+      <span className="mt-auto text-xs text-muted-foreground">
+        {quiz.questionCount} questions
+      </span>
     </button>
   );
 }
@@ -111,7 +196,7 @@ function DifficultyPips({ rank }: { rank: number }) {
             "h-2 w-2 rounded-[2px]",
             l.rank <= rank
               ? "bg-[var(--panel)] dark:bg-[var(--panel-light)]"
-              : "bg-[color-mix(in_srgb,var(--panel)_22%,transparent)] dark:bg-[color-mix(in_srgb,var(--panel-light)_28%,transparent)]"
+              : "bg-[color-mix(in_srgb,var(--panel)_22%,transparent)] dark:bg-[color-mix(in_srgb,var(--panel-light)_28%,transparent)]",
           )}
         />
       ))}

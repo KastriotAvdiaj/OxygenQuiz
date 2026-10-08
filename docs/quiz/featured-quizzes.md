@@ -162,32 +162,50 @@ the API returns.
 
 ### The panel
 
-Each category is its name — a heading in the category colour's small square, then the name — and
-under it a rounded card of the category's photo holding the four tiles.
+Each category is one card: its photo, its name in large white **3D letters** at the top left, and
+its four tiles centred below, with equal photo showing above and below.
 
-**The name sits above the card, not on it.** The first version cut the card into a folder shape
-with a **tab** rising from its top-right corner and the name on the tab (`clip-path: path(...)`,
-rebuilt on every resize by a `ResizeObserver`). It was dropped on 2026-10-08 after seeing it in the
-app: a plain heading over a plain card reads more cleanly, and the measuring code, the clip path and
-its tests went with it. `git show beba94f:src/pages/Quiz/Featured/panel-shape.ts` has it if the idea
-comes back.
+- **The 3D is a stack of text-shadows** — five 1px layers in the category's darker edge colour
+  (`quizEdgeColor`), then a soft drop shadow (`TITLE_3D` in `category-panel.tsx`). Being plain CSS,
+  it works with whichever quiz font the player has chosen and stays sharp at any size. White letters
+  with a coloured extrusion read on every part of every photo. (Real 3D text — three.js geometry —
+  was considered and rejected: a font conversion and WebGL for a heading.)
+- **The photo stays clean.** No blur and no colour wash across it (both were tried, 2026-10-07/08,
+  and made the photos look muddy); only saturation 0.9. The category colour is **only at the edges**,
+  an inset `box-shadow` glow round the frame, plus the card's lifted bottom edge.
+- **The font is the player's.** Nothing on the page sets a font family: it inherits `font-quiz` from
+  the layout — the quiz font chosen in Settings, DynaPuff by default — like every other play screen.
 
-**The font is the player's.** Nothing on the page sets a font family: it inherits `font-quiz` from
-the layout — the quiz font chosen in Settings, DynaPuff by default — like every other play screen.
-(The first version used the `font-header` Titillium on the title and tab; it didn't match the rest
-of the app.)
+**Earlier versions, for the record.** The first cut the card into a folder shape with a *tab* at its
+top right carrying the name (`clip-path: path(...)` rebuilt on every resize by a `ResizeObserver`);
+the second put the name above a plain card in the `font-header` Titillium. Both were dropped after
+seeing them in the app (2026-10-08). `git show beba94f:src/pages/Quiz/Featured/panel-shape.ts` has the
+tab if the idea comes back.
 
-**The photo** is softened to stay a backdrop: a 2px blur, saturation 0.85, brightness 0.92, scaled
-slightly so the blur's faded edge stays inside the card's rounded corners. **The scrim** is nearly
-clear at the top so the photo reads, then fades to the category colour behind the tiles. The card's
-lifted edge is that colour too (`quizEdgeColor`), like the quiz cards'.
+### Loading and motion
+
+- **No waterfall.** The route's code is lazy-loaded, and its loader starts `GET /quiz/featured`
+  without waiting for it, so the request and the code download run side by side. Until the quizzes
+  arrive each panel draws with pulsing placeholder tiles, so nothing jumps when they land. The
+  result is cached for 5 minutes.
+- **Photos are `<img>`, not CSS backgrounds,** so the browser can choose a size and load them lazily:
+  `srcset` offers an 800px copy (~25–60 KB) next to the 1600px one, so a phone downloads about a
+  quarter of what a desktop does; the first panel loads eagerly at high priority, the rest lazily.
+  Each photo fades and settles in once it has actually loaded, instead of painting in strips.
+- **The entrance** (framer-motion variants): the header drops in, the panels rise one after another,
+  each panel slides its title in and pops its tiles in left to right, then the Explore button
+  appears. Everything is short (under half a second per step) so nobody waits to click. All of it is
+  skipped for players whose system asks for reduced motion (`MotionConfig reducedMotion="user"`).
+- **The h1 waits for sign-in status** before showing, so a guest never sees "Pick a quiz" flip to
+  "Pick your first quiz".
 
 **Tiles** are 4 in a row from 640px, a 2×2 grid below — four in a row at 360px left ~70px each,
 too narrow for a title. Each shows four difficulty pips (filled up to its level), the level, the
 title and the question count.
 
-**Images** are `public/assets/categories/<slug>.webp`, 1600px wide (~600 KB for all four), from
-Unsplash. The 1–2 MB originals are not in the repo.
+**Images** are `public/assets/categories/<slug>.webp` (1600px, ~600 KB for all four) and
+`<slug>-800.webp` (800px, ~165 KB for all four), from Unsplash. The 1–2 MB originals are not in the
+repo.
 
 ## 6. Category colours
 
