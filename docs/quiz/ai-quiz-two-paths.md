@@ -71,8 +71,9 @@ title-only dialog that linked straight to the manual builder, so the `/my-dashbo
 existed but were unreachable.)
 
 1. **What kind of quiz?** — Classic quiz / Associations. Associations has one way to be built,
-   so it goes straight to the board builder. **Only shown while there is a choice**: Associations
-   is admin-only in preview (`format-access.ts`), so everyone else opens on step 2.
+   so it goes straight to the board builder. **Only shown while there is a choice** (`format-access.ts`):
+   every player since Associations was released (2026-10-08); before that only admins and
+   Teachers, and everyone else opened on step 2.
 2. **How do you want to build it?** — Manually / With AI.
 3. **What should the AI work from?** — From a topic / From my material.
 

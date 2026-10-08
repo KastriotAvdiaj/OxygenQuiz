@@ -327,8 +327,8 @@ const createAppRouter = (queryClient: QueryClient) =>
       ),
     },
     // ── Associations Solo ──
-    // Signed-in only (userAuthLoader): guest play of a Board comes with the format's release, and
-    // while it is in preview the API answers 404 to anyone but an admin anyway.
+    // Signed-in only (userAuthLoader): guest play of a Board isn't built (associations.md §9.8), so a
+    // guest who opens a board — e.g. from the quiz home page — is sent to sign in and comes back.
     {
       path: "/associations/:quizId/play",
       loader: userAuthLoader(queryClient),

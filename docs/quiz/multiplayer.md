@@ -275,8 +275,7 @@ to the caller.
   follow from it, so it can't be the client's to choose. It reaches late joiners with the rest of the
   pick through the `QuizSelected` replay, so no new lobby state was needed.
 - **An Associations quiz is a Duel, for exactly 2 players** ([`associations.md`](./associations.md)
-  §10). While the format is in preview only an admin may pick one; anyone else gets the same "You
-  can't host this quiz." as for a quiz they may not host at all.
+  §10). Any host may pick one since the format's release (2026-10-08); before, only an admin could.
 - `canStartQuiz` (client) = host **and** the right number of players — ≥2, or **exactly 2** for a
   Board — **and** all ready **and** a quiz selected. One function, `startBlockedReason`
   (`Multiplayer/utils/lobby-start.ts`), gives both the button's state and the sentence under it. With a Board and three or more players the

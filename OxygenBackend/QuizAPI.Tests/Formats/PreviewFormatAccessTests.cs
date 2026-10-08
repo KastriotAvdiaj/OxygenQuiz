@@ -21,13 +21,14 @@ using Xunit;
 namespace QuizAPI.Tests.Formats;
 
 /// <summary>
-/// A format in preview (Associations, for now) exists for admins only. For anyone else its quizzes
-/// are absent from every read, and its authoring endpoints answer 404. See QuizFormatAccess and
-/// docs/quiz/associations.md, "Admins only, for now".
+/// Associations was in preview — visible to admins and Teachers only — until its release on
+/// 2026-10-08. These pin the release: a player gets boards from every read and reaches the
+/// authoring and play services. The preview mechanism (QuizFormatAccess.PreviewFormats) is still
+/// there, empty, for the next format; see docs/quiz/associations.md §0.
 ///
-/// <para>Each read is its own test because each is its own query: the catalogue, search, "my
-/// quizzes", by id, by share link and the questions list were written separately, and a format
-/// filter missing from one of them is exactly how a preview leaks.</para>
+/// <para>Each read is its own test because each is its own query: the catalogue, search, by id
+/// and by share link were written separately, and a format filter left behind in one of them is
+/// exactly how a release would half-happen.</para>
 /// </summary>
 public class PreviewFormatAccessTests
 {
@@ -90,10 +91,10 @@ public class PreviewFormatAccessTests
     }
 
     [Fact]
-    public void AssociationsIsInPreview_ClassicIsNot()
+    public void NoFormatIsInPreview()
     {
-        Assert.False(QuizFormatAccess.IsAvailableTo(QuizFormat.Associations, canSeePreview: false));
-        Assert.True(QuizFormatAccess.IsAvailableTo(QuizFormat.Associations, canSeePreview: true));
+        Assert.Empty(QuizFormatAccess.PreviewFormats);
+        Assert.True(QuizFormatAccess.IsAvailableTo(QuizFormat.Associations, canSeePreview: false));
         Assert.True(QuizFormatAccess.IsAvailableTo(QuizFormat.Classic, canSeePreview: false));
     }
 
@@ -114,37 +115,37 @@ public class PreviewFormatAccessTests
     }
 
     [Theory]
-    [InlineData(false, new[] { "Capitals" })]
-    [InlineData(true, new[] { "Capitals", "Italian cities" })]
-    public async Task TheCatalogue_HidesTheBoardFromPlayers(bool admin, string[] expected)
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task TheCatalogue_ShowsTheBoardToEveryone(bool admin)
     {
         var world = new World();
         await using var ctx = world.Context();
 
         var page = await world.Service(ctx, admin).GetPublicQuizzesAsync(new QuizFilterParams());
 
-        Assert.Equal(expected.OrderBy(t => t), page.Items.Select(q => q.Title).OrderBy(t => t));
+        Assert.Equal(new[] { "Capitals", "Italian cities" }, page.Items.Select(q => q.Title).OrderBy(t => t));
     }
 
     [Theory]
-    [InlineData(false, 1)]
-    [InlineData(true, 2)]
-    public async Task Search_HidesTheBoardFromPlayers(bool admin, int expected)
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Search_ShowsTheBoardToEveryone(bool admin)
     {
         var world = new World();
         await using var ctx = world.Context();
 
         var result = await world.Service(ctx, admin).SearchQuizzesAsync(new FilterQuery(), publicOnly: true);
 
-        Assert.Equal(expected, result.Items.Count());
+        Assert.Equal(2, result.Items.Count());
     }
 
-    /// <summary>The catalogue's Format filter ("Quizzes" / "Boards"), and that it can't reach past the preview gate.</summary>
+    /// <summary>The catalogue's Format filter ("Quizzes" / "Boards") — now for a player too.</summary>
     [Theory]
+    [InlineData(false, "Associations", new[] { "Italian cities" })]
+    [InlineData(false, "Classic", new[] { "Capitals" })]
     [InlineData(true, "Associations", new[] { "Italian cities" })]
-    [InlineData(true, "Classic", new[] { "Capitals" })]
-    [InlineData(false, "Associations", new string[0])]
-    public async Task Search_FiltersByFormat_WithinWhatTheCallerMaySee(bool admin, string format, string[] expected)
+    public async Task Search_FiltersByFormat(bool admin, string format, string[] expected)
     {
         var world = new World();
         await using var ctx = world.Context();
@@ -156,37 +157,23 @@ public class PreviewFormatAccessTests
     }
 
     [Fact]
-    public async Task ByIdAndItsQuestions_AreNothingForAPlayer_ButClassicStillLoads()
-    {
-        var world = new World();
-        await using var ctx = world.Context();
-        var sut = world.Service(ctx, admin: false);
-
-        Assert.Null(await sut.GetQuizByIdAsync(world.BoardId, PlayerId));
-        Assert.Null(await sut.GetQuizQuestionsAsync(world.BoardId));
-        Assert.NotNull(await sut.GetQuizByIdAsync(world.ClassicId, PlayerId));
-        Assert.NotNull(await sut.GetQuizQuestionsAsync(world.ClassicId));
-    }
-
-    [Fact]
-    public async Task ByIdForAnAdmin_LoadsTheBoard()
+    public async Task ById_LoadsTheBoardForAPlayer()
     {
         var world = new World();
         await using var ctx = world.Context();
 
-        var dto = await world.Service(ctx, admin: true).GetQuizByIdAsync(world.BoardId, AdminId);
+        var dto = await world.Service(ctx, admin: false).GetQuizByIdAsync(world.BoardId, PlayerId);
 
         Assert.Equal("Associations", dto!.Format);
     }
 
     [Fact]
-    public async Task AShareLink_DoesNotOpenABoardForAPlayer()
+    public async Task AShareLink_OpensABoardForAPlayer()
     {
         var world = new World();
         await using var ctx = world.Context();
 
-        Assert.Null(await world.Service(ctx, admin: false).GetQuizByShareTokenAsync(world.TokenOf(world.BoardId)));
-        Assert.NotNull(await world.Service(ctx, admin: true).GetQuizByShareTokenAsync(world.TokenOf(world.BoardId)));
+        Assert.NotNull(await world.Service(ctx, admin: false).GetQuizByShareTokenAsync(world.TokenOf(world.BoardId)));
     }
 
     // ── The authoring endpoints ─────────────────────────────────────────
@@ -201,51 +188,36 @@ public class PreviewFormatAccessTests
         return (controller, service);
     }
 
-    /// <summary>Strict mock: a player's request must be turned away before the service is touched.</summary>
-    [Fact]
-    public async Task EveryAuthoringEndpoint_IsNotFoundForAPlayer()
+    /// <summary>Strict mock: the call must arrive — a player is no longer turned away before it.</summary>
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task EveryoneReachesTheAuthoringService(bool admin)
     {
-        var (controller, _) = Controller(admin: false);
-
-        Assert.IsType<NotFoundResult>(await controller.Create(new AssociationQuizCM()));
-        Assert.IsType<NotFoundResult>(await controller.GetBoard(1));
-        Assert.IsType<NotFoundResult>(await controller.Update(new AssociationQuizUM()));
-    }
-
-    [Fact]
-    public async Task AnAdmin_ReachesTheService()
-    {
-        var (controller, service) = Controller(admin: true);
-        service.Setup(s => s.GetForEditAsync(1, AdminId, true)).ReturnsAsync((AssociationBoardDTO?)null);
+        var (controller, service) = Controller(admin);
+        var caller = admin ? AdminId : PlayerId;
+        service.Setup(s => s.GetForEditAsync(1, caller, admin)).ReturnsAsync((AssociationBoardDTO?)null);
 
         Assert.IsType<NotFoundResult>(await controller.GetBoard(1));   // no such board — but asked
-        service.Verify(s => s.GetForEditAsync(1, AdminId, true), Times.Once);
+        service.Verify(s => s.GetForEditAsync(1, caller, admin), Times.Once);
     }
 
     // ── The play endpoints ──────────────────────────────────────────────
 
-    /// <summary>
-    /// Strict mock, as above: Solo play is as absent for a player as authoring is. The one read a
-    /// player gets is the review of a Duel they played — an admin can invite anyone to a Duel
-    /// (associations.md §10.1), and that player has seen the whole Board already. The service
-    /// decides that (<c>GetOwnDuelAsync</c>, DuelReviewTests); nothing else reaches it.
-    /// </summary>
+    /// <summary>Strict mock, as above: a player's Solo game reaches the play service.</summary>
     [Fact]
-    public async Task EveryPlayEndpoint_IsNotFoundForAPlayer_ExceptTheReviewOfTheirOwnDuel()
+    public async Task APlayer_ReachesThePlayService()
     {
         var play = new Mock<IAssociationPlayService>(MockBehavior.Strict);
         var id = Guid.NewGuid();
-        var duel = new AssociationGameViewDTO { SessionId = id, PlayStyle = "Duel" };
-        play.Setup(p => p.GetOwnDuelAsync(id, PlayerId)).ReturnsAsync(duel);
+        var view = new AssociationGameViewDTO { SessionId = id, PlayStyle = "Solo" };
+        play.Setup(p => p.StartAsync(PlayerId, 1, null)).ReturnsAsync(view);
+        play.Setup(p => p.GetAsync(id, PlayerId, false)).ReturnsAsync(view);
         var controller = new AssociationSessionsController(
             play.Object,
             new TestCurrentUserService { UserId = PlayerId, IsAdmin = false, IsAuthenticated = true });
 
-        Assert.IsType<NotFoundResult>(await controller.Start(new StartAssociationGameRequest { QuizId = 1 }));
-        Assert.Same(duel, Assert.IsType<OkObjectResult>(await controller.Get(id)).Value);
-        Assert.IsType<NotFoundResult>(await controller.Open(id, new OpenAssociationTileRequest { TileId = 1 }));
-        Assert.IsType<NotFoundResult>(await controller.Guess(id, new AssociationGuessRequest { Target = "A", Text = "x" }));
-        Assert.IsType<NotFoundResult>(await controller.GiveUp(id));
-        Assert.IsType<NotFoundResult>(await controller.Restart(id, null));
+        Assert.Same(view, Assert.IsType<CreatedResult>(await controller.Start(new StartAssociationGameRequest { QuizId = 1 })).Value);
+        Assert.Same(view, Assert.IsType<OkObjectResult>(await controller.Get(id)).Value);
     }
 }

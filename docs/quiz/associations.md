@@ -12,35 +12,34 @@ in [`glossary.md`](./glossary.md); why a format is its own system rather than a 
 > points that refuse other formats, the rules engine with its scoring and settings, **authoring**
 > — the Board tables, the create / edit API and the board builder (§8) — **Solo play** (§9):
 > start, play, leave and resume, the board clock, results and review — and the **Duel** in a lobby
-> (§10). Not yet: guest play of a Board (at release, §9.8) and board analytics (Phase 6).
+> (§10). **Released to every signed-in player 2026-10-08** (§0). Not yet: guest play of a Board
+> (§9.8) and board analytics (Phase 6).
 
 ---
 
-## 0. Admins and Teachers only, for now
+## 0. Released to every player (2026-10-08)
 
-**Associations is in preview: only admins (Admin / SuperAdmin) and Teachers can see or use it.**
-Decided 2026-09-23, so the format can be tested on the live site without players meeting a
-half-built feature; Teachers added 2026-10-01, since hosting a board for a class is what they are
-for ([`../auth/teacher-role.md`](../auth/teacher-role.md) §3). In code the flag is
-`ICurrentUserService.CanSeePreviewFormats` (`RoleRules.PreviewFormatRoles`), not `IsAdmin`.
+> **Status: released 2026-10-08.** From 2026-09-23 the format was in preview — only admins and
+> (from 2026-10-01) Teachers could see or use it — so it could be tested on the live site without
+> players meeting a half-built feature. It was released when the quiz home page got its "Try our new
+> quiz type" card ([`featured-quizzes.md`](./featured-quizzes.md)): every signed-in player now finds
+> boards in the catalogue, plays them Solo, picks one for a Duel and builds their own.
 
-- **Server (the rule).** `QuizFormatAccess.PreviewFormats` lists the formats in preview. For a
-  non-admin, `QuizService` leaves those quizzes out of every read — catalogue, search, "my
-  quizzes", by id, questions, share link — and `AssociationQuizzesController` and
-  `AssociationSessionsController` answer **404** from every endpoint, the same way the admin
-  dashboard answers non-admins. So a Public board is
-  invisible to players even in the catalogue, and a crafted request gets nothing.
-- **Frontend (the affordance).** `PREVIEW_FORMATS` in `format-access.ts` decides what to offer: a
-  player's create dialog shows only the two Classic cards, and the create-board route sends them
-  back to their quiz list.
-- **One exception: a Duel's review.** An admin may invite anyone to a Duel (§10.1), so the other
-  player may be a player. `GET /api/associations/sessions/{id}` lets a non-admin read **their own
-  Duel session** (`GetOwnDuelAsync`) and nothing else — they have seen the whole Board already.
-- **Releasing it** is removing `Associations` from both arrays — one line each. Every read follows.
+**Guests still can't play a Board** — the guest routes were never built (§9.8, `known-issues.md`).
+A guest who opens one is sent to sign in by the play route's `userAuthLoader`, and comes back to
+the board after.
 
-Pinned by `QuizAPI.Tests/Formats/PreviewFormatAccessTests.cs` (each read separately, plus the
-authoring and play endpoints with a strict mock proving a player never reaches the service). Removing Associations
-from the array makes six of them fail — checked.
+**The preview mechanism stays, empty, for the next format.** `QuizFormatAccess.PreviewFormats`
+(server, the rule) and `PREVIEW_FORMATS` in `format-access.ts` (frontend, what to offer) list the
+formats in testing; for anyone without `CanSeePreviewFormats` (`RoleRules.PreviewFormatRoles`:
+Admin, SuperAdmin, Teacher) such a format's quizzes are absent from every read and its endpoints
+answer 404. Releasing a format is removing it from both arrays, one line each — which is all the
+release of Associations was. The one-off exception that let a non-admin read the review of a Duel
+they were invited to (`GetOwnDuelAsync`) is now unreachable, and harmless.
+
+Pinned by `QuizAPI.Tests/Formats/PreviewFormatAccessTests.cs`, which since the release asserts the
+opposite of what it did: a player gets boards from every read and reaches the authoring and play
+services.
 
 ## 1. A quiz has a format
 
@@ -438,8 +437,8 @@ appears in the player's history like any other play (§9.7).
 
 ### 9.2 The API
 
-`AssociationSessionsController`, `api/associations/sessions`, `[Authorize]`. Every route answers
-**404** to a non-admin while the format is in preview (§0). Every response is a **view** (§9.3),
+`AssociationSessionsController`, `api/associations/sessions`, `[Authorize]`. (Until the release, §0,
+every route answered **404** to a non-admin.) Every response is a **view** (§9.3),
 never the Board.
 
 | Route | Does |
@@ -561,9 +560,9 @@ A Board session is a `QuizSession` with no questions, and some Classic code hand
 
 ### 9.8 Guests
 
-**Not yet.** Guest play is Public-only and guests are never admins, so while the format is in
-preview (§0) no guest can reach a Board, and a guest endpoint would be unreachable and untestable
-end to end. It is built with the release (plan §8.5): a guest twin of the start / read / move
+**Not yet.** It was left out while the format was in preview (§0), when no guest could reach a
+Board, and the release (2026-10-08) didn't add it: a guest who opens a board is sent to sign in.
+When built (plan §8.5) it is: a guest twin of the start / read / move
 routes, the one-free-quiz cookie, and deletion after the results — the deletion half already exists
 (§9.6) and is tested (`AssociationLifecycleTests`).
 
@@ -706,9 +705,8 @@ rematch) is unchanged and is [`multiplayer.md`](./multiplayer.md).
 - **The pick carries its format**, filled by `QuizHub.SelectQuiz` from the quiz — never the
   client's — and replayed to late joiners with the rest of the pick (multiplayer.md §4.3).
   `StartMatch` dispatches on it.
-- **While the format is in preview (§0) only an admin may pick a Board**; anyone else gets "You
-  can't host this quiz.", the same as for a quiz they may not host at all. The other player needn't
-  be an admin — an admin can test a Duel with anyone they invite.
+- **Any host may pick a Board** since the release (§0); until then only an admin could, and anyone
+  else got "You can't host this quiz."
 - **The server picks who opens first at random; a rematch alternates** (D12) —
   `MultiplayerSession.LastDuelOpener` survives the lobby reset for exactly that.
 
@@ -809,8 +807,7 @@ through the same `GET /api/associations/sessions/{id}` — replay under the game
 Board revealed. The view knows whose it is: `mySeat`, `score` (that Seat's), `seats` (names and
 scores) and `winnerSeat` (from the `Match`). A Seat whose player later deleted their session keeps
 its score and is shown as "(player left)". A Duel session takes no moves over HTTP ("This game is
-already over."). While the format is in preview, a non-admin opponent can still read their own
-Duel here (§0). The page shows both scores and who won instead of one score, names who solved
+already over."). (During the preview, §0, this was also the one read a non-admin opponent was allowed.) The page shows both scores and who won instead of one score, names who solved
 each slot on the board itself (no breakdown or move list, §9.9), and has no "Play again" — a rematch is in the
 lobby. Pinned by `DuelReviewTests`.
 

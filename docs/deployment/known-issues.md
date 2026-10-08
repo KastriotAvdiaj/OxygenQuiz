@@ -1195,8 +1195,10 @@ fixed; these were left.
   the right to start before it ends anything (`A_refused_restart_leaves_the_running_game_alone`) —
   and starting again from the share link works. Fix: carry the token in the game page's URL (`?shareToken=`) and pass it on.
   → `src/pages/Quiz/Associations/solo/association-game-page.tsx`, `results/association-results-page.tsx`
-- **P3 — Guest play of a Board isn't built** (2026-09-23), deliberately: unreachable while the format
-  is admin-only. Built with the release — `associations-plan.md` §8.5; feature doc §9.8.
+- **P3 — Guest play of a Board isn't built** (2026-09-23). Deferred while the format was admin-only;
+  still missing after its release (2026-10-08), so a guest who opens a board — e.g. from the quiz
+  home page's "Try our new quiz type" card — is sent to sign in. `associations-plan.md` §8.5;
+  feature doc §9.8.
 
 ## Quiz history (2026-09-26 — see docs/quiz/user-stats-history.md)
 

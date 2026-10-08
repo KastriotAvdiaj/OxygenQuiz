@@ -65,8 +65,9 @@ refreshes; the approval notification says so.
 
 ## 3. Teachers and the Associations preview
 
-While Associations is in preview it is visible to Admin, SuperAdmin **and Teacher** — a Teacher
-can't host a board they can't see. One flag, `ICurrentUserService.CanSeePreviewFormats`
+While Associations was in preview (until its release, 2026-10-08) it was visible to Admin,
+SuperAdmin **and Teacher** — a Teacher can't host a board they can't see. Today every player sees
+it; the flag below still governs any future format in preview. One flag, `ICurrentUserService.CanSeePreviewFormats`
 (`RoleRules.PreviewFormatRoles`), replaces `IsAdmin` at every preview check; the frontend's
 `useFormatAvailable` mirrors it. See [`../quiz/associations.md`](../quiz/associations.md) §0.
 

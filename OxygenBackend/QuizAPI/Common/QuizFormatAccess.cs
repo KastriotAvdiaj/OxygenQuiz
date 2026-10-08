@@ -15,12 +15,16 @@ namespace QuizAPI.Common
     /// <c>Format == Classic</c> scattered through the reads.</para>
     ///
     /// <para>Enforced on the server. The frontend hides the matching buttons too, but that is
-    /// affordance; this is the rule. See docs/quiz/associations.md, "Admins only, for now".</para>
+    /// affordance; this is the rule. See docs/quiz/associations.md §0.</para>
     /// </summary>
     public static class QuizFormatAccess
     {
-        /// <summary>Formats visible to admins and Teachers only. Associations: added 2026-09-23, in testing.</summary>
-        public static readonly QuizFormat[] PreviewFormats = { QuizFormat.Associations };
+        /// <summary>
+        /// Formats visible to admins and Teachers only. Empty today: Associations was here from
+        /// 2026-09-23 and was released to every player on 2026-10-08 (docs/quiz/associations.md §0).
+        /// The next format in testing goes here.
+        /// </summary>
+        public static readonly QuizFormat[] PreviewFormats = Array.Empty<QuizFormat>();
 
         /// <param name="canSeePreview">Admin, SuperAdmin or Teacher — <c>ICurrentUserService.CanSeePreviewFormats</c>.</param>
         public static bool IsAvailableTo(QuizFormat format, bool canSeePreview) =>

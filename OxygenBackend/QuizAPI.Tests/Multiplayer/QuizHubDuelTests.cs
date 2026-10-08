@@ -65,17 +65,19 @@ public class QuizHubDuelTests
         Assert.Equal("Classic", (await h.Sessions.GetSessionAsync(Room))!.SelectedQuiz!.Format);
     }
 
+    /// <summary>
+    /// Since Associations was released (2026-10-08) any host may pick a Board. Until then this test
+    /// pinned the opposite: a non-admin got "You can't host this quiz." (associations.md §0).
+    /// </summary>
     [Fact]
-    public async Task While_boards_are_in_preview_a_host_who_isnt_an_admin_cant_pick_one()
+    public async Task A_host_who_isnt_an_admin_can_pick_a_board()
     {
         var h = World();
         await h.As("ben", "ben-1").CreateSession(Room, "Ben's lobby", 4);
 
-        var ex = await Assert.ThrowsAsync<HubException>(() => h.As("ben", "ben-1").SelectQuiz(Room, Pick(BoardQuiz)));
+        await h.As("ben", "ben-1").SelectQuiz(Room, Pick(BoardQuiz));
 
-        // The same answer as a quiz they may not host at all: no hint that a board is there.
-        Assert.Equal("You can't host this quiz.", ex.Message);
-        Assert.Null((await h.Sessions.GetSessionAsync(Room))!.SelectedQuiz);
+        Assert.Equal("Associations", (await h.Sessions.GetSessionAsync(Room))!.SelectedQuiz!.Format);
     }
 
     // ── Starting ────────────────────────────────────────────────────────────

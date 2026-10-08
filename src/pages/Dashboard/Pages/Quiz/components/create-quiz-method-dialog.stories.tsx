@@ -5,8 +5,7 @@ import { CreateQuizMethodDialog } from "./create-quiz-method-dialog";
 
 /**
  * The fork users hit when they click "+ Create Quiz", one question per step: what kind of quiz
- * (Classic or Associations — admins only while Associations is in preview; everyone else starts
- * on the next step), how to build a Classic one (by hand or with AI), and — for the AI branch —
+ * (Classic or Associations), how to build a Classic one (by hand or with AI), and — for the AI branch —
  * what the AI should work from. Picking a card that leads on pops the next step's cards out of
  * it; try it in the `Open` story.
  *
@@ -55,8 +54,7 @@ export const ClosedWithTrigger: Story = {
   args: { open: false },
 };
 
-/** The first step (for a signed-out Storybook user that is "How do you want to build it?", since
- * Associations is admin-only). Pinned open so it can be reviewed directly. */
+/** The first step, "What kind of quiz?". Pinned open so it can be reviewed directly. */
 export const Open: Story = {
   args: { open: true },
 };

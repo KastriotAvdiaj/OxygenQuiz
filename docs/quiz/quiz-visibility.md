@@ -68,13 +68,14 @@ are role-gated — so **Draft and Unlisted quizzes never appear in any list or s
 ### Formats in preview are admin-only
 
 A quiz **format** that is still being built and tested exists for admins only:
-`QuizFormatAccess.PreviewFormats` (today: Associations). For everyone else — players and guests —
+`QuizFormatAccess.PreviewFormats` (today: none — Associations was there until its release on
+2026-10-08). For everyone else — players and guests —
 those quizzes are absent from the catalogue, search, "my quizzes", a read by id, the questions
 list and a share link, and the format's authoring endpoints answer 404. It is enforced in
 `QuizService` (`VisibleTo(isAdmin)` on every list, `IsAvailableTo` on every single read), on top of
 the status rules on this page, and pinned by `QuizAPI.Tests/Formats/PreviewFormatAccessTests.cs`.
 Releasing a format is removing it from that array (and from `PREVIEW_FORMATS` on the frontend,
-which only decides what to offer). See [associations.md](associations.md), "Admins only, for now".
+which only decides what to offer). See [associations.md](associations.md) §0.
 
 ### Unlisted via share link
 - The owner calls `POST /api/quiz/{id}/share-link` to lazily generate (and thereafter reuse) an

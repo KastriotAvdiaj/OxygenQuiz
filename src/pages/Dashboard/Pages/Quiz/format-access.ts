@@ -9,9 +9,9 @@ import type { QuizFormat } from "@/types/quiz-types";
  * the create route), so a player isn't shown a door that leads to a 404.
  *
  * Releasing a format: remove it here and in `QuizFormatAccess` together.
- * See docs/quiz/associations.md, "Admins only, for now".
+ * Empty since 2026-10-08, when Associations was released (docs/quiz/associations.md §0).
  */
-export const PREVIEW_FORMATS: readonly QuizFormat[] = ["Associations"];
+export const PREVIEW_FORMATS: readonly QuizFormat[] = [];
 
 /** True when the signed-in user may use `format`. Always true for a released format. */
 export const useFormatAvailable = (format: QuizFormat): boolean => {

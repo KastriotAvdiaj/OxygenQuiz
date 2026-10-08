@@ -142,7 +142,8 @@ export const CreateQuizMethodDialog = ({
   initialStep,
 }: CreateQuizMethodDialogProps) => {
   const navigate = useNavigate();
-  // Associations is admin-only while it is tested (format-access.ts).
+  // Every player since Associations was released (format-access.ts); the format step is skipped
+  // for anyone a future preview format would hide from.
   const showAssociations = useFormatAvailable("Associations");
   const firstStep: Step = showAssociations ? "format" : "method";
 

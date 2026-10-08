@@ -59,7 +59,7 @@ the docs say what is now true.
 ### 2.1 What it is
 
 `Teacher` is a role alongside `User`, `Admin`, `SuperAdmin`, held **on top of** `User`. It grants:
-hosting (Host mode), Classes, and — while Associations is in preview — seeing, playing and
+hosting (Host mode), Classes, and — while Associations was in preview, until 2026-10-08 — seeing, playing and
 authoring Associations (§2.3). Nothing else: no admin dashboard, no power over other accounts.
 
 **It is not "elevated".** `RoleRules.IsElevated` currently means "anything but `User`", and two

@@ -155,9 +155,9 @@ export function QuizSelection() {
     arrival?.id != null ? { categoryIds: [arrival.id] } : undefined
   );
 
-  // Format: quizzes, Associations boards, or both. Offered only to someone who can see boards —
-  // while the format is in preview that is admins (format-access.ts); for anyone else the server
-  // returns no boards anyway, so the control would have nothing to separate.
+  // Format: quizzes, Associations boards, or both. Offered to whoever can see boards — everyone
+  // since the format's release (format-access.ts); a format in preview would hide it, since the
+  // server would return no boards and the control would have nothing to separate.
   const boardsAvailable = useFormatAvailable("Associations");
   const [formatFilter, setFormatFilter] = useState<FormatFilter>("all");
   const handleFormatChange = useCallback(

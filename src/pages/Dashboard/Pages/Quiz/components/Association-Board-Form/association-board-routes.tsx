@@ -21,8 +21,8 @@ import { AssociationBoardForm } from "./association-board-form";
 
 /**
  * `…/create-quiz/associations` (admin) and `…/create/associations` (player dashboard).
- * While the format is in preview a non-admin who types the URL is sent back to their quiz list —
- * the API would refuse the save anyway (format-access.ts).
+ * Open to every player since Associations was released (2026-10-08). If a format is ever in preview
+ * again, someone who may not use it is sent back to their quiz list here (format-access.ts).
  *
  * <b>Draft.</b> Reads any unfinished board *before* the builder mounts and seeds it as the form's
  * defaults, the same way `create-quiz-route.tsx` does for the Classic builder — read once in a
