@@ -67,34 +67,40 @@ export function FeaturedQuizzes() {
         initial="hidden"
         animate="shown"
         variants={pageVariants}
-        className="mx-auto w-full max-w-6xl px-4 pb-12 pt-4 sm:px-6 sm:pb-16 sm:pt-6"
+        className="mx-auto w-full max-w-6xl px-4 pb-12 pt-4 sm:px-6 sm:pb-16 sm:pt-5"
       >
-        <button
-          onClick={() => navigate("/choose-mode")}
-          className="group mb-4 inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-foreground/20 hover:text-foreground sm:mb-5"
-        >
-          <ArrowLeft className="h-3.5 w-3.5 transition-transform group-hover:-translate-x-0.5" />
-          Back
-        </button>
-
+        {/* One row: Back at the left edge, the heading centred, Browse all at the right edge. The
+            outer columns are equal (1fr each), so the heading stays centred whatever the buttons'
+            widths are. */}
         <motion.header
           variants={fadeDown}
-          className="flex items-center justify-between gap-3"
+          className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:gap-3"
         >
+          <button
+            onClick={() => navigate("/choose-mode")}
+            aria-label="Back"
+            className="group inline-flex items-center gap-1.5 justify-self-start rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-foreground/20 hover:text-foreground"
+          >
+            <ArrowLeft className="h-3.5 w-3.5 transition-transform group-hover:-translate-x-0.5" />
+            <span className="hidden sm:inline">Back</span>
+          </button>
+
           {/* Held invisible (not removed, so nothing shifts) until we know whether the visitor is
               signed in — otherwise a guest sees "Pick a quiz" flip to "Pick your first quiz". */}
           <h1
             className={cn(
-              "text-3xl font-bold leading-none transition-opacity duration-200 sm:text-4xl",
+              "text-center text-2xl font-bold leading-none transition-opacity duration-200 sm:text-4xl",
               isUserLoading ? "opacity-0" : "opacity-100",
             )}
           >
             {signedOut ? "Pick your first quiz" : "Pick a quiz"}
           </h1>
-          <Link to={CATALOGUE_PATH} tabIndex={-1} className="shrink-0">
+
+          <Link to={CATALOGUE_PATH} tabIndex={-1} className="justify-self-end">
             {/* Primary, with an arrow: the one way on from here, to a page of its own. */}
-            <LiftedButton size="sm" className="gap-1.5">
-              Browse all
+            <LiftedButton size="sm" className="gap-1.5" aria-label="Browse all quizzes">
+              <span className="hidden sm:inline">Browse all</span>
+              <span className="sm:hidden">All</span>
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </LiftedButton>
           </Link>
@@ -102,7 +108,7 @@ export function FeaturedQuizzes() {
 
         <motion.div
           variants={pageVariants}
-          className="mt-6 space-y-6 sm:mt-8 sm:space-y-8"
+          className="mt-5 space-y-5 sm:mt-6 sm:space-y-6"
         >
           {filled
             ? filled.map(({ panel, slots }, i) => (

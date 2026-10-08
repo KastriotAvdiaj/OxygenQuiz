@@ -128,7 +128,7 @@ export function CategoryPanel({
       />
 
       {/* Title and tiles as one block, centred with equal photo above and below. */}
-      <div className="px-3 py-8 sm:px-5 sm:py-12">
+      <div className="px-3 py-7 sm:px-5 sm:py-10">
         <motion.h2
           id={`panel-${panel.slug}`}
           variants={titleVariants}
