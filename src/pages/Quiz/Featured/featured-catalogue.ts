@@ -23,12 +23,6 @@ export type CategoryPanelSpec = {
   slug: string;
   /** Shown in 3D letters on the panel. */
   name: string;
-  /** In public/assets/categories (WebP, 1600px wide). */
-  image: string;
-  /** The same photo 800px wide (~35 KB), for phones — picked by the browser through srcset. */
-  imageSmall: string;
-  /** `object-position` — which part of the photo stays in view in a short, wide panel. */
-  imagePosition: string;
   /**
    * Used only until the quizzes have loaded or if their category has no palette. Normally the
    * panel takes its colour from the category itself, so an admin's palette change shows here too.
@@ -41,33 +35,21 @@ export const CATEGORY_PANELS: readonly CategoryPanelSpec[] = [
   {
     slug: "geography",
     name: "Geography",
-    image: "/assets/categories/geography.webp",
-    imageSmall: "/assets/categories/geography-800.webp",
-    imagePosition: "center 35%",
     fallbackPalette: ["#0B5CA8", "#CFE3F5"],
   },
   {
     slug: "general-knowledge",
     name: "General Knowledge",
-    image: "/assets/categories/general-knowledge.webp",
-    imageSmall: "/assets/categories/general-knowledge-800.webp",
-    imagePosition: "center 40%",
     fallbackPalette: ["#8E3B2F", "#F2D6CF"],
   },
   {
     slug: "science",
     name: "Science",
-    image: "/assets/categories/science.webp",
-    imageSmall: "/assets/categories/science-800.webp",
-    imagePosition: "center 30%",
     fallbackPalette: ["#4652C8", "#DCDFFA"],
   },
   {
     slug: "history",
     name: "History",
-    image: "/assets/categories/history.webp",
-    imageSmall: "/assets/categories/history-800.webp",
-    imagePosition: "center 45%",
     fallbackPalette: ["#8E5326", "#F5E1C8"],
   },
 ];

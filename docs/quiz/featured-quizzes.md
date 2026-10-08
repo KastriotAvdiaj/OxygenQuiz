@@ -8,8 +8,8 @@
 `/choose-quiz` is where the header's **Play** → single player lands, and for a first-time visitor
 it is the first real screen of the app. It used to be the full catalogue: a search box, a filter
 sidebar and a grid of whatever had been published lately. It is now the **quiz home page**: four
-**category panels** — Geography, General Knowledge, Science, History — each a photo-backed card
-holding a ladder of four **featured quizzes**, Easy, Medium, Hard and Expert. Anyone who wants more
+**category panels** — Geography, General Knowledge, Science, History — each a card in its category's
+colour with a line drawing across it, holding a ladder of four **featured quizzes**, Easy, Medium, Hard and Expert. Anyone who wants more
 presses **Browse all** and gets the old catalogue.
 
 The sixteen quizzes are part of the app, not of anyone's data: the API seeds them into every
@@ -163,24 +163,53 @@ the API returns.
 
 ### The panel
 
-Each category is one card: its photo, its name in large white **3D letters** at the top left, and
-its four tiles centred below, with equal photo showing above and below.
+Each category is one card: its category colour with a white **line drawing** across it, its name
+in large white **3D letters** at the top left, and its four tiles centred below, with equal space
+above and below.
 
 - **The 3D is a stack of text-shadows** — five 1px layers in the category's darker edge colour
   (`quizEdgeColor`), then a soft drop shadow (`TITLE_3D` in `category-panel.tsx`). Being plain CSS,
   it works with whichever quiz font the player has chosen and stays sharp at any size. White letters
-  with a coloured extrusion read on every part of every photo. (Real 3D text — three.js geometry —
+  with a coloured extrusion read over every part of the drawing. (Real 3D text — three.js geometry —
   was considered and rejected: a font conversion and WebGL for a heading.)
-- **The photo stays clean.** No blur and no colour wash across it (both were tried, 2026-10-07/08,
-  and made the photos look muddy); only saturation 0.9. The category colour is **only at the edges**,
-  an inset `box-shadow` glow round the frame, plus the card's lifted bottom edge.
 - **The tiles are solid** `bg-background`. They were 90% opaque with a light backdrop blur at
-  first, which let the photo faintly show through and muddy the text; a frosted-glass version was
-  considered too. Solid reads cleanest against a sharp photo.
+  first, which let the background faintly show through and muddy the text; a frosted-glass version
+  was considered too. Solid reads cleanest.
 - **The font is the player's.** Nothing on the page sets a font family: it inherits `font-quiz` from
   the layout — the quiz font chosen in Settings, DynaPuff by default — like every other play screen.
 
-**Earlier versions, for the record.** The first cut the card into a folder shape with a *tab* at its
+### The drawings
+
+Each panel's picture is a line drawing in the style of the landing page's globe
+([`landing-page.md`](../home/landing-page.md), "The globe"), so the quiz home page looks like the
+rest of the app instead of like a stock-photo site (2026-10-08). They live in
+`src/pages/Quiz/Featured/art/`, one component per category, picked by slug in `category-art.tsx`.
+
+| Category | Drawing |
+|---|---|
+| Geography | The globe itself — d3-geo over the shared Natural Earth land (`components/globe/land.ts`), facing Europe, with amber flight arcs out of Prishtina — half risen on the right, a compass rose beside the title, a faint flat-map grid behind |
+| General Knowledge | A wall of old books stacked spines-out filling the whole card, laid out once by a seeded random generator so it is the same everywhere |
+| Science | A two-stage rocket with side boosters (grid fins, legs, seams, flames) climbing across the top right, its smoke trail falling behind the tiles; an atom beside the title, a ringed planet |
+| History | Three pyramids under the sun, a broken column beside the title, on a line of desert |
+
+- **The globe's rules, shared** (`art/strokes.ts`): outlines at 70%, solid parts at 45%, background
+  detail at 18%, all `currentColor`; the few warm accents in the `cta` amber; every stroke
+  `non-scaling-stroke`, so lines stay a pixel or two thick at any card size.
+- **White on the category colour.** The lines are `text-white` on `bg-[var(--panel)]`, so a
+  drawing follows the category's palette — an admin's change included — and needs nothing for dark
+  mode. The wall of books covers the title too, so it is drawn fainter (60% against 90%).
+- **Drawn for the strip above the tiles.** On a desktop the tiles cover the middle of the card;
+  only the band beside the title and a sliver below them show. The subjects sit there — the rocket
+  climbs across the top rather than standing on a pad (upright, it hid entirely behind the Expert
+  tile). The drawing is a 1600×380 box scaled with `xMaxYMax slice`: cropped, never squashed,
+  anchored bottom right, so on a phone's nearly square card the right-hand subject is what stays.
+- **No downloads.** The drawings are code — no image files, nothing to lazy-load or size with
+  `srcset`. Only Geography waits on anything: its coastlines join the outline when the land chunk
+  (~55 KB, shared with the landing page) arrives.
+
+**Earlier versions, for the record.** Until 2026-10-08 each card was an Unsplash photo (a satellite
+map, books, a rocket launch, the Sphinx) with the category colour only as a glow round the frame;
+`git show f064191e:src/pages/Quiz/Featured/category-panel.tsx` has it. The first cut the card into a folder shape with a *tab* at its
 top right carrying the name (`clip-path: path(...)` rebuilt on every resize by a `ResizeObserver`);
 the second put the name above a plain card in the `font-header` Titillium. Both were dropped after
 seeing them in the app (2026-10-08). `git show beba94f:src/pages/Quiz/Featured/panel-shape.ts` has the
@@ -192,10 +221,6 @@ tab if the idea comes back.
   without waiting for it, so the request and the code download run side by side. Until the quizzes
   arrive each panel draws with pulsing placeholder tiles, so nothing jumps when they land. The
   result is cached for 5 minutes.
-- **Photos are `<img>`, not CSS backgrounds,** so the browser can choose a size and load them lazily:
-  `srcset` offers an 800px copy (~25–60 KB) next to the 1600px one, so a phone downloads about a
-  quarter of what a desktop does; the first panel loads eagerly at high priority, the rest lazily.
-  Each photo fades and settles in once it has actually loaded, instead of painting in strips.
 - **The entrance** (framer-motion variants): the header drops in, the panels rise one after another,
   each panel slides its title in and pops its tiles in left to right. Everything is short (under half a second per step) so nobody waits to click. All of it is
   skipped for players whose system asks for reduced motion (`MotionConfig reducedMotion="user"`).
@@ -205,10 +230,6 @@ tab if the idea comes back.
 **Tiles** are 4 in a row from 640px, a 2×2 grid below — four in a row at 360px left ~70px each,
 too narrow for a title. Each shows four difficulty pips (filled up to its level), the level, the
 title and the question count.
-
-**Images** are `public/assets/categories/<slug>.webp` (1600px, ~600 KB for all four) and
-`<slug>-800.webp` (800px, ~165 KB for all four), from Unsplash. The 1–2 MB originals are not in the
-repo.
 
 ### Beside the panels
 
@@ -236,10 +257,10 @@ Each panel takes its colours from its **category's palette** (`colorPaletteJson`
 cards use), so an admin's palette change reaches the panel too. `featured-catalogue.ts` holds a
 copy only for the moment before the quizzes load.
 
-The palettes were picked from the photos so the colour reads as part of the image, then darkened
+The palettes were picked from the photos the panels first had (see "The drawings"), then darkened
 until white text on the first colour, and the first colour on the second, both clear 4.5:1:
 
-| Category | Palette | From the photo |
+| Category | Palette | From the old photo |
 |---|---|---|
 | Geography | `#0B5CA8` → `#CFE3F5` | the oceans |
 | General Knowledge | `#8E3B2F` → `#F2D6CF` | the red book spines |

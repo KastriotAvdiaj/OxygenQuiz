@@ -88,8 +88,8 @@ _Avoid_: official quiz, starter quiz, default quiz, sample quiz (the Development
 questions are something else)
 
 **Category panel**:
-One category on the quiz home page: a card of its photo, carrying its name and its ladder of
-featured quizzes.
+One category on the quiz home page: a card in its category's colour with a line drawing across it,
+carrying its name and its ladder of featured quizzes.
 _Avoid_: category card (a quiz card is a different component), shelf, section, banner
 
 **Ladder**:

@@ -130,22 +130,20 @@ export function FeaturedQuizzes() {
           className="mt-5 space-y-5 sm:mt-6 sm:space-y-6"
         >
           {filled
-            ? filled.map(({ panel, slots }, i) => (
+            ? filled.map(({ panel, slots }) => (
                 <CategoryPanel
                   key={panel.slug}
                   panel={panel}
                   slots={slots}
                   onPick={handlePick}
-                  priority={i === 0}
                 />
               ))
             : isLoading &&
-              CATEGORY_PANELS.map((panel, i) => (
+              CATEGORY_PANELS.map((panel) => (
                 <CategoryPanel
                   key={panel.slug}
                   panel={panel}
                   onPick={handlePick}
-                  priority={i === 0}
                 />
               ))}
 

@@ -1,14 +1,16 @@
-import { useCallback, useState, type CSSProperties } from "react";
+import type { CSSProperties } from "react";
 import { motion, type Variants } from "framer-motion";
 import { cn } from "@/utils/cn";
 import type { QuizSummaryDTO } from "@/types/quiz-types";
 import { parseQuizPalette, quizEdgeColor } from "../components/quiz-palette";
 import type { CategoryPanelSpec, FeaturedSlot } from "./featured-catalogue";
 import { FEATURED_LEVELS } from "./featured-catalogue";
+import { CategoryArt } from "./art/category-art";
 
 /**
- * One category on the quiz home page: a card of the category's photo with its name in 3D letters
- * and its Easy → Expert ladder in the middle (docs/quiz/featured-quizzes.md, "The panel").
+ * One category on the quiz home page: a card in the category's colour with a line drawing across
+ * it (`art/`), its name in 3D letters and its Easy → Expert ladder in the middle
+ * (docs/quiz/featured-quizzes.md, "The panel").
  *
  * No font is set anywhere here: the page inherits the player's chosen quiz font (`font-quiz` on
  * the layout, DynaPuff by default), like every other play screen — the 3D is a text-shadow, so it
@@ -50,7 +52,7 @@ const tileVariants: Variants = {
 
 /**
  * Extruded letters: a stack of 1px shadows in the category's darker edge colour, then a soft drop
- * shadow, so white text reads on any part of the photo.
+ * shadow, so white text reads over the drawing.
  */
 const TITLE_3D: CSSProperties = {
   textShadow: [
@@ -67,13 +69,10 @@ export function CategoryPanel({
   panel,
   slots,
   onPick,
-  priority = false,
 }: {
   panel: CategoryPanelSpec;
   slots?: FeaturedSlot[];
   onPick: (quiz: QuizSummaryDTO) => void;
-  /** The first panel's photo is above the fold: fetch it first instead of lazily. */
-  priority?: boolean;
 }) {
   // The category's own palette, so an admin's change to it reaches the panel too; the spec's copy
   // only covers the moment before the quizzes load.
@@ -86,13 +85,6 @@ export function CategoryPanel({
     "--panel-edge": quizEdgeColor(main),
   } as CSSProperties;
 
-  // The photo fades in once it has actually arrived, rather than painting in strips.
-  const [photoLoaded, setPhotoLoaded] = useState(false);
-  // A cached photo can finish before React attaches onLoad; the ref catches that case.
-  const photoRef = useCallback((img: HTMLImageElement | null) => {
-    if (img?.complete) setPhotoLoaded(true);
-  }, []);
-
   return (
     <motion.section
       aria-labelledby={`panel-${panel.slug}`}
@@ -100,34 +92,9 @@ export function CategoryPanel({
       variants={panelVariants}
       className="relative isolate overflow-hidden rounded-2xl bg-[var(--panel)] shadow-[0_6px_0_var(--panel-edge)]"
     >
-      <img
-        ref={photoRef}
-        src={panel.image}
-        srcSet={`${panel.imageSmall} 800w, ${panel.image} 1600w`}
-        sizes="(min-width: 1152px) 1104px, 100vw"
-        alt=""
-        aria-hidden="true"
-        decoding="async"
-        loading={priority ? "eager" : "lazy"}
-        {...(priority ? { fetchpriority: "high" } : {})}
-        onLoad={() => setPhotoLoaded(true)}
-        className={cn(
-          "absolute inset-0 -z-10 h-full w-full object-cover saturate-[.9] transition-[opacity,transform] duration-700 ease-out motion-reduce:transition-none",
-          photoLoaded ? "scale-100 opacity-100" : "scale-[1.04] opacity-0",
-        )}
-        style={{ objectPosition: panel.imagePosition }}
-      />
-      {/* The category colour only at the edges — a glow round the frame, the photo clean inside. */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 -z-10 rounded-2xl"
-        style={{
-          boxShadow:
-            "inset 0 0 48px 6px color-mix(in srgb, var(--panel) 75%, transparent)",
-        }}
-      />
+      <CategoryArt slug={panel.slug} className="absolute inset-0 -z-10 h-full w-full" />
 
-      {/* Title and tiles as one block, centred with equal photo above and below. */}
+      {/* Title and tiles as one block, centred with equal space above and below. */}
       <div className="px-3 py-7 sm:px-5 sm:py-10">
         <motion.h2
           id={`panel-${panel.slug}`}
@@ -156,7 +123,7 @@ export function CategoryPanel({
   );
 }
 
-/** A solid tile on the photo — no transparency, so the text never competes with the picture. */
+/** A solid tile over the drawing — no transparency, so the text never competes with the lines. */
 function FeaturedTile({
   slot,
   onPick,

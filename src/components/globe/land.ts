@@ -2,8 +2,9 @@ import { feature } from "topojson-client";
 import type { Feature, FeatureCollection } from "geojson";
 
 /**
- * The Earth's land, as GeoJSON, for the app's globes (the landing page's line globe and the 404's
- * spinning "0"): Natural Earth's 1:110m outlines from `world-atlas`, ~55KB of TopoJSON.
+ * The Earth's land, as GeoJSON, for the app's globes (the landing page's line globe, the 404's
+ * spinning "0" and the Geography panel on the quiz home page): Natural Earth's 1:110m outlines
+ * from `world-atlas`, ~55KB of TopoJSON.
  *
  * Loaded on first call with a dynamic import — Vite splits the data into its own chunk, so no
  * page pays for it until a globe asks — and cached, so a second globe (or a remount) reuses the

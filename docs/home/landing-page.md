@@ -101,7 +101,9 @@ Decoration only: `aria-hidden`, no pointer events, unselectable.
   below the fold.
 - **Drawn with d3-geo** (`geoOrthographic`) from Natural Earth's 1:110m land outlines
   (`world-atlas/land-110m.json`, ~55KB TopoJSON, turned into GeoJSON by `topojson-client`), loaded
-  and cached by `src/components/globe/land.ts` — shared with the 404 page's globe.
+  and cached by `src/components/globe/land.ts` — shared with the 404 page's globe and the quiz home
+  page's Geography drawing (`docs/quiz/featured-quizzes.md`, "The drawings"), which also borrows the
+  globe's line style.
   Each frame writes the two paths' `d` straight onto the DOM — no React state per frame.
 - **Loaded after the pitch.** `pitch.tsx` imports the component with `React.lazy`, and the map
   data is a dynamic import of its own, so the headline and buttons never wait on them. A
