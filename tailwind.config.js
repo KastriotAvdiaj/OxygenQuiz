@@ -70,6 +70,10 @@ module.exports = {
   		// See docs/RESPONSIVE.md, "Short viewports".
   		screens: {
   			short: { raw: '(max-height: 860px)' },
+  			// Wider than 2xl: room for a 72rem column with a card in each side margin (the quiz
+  			// home page's side cards, docs/quiz/featured-quizzes.md). A named screen because the
+  			// arbitrary `min-[…]:` variant is switched off while `short` above is a `raw` screen.
+  			wide: '1640px',
   		},
   		fontFamily: {
   			header: [

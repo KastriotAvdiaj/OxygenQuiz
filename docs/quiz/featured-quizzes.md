@@ -23,7 +23,7 @@ database on startup, so the page looks the same on a laptop, in CI and on oxygen
 | Who may change one | [`FeaturedQuizRules`](../../OxygenBackend/QuizAPI/Services/FeaturedQuizzes/FeaturedQuizRules.cs), called from `QuizService` and `QuestionsController` |
 | Owner account | [`SystemAccount`](../../OxygenBackend/QuizAPI/Services/SystemAccount.cs) — "OxygenQuiz" |
 | Read | `GET /api/quiz/featured`, anonymous — `QuizService.GetFeaturedQuizzesAsync` |
-| Page | [`src/pages/Quiz/Featured/`](../../src/pages/Quiz/Featured/) — `Featured-Quizzes.tsx`, `category-panel.tsx`, `featured-catalogue.ts` |
+| Page | [`src/pages/Quiz/Featured/`](../../src/pages/Quiz/Featured/) — `Featured-Quizzes.tsx`, `category-panel.tsx`, `featured-catalogue.ts`, `side-promos.tsx` |
 | Route + redirect | [`featured-quizzes.loader.ts`](../../src/loaders/featured-quizzes.loader.ts), `Router.tsx` |
 
 ---
@@ -209,6 +209,26 @@ title and the question count.
 **Images** are `public/assets/categories/<slug>.webp` (1600px, ~600 KB for all four) and
 `<slug>-800.webp` (800px, ~165 KB for all four), from Unsplash. The 1–2 MB originals are not in the
 repo.
+
+### Beside the panels
+
+Two cards sit beside the panels (`side-promos.tsx`, 2026-10-08):
+
+- **Try Associations** — a "New" badge, a little 4×4 board whose tiles pop in, a line on how the
+  game works, and **Play a board** (primary). It opens the **newest public board** (catalogue
+  search, `format = Associations`, newest first); a guest sees **Sign in to play**, because guest
+  play of a board isn't built (associations.md §9.8) — the play route sends them to sign in and
+  back. **No public board on the database → no card**, rather than a button that goes nowhere.
+  Associations was released to every player for this card (associations.md §0).
+- **Play with friends** — to `/multiplayer-menu`, as a muted secondary button.
+
+**Where they go depends on the width.** From 1640px — the 72rem column plus a 13rem card and its
+gap on each side — they sit in the side margins, Associations left and friends right, and stay in
+view while the panels scroll (`sticky` inside an absolutely positioned `aside` on each side of the
+column). Below that they sit side by side under the panels. The breakpoint is a named `wide`
+screen in `tailwind.config.js`, not `min-[1640px]:` — Tailwind 3 switches the arbitrary `min-*`
+variants off while the config has a `raw` screen (`short`), and the first version silently never
+showed the cards.
 
 ## 6. Category colours
 

@@ -114,12 +114,12 @@ export function FeaturedQuizzes() {
         {/* Beside the panels, in the page's side margins — only where the screen leaves room for
             them (1640px: the 72rem column plus a 13rem card and gap on each side). They stay in
             view while the panels scroll past. */}
-        <aside className="absolute inset-y-0 right-full hidden w-52 min-[1640px]:block">
+        <aside className="absolute inset-y-0 right-full hidden w-52 wide:block">
           <div className="sticky top-6 mr-6 mt-[4.5rem]">
             <TryAssociationsCard signedOut={signedOut} />
           </div>
         </aside>
-        <aside className="absolute inset-y-0 left-full hidden w-52 min-[1640px]:block">
+        <aside className="absolute inset-y-0 left-full hidden w-52 wide:block">
           <div className="sticky top-6 ml-6 mt-[4.5rem]">
             <PlayWithFriendsCard />
           </div>
@@ -158,7 +158,7 @@ export function FeaturedQuizzes() {
         </motion.div>
 
         {/* Narrower screens: the same two cards, under the panels. */}
-        <div className="mt-6 grid gap-4 sm:grid-cols-2 min-[1640px]:hidden">
+        <div className="mt-6 grid gap-4 sm:grid-cols-2 wide:hidden">
           <TryAssociationsCard signedOut={signedOut} />
           <PlayWithFriendsCard />
         </div>

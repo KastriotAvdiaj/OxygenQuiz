@@ -181,6 +181,16 @@ Two traps found while unpicking it, both worth checking before you trust any siz
   them off the element is how the field's height got misdiagnosed. If you are explaining a
   component's size from its class list, first confirm those classes are the ones in effect.
 
+## Very wide screens: the `wide:` variant, and why not `min-[…]:`
+
+`wide` (`tailwind.config.js`, 1640px, added 2026-10-08) is one step past `2xl`: wide enough for the
+72rem page column plus a card in each side margin — the quiz home page's side cards
+([`quiz/featured-quizzes.md`](quiz/featured-quizzes.md), "Beside the panels").
+
+**Don't write `min-[1640px]:`** (or any arbitrary `min-*`/`max-*` breakpoint). Tailwind 3 turns
+those variants off while any screen is a `raw` media query, and `short` below is one — so the class
+is never generated and the rule silently does nothing. Add a named screen instead.
+
 ## Short viewports: the `short:` variant
 
 Every other breakpoint in this app is about **width**. `short:` is about **height**, and it

@@ -1275,6 +1275,12 @@ fixed in that change; these were not.
 
 ## Featured quizzes (2026-10-07 — see docs/quiz/featured-quizzes.md)
 
+- **P3 — The Controller page's `min-[1920px]:` rules never apply.** Found 2026-10-08 while adding
+  the `wide` screen: Tailwind 3 doesn't generate arbitrary `min-*` variants while a `raw` screen
+  (`short`) exists, so the extra zoom and wider column meant for 1920px screens are dead classes.
+  Fix: a named screen (as `wide` was added) and use it. See docs/RESPONSIVE.md, "Very wide screens".
+  → `src/pages/Classroom/host/ControllerPage.tsx`
+
 - **P3 — A featured quiz's tile doesn't show whether you've played it.** "Played · best 8/10" on
   the quiz home page was designed and deliberately left out of the first version: it needs a
   per-user read beside the anonymous `GET /quiz/featured`, and the page works without it.
