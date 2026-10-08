@@ -138,7 +138,6 @@ interesting part, so we fake it with Moq (pattern C below).
 | `src/lib/__tests__/token-store.test.ts` | In-memory access-token get/set/clear. |
 | `src/lib/__tests__/date-format.test.ts` | Date formatting + graceful fallbacks. |
 | `src/pages/Quiz/Featured/__tests__/featured-catalogue.test.ts` | `fillPanels`: the quiz home page is laid out from the fixed catalogue, not from the API — ladder and panel order fixed, a missing slot or empty panel left out, unknown keys ignored. See [`../quiz/featured-quizzes.md`](../quiz/featured-quizzes.md) §5. |
-| `src/pages/Quiz/Featured/__tests__/panel-shape.test.ts` | `panelPath`, the category panel's tab outline: where the tab sits, a tab never wider than the card, corner radii capped, stable under sub-pixel noise. |
 | `src/loaders/__tests__/featured-quizzes.loader.test.ts` | Which `/choose-quiz` URLs go on to the catalogue: `?category=` and `?shared=` (query intact), not a plain visit or `?settings=`. |
 | `src/common/Notifications/__tests__/notifications.test.ts` | Notifications store (pre-existing). |
 | `src/hooks/__tests__/use-disclosure.test.ts` | `useDisclosure` hook (pre-existing). |

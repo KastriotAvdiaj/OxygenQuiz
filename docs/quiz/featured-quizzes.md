@@ -23,7 +23,7 @@ database on startup, so the page looks the same on a laptop, in CI and on oxygen
 | Who may change one | [`FeaturedQuizRules`](../../OxygenBackend/QuizAPI/Services/FeaturedQuizzes/FeaturedQuizRules.cs), called from `QuizService` and `QuestionsController` |
 | Owner account | [`SystemAccount`](../../OxygenBackend/QuizAPI/Services/SystemAccount.cs) — "OxygenQuiz" |
 | Read | `GET /api/quiz/featured`, anonymous — `QuizService.GetFeaturedQuizzesAsync` |
-| Page | [`src/pages/Quiz/Featured/`](../../src/pages/Quiz/Featured/) — `Featured-Quizzes.tsx`, `category-panel.tsx`, `featured-catalogue.ts`, `panel-shape.ts` |
+| Page | [`src/pages/Quiz/Featured/`](../../src/pages/Quiz/Featured/) — `Featured-Quizzes.tsx`, `category-panel.tsx`, `featured-catalogue.ts` |
 | Route + redirect | [`featured-quizzes.loader.ts`](../../src/loaders/featured-quizzes.loader.ts), `Router.tsx` |
 
 ---
@@ -160,29 +160,27 @@ The layout comes from a fixed list in the code (`CATEGORY_PANELS` × `FEATURED_L
 So a missing quiz is never a broken tile, and the page never depends on what order or how many
 the API returns.
 
-### The panel shape
+### The panel
 
-The bulge at the panel's top right is the **tab**: the card's outline rises into it, and the
-category name sits on it. It is one shape — `clip-path: path(...)` built by `panelPath` — not a
-label laid on a rectangle, so the photo runs unbroken from the body up into the tab.
+Each category is its name — a heading in the category colour's small square, then the name — and
+under it a rounded card of the category's photo holding the four tiles.
 
-```
-                   ╭──────────╮   ← tab (300 × 52px; ~66% × 44px below 640px)
- ╭─────────────────╯          │
- │                            │   ← body: photo, then the four tiles
- ╰────────────────────────────╯
-```
+**The name sits above the card, not on it.** The first version cut the card into a folder shape
+with a **tab** rising from its top-right corner and the name on the tab (`clip-path: path(...)`,
+rebuilt on every resize by a `ResizeObserver`). It was dropped on 2026-10-08 after seeing it in the
+app: a plain heading over a plain card reads more cleanly, and the measuring code, the clip path and
+its tests went with it. `git show beba94f:src/pages/Quiz/Featured/panel-shape.ts` has it if the idea
+comes back.
 
-`path()` only takes pixels, so each panel measures itself with a `ResizeObserver` (an Effect with
-a named external system — a DOM measurement) and rebuilds the path when it resizes; until the first
-measurement the panel is transparent rather than briefly rectangular. The shadow is a
-`drop-shadow` filter on the parent, because a clip-path cuts a `box-shadow` off with the corners.
+**The font is the player's.** Nothing on the page sets a font family: it inherits `font-quiz` from
+the layout — the quiz font chosen in Settings, DynaPuff by default — like every other play screen.
+(The first version used the `font-header` Titillium on the title and tab; it didn't match the rest
+of the app.)
 
 **The photo** is softened to stay a backdrop: a 2px blur, saturation 0.85, brightness 0.92, scaled
-slightly so the blur's faded edge stays outside the clip. **One scrim** covers the whole shape: the
-category colour at 60% behind the tab, nearly clear through the middle so the photo reads, then the
-colour again behind the tiles. One gradient over tab and body is what avoids a seam at the joint —
-an earlier version tinted the tab separately and showed one.
+slightly so the blur's faded edge stays inside the card's rounded corners. **The scrim** is nearly
+clear at the top so the photo reads, then fades to the category colour behind the tiles. The card's
+lifted edge is that colour too (`quizEdgeColor`), like the quiz cards'.
 
 **Tiles** are 4 in a row from 640px, a 2×2 grid below — four in a row at 360px left ~70px each,
 too narrow for a title. Each shows four difficulty pips (filled up to its level), the level, the
@@ -197,7 +195,7 @@ Each panel takes its colours from its **category's palette** (`colorPaletteJson`
 cards use), so an admin's palette change reaches the panel too. `featured-catalogue.ts` holds a
 copy only for the moment before the quizzes load.
 
-The palettes were picked from the photos so the tab reads as part of the image, then darkened
+The palettes were picked from the photos so the colour reads as part of the image, then darkened
 until white text on the first colour, and the first colour on the second, both clear 4.5:1:
 
 | Category | Palette | From the photo |
@@ -235,7 +233,7 @@ Only single player changed. The multiplayer lobby still picks from its own dialo
 | Backend | `Featured/FeaturedQuizContentTests.cs` | The shipped JSON breaks no rule, has all 16 keys, no repeated question; each rule is caught. |
 | Backend | `Featured/FeaturedQuizSeederTests.cs` | A fresh database gets the 16 quizzes, 160 Global questions with explanations and four options, the lookups and palettes, a protected owner; a second run adds nothing; an existing category, an edited quiz and a deleted quiz are left alone; a hard-deleted one is recreated; a name clash falls back. |
 | Backend | `Featured/FeaturedQuizRulesTests.cs` | Admin can't delete or unpublish (either route), SuperAdmin can; admin gets past the owner check to edit, a player doesn't; OxygenQuiz's questions are SuperAdmin-only; the page read returns only live, published, featured quizzes. |
-| Unit | `Featured/__tests__/featured-catalogue.test.ts`, `panel-shape.test.ts`, `loaders/__tests__/featured-quizzes.loader.test.ts` | Slot placement and the missing-slot rules; the outline's geometry; which URLs redirect. |
+| Unit | `Featured/__tests__/featured-catalogue.test.ts`, `loaders/__tests__/featured-quizzes.loader.test.ts` | Slot placement and the missing-slot rules; which URLs redirect. |
 | E2E | `e2e/featured-quizzes.spec.ts` | A guest picks Geography · Easy on the home page and lands on its first question; Explore more reaches the catalogue and an old `?category=` link is redirected. |
 
 ## 9. Not done yet

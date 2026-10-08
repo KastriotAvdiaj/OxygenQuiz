@@ -88,13 +88,9 @@ _Avoid_: official quiz, starter quiz, default quiz, sample quiz (the Development
 questions are something else)
 
 **Category panel**:
-One category's card on the quiz home page: its photo, its tab and its ladder of featured quizzes.
+One category on the quiz home page: its name, and a card of its photo holding its ladder of
+featured quizzes.
 _Avoid_: category card (a quiz card is a different component), shelf, section, banner
-
-**Tab**:
-The part of a Category panel's outline that rises from its top-right edge and carries the category
-name.
-_Avoid_: bulge, label, header, notch
 
 **Ladder**:
 A category's featured quizzes in difficulty order, Easy → Medium → Hard → Expert.

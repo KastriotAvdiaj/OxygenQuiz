@@ -54,7 +54,7 @@ export function FeaturedQuizzes() {
       </button>
 
       <header className="flex items-center justify-between gap-3">
-        <h1 className="font-header text-3xl font-black leading-none sm:text-4xl">
+        <h1 className="text-3xl font-bold leading-none sm:text-4xl">
           {signedOut ? "Pick your first quiz" : "Pick a quiz"}
         </h1>
         <Link to={CATALOGUE_PATH} tabIndex={-1} className="shrink-0">
@@ -65,7 +65,7 @@ export function FeaturedQuizzes() {
         </Link>
       </header>
 
-      <div className="mt-6 space-y-6 sm:mt-8 sm:space-y-8">
+      <div className="mt-6 space-y-8 sm:mt-8 sm:space-y-10">
         {filled
           ? filled.map(({ panel, slots }) => (
               <CategoryPanel key={panel.slug} panel={panel} slots={slots} onPick={handlePick} />
