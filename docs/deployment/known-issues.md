@@ -1289,6 +1289,11 @@ fixed in that change; these were not.
   updates an existing category (ADR 0026), so Geography, Science and History on oxygenquiz.com
   keep their palettes until the values in `featured-quizzes.md` §6 are entered in the admin
   category editor. General Knowledge, created by the seeder, already has its new one.
+- **P3 — Each new category picture is drawn by hand.** The quiz home page's line drawings have no
+  outside source in their style, so a new category, empty state or achievement needs a new SVG
+  component. Parked on purpose until a direction is picked; options (keep the style and feed it
+  from icon sets, 3D objects, flat illustration, a generated custom style):
+  [`proposals/app-illustration-style.md`](../proposals/app-illustration-style.md).
 
 ## Paid plans and launch compliance (2026-10-07 — proposals only)
 
