@@ -142,6 +142,10 @@ namespace QuizAPI.Repositories
         public async Task AddAsync(Quiz quiz, CancellationToken ct = default) =>
             await _context.Quizzes.AddAsync(quiz, ct);
 
+        // The soft-delete query filter applies, so a deleted quiz frees its slot.
+        public Task<int> CountOwnedAsync(Guid userId, CancellationToken ct = default) =>
+            _context.Quizzes.CountAsync(q => q.UserId == userId, ct);
+
         public async Task AddQuizQuestionsAsync(IEnumerable<QuizQuestion> quizQuestions, CancellationToken ct = default) =>
             await _context.QuizQuestions.AddRangeAsync(quizQuestions, ct);
 

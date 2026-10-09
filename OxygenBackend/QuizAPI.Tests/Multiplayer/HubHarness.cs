@@ -24,6 +24,8 @@ internal sealed class HubHarness
     public readonly Mock<IGroupManager> Groups = new();
     public readonly Mock<IMatchOrchestrator> Classic = new();
     public readonly Mock<IAssociationMatchOrchestrator> Duels = new();
+    /// <summary>What every caller's plan allows. Free by default; set <c>Entitlements.Value</c> to test another plan.</summary>
+    public readonly FixedEntitlements Entitlements = new();
     public readonly ServiceProvider Services;
     /// <summary>Drives the 5-second disconnect grace.</summary>
     public readonly Microsoft.Extensions.Time.Testing.FakeTimeProvider Clock = new();
@@ -51,6 +53,8 @@ internal sealed class HubHarness
         hubContext.Setup(c => c.Clients.Group(It.IsAny<string>())).Returns(Group.Object);
         services.AddSingleton(hubContext.Object);
         services.AddSingleton(Duels.Object);
+        // The lobby cap is the host's plan's. Free unless a test swaps in another plan.
+        services.AddSingleton<QuizAPI.Services.Billing.IEntitlementService>(Entitlements);
         configure?.Invoke(services);
         Services = services.BuildServiceProvider();
     }

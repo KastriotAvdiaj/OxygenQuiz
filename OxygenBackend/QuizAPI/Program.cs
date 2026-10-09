@@ -133,6 +133,11 @@ builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
 builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
 builder.Services.AddScoped<ITeacherAccessRequestRepository, TeacherAccessRequestRepository>();
 builder.Services.AddScoped<IClassRepository, ClassRepository>();
+// Paid plans (docs/auth/paid-plans.md). Entitlements are read by every limit check, including the hub.
+builder.Services.AddScoped<ISubscriptionRepository, SubscriptionRepository>();
+builder.Services.AddScoped<QuizAPI.Services.Billing.IEntitlementService, QuizAPI.Services.Billing.EntitlementService>();
+builder.Services.AddScoped<QuizAPI.Services.Billing.IPlanLimitGuard, QuizAPI.Services.Billing.PlanLimitGuard>();
+builder.Services.AddScoped<QuizAPI.Services.Billing.IManualPlanService, QuizAPI.Services.Billing.ManualPlanService>();
 builder.Services.AddScoped<QuizAPI.Services.Classroom.IClassService, QuizAPI.Services.Classroom.ClassService>();
 builder.Services.AddScoped<IHostedGameRepository, HostedGameRepository>();
 builder.Services.AddScoped<QuizAPI.Services.Classroom.IHostedGameService, QuizAPI.Services.Classroom.HostedGameService>();
@@ -343,7 +348,7 @@ else
     builder.Services.AddScoped<QuizAPI.Services.Ai.IQuizAiProvider, QuizAPI.Services.Ai.UnavailableQuizAiProvider>();
 }
 builder.Services.AddScoped<IAiGenerationUsageRepository, AiGenerationUsageRepository>();
-builder.Services.AddScoped<QuizAPI.Services.Ai.IAiQuotaPolicy, QuizAPI.Services.Ai.ConfigAiQuotaPolicy>();
+builder.Services.AddScoped<QuizAPI.Services.Ai.IAiQuotaPolicy, QuizAPI.Services.Ai.EntitlementAiQuotaPolicy>();
 builder.Services.AddScoped<QuizAPI.Services.Ai.IAiQuotaService, QuizAPI.Services.Ai.AiQuotaService>();
 builder.Services.AddScoped<QuizAPI.Services.Ai.IAiGenerationService, QuizAPI.Services.Ai.AiGenerationService>();
 builder.Services.AddScoped<QuizAPI.Services.Ai.AiReservationSweeper>();

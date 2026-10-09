@@ -24,7 +24,7 @@ public class AiGenerationServiceAvailabilityTests
     private static AiGenerationService Build(bool enabled, bool overBudget, out Mock<IAiQuotaService> quota)
     {
         quota = new Mock<IAiQuotaService>();
-        quota.Setup(q => q.IsOverBudgetAsync(It.IsAny<CancellationToken>()))
+        quota.Setup(q => q.IsOverBudgetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
              .ReturnsAsync(overBudget);
 
         return new AiGenerationService(
@@ -41,7 +41,7 @@ public class AiGenerationServiceAvailabilityTests
     {
         var service = Build(enabled: true, overBudget: false, out _);
 
-        Assert.True(await service.IsAvailableAsync());
+        Assert.True(await service.IsAvailableAsync(Guid.NewGuid()));
     }
 
     /// <summary>The regression this method exists for.</summary>
@@ -50,7 +50,7 @@ public class AiGenerationServiceAvailabilityTests
     {
         var service = Build(enabled: true, overBudget: true, out _);
 
-        Assert.False(await service.IsAvailableAsync());
+        Assert.False(await service.IsAvailableAsync(Guid.NewGuid()));
     }
 
     /// <summary>
@@ -64,7 +64,7 @@ public class AiGenerationServiceAvailabilityTests
     {
         var service = Build(enabled: false, overBudget: false, out var quota);
 
-        Assert.False(await service.IsAvailableAsync());
-        quota.Verify(q => q.IsOverBudgetAsync(It.IsAny<CancellationToken>()), Times.Never);
+        Assert.False(await service.IsAvailableAsync(Guid.NewGuid()));
+        quota.Verify(q => q.IsOverBudgetAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 }

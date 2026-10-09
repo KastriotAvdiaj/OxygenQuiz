@@ -3,6 +3,13 @@ import { useNavigate } from "react-router-dom";
 import { useMultiplayer } from "@/hooks/useMultiplayer";
 import { useUser } from "@/lib/Auth";
 import { useNotifications } from "@/common/Notifications";
+import {
+  cheapestUpgrade,
+  FREE_LOBBY_PLAYERS,
+  MIN_LOBBY_PLAYERS,
+  useMyPlan,
+  usePlanCatalog,
+} from "@/lib/api/plans";
 import { CreateLobbyDialogView } from "./create-lobby-dialog-view";
 
 interface CreateLobbyDialogProps {
@@ -20,7 +27,14 @@ export const CreateLobbyDialog = ({ open, onOpenChange }: CreateLobbyDialogProps
   const { addNotification } = useNotifications();
   const { data: user } = useUser();
 
-  // 2–10 here is fast feedback; QuizHub.CreateSession clamps to the same range (MinLobbyPlayers/MaxLobbyPlayers).
+  // The range is the host's plan's (docs/auth/paid-plans.md). Fast feedback only:
+  // QuizHub.CreateSession clamps to the same plan limit server-side.
+  const myPlan = useMyPlan(!!user);
+  const catalog = usePlanCatalog();
+  const planMax = myPlan.data?.limits.maxLobbyPlayers ?? FREE_LOBBY_PLAYERS;
+  const upgrade = myPlan.data
+    ? cheapestUpgrade(catalog.data, myPlan.data.plan, (l) => l.maxLobbyPlayers)
+    : null;
   const [maxPlayers, setMaxPlayers] = useState(4);
   const [isCreating, setIsCreating] = useState(false);
 
@@ -72,8 +86,14 @@ export const CreateLobbyDialog = ({ open, onOpenChange }: CreateLobbyDialogProps
       open={open}
       onOpenChange={onOpenChange}
       maxPlayers={maxPlayers}
-      onIncrement={() => setMaxPlayers((prev) => Math.min(10, prev + 1))}
-      onDecrement={() => setMaxPlayers((prev) => Math.max(2, prev - 1))}
+      planMaxPlayers={planMax}
+      upgradeHint={
+        upgrade && !myPlan.data?.isStaff
+          ? `Up to ${upgrade.limits.maxLobbyPlayers} players with ${upgrade.name}`
+          : null
+      }
+      onIncrement={() => setMaxPlayers((prev) => Math.min(planMax, prev + 1))}
+      onDecrement={() => setMaxPlayers((prev) => Math.max(MIN_LOBBY_PLAYERS, prev - 1))}
       isCreating={isCreating}
       onCreate={handleCreateLobby}
       onCancel={handleCancel}

@@ -25,7 +25,7 @@ public class ClassServiceTests
         {
             await using var ctx = new ApplicationDbContext(
                 new DbContextOptionsBuilder<ApplicationDbContext>().UseInMemoryDatabase(_db).Options, new TestCurrentUserService());
-            return await call(new ClassService(new ClassRepository(ctx), Clock));
+            return await call(new ClassService(new ClassRepository(ctx), Clock, NoPlanLimits.Instance));
         }
 
         public Task Do(Func<ClassService, Task> call) => Call(async s => { await call(s); return 0; });

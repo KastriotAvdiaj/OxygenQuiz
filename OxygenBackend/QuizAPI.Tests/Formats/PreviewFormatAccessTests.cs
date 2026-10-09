@@ -74,13 +74,15 @@ public class PreviewFormatAccessTests
         public QuizService Service(ApplicationDbContext ctx, bool admin) =>
             new(new QuizRepository(ctx), new Mock<IQuestionRepository>().Object,
                 NullLogger<QuizService>.Instance, new Mock<IImageService>().Object,
-                new TestCurrentUserService { UserId = admin ? AdminId : PlayerId, IsAdmin = admin, IsAuthenticated = true });
+                new TestCurrentUserService { UserId = admin ? AdminId : PlayerId, IsAdmin = admin, IsAuthenticated = true },
+                NoPlanLimits.Instance);
 
         /// <summary>A Teacher: not an admin, but may see formats in preview (docs/auth/teacher-role.md §2.3).</summary>
         public QuizService TeacherService(ApplicationDbContext ctx) =>
             new(new QuizRepository(ctx), new Mock<IQuestionRepository>().Object,
                 NullLogger<QuizService>.Instance, new Mock<IImageService>().Object,
-                new TestCurrentUserService { UserId = PlayerId, IsAdmin = false, IsTeacher = true, IsAuthenticated = true });
+                new TestCurrentUserService { UserId = PlayerId, IsAdmin = false, IsTeacher = true, IsAuthenticated = true },
+                NoPlanLimits.Instance);
 
         public string TokenOf(int id)
         {

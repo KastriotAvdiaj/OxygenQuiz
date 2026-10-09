@@ -8,6 +8,7 @@ import {
   UserX,
   UserRoundCog,
   MoreHorizontal,
+  BadgeEuro,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -19,6 +20,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { DeleteUser } from "./delete-user";
 import { ChangeUserRole } from "./change-user-role";
+import { ManageUserPlan } from "./manage-user-plan";
 import formatDate from "@/lib/date-format";
 import { useUser } from "@/lib/Auth";
 
@@ -139,6 +141,7 @@ export const columns: ColumnDef<User>[] = [
       // otherwise the still-open menu steals pointer/focus and collapses the
       // roles popover the moment you move the mouse.
       const roleDialog = useDisclosure();
+      const planDialog = useDisclosure();
 
       // Role-management gating (backend enforces the same rules):
       //  - never let someone change their own role (self-demotion / lockout footgun)
@@ -217,6 +220,18 @@ export const columns: ColumnDef<User>[] = [
                 <UserRoundCog size={16} /> Change Role
               </DropdownMenuItem>
             )}
+            {/* Plans aren't roles: an Admin may grant one to anyone but a system account
+                (ManualPlanService refuses those too). */}
+            {user.isProtected ? (
+              <DropdownMenuItem disabled title="System accounts can't have a plan">
+                <BadgeEuro size={16} /> Manage plan
+              </DropdownMenuItem>
+            ) : (
+              <DropdownMenuItem
+                onSelect={() => requestAnimationFrame(() => planDialog.open())}>
+                <BadgeEuro size={16} /> Manage plan
+              </DropdownMenuItem>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
 
@@ -233,6 +248,13 @@ export const columns: ColumnDef<User>[] = [
               state ? roleDialog.open() : roleDialog.close()
             }
             closeDropDown={roleDialog.close}
+          />
+        )}
+        {!user.isProtected && (
+          <ManageUserPlan
+            user={{ id: user.id, username: user.username }}
+            open={planDialog.isOpen}
+            onOpenChange={(state) => (state ? planDialog.open() : planDialog.close())}
           />
         )}
         </>

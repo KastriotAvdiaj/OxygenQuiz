@@ -137,6 +137,19 @@ namespace QuizAPI.Services.Ai
         public decimal MonthlyBudgetUsd { get; set; } = 25m;
 
         /// <summary>
+        /// The ceilings for spend by users on a <b>paid</b> plan, which no longer count against
+        /// <see cref="MonthlyBudgetUsd"/> / <see cref="DailyBudgetUsd"/>. Those two now bound Free
+        /// spend only — otherwise free users exhausting them would switch AI off for the people
+        /// paying for it. Paid spend is already bounded by quota × users × price, so these are a
+        /// runaway-loop backstop, not rationing. Zero or negative disables the check, as above.
+        /// See docs/auth/paid-plans.md.
+        /// </summary>
+        public decimal PaidMonthlyBudgetUsd { get; set; } = 60m;
+
+        /// <summary>Rolling 24-hour ceiling for paid-plan spend. See <see cref="PaidMonthlyBudgetUsd"/>.</summary>
+        public decimal PaidDailyBudgetUsd { get; set; } = 6m;
+
+        /// <summary>
         /// Rolling 24-hour spend ceiling. The monthly cap bounds total loss; this one bounds how
         /// fast it can happen. Without it, a bug that generates in a loop burns the entire
         /// monthly budget in an afternoon and takes the feature down for 30 days — with it, the

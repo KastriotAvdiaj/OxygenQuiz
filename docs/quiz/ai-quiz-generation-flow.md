@@ -478,10 +478,13 @@ in practice. On non-Postgres providers it is a no-op (see §9).
 
 ### 4a. Staff have no daily cap
 
-`ConfigAiQuotaPolicy` returns `null` for anyone holding **Admin** or **SuperAdmin** — the same
-Admin-or-SuperAdmin notion `ICurrentUserService.IsAdmin` uses, rather than a third definition of
-"staff". Roles are read from the user's stored roles, not the request principal, so the answer
-doesn't depend on who happens to be calling.
+`EntitlementAiQuotaPolicy` returns `null` for anyone holding **Admin** or **SuperAdmin** — the
+same Admin-or-SuperAdmin notion `ICurrentUserService.IsAdmin` uses, rather than a third definition
+of "staff". Roles are read from the user's stored roles, not the request principal, so the answer
+doesn't depend on who happens to be calling. (Until 2026-10-10 this was `ConfigAiQuotaPolicy`,
+which gave everyone else `Ai:DefaultDailyQuota`. Paid plans replaced it: the allowance is now the
+user's plan's, and Free's is still `Ai:DefaultDailyQuota` — see
+[`../auth/paid-plans.md`](../auth/paid-plans.md).)
 
 Be precise about what "unlimited" exempts, because getting this wrong is how a bill happens:
 
@@ -513,7 +516,7 @@ The code set is closed. Adding one means touching all four columns of this table
 
 | Code | When | HTTP | Quota | What the user should see |
 |---|---|---|---|---|
-| `FeatureDisabled` | `Ai:Enabled=false`, or **daily** spend over `Ai:DailyBudgetUsd` (checked first), or 30-day spend over `Ai:MonthlyBudgetUsd`, or no API key | 503 | untouched | "AI generation is off right now — you can still copy the prompt into your own AI." |
+| `FeatureDisabled` | `Ai:Enabled=false`, or the caller's budget pool over its **daily** cap (checked first) or its 30-day cap — `Ai:DailyBudgetUsd` / `Ai:MonthlyBudgetUsd` on Free, the `Paid*` pair on a paid plan — or no API key | 503 | untouched | "AI generation is off right now — you can still copy the prompt into your own AI." |
 | `EmailNotVerified` | `user.EmailConfirmed == false` | 403 | untouched | A prompt to verify, with a resend link. |
 | `QuotaExceeded` | Daily cap spent | 429 + `Retry-After` | untouched | "All N used for today", the reset time, and the copy-paste fallback. |
 | `InvalidRequest` | Unknown mode, no question types, no difficulties, no language | 400 | untouched | Inline field error. Mostly unreachable — the client validates first. |
@@ -700,12 +703,14 @@ Ordered from "cheapest to bypass by a bug in our code" to "cannot be bypassed by
 |---|---|---|---|
 | 1 | `MaxOutputTokens` = 4000 | One call to ~$0.0024 at Groq's output rate, instead of whatever a repetition loop would run to | `max_tokens` on the request |
 | 2 | `MaxSourceChars` = 40,000 | Input to ~10K tokens (~$0.0022) per call | `AiGenerationService.Normalise` |
-| 3 | `DefaultDailyQuota` = 2 | One user to 2 generations/day — stated in the UI. **Staff exempt** (§4a) | `AiQuotaService` |
-| 4 | `DailyBudgetUsd` = 2 | Everyone, to ~$2/day — bounds the *rate* of loss | `IsOverBudgetAsync` |
-| 5 | `MonthlyBudgetUsd` = 25 | Everyone, to ~$25/30 days — bounds *total* loss | `IsOverBudgetAsync` |
+| 3 | The plan's daily quota | One user to 2 (Free, `DefaultDailyQuota`), 10 (Plus) or 15 (Teacher) generations/day — stated in the UI. **Staff exempt** (§4a) | `AiQuotaService` via `EntitlementAiQuotaPolicy` |
+| 4 | `DailyBudgetUsd` = 2 / `PaidDailyBudgetUsd` = 6 | Free-plan spend to ~$2/day, paid-plan spend to ~$6/day — bounds the *rate* of loss | `IsOverBudgetAsync(userId)` |
+| 5 | `MonthlyBudgetUsd` = 25 / `PaidMonthlyBudgetUsd` = 60 | Free-plan spend to ~$25/30 days, paid-plan spend to ~$60 — bounds *total* loss | `IsOverBudgetAsync(userId)` |
 
-Layers 4 and 5 are checked **before** each reservation, against *estimated* spend priced at the
-cache-miss rate — so our number runs ahead of the real bill, not behind it. Overshoot past a cap
+Layers 4 and 5 are checked **before** each reservation, against the spend of the caller's budget
+pool — Free-plan rows or paid-plan rows, by `PlanAtGeneration`, so free users can't spend what
+paying users were promised ([`../auth/paid-plans.md`](../auth/paid-plans.md) §4) — and against
+*estimated* spend priced at the cache-miss rate — so our number runs ahead of the real bill, not behind it. Overshoot past a cap
 is at most one generation, i.e. fractions of a cent.
 
 **The estimate is only as good as two config numbers, and they go stale in silence.**

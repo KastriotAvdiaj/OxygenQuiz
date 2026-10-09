@@ -87,6 +87,9 @@ namespace QuizAPI.Data
         public DbSet<Models.Classroom.Class> Classes { get; set; }
         public DbSet<Models.Classroom.ClassStudent> ClassStudents { get; set; }
 
+        // Paid plans (docs/auth/paid-plans.md)
+        public DbSet<Models.Billing.UserSubscription> UserSubscriptions { get; set; }
+
 
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options, ICurrentUserService current) : base(options)
         {
@@ -526,6 +529,7 @@ namespace QuizAPI.Data
             ConfigureAssociationBoards(modelBuilder);
             ConfigureAssociationGames(modelBuilder);
             ConfigureClassroom(modelBuilder);
+            ConfigureBilling(modelBuilder);
 
             modelBuilder.Entity<TypeTheAnswerQuestion>()
                 .Property(e => e.AcceptableAnswers)
@@ -637,6 +641,21 @@ namespace QuizAPI.Data
             @class.HasOne(c => c.Owner).WithMany().HasForeignKey(c => c.OwnerUserId).OnDelete(DeleteBehavior.Cascade);
             @class.HasIndex(c => c.OwnerUserId);
             @class.HasMany(c => c.Students).WithOne(s => s.Class).HasForeignKey(s => s.ClassId).OnDelete(DeleteBehavior.Cascade);
+        }
+
+        /// <summary>Subscriptions (docs/auth/paid-plans.md).</summary>
+        private static void ConfigureBilling(ModelBuilder modelBuilder)
+        {
+            var sub = modelBuilder.Entity<Models.Billing.UserSubscription>();
+            // Restrict, not cascade: a subscription is a financial record. Users are anonymised,
+            // never hard-deleted (ADR 0012), so the FK always resolves; if a hard delete is ever
+            // attempted, losing the billing history silently is the wrong default.
+            sub.HasOne(s => s.User).WithMany().HasForeignKey(s => s.UserId).OnDelete(DeleteBehavior.Restrict);
+            // The one hot query: every entitlement lookup lists a user's subscriptions.
+            sub.HasIndex(s => s.UserId);
+            // A provider subscription maps to exactly one row; webhooks upsert by it.
+            sub.HasIndex(s => s.ProviderSubscriptionId).IsUnique()
+                .HasFilter($"\"{nameof(Models.Billing.UserSubscription.ProviderSubscriptionId)}\" IS NOT NULL");
         }
     }
 }

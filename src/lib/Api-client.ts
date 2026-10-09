@@ -124,6 +124,24 @@ function parseApiError(status: number | undefined, data: unknown): ParsedApiErro
   return { kind: isServerFault ? "opaque" : "authored", message };
 }
 
+/**
+ * A `PlanLimitReached` 403 from `GlobalExceptionHandler` (PlanLimitException), or null. The body
+ * is ProblemDetails with `code`, `limit`, `max` and `upgradeTo` extensions.
+ */
+export function readPlanLimit(
+  status: number | undefined,
+  data: unknown,
+): { limit: string; max: number; upgradeTo: string | null } | null {
+  if (status !== 403 || !data || typeof data !== "object") return null;
+  const body = data as Record<string, unknown>;
+  if (body.code !== "PlanLimitReached") return null;
+  return {
+    limit: typeof body.limit === "string" ? body.limit : "",
+    max: typeof body.max === "number" ? body.max : 0,
+    upgradeTo: typeof body.upgradeTo === "string" ? body.upgradeTo : null,
+  };
+}
+
 /** First non-blank string property, or "" — keeps `parseApiError` readable. */
 function readString(body: Record<string, unknown>, key: string): string {
   const value = body[key];
@@ -290,7 +308,22 @@ api.interceptors.response.use(
       // shows the exact reason and bounces the user back to the bad step; or the AI wizard's
       // error panel, which offers a different next step per failure code). They set
       // `skipErrorToast` on the request so we don't also fire a duplicate generic toast.
-      if (!error.config?.skipErrorToast) {
+      const planLimit = readPlanLimit(status, data);
+      if (planLimit) {
+        // Not an error the user made: the action is allowed, just not this many of it on their
+        // plan. One toast for every endpoint that refuses this way (docs/auth/paid-plans.md).
+        // Shown even with skipErrorToast — a caller that handles its own errors still has no
+        // other way to offer the upgrade.
+        useNotifications.getState().addNotification({
+          type: "info",
+          title: "Plan limit reached",
+          message: displayMessage,
+          action: {
+            label: planLimit.upgradeTo ? `See the ${planLimit.upgradeTo} plan` : "See plans",
+            href: "/pricing",
+          },
+        });
+      } else if (!error.config?.skipErrorToast) {
         useNotifications.getState().addNotification({
           type: "error",
           title: "Error",

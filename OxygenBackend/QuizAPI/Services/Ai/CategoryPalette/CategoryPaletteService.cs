@@ -97,18 +97,22 @@ namespace QuizAPI.Services.Ai.CategoryPalette
             return new CategoryPaletteResult(candidates, _provider.Model);
         }
 
+        /// <summary>
+        /// Staff-only, so it draws on the Free pool's caps — the proposer must never be able to
+        /// spend what paying users' generations are budgeted against (docs/auth/paid-plans.md).
+        /// </summary>
         private async Task GuardBudgetAsync(CancellationToken ct)
         {
             if (_options.DailyBudgetUsd > 0)
             {
-                var daily = await _usages.SumEstimatedCostSinceAsync(DateTime.UtcNow.AddDays(-1), ct);
+                var daily = await _usages.SumEstimatedCostSinceAsync(DateTime.UtcNow.AddDays(-1), AiSpendPool.Free, ct);
                 if (daily >= _options.DailyBudgetUsd)
                     throw new AppValidationException("Today's AI budget is spent. Pick colours by hand for now.");
             }
 
             if (_options.MonthlyBudgetUsd > 0)
             {
-                var monthly = await _usages.SumEstimatedCostSinceAsync(DateTime.UtcNow.AddDays(-30), ct);
+                var monthly = await _usages.SumEstimatedCostSinceAsync(DateTime.UtcNow.AddDays(-30), AiSpendPool.Free, ct);
                 if (monthly >= _options.MonthlyBudgetUsd)
                     throw new AppValidationException("This month's AI budget is spent. Pick colours by hand for now.");
             }

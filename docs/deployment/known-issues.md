@@ -1271,12 +1271,17 @@ fixed in that change; these were not.
   confusables check if impersonation ever becomes a real problem.
   → `DTOs/User/AccountIdentityDTOs.cs`, `DTOs/Authentication/SignupDTO.cs`
 
-## Paid plans and launch compliance (2026-10-07 — proposals only)
+## Paid plans and launch compliance (2026-10-07 — see docs/auth/paid-plans.md)
 
-- **P3 — No paid plans and no way to take payment.** Tiers, prices, Paddle as Merchant of Record
-  (Stripe does not serve Kosovo-based businesses), and the entitlement design are written up in
-  [`proposals/paid-plans-and-payments.md`](../proposals/paid-plans-and-payments.md). Provider
-  decided (Paddle, 2026-10-07); tiers and prices open.
+- **P3 — Plans exist but can't be bought.** Plans, limits and admin grants shipped 2026-10-10
+  ([`../auth/paid-plans.md`](../auth/paid-plans.md)); checkout through Paddle as Merchant of Record
+  (Stripe does not serve Kosovo-based businesses) is
+  [`proposals/paid-plans-and-payments.md`](../proposals/paid-plans-and-payments.md) Phase 2.
+- **P2 — Lobbies of 20 and 40 are enforced but untested at that size.** Plus and Teacher hosts
+  can open them, but the lobby roster and the single in-memory `InMemoryQuizSessionManager` have
+  only been used with up to 10 players. Before selling the perk: a layout pass on the roster at
+  40, and a SignalR load test with 40 connections answering one question.
+  → `src/pages/Quiz/Multiplayer/`, `OxygenBackend/QuizAPI/Services/QuizSessionServices/`
 - **P2 — No Terms, Privacy Policy, refund or contact page; Google Fonts load from Google's
   servers.** Required before a public or paid launch, and before Paddle approves checkout. No
   cookie banner is needed today (all storage is essential or user-chosen). Write-up:

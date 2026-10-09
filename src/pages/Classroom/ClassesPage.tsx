@@ -20,6 +20,7 @@ import {
   useSaveClass,
   type ClassRoster,
 } from "./api/classes";
+import { useMyPlan } from "@/lib/api/plans";
 
 /**
  * `/my-dashboard/classes` — a Teacher's saved Classes (docs/quiz/classroom.md,
@@ -28,16 +29,35 @@ import {
  */
 export const ClassesPage = () => {
   const classes = useClasses();
+  const myPlan = useMyPlan();
   const [editing, setEditing] = useState<ClassRoster | "new" | null>(null);
+  // The plan decides how many Classes a host keeps (docs/auth/paid-plans.md). Fast feedback:
+  // ClassService refuses the one-too-many with a PlanLimitReached 403 either way. Classes over
+  // the limit — a lapsed plan — stay listed and editable; only a new one is blocked.
+  const maxClasses = myPlan.data?.limits.maxClasses ?? null;
+  const atLimit = maxClasses !== null && (classes.data?.length ?? 0) >= maxClasses;
 
   return (
     <div className="container mx-auto py-8 px-4 md:px-0">
       <div className="mb-6 flex items-center justify-between gap-4">
         <h1 className="text-3xl font-bold">Classes</h1>
-        <LiftedButton onClick={() => setEditing("new")} className="flex items-center gap-2 text-sm">
+        <LiftedButton
+          onClick={() => setEditing("new")}
+          disabled={atLimit}
+          className="flex items-center gap-2 text-sm"
+        >
           <Plus className="h-4 w-4" /> New class
         </LiftedButton>
       </div>
+
+      {atLimit && (
+        <p className="mb-4 text-sm text-muted-foreground">
+          Your plan includes {maxClasses === 1 ? "one class" : `${maxClasses} classes`}.{" "}
+          <a href="/pricing" className="text-primary underline-offset-2 hover:underline">
+            The Teacher plan has unlimited classes.
+          </a>
+        </p>
+      )}
 
       {classes.isLoading ? (
         <div className="flex justify-center py-16">

@@ -24,6 +24,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
         private readonly IQuestionRepository _questions;
         private readonly ILogger<QuizService> _logger;
         private readonly IImageService _imageService;
+        private readonly QuizAPI.Services.Billing.IPlanLimitGuard _planLimits;
         private readonly QuizAPI.Services.CurrentUserService.ICurrentUserService _current;
 
         public QuizService(
@@ -31,8 +32,10 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
             IQuestionRepository questions,
             ILogger<QuizService> logger,
             IImageService imageService,
-            QuizAPI.Services.CurrentUserService.ICurrentUserService currentUser)
+            QuizAPI.Services.CurrentUserService.ICurrentUserService currentUser,
+            QuizAPI.Services.Billing.IPlanLimitGuard planLimits)
         {
+            _planLimits = planLimits ?? throw new ArgumentNullException(nameof(planLimits));
             // Who is asking decides which quiz *formats* exist for them (QuizFormatAccess):
             // a format still in preview is admin-only, in every read below.
             _current = currentUser ?? throw new ArgumentNullException(nameof(currentUser));
@@ -252,6 +255,9 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
         // ── Writes ────────────────────────────────────────────────────────────────
         public async Task<QuizDTO> CreateQuizAsync(Guid userId, QuizCM quizCM)
         {
+            // Before the transaction: a refusal writes nothing (docs/auth/paid-plans.md).
+            await _planLimits.EnsureCanCreateQuizAsync(userId);
+
             using var transaction = await _quizzes.BeginTransactionAsync();
 
             try
@@ -305,6 +311,8 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
 
         public async Task<QuizDTO> CreateAiQuizAsync(Guid userId, AiQuizImportCM importCM)
         {
+            await _planLimits.EnsureCanCreateQuizAsync(userId);
+
             using var transaction = await _quizzes.BeginTransactionAsync();
 
             try

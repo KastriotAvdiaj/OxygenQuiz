@@ -20,6 +20,9 @@ that Teams are formed from when hosting. It is optional: a Teacher can host with
   (case-insensitive); up to **40 students**, each up to 30 characters. Names are trimmed and inner
   whitespace collapsed; blank lines are dropped. **Duplicate student names are allowed** — two Artas
   in one class happens, and the Teacher tells them apart.
+- **How many Classes is the plan's:** one on Free and Plus, unlimited on the Teacher plan
+  ([`../auth/paid-plans.md`](../auth/paid-plans.md)). Only creating one more is refused — a host
+  over the limit keeps, edits and hosts from every Class they have (ADR 0026).
 - **Ownership:** every read and write goes through `IClassRepository` with the Teacher's id, so
   another Teacher's Class is a 404, never a 403 that confirms it exists. `ClassesController` is
   `[Authorize(Roles = RoleRules.HostRoles)]` — Teacher or SuperAdmin

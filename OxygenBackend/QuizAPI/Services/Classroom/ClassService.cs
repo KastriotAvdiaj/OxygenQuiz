@@ -24,11 +24,13 @@ namespace QuizAPI.Services.Classroom
     {
         private readonly IClassRepository _classes;
         private readonly TimeProvider _clock;
+        private readonly QuizAPI.Services.Billing.IPlanLimitGuard _planLimits;
 
-        public ClassService(IClassRepository classes, TimeProvider clock)
+        public ClassService(IClassRepository classes, TimeProvider clock, QuizAPI.Services.Billing.IPlanLimitGuard planLimits)
         {
             _classes = classes;
             _clock = clock;
+            _planLimits = planLimits;
         }
 
         public async Task<IReadOnlyList<ClassDTO>> ListAsync(Guid teacherId, CancellationToken ct = default) =>
@@ -39,6 +41,9 @@ namespace QuizAPI.Services.Classroom
 
         public async Task<ClassDTO> CreateAsync(Guid teacherId, SaveClassDTO dto, CancellationToken ct = default)
         {
+            // The plan decides how many Classes a host keeps; only creating one more is refused.
+            await _planLimits.EnsureCanCreateClassAsync(teacherId, ct);
+
             var (name, students) = await ValidateAsync(teacherId, dto, null, ct);
             var now = _clock.GetUtcNow().UtcDateTime;
             var @class = new Class

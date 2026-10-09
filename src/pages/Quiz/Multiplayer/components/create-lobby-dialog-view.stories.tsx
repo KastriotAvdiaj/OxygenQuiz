@@ -13,6 +13,8 @@ const meta = {
   args: {
     open: true,
     isCreating: false,
+    planMaxPlayers: 10,
+    upgradeHint: "Up to 20 players with Plus",
     onOpenChange: fn(),
     onIncrement: fn(),
     onDecrement: fn(),
@@ -38,4 +40,9 @@ export const MaxPlayers: Story = {
 
 export const Creating: Story = {
   args: { maxPlayers: 4, isCreating: true },
+};
+
+/** A Teacher plan's cap (docs/auth/paid-plans.md): the stepper runs to 40 and there's nothing to upsell. */
+export const TeacherPlan: Story = {
+  args: { maxPlayers: 40, planMaxPlayers: 40, upgradeHint: null },
 };

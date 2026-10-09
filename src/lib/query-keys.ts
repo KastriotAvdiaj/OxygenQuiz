@@ -43,3 +43,15 @@ export const classroomKeys = {
   hostedGames: () => [...classroomKeys.all, "hosted-games"] as const,
   hostedGame: (id: string) => [...classroomKeys.all, "hosted-games", id] as const,
 };
+
+/**
+ * Paid plans (docs/auth/paid-plans.md) — ["plans", …]. A plan change (an admin grant today, a
+ * purchase later) invalidates `planKeys.all`, which covers the caller's own plan and every admin
+ * view of one.
+ */
+export const planKeys = {
+  all: ["plans"] as const,
+  catalog: () => [...planKeys.all, "catalog"] as const,
+  mine: () => [...planKeys.all, "mine"] as const,
+  user: (userId: string) => [...planKeys.all, "user", userId] as const,
+};

@@ -90,6 +90,15 @@ public class QuizHub : Hub<IQuizClient>
         return (account.Username, account.ProfileImageUrl);
     }
 
+    /// <summary>The largest lobby the caller's plan allows. Read through a scope, like the account above.</summary>
+    private async Task<int> GetLobbyCapAsync()
+    {
+        var userId = GetUserId();
+        using var scope = _scopes.CreateScope();
+        var entitlements = scope.ServiceProvider.GetRequiredService<QuizAPI.Services.Billing.IEntitlementService>();
+        return (await entitlements.GetAsync(userId)).MaxLobbyPlayers;
+    }
+
     /// <summary>
     /// Non-mutating "can I join this code?" lookup. The join dialog calls this before navigating so
     /// a wrong code is rejected in place instead of dumping the player on the lobby route in a
@@ -397,16 +406,17 @@ public class QuizHub : Hub<IQuizClient>
     }
 
     /// <summary>
-    /// The lobby size the create dialog offers. The dialog's clamp is only feedback: a crafted call
-    /// with 0 used to make a lobby with no cap at all, because the join check reads 0 as "unlimited".
+    /// The smallest lobby. The largest is the host's plan's (<c>Entitlements.MaxLobbyPlayers</c>,
+    /// docs/auth/paid-plans.md). The dialog's clamp is only feedback: a crafted call with 0 used to
+    /// make a lobby with no cap at all, because the join check reads 0 as "unlimited".
     /// </summary>
-    public const int MinLobbyPlayers = 2;
-    public const int MaxLobbyPlayers = 10;
+    public const int MinLobbyPlayers = QuizAPI.Services.Billing.PlanCatalog.MinLobbyPlayers;
 
     public async Task CreateSession(string sessionId, string lobbyName, int maxPlayers)
     {
-        // Mirrors create-lobby-dialog.tsx; this is the rule, the dialog is fast feedback.
-        maxPlayers = Math.Clamp(maxPlayers, MinLobbyPlayers, MaxLobbyPlayers);
+        // Mirrors create-lobby-dialog.tsx, which reads the same limit from GET /api/plans/me; this
+        // is the rule, the dialog is fast feedback.
+        maxPlayers = Math.Clamp(maxPlayers, MinLobbyPlayers, await GetLobbyCapAsync());
         var (username, profileImageUrl) = await GetAccountAsync();
         try
         {

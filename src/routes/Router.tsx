@@ -47,6 +47,9 @@ const GameModeSelection = lazy(() =>
     default: module.GameModeSelection,
   })),
 );
+const PricingPage = lazy(() =>
+  import("@/pages/Pricing/pricing-page").then((module) => ({ default: module.PricingPage })),
+);
 const MultiplayerMenu = lazy(() =>
   import("@/pages/Quiz/Multiplayer/Multiplayer-Menu").then((module) => ({
     default: module.MultiplayerMenu,
@@ -186,6 +189,14 @@ const createAppRouter = (queryClient: QueryClient) =>
             children={<GameModeSelection />}
           />
         </>
+      ),
+    },
+    // Public: the plans (docs/auth/paid-plans.md). Paddle's account review needs it reachable
+    // signed out, and so does anyone deciding whether to sign up.
+    {
+      path: "/pricing",
+      element: (
+        <HomeLayout headerBehavior={HeaderBehavior.DEFAULT} children={<PricingPage />} />
       ),
     },
     {

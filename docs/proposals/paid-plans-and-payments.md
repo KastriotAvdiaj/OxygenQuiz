@@ -1,7 +1,10 @@
 # Proposal: paid plans, and how the money is taken
 
-**Status: open — provider decided (Paddle, 2026-10-07), tiers and prices not.** Nothing
-implemented. Written 2026-10-07. What has to exist *around* a paid launch (terms, privacy, cookies,
+**Status: partly shipped — Phase 0 and Phase 1 implemented (2026-10-10); Paddle (Phase 2) and
+Phase 3 open.** Provider decided: Paddle (2026-10-07). Tiers and prices decided 2026-10-10: Free,
+Plus and Teacher as in §3.2, no free quiz cap. What exists now is described in
+[`../auth/paid-plans.md`](../auth/paid-plans.md), which is the authority where this file and it
+disagree. Written 2026-10-07. What has to exist *around* a paid launch (terms, privacy, cookies,
 age) is a separate proposal:
 [`legal-and-compliance-for-launch.md`](./legal-and-compliance-for-launch.md).
 
@@ -412,29 +415,28 @@ suite exercise the real entitlement logic with no Paddle account. Following
 
 ### Phase 1 — entitlements, no money (≈4–6 days)
 
-Backend:
-- [ ] `Models/Billing/` — `PlanTier`, `SubscriptionStatus`, `UserSubscription`, `BillingWebhookEvent`
-- [ ] `ApplicationDbContext` — DbSets and config; migration `AddBilling` (also `AiGenerationUsage.PlanAtGeneration`)
-- [ ] `Repositories/ISubscriptionRepository` + implementation (no `DbContext` outside repositories)
-- [ ] `Services/Billing/PlanCatalog.cs`, `Entitlements.cs`, `IEntitlementService` + `EntitlementService` (cache, effective-plan rule §5.3)
-- [ ] `Services/Ai/EntitlementAiQuotaPolicy.cs`; swap the registration in `Program.cs`; delete `ConfigAiQuotaPolicy` ("replace, don't extend", as its comment says)
-- [ ] `PlanLimitException` in `Exeptions/AppExceptions.cs`; mapping in `GlobalExceptionHandler`
-- [ ] Enforcement points from §5.6 (quiz count only if §3.3 says yes)
-- [ ] `AiQuotaService`: budget caps over Free spend only; record `PlanAtGeneration`
-- [ ] `GET /api/me/entitlements`
-- [ ] Admin: `PUT /api/admin/users/{id}/plan` (Manual grant/revoke), audit `PlanGrantedManually`
+**Shipped 2026-10-10** — see [`../auth/paid-plans.md`](../auth/paid-plans.md). Where it differs
+from the list that was here:
 
-Frontend:
-- [ ] `src/lib/query-keys.ts` — `entitlementKeys.all`; `src/lib/api/entitlements.ts` — `useEntitlements`
-- [ ] `src/common/PlanLimitNotice.tsx` — the one upgrade prompt; `Api-client.ts` routes a `PlanLimitReached` 403 to it
-- [ ] `quota-note.tsx` — "Upgrade for 10 a day" when at the limit
-- [ ] `create-lobby-dialog.tsx` — max from `useEntitlements`, not the literal 10
-- [ ] Classes page — the count against the limit
-- [ ] `/pricing` page (public, linked from landing and account drawer) — Phase 1 shows plans with "coming soon"
-- [ ] Admin Users table — plan column and grant dialog
-
-Tests: the effective-plan table row by row; `PlanCatalog`; each enforcement point at the limit
-and over it; the `PlanLimitReached` response shape; `EntitlementAiQuotaPolicy` (staff → null).
+- [x] Models, `UserSubscriptions` table and migration `AddBilling` (with
+  `AiGenerationUsage.PlanAtGeneration`). `BillingWebhookEvent` was left for Phase 2, where it is
+  first used.
+- [x] `PlanCatalog`, `Entitlements`, `EntitlementService` (one-minute cache), `EntitlementAiQuotaPolicy`;
+  `ConfigAiQuotaPolicy` deleted.
+- [x] `PlanLimitException` → `PlanLimitReached` 403; `PlanLimitGuard` called by the three quiz
+  create paths and `ClassService`; the hub's lobby clamp reads the plan.
+- [x] AI budget split into a Free and a Paid pool (`Ai:PaidDailyBudgetUsd` = 6,
+  `Ai:PaidMonthlyBudgetUsd` = 60).
+- [x] Endpoints under `/api/plans` instead of `/api/me/entitlements` and `/api/admin/users/{id}/plan`:
+  `GET /plans`, `GET /plans/me`, `GET|PUT /plans/users/{id}[/manual]`.
+- [x] Manual grants, with the one-way Teacher role grant moved forward from Phase 3 — a Teacher
+  plan that can't open the Classroom section would be useless even when granted by hand.
+- [x] Frontend: `src/lib/api/plans.ts` (`useMyPlan`, `usePlanCatalog`, `cheapestUpgrade`); the
+  upgrade prompt is a toast with a link (`readPlanLimit` in `Api-client.ts`) rather than a
+  separate `PlanLimitNotice` component; quota note, lobby dialog, Classes page, `/pricing`,
+  **Plan** in the account panel, **Manage plan** in the admin Users table.
+- [ ] Links to `/pricing` from the landing page and the account drawer — the account panel links
+  to it; the landing page doesn't yet.
 
 ### Phase 2 — Paddle (≈5–7 days)
 

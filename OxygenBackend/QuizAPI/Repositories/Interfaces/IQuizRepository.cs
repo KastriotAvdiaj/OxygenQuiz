@@ -68,6 +68,8 @@ namespace QuizAPI.Repositories.Interfaces
 
         // ── Writes ────────────────────────────────────────────────────────────────
         Task AddAsync(Quiz quiz, CancellationToken ct = default);
+        /// <summary>Non-deleted quizzes the user owns, any format — what a plan's quiz limit counts.</summary>
+        Task<int> CountOwnedAsync(Guid userId, CancellationToken ct = default);
         Task AddQuizQuestionsAsync(IEnumerable<QuizQuestion> quizQuestions, CancellationToken ct = default);
         Task AddQuizQuestionAsync(QuizQuestion quizQuestion, CancellationToken ct = default);
         // QuizQuestion rows are never hard-deleted — edits retire rows via RemovedInVersion

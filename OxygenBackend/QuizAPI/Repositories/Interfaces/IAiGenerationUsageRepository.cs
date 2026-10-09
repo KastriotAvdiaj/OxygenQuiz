@@ -36,8 +36,11 @@ namespace QuizAPI.Repositories.Interfaces
         /// <summary>Tracked lookup — the caller is about to mutate the row's status.</summary>
         Task<AiGenerationUsage?> GetTrackedByIdAsync(Guid id, CancellationToken ct = default);
 
-        /// <summary>Total estimated spend since <paramref name="sinceUtc"/>, for the budget cap.</summary>
-        Task<decimal> SumEstimatedCostSinceAsync(DateTime sinceUtc, CancellationToken ct = default);
+        /// <summary>
+        /// Estimated spend since <paramref name="sinceUtc"/> in one budget pool — rows reserved on
+        /// the Free plan, or on a paid one — for the budget caps.
+        /// </summary>
+        Task<decimal> SumEstimatedCostSinceAsync(DateTime sinceUtc, QuizAPI.Services.Ai.AiSpendPool pool, CancellationToken ct = default);
 
         /// <summary>
         /// Releases reservations created before <paramref name="cutoffUtc"/> that never

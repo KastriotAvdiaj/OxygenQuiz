@@ -9,6 +9,11 @@ export type Notification = {
   title: string;
   message?: string;
   variant?: NotificationVariant;
+  /**
+   * One link under the message — e.g. "See plans" on a plan-limit refusal. A plain href rather
+   * than a router link: the toast host renders outside any route.
+   */
+  action?: { label: string; href: string };
 };
 
 type NotificationsStore = {

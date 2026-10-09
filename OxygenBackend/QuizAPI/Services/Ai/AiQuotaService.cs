@@ -1,6 +1,8 @@
 using Microsoft.Extensions.Options;
 using QuizAPI.Models.Ai;
+using QuizAPI.Models.Billing;
 using QuizAPI.Repositories.Interfaces;
+using QuizAPI.Services.Billing;
 
 namespace QuizAPI.Services.Ai
 {
@@ -16,17 +18,20 @@ namespace QuizAPI.Services.Ai
     {
         private readonly IAiGenerationUsageRepository _usages;
         private readonly IAiQuotaPolicy _policy;
+        private readonly IEntitlementService _entitlements;
         private readonly AiOptions _options;
         private readonly ILogger<AiQuotaService> _logger;
 
         public AiQuotaService(
             IAiGenerationUsageRepository usages,
             IAiQuotaPolicy policy,
+            IEntitlementService entitlements,
             IOptions<AiOptions> options,
             ILogger<AiQuotaService> logger)
         {
             _usages = usages;
             _policy = policy;
+            _entitlements = entitlements;
             _options = options.Value;
             _logger = logger;
         }
@@ -35,6 +40,7 @@ namespace QuizAPI.Services.Ai
             Guid userId, AiGenerationRequest request, string? requestHash, CancellationToken ct = default)
         {
             var limit = await _policy.GetDailyLimitAsync(userId, ct);
+            var plan = (await _entitlements.GetAsync(userId, ct)).Plan;
             var windowStart = WindowStart();
             var windowEnd = windowStart.AddDays(1);
 
@@ -65,6 +71,7 @@ namespace QuizAPI.Services.Ai
                 RequestHash = requestHash,
                 SourceChars = request.SourceText?.Length ?? 0,
                 QuestionsRequested = request.QuestionCount,
+                PlanAtGeneration = plan,
                 CreatedAt = DateTime.UtcNow,
             };
 
@@ -134,33 +141,43 @@ namespace QuizAPI.Services.Ai
         /// runaway burns the whole month's budget in an afternoon and disables the feature for
         /// 30 days, which turns a small bill into a long outage.
         ///
+        /// <para><b>Per pool.</b> A user on a paid plan is checked against paid-plan spend and the
+        /// <c>Paid*</c> caps; everyone else against Free spend and the original caps. One shared
+        /// pool would let free users switch AI off for the people paying for it
+        /// (docs/auth/paid-plans.md).</para>
+        ///
         /// Note these are checked against <b>estimated</b> spend, priced at the cache-miss rate,
         /// so the figure runs ahead of the real bill rather than behind it. That is the safe
         /// direction, but it is not the last line of defence — a prepaid provider balance is.
         /// See docs/quiz/ai-quiz-generation-flow.md §7.
         /// </summary>
-        public async Task<bool> IsOverBudgetAsync(CancellationToken ct = default)
+        public async Task<bool> IsOverBudgetAsync(Guid userId, CancellationToken ct = default)
         {
-            if (_options.DailyBudgetUsd > 0)
+            var paid = (await _entitlements.GetAsync(userId, ct)).Plan != PlanTier.Free;
+            var pool = paid ? AiSpendPool.Paid : AiSpendPool.Free;
+            var dailyCap = paid ? _options.PaidDailyBudgetUsd : _options.DailyBudgetUsd;
+            var monthlyCap = paid ? _options.PaidMonthlyBudgetUsd : _options.MonthlyBudgetUsd;
+
+            if (dailyCap > 0)
             {
-                var daily = await _usages.SumEstimatedCostSinceAsync(DateTime.UtcNow.AddDays(-1), ct);
-                if (daily >= _options.DailyBudgetUsd)
+                var daily = await _usages.SumEstimatedCostSinceAsync(DateTime.UtcNow.AddDays(-1), pool, ct);
+                if (daily >= dailyCap)
                 {
                     _logger.LogError(
-                        "AI generation is over its daily budget: ${Spend} in the last 24h against a ${Budget} cap.",
-                        daily, _options.DailyBudgetUsd);
+                        "AI generation ({Pool} pool) is over its daily budget: ${Spend} in the last 24h against a ${Budget} cap.",
+                        pool, daily, dailyCap);
                     return true;
                 }
             }
 
-            if (_options.MonthlyBudgetUsd <= 0) return false;
+            if (monthlyCap <= 0) return false;
 
-            var monthly = await _usages.SumEstimatedCostSinceAsync(DateTime.UtcNow.AddDays(-30), ct);
-            if (monthly < _options.MonthlyBudgetUsd) return false;
+            var monthly = await _usages.SumEstimatedCostSinceAsync(DateTime.UtcNow.AddDays(-30), pool, ct);
+            if (monthly < monthlyCap) return false;
 
             _logger.LogError(
-                "AI generation is over its monthly budget: ${Spend} in the last 30 days against a ${Budget} cap.",
-                monthly, _options.MonthlyBudgetUsd);
+                "AI generation ({Pool} pool) is over its monthly budget: ${Spend} in the last 30 days against a ${Budget} cap.",
+                pool, monthly, monthlyCap);
             return true;
         }
 

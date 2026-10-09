@@ -39,10 +39,14 @@ namespace QuizAPI.Repositories
         public Task<AiGenerationUsage?> GetTrackedByIdAsync(Guid id, CancellationToken ct = default) =>
             _context.AiGenerationUsages.FirstOrDefaultAsync(u => u.Id == id, ct);
 
-        public async Task<decimal> SumEstimatedCostSinceAsync(DateTime sinceUtc, CancellationToken ct = default) =>
-            await _context.AiGenerationUsages
-                .Where(u => u.CreatedAt >= sinceUtc)
-                .SumAsync(u => (decimal?)u.EstimatedCostUsd, ct) ?? 0m;
+        public async Task<decimal> SumEstimatedCostSinceAsync(DateTime sinceUtc, AiSpendPool pool, CancellationToken ct = default)
+        {
+            var rows = _context.AiGenerationUsages.Where(u => u.CreatedAt >= sinceUtc);
+            rows = pool == AiSpendPool.Paid
+                ? rows.Where(u => u.PlanAtGeneration != QuizAPI.Models.Billing.PlanTier.Free)
+                : rows.Where(u => u.PlanAtGeneration == QuizAPI.Models.Billing.PlanTier.Free);
+            return await rows.SumAsync(u => (decimal?)u.EstimatedCostUsd, ct) ?? 0m;
+        }
 
         public async Task<int> ReleaseStaleReservationsAsync(DateTime cutoffUtc, CancellationToken ct = default)
         {

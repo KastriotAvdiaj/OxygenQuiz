@@ -26,7 +26,18 @@ import type { AiQuotaStatus } from "../../../api/generate-ai-quiz";
  * is always named, and the last one is called out — running out mid-thought on a quiz you
  * were about to make is the moment worth warning about, not the moment after.
  */
-export const QuotaNote = ({ quota }: { quota: AiQuotaStatus | null }) => {
+export const QuotaNote = ({
+  quota,
+  upgrade,
+}: {
+  quota: AiQuotaStatus | null;
+  /**
+   * The cheapest plan with a bigger daily allowance, or null when there isn't one (the user is
+   * on the top plan, or staff). Offered only once today's allowance is spent — the moment it
+   * answers a question the user is actually asking (docs/auth/paid-plans.md).
+   */
+  upgrade?: { name: string; aiDailyGenerations: number | null } | null;
+}) => {
   if (!quota?.enabled) return null;
 
   const { remaining, limit } = quota;
@@ -48,6 +59,16 @@ export const QuotaNote = ({ quota }: { quota: AiQuotaStatus | null }) => {
     return (
       <p className="text-muted-foreground text-xs">
         You've used today's {limit} {noun}. More tomorrow — or use your own AI below.
+        {upgrade && (
+          <>
+            {" "}
+            <a href="/pricing" className="text-primary underline-offset-2 hover:underline">
+              {upgrade.aiDailyGenerations === null
+                ? `No daily limit with ${upgrade.name}.`
+                : `${upgrade.name} gets ${upgrade.aiDailyGenerations} a day.`}
+            </a>
+          </>
+        )}
       </p>
     );
   }

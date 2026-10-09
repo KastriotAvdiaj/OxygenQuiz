@@ -29,10 +29,11 @@ namespace QuizAPI.Services.Ai
         Task<AiQuotaStatus> GetStatusAsync(Guid userId, CancellationToken ct = default);
 
         /// <summary>
-        /// True when rolling 30-day spend is at or over <c>Ai:MonthlyBudgetUsd</c>. Checked before
-        /// reserving so a budget overrun degrades to "temporarily unavailable" rather than a bill.
+        /// True when the budget pool this user's plan draws from is at or over its daily or 30-day
+        /// cap. Checked before reserving so a budget overrun degrades to "temporarily unavailable"
+        /// rather than a bill.
         /// </summary>
-        Task<bool> IsOverBudgetAsync(CancellationToken ct = default);
+        Task<bool> IsOverBudgetAsync(Guid userId, CancellationToken ct = default);
     }
 
     /// <param name="Succeeded">False when the daily cap is already spent.</param>

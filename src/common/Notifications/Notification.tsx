@@ -25,13 +25,14 @@ export type NotificationProps = {
     type: keyof typeof icons;
     title: string;
     message?: string;
+    action?: { label: string; href: string };
   };
   onDismiss: (id: string) => void;
   timeout?: number; // timeout in milliseconds (default: 5000ms)
 };
 
 export const Notification = ({
-  notification: { id, type, title, message },
+  notification: { id, type, title, message, action },
   onDismiss,
   timeout = 5000,
 }: NotificationProps) => {
@@ -84,6 +85,14 @@ export const Notification = ({
                 <div className="ml-3 w-0 flex-1 pt-0.5">
                   <p className="text-sm font-medium text-gray-900">{title}</p>
                   <p className="mt-1 text-sm text-gray-500">{message}</p>
+                  {action && (
+                    <a
+                      href={action.href}
+                      className="mt-2 inline-block text-sm font-medium text-blue-600 underline-offset-2 hover:underline"
+                    >
+                      {action.label}
+                    </a>
+                  )}
                 </div>
                 <div className="ml-4 flex shrink-0">
                   <button

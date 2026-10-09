@@ -89,6 +89,8 @@ export interface AiQuizWizardViewProps {
   generateError: AiGenerateError | null;
   /** null while loading or when the endpoint isn't reachable. */
   quota: AiQuotaStatus | null;
+  /** The cheapest plan with more AI quizzes a day, offered once today's are spent. Null at the top. */
+  quotaUpgrade?: { name: string; aiDailyGenerations: number | null } | null;
 
   /** Questions arrived, but a category or language still needs picking before review. */
   needsConfirmation: boolean;
@@ -183,6 +185,7 @@ export const AiQuizWizardView = ({
   isGenerating,
   generateError,
   quota,
+  quotaUpgrade = null,
   needsConfirmation,
   effectiveCategoryId,
   effectiveLanguageId,
@@ -490,7 +493,7 @@ export const AiQuizWizardView = ({
                 its own text (docs/RESPONSIVE.md, "Rows of buttons"). */}
             <div className="flex items-end justify-between gap-4 pt-1">
               <div className="min-w-0 space-y-1">
-                <QuotaNote quota={quota} />
+                <QuotaNote quota={quota} upgrade={quotaUpgrade} />
 
                 {/* One way out, not three. "Create manually instead" left with the mode
                     tabs — that decision belongs to the method dialog, and repeating it

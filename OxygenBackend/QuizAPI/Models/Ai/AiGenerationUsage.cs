@@ -74,6 +74,14 @@ namespace QuizAPI.Models.Ai
         [MaxLength(50)]
         public string? ErrorCode { get; set; }
 
+        /// <summary>
+        /// The user's effective plan when the slot was reserved. It decides which budget pool the
+        /// row's cost counts against: Free spend has the original caps, paid spend its own ceiling,
+        /// so free users can never use up what paying users were promised
+        /// (docs/auth/paid-plans.md). Frozen on the row, like the cost.
+        /// </summary>
+        public QuizAPI.Models.Billing.PlanTier PlanAtGeneration { get; set; }
+
         public DateTime CreatedAt { get; set; }
 
         /// <summary>Set when the row leaves <see cref="AiGenerationStatus.Reserved"/>.</summary>

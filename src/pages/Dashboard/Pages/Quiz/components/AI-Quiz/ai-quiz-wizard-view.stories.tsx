@@ -482,6 +482,17 @@ export const ErrorQuotaExceeded: Story = {
   },
 };
 
+/**
+ * The same, for a Free user: the quota note names the next plan's allowance and links to
+ * /pricing (docs/auth/paid-plans.md). Offered only now, when today's allowance is spent.
+ */
+export const QuotaExceededWithUpgrade: Story = {
+  args: {
+    ...ErrorQuotaExceeded.args,
+    quotaUpgrade: { name: "Plus", aiDailyGenerations: 10 },
+  },
+};
+
 export const ErrorEmailNotVerified: Story = {
   args: {
     topic: "The French Revolution",

@@ -25,6 +25,9 @@ namespace QuizAPI.Repositories
             return q.FirstOrDefaultAsync(c => c.Id == id && c.OwnerUserId == ownerId, ct);
         }
 
+        public Task<int> CountAsync(Guid ownerId, CancellationToken ct = default) =>
+            _context.Classes.CountAsync(c => c.OwnerUserId == ownerId, ct);
+
         public Task<bool> NameTakenAsync(Guid ownerId, string name, int? exceptId, CancellationToken ct = default)
         {
             var lower = name.ToLower();

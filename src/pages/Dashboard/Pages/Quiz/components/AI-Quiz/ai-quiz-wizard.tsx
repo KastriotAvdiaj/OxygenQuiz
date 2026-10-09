@@ -1,3 +1,4 @@
+import { cheapestUpgrade, useMyPlan, usePlanCatalog } from "@/lib/api/plans";
 import { useState } from "react";
 
 import { useNavigationGuard } from "@/hooks/use-navigation-guard";
@@ -33,6 +34,14 @@ export const AiQuizWizard = () => {
 
   const generateMutation = useGenerateAiQuiz();
   const quotaQuery = useAiQuota();
+  // Only to name the next plan in the quota note once today's allowance is spent. Staff have no
+  // daily count, so there is nothing to offer them.
+  const myPlan = useMyPlan();
+  const planCatalog = usePlanCatalog();
+  const aiUpgrade =
+    myPlan.data && !myPlan.data.isStaff
+      ? cheapestUpgrade(planCatalog.data, myPlan.data.plan, (l) => l.aiDailyGenerations)
+      : null;
 
   /**
    * The request is in flight and the page owns it — there is no job id to come back to, so
@@ -107,6 +116,9 @@ export const AiQuizWizard = () => {
       isGenerating={generateMutation.isPending}
       generateError={generateError}
       quota={quotaQuery.data ?? null}
+      quotaUpgrade={
+        aiUpgrade ? { name: aiUpgrade.name, aiDailyGenerations: aiUpgrade.limits.aiDailyGenerations } : null
+      }
       needsConfirmation={draft.needsConfirmation}
       effectiveCategoryId={draft.effectiveCategoryId}
       effectiveLanguageId={draft.effectiveLanguageId}

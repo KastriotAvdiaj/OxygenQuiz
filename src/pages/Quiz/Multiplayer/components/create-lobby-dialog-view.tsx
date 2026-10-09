@@ -13,6 +13,10 @@ export interface CreateLobbyDialogViewProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   maxPlayers: number;
+  /** The largest lobby the host's plan allows (GET /api/plans/me). */
+  planMaxPlayers: number;
+  /** Shown under the range when a plan offers bigger lobbies, e.g. "Up to 20 with Plus". */
+  upgradeHint?: string | null;
   onIncrement: () => void;
   onDecrement: () => void;
   isCreating: boolean;
@@ -29,6 +33,8 @@ export const CreateLobbyDialogView = ({
   open,
   onOpenChange,
   maxPlayers,
+  planMaxPlayers,
+  upgradeHint,
   onIncrement,
   onDecrement,
   isCreating,
@@ -75,7 +81,7 @@ export const CreateLobbyDialogView = ({
                 variant="outline"
                 size="icon"
                 onClick={onIncrement}
-                disabled={maxPlayers >= 10 || isCreating}
+                disabled={maxPlayers >= planMaxPlayers || isCreating}
                 className="h-12 w-12 flex-shrink-0 rounded-full bg-primary text-white hover:bg-primary/80"
                 aria-label="Increase max players"
               >
@@ -83,8 +89,15 @@ export const CreateLobbyDialogView = ({
               </Button>
             </div>
             <p className="text-xs text-muted-foreground text-center">
-              Choose between 2 and 10 players
+              Choose between 2 and {planMaxPlayers} players
             </p>
+            {upgradeHint && (
+              <p className="text-xs text-center">
+                <a href="/pricing" className="text-primary underline-offset-2 hover:underline">
+                  {upgradeHint}
+                </a>
+              </p>
+            )}
           </div>
         </div>
 

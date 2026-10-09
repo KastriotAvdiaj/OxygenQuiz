@@ -8,6 +8,7 @@ import formatDate from "@/lib/date-format";
 import { useRequestPasswordReset } from "@/pages/UserRelated/PasswordReset/api/password-reset";
 import { CloseAccountSection } from "./CloseAccountSection";
 import { TeacherAccessSection } from "./TeacherAccessSection";
+import { PlanSection } from "./PlanSection";
 import { useAccountIdentity } from "../api/account-identity";
 import { EmailEditor, PendingEmailNotice, UsernameEditor } from "./IdentityEditors";
 
@@ -193,6 +194,7 @@ export const AccountPanel = () => {
       </section>
 
       {/* A SuperAdmin hosts without the Teacher role, so there is nothing to ask for. */}
+      <PlanSection />
       {!user?.roles?.includes(ROLES.SuperAdmin) && <TeacherAccessSection />}
 
       {/* Last, and visually separated by its destructive border. The only way to leave —

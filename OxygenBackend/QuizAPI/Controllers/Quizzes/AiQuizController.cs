@@ -147,7 +147,7 @@ namespace QuizAPI.Controllers.Quizzes
             if (userId is null) return Unauthorized();
 
             var status = await _generation.GetQuotaStatusAsync(userId.Value, ct);
-            var enabled = await _generation.IsAvailableAsync(ct);
+            var enabled = await _generation.IsAvailableAsync(userId.Value, ct);
 
             return Ok(new AiQuotaResponse
             {

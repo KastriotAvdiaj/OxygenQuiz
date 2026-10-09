@@ -77,8 +77,8 @@ namespace QuizAPI.Services.Ai
         /// one-or-two aggregates <see cref="GenerateAsync"/> already runs per call, and this
         /// endpoint is hit once per wizard mount.
         /// </summary>
-        public async Task<bool> IsAvailableAsync(CancellationToken ct = default) =>
-            _options.Enabled && !await _quota.IsOverBudgetAsync(ct);
+        public async Task<bool> IsAvailableAsync(Guid userId, CancellationToken ct = default) =>
+            _options.Enabled && !await _quota.IsOverBudgetAsync(userId, ct);
 
         public async Task<AiGenerationOutcome> GenerateAsync(
             Guid userId, AiGenerationRequest request, CancellationToken ct = default)
@@ -103,7 +103,7 @@ namespace QuizAPI.Services.Ai
                     "Verify your email address to generate quizzes with AI.");
 
             // Mirrored by IsAvailableAsync — see the note there.
-            if (await _quota.IsOverBudgetAsync(ct))
+            if (await _quota.IsOverBudgetAsync(userId, ct))
                 return AiGenerationOutcome.Fail(
                     AiErrorCodes.FeatureDisabled,
                     "AI generation is temporarily unavailable. You can still create a quiz by copying the prompt into your own AI.");

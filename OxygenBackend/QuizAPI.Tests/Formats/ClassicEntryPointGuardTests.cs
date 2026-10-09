@@ -216,7 +216,8 @@ public class ClassicEntryPointGuardTests
             new Mock<IImageService>().Object,
             // Admin: these tests are about the Classic guards, which must hold even for someone
             // who can see an Associations quiz. The preview gate has its own tests.
-            new TestCurrentUserService { UserId = OwnerId, IsAdmin = true });
+            new TestCurrentUserService { UserId = OwnerId, IsAdmin = true },
+            NoPlanLimits.Instance);
 
     /// <summary>
     /// The one that fails silently without the guard: the Classic update recomputes

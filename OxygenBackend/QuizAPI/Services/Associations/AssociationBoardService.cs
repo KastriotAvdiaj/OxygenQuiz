@@ -43,14 +43,17 @@ namespace QuizAPI.Services.Associations
         private readonly IQuizService _quizService;
         private readonly IAssociationRulesProvider _rules;
         private readonly IImageService _images;
+        private readonly QuizAPI.Services.Billing.IPlanLimitGuard _planLimits;
 
         public AssociationBoardService(
             IQuizRepository quizzes,
             IAssociationBoardRepository boards,
             IQuizService quizService,
             IAssociationRulesProvider rules,
-            IImageService images)
+            IImageService images,
+            QuizAPI.Services.Billing.IPlanLimitGuard planLimits)
         {
+            _planLimits = planLimits;
             _quizzes = quizzes;
             _boards = boards;
             _quizService = quizService;
@@ -60,6 +63,9 @@ namespace QuizAPI.Services.Associations
 
         public async Task<QuizDTO> CreateAsync(Guid userId, AssociationQuizCM cm)
         {
+            // A board is a quiz, so it counts toward the same plan limit (docs/auth/paid-plans.md).
+            await _planLimits.EnsureCanCreateQuizAsync(userId);
+
             var status = QuizMappers.ParseStatus(cm.Status);
             await EnsureQuizFieldsAsync(cm, status, userId);
 

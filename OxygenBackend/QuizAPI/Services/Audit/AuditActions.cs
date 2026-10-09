@@ -77,5 +77,9 @@ namespace QuizAPI.Services.Audit
         public const string TeacherAccessRequested = "TeacherAccessRequested";
         public const string TeacherAccessApproved = "TeacherAccessApproved";
         public const string TeacherAccessDeclined = "TeacherAccessDeclined";
+
+        // Paid plans (docs/auth/paid-plans.md). A Teacher plan's role grant is UserRolesChanged.
+        public const string PlanGrantedManually = "PlanGrantedManually";
+        public const string PlanRevokedManually = "PlanRevokedManually";
     }
 }

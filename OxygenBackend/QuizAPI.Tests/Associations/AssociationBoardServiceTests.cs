@@ -68,11 +68,11 @@ public class AssociationBoardServiceTests
         var quizzes = new QuizRepository(ctx);
         var quizService = new QuizService(quizzes, new Mock<IQuestionRepository>().Object,
             NullLogger<QuizService>.Instance, new Mock<IImageService>().Object,
-            new TestCurrentUserService { UserId = OwnerId, IsAdmin = true });
+            new TestCurrentUserService { UserId = OwnerId, IsAdmin = true }, NoPlanLimits.Instance);
         var rules = new Mock<IAssociationRulesProvider>();
         rules.Setup(r => r.GetRulesFor(It.IsAny<int>())).Returns(AssociationRules.Default);
         return new AssociationBoardService(quizzes, new AssociationBoardRepository(ctx), quizService,
-            rules.Object, new Mock<IImageService>().Object);
+            rules.Object, new Mock<IImageService>().Object, NoPlanLimits.Instance);
     }
 
     internal static AssociationBoardInput Board(string suffix = "") => new()
