@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import Squares from "@/common/Effect-Related/background-squares";
 import Prism from "@/common/Effect-Related/Prism";
 import Header from "@/common/Header";
+import { SiteFooter } from "@/common/SiteFooter";
 import { useTheme } from "@/components/ui";
 import { EmailVerificationBanner } from "@/common/EmailVerificationBanner";
 import { APP_SCROLL_CONTAINER_ID } from "@/lib/app-scroll";
@@ -19,6 +20,8 @@ interface LayoutProps {
   headerBehavior?: "default" | "overlay-transparent" | "overlay-solid" | "hidden";
   contentPadding?: "auto" | "manual" | "none";
   effect?: EffectType;
+  /** Show the site footer (legal links) under the page. Public content pages only. */
+  footer?: boolean;
 
   // Legacy props (deprecated but maintained for backward compatibility)
   /** @deprecated Use effect="squares" instead */
@@ -36,6 +39,7 @@ export const HomeLayout = ({
   effect,
   headerBehavior,
   contentPadding = "auto",
+  footer = false,
 
   // Legacy props
   squares = false,
@@ -154,6 +158,7 @@ export const HomeLayout = ({
               children
             )}
           </Suspense>
+          {footer && <SiteFooter />}
         </div>
       </div>
 

@@ -53,6 +53,19 @@ const PricingPage = lazy(() =>
 const WelcomePage = lazy(() =>
   import("@/pages/Welcome/welcome-page").then((module) => ({ default: module.WelcomePage })),
 );
+// Terms, Privacy, Refunds, Contact (docs/proposals/legal-and-compliance-for-launch.md §2.1).
+const TermsPage = lazy(() =>
+  import("@/pages/Legal/terms-page").then((module) => ({ default: module.TermsPage })),
+);
+const PrivacyPage = lazy(() =>
+  import("@/pages/Legal/privacy-page").then((module) => ({ default: module.PrivacyPage })),
+);
+const RefundsPage = lazy(() =>
+  import("@/pages/Legal/refunds-page").then((module) => ({ default: module.RefundsPage })),
+);
+const ContactPage = lazy(() =>
+  import("@/pages/Legal/contact-page").then((module) => ({ default: module.ContactPage })),
+);
 const MultiplayerMenu = lazy(() =>
   import("@/pages/Quiz/Multiplayer/Multiplayer-Menu").then((module) => ({
     default: module.MultiplayerMenu,
@@ -176,6 +189,7 @@ const createAppRouter = (queryClient: QueryClient) =>
         <>
           <HomeLayout
             headerBehavior={HeaderBehavior.OVERLAY_SOLID}
+            footer
             // effect="prism"
             children={<Home />}
           />
@@ -199,8 +213,26 @@ const createAppRouter = (queryClient: QueryClient) =>
     {
       path: "/pricing",
       element: (
-        <HomeLayout headerBehavior={HeaderBehavior.DEFAULT} children={<PricingPage />} />
+        <HomeLayout headerBehavior={HeaderBehavior.DEFAULT} footer children={<PricingPage />} />
       ),
+    },
+    // Public, signed out included: Paddle's review reads these, and so does anyone deciding
+    // whether to trust the site. Linked from SiteFooter.
+    {
+      path: "/terms",
+      element: <HomeLayout headerBehavior={HeaderBehavior.DEFAULT} footer children={<TermsPage />} />,
+    },
+    {
+      path: "/privacy",
+      element: <HomeLayout headerBehavior={HeaderBehavior.DEFAULT} footer children={<PrivacyPage />} />,
+    },
+    {
+      path: "/refunds",
+      element: <HomeLayout headerBehavior={HeaderBehavior.DEFAULT} footer children={<RefundsPage />} />,
+    },
+    {
+      path: "/contact",
+      element: <HomeLayout headerBehavior={HeaderBehavior.DEFAULT} footer children={<ContactPage />} />,
     },
     // Lands here from Paddle Checkout's successUrl (and the Fake provider's checkout) after a
     // purchase — see docs/auth/paid-plans.md §8.

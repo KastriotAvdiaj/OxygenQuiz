@@ -1,6 +1,11 @@
 # Proposal: what has to exist around a paid, public launch
 
-**Status: open.** Nothing implemented. Written 2026-10-07. Companion to
+**Status: partly shipped (2026-10-10).** The pages and the footer of §2.1 exist as a first draft
+(`src/pages/Legal/`, `src/common/SiteFooter.tsx`): not yet reviewed by a lawyer, and
+`legal-entity.ts` still holds `TODO` in place of the business name, address, number and contact
+addresses, so they must not go live as they are. Everything else here is open — signup consent
+and the age checkbox (§2.2, §2.3), self-hosted fonts, the AI privacy line, reporting a quiz.
+Written 2026-10-07. Companion to
 [`paid-plans-and-payments.md`](./paid-plans-and-payments.md). Paddle will not approve checkout
 until most of this is live.
 
@@ -85,6 +90,13 @@ site-wide.
 
 Write them as plain React pages with the content in one file each (Markdown rendered to JSX is
 fine). Put a **"Last updated"** date and a **version number** at the top of Terms and Privacy.
+
+**As built (2026-10-10):** one file per page in `src/pages/Legal/`, sharing `legal-page.tsx` for
+the frame. Who runs the site, and the documents' version and date, are in `legal-entity.ts` —
+the one place to change them. The footer is opt-in per route (`HomeLayout`'s `footer` prop) and
+is on `/`, `/pricing` and the four pages themselves; play, lobby and host routes never show it.
+The storage and processor tables on `/privacy` copy §1.1 and §3 here: a new cookie or a new
+processor is a row in both.
 
 ### 2.2 Consent at signup, recorded
 
