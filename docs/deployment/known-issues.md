@@ -500,6 +500,20 @@ timeLimit` points, i.e. ~33 pts on a 30s question but ~100 pts (10% of base) on 
   noise (and can hide the real change in review). _Fix:_ add a `.gitattributes` with
   `* text=auto eol=lf`, then renormalize once (`git add --renormalize .`).
 
+## Billing (Paddle)
+
+- **P3 — Checkout overlay uses Paddle's own styling, not the app's.** `Paddle.Checkout.open()`
+  runs the `overlay`/`one-page` variant (docs/auth/paid-plans.md §8). That variant only exposes
+  brand color and a light/dark theme toggle — set in the Paddle dashboard under
+  **Checkout → Checkout configuration → Styling** — not fonts, borders, button shape, or field
+  layout. Matching the app's look fully needs **Inline checkout** instead, a different
+  integration (the form embeds directly in the page rather than opening as a popup), not a
+  settings change. Deliberately left as-is for now.
+  _Fix, if wanted later:_ set brand color/logo in the dashboard Styling tab and pass
+  `settings.theme` ("light"/"dark") from `Paddle.Checkout.open()` to match the app's current
+  theme; only move to Inline checkout if full re-skinning is actually needed.
+  → `src/pages/Pricing/pricing-page.tsx` (`Checkout.open` call)
+
 ## Operations / deployment
 
 - ~~**P2 — Frontend deploys never activated (stale bundle served).**~~ **Root-caused + fixed

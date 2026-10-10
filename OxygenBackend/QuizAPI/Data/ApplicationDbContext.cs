@@ -89,6 +89,7 @@ namespace QuizAPI.Data
 
         // Paid plans (docs/auth/paid-plans.md)
         public DbSet<Models.Billing.UserSubscription> UserSubscriptions { get; set; }
+        public DbSet<Models.Billing.BillingWebhookEvent> BillingWebhookEvents { get; set; }
 
 
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options, ICurrentUserService current) : base(options)
@@ -656,6 +657,10 @@ namespace QuizAPI.Data
             // A provider subscription maps to exactly one row; webhooks upsert by it.
             sub.HasIndex(s => s.ProviderSubscriptionId).IsUnique()
                 .HasFilter($"\"{nameof(Models.Billing.UserSubscription.ProviderSubscriptionId)}\" IS NOT NULL");
+
+            // Paddle's own event id is the key: a delivery is "already handled" only once it has
+            // been processed, so a failed sync can be retried under the same id (§5.5).
+            modelBuilder.Entity<Models.Billing.BillingWebhookEvent>().HasKey(e => e.EventId);
         }
     }
 }

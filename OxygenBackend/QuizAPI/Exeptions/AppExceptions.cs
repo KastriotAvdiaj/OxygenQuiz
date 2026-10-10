@@ -49,4 +49,19 @@ namespace QuizAPI.Exceptions
         public const string Quizzes = "quizzes";
         public const string Classes = "classes";
     }
+
+    /// <summary>
+    /// Billing is disabled or misconfigured (<c>Billing:Enabled = false</c>, per ADR 0004 "a
+    /// misconfigured provider turns the feature off, not crash"). The pricing page already hides
+    /// checkout behind <c>PlanCatalogDTO.CheckoutAvailable</c>, so this only guards a caller that
+    /// reaches <c>/api/billing</c> anyway. Maps to HTTP 503.
+    /// </summary>
+    public sealed class BillingUnavailableException(string message) : AppException(message)
+    {
+    }
+
+    /// <summary>Paddle's API returned something other than success. Maps to HTTP 502 — the failure is upstream, not ours.</summary>
+    public sealed class BillingProviderException(string message) : AppException(message)
+    {
+    }
 }

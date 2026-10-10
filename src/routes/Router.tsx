@@ -50,6 +50,9 @@ const GameModeSelection = lazy(() =>
 const PricingPage = lazy(() =>
   import("@/pages/Pricing/pricing-page").then((module) => ({ default: module.PricingPage })),
 );
+const WelcomePage = lazy(() =>
+  import("@/pages/Welcome/welcome-page").then((module) => ({ default: module.WelcomePage })),
+);
 const MultiplayerMenu = lazy(() =>
   import("@/pages/Quiz/Multiplayer/Multiplayer-Menu").then((module) => ({
     default: module.MultiplayerMenu,
@@ -197,6 +200,14 @@ const createAppRouter = (queryClient: QueryClient) =>
       path: "/pricing",
       element: (
         <HomeLayout headerBehavior={HeaderBehavior.DEFAULT} children={<PricingPage />} />
+      ),
+    },
+    // Lands here from Paddle Checkout's successUrl (and the Fake provider's checkout) after a
+    // purchase — see docs/auth/paid-plans.md §8.
+    {
+      path: "/welcome",
+      element: (
+        <HomeLayout headerBehavior={HeaderBehavior.DEFAULT} children={<WelcomePage />} />
       ),
     },
     {

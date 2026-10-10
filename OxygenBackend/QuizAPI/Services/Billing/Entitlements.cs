@@ -15,6 +15,7 @@ namespace QuizAPI.Services.Billing
     /// <param name="MaxClasses">Classes a host may keep, or null for unlimited.</param>
     /// <param name="PlanEndsAt">When the effective paid plan stops (renewal or end of a canceled period), or null.</param>
     /// <param name="CancelAtPeriodEnd">The plan will not renew.</param>
+    /// <param name="Provider">Where the winning row came from ("Manual", "Paddle" or "Fake"), or null on Free. Lets the client show "Manage subscription" only for a real Paddle purchase.</param>
     public sealed record Entitlements(
         PlanTier Plan,
         bool IsStaff,
@@ -23,5 +24,6 @@ namespace QuizAPI.Services.Billing
         int MaxLobbyPlayers,
         int? MaxClasses,
         DateTime? PlanEndsAt = null,
-        bool CancelAtPeriodEnd = false);
+        bool CancelAtPeriodEnd = false,
+        string? Provider = null);
 }

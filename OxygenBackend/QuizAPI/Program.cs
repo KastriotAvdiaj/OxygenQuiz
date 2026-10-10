@@ -135,9 +135,58 @@ builder.Services.AddScoped<ITeacherAccessRequestRepository, TeacherAccessRequest
 builder.Services.AddScoped<IClassRepository, ClassRepository>();
 // Paid plans (docs/auth/paid-plans.md). Entitlements are read by every limit check, including the hub.
 builder.Services.AddScoped<ISubscriptionRepository, SubscriptionRepository>();
+builder.Services.AddScoped<QuizAPI.Repositories.Interfaces.IBillingWebhookEventRepository, QuizAPI.Repositories.BillingWebhookEventRepository>();
 builder.Services.AddScoped<QuizAPI.Services.Billing.IEntitlementService, QuizAPI.Services.Billing.EntitlementService>();
 builder.Services.AddScoped<QuizAPI.Services.Billing.IPlanLimitGuard, QuizAPI.Services.Billing.PlanLimitGuard>();
 builder.Services.AddScoped<QuizAPI.Services.Billing.IManualPlanService, QuizAPI.Services.Billing.ManualPlanService>();
+
+// Paddle (Phase 2, docs/proposals/paid-plans-and-payments.md §5.8). ApiKey/WebhookSecret are
+// secrets, read straight off configuration and never bound onto BillingOptions — mirroring
+// Email:Brevo:ApiKey below, so the validated options object stays safe to log and inspect.
+builder.Services.AddOptions<QuizAPI.Services.Billing.BillingOptions>()
+    .Bind(configuration.GetSection(QuizAPI.Services.Billing.BillingOptions.SectionName))
+    .Validate(o => o.Validate().Count == 0,
+        "Billing is invalid — see BillingOptions.Validate for what each value must be.")
+    .ValidateOnStart();
+
+var billingEnabled = configuration.GetValue<bool>("Billing:Enabled");
+var billingProvider = configuration["Billing:Provider"] ?? "Paddle";
+var billingApiKey = configuration["Billing:ApiKey"];
+var billingWebhookSecret = configuration["Billing:WebhookSecret"];
+
+if (billingEnabled && billingProvider == "Paddle" &&
+    (string.IsNullOrWhiteSpace(billingApiKey) || string.IsNullOrWhiteSpace(billingWebhookSecret)))
+    throw new InvalidOperationException(
+        "Billing:Enabled is true with Provider=Paddle but Billing:ApiKey / Billing:WebhookSecret is not configured.");
+
+if (billingProvider == "Fake" && environment.IsProduction())
+    throw new InvalidOperationException("Billing:Provider=Fake is refused in Production.");
+
+builder.Services.Configure<QuizAPI.Services.Billing.PaddleWebhookOptions>(o => o.Secret = billingWebhookSecret ?? "");
+
+if (billingEnabled && billingProvider == "Fake")
+{
+    builder.Services.AddScoped<QuizAPI.Services.Billing.IBillingProvider, QuizAPI.Services.Billing.FakeBillingProvider>();
+}
+else if (billingEnabled && billingProvider == "Paddle")
+{
+    // Typed client, same shape as the AI provider: base address depends on resolved options
+    // (sandbox vs production), so it's picked inside the (sp, client) overload.
+    builder.Services.AddHttpClient<QuizAPI.Services.Billing.IBillingProvider, QuizAPI.Services.Billing.PaddleBillingProvider>((sp, client) =>
+    {
+        var billingEnv = sp.GetRequiredService<IOptions<QuizAPI.Services.Billing.BillingOptions>>().Value.Environment;
+        client.BaseAddress = new Uri(billingEnv == "production" ? "https://api.paddle.com/" : "https://sandbox-api.paddle.com/");
+        client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", billingApiKey);
+    });
+}
+else
+{
+    // Unreachable while PlanCatalogDTO.CheckoutAvailable holds, and registered precisely so that
+    // if one ever doesn't, the failure is a BillingUnavailableException the pipeline understands.
+    builder.Services.AddScoped<QuizAPI.Services.Billing.IBillingProvider, QuizAPI.Services.Billing.UnavailableBillingProvider>();
+}
+builder.Services.AddScoped<QuizAPI.Services.Billing.ISubscriptionSyncService, QuizAPI.Services.Billing.SubscriptionSyncService>();
+builder.Services.AddScoped<QuizAPI.Services.Billing.BillingReconciliationJob>();
 builder.Services.AddScoped<QuizAPI.Services.Classroom.IClassService, QuizAPI.Services.Classroom.ClassService>();
 builder.Services.AddScoped<IHostedGameRepository, HostedGameRepository>();
 builder.Services.AddScoped<QuizAPI.Services.Classroom.IHostedGameService, QuizAPI.Services.Classroom.HostedGameService>();
@@ -683,6 +732,15 @@ using (var scope = app.Services.CreateScope())
         "account-closure-reminder-sweep",
         service => service.RunAsync(),
         Cron.Hourly()
+    );
+
+    // Catches a Paddle webhook that never arrived — reads every live subscription back the same
+    // way the webhook does (docs/proposals/paid-plans-and-payments.md §5.5). Daily, at a different
+    // hour than image-cleanup-daily (2 AM).
+    recurringJobs.AddOrUpdate<QuizAPI.Services.Billing.BillingReconciliationJob>(
+        "billing-reconciliation-daily",
+        service => service.RunAsync(CancellationToken.None),
+        Cron.Daily(3)
     );
 }
 

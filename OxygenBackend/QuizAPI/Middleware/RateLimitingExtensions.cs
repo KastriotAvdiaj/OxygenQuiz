@@ -34,6 +34,13 @@ namespace QuizAPI.Middleware
         public const string AiPolicy = "ai";
 
         /// <summary>
+        /// Paddle's own servers deliver webhooks, not a browser — partitioned by IP like
+        /// <see cref="AuthPolicy"/>/<see cref="GuestPolicy"/>, never <see cref="UserOrIp"/>. One
+        /// purchase can fire several event types in a burst, so this is generous.
+        /// </summary>
+        public const string BillingWebhookPolicy = "billing-webhook";
+
+        /// <summary>
         /// Config key that turns every limit here off (<c>false</c>). Missing means on, so a
         /// production box can never lose its limits to a forgotten setting;
         /// <c>appsettings.Development.json</c> sets it to <c>false</c>, because local work (hot
@@ -56,7 +63,7 @@ namespace QuizAPI.Middleware
                     // for them by name, and an unknown policy name throws) but never limits.
                     options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(
                         _ => RateLimitPartition.GetNoLimiter("disabled"));
-                    foreach (var policy in new[] { AuthPolicy, GuestPolicy, AiPolicy })
+                    foreach (var policy in new[] { AuthPolicy, GuestPolicy, AiPolicy, BillingWebhookPolicy })
                         options.AddPolicy(policy, _ => RateLimitPartition.GetNoLimiter("disabled"));
                     return;
                 }
@@ -116,6 +123,18 @@ namespace QuizAPI.Middleware
                         factory: _ => new FixedWindowRateLimiterOptions
                         {
                             PermitLimit = 6,
+                            Window = TimeSpan.FromMinutes(1),
+                            QueueLimit = 0,
+                        }));
+
+                // Paddle's webhook servers. IP-partitioned because there's no authenticated user to
+                // key on; generous because one purchase can fire several event types in a burst.
+                options.AddPolicy(BillingWebhookPolicy, httpContext =>
+                    RateLimitPartition.GetFixedWindowLimiter(
+                        partitionKey: ClientIp(httpContext),
+                        factory: _ => new FixedWindowRateLimiterOptions
+                        {
+                            PermitLimit = 60,
                             Window = TimeSpan.FromMinutes(1),
                             QueueLimit = 0,
                         }));

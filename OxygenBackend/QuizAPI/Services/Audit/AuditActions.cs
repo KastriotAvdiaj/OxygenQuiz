@@ -81,5 +81,13 @@ namespace QuizAPI.Services.Audit
         // Paid plans (docs/auth/paid-plans.md). A Teacher plan's role grant is UserRolesChanged.
         public const string PlanGrantedManually = "PlanGrantedManually";
         public const string PlanRevokedManually = "PlanRevokedManually";
+
+        // Paddle subscriptions (docs/auth/paid-plans.md §5.5). The role grant on a Teacher
+        // purchase is its own verb because UserRolesChanged doesn't say *why* — same reasoning as
+        // PlanGrantedManually not reusing UserRolesChanged.
+        public const string SubscriptionStarted = "SubscriptionStarted";
+        public const string SubscriptionChanged = "SubscriptionChanged";
+        public const string SubscriptionCanceled = "SubscriptionCanceled";
+        public const string TeacherAccessGrantedByPurchase = "TeacherAccessGrantedByPurchase";
     }
 }

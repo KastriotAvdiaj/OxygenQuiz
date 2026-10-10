@@ -27,12 +27,21 @@ export type Plan = {
   monthlyEur: number;
   yearlyEur: number;
   limits: PlanLimits;
+  /** Paddle price id for PricePreview/Checkout. Null for Free, or whenever checkout is unavailable. */
+  monthlyPriceId: string | null;
+  yearlyPriceId: string | null;
 };
 
 export type PlanCatalog = {
   plans: Plan[];
   /** False until a payment provider is configured — the pricing page says "coming soon". */
   checkoutAvailable: boolean;
+  /** Public Paddle client token for Paddle.js. Empty when checkoutAvailable is false. */
+  clientToken: string;
+  /** "sandbox" | "production" — which Paddle.js environment to initialise. */
+  environment: "sandbox" | "production";
+  /** The visitor's two-letter country from Cloudflare, or null when Cloudflare couldn't tell. */
+  countryCode: string | null;
 };
 
 export type MyPlan = {
@@ -41,6 +50,8 @@ export type MyPlan = {
   limits: PlanLimits;
   planEndsAt: string | null;
   cancelAtPeriodEnd: boolean;
+  /** "Manual" | "Paddle" | "Fake", or null on Free. "Manage subscription" only makes sense for Paddle. */
+  provider: "Manual" | "Paddle" | "Fake" | null;
 };
 
 export type UserPlanAdmin = MyPlan & {
@@ -73,13 +84,17 @@ export const usePlanCatalog = () =>
 /**
  * The signed-in user's plan and limits. Pass `enabled: false` for signed-out callers — the
  * endpoint is authenticated, and a 401 here would trigger a pointless refresh attempt.
+ *
+ * `refetchInterval` is exposed so `/welcome` can poll right after a checkout — see
+ * `WelcomePage`'s `pendingPlan` — without a second query under a different key.
  */
-export const useMyPlan = (enabled = true) =>
+export const useMyPlan = (enabled = true, refetchInterval: number | false = false) =>
   useQuery({
     queryKey: planKeys.mine(),
     queryFn: () => apiService.get<MyPlan>("/plans/me"),
     enabled,
     staleTime: 60 * 1000,
+    refetchInterval,
   });
 
 /** Admin: one user's plan and manual grant. */

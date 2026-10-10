@@ -21,6 +21,8 @@ namespace QuizAPI.Middleware
                 ForbiddenException => (StatusCodes.Status403Forbidden, ex.Message),
                 PlanLimitException => (StatusCodes.Status403Forbidden, ex.Message),
                 UnauthorizedException => (StatusCodes.Status401Unauthorized, ex.Message),
+                BillingUnavailableException => (StatusCodes.Status503ServiceUnavailable, ex.Message),
+                BillingProviderException => (StatusCodes.Status502BadGateway, ex.Message),
                 _ => (StatusCodes.Status500InternalServerError, "An unexpected error occurred.")
             };
 

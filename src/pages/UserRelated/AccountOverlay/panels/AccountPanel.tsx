@@ -9,6 +9,7 @@ import { useRequestPasswordReset } from "@/pages/UserRelated/PasswordReset/api/p
 import { CloseAccountSection } from "./CloseAccountSection";
 import { TeacherAccessSection } from "./TeacherAccessSection";
 import { PlanSection } from "./PlanSection";
+import { SubscriptionSection } from "./SubscriptionSection";
 import { useAccountIdentity } from "../api/account-identity";
 import { EmailEditor, PendingEmailNotice, UsernameEditor } from "./IdentityEditors";
 
@@ -195,6 +196,7 @@ export const AccountPanel = () => {
 
       {/* A SuperAdmin hosts without the Teacher role, so there is nothing to ask for. */}
       <PlanSection />
+      <SubscriptionSection />
       {!user?.roles?.includes(ROLES.SuperAdmin) && <TeacherAccessSection />}
 
       {/* Last, and visually separated by its destructive border. The only way to leave —

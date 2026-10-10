@@ -21,17 +21,20 @@ namespace QuizAPI.Controllers.Billing
         private readonly IManualPlanService _manual;
         private readonly ICurrentUserService _current;
         private readonly Microsoft.Extensions.Options.IOptions<QuizAPI.Services.Ai.AiOptions> _ai;
+        private readonly Microsoft.Extensions.Options.IOptions<BillingOptions> _billing;
 
         public PlansController(
             IEntitlementService entitlements,
             IManualPlanService manual,
             ICurrentUserService current,
-            Microsoft.Extensions.Options.IOptions<QuizAPI.Services.Ai.AiOptions> ai)
+            Microsoft.Extensions.Options.IOptions<QuizAPI.Services.Ai.AiOptions> ai,
+            Microsoft.Extensions.Options.IOptions<BillingOptions> billing)
         {
             _entitlements = entitlements;
             _manual = manual;
             _current = current;
             _ai = ai;
+            _billing = billing;
         }
 
         /// <summary>Every plan with its limits and display prices. Anonymous — the pricing page is public.</summary>
@@ -40,6 +43,7 @@ namespace QuizAPI.Controllers.Billing
         public ActionResult<PlanCatalogDTO> Catalog()
         {
             var freeAi = _ai.Value.DefaultDailyQuota;
+            var billing = _billing.Value;
             var plans = new List<PlanDTO>
             {
                 new()
@@ -55,9 +59,18 @@ namespace QuizAPI.Controllers.Billing
                 MonthlyEur = p.MonthlyEur,
                 YearlyEur = p.YearlyEur,
                 Limits = PlanMapping.Limits(PlanCatalog.For(p.Tier, freeAi)),
+                MonthlyPriceId = billing.Enabled ? BillingPriceCatalog.GetPriceId(billing.Prices, p.Tier, BillingInterval.Month) : null,
+                YearlyPriceId = billing.Enabled ? BillingPriceCatalog.GetPriceId(billing.Prices, p.Tier, BillingInterval.Year) : null,
             }));
 
-            return Ok(new PlanCatalogDTO { Plans = plans, CheckoutAvailable = false });
+            return Ok(new PlanCatalogDTO
+            {
+                Plans = plans,
+                CheckoutAvailable = billing.Enabled,
+                ClientToken = billing.Enabled ? billing.ClientToken : "",
+                Environment = billing.Environment,
+                CountryCode = ResolveCountryCode(),
+            });
         }
 
         /// <summary>The caller's effective plan and limits. The client mirrors these to warn early; the API enforces them.</summary>
@@ -82,6 +95,17 @@ namespace QuizAPI.Controllers.Billing
         {
             if (_current.UserId is not Guid callerId) return Unauthorized();
             return Ok(await _manual.SetAsync(id, dto, callerId, User.IsInRole("SuperAdmin"), ct));
+        }
+
+        /// <summary>
+        /// Cloudflare's own geolocation, same trust boundary as <c>CF-Connecting-IP</c> in
+        /// <c>RateLimitingExtensions</c>. <c>XX</c> (unknown) and <c>T1</c> (Tor) are treated the
+        /// same as absent, so the client never hands Paddle's PricePreview a sentinel country.
+        /// </summary>
+        private string? ResolveCountryCode()
+        {
+            var country = Request.Headers["CF-IPCountry"].FirstOrDefault();
+            return string.IsNullOrWhiteSpace(country) || country is "XX" or "T1" ? null : country;
         }
     }
 }

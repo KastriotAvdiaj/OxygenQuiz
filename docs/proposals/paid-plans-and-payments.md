@@ -1,11 +1,13 @@
 # Proposal: paid plans, and how the money is taken
 
-**Status: partly shipped — Phase 0 and Phase 1 implemented (2026-10-10); Paddle (Phase 2) and
-Phase 3 open.** Provider decided: Paddle (2026-10-07). Tiers and prices decided 2026-10-10: Free,
-Plus and Teacher as in §3.2, no free quiz cap. What exists now is described in
-[`../auth/paid-plans.md`](../auth/paid-plans.md), which is the authority where this file and it
-disagree. Written 2026-10-07. What has to exist *around* a paid launch (terms, privacy, cookies,
-age) is a separate proposal:
+**Status: partly shipped — Phase 0, Phase 1 and Phase 2 implemented (2026-10-10); Phase 3 open.**
+Provider decided: Paddle (2026-10-07). Tiers and prices decided 2026-10-10: Free, Plus and Teacher
+as in §3.2, no free quiz cap. Phase 2 (Paddle checkout, webhooks, reconciliation) shipped
+2026-10-10 against a sandbox catalog — see §6 for the file-level list and
+[ADR 0027](../adr/0027-a-webhook-is-a-ping-the-provider-is-read-back.md) for the one hard-to-reverse
+call it made. What exists now is described in [`../auth/paid-plans.md`](../auth/paid-plans.md),
+which is the authority where this file and it disagree. Written 2026-10-07. What has to exist
+*around* a paid launch (terms, privacy, cookies, age) is a separate proposal:
 [`legal-and-compliance-for-launch.md`](./legal-and-compliance-for-launch.md).
 
 A teacher in Prishtina has hosted three Associations boards for her class on the free account. She
@@ -438,30 +440,52 @@ from the list that was here:
 - [ ] Links to `/pricing` from the landing page and the account drawer — the account panel links
   to it; the landing page doesn't yet.
 
-### Phase 2 — Paddle (≈5–7 days)
+### Phase 2 — Paddle (≈5–7 days) — shipped 2026-10-10
 
-- [ ] `Services/Billing/IBillingProvider`, `PaddleBillingProvider`, `FakeBillingProvider`, `BillingOptions` + startup validation
-- [ ] `PaddleSignatureVerifier` — tested against a recorded sandbox request
-- [ ] `SubscriptionSyncService` — read back, upsert, evict, audit, notify
-- [ ] `Controllers/Billing/BillingController` — `POST checkout`, `POST portal`
-- [ ] `Controllers/Billing/PaddleWebhookController` — anonymous, raw body, rate-limited
-- [ ] `BillingReconciliationJob` — daily Hangfire recurring job
-- [ ] Frontend: `@paddle/paddle-js`, loaded **only** on `/pricing` (lazy import); checkout → poll entitlements → success state
-- [ ] Account panel: `SubscriptionSection.tsx` beside `TeacherAccessSection` — plan, renews/ends, Manage
-- [ ] Paddle sandbox: products, prices, webhook destination; one manual end-to-end run per event type
+- [x] `Services/Billing/IBillingProvider`, `PaddleBillingProvider`, `FakeBillingProvider`,
+  `UnavailableBillingProvider`, `BillingOptions` + startup validation (`ValidateOnStart`).
+  `ApiKey`/`WebhookSecret` are read off `IConfiguration` directly, never bound onto the options
+  object, mirroring `Email:Brevo:ApiKey` — see `Program.cs`.
+- [x] `PaddleSignatureVerifier` — static, pure, unit-tested (`PaddleSignatureVerifierTests`)
+- [x] `SubscriptionSyncService` — read back, upsert, evict, audit, notify, Teacher-on-purchase
+  grant. One upsert path shared by the webhook, the reconciliation job, and the Fake provider's
+  checkout (which calls it synchronously, so dev/CI/E2E exercise the real entitlement logic with
+  no Paddle account)
+- [x] `Controllers/Billing/BillingController` — `POST /api/billing/checkout`, `POST /api/billing/portal`
+- [x] `Controllers/Billing/PaddleWebhookController` — anonymous, raw body (first in this codebase),
+  `BillingWebhookPolicy` rate limit. "Already handled" means *processed*, not merely received — a
+  failed sync leaves the event retryable under Paddle's own redelivery (ADR 0027)
+- [x] `BillingReconciliationJob` — daily Hangfire recurring job (`billing-reconciliation-daily`, 3 AM)
+- [x] Frontend: `@paddle/paddle-js`, loaded **only** when the catalog reports a `clientToken`
+  (lazy `import()` inside an effect, not the route-level `lazy()` convention — it's a library, not
+  a component); checkout → `Paddle.Checkout.open` → poll `/plans/me` → success or a 30s "we'll
+  email you" fallback
+- [x] Account panel: `SubscriptionSection.tsx` beside `PlanSection`/`TeacherAccessSection` — renders
+  only when `MyPlanDTO.Provider === "Paddle"`, with a "Manage subscription" button to the portal
+- [x] Paddle sandbox: Plus and Teacher products/prices created (see the price ids in
+  `appsettings`'s `Billing:Prices`); a Western-Balkans annual override on each yearly price.
+  Webhook destination and one manual end-to-end run per event type are a deploy-time step, not
+  code — do this before flipping `Billing:Enabled` on in a real environment.
 
-Tests: duplicate webhook = no-op; out-of-order pair ends in Paddle's state; a bad signature is a
-401 and writes nothing. **One E2E journey (Fake provider):** a free user hits the AI limit,
-upgrades on `/pricing`, and the quota note shows the new allowance.
+Tests: `PaddleSignatureVerifierTests` (valid/tampered/stale/malformed), `SubscriptionSyncServiceTests`
+(new row, idempotent repeat, Teacher grant once, never revoked on cancel, plan change),
+`PaddleWebhookControllerTests` (bad signature → 401 + no row; success → processed; duplicate →
+no-op; failure → 500 + unprocessed + retried; non-subscription event → acknowledged, not synced).
+**E2E journey, still open:** a free user hits the AI limit, upgrades on `/pricing` with
+`Billing:Provider=Fake`, and the quota note shows the new allowance — the backend path is
+exercised by the unit tests above; a Playwright journey through the actual pricing page UI is not
+yet written.
 
-### Phase 3 — polish (≈3–5 days, each item independent)
+### Phase 3 — polish (≈2–4 days, each item independent)
 
-- [ ] Teacher role on purchase (§5.1), audit `TeacherAccessGrantedByPurchase`
+- [x] Teacher role on purchase (§5.1), audit `TeacherAccessGrantedByPurchase` — shipped with Phase 2
+  (`SubscriptionSyncService`), not deferred to Phase 3 as originally planned
 - [ ] Account closure ↔ subscription (§5.7)
 - [ ] Ship Reports behind `CanExportReports`
 - [ ] Hosted-game history limit + CSV export
 - [ ] Lobby roster layout for 20/40, plus a SignalR load test at 40
-- [ ] Regional prices in Paddle (country overrides)
+- [ ] Regional prices in Paddle (country overrides) — done for Plus/Teacher's yearly price
+  (Western Balkans); revisit if more regions are wanted
 
 ### Phase 4 — Schools, when asked.
 
@@ -492,7 +516,10 @@ upgrades on `/pricing`, and the quota note shows the new allowance.
 
 ## 9. ADRs this would produce, if accepted
 
-- *Plans grant entitlements, never roles* (with the one-way Teacher grant as the exception).
-- *A webhook is a ping; the provider is read back.*
-- *A downgrade never deletes.*
-- *Paddle as Merchant of Record because the seller is in Kosovo.*
+- *Plans grant entitlements, never roles* (with the one-way Teacher grant as the exception) —
+  [ADR 0026](../adr/0026-a-plan-grants-limits-never-permissions.md).
+- *A webhook is a ping; the provider is read back* —
+  [ADR 0027](../adr/0027-a-webhook-is-a-ping-the-provider-is-read-back.md).
+- *A downgrade never deletes* — folded into ADR 0026.
+- *Paddle as Merchant of Record because the seller is in Kosovo* — decided in §2.2 above; not
+  written up separately, since the comparison table there is the record of the choice.

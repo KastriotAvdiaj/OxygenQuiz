@@ -1,17 +1,21 @@
 # Paid plans — a plan grants limits, the API enforces each one in one place
 
 How plans work **today**: what Free, Plus and Teacher get, how a user's effective plan is worked
-out, where each limit is enforced, and how an admin grants a plan by hand. Nobody can buy a plan
-yet. Checkout with Paddle is the next step and is still a proposal:
+out, where each limit is enforced, how an admin grants a plan by hand, and — since Phase 2, §8 —
+how a user buys one through Paddle. The full proposal, including what's still Phase 3:
 [`../proposals/paid-plans-and-payments.md`](../proposals/paid-plans-and-payments.md). Why plans
 are not roles, and why a downgrade deletes nothing, is
-[ADR 0026](../adr/0026-a-plan-grants-limits-never-permissions.md).
+[ADR 0026](../adr/0026-a-plan-grants-limits-never-permissions.md); why a webhook only ever
+triggers a read-back, never supplies field values itself, is
+[ADR 0027](../adr/0027-a-webhook-is-a-ping-the-provider-is-read-back.md).
 
 > **Status: implemented (2026-10-10)** — plans, entitlements, enforcement, the AI budget split,
-> manual grants, the pricing page (checkout says "coming soon"). Not yet: Paddle checkout and
-> webhooks, Teachers' unlimited hosted-game history and its export, Reports behind a plan, regional
-> prices. Lobby sizes of 20 and 40 are enforced but have not been load-tested — see
-> `known-issues.md`.
+> manual grants, the pricing page, Paddle checkout + webhooks (Phase 2, §8 below), and — same
+> day, as a follow-up — country-localized prices via `PricePreview()`, the overlay/one-page
+> checkout variant, and a `/welcome` redirect on success. Not yet: Teachers' unlimited
+> hosted-game history and its export, Reports behind a plan, and a real webhook delivery in local
+> dev (needs a tunnel — see §8's "Local sandbox setup"). Lobby sizes of 20 and 40 are enforced but
+> have not been load-tested — see `known-issues.md`.
 
 ---
 
@@ -132,13 +136,17 @@ in production. **Dashboard → Users → (row) → Manage plan** calls
 
 | Endpoint | Who | Returns |
 |---|---|---|
-| `GET /api/plans` | Anyone | The catalogue: tiers, display prices, limits, `checkoutAvailable` (false until a payment provider exists) |
-| `GET /api/plans/me` | Signed in | The caller's effective plan, limits, `planEndsAt`, `cancelAtPeriodEnd` |
+| `GET /api/plans` | Anyone | The catalogue: tiers, display prices, limits, `checkoutAvailable`, `clientToken`, `environment` |
+| `GET /api/plans/me` | Signed in | The caller's effective plan, limits, `planEndsAt`, `cancelAtPeriodEnd`, `provider` |
 | `GET /api/plans/users/{id}` | Admin, SuperAdmin | That user's plan plus their manual grant |
 | `PUT /api/plans/users/{id}/manual` | Admin, SuperAdmin | Grant, change or revoke |
+| `POST /api/billing/checkout` | Signed in | Opens a Paddle transaction for a price; returns `transactionId` for Paddle.js |
+| `POST /api/billing/portal` | Signed in | A Paddle customer-portal session URL |
+| `POST /api/billing/webhooks/paddle` | Paddle (anonymous, signature-verified) | `200` once synced; `401` on a bad signature; `500` to make Paddle retry a failed sync |
 
-Screens: `/pricing` (public, `src/pages/Pricing/`), **Plan** in the account panel
-(`PlanSection.tsx`), and the admin dialog (`manage-user-plan.tsx`).
+Screens: `/pricing` (public, `src/pages/Pricing/`), **Plan** and **Subscription** in the account
+panel (`PlanSection.tsx`, `SubscriptionSection.tsx` — the latter only when `provider === "Paddle"`),
+and the admin dialog (`manage-user-plan.tsx`).
 
 ## 7. Tests
 
@@ -146,5 +154,92 @@ Screens: `/pricing` (public, `src/pages/Pricing/`), **Plan** in the account pane
 (`EntitlementServiceTests`); refusals and their `upgradeTo`, and that unlimited costs no count query
 (`PlanLimitGuardTests`); the two budget pools (`AiBudgetPoolTests`); the 403 shape
 (`PlanLimitResponseTests`); grants, the one-way role, revocation, system accounts
-(`ManualPlanServiceTests`). Lobby caps per plan are in `Multiplayer/QuizHubLobbyCapTests`. On the
-client, `src/lib/__tests__/plans.test.ts` covers `cheapestUpgrade` and `readPlanLimit`.
+(`ManualPlanServiceTests`); HMAC verification (`PaddleSignatureVerifierTests`); the upsert —new
+row, idempotent repeat, Teacher grant once and never revoked, plan change
+(`SubscriptionSyncServiceTests`); the concurrent-insert race on a brand-new subscription's
+first two events retries as an update instead of surfacing a 500, and a genuine second failure
+still throws rather than looping (`SubscriptionRaceTests`); the webhook endpoint's
+signature/idempotency/retry contract (`PaddleWebhookControllerTests`). Lobby caps per plan are
+in `Multiplayer/QuizHubLobbyCapTests`.
+On the client, `src/lib/__tests__/plans.test.ts` covers `cheapestUpgrade` and `readPlanLimit`.
+
+## 8. Buying a plan (Phase 2, shipped 2026-10-10)
+
+The architecture is [the proposal's §5](../proposals/paid-plans-and-payments.md), unchanged by
+implementation; this section is what to read to find the code.
+
+- **`IBillingProvider`** (`Services/Billing/`) is the seam: `PaddleBillingProvider` (a typed
+  `HttpClient` against `api.paddle.com` / `sandbox-api.paddle.com`, per `BillingOptions.Environment`),
+  `FakeBillingProvider` (dev/CI/E2E, refused in Production), `UnavailableBillingProvider`
+  (`Billing:Enabled = false` — ADR 0004's "misconfigured turns the feature off"). Selected once in
+  `Program.cs`.
+- **`ISubscriptionSyncService.SyncAsync(providerSubscriptionId)`** is the only place a
+  `UserSubscription` row is written from a provider. It reads the subscription back from
+  `IBillingProvider` — never trusts a webhook payload (ADR 0027) — upserts by
+  `ProviderSubscriptionId`, evicts the entitlement cache, audits
+  (`SubscriptionStarted`/`Changed`/`Canceled`), notifies on a plan change, and grants the Teacher
+  role on a Teacher purchase the same one-way way a manual grant does (ADR 0026).
+  `PaddleWebhookController`, `BillingReconciliationJob` and `BillingController.Checkout` (for the
+  Fake provider only) all call it — one upsert path, three callers. The upsert's check-then-insert
+  isn't atomic: two events for a brand-new subscription (`created` and `activated`, typically
+  delivered within milliseconds) can both read "no row yet" and both try to insert, so the loser
+  hits `IX_UserSubscriptions_ProviderSubscriptionId`'s unique constraint. Caught once and retried
+  as the update it should have been — bounded to exactly one retry, so a genuine second failure
+  still surfaces rather than looping — found and fixed 2026-10-10, proven in `SubscriptionRaceTests`
+  (drives the race deterministically via a mocked repository, not real Postgres timing).
+- **`PaddleWebhookController`** (`api/billing/webhooks/paddle`, anonymous) verifies
+  `Paddle-Signature` with `PaddleSignatureVerifier` (HMAC-SHA256, constant-time compare, 5-minute
+  window) before touching the body. A `BillingWebhookEvent` row tracks each delivery by Paddle's
+  own event id; `ProcessedAt` stays null until the sync for that id succeeds, so a failed sync is
+  retried on Paddle's own redelivery rather than being dropped as "already seen" (ADR 0027).
+- **`BillingController`** (`api/billing`, `[Authorize]`) — `POST checkout` resolves a price id
+  from `(plan, interval)` via `BillingPriceCatalog` and opens the transaction with the caller's
+  JWT id, never a client-supplied one; `POST portal` looks up the caller's Paddle customer id and
+  opens a portal session.
+- **`BillingReconciliationJob`** — a daily Hangfire job (`billing-reconciliation-daily`, 3 AM)
+  that re-syncs every `Provider = Paddle` subscription, catching a webhook that never arrived.
+- **Config** — `Billing:Enabled`, `Billing:Provider` ("Paddle" | "Fake"), `Billing:Environment`
+  ("sandbox" | "production"), `Billing:ClientToken` (public), `Billing:Prices:{PlusMonthly,
+  PlusYearly,TeacherMonthly,TeacherYearly}` are a validated `BillingOptions` (`ValidateOnStart`).
+  `Billing:ApiKey` and `Billing:WebhookSecret` are secrets, read directly off configuration in
+  `Program.cs` and never bound onto the options object.
+- **Frontend** — `/pricing` loads `@paddle/paddle-js` only when the catalog returns a
+  `clientToken` (so a Fake-provider box never calls Paddle's CDN), calls `Paddle.PricePreview()`
+  once for every price id on the page (country-localized if `GET /plans` returned a
+  `countryCode` — Cloudflare's `CF-IPCountry` header, treated as absent on `XX`/Tor's `T1` — else
+  Paddle auto-detects from the visitor's IP) and renders only `formattedTotals`, never
+  reformatted. `useCheckout()` (`src/lib/api/billing.ts`) opens
+  `Paddle.Checkout.open({ transactionId, settings: { displayMode: "overlay", variant: "one-page", successUrl } })`;
+  `successUrl` points at `/welcome?plan=...`, so Paddle itself redirects the browser there once
+  payment completes — the Fake provider (no overlay) navigates there directly instead, since its
+  checkout already upserted synchronously. `/welcome` (`src/pages/Welcome/`) is where the
+  post-checkout poll of `GET /plans/me` now lives (moved off `/pricing`), with the same
+  30-second "we'll email you" fallback as before. `SubscriptionSection.tsx` in the account panel
+  offers "Manage subscription" only when `provider === "Paddle"`.
+
+### Local sandbox setup
+
+`appsettings.Development.json` ships with `Billing:Enabled: false` — it's committed, so turning
+billing on there would break every fresh clone's boot the moment `BillingOptions.Validate` found
+no `ApiKey`/`WebhookSecret`. Turn it on **personally**, with `dotnet user-secrets` (run from
+`OxygenBackend/QuizAPI/`), bundling the non-secret values in too so the toggle stays entirely
+local:
+
+```
+dotnet user-secrets set "Billing:Enabled" "true"
+dotnet user-secrets set "Billing:Provider" "Paddle"
+dotnet user-secrets set "Billing:Environment" "sandbox"
+dotnet user-secrets set "Billing:ClientToken" "<sandbox client-side token>"
+dotnet user-secrets set "Billing:Prices:PlusMonthly" "<pri_... Plus monthly>"
+dotnet user-secrets set "Billing:Prices:PlusYearly" "<pri_... Plus yearly>"
+dotnet user-secrets set "Billing:Prices:TeacherMonthly" "<pri_... Teacher monthly>"
+dotnet user-secrets set "Billing:Prices:TeacherYearly" "<pri_... Teacher yearly>"
+dotnet user-secrets set "Billing:ApiKey" "<sandbox API key, from Paddle > Developer tools > Authentication>"
+```
+
+`Billing:WebhookSecret` has no value yet — it's returned when a webhook *destination* is created
+(dashboard, or `client.notificationSettings.create` with `type: "url"`), and a destination needs
+a URL Paddle's servers can reach. `localhost` isn't one; a tunnel (ngrok) or a deployed URL is.
+Until then, `PaddleWebhookControllerTests` and `SubscriptionSyncServiceTests` exercise that path
+without a real delivery, and `BillingReconciliationJob` is the eventual catch-up once a
+destination exists.

@@ -190,6 +190,7 @@ namespace QuizAPI.Services.Billing
             dto.Limits = Limits(e);
             dto.PlanEndsAt = e.PlanEndsAt;
             dto.CancelAtPeriodEnd = e.CancelAtPeriodEnd;
+            dto.Provider = e.Provider;
             return dto;
         }
     }

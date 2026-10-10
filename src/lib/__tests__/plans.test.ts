@@ -6,12 +6,15 @@ import { readPlanLimit } from "../Api-client";
 // about which plan it *names*, which must agree with PlanCatalog.CheapestAbove on the server.
 const catalog: PlanCatalog = {
   checkoutAvailable: false,
+  clientToken: "",
+  environment: "sandbox",
+  countryCode: null,
   plans: [
-    { tier: "Free", name: "Free", monthlyEur: 0, yearlyEur: 0,
+    { tier: "Free", name: "Free", monthlyEur: 0, yearlyEur: 0, monthlyPriceId: null, yearlyPriceId: null,
       limits: { aiDailyGenerations: 2, maxOwnedQuizzes: null, maxLobbyPlayers: 10, maxClasses: 1 } },
-    { tier: "Plus", name: "Plus", monthlyEur: 3.99, yearlyEur: 29,
+    { tier: "Plus", name: "Plus", monthlyEur: 3.99, yearlyEur: 29, monthlyPriceId: null, yearlyPriceId: null,
       limits: { aiDailyGenerations: 10, maxOwnedQuizzes: null, maxLobbyPlayers: 20, maxClasses: 1 } },
-    { tier: "Teacher", name: "Teacher", monthlyEur: 6.99, yearlyEur: 49,
+    { tier: "Teacher", name: "Teacher", monthlyEur: 6.99, yearlyEur: 49, monthlyPriceId: null, yearlyPriceId: null,
       limits: { aiDailyGenerations: 15, maxOwnedQuizzes: null, maxLobbyPlayers: 40, maxClasses: null } },
   ],
 };

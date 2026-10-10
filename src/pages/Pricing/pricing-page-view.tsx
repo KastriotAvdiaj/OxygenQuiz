@@ -3,6 +3,7 @@ import { Card, Spinner } from "@/components/ui";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { LiftedButton } from "@/common/LiftedButton";
 import type { Plan, PlanCatalog, PlanLimits, PlanTier } from "@/lib/api/plans";
+import type { PricePreviewMap } from "./pricing-page";
 
 export type BillingPeriod = "yearly" | "monthly";
 
@@ -14,6 +15,11 @@ type PricingPageViewProps = {
   period: BillingPeriod;
   onPeriodChange: (period: BillingPeriod) => void;
   onSignUp: () => void;
+  onBuy: (plan: Exclude<PlanTier, "Free">) => void;
+  /** The plan a checkout request is in flight for, or null. */
+  buyingPlan: PlanTier | null;
+  /** Paddle's country-localized totals, keyed by price id. Empty until PricePreview resolves. */
+  preview: PricePreviewMap;
 };
 
 const euro = (amount: number) =>
@@ -53,6 +59,9 @@ export const PricingPageView = ({
   period,
   onPeriodChange,
   onSignUp,
+  onBuy,
+  buyingPlan,
+  preview,
 }: PricingPageViewProps) => (
   <div className="flex flex-1 flex-col items-center px-4 py-10 text-foreground">
     <div className="w-full max-w-5xl">
@@ -84,6 +93,9 @@ export const PricingPageView = ({
               signedIn={currentPlan !== null}
               checkoutAvailable={catalog.checkoutAvailable}
               onSignUp={onSignUp}
+              onBuy={onBuy}
+              isBuying={buyingPlan === plan.tier}
+              preview={preview}
             />
           ))}
         </div>
@@ -104,6 +116,9 @@ const PlanCard = ({
   signedIn,
   checkoutAvailable,
   onSignUp,
+  onBuy,
+  isBuying,
+  preview,
 }: {
   plan: Plan;
   period: BillingPeriod;
@@ -111,9 +126,17 @@ const PlanCard = ({
   signedIn: boolean;
   checkoutAvailable: boolean;
   onSignUp: () => void;
+  onBuy: (plan: Exclude<PlanTier, "Free">) => void;
+  isBuying: boolean;
+  preview: PricePreviewMap;
 }) => {
   const free = plan.tier === "Free";
-  const price = period === "yearly" ? plan.yearlyEur : plan.monthlyEur;
+  const priceId = period === "yearly" ? plan.yearlyPriceId : plan.monthlyPriceId;
+  // Paddle's own localized, already-formatted total — never reformatted or recomputed here. Falls
+  // back to the static EUR display price until the preview resolves, or when there's no price id
+  // to preview (checkout disabled).
+  const previewedTotal = priceId ? preview[priceId] : undefined;
+  const fallbackPrice = period === "yearly" ? plan.yearlyEur : plan.monthlyEur;
 
   return (
     <Card
@@ -131,7 +154,9 @@ const PlanCard = ({
       </div>
 
       <p className="flex items-baseline gap-1">
-        <span className="text-4xl font-bold">{free ? "€0" : euro(price)}</span>
+        <span className="text-4xl font-bold">
+          {free ? "€0" : previewedTotal ?? euro(fallbackPrice)}
+        </span>
         {!free && (
           <span className="text-sm text-muted-foreground">/ {period === "yearly" ? "year" : "month"}</span>
         )}
@@ -158,8 +183,13 @@ const PlanCard = ({
           </LiftedButton>
         )
       ) : isCurrent ? null : (
-        <LiftedButton outerClassName="w-full" className="w-full" disabled={!checkoutAvailable}>
-          {checkoutAvailable ? `Get ${plan.name}` : "Coming soon"}
+        <LiftedButton
+          outerClassName="w-full"
+          className="w-full"
+          disabled={!checkoutAvailable || isBuying}
+          onClick={checkoutAvailable ? () => onBuy(plan.tier as Exclude<PlanTier, "Free">) : undefined}
+        >
+          {!checkoutAvailable ? "Coming soon" : isBuying ? "Starting checkout…" : `Get ${plan.name}`}
         </LiftedButton>
       )}
     </Card>

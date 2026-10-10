@@ -83,6 +83,7 @@ namespace QuizAPI.Services.Billing
                 {
                     PlanEndsAt = best?.CurrentPeriodEnd,
                     CancelAtPeriodEnd = best?.CancelAtPeriodEnd ?? false,
+                    Provider = best?.Provider.ToString(),
                 };
 
             _cache.Set(CacheKey(userId), entitlements, CacheLifetime);
