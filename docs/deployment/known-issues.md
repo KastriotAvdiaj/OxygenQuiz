@@ -1296,6 +1296,18 @@ fixed in that change; these were not.
   only been used with up to 10 players. Before selling the perk: a layout pass on the roster at
   40, and a SignalR load test with 40 connections answering one question.
   → `src/pages/Quiz/Multiplayer/`, `OxygenBackend/QuizAPI/Services/QuizSessionServices/`
+- **P3 — Before the repo goes private: split the "use your own AI" prompt from the in-app one.**
+  The repo is public (MIT) today, so the generation prompt in `AiPromptBuilder` is public anyway.
+  Once it goes closed-source for launch, the in-app prompt becomes worth keeping private, but the
+  own-AI path copies the same prompt to every user's clipboard, so it would still leak. Plan: keep
+  the button, but give it its own plain prompt (the JSON format and the basic rules, enough for the
+  parser to accept the reply), and keep all accuracy tuning in the server-only prompt. This
+  reverses the one-prompt rule in
+  [`../quiz/ai-quiz-two-paths.md`](../quiz/ai-quiz-two-paths.md), so it needs an ADR. About half a
+  day. Do it just before the switch to private: anything committed while the repo is public stays
+  public in clones and forks, and code already released under MIT stays MIT. Also check the
+  history for committed secrets before going private.
+  → `OxygenBackend/QuizAPI/Services/Ai/AiPromptBuilder.cs`, `src/pages/Dashboard/Pages/Quiz/components/AI-Quiz/`
 - **P2 — No Terms, Privacy Policy, refund or contact page; Google Fonts load from Google's
   servers.** Required before a public or paid launch, and before Paddle approves checkout. No
   cookie banner is needed today (all storage is essential or user-chosen). Write-up:
