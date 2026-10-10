@@ -33,6 +33,19 @@ services:
       # the first CORS origin, which was right by luck; once mail actually sends, a wrong link
       # is a broken feature rather than a wrong log line.
       - App__FrontendBaseUrl=https://oxygenquiz.com
+      #  Paid plans (Paddle, live account). Off until BILLING_ENABLED=true is in .env.prod, and
+      #  every value comes from there: Enabled=true with a blank key or secret fails startup on
+      #  purpose, so the switch and what it needs arrive together. docs/auth/paid-plans.md §9.
+      - Billing__Enabled=${BILLING_ENABLED:-false}
+      - Billing__Provider=Paddle
+      - Billing__Environment=production
+      - Billing__ClientToken=${PADDLE_CLIENT_TOKEN:-}
+      - Billing__ApiKey=${PADDLE_API_KEY:-}
+      - Billing__WebhookSecret=${PADDLE_WEBHOOK_SECRET:-}
+      - Billing__Prices__PlusMonthly=${PADDLE_PRICE_PLUS_MONTHLY:-}
+      - Billing__Prices__PlusYearly=${PADDLE_PRICE_PLUS_YEARLY:-}
+      - Billing__Prices__TeacherMonthly=${PADDLE_PRICE_TEACHER_MONTHLY:-}
+      - Billing__Prices__TeacherYearly=${PADDLE_PRICE_TEACHER_YEARLY:-}
       # - Security__EnforceProductionConfig=true   # turn ON after domain+TLS are wired and tested
   postgres:
     image: postgres:15

@@ -164,6 +164,10 @@ if (billingProvider == "Fake" && environment.IsProduction())
 
 builder.Services.Configure<QuizAPI.Services.Billing.PaddleWebhookOptions>(o => o.Secret = billingWebhookSecret ?? "");
 
+// Singleton: it holds the cached list of Paddle's webhook addresses between requests.
+builder.Services.AddHttpClient(QuizAPI.Services.Billing.PaddleIpAllowlist.HttpClientName, c => c.Timeout = TimeSpan.FromSeconds(5));
+builder.Services.AddSingleton<QuizAPI.Services.Billing.IPaddleIpAllowlist, QuizAPI.Services.Billing.PaddleIpAllowlist>();
+
 if (billingEnabled && billingProvider == "Fake")
 {
     builder.Services.AddScoped<QuizAPI.Services.Billing.IBillingProvider, QuizAPI.Services.Billing.FakeBillingProvider>();

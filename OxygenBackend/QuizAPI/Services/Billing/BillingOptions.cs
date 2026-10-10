@@ -28,6 +28,13 @@ namespace QuizAPI.Services.Billing
 
         public BillingPriceOptions Prices { get; set; } = new();
 
+        /// <summary>
+        /// Refuse webhooks that don't come from Paddle's published addresses
+        /// (<see cref="PaddleIpAllowlist"/>). On unless turned off: the lever for the day the
+        /// client address stops arriving the way <c>RateLimitingExtensions.ClientIp</c> expects.
+        /// </summary>
+        public bool VerifyWebhookSourceIp { get; set; } = true;
+
         internal static readonly string[] ValidProviders = ["Paddle", "Fake"];
         internal static readonly string[] ValidEnvironments = ["sandbox", "production"];
 

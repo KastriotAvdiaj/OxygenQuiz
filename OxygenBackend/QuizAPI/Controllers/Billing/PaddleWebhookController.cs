@@ -26,16 +26,19 @@ namespace QuizAPI.Controllers.Billing
         private readonly IBillingWebhookEventRepository _events;
         private readonly ISubscriptionSyncService _sync;
         private readonly IOptions<PaddleWebhookOptions> _secret;
+        private readonly IPaddleIpAllowlist _sourceIps;
         private readonly TimeProvider _clock;
         private readonly ILogger<PaddleWebhookController> _logger;
 
         public PaddleWebhookController(
             IBillingWebhookEventRepository events, ISubscriptionSyncService sync,
-            IOptions<PaddleWebhookOptions> secret, TimeProvider clock, ILogger<PaddleWebhookController> logger)
+            IOptions<PaddleWebhookOptions> secret, IPaddleIpAllowlist sourceIps, TimeProvider clock,
+            ILogger<PaddleWebhookController> logger)
         {
             _events = events;
             _sync = sync;
             _secret = secret;
+            _sourceIps = sourceIps;
             _clock = clock;
             _logger = logger;
         }
@@ -43,6 +46,11 @@ namespace QuizAPI.Controllers.Billing
         [HttpPost]
         public async Task<IActionResult> Handle(CancellationToken ct)
         {
+            // Not from one of Paddle's addresses: refused before the body is read. Bare, for the
+            // same reason as the 401 below.
+            if (!await _sourceIps.IsAllowedAsync(RateLimitingExtensions.ClientIp(HttpContext), ct))
+                return StatusCode(StatusCodes.Status403Forbidden);
+
             // Defensive: nothing upstream reads the body today, but EnableBuffering costs nothing
             // and protects against a future logging middleware breaking this the first time it does.
             Request.EnableBuffering();

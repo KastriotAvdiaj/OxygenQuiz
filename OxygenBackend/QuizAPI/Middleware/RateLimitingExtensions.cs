@@ -197,7 +197,7 @@ namespace QuizAPI.Middleware
         /// Cloudflare IP ranges) — otherwise a caller hitting the origin directly can spoof them.
         /// See docs/development/rate-limiting.md § "Trusting the client IP".
         /// </summary>
-        private static string ClientIp(HttpContext context)
+        internal static string ClientIp(HttpContext context)
         {
             var cfIp = context.Request.Headers["CF-Connecting-IP"].FirstOrDefault();
             if (!string.IsNullOrWhiteSpace(cfIp))

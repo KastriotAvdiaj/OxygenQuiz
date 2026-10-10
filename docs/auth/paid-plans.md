@@ -142,7 +142,7 @@ in production. **Dashboard → Users → (row) → Manage plan** calls
 | `PUT /api/plans/users/{id}/manual` | Admin, SuperAdmin | Grant, change or revoke |
 | `POST /api/billing/checkout` | Signed in | Opens a Paddle transaction for a price; returns `transactionId` for Paddle.js |
 | `POST /api/billing/portal` | Signed in | A Paddle customer-portal session URL |
-| `POST /api/billing/webhooks/paddle` | Paddle (anonymous, signature-verified) | `200` once synced; `401` on a bad signature; `500` to make Paddle retry a failed sync |
+| `POST /api/billing/webhooks/paddle` | Paddle (anonymous, signature-verified) | `200` once synced; `403` from an address that isn't Paddle's; `401` on a bad signature; `500` to make Paddle retry a failed sync |
 
 Screens: `/pricing` (public, `src/pages/Pricing/`), **Plan** and **Subscription** in the account
 panel (`PlanSection.tsx`, `SubscriptionSection.tsx` — the latter only when `provider === "Paddle"`),
@@ -192,6 +192,15 @@ implementation; this section is what to read to find the code.
   window) before touching the body. A `BillingWebhookEvent` row tracks each delivery by Paddle's
   own event id; `ProcessedAt` stays null until the sync for that id succeeds, so a failed sync is
   retried on Paddle's own redelivery rather than being dropped as "already seen" (ADR 0027).
+- **`PaddleIpAllowlist`** runs before the signature check: a webhook whose source address isn't
+  one Paddle publishes at `/ips` (`api.paddle.com` or `sandbox-api.paddle.com`, per
+  `Billing:Environment`) gets a bare `403`. The list is fetched, cached for an hour and never
+  written down. The address comes from `RateLimitingExtensions.ClientIp` (`CF-Connecting-IP`
+  first), so it is only as trustworthy as the origin firewall
+  ([`rate-limiting.md`](../development/rate-limiting.md) § "Trusting the client IP"). If the
+  list has never been fetched, the request goes through to the signature check rather than being
+  refused; a failed refresh keeps the previous list. `Billing:VerifyWebhookSourceIp = false`
+  turns the gate off (`PaddleIpAllowlistTests`).
 - **`BillingController`** (`api/billing`, `[Authorize]`) — `POST checkout` resolves a price id
   from `(plan, interval)` via `BillingPriceCatalog` and opens the transaction with the caller's
   JWT id, never a client-supplied one; `POST portal` looks up the caller's Paddle customer id and
@@ -243,3 +252,57 @@ a URL Paddle's servers can reach. `localhost` isn't one; a tunnel (ngrok) or a d
 Until then, `PaddleWebhookControllerTests` and `SubscriptionSyncServiceTests` exercise that path
 without a real delivery, and `BillingReconciliationJob` is the eventual catch-up once a
 destination exists.
+
+## 9. Going live (in progress, 2026-10-10)
+
+Nothing in the code names a Paddle account: price ids, the client token, the API host and the
+Paddle.js environment all follow `Billing:*`. Moving from sandbox to live is therefore
+configuration plus a second catalog in the live account — no code swap.
+
+**Production configuration.** Root `docker-compose.prod.yml` maps these names from
+`~/OxygenQuiz/.env.prod` onto `Billing__*`; `Billing__Environment=production` and
+`Billing__Provider=Paddle` are inline. Billing stays off until `BILLING_ENABLED=true`.
+
+| `.env.prod` name | What | Secret? |
+|---|---|---|
+| `BILLING_ENABLED` | `true` to turn checkout on | No |
+| `PADDLE_CLIENT_TOKEN` | Live client-side token (`live_…`) | No |
+| `PADDLE_API_KEY` | Live API key — created in the dashboard, shown once | **Yes** |
+| `PADDLE_WEBHOOK_SECRET` | The live destination's secret key | **Yes** |
+| `PADDLE_PRICE_PLUS_MONTHLY`, `…_PLUS_YEARLY`, `…_TEACHER_MONTHLY`, `…_TEACHER_YEARLY` | Live price ids | No |
+
+Set them all in one edit: `Billing:Enabled = true` with a blank key or secret fails startup.
+Then verify the way [`production-topology.md`](../deployment/production-topology.md) says to —
+`printenv | grep Billing__`, and `curl https://api.oxygenquiz.com/api/plans` should report
+`checkoutAvailable: true` and `environment: "production"`.
+
+**The live catalog mirrors sandbox**, entity for entity: two products, four EUR prices, the
+Western-Balkans override (AL, BA, XK, ME, MK, RS) on each yearly price, no discounts. Sandbox
+stays as it is; it is what local development and the tunnel test run against.
+
+| | Sandbox | Live |
+|---|---|---|
+| Plus (product) | `pro_01m4jw3ay0qdvyba9hb3netny0` | `pro_01m4kgs5mk8kzakqreh14wvv5n` |
+| Teacher (product) | `pro_01m4jw3bez6136r3ja8ztjkmy0` | `pro_01m4kgs5wcsgyy3z2a5ps1rjqh` |
+| Plus monthly, €3.99 | `pri_01m4jw3b2wgh9v62hg3c8z37hc` | `pri_01m4kgs62pdmty7g2xarez9bn1` |
+| Plus yearly, €29 (€19) | `pri_01m4jw3b8ey2t46mfr37s6rppe` | `pri_01m4kgs69emp0kd8a9388yztny` |
+| Teacher monthly, €6.99 | `pri_01m4jw3bkmk82wdnxdy0gk9n01` | `pri_01m4kgs6g22dhxp03g00w8q6tc` |
+| Teacher yearly, €49 (€29) | `pri_01m4jw3brgtejpt172b96gj1nn` | `pri_01m4kgs6ptc11bne14axbmrb13` |
+
+A price is immutable once a subscription uses it. Changing what a plan costs means a new price
+and a new id in `.env.prod`, never an edit to one of these.
+
+**The live webhook destination** (`ntfset_01m4kgs7bnykdcn7c474t9tmfm`) is
+`https://api.oxygenquiz.com/api/billing/webhooks/paddle`, subscribed to the same eight `subscription.*` events as sandbox. Never delete and recreate it:
+that rotates the secret key and every later delivery fails its signature check.
+
+**Not done by code, and required before a live checkout works:** the domain approved under
+Paddle's website approval, a default payment link on that domain, payout details, and business
+verification — which reviews the Terms, Privacy and Refund pages
+([`../proposals/legal-and-compliance-for-launch.md`](../proposals/legal-and-compliance-for-launch.md)),
+none of which exist yet.
+
+**Paddle Retain (`pwCustomer`) is not wired, on purpose.** It needs Paddle.js on signed-in pages
+across the app, and the compliance proposal keeps Paddle.js on `/pricing` alone precisely so no
+cookie banner is needed (its §1.1 names Retain as one of the things that would require one).
+Turning Retain on is that decision, not a one-line change.

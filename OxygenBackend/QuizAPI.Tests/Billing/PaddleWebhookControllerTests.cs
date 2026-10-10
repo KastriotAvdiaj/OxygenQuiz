@@ -31,6 +31,7 @@ public class PaddleWebhookControllerTests
         private readonly string _db = Guid.NewGuid().ToString();
         public readonly Mock<ISubscriptionSyncService> Sync = new();
         public readonly FakeTimeProvider Clock = new(Now);
+        public bool FromPaddle = true;
 
         public async Task<IActionResult> Post(string body, string? signatureHeader)
         {
@@ -38,8 +39,11 @@ public class PaddleWebhookControllerTests
                 new DbContextOptionsBuilder<ApplicationDbContext>().UseInMemoryDatabase(_db).Options, new TestCurrentUserService());
             var events = new BillingWebhookEventRepository(ctx);
 
+            var sourceIps = new Mock<IPaddleIpAllowlist>();
+            sourceIps.Setup(a => a.IsAllowedAsync(It.IsAny<string?>(), It.IsAny<CancellationToken>())).ReturnsAsync(FromPaddle);
+
             var controller = new PaddleWebhookController(
-                events, Sync.Object, Options.Create(new PaddleWebhookOptions { Secret = Secret }), Clock,
+                events, Sync.Object, Options.Create(new PaddleWebhookOptions { Secret = Secret }), sourceIps.Object, Clock,
                 NullLogger<PaddleWebhookController>.Instance);
 
             var httpContext = new DefaultHttpContext();
@@ -82,6 +86,20 @@ public class PaddleWebhookControllerTests
         Assert.Equal(StatusCodes.Status401Unauthorized, ((StatusCodeResult)result).StatusCode);
         w.Sync.Verify(s => s.SyncAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
         Assert.Null(await (await w.Events()).GetAsync("evt_bad"));
+    }
+
+    [Fact]
+    public async Task A_correctly_signed_event_from_an_address_that_is_not_Paddles_is_a_403_and_writes_nothing()
+    {
+        var w = new World { FromPaddle = false };
+        var body = SubscriptionEventBody("evt_elsewhere", "sub_1");
+
+        var result = await w.Post(body, ValidHeader(body));
+
+        Assert.IsType<StatusCodeResult>(result);
+        Assert.Equal(StatusCodes.Status403Forbidden, ((StatusCodeResult)result).StatusCode);
+        w.Sync.Verify(s => s.SyncAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+        Assert.Null(await (await w.Events()).GetAsync("evt_elsewhere"));
     }
 
     [Fact]
