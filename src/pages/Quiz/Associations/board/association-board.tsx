@@ -345,7 +345,9 @@ const BoardTile = ({
                   "border border-dashed border-border bg-background text-muted-foreground"
           )}
         >
-          {opened && (
+          {/* Only once the game is over: while playing, every face-up word in a shaded Tile is one
+              the player opened, so the eye would mark all of them and say nothing. */}
+          {opened && over && (
             <Tooltip>
               <TooltipTrigger asChild>
                 <span tabIndex={0} aria-label={openedLabel} className="shrink-0 rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring">

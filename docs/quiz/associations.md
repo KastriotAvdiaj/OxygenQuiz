@@ -644,7 +644,7 @@ doesn't drift down the page with a short board.
 - **An opened Tile shows its word in capitals** on a faint primary shade (`bg-primary/20`), so
   the board still reads as one grid after the flip.
 - **A Tile a player opened is marked apart from one a solve turned over** (2026-10-11): the shade
-  and an eye icon for the first, and under a finished board one line — "You opened 2 of 16 tiles"
+  and, once the game is over, an eye icon for the first (never during play), and under a finished board one line — "You opened 2 of 16 tiles"
   (in a Duel, "Opened in play: …"). The eye has a tooltip: "Opened in play", or "Opened by
   <name>" in a Duel. A Tile nobody opened is drawn two ways. **On a finished board it keeps the
   closed Tile's look** — solid primary, lifted — with its word on it: it stayed closed all game,
