@@ -1,4 +1,4 @@
-import { Check, Copy, LogOut, Users } from "lucide-react";
+import { Check, Copy, ListChecks, LogOut, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface RoomPanelBodyProps {
@@ -8,6 +8,9 @@ interface RoomPanelBodyProps {
   copied: boolean;
   onCopyInvite: () => void;
   onLeave: () => void;
+  /** Matches already played in this lobby that the viewer can review. 0 hides the button. */
+  reviewableMatchCount?: number;
+  onOpenReview?: () => void;
 }
 
 /**
@@ -22,6 +25,8 @@ export const RoomPanelBody = ({
   copied,
   onCopyInvite,
   onLeave,
+  reviewableMatchCount = 0,
+  onOpenReview,
 }: RoomPanelBodyProps) => (
   <div className="flex h-full flex-col gap-2.5">
     <button
@@ -49,6 +54,22 @@ export const RoomPanelBody = ({
         {copied ? "Invite link copied" : "Click to copy invite link"}
       </span>
     </button>
+
+    {/* Only once there is something to review: before the first match it would be a button that
+        opens an empty dialog. */}
+    {onOpenReview && reviewableMatchCount > 0 && (
+      <Button
+        type="button"
+        variant="outline"
+        size="none"
+        onClick={onOpenReview}
+        className="h-9 w-full gap-1.5 rounded-md border-border text-xs lg:h-10 lg:text-sm"
+      >
+        <ListChecks className="h-3.5 w-3.5" />
+        Match review
+        <span className="tabular-nums text-muted-foreground">({reviewableMatchCount})</span>
+      </Button>
+    )}
 
     {/* One row: neither the count nor the Leave button needs the full width, and pairing them
         keeps the panel from turning into a stack of full-bleed bars. */}

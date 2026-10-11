@@ -8,6 +8,15 @@ namespace QuizAPI.Services.QuizSessionServices
     public class MultiplayerSession
     {
         public string SessionId { get; set; } = string.Empty;
+
+        /// <summary>
+        /// This lobby, as opposed to its room code: <see cref="SessionId"/> is what players type and
+        /// can be handed out again once the lobby is gone, this cannot. Stamped on every
+        /// <see cref="Models.Quiz.Match"/> played here (<c>Match.LobbyId</c>), which is how the
+        /// lobby's review and the history page find "the matches of this lobby".
+        /// </summary>
+        public Guid LobbyId { get; } = Guid.NewGuid();
+
         public string LobbyName { get; set; } = "Quiz Lobby";
         public int MaxPlayers { get; set; } = 4;
         /// <summary>

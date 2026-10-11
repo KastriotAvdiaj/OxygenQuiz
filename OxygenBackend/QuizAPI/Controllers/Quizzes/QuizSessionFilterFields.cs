@@ -37,6 +37,9 @@ namespace QuizAPI.Controllers.Quizzes
                     ? SessionHistoryStatus.Abandoned
                     : s.IsCompleted ? SessionHistoryStatus.Completed : SessionHistoryStatus.InProgress,
                 new[] { Eq, In })
+            // Single player vs a match. The history page's "Single player" tab filters on this:
+            // matches are listed by lobby, on their own tab (GET /api/matches/mine).
+            .Field("mode",         s => s.Mode,              new[] { Eq, In })
             .Field("totalScore",   s => s.TotalScore,        new[] { Gte, Lte, Between }, sortable: true)
             // Share of the session's questions answered correctly, 0–1 — the history's headline
             // "score /100" (the results page's Final Score), so "highest score" sorts by what the

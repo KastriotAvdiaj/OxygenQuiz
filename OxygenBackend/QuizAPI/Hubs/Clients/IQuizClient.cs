@@ -24,6 +24,12 @@ public interface IQuizClient
     Task QuestionEnded(QuestionResult result);
     Task MatchEnded(MatchResult result);
 
+    // The match that just ended is now in the database, and so is its review. Its own event
+    // because MatchEnded goes out first, on purpose — players see their results before the write,
+    // and a failed write must not hold them up — so at MatchEnded there is nothing to read yet.
+    // No payload: it only tells the lobby to ask for its matches again (GET /api/matches/lobby/…).
+    Task MatchRecorded();
+
     // ── Associations Duel (server-driven; see AssociationMatchOrchestrator) ──
     // Own names, never a Classic one: connection.off(name) on the client removes every handler for
     // that name, so the Duel's hook and useMatch must not share an event (multiplayer.md §1).

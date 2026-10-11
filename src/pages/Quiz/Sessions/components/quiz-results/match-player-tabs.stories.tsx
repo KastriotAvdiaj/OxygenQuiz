@@ -98,6 +98,39 @@ export const TiedMatch: Story = {
   },
 };
 
+/**
+ * You lost. Your tab is still first; the winner — trophy — is second. Before, the row was in
+ * scoreboard order, so your tab sat second here and first in a match you won.
+ */
+export const YouLostAndAreStillFirst: Story = {
+  args: {
+    players: [player("KaLoti", 5546, { isWinner: true }), player("admin", 2893)],
+    value: "session-admin",
+    ownSessionId: "session-admin",
+  },
+};
+
+/**
+ * Far more players than fit. The row scrolls; an arrow appears at whichever end has more, and
+ * moves the row by one player. Narrow on purpose, so the overflow is there at any window size.
+ */
+export const ManyPlayers: Story = {
+  args: {
+    players: Array.from({ length: 14 }, (_, i) =>
+      player(`player${i + 1}`, 6000 - i * 350, { isWinner: i === 0 }),
+    ),
+    value: "session-player9",
+    ownSessionId: "session-player9",
+  },
+  decorators: [
+    (StoryFn) => (
+      <div className="max-w-xl">
+        <StoryFn />
+      </div>
+    ),
+  ],
+};
+
 /** Single player: the row renders nothing at all. */
 export const SinglePlayer: Story = {
   args: {

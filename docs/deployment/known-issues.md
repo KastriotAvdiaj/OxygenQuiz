@@ -569,6 +569,17 @@ timeLimit` points, i.e. ~33 pts on a 30s question but ~100 pts (10% of base) on 
 
 ## Multiplayer / Game State
 
+- **P3 — Associations duels are only linked from the lobby review and the history's lobby rows.**
+  The in-lobby review (`MatchReviewDialog`) embeds a Classic match's question review; for a duel
+  it shows a link to the duel's results page, in a new tab. Embedding the board and move log
+  there, and deciding what a duel should show in a lobby row beyond score and outcome, was
+  deferred on 2026-10-11 to keep that change to Classic matches.
+  → `src/pages/Quiz/Multiplayer/components/review/`, [`../quiz/multiplayer.md`](../quiz/multiplayer.md) §7.6
+- **P3 — The Multiplayer history tab has no search or filters**, and the grouped query behind it
+  (`MatchRepository.ListLobbiesForUserAsync`: `GROUP BY COALESCE(LobbyId, Id)`) is only tested
+  on the InMemory provider. Run it once against Postgres before relying on it.
+  → `OxygenBackend/QuizAPI/Repositories/MatchRepository.cs`
+
 - ~~**P2 — The lobby's player cap was only enforced by the client.**~~ **Fixed (2026-10-07).**
   `QuizHub.CreateSession` passed the caller's `maxPlayers` straight to `InMemoryQuizSessionManager`,
   which only refuses joins when `MaxPlayers > 0`, so a crafted hub call with `0` made a lobby with

@@ -19,6 +19,8 @@ interface MultiplayerGameProps {
   username: string;
   match: ReturnType<typeof useMatch>;
   onExit: () => void;
+  /** Opens the lobby's match review from the end screen. Omitted where there is none (Storybook). */
+  onReview?: () => void;
   participants: Participant[];
 }
 
@@ -34,6 +36,7 @@ export const MultiplayerGame = ({
   username,
   match,
   onExit,
+  onReview,
   participants,
 }: MultiplayerGameProps) => {
   const { phase } = match;
@@ -80,6 +83,7 @@ export const MultiplayerGame = ({
             username={username}
             match={match}
             onExit={onExit}
+            onReview={onReview}
             participants={roster}
           />
         )}
@@ -263,11 +267,13 @@ const ResultsPanel = ({
   username,
   match,
   onExit,
+  onReview,
   participants,
 }: {
   username: string;
   match: ReturnType<typeof useMatch>;
   onExit: () => void;
+  onReview?: () => void;
   participants: Participant[];
 }) => {
   const winner = match.matchResult?.winnerUsername;
@@ -312,6 +318,13 @@ const ResultsPanel = ({
 
         <Scoreboard entries={match.scoreboard} username={username} showRank />
 
+        {/* Review first: it is what the end of a match is for, and the lobby is one press away
+            either way. The same dialog opens from the lobby's Room panel afterwards. */}
+        {onReview && (
+          <Button size="lg" variant="outline" className="w-full h-12 font-bold" onClick={onReview}>
+            Review answers
+          </Button>
+        )}
         <Button size="lg" className="w-full h-12 font-bold" onClick={onExit}>
           Back to lobby
         </Button>

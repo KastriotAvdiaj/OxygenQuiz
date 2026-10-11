@@ -456,6 +456,7 @@ Defined in `IQuizClient`; SignalR serializes payloads camelCased.
 | `AnswerSubmitted` | `username` | A player locked in (progress only, no correctness) |
 | `QuestionEnded` | `QuestionResult` | Round closed: per-player outcome + standings |
 | `MatchEnded` | `MatchResult` | Final scoreboard + winner |
+| `MatchRecorded` | — | The match is in the database; refetch the lobby's matches (§7.6) |
 | `ChatMessageReceived` | `LobbyChatMessage` | New chat message |
 | `ChatHistory` | `LobbyChatMessage[]` | To a newly-joined client |
 | `DuelStarting` | `countdownSeconds` | A Duel begins (its own name — `useMatch` owns `MatchStarting`) |
@@ -598,7 +599,79 @@ both were taught the difference **before** anything started writing:
   later would be strange. `EnsureSessionOrMatchPeerAccessAsync` admits a match peer to exactly two
   reads — the roster and `/results` — and to nothing writable.
 
-### 7.6 Still open
+### 7.6 Matches belong to a lobby, and a lobby can review them
+
+Decided 2026-10-11. Until then a finished match had a review — the results page, §7.5 — and no
+way to reach it: the end screen offered only *Back to lobby*, and the only route to
+`/quiz/results/:sessionId` was the history page.
+
+**A lobby has an id of its own.** `MultiplayerSession.LobbyId` is made up when the lobby is
+created, never shown to anyone, and stamped on every `Match` played there (`Match.LobbyId`, by
+both orchestrators — a Duel is a match too). That is what "the matches of one lobby" means; a
+rematch is a new `Match` with the same `LobbyId`.
+
+- **Not the room code.** It is what players type, it is unique only among the lobbies open right
+  now, and it is free to be handed out again once its lobby is gone. Grouping by `RoomCode` would
+  in time merge two evenings that had nothing to do with each other.
+- **Matches recorded before this have no `LobbyId`**, and each is its own group
+  (`LobbyId ?? Id`). There is no honest way to say afterwards which of them shared a lobby, and
+  one giant group with a null key would be worse than none.
+
+**Two reads, both clamped to the caller** (`MatchesController` → `IMatchRepository`, no service:
+there is no rule here that is neither the HTTP shape nor the query):
+
+| Route | Returns |
+|---|---|
+| `GET /api/matches/lobby/{roomCode}` | The matches of the open lobby with that code that the caller played in, oldest first. The code is resolved to the lobby's id on the server; **404** once the lobby is gone. |
+| `GET /api/matches/mine?page=&pageSize=` | The caller's multiplayer history, one entry per lobby, most recently played first, each with its matches. Paged by lobby, not by match. |
+
+Each match is a `MatchSummaryDto`: quiz, format, times, and every player's score with the
+**session id that holds their answers**. No answers travel with it; a review loads
+`/quizsessions/{sessionId}/results`, the read the results page uses, behind the same match-peer
+rule (§7.5). So nothing new can be read — only reached.
+
+- **You get the matches you played in.** Joined for the third match: the first two are not yours.
+  That is the repository's clamp, on both reads.
+- **A match of a deleted quiz is left out** of both, as history leaves out its plays. The check is
+  explicit (`PlayedBy`) because the lobby list counts and pages groups without reading the quiz,
+  and would otherwise return a lobby with no matches in it.
+
+**The review is a dialog in the lobby** (`MatchReviewDialog`): which match (newest first and
+selected), whose answers (yours first), then the questions. The lower two are the results page's
+own `MatchPlayerTabs` and `QuestionReview`. It opens from the match's end screen (*Review
+answers*, above *Back to lobby*) and from the Room panel (*Match review (n)*, hidden until there
+is one).
+
+**Two labelled boxes, "Matches" over "Players"** (2026-10-11; `MatchPicker` and
+`MatchPlayerTabs`, both drawn with `TabStrip`):
+
+- **You are always the first player**, then the rest in scoreboard order — so the winner is
+  second unless that is you. In plain scoreboard order your tab was first in a match you won and
+  second in one you lost, and moved under the pointer when you switched matches. The same order
+  applies on the results page, which uses the same component.
+- **Each box is one row that scrolls sideways**, never wraps, for any number of matches or
+  players. An arrow appears at an end only when there is more that way, and moves the row by one
+  tab, smoothly (instantly under `prefers-reduced-motion`). The arrow scrolls; it does not
+  change which tab is selected.
+- The Matches box is not drawn for a single match — nothing to choose.
+- Stories: `Quiz/Multiplayer/MatchPicker` (two matches, thirteen, and the two boxes together
+  with a full room) and `Quiz/MatchPlayerTabs` (`YouLostAndAreStillFirst`, `ManyPlayers`).
+
+- **It reads the database, not the match's events** — so a player who dropped out and came back
+  after the match ended still finds it. Losing the review to a reconnect was the option
+  considered and refused.
+- **`MatchRecorded`** is why the list is fresh. `MatchEnded` goes out *before* the write (§7.3:
+  players see results first, and a failed write must not hold them up), so at `MatchEnded` there
+  is nothing to read yet. `MatchRecorded`, sent after a successful write and carrying nothing,
+  tells clients to ask for the lobby's matches again.
+- **An Associations duel is listed but not embedded**: the dialog links to its results page in a
+  new tab. Its review is a board and a move log, not a list of questions. Embedding it, and
+  deciding how duels read in the history's lobby rows beyond a link, is deferred
+  ([`known-issues.md`](../deployment/known-issues.md)).
+- Everything recorded stays reachable from the history page's Multiplayer tab once the lobby is
+  gone ([`user-stats-history.md`](./user-stats-history.md)).
+
+### 7.7 Still open
 
 Whether a `Match` should survive its quiz being **soft-deleted**. Sessions deliberately outlive a
 deleted quiz and a match currently does too, which is the reversible default; the reason to revisit

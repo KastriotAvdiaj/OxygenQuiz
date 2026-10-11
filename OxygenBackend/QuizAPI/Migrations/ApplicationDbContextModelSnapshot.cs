@@ -1448,6 +1448,9 @@ namespace QuizAPI.Migrations
                     b.Property<Guid>("HostUserId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("LobbyId")
+                        .HasColumnType("uuid");
+
                     b.Property<int>("QuizId")
                         .HasColumnType("integer");
 
@@ -1468,6 +1471,8 @@ namespace QuizAPI.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("HostUserId");
+
+                    b.HasIndex("LobbyId");
 
                     b.HasIndex("QuizId");
 

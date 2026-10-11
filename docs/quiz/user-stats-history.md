@@ -176,6 +176,7 @@ whitelist in `Controllers/Quizzes/QuizSessionFilterFields.cs`:
 | `quizId` | eq, in | used by the resume flow |
 | `categoryId`, `difficultyId`, `languageId` | eq, in | **the same names as `QuizFilterFields`**, read through `s.Quiz` |
 | `status` | eq, in | derived `SessionHistoryStatus`: `InProgress`=0, `Completed`=1, `Abandoned`=2 |
+| `mode` | eq, in | `QuizSessionMode`: `SinglePlayer`=0, `Multiplayer`=1. What the dashboard's "Single player" tab filters on — see "Two tabs" |
 | `totalScore` | gte, lte, between | sortable (raw points) |
 | `accuracy` | — | sort-only: correct ÷ pinned question count, 0–1 (0 when the quiz has no questions) |
 | `startTime` | eq, gt, gte, lt, lte, between | sortable, **default sort (desc)** |
@@ -307,6 +308,40 @@ the row it wants — `quizId:eq:<id>` + `status:eq:0`, one row. It used to read 
 and search them client-side, on the assumption that the active session is the most recent one. It
 is only the most recent *for that quiz*: twenty plays of other quizzes since then pushed it off
 the page and the lookup came back empty.
+
+## Two tabs: single player, and multiplayer by lobby
+
+Decided 2026-10-11, for `/my-dashboard/history` (`MyQuizHistory.tsx`).
+
+History used to be one list of sessions, and a match is one session per player — so an evening of
+five rematches in one lobby was five rows that read as five unrelated plays, mixed in among the
+solo ones. They are now two lists:
+
+| Tab | Rows | Read |
+|---|---|---|
+| **Single player** | One per session, as before: the table, search, facets, sort | `GET /quizsessions/user/{id}` with `mode:eq:0` |
+| **Multiplayer** | One per **lobby**, opening into its matches | `GET /matches/mine` ([multiplayer.md §7.6](./multiplayer.md)) |
+
+- **Two tabs rather than one table with grouped rows**, because a lobby is not a session with more
+  in it. A session has one score, one duration, one status; a lobby has several matches, possibly
+  of different quizzes, and none of those as a single value. The columns that make the first list
+  worth sorting and filtering have nothing to say about the second.
+- **A lobby row** shows the quiz (or "3 quizzes"), when it was last played, who else was there,
+  how many matches, and how many of them you won. Opened, it lists each match with your score, the
+  outcome (a tie has no winner, so nobody lost it) and a link to the results page that already
+  reviews it. All of it is derived from the lobby's own matches (`multiplayer-history.tsx`), so
+  the summary and the list under it cannot disagree.
+- **Matches are left out of the first tab, not listed twice.** That is `useQuizHistory`'s
+  `singlePlayerOnly` option: it adds the `mode` rule to the query without making it a visible
+  filter — no pill, and "Clear" leaves it alone, because it defines the list rather than narrows it.
+- **The profile's history list is unchanged** and still shows every play. It has no tabs and no
+  room for them; the dashboard page is the workspace.
+- **The Multiplayer tab has no search or facets yet**, only paging, newest lobby first.
+- **Stats are untouched.** Multiplayer still counts toward personal stats exactly as before
+  ([multiplayer.md §7.5](./multiplayer.md)); this is about how plays are listed, not counted.
+- **Duels appear as matches** in a lobby's row and link to their own results page. Anything more
+  for them is deferred ([`known-issues.md`](../deployment/known-issues.md)).
+- **Matches recorded before lobbies had an id are a lobby each** — see multiplayer.md §7.6.
 
 ## Key files
 

@@ -45,6 +45,21 @@ namespace QuizAPI.Models.Quiz
         [MaxLength(64)]
         public string RoomCode { get; set; } = string.Empty;
 
+        /// <summary>
+        /// The lobby this match was played in — <see cref="Services.QuizSessionServices.MultiplayerSession.LobbyId"/>,
+        /// made up when the lobby is created and never shown to anyone. It is what "the matches of
+        /// one lobby" means: a rematch is a new Match with the same LobbyId.
+        ///
+        /// <para><b>Not <see cref="RoomCode"/>.</b> A room code is what players type, it is only
+        /// unique among the lobbies open right now, and it is free to be handed out again once its
+        /// lobby is gone — grouping by it would in time merge two evenings that had nothing to do
+        /// with each other.</para>
+        ///
+        /// <para>Null for every match recorded before 2026-10-11. Those are each their own group:
+        /// there is no honest way to say afterwards which of them shared a lobby.</para>
+        /// </summary>
+        public Guid? LobbyId { get; set; }
+
         public Guid HostUserId { get; set; }
 
         public DateTime StartedAt { get; set; }

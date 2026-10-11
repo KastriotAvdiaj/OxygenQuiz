@@ -191,6 +191,27 @@ public class SessionHistoryPagingTests
         Assert.Equal(["B"], paged.Items.Select(s => s.QuizTitle));
     }
 
+    /// <summary>
+    /// The history page's "Single player" tab: matches are listed by lobby on their own tab, so
+    /// this one filters them out (docs/quiz/user-stats-history.md § "Two tabs"). Without the
+    /// filter the list is everything, which is what the profile still shows.
+    /// </summary>
+    [Fact]
+    public async Task Mode_SeparatesSinglePlayerFromMatches()
+    {
+        using var ctx = NewContext();
+        var quiz = AddQuiz(ctx, 1, "Quiz");
+        var solo = AddSession(ctx, quiz, 1);
+        var inAMatch = AddSession(ctx, quiz, 2);
+        inAMatch.Mode = QuizSessionMode.Multiplayer;
+        ctx.SaveChanges();
+
+        // The frontend sends the enum's numeric value, as it does for status.
+        Assert.Equal([solo.Id], (await Query(ctx, Q("mode:eq:0"))).Items.Select(s => s.Id));
+        Assert.Equal([inAMatch.Id], (await Query(ctx, Q("mode:eq:Multiplayer"))).Items.Select(s => s.Id));
+        Assert.Equal(2, (await Query(ctx, new FilterQuery())).TotalItems);
+    }
+
     [Fact]
     public async Task Status_FollowsTheBadgePrecedence()
     {

@@ -12,6 +12,9 @@ import { LobbyPageView } from "./LobbyPageView";
 import { useAssociationMatch } from "../Associations/duel/use-association-match";
 import { DuelGame } from "../Associations/duel/duel-game";
 import { mySeatIn } from "../Associations/duel/duel-model";
+import { useUser } from "@/lib/Auth";
+import { useLobbyMatches } from "./api/matches";
+import { MatchReviewDialog } from "./components/review/match-review-dialog";
 
 interface MultiplayerLobbyPageProps {
   mode?: "create" | "join";
@@ -59,6 +62,24 @@ export const MultiplayerLobbyPage = ({
     open: openManualLeave,
     close: closeManualLeave,
   } = useDisclosure();
+
+  // The review of this lobby's matches (docs/quiz/multiplayer.md §7.6). One dialog, two ways in:
+  // the match's end screen and the Room panel. The count is the same query the dialog reads.
+  const {
+    isOpen: isReviewOpen,
+    open: openReview,
+    close: closeReview,
+  } = useDisclosure();
+  const userId = useUser().data?.id;
+  const { data: lobbyMatches } = useLobbyMatches({ roomCode: sessionId, enabled: hasJoined });
+  const reviewDialog = (
+    <MatchReviewDialog
+      isOpen={isReviewOpen}
+      onClose={closeReview}
+      roomCode={sessionId}
+      userId={userId}
+    />
+  );
 
   // Mobile chat drawer. Chat is an always-open panel on desktop, so this only drives the phone
   // layout — but the unread count has to know about it either way.
@@ -137,8 +158,10 @@ export const MultiplayerLobbyPage = ({
           username={username}
           match={match}
           onExit={match.reset}
+          onReview={openReview}
           participants={participants}
         />
+        {reviewDialog}
 
         {/* The navigation blocker is armed by `useLobbyConnection` for as long as you're in the
             session — including mid-match — but the dialog that explains it used to live only
@@ -160,57 +183,62 @@ export const MultiplayerLobbyPage = ({
   }
 
   return (
-    <LobbyPageView
-      mode={mode}
-      username={username}
-      sessionId={sessionId}
-      hasJoined={hasJoined}
-      participants={participants}
-      maxPlayers={maxPlayers}
-      copied={copied}
-      isJoining={isJoining}
-      joinError={joinError}
-      isConnected={isConnected}
-      isHost={isHost}
-      isReady={isReady}
-      canStartQuiz={canStartQuiz}
-      hasSelectedQuiz={hasSelectedQuiz}
-      selectedQuiz={selectedQuiz}
-      onSessionIdChange={setSessionId}
-      onJoin={handleJoinSession}
-      onCopyInvite={handleCopyInvite}
-      onLeave={openManualLeave}
-      onToggleReady={handleToggleReady}
-      onStartQuiz={handleStartQuiz}
-      onOpenQuizSelect={openQuizSelect}
-      quizSelectionDialogSlot={
-        <QuizSelectionDialog
-          isOpen={isQuizSelectOpen}
-          onClose={closeQuizSelect}
-          onSelectQuiz={handleSelectQuiz}
-          selectedQuiz={selectedQuiz}
-        />
-      }
-      chatSlot={
-        <LobbyChat
-          messages={chatMessages}
-          username={username}
-          onSend={sendChatMessage}
-        />
-      }
-      chatUnreadCount={chatUnreadCount}
-      isChatOpen={isChatOpen}
-      onChatOpenChange={handleChatOpenChange}
-      navGuardLeaveDialog={{
-        isOpen: showLeaveDialog,
-        onConfirm: confirmNavigation,
-        onCancel: cancelNavigation,
-      }}
-      manualLeaveDialog={{
-        isOpen: isManualLeaveOpen,
-        onConfirm: handleConfirmManualLeave,
-        onCancel: closeManualLeave,
-      }}
-    />
+    <>
+      {reviewDialog}
+      <LobbyPageView
+        mode={mode}
+        username={username}
+        sessionId={sessionId}
+        hasJoined={hasJoined}
+        participants={participants}
+        maxPlayers={maxPlayers}
+        copied={copied}
+        isJoining={isJoining}
+        joinError={joinError}
+        isConnected={isConnected}
+        isHost={isHost}
+        isReady={isReady}
+        canStartQuiz={canStartQuiz}
+        hasSelectedQuiz={hasSelectedQuiz}
+        selectedQuiz={selectedQuiz}
+        onSessionIdChange={setSessionId}
+        onJoin={handleJoinSession}
+        onCopyInvite={handleCopyInvite}
+        onLeave={openManualLeave}
+        reviewableMatchCount={lobbyMatches?.length ?? 0}
+        onOpenReview={openReview}
+        onToggleReady={handleToggleReady}
+        onStartQuiz={handleStartQuiz}
+        onOpenQuizSelect={openQuizSelect}
+        quizSelectionDialogSlot={
+          <QuizSelectionDialog
+            isOpen={isQuizSelectOpen}
+            onClose={closeQuizSelect}
+            onSelectQuiz={handleSelectQuiz}
+            selectedQuiz={selectedQuiz}
+          />
+        }
+        chatSlot={
+          <LobbyChat
+            messages={chatMessages}
+            username={username}
+            onSend={sendChatMessage}
+          />
+        }
+        chatUnreadCount={chatUnreadCount}
+        isChatOpen={isChatOpen}
+        onChatOpenChange={handleChatOpenChange}
+        navGuardLeaveDialog={{
+          isOpen: showLeaveDialog,
+          onConfirm: confirmNavigation,
+          onCancel: cancelNavigation,
+        }}
+        manualLeaveDialog={{
+          isOpen: isManualLeaveOpen,
+          onConfirm: handleConfirmManualLeave,
+          onCancel: closeManualLeave,
+        }}
+      />
+    </>
   );
 };

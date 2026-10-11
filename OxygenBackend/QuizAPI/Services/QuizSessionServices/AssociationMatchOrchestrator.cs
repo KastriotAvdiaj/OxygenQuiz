@@ -309,6 +309,7 @@ namespace QuizAPI.Services.QuizSessionServices
                 QuizId = duel.QuizId,
                 QuizVersion = session.MatchQuizVersion,
                 RoomCode = sessionId,
+                LobbyId = session.LobbyId,
                 HostUserId = session.MatchHostUserId,
                 StartedAt = game.StartedAt,
                 EndedAt = endedAt,

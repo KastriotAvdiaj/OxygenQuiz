@@ -11,6 +11,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { pagedResponseToPagination } from "@/lib/pagination-query";
+import { rule } from "@/lib/filtering";
 import { cn } from "@/utils/cn";
 import { useUserSessions } from "@/pages/Quiz/Sessions/api/get-user-sessions";
 import { QuizToolbar } from "@/pages/Quiz/components/quiz-header";
@@ -33,7 +34,22 @@ const PAGE_SIZE = 20;
  * below (the profile: toolbar + filter drawer) and `MyQuizHistory` (the dashboard: toolbar in
  * the table card, filters in a sidebar like My Quizzes). See docs/quiz/user-stats-history.md.
  */
-export function useQuizHistory(userId: string) {
+/** `QuizSessionMode.SinglePlayer` on the API — the `mode` filter takes the enum's number. */
+const SINGLE_PLAYER_MODE = 0;
+
+export function useQuizHistory(
+  userId: string,
+  {
+    singlePlayerOnly = false,
+  }: {
+    /**
+     * Leave matches out. The dashboard's history page sets it: there, matches are listed by lobby
+     * on their own tab (MyQuizHistory.tsx). The profile's list doesn't, and shows every play.
+     * Not a visible filter — it defines the list, so it adds no pill and "Clear" leaves it alone.
+     */
+    singlePlayerOnly?: boolean;
+  } = {},
+) {
   const [page, setPage] = useState(1);
   const resetPage = useCallback(() => setPage(1), []);
 
@@ -47,7 +63,14 @@ export function useQuizHistory(userId: string) {
 
   const sessionsQuery = useUserSessions({
     userId,
-    query: { ...filters.query, page, pageSize: PAGE_SIZE },
+    query: {
+      ...filters.query,
+      filters: singlePlayerOnly
+        ? [...(filters.query.filters ?? []), rule.eq("mode", SINGLE_PLAYER_MODE)]
+        : filters.query.filters,
+      page,
+      pageSize: PAGE_SIZE,
+    },
   });
 
   const { data, isLoading, isError } = sessionsQuery;

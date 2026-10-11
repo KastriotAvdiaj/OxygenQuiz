@@ -483,6 +483,10 @@ namespace QuizAPI.Data
                 .HasForeignKey(m => m.WinnerUserId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            // "The matches of this lobby" — the lobby's review and the history's lobby rows.
+            modelBuilder.Entity<Match>()
+                .HasIndex(m => m.LobbyId);
+
             // The sessions that make up a match. Restrict rather than cascade: deleting a match out
             // from under its sessions would orphan one player's answers from the others', and
             // nothing in the app deletes matches anyway.
