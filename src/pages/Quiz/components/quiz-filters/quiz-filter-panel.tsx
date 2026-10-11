@@ -46,6 +46,12 @@ interface QuizFilterPanelProps {
    */
   fillHeight?: boolean;
   /**
+   * Drop the card — border, fill, padding and shadow — and lay the panel straight onto its
+   * parent. For the mobile drawer: the drawer is already the filters' surface, and a card
+   * inside it was a box in a box that only took width away from the facets.
+   */
+  frameless?: boolean;
+  /**
    * Extra sections rendered after the three quiz facets, inside the same divided
    * column — for lists that filter on more than the quiz itself (the play history
    * adds status and a date range). Include their selections in `activeCount` and
@@ -85,6 +91,7 @@ export function QuizFilterPanel({
   variant = "sidebar",
   showUnspecified = false,
   fillHeight = false,
+  frameless = false,
   children,
   leading,
   className,
@@ -139,8 +146,9 @@ export function QuizFilterPanel({
           // blobs (removed 2026-09-28) show through as a blue smear behind the filter
           // text. Kept opaque so any future page decoration can't do that again
           // (docs/development/decorative-shapes.md — text never sits on a shape).
-          !compact &&
+          !compact && !frameless &&
             "w-full rounded-xl border border-border bg-background p-5 shadow-sm lg:w-auto sm:p-6 font-app",
+          !compact && frameless && "w-full font-app",
           // Sidebar: hugs its content when short (collapsed), but never grows past
           // the viewport — it caps at the page height and scrolls its body
           // internally, so it can't spill onto the footer.
