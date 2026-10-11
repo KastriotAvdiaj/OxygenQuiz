@@ -25,13 +25,16 @@ export interface FacetOption {
  * docs/RESPONSIVE.md — with the plain-rem first line as the older-browser
  * fallback, since an unsupported unit inside `min()` invalidates the whole
  * declaration and would silently restore the uncapped behaviour.
+ *
+ * Raised 2026-10-11 (15rem/38dvh to 20rem/48dvh, and 9rem/26dvh to 12rem/34dvh compact): about
+ * six rows showed at a time, which made a category list of twenty feel like a keyhole.
  */
 export const FACET_LIST_MAX_HEIGHT =
-  "max-h-60 supports-[height:100dvh]:max-h-[min(15rem,38dvh)]";
+  "max-h-80 supports-[height:100dvh]:max-h-[min(20rem,48dvh)]";
 
 /** Tighter cap for side-by-side layouts (the multiplayer dialog's 3-up grid). */
 export const FACET_LIST_MAX_HEIGHT_COMPACT =
-  "max-h-36 supports-[height:100dvh]:max-h-[min(9rem,26dvh)]";
+  "max-h-48 supports-[height:100dvh]:max-h-[min(12rem,34dvh)]";
 
 
 interface FacetSectionProps {

@@ -287,7 +287,7 @@ scrollable region.** Not the page's scroll, not the panel's — its own.
   declaration on browsers that lack it, which silently *uncaps* the list:
 
   ```
-  max-h-60 supports-[height:100dvh]:max-h-[min(15rem,38dvh)]
+  max-h-80 supports-[height:100dvh]:max-h-[min(20rem,48dvh)]
   ```
 
 - **Define the cap once, as an exported constant, and use it in every variant.**
@@ -632,7 +632,7 @@ dialog, a hand-rolled spinner.
 
 | Where | Change | Why |
 | --- | --- | --- |
-| `facet-section.tsx` | Exported `FACET_LIST_MAX_HEIGHT` / `…_COMPACT` (`max-h-60` + `min(15rem,38dvh)` pair) and made it the prop default | The cap was a per-call-site string, so each variant chose its own — and one chose none. A shared constant is the only version that can't drift |
+| `facet-section.tsx` | Exported `FACET_LIST_MAX_HEIGHT` / `…_COMPACT` (`max-h-80` + `min(20rem,48dvh)` pair; raised from 15rem/38dvh on 2026-10-11) and made it the prop default | The cap was a per-call-site string, so each variant chose its own — and one chose none. A shared constant is the only version that can't drift |
 | `quiz-filter-panel.tsx` | Sidebar/drawer/compact all pass the shared cap; the full-height sidebar no longer passes `""` | Uncapping the facets there just relocated the growth from the page into a single 25-row scroll column. Panel height is now a function of the layout, never of the row count |
 | `facet-section.tsx`, `quiz-filter-panel.tsx` | Added `overscroll-contain` to both the facet lists and the sidebar's facet column | These scroll regions nest (list → panel → drawer → app container); a flick past the end chained outward and scrolled the page behind the panel |
 | `facet-section.tsx` | Facet search input `text-sm` → `text-base sm:text-sm`; added `role="group"` + `aria-label` to each list | Another bare inline `<input>` the July 31 sweep missed — 14px, so iOS zoomed on focus (see "the second trap" above) |

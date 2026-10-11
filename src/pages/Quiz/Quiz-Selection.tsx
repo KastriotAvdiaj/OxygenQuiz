@@ -331,8 +331,9 @@ export function QuizSelection() {
       frameless={inDrawer}
     >
       {inDrawer && (
-        <div className="space-y-2 py-3 sm:hidden">
-          <p className="text-sm font-semibold text-foreground">Sort by</p>
+        <div className="space-y-3 pb-3 pt-8 sm:hidden">
+          {/* The same heading as "Filters" above: two sections of one drawer. */}
+          <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Sort by</h3>
           <QuizSortSelect value={sortBy} onValueChange={handleSortChange} />
         </div>
       )}
