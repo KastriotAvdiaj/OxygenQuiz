@@ -41,15 +41,18 @@ export const JoinLobbyDialog = ({
   };
 
   const handleJoinLobby = async () => {
-    // Joining requires login — invite links should prompt sign-in, not a typed username.
-    if (!user) {
-      onOpenChange(false);
-      navigate("/login?redirectTo=/multiplayer-menu");
-      return;
-    }
     const code = roomCode.trim().toUpperCase();
     if (!code) {
       setError("Room code is required");
+      return;
+    }
+    // Joining requires an account. A guest is sent to log in (the login page links to sign-up)
+    // and comes back to the lobby they typed — the lobby page does the join, as it does for an
+    // invite link. The code can't be checked first: that goes over the game connection, which
+    // only exists for a signed-in account.
+    if (!user) {
+      onOpenChange(false);
+      navigate(`/login?redirectTo=${encodeURIComponent(`/multiplayer/lobby/${code}`)}`);
       return;
     }
 
@@ -92,6 +95,7 @@ export const JoinLobbyDialog = ({
       open={open}
       onOpenChange={onOpenChange}
       username={username}
+      signedIn={!!user}
       roomCode={roomCode}
       onRoomCodeChange={handleRoomCodeChange}
       error={error}

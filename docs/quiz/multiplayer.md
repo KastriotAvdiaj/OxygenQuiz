@@ -184,6 +184,14 @@ seated in ([ADR 0021](../adr/0021-a-duel-is-forfeited-when-the-lobby-drops-the-p
 `useBlocker`, plus `beforeunload` for refresh and tab close) for as long as you're in the session —
 **including mid-match**, since `hasJoined` doesn't drop when a match starts.
 
+**It blocks leaving the page, not every URL change** (2026-10-11). A navigation that keeps the
+pathname — only the query or hash changes — is let through, because the lobby stays mounted and
+the seat is not at risk. The account overlay is such a navigation (`?settings=…`). Before, opening
+Settings in a lobby raised "Leave lobby?"; confirming only let that URL change through, so the
+player was still in the lobby with the panel open, and every click inside the panel — a section,
+the close button — asked again. The rule lives in `useNavigationGuard`, so the AI quiz wizard
+gets it too.
+
 That has one hard requirement: *every* render branch of `MultiplayerLobbyPage` must render
 `<LeaveLobbyDialog>`. A blocked navigation with no dialog on screen is not a no-op — the blocker
 latches into `blocked` and nothing can call `proceed()` or `reset()`, so the click looks ignored and

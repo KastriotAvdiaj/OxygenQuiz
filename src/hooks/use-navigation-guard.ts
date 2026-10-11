@@ -1,5 +1,5 @@
 import { useEffect, useCallback, useRef } from "react";
-import { useBlocker } from "react-router-dom";
+import { useBlocker, type BlockerFunction } from "react-router-dom";
 
 interface UseNavigationGuardReturn {
   showLeaveDialog: boolean;
@@ -35,6 +35,13 @@ interface UseNavigationGuardReturn {
  * builds a fresh blocker and re-renders the subtree — the bug that once froze the multiplayer
  * question timer (see MultiplayerLobbyPage).
  *
+ * <b>Only leaving the page is blocked.</b> A navigation that keeps the pathname — a search
+ * param or a hash changing — leaves the route mounted, so nothing the guard protects is lost,
+ * and it is let through. The account overlay opens and switches sections that way
+ * (`?settings=…`); blocking it meant that opening Settings inside a lobby raised "Leave
+ * lobby?", and that confirming only let the URL change through — the player stayed in the
+ * lobby with the panel open, and every click inside the panel asked again (2026-10-11).
+ *
  * @param shouldBlock - Whether navigation should currently be blocked.
  */
 export const useNavigationGuard = (
@@ -50,7 +57,13 @@ export const useNavigationGuard = (
   const allowedRef = useRef(false);
 
   const blocker = useBlocker(
-    useCallback(() => shouldBlockRef.current && !allowedRef.current, []),
+    useCallback<BlockerFunction>(
+      ({ currentLocation, nextLocation }) =>
+        shouldBlockRef.current &&
+        !allowedRef.current &&
+        currentLocation.pathname !== nextLocation.pathname,
+      [],
+    ),
   );
 
   // Block hard navigations (refresh / tab close) with the native prompt
