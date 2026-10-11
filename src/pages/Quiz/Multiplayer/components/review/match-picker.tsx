@@ -43,7 +43,10 @@ export function MatchPicker({ matches, value, onValueChange, userId }: MatchPick
             )}
           >
             {won && <Trophy className="h-3.5 w-3.5 text-yellow-500" aria-label="You won" />}
-            <span>Match {matches.length - index}</span>
+            {/* The number alone: the box is already labelled "Matches". */}
+            <span className="font-semibold tabular-nums" aria-label={`Match ${matches.length - index}`}>
+              {matches.length - index}
+            </span>
             <span className="max-w-[10rem] truncate text-xs text-muted-foreground">{m.quizTitle}</span>
           </button>
         );
