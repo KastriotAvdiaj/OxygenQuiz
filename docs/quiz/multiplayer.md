@@ -485,7 +485,9 @@ bordered box, solid title bar, inset body.
   `flex-1` so chat can no longer size to its row.
 
 - **Type zones:** `font-quiz` cascades from the page shell so labels, buttons, names and chat wear
-  the user's display font. Two deliberate opt-outs — panel title bars (`font-header`: chrome
+  the user's display font. The match screen (`MultiplayerGame`) sets `font-quiz` on its own root
+  for the same reason: until 2026-10-11 it set `font-header` there, so a match was the one place
+  a player's chosen quiz font didn't apply. Two deliberate opt-outs — panel title bars (`font-header`: chrome
   shouldn't be restyled by a user setting) and the room code (`font-mono`: `0` vs `O` must be
   unambiguous for someone typing it in).
 - **Surfaces:** panel bodies are `--background` in light mode with the page behind them `bg-muted`;

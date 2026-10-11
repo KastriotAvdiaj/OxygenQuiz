@@ -51,7 +51,7 @@ export const MultiplayerGame = ({
         }));
 
   return (
-    <div className="relative w-full min-h-[calc(100vh-4rem)] flex items-center justify-center p-4 font-header">
+    <div className="relative w-full min-h-[calc(100vh-4rem)] flex items-center justify-center p-4 font-quiz">
       <div className="w-full max-w-3xl mx-auto">
         {phase === "starting" && (
           <CountdownPanel
