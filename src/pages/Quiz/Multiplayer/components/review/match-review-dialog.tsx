@@ -45,7 +45,10 @@ export function MatchReviewDialog({ isOpen, onClose, roomCode, userId }: MatchRe
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="flex max-h-[90dvh] max-w-3xl flex-col gap-4 font-quiz">
+      {/* overflow-hidden: the shared DialogContent scrolls itself (overflow-y-auto), and with the
+          list below scrolling too there were two scrollbars, one inside the other. Here only the
+          list scrolls and the title stays put — the same arrangement as the quiz picker dialog. */}
+      <DialogContent className="flex max-h-[90vh] max-w-3xl flex-col gap-4 overflow-hidden font-quiz supports-[height:100dvh]:max-h-[90dvh]">
         <DialogHeader>
           <DialogTitle>Match review</DialogTitle>
           <DialogDescription>
