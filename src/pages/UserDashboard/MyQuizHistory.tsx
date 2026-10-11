@@ -15,6 +15,21 @@ import {
   useQuizHistory,
 } from "@/pages/UserRelated/Profile/components/QuizHistoryList";
 import { QuizHistoryFilterPanel } from "@/pages/UserRelated/Profile/components/quiz-history-filters";
+import { SegmentedControl } from "@/components/ui/segmented-control";
+import { MultiplayerHistory } from "./multiplayer-history";
+
+/**
+ * Two tabs, because the two kinds of play are different lists (decided 2026-10-11;
+ * docs/quiz/user-stats-history.md § "Two tabs"). A single-player session is a row with a score, a
+ * duration and a status, and is searched and filtered like one. A lobby is several matches against
+ * the same people and has none of those as a single value — so it gets its own rows, one per
+ * lobby, and its matches are left out of the first tab rather than listed twice.
+ */
+type HistoryTab = "single" | "multiplayer";
+const HISTORY_TABS: { value: HistoryTab; label: string }[] = [
+  { value: "single", label: "Single player" },
+  { value: "multiplayer", label: "Multiplayer" },
+];
 
 /**
  * `/my-dashboard/history` — the signed-in user's full play history.
@@ -32,14 +47,35 @@ import { QuizHistoryFilterPanel } from "@/pages/UserRelated/Profile/components/q
  */
 export const MyQuizHistory = () => {
   const { data: user } = useUser();
+  const [tab, setTab] = useState<HistoryTab>("single");
+  const tabs = (
+    <SegmentedControl
+      aria-label="Which plays to list"
+      value={tab}
+      onValueChange={setTab}
+      options={HISTORY_TABS}
+      className="mb-4"
+    />
+  );
 
   return (
     <div className="container mx-auto py-8 px-4 md:px-0">
       {/* The route is behind `userAuthLoader`, so an absent user here means the profile
           request is still in flight rather than a signed-out visitor. */}
-      {user?.id ? (
-        <HistoryWorkspace userId={user.id} />
+      {!user?.id ? null : tab === "single" ? (
+        <HistoryWorkspace userId={user.id} tabs={tabs} />
       ) : (
+        <>
+          <div className="mb-6 space-y-1">
+            <h1 className="text-3xl font-bold">Quiz History</h1>
+          </div>
+          {tabs}
+          <Card className="p-6 bg-card border dark:border-foreground/30 space-y-4">
+            <MultiplayerHistory userId={user.id} />
+          </Card>
+        </>
+      )}
+      {user?.id ? null : (
         <div className="flex justify-center items-center py-16">
           <BlobLoader size="md" />
         </div>
@@ -48,8 +84,9 @@ export const MyQuizHistory = () => {
   );
 };
 
-const HistoryWorkspace = ({ userId }: { userId: string }) => {
-  const history = useQuizHistory(userId);
+const HistoryWorkspace = ({ userId, tabs }: { userId: string; tabs: React.ReactNode }) => {
+  // Matches are the other tab's, listed by lobby — so this list leaves them out.
+  const history = useQuizHistory(userId, { singlePlayerOnly: true });
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   const filterPanel = (
@@ -78,6 +115,8 @@ const HistoryWorkspace = ({ userId }: { userId: string }) => {
           />
         )}
       </div>
+
+      {tabs}
 
       {history.hasNoPlays ? (
         <Card className="p-6 bg-card border dark:border-foreground/30">
