@@ -203,6 +203,7 @@ namespace QuizAPI.Services.QuizSessionServices
                 try
                 {
                     await PersistMatchAsync(sessionId, session);
+                    await clients.MatchRecorded();
                 }
                 catch (Exception ex)
                 {
@@ -418,6 +419,7 @@ namespace QuizAPI.Services.QuizSessionServices
                 QuizId = quizId,
                 QuizVersion = session.MatchQuizVersion,
                 RoomCode = sessionId,
+                LobbyId = session.LobbyId,
                 HostUserId = session.MatchHostUserId,
                 StartedAt = session.MatchStartedUtc,
                 EndedAt = endedAt,

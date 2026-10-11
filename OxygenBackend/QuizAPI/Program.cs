@@ -132,6 +132,7 @@ builder.Services.AddScoped<IFileRepository, FileRepository>();
 builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
 builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
 builder.Services.AddScoped<ITeacherAccessRequestRepository, TeacherAccessRequestRepository>();
+builder.Services.AddScoped<IMatchRepository, MatchRepository>();
 builder.Services.AddScoped<IClassRepository, ClassRepository>();
 builder.Services.AddScoped<QuizAPI.Services.Classroom.IClassService, QuizAPI.Services.Classroom.ClassService>();
 builder.Services.AddScoped<IHostedGameRepository, HostedGameRepository>();
