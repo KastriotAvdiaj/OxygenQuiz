@@ -280,6 +280,16 @@ Note what is **absent**: no category, no language, no IDs of any kind. `{DIFFICU
 is the only entity vocabulary in the prompt — names not IDs, and a closed set of a few
 rows.
 
+**Maths is asked for as plain text** (2026-10-11). The app shows question and answer text as
+written; nothing renders LaTeX or Markdown. Asked for algebra, a model wrote
+`x = [-b ± sqrt(b² - 4ac)]/(2a)` — notation that wants a renderer — and players read it raw. A
+prompt rule now forbids LaTeX, Markdown and calculator notation and asks for the Unicode
+characters themselves (`√(b² − 4ac)`, `x²`, `H₂O`, `½`, `≤`). This is the cheap half. A formula
+that has no plain-text form — a stacked fraction, an integral with limits, a matrix — still
+can't be shown properly; that needs a maths renderer in every place question text appears
+(play, review, the builder, multiplayer) and a rule for how `TypeTheAnswer` compares such an
+answer. Not built; listed in `docs/deployment/known-issues.md`.
+
 ---
 
 ## 6. Import pipeline & validation

@@ -242,6 +242,16 @@ namespace QuizAPI.Services.Ai
                 + "Never write the answer, or an obvious hint to it, in the question text. "
                 + "Avoid \"all of the above\", \"none of the above\" and questions phrased with NOT or EXCEPT.");
 
+            // The app shows question and answer text exactly as written: no LaTeX, no Markdown.
+            // Models asked for maths reach for one of two things that need a renderer — LaTeX
+            // ("$\\frac{a}{b}$") or calculator notation ("sqrt(b^2 - 4ac)") — and players then read
+            // the markup. Asking for the symbols themselves needs nothing on our side.
+            rules.Add(
+                "All text is shown to players exactly as you write it, as plain text. "
+                + "Do NOT use LaTeX, Markdown, HTML or code-style notation anywhere: no $...$, no backslash commands such as \\frac or \\sqrt, no ^ or _ for powers and indices, no sqrt( ), no asterisks for emphasis or multiplication. "
+                + "Write mathematics and science with real Unicode characters, the way a textbook prints it: √(b² − 4ac), x², H₂O, ½, ×, ÷, ±, ≤, ≥, ≠, π, °. "
+                + "Use a slash with brackets for a fraction that has no single character: (a + b)/(2c).");
+
             if (!string.IsNullOrWhiteSpace(r.ExtraInstructions))
                 rules.Add($"Additional instructions from the user: {r.ExtraInstructions.Trim()}");
 
