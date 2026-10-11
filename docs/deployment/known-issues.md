@@ -1330,3 +1330,13 @@ fixed in that change; these were not.
 - **P3 — `Documentation.md` was retired to `_to_delete/`** (2026-08-23). A root-level, tutorial-style
   per-file explainer that had drifted; nothing referenced it. If any of it was worth keeping it
   needs rescuing from there before that folder is emptied.
+
+## Maths is plain text only
+
+Found 2026-10-11. Question and answer text is shown as written — no LaTeX or Markdown
+rendering anywhere. The AI prompt asks for Unicode maths (`√`, `x²`, `½`), which covers school
+algebra and chemistry, but a formula with no plain-text form (stacked fractions, integrals with
+limits, matrices) can't be displayed, and a quiz author typing LaTeX by hand sees it raw.
+Deferred: a renderer (KaTeX) has to be added to every surface that shows question text, and
+`TypeTheAnswer` needs a rule for comparing a typed answer against a formula. See
+`docs/quiz/ai-quiz-creation-plan.md` §5.
