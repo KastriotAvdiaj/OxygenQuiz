@@ -41,7 +41,7 @@ Companion to [`email-verification.md`](email-verification.md), which this delibe
 | Endpoints | `Controllers/Authentication/Authentication.cs` |
 | DTOs | `DTOs/Authentication/ForgotPasswordDTO.cs`, `ResetPasswordDTO.cs` |
 | Pages | `src/pages/UserRelated/PasswordReset/` |
-| Routes | `/forgot-password`, `/reset-password` — both anonymous |
+| Routes | `/forgot-password`, `/reset-password` — both anonymous. A signed-in visitor to `/forgot-password` is redirected to the account panel (`/?settings=account`), whose "Change password" row mails the same link in one click (decided 2026-10-11). `/reset-password` is never redirected: the mailed link must work whoever is signed in on that browser |
 
 ## 3. The decisions worth knowing
 
