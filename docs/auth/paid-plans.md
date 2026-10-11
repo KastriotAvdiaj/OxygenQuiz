@@ -253,7 +253,7 @@ Until then, `PaddleWebhookControllerTests` and `SubscriptionSyncServiceTests` ex
 without a real delivery, and `BillingReconciliationJob` is the eventual catch-up once a
 destination exists.
 
-## 9. Going live (in progress, 2026-10-10)
+## 9. Going live (in progress, 2026-10-11)
 
 Nothing in the code names a Paddle account: price ids, the client token, the API host and the
 Paddle.js environment all follow `Billing:*`. Moving from sandbox to live is therefore
@@ -296,12 +296,59 @@ and a new id in `.env.prod`, never an edit to one of these.
 `https://api.oxygenquiz.com/api/billing/webhooks/paddle`, subscribed to the same eight `subscription.*` events as sandbox. Never delete and recreate it:
 that rotates the secret key and every later delivery fails its signature check.
 
-**Not done by code, and required before a live checkout works:** the domain approved under
-Paddle's website approval, a default payment link on that domain, payout details, and business
-verification — which reviews the Terms, Privacy and Refund pages
+**The webhook secret is not written down anywhere but `.env.prod`.** Read it from Paddle >
+Developer tools > Notifications > the destination > Secret key. The live API key expires on
+**8 January 2027**: create its replacement and swap `PADDLE_API_KEY` before then, or every
+read-back and the daily reconciliation start failing.
+
+### Where it stands (2026-10-11)
+
+Paddle's own checklist is the source of truth for what is left and in what order:
+<https://vendors.paddle.com/onboarding/get-started>. Read it there rather than trusting this
+table once it is a few weeks old. Its three steps are *migrate to live*, *verify your account*,
+*test and go live*; this section is the first.
+
+| Step | State |
+|---|---|
+| Live catalog, client token, webhook destination | Done (tables above) |
+| Live API key | Done, in `.env.prod`; expires 2027-01-08 |
+| `.env.prod` and `docker-compose.prod.yml` | Done; `BILLING_ENABLED` stays `false` until the last row |
+| Webhook source-IP gate | Done (`PaddleIpAllowlist`, §8) |
+| Default payment link | Done: `https://oxygenquiz.com/pricing` (dashboard only: Checkout > Checkout configuration) |
+| Payout details | Done: wire transfer, individual / sole proprietor, Kosovo |
+| Support address | Done: `support@oxygenquiz.com`, Cloudflare Email Routing, forwarded. Receives only |
+| Legal pages | Written (`/terms`, `/privacy`, `/refunds`, `/contact`; details in `src/pages/Legal/legal-entity.ts`). **Not deployed**, not yet read by a lawyer |
+| Payment methods | **Open**: Checkout > Checkout configuration > Payment methods |
+| Website approval for `oxygenquiz.com` | Submitted 2026-10-10, in review. Expect a rejection while production has no `/pricing` or legal pages; resubmit after the deploy |
+| Business verification | **Open**: Paddle's step two, not started |
+| A live payment, end to end | **Open**: Paddle's step three |
+
+### What is left, in order
+
+1. **Decide the product's name.** Open question, and it comes first because the domain, the
+   legal pages and the Paddle account all carry the name: either written permission to use it,
+   or a rename. No paid plan is published until that is settled. A rename means a new domain,
+   so a new website approval, a new default payment link and a new webhook destination URL (a
+   *new* destination on the new host; the existing one is left alone).
+2. **Merge and deploy this branch with `BILLING_ENABLED=false`.** That puts `/pricing` and the
+   legal pages on the live domain, which is what Paddle's reviewers open, while checkout stays
+   off (`UnavailableBillingProvider`).
+3. **Check the deploy.** `/terms`, `/privacy`, `/refunds`, `/contact` and `/pricing` load on the
+   live domain; contact is two clicks from the home page (the footer); `GET /api/plans` answers.
+4. **Resubmit the domain** if Paddle rejected it in the meantime, and pick the payment methods.
+5. **Verify the account**: Paddle's step two. It asks for identity documents and reviews the
+   site. Its requirements change; follow the checklist linked above, not this list.
+6. **Turn billing on**: `BILLING_ENABLED=true`, restart, then the two checks under *Production
+   configuration* above (`checkoutAvailable: true`, `environment: "production"`).
+7. **Buy a plan with a real card and refund it**: Paddle's step three. Watch the delivery arrive
+   in Paddle > Developer tools > Notifications, the `UserSubscription` row appear, and the
+   plan show in the account panel. Then cancel from the customer portal and see it lapse.
+8. Only then link `/pricing` from the header or the landing page; today the footer is the only
+   way in.
+
+Before public signup rather than before Paddle: the signup consent line and age checkbox,
+self-hosted fonts, and a lawyer's read of the Terms and Privacy Policy
 ([`../proposals/legal-and-compliance-for-launch.md`](../proposals/legal-and-compliance-for-launch.md)).
-Those exist as a first draft at `/terms`, `/privacy`, `/refunds` and `/contact`; who runs the
-site and the contact address are in `src/pages/Legal/legal-entity.ts`.
 
 **Paddle Retain (`pwCustomer`) is not wired, on purpose.** It needs Paddle.js on signed-in pages
 across the app, and the compliance proposal keeps Paddle.js on `/pricing` alone precisely so no

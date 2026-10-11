@@ -1287,10 +1287,13 @@ fixed in that change; these were not.
 
 ## Paid plans and launch compliance (2026-10-07 — see docs/auth/paid-plans.md)
 
-- **P3 — Plans exist but can't be bought.** Plans, limits and admin grants shipped 2026-10-10
-  ([`../auth/paid-plans.md`](../auth/paid-plans.md)); checkout through Paddle as Merchant of Record
-  (Stripe does not serve Kosovo-based businesses) is
-  [`proposals/paid-plans-and-payments.md`](../proposals/paid-plans-and-payments.md) Phase 2.
+- **P2 — Plans can be bought in sandbox, not in production.** Checkout through Paddle shipped
+  2026-10-10 and the live Paddle account is configured, but production keeps
+  `BILLING_ENABLED=false`: the product's name is an open decision (permission or a rename), the
+  branch is not deployed, and Paddle has not verified the account. Status and the ordered list of
+  what is left: [`../auth/paid-plans.md`](../auth/paid-plans.md) §9.
+- **P2 — The live Paddle API key expires 2027-01-08.** Replace `PADDLE_API_KEY` in `.env.prod`
+  before then; after it, webhook read-backs and the daily reconciliation fail.
 - **P2 — Lobbies of 20 and 40 are enforced but untested at that size.** Plus and Teacher hosts
   can open them, but the lobby roster and the single in-memory `InMemoryQuizSessionManager` have
   only been used with up to 10 players. Before selling the perk: a layout pass on the roster at
@@ -1308,9 +1311,11 @@ fixed in that change; these were not.
   public in clones and forks, and code already released under MIT stays MIT. Also check the
   history for committed secrets before going private.
   → `OxygenBackend/QuizAPI/Services/Ai/AiPromptBuilder.cs`, `src/pages/Dashboard/Pages/Quiz/components/AI-Quiz/`
-- **P2 — No Terms, Privacy Policy, refund or contact page; Google Fonts load from Google's
-  servers.** Required before a public or paid launch, and before Paddle approves checkout. No
-  cookie banner is needed today (all storage is essential or user-chosen). Write-up:
+- **P2 — Terms, Privacy Policy, refund and contact pages are a first draft; Google Fonts load
+  from Google's servers.** The pages were written 2026-10-10 (`src/pages/Legal/`) but are not
+  deployed and no lawyer has read them. Still open: the signup consent line and age checkbox,
+  self-hosted fonts, the AI privacy line, reporting a quiz. No cookie banner is needed today
+  (all storage is essential or user-chosen). Write-up:
   [`proposals/legal-and-compliance-for-launch.md`](../proposals/legal-and-compliance-for-launch.md).
 
 ## Documentation debt (2026-08-23)
