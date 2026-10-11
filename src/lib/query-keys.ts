@@ -43,3 +43,14 @@ export const classroomKeys = {
   hostedGames: () => [...classroomKeys.all, "hosted-games"] as const,
   hostedGame: (id: string) => [...classroomKeys.all, "hosted-games", id] as const,
 };
+
+/**
+ * Played multiplayer matches (docs/quiz/multiplayer.md §7.6) — ["matches", …]. `lobby` is the
+ * review inside an open lobby, refetched when the server says a match was recorded; `mine` is the
+ * history page's Multiplayer tab.
+ */
+export const matchKeys = {
+  all: ["matches"] as const,
+  lobby: (roomCode: string) => [...matchKeys.all, "lobby", roomCode] as const,
+  mine: (page: number, pageSize: number) => [...matchKeys.all, "mine", page, pageSize] as const,
+};

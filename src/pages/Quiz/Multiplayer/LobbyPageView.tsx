@@ -38,6 +38,9 @@ export interface LobbyPageViewProps {
   onJoin: () => void;
   onCopyInvite: () => void;
   onLeave: () => void;
+  /** The lobby's match review (docs/quiz/multiplayer.md §7.6): how many matches, and how to open it. */
+  reviewableMatchCount?: number;
+  onOpenReview?: () => void;
   onToggleReady: () => void;
   onStartQuiz: () => void;
   onOpenQuizSelect: () => void;
@@ -98,6 +101,8 @@ export const LobbyPageView = ({
   onJoin,
   onCopyInvite,
   onLeave,
+  reviewableMatchCount,
+  onOpenReview,
   onToggleReady,
   onStartQuiz,
   onOpenQuizSelect,
@@ -216,6 +221,8 @@ export const LobbyPageView = ({
             copied={copied}
             onCopyInvite={onCopyInvite}
             onLeave={onLeave}
+            reviewableMatchCount={reviewableMatchCount}
+            onOpenReview={onOpenReview}
           />
         </LobbyPanel>
 

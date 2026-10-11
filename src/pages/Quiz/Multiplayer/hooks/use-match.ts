@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useMultiplayer } from "@/hooks/useMultiplayer";
 import { audio } from "@/lib/audio";
+import { matchKeys } from "@/lib/query-keys";
 
 // Wire shapes mirror the server's match DTOs (SignalR serializes them camelCased).
 // See OxygenBackend/QuizAPI/Services/QuizSessionServices/MatchModels.cs.
@@ -62,6 +64,10 @@ interface UseMatchOptions {
  */
 export const useMatch = ({ sessionId, username }: UseMatchOptions) => {
   const { connection, submitAnswer } = useMultiplayer();
+  const queryClient = useQueryClient();
+  // Same reason as the username ref below: the handlers are bound once per connection.
+  const sessionIdRef = useRef(sessionId);
+  sessionIdRef.current = sessionId;
 
   // Keep the latest username in a ref so the SignalR handlers (bound once) always see it.
   const usernameRef = useRef<string | undefined>(username);
@@ -155,14 +161,21 @@ export const useMatch = ({ sessionId, username }: UseMatchOptions) => {
       audio.play(won ? "win" : "lose");
     });
 
+    // The match is in the database now, so its review can be read. Sent after MatchEnded, not
+    // with it: the write happens once the players already have their results (multiplayer.md §7.6).
+    connection.on("MatchRecorded", () => {
+      void queryClient.invalidateQueries({ queryKey: matchKeys.lobby(sessionIdRef.current) });
+    });
+
     return () => {
       connection.off("MatchStarting");
       connection.off("QuestionStarted");
       connection.off("AnswerSubmitted");
       connection.off("QuestionEnded");
       connection.off("MatchEnded");
+      connection.off("MatchRecorded");
     };
-  }, [connection]);
+  }, [connection, queryClient]);
 
   // Submit an answer for the current question. `answer` is an option id (multiple choice) or
   // raw text ("True"/"False" or the typed answer).
