@@ -642,6 +642,21 @@ own `MatchPlayerTabs` and `QuestionReview`. It opens from the match's end screen
 answers*, above *Back to lobby*) and from the Room panel (*Match review (n)*, hidden until there
 is one).
 
+**Two labelled boxes, "Matches" over "Players"** (2026-10-11; `MatchPicker` and
+`MatchPlayerTabs`, both drawn with `TabStrip`):
+
+- **You are always the first player**, then the rest in scoreboard order — so the winner is
+  second unless that is you. In plain scoreboard order your tab was first in a match you won and
+  second in one you lost, and moved under the pointer when you switched matches. The same order
+  applies on the results page, which uses the same component.
+- **Each box is one row that scrolls sideways**, never wraps, for any number of matches or
+  players. An arrow appears at an end only when there is more that way, and moves the row by one
+  tab, smoothly (instantly under `prefers-reduced-motion`). The arrow scrolls; it does not
+  change which tab is selected.
+- The Matches box is not drawn for a single match — nothing to choose.
+- Stories: `Quiz/Multiplayer/MatchPicker` (two matches, thirteen, and the two boxes together
+  with a full room) and `Quiz/MatchPlayerTabs` (`YouLostAndAreStillFirst`, `ManyPlayers`).
+
 - **It reads the database, not the match's events** — so a player who dropped out and came back
   after the match ended still finds it. Losing the review to a reconnect was the option
   considered and refused.

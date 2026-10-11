@@ -1,6 +1,7 @@
 import { Trophy, LogOut } from "lucide-react";
 import { cn } from "@/utils/cn";
 import type { MatchPlayer } from "../../api/get-quiz-session";
+import { TabStrip } from "./tab-strip";
 
 type MatchPlayerTabsProps = {
   players: MatchPlayer[];
@@ -18,8 +19,13 @@ type MatchPlayerTabsProps = {
  * being asked the same questions, so hiding it afterwards would be strange, and "what did you put
  * for number four?" is the conversation this screen exists to settle.</p>
  *
- * <p>Ordered exactly as the final scoreboard was (the API sorts by score, then correct count, then
- * name), so the row reads the way the players last saw themselves.</p>
+ * <p><b>You are always first</b>, then everyone else as the final scoreboard had them (the API
+ * sorts by score, then correct count, then name) — so the winner is second unless that was you.
+ * It was scoreboard order throughout, which put you first in a match you won and second in one
+ * you lost: flip between two matches of a lobby and your own tab changed places under the
+ * pointer (2026-10-11). The trophy still says who won.</p>
+ *
+ * <p>Any number of players fits: the row scrolls sideways and grows arrows (`TabStrip`).</p>
  */
 export function MatchPlayerTabs({
   players,
@@ -30,15 +36,14 @@ export function MatchPlayerTabs({
   // One player is not a match to compare — the review below is simply theirs.
   if (players.length < 2) return null;
 
+  const ordered = [
+    ...players.filter((p) => p.sessionId === ownSessionId),
+    ...players.filter((p) => p.sessionId !== ownSessionId),
+  ];
+
   return (
-    <div
-      role="tablist"
-      aria-label="Whose answers to show"
-      // Scrolls rather than wraps: a lobby holds up to four, and a wrapped second row of tabs
-      // reads as a separate control rather than more of the same one.
-      className="mb-4 flex gap-2 overflow-x-auto pb-1"
-    >
-      {players.map((player) => {
+    <TabStrip label="Players" ariaLabel="Whose answers to show" className="mb-4">
+      {ordered.map((player) => {
         const active = player.sessionId === value;
         const isYou = player.sessionId === ownSessionId;
 
@@ -79,6 +84,6 @@ export function MatchPlayerTabs({
           </button>
         );
       })}
-    </div>
+    </TabStrip>
   );
 }

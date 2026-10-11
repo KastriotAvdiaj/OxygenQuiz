@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ExternalLink, Trophy } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -8,11 +8,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { BlobLoader } from "@/components/ui";
-import { cn } from "@/utils/cn";
 import { MatchPlayerTabs } from "@/pages/Quiz/Sessions/components/quiz-results/match-player-tabs";
 import { QuestionReview } from "@/pages/Quiz/Sessions/components/quiz-results/question-review";
 import { useGetSessionResults, useMatchPlayers } from "@/pages/Quiz/Sessions/api/get-quiz-session";
 import { useLobbyMatches, type MatchSummary } from "../../api/matches";
+import { MatchPicker } from "./match-picker";
 
 interface MatchReviewDialogProps {
   isOpen: boolean;
@@ -72,7 +72,6 @@ export function MatchReviewDialog({ isOpen, onClose, roomCode, userId }: MatchRe
           <div className="min-h-0 flex-1 overflow-y-auto pr-1">
             <MatchPicker
               matches={newestFirst}
-              total={newestFirst.length}
               value={match.matchId}
               onValueChange={setPickedMatchId}
               userId={userId}
@@ -84,56 +83,6 @@ export function MatchReviewDialog({ isOpen, onClose, roomCode, userId }: MatchRe
         )}
       </DialogContent>
     </Dialog>
-  );
-}
-
-/** Which match. Hidden while there is only one: a single tab is not a choice. */
-function MatchPicker({
-  matches,
-  total,
-  value,
-  onValueChange,
-  userId,
-}: {
-  matches: MatchSummary[];
-  total: number;
-  value: string;
-  onValueChange: (matchId: string) => void;
-  userId: string | undefined;
-}) {
-  if (matches.length < 2) return null;
-
-  return (
-    <div
-      role="tablist"
-      aria-label="Which match to review"
-      className="mb-4 flex gap-2 overflow-x-auto pb-1"
-    >
-      {matches.map((m, index) => {
-        const active = m.matchId === value;
-        const won = m.players.some((p) => p.userId === userId && p.isWinner);
-        return (
-          <button
-            key={m.matchId}
-            role="tab"
-            type="button"
-            aria-selected={active}
-            onClick={() => onValueChange(m.matchId)}
-            className={cn(
-              "flex shrink-0 items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors",
-              active
-                ? "border-primary bg-primary/10 font-medium text-foreground"
-                : "border-border text-muted-foreground hover:text-foreground",
-            )}
-          >
-            {won && <Trophy className="h-3.5 w-3.5 text-yellow-500" aria-label="You won" />}
-            {/* Numbered in the order they were played, though listed newest first. */}
-            <span>Match {total - index}</span>
-            <span className="max-w-[10rem] truncate text-xs text-muted-foreground">{m.quizTitle}</span>
-          </button>
-        );
-      })}
-    </div>
   );
 }
 
