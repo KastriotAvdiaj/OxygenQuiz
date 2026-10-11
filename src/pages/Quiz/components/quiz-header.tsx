@@ -7,6 +7,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { SortRule } from "@/lib/filtering";
+import { cn } from "@/utils/cn";
 
 /**
  * Sort options exposed to users. `variety` is a backend pseudo-sort that interleaves
@@ -95,6 +96,43 @@ interface QuizToolbarProps<S extends string = SortOption> {
    * search sits in the filter sidebar, like the other dashboard pages' panels.
    */
   showSearch?: boolean;
+
+  /**
+   * Leave the sort menu out below `sm`. For a page that offers it somewhere else on a phone —
+   * /choose-quiz puts it in the filter drawer, where it stops costing the toolbar a full row.
+   */
+  hideSortOnPhones?: boolean;
+}
+
+/**
+ * The sort menu on its own, so it can sit in the toolbar and, on a phone, in the filter drawer
+ * — one control, the same options and labels in both places.
+ */
+export function QuizSortSelect<S extends string = SortOption>({
+  value,
+  onValueChange,
+  options = SORT_LABELS as Record<S, string>,
+  className,
+}: {
+  value: S;
+  onValueChange: (value: S) => void;
+  options?: Record<S, string>;
+  className?: string;
+}) {
+  return (
+    <Select value={value} onValueChange={(v) => onValueChange(v as S)}>
+      <SelectTrigger variant="minimal" aria-label="Sort quizzes" className={cn("h-9 w-full", className)}>
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent variant="minimal">
+        {(Object.keys(options) as S[]).map((option) => (
+          <SelectItem variant="minimal" key={option} value={option}>
+            {options[option]}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
 }
 
 /**
@@ -115,6 +153,7 @@ export function QuizToolbar<S extends string = SortOption>({
   onClearFilters,
   filterAction,
   showSearch = true,
+  hideSortOnPhones = false,
 }: QuizToolbarProps<S>) {
   return (
     <div>
@@ -166,29 +205,21 @@ export function QuizToolbar<S extends string = SortOption>({
         )}
 
         {/* Sort + count — pinned to the right on desktop */}
-        <div className="flex items-center gap-2 sm:gap-3 basis-full sm:basis-auto sm:ml-auto">
+        <div
+          className={cn(
+            "items-center gap-2 sm:gap-3 basis-full sm:basis-auto sm:ml-auto",
+            hideSortOnPhones ? "hidden sm:flex" : "flex",
+          )}
+        >
           {sortBy !== undefined && onSortChange && (
             <div className="flex items-center gap-1.5 flex-1 sm:flex-initial">
               <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground hidden sm:block" />
-              <Select
+              <QuizSortSelect
                 value={sortBy}
-                onValueChange={(v) => onSortChange(v as S)}
-              >
-                <SelectTrigger
-                  variant="minimal"
-                  aria-label="Sort quizzes"
-                  className="h-9 w-full sm:w-[165px]"
-                >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent variant="minimal">
-                  {(Object.keys(sortOptions) as S[]).map((option) => (
-                    <SelectItem variant="minimal" key={option} value={option}>
-                      {sortOptions[option]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                onValueChange={onSortChange}
+                options={sortOptions}
+                className="sm:w-[165px]"
+              />
             </div>
           )}
 

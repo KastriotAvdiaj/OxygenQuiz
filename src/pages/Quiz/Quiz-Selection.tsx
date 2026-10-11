@@ -3,6 +3,7 @@ import { QuizCard } from "./components/quiz-card";
 import {
   QuizToolbar,
   SORT_RULES,
+  QuizSortSelect,
   DEFAULT_SORT,
   type SortOption,
 } from "./components/quiz-header";
@@ -313,10 +314,10 @@ export function QuizSelection() {
     [navigate, close, sharedToken, selectedQuiz]
   );
 
-  // fillHeight only for the desktop sidebar (it gets a page-height column that
-  // scrolls internally); the mobile drawer scrolls as a whole, so it renders the
-  // panel at natural height.
-  const renderFilterPanel = (fillHeight = false) => (
+  // The desktop sidebar is a card that fills a page-height column and scrolls internally. The
+  // mobile drawer scrolls as a whole and is the filters' surface itself, so there the panel
+  // has no card of its own — and, on a phone, carries the sort menu the toolbar drops.
+  const renderFilterPanel = (inDrawer = false) => (
     <QuizFilterPanel
       categories={categories}
       difficulties={difficulties}
@@ -326,8 +327,16 @@ export function QuizSelection() {
       onClearAll={clearFacets}
       activeCount={facetCount}
       showUnspecified={showUnspecified}
-      fillHeight={fillHeight}
-    />
+      fillHeight={!inDrawer}
+      frameless={inDrawer}
+    >
+      {inDrawer && (
+        <div className="space-y-2 py-3 sm:hidden">
+          <p className="text-sm font-semibold text-foreground">Sort by</p>
+          <QuizSortSelect value={sortBy} onValueChange={handleSortChange} />
+        </div>
+      )}
+    </QuizFilterPanel>
   );
 
   return (
@@ -344,15 +353,42 @@ export function QuizSelection() {
       <div className="relative mx-auto w-full max-w-[1700px] px-4 sm:px-6 md:px-8 lg:px-10 py-4 sm:py-6 pb-8 sm:pb-12 md:pb-16">
         {/* Low-profile "Back" chip — the page title was dropped in favour of a
             cleaner, content-first header. */}
-        <div className="mb-5 sm:mb-6">
+        {/* Back on the left, Filters on the right (below lg, where the sidebar becomes a drawer).
+            The two are the same chip — height, padding, type — so the row reads as one line of
+            controls rather than a small link beside a bigger button. */}
+        <div className="mb-5 flex items-center justify-between gap-2 sm:mb-6">
           <button
             onClick={() => navigate("/choose-mode")}
-            className="group inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-foreground/20 hover:text-foreground"
+            className="group inline-flex h-9 items-center gap-1.5 rounded-lg border border-border bg-background px-3 text-sm font-medium text-foreground shadow-sm transition-colors hover:border-foreground/25"
           >
-            <ArrowLeft className="h-3.5 w-3.5 transition-transform group-hover:-translate-x-0.5" />
+            <ArrowLeft className="h-4 w-4 text-muted-foreground transition-transform group-hover:-translate-x-0.5" />
             <span className="hidden sm:inline">Back to Mode Selection</span>
             <span className="sm:hidden">Back</span>
           </button>
+          <Sheet>
+            <SheetTrigger asChild>
+              <button
+                type="button"
+                className="lg:hidden inline-flex items-center gap-1.5 h-9 px-3 rounded-lg border border-border bg-background text-sm font-medium text-foreground shadow-sm hover:border-foreground/25 transition-colors"
+              >
+                <ListFilter className="h-4 w-4 text-muted-foreground" />
+                Filters
+                {facetCount > 0 && (
+                  <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[11px] font-bold text-white tabular-nums">
+                    {facetCount}
+                  </span>
+                )}
+              </button>
+            </SheetTrigger>
+            {/* max-w-[85vw]: never wider than the phone — a fixed w-80
+                overflowed 320–360px screens */}
+            <SheetContent side="left" className="w-80 max-w-[85vw] overflow-y-auto px-4 pb-4 pt-12">
+              <SheetHeader className="sr-only">
+                <SheetTitle>Filters</SheetTitle>
+              </SheetHeader>
+              {renderFilterPanel(true)}
+            </SheetContent>
+          </Sheet>
         </div>
 
         {/* Facet sidebar (desktop) + everything else on its right */}
@@ -362,7 +398,7 @@ export function QuizSelection() {
               internally, so it stays pinned in view and never spills onto the
               footer. */}
           <aside className="hidden lg:block w-64 xl:w-72 shrink-0 sticky top-6 self-start">
-            {renderFilterPanel(true)}
+            {renderFilterPanel()}
           </aside>
 
           <div className="min-w-0 flex-1">
@@ -387,33 +423,7 @@ export function QuizSelection() {
                 resultCount={resultCount}
                 activeFilterCount={activeFilterCount}
                 onClearFilters={clearFilters}
-                filterAction={
-                  /* Mobile/tablet: the facet panel slides in as a drawer */
-                  <Sheet>
-                    <SheetTrigger asChild>
-                      <button
-                        type="button"
-                        className="lg:hidden inline-flex items-center gap-1.5 h-9 px-3 rounded-lg border border-border bg-background text-sm font-medium text-foreground shadow-sm hover:border-foreground/25 transition-colors"
-                      >
-                        <ListFilter className="h-4 w-4 text-muted-foreground" />
-                        Filters
-                        {facetCount > 0 && (
-                          <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[11px] font-bold text-white tabular-nums">
-                            {facetCount}
-                          </span>
-                        )}
-                      </button>
-                    </SheetTrigger>
-                    {/* max-w-[85vw]: never wider than the phone — a fixed w-80
-                        overflowed 320–360px screens */}
-                    <SheetContent side="left" className="w-80 max-w-[85vw] overflow-y-auto px-4 pb-4 pt-12">
-                      <SheetHeader className="sr-only">
-                        <SheetTitle>Filters</SheetTitle>
-                      </SheetHeader>
-                      {renderFilterPanel()}
-                    </SheetContent>
-                  </Sheet>
-                }
+                hideSortOnPhones
               />
             </div>
 

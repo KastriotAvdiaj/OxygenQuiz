@@ -18,6 +18,10 @@ same defaults:
 
 - **Single player** — `/choose-quiz` (`src/pages/Quiz/Quiz-Selection.tsx`);
   the panel renders as a left sidebar on desktop and a slide-in drawer on mobile
+  (below `lg`). In the drawer the panel is `frameless` — no card; the drawer is its surface
+  (2026-10-11). The drawer's "Filters" button sits on the Back row, opposite Back, the two the
+  same chip. Below `sm` the sort menu leaves the toolbar (`hideSortOnPhones`) and appears in
+  the drawer as "Sort by" (`QuizSortSelect`, the same control), so the toolbar is one row.
 - **Multiplayer** — the lobby's quiz picker dialog
   (`src/pages/Quiz/Multiplayer/components/lobby/quiz-selection-dialog.tsx`);
   the panel sits behind a "Filters" toggle in its compact variant
