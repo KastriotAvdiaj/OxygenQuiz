@@ -10,6 +10,7 @@ import { useQuestionDifficultyData } from "@/pages/Dashboard/Pages/Question/Enti
 import { useQuestionLanguageData } from "@/pages/Dashboard/Pages/Question/Entities/Language/api/get-question-language";
 import { useQuizFilterState } from "@/pages/Quiz/components/quiz-filters";
 import { QuizSelectionDialogView } from "./quiz-selection-dialog-view";
+import { useCanSelectUnspecifiedLookup } from "@/pages/Dashboard/Pages/Question/Entities/lookup-visibility";
 
 // Matches the /choose-quiz page size, so an identical filter/sort/page state reuses its
 // React-Query cache entry (key includes the full query object).
@@ -44,6 +45,7 @@ export const QuizSelectionDialog = ({
     activeCount: facetCount,
     selectionKey,
   } = useQuizFilterState();
+  const showUnspecified = useCanSelectUnspecifiedLookup();
 
   const { data: categories = [] } = useQuestionCategoryData({});
   const { data: difficulties = [] } = useQuestionDifficultyData({});
@@ -94,6 +96,7 @@ export const QuizSelectionDialog = ({
       filtersOpen={filtersOpen}
       onFiltersOpenChange={setFiltersOpen}
       facetCount={facetCount}
+      showUnspecified={showUnspecified}
       categories={categories}
       difficulties={difficulties}
       languages={languages}

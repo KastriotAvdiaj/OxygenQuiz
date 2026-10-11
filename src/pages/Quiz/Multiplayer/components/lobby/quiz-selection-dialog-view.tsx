@@ -48,6 +48,8 @@ export interface QuizSelectionDialogViewProps {
   filtersOpen: boolean;
   onFiltersOpenChange: (open: boolean) => void;
   facetCount: number;
+  /** Passed to `QuizFilterPanel`: whether "Unspecified" is offered as a facet (catalog admins only). */
+  showUnspecified?: boolean;
   categories: QuestionCategory[];
   difficulties: QuestionDifficulty[];
   languages: QuestionLanguage[];
@@ -80,6 +82,7 @@ export const QuizSelectionDialogView = ({
   filtersOpen,
   onFiltersOpenChange,
   facetCount,
+  showUnspecified = false,
   categories,
   difficulties,
   languages,
@@ -168,6 +171,7 @@ export const QuizSelectionDialogView = ({
                   onToggle={onToggleFacet}
                   onClearAll={onClearFacets}
                   activeCount={facetCount}
+                  showUnspecified={showUnspecified}
                 />
               </div>
             </CollapsibleContent>
