@@ -22,6 +22,9 @@ public class GuestQuizSessionsController : BaseApiController
 {
     private const string GuestPlayedCookieName = "guest_played";
 
+    /// <summary>The cookie's value once the free quiz is over: results seen, session deleted.</summary>
+    private const string SpentValue = "1";
+
     private readonly IQuizSessionService _quizSessionService;
 
     public GuestQuizSessionsController(IQuizSessionService quizSessionService)
@@ -29,12 +32,30 @@ public class GuestQuizSessionsController : BaseApiController
         _quizSessionService = quizSessionService;
     }
 
-    /// <summary>Whether this browser still has its free guest quiz available.</summary>
+    /// <summary>
+    /// Whether this browser still has its free guest quiz available — and, if that quiz was
+    /// started but never finished, the session to carry on with.
+    ///
+    /// The free quiz is spent when it <b>starts</b>, not when its results are seen: until
+    /// 2026-10-11 the cookie was only set by <c>/finish</c>, so leaving before the results page —
+    /// even on the last question — left the browser free to start another, indefinitely. The
+    /// cookie now carries the session id from the moment the session exists, which is also what
+    /// makes a refresh or a dropped connection recoverable rather than the end of the only try.
+    /// </summary>
     [HttpGet("can-play")]
-    public IActionResult CanPlay()
+    public async Task<IActionResult> CanPlay()
     {
-        var alreadyPlayed = Request.Cookies.ContainsKey(GuestPlayedCookieName);
-        return Ok(new { canPlay = !alreadyPlayed });
+        if (!Request.Cookies.TryGetValue(GuestPlayedCookieName, out var value))
+            return Ok(new { canPlay = true, resumeSessionId = (Guid?)null });
+
+        // A session id whose session is still there (the sweep deletes abandoned guest sessions,
+        // /finish deletes viewed ones) can be continued. Anything else is a spent try.
+        Guid? resumeSessionId =
+            Guid.TryParse(value, out var sessionId) && await _quizSessionService.IsGuestSessionAsync(sessionId)
+                ? sessionId
+                : null;
+
+        return Ok(new { canPlay = false, resumeSessionId });
     }
 
     [HttpPost]
@@ -50,6 +71,10 @@ public class GuestQuizSessionsController : BaseApiController
         var result = await _quizSessionService.CreateGuestSessionAsync(model.QuizId);
         if (!result.IsSuccess) return HandleResult(result);
 
+        // Spent from here on (see CanPlay). The value is the session id so the same browser can
+        // come back to this session, and only this one.
+        SetGuestPlayedCookie(result.Data!.Id.ToString());
+
         return CreatedAtAction(nameof(GetCurrentState), new { sessionId = result.Data!.Id }, result.Data);
     }
 
@@ -61,6 +86,23 @@ public class GuestQuizSessionsController : BaseApiController
         if (!await _quizSessionService.IsGuestSessionAsync(sessionId)) return NotFound();
 
         var result = await _quizSessionService.GetCurrentStateAsync(sessionId);
+        return HandleResult(result);
+    }
+
+    /// <summary>
+    /// Carries on with a guest session after a refresh or a lost connection: the same
+    /// catch-up a signed-in player gets, so questions whose time ran out while the guest was
+    /// away are timed out rather than handed back. A finished session answers with
+    /// <c>isQuizComplete</c> and the client goes to the results.
+    /// </summary>
+    [HttpPost("{sessionId:guid}/resume")]
+    [ProducesResponseType(typeof(ResumeResultDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Resume(Guid sessionId)
+    {
+        if (!await _quizSessionService.IsGuestSessionAsync(sessionId)) return NotFound();
+
+        var result = await _quizSessionService.ResolveAndResumeGuestAsync(sessionId);
         return HandleResult(result);
     }
 
@@ -110,7 +152,8 @@ public class GuestQuizSessionsController : BaseApiController
 
     /// <summary>
     /// Call once the guest has seen their results. Permanently deletes the session and its
-    /// answers, and sets the cookie that spends this browser's one free guest quiz.
+    /// answers, and turns the cookie from "this session" into "spent" — there is no longer a
+    /// session to come back to.
     /// </summary>
     [HttpPost("{sessionId:guid}/finish")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -122,14 +165,17 @@ public class GuestQuizSessionsController : BaseApiController
         var result = await _quizSessionService.DiscardGuestSessionAsync(sessionId);
         if (!result.IsSuccess) return HandleResult(result);
 
-        Response.Cookies.Append(GuestPlayedCookieName, "1", new CookieOptions
+        SetGuestPlayedCookie(SpentValue);
+
+        return NoContent();
+    }
+
+    private void SetGuestPlayedCookie(string value) =>
+        Response.Cookies.Append(GuestPlayedCookieName, value, new CookieOptions
         {
             HttpOnly = true,
             Secure = true,
             SameSite = SameSiteMode.None,
             Expires = DateTime.UtcNow.AddYears(1),
         });
-
-        return NoContent();
-    }
 }

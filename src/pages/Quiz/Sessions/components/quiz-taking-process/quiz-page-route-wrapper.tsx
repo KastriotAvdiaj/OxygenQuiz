@@ -71,8 +71,17 @@ export const QuizPageRouteWrapper = () => {
     );
   }
 
-  if (guestStatus?.canPlay) {
-    return <GuestQuizPage quizId={parseInt(quizId, 10)} />;
+  // One branch for "may start" and "has one to carry on with", so a refetch of can-play
+  // mid-quiz (it flips from the first to the second once the session exists) re-renders the same
+  // page instead of remounting it. A started session is continued whichever quiz this URL names:
+  // it is the only quiz this browser has left.
+  if (guestStatus?.canPlay || guestStatus?.resumeSessionId) {
+    return (
+      <GuestQuizPage
+        quizId={parseInt(quizId, 10)}
+        resumeSessionId={guestStatus.resumeSessionId}
+      />
+    );
   }
 
   // Not logged in and the free guest quiz is already spent.

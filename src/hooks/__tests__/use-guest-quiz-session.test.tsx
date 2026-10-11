@@ -69,6 +69,31 @@ describe("useGuestQuizSession under StrictMode", () => {
     expect(result.current.error).toContain("Failed to create quiz session.");
   });
 
+  it("carries on with a started session instead of creating one", async () => {
+    post.mockResolvedValue({
+      session,
+      activeQuestion: question,
+      questionNumber: 2,
+      isQuizComplete: false,
+      skippedCount: 0,
+    });
+
+    const { result } = renderHook(
+      () => useGuestQuizSession({ quizId: 1, resumeSessionId: "session-1" }),
+      { wrapper }
+    );
+
+    await waitFor(() => expect(result.current.isInitialLoading).toBe(false));
+
+    expect(result.current.quizSession).toEqual(session);
+    expect(result.current.currentQuestion).toEqual(question);
+    expect(result.current.currentQuestionNumber).toBe(2);
+    // The only POST is the resume: no second session behind the guest's back.
+    expect(post.mock.calls.map((c) => String(c[0]))).toEqual([
+      "/guest-quiz-sessions/session-1/resume",
+    ]);
+  });
+
   it("creates exactly one session per mount", async () => {
     const { result } = renderHook(() => useGuestQuizSession({ quizId: 1 }), { wrapper });
 

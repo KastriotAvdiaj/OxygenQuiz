@@ -1,9 +1,11 @@
 /**
  * Drives a guest (no-account) singleplayer quiz attempt — see docs/auth/guest-play.md.
  *
- * Deliberately much simpler than `useQuizSession`: there is no "resume an existing session"
- * concept (a guest only ever has the one session this hook just created) and no abandon/restart
- * flow, since a guest only gets one attempt per browser. It exists as its own hook rather than a
+ * Deliberately much simpler than `useQuizSession`: a guest only ever has one session, so there
+ * is no resume-or-abandon choice to offer and no restart. The one session is either created here
+ * or, when the route found it already started (`resumeSessionId` — a refresh, a dropped
+ * connection), carried on with: the free try was spent when it started, so losing the page must
+ * not lose the quiz. It exists as its own hook rather than a
  * branch inside `useQuizSession` so the authenticated flow's resume/abandon state machine never
  * has to reason about guests.
  */
@@ -11,15 +13,21 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { useCreateGuestQuizSession, useGetGuestNextQuestion } from "@/pages/Quiz/Sessions/api/guest-quiz-session";
+import {
+  resumeGuestQuizSession,
+  useCreateGuestQuizSession,
+  useGetGuestNextQuestion,
+} from "@/pages/Quiz/Sessions/api/guest-quiz-session";
 import { QuizSession, CurrentQuestion, InstantFeedbackAnswerResult } from "@/types/quiz-session-types";
 import { extractErrorMessage } from "./use-quiz-session";
 
 interface UseGuestQuizSessionParams {
   quizId: number;
+  /** The guest's already-started session, if the route found one. Read once, on mount. */
+  resumeSessionId?: string | null;
 }
 
-export const useGuestQuizSession = ({ quizId }: UseGuestQuizSessionParams) => {
+export const useGuestQuizSession = ({ quizId, resumeSessionId }: UseGuestQuizSessionParams) => {
   const navigate = useNavigate();
 
   const [quizSession, setQuizSession] = useState<QuizSession | null>(null);
@@ -81,6 +89,28 @@ export const useGuestQuizSession = ({ quizId }: UseGuestQuizSessionParams) => {
     // doesn't care who is subscribed. See docs/auth/guest-play.md
     // § "Why this hook awaits its mutations".
     (async () => {
+      if (resumeSessionId) {
+        try {
+          const result = await resumeGuestQuizSession({ sessionId: resumeSessionId });
+          if (result.isQuizComplete) {
+            navigate(`/quiz/results-guest/${result.session.id}`, { replace: true });
+            return;
+          }
+          setQuizSession(result.session);
+          if (result.activeQuestion) {
+            setCurrentQuestion(result.activeQuestion);
+            setCurrentQuestionNumber(result.questionNumber);
+          } else {
+            // One below: fetchNextQuestion bumps the number when the question arrives.
+            setCurrentQuestionNumber(result.questionNumber - 1);
+            await fetchNextQuestion(result.session.id);
+          }
+        } catch (err: any) {
+          setError(extractErrorMessage(err, "Failed to continue your quiz"));
+        }
+        return;
+      }
+
       try {
         const sessionData = await createSessionMutation.mutateAsync({ quizId });
         setQuizSession(sessionData);

@@ -8,12 +8,14 @@ import { QuizLoadingView } from "../quiz-loading-view";
 import { useGuestQuizSession } from "@/hooks/use-guest-quiz-session";
 
 interface GuestQuizPageProps {
+  /** The already-started session to carry on with, if any — see `useGuestQuizSession`. */
+  resumeSessionId?: string | null;
   quizId: number;
 }
 
-/** Guest-play counterpart of QuizPage — see docs/auth/guest-play.md. No resume/abandon UI: a guest
+/** Guest-play counterpart of QuizPage — see docs/auth/guest-play.md. No resume/abandon choice: a guest
  * only ever has the one session this page creates. */
-export function GuestQuizPage({ quizId }: GuestQuizPageProps) {
+export function GuestQuizPage({ quizId, resumeSessionId }: GuestQuizPageProps) {
   const navigate = useNavigate();
 
   const {
@@ -26,7 +28,7 @@ export function GuestQuizPage({ quizId }: GuestQuizPageProps) {
     isFetchingNextQuestion,
     handleAnswerSubmissionSuccess,
     fetchNextQuestion,
-  } = useGuestQuizSession({ quizId });
+  } = useGuestQuizSession({ quizId, resumeSessionId });
 
   const submitAnswerMutation = useSubmitGuestAnswer();
   const isSubmitting = submitAnswerMutation.isPending;

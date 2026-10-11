@@ -23,6 +23,32 @@ board (the Classic format guard). What *is* already in place is the deletion hal
 deletion paths below remove a session's Associations game first, so nothing of a guest's board
 could outlive the attempt either.
 
+## The free quiz is spent when it starts
+
+Decided 2026-10-11. The `guest_played` cookie is set by `POST /guest-quiz-sessions`, the moment
+the session exists, and its value is that session's id. `POST /finish` then overwrites it with
+`1`: spent, and nothing left to come back to.
+
+Until then the cookie was only set by `/finish`, which the results page calls. A guest who left
+before the results page, even on the last question, had spent nothing and could start another
+quiz, and another. That was the whole limit, undone by closing a tab.
+
+Spending the try at the start would by itself make a refresh or a dropped connection the end of
+the only quiz a guest gets, so the same change adds the one thing guests did not have: **carrying
+on with that session.** `GET /can-play` answers `{ canPlay, resumeSessionId }`:
+
+| Cookie | Answer | The play route |
+|---|---|---|
+| absent | `canPlay: true` | starts a session |
+| a session id, session still exists | `canPlay: false, resumeSessionId` | carries on with it, whichever quiz the URL names |
+| `1`, or an id whose session is gone | `canPlay: false` | sends the visitor to log in |
+
+`POST /{id}/resume` is the signed-in flow's catch-up (`ResolveAndResumeGuestAsync`, the same
+code matched on `IsGuestSession` instead of a user id): questions whose time ran out while the
+guest was away are timed out, not handed back, so leaving is not a way to buy thinking time. A
+session the sweep has already deleted simply stops being resumable. There is still no
+abandon-and-restart and no choice to offer: one session, continued or over.
+
 ## The limit is soft, by design
 
 The one-quiz limit is enforced with an **HttpOnly cookie** (`guest_played`), not a hard server-side
@@ -98,17 +124,18 @@ only the sessions currently in flight.
 
 | Route | Mirrors (real controller) | Notes |
 |---|---|---|
-| `GET /can-play` | — (guest-only) | Frontend checks this before offering guest play. |
-| `POST /` | `POST /api/QuizSessions` | Rejects with 403 if `guest_played` cookie is already set. |
+| `GET /can-play` | — (guest-only) | `{ canPlay, resumeSessionId }` — see "The free quiz is spent when it starts". |
+| `POST /` | `POST /api/QuizSessions` | Rejects with 403 if `guest_played` cookie is already set. Sets it, to the new session's id. |
+| `POST /{id}/resume` | `POST /api/QuizSessions/{id}/resolve-and-resume` | Carries on with the started session. |
 | `GET /{id}/current-state` | `GET /api/QuizSessions/{id}/current-state` | |
 | `GET /{id}/next-question` | `GET /api/QuizSessions/{id}/next-question` | |
 | `POST /answer` | `POST /api/QuizSessions/answer` | |
 | `POST /{id}/complete` | `POST /api/QuizSessions/{id}/complete` | |
 | `GET /{id}/results` | `GET /api/QuizSessions/{id}/results` | |
-| `POST /{id}/finish` | — (guest-only) | Deletes the session + answers, sets `guest_played`. |
+| `POST /{id}/finish` | — (guest-only) | Deletes the session + answers, sets `guest_played` to `1`. |
 
-There is **no** guest equivalent of resume, abandon-and-restart, or "get user's sessions" — a
-guest only ever has the one session this flow creates, so none of that applies.
+There is **no** guest equivalent of abandon-and-restart or "get user's sessions" — a guest only
+ever has the one session this flow creates. Resume exists since 2026-10-11, for that one session.
 
 ### Security model — why an anonymous controller is safe here
 
@@ -256,6 +283,7 @@ never reaches them at all; there's no guest-mode fallback for multiplayer anywhe
 ```
 1. Visitor opens /quiz/:quizId/play, not logged in, guest_played cookie absent
      → POST /guest-quiz-sessions  (creates QuizSession, UserId = GuestAccount.Id, IsGuestSession = true)
+         → backend sets the guest_played cookie to the session id (1 year): the free quiz is spent
 
 2. Plays through questions exactly like a real session
      → GET next-question / POST answer, repeated — same engine, same grading, same timers
@@ -265,7 +293,7 @@ never reaches them at all; there's no guest-mode fallback for multiplayer anywhe
      → GET results loads the graded session
      → frontend calls POST /finish
          → backend deletes the session's Associations game, if any, then UserAnswers + the QuizSession row
-         → backend sets the guest_played cookie (1 year)
+         → backend overwrites the guest_played cookie with "1": spent, nothing to resume
      → nothing about this attempt exists anywhere anymore
 
 3b. Abandoned path: visitor closes the tab mid-quiz, never reaches results
@@ -273,8 +301,13 @@ never reaches them at all; there's no guest-mode fallback for multiplayer anywhe
      → because IsGuestSession = true, the cleanup DELETES the row (its answers, and any
        Associations game it plays)
        instead of marking it "completed" the way a real account's session would be
-     → the guest_played cookie is never set in this path — that browser still has its
-       free quiz available (consistent with "the limit is soft, not a security boundary")
+     → the cookie still names the deleted session, so can-play answers "spent": leaving
+       mid-quiz does not buy a second free quiz (it did until 2026-10-11)
+
+3c. Came back in time: a refresh, a dropped connection, or the tab reopened before the sweep
+     → GET can-play answers resumeSessionId
+     → POST /{id}/resume times out what expired meanwhile and returns where to carry on,
+       or says the quiz is complete and the visitor goes to the results
 ```
 
 There is no path where a guest session outlives the attempt. Either the guest finishes and views
