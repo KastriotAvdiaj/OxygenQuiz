@@ -170,22 +170,37 @@ engine never sees a user, only a Seat.
 ```
 columnValue(c) = ColumnBase + PerClosedTile × (Tiles of c still closed when it is solved)
 solve Column c  → columnValue(c), to whoever solved it
-solve the Final → FinalBase + Σ columnValue(c) over every Column still unsolved, to whoever solved it
+solve the Final → FinalBase + Σ (columnValue(c) + FinalPerCollectedColumn) over every Column still unsolved,
+                  to whoever solved it
 wrong Guess, Pass, running out of time → 0
 ```
 
-With the default settings (5, 1, 10): a Column is worth 5–9, and the Final 10–45.
+With the default settings (5, 1, 10, 5): a Column is worth 5–9, and the Final 10–65.
 
-| At the moment the Final is solved | The Final scores |
-|---|---|
-| One Tile opened (in A), nothing solved: A = 5+3, B = C = D = 5+4 | 10 + 8 + 27 = **45** (the maximum) |
-| A and B solved; C has one Tile open, D none | 10 + (5+3) + (5+4) = **27** |
-| All four Columns already solved | **10** |
+| At the moment the Final is solved | The Final scores | The game scores |
+|---|---|---|
+| One Tile opened (in A), nothing solved: A = 5+3, B = C = D = 5+4 | 10 + 8 + 27 + 4×5 = **65** | **65** (the maximum) |
+| A and B solved; C has one Tile open, D none | 10 + (5+3) + (5+4) + 2×5 = **37** | 37 + what A and B paid |
+| One Tile opened (in A), then A, B, C and D each solved, then the Final | **10** | 8 + 9 + 9 + 9 + 10 = **45** |
 
-**Why this shape.** Solving the Final early is worth more because every Column you didn't need goes
-to you at its full value, and a Column is worth more the fewer of its Tiles were opened. So the Final
-with two Columns unsolved beats the Final with all four solved, and a Column solution is worth more
-than any Tile. There is **no time factor** — unlike Classic, speed is not what this format rewards.
+**Why this shape.** A Column is worth more the fewer of its Tiles were opened, and a Column solution
+is worth more than any Tile. A Column may be solved with none of its own Tiles open — a correct Guess
+earns another Guess at any target (§3.2) — and that pays the most a Column can: 9. Going for the Final
+early is worth more than that again, because each Column you did not need comes to you at its value
+**plus** `FinalPerCollectedColumn`.
+
+**The bonus is what separates the two routes (decided 2026-10-11).** Until then the Final paid
+`FinalBase` plus the collected Columns' values and nothing else, so it handed over exactly what
+those Columns would have paid on their own: one Tile and then the Final scored 45, and one Tile,
+all four Columns and then the Final also scored 45 (the first and third rows of the table). The
+bold move and the careful one were the same sum. The bonus is per collected Column rather than a
+flat amount so that it scales with how much was skipped, and it is a whole number so that no score
+needs rounding.
+
+**There is no time factor** — unlike Classic, speed is not what this format rewards. Asked again
+on 2026-10-11 for Solo, and kept: the board timer is already the pressure, a time bonus would
+reward typing speed over deduction, and a Duel's turns run on a fixed clock, so the two modes
+would stop being comparable.
 
 **The Final's points include the Columns it collected.** Each collected Column is recorded as solved
 by the Final's solver (`ColumnSolve.ViaFinal`), with its value, for the breakdown — but that value
@@ -211,6 +226,7 @@ No number in §3–§4 is written in the engine or the scoring code. They are al
 | `ColumnBase` | 5 | points for a Column solution |
 | `PerClosedTile` | 1 | extra points per Tile of that Column still closed |
 | `FinalBase` | 10 | points for the Final, before the Columns it collects |
+| `FinalPerCollectedColumn` | 5 | extra points for each unsolved Column the Final collects |
 | `DuelTurnSeconds` | 30 | a Duel turn; restarts after each correct Guess |
 | `EndgameTurnsPerSeat` | 2 | guess-only turns each player gets once every Tile is open |
 | `SoloDefaultBoardSeconds` | 240 | the board time the builder proposes |
@@ -228,8 +244,14 @@ No number in §3–§4 is written in the engine or the scoring code. They are al
   `AssociationRules.ToJson` when the game starts and never updated — [ADR 0020](../adr/0020-an-associations-game-is-its-move-log.md)). This is not optional.
   Scores are recomputed by replaying the moves (§6), so without a snapshot, changing `FinalBase`
   from 10 to 12 would silently rewrite every past game's score. `ReplayAndRulesTests` shows the same
-  log scoring 35 under the snapshot and 37 under the changed setting. A snapshot written before a
-  setting existed replays with that setting's default.
+  log scoring 45 under the snapshot and 47 under the changed setting. A snapshot written before a
+  setting existed replays with that setting's **initializer**, which is normally its default.
+  `FinalPerCollectedColumn` is the exception, and the reason the two words are kept apart: its
+  initializer is 0 and `AssociationRules.Default` sets 5, because every game recorded before the
+  setting existed was scored without a bonus. Had the initializer been 5, the next replay would
+  have raised the score of every past game that ended on the Final
+  (`AGameRecordedBeforeTheCollectedColumnBonus_KeepsItsScore`). A new setting that changes scoring
+  must do the same: initialize to "what it implicitly was", default to what it should be now.
 
 ## 6. The engine
 

@@ -262,7 +262,7 @@ public class DuelRulesTests
         var win = Must(s, AssociationMove.Guess(1, GuessTarget.Final, "Italy", At(41)));
 
         Assert.Equal(GameEndReason.FinalSolved, win.GameEnded);
-        Assert.Equal(10 + 4 * 5, win.Points);   // all Tiles open: every Column is worth its base
+        Assert.Equal(10 + 4 * (5 + 5), win.Points);   // all Tiles open: every Column is worth its base, plus the bonus for collecting it
     }
 
     // ── More seats ──────────────────────────────────────────────────────

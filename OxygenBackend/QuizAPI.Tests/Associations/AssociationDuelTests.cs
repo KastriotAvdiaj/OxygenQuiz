@@ -305,7 +305,7 @@ public class AssociationDuelTests
         Assert.Equal("FinalSolved", end.View.EndReason);
         Assert.Equal(1, end.View.WinnerSeat);
         Assert.Equal(1, duel.WinnerSeat);
-        Assert.Equal(10 + (5 + 3) + (5 + 3) + (5 + 4) + (5 + 4), end.View.Seats[1].Score);
+        Assert.Equal(10 + (5 + 3) + (5 + 3) + (5 + 4) + (5 + 4) + 4 * 5, end.View.Seats[1].Score);
         Refused(() => duel.Open(Ana, Tile('C', 1), At(5)), "This duel is over.", duel);
         Assert.Null(duel.ExpireTurnIfDue(At(500)));
     }

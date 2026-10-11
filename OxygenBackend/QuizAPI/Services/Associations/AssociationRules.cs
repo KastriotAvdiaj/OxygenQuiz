@@ -29,6 +29,20 @@ namespace QuizAPI.Services.Associations
         /// <summary>Points for the Final solution, before the unsolved Columns it collects.</summary>
         public int FinalBase { get; init; } = 10;
 
+        /// <summary>
+        /// Extra points for each unsolved Column the Final collects, on top of that Column's value.
+        /// It is what makes going straight for the Final beat solving the Columns one by one:
+        /// without it the two are the same sum, because the Final hands over exactly what the
+        /// Columns would have paid (45 either way under the other defaults).
+        ///
+        /// <para><b>The initializer is 0, and <see cref="Default"/> sets 5 — on purpose.</b> A
+        /// property missing from a stored snapshot takes its initializer (<see cref="FromJson"/>),
+        /// and every game recorded before 2026-10-11 has no such property: it was played, and
+        /// scored, with no bonus. Initializing to 5 would have rewritten all of their scores on the
+        /// next replay.</para>
+        /// </summary>
+        public int FinalPerCollectedColumn { get; init; } = 0;
+
         /// <summary>Length of a Duel turn. Restarts after each correct Guess.</summary>
         public int DuelTurnSeconds { get; init; } = 30;
 
@@ -48,7 +62,7 @@ namespace QuizAPI.Services.Associations
         public int SoloMaxBoardSeconds { get; init; } = 1800;
 
         /// <summary>The defaults, as documented. What a game gets when nothing is configured.</summary>
-        public static AssociationRules Default { get; } = new();
+        public static AssociationRules Default { get; } = new() { FinalPerCollectedColumn = 5 };
 
         /// <summary>
         /// Every reason these rules can't run a game; empty when they can. Checked at startup for
@@ -61,6 +75,7 @@ namespace QuizAPI.Services.Associations
             if (ColumnBase < 0) errors.Add($"{nameof(ColumnBase)} can't be negative.");
             if (PerClosedTile < 0) errors.Add($"{nameof(PerClosedTile)} can't be negative.");
             if (FinalBase < 0) errors.Add($"{nameof(FinalBase)} can't be negative.");
+            if (FinalPerCollectedColumn < 0) errors.Add($"{nameof(FinalPerCollectedColumn)} can't be negative.");
             if (DuelTurnSeconds < 5) errors.Add($"{nameof(DuelTurnSeconds)} must be at least 5.");
             if (EndgameTurnsPerSeat < 1) errors.Add($"{nameof(EndgameTurnsPerSeat)} must be at least 1.");
             if (SoloMinBoardSeconds < 10) errors.Add($"{nameof(SoloMinBoardSeconds)} must be at least 10.");
@@ -98,6 +113,7 @@ namespace QuizAPI.Services.Associations
         public int ColumnBase { get; set; } = AssociationRules.Default.ColumnBase;
         public int PerClosedTile { get; set; } = AssociationRules.Default.PerClosedTile;
         public int FinalBase { get; set; } = AssociationRules.Default.FinalBase;
+        public int FinalPerCollectedColumn { get; set; } = AssociationRules.Default.FinalPerCollectedColumn;
         public int DuelTurnSeconds { get; set; } = AssociationRules.Default.DuelTurnSeconds;
         public int EndgameTurnsPerSeat { get; set; } = AssociationRules.Default.EndgameTurnsPerSeat;
         public int SoloDefaultBoardSeconds { get; set; } = AssociationRules.Default.SoloDefaultBoardSeconds;
@@ -109,6 +125,7 @@ namespace QuizAPI.Services.Associations
             ColumnBase = ColumnBase,
             PerClosedTile = PerClosedTile,
             FinalBase = FinalBase,
+            FinalPerCollectedColumn = FinalPerCollectedColumn,
             DuelTurnSeconds = DuelTurnSeconds,
             EndgameTurnsPerSeat = EndgameTurnsPerSeat,
             SoloDefaultBoardSeconds = SoloDefaultBoardSeconds,

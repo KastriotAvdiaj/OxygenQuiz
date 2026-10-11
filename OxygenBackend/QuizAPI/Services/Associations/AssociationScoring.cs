@@ -7,11 +7,13 @@ namespace QuizAPI.Services.Associations
     /// <code>
     /// columnValue(c) = ColumnBase + PerClosedTile × (Tiles of c still closed)
     /// solve Column c  → columnValue(c)
-    /// solve the Final → FinalBase + Σ columnValue(c) over every Column still unsolved
+    /// solve the Final → FinalBase + Σ (columnValue(c) + FinalPerCollectedColumn) over every Column still unsolved
     /// </code>
     ///
-    /// Solving the Final early is worth more because every Column you didn't need goes to you at
-    /// its full value, and a Column is worth more the fewer of its Tiles were opened. There is no
+    /// A Column is worth more the fewer of its Tiles were opened, and a Column the Final collects
+    /// is worth more than the same Column solved on its own — by <c>FinalPerCollectedColumn</c>.
+    /// That bonus is the whole reason going straight for the Final beats solving the Columns
+    /// first: without it both routes add up to the same number. There is no
     /// time factor: speed is not what this format rewards. See docs/quiz/associations.md, "Scoring".
     /// </summary>
     public static class AssociationScoring
@@ -24,8 +26,14 @@ namespace QuizAPI.Services.Associations
             return rules.ColumnBase + rules.PerClosedTile * closedTiles;
         }
 
-        /// <summary>What the Final is worth: its base plus the value of every Column it collects.</summary>
-        public static int FinalValue(AssociationRules rules, IEnumerable<int> unsolvedColumnValues) =>
-            rules.FinalBase + unsolvedColumnValues.Sum();
+        /// <summary>
+        /// What the Final is worth: its base, plus the value of every Column it collects, plus the
+        /// bonus for each of those Columns.
+        /// </summary>
+        public static int FinalValue(AssociationRules rules, IEnumerable<int> unsolvedColumnValues)
+        {
+            var collected = unsolvedColumnValues.ToList();
+            return rules.FinalBase + collected.Sum() + rules.FinalPerCollectedColumn * collected.Count;
+        }
     }
 }

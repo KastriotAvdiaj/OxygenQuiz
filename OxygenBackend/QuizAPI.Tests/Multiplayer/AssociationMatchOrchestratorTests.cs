@@ -169,7 +169,7 @@ public class AssociationMatchOrchestratorTests
             Assert.Equal(3, s.QuizVersion);
         });
         Assert.Equal(8, sessions.Single(s => s.UserId == w.UserIds[Ana]).TotalScore);
-        Assert.Equal(36, sessions.Single(s => s.UserId == w.UserIds[Ben]).TotalScore);
+        Assert.Equal(51, sessions.Single(s => s.UserId == w.UserIds[Ben]).TotalScore);
 
         var game = await ctx.AssociationGames.Include(g => g.Players).Include(g => g.Moves).SingleAsync();
         Assert.Equal(PlayStyle.Duel, game.PlayStyle);
