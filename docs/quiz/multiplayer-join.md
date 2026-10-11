@@ -20,6 +20,19 @@ A lobby can be reached two ways, and `useLobbyConnection` reads the code from wh
 | Join dialog / create flow | `/multiplayer/lobby/:sessionId` | route param |
 | Shared invite link | `/multiplayer/join?code=XYZ123` | `?code=` query |
 
+**A guest can press Join** (2026-10-11). The game connection is only opened for a signed-in
+account, so to a guest the Join dialog used to show "Game server unavailable" with a dead button —
+wrong, and no amount of refreshing fixed it. Now a guest sees no connection warning, a line saying
+an account is needed, and a "Log in to join" button that goes to
+`/login?redirectTo=/multiplayer/lobby/<code>`; after logging in (or signing up from there) they
+land in the lobby, which does the join as it does for an invite link. The code is not checked
+before the redirect: the check goes over the connection a guest doesn't have.
+
+**Pasting an invite link into a code field works.** Both code fields (the Join dialog and the
+lobby page's `JoinForm`) run a paste through `roomCodeFromPaste` (`utils/room-code.ts`): a link
+gives up its `?code=` or its `/multiplayer/lobby/<code>` segment, and anything else is stripped to
+letters and digits. The six-character limit used to cut a pasted link to `HTTPS:`.
+
 `/multiplayer/join` with **no** `?code=` is also valid — that's the manual code-entry screen
 (`JoinForm`, rendered by `LobbyPageView` whenever `hasJoined` is false).
 

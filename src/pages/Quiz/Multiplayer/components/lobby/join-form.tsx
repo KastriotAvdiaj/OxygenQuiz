@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { ROOM_CODE_LENGTH, roomCodeFromPaste } from "../../utils/room-code";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/form";
 
@@ -66,9 +67,14 @@ export const JoinForm = ({
             placeholder="XXXXXX"
             value={sessionId}
             onChange={(e) => onSessionIdChange(e.target.value.toUpperCase())}
+            // A pasted invite link gives up its code; the length limit would cut it to "HTTPS:".
+            onPaste={(e) => {
+              e.preventDefault();
+              onSessionIdChange(roomCodeFromPaste(e.clipboardData.getData("text")));
+            }}
             onKeyDown={(e) => e.key === "Enter" && onJoin()}
             disabled={!isConnected}
-            maxLength={6}
+            maxLength={ROOM_CODE_LENGTH}
             className="h-16 border-2 font-quiz border-primary/30 text-center text-2xl tracking-[0.3em] transition-all focus-visible:border-primary sm:h-20 sm:text-4xl"
           />
         </div>

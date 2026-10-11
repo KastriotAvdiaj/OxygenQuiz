@@ -17,6 +17,7 @@ import {
   useRequestEmailChange,
   type AccountIdentity,
 } from "../api/account-identity";
+import { LiftedButton } from "@/common/LiftedButton";
 
 /**
  * The Username and Email "Edit" dialogs in the Account panel.
@@ -27,11 +28,19 @@ import {
  */
 
 const formatDay = (iso: string) =>
-  new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" });
+  new Date(iso).toLocaleDateString(undefined, {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
 
 // ── Username ────────────────────────────────────────────────────────────────────────────────
 
-export const UsernameEditor = ({ identity }: { identity?: AccountIdentity }) => {
+export const UsernameEditor = ({
+  identity,
+}: {
+  identity?: AccountIdentity;
+}) => {
   const [open, setOpen] = useState(false);
   const lockedUntil = identity?.nextUsernameChangeAt ?? null;
 
@@ -44,13 +53,19 @@ export const UsernameEditor = ({ identity }: { identity?: AccountIdentity }) => 
           className="shrink-0"
           // Locked by the 30-day rule — say until when, rather than a dead button.
           disabled={!identity || !!lockedUntil}
-          title={lockedUntil ? `You can change it again on ${formatDay(lockedUntil)}` : undefined}
+          title={
+            lockedUntil
+              ? `You can change it again on ${formatDay(lockedUntil)}`
+              : undefined
+          }
         >
           Edit
         </Button>
       </DialogTrigger>
       <DialogContent className="bg-background sm:max-w-md">
-        {identity && <UsernameForm identity={identity} onDone={() => setOpen(false)} />}
+        {identity && (
+          <UsernameForm identity={identity} onDone={() => setOpen(false)} />
+        )}
       </DialogContent>
     </Dialog>
   );
@@ -71,7 +86,8 @@ const UsernameForm = ({
   // "taken" answer can only come from it.
   const lengthOk = trimmed.length >= 3 && trimmed.length <= 50;
   const unchanged = trimmed === identity.username;
-  const caseOnly = !unchanged && trimmed.toLowerCase() === identity.username.toLowerCase();
+  const caseOnly =
+    !unchanged && trimmed.toLowerCase() === identity.username.toLowerCase();
 
   return (
     <form
@@ -85,8 +101,8 @@ const UsernameForm = ({
       <DialogHeader>
         <DialogTitle>Change your username</DialogTitle>
         <DialogDescription>
-          This is the name other players see. You can change it once every 30 days — fixing
-          only capital letters doesn't count.
+          This is the name other players see. You can change it once every 30
+          days — fixing only capital letters doesn't count.
         </DialogDescription>
       </DialogHeader>
 
@@ -103,8 +119,8 @@ const UsernameForm = ({
           aria-invalid={change.isError}
         />
         <p className="text-xs text-muted-foreground">
-          3 to 50 characters. The name you signed up with stays reserved to you, so nobody else
-          can take it.
+          3 to 50 characters. The name you signed up with stays reserved to you,
+          so nobody else can take it.
         </p>
         {change.isError && (
           <p role="alert" className="text-sm text-destructive">
@@ -114,16 +130,22 @@ const UsernameForm = ({
       </div>
 
       <DialogFooter>
-        <Button type="button" variant="outline" onClick={onDone}>
+        <LiftedButton
+          type="button"
+          className="text-sm bg-muted-foreground dark:bg-muted"
+          liftColor="muted-foreground"
+          onClick={onDone}
+        >
           Cancel
-        </Button>
-        <Button
+        </LiftedButton>
+        <LiftedButton
           type="submit"
+          className="text-sm text-white"
           disabled={!lengthOk || unchanged || change.isPending}
           isPending={change.isPending}
         >
           {caseOnly ? "Save" : "Change username"}
-        </Button>
+        </LiftedButton>
       </DialogFooter>
     </form>
   );
@@ -137,18 +159,31 @@ export const EmailEditor = ({ identity }: { identity?: AccountIdentity }) => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="shrink-0" disabled={!identity}>
+        <Button
+          variant="outline"
+          size="sm"
+          className="shrink-0"
+          disabled={!identity}
+        >
           Edit
         </Button>
       </DialogTrigger>
       <DialogContent className="bg-background sm:max-w-md">
-        {identity && <EmailForm identity={identity} onDone={() => setOpen(false)} />}
+        {identity && (
+          <EmailForm identity={identity} onDone={() => setOpen(false)} />
+        )}
       </DialogContent>
     </Dialog>
   );
 };
 
-const EmailForm = ({ identity, onDone }: { identity: AccountIdentity; onDone: () => void }) => {
+const EmailForm = ({
+  identity,
+  onDone,
+}: {
+  identity: AccountIdentity;
+  onDone: () => void;
+}) => {
   const [newEmail, setNewEmail] = useState("");
   const [password, setPassword] = useState("");
   const request = useRequestEmailChange();
@@ -161,9 +196,9 @@ const EmailForm = ({ identity, onDone }: { identity: AccountIdentity; onDone: ()
         <DialogHeader>
           <DialogTitle>Set a password first</DialogTitle>
           <DialogDescription>
-            Changing your email needs your password, and your account signs in with Google or
-            Microsoft only. Use <strong>Change password</strong> below to set one — we'll email you
-            a link — then come back here.
+            Changing your email needs your password, and your account signs in
+            with Google or Microsoft only. Use <strong>Change password</strong>{" "}
+            below to set one — we'll email you a link — then come back here.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
@@ -182,8 +217,8 @@ const EmailForm = ({ identity, onDone }: { identity: AccountIdentity; onDone: ()
           <DialogTitle>Check your new inbox</DialogTitle>
           <DialogDescription>
             We sent a confirmation link to{" "}
-            <strong className="text-foreground">{newEmail.trim()}</strong>. Your email changes
-            when you click it. The link expires in an hour.
+            <strong className="text-foreground">{newEmail.trim()}</strong>. Your
+            email changes when you click it. The link expires in an hour.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
@@ -195,22 +230,26 @@ const EmailForm = ({ identity, onDone }: { identity: AccountIdentity; onDone: ()
     );
   }
 
-  const canSubmit = newEmail.trim().length > 0 && password.length > 0 && !request.isPending;
+  const canSubmit =
+    newEmail.trim().length > 0 && password.length > 0 && !request.isPending;
 
   return (
     <form
       onSubmit={(e) => {
         e.preventDefault();
         if (!canSubmit) return;
-        request.mutate({ newEmail: newEmail.trim(), currentPassword: password });
+        request.mutate({
+          newEmail: newEmail.trim(),
+          currentPassword: password,
+        });
       }}
       className="space-y-4"
     >
       <DialogHeader>
         <DialogTitle>Change your email</DialogTitle>
         <DialogDescription>
-          We'll send a link to the new address. Nothing changes until you click it, and your
-          current address gets a notice when it does.
+          We'll send a link to the new address. Nothing changes until you click
+          it, and your current address gets a notice when it does.
         </DialogDescription>
       </DialogHeader>
 
@@ -250,7 +289,11 @@ const EmailForm = ({ identity, onDone }: { identity: AccountIdentity; onDone: ()
         <Button type="button" variant="outline" onClick={onDone}>
           Cancel
         </Button>
-        <Button type="submit" disabled={!canSubmit} isPending={request.isPending}>
+        <Button
+          type="submit"
+          disabled={!canSubmit}
+          isPending={request.isPending}
+        >
           Send confirmation link
         </Button>
       </DialogFooter>
@@ -259,14 +302,18 @@ const EmailForm = ({ identity, onDone }: { identity: AccountIdentity; onDone: ()
 };
 
 /** Under the Email row while a confirmation link is outstanding. */
-export const PendingEmailNotice = ({ pendingEmail }: { pendingEmail: string }) => {
+export const PendingEmailNotice = ({
+  pendingEmail,
+}: {
+  pendingEmail: string;
+}) => {
   const cancel = useCancelEmailChange();
   return (
     <div className="-mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 pb-3 text-xs text-muted-foreground">
       <span>
         Waiting for you to confirm{" "}
-        <strong className="font-medium text-foreground">{pendingEmail}</strong> — check that
-        inbox.
+        <strong className="font-medium text-foreground">{pendingEmail}</strong>{" "}
+        — check that inbox.
       </span>
       <button
         type="button"

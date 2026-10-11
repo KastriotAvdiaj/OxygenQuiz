@@ -58,26 +58,26 @@ export const LeaveLobbyDialog = ({
               {inDuel
                 ? "The duel is still on. Leaving now forfeits it: your opponent wins, whatever the score."
                 : inMatch
-                ? isHost
-                  ? "The match is still running. Leaving now forfeits your remaining questions, and as host it will end the match for everyone."
-                  : "The match is still running. The clock keeps going without you, so any questions left will be scored as unanswered."
-                : isHost
-                  ? "You are the host. Leaving will disband the lobby and disconnect all participants."
-                  : "You will be removed from the lobby. You can rejoin later with the room code."}
+                  ? isHost
+                    ? "The match is still running. Leaving now forfeits your remaining questions, and as host it will end the match for everyone."
+                    : "The match is still running. The clock keeps going without you, so any questions left will be scored as unanswered."
+                  : isHost
+                    ? "You are the host. Leaving will disband the lobby and disconnect all participants."
+                    : "You will be removed from the lobby. You can rejoin later with the room code."}
             </DialogDescription>
           </DialogHeader>
 
-          <DialogFooter className="flex flex-row gap-2 sm:gap-3 pt-2">
+          <DialogFooter className="flex flex-row gap-2 sm:gap-2 pt-2">
             <LiftedButton
               onClick={onCancel}
-              className="flex-1 h-10 sm:h-11 font-bold font-quiz tracking-wider bg-background text-foreground border border-border "
-              liftColor="border"
+              className="flex-1 h-10 sm:h-11 font-bold font-quiz tracking-wider bg-background text-foreground border border-border"
+              liftColor="foreground"
             >
               Stay
             </LiftedButton>
             <LiftedButton
               onClick={onConfirm}
-              className="flex-1 h-10 sm:h-11 font-bold font-quiz tracking-wider shadow-lg bg-destructive text-destructive-foreground"
+              className="flex-1 h-10 sm:h-11 font-bold font-quiz tracking-wider shadow-lg bg-red-600 text-destructive-foreground"
               liftColor="red-600"
             >
               {inMatch ? "Leave Match" : "Leave Lobby"}

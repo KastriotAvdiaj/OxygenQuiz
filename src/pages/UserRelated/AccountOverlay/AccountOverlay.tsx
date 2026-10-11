@@ -2,8 +2,15 @@ import { useEffect } from "react";
 import { useBlocker } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { ChevronLeft, ChevronRight, X, Save, Undo2, LogOut } from "lucide-react";
-import { Button, BlobLoader } from "@/components/ui";
+import {
+  ChevronLeft,
+  ChevronRight,
+  X,
+  Save,
+  Undo2,
+  LogOut,
+} from "lucide-react";
+import { BlobLoader } from "@/components/ui";
 import {
   Dialog,
   DialogContent,
@@ -279,111 +286,114 @@ export const AccountOverlay = () => {
               "sm:supports-[height:100dvh]:h-[calc(100dvh-4rem)]",
             )}
           >
-          {/* Radix requires an accessible title; ours is visual, per-pane. */}
-          <DialogPrimitive.Title className="sr-only">
-            Account and settings
-          </DialogPrimitive.Title>
+            {/* Radix requires an accessible title; ours is visual, per-pane. */}
+            <DialogPrimitive.Title className="sr-only">
+              Account and settings
+            </DialogPrimitive.Title>
 
-          {/* ── Sidebar: always on ≥md, and on phones only in the menu view ── */}
-          <aside
-            className={cn(
-              "shrink-0 overflow-y-auto border-border bg-background p-3",
-              "md:block md:w-60 md:border-r",
-              isMenuView ? "block w-full" : "hidden",
-            )}
-            style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
-          >
-            <div className="mb-3 flex items-center justify-between px-2 md:hidden">
-              <p className="text-base font-semibold">Settings</p>
-            </div>
-            <SectionNav
-              activeSection={isMenuView ? null : activeSection}
-              showChevrons={isMenuView}
-              onSelect={goToSection}
-              onLogout={handleLogout}
-            />
-          </aside>
-
-          {/* ── Content pane ── */}
-          <div
-            className={cn(
-              "min-w-0 flex-1 flex-col bg-background",
-              isMenuView ? "hidden md:flex" : "flex",
-            )}
-          >
-            <header className="flex items-center gap-2 border-b border-border px-3 py-3 sm:px-6">
-              {/* Back is the phone's way out of a panel; hidden once the sidebar exists. */}
-              <button
-                type="button"
-                onClick={() => goToSection(MENU_SECTION)}
-                aria-label="Back to settings menu"
-                className="-ml-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground md:hidden"
-              >
-                <ChevronLeft size={20} strokeWidth={1.75} />
-              </button>
-
-              <h2 className="min-w-0 flex-1 truncate text-base font-semibold sm:text-lg">
-                {sectionLabel(activeSection)}
-              </h2>
-
-              <button
-                type="button"
-                onClick={close}
-                aria-label="Close settings"
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-              >
-                <X size={20} strokeWidth={1.75} />
-              </button>
-            </header>
-
-            {/* The pane owns the scrollbar — the dialog itself never grows. */}
-            <div className="min-h-0 flex-1 overflow-y-auto px-3 py-4 sm:px-6 sm:py-6">
-              <div className="mx-auto w-full max-w-2xl">{renderPanel()}</div>
-            </div>
-
-            {/* Save bar: sticky to the bottom of the pane rather than fixed to the
-                viewport, so it stays inside the dialog and clears the home indicator. */}
-            <AnimatePresence>
-              {showSaveBar && (
-                <motion.div
-                  initial={{ y: 60, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  exit={{ y: 60, opacity: 0 }}
-                  transition={{ duration: 0.2, ease: "easeOut" }}
-                  className="border-t border-border bg-background/95 px-3 py-3 backdrop-blur sm:px-6"
-                  style={{
-                    paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))",
-                  }}
-                >
-                  <div className="mx-auto flex w-full max-w-2xl flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <span className="text-sm text-muted-foreground">
-                      You have unsaved changes
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <LiftedButton
-                        size="sm"
-                        className="flex-1 sm:flex-none bg-muted"
-                        liftColor="muted"
-                        onClick={settings.discard}
-                      >
-                        <Undo2 className="h-4 w-4" />
-                        Discard
-                      </LiftedButton>
-                      <LiftedButton
-                        size="sm"
-                        className="flex-1 text-white sm:flex-none"
-                        isPending={settings.isSaving}
-                        onClick={() => settings.save()}
-                      >
-                        <Save className="h-4 w-4" />
-                        Save changes
-                      </LiftedButton>
-                    </div>
-                  </div>
-                </motion.div>
+            {/* ── Sidebar: always on ≥md, and on phones only in the menu view ── */}
+            <aside
+              className={cn(
+                "shrink-0 overflow-y-auto border-border bg-background p-3",
+                "md:block md:w-60 md:border-r",
+                isMenuView ? "block w-full" : "hidden",
               )}
-            </AnimatePresence>
-          </div>
+              style={{
+                paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))",
+              }}
+            >
+              <div className="mb-3 flex items-center justify-between px-2 md:hidden">
+                <p className="text-base font-semibold">Settings</p>
+              </div>
+              <SectionNav
+                activeSection={isMenuView ? null : activeSection}
+                showChevrons={isMenuView}
+                onSelect={goToSection}
+                onLogout={handleLogout}
+              />
+            </aside>
+
+            {/* ── Content pane ── */}
+            <div
+              className={cn(
+                "min-w-0 flex-1 flex-col bg-background",
+                isMenuView ? "hidden md:flex" : "flex",
+              )}
+            >
+              <header className="flex items-center gap-2 border-b border-border px-3 py-3 sm:px-6">
+                {/* Back is the phone's way out of a panel; hidden once the sidebar exists. */}
+                <button
+                  type="button"
+                  onClick={() => goToSection(MENU_SECTION)}
+                  aria-label="Back to settings menu"
+                  className="-ml-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground md:hidden"
+                >
+                  <ChevronLeft size={20} strokeWidth={1.75} />
+                </button>
+
+                <h2 className="min-w-0 flex-1 truncate text-base font-semibold sm:text-lg">
+                  {sectionLabel(activeSection)}
+                </h2>
+
+                <button
+                  type="button"
+                  onClick={close}
+                  aria-label="Close settings"
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                >
+                  <X size={20} strokeWidth={1.75} />
+                </button>
+              </header>
+
+              {/* The pane owns the scrollbar — the dialog itself never grows. */}
+              <div className="min-h-0 flex-1 overflow-y-auto px-3 py-4 sm:px-6 sm:py-6">
+                <div className="mx-auto w-full max-w-2xl">{renderPanel()}</div>
+              </div>
+
+              {/* Save bar: sticky to the bottom of the pane rather than fixed to the
+                viewport, so it stays inside the dialog and clears the home indicator. */}
+              <AnimatePresence>
+                {showSaveBar && (
+                  <motion.div
+                    initial={{ y: 60, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    exit={{ y: 60, opacity: 0 }}
+                    transition={{ duration: 0.2, ease: "easeOut" }}
+                    className="border-t border-border bg-background/95 px-3 py-3 backdrop-blur sm:px-6"
+                    style={{
+                      paddingBottom:
+                        "max(0.75rem, env(safe-area-inset-bottom))",
+                    }}
+                  >
+                    <div className="mx-auto flex w-full max-w-2xl flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                      <span className="text-sm text-muted-foreground">
+                        You have unsaved changes
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <LiftedButton
+                          size="sm"
+                          className="flex-1 sm:flex-none bg-muted-foreground dark:bg-muted"
+                          liftColor="muted"
+                          onClick={settings.discard}
+                        >
+                          <Undo2 className="h-4 w-4" />
+                          Discard
+                        </LiftedButton>
+                        <LiftedButton
+                          size="sm"
+                          className="flex-1 text-white sm:flex-none"
+                          isPending={settings.isSaving}
+                          onClick={() => settings.save()}
+                        >
+                          <Save className="h-4 w-4" />
+                          Save changes
+                        </LiftedButton>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </DialogPrimitive.Content>
         </DialogPrimitive.Portal>
       </DialogPrimitive.Root>
@@ -400,30 +410,35 @@ export const AccountOverlay = () => {
             <DialogTitle>Unsaved changes</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            You've made changes to your settings that haven't been saved yet. Save them
-            before leaving, or discard them?
+            You've made changes to your settings that haven't been saved yet.
+            Save them before leaving, or discard them?
           </p>
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => blocker.reset?.()}>
+          <DialogFooter className="gap-2 sm:gap-0 mt-4">
+            <LiftedButton
+              size="sm"
+              className="flex-1 sm:flex-none bg-muted-foreground dark:bg-muted"
+              liftColor="muted"
+              onClick={() => blocker.reset?.()}
+            >
               Stay here
-            </Button>
-            <Button
-              variant="destructive"
+            </LiftedButton>
+            <LiftedButton
+              className="bg-red-600 hover:bg-red-600 py-1 text-white sm:flex-none"
+              liftColor="red-700"
               onClick={() => {
                 settings.discard();
                 blocker.proceed?.();
               }}
             >
               Discard & leave
-            </Button>
-            <Button
-              className="text-white"
+            </LiftedButton>
+            <LiftedButton
+              className="text-white text-sm py-1"
               isPending={settings.isSaving}
               onClick={() => settings.save(() => blocker.proceed?.())}
             >
-              <Save className="h-4 w-4" />
               Save & leave
-            </Button>
+            </LiftedButton>
           </DialogFooter>
         </DialogContent>
       </Dialog>

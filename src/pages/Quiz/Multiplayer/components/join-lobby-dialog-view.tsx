@@ -10,11 +10,18 @@ import {
 } from "@/components/ui/dialog/dialog";
 import { LiftedButton } from "@/common/LiftedButton";
 import type { ConnectionStatus } from "@/hooks/use-connection-status";
+import { ROOM_CODE_LENGTH, roomCodeFromPaste } from "../utils/room-code";
 
 export interface JoinLobbyDialogViewProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   username: string;
+  /**
+   * False for a guest. The game connection is only opened for an account, so to a guest it
+   * always reads "server unavailable" — which is not what is wrong, and refreshing never fixes
+   * it. A guest gets no connection warning and a live button that leads to the login page.
+   */
+  signedIn?: boolean;
   roomCode: string;
   onRoomCodeChange: (value: string) => void;
   error: string | null;
@@ -35,6 +42,7 @@ export const JoinLobbyDialogView = ({
   open,
   onOpenChange,
   username,
+  signedIn = true,
   roomCode,
   onRoomCodeChange,
   error,
@@ -43,7 +51,8 @@ export const JoinLobbyDialogView = ({
   onJoin,
   onCancel,
 }: JoinLobbyDialogViewProps) => {
-  const canJoin = connectionStatus.status === "connected" && !isChecking;
+  const showConnectionWarning = signedIn && connectionStatus.status !== "connected";
+  const canJoin = !showConnectionWarning && !isChecking;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -58,7 +67,7 @@ export const JoinLobbyDialogView = ({
         </DialogHeader>
 
         <div className="py-4 space-y-4 font-quiz">
-          {connectionStatus.status !== "connected" && (
+          {showConnectionWarning && (
             <div className="flex items-center justify-center gap-2 text-sm text-destructive bg-destructive/10 rounded-lg p-2.5">
               {connectionStatus.status === "no-internet" ? (
                 <WifiOff className="h-4 w-4 flex-shrink-0" />
@@ -79,19 +88,31 @@ export const JoinLobbyDialogView = ({
               placeholder="XXXXXX"
               value={roomCode}
               onChange={(e) => onRoomCodeChange(e.target.value.toUpperCase())}
+              // A pasted invite link gives up its code; the length limit would cut it to "HTTPS:".
+              onPaste={(e) => {
+                e.preventDefault();
+                onRoomCodeChange(roomCodeFromPaste(e.clipboardData.getData("text")));
+              }}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && canJoin && roomCode.trim()) onJoin();
               }}
               disabled={isChecking}
               className="h-16 border-2 border-primary/30 text-center text-2xl font-extrabold tracking-[0.3em] uppercase transition-all focus-visible:border-primary"
-              maxLength={6}
+              maxLength={ROOM_CODE_LENGTH}
             />
           </div>
 
-          <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
-            Joining as{" "}
-            <span className="font-bold text-foreground">{username || "…"}</span>
-          </div>
+          {signedIn ? (
+            <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
+              Joining as{" "}
+              <span className="font-bold text-foreground">{username || "…"}</span>
+            </div>
+          ) : (
+            <p className="text-center text-xs text-muted-foreground">
+              You need an account to join. We&apos;ll ask you to log in or sign up, then bring you
+              to this lobby.
+            </p>
+          )}
 
           {error && (
             <div className="bg-destructive/20 text-destructive p-3 rounded-lg text-sm">
@@ -116,7 +137,7 @@ export const JoinLobbyDialogView = ({
             isPending={isChecking}
             className="w-full sm:w-auto font-bold font-quiz text-white rounded-md"
           >
-            {isChecking ? "Checking…" : "Join Lobby"}
+            {isChecking ? "Checking…" : signedIn ? "Join Lobby" : "Log in to join"}
           </LiftedButton>
         </DialogFooter>
       </DialogContent>
