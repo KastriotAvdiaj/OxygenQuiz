@@ -468,6 +468,10 @@ timeLimit` points, i.e. ~33 pts on a 30s question but ~100 pts (10% of base) on 
 
 ## Repo hygiene
 
+- **P3 — Two branches are not in `main`, and about forty merged ones are still around.**
+  `feature/paid-plans-entitlements` is held on purpose; `feature/featured-quizzes` is simply not
+  merged yet. Why, and the three small things to fix when both merge (two ADRs share the number
+  0026): [`../development/unmerged-branches.md`](../development/unmerged-branches.md).
 - ~~**P2 — Committed build artifacts.**~~ **Fixed.** Untracked the
   recursively-nested `publish/` tree (~355 files) and added it to `.gitignore`.
   It contained stale copies of the JWT key from before it was rotated
