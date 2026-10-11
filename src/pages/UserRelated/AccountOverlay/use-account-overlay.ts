@@ -33,6 +33,12 @@ export const accountOverlayHref = (
 export const useAccountOverlay = () => {
   const [searchParams, setSearchParams] = useSearchParams();
 
+  // Every write below works on a copy. The updater is handed the live `searchParams` object,
+  // not a clone, and this hook reads `isOpen` from that same object — so editing it in place
+  // changed what the overlay saw whether or not the navigation went through. When the
+  // unsaved-changes guard blocked a close, the overlay shut anyway (taking the guard's own
+  // dialog with it) while the URL still said open, and the dialog turned up on the next visit.
+
   const raw = searchParams.get(SETTINGS_PARAM);
   const isOpen = raw !== null;
 
@@ -50,8 +56,9 @@ export const useAccountOverlay = () => {
     (next: OverlaySectionId | typeof MENU_SECTION = MENU_SECTION) => {
       setSearchParams(
         (params) => {
-          params.set(SETTINGS_PARAM, next);
-          return params;
+          const copy = new URLSearchParams(params);
+          copy.set(SETTINGS_PARAM, next);
+          return copy;
         },
         // push: opening is a history entry, so Back closes the overlay.
         { replace: false },
@@ -66,8 +73,9 @@ export const useAccountOverlay = () => {
     (next: OverlaySectionId | typeof MENU_SECTION) => {
       setSearchParams(
         (params) => {
-          params.set(SETTINGS_PARAM, next);
-          return params;
+          const copy = new URLSearchParams(params);
+          copy.set(SETTINGS_PARAM, next);
+          return copy;
         },
         { replace: true },
       );
@@ -78,8 +86,9 @@ export const useAccountOverlay = () => {
   const close = useCallback(() => {
     setSearchParams(
       (params) => {
-        params.delete(SETTINGS_PARAM);
-        return params;
+        const copy = new URLSearchParams(params);
+        copy.delete(SETTINGS_PARAM);
+        return copy;
       },
       { replace: false },
     );
