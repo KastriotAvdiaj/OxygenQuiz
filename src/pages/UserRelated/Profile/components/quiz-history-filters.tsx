@@ -16,6 +16,7 @@ import {
   type FacetOption,
   type QuizFacetKey,
 } from "@/pages/Quiz/components/quiz-filters";
+import { useCanSelectUnspecifiedLookup } from "@/pages/Dashboard/Pages/Question/Entities/lookup-visibility";
 import {
   SESSION_HISTORY_STATUS,
   type UserSessionsQuery,
@@ -245,8 +246,10 @@ export function QuizHistoryFilterPanel({
   showSearch?: boolean;
   className?: string;
 }) {
+  const showUnspecified = useCanSelectUnspecifiedLookup();
   return (
     <QuizFilterPanel
+      showUnspecified={showUnspecified}
       categories={lookups.categories}
       difficulties={lookups.difficulties}
       languages={lookups.languages}

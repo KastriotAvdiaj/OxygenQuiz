@@ -202,18 +202,18 @@ public class AssociationPlayServiceTests
 
         var result = await world.Call(s => s.GuessAsync(start.SessionId, Player, "Final", "the final"));
 
-        // 10 + B and C untouched (9 each) + D with one Tile open (8).
-        Assert.Equal(10 + 26, result.Points);
+        // 10 + B and C untouched (9 each) + D with one Tile open (8) + 5 for each of the three collected.
+        Assert.Equal(10 + 26 + 15, result.Points);
         Assert.True(result.FinalSolved);
         Assert.True(result.Game.IsOver);
         Assert.Equal("FinalSolved", result.Game.EndReason);
-        Assert.Equal(9 + 36, result.Game.Score);
+        Assert.Equal(9 + 51, result.Game.Score);
         Assert.Equal("Final", result.Game.Final.Solution);   // the canonical text, not the spelling typed
         Assert.All(result.Game.Columns, c => Assert.NotNull(c.Solution));
 
         var session = world.Session(start.SessionId);
         Assert.True(session.IsCompleted);
-        Assert.Equal(45, session.TotalScore);
+        Assert.Equal(60, session.TotalScore);
         Assert.Equal(world.Clock.Now.UtcDateTime, session.EndTime);
         Assert.Equal(GameEndReason.FinalSolved, world.Game(start.SessionId).EndReason);
 

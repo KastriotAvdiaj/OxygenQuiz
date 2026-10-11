@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useAnimate } from "framer-motion";
-import { Info, PencilLine, Send } from "lucide-react";
+import { Eye, Info, PencilLine, Send } from "lucide-react";
 import { cn } from "@/utils/cn";
 import type {
   AssociationBoardView,
@@ -132,6 +132,8 @@ export const AssociationBoard = ({
   // player needs for the next one. Each input waits for its own Guess; the page refuses a move
   // while another is in flight.
   const guess = !view.isOver ? onGuess : undefined;
+  const allTiles = view.columns.flatMap((column) => column.tiles);
+  const openedInPlay = allTiles.filter(wasOpenedInPlay).length;
 
   return (
     // The Final stands apart from the Columns: it answers all four, not a fifth one.
@@ -152,6 +154,17 @@ export const AssociationBoard = ({
         ))}
       </div>
 
+      {/* The finished board shows every word, so it has to say which of them were actually seen
+          in play: the score depends on exactly that, and without it "44, not 45" has no visible
+          cause. Solo says "you"; a Duel's Tiles were opened by either player. */}
+      {view.isOver && (
+        <p className="flex items-center justify-center gap-1.5 text-center text-xs text-muted-foreground">
+          <Eye className="h-3.5 w-3.5 shrink-0" aria-hidden />
+          {solverName ? "Opened in play: " : "You opened "}
+          {openedInPlay} of {allTiles.length} tiles. The dashed ones were never opened.
+        </p>
+      )}
+
       <SolutionSlot
         target="Final"
         label="Final solution"
@@ -168,6 +181,14 @@ export const AssociationBoard = ({
     </div>
   );
 };
+
+/**
+ * Opened by a player, as opposed to turned over by a solve or by the game ending. `isOpen` alone
+ * can't tell them apart: solving a Column or the Final opens every Tile it covers, so on a
+ * finished board `isOpen` is true for all sixteen and they were all drawn as opened — which is
+ * what this replaced (2026-10-11). `openedBySeat` is null exactly when a solve did the opening.
+ */
+const wasOpenedInPlay = (tile: AssociationTileView) => tile.isOpen && tile.openedBySeat !== null;
 
 const BoardColumn = ({
   column,
@@ -258,6 +279,7 @@ const BoardTile = ({
   const name = `${letter}${tile.position + 1}`;
   // Over and never opened: turned for the review, but visibly not something the player saw in play.
   const revealed = tile.isOpen || over;
+  const opened = wasOpenedInPlay(tile);
 
   return (
     <div ref={scope} className="board-tile">
@@ -294,11 +316,12 @@ const BoardTile = ({
             // Uppercase, as the show writes them; an opened Tile keeps a faint shade of the
             // primary it was, so the board still reads as one grid of Tiles.
             "uppercase tracking-wide",
-            tile.isOpen
-              ? "border border-primary/30 bg-primary/20 font-semibold"
+            opened
+              ? "gap-1.5 border border-primary/40 bg-primary/20 font-semibold"
               : "border border-dashed border-border bg-background text-muted-foreground"
           )}
         >
+          {opened && <Eye className="h-3.5 w-3.5 shrink-0 text-primary" aria-label="Opened in play" />}
           {tile.text}
         </div>
       </div>

@@ -1,8 +1,10 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { MailCheck } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { useUser } from "@/lib/Auth";
+import { accountOverlayHref } from "../AccountOverlay/use-account-overlay";
 import { useRequestPasswordReset } from "./api/password-reset";
 /**
  * `/forgot-password` — ask for a reset link.
@@ -17,6 +19,14 @@ import { useRequestPasswordReset } from "./api/password-reset";
 export const ForgotPassword = () => {
   const [email, setEmail] = useState("");
   const request = useRequestPasswordReset();
+  const user = useUser();
+
+  // Signed in: this page has nothing to offer that the account panel's "Change password" row
+  // doesn't do in one click, for the address we already know. `/reset-password` is not guarded
+  // the same way — the mailed link has to work whoever is signed in on that browser.
+  if (user.data) {
+    return <Navigate to={`/${accountOverlayHref("account")}`} replace />;
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

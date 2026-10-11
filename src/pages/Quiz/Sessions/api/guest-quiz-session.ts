@@ -10,11 +10,28 @@ import {
   QuizSession,
   CurrentQuestion,
   InstantFeedbackAnswerResult,
+  ResumeResult,
 } from "../../../../types/quiz-session-types";
 import { SubmitAnswerInput } from "./submit-answer";
 
-export const getGuestCanPlay = (): Promise<{ canPlay: boolean }> => {
+/**
+ * `canPlay` — the free guest quiz has not been started yet. `resumeSessionId` — it was started
+ * and never finished, and that one session can be carried on with. Neither — it is spent.
+ * The free quiz is spent when it starts (docs/auth/guest-play.md § "The limit").
+ */
+export type GuestCanPlay = { canPlay: boolean; resumeSessionId?: string | null };
+
+export const getGuestCanPlay = (): Promise<GuestCanPlay> => {
   return apiService.get("/guest-quiz-sessions/can-play");
+};
+
+/** Carries on with a started guest session: the server times out what expired meanwhile. */
+export const resumeGuestQuizSession = ({
+  sessionId,
+}: {
+  sessionId: string;
+}): Promise<ResumeResult> => {
+  return apiService.post(`/guest-quiz-sessions/${sessionId}/resume`, undefined, { timeout: 20000 });
 };
 
 export const useGuestCanPlay = ({ enabled = true }: { enabled?: boolean } = {}) => {

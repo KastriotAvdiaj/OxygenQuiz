@@ -43,6 +43,7 @@ import { scrollAppToTop } from "@/lib/app-scroll";
 import { quizPlayPath } from "./quiz-play-path";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { useFormatAvailable } from "../Dashboard/Pages/Quiz/format-access";
+import { useCanSelectUnspecifiedLookup } from "@/pages/Dashboard/Pages/Question/Entities/lookup-visibility";
 
 /** The catalogue's format filter. "all" sends no rule; the others filter server-side (QuizFilterFields: format). */
 type FormatFilter = "all" | "Classic" | "Associations";
@@ -125,6 +126,7 @@ export function QuizSelection() {
   const categories = categoryData ?? [];
   const { data: difficulties = [] } = useQuestionDifficultyData({});
   const { data: languages = [] } = useQuestionLanguageData({});
+  const showUnspecified = useCanSelectUnspecifiedLookup();
 
   /**
    * Arrived via `?category=<name>` (category-param.ts) — e.g. the landing page's "Play a full …
@@ -323,6 +325,7 @@ export function QuizSelection() {
       onToggle={toggle}
       onClearAll={clearFacets}
       activeCount={facetCount}
+      showUnspecified={showUnspecified}
       fillHeight={fillHeight}
     />
   );

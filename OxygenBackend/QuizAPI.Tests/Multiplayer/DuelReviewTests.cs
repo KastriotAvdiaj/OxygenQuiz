@@ -23,7 +23,7 @@ public class DuelReviewTests
         await w.Duels.GuessAsync(Room, Ana, "A", "Solution A");     // Ana 8
         await w.Duels.PassAsync(Room, Ana);
         await w.Duels.OpenTileAsync(Room, Ben, w.Tile('B', 1));
-        await w.Duels.GuessAsync(Room, Ben, "Final", "the final");  // Ben 36
+        await w.Duels.GuessAsync(Room, Ben, "Final", "the final");  // Ben 51: 10 + 26 + 5 for each of the three Columns collected
         await Eventually(() => w.LoopStopped && w.Calls("DuelEnded").Count == 1);
 
         using var ctx = w.Context();
@@ -54,11 +54,11 @@ public class DuelReviewTests
         Assert.True(ben.IsOver);
         Assert.Equal("FinalSolved", ben.EndReason);
         Assert.Equal(1, ben.MySeat);
-        Assert.Equal(36, ben.Score);
+        Assert.Equal(51, ben.Score);
         Assert.Equal(0, ana.MySeat);
         Assert.Equal(8, ana.Score);
         Assert.Equal(1, ben.WinnerSeat);
-        Assert.Equal(new[] { (Ana, 8), (Ben, 36) }, ben.Seats.Select(s => (s.Username, s.Score)));
+        Assert.Equal(new[] { (Ana, 8), (Ben, 51) }, ben.Seats.Select(s => (s.Username, s.Score)));
         Assert.Equal(5, ben.Moves.Count);
         Assert.False(ben.CanOpen);
         Assert.False(ben.CanGuess);
@@ -79,7 +79,7 @@ public class DuelReviewTests
         // Replay can't count Seats from the players left: one row is gone. SeatCount says two.
         var ben = await Call(w, s => s.GetAsync(benSession, w.UserIds[Ben], isAdmin: false));
 
-        Assert.Equal(36, ben.Score);
+        Assert.Equal(51, ben.Score);
         Assert.Equal(1, ben.WinnerSeat);
         Assert.Equal(2, ben.Seats.Count);
         Assert.Equal(8, ben.Seats[0].Score);
@@ -93,7 +93,7 @@ public class DuelReviewTests
         var ben = await Call(w, s => s.GetOwnDuelAsync(benSession, w.UserIds[Ben]));
 
         Assert.Equal(1, ben.MySeat);
-        Assert.Equal(36, ben.Score);
+        Assert.Equal(51, ben.Score);
     }
 
     [Fact]

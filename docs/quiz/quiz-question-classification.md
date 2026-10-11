@@ -51,6 +51,14 @@ to land on the same ids in every environment, which is the same reason
 "kept in sync" with the other; the third caller is what made that arrangement untenable rather
 than merely untidy.
 
+**The play side hides it too (2026-10-11).** The dashboard selects were not the only place the
+seeded row was listed: `QuizFilterPanel` — the quiz catalogue, the lobby's quiz picker and the
+history filters — mapped the raw lookups and offered "Unspecified" to every player. A public quiz
+can never carry it (the publication gate), so the facet only ever filtered to nothing. The panel
+now drops it unless its `showUnspecified` prop is set, and its three callers pass
+`useCanSelectUnspecifiedLookup()`: catalog admins see it, everyone else, Teachers included, does
+not. One rule, in `lookup-visibility.ts`, for both sides of the app.
+
 > **Existing data is untouched.** The rule applies to writes from this point on; questions already
 > stored as Unspecified keep working and still play. They will, however, have to be given a real
 > category and language the next time someone edits them — the update path validates too.

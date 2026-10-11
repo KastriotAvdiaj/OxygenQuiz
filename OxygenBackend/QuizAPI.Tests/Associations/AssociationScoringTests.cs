@@ -27,7 +27,10 @@ public class AssociationScoringTests
     public void ColumnValue_RefusesAnImpossibleTileCount(int closed) =>
         Assert.Throws<ArgumentOutOfRangeException>(() => AssociationScoring.ColumnValue(Rules, closed));
 
-    /// <summary>One tile opened (in A), then the Final: 10 + (5+3) + 3×(5+4) = 45, the maximum.</summary>
+    /// <summary>
+    /// One tile opened (in A), then the Final: 10 + (5+3) + 3×(5+4) = 45, plus 5 for each of the
+    /// four Columns it collects = 65, the maximum.
+    /// </summary>
     [Fact]
     public void FinalAfterOneTile_ScoresTheMaximum()
     {
@@ -35,9 +38,30 @@ public class AssociationScoringTests
         s = Must(s, AssociationMove.Open(0, 1, At(1))).State;
         var final = Must(s, AssociationMove.Guess(0, GuessTarget.Final, "Italy", At(2)));
 
-        Assert.Equal(45, final.Points);
-        Assert.Equal(45, final.State.Scores[0]);
+        Assert.Equal(65, final.Points);
+        Assert.Equal(65, final.State.Scores[0]);
         Assert.Equal(new[] { ColumnLetter.A, ColumnLetter.B, ColumnLetter.C, ColumnLetter.D }, final.SolvedColumns);
+    }
+
+    /// <summary>
+    /// The same single Tile, but every Column solved first and the Final last: 8 + 9 + 9 + 9 + 10
+    /// = 45. This is the route that used to tie with going straight for the Final, because the
+    /// Final handed over exactly what the Columns would have paid. The bonus for a collected
+    /// Column is what separates them (decided 2026-10-11; docs/quiz/associations.md §4).
+    /// </summary>
+    [Fact]
+    public void SolvingEveryColumnFirst_ScoresLessThanGoingStraightForTheFinal()
+    {
+        var s = AssociationEngine.StartSolo(T0, 240);
+        s = Must(s, AssociationMove.Open(0, 1, At(1))).State;
+        s = Must(s, AssociationMove.Guess(0, GuessTarget.A, "Rome", At(2))).State;
+        s = Must(s, AssociationMove.Guess(0, GuessTarget.B, "drite", At(3))).State;
+        s = Must(s, AssociationMove.Guess(0, GuessTarget.C, SolutionOf(GuessTarget.C), At(4))).State;
+        s = Must(s, AssociationMove.Guess(0, GuessTarget.D, SolutionOf(GuessTarget.D), At(5))).State;
+        var final = Must(s, AssociationMove.Guess(0, GuessTarget.Final, "Italy", At(6)));
+
+        Assert.Equal(10, final.Points);   // nothing left to collect, so no bonus
+        Assert.Equal(45, final.State.Scores[0]);
     }
 
     [Fact]
@@ -52,11 +76,12 @@ public class AssociationScoringTests
     }
 
     /// <summary>
-    /// A and B solved; C has one Tile open, D none. Final: 10 + (5+3) + (5+4) = 27. The collected
-    /// Columns are counted once, inside the Final's points.
+    /// A and B solved; C has one Tile open, D none. Final: 10 + (5+3) + (5+4) = 27, plus 5 for each
+    /// of the two Columns it collects = 37. The collected Columns are counted once, inside the
+    /// Final's points.
     /// </summary>
     [Fact]
-    public void FinalWithTwoColumnsUnsolved_Scores27()
+    public void FinalWithTwoColumnsUnsolved_Scores37()
     {
         var s = AssociationEngine.StartSolo(T0, 240);
         s = Must(s, AssociationMove.Open(0, 1, At(1))).State;
@@ -72,8 +97,8 @@ public class AssociationScoringTests
 
         var final = Must(s, AssociationMove.Guess(0, GuessTarget.Final, "italia", At(7)));
 
-        Assert.Equal(27, final.Points);
-        Assert.Equal(7 + 8 + 27, final.State.Scores[0]);
+        Assert.Equal(37, final.Points);
+        Assert.Equal(7 + 8 + 37, final.State.Scores[0]);
         Assert.Equal(new[] { ColumnLetter.C, ColumnLetter.D }, final.SolvedColumns);
         Assert.True(final.State.SolvedColumns[ColumnLetter.C].ViaFinal);
         Assert.Equal(8, final.State.SolvedColumns[ColumnLetter.C].Points);

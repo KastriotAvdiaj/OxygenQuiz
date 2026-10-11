@@ -511,7 +511,20 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
         /// then returns the correct question for the user to resume on.
         /// This is the "mathematical catch-up" — no background timers needed.
         /// </summary>
-        public async Task<Result<ResumeResultDto>> ResolveAndResumeAsync(Guid sessionId, Guid userId)
+        public Task<Result<ResumeResultDto>> ResolveAndResumeAsync(Guid sessionId, Guid userId) =>
+            ResolveAndResumeCoreAsync(sessionId, userId);
+
+        /// <summary>
+        /// The same catch-up for a guest session, which has no user to match on: the session must be
+        /// flagged <c>IsGuestSession</c> instead. This is what lets a guest who refreshed or lost their
+        /// connection carry on with the one session their free try was spent on at its start
+        /// (docs/auth/guest-play.md).
+        /// </summary>
+        public Task<Result<ResumeResultDto>> ResolveAndResumeGuestAsync(Guid sessionId) =>
+            ResolveAndResumeCoreAsync(sessionId, userId: null);
+
+        /// <param name="userId">The owner to match, or null for a guest session.</param>
+        private async Task<Result<ResumeResultDto>> ResolveAndResumeCoreAsync(Guid sessionId, Guid? userId)
         {
             try
             {
@@ -520,7 +533,8 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizSessionServices
                         .ThenInclude(q => q.QuizQuestions)
                             .ThenInclude(qq => qq.Question)
                     .Include(s => s.UserAnswers)
-                    .FirstOrDefaultAsync(s => s.Id == sessionId && s.UserId == userId);
+                    .FirstOrDefaultAsync(s => s.Id == sessionId
+                        && (userId == null ? s.IsGuestSession : s.UserId == userId));
 
                 if (session == null)
                     return Result<ResumeResultDto>.ValidationFailure("Session not found.");

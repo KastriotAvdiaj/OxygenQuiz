@@ -6,6 +6,7 @@ import type {
   QuestionLanguage,
 } from "@/types/question-types";
 import { cn } from "@/utils/cn";
+import { isUnspecifiedLookup } from "@/pages/Dashboard/Pages/Question/Entities/lookup-visibility";
 import { FacetAccordionContext } from "./facet-accordion";
 import {
   FacetSection,
@@ -29,6 +30,14 @@ interface QuizFilterPanelProps {
    * default and side-by-side where width allows; for the multiplayer dialog.
    */
   variant?: "sidebar" | "compact";
+  /**
+   * Offer the seeded "Unspecified" row as a facet. Off by default: it is an internal default,
+   * and a public quiz can never carry it, so for a player it only ever filters to nothing.
+   * Callers pass `useCanSelectUnspecifiedLookup()` — the dashboard selects' rule, catalog admins
+   * only (lookup-visibility.ts). A prop rather than the hook here, so the panel stays
+   * previewable without a signed-in user.
+   */
+  showUnspecified?: boolean;
   /**
    * When true (desktop sidebar), the panel fills its parent's height and scrolls
    * its facet list internally — the header stays pinned and the panel never grows
@@ -74,22 +83,32 @@ export function QuizFilterPanel({
   onClearAll,
   activeCount,
   variant = "sidebar",
+  showUnspecified = false,
   fillHeight = false,
   children,
   leading,
   className,
 }: QuizFilterPanelProps) {
   const categoryOptions = useMemo<FacetOption[]>(
-    () => categories.map((c) => ({ id: c.id, label: c.name })),
-    [categories]
+    () =>
+      categories
+        .filter((c) => showUnspecified || !isUnspecifiedLookup(c.name))
+        .map((c) => ({ id: c.id, label: c.name })),
+    [categories, showUnspecified]
   );
   const difficultyOptions = useMemo<FacetOption[]>(
-    () => difficulties.map((d) => ({ id: d.id, label: d.level })),
-    [difficulties]
+    () =>
+      difficulties
+        .filter((d) => showUnspecified || !isUnspecifiedLookup(d.level))
+        .map((d) => ({ id: d.id, label: d.level })),
+    [difficulties, showUnspecified]
   );
   const languageOptions = useMemo<FacetOption[]>(
-    () => languages.map((l) => ({ id: l.id, label: l.language })),
-    [languages]
+    () =>
+      languages
+        .filter((l) => showUnspecified || !isUnspecifiedLookup(l.language))
+        .map((l) => ({ id: l.id, label: l.language })),
+    [languages, showUnspecified]
   );
 
   const compact = variant === "compact";

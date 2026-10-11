@@ -38,8 +38,8 @@ public class ReplayAndRulesTests
         Assert.Equal(live.SolvedColumns.OrderBy(kv => kv.Key), replayed.SolvedColumns.OrderBy(kv => kv.Key));
         Assert.Equal(live.EndReason, replayed.EndReason);
         Assert.Equal(DuelLog.Length, replayed.MoveCount);
-        // Seat 0: A (5+3) + Final 10 + C (5+3) + D (5+4) = 8 + 27; seat 1: B (5+3).
-        Assert.Equal(new[] { 35, 8 }, replayed.Scores);
+        // Seat 0: A (5+3) + Final 10 + C (5+3) + D (5+4) + 2×5 for collecting them = 8 + 37; seat 1: B (5+3).
+        Assert.Equal(new[] { 45, 8 }, replayed.Scores);
     }
 
     [Fact]
@@ -65,8 +65,8 @@ public class ReplayAndRulesTests
         var withSnapshot = AssociationEngine.Replay(AssociationEngine.StartDuel(T0, 2, 0), Board, snapshot, DuelLog);
         var withToday = AssociationEngine.Replay(AssociationEngine.StartDuel(T0, 2, 0), Board, changedSince, DuelLog);
 
-        Assert.Equal(new[] { 35, 8 }, withSnapshot.Scores);
-        Assert.Equal(new[] { 37, 8 }, withToday.Scores);
+        Assert.Equal(new[] { 45, 8 }, withSnapshot.Scores);
+        Assert.Equal(new[] { 47, 8 }, withToday.Scores);
     }
 
     [Fact]
@@ -92,8 +92,8 @@ public class ReplayAndRulesTests
     public void TheDefaults_AreTheDocumentedOnes()
     {
         var d = AssociationRules.Default;
-        Assert.Equal((5, 1, 10, 30, 2, 240, 60, 1800),
-            (d.ColumnBase, d.PerClosedTile, d.FinalBase, d.DuelTurnSeconds, d.EndgameTurnsPerSeat,
+        Assert.Equal((5, 1, 10, 5, 30, 2, 240, 60, 1800),
+            (d.ColumnBase, d.PerClosedTile, d.FinalBase, d.FinalPerCollectedColumn, d.DuelTurnSeconds, d.EndgameTurnsPerSeat,
              d.SoloDefaultBoardSeconds, d.SoloMinBoardSeconds, d.SoloMaxBoardSeconds));
         Assert.Empty(d.Validate());
     }
@@ -111,6 +111,24 @@ public class ReplayAndRulesTests
     {
         var rules = AssociationRules.FromJson("""{"ColumnBase":5,"PerClosedTile":1,"FinalBase":10}""");
         Assert.Equal(AssociationRules.Default.EndgameTurnsPerSeat, rules.EndgameTurnsPerSeat);
+    }
+
+    /// <summary>
+    /// The one setting whose "default for an old snapshot" is not its default today. A game
+    /// recorded before the collected-Column bonus existed was scored without it; replaying it must
+    /// give the score its players saw, not the one today's rules would give.
+    /// </summary>
+    [Fact]
+    public void AGameRecordedBeforeTheCollectedColumnBonus_KeepsItsScore()
+    {
+        var recordedThen = AssociationRules.FromJson(
+            """{"ColumnBase":5,"PerClosedTile":1,"FinalBase":10,"DuelTurnSeconds":30,"EndgameTurnsPerSeat":2}""");
+
+        Assert.Equal(0, recordedThen.FinalPerCollectedColumn);
+        Assert.Equal(5, AssociationRules.Default.FinalPerCollectedColumn);
+
+        var replayed = AssociationEngine.Replay(AssociationEngine.StartDuel(T0, 2, 0), Board, recordedThen, DuelLog);
+        Assert.Equal(new[] { 35, 8 }, replayed.Scores);
     }
 
     [Theory]
