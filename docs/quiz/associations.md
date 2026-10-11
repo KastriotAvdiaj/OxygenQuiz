@@ -634,6 +634,9 @@ doesn't drift down the page with a short board.
   Columns than the Columns' rows sit from each other: it answers all four. **Nothing is pre-focused**, for the
   reason the first build learned: a pre-aimed Column read as "you must guess this one". A wrong
   Guess shakes its slot; the line under the board says what happened.
+- **The board sits in one card** (2026-10-11): the page's `bg-background`, a light border and a
+  shadow, around the Columns and the Final together. It is part of `AssociationBoard`, so Solo,
+  the Duel, the results page and the Host screens all get it.
 - **A closed Tile is a solid primary button** with a pressed-down lift, so it can't be confused
   with the guess slots under it — the Tiles are what you press, the slots what you type into
   (2026-10-01; before, both were the same pale blue and a first-time player in the guess step
@@ -641,8 +644,13 @@ doesn't drift down the page with a short board.
 - **An opened Tile shows its word in capitals** on a faint primary shade (`bg-primary/20`), so
   the board still reads as one grid after the flip.
 - **A Tile a player opened is marked apart from one a solve turned over** (2026-10-11): the shade
-  and an eye icon for the first, a dashed, muted card for the second, and under a finished board
-  one line — "You opened 2 of 16 tiles" (in a Duel, "Opened in play: …"). The score depends on
+  and an eye icon for the first, and under a finished board one line — "You opened 2 of 16 tiles"
+  (in a Duel, "Opened in play: …"). The eye has a tooltip: "Opened in play", or "Opened by
+  <name>" in a Duel. A Tile nobody opened is drawn two ways. **On a finished board it keeps the
+  closed Tile's look** — solid primary, lifted — with its word on it: it stayed closed all game,
+  so it still looks closed. Mid-game, a Tile turned over by a Column solve is a dashed, muted
+  card instead, so the Tiles still to open remain the only solid ones. (The finished board used
+  the dashed card too, for a few hours; it read as disabled.) The score depends on
   exactly how many Tiles were open, so a finished board that draws all sixteen alike can't explain
   itself: 44 instead of 45 had no visible cause. That is what it did. The styling keyed on
   `isOpen`, and solving a Column or the Final opens every Tile it covers, so on a finished board
