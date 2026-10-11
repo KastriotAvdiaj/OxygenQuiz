@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useAnimate } from "framer-motion";
 import { Eye, Info, PencilLine, Send } from "lucide-react";
 import { cn } from "@/utils/cn";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import type {
   AssociationBoardView,
   AssociationColumnView,
@@ -134,10 +135,18 @@ export const AssociationBoard = ({
   const guess = !view.isOver ? onGuess : undefined;
   const allTiles = view.columns.flatMap((column) => column.tiles);
   const openedInPlay = allTiles.filter(wasOpenedInPlay).length;
+  // The eye's tooltip. A Duel names the opener; elsewhere there is one player, or a host's teams.
+  const openedLabel = (tile: AssociationTileView) => {
+    const name = by(tile.openedBySeat);
+    return name ? `Opened by ${name}` : "Opened in play";
+  };
 
   return (
-    // The Final stands apart from the Columns: it answers all four, not a fifth one.
-    <div className="space-y-5 sm:space-y-7">
+    // One card around the whole board, Final included, so it reads as one object on the page:
+    // the page's own background, a light border and a shadow (2026-10-11). The Final stands
+    // apart from the Columns inside it: it answers all four, not a fifth one.
+    <TooltipProvider>
+    <div className="space-y-5 rounded-xl border border-border bg-background p-3 shadow-md dark:border-foreground/20 sm:space-y-7 sm:p-5">
       <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
         {view.columns.map((column) => (
           <BoardColumn
@@ -148,6 +157,7 @@ export const AssociationBoard = ({
             onBlockedOpen={blockable ? showHint : undefined}
             hint={hint && openBlockedHint ? { ...hint, text: openBlockedHint } : null}
             onGuess={guess}
+            openedLabel={openedLabel}
             revealAt={timing?.columns[column.letter]}
             by={by(column.solvedBySeat)}
           />
@@ -161,7 +171,7 @@ export const AssociationBoard = ({
         <p className="flex items-center justify-center gap-1.5 text-center text-xs text-muted-foreground">
           <Eye className="h-3.5 w-3.5 shrink-0" aria-hidden />
           {solverName ? "Opened in play: " : "You opened "}
-          {openedInPlay} of {allTiles.length} tiles. The dashed ones were never opened.
+          {openedInPlay} of {allTiles.length} tiles. The filled ones were never opened.
         </p>
       )}
 
@@ -179,6 +189,7 @@ export const AssociationBoard = ({
         celebrate={!!timing && view.final.solved}
       />
     </div>
+    </TooltipProvider>
   );
 };
 
@@ -197,6 +208,7 @@ const BoardColumn = ({
   onBlockedOpen,
   hint,
   onGuess,
+  openedLabel,
   revealAt,
   by,
 }: {
@@ -206,6 +218,7 @@ const BoardColumn = ({
   onBlockedOpen?: (tileId: number) => void;
   hint: { tileId: number; key: number; text: string } | null;
   onGuess?: AssociationBoardProps["onGuess"];
+  openedLabel: (tile: AssociationTileView) => string;
   revealAt?: { tiles: Record<number, number>; solution: number };
   by?: string;
 }) => (
@@ -216,6 +229,7 @@ const BoardColumn = ({
         letter={column.letter}
         tile={tile}
         over={over}
+        openedLabel={openedLabel(tile)}
         revealDelay={revealAt?.tiles[tile.id]}
         onOpen={onOpenTile && !tile.isOpen ? () => onOpenTile(tile.id) : undefined}
         onBlocked={onBlockedOpen ? () => onBlockedOpen(tile.id) : undefined}
@@ -249,6 +263,7 @@ const BoardTile = ({
   letter,
   tile,
   over,
+  openedLabel,
   onOpen,
   onBlocked,
   hint,
@@ -257,6 +272,8 @@ const BoardTile = ({
   letter: string;
   tile: AssociationTileView;
   over: boolean;
+  /** What the eye on an opened Tile says on hover. */
+  openedLabel: string;
   onOpen?: () => void;
   /** Clicked while it can't be opened: shake, and let the board say why. */
   onBlocked?: () => void;
@@ -318,10 +335,26 @@ const BoardTile = ({
             "uppercase tracking-wide",
             opened
               ? "gap-1.5 border border-primary/40 bg-primary/20 font-semibold"
-              : "border border-dashed border-border bg-background text-muted-foreground"
+              : over
+                ? // Never opened, on the finished board: still the closed Tile it was all game —
+                  // solid primary, lifted — only now with its word on it. "Looks closed" is the
+                  // message (2026-10-11; it was dashed and muted, which read as disabled).
+                  "bg-primary font-semibold text-primary-foreground shadow-[0_3px_0_0_hsl(var(--quiz-primary-dark))]"
+                : // Turned over mid-game by a Column solve: quiet, so the closed Tiles still to
+                  // open stay the only solid ones on the board.
+                  "border border-dashed border-border bg-background text-muted-foreground"
           )}
         >
-          {opened && <Eye className="h-3.5 w-3.5 shrink-0 text-primary" aria-label="Opened in play" />}
+          {opened && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span tabIndex={0} aria-label={openedLabel} className="shrink-0 rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                  <Eye className="h-3.5 w-3.5 text-primary" aria-hidden />
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>{openedLabel}</TooltipContent>
+            </Tooltip>
+          )}
           {tile.text}
         </div>
       </div>
