@@ -117,6 +117,16 @@ The guard has two layers, both inherited from the old page:
 
 Logging out calls `discard()` first, so signing out mid-edit doesn't trip the guard.
 
+**The URL writes work on a copy of the search params.** `setSearchParams((params) => …)` hands
+the updater the live `searchParams` object, not a clone, and `useAccountOverlay` reads
+`isOpen` from that same object. Editing it in place therefore changed what the overlay saw
+whether or not the navigation happened. With a dirty draft, clicking outside the dialog did
+this: the close was blocked, the URL kept `?settings=…`, but the overlay read "closed" and
+unmounted — taking the guard's dialog with it, since the overlay renders it. The draft stayed
+dirty (and its font preview stayed on screen, which looked like a save), and the dialog
+appeared on the next visit. Fixed 2026-10-11: `open`, `goToSection` and `close` each build a
+new `URLSearchParams`. `use-account-overlay.test.tsx` holds it.
+
 ### The font preview belongs to the draft
 
 Typography is the one setting you can see before you save it: picking a font writes
