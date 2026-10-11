@@ -640,6 +640,15 @@ doesn't drift down the page with a short board.
   couldn't tell them apart).
 - **An opened Tile shows its word in capitals** on a faint primary shade (`bg-primary/20`), so
   the board still reads as one grid after the flip.
+- **A Tile a player opened is marked apart from one a solve turned over** (2026-10-11): the shade
+  and an eye icon for the first, a dashed, muted card for the second, and under a finished board
+  one line — "You opened 2 of 16 tiles" (in a Duel, "Opened in play: …"). The score depends on
+  exactly how many Tiles were open, so a finished board that draws all sixteen alike can't explain
+  itself: 44 instead of 45 had no visible cause. That is what it did. The styling keyed on
+  `isOpen`, and solving a Column or the Final opens every Tile it covers, so on a finished board
+  `isOpen` is true for all of them. The test is now `isOpen && openedBySeat !== null`
+  (`wasOpenedInPlay`): `openedBySeat` is null exactly when a solve did the opening (§9.3). The
+  results page draws the same board, so it gets the same marking.
 - **Opening a Tile turns it over** — a card flip from its name (B2) to its word
   (`.board-tile-card` in `global.css`). Solving a Column turns its remaining Tiles the same way,
   and in a Duel the Tiles nobody opened turn when it ends. It is a CSS transition on the view
