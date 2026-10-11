@@ -180,7 +180,9 @@ export function QuizFilterPanel({
           className={cn(
             compact
               ? "sm:grid sm:grid-cols-3 sm:gap-x-6 divide-y divide-border/60 sm:divide-y-0"
-              : "divide-y divide-border/60",
+              : // Full-strength divider: at 60% the hairline dropped out between some rows when the
+                // browser scaled the page (a phone emulator, a zoom level) — one separator missing.
+                "divide-y divide-border",
             // Full-height sidebar: the facet column takes the leftover height and
             // scrolls the *headers* on a viewport too short for one open facet. Each
             // facet list already caps itself, so this outer scrollbar is a fallback
