@@ -300,8 +300,8 @@ that rotates the secret key and every later delivery fails its signature check.
 Paddle's website approval, a default payment link on that domain, payout details, and business
 verification — which reviews the Terms, Privacy and Refund pages
 ([`../proposals/legal-and-compliance-for-launch.md`](../proposals/legal-and-compliance-for-launch.md)).
-Those exist as a first draft at `/terms`, `/privacy`, `/refunds` and `/contact`, with the
-business's own details still to fill in (`src/pages/Legal/legal-entity.ts`).
+Those exist as a first draft at `/terms`, `/privacy`, `/refunds` and `/contact`; who runs the
+site and the contact address are in `src/pages/Legal/legal-entity.ts`.
 
 **Paddle Retain (`pwCustomer`) is not wired, on purpose.** It needs Paddle.js on signed-in pages
 across the app, and the compliance proposal keeps Paddle.js on `/pricing` alone precisely so no

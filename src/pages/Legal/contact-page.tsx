@@ -6,9 +6,8 @@ export const ContactPage = () => (
   <LegalPage title="Contact">
     <LegalSection title="Get in touch">
       <p>
-        Questions, problems, a quiz to report, or a refund: write to{" "}
-        <MailLink address={LEGAL_ENTITY.contactEmail} />. For anything about your personal data,
-        write to <MailLink address={LEGAL_ENTITY.privacyEmail} />.
+        Questions, problems, a quiz to report, a refund, or anything about your personal data:
+        write to <MailLink address={LEGAL_ENTITY.contactEmail} />.
       </p>
     </LegalSection>
 
@@ -18,12 +17,10 @@ export const ContactPage = () => (
         alone, live with friends, or in a classroom.
       </p>
       <dl className="grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-[max-content_1fr]">
-        <dt className="font-semibold">Business</dt>
-        <dd>{LEGAL_ENTITY.businessName}</dd>
-        <dt className="font-semibold">Address</dt>
-        <dd>{LEGAL_ENTITY.registeredAddress}</dd>
-        <dt className="font-semibold">Business number</dt>
-        <dd>{LEGAL_ENTITY.businessNumber}</dd>
+        <dt className="font-semibold">Run by</dt>
+        <dd>{LEGAL_ENTITY.operatorName}</dd>
+        <dt className="font-semibold">Location</dt>
+        <dd>{LEGAL_ENTITY.location}</dd>
       </dl>
     </LegalSection>
   </LegalPage>

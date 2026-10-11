@@ -1,9 +1,10 @@
 # Proposal: what has to exist around a paid, public launch
 
 **Status: partly shipped (2026-10-10).** The pages and the footer of §2.1 exist as a first draft
-(`src/pages/Legal/`, `src/common/SiteFooter.tsx`): not yet reviewed by a lawyer, and
-`legal-entity.ts` still holds `TODO` in place of the business name, address, number and contact
-addresses, so they must not go live as they are. Everything else here is open — signup consent
+(`src/pages/Legal/`, `src/common/SiteFooter.tsx`): not yet reviewed by a lawyer. The site is run
+by an individual, so `legal-entity.ts` names a person and a town rather than a company, and there
+is no business number to show; `support@oxygenquiz.com` (Cloudflare Email Routing, forwarded)
+serves both contact and privacy requests. Everything else here is open — signup consent
 and the age checkbox (§2.2, §2.3), self-hosted fonts, the AI privacy line, reporting a quiz.
 Written 2026-10-07. Companion to
 [`paid-plans-and-payments.md`](./paid-plans-and-payments.md). Paddle will not approve checkout

@@ -8,8 +8,8 @@ export const TermsPage = () => (
       <p>
         {LEGAL_ENTITY.productName} is a quiz platform: you can play quizzes alone or live with
         others, create your own by hand or with AI assistance, and host games for a class. It is
-        run by {LEGAL_ENTITY.businessName}, {LEGAL_ENTITY.registeredAddress} (business number{" "}
-        {LEGAL_ENTITY.businessNumber}). "We" and "us" mean that business.
+        run by {LEGAL_ENTITY.operatorName}, {LEGAL_ENTITY.location}. "We" and "us" mean the
+        operator of {LEGAL_ENTITY.productName}.
       </p>
       <p>
         By creating an account or using {LEGAL_ENTITY.productName} you agree to these terms. If

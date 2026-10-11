@@ -71,8 +71,8 @@ export const PrivacyPage = () => (
   <LegalPage title="Privacy Policy" versioned>
     <LegalSection title="1. Who is responsible">
       <p>
-        {LEGAL_ENTITY.businessName}, {LEGAL_ENTITY.registeredAddress} (business number{" "}
-        {LEGAL_ENTITY.businessNumber}) runs {LEGAL_ENTITY.productName} and is responsible for the
+        {LEGAL_ENTITY.operatorName}, {LEGAL_ENTITY.location}, runs {LEGAL_ENTITY.productName} and
+        is responsible for the
         personal data described here. Contact: <MailLink address={LEGAL_ENTITY.privacyEmail} />.
       </p>
     </LegalSection>
