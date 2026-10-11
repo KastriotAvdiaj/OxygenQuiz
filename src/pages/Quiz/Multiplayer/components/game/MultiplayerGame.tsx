@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { LoadingWave } from "@/components/ui/loading-wave";
 import { Trophy, Crown, Check, X } from "lucide-react";
 import type { useMatch, ScoreboardEntry } from "../../hooks/use-match";
 import type { Participant } from "../../hooks/use-lobby-connection";
@@ -246,13 +247,11 @@ const RevealPanel = ({
 
         <Scoreboard entries={match.scoreboard} username={username} />
 
-        <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-          <motion.span
-            className="h-1.5 w-1.5 rounded-full bg-primary"
-            animate={{ opacity: [0.3, 1, 0.3] }}
-            transition={{ duration: 1.2, repeat: Infinity }}
-          />
-          Next question soon…
+        {/* The wait between questions: the letters hop in a wave, which says "something is on
+            its way" without a dot or an ellipsis doing it (2026-10-11). Tighter tracking than
+            the component's default — that one is spaced for a single word. */}
+        <div className="flex justify-center">
+          <LoadingWave text="Next question coming" size="sm" variant="muted" className="text-base tracking-wide" />
         </div>
       </CardContent>
     </Card>

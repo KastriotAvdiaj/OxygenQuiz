@@ -57,6 +57,18 @@ public class AiPromptBuilderTests
     }
 
     [Fact]
+    public void AsksForPlainTextMaths_NotMarkup()
+    {
+        // Nothing in the app renders LaTeX or Markdown, so a model that writes "sqrt(b^2 - 4ac)"
+        // or "$\frac{a}{b}$" puts that markup in front of the player as it is.
+        foreach (var prompt in new[] { Builder.Build(InferredRequest()), Builder.Build(SourceRequest()) })
+        {
+            Assert.Contains("Do NOT use LaTeX", prompt);
+            Assert.Contains("√(b² − 4ac)", prompt);
+        }
+    }
+
+    [Fact]
     public void QuestionsNeverCarryCategoryOrLanguage()
     {
         // The invariant that survived the move to inferred quiz-level fields: a *question* is
