@@ -63,6 +63,16 @@ export const NoInternet: Story = {
   },
 };
 
+/** A guest: no connection warning (they never get a connection), and the button leads to login. */
+export const Guest: Story = {
+  args: {
+    roomCode: "AB12CD",
+    username: "",
+    signedIn: false,
+    connectionStatus: { status: "server-down", message: "Game server unavailable" },
+  },
+};
+
 export const ServerUnavailable: Story = {
   args: {
     roomCode: "AB12CD",
