@@ -1,11 +1,5 @@
 import { useQuizAnalytics } from "../api/get-quiz-analytics";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  Spinner,
-} from "@/components/ui";
+import { Card, CardContent, CardHeader, CardTitle, BlobLoader } from "@/components/ui";
 import { Progress } from "@/components/ui/progress";
 import {
   Table,
@@ -89,7 +83,7 @@ export const QuizAnalytics = ({ quizId }: { quizId: number }) => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Spinner size="lg" />
+        <BlobLoader size="lg" />
       </div>
     );
   }

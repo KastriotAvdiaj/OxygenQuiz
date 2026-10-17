@@ -5,7 +5,7 @@ import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import { DashboardNav } from "@/pages/Dashboard/Components/DashboardNav";
 import { adminDashboardNavButtons } from "@/pages/Dashboard/Components/dashboardNavConfig";
 import { DashboardHeader } from "./Components/DashboardHeader";
-import { Spinner } from "@/components/ui";
+import { BlobLoader } from "@/components/ui";
 
 // Lazy load sub-pages
 const Application = lazy(() =>
@@ -57,7 +57,7 @@ export const Dashboard = () => {
             // Centred, like every other dashboard wait. Bare, this spinner sat in the
             // top-left corner and the page appeared somewhere else entirely.
             <div className="flex min-h-[60vh] w-full items-center justify-center">
-              <Spinner size="xl" />
+              <BlobLoader size="xl" />
             </div>
           }>
           <Routes>

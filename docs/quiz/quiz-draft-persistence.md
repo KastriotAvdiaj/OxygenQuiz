@@ -159,9 +159,14 @@ none. One gap: a change made inside the 400ms debounce hasn't been written yet, 
 that window reads as the last successful save. The redirect after a successful create calls
 `allowNavigation()` so the guard doesn't stop it. An untouched builder never prompts.
 
-**AI wizard:** hydrate first, then say so — `RestoredDraftNotice` with **Start fresh**, per
-[ADR 0009](../adr/0009-a-restored-draft-is-announced-not-asked-about.md). Its guard stays armed
-only while a generation is in flight.
+**AI wizard:** hydrate first, then say so, per
+[ADR 0009](../adr/0009-a-restored-draft-is-announced-not-asked-about.md). Since 2026-10-17 the
+saying is an info **notification** ("Picked up where you left off — your drafted questions from
+an earlier visit, saved 5 minutes ago"), fired once by `useAiQuizDraft` on mount, not the
+`RestoredDraftNotice` banner, which kept repeating it above the work for as long as the page was
+open. The banner's *Start fresh* went with it: on the review, Back → *Discard & go back* does that
+job; on the form, the brief is cleared by hand. Its guard stays armed only while a generation is
+in flight.
 
 ## Limits worth knowing
 

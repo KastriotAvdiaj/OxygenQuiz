@@ -1,4 +1,4 @@
-import { DataTable, Spinner } from "@/components/ui";
+import { DataTable, BlobLoader } from "@/components/ui";
 
 import { Card } from "@/components/ui";
 import CreateQuestionDifficultyForm from "./create-question-difficulty";
@@ -11,7 +11,7 @@ export const DifficultyView = () => {
   // carries. See get-question-difficulties-admin.ts.
   const questionDifficultiesQuery = useQuestionDifficultyAdminData({});
 
-  if (questionDifficultiesQuery.isLoading) return <Spinner size="lg" />;
+  if (questionDifficultiesQuery.isLoading) return <BlobLoader size="lg" />;
   if (questionDifficultiesQuery.isError)
     return <p>Failed to load difficulties.</p>;
 

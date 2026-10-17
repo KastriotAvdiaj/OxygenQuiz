@@ -3,7 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Sparkles } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
-import { Spinner } from "@/components/ui";
+import { ModeToggle } from "@/components/ui/mode-toggle";
+import { Spinner, BlobLoader } from "@/components/ui";
 import { cn } from "@/utils/cn";
 import type {
   QuestionCategory,
@@ -18,7 +19,6 @@ import type {
 } from "../../api/generate-ai-quiz";
 import type { ParseResult } from "./parse-ai-output";
 
-import { RestoredDraftNotice } from "../draft-notices";
 
 import { AdvancedOptions } from "./components/advanced-options";
 import { ConfirmDetailsCard } from "./components/confirm-details-card";
@@ -27,8 +27,6 @@ import { GeneratingOverlay } from "./components/generating-overlay";
 import { useGenerationWait } from "./components/use-generation-wait";
 import { LeaveGenerationDialog } from "./components/leave-generation-dialog";
 import { GenerationInput } from "./components/generation-input";
-import { ImportNotices } from "./components/import-notices";
-import { ImportNote } from "./components/import-note";
 import { QuotaNote } from "./components/quota-note";
 import { WizardButton } from "./components/wizard-button";
 
@@ -37,7 +35,6 @@ export {
   DEFAULT_AI_QUESTION_TYPES,
 } from "./components/question-type-options";
 export { ImportNotices } from "./components/import-notices";
-export { ImportNote } from "./components/import-note";
 
 export interface AiQuizWizardViewProps {
   // ── Entity lookups (fetched by the container) ────────────────────────────────
@@ -126,15 +123,6 @@ export interface AiQuizWizardViewProps {
   onConfirmLeave?: () => void;
   onCancelLeave?: () => void;
 
-  // ── Unfinished work brought back ─────────────────────────────────────────────
-  /**
-   * When the draft this page was restored from was saved, or `null` on a fresh visit. Props
-   * rather than hooks, like everything else here, so a story can show the notice.
-   * See docs/quiz/quiz-draft-persistence.md.
-   */
-  restoredDraftSavedAt?: number | null;
-  /** "Start fresh": drop the restored draft and empty the page. */
-  onDiscardDraft?: () => void;
 }
 
 /**
@@ -191,8 +179,6 @@ export const AiQuizWizardView = ({
   onStartOver,
   parseResult,
   builderSlot,
-  restoredDraftSavedAt = null,
-  onDiscardDraft,
   showLeaveDialog = false,
   onConfirmLeave,
   onCancelLeave,
@@ -208,13 +194,17 @@ export const AiQuizWizardView = ({
    * the message disappears the moment the user fixes the problem — no clearing logic, and no
    * chance of it lingering next to input it no longer describes.
    */
-  const validationMessage = !hasInput
+  const topicMessage = !hasInput
     ? mode === "Topic"
       ? "Tell the AI what the quiz should be about."
       : "Paste a bit more material — a couple of sentences at least."
-    : allowedTypes.length === 0
-      ? "Pick at least one question type below."
-      : null;
+    : null;
+  // Mirrors the API, which refuses an empty type list (AiGenerationService.ValidateContent).
+  const typesMessage =
+    allowedTypes.length === 0 ? "Pick at least one question type." : null;
+  // Each message shows under its own field — a missing type used to be reported under the
+  // topic box, with the cursor sent there too, far from the cards that needed fixing.
+  const validationMessage = topicMessage ?? typesMessage;
 
   /**
    * The button stays enabled while the form is incomplete.
@@ -227,6 +217,7 @@ export const AiQuizWizardView = ({
    */
   const [showValidation, setShowValidation] = useState(false);
   const inputRegion = useRef<HTMLDivElement>(null);
+  const optionsRegion = useRef<HTMLDivElement>(null);
 
   /**
    * Wraps any action that needs a filled-in topic. Only Generate, now that Copy prompt lives
@@ -237,11 +228,12 @@ export const AiQuizWizardView = ({
   const runWhenValid = (action: () => void) => () => {
     if (validationMessage) {
       setShowValidation(true);
-      // Focus whichever field is mounted. One ref on the region beats threading a ref
-      // through GenerationInput to two different element types for a single focus call.
-      inputRegion.current
-        ?.querySelector<HTMLElement>("input, textarea")
-        ?.focus();
+      // Focus the first field at fault. One ref per region beats threading refs through
+      // GenerationInput (two different element types) and AdvancedOptions for a focus call.
+      (topicMessage
+        ? inputRegion.current?.querySelector<HTMLElement>("input, textarea")
+        : optionsRegion.current?.querySelector<HTMLElement>('[role="checkbox"]')
+      )?.focus();
       return;
     }
 
@@ -336,37 +328,27 @@ export const AiQuizWizardView = ({
   if (isLoadingEntities) {
     return (
       <div className="w-full h-64 flex items-center justify-center">
-        <Spinner size="lg" />
+        <BlobLoader size="lg" />
         {leaveDialog}
         {generatingOverlay}
       </div>
     );
   }
 
-  // ── Screen 2: parsing succeeded, so drop the user into the real quiz builder with
-  // everything prefilled. They get inline editing, validation and the normal submit path,
-  // and nothing is saved until they act.
+  // ── Screen 2: parsing succeeded, so the builder opens on its overview — the quiz to read
+  // and publish as it is, with any question a tap away from its editor (docs/adr/0026-the-quiz-overview.md).
+  // Nothing is saved until they act.
+  //
+  // No `lg:h-full` here any more: the overview is a page that scrolls, and a fixed height
+  // would end its pinned bar partway down (the bar is sticky within this box).
   if (parseResult?.ok && resultsMayShow) {
     return (
-      <div className={cn("flex flex-col gap-3 lg:h-full lg:min-h-0", arriving)}>
-        {/* Named, because on this screen it is the only thing that explains where a set
-            of questions nobody remembers making came from. Unnamed it reads as a claim
-            about the quiz — next to a banner that says nothing is saved yet, "saved 5
-            minutes ago" is the worst sentence on the page. Reaching this screen by
-            generating does not show it at all: `setPayload` retires the notice. */}
-        {restoredDraftSavedAt != null && onDiscardDraft && (
-          <RestoredDraftNotice
-            savedAt={restoredDraftSavedAt}
-            onDiscard={onDiscardDraft}
-            summary="your drafted questions, from an earlier visit"
-          />
-        )}
-        {/* Exceptions first, and they are the only thing here that gets a box: "four were
-            skipped" is what needs reading, and it is the one message on this screen the user
-            cannot switch off. `ImportNote` under it is a single muted line. */}
-        <ImportNotices result={parseResult} />
-        <ImportNote isFromTopic={mode === "Topic"} onStartOver={onStartOver} />
-        <div className="flex-1 min-h-0">{builderSlot}</div>
+      // The overview's own column. Back, the import report and the overview itself are all
+      // rendered by the builder now (create-quiz.tsx → QuizOverview), so they can reach the
+      // form — Back can save the quiz as a draft. `xl:max-w-none`: from `xl` the overview goes
+      // two-column and sets its own width (docs/quiz/quiz-overview.md, "Wide screens").
+      <div className={cn("mx-auto flex w-full max-w-3xl flex-col gap-3 xl:max-w-none", arriving)}>
+        <div>{builderSlot}</div>
         {leaveDialog}
         {generatingOverlay}
       </div>
@@ -388,9 +370,20 @@ export const AiQuizWizardView = ({
     //
     // `FitsTheFold` in the stories file is what holds this. If you need space here, take it
     // from spacing and type — ADR 0001 rules out taking it from the fields.
-    <div className="mx-auto w-full max-w-3xl py-6 px-4 short:py-0">
+    // min-h-full + justify-center: centred in the dashboard's <main> (this is its direct child,
+    // and <main> has a height), so a phone doesn't show the form at the top over half a screen
+    // of empty page. When the form is taller than the screen it simply grows and scrolls.
+    //
+    // Centred on a phone only, where the form is shorter than the screen and would otherwise
+    // sit on half a page of nothing. From `sm` up it starts at the top with a margin — on a
+    // laptop or a large monitor a centred form floats mid-screen, a long way from the page's
+    // edge it belongs to.
+    //
+    // `animate-in`: the form fades in when it appears — on arrival, and when Back on the
+    // review returns here (docs/development/motion.md).
+    <div className="mx-auto flex min-h-full w-full max-w-3xl flex-col justify-center py-6 px-4 animate-in fade-in-0 duration-300 motion-reduce:animate-none sm:justify-start sm:pt-8 short:py-0 short:sm:pt-4">
       <header className="mb-6 short:mb-2">
-        <div className="mb-5 sm:mb-6 short:mb-1.5">
+        <div className="mb-5 flex items-center justify-between sm:mb-6 short:mb-1.5">
           <button
             onClick={() => navigate(quizzesPath)}
             className="group inline-flex items-center gap-1.5 rounded-lg border border-border bg-card/60 px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-foreground/20 hover:text-foreground"
@@ -398,6 +391,10 @@ export const AiQuizWizardView = ({
             <ArrowLeft className="h-3.5 w-3.5 transition-transform group-hover:-translate-x-0.5" />
             Back
           </button>
+          {/* Development only — for checking this screen in both themes without leaving it
+              (the dashboard header that normally carries the toggle is hidden on this route).
+              `import.meta.env.DEV` is false in a production build, so this is dropped there. */}
+          {import.meta.env.DEV && <ModeToggle className="h-8 px-2.5" />}
         </div>
         <h1 className="text-2xl font-bold flex items-center gap-2 short:text-lg">
           Create a quiz with AI
@@ -412,13 +409,6 @@ export const AiQuizWizardView = ({
         </p> */}
       </header>
 
-      {restoredDraftSavedAt != null && onDiscardDraft && (
-        <RestoredDraftNotice
-          className="mb-4 short:mb-2"
-          savedAt={restoredDraftSavedAt}
-          onDiscard={onDiscardDraft}
-        />
-      )}
 
       {/* Questions arrived but we can't place them yet. Shown *instead of* the topic box, so
           the user finishes the one thing standing between them and the review step rather
@@ -443,8 +433,10 @@ export const AiQuizWizardView = ({
         // the card holds now is the whole of it — the question, the details that answer it,
         // and the button. Nothing on this screen is hidden behind a click any more: the
         // Advanced drawer became the visible `AdvancedOptions` form below.
-        <Card className="bg-background border-2 border-primary/30">
-          <CardContent className="space-y-5 pt-6 short:space-y-3 short:pt-3">
+        // The dashboard card (CLAUDE.md, "Inside a dashboard"): on the muted page a plain
+        // hairline frame, not the primary one — the card needs an edge, not emphasis.
+        <Card className="bg-card border border-border dark:border-foreground/30">
+          <CardContent className="space-y-8 pt-6 short:space-y-6 short:pt-3">
             <div ref={inputRegion}>
               <GenerationInput
                 mode={mode}
@@ -453,22 +445,23 @@ export const AiQuizWizardView = ({
                 sourceData={sourceData}
                 onSourceDataChange={onSourceDataChange}
                 disabled={isGenerating}
-                error={
-                  showValidation ? (validationMessage ?? undefined) : undefined
-                }
+                error={showValidation ? (topicMessage ?? undefined) : undefined}
                 // The same wrapper the button uses, so Enter cannot skip validation.
                 onSubmit={runWhenValid(onGenerate)}
               />
             </div>
 
-            <AdvancedOptions
-              questionCount={questionCount}
-              onQuestionCountChange={onQuestionCountChange}
-              allowedTypes={allowedTypes}
-              onToggleType={onToggleType}
-              extraInstructions={extraInstructions}
-              onExtraInstructionsChange={onExtraInstructionsChange}
-            />
+            <div ref={optionsRegion}>
+              <AdvancedOptions
+                questionCount={questionCount}
+                onQuestionCountChange={onQuestionCountChange}
+                allowedTypes={allowedTypes}
+                onToggleType={onToggleType}
+                typesError={showValidation ? (typesMessage ?? undefined) : undefined}
+                extraInstructions={extraInstructions}
+                onExtraInstructionsChange={onExtraInstructionsChange}
+              />
+            </div>
 
             {generateError && <GenerateErrorPanel error={generateError} />}
 
@@ -505,22 +498,22 @@ export const AiQuizWizardView = ({
                     the link stops being quiet and takes the primary colour, with a line
                     above it saying why. Moving it into this row changed where it sits,
                     not that behaviour: see docs/quiz/ai-quiz-two-paths.md §2. */}
+                {/* Since 2026-10-17 the link shows only in that blocked state. The rest of the
+                    time it was an offer competing with Generate; when Generate is dead it is
+                    the only way off this page, and the only entry to the own-AI page at all. */}
                 {generationBlocked && (
-                  <p className="text-muted-foreground text-xs">
-                    Generating in the app isn't available right now.
-                  </p>
+                  <>
+                    <p className="text-muted-foreground text-xs">
+                      Generating in the app isn't available right now.
+                    </p>
+                    <Link
+                      to={ownAiPath}
+                      className="block text-sm font-medium text-primary hover:underline"
+                    >
+                      Use your own AI instead (free)
+                    </Link>
+                  </>
                 )}
-                <Link
-                  to={ownAiPath}
-                  className={cn(
-                    "block text-sm",
-                    generationBlocked
-                      ? "text-primary font-medium hover:underline"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  Use your own AI instead (free)
-                </Link>
               </div>
 
               <WizardButton

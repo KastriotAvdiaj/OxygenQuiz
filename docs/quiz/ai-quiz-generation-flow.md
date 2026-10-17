@@ -18,8 +18,9 @@ pasted text, not a PDF. Last updated: 2026-08-22
 ## 1. Where this sits in the bigger flow
 
 The user's journey is unchanged from Phase 1 except for one step. They configure the quiz, they
-get questions, they review them in the normal builder, they save through the existing atomic
-import. The only new thing is *how the questions arrive*.
+get questions, they review them in the quiz overview — the builder's reading view, answers
+hidden until revealed ([quiz-overview.md](quiz-overview.md)) — and they save through the existing
+atomic import. The only new thing is *how the questions arrive*.
 
 ```mermaid
 flowchart LR
@@ -32,7 +33,7 @@ flowchart LR
     end
 
     S2 --> P["parse-ai-output.ts\nUNCHANGED"]
-    P --> R["Step 3 — review in\nthe normal builder\nUNCHANGED"]
+    P --> R["Step 3 — review in\nthe quiz overview\n(ADR 0026)"]
     R --> I["POST /quiz/ai-import\none transaction\nUNCHANGED"]
 ```
 
@@ -117,7 +118,7 @@ worst case is a wrong-but-real category on a Draft quiz that a human is looking 
 | Wizard view | `AI-Quiz/ai-quiz-wizard-view.tsx` | **Composition only.** The three screens (§3b) and which component renders in each. |
 | Shared draft | `AI-Quiz/use-ai-quiz-draft.tsx` | Everything both AI paths share: lookups, request state, reply → parse → builder handoff. |
 | Own-AI path | `AI-Quiz/own-ai-quiz.tsx` + `own-ai-quiz-view.tsx` | Copy the prompt out, paste the reply back. Its own route — [`ai-quiz-two-paths.md`](./ai-quiz-two-paths.md). |
-| View pieces | `AI-Quiz/components/*.tsx` | One block each: `generation-input`, `advanced-options`, `quota-note`, `generate-error-panel`, `confirm-details-card`, `import-note`, `question-type-options`, `question-count-stepper`. |
+| View pieces | `AI-Quiz/components/*.tsx` | One block each: `generation-input`, `advanced-options`, `quota-note`, `generate-error-panel`, `confirm-details-card`, `review-back-button`, `question-type-options`, `question-count-stepper`. |
 | Limits | `AI-Quiz/prompt.ts` | Numbers only. The prompt text lives in C# (slice 2.1). |
 | Quality checks | `AI-Quiz/question-checks.ts` | Pure checks the parser runs on every question, both paths: duplicate options, contradictory key, giveaway, repeat, source quote not in the material. Plan: [`ai-question-accuracy-plan.md`](./ai-question-accuracy-plan.md). |
 

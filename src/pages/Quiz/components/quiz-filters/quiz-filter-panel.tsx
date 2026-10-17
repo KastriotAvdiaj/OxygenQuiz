@@ -154,8 +154,10 @@ export function QuizFilterPanel({
           // internally, so it can't spill onto the footer.
           // dvh, not vh: cap against the *visible* viewport (mobile browser chrome
           // makes 100vh over-measure); the vh class is the older-browser fallback.
+          // 10rem, not 7rem: /choose-quiz's Back button (h-9 + gap-6) sits above the panel in
+          // the same sticky column, so the panel gives up that height.
           !compact && fillHeight &&
-            "flex max-h-[calc(100vh-7rem)] supports-[height:100dvh]:max-h-[calc(100dvh-7rem)] flex-col overflow-hidden",
+            "flex max-h-[calc(100vh-10rem)] supports-[height:100dvh]:max-h-[calc(100dvh-10rem)] flex-col overflow-hidden",
           className
         )}
       >

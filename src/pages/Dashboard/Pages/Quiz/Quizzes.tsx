@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { DataTable, Card, Spinner } from "@/components/ui";
+import { DataTable, Card, BlobLoader } from "@/components/ui";
 import { LiftedButton } from "@/common/LiftedButton";
 import { quizColumns } from "./components/Data-Table-Columns/columns";
 import { useSearchQuizzes } from "./api/search-quizzes";
@@ -87,7 +87,7 @@ export const Quizzes = () => {
   if (isFilterDataLoading) {
     return (
       <div className="flex justify-center items-center h-screen">
-        <Spinner size="lg" />
+        <BlobLoader size="lg" />
       </div>
     );
   }
@@ -195,7 +195,7 @@ export const Quizzes = () => {
               </p>
             ) : quizData.isLoading ? (
               <div className="flex justify-center items-center py-16">
-                <Spinner size="lg" />
+                <BlobLoader size="lg" />
               </div>
             ) : (
               <>

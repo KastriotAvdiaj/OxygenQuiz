@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { DataTable, Spinner, Card } from "@/components/ui";
+import { DataTable, Card, BlobLoader } from "@/components/ui";
 import CreateQuestionCategoryForm from "./create-question-category";
 import { categoryColumns } from "./columns";
 import { CategoryFilters } from "./category-filters";
@@ -67,7 +67,7 @@ export const CategoryView = () => {
               <p className="text-center text-red-500 py-8">Failed to load categories.</p>
             ) : categoriesQuery.isLoading ? (
               <div className="flex justify-center py-12">
-                <Spinner size="lg" />
+                <BlobLoader size="lg" />
               </div>
             ) : (
               <>

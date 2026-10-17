@@ -3,7 +3,7 @@ import { useQuestionCategoryData } from "./Entities/Categories/api/get-question-
 import { useQuestionDifficultyData } from "./Entities/Difficulty/api/get-question-difficulties";
 import { useQuestionLanguageData } from "./Entities/Language/api/get-question-language";
 
-import { Card, Spinner } from "@/components/ui";
+import { Card, BlobLoader } from "@/components/ui";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useDisclosure } from "@/hooks/use-disclosure";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -93,7 +93,7 @@ export const Questions = () => {
   if (isFilterDataLoading) {
     return (
       <div className="flex justify-center items-center h-screen">
-        <Spinner size="lg" />
+        <BlobLoader size="lg" />
       </div>
     );
   }

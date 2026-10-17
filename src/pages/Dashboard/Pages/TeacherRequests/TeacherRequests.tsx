@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { GraduationCap } from "lucide-react";
-import { Card, Spinner, Button } from "@/components/ui";
+import { Card, Button, BlobLoader } from "@/components/ui";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/form/input";
 import { useNotifications } from "@/common/Notifications";
@@ -30,7 +30,7 @@ export const TeacherRequests = () => {
       <Card className="p-6 bg-card border dark:border-foreground/30">
         {isLoading ? (
           <div className="flex justify-center py-16">
-            <Spinner size="lg" />
+            <BlobLoader size="lg" />
           </div>
         ) : isError ? (
           <p className="py-8 text-center text-red-500">

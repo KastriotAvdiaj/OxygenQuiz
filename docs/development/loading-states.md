@@ -27,9 +27,9 @@ thing continuing. Agreement by convention does not survive a fourth call site �
 |---|---|---|
 | `components/ui/page-loading.tsx` — **`PageLoading`** | Anything that holds the screen while it resolves | Owns the size, the centring and the appearance delay. `fullScreen` only for a boundary that owns the viewport before any layout exists. |
 | `pages/Quiz/Sessions/components/quiz-loading-view.tsx` — **`QuizLoadingView`** | The quiz flow's waits | A thin name over `PageLoading`. Exists so a call site can say *which* wait it is via `label`. **Change the look in `PageLoading`, not here.** |
-| `components/ui/blob-loader.tsx` — **`BlobLoader`** | In-panel waits: a tab body, a list inside a card, a drawer | The primitive: a ball crossing between two bars, fused by an SVG goo filter. `primary` by default, transparent, so it sits on either theme. Sized `sm`/`md`/`lg` in place; every size steps down on phones and up on large screens. Do not use it for a full page — that is what `PageLoading` wraps. |
-| `components/ui/loading-wave.tsx` — **`LoadingWave`** | Nothing, currently | The previous primitive (a bouncing `LOADING` wordmark). Replaced by `BlobLoader` after the landing-page redesign because it no longer fit the look; kept and storied, like `SplitFlapLoader`. |
-| `components/ui/Spinner.tsx` — **`Spinner`** | The admin dashboard | The dashboard's own idiom, used by ~18 screens. Not worth converting; just keep it centred. |
+| `components/ui/blob-loader.tsx` — **`BlobLoader`** | In-panel waits: a tab body, a list inside a card, a drawer — and, since 2026-10-17, every dashboard wait that used `Spinner` at `md`/`lg`/`xl` | The primitive: a ball crossing between two bars, fused by an SVG goo filter. `primary` by default, transparent, so it sits on either theme. Sized `sm`/`md`/`lg` in place; every size steps down on phones and up on large screens. Do not use it for a full page — that is what `PageLoading` wraps. |
+| `components/ui/loading-wave.tsx` — **`LoadingWave`** | One text effect: multiplayer's "Next question coming" line | The previous primitive (a bouncing `LOADING` wordmark). Replaced by `BlobLoader` after the landing-page redesign because it no longer fit the look; kept and storied, like `SplitFlapLoader`. |
+| `components/ui/Spinner.tsx` — **`Spinner`** | Inline busy marks only: inside a button while it submits, beside a short "Writing questions…"/"Thinking…" line, the notification bell | Was the dashboard's page and panel loader on ~25 screens; those moved to `BlobLoader` (2026-10-17), same size name, same centring. What's left is `sm`, where a 2:1 blob doesn't sit in a line of text or a button face the way a 16px ring does. |
 | `components/ui/split-flap-loader.tsx` — **`SplitFlapLoader`** | Nothing, currently | A set-piece, kept for a moment that wants one. It only animates on a phrase *change* — a single-entry `words` array renders a board that never moves. |
 
 ## 3. The boundaries
@@ -46,7 +46,9 @@ away.
    leaves the header, background and account overlay mounted. **A route that renders a lazy
    element outside a layout falls through to (1) and blanks the app** — that is the failure this
    boundary exists to prevent, and the thing to check when adding a route.
-3. **`AppRoot.tsx` and `Dashboard.tsx`** — the dashboard's equivalents, using `Spinner`.
+3. **`AppRoot.tsx` and `Dashboard.tsx`** — the dashboard's equivalents, using `BlobLoader` at `xl`
+   in a centred `min-h-[60vh]` box (they were `Spinner` until 2026-10-17). Not yet `PageLoading`,
+   so they don't have its 140ms delay — the next step if the dashboard's route waits flicker.
 
 ## 4. Nothing paints for 140ms
 

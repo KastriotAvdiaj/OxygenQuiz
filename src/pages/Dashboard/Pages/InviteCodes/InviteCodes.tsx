@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Card, Spinner, Button } from "@/components/ui";
+import { Card, Button, BlobLoader } from "@/components/ui";
 import { Plus, Copy, Check, Ban, Ticket } from "lucide-react";
 import {
   Table,
@@ -242,7 +242,7 @@ export const InviteCodes = () => {
       <Card className="p-6 bg-card border dark:border-foreground/30">
         {isLoading ? (
           <div className="flex justify-center items-center py-16">
-            <Spinner size="lg" />
+            <BlobLoader size="lg" />
           </div>
         ) : isError ? (
           <p className="text-center text-red-500 py-8">

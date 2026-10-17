@@ -35,6 +35,21 @@ interface QuizContextType {
   addedQuestionsCount: number;
   addQuestionToQuiz: (questionObject: QuizQuestion) => void;
   removeQuestionFromQuiz: (questionId: number) => void;
+  /**
+   * Replace the order of the quiz's questions. Takes the whole reordered list — the shape
+   * framer-motion's `Reorder.Group` hands back — and must contain the same questions.
+   * Order is positional: `getQuestionsWithSettings` derives `orderInQuiz` from the index.
+   */
+  reorderQuestions: (ordered: QuizQuestion[]) => void;
+  /**
+   * Put back a question that was just removed — the overview's Undo. Goes back at `index`
+   * (clamped to the end) with the settings it had, so it returns exactly as it left.
+   */
+  restoreQuestion: (
+    question: QuizQuestion,
+    settings: QuestionSettings,
+    index: number
+  ) => void;
   isQuestionSelected: (questionId: number) => boolean;
 
   // Temporary modal selections
@@ -401,6 +416,24 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
     });
   };
 
+  const reorderQuestions = (ordered: QuizQuestion[]): void => {
+    setAddedQuestions(ordered);
+  };
+
+  const restoreQuestion = (
+    question: QuizQuestion,
+    settings: QuestionSettings,
+    index: number
+  ): void => {
+    setAddedQuestions((prev) => {
+      if (prev.some((q) => q.id === question.id)) return prev;
+      const next = [...prev];
+      next.splice(Math.min(index, next.length), 0, question);
+      return next;
+    });
+    setQuestionSettings((prev) => ({ ...prev, [question.id]: settings }));
+  };
+
   const isQuestionSelected = (questionId: number): boolean => {
     return addedQuestions.some((q) => q.id === questionId);
   };
@@ -582,6 +615,8 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
     addedQuestionsCount: addedQuestions.length,
     addQuestionToQuiz,
     removeQuestionFromQuiz,
+    reorderQuestions,
+    restoreQuestion,
     isQuestionSelected,
 
     // Temporary selections

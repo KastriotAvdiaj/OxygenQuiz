@@ -145,6 +145,7 @@ interesting part, so we fake it with Moq (pattern C below).
 | `src/pages/UserRelated/AccountOverlay/__tests__/use-account-overlay.test.tsx` | Closing the account overlay while a navigation blocker refuses it: the overlay still reads open and the URL keeps `?settings=`. Guards the in-place edit of the live search params that shut the overlay under its own unsaved-changes dialog — see [account-overlay.md](account-overlay.md). |
 | `src/components/ui/__tests__/button.test.tsx` | `Button` renders normally, and as its child element under `asChild` (Radix `Slot` accepts one element child — the layout `<span>` used to make two and throw). The only `asChild` callers are error screens, so this breaks exactly when it's needed. |
 | `src/lib/__tests__/font-defaults.test.ts` | The default app and quiz fonts agree between `global.css` (which paints before any JS runs) and the constant `SettingsApplier` applies. They disagreed for months, so every first paint flashed the wrong typeface. |
+| `src/pages/Dashboard/.../Create-Quiz-Form/components/overview/__tests__/review-model.test.ts` | The quiz overview's card model: a new question and one from the bank read the same — multiple choice keeps its options in order, true/false becomes two options with exactly one correct, a typed answer's other spellings are read from either shape with blanks and repeats of the answer dropped, and a blank image or explanation counts as none. See [quiz-overview.md](../quiz/quiz-overview.md). |
 | `src/pages/Dashboard/.../AI-Quiz/__tests__/extract-quiz-suggestions.test.ts` | The quiz-level title, category and language are read out of the model's reply **in the parser** — the one place a generated and a pasted reply both pass through. Guards the regression where a pasted reply carrying all three was never enriched and the wizard demanded them by hand. |
 | `src/pages/Quiz/Sessions/.../__tests__/resume-projection.test.ts` | `projectResume` agrees with `ResolveAndResumeAsync`: the inclusive `elapsed <= timeLimit` boundary, truncated seconds, the walk restarting from the front of the list, and the abandonment deadline that runs **before** the walk. Written as the server's rules rather than the function's branches, with numbers sitting on each boundary. See [`../quiz/session-resume-screen.md`](../quiz/session-resume-screen.md). |
 | `src/pages/Dashboard/.../AI-Quiz/__tests__/parse-ai-output.test.ts` | The trust boundary for model output: JSON found inside a chatty, fenced reply; category, language and visibility come from the quiz, never the model; `allowPartialMatch` is always false; unusable questions are dropped **with a reason** while the rest survive; time limits snap to a value the builder can display; difficulty is matched by name with a reported fallback; and a reply with nothing usable fails with an actionable message. |
@@ -178,8 +179,9 @@ testing a component the app never renders.
 
 ### Frontend — Storybook stories (`*.stories.tsx`)
 
-Twenty-three stories exist, covering the notification surfaces, dialogs and data table (both tones), the
-loading and split-flap views, the AI quiz wizard (including its generating overlay), the
+Twenty-four stories exist, covering the notification surfaces, dialogs and data table (both tones), the
+loading and split-flap views, the AI quiz wizard (including its generating overlay), the quiz
+overview (hidden answers and Reveal, the editor dialog's Next — `quiz-overview.stories.tsx`), the
 create-quiz method dialog, the multiplayer lobby and game, the quiz interface, the
 "Session In Progress" screen, and the error boundaries. These power Storybook and Chromatic
 visual review.
