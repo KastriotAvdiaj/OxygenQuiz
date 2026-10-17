@@ -6,6 +6,7 @@ import {
   MessageSquareText,
   Plus,
   ArrowRight,
+  Save,
 } from "lucide-react";
 import {
   Card,
@@ -830,7 +831,9 @@ const CreateQuizForm = ({
                   >
                     {/* Spinner over an invisible label, so the button keeps its width. The
                         arrow says this is the step forward out of the builder (as Finish's
-                        does); Save changes keeps you where you are, so it has none. */}
+                        does). Save changes keeps you where you are, so it gets a save icon
+                        instead — an arrow would overpromise, and a bare label read as less of
+                        a button than "+ Add a question" beside it. */}
                     <span className="relative flex items-center justify-center">
                       <Spinner
                         size="sm"
@@ -843,6 +846,9 @@ const CreateQuizForm = ({
                             : "visible flex items-center gap-1.5"
                         }
                       >
+                        {isEditMode && !isCreatingQuestions && (
+                          <Save className="h-4 w-4" aria-hidden="true" />
+                        )}
                         {submitLabel}
                         {!isEditMode && !isCreatingQuestions && (
                           <ArrowRight className="h-4 w-4" aria-hidden="true" />

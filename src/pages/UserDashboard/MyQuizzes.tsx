@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { DataTable, Card, BlobLoader, Button } from "@/components/ui";
+import { DataTable, Card, BlobLoader } from "@/components/ui";
 import { quizColumns } from "@/pages/Dashboard/Pages/Quiz/components/Data-Table-Columns/columns";
 import { useSearchQuizzes } from "@/pages/Dashboard/Pages/Quiz/api/search-quizzes";
 import { rule, type FilterQuery, type FilterRule } from "@/lib/filtering";
@@ -12,6 +12,9 @@ import { useQuestionCategoryData } from "@/pages/Dashboard/Pages/Question/Entiti
 import { useQuestionDifficultyData } from "@/pages/Dashboard/Pages/Question/Entities/Difficulty/api/get-question-difficulties";
 import { useQuestionLanguageData } from "@/pages/Dashboard/Pages/Question/Entities/Language/api/get-question-language";
 import { CreateQuizMethodDialog } from "@/pages/Dashboard/Pages/Quiz/components/create-quiz-method-dialog";
+import { HEADER_ACTION_FACE } from "@/pages/Dashboard/Pages/Quiz/components/header-action-face";
+import { LiftedButton } from "@/common/LiftedButton";
+import { cn } from "@/utils/cn";
 import { QuizFiltersPanel } from "@/pages/Dashboard/Pages/Quiz/components/Quiz-Filter";
 import { Filter } from "lucide-react";
 import {
@@ -96,13 +99,16 @@ export const MyQuizzes = () => {
 
   return (
     <div className="container mx-auto py-8 px-4 md:px-0">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">My Quizzes</h1>
+      {/* The admin Quizzes page's header, copied: stacked on phones, one row from `sm`, and
+          the same two lifted buttons. This page used a flat outline `Button` for Filters, which
+          sat beside the lifted "+ Create Quiz" as a different, shorter kind of control. */}
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-2xl font-bold sm:text-3xl">My Quizzes</h1>
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex items-center gap-2 lg:hidden"
+          <LiftedButton
+            outerClassName="w-fit lg:hidden"
+            className={cn("gap-2 bg-background font-medium text-foreground", HEADER_ACTION_FACE)}
+            liftColor="muted"
             onClick={() => setFiltersOpen(true)}
           >
             <Filter className="h-4 w-4" />
@@ -112,7 +118,7 @@ export const MyQuizzes = () => {
                 {activeFilterCount}
               </span>
             )}
-          </Button>
+          </LiftedButton>
           {/* Same chooser as the admin Quizzes page — manual, or AI (generate / bring your own).
               The /my-dashboard AI routes existed but nothing linked to them; this is the entry
               point. The old title-first dialog is gone: its input was never read. */}

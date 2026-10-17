@@ -23,7 +23,7 @@ Last updated: 2026-08-13. Companion to
 | Input | Topic **or** source material — one per route | Topic only (see below) |
 | Owns | The generate mutation, quota, `AiGenerateError` | The clipboard, the pasted reply |
 
-Everything else — the entity lookups, "what should this quiz be about?", the details form,
+Everything else — the entity lookups, "what's this quiz about?", the details form,
 resolving the model's category/language names into ids, the parser, the confirm-details card,
 the review handoff into the prefilled builder — is **the same code**, and lives in
 `use-ai-quiz-draft.tsx`.
