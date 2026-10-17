@@ -159,6 +159,7 @@ interesting part, so we fake it with Moq (pattern C below).
 | `src/pages/Quiz/Associations/duel/__tests__/duel-model.test.ts` | The Duel screen from the reader's seat: finding it by username (any case), the turn prompt (open / guess or pass / endgame turns left / the other player's turn), the outcome for winner, loser, a forfeit and a tie, and each move in words with who made it. |
 | `src/context/__tests__/lobby-rejoin.test.ts` | The reconnect fix's client half: after an automatic reconnect the provider re-invokes `JoinSession` for the lobby it's in — the latest one, not after leaving, not when in none — and a refused rejoin is reported with the hub's own sentence and forgotten. |
 | `src/pages/Quiz/__tests__/quiz-play-path.test.ts` | Play and results routes by format: a Board goes to `/associations/...`, Classic to `/quiz/...`, and the share token travels with either. |
+| `src/layouts/__tests__/active-nav-id.test.ts` | Which dashboard nav item a URL lights: the first segment after the dashboard root, or the item that claims it through `activeOn` — `/dashboard/quiz/37` lights Quizzes. Guards the last-segment lookup that lit nothing on any page below a section. |
 
 The signup-storm test is worth copying as a pattern: it mocks `@/lib/Api-client` to reject, then
 **counts calls over a time window** rather than asserting on rendered output. Render assertions

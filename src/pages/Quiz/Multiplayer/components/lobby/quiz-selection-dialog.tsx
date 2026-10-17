@@ -9,7 +9,7 @@ import { useQuestionCategoryData } from "@/pages/Dashboard/Pages/Question/Entiti
 import { useQuestionDifficultyData } from "@/pages/Dashboard/Pages/Question/Entities/Difficulty/api/get-question-difficulties";
 import { useQuestionLanguageData } from "@/pages/Dashboard/Pages/Question/Entities/Language/api/get-question-language";
 import { useQuizFilterState } from "@/pages/Quiz/components/quiz-filters";
-import { QuizSelectionDialogView } from "./quiz-selection-dialog-view";
+import { QuizSelectionDialogView, type LobbyQuizScope } from "./quiz-selection-dialog-view";
 import { useCanSelectUnspecifiedLookup } from "@/pages/Dashboard/Pages/Question/Entities/lookup-visibility";
 
 // Matches the /choose-quiz page size, so an identical filter/sort/page state reuses its
@@ -31,6 +31,14 @@ export const QuizSelectionDialog = ({
 }: QuizSelectionDialogProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [pageNumber, setPageNumber] = useState(1);
+  /**
+   * Which quizzes the host is picking from. "mine" is how a host runs their own Unlisted (or
+   * Draft) quiz for friends: the catalogue never lists those, but the hub lets an owner host any
+   * quiz of theirs — the API counterpart is `IQuizService.CanHostQuizAsync`, called from
+   * `QuizHub.SelectQuiz`. Lobby membership is then the participants' access grant
+   * (docs/quiz/quiz-visibility.md, "Unlisted via multiplayer lobby").
+   */
+  const [scope, setScope] = useState<LobbyQuizScope>("public");
   // The facet panel is tucked behind a toggle — dialog space is tight.
   const [filtersOpen, setFiltersOpen] = useState(false);
 
@@ -61,7 +69,7 @@ export const QuizSelectionDialog = ({
     filters,
   };
 
-  const { data: quizData, isLoading } = useSearchQuizzes({ scope: "public", query });
+  const { data: quizData, isLoading } = useSearchQuizzes({ scope, query });
 
   const quizzes = quizData?.items ?? [];
   const pagination = quizData ? pagedResponseToPagination(quizData) : undefined;
@@ -70,6 +78,13 @@ export const QuizSelectionDialog = ({
   useEffect(() => {
     setPageNumber(1);
   }, [debouncedSearch, selectionKey]);
+
+  // Page reset in the handler, not the Effect above: a different list starts at page 1, and doing
+  // it here means the first request for the new scope is already the right one.
+  const handleScopeChange = useCallback((next: LobbyQuizScope) => {
+    setScope(next);
+    setPageNumber(1);
+  }, []);
 
   const clearFilters = useCallback(() => {
     setSearchQuery("");
@@ -89,6 +104,8 @@ export const QuizSelectionDialog = ({
       isOpen={isOpen}
       onClose={onClose}
       selectedQuiz={selectedQuiz}
+      scope={scope}
+      onScopeChange={handleScopeChange}
       searchQuery={searchQuery}
       onSearchChange={setSearchQuery}
       resultCount={quizData?.totalItems ?? quizzes.length}

@@ -29,9 +29,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui";
-import { Copy, Edit2, Eye, MoreHorizontal, Trash2 } from "lucide-react";
+import { Copy, Edit2, Eye, MoreHorizontal, Play, Share2, Trash2 } from "lucide-react";
 import { DeleteQuiz } from "../delete-quiz";
 import { Link, useLocation } from "react-router-dom";
+import { useUser } from "@/lib/Auth";
+import { quizPlayPath } from "@/pages/Quiz/quiz-play-path";
+import { useCopyShareLink } from "../../api/use-copy-share-link";
 import { QuizSummaryDTO } from "@/types/quiz-types";
 
 /**
@@ -184,7 +187,18 @@ function QuizActionsCell({ quiz }: { quiz: QuizSummaryDTO }) {
   const editPath = useQuizEditPath();
   // The single-quiz page lives in the admin dashboard only; a player opening it gets the admin
   // area's 404, so "View" is offered only where it works (known-issues.md, Associations).
-  const canView = dashboardBaseOf(useLocation().pathname) === "/dashboard";
+  const isAdminDashboard = dashboardBaseOf(useLocation().pathname) === "/dashboard";
+  const canView = isAdminDashboard;
+  // "My quizzes" lists only the viewer's own (`scope: "mine"`); the admin table lists everyone's,
+  // and a summary row carries the author's username, not an id.
+  const { data: currentUser } = useUser();
+  const isOwn = !isAdminDashboard || quiz.user === currentUser?.username;
+  // Play mirrors `QuizPlayAccess.IsPlayAuthorized` (Public, or yours); Share mirrors
+  // `GenerateShareTokenAsync` (yours) plus the resolver's 404 on a Draft. These two items are the
+  // only way a player reaches their own Unlisted quiz — players have no single-quiz page.
+  const canPlay = !quiz.deletedAt && (quiz.status === "Public" || isOwn);
+  const canShare = !quiz.deletedAt && isOwn && quiz.status !== "Draft";
+  const shareLink = useCopyShareLink();
   // Separate disclosure for the delete confirmation. It's rendered OUTSIDE the
   // dropdown (below) so closing the menu can't unmount an open dialog and leave
   // `pointer-events: none` stuck on <body>.
@@ -204,6 +218,24 @@ function QuizActionsCell({ quiz }: { quiz: QuizSummaryDTO }) {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="bg-muted">
         <DropdownMenuLabel>Actions</DropdownMenuLabel>
+        {canPlay && (
+          <DropdownMenuItem className="hover:bg-background" asChild>
+            <Link to={quizPlayPath(quiz)} className="flex items-center gap-2">
+              <Play size={16} /> Play
+            </Link>
+          </DropdownMenuItem>
+        )}
+        {canShare && (
+          <DropdownMenuItem
+            className="hover:bg-background"
+            disabled={shareLink.isPending}
+            onClick={() => shareLink.copy(quiz.id)}
+          >
+            <Share2 size={16} />
+            {quiz.status === "Unlisted" ? "Copy share link" : "Share"}
+          </DropdownMenuItem>
+        )}
+        {(canPlay || canShare) && <DropdownMenuSeparator className="bg-background/60" />}
         <DropdownMenuItem
           onClick={() =>
             navigator.clipboard.writeText(quiz.id as unknown as string)
