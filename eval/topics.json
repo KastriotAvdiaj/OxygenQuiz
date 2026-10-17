@@ -1,0 +1,31 @@
+{
+  "$comment": [
+    "The fixed input set. THIS FILE IS THE PART A HUMAN OWNS — edit it before the first run.",
+    "Every row is one generation. Keep ids stable: they are how two runs are compared.",
+    "'language' is what the questions are SUPPOSED to be in. In --language-mode=inferred",
+    "(production's behaviour today) it is never sent to the model; it is only the yardstick",
+    "the scorer measures the output against."
+  ],
+  "defaults": {
+    "questionCount": 10,
+    "allowedTypes": ["MultipleChoice", "TrueFalse", "TypeTheAnswer"],
+    "difficultyNames": ["Easy", "Medium", "Hard"],
+    "categoryNames": ["History", "Science", "Geography", "Sports", "Entertainment"],
+    "languageNames": ["English", "Albanian", "Spanish", "French"]
+  },
+  "topics": [
+    { "id": "en-sci-01", "language": "English",  "topic": "Photosynthesis" },
+    { "id": "en-sci-02", "language": "English",  "topic": "The periodic table of elements" },
+    { "id": "en-his-01", "language": "English",  "topic": "The fall of the Roman Republic" },
+    { "id": "en-geo-01", "language": "English",  "topic": "Rivers of South America" },
+    { "id": "en-amb-01", "language": "English",  "topic": "Mercury", "note": "ambiguity trap: planet vs element vs deity" },
+    { "id": "en-cur-01", "language": "English",  "topic": "Current world record holders in athletics", "note": "time-sensitive trap" },
+
+    { "id": "sq-his-01", "language": "Albanian", "topic": "Lufta e Dytë Botërore në Shqipëri" },
+    { "id": "sq-his-02", "language": "Albanian", "topic": "Skënderbeu dhe Lidhja e Lezhës" },
+    { "id": "sq-geo-01", "language": "Albanian", "topic": "Gjeografia e Shqipërisë" },
+    { "id": "sq-sci-01", "language": "Albanian", "topic": "Sistemi diellor", "note": "general science in Albanian — thin sq.wikipedia coverage expected" },
+    { "id": "sq-ent-01", "language": "Albanian", "topic": "Muzika shqiptare e viteve 1990" },
+    { "id": "sq-spo-01", "language": "Albanian", "topic": "Kombëtarja shqiptare e futbollit" }
+  ]
+}

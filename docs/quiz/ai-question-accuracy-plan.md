@@ -1,10 +1,10 @@
 # Plan: Accurate AI Question Generation
 
-Status: **Phases 1 and 1b implemented** (deterministic checks, prompt hardening, question
-explanations). Phases 2–5 proposed.
+Status: **Phases 0, 1 and 1b implemented** (eval harness, deterministic checks, prompt hardening,
+question explanations). Phases 2–5 proposed.
 Transient plan doc — fold what ships into [`ai-quiz-generation-flow.md`](./ai-quiz-generation-flow.md)
 and [`ai-quiz-architecture.md`](./ai-quiz-architecture.md), then delete this file.
-Last updated: 2026-09-26
+Last updated: 2026-10-17
 
 ---
 
@@ -78,15 +78,28 @@ Topic ──► 2. Source (Wikipedia) ─┐            (Source mode: the user's
 
 ## Phases
 
-### Phase 0 — Eval set (before anything else is judged)
+### Phase 0 — Eval set (before anything else is judged) ✅ implemented
 
-- ~200 questions across 20 topics, current setup, labelled correct / wrong / ambiguous /
-  time-sensitive. 50 is too few: 2 errors in 50 is "4%" with a 95% interval of roughly 0.5–14%.
-- Label without knowing which pipeline produced a question.
-- Store under `eval/` with a script that runs the pipeline against the topic list and prints, per
-  stage, how many were dropped and why — plus **yield** (kept ÷ requested).
-- Close gap §9.8 of the flow doc while here: `QuestionsReturned` counts array elements, not
-  survivors, so the ledger's quality metric is optimistic.
+Built as `eval/`; how it works and why, in
+[`../development/ai-eval.md`](../development/ai-eval.md). It came in at 12 topics × 10 questions
+rather than 20 × 10 — the sample-size argument below is right, and 200 hand-labelled items is
+also how the harness never gets used once. Widen `topics.json` when a run proves worth repeating.
+Two things the plan did not anticipate: the run is **blind** (shuffled rows, the key in a separate
+file), and it carries a `--language-mode` flag, because there is no language picker on the
+generate form and the model currently infers the language from the topic string.
+
+Against the original list:
+
+- **Done** — blind labelling; `eval/` with a script that runs the topic list and prints, per
+  stage, how many were dropped and why, plus **yield** (kept ÷ requested); every rate carries a
+  95% Wilson interval, because the sample-size worry below is real.
+- **Reduced** — 12 topics × 10 questions (120), not 20 × 10 (200). Widen `topics.json` once a
+  run has proved worth repeating.
+- **Still open** — gap §9.8 of the flow doc. The harness now reports *returned* and *kept*
+  separately, so a run shows the difference; the `QuestionsReturned` **column** still counts
+  array elements, so the ledger's own quality metric remains optimistic. Fixing it is a
+  backend change the harness does not need.
+- **Still open** — nobody has run it yet. A harness with no baseline in it measures nothing.
 
 ### Phase 1 — Deterministic checks ✅ implemented
 

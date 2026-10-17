@@ -1,0 +1,5 @@
+# Run output: raw model replies, labels and reports. Generated, often large, and a labelled run
+# is a snapshot of one afternoon rather than something the next person should inherit.
+# Commit a run deliberately by force-adding it when it is the baseline a change is measured against.
+runs/
+.env
