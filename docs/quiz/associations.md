@@ -406,6 +406,8 @@ browser: the builder autosaves it locally and guards the exit, exactly like the 
   second and `toAssociationQuizFormValues` divides a stored board's seconds back, so the wire,
   the rules (§5) and the clock (§9.4) stay in seconds. `BOARD_MINUTES` is derived from
   `BOARD_SECONDS`, the mirror of the rules' defaults.
+- **A new board starts Public** (2026-10-17, like every new quiz — `quiz-visibility.md`,
+  "Defaults"), and its **Create quiz** button carries an arrow, the step out of the builder.
 - **The Public option is disabled** until the classification is real, as in the Classic builder;
   changing a lookup back to Unspecified while Public is selected falls back to Draft — in the
   change handler, not an Effect.

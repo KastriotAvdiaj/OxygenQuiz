@@ -18,8 +18,9 @@ The owner sets the status when creating/editing a quiz, or via `PATCH /api/quiz/
 
 **A new quiz starts Public, with instant feedback on** — by hand or by AI (since 2026-10-17;
 before that, Draft with feedback off). Set as the builder's form defaults in `create-quiz.tsx`
-and in the AI handoff (`use-ai-quiz-draft.tsx`); a restored draft keeps the status it was saved
-with. The API's own default for a missing status is still Draft — only the client changed.
+and in the AI handoff (`use-ai-quiz-draft.tsx`); a new Associations board starts Public too
+(`emptyAssociationQuizFormValues`, same day — it has no feedback setting). A restored draft keeps
+the status it was saved with. The API's own default for a missing status is still Draft — only the client changed.
 
 Two things keep this from publishing by accident:
 
