@@ -2,7 +2,7 @@ import { MultipleChoiceQuestionList } from "./Multiple_Choice_Question/multiple-
 import { TrueFalseQuestionList } from "../Components/True_Flase-Question/true-false-question-list";
 import { TypeTheAnswerQuestionList } from "../Components/Type_The_Answer-Question/type-the-asnwer-list";
 import { PaginationControls } from "@/components/ui/pagination-control";
-import { Spinner } from "@/components/ui";
+import { BlobLoader } from "@/components/ui";
 import { QuestionListComponent } from "../../Quiz/components/Create-Quiz-Form/components/question-select/select-common-question-list";
 import {
   QuestionType,
@@ -118,7 +118,7 @@ export const QuestionTabContent = ({
   if (activeQuery.isLoading) {
     return (
       <div className="flex justify-center items-center py-16">
-        <Spinner size="lg" />
+        <BlobLoader size="lg" />
       </div>
     );
   }

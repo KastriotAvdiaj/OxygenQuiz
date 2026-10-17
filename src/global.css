@@ -172,7 +172,9 @@ body {
     --muted-foreground: 240 6% 65%;
     --accent: 240 5% 18%;             /* hover/active surface, a touch lighter */
     --accent-foreground: 240 10% 98%;
-    --destructive: 0 62.8% 37.6%;
+    /* The light theme's red, not a darker one. The old 0 62.8% 37.6% (a dark brick red) was
+       muddy as text on this near-black — every error line and invalid border read as muted. */
+    --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
     --border: 240 5% 18%;
     --input: 240 5% 18%;

@@ -5,6 +5,9 @@ import { useQuiz } from "../../Quiz-questions-context";
 import { AnyQuestion } from "@/types/question-types";
 import { NewAnyQuestion } from "../../types";
 import { SmallQuestionCard } from "./small-question-card";
+import { MotionConfig, motion } from "framer-motion";
+import { GripVertical } from "lucide-react";
+import { useDragReorder } from "../overview/use-drag-reorder";
 
 export function isAnyQuestion(
   question: AnyQuestion | NewAnyQuestion
@@ -14,7 +17,14 @@ export function isAnyQuestion(
 
 export const CreatedQuestionsPanel = ({}) => {
   const { isOpen, close } = useDisclosure();
-  const { addedQuestions } = useQuiz();
+  const { addedQuestions, reorderQuestions } = useQuiz();
+  // Same drag as the overview's cards: by the grip (the card's own click selects it), with
+  // edge auto-scroll inside this panel's scroller (docs/quiz/quiz-overview.md, "Reordering").
+  const { listRef, itemRef, handleProps, positionedId, liftedId, dragY } = useDragReorder({
+    items: addedQuestions,
+    getId: (q) => q.id,
+    onReorder: reorderQuestions,
+  });
 
   return (
     <>
@@ -30,14 +40,49 @@ export const CreatedQuestionsPanel = ({}) => {
               No questions added yet
             </p>
           ) : (
-            <div className="space-y-3">
-              {addedQuestions.map((question) => (
-                <SmallQuestionCard
-                  key={question.id}
-                  question={question}
-                />
-              ))}
-            </div>
+            <MotionConfig reducedMotion="user">
+              <div
+                ref={listRef as React.RefObject<HTMLDivElement>}
+                className="relative space-y-3"
+              >
+                {addedQuestions.map((question) => {
+                  const isPositioned = positionedId === question.id;
+                  return (
+                    <motion.div
+                      key={question.id}
+                      ref={itemRef(question.id)}
+                      layout={isPositioned ? false : "position"}
+                      animate={{
+                        ...(isPositioned ? {} : { y: 0 }),
+                        scale: liftedId === question.id ? 1.02 : 1,
+                      }}
+                      transition={{
+                        duration: 0.2,
+                        ease: "easeOut",
+                                      }}
+                      style={{
+                        y: isPositioned ? dragY : undefined,
+                        zIndex: isPositioned ? 10 : undefined,
+                      }}
+                      className="relative flex items-stretch gap-1"
+                    >
+                      <button
+                        type="button"
+                        aria-label="Drag to reorder"
+                        title="Drag, or use the arrow keys, to move"
+                        {...handleProps(question.id)}
+                        className="flex w-5 shrink-0 cursor-grab touch-none items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground active:cursor-grabbing"
+                      >
+                        <GripVertical className="h-4 w-4" />
+                      </button>
+                      <div className="min-w-0 flex-1">
+                        <SmallQuestionCard question={question} />
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </MotionConfig>
           )}
         </CardContent>
       </Card>

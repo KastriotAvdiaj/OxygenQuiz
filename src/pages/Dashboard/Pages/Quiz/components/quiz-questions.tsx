@@ -3,7 +3,7 @@ import { useParams } from "react-router";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Spinner } from "@/components/ui";
+import { BlobLoader } from "@/components/ui";
 import { List, LayoutGrid } from "lucide-react";
 import { useQuizQuestionsData } from "../api/get-quiz-questions";
 import { QuizQuestionDTO } from "@/types/quiz-types";
@@ -26,7 +26,7 @@ export const QuizQuestions = () => {
   if (isLoading) {
     return (
       <div className="w-full h-full flex items-center justify-center">
-        <Spinner size="lg" />
+        <BlobLoader size="lg" />
       </div>
     );
   }

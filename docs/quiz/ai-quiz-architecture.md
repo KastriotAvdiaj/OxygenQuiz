@@ -222,6 +222,10 @@ These are the properties that make the feature safe. Every change should preserv
 > of `ImportSummary` "gaining both dismissals" describes a component that no longer exists under
 > that name. The decision it was protecting is untouched: the exception report is still its own
 > component, still renders only when something happened, and still cannot be turned off.
+>
+> On **2026-10-17** `ImportNote` went too — its fact-check line and *Start over* were replaced by a
+> Back button on the review (`review-back-button.tsx`, which asks before discarding). The
+> exception report, `ImportNotices`, is unchanged and still renders above the quiz overview.
 
 
 | Failure | Where caught | Behaviour |

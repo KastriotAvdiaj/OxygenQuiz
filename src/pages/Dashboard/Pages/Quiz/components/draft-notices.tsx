@@ -1,4 +1,4 @@
-import { Check, History } from "lucide-react";
+import { Check } from "lucide-react";
 
 import { LiftedButton } from "@/common/LiftedButton";
 import { ConfirmationDialog } from "@/components/ui/dialog";
@@ -28,7 +28,7 @@ const RELATIVE_UNITS: Array<{ unit: Intl.RelativeTimeFormatUnit; ms: number }> =
   ];
 
 /** "just now" / "3 minutes ago" / "yesterday" — the granularity a rescued draft needs. */
-const describeAge = (savedAt: number): string => {
+export const describeDraftAge = (savedAt: number): string => {
   const elapsed = Date.now() - savedAt;
   const formatter = new Intl.RelativeTimeFormat(undefined, { numeric: "auto" });
 
@@ -37,53 +37,6 @@ const describeAge = (savedAt: number): string => {
   }
   return "just now";
 };
-
-interface RestoredDraftNoticeProps {
-  /** When the restored draft was written. */
-  savedAt: number;
-  /** Throws the draft away and empties the form. */
-  onDiscard: () => void;
-  /** What came back, in the user's terms — "3 questions", "your generated quiz". */
-  summary?: string;
-  className?: string;
-}
-
-export const RestoredDraftNotice = ({
-  savedAt,
-  onDiscard,
-  summary,
-  className,
-}: RestoredDraftNoticeProps) => (
-  <div
-    // `status`, not `alert`: nothing has gone wrong and nothing is waiting on the user, so it
-    // is announced politely rather than interrupting whatever a screen reader is saying.
-    role="status"
-    className={cn(
-      "flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-sm",
-      className,
-    )}
-  >
-    <History className="h-4 w-4 shrink-0 text-primary" />
-    <p className="min-w-0 flex-1 text-foreground">
-      Picked up where you left off
-      {summary ? (
-        <span className="text-muted-foreground"> — {summary}</span>
-      ) : null}
-      <span className="text-muted-foreground">
-        , saved {describeAge(savedAt)}.
-      </span>
-    </p>
-    <button
-      // Always `type="button"`: this renders inside the builder's <form>, where the default
-      // "submit" would post a half-finished quiz instead of clearing it.
-      type="button"
-      onClick={onDiscard}
-      className="shrink-0 rounded-md px-2 py-1 text-xs font-medium text-muted-foreground underline underline-offset-2 transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-    >
-      Start fresh
-    </button>
-  </div>
-);
 
 interface DraftSavedIndicatorProps {
   /** `null` while there is nothing stored — an untouched form, or a draft just discarded. */

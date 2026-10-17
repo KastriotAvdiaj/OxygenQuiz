@@ -14,6 +14,19 @@ enforced inconsistently.
 
 The owner sets the status when creating/editing a quiz, or via `PATCH /api/quiz/{id}/status`.
 
+## Defaults
+
+**A new quiz starts Public, with instant feedback on** — by hand or by AI (since 2026-10-17;
+before that, Draft with feedback off). Set as the builder's form defaults in `create-quiz.tsx`
+and in the AI handoff (`use-ai-quiz-draft.tsx`); a restored draft keeps the status it was saved
+with. The API's own default for a missing status is still Draft — only the client changed.
+
+Two things keep this from publishing by accident:
+
+- The primary button says **Publish quiz** while the status is Public, and *Save draft* /
+  *Save quiz* otherwise ([quiz-overview.md](quiz-overview.md), "The primary action").
+- If a lookup is set to Unspecified, the publication gate below drops the status to Draft.
+
 ## Publishing requires a full classification
 
 **A quiz may only be `Public` when its category, language and difficulty are all real** — none

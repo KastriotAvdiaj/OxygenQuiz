@@ -37,6 +37,14 @@ export interface QuestionTypeTheme {
   /** HSL triplet (no `hsl(...)` wrapper) fed to `--field-accent` so the card's minimal
    *  inputs pick up the type hue at rest and on focus. */
   fieldAccent: string;
+  /**
+   * The quiz overview card (docs/quiz/quiz-overview.md): the card's frame in the full type
+   * colour, and its header bar a 25% tint of it — enough to name the type at a glance without
+   * every card shouting (it was 70%, which was too loud in a list of them). Text on the bar is
+   * `text-foreground`, which a 25% tint leaves near the card's own contrast in both themes.
+   */
+  overviewFrame: string;
+  overviewBar: string;
 }
 
 const MULTIPLE_CHOICE: QuestionTypeTheme = {
@@ -49,6 +57,8 @@ const MULTIPLE_CHOICE: QuestionTypeTheme = {
   surface: "bg-primary/[0.04]",
   previewBorder: "border-primary/60",
   fieldAccent: "var(--primary)",
+  overviewFrame: "border-primary",
+  overviewBar: "bg-primary/25",
 };
 
 const TRUE_FALSE: QuestionTypeTheme = {
@@ -61,6 +71,8 @@ const TRUE_FALSE: QuestionTypeTheme = {
   surface: "bg-teal-500/[0.05]",
   previewBorder: "border-teal-500/60",
   fieldAccent: "173 80% 40%",
+  overviewFrame: "border-teal-500",
+  overviewBar: "bg-teal-500/25",
 };
 
 const TYPE_THE_ANSWER: QuestionTypeTheme = {
@@ -73,6 +85,8 @@ const TYPE_THE_ANSWER: QuestionTypeTheme = {
   surface: "bg-amber-500/[0.05]",
   previewBorder: "border-amber-500/60",
   fieldAccent: "38 92% 50%",
+  overviewFrame: "border-amber-500",
+  overviewBar: "bg-amber-500/25",
 };
 
 const QUESTION_TYPE_THEME: Record<QuestionType, QuestionTypeTheme> = {
@@ -94,6 +108,8 @@ export const questionErrorTheme = {
   surface: "bg-red-500/[0.05]",
   previewBorder: "border-red-500/60",
   fieldAccent: "var(--destructive)",
+  overviewFrame: "border-destructive",
+  overviewBar: "bg-destructive/15",
 } satisfies Omit<QuestionTypeTheme, "label" | "Icon">;
 
 /** The theme for a question type. Falls back to Multiple Choice for unknown values. */

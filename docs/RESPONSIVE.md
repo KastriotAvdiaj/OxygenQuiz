@@ -414,6 +414,13 @@ with `env(safe-area-inset-*)`. If you ever add a fixed bottom bar, pad it with
 
 ## Layout patterns
 
+- **A bar pinned to the bottom of a padded scroller sits at minus the padding.** Chrome pins a
+  `sticky` element inside the scroll container's *padding*, so `bottom-0` inside the dashboard's
+  `p-4 sm:p-6 lg:p-8` `<main>` stops 16–32px short and the page shows under the bar. Use
+  `-bottom-4 sm:-bottom-6 lg:-bottom-8 short:-bottom-4`, and don't give an ancestor a fixed
+  height (`h-full`) — sticky is bounded by its parent, and a parent shorter than its content
+  ends the bar partway down. Reference: the quiz overview's bar (`quiz-overview.tsx`).
+
 - **Breakpoints:** Tailwind defaults (`sm` 640, `md` 768, `lg` 1024, `xl` 1280,
   `2xl` 1536). Design mobile-first: base classes are the phone layout,
   `sm:`/`lg:` add space and columns (e.g. the quiz grid:
@@ -757,3 +764,6 @@ a field hint — not as a subtitle.
    the dashboard is `bg-muted`, and so is a plain `<Card>` in dark mode. Look at it in dark
    mode. See "Surfaces inside a dashboard". Dialogs stay on the `bg-background` default, and
    the page header is the h1 and its actions — no description paragraph under it.
+15. Anything appear, disappear, open, reorder, or push content down? Animate it, and check it
+   with reduced motion on (devtools → Rendering → emulate `prefers-reduced-motion`). Nothing
+   snaps — see [`development/motion.md`](./development/motion.md).

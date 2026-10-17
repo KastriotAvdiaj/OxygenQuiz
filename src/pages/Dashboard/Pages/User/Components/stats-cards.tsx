@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, Activity, TrendingUp, Calendar } from "lucide-react";
 import { cn } from "@/utils/cn";
 // import { useTotalUsersData } from "../api/get-total-users";
-// import { Spinner } from "@/components/ui";
+// import { BlobLoader } from "@/components/ui";
 
 interface StatsCardsProps {
   className?: string;
@@ -14,7 +14,7 @@ export function StatsCards({ className }: StatsCardsProps) {
   // if (isLoading) {
   //   return (
   //     <div className="flex h-48 w-full items-center justify-center">
-  //       <Spinner size="lg" />
+  //       <BlobLoader size="lg" />
   //     </div>
   //   );
   // }

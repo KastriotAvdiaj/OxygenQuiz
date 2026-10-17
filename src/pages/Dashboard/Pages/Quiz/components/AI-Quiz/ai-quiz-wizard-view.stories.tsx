@@ -648,14 +648,6 @@ export const LoadingEntities: Story = {
 // The generate path is where it matters most — a restored draft here carries the model's
 // reply, which cost the user quota.
 
-export const RestoredFromDraft: Story = {
-  args: {
-    topic: "The French Revolution",
-    restoredDraftSavedAt: Date.now() - 4 * 60 * 1000,
-    onDiscardDraft: () => {},
-  },
-};
-
 // ── Responsive checks (docs/RESPONSIVE.md: verify at 360/390px) ────────────────────────
 
 export const OnMobile: Story = {

@@ -10,7 +10,7 @@ import { ArrowLeft, Brain, Info, Plus, X } from "lucide-react";
 
 import { Form, Input, Label, Textarea } from "@/components/ui/form";
 import { Separator } from "@/components/ui/separator";
-import { Spinner } from "@/components/ui";
+import { BlobLoader } from "@/components/ui";
 import {
   Select,
   SelectContent,
@@ -153,7 +153,7 @@ export const AssociationBoardForm = ({
   if (queryData.isLoading) {
     return (
       <div className="flex h-64 w-full items-center justify-center">
-        <Spinner size="lg" />
+        <BlobLoader size="lg" />
       </div>
     );
   }

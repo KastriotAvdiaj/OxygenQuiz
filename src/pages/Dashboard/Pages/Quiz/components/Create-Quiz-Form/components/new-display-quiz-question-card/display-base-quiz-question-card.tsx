@@ -1,5 +1,5 @@
 import { Card, CardContent } from "@/components/ui";
-import { Input} from "@/components/ui/form";
+import { Textarea } from "@/components/ui/form";
 import { QuestionType } from "@/types/question-types";
 import ImageUpload from "@/utils/Image-Upload";
 import { FieldError } from "react-hook-form";
@@ -85,14 +85,24 @@ export const BaseQuestionFormCard: React.FC<BaseQuestionFormCardProps> = ({
           {/* <section className="flex flex-col items-center w-full">
             <Label className="text-lg font-bold">Question</Label>
           </section> */}
-          <Input
+          {/* A textarea that grows with the question, not a one-line input: a long question
+              was cut off at the field's edge — on a phone after ~15 characters — so it could
+              not be read, let alone checked. Still one line of *data*: Enter doesn't insert a
+              newline, since a question has never had one. `field-sizing: content` grows it
+              where supported; elsewhere it is two rows that scroll. `!max-h-48` lifts
+              `.minimal-input`'s one-line 3rem cap. 18px, 20px from `lg`: it was 24px, which on a
+              desktop made the question shout over everything else in the editor. */}
+          <Textarea
             id="question-text"
-            variant={`${questionTextError ? "isIncorrect" : "minimal"}`}
-            className="!text-[1.5rem] !py-8 w-full"
-            questionType={questionType}
+            variant="minimal"
+            rows={2}
+            className="w-full resize-none !max-h-48 !text-lg leading-snug [field-sizing:content] lg:!text-xl"
             placeholder="Enter your question here..."
             value={questionText}
             onChange={(e) => onQuestionTextChange(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") e.preventDefault();
+            }}
             error={questionTextError}
           />
         </div>
@@ -118,6 +128,9 @@ export const BaseQuestionFormCard: React.FC<BaseQuestionFormCardProps> = ({
         {onExplanationChange && (
           <ExplanationField
             id={`question-explanation-${questionType ?? "new"}`}
+            // The card's own field style, so it takes the type's accent (--field-accent)
+            // and the form's font like the question and answers above it.
+            variant="minimal"
             value={explanation}
             onChange={onExplanationChange}
             error={explanationError}

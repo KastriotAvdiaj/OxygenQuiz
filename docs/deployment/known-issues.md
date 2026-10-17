@@ -1142,25 +1142,20 @@ fixed; these were left.
   React Router's own `lazy: async () => ({ Component })` rather than `React.lazy`. That is
   resolved as part of the navigation instead of by a suspending render, so **no Suspense
   fallback ever fires** — the current page simply sits there until the chunk arrives. The two
-  `Spinner` boundaries in `AppRoot.tsx` and `Dashboard.tsx` catch other things, not this.
+  Suspense boundaries in `AppRoot.tsx` and `Dashboard.tsx` catch other things, not this.
   `RouteProgressBar` would cover the stall, but it is rendered by `HomeLayout` only;
   `DashboardLayout` does not render it, so the admin side has no navigation feedback of any
   kind. Deferred because it is a change to how ~15 routes are declared, not a fix.
   → `src/routes/Router.tsx`, `src/layouts/dashboard-layout.tsx`
-- **P3 — Two visual languages for a wait.** The public app waits with `PageLoading` /
-  `BlobLoader`; the admin dashboard waits with `Spinner`, across ~18 screens plus the
-  in-button loader. Both are internally consistent and nothing crosses between them, so this
-  is cosmetic — but it is the reason the sizing rule in
-  [`../development/loading-states.md`](../development/loading-states.md) has to name two
-  components instead of one. Converting the dashboard is a visual decision, not a cleanup.
-  → `src/components/ui/Spinner.tsx`
 - **P3 — `SplitFlapLoader` has no call sites.** Kept deliberately (ADR 0015 context, and
   `docs/quiz/quiz-playing-architecture.md` § 3b explains why it stopped being the quiz
   loader), storied, and dead. Listed so it is not rediscovered as an oversight.
   → `src/components/ui/split-flap-loader.tsx`
-- **P3 — `LoadingWave` has no call sites.** Replaced by `BlobLoader` as the app's loader after
-  the landing-page redesign (it no longer fit the look). Kept deliberately and storied, same as
-  `SplitFlapLoader`; its `loading-wave` keyframe in `global.css` stays with it.
+- **P3 — `LoadingWave` has one call site left.** Replaced by `BlobLoader` as the app's loader
+  after the landing-page redesign (it no longer fit the look), but still used as a *text* effect:
+  the multiplayer game's "Next question coming" line (`MultiplayerGame.tsx`) — a waving sentence,
+  not a loader in the sense above. Kept and storied; its `loading-wave` keyframe in `global.css`
+  stays with it.
   → `src/components/ui/loading-wave.tsx`
 
 ## Quiz card (2026-09-18 — see docs/quiz/quiz-card.md)
@@ -1340,3 +1335,24 @@ limits, matrices) can't be displayed, and a quiz author typing LaTeX by hand see
 Deferred: a renderer (KaTeX) has to be added to every surface that shows question text, and
 `TypeTheAnswer` needs a rule for comparing a typed answer against a formula. See
 `docs/quiz/ai-quiz-creation-plan.md` §5.
+
+## Quiz overview (2026-10-17 — see docs/quiz/quiz-overview.md)
+
+- **P3 — A long multiple-choice option is cut off in the editor.** Option text fields are still
+  one-line inputs; the question text became a growing textarea, the options didn't. Rarely
+  matters (options are short), but an AI option of a full sentence can't be read whole while
+  editing — the overview card itself shows it in full.
+  → `new-display-quiz-question-card/multiple-choice-question-form.tsx`
+- **P3 — `field-sizing: content` isn't in every browser.** Where it's missing (older Safari) the
+  question field is two rows that scroll instead of growing.
+
+## Typography: a readable face for small text (2026-10-17 — proposal, not applied)
+
+- **P3 — Small explanatory text in a display font is hard to read.** The app font is the user's
+  choice, and some options are display faces (DynaPuff, Baloo 2, Fredoka, Barriecito) built for
+  headings: at 11–13px their heavy, rounded shapes close up. Proposal: keep the chosen font for
+  headings, labels, buttons and quiz content (questions, answers), and set *secondary* text —
+  hints, field descriptions, helper lines — in a fixed readable face (Noto Sans, the default), via
+  one shared token rather than per screen. Deliberately not applied: test it on one screen first
+  (the question editor is the candidate) with a display font selected, and decide then. See
+  docs/TYPOGRAPHY.md for the current font rules.

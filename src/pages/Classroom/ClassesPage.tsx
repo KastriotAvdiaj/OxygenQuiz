@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Pencil, Plus, Save, Trash2, Users } from "lucide-react";
-import { Button, Card, Spinner } from "@/components/ui";
+import { Button, Card, BlobLoader } from "@/components/ui";
 import {
   ConfirmationDialog,
   Dialog,
@@ -41,7 +41,7 @@ export const ClassesPage = () => {
 
       {classes.isLoading ? (
         <div className="flex justify-center py-16">
-          <Spinner size="lg" />
+          <BlobLoader size="lg" />
         </div>
       ) : !classes.data?.length ? (
         <Card className="flex flex-col items-center gap-3 p-10 text-center bg-card border dark:border-foreground/30">

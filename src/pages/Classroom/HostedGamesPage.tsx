@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Pause, Plus, Trophy } from "lucide-react";
-import { Card, Spinner } from "@/components/ui";
+import { Card, BlobLoader } from "@/components/ui";
 import { Badge } from "@/components/ui/badge";
 import { LiftedButton } from "@/common/LiftedButton";
 import formatDate from "@/lib/date-format";
@@ -29,7 +29,7 @@ export const HostedGamesPage = () => {
 
       {games.isLoading ? (
         <div className="flex justify-center py-16">
-          <Spinner size="lg" />
+          <BlobLoader size="lg" />
         </div>
       ) : !games.data?.length ? (
         <Card className="flex flex-col items-center gap-3 p-10 text-center bg-card border dark:border-foreground/30">
