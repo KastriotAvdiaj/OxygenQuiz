@@ -21,6 +21,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { LiftedButton } from "@/common/LiftedButton";
+import { HEADER_ACTION_FACE } from "./header-action-face";
 import { ModeCard } from "@/pages/Quiz/components/mode-card";
 import { useFormatAvailable } from "../format-access";
 
@@ -269,7 +270,9 @@ export const CreateQuizMethodDialog = ({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        {trigger ?? <LiftedButton>+ Create Quiz</LiftedButton>}
+        {/* Default trigger = the dashboards' header action. Its face is `HEADER_ACTION_FACE`,
+            shared with the Filters button beside it so the pair stays one height. */}
+        {trigger ?? <LiftedButton className={HEADER_ACTION_FACE}>+ Create Quiz</LiftedButton>}
       </DialogTrigger>
       {/* `sm:max-w-xl` is the width at which two cards sit side by side without either wrapping
           its title — and every step is two cards, so the width never changes. DialogContent

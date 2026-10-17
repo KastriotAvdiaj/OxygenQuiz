@@ -1,4 +1,4 @@
-import { Edit2, Eye, EyeOff, MoreHorizontal, Share2, Trash2 } from "lucide-react";
+import { Edit2, Eye, EyeOff, MoreHorizontal, Play, Share2, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -14,6 +14,8 @@ import type { Quiz } from "@/types/quiz-types";
 export interface QuizActionsMenuProps {
   quiz: Quiz;
   isDraft: boolean;
+  /** Absent when the viewer may not start this quiz (see `canPlay` in Quiz.tsx). */
+  onPlay?: () => void;
   onShare: () => void;
   isSharePending: boolean;
   onSetStatus: () => void;
@@ -45,6 +47,7 @@ export interface QuizActionsMenuProps {
 export const QuizActionsMenu = ({
   quiz,
   isDraft,
+  onPlay,
   onShare,
   isSharePending,
   onSetStatus,
@@ -66,6 +69,14 @@ export const QuizActionsMenu = ({
 
     <DropdownMenuContent align="end" className="w-56 bg-muted">
       <DropdownMenuLabel>Actions</DropdownMenuLabel>
+
+      {/* The owner's way into their own Unlisted or Draft quiz: neither is in the catalogue, so
+          without this the only route was opening their own share link. */}
+      {onPlay && (
+        <DropdownMenuItem className="hover:bg-background" onClick={onPlay}>
+          <Play size={16} /> Play quiz
+        </DropdownMenuItem>
+      )}
 
       <DropdownMenuItem className="hover:bg-background" onClick={onEdit}>
         <Edit2 size={16} /> Edit quiz

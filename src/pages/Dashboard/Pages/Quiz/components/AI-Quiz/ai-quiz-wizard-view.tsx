@@ -365,7 +365,7 @@ export const AiQuizWizardView = ({
     // header) plus a padding step, which left the Generate button 30px above the fold against
     // a 60px requirement — so the last 30 came from the chrome around the form: the heading
     // block, the card's internal rhythm, and the `Details` heading. The lead question
-    // ("What should this quiz be about?") was deliberately left alone: it is the one required
+    // ("What's this quiz about?") was deliberately left alone: it is the one required
     // thing on the screen and its weight is what says so.
     //
     // `FitsTheFold` in the stories file is what holds this. If you need space here, take it

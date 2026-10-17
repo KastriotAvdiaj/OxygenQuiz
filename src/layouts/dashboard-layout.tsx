@@ -7,6 +7,7 @@ import type { DashboardNavItem } from "@/pages/Dashboard/Components/dashboardNav
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/utils/cn";
 import { usePrefersReducedMotion } from "@/hooks/use-prefers-reduced-motion";
+import { activeNavId } from "./active-nav-id";
 
 /**
  * The shell's height. `h-screen` is `100vh`, which on mobile is the viewport *without* the
@@ -92,7 +93,7 @@ export const DashboardLayout = ({
     setActivePage(page);
   };
 
-  const activePage = location.pathname.split("/").pop() || "";
+  const activePage = activeNavId(location.pathname, basePath, navItems);
   // Exact match, or prefix match for parameterised paths (e.g. .../edit-quiz/:quizId).
   const matchesPath = (paths: string[]) =>
     paths.some(

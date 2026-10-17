@@ -1192,7 +1192,8 @@ fixed; these were left.
 - **P3 — Players have no single-quiz page.** `/dashboard/quiz/:id` (stats, board preview) is in the
   admin dashboard only, so "My quizzes" hides the table's View item rather than link to a 404. An
   owner-facing version would need the analytics endpoint's owner scoping (it has it) and a
-  player-dashboard route.
+  player-dashboard route. Until then the row menu carries **Play** and **Copy share link**
+  (2026-10-17), the two things an owner of an Unlisted quiz couldn't otherwise reach.
   → `src/pages/Dashboard/Pages/Quiz/components/Data-Table-Columns/columns.tsx`
 - **P3 — No image on a Board quiz in the builder.** The API accepts `imageUrl` on create and
   update; the builder has no upload field, matching the Classic builder, whose `ImageUpload` is

@@ -91,7 +91,10 @@ Releasing a format is removing it from that array (and from `PREVIEW_FORMATS` on
 which only decides what to offer). See [associations.md](associations.md), "Admins only, for now".
 
 ### Unlisted via share link
-- The owner calls `POST /api/quiz/{id}/share-link` to lazily generate (and thereafter reuse) an
+- The owner gets the link from **Copy share link** — in the quiz row's ⋯ menu (both dashboards; a
+  player's only route, since players have no single-quiz page) or the admin quiz page's ⋯ menu. It
+  is offered on the owner's own non-Draft quizzes only (`use-copy-share-link.ts`).
+- That calls `POST /api/quiz/{id}/share-link` to lazily generate (and thereafter reuse) an
   unguessable `ShareToken`. The token is only ever returned to the owner.
 - A visitor opens `/play/shared/{token}`, which resolves the quiz through
   `GET /api/quiz/shared/{token}`. That endpoint reads the quiz whatever its status
@@ -106,6 +109,9 @@ which only decides what to offer). See [associations.md](associations.md), "Admi
 - A host may select a quiz that is `Public` **or one they own** (any status, including Unlisted/Draft).
   `QuizHub.SelectQuiz` validates this server-side via `IQuizService.CanHostQuizAsync` — the client's
   quiz id is never trusted.
+- The lobby's quiz picker has a **Public / My quizzes** switch (`quiz-selection-dialog.tsx`). *My
+  quizzes* searches `scope: "mine"`, so it lists the host's Unlisted and Draft quizzes, each marked
+  with its status — this is how a host runs an Unlisted quiz for friends.
 - Participants who join the lobby inherit play access for that match; lobby membership is the grant,
   so no per-player token is needed. The match loads questions with `ignoreFilters: true` because it
   runs in a background scope with no current user.
@@ -175,10 +181,19 @@ Done:
   enforcement surface (explicit status checks per endpoint — see ADR 0019 — session-create authorization, share-token endpoints,
   `QuizHub.SelectQuiz` validation, guest-play restriction).
 - Frontend status model: create/edit form status selector, dashboard status column + filter, and the
-  owner-side **share-link generation + copy** on the quiz detail page.
+  owner-side **share-link generation + copy** in the quiz page's and the quiz row's ⋯ menus (hidden on a Draft).
+- The `/play/shared/:token` route (`SharedQuizRouteWrapper`): sends a signed-out visitor to log in
+  and back, resolves the token, then hands off to `/choose-quiz?shared=<token>` so the recipient sees
+  the normal start dialog before anything is timed. `quizPlayPath` carries the token on as
+  `?shareToken=` into session creation, for Classic and Associations alike.
+- Classroom hosting (Associations, Teacher role): the host setup page lists the host's own boards
+  (`scope: "mine"`) alongside public ones, so an Unlisted board can be hosted for a class.
+- The multiplayer lobby's picker: a Public / My quizzes switch, so a host can pick their own
+  Unlisted or Draft quiz (2026-10-17).
+- An owner's way to play their own quiz: **Play** in the quiz row's ⋯ menu and on the admin quiz
+  page, offered when the quiz is Public or the viewer owns it — the client copy of
+  `QuizPlayAccess.IsPlayAuthorized` (2026-10-17). No share token is needed; the owner is authorised
+  without one.
 
-Remaining client wiring:
-- The `/play/shared/:token` route that resolves a token and starts a session passing
-  `QuizSessionCM.ShareToken` (the backend contract is in place).
-- A "My quizzes" scope in the multiplayer lobby's quiz picker so a host can pick their own Unlisted
-  quiz (the hub already authorizes owned quizzes server-side).
+Nothing remaining. Players still have no single-quiz page of their own (known-issues.md), which is
+why Play and Copy share link live in the row menu.
