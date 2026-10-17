@@ -18,6 +18,19 @@ Auth-specific enhancements are tracked in [authentication.md](../auth/authentica
 
 ## Security hardening (defense-in-depth — no known active exploit)
 
+- **P2 — The origin answers on its bare IP (found 2026-10-17).** 80/443 accept anyone, so
+  `curl -k https://89.167.23.147 -H "Host: api.oxygenquiz.com"` reaches the API without Cloudflare.
+  The rate limiter no longer trusts headers a direct caller could forge (ADR 0027), so this is now a
+  "keeps floods and scanners off the box" item rather than a limiter bypass. Fix: the Hetzner Cloud
+  Firewall steps in `production-topology.md`, "Locking the edge".
+  → Hetzner Console (no code)
+- **P3 — No per-account login throttle (found 2026-10-17).** The `auth` policy bounds attempts per
+  IP; the limiter can't see the email in the body, so guesses spread across many IPs against one
+  account aren't slowed. Deferred: needs a failed-attempt counter per account in
+  `AuthenticationService.LoginAsync` (with a lockout that can't be used to lock someone else out).
+  The Cloudflare edge rule narrows it meanwhile.
+  → `OxygenBackend/QuizAPI/Services/AuthenticationService/AuthenticationService.cs`
+
 - ~~**P1 — `UserAnswersController` had no authorization at all.**~~ **Fixed 2026-09-26.** No
   `[Authorize]` on the class and no global fallback policy, so `GET /api/useranswers/session/{id}`
   returned any session's answers *with the answer key* to anyone holding the id, and
