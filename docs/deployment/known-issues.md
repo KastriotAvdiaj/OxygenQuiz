@@ -16,6 +16,18 @@ Auth-specific enhancements are tracked in [authentication.md](../auth/authentica
 
 ---
 
+## Open exploits
+
+- **P1 — Answer keys and Unlisted quizzes are readable anonymously by id (found 2026-10-18).**
+  `GET /api/quiz/{id}` and `GET /api/quiz/{id}/questions` refuse only a **Draft** to non-owners.
+  Verified in production: `/api/quiz/20/questions`, signed out, returns every question with
+  `answerOptions[].isCorrect` — the answer key of any Public quiz. And because ids are sequential, the
+  same two calls hand anyone the title, description and full content of every **Unlisted** quiz,
+  which defeats "only people with the link". Playing is not affected (`QuizPlayAccess` still needs
+  the token). The only client of `/questions` is the owner/admin quiz page.
+  → `OxygenBackend/QuizAPI/Controllers/Quizzes/QuizzesController.cs` (`GetQuizById`,
+  `GetQuizQuestions`)
+
 ## Security hardening (defense-in-depth — no known active exploit)
 
 - ~~**P2 — The origin answers on its bare IP (found 2026-10-17).**~~ **Fixed 2026-10-18** — Hetzner

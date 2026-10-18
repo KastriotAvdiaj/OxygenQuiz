@@ -165,7 +165,16 @@ Hetzner Console → **Firewalls** → the firewall attached to this server → *
 
 Remove any other 80/443 rule that allows *Any*. Port 80 stays, Cloudflare-only: in Full (strict) mode
 Cloudflare reaches the origin with the scheme the visitor used, so an `http://` request reaches 80
-unless **SSL/TLS → Edge Certificates → Always Use HTTPS** is on (turn it on either way).
+unless **SSL/TLS → Edge Certificates → Always Use HTTPS** is on.
+
+**Always Use HTTPS is on (2026-10-18).** Before it, `http://oxygenquiz.com` was served over plain
+HTTP with a 200 — the Worker has no redirect of its own — while `http://api…` was redirected by
+Nginx's port-80 block. Now Cloudflare answers every `http://` request in the zone with a 301 to
+`https://` at the edge, and Nginx's redirect is never reached. Its dashboard warning about redirect
+loops doesn't apply here: a loop needs SSL mode **Flexible** (Cloudflare → origin over HTTP, origin
+redirects to HTTPS, repeat). This zone is **Full (strict)** — keep it that way; switching to Flexible
+with this on is what would produce `ERR_TOO_MANY_REDIRECTS`. Check: `curl.exe -I http://oxygenquiz.com`
+→ `301`, `Location: https://oxygenquiz.com/`.
 
 **Check:** the `curl.exe` above now times out, `https://api.oxygenquiz.com` still works, the site logs
 in, and a multiplayer match connects (WebSockets). SSH still works because 22 is untouched. If
