@@ -540,6 +540,21 @@ timeLimit` points, i.e. ~33 pts on a 30s question but ~100 pts (10% of base) on 
 
 ## Operations / deployment
 
+- **P2 — No page per quiz for search engines (found 2026-10-18).** Shared links preview well now
+  (`frontend-worker.md`), but nothing is indexable per quiz: `/quiz/:id/play` starts a game and the
+  catalogue is one URL. Needs a public quiz landing page plus a `sitemap.xml` of Public quizzes,
+  with the Worker filling its tags the same way it does for shared links. Deferred: it is a product
+  feature, not a fix.
+- **P3 — Hashed build files aren't cached long-term (2026-10-18).** Vite writes its content-hashed
+  output to `dist/assets/`, and `public/assets/` (unhashed images) lands in the same folder, so an
+  `immutable` rule on `/assets/*` would freeze a replaced image for a year. Fix: set
+  `build.assetsDir` in `vite.config.ts` to its own folder (e.g. `_app`) and give that the rule in
+  `public/_headers`.
+- **P3 — Wrangler isn't pinned (2026-10-18).** It isn't in `package.json`, so Workers Builds' `npx
+  wrangler deploy` uses whatever is latest. `assets.run_worker_first` as a path list needs a 2025+
+  Wrangler; `wrangler deploy --dry-run` with 4.151 accepts it. Pin it as a devDependency the next
+  time `package-lock.json` is touched.
+
 - ~~**P2 — Frontend deploys never activated (stale bundle served).**~~ **Root-caused + fixed
   (2026-07-04).** Every `wrangler deploy` uploaded the new assets but then **errored at the final step**
   — `wrangler.jsonc` declared no `routes` and the Worker had no `*.workers.dev` subdomain, so wrangler

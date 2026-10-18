@@ -111,6 +111,21 @@ namespace QuizAPI.DTOs.Quiz
         /*public List<QuizQuestionDTO> Questions { get; set; } = new List<QuizQuestionDTO>();*/
     }
 
+    /// <summary>
+    /// What a shared link's preview card shows (GET /api/quiz/shared/{token}/preview): the fields a
+    /// chat app's link preview needs and nothing else — no questions, no owner id, no token. Read
+    /// anonymously by the frontend Worker, which writes them into the page's Open Graph tags.
+    /// </summary>
+    public class SharedQuizPreviewDTO
+    {
+        public string Title { get; set; } = string.Empty;
+        public string? Description { get; set; }
+        public string? ImageUrl { get; set; }
+        public string Category { get; set; } = string.Empty;
+        public string Format { get; set; } = string.Empty;
+        public int QuestionCount { get; set; }
+    }
+
     public class QuizUM
     {
         [Required] 
