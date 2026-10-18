@@ -170,12 +170,13 @@ namespace QuizAPI.Controllers.Quizzes
         }
 
         /// <summary>
-        /// Get a specific quiz by ID
+        /// Get a specific quiz by ID. A Public quiz is readable by anyone; a Draft or Unlisted one
+        /// only by its owner, an admin, or — Unlisted only — a caller holding its share token.
         /// </summary>
         [HttpGet("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> GetQuizById(int id)
+        public async Task<IActionResult> GetQuizById(int id, [FromQuery] string? shareToken = null)
         {
             try
             {
@@ -188,14 +189,13 @@ namespace QuizAPI.Controllers.Quizzes
                     return NotFound();
                 }
 
-                // Draft quizzes are visible only to their owner (and admins). Unlisted and Public
-                // quizzes can be fetched by id once you have it — Unlisted simply isn't discoverable.
-                if (IsDraft(quiz) && !_currentUser.IsAdmin)
+                // Only Public is open. This used to refuse Draft alone, and quiz ids are sequential,
+                // so counting upward read every Unlisted quiz — which is meant to need the link
+                // (docs/quiz/quiz-visibility.md). 404, not 403: a non-owner learns nothing about
+                // whether the id exists.
+                if (!IsPublic(quiz) && !IsOwnerOrAdmin(quiz) && !await HoldsShareTokenAsync(quiz, shareToken))
                 {
-                    if (currentUserId is null || quiz.User.Id != currentUserId)
-                    {
-                        return NotFound(); // Don't reveal existence to non-owners
-                    }
+                    return NotFound();
                 }
 
                 return Ok(quiz);
@@ -217,26 +217,16 @@ namespace QuizAPI.Controllers.Quizzes
         {
             try
             {
-                // First get quiz to check permissions (reusing existing logic)
+                // <b>Owner or admin only, whatever the status.</b> This is the authoring view: each
+                // question with its answer options and which are correct. It used to refuse only a
+                // Draft, so any Public quiz's answer key was one anonymous GET away (and any Unlisted
+                // one, by counting ids). Its only client is the owner/admin quiz page and the
+                // editors; play never reads it — a session serves questions one at a time without
+                // the answers. 404 for everyone else, so the id's existence isn't confirmed either.
                 var quiz = await _quizService.GetQuizByIdAsync(id);
-                if (quiz == null)
+                if (quiz == null || !IsOwnerOrAdmin(quiz))
                 {
-                    return Unauthorized();
-                }
-
-                // Apply same authorization logic as GetQuizById: a Draft quiz's questions are
-                // visible only to its owner (and admins).
-                if (IsDraft(quiz) && !_currentUser.IsAdmin)
-                {
-                    var currentUserId = _currentUser.UserId;
-                    if (currentUserId is null)
-                    {
-                        return Unauthorized();
-                    }
-                    if (quiz.User.Id != currentUserId)
-                    {
-                        return Forbid();
-                    }
+                    return NotFound();
                 }
 
                 // If authorized, get the questions
@@ -497,8 +487,22 @@ namespace QuizAPI.Controllers.Quizzes
             _currentUser.UserId
             ?? throw new InvalidOperationException("User ID not found or invalid");
 
-        // A quiz is a Draft when its status string matches QuizStatus.Draft (case-insensitive).
-        private static bool IsDraft(QuizDTO quiz) =>
-            string.Equals(quiz.Status, nameof(QuizStatus.Draft), StringComparison.OrdinalIgnoreCase);
+        private static bool IsPublic(QuizDTO quiz) =>
+            string.Equals(quiz.Status, nameof(QuizStatus.Public), StringComparison.OrdinalIgnoreCase);
+
+        private bool IsOwnerOrAdmin(QuizDTO quiz) =>
+            _currentUser.IsAdmin || (_currentUser.UserId is { } uid && quiz.User?.Id == uid);
+
+        /// <summary>
+        /// The share-link grant, for reading an Unlisted quiz by id. Resolved through the same lookup
+        /// as <c>GET shared/{token}</c>, so a token works here exactly when it works there (never for
+        /// a Draft) and the token never has to leave the service.
+        /// </summary>
+        private async Task<bool> HoldsShareTokenAsync(QuizDTO quiz, string? shareToken)
+        {
+            if (string.IsNullOrWhiteSpace(shareToken)) return false;
+            var shared = await _quizService.GetQuizByShareTokenAsync(shareToken);
+            return shared?.Id == quiz.Id;
+        }
     }
 }

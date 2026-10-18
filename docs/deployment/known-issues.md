@@ -18,7 +18,14 @@ Auth-specific enhancements are tracked in [authentication.md](../auth/authentica
 
 ## Open exploits
 
-- **P1 — Answer keys and Unlisted quizzes are readable anonymously by id (found 2026-10-18).**
+None open in code. The fix below is live only once the backend is rebuilt on the VPS.
+
+
+- ~~**P1 — Answer keys and Unlisted quizzes are readable anonymously by id (found 2026-10-18).**~~
+  **Fixed 2026-10-18** — `/questions` is owner/admin only at any status, `/{id}` opens a non-Public
+  quiz only to its owner, an admin or its share token; both answer 404 otherwise
+  (`QuizReadAccessTests`, `quiz-visibility.md` "Reading a quiz by id"). Live once the backend is
+  rebuilt. Was:
   `GET /api/quiz/{id}` and `GET /api/quiz/{id}/questions` refuse only a **Draft** to non-owners.
   Verified in production: `/api/quiz/20/questions`, signed out, returns every question with
   `answerOptions[].isCorrect` — the answer key of any Public quiz. And because ids are sequential, the
@@ -1216,7 +1223,9 @@ fixed; these were left.
   2026-09-23.** The player dashboard mounts the editors at `/my-dashboard/quizzes/edit/:id` (and
   `…/board`); the shared table links within its own dashboard (`useQuizEditPath`). Only an owner
   can save — unchanged, that was always the API's rule. See docs/quiz/quiz-editing.md.
-- **P3 — Players have no single-quiz page.** `/dashboard/quiz/:id` (stats, board preview) is in the
+- ~~**P3 — Players have no single-quiz page.**~~ **Fixed 2026-10-18** — `/my-dashboard/quiz/:id`
+  mounts the same page; View and a row click open it ([`quiz-analytics-page.md`](../quiz/quiz-analytics-page.md),
+  "Two dashboards, one page"). Was: `/dashboard/quiz/:id` (stats, board preview) is in the
   admin dashboard only, so "My quizzes" hides the table's View item rather than link to a 404. An
   owner-facing version would need the analytics endpoint's owner scoping (it has it) and a
   player-dashboard route. Until then the row menu carries **Play** and **Copy share link**
