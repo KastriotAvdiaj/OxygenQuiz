@@ -161,6 +161,8 @@ export const userDashboardNavButtons: DashboardNavItem[] = [
     icon: Folder,
     group: "Overview",
     island: true,
+    // The owner's quiz page, `quiz/:quizId` — same as the admin nav's Quizzes item.
+    activeOn: ["quiz"],
   },
   {
     id: "questions",

@@ -14,6 +14,7 @@ import {
   SearchX,
 } from "lucide-react";
 import { cn } from "@/utils/cn";
+import { useIsAdminDashboard } from "@/pages/Dashboard/Pages/Quiz/quiz-paths";
 import { DeleteQuestion } from "../Re-Usable-Components/delete-question";
 import UpdateTypeAnswerQuestionForm from "./update-type_the_asnwer-question";
 import { QuestionType, TypeTheAnswerQuestion } from "@/types/question-types";
@@ -29,6 +30,8 @@ export const TypeTheAnswerQuestionCard = ({
   question,
   viewMode = "list",
 }: TypeTheAnswerQuestionCardProps) => {
+  // Database ids are admin tooling; the player's "My Questions" doesn't show them.
+  const showId = useIsAdminDashboard();
   if (viewMode === "grid") {
     // Compact grid view - always expanded, no accordion
     return (
@@ -151,9 +154,11 @@ export const TypeTheAnswerQuestionCard = ({
           )}
 
           <section className="flex items-center justify-between">
-            <Badge variant="outline" className="text-xs">
-              ID: {question.id}
-            </Badge>
+            {showId && (
+              <Badge variant="outline" className="text-xs">
+                ID: {question.id}
+              </Badge>
+            )}
             <div className="flex items-center gap-1">
               <UpdateTypeAnswerQuestionForm question={question} />
               <DeleteQuestion
@@ -184,9 +189,11 @@ export const TypeTheAnswerQuestionCard = ({
             )}
           </CardTitle>
           <div className="flex items-center gap-2 flex-shrink-0">
-            <Badge variant="outline" className="text-xs">
-              ID: {question.id}
-            </Badge>
+            {showId && (
+              <Badge variant="outline" className="text-xs">
+                ID: {question.id}
+              </Badge>
+            )}
             <Badge
               variant="outline"
               className={cn(

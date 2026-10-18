@@ -691,6 +691,17 @@ const createAppRouter = (queryClient: QueryClient) =>
           },
         },
         {
+          // The owner's quiz page — the same component as the admin dashboard's `quiz/:quizId`,
+          // which links within whichever dashboard it is in (quiz-paths.ts, `quizViewPath`).
+          path: "quiz/:quizId",
+          lazy: async () => {
+            const { QuizRoute } =
+              await import("../pages/Dashboard/Pages/Quiz/Quiz");
+            return { Component: QuizRoute };
+          },
+          loader: quizLoader(queryClient),
+        },
+        {
           path: "history",
           lazy: async () => {
             const { MyQuizHistory } =

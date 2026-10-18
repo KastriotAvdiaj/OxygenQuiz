@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { ChevronRight } from "lucide-react";
 import { BlobLoader } from "@/components/ui";
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,7 @@ import { QuizStatStrip } from "./components/quiz-view/quiz-stat-strip";
 import { QuizStatusBadge } from "./components/quiz-view/quiz-status-badge";
 import { formatDuration } from "./components/quiz-view/format-duration";
 import { AssociationBoardPreview } from "./components/quiz-view/association-board-preview";
-import { quizEditPath } from "./quiz-paths";
+import { dashboardBaseOf, quizEditPath } from "./quiz-paths";
 import { quizPlayPath } from "@/pages/Quiz/quiz-play-path";
 import { useUser } from "@/lib/Auth";
 import {
@@ -60,6 +60,10 @@ export const QuizRoute = () => {
   const quizId = Number(params.quizId as string);
   const navigate = useNavigate();
   const { data: currentUser } = useUser();
+  // One page, two dashboards: `/dashboard/quiz/:id` (admins) and `/my-dashboard/quiz/:id` (the
+  // owner). Every link out of it — the breadcrumb, Edit, where Delete lands — stays in the one
+  // it was opened from.
+  const base = dashboardBaseOf(useLocation().pathname);
   const { addNotification } = useNotifications();
 
   const quizQuery = useQuizData({ quizId });
@@ -138,6 +142,22 @@ export const QuizRoute = () => {
   const quiz = quizQuery.data;
   if (!quiz) return null;
 
+  // The player dashboard is for your own quizzes. Someone else's Public quiz reads fine by id,
+  // but its questions, stats and board are owner-only (QuizController.GetQuizQuestions, the
+  // analytics and board endpoints), so the page would be all error states — say so instead.
+  if (base === "/my-dashboard" && quiz.user.id !== currentUser?.id) {
+    return (
+      <div className="w-full h-full flex items-center justify-center py-16">
+        <div className="text-center space-y-4">
+          <p className="font-medium">This isn&apos;t one of your quizzes</p>
+          <Button variant="outline" asChild>
+            <Link to="/my-dashboard/quizzes">Back to my quizzes</Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   const analytics = analyticsQuery.data;
   const isDraft = quiz.status === "Draft";
   // Mirrors the API's play rule, `QuizPlayAccess.IsPlayAuthorized`: Public, or the caller owns
@@ -167,7 +187,7 @@ export const QuizRoute = () => {
         onOpenChange={setDeleteOpen}
         // Defer navigation one tick so the dialog can close and Radix can restore
         // <body> pointer-events before this page unmounts.
-        finished={() => setTimeout(() => navigate("/dashboard/quizzes"), 0)}
+        finished={() => setTimeout(() => navigate(`${base}/quizzes`), 0)}
         id={quiz.id}
       />
 
@@ -178,10 +198,10 @@ export const QuizRoute = () => {
         <ol className="flex min-w-0 items-center gap-1.5 text-sm text-muted-foreground">
           <li>
             <Link
-              to="/dashboard/quizzes"
+              to={`${base}/quizzes`}
               className="rounded transition-colors duration-150 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
             >
-              Quizzes
+              {base === "/my-dashboard" ? "My Quizzes" : "Quizzes"}
             </Link>
           </li>
           <li aria-hidden="true">
@@ -238,7 +258,7 @@ export const QuizRoute = () => {
                 isSharePending={shareLink.isPending}
                 onSetStatus={handleSetStatus(isDraft ? "Public" : "Draft")}
                 isStatusPending={setStatus.isPending}
-                onEdit={() => navigate(quizEditPath(quiz))}
+                onEdit={() => navigate(quizEditPath(quiz, base))}
                 onDelete={() => setDeleteOpen(true)}
               />
             </div>

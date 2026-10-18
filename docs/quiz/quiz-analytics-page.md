@@ -1,6 +1,7 @@
 # The single-quiz page
 
-How `/dashboard/quiz/:quizId` behaves **today**. It is one continuous page — hero, stat strip,
+How `/dashboard/quiz/:quizId` — and its twin for owners, `/my-dashboard/quiz/:quizId` — behaves
+**today**. It is one continuous page — hero, stat strip,
 attempts panel, then every question with its own numbers — replacing the Overview / Questions /
 Analytics tabs. The reasoning for that shape, and the list of things deliberately not built, is in
 [`../proposals/quiz-view-redesign.md`](../proposals/quiz-view-redesign.md); this file describes
@@ -392,9 +393,26 @@ resolved it as the winner and **every caller's border colour was silently discar
 mode** — including the amber edge on "Needs a look". The default now goes before `className`,
 which is what the rest of the components here do and what every caller assumes.
 
+## Two dashboards, one page
+
+The same `QuizRoute` is mounted in both dashboards (since 2026-10-18; players had no quiz page
+before). It reads which one it is in from the URL (`dashboardBaseOf`) and keeps every link inside it:
+the breadcrumb (`Quizzes` / `My Quizzes`), Edit (`quizEditPath(quiz, base)`) and where Delete lands.
+The rail keeps the Quizzes item lit on it (`activeOn: ["quiz"]`).
+
+It is reached from the quiz table in either dashboard: the row's ⋯ **View**, or a click anywhere on
+the row (`DataTable`'s `onRowClick`; clicks on the ⋯ menu, its items and the delete dialog are
+excluded — `data-table-row-click.ts`).
+
+**In the player dashboard it is for your own quizzes.** Someone else's Public quiz reads fine by id,
+but its questions, stats and board are owner-only, so the page would be all error states; it says
+"This isn't one of your quizzes" instead.
+
 ## No database ids
 
-Neither the quiz id nor the question ids appear anywhere on this page. A primary key identifies
+Neither the quiz id nor the question ids appear anywhere on this page. The same goes for the
+player dashboard as a whole (2026-10-18): the `ID: 665` badges on question cards and the quiz row's
+**Copy ID** show in the admin dashboard only (`useIsAdminDashboard` in `quiz-paths.ts`). A primary key identifies
 a row to a query; it tells the person deciding whether a question needs rewriting nothing at all.
 The card header used to read "Quiz #37" directly above an `<h1>` carrying the quiz's actual name
 — an id *and* a duplicate heading — so `ContentLayout`'s title is now optional and this page

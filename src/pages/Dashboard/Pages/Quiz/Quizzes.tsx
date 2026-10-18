@@ -23,9 +23,12 @@ import { cn } from "@/utils/cn";
 import { QuizFiltersPanel } from "./components/Quiz-Filter";
 import { CreateQuizMethodDialog } from "./components/create-quiz-method-dialog";
 import { HEADER_ACTION_FACE } from "./components/header-action-face";
+import { quizViewPath } from "./quiz-paths";
+import { useNavigate } from "react-router-dom";
 // import { DataTransferControls } from "@/components/data-transfer/DataTransferControls";
 
 export const Quizzes = () => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
   const [categoryIds, setCategoryIds] = useState<number[]>([]);
@@ -200,7 +203,15 @@ export const Quizzes = () => {
               </div>
             ) : (
               <>
-                <DataTable data={quizzes} columns={quizColumns} />
+                {/* A click anywhere on the row opens the quiz; the ⋯ menu keeps its own clicks.
+                    Not for a soft-deleted row (shown with "show deleted"): it has no page. */}
+                <DataTable
+                  data={quizzes}
+                  columns={quizColumns}
+                  onRowClick={(quiz) => {
+                    if (!quiz.deletedAt) navigate(quizViewPath(quiz));
+                  }}
+                />
                 <div className="mt-6">
                   <PaginationControls
                     pagination={
