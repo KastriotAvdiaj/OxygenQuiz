@@ -75,8 +75,29 @@ Applied by Cloudflare to everything served from assets:
 **`_headers` does not reach responses the Worker builds**, so `worker/index.js` sets the same set
 (`SECURITY_HEADERS`). Change both together.
 
-**No long-cache rule for `/assets/*`.** Vite's hashed output and `public/assets/` (unhashed images)
-share that folder, so `immutable` would freeze a replaced image for a year. See known-issues.
+### Caching
+
+| Path | `Cache-Control` | Why |
+|---|---|---|
+| `/_app/*` — Vite's build output (`build.assetsDir` in `vite.config.ts`) | `public, max-age=31536000, immutable` | Every file is named by its content hash, so a changed file is a new URL. Browsers keep these for a year and never ask again. |
+| `index.html`, every SPA route, `/assets/*` (`public/assets/`, unhashed images) | Cloudflare's default, `public, max-age=0, must-revalidate` + ETag | Revalidated on every load. `index.html` is how a deploy reaches a browser — it names the new `/_app/` files. An image replaced under the same name shows up on the next load. |
+
+The build has its own folder because Vite's default, `assets/`, is also where `public/assets/` lands:
+an `immutable` rule there would freeze a replaced image for a year. Only hashed files may ever go in
+`_app/`, and nothing in `public/` may be named `_app/` — `src/lib/__tests__/build-cache.test.ts`
+asserts both, and that the rule names exactly that folder. The local Docker image
+(`docker/nginx-spa.conf`) has the same rule.
+
+**A missing `/_app/` file is answered with `index.html`, immutable.** With `run_worker_first` set as
+a path list, Cloudflare's single-page fallback answers *every* unknown path with `index.html` and a
+200 — a script request included — and `_headers` still applies the `/_app/*` rule to it (checked
+with `wrangler dev`). A tab left open across a deploy asks for chunk names the new version no longer
+has; it gets HTML, the import fails, and the route error screen shows `StaleVersionNotice`. The
+browser now holds HTML under that chunk's URL for a year, which is harmless while the name stays dead
+— hashes don't come back. It stops being harmless only if an older version containing that exact
+file is promoted again (a rollback): that browser keeps loading HTML for it until its cache is
+cleared. Accepted — see known-issues. Answering misses with a 404 instead would mean adding `/_app/*`
+to `run_worker_first`, a billed Worker request for every file of every page load.
 
 ## robots.txt
 

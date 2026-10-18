@@ -30,6 +30,13 @@ export default defineConfig({
     // fail on `@playwright/test` imports. They run under `npm run test:e2e`, never here.
     exclude: [...configDefaults.exclude, 'e2e/**'],
   },
+  build: {
+    // The build's content-hashed files get their own folder, so public/_headers can cache it for
+    // a year (`immutable`). Vite's default, `assets/`, is also where public/assets/ (unhashed
+    // images) lands, and freezing those would keep a replaced image stale for a year.
+    // Guarded by src/lib/__tests__/build-cache.test.ts; docs/deployment/frontend-worker.md.
+    assetsDir: "_app",
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),

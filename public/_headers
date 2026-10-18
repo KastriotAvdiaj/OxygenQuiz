@@ -15,7 +15,10 @@
   # Nothing in the app uses these; refusing them limits what an injected script could ask for.
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
 
-# No long-cache rule for /assets/*, deliberately. Vite's hashed build output lands in /assets/, but
-# so does public/assets/ — unhashed images like /assets/classroom.png — and "immutable" on those
-# would keep a replaced image stale in browsers for a year. Cloudflare already revalidates with
-# ETags. To cache the build forever, first give it its own folder (vite.config.ts build.assetsDir).
+# Vite's content-hashed build output (vite.config.ts build.assetsDir). A file there is named by its
+# content, so a changed file is a new URL and the browser may keep each one for a year without
+# asking again. public/assets/ (unhashed images) is deliberately NOT covered: it revalidates with
+# ETags, so a replaced image shows up on the next load. index.html revalidates too (Cloudflare's
+# default), which is how a deploy reaches browsers. Guarded by src/lib/__tests__/build-cache.test.ts.
+/_app/*
+  Cache-Control: public, max-age=31536000, immutable
