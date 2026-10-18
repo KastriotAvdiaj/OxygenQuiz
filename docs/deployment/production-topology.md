@@ -141,8 +141,8 @@ monthly cron line at the top of `update-cloudflare-ips.sh`. It refuses to write 
 
 ### 2. Origin firewall (Hetzner Cloud Firewall)
 
-Today 80/443 accept anyone, so the API answers at its bare IP and skips Cloudflare's protection.
-Test it from Windows. In **PowerShell, `curl` is an alias for `Invoke-WebRequest`** and doesn't take
+**Done 2026-10-18** (`firewall-1`, rules below). Before that, 80/443 accepted anyone, so the API
+answered at its bare IP and skipped Cloudflare's protection. To test it from Windows: In **PowerShell, `curl` is an alias for `Invoke-WebRequest`** and doesn't take
 curl's flags, so call the real binary, `curl.exe`:
 
 ```powershell

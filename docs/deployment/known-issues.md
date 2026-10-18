@@ -18,7 +18,9 @@ Auth-specific enhancements are tracked in [authentication.md](../auth/authentica
 
 ## Security hardening (defense-in-depth — no known active exploit)
 
-- **P2 — The origin answers on its bare IP (found 2026-10-17).** 80/443 accept anyone, so
+- ~~**P2 — The origin answers on its bare IP (found 2026-10-17).**~~ **Fixed 2026-10-18** — Hetzner
+  firewall `firewall-1` allows 80/443 from Cloudflare's ranges only (22 open, key-only); the bare-IP
+  `curl.exe -k` now times out, and the API still answers through Cloudflare. Was: 80/443 accepted anyone, so
   `curl -k https://89.167.23.147 -H "Host: api.oxygenquiz.com"` reaches the API without Cloudflare.
   The rate limiter no longer trusts headers a direct caller could forge (ADR 0027), so this is now a
   "keeps floods and scanners off the box" item rather than a limiter bypass. Fix: the Hetzner Cloud

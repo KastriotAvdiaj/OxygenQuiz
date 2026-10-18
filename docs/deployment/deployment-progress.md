@@ -240,8 +240,9 @@ left before calling it launched:
    using `@oxygenquiz.com` email; otherwise safe to remove. — *DECISION PENDING.*
 4. **Turn on the strict config gate** — uncomment `Security__EnforceProductionConfig=true` in the
    compose once the real domain is serving, and rebuild.
-5. **Lock the origin to Cloudflare** — Hetzner Cloud Firewall 80/443 to Cloudflare's ranges (not
-   `ufw`), the Nginx real-IP snippet, and an edge rate-limit rule on the auth endpoints. Exact steps:
+5. **Lock the origin to Cloudflare** — ✅ Hetzner Cloud Firewall 80/443 to Cloudflare's ranges (done
+   2026-10-18). Still to do: the Nginx real-IP snippet (with the backend that needs it), and an edge
+   rate-limit rule on the auth endpoints. Exact steps:
    [`production-topology.md`, "Locking the edge"](production-topology.md).
 6. **Smoke test over HTTPS** — signup/login, guest play, a full 2-browser multiplayer match (WebSockets
    end to end), upload persists across a rebuild, admin reachable, Hangfire dashboard NOT reachable.
