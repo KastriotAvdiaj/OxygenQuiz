@@ -100,4 +100,34 @@ public class QuizReadAccessTests
         Assert.IsType<OkObjectResult>(await Controller(status, TheOwner).GetQuizQuestions(QuizId));
         Assert.IsType<OkObjectResult>(await Controller(status, Admin).GetQuizQuestions(QuizId));
     }
+
+    // ── GET /api/quiz/shared/{token}/preview — the link-preview card ────────
+
+    [Fact]
+    public async Task A_shared_link_preview_is_a_card_for_anyone_holding_the_token()
+    {
+        var result = await Controller("Unlisted", Anonymous).GetSharedQuizPreview(Token);
+
+        var card = Assert.IsType<SharedQuizPreviewDTO>(Assert.IsType<OkObjectResult>(result).Value);
+        Assert.Equal("Friday Pub Quiz", card.Title);
+    }
+
+    [Fact]
+    public async Task A_preview_carries_only_card_fields()
+    {
+        // Anonymous by design, so its shape is the whole guarantee: nothing that identifies the
+        // owner, unlocks the quiz or reveals its content.
+        var fields = typeof(SharedQuizPreviewDTO).GetProperties().Select(p => p.Name).OrderBy(n => n);
+        Assert.Equal(
+            new[] { "Category", "Description", "Format", "ImageUrl", "QuestionCount", "Title" },
+            fields);
+    }
+
+    [Theory]
+    [InlineData("Draft", Token)]
+    [InlineData("Unlisted", "wrong")]
+    public async Task A_preview_404s_wherever_the_link_would(string status, string token)
+    {
+        Assert.IsType<NotFoundResult>(await Controller(status, Anonymous).GetSharedQuizPreview(token));
+    }
 }

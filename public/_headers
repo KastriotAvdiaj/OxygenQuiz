@@ -1,0 +1,21 @@
+# Response headers for the static site (Cloudflare Workers static assets). Vite copies public/ into
+# dist/, and Cloudflare applies this file to every asset it serves — but not to responses the Worker
+# builds itself, so worker/index.js repeats these (SECURITY_HEADERS). Change both together.
+# docs/deployment/frontend-worker.md, "Headers"
+
+/*
+  # Browsers use HTTPS for a year after one visit, so a typed "oxygenquiz.com" never goes out over
+  # plain HTTP first. No includeSubDomains/preload yet: both are hard to undo.
+  Strict-Transport-Security: max-age=31536000
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  # Our pages may be framed only by our own pages. Not DENY: MSAL and similar libraries can load the
+  # app's own origin in a hidden iframe, and DENY would break that silently.
+  X-Frame-Options: SAMEORIGIN
+  # Nothing in the app uses these; refusing them limits what an injected script could ask for.
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
+
+# No long-cache rule for /assets/*, deliberately. Vite's hashed build output lands in /assets/, but
+# so does public/assets/ — unhashed images like /assets/classroom.png — and "immutable" on those
+# would keep a replaced image stale in browsers for a year. Cloudflare already revalidates with
+# ETags. To cache the build forever, first give it its own folder (vite.config.ts build.assetsDir).

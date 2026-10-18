@@ -100,6 +100,10 @@ which only decides what to offer). See [associations.md](associations.md), "Admi
   `GET /api/quiz/shared/{token}`. That endpoint reads the quiz whatever its status
   (the token *is* the grant); it returns 404 for an unknown token or a
   Draft quiz.
+- **A link preview needs no login.** `GET /api/quiz/shared/{token}/preview` returns only the card
+  a chat app shows (title, description, image, category, format, question count) for the frontend
+  Worker to write into the page's tags; it 404s wherever the resolver would.
+  [`frontend-worker.md`](../deployment/frontend-worker.md).
 - **Login is required to play** even with a valid link — the token grants access, the account ties
   the play session to a user. Starting the session sends the token in `QuizSessionCM.ShareToken`,
   which `QuizPlayAccess.IsPlayAuthorized` (`Common/QuizPlayAccess.cs`) validates — the one rule

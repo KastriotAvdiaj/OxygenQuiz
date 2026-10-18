@@ -432,6 +432,40 @@ namespace QuizAPI.Controllers.Quizzes
         /// Resolves a quiz from its Unlisted share token. Login is required (the token grants
         /// access, the account ties the play to a user). Returns 404 for an unknown/Draft token.
         /// </summary>
+        [HttpGet("shared/{token}/preview")]
+        [AllowAnonymous]
+        [ProducesResponseType(typeof(SharedQuizPreviewDTO), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetSharedQuizPreview(string token)
+        {
+            // The link-preview card for a shared link, read by the frontend Worker
+            // (worker/index.js) — chat-app crawlers are never signed in, so unlike the resolver
+            // below this one is anonymous. That is why it returns a card, not the quiz: whoever
+            // holds the link can already see the title on the start screen, and nothing here
+            // goes further (no questions, no owner, no token). Same lookup as the resolver, so it
+            // 404s exactly when the link wouldn't work: unknown token, Draft, a preview format.
+            try
+            {
+                var quiz = await _quizService.GetQuizByShareTokenAsync(token);
+                if (quiz == null) return NotFound();
+
+                return Ok(new SharedQuizPreviewDTO
+                {
+                    Title = quiz.Title,
+                    Description = quiz.Description,
+                    ImageUrl = quiz.ImageUrl,
+                    Category = quiz.Category?.Name ?? string.Empty,
+                    Format = quiz.Format,
+                    QuestionCount = quiz.QuestionCount,
+                });
+            }
+            catch (Exception ex) when (ex is not AppException)
+            {
+                _logger.LogError(ex, "Error building shared quiz preview");
+                return HandleCustomError("An error occurred while processing your request", false);
+            }
+        }
+
         [HttpGet("shared/{token}")]
         [Authorize]
         [ProducesResponseType(StatusCodes.Status200OK)]
