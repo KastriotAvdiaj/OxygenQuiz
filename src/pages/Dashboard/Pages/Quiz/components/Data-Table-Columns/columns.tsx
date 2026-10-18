@@ -18,7 +18,7 @@ import { ColumnDef } from "@tanstack/react-table";
 // } from "@/components/ui/dropdown-menu";
 import formatDate from "@/lib/date-format";
 import TitleWithDescription from "./title-description";
-import { dashboardBaseOf, useQuizEditPath } from "../../quiz-paths";
+import { dashboardBaseOf, quizViewPath, useQuizEditPath } from "../../quiz-paths";
 import { useDisclosure } from "@/hooks/use-disclosure";
 import {
   Button,
@@ -185,17 +185,16 @@ function QuizActionsCell({ quiz }: { quiz: QuizSummaryDTO }) {
   const { open, isOpen, close } = useDisclosure();
   // The table is shared by both dashboards; edit within whichever one it's shown in.
   const editPath = useQuizEditPath();
-  // The single-quiz page lives in the admin dashboard only; a player opening it gets the admin
-  // area's 404, so "View" is offered only where it works (known-issues.md, Associations).
-  const isAdminDashboard = dashboardBaseOf(useLocation().pathname) === "/dashboard";
-  const canView = isAdminDashboard;
+  // Both dashboards have the single-quiz page now (`quizViewPath`); "View" opens it in whichever
+  // this table is shown in, and so does a click on the row (`onRowClick` where the table is used).
+  const base = dashboardBaseOf(useLocation().pathname);
+  const isAdminDashboard = base === "/dashboard";
   // "My quizzes" lists only the viewer's own (`scope: "mine"`); the admin table lists everyone's,
   // and a summary row carries the author's username, not an id.
   const { data: currentUser } = useUser();
   const isOwn = !isAdminDashboard || quiz.user === currentUser?.username;
   // Play mirrors `QuizPlayAccess.IsPlayAuthorized` (Public, or yours); Share mirrors
-  // `GenerateShareTokenAsync` (yours) plus the resolver's 404 on a Draft. These two items are the
-  // only way a player reaches their own Unlisted quiz — players have no single-quiz page.
+  // `GenerateShareTokenAsync` (yours) plus the resolver's 404 on a Draft.
   const canPlay = !quiz.deletedAt && (quiz.status === "Public" || isOwn);
   const canShare = !quiz.deletedAt && isOwn && quiz.status !== "Draft";
   const shareLink = useCopyShareLink();
@@ -218,6 +217,13 @@ function QuizActionsCell({ quiz }: { quiz: QuizSummaryDTO }) {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="bg-muted">
         <DropdownMenuLabel>Actions</DropdownMenuLabel>
+        {/* Order: the things you do with the quiz, then admin tooling, then Delete last in red —
+            the quiz page's own ⋯ menu (QuizActionsMenu) reads the same way. */}
+        <DropdownMenuItem className="hover:bg-background" asChild>
+          <Link to={quizViewPath(quiz, base)} className="flex items-center gap-2">
+            <Eye size={16} /> View
+          </Link>
+        </DropdownMenuItem>
         {canPlay && (
           <DropdownMenuItem className="hover:bg-background" asChild>
             <Link to={quizPlayPath(quiz)} className="flex items-center gap-2">
@@ -235,19 +241,30 @@ function QuizActionsCell({ quiz }: { quiz: QuizSummaryDTO }) {
             {quiz.status === "Unlisted" ? "Copy share link" : "Share"}
           </DropdownMenuItem>
         )}
-        {(canPlay || canShare) && <DropdownMenuSeparator className="bg-background/60" />}
-        <DropdownMenuItem
-          onClick={() =>
-            navigator.clipboard.writeText(quiz.id as unknown as string)
-          }
-        >
-          <Copy size={16} /> Copy ID
-        </DropdownMenuItem>
+        {!quiz.deletedAt && (
+          <DropdownMenuItem className="hover:bg-background" asChild>
+            <Link to={editPath(quiz)} className="flex items-center gap-2">
+              <Edit2 size={16} /> Edit
+            </Link>
+          </DropdownMenuItem>
+        )}
+        {/* Admin tooling only. A player never needs a quiz's database id — nothing in the
+            player's app takes one. */}
+        {isAdminDashboard && (
+          <>
+            <DropdownMenuSeparator className="bg-background/60" />
+            <DropdownMenuItem
+              onClick={() => navigator.clipboard.writeText(String(quiz.id))}
+            >
+              <Copy size={16} /> Copy ID
+            </DropdownMenuItem>
+          </>
+        )}
         {!quiz.deletedAt && (
           <>
             <DropdownMenuSeparator className="bg-background/60" />
             <DropdownMenuItem
-              // className="text-red-600 focus:text-red-600"
+              className="text-red-600 focus:text-red-600"
               onSelect={() => {
                 // Let the menu finish closing, then open the dialog on the next
                 // frame so the two Radix modal layers never overlap.
@@ -257,32 +274,6 @@ function QuizActionsCell({ quiz }: { quiz: QuizSummaryDTO }) {
               <Trash2 size={16} /> Delete
             </DropdownMenuItem>
           </>
-        )}
-        {canView && (<>
-        <DropdownMenuSeparator className="bg-background/60" />
-        <DropdownMenuItem className="hover:bg-background">
-          <Link
-            to={`/dashboard/quiz/${quiz.id}`}
-            className="w-full h-full flex items-center gap-2"
-          >
-            <Eye size={16} />
-            View
-          </Link>
-        </DropdownMenuItem>
-        </>)}
-        {!quiz.deletedAt && (
-          <>
-        <DropdownMenuSeparator className="bg-background/60" />
-          <DropdownMenuItem className="hover:bg-background">
-            <Link
-              to={editPath(quiz)}
-              className="w-full h-full flex items-center gap-2"
-              >
-              <Edit2 size={16} />
-              Edit
-            </Link>
-          </DropdownMenuItem>
-              </>
         )}
       </DropdownMenuContent>
     </DropdownMenu>

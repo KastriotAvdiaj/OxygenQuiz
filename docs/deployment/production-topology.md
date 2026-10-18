@@ -105,6 +105,97 @@ ssh deploy@89.167.23.147 'cd ~/OxygenQuiz && git status --short docker-compose.p
 
 ---
 
+## Locking the edge — real client IP, and the origin firewall
+
+Two separate jobs, done in this order. The first is what makes the rate limiter and the audit log see
+real visitors ([ADR 0027](../adr/0027-the-client-ip-is-resolved-at-nginx.md)); the second keeps
+everything except Cloudflare off the box.
+
+### 1. Real client IP (Nginx) — before the backend that needs it
+
+The backend from 2026-10-17 reads the visitor's address from what Nginx hands it. **Reload Nginx
+first, then rebuild the backend.** In the other order the backend reads an old Nginx's appended
+`X-Forwarded-For`, takes the last hop — a Cloudflare edge — and puts many visitors in one bucket.
+
+```bash
+ssh deploy@89.167.23.147
+cd ~/OxygenQuiz && git pull
+
+# a. The Cloudflare ranges snippet (writes /etc/nginx/snippets/cloudflare-real-ip.conf, tests, reloads)
+sudo mkdir -p /etc/nginx/snippets
+sudo bash deploy/nginx/update-cloudflare-ips.sh
+
+# b. The site config that includes it and overwrites X-Forwarded-For
+sudo cp deploy/nginx/api.oxygenquiz.com.conf /etc/nginx/sites-available/api.oxygenquiz.com
+sudo nginx -t && sudo systemctl reload nginx
+
+# c. Only now, the backend
+docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+```
+
+**Check:** do something audited (e.g. edit a quiz) and look at the newest audit-log entry. It should
+show your own public IP, not a Cloudflare address (`104.16–31.x`, `172.64–71.x`, `162.158–159.x`, …).
+
+Cloudflare's ranges change rarely, with notice. Re-run step **a** after an announcement, or add the
+monthly cron line at the top of `update-cloudflare-ips.sh`. It refuses to write a short list.
+
+### 2. Origin firewall (Hetzner Cloud Firewall)
+
+**Done 2026-10-18** (`firewall-1`, rules below). Before that, 80/443 accepted anyone, so the API
+answered at its bare IP and skipped Cloudflare's protection. To test it from Windows: In **PowerShell, `curl` is an alias for `Invoke-WebRequest`** and doesn't take
+curl's flags, so call the real binary, `curl.exe`:
+
+```powershell
+curl.exe -k -i -m 10 https://89.167.23.147/ -H "Host: api.oxygenquiz.com"
+```
+
+Any HTTP response (even a 404) means the origin is reachable directly. After the lockdown it should
+time out.
+
+Use the **Hetzner Cloud Firewall**, not `ufw`: it filters before traffic reaches the VM, so nothing
+on the box (Docker's own iptables rules included) can open a hole in it.
+
+Hetzner Console → **Firewalls** → the firewall attached to this server → **Inbound rules**:
+
+| Rule | Protocol / port | Source |
+|---|---|---|
+| SSH | TCP 22 | Any IPv4, Any IPv6 (key-only login; narrow to your IP if it's static) |
+| HTTPS | TCP 443 | Cloudflare's ranges — every line of https://www.cloudflare.com/ips-v4 and /ips-v6 |
+| HTTP | TCP 80 | The same Cloudflare ranges |
+
+Remove any other 80/443 rule that allows *Any*. Port 80 stays, Cloudflare-only: in Full (strict) mode
+Cloudflare reaches the origin with the scheme the visitor used, so an `http://` request reaches 80
+unless **SSL/TLS → Edge Certificates → Always Use HTTPS** is on.
+
+**Always Use HTTPS is on (2026-10-18).** Before it, `http://oxygenquiz.com` was served over plain
+HTTP with a 200 — the Worker has no redirect of its own — while `http://api…` was redirected by
+Nginx's port-80 block. Now Cloudflare answers every `http://` request in the zone with a 301 to
+`https://` at the edge, and Nginx's redirect is never reached. Its dashboard warning about redirect
+loops doesn't apply here: a loop needs SSL mode **Flexible** (Cloudflare → origin over HTTP, origin
+redirects to HTTPS, repeat). This zone is **Full (strict)** — keep it that way; switching to Flexible
+with this on is what would produce `ERR_TOO_MANY_REDIRECTS`. Check: `curl.exe -I http://oxygenquiz.com`
+→ `301`, `Location: https://oxygenquiz.com/`.
+
+**Check:** the `curl.exe` above now times out, `https://api.oxygenquiz.com` still works, the site logs
+in, and a multiplayer match connects (WebSockets). SSH still works because 22 is untouched. If
+something is wrong, the Hetzner Console's own web console reaches the server regardless of the
+firewall.
+
+When Cloudflare announces new ranges, update this rule as well as the Nginx snippet.
+
+### 3. Optional: a rate-limiting rule at Cloudflare
+
+Drops floods on the login endpoints before they reach the VPS. Cloudflare dashboard →
+**Security → WAF → Rate limiting rules** → Create:
+
+- **If incoming requests match:** hostname equals `api.oxygenquiz.com` *and* URI path starts with
+  `/api/Authentication/` (Cloudflare compares case-sensitively; this is the casing the API routes use)
+- **Counting characteristic:** IP
+- **Rate:** 30 requests per 10 seconds → **Block** for 10 seconds (the free plan's fixed period)
+
+The app's own `auth` policy (20 a minute per IP) stays — this is the outer layer, sized to catch
+floods, not to replace it.
+
 ## The unadopted stack (design B) — `deploy/`
 
 `deploy/docker-compose.prod.yml`, `deploy/Caddyfile` and `deploy/.env.example` describe a

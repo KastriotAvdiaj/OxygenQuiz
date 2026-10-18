@@ -26,15 +26,28 @@ Switched by `RateLimiting:Enabled` (default on; off in Development — see "In d
 
 | Scope | Limit | Window | Applies to |
 |---|---|---|---|
-| **Global** (safety net) | 100 requests | 10 s sliding, per IP | Everything **except** the SignalR hubs |
-| **`auth`** policy | 10 requests | 1 min fixed, per IP | `login`, `signup`, `refresh`, `verify-email`, `resend-verification` |
-| **`guest`** policy | 20 requests | 1 min fixed, per IP | `POST /api/guest-quiz-sessions` (guest session creation) |
-| **`ai`** policy | 6 requests | 1 min fixed, **per user** | `POST /api/quiz/ai-generate` only |
+| **Global**, signed in | 100 requests | 10 s sliding, **per user** | Everything except hub connection traffic |
+| **Global**, anonymous | 300 requests | 10 s sliding, per IP | Everything except hub connection traffic |
+| **`auth`** policy | 20 requests | 1 min sliding, per IP | `login`, `signup`, `external-login`/`-signup`, `validate-invite-code`, `verify-email`, `resend-verification`, password reset |
+| **`guest`** policy | 20 requests | 1 min sliding, per IP | `POST /api/guest-quiz-sessions` (guest session creation) |
+| **`ai`** policy | 6 requests | 1 min sliding, **per user** | `POST /api/quiz/ai-generate` only |
 
 - The **global** limiter is deliberately generous — normal play (loading questions, submitting
   answers) must never trip it. It only catches a single source hammering the API.
-- The **SignalR hubs** (`/quizHub`, `/notificationHub`) are exempt: rate-limiting a long-lived
-  WebSocket connection is meaningless and would break multiplayer.
+- **Signed in is counted per user, anonymous per IP** (2026-10-17). A school puts a whole class
+  behind one public IP (NAT); counted per IP, 30 students opening a quiz together — each page load is
+  several requests — overran 100 in a few seconds. Anonymous traffic keeps the IP, with more room
+  (300) because that IP may also be a whole class browsing signed out or playing as guests.
+- **`refresh` is not in `auth`** (2026-10-17). Its token is 256 random bits, so there is nothing to
+  guess, and the SPA calls it by itself — in the login bucket, a user's background refreshes ate
+  their own login attempts. The global limit still covers it.
+- **Every SignalR hub's connection traffic is exempt** — recognised by the `HubMetadata` `MapHub`
+  puts on its endpoints, not by a path list. The list this replaced missed `/hostedGameHub`.
+  **`negotiate` is still counted**: one request per new connection costs a real client nothing, and
+  it is the only cap on how fast connections can be opened — which is what bounds Screen-code
+  guessing, since a Display gets a fixed number of guesses *per connection* (ADR 0024).
+- **Sliding windows everywhere.** A fixed minute allowed the limit at 0:59 and the limit again at
+  1:00 — double, at every boundary.
 - Limits **reject immediately** (`QueueLimit = 0`) rather than queueing requests.
 - The **`ai`** policy is the one exception to per-IP partitioning — see
   ["Partitioning by user"](#partitioning-by-user) below. It is also the only limit that guards
@@ -55,8 +68,13 @@ Policies are attached per-action with `[EnableRateLimiting("...")]` using the na
 public Task<IActionResult> Login(...) { ... }
 ```
 
-`logout` and `me` are intentionally **not** rate-limited beyond the global cap (`me` is polled by the
-SPA; throttling it would break the UI).
+`logout`, `me` and `refresh` are intentionally **not** rate-limited beyond the global cap (`me` and
+`refresh` are called by the SPA on its own; throttling them would break the UI).
+
+**Per-account brute force is not covered here.** The limiter can't see the email in a login body,
+so `auth` bounds guesses per IP, not per account — someone with many IPs can still spread guesses
+across one account. Recorded in `known-issues.md`; the Cloudflare rate-limiting rule
+(`production-topology.md`, "Locking the edge") narrows it.
 
 ## Rejection behavior
 
@@ -73,16 +91,17 @@ clean user-facing notification rather than a generic error.
 
 ## Partitioning by user
 
-The **`ai`** policy partitions on the authenticated user id (`user:<guid>`), falling back to
-`ip:<addr>` for anonymous callers. Everything else partitions on IP.
+The **`ai`** policy and the **global** limiter partition on the authenticated user id
+(`user:<guid>`), falling back to `ip:<addr>` for anonymous callers. `auth` and `guest` partition on
+IP.
 
 **Why.** A school, library or office sits behind one public address (NAT), so thirty laptops look
 like a single client and share one bucket. For AI generation — plausibly most used in exactly
 those places — that means the seventh person to press the button in a minute is told to slow down
 for something they didn't do.
 
-**Why it's safe here and nowhere else.** `ai-generate` is `[Authorize]`, so the id comes from a
-signed token and a caller can't mint fresh partitions by lying. On an anonymous endpoint the IP is
+**Why it's safe.** The id comes from a signed token that authentication has already validated, so a
+caller can't mint fresh partitions by lying — a forged token is no token, and lands on the IP. On an anonymous endpoint the IP is
 the only key that can't be forged, which is why **`auth` and `guest` must stay on IP** — moving
 them would hand an attacker unlimited login attempts for the price of a new anonymous identity.
 
@@ -92,20 +111,24 @@ already guarantees.
 
 ## Trusting the client IP
 
-The IP-partitioned limits use the **real client IP**, resolved in this order (`ClientIp` in the
-extension):
+**The app reads `Connection.RemoteIpAddress` and no header** (`ClientIp`). Nginx is what makes that
+the visitor's address — [ADR 0027](../adr/0027-the-client-ip-is-resolved-at-nginx.md):
 
-1. `CF-Connecting-IP` — Cloudflare's header carrying the true visitor IP.
-2. first hop of `X-Forwarded-For` — generic proxy fallback.
-3. socket `RemoteIpAddress` — direct connection (local dev).
+1. Nginx trusts `CF-Connecting-IP` only from Cloudflare's published ranges
+   (`deploy/nginx/cloudflare-real-ip.conf`, `real_ip`). From anyone else it's ignored and the socket
+   address stands.
+2. It overwrites `X-Forwarded-For` with that one address and clears `CF-Connecting-IP`.
+3. `UseForwardedHeaders` in `Program.cs` applies it to `RemoteIpAddress`, which the limiter and the
+   audit log both read.
 
-> ⚠️ **Security note.** These headers are only trustworthy when traffic is *forced* through the proxy.
-> If the origin is reachable directly, a caller can spoof `CF-Connecting-IP` to dodge per-IP limits or
-> frame another IP. In production, **lock the origin's firewall to Cloudflare's published IP ranges**
-> so the only path in is through the edge. Without that, treat these limits as best-effort.
+So a request sent straight to the origin, with any headers it likes, is counted for its real socket
+address. This used to be the other way round — the app read `CF-Connecting-IP` itself, and a direct
+caller could choose a fresh bucket per request. The firewall restricting 443 to Cloudflare is still
+wanted, but the limiter's correctness no longer rests on it.
 
-This is also why we read the header manually instead of trusting `X-Forwarded-For` globally via
-`ForwardedHeaders` middleware — we want one explicit, auditable place that knows about Cloudflare.
+> ⚠️ **Deploy Nginx first.** An old Nginx *appends* to `X-Forwarded-For`; the backend reads the last
+> entry, a Cloudflare edge, and many visitors share one bucket. Steps in
+> [`production-topology.md`](../deployment/production-topology.md), "Locking the edge".
 
 ## In development
 
@@ -140,8 +163,11 @@ The numbers above are sensible starting points, not law. Adjust in `RateLimiting
     -H "Content-Type: application/json" -d '{"email":"x@x.com","password":"nope"}'; done
   ```
   (Local requests share one socket IP, so they all land in the same partition — expect `...200/400 × 10` then `429`.)
-- **Behind Cloudflare:** verify partitioning works per real user by confirming two different clients
-  aren't throttled together (i.e. `CF-Connecting-IP` is being honored).
+- **Behind Cloudflare:** after deploying, check the audit log for a recent action — it should show
+  your own public IP, not a Cloudflare address (`104.x`, `172.64–71.x`, `162.158/159.x`, …). That is
+  the end-to-end proof that Nginx resolved it and the app applied it.
+- **Unit tests:** `QuizAPI.Tests/Security/RateLimitPartitionTests.cs` pins the partition — per user
+  when signed in, per IP otherwise, headers ignored, hubs exempt except `negotiate`.
 
 ## Related
 

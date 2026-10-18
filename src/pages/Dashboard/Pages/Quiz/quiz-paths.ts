@@ -24,6 +24,15 @@ export function quizEditPath(
   return quiz.format === "Associations" ? `${root}/board` : root;
 }
 
+/**
+ * A quiz's own page — stats, questions, its ⋯ menu — in the given dashboard: `/dashboard/quiz/:id`
+ * for admins, `/my-dashboard/quiz/:id` for an owner. Same page component; the player route exists
+ * since 2026-10-18 (before that a player had no single-quiz page at all).
+ */
+export function quizViewPath(quiz: { id: number }, base: DashboardBase = "/dashboard"): string {
+  return `${base}/quiz/${quiz.id}`;
+}
+
 /** The dashboard the current route belongs to — so a shared component links within it. */
 export function dashboardBaseOf(pathname: string): DashboardBase {
   return pathname.startsWith("/my-dashboard") ? "/my-dashboard" : "/dashboard";
@@ -34,4 +43,13 @@ export function useQuizEditPath() {
   const { pathname } = useLocation();
   const base = dashboardBaseOf(pathname);
   return (quiz: { id: number; format: QuizFormat }) => quizEditPath(quiz, base);
+}
+
+/**
+ * Whether the current page is the admin dashboard. For things only admin tooling needs — a
+ * question's or quiz's database id, which no part of the player's app takes (Copy ID, the
+ * `ID: 665` badges on question cards). Shared components hide them in `/my-dashboard`.
+ */
+export function useIsAdminDashboard(): boolean {
+  return dashboardBaseOf(useLocation().pathname) === "/dashboard";
 }

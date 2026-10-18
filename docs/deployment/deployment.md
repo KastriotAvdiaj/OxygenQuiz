@@ -162,13 +162,15 @@ Proxy all traffic through Cloudflare (orange cloud). Free tier gives you:
 ### Layer 2 — app-level rate limiting (.NET 8 built-in) ✅ implemented
 Defense in depth for anything that slips past the edge, plus targeted protection on high-risk
 endpoints. **This is done** — full details, limits, tuning, and testing in
-[`rate-limiting.md`](../development/rate-limiting.md). In short: a generous global per-IP safety net (excluding
-the SignalR hubs), a strict `auth` policy on login/signup/refresh/email-token endpoints, and a
-`guest` policy on guest-session creation; rejections return 429 + `Retry-After`.
+[`rate-limiting.md`](../development/rate-limiting.md). In short: a generous global safety net — per user
+when signed in, per IP otherwise, hub connections exempt — a strict `auth` policy on login/signup and
+the email-token endpoints, and a `guest` policy on guest-session creation; rejections return 429 +
+`Retry-After`.
 
-⚠️ **Read the real client IP, not Cloudflare's** — the limiter partitions on `CF-Connecting-IP`, and
-in production you must **firewall the origin to Cloudflare's IP ranges** so that header can't be
-spoofed by hitting the origin directly. See [`rate-limiting.md` § Trusting the client IP](../development/rate-limiting.md).
+⚠️ **The client IP is resolved by Nginx, not the app** — Nginx trusts `CF-Connecting-IP` only from
+Cloudflare's ranges and the app reads the result ([ADR 0027](../adr/0027-the-client-ip-is-resolved-at-nginx.md)).
+**Firewall the origin to Cloudflare's ranges** as well — steps in
+[`production-topology.md`, "Locking the edge"](production-topology.md).
 
 ### Layer 3 — reverse proxy (VPS route only)
 If you self-host on a VPS, add nginx in front with `limit_req` and TLS termination.

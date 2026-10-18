@@ -157,6 +157,21 @@ only thing carrying it.
 being signed in as anyone else passes rule 4's other half, so both authenticated cases sail through
 a filter that is broken for everybody else.
 
+### Reading a quiz by id
+
+Two read endpoints take a bare id, and ids are sequential — so "you need the id" protects nothing.
+
+| Endpoint | Who gets it | Everyone else |
+|---|---|---|
+| `GET /api/quiz/{id}` — the quiz's details | Public: anyone. Draft / Unlisted: the owner, an admin, or (Unlisted only) a caller passing `?shareToken=` | 404 |
+| `GET /api/quiz/{id}/questions` — every question **with `isCorrect` on its options** | The owner or an admin, at **any** status — Public included | 404 |
+
+`/questions` is the authoring view: the quiz page and the editors read it, play never does (a
+session serves one question at a time, without the answers). Both endpoints answered 404 only for a
+Draft until 2026-10-18, which made every Public quiz's answer key one anonymous request away and
+every Unlisted quiz readable by counting ids. Pinned by `QuizAPI.Tests/Security/QuizReadAccessTests.cs`.
+404 rather than 403, so a stranger can't tell an existing id from a missing one.
+
 ## Authorization summary
 
 | Caller | Draft | Unlisted | Public |
@@ -167,6 +182,9 @@ a filter that is broken for everybody else.
 | Lobby participant (host owns the quiz) | ✅ (via lobby) | ✅ (via lobby) | ✅ |
 | Anonymous guest | ❌ | ❌ | ✅ |
 | Admin | ✅ | ✅ | ✅ |
+
+The rows are about **playing**. Reading a quiz's details and its questions by id is narrower — see
+"Reading a quiz by id" above: nobody but the owner and admins reads the questions, of any status.
 
 ## Import / export
 
@@ -190,10 +208,12 @@ Done:
   (`scope: "mine"`) alongside public ones, so an Unlisted board can be hosted for a class.
 - The multiplayer lobby's picker: a Public / My quizzes switch, so a host can pick their own
   Unlisted or Draft quiz (2026-10-17).
-- An owner's way to play their own quiz: **Play** in the quiz row's ⋯ menu and on the admin quiz
+- An owner's way to play their own quiz: **Play** in the quiz row's ⋯ menu and on the quiz
   page, offered when the quiz is Public or the viewer owns it — the client copy of
   `QuizPlayAccess.IsPlayAuthorized` (2026-10-17). No share token is needed; the owner is authorised
   without one.
 
-Nothing remaining. Players still have no single-quiz page of their own (known-issues.md), which is
-why Play and Copy share link live in the row menu.
+- A player quiz page, `/my-dashboard/quiz/:id` (2026-10-18) — the same page as the admin one, opened
+  from the row's **View** item or a click on the row; Play and Copy share link are in its ⋯ menu too.
+
+Nothing remaining.

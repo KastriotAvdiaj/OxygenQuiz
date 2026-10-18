@@ -145,8 +145,10 @@ public class AuthenticationController(
         return Ok(result.Response);
     }
 
+    // Global limit only, not AuthPolicy: the refresh token is 256 random bits — nothing to guess —
+    // and the SPA calls this by itself, so in the login bucket a user's background refreshes ate
+    // their own login attempts (and a classroom's, on one IP). docs/development/rate-limiting.md.
     [HttpPost("refresh")]
-    [EnableRateLimiting(RateLimitingExtensions.AuthPolicy)]
     public async Task<IActionResult> Refresh(CancellationToken ct)
     {
         var raw = Request.Cookies[RefreshCookieName];

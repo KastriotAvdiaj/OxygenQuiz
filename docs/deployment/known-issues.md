@@ -16,7 +16,41 @@ Auth-specific enhancements are tracked in [authentication.md](../auth/authentica
 
 ---
 
+## Open exploits
+
+None open in code. The fix below is live only once the backend is rebuilt on the VPS.
+
+
+- ~~**P1 — Answer keys and Unlisted quizzes are readable anonymously by id (found 2026-10-18).**~~
+  **Fixed 2026-10-18** — `/questions` is owner/admin only at any status, `/{id}` opens a non-Public
+  quiz only to its owner, an admin or its share token; both answer 404 otherwise
+  (`QuizReadAccessTests`, `quiz-visibility.md` "Reading a quiz by id"). Live once the backend is
+  rebuilt. Was:
+  `GET /api/quiz/{id}` and `GET /api/quiz/{id}/questions` refuse only a **Draft** to non-owners.
+  Verified in production: `/api/quiz/20/questions`, signed out, returns every question with
+  `answerOptions[].isCorrect` — the answer key of any Public quiz. And because ids are sequential, the
+  same two calls hand anyone the title, description and full content of every **Unlisted** quiz,
+  which defeats "only people with the link". Playing is not affected (`QuizPlayAccess` still needs
+  the token). The only client of `/questions` is the owner/admin quiz page.
+  → `OxygenBackend/QuizAPI/Controllers/Quizzes/QuizzesController.cs` (`GetQuizById`,
+  `GetQuizQuestions`)
+
 ## Security hardening (defense-in-depth — no known active exploit)
+
+- ~~**P2 — The origin answers on its bare IP (found 2026-10-17).**~~ **Fixed 2026-10-18** — Hetzner
+  firewall `firewall-1` allows 80/443 from Cloudflare's ranges only (22 open, key-only); the bare-IP
+  `curl.exe -k` now times out, and the API still answers through Cloudflare. Was: 80/443 accepted anyone, so
+  `curl -k https://89.167.23.147 -H "Host: api.oxygenquiz.com"` reaches the API without Cloudflare.
+  The rate limiter no longer trusts headers a direct caller could forge (ADR 0027), so this is now a
+  "keeps floods and scanners off the box" item rather than a limiter bypass. Fix: the Hetzner Cloud
+  Firewall steps in `production-topology.md`, "Locking the edge".
+  → Hetzner Console (no code)
+- **P3 — No per-account login throttle (found 2026-10-17).** The `auth` policy bounds attempts per
+  IP; the limiter can't see the email in the body, so guesses spread across many IPs against one
+  account aren't slowed. Deferred: needs a failed-attempt counter per account in
+  `AuthenticationService.LoginAsync` (with a lockout that can't be used to lock someone else out).
+  The Cloudflare edge rule narrows it meanwhile.
+  → `OxygenBackend/QuizAPI/Services/AuthenticationService/AuthenticationService.cs`
 
 - ~~**P1 — `UserAnswersController` had no authorization at all.**~~ **Fixed 2026-09-26.** No
   `[Authorize]` on the class and no global fallback policy, so `GET /api/useranswers/session/{id}`
@@ -1189,7 +1223,9 @@ fixed; these were left.
   2026-09-23.** The player dashboard mounts the editors at `/my-dashboard/quizzes/edit/:id` (and
   `…/board`); the shared table links within its own dashboard (`useQuizEditPath`). Only an owner
   can save — unchanged, that was always the API's rule. See docs/quiz/quiz-editing.md.
-- **P3 — Players have no single-quiz page.** `/dashboard/quiz/:id` (stats, board preview) is in the
+- ~~**P3 — Players have no single-quiz page.**~~ **Fixed 2026-10-18** — `/my-dashboard/quiz/:id`
+  mounts the same page; View and a row click open it ([`quiz-analytics-page.md`](../quiz/quiz-analytics-page.md),
+  "Two dashboards, one page"). Was: `/dashboard/quiz/:id` (stats, board preview) is in the
   admin dashboard only, so "My quizzes" hides the table's View item rather than link to a 404. An
   owner-facing version would need the analytics endpoint's owner scoping (it has it) and a
   player-dashboard route. Until then the row menu carries **Play** and **Copy share link**

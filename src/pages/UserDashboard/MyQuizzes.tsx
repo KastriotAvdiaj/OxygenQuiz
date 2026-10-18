@@ -12,6 +12,8 @@ import { useQuestionCategoryData } from "@/pages/Dashboard/Pages/Question/Entiti
 import { useQuestionDifficultyData } from "@/pages/Dashboard/Pages/Question/Entities/Difficulty/api/get-question-difficulties";
 import { useQuestionLanguageData } from "@/pages/Dashboard/Pages/Question/Entities/Language/api/get-question-language";
 import { CreateQuizMethodDialog } from "@/pages/Dashboard/Pages/Quiz/components/create-quiz-method-dialog";
+import { quizViewPath } from "@/pages/Dashboard/Pages/Quiz/quiz-paths";
+import { useNavigate } from "react-router-dom";
 import { HEADER_ACTION_FACE } from "@/pages/Dashboard/Pages/Quiz/components/header-action-face";
 import { LiftedButton } from "@/common/LiftedButton";
 import { cn } from "@/utils/cn";
@@ -26,6 +28,7 @@ import {
 
 export const MyQuizzes = () => {
   // Same filter state as the admin page, minus the author filter (these are the user's own).
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
   const [categoryIds, setCategoryIds] = useState<number[]>([]);
@@ -146,7 +149,13 @@ export const MyQuizzes = () => {
               </div>
             ) : (
               <>
-                <DataTable data={quizzes} columns={quizColumns} density="compact" />
+                {/* A click anywhere on the row opens the quiz; the ⋯ menu keeps its own clicks. */}
+                <DataTable
+                  data={quizzes}
+                  columns={quizColumns}
+                  density="compact"
+                  onRowClick={(quiz) => navigate(quizViewPath(quiz, "/my-dashboard"))}
+                />
                 {/* This page fetches one server page of 10 but had no pager of its own — the
                     only paging control was DataTable's internal one, which never moved past
                     the 10 rows already on screen, so quiz 11 onwards was unreachable. */}
