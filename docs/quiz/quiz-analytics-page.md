@@ -311,8 +311,12 @@ miss), in `text-foreground/70` with the current page in full `text-foreground` �
   layers overlapping and `pointer-events: none` stuck on `<body>`. The data-table row does the
   same thing for the same reason.
 
-Publish/Unpublish carries its consequence as a sub-line in the item rather than a tooltip: a
-tooltip inside an open Radix menu fights the menu for the same hover.
+**The ⋯ menu is one plain list** (2026-10-20), here and on the quiz rows: no separators, and
+Publish/Unpublish is a single line like every other item. The separators fell between some items
+and not others, and the grey line under Unpublish ("Back to draft — only you see it") made one item
+twice as tall as the rest; Delete last and in red is grouping enough. Play uses `CirclePlay`, which
+matches the outlined icons around it, rather than the bare `Play` triangle. No tooltips inside the
+menu: a tooltip in an open Radix menu fights the menu for the same hover.
 
 `BlobLoader` is the loader in all three loading states (page, analytics, questions) — not
 `Spinner`, which this page was written against before the app had its own loader. (It was
