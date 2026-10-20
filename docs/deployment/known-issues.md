@@ -558,7 +558,10 @@ timeLimit` points, i.e. ~33 pts on a 30s question but ~100 pts (10% of base) on 
   reload doesn't help until the browser's cache is cleared. Deferred: the fix is answering `/_app/`
   misses with a 404 through the Worker, which bills every asset request; the case needs a rollback
   *and* a tab that stayed open across the deploy. → `wrangler.jsonc`, `worker/index.js`
-- **P2 — `www.oxygenquiz.com` is down (found 2026-10-20).** It answers Cloudflare **522** (Cloudflare
+- ~~**P2 — `www.oxygenquiz.com` is down (found 2026-10-20).**~~ **Fixed 2026-10-20** — a Cloudflare
+  Redirect Rule ("Redirect from WWW to root" template: `https://www.*` → `https://${1}`, 301, query
+  string preserved) sends every `www` URL to the apex; checked with
+  `www.oxygenquiz.com/choose-quiz?category=History` landing on the apex with the filter applied. Was: It answers Cloudflare **522** (Cloudflare
   reached for an origin server and got no answer), so `www` is not served by the Worker as
   `production-topology.md` used to say. Its DNS record is a proxied `CNAME www → oxygenquiz.com`
   (checked 2026-10-20), but the apex is a Worker *custom domain*, which answers for that exact
