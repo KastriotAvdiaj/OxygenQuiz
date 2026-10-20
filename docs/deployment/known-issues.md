@@ -558,6 +558,18 @@ timeLimit` points, i.e. ~33 pts on a 30s question but ~100 pts (10% of base) on 
   reload doesn't help until the browser's cache is cleared. Deferred: the fix is answering `/_app/`
   misses with a 404 through the Worker, which bills every asset request; the case needs a rollback
   *and* a tab that stayed open across the deploy. → `wrangler.jsonc`, `worker/index.js`
+- **P2 — `www.oxygenquiz.com` is down (found 2026-10-20).** It answers Cloudflare **522** (Cloudflare
+  reached for an origin server and got no answer), so `www` is not served by the Worker as
+  `production-topology.md` used to say — it has a proxied DNS record pointing at some origin, most
+  likely an old one. Anyone typing `www.` sees an error page, and search engines see two hosts.
+  Fix (dashboard, no code): a **Redirect Rule** sending `www.oxygenquiz.com/*` to
+  `https://oxygenquiz.com/${1}` with a 301, keeping the query string (Rules → Redirect Rules, the
+  "Redirect from WWW to root" template). It runs at Cloudflare's edge before any origin is asked,
+  so the dead target stops mattering; the `www` DNS record must stay proxied (orange cloud) for the
+  rule to see the request. Then check `curl -sI https://www.oxygenquiz.com/choose-quiz` returns
+  `301` with `location: https://oxygenquiz.com/choose-quiz`. The quiz listing's canonical URLs are
+  on the apex, so this also settles which host search engines index.
+  → Cloudflare dashboard (oxygenquiz.com zone)
 - **P3 — Wrangler isn't pinned (2026-10-18).** It isn't in `package.json`, so Workers Builds' `npx
   wrangler deploy` uses whatever is latest. `assets.run_worker_first` as a path list needs a 2025+
   Wrangler; `wrangler deploy --dry-run` with 4.151 accepts it. Pin it as a devDependency the next
