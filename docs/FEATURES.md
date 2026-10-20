@@ -84,7 +84,7 @@ Teachers only, while it is tested. **Not shipped** = built in part, not reachabl
 | Quiz cards | Live | Each card in its category's colour palette; admins set palettes, optionally with AI-proposed options. | [quiz-card.md](quiz/quiz-card.md), [category-palettes.md](entities/category-palettes.md) |
 | Share links | Live | An Unlisted quiz is reached only by an unguessable link (sign-in required to play). | [quiz-visibility.md](quiz/quiz-visibility.md) |
 | Link previews | Live | A shared link previews in WhatsApp, Discord, Slack and X with the quiz's own title and description, filled in by a Cloudflare Worker; never indexed by search engines. | [frontend-worker.md](deployment/frontend-worker.md) |
-| Quiz page per quiz for search | Planned | A public, indexable page per Public quiz plus a sitemap. Design agreed 2026-10-20. | [known-issues.md](deployment/known-issues.md) |
+| Quiz page per quiz for search | Planned | A public, indexable page per Public quiz plus a sitemap. Design agreed 2026-10-20. | [quiz-listing.md](quiz/quiz-listing.md), [ADR 0028](adr/0028-the-worker-renders-the-quiz-listing-for-crawlers.md), [known-issues.md](deployment/known-issues.md) |
 
 ## Accounts
 

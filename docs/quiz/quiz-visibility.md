@@ -91,8 +91,8 @@ Releasing a format is removing it from that array (and from `PREVIEW_FORMATS` on
 which only decides what to offer). See [associations.md](associations.md), "Admins only, for now".
 
 ### Unlisted via share link
-- The owner gets the link from **Copy share link** — in the quiz row's ⋯ menu (both dashboards; a
-  player's only route, since players have no single-quiz page) or the admin quiz page's ⋯ menu. It
+- The owner gets the link from **Copy share link** — in the quiz row's ⋯ menu (both dashboards) or
+  the single-quiz page's ⋯ menu (`/dashboard/quiz/:id` and, since 2026-10-18, `/my-dashboard/quiz/:id`). It
   is offered on the owner's own non-Draft quizzes only (`use-copy-share-link.ts`).
 - That calls `POST /api/quiz/{id}/share-link` to lazily generate (and thereafter reuse) an
   unguessable `ShareToken`. The token is only ever returned to the owner.

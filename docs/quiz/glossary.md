@@ -20,6 +20,25 @@ _Avoid_: normal quiz, basic quiz, standard quiz
 The format played on a single Board, modelled on the final of the TV show *Oxygen*.
 _Avoid_: Asocijacije, association quiz, connections
 
+## Pages about one quiz
+
+**Quiz listing**:
+The public page for one Public quiz, at `/q/:id/:slug` — title, description, the facts and a Play
+button, the same for every visitor. It exists for search engines and for links to a Public quiz;
+the catalogue still opens the start modal. See [`quiz-listing.md`](./quiz-listing.md).
+_Avoid_: quiz page (ambiguous with the Single-quiz page), landing page, quiz detail page, public
+quiz page
+
+**Single-quiz page**:
+The owner's and admins' page for one quiz — its stats, questions and actions — at
+`/my-dashboard/quiz/:id` and `/dashboard/quiz/:id`. See
+[`quiz-analytics-page.md`](./quiz-analytics-page.md).
+_Avoid_: quiz page, quiz view, analytics page (fine in prose for what the page shows)
+
+**Start modal**:
+The dialog a catalogue card opens to read a quiz before playing it (`quiz-start-modal.tsx`).
+_Avoid_: quiz preview (a link preview is the card a chat app draws), quiz details dialog
+
 ## Associations
 
 **Board**:
