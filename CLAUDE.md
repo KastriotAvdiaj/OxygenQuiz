@@ -13,6 +13,9 @@ edit); `docs/<area>/*.md` for how something behaves today;
 `docs/deployment/known-issues.md` for something real, found, and deliberately deferred; a
 doc comment for reasoning that only makes sense beside the code.
 
+A change to what a user can do also updates its row in `docs/FEATURES.md`, the one list of
+every feature (the README and job applications are taken from it).
+
 Not for renames, typos, or anything a reader gets from the diff. Plan docs (`*-plan.md`)
 are transient: fold what is still true into the feature doc and delete the plan.
 

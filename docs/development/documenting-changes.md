@@ -63,6 +63,7 @@ proposals. Check for references first: source comments cite these by section num
 | File | Answers | Edited? |
 |---|---|---|
 | `README.md` §Architecture | How do I run and deploy this? | Freely |
+| `docs/FEATURES.md` | What can a user do, and how well is it built? The source for the README, CVs and interviews. | With every change that adds, removes or changes a feature |
 | `docs/<area>/*.md` | How does this behave **today**? | Freely — describes the present |
 | `docs/adr/*.md` | **Why** is it like this, and what did we reject? | Never — supersede instead |
 | `docs/deployment/known-issues.md` | What do we know is wrong and chose not to fix? | Append; strike through when fixed |
