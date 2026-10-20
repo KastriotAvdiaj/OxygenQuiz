@@ -168,8 +168,9 @@ export const QuizRoute = () => {
   return (
     // <b>The card is the width of what is in it.</b> Constraining the inner content box was
     // half a fix: the card still spanned the viewport, so the content sat centred inside a
-    // frame with a wide empty band down each side. The measure now applies to the card, so the
-    // border tracks the content instead of the window.
+    // frame with a wide empty band down each side. The measure now applies to the wrapper that
+    // holds the breadcrumb and the card, so the border tracks the content instead of the window
+    // and the breadcrumb lines up with the card's left edge.
     //
     // Two measures, because the page has two shapes. Stacked (below `xl`) the widest element is
     // the six-column question row and `max-w-5xl` is right. Split into columns (from `xl`) the
@@ -180,7 +181,34 @@ export const QuizRoute = () => {
     // carries the quiz's name. Nobody looking at a quiz needs its primary key, and two
     // headings for one page is one too many. `ContentLayout` drops the header bar entirely
     // when no title is passed.
-    <ContentLayout className="mx-auto max-w-5xl xl:max-w-7xl">
+    <div className="mx-auto w-full max-w-5xl xl:max-w-7xl">
+      {/* <b>A way back up, not just back.</b> The header's Back is browser history — it goes
+          wherever you came from, which is not always the list (a share, a bookmark, a play).
+          Two levels is all this needs: the section, then where you are.
+
+          <b>Above the card, not in it.</b> It is page navigation, not part of what the card
+          shows, and inside the card it sat in muted grey on white above a large title and was
+          easy to miss. On the dashboard's muted background it is set darker than
+          `text-muted-foreground`, which is too close to that background to read. */}
+      <nav aria-label="Breadcrumb" className="mt-4">
+        <ol className="flex min-w-0 items-center gap-1.5 text-sm text-foreground/70">
+          <li>
+            <Link
+              to={`${base}/quizzes`}
+              className="rounded transition-colors duration-150 hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            >
+              {base === "/my-dashboard" ? "My Quizzes" : "Quizzes"}
+            </Link>
+          </li>
+          <li aria-hidden="true">
+            <ChevronRight className="h-3.5 w-3.5" />
+          </li>
+          <li aria-current="page" className="min-w-0 truncate font-medium text-foreground">
+            {quiz.title}
+          </li>
+        </ol>
+      </nav>
+    <ContentLayout className="mt-3">
       {/* Controlled, and rendered outside the menu on purpose (see `DeleteQuiz`). */}
       <DeleteQuiz
         open={deleteOpen}
@@ -191,27 +219,6 @@ export const QuizRoute = () => {
         id={quiz.id}
       />
 
-      {/* <b>A way back up, not just back.</b> The header's Back is browser history — it goes
-          wherever you came from, which is not always the list (a share, a bookmark, a play).
-          Two levels is all this needs: the section, then where you are. */}
-      <nav aria-label="Breadcrumb" className="mb-4">
-        <ol className="flex min-w-0 items-center gap-1.5 text-sm text-muted-foreground">
-          <li>
-            <Link
-              to={`${base}/quizzes`}
-              className="rounded transition-colors duration-150 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-            >
-              {base === "/my-dashboard" ? "My Quizzes" : "Quizzes"}
-            </Link>
-          </li>
-          <li aria-hidden="true">
-            <ChevronRight className="h-3.5 w-3.5" />
-          </li>
-          <li aria-current="page" className="min-w-0 truncate text-foreground">
-            {quiz.title}
-          </li>
-        </ol>
-      </nav>
 
       {/* <b>Two columns from `xl` up: what the quiz IS on the left, what its questions DID on
           the right.</b> Stacked, a 15-question quiz pushes the whole left-hand story — title,
@@ -428,6 +435,7 @@ export const QuizRoute = () => {
         <p className="text-xs text-muted-foreground">Version {quiz.version}</p>
       </footer>
     </ContentLayout>
+    </div>
   );
 };
 

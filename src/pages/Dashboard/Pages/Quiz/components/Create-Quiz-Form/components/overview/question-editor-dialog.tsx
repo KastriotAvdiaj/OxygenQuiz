@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
 
 import { LiftedButton } from "@/common/LiftedButton";
 import { Button } from "@/components/ui/button";
@@ -146,7 +146,12 @@ export const QuestionEditorDialog = ({
                 <ChevronLeft className="h-4 w-4" />
                 Previous
               </Button>
-              <LiftedButton type="button" onClick={() => onQuestionChange(null)} className="px-6">
+              <LiftedButton
+                type="button"
+                onClick={() => onQuestionChange(null)}
+                className="flex items-center gap-2 px-6"
+              >
+                <Check className="h-4 w-4" aria-hidden="true" />
                 Done
               </LiftedButton>
               <Button
