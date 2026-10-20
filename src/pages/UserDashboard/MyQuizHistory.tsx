@@ -15,7 +15,7 @@ import {
   useQuizHistory,
 } from "@/pages/UserRelated/Profile/components/QuizHistoryList";
 import { QuizHistoryFilterPanel } from "@/pages/UserRelated/Profile/components/quiz-history-filters";
-import { SegmentedControl } from "@/components/ui/segmented-control";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MultiplayerHistory } from "./multiplayer-history";
 
 /**
@@ -47,35 +47,14 @@ const HISTORY_TABS: { value: HistoryTab; label: string }[] = [
  */
 export const MyQuizHistory = () => {
   const { data: user } = useUser();
-  const [tab, setTab] = useState<HistoryTab>("single");
-  const tabs = (
-    <SegmentedControl
-      aria-label="Which plays to list"
-      value={tab}
-      onValueChange={setTab}
-      options={HISTORY_TABS}
-      className="mb-4"
-    />
-  );
 
   return (
     <div className="container mx-auto py-8 px-4 md:px-0">
       {/* The route is behind `userAuthLoader`, so an absent user here means the profile
           request is still in flight rather than a signed-out visitor. */}
-      {!user?.id ? null : tab === "single" ? (
-        <HistoryWorkspace userId={user.id} tabs={tabs} />
+      {user?.id ? (
+        <HistoryPage userId={user.id} />
       ) : (
-        <>
-          <div className="mb-6 space-y-1">
-            <h1 className="text-3xl font-bold">Quiz History</h1>
-          </div>
-          {tabs}
-          <Card className="p-6 bg-card border dark:border-foreground/30 space-y-4">
-            <MultiplayerHistory userId={user.id} />
-          </Card>
-        </>
-      )}
-      {user?.id ? null : (
         <div className="flex justify-center items-center py-16">
           <BlobLoader size="md" />
         </div>
@@ -84,7 +63,15 @@ export const MyQuizHistory = () => {
   );
 };
 
-const HistoryWorkspace = ({ userId, tabs }: { userId: string; tabs: React.ReactNode }) => {
+/**
+ * One header and one `Tabs` for both tabs, so switching only swaps what is under the tabs. Each
+ * tab used to render its own header and its own tab control: the multiplayer one had lost the
+ * description line, and because the control was remounted on every switch its pill had nothing
+ * to slide from. The single-player history state lives here too, so its filters and page survive
+ * a trip to the other tab.
+ */
+const HistoryPage = ({ userId }: { userId: string }) => {
+  const [tab, setTab] = useState<HistoryTab>("single");
   // Matches are the other tab's, listed by lobby — so this list leaves them out.
   const history = useQuizHistory(userId, { singlePlayerOnly: true });
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -107,7 +94,7 @@ const HistoryWorkspace = ({ userId, tabs }: { userId: string; tabs: React.ReactN
             Every quiz you've played. Select one to review your answers.
           </p>
         </div>
-        {!history.hasNoPlays && (
+        {tab === "single" && !history.hasNoPlays && (
           <QuizHistoryFilterButton
             className="lg:hidden"
             count={history.filters.activeCount}
@@ -116,27 +103,43 @@ const HistoryWorkspace = ({ userId, tabs }: { userId: string; tabs: React.ReactN
         )}
       </div>
 
-      {tabs}
+      <Tabs value={tab} onValueChange={(value) => setTab(value as HistoryTab)}>
+        <TabsList aria-label="Which plays to list" className="mb-6">
+          {HISTORY_TABS.map((t) => (
+            <TabsTrigger key={t.value} value={t.value}>
+              {t.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
 
-      {history.hasNoPlays ? (
-        <Card className="p-6 bg-card border dark:border-foreground/30">
-          <QuizHistoryEmpty />
-        </Card>
-      ) : (
-        <div className="flex gap-6 items-start">
-          <div className="flex-1 min-w-0">
-            <Card className="p-6 bg-card border dark:border-foreground/30 space-y-4">
-              <QuizHistoryToolbar history={history} showSearch={false} />
-              <QuizHistoryResults history={history} tone="primary" />
+        <TabsContent value="single" className="mt-0">
+          {history.hasNoPlays ? (
+            <Card className="p-6 bg-card border dark:border-foreground/30">
+              <QuizHistoryEmpty />
             </Card>
-          </div>
+          ) : (
+            <div className="flex gap-6 items-start">
+              <div className="flex-1 min-w-0">
+                <Card className="p-6 bg-card border dark:border-foreground/30 space-y-4">
+                  <QuizHistoryToolbar history={history} showSearch={false} />
+                  <QuizHistoryResults history={history} tone="primary" />
+                </Card>
+              </div>
 
-          {/* Same sticky sidebar as My Quizzes. */}
-          <aside className="hidden lg:block w-80 xl:w-[350px] shrink-0 sticky top-6 self-start max-h-[calc(100vh-3rem)] overflow-y-auto pl-1">
-            {filterPanel}
-          </aside>
-        </div>
-      )}
+              {/* Same sticky sidebar as My Quizzes. */}
+              <aside className="hidden lg:block w-80 xl:w-[350px] shrink-0 sticky top-6 self-start max-h-[calc(100vh-3rem)] overflow-y-auto pl-1">
+                {filterPanel}
+              </aside>
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="multiplayer" className="mt-0">
+          <Card className="p-6 bg-card border dark:border-foreground/30 space-y-4">
+            <MultiplayerHistory userId={userId} />
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
         <SheetContent side="right" className="w-[350px] sm:max-w-md overflow-y-auto">
