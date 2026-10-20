@@ -126,7 +126,7 @@ Teachers only, while it is tested. **Not shipped** = built in part, not reachabl
 | | Count | How to recount |
 |---|---|---|
 | Backend test cases | ~630 `[Fact]`/`[Theory]` | `grep -rE '^\s*\[(Fact\|Theory)' OxygenBackend/QuizAPI.Tests --include=*.cs \| wc -l` |
-| Frontend unit tests | 297 in 44 files | `npx vitest run --project unit` |
+| Frontend unit tests | 301 in 45 files | `npx vitest run --project unit` |
 | End-to-end tests | 10 in 4 specs | `grep -rhoE '^\s*test\(' e2e --include=*.spec.ts \| wc -l` |
 | EF Core migrations | 34 | `ls OxygenBackend/QuizAPI/Migrations/*.cs \| grep -v -e Designer -e Snapshot \| wc -l` |
 | ADRs | 30 | `ls docs/adr/*.md \| wc -l` |
