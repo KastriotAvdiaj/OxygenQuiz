@@ -545,11 +545,37 @@ timeLimit` points, i.e. ~33 pts on a 30s question but ~100 pts (10% of base) on 
   catalogue is one URL. Needs a public quiz landing page plus a `sitemap.xml` of Public quizzes,
   with the Worker filling its tags the same way it does for shared links. Deferred: it is a product
   feature, not a fix.
-- **P3 — Hashed build files aren't cached long-term (2026-10-18).** Vite writes its content-hashed
-  output to `dist/assets/`, and `public/assets/` (unhashed images) lands in the same folder, so an
-  `immutable` rule on `/assets/*` would freeze a replaced image for a year. Fix: set
-  `build.assetsDir` in `vite.config.ts` to its own folder (e.g. `_app`) and give that the rule in
-  `public/_headers`.
+- ~~**P3 — Hashed build files aren't cached long-term (2026-10-18).**~~ **Fixed 2026-10-18** — the
+  build writes to `dist/_app/` (`build.assetsDir`) and `public/_headers` caches `/_app/*` for a year,
+  `immutable`; `/assets/*` and `index.html` still revalidate (`frontend-worker.md`, "Caching";
+  `build-cache.test.ts`). Was: Vite's hashed output and `public/assets/` (unhashed images) shared
+  `dist/assets/`, so an `immutable` rule there would have frozen a replaced image for a year.
+- **P3 — A rollback can leave a stale tab's browser holding HTML at a chunk URL (2026-10-18).** A
+  missing `/_app/` file is answered with `index.html` *and* the immutable header (the SPA fallback
+  answers every unknown path; `run_worker_first` as a path list turns off its navigation-only mode).
+  Harmless while that chunk name stays dead. If a version containing it is promoted again, a browser
+  that asked for it in between keeps getting HTML for it — the page shows `StaleVersionNotice`, and a
+  reload doesn't help until the browser's cache is cleared. Deferred: the fix is answering `/_app/`
+  misses with a 404 through the Worker, which bills every asset request; the case needs a rollback
+  *and* a tab that stayed open across the deploy. → `wrangler.jsonc`, `worker/index.js`
+- ~~**P2 — `www.oxygenquiz.com` is down (found 2026-10-20).**~~ **Fixed 2026-10-20** — a Cloudflare
+  Redirect Rule ("Redirect from WWW to root" template: `https://www.*` → `https://${1}`, 301, query
+  string preserved) sends every `www` URL to the apex; checked with
+  `www.oxygenquiz.com/choose-quiz?category=History` landing on the apex with the filter applied. Was: It answers Cloudflare **522** (Cloudflare
+  reached for an origin server and got no answer), so `www` is not served by the Worker as
+  `production-topology.md` used to say. Its DNS record is a proxied `CNAME www → oxygenquiz.com`
+  (checked 2026-10-20), but the apex is a Worker *custom domain*, which answers for that exact
+  hostname only — so Cloudflare follows the CNAME, finds no origin behind it, and times out. Anyone
+  typing `www.` sees an error page, and search engines see two hosts.
+  Fix (dashboard, no code): a **Redirect Rule** sending `www.oxygenquiz.com/*` to
+  `https://oxygenquiz.com/${1}` with a 301, keeping the query string (Rules → Redirect Rules, the
+  "Redirect from WWW to root" template). It runs at Cloudflare's edge before any origin is asked,
+  so the dead target stops mattering; keep the CNAME proxied (orange cloud) or the rule never sees
+  the request. Deploying the rule warns that `www` "may not be proxied" — a false alarm with this
+  CNAME: choose *Ignore and deploy rule anyway*, not *Create a new proxied DNS record*. Then check `curl -sI https://www.oxygenquiz.com/choose-quiz` returns
+  `301` with `location: https://oxygenquiz.com/choose-quiz`. The quiz listing's canonical URLs are
+  on the apex, so this also settles which host search engines index.
+  → Cloudflare dashboard (oxygenquiz.com zone)
 - **P3 — Wrangler isn't pinned (2026-10-18).** It isn't in `package.json`, so Workers Builds' `npx
   wrangler deploy` uses whatever is latest. `assets.run_worker_first` as a path list needs a 2025+
   Wrangler; `wrangler deploy --dry-run` with 4.151 accepts it. Pin it as a devDependency the next

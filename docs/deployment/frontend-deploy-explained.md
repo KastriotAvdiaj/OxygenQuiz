@@ -194,6 +194,11 @@ Deploying then **promotes** one version to be the active one. The live domain al
 version. This is also why rollbacks are easy: in the dashboard you can promote an older version back to
 active without rebuilding anything.
 
+One caveat since the build's files are cached for a year: a browser whose tab stayed open across the
+newer deploy may hold `index.html` cached under one of the older version's chunk URLs, and keep
+failing to load it after the rollback until its cache is cleared. Rare; see
+[`frontend-worker.md`](frontend-worker.md), "Caching".
+
 ### The other deploy path: the Git-connected build
 
 There are **two** ways this project can deploy, and they do the same thing:

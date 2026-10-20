@@ -18,7 +18,7 @@ Verified against the live server on 2026-08-29 (`docker ps`, `systemctl status n
       ┌─────────────────┴──────────────────┐
       │                                    │
   oxygenquiz.com                    api.oxygenquiz.com
-  www.oxygenquiz.com                        │
+  (www.* → 301 to apex)                     │
       │                                     │
   Cloudflare Workers                   Hetzner VPS
   (worker name: "oxygenquiz")               │
@@ -43,6 +43,7 @@ Facts that pin this down, so a future reader can re-verify rather than trust the
 | Backend port | `127.0.0.1:5000 -> 8080` — localhost only, never exposed publicly |
 | TLS / reverse proxy | **nginx**, installed on the host as a system package (`systemctl status nginx`), *not* in Docker. Caddy is not installed at all. |
 | Frontend host | **Cloudflare Workers**, not the VPS. The VPS serves no static files. |
+| `www.oxygenquiz.com` | **301 to the apex**, query string kept — a Cloudflare Redirect Rule ("Redirect from WWW to root", `https://www.*` → `https://${1}`), since 2026-10-20. The DNS record is a proxied `CNAME → oxygenquiz.com` and must stay proxied: the rule only sees proxied traffic, and there is no origin behind it (the apex's Worker custom domain covers the apex only — without the rule, `www` answers 522). |
 | Frontend → API | `VITE_API_URL=https://api.oxygenquiz.com/api`, baked into the bundle at build time (`.env.production`) |
 
 Because the frontend is on Workers and the API is on the VPS, **every browser call is

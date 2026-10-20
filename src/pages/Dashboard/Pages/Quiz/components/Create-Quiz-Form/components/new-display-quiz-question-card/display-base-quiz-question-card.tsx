@@ -57,15 +57,13 @@ export const BaseQuestionFormCard: React.FC<BaseQuestionFormCardProps> = ({
       className={`bg-background border border-l-[3px] ${borderColor} dark:bg-muted/30 ${backgroundColor} relative overflow-hidden`}
       style={
         {
-          backgroundImage: `url('/src/assets/classroom.png')`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          backgroundRepeat: "no-repeat",
           ...(fieldAccent ? { "--field-accent": fieldAccent } : {}),
         } as React.CSSProperties
       }
     >
-      {/* Optional: Add overlay for better text readability */}
+      {/* A light wash over the card's type tint. It once sat over a background photo that never
+          loaded (its path pointed at a src/assets/ folder that doesn't exist); the photo is gone,
+          the wash is what the card has always looked like. */}
       <div className="absolute inset-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-[1px]" />
 
       {/* Dark-mode only: a very slight wash of the question type's color over the readability

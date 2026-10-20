@@ -26,6 +26,7 @@ import { Switch } from "@/components/ui/switch";
 import { Input, Label } from "@/components/ui/form";
 import { QuizCard } from "@/pages/Quiz/components/quiz-card";
 import type { QuizSummaryDTO } from "@/types/quiz-types";
+import { DEFAULT_QUIZ_PALETTE } from "@/pages/Quiz/components/quiz-palette";
 import { PaletteSuggestions } from "./palette-suggestions";
 
 interface ColorPaletteInputProps {
@@ -232,7 +233,7 @@ export const ColorPaletteInput: React.FC<ColorPaletteInputProps> = ({
                       category: category || "Category Name",
                       difficulty: "Medium",
                       colorPaletteJson: JSON.stringify(
-                        validColors.length ? validColors : ["#6366f1"]
+                        validColors.length ? validColors : [...DEFAULT_QUIZ_PALETTE]
                       ),
                       timeLimitInSeconds: 300,
                       questionCount: 12,
