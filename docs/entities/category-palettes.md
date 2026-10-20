@@ -16,7 +16,13 @@ Category.ColorPaletteJson  →  every quiz in that category  →  QuizCard, star
 
 `CreateQuizInput` has no palette field. Everything that paints itself with a quiz's colour goes
 through `parseQuizPalette` in `src/pages/Quiz/components/quiz-palette.ts`, which falls back to
-`DEFAULT_QUIZ_PALETTE` (`#6366f1 / #3b82f6 / #06b6d4`) on a missing or malformed value.
+`DEFAULT_QUIZ_PALETTE` on a missing or malformed value: the app's primary blue (`#2563eb`, the
+light theme's `--primary`) and two lighter steps of it (`#3b82f6 / #60a5fa`). It is hex rather
+than the CSS variable because the helpers do contrast maths on it; `quiz-palette-default.test.ts`
+fails if it drifts from `--primary`. Until 2026-10-20 the default was an unrelated indigo
+(`#6366f1`), and the lobby picker and the category editor's preview each hard-coded their own copy
+of it — both now go through `quiz-palette.ts` too. (`src/common/ColouredCard.tsx` still carries the
+old indigo; nothing renders it.)
 
 A palette is **2–5 hex colours** plus a `gradient` boolean, edited in `color-palette-input.tsx`
 with a live `QuizCard` preview.

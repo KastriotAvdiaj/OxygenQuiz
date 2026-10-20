@@ -35,6 +35,7 @@ import {
   type QuizFilterSelections,
 } from "@/pages/Quiz/components/quiz-filters";
 import { motion, AnimatePresence } from "framer-motion";
+import { parseQuizPalette } from "@/pages/Quiz/components/quiz-palette";
 
 /** The two lists a host picks from: the public catalogue, or their own quizzes (any status). */
 export type LobbyQuizScope = "public" | "mine";
@@ -233,15 +234,7 @@ export const QuizSelectionDialogView = ({
               <AnimatePresence mode="popLayout">
                 {quizzes.map((quiz) => {
                   const isSelected = selectedQuiz?.id === quiz.id.toString();
-                  const primaryColor = (() => {
-                    try {
-                      return quiz.colorPaletteJson
-                        ? (JSON.parse(quiz.colorPaletteJson) as string[])[0]
-                        : "#6366f1";
-                    } catch {
-                      return "#6366f1";
-                    }
-                  })();
+                  const primaryColor = parseQuizPalette(quiz.colorPaletteJson)[0];
 
                   return (
                     <motion.button
