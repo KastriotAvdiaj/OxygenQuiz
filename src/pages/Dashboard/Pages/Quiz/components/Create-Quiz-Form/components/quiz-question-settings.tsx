@@ -20,11 +20,18 @@ import { QuizQuestion } from "../types";
 interface QuestionSettingsCardProps {
   question: QuizQuestion;
   showCopyActions?: boolean;
+  /**
+   * The question's text and number as a header. On in the desktop builder's sidebar, where the
+   * question is in another column; off in the overview's editor dialog, where it is the field
+   * directly above and repeating it is noise.
+   */
+  showTitle?: boolean;
 }
 
 export const QuestionSettingsCard: React.FC<QuestionSettingsCardProps> = ({
   question,
   showCopyActions = true,
+  showTitle = true,
 }) => {
   const {
     updateQuestionSetting,
@@ -68,6 +75,7 @@ export const QuestionSettingsCard: React.FC<QuestionSettingsCardProps> = ({
 
   return (
     <div className="w-full h-full flex flex-col">
+      {showTitle && (
       <CardHeader className="pb-4 px-4 sm:px-6">
         <CardTitle className="text-sm sm:text-base flex items-center justify-between gap-3 border-b border-border pb-2">
           <div className="flex items-center gap-2 min-w-0 flex-1 ">
@@ -83,8 +91,15 @@ export const QuestionSettingsCard: React.FC<QuestionSettingsCardProps> = ({
           </Badge>
         </CardTitle>
       </CardHeader>
+      )}
 
-      <CardContent className="flex-1 space-y-5 px-4 sm:px-6 pb-6">
+      <CardContent
+        className={
+          showTitle
+            ? "flex-1 space-y-5 px-4 sm:px-6 pb-6"
+            : "flex-1 space-y-5 px-4 pb-4 pt-4 sm:px-5"
+        }
+      >
         {/* Point System */}
         <div className="space-y-2.5">
           <Label className="text-xs font-medium">Point System</Label>

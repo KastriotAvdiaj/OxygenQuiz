@@ -9,6 +9,8 @@ export interface AdvancedOptionsProps {
   onQuestionCountChange: (value: number) => void;
   allowedTypes: QuestionType[];
   onToggleType: (type: QuestionType) => void;
+  /** Shown under the type cards — the only field here that can be wrong. */
+  typesError?: string;
   extraInstructions: string;
   onExtraInstructionsChange: (value: string) => void;
 }
@@ -49,34 +51,21 @@ export const AdvancedOptions = ({
   onQuestionCountChange,
   allowedTypes,
   onToggleType,
+  typesError,
   extraInstructions,
   onExtraInstructionsChange,
 }: AdvancedOptionsProps) => (
-  <section
-    aria-label="Quiz details"
-    className="space-y-4 border-t border-border pt-5 short:space-y-3 short:pt-3"
-  >
-    {/* One statement of optionality for the whole block, so no field has to carry
-        "(optional)" in its own label. The eyebrow is the twin of the "Required" one over the
-        topic box — same size, same weight, same colour — because the contrast between the two
-        halves of the card only reads if they are marked the same way. */}
-    <div>
-      {/* <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-        Optional
-      </p> */}
-      {/* Wraps to two lines on a narrow phone rather than squeezing the heading. */}
-      <div className="mt-0.5 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-        {/* <h2 className="text-xl font-medium text-foreground short:text-base">Details</h2> */}
-        {/* <p className="text-xs text-muted-foreground">
-          Leave anything blank and the AI decides it.
-        </p> */}
-      </div>
-    </div>
-
+  <section aria-label="Quiz details">
     {/* One column. The `md:grid-cols-2` split existed to keep two columns' worth of fields
         inside one viewport; with three controls left it would be a column of air next to a
         column of form. */}
-    <div className="space-y-4 short:space-y-3">
+    {/* Spacing: 32px between fields (24px on short screens — most phones count), 8px from a
+        label to its control — the same 32px the card puts between the topic and this block.
+        The gap between groups has to be clearly bigger than the gap inside one, or the labels
+        float halfway between two controls, which is what made this read as cramped at 16px.
+        No separators, here or above: one between every field was too much, and a single one
+        under the topic made that the only boundary when every field is its own section. */}
+    <div className="space-y-8 short:space-y-6">
       <div>
         {/* A heading, not a `<Label>`: the control below is a group of buttons, so there
             is no single field for a label element to point at. Each group carries its
@@ -94,7 +83,11 @@ export const AdvancedOptions = ({
         <span className="block text-sm font-medium text-foreground">
           Question types
         </span>
-        <QuestionTypeOptions selected={allowedTypes} onToggle={onToggleType} />
+        <QuestionTypeOptions
+          selected={allowedTypes}
+          onToggle={onToggleType}
+          error={typesError}
+        />
       </div>
 
       <div>
@@ -106,7 +99,7 @@ export const AdvancedOptions = ({
         <Textarea
           id="ai-extra"
           variant="minimal"
-          className="mt-1"
+          className="mt-2"
           placeholder="e.g. focus on dates, keep it exam-style..."
           value={extraInstructions}
           onChange={(e) => onExtraInstructionsChange(e.target.value)}

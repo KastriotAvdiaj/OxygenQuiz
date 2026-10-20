@@ -1,4 +1,4 @@
-import { Card, DataTable, Spinner } from "@/components/ui";
+import { Card, DataTable, BlobLoader } from "@/components/ui";
 import { langaugeColumns } from "./columns";
 import { useQuestionLanguageAdminData } from "../api/get-question-language-admin";
 import CreateQuestionLanguageForm from "./create-question-language";
@@ -8,7 +8,7 @@ export const LanguagesView = () => {
   // The admin list — see get-question-language-admin.ts.
   const questionLanguagesQuery = useQuestionLanguageAdminData({});
 
-  if (questionLanguagesQuery.isLoading) return <Spinner size="lg" />;
+  if (questionLanguagesQuery.isLoading) return <BlobLoader size="lg" />;
   if (questionLanguagesQuery.isError) return <p>Failed to load categories.</p>;
   return (
     <>

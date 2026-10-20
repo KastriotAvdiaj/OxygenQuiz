@@ -413,6 +413,13 @@ with `env(safe-area-inset-*)`. If you ever add a fixed bottom bar, pad it with
 
 ## Layout patterns
 
+- **A bar pinned to the bottom of a padded scroller sits at minus the padding.** Chrome pins a
+  `sticky` element inside the scroll container's *padding*, so `bottom-0` inside the dashboard's
+  `p-4 sm:p-6 lg:p-8` `<main>` stops 16–32px short and the page shows under the bar. Use
+  `-bottom-4 sm:-bottom-6 lg:-bottom-8 short:-bottom-4`, and don't give an ancestor a fixed
+  height (`h-full`) — sticky is bounded by its parent, and a parent shorter than its content
+  ends the bar partway down. Reference: the quiz overview's bar (`quiz-overview.tsx`).
+
 - **Breakpoints:** Tailwind defaults (`sm` 640, `md` 768, `lg` 1024, `xl` 1280,
   `2xl` 1536). Design mobile-first: base classes are the phone layout,
   `sm:`/`lg:` add space and columns (e.g. the quiz grid:
@@ -603,7 +610,7 @@ freshly fetched question.
 
 | Where | Change | Why |
 | --- | --- | --- |
-| `global.css` `.minimal-input` | `font-size` 0.875rem → **1rem**; `max-height` 2.25rem → 2.75rem | 14px made iOS Safari zoom on every login/signup field focus. The `text-base` on the call site was being silently overridden (see the trap note above); the height cap had to rise or the larger text clipped |
+| `global.css` `.minimal-input` | `font-size` 0.875rem → **1rem**; `max-height` 2.25rem → 2.75rem | 14px made iOS Safari zoom on every login/signup field focus. The `text-base` on the call site was being silently overridden (see "Why not the font size" under "Inputs and iOS focus-zoom"); the height cap had to rise or the larger text clipped |
 | `form/input.tsx`, `form/textarea.tsx`, `field-variants.ts` | `text-sm` → `text-base sm:text-sm`; `text-[15px]` → `text-base sm:text-[15px]` | Same zoom, every other field in the app. Phones get 16px, desktop keeps its denser size |
 | `ui/dialog/dialog.tsx` | `w-full` → `w-[calc(100%-2rem)] sm:w-full`; `sm:rounded-lg` → `rounded-lg`; added dvh height cap + `overflow-y-auto` | Dialogs were full-bleed square rectangles on phones |
 | `Login.tsx`, `Signup.tsx` | `px-5` → `px-6` on phones | Form ran almost edge to edge; now matches the dialog gutter |
@@ -633,7 +640,7 @@ dialog, a hand-rolled spinner.
 | `facet-section.tsx` | Exported `FACET_LIST_MAX_HEIGHT` / `…_COMPACT` (`max-h-80` + `min(20rem,48dvh)` pair; raised from 15rem/38dvh on 2026-10-11) and made it the prop default | The cap was a per-call-site string, so each variant chose its own — and one chose none. A shared constant is the only version that can't drift |
 | `quiz-filter-panel.tsx` | Sidebar/drawer/compact all pass the shared cap; the full-height sidebar no longer passes `""` | Uncapping the facets there just relocated the growth from the page into a single 25-row scroll column. Panel height is now a function of the layout, never of the row count |
 | `facet-section.tsx`, `quiz-filter-panel.tsx` | Added `overscroll-contain` to both the facet lists and the sidebar's facet column | These scroll regions nest (list → panel → drawer → app container); a flick past the end chained outward and scrolled the page behind the panel |
-| `facet-section.tsx` | Facet search input `text-sm` → `text-base sm:text-sm`; added `role="group"` + `aria-label` to each list | Another bare inline `<input>` the July 31 sweep missed — 14px, so iOS zoomed on focus (see "the second trap" above) |
+| `facet-section.tsx` | Facet search input `text-sm` → `text-base sm:text-sm`; added `role="group"` + `aria-label` to each list | Another bare inline `<input>` the July 31 sweep missed — 14px, so iOS zoomed on focus (see "Why not the font size" under "Inputs and iOS focus-zoom") |
 | `lib/Search-Input.tsx` | Row is `flex w-full items-center gap-2`; field wrapper `relative min-w-0 flex-1`; button `shrink-0` | Two nested shrink-to-fit flex boxes meant the field sized to its content and left the panel row half empty — `.minimal-input`'s `width: 100%` was resolving against the shrink-wrapped parent, not the row. `min-w-0` is what lets a long placeholder shrink instead of pushing the button out |
 | `global.css`, `lib/Search-Input.tsx` | New `.minimal-input--compact` / `--has-clear` modifiers (padding `0.75rem` → `0.5rem 0.625rem`; `font-size` 14px **only from `sm` up**) | The default minimal field is a ~44px control — right for a login form, oversized next to the filter panel's Select triggers. **The third instance of the layer trap:** a `py-2 text-sm` at the call site loses to plain-CSS `.minimal-input`, so the modifier lives next to the rule it overrides. Phones keep 16px (iOS zoom); both steps stay ≥36px |
 | `lib/Search-Input.tsx` | `LiftedButton` → plain `Button size="icon"`; `onKeyPress` → `onKeyDown`; added `enterKeyHint="search"`, `aria-label` on both icon buttons; `className` finally forwarded | The lifted style's 4px edge reads as a primary page action and made the row look misaligned. `className` was in the props type but never destructured, so the `!my-0` five call sites passed had been doing nothing — the component's own `my-4` was the spacing all along |
@@ -755,3 +762,6 @@ a field hint — not as a subtitle.
    the dashboard is `bg-muted`, and so is a plain `<Card>` in dark mode. Look at it in dark
    mode. See "Surfaces inside a dashboard". Dialogs stay on the `bg-background` default, and
    the page header is the h1 and its actions — no description paragraph under it.
+15. Anything appear, disappear, open, reorder, or push content down? Animate it, and check it
+   with reduced motion on (devtools → Rendering → emulate `prefers-reduced-motion`). Nothing
+   snaps — see [`development/motion.md`](./development/motion.md).

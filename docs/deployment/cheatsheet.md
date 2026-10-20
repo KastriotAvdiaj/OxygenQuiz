@@ -82,6 +82,10 @@ npx wrangler deploy    # ships dist/ live to oxygenquiz.com
 
 Then hard-refresh `oxygenquiz.com` (Ctrl+Shift+R) — stale look = browser cache, not a failed deploy.
 
+The deploy also ships a small Worker script (`worker/index.js`) that runs **only** on
+`/play/shared/*`, for link previews; everything else is plain static files. What it does, the
+`_headers`/`robots.txt` files and how to test it locally: [`frontend-worker.md`](frontend-worker.md).
+
 ⚠️ Backend rebuild does NOT deploy frontend changes, and vice-versa — a push to `main` deploys only the frontend; the API still needs the VPS `git pull` + rebuild. A manual `wrangler deploy` ships whatever is already in `dist/` — always `npm run build` first. Every deploy replaces the whole site with one build, so deploy from `main` (with everything merged), never from a feature branch.
 
 ## Quick reference

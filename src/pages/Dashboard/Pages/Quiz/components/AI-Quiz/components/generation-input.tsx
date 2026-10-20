@@ -91,7 +91,10 @@ export const GenerationInput = ({
       <div>
         <RequiredEyebrow />
         <Label htmlFor="ai-topic" className="mt-0.5 block text-xl font-medium short:text-lg">
-          What should this quiz be about?
+          {/* "What should this quiz be about?" wrapped to two lines on a phone at this size.
+              Shorter wording rather than smaller type: this is the one required thing on the
+              screen and its weight is what says so (ai-quiz-wizard-view.tsx). */}
+          What&apos;s this quiz about?
         </Label>
         <Input
           id="ai-topic"

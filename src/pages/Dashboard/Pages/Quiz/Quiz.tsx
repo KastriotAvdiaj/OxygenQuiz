@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router";
+import { Link, useLocation } from "react-router-dom";
+import { ChevronRight } from "lucide-react";
 import { BlobLoader } from "@/components/ui";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -11,7 +13,7 @@ import { useQuizData } from "./api/get-quiz";
 import { useQuizQuestionsData } from "./api/get-quiz-questions";
 import { useQuizAnalytics, type AnalyticsMode } from "./api/get-quiz-analytics";
 import { SegmentedControl } from "@/components/ui/segmented-control";
-import { useCreateShareLink, buildShareUrl } from "./api/create-share-link";
+import { useCopyShareLink } from "./api/use-copy-share-link";
 import { useSetQuizStatus } from "./api/set-quiz-status";
 import { DeleteQuiz } from "./components/delete-quiz";
 import { AttemptsChart } from "./components/quiz-view/attempts-chart";
@@ -21,7 +23,9 @@ import { QuizStatStrip } from "./components/quiz-view/quiz-stat-strip";
 import { QuizStatusBadge } from "./components/quiz-view/quiz-status-badge";
 import { formatDuration } from "./components/quiz-view/format-duration";
 import { AssociationBoardPreview } from "./components/quiz-view/association-board-preview";
-import { quizEditPath } from "./quiz-paths";
+import { dashboardBaseOf, quizEditPath } from "./quiz-paths";
+import { quizPlayPath } from "@/pages/Quiz/quiz-play-path";
+import { useUser } from "@/lib/Auth";
 import {
   SIGNED_IN_ONLY_NOTE,
   showsTrend,
@@ -55,6 +59,11 @@ export const QuizRoute = () => {
   const params = useParams();
   const quizId = Number(params.quizId as string);
   const navigate = useNavigate();
+  const { data: currentUser } = useUser();
+  // One page, two dashboards: `/dashboard/quiz/:id` (admins) and `/my-dashboard/quiz/:id` (the
+  // owner). Every link out of it — the breadcrumb, Edit, where Delete lands — stays in the one
+  // it was opened from.
+  const base = dashboardBaseOf(useLocation().pathname);
   const { addNotification } = useNotifications();
 
   const quizQuery = useQuizData({ quizId });
@@ -73,7 +82,7 @@ export const QuizRoute = () => {
     mode: analyticsMode,
     queryConfig: { enabled: quizQuery.isSuccess && !isBoard },
   });
-  const shareLink = useCreateShareLink();
+  const shareLink = useCopyShareLink();
   const setStatus = useSetQuizStatus();
 
   // Owned here rather than by the menu item, so the confirm dialog outlives the menu closing.
@@ -106,23 +115,6 @@ export const QuizRoute = () => {
     );
   };
 
-  const handleShare = () => {
-    shareLink.mutate(quizId, {
-      onSuccess: async ({ shareToken }) => {
-        const url = buildShareUrl(shareToken);
-        try {
-          await navigator.clipboard.writeText(url);
-          addNotification({ type: "success", title: "Share link copied to clipboard" });
-        } catch {
-          // Clipboard can be blocked (e.g. insecure context) — still surface the link.
-          addNotification({ type: "success", title: "Share link ready", message: url });
-        }
-      },
-      onError: () =>
-        addNotification({ type: "error", title: "Couldn't create share link" }),
-    });
-  };
-
   if (quizQuery.isLoading) {
     // `BlobLoader` is the app's loader; `Spinner` is what this page was written against
     // before that. The "Loading quiz..." line underneath stays gone: the loader announces
@@ -150,8 +142,28 @@ export const QuizRoute = () => {
   const quiz = quizQuery.data;
   if (!quiz) return null;
 
+  // The player dashboard is for your own quizzes. Someone else's Public quiz reads fine by id,
+  // but its questions, stats and board are owner-only (QuizController.GetQuizQuestions, the
+  // analytics and board endpoints), so the page would be all error states — say so instead.
+  if (base === "/my-dashboard" && quiz.user.id !== currentUser?.id) {
+    return (
+      <div className="w-full h-full flex items-center justify-center py-16">
+        <div className="text-center space-y-4">
+          <p className="font-medium">This isn&apos;t one of your quizzes</p>
+          <Button variant="outline" asChild>
+            <Link to="/my-dashboard/quizzes">Back to my quizzes</Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   const analytics = analyticsQuery.data;
   const isDraft = quiz.status === "Draft";
+  // Mirrors the API's play rule, `QuizPlayAccess.IsPlayAuthorized`: Public, or the caller owns
+  // it. An admin viewing someone else's Unlisted or Draft quiz gets no Play — the session would
+  // be refused. No share token is passed: the owner is authorised without one.
+  const canPlay = quiz.status === "Public" || quiz.user.id === currentUser?.id;
 
   return (
     // <b>The card is the width of what is in it.</b> Constraining the inner content box was
@@ -175,9 +187,31 @@ export const QuizRoute = () => {
         onOpenChange={setDeleteOpen}
         // Defer navigation one tick so the dialog can close and Radix can restore
         // <body> pointer-events before this page unmounts.
-        finished={() => setTimeout(() => navigate("/dashboard/quizzes"), 0)}
+        finished={() => setTimeout(() => navigate(`${base}/quizzes`), 0)}
         id={quiz.id}
       />
+
+      {/* <b>A way back up, not just back.</b> The header's Back is browser history — it goes
+          wherever you came from, which is not always the list (a share, a bookmark, a play).
+          Two levels is all this needs: the section, then where you are. */}
+      <nav aria-label="Breadcrumb" className="mb-4">
+        <ol className="flex min-w-0 items-center gap-1.5 text-sm text-muted-foreground">
+          <li>
+            <Link
+              to={`${base}/quizzes`}
+              className="rounded transition-colors duration-150 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+            >
+              {base === "/my-dashboard" ? "My Quizzes" : "Quizzes"}
+            </Link>
+          </li>
+          <li aria-hidden="true">
+            <ChevronRight className="h-3.5 w-3.5" />
+          </li>
+          <li aria-current="page" className="min-w-0 truncate text-foreground">
+            {quiz.title}
+          </li>
+        </ol>
+      </nav>
 
       {/* <b>Two columns from `xl` up: what the quiz IS on the left, what its questions DID on
           the right.</b> Stacked, a 15-question quiz pushes the whole left-hand story — title,
@@ -219,11 +253,12 @@ export const QuizRoute = () => {
               <QuizActionsMenu
                 quiz={quiz}
                 isDraft={isDraft}
-                onShare={handleShare}
+                onPlay={canPlay ? () => navigate(quizPlayPath(quiz)) : undefined}
+                onShare={() => shareLink.copy(quizId)}
                 isSharePending={shareLink.isPending}
                 onSetStatus={handleSetStatus(isDraft ? "Public" : "Draft")}
                 isStatusPending={setStatus.isPending}
-                onEdit={() => navigate(quizEditPath(quiz))}
+                onEdit={() => navigate(quizEditPath(quiz, base))}
                 onDelete={() => setDeleteOpen(true)}
               />
             </div>

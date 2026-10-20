@@ -139,8 +139,6 @@ export const OwnAiQuiz = () => {
       suggestedLanguageName={draft.suggestedLanguageName}
       onStartOver={handleStartOver}
       builderSlot={draft.builderSlot}
-      restoredDraftSavedAt={draft.restoredAt}
-      onDiscardDraft={draft.discardDraft}
     />
   );
 };

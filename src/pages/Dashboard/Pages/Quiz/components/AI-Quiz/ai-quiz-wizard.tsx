@@ -115,8 +115,6 @@ export const AiQuizWizard = () => {
       onStartOver={handleStartOver}
       parseResult={draft.parseResult}
       builderSlot={draft.builderSlot}
-      restoredDraftSavedAt={draft.restoredAt}
-      onDiscardDraft={draft.discardDraft}
       showLeaveDialog={showLeaveDialog}
       onConfirmLeave={confirmNavigation}
       onCancelLeave={cancelNavigation}

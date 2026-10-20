@@ -5,6 +5,10 @@ export type CategoryDTO = {
   id: number;
   name: string;
   emoji: string;
+  /** The category's colours as a JSON array of hex strings (`QuestionCategoryDTO`); read with
+   *  `parseQuizPalette`. Sent on a quiz's detail read, so a full `Quiz` can colour its own UI. */
+  colorPaletteJson?: string | null;
+  gradient?: boolean;
 };
 
 export type DifficultyDTO = {

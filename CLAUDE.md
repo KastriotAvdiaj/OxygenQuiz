@@ -103,6 +103,15 @@ Full version, including the two failure modes this project has actually hit:
   title, the empty state and the controls carry that. Put a needed explanation where it's
   needed (an empty state, a field hint), not under the title.
 
+### Motion
+
+- **Nothing in the UI snaps.** Anything that appears, disappears, opens, closes, reorders, changes
+  view, or pushes content below it is animated — 150–300ms, and honouring
+  `prefers-reduced-motion` (arrive, don't travel). Radix `data-[state]` classes and
+  `tailwindcss-animate` for enter and open/close; `framer-motion` (`AnimatePresence`, `layout`) for
+  exits, height changes and lists. Full rule and what counts as a shift:
+  [`docs/development/motion.md`](docs/development/motion.md).
+
 ## Backend conventions (C#)
 
 - **Nothing outside a repository touches `DbContext`** — services *or* controllers. Query

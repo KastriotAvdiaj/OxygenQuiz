@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { Outlet, useLocation } from "react-router-dom";
-import { Spinner } from "@/components/ui/Spinner";
+import { BlobLoader } from "@/components/ui/blob-loader";
 import { DashboardLayout } from "@/layouts/dashboard-layout";
 import { MainErrorFallback } from "./UtilityPages/Error/Main-Error-Boundary";
 import type { DashboardNavItem } from "./Dashboard/Components/dashboardNavConfig";
@@ -30,7 +30,7 @@ export const AppRoot = ({ basePath, navItems, fullWidthPaths, focusPaths }: AppR
           // spinner centre on the *viewport*, i.e. behind the sidebar and under the
           // header, so it visibly jumped into place when the page took over.
           <div className="flex min-h-[60vh] w-full items-center justify-center">
-            <Spinner size="xl" />
+            <BlobLoader size="xl" />
           </div>
         }>
         <ErrorBoundary

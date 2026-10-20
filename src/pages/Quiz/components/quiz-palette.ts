@@ -8,8 +8,13 @@
  * the card, the start modal and the category preview.
  */
 
-/** Used when a quiz has no palette yet, or its stored JSON is unreadable. */
-export const DEFAULT_QUIZ_PALETTE = ["#6366f1", "#3b82f6", "#06b6d4"] as const;
+/**
+ * Used when a quiz has no palette yet, or its stored JSON is unreadable: the app's primary blue
+ * (`--primary` in global.css, light theme), then two lighter steps of it. Hex, not the CSS
+ * variable, because the helpers below do contrast maths on it. If the brand colour changes,
+ * change it here too — `__tests__/quiz-palette-default.test.ts` fails until you do.
+ */
+export const DEFAULT_QUIZ_PALETTE = ["#2563eb", "#3b82f6", "#60a5fa"] as const;
 
 /**
  * Read a quiz's palette, falling back to the default on missing or malformed JSON.

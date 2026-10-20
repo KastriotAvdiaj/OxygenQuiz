@@ -6,11 +6,11 @@ import type {
   UseFormReturn,
   UseFormSetValue,
 } from "react-hook-form";
-import { ArrowLeft, Brain, Info, Plus, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Brain, Info, Plus, X } from "lucide-react";
 
 import { Form, Input, Label, Textarea } from "@/components/ui/form";
 import { Separator } from "@/components/ui/separator";
-import { Spinner } from "@/components/ui";
+import { BlobLoader } from "@/components/ui";
 import {
   Select,
   SelectContent,
@@ -153,7 +153,7 @@ export const AssociationBoardForm = ({
   if (queryData.isLoading) {
     return (
       <div className="flex h-64 w-full items-center justify-center">
-        <Spinner size="lg" />
+        <BlobLoader size="lg" />
       </div>
     );
   }
@@ -358,8 +358,22 @@ const BoardFields = ({
         </div>
         <div className="flex items-center gap-3">
           <DraftSavedIndicator savedAt={draftSavedAt} />
-          <LiftedButton type="submit" disabled={isSaving} isPending={isSaving}>
-            {edit ? "Save board" : "Create quiz"}
+          {/* The arrow on Create: it is the step forward out of the builder, as the Classic
+              builder's Publish is (create-quiz.tsx). Save board keeps the plain label. */}
+          <LiftedButton
+            type="submit"
+            disabled={isSaving}
+            isPending={isSaving}
+            className="flex items-center gap-1.5"
+          >
+            {edit ? (
+              "Save board"
+            ) : (
+              <>
+                Create quiz
+                <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              </>
+            )}
           </LiftedButton>
         </div>
       </div>
@@ -481,7 +495,7 @@ const BoardFields = ({
               Status
             </Label>
             <Select
-              value={status || "Draft"}
+              value={status || "Public"}
               onValueChange={(value) => setValue("status", value as QuizStatus)}
             >
               <SelectTrigger variant="form" className="w-full">

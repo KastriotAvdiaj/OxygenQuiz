@@ -43,6 +43,13 @@ export type DashboardNavItem = {
    * so an item the viewer can't reach never takes a slot.
    */
   island?: boolean;
+  /**
+   * Other first path segments that belong to this item, so a page *under* a section keeps that
+   * section lit — `/dashboard/quiz/37` is the Quizzes section, though its URL says `quiz`.
+   * The active item is the one whose `id` or `activeOn` matches the first segment after the
+   * dashboard root (`activeNavId` in dashboard-layout.tsx).
+   */
+  activeOn?: string[];
 };
 
 // Admin / SuperAdmin dashboard (/dashboard)
@@ -60,6 +67,8 @@ export const adminDashboardNavButtons: DashboardNavItem[] = [
     icon: Folder,
     group: "Overview",
     island: true,
+    // The single-quiz page is `quiz/:quizId`, a sibling of `quizzes` rather than under it.
+    activeOn: ["quiz"],
   },
   {
     id: "questions",
@@ -152,6 +161,8 @@ export const userDashboardNavButtons: DashboardNavItem[] = [
     icon: Folder,
     group: "Overview",
     island: true,
+    // The owner's quiz page, `quiz/:quizId` — same as the admin nav's Quizzes item.
+    activeOn: ["quiz"],
   },
   {
     id: "questions",

@@ -11,6 +11,12 @@ interface ExplanationFieldBase {
   id?: string;
   className?: string;
   error?: FieldError;
+  /**
+   * `settings` (default) is the boxed dashboard field the standalone question forms use.
+   * `minimal` is the quiz builder card's underlined field: it takes the card's type accent
+   * (`--field-accent`) and font, like the question and answers above it.
+   */
+  variant?: "settings" | "minimal";
 }
 
 /** Controlled — the quiz builder's question cards keep their own state and debounce it upward. */
@@ -83,7 +89,15 @@ export function ExplanationField(props: ExplanationFieldProps) {
       </label>
       <Textarea
         id={props.id ?? "question-explanation"}
-        variant="settings"
+        variant={props.variant ?? "settings"}
+        // Minimal fields are capped at one line (`.minimal-input`, 3rem); an explanation is a
+        // sentence or two, so it grows to fit instead.
+        rows={props.variant === "minimal" ? 2 : undefined}
+        className={
+          props.variant === "minimal"
+            ? "resize-none !max-h-40 leading-snug [field-sizing:content]"
+            : undefined
+        }
         maxLength={EXPLANATION_MAX_LENGTH}
         placeholder="Why is the correct answer correct? One or two sentences is plenty."
         error={props.error}

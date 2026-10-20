@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 import { RefreshCw } from "lucide-react";
-import { Card, Spinner } from "@/components/ui";
+import { Card, BlobLoader } from "@/components/ui";
 import { LiftedButton } from "@/common/LiftedButton";
 import { useNotifications } from "@/common/Notifications";
 import { usePermissionMatrix } from "./api/get-permission-matrix";
@@ -76,7 +76,7 @@ export const Permissions = () => {
       <Card className="p-6 bg-card border dark:border-foreground/30">
         {isLoading ? (
           <div className="flex justify-center items-center py-16">
-            <Spinner size="lg" />
+            <BlobLoader size="lg" />
           </div>
         ) : isError ? (
           <p className="text-center text-red-500 py-8">

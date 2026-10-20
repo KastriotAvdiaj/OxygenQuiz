@@ -1,4 +1,4 @@
-import { Check } from "lucide-react";
+import { AlertTriangle, Check, PenLine, X } from "lucide-react";
 
 import { QuestionType } from "@/types/question-types";
 import { cn } from "@/utils/cn";
@@ -28,73 +28,165 @@ const QUESTION_TYPE_LABELS: Record<QuestionType, string> = {
   [QuestionType.TypeTheAnswer]: "Type The Answer",
 };
 
+/** One answer slot in a glyph: an outlined chip in the type's colour, `filled` for the right one. */
+const Slot = ({
+  className,
+  filled,
+}: {
+  className: string;
+  filled?: boolean;
+}) => (
+  <span
+    className={cn(
+      "rounded-[3px] border-[1.5px] border-current",
+      filled && "bg-current",
+      className,
+    )}
+  />
+);
+
+/**
+ * A small picture of what answering each type looks like — four options, two cards, a field
+ * you write in — so the cards read at a glance. Drawn in `currentColor`, all three in the primary
+ * colour: here they are one family of choices, so they share a colour rather than wearing the
+ * builder's per-type hues (question-type-theme.ts).
+ */
+const TypeGlyph = ({ type }: { type: QuestionType }) => {
+  switch (type) {
+    case QuestionType.MultipleChoice:
+      return (
+        <span className="grid grid-cols-2 gap-1">
+          <Slot className="h-2.5 w-6" />
+          <Slot className="h-2.5 w-6" filled />
+          <Slot className="h-2.5 w-6" />
+          <Slot className="h-2.5 w-6" />
+        </span>
+      );
+    case QuestionType.TrueFalse:
+      return (
+        <span className="flex gap-1.5">
+          <span className="flex h-7 w-6 items-center justify-center rounded-[4px] border-[1.5px] border-current">
+            <Check className="h-3.5 w-3.5" strokeWidth={3} />
+          </span>
+          <span className="flex h-7 w-6 items-center justify-center rounded-[4px] border-[1.5px] border-current">
+            <X className="h-3.5 w-3.5" strokeWidth={3} />
+          </span>
+        </span>
+      );
+    case QuestionType.TypeTheAnswer:
+      return (
+        <span className="relative flex items-end pr-2.5 pt-2.5">
+          <Slot className="h-3.5 w-11" />
+          <PenLine
+            className="absolute right-0 top-0 h-4 w-4"
+            strokeWidth={2.25}
+          />
+        </span>
+      );
+  }
+};
+
 export interface QuestionTypeOptionsProps {
   selected: QuestionType[];
   onToggle: (type: QuestionType) => void;
+  /** Why the selection can't be used — today only "none selected". Styled like the topic
+   *  box's error (generation-input.tsx) so the two read as one family. */
+  error?: string;
 }
 
 /**
  * The question types the model may use. Multi-select; at least one is required, which the
  * wizard enforces when Generate is pressed rather than by blocking the last deselection.
  *
- * Stacked rows with a tick circle rather than the pill chips this used to be. Chips wrapped to
- * two ragged lines inside the narrow details column and read as tags — decoration you scan — when
- * they are in fact three checkboxes. A row per type, each with a target the full width of the
- * panel and a circle that fills in, says "pick some of these" without a legend.
+ * Three vertical cards in a row (since 2026-10-17; stacked rows before that, pill chips before
+ * those): tick circle at the top, the label, then a glyph of the type. The row of three is shorter
+ * than the stack of three rows was, which matters on this screen — the Generate button has to
+ * stay above the fold (`FitsTheFold` in the wizard's stories).
+ *
+ * No primary border on a selected card: the filled circle is the state, and the card frame
+ * only firms up (`border-foreground/40`) and takes a faint muted fill.
  *
  * `role="checkbox"` rather than `aria-pressed`: the circle *is* a checkmark, so "checked" is
- * what a screen reader should say about it. The whole row is the control, so the label needs
+ * what a screen reader should say about it. The whole card is the control, so the label needs
  * no separate `htmlFor` wiring.
  */
 export const QuestionTypeOptions = ({
   selected,
   onToggle,
+  error,
 }: QuestionTypeOptionsProps) => (
-  <div
-    role="group"
-    aria-label="Question types the AI may use"
-    className="mt-2 grid grid-cols-1 gap-2 short:mt-1.5 short:gap-1.5"
-  >
-    {ALL_AI_QUESTION_TYPES.map((type) => {
-      const active = selected.includes(type);
-      return (
-        <button
-          key={type}
-          type="button"
-          role="checkbox"
-          aria-checked={active}
-          onClick={() => onToggle(type)}
-          className={cn(
-            // min-h-11 (44px): docs/RESPONSIVE.md asks ≥36px for anything tappable and
-            // 40–44px for the ones that matter. These are the panel's main choice.
-            // short: 44px → 40px, still inside the 40–44px band the doc asks for on primary
-            // controls, and three rows of them is where this column's height actually goes.
-            "flex min-h-11 w-full items-center justify-between gap-3 rounded-lg border-2 px-3 py-2.5",
-            "short:min-h-10 short:py-2",
-            "text-left text-sm leading-tight transition-colors",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-            active
-              ? "border-primary bg-primary/10 font-medium text-foreground"
-              : "border-border text-muted-foreground hover:border-primary/50 hover:text-foreground"
-          )}
-        >
-          <span>{QUESTION_TYPE_LABELS[type]}</span>
-
-          {/* aria-hidden: aria-checked on the button already carries this state, and a
-              screen reader announcing it twice is worse than not at all. */}
-          <span
-            aria-hidden
+  <div className="mt-2 short:mt-1.5">
+    <div
+      role="group"
+      aria-label="Question types the AI may use"
+      aria-describedby={error ? "ai-types-error" : undefined}
+      className="grid grid-cols-3 gap-2 short:gap-1.5"
+    >
+      {ALL_AI_QUESTION_TYPES.map((type) => {
+        const active = selected.includes(type);
+        return (
+          <button
+            key={type}
+            type="button"
+            role="checkbox"
+            aria-checked={active}
+            onClick={() => onToggle(type)}
             className={cn(
-              "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors",
+              "flex w-full flex-col items-center gap-2 rounded-lg border px-2 pb-3 pt-2.5",
+              "short:gap-1.5 short:pb-2 short:pt-2",
+              "text-center text-xs leading-tight transition-colors sm:text-sm",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background",
               active
-                ? "border-primary bg-primary text-primary-foreground"
-                : "border-muted-foreground/40"
+                ? "border-foreground/40 bg-muted/50 font-medium text-foreground"
+                : error
+                  ? "border-destructive/60 text-muted-foreground hover:text-foreground"
+                  : "border-border text-muted-foreground hover:border-foreground/25 hover:text-foreground",
             )}
           >
-            {active && <Check className="h-3 w-3" strokeWidth={3} />}
-          </span>
-        </button>
-      );
-    })}
+            {/* aria-hidden: aria-checked on the button already carries this state, and a
+              screen reader announcing it twice is worse than not at all. */}
+            <span
+              aria-hidden
+              className={cn(
+                "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors",
+                active
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-muted-foreground/40",
+              )}
+            >
+              {active && <Check className="h-3 w-3" strokeWidth={3} />}
+            </span>
+
+            {/* `flex-1`: "Multiple Choice" wraps to two lines on a phone and the others don't;
+              the label cell takes the slack, so the three glyphs below still line up. */}
+            <span className="flex flex-1 items-center">
+              {QUESTION_TYPE_LABELS[type]}
+            </span>
+
+            {/* Fixed height so the glyphs sit on one line whatever each one's size. Dimmed when
+              off, so the selected types are the ones in full colour. */}
+            <span
+              aria-hidden
+              className={cn(
+                "flex h-9 items-center justify-center text-primary transition-opacity short:h-8",
+                active ? "opacity-100" : "opacity-50",
+              )}
+            >
+              <TypeGlyph type={type} />
+            </span>
+          </button>
+        );
+      })}
+    </div>
+    {error && (
+      <p
+        id="ai-types-error"
+        role="alert"
+        className="text-destructive text-xs mt-1.5 flex items-center gap-1"
+      >
+        <AlertTriangle className="h-3 w-3 shrink-0" />
+        {error}
+      </p>
+    )}
   </div>
 );

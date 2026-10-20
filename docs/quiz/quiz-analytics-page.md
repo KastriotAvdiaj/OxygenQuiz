@@ -1,6 +1,7 @@
 # The single-quiz page
 
-How `/dashboard/quiz/:quizId` behaves **today**. It is one continuous page — hero, stat strip,
+How `/dashboard/quiz/:quizId` — and its twin for owners, `/my-dashboard/quiz/:quizId` — behaves
+**today**. It is one continuous page — hero, stat strip,
 attempts panel, then every question with its own numbers — replacing the Overview / Questions /
 Analytics tabs. The reasoning for that shape, and the list of things deliberately not built, is in
 [`../proposals/quiz-view-redesign.md`](../proposals/quiz-view-redesign.md); this file describes
@@ -275,8 +276,8 @@ player's.
 
 ## Actions
 
-**Every action lives in one ⋯ menu, on the title row.** `QuizActionsMenu` holds Edit quiz,
-Share, Publish/Unpublish and Delete; the trigger is a 32px icon button right-aligned against
+**Every action lives in one ⋯ menu, on the title row.** `QuizActionsMenu` holds Play quiz, Edit
+quiz, Share, Publish/Unpublish and Delete; the trigger is a 32px icon button right-aligned against
 the `<h1>`.
 
 It is deliberately the **same pattern as the quiz rows in the data table** — same
@@ -291,8 +292,17 @@ could reach them. A menu is the same menu at every width, so that duplication is
 Two details worth keeping:
 
 - **Share is not offered on a Draft.** The backend mints a token its own resolver 404s, so it
-  could only produce a link that fails at the recipient's end. (The share URL is broken for a
-  separate reason; see [`quiz-visibility.md`](./quiz-visibility.md).)
+  could only produce a link that fails at the recipient's end. The copy itself is
+  `useCopyShareLink`, shared with the quiz table's row menu.
+- **Play is offered only where it would start.** Public, or the viewer owns the quiz — the API's
+  `QuizPlayAccess.IsPlayAuthorized`. An admin looking at someone else's Unlisted or Draft quiz gets
+  no Play, because the session would be refused.
+
+**A breadcrumb above the card — `Quizzes › <title>`.** The header's Back is browser history, which
+is wherever you came from (a share, a bookmark, a play), not necessarily the list. The breadcrumb
+is the way *up*. The dashboard rail also keeps **Quizzes** lit on this page: the route is
+`quiz/:quizId`, a sibling of `quizzes`, so the Quizzes nav item claims it through `activeOn`
+(`dashboardNavConfig.ts`, `activeNavId`).
 - **Delete opens on the next animation frame.** The confirm dialog is owned by the page and
   rendered outside the menu — opening it while Radix is still closing the menu leaves two modal
   layers overlapping and `pointer-events: none` stuck on `<body>`. The data-table row does the
@@ -383,9 +393,26 @@ resolved it as the winner and **every caller's border colour was silently discar
 mode** — including the amber edge on "Needs a look". The default now goes before `className`,
 which is what the rest of the components here do and what every caller assumes.
 
+## Two dashboards, one page
+
+The same `QuizRoute` is mounted in both dashboards (since 2026-10-18; players had no quiz page
+before). It reads which one it is in from the URL (`dashboardBaseOf`) and keeps every link inside it:
+the breadcrumb (`Quizzes` / `My Quizzes`), Edit (`quizEditPath(quiz, base)`) and where Delete lands.
+The rail keeps the Quizzes item lit on it (`activeOn: ["quiz"]`).
+
+It is reached from the quiz table in either dashboard: the row's ⋯ **View**, or a click anywhere on
+the row (`DataTable`'s `onRowClick`; clicks on the ⋯ menu, its items and the delete dialog are
+excluded — `data-table-row-click.ts`).
+
+**In the player dashboard it is for your own quizzes.** Someone else's Public quiz reads fine by id,
+but its questions, stats and board are owner-only, so the page would be all error states; it says
+"This isn't one of your quizzes" instead.
+
 ## No database ids
 
-Neither the quiz id nor the question ids appear anywhere on this page. A primary key identifies
+Neither the quiz id nor the question ids appear anywhere on this page. The same goes for the
+player dashboard as a whole (2026-10-18): the `ID: 665` badges on question cards and the quiz row's
+**Copy ID** show in the admin dashboard only (`useIsAdminDashboard` in `quiz-paths.ts`). A primary key identifies
 a row to a query; it tells the person deciding whether a question needs rewriting nothing at all.
 The card header used to read "Quiz #37" directly above an `<h1>` carrying the quiz's actual name
 — an id *and* a duplicate heading — so `ContentLayout`'s title is now optional and this page

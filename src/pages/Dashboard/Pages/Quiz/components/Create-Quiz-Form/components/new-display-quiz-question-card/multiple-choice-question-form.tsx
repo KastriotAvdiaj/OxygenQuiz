@@ -131,7 +131,9 @@ export const MultipleChoiceFormCard: React.FC<MultipleChoiceFormCardProps> = ({
         explanationError={getFieldError("explanation")}
       >
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4 pt-4">
+          {/* One column on a phone: two columns there left each option's text field ~25px
+              wide beside its switch and delete button — one letter visible. */}
+          <div className="grid grid-cols-1 gap-3 pt-4 sm:grid-cols-2 sm:gap-4">
             {answerOptions.map((option, index) => {
               const answerError = getAnswerOptionError(index);
               const hasAnswerError = !!answerError;
@@ -161,7 +163,7 @@ export const MultipleChoiceFormCard: React.FC<MultipleChoiceFormCardProps> = ({
                       onChange={(e) =>
                         handleAnswerTextChange(index, e.target.value)
                       }
-                      className={`h-20 ${
+                      className={`h-12 sm:h-20 ${
                         option.isCorrect && !hasAnswerError
                           ? "border-green-300 focus:border-green-500"
                           : ""

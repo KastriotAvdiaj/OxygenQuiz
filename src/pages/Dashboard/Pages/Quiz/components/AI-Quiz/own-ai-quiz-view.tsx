@@ -8,7 +8,7 @@ import {
   Copy,
 } from "lucide-react";
 
-import { Spinner } from "@/components/ui";
+import { Spinner, BlobLoader } from "@/components/ui";
 import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/form";
 import { Separator } from "@/components/ui/separator";
@@ -21,13 +21,10 @@ import type {
 
 import type { ParseResult } from "./parse-ai-output";
 
-import { RestoredDraftNotice } from "../draft-notices";
 
 import { AdvancedOptions } from "./components/advanced-options";
 import { ConfirmDetailsCard } from "./components/confirm-details-card";
 import { GenerationInput } from "./components/generation-input";
-import { ImportNotices } from "./components/import-notices";
-import { ImportNote } from "./components/import-note";
 import { InfoHint } from "./components/info-hint";
 import { StepMarker } from "./components/step-marker";
 import { WizardButton } from "./components/wizard-button";
@@ -105,15 +102,6 @@ export interface OwnAiQuizViewProps {
   /** The prefilled quiz builder — a slot for the same reason as in the wizard view. */
   builderSlot?: ReactNode;
 
-  // ── Unfinished work brought back ─────────────────────────────────────────────
-  /**
-   * When the draft this page was restored from was saved, or `null` on a fresh visit. Props
-   * rather than hooks, like everything else here, so a story can show the notice.
-   * See docs/quiz/quiz-draft-persistence.md.
-   */
-  restoredDraftSavedAt?: number | null;
-  /** "Start fresh": drop the restored draft and empty the page. */
-  onDiscardDraft?: () => void;
 }
 
 /**
@@ -157,8 +145,6 @@ export const OwnAiQuizView = ({
   suggestedLanguageName,
   onStartOver,
   builderSlot,
-  restoredDraftSavedAt = null,
-  onDiscardDraft,
 }: OwnAiQuizViewProps) => {
   const navigate = useNavigate();
 
@@ -167,18 +153,20 @@ export const OwnAiQuizView = ({
    * message disappears the moment the user fixes the problem. Same bar as the generate
    * path's topic mode — keep the two in step.
    */
-  const validationMessage =
-    topic.trim().length === 0
-      ? "Tell the AI what the quiz should be about."
-      : allowedTypes.length === 0
-        ? "Pick at least one question type under Advanced."
-        : null;
+  const topicMessage =
+    topic.trim().length === 0 ? "Tell the AI what the quiz should be about." : null;
+  // Mirrors the API's rule (AiGenerationService.ValidateContent). Shown under the type cards,
+  // like the wizard's — not under the topic box.
+  const typesMessage =
+    allowedTypes.length === 0 ? "Pick at least one question type." : null;
+  const validationMessage = topicMessage ?? typesMessage;
 
   // Both buttons stay clickable while the form is incomplete and explain themselves on
   // press, rather than greying out and leaving the user to guess which box is at fault.
   const [showValidation, setShowValidation] = useState(false);
   const [showPasteError, setShowPasteError] = useState(false);
   const inputRegion = useRef<HTMLDivElement>(null);
+  const optionsRegion = useRef<HTMLDivElement>(null);
   const replyRef = useRef<HTMLTextAreaElement>(null);
 
   const pasteMissing = aiResponse.trim().length === 0;
@@ -186,11 +174,11 @@ export const OwnAiQuizView = ({
   const handleCopyClick = () => {
     if (validationMessage) {
       setShowValidation(true);
-      // Focus whichever field is mounted. One ref on the region beats threading a ref
-      // through GenerationInput to two different element types for a single focus call.
-      inputRegion.current
-        ?.querySelector<HTMLElement>("input, textarea")
-        ?.focus();
+      // Focus the first field at fault — the wizard's twin of this does the same.
+      (topicMessage
+        ? inputRegion.current?.querySelector<HTMLElement>("input, textarea")
+        : optionsRegion.current?.querySelector<HTMLElement>('[role="checkbox"]')
+      )?.focus();
       return;
     }
 
@@ -213,7 +201,7 @@ export const OwnAiQuizView = ({
   if (isLoadingEntities) {
     return (
       <div className="w-full h-64 flex items-center justify-center">
-        <Spinner size="lg" />
+        <BlobLoader size="lg" />
       </div>
     );
   }
@@ -222,17 +210,12 @@ export const OwnAiQuizView = ({
   // prefilled. Identical handoff to the generate path — that convergence is the point.
   if (parseResult?.ok) {
     return (
-      <div className="flex flex-col gap-3 lg:h-full lg:min-h-0">
-        {restoredDraftSavedAt != null && onDiscardDraft && (
-          <RestoredDraftNotice
-            savedAt={restoredDraftSavedAt}
-            onDiscard={onDiscardDraft}
-          />
-        )}
-        <ImportNotices result={parseResult} />
-        {/* Always topic-based here, so the fact-check nudge always applies. */}
-        <ImportNote isFromTopic onStartOver={onStartOver} />
-        <div className="flex-1 min-h-0">{builderSlot}</div>
+      // The overview's own column, and no fixed height — the overview is a page that scrolls
+      // and a fixed height would end its pinned bar partway down (docs/RESPONSIVE.md).
+      // Back and the import report are rendered by the builder's overview (create-quiz.tsx).
+      // `xl:max-w-none`: from `xl` the overview goes two-column and sets its own width.
+      <div className="mx-auto flex w-full max-w-3xl flex-col gap-3 xl:max-w-none">
+        <div>{builderSlot}</div>
       </div>
     );
   }
@@ -272,14 +255,6 @@ export const OwnAiQuizView = ({
         </div>
       </header>
 
-      {restoredDraftSavedAt != null && onDiscardDraft && (
-        <RestoredDraftNotice
-          className="mb-4 short:mb-2"
-          savedAt={restoredDraftSavedAt}
-          onDiscard={onDiscardDraft}
-        />
-      )}
-
       {needsConfirmation ? (
         <ConfirmDetailsCard
           categories={categories}
@@ -295,7 +270,7 @@ export const OwnAiQuizView = ({
       ) : (
         // No header strip: the wizard's is the mode tabs, and there is only one mode here.
         <Card className="bg-background border-2 border-primary/30">
-          <CardContent className="space-y-4 pt-5 short:space-y-3 short:pt-3">
+          <CardContent className="space-y-8 pt-5 short:space-y-6 short:pt-3">
             {/* The same question the wizard asks, because the prompt is built from the same
                 request — this page just can't inherit the answer. It carries a step number
                 here and not there: see `step-marker.tsx`. */}
@@ -312,9 +287,7 @@ export const OwnAiQuizView = ({
                 sourceData=""
                 onSourceDataChange={() => undefined}
                 disabled={false}
-                error={
-                  showValidation ? (validationMessage ?? undefined) : undefined
-                }
+                error={showValidation ? (topicMessage ?? undefined) : undefined}
                 // "Copy prompt" is this page's first action, and `handleCopyClick`
                 // carries the same validation guard the wizard's Generate does — keep
                 // the two in step (docs/quiz/ai-quiz-two-paths.md §3).
@@ -322,14 +295,17 @@ export const OwnAiQuizView = ({
               />
             </div>
 
-            <AdvancedOptions
-              questionCount={questionCount}
-              onQuestionCountChange={onQuestionCountChange}
-              allowedTypes={allowedTypes}
-              onToggleType={onToggleType}
-              extraInstructions={extraInstructions}
-              onExtraInstructionsChange={onExtraInstructionsChange}
-            />
+            <div ref={optionsRegion}>
+              <AdvancedOptions
+                questionCount={questionCount}
+                onQuestionCountChange={onQuestionCountChange}
+                allowedTypes={allowedTypes}
+                onToggleType={onToggleType}
+                typesError={showValidation ? (typesMessage ?? undefined) : undefined}
+                extraInstructions={extraInstructions}
+                onExtraInstructionsChange={onExtraInstructionsChange}
+              />
+            </div>
 
             <Separator className="bg-primary/20" />
 

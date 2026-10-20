@@ -1,5 +1,6 @@
 import { useCallback, useRef } from "react";
-import { Badge } from "@/components/ui/badge";
+import { SegmentedControl } from "@/components/ui/segmented-control";
+import { QuizStatusBadge } from "@/pages/Dashboard/Pages/Quiz/components/quiz-view/quiz-status-badge";
 import { BlobLoader } from "@/components/ui";
 import { PaginationControls } from "@/components/ui/pagination-control";
 import { HelpCircle, Clock, Check, ArchiveX, ChevronDown, ListFilter } from "lucide-react";
@@ -34,11 +35,18 @@ import {
   type QuizFilterSelections,
 } from "@/pages/Quiz/components/quiz-filters";
 import { motion, AnimatePresence } from "framer-motion";
+import { parseQuizPalette } from "@/pages/Quiz/components/quiz-palette";
+
+/** The two lists a host picks from: the public catalogue, or their own quizzes (any status). */
+export type LobbyQuizScope = "public" | "mine";
 
 export interface QuizSelectionDialogViewProps {
   isOpen: boolean;
   onClose: () => void;
   selectedQuiz: SelectedQuiz | null;
+
+  scope: LobbyQuizScope;
+  onScopeChange: (scope: LobbyQuizScope) => void;
 
   searchQuery: string;
   onSearchChange: (value: string) => void;
@@ -75,6 +83,8 @@ export const QuizSelectionDialogView = ({
   isOpen,
   onClose,
   selectedQuiz,
+  scope,
+  onScopeChange,
   searchQuery,
   onSearchChange,
   resultCount,
@@ -118,12 +128,23 @@ export const QuizSelectionDialogView = ({
               <DialogTitle className="text-xl sm:text-2xl font-bold font-quiz tracking-wider text-foreground">
                 Select a Quiz
               </DialogTitle>
-              <Badge variant="secondary" className="text-[10px] font-medium px-2 py-0.5 border border-primary/20 bg-primary/5 text-primary">
-                Public Only
-              </Badge>
+              {/* Replaced a static "Public Only" badge. Your own Unlisted and Draft quizzes are
+                  hostable (QuizHub.SelectQuiz allows an owner any status), and this is the
+                  only place a host can reach them — the catalogue never lists them. */}
+              <SegmentedControl
+                aria-label="Which quizzes to show"
+                value={scope}
+                onValueChange={onScopeChange}
+                options={[
+                  { value: "public", label: "Public" },
+                  { value: "mine", label: "My quizzes" },
+                ]}
+              />
             </div>
             <DialogDescription className="text-sm text-muted-foreground">
-              Choose a quiz to host for this multiplayer lobby.
+              {scope === "mine"
+                ? "Your own quizzes, including Unlisted and Drafts — everyone in the lobby can play the one you pick."
+                : "Choose a quiz to host for this multiplayer lobby."}
             </DialogDescription>
           </DialogHeader>
 
@@ -194,7 +215,11 @@ export const QuizSelectionDialogView = ({
               animate={{ opacity: 1, scale: 1 }}
             >
               <ArchiveX className="h-8 w-8 sm:h-10 sm:w-10 opacity-50" />
-              <span>No quizzes found</span>
+              <span>
+                {scope === "mine" && !hasActiveFilters
+                  ? "You haven't made any quizzes yet"
+                  : "No quizzes found"}
+              </span>
               {hasActiveFilters && (
                 <button
                   onClick={onClearFilters}
@@ -209,15 +234,7 @@ export const QuizSelectionDialogView = ({
               <AnimatePresence mode="popLayout">
                 {quizzes.map((quiz) => {
                   const isSelected = selectedQuiz?.id === quiz.id.toString();
-                  const primaryColor = (() => {
-                    try {
-                      return quiz.colorPaletteJson
-                        ? (JSON.parse(quiz.colorPaletteJson) as string[])[0]
-                        : "#6366f1";
-                    } catch {
-                      return "#6366f1";
-                    }
-                  })();
+                  const primaryColor = parseQuizPalette(quiz.colorPaletteJson)[0];
 
                   return (
                     <motion.button
@@ -263,9 +280,15 @@ export const QuizSelectionDialogView = ({
                             >
                               {quiz.category || "Uncategorized"}
                             </span>
-                             <span className="text-[10px] sm:text-xs text-muted-foreground font-medium truncate">
-                              by {quiz.user}
-                            </span>
+                            {/* In your own list the author is always you; the status is the
+                                useful fact — it tells you this one isn't in the catalogue. */}
+                            {scope === "mine" ? (
+                              quiz.status !== "Public" && <QuizStatusBadge status={quiz.status} />
+                            ) : (
+                              <span className="text-[10px] sm:text-xs text-muted-foreground font-medium truncate">
+                                by {quiz.user}
+                              </span>
+                            )}
                           </div>
 
                           {/* Stats block */}

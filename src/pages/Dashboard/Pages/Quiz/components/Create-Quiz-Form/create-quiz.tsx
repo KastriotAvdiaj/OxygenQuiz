@@ -1,69 +1,37 @@
-import { Form, Input, Label, Textarea } from "@/components/ui/form";
-import { Separator } from "@/components/ui/separator";
+import { Form } from "@/components/ui/form";
 import { useQuizForm } from "./use-quiz-form";
 import {
   Brain,
-  // Clock,
-  // Eye,
-  // Shuffle,
   Folder,
-  Info,
   MessageSquareText,
   Plus,
   ArrowRight,
+  Save,
 } from "lucide-react";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import {
   Card,
   CardContent,
   CardFooter,
   CardHeader,
 } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import SelectQuestionComponent from "./components/question-select/question-select";
 import { useQuiz } from "./Quiz-questions-context";
 import { AnyQuestion } from "@/types/question-types";
 import { LiftedButton } from "@/common/LiftedButton";
-import { CategorySelect } from "../../../Question/Entities/Categories/Components/select-question-category";
 import {
   CreateQuizInput,
   createQuizInputSchema,
   useCreateQuiz,
 } from "../../api/create-quiz";
-import { DifficultySelect } from "../../../Question/Entities/Difficulty/Components/select-question-difficulty";
-import { LanguageSelect } from "../../../Question/Entities/Language/components/select-question-language";
-import { Spinner, Switch } from "@/components/ui";
+import { Spinner, BlobLoader } from "@/components/ui";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useNotifications } from "@/common/Notifications";
 import { useNavigate, useLocation } from "react-router";
 import { ExistingQuestionCard } from "./components/existing-display-quiz-question-card/main-display-quiz-question-export";
 import { QuestionSettingsCard } from "./components/quiz-question-settings";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { useDisclosure } from "@/hooks/use-disclosure";
 import { NewAnyQuestion, QuizQuestion } from "./types";
 import { inheritQuizClassification } from "./inherit-quiz-classification";
 import { isUnspecifiedLookup } from "../../../Question/Entities/lookup-visibility";
-import {
-  DEFAULT_NEW_MULTIPLE_CHOICE,
-  DEFAULT_NEW_TRUE_FALSE,
-  DEFAULT_NEW_TYPE_ANSWER,
-} from "./constants";
 import { NewQuestionCard } from "./components/new-display-quiz-question-card/main-display-quiz-question-card";
 import { QuestionType } from "@/types/question-types";
 import { useCreateMultipleChoiceQuestion } from "../../../Question/api/Multiple_Choice_Question/create-multiple-choice-question";
@@ -78,6 +46,10 @@ import { useUser } from "@/lib/Auth";
 import { useDraftAutosave } from "@/hooks/use-draft-autosave";
 import { useNavigationGuard } from "@/hooks/use-navigation-guard";
 import { DraftSavedIndicator, LeaveUnfinishedQuizDialog } from "../draft-notices";
+import { DESKTOP_QUERY, useMediaQuery } from "@/hooks/use-media-query";
+import { AddQuestionMenu } from "./components/add-question-menu";
+import { QuizDetailsFields } from "./components/quiz-details-fields";
+import { QuizOverview } from "./components/overview/quiz-overview";
 import {
   ManualQuizDraft,
   QUIZ_DRAFT_SLOTS,
@@ -112,6 +84,13 @@ interface CreateQuizFormProps {
    * reply is no longer unfinished work.
    */
   onSaved?: () => void;
+  /**
+   * AI review only: the overview's Back button — discard and return to the brief, or save as a
+   * draft and leave (docs/quiz/quiz-overview.md).
+   */
+  reviewBack?: { onDiscard: () => void; costsAGeneration: boolean };
+  /** AI review only: the import report, rendered by the overview under Back. */
+  reviewNotices?: ReactNode;
 }
 
 const CreateQuizForm = ({
@@ -119,6 +98,8 @@ const CreateQuizForm = ({
   initialValues,
   aiImportMode = false,
   onSaved,
+  reviewBack,
+  reviewNotices,
 }: CreateQuizFormProps = {}) => {
   const isEditMode = editQuiz != null;
   const { queryData } = useQuizForm();
@@ -126,7 +107,6 @@ const CreateQuizForm = ({
     addedQuestions,
     displayQuestion,
     getQuestionsWithSettings,
-    addQuestionToQuiz,
     setDisplayQuestion,
     getQuestionErrors,
     validateAllQuestionsForSubmit,
@@ -168,11 +148,20 @@ const CreateQuizForm = ({
     ? "/my-dashboard"
     : "/dashboard";
 
-  const {
-    isOpen: isAddQuestionDialogOpen,
-    open: openAddQuestionDialog,
-    close: closeAddQuestionDialog,
-  } = useDisclosure();
+  /**
+   * Which interaction model this builder uses (docs/adr/0026-the-quiz-overview.md). The overview — a reading list
+   * with a dialog per question — on a phone, and for AI review on every screen; the three
+   * columns only for writing or editing by hand on a screen wide enough for them.
+   *
+   * A media query in JS rather than CSS because the two layouts mount different things: the
+   * quiz fields live in the sidebar in one and in a dialog in the other, and react-hook-form
+   * must only ever see one copy of each.
+   */
+  const isDesktop = useMediaQuery(DESKTOP_QUERY);
+  const usesOverview = aiImportMode || !isDesktop;
+  // The overview's two dialogs, lifted here so a failed submit can open the one that needs it.
+  const [editingQuestionId, setEditingQuestionId] = useState<number | null>(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
 
   // Question creation mutations
   const createMultipleChoiceMutation = useCreateMultipleChoiceQuestion();
@@ -180,11 +169,6 @@ const CreateQuizForm = ({
   const createTypeTheAnswerMutation = useCreateTypeTheAnswerQuestion();
 
   const [isCreatingQuestions, setIsCreatingQuestions] = useState(false);
-  // Anchored "+ Add a question" menu (Browse pool / Create new).
-  const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
-  // Public-pool dialog visibility — owned here so it survives the menu closing.
-  const [isPoolOpen, setIsPoolOpen] = useState(false);
-  // const [activeTab, setActiveTab] = useState("quiz");
 
   // Type guards
   const isAnyQuestion = (q: any): q is AnyQuestion => {
@@ -196,29 +180,6 @@ const CreateQuizForm = ({
   const isNewAnyQuestion = (q: any): q is NewAnyQuestion => {
     return q && !("difficulty" in q) && !("category" in q);
   };
-
-  const createNewMultipleChoiceQuestion = (id: number) => ({
-    ...DEFAULT_NEW_MULTIPLE_CHOICE,
-    id,
-    answerOptions: DEFAULT_NEW_MULTIPLE_CHOICE.answerOptions.map((option) => ({
-      ...option,
-    })),
-  });
-
-  const createNewTrueFalseQuestion = (id: number) => ({
-    ...DEFAULT_NEW_TRUE_FALSE,
-    id,
-  });
-
-  const createNewTypeTheAnswerQuestion = (id: number) => ({
-    ...DEFAULT_NEW_TYPE_ANSWER,
-    id,
-    acceptableAnswers: DEFAULT_NEW_TYPE_ANSWER.acceptableAnswers.map(
-      (answer) => ({
-        ...answer,
-      }),
-    ),
-  });
 
   // Function to create a new question based on its type
   const createNewQuestion = async (
@@ -368,9 +329,10 @@ const CreateQuizForm = ({
       ].filter((field): field is string => field !== null);
 
       if (unspecifiedClassification.length > 0) {
-        // These fields live on the Quiz tab, and the submit button is reachable from the
-        // Question tab — same reason `quizTabErrorCount` exists.
-        setActiveTab("quiz");
+        // These fields live on the Quiz tab (or, in the overview, behind "Edit details"), and
+        // the submit button is reachable from elsewhere — same reason `quizTabErrorCount` exists.
+        if (usesOverview) setDetailsOpen(true);
+        else setActiveTab("quiz");
         addNotification({
           type: "error",
           title:
@@ -409,6 +371,8 @@ const CreateQuizForm = ({
 
         if (firstErrorQuestion) {
           setDisplayQuestion(firstErrorQuestion);
+          // The overview has no editor on screen until one is opened — open it on the problem.
+          if (usesOverview) setEditingQuestionId(firstErrorQuestion.id);
         }
 
         addNotification({
@@ -603,13 +567,15 @@ const CreateQuizForm = ({
     }
   };
 
+  const formId = isEditMode ? "edit-quiz" : "create-quiz";
+
   if (queryData.isLoading) {
     return (
       <div className="w-full h-64 flex items-center justify-center">
         {/* The shared Spinner, not a hand-rolled `rounded-full border-b-2` div: that one
             rendered as a 64px circle with a single 2px arc, which reads as a rendering
             glitch rather than a loader, and matched nothing else in the app. */}
-        <Spinner size="lg" />
+        <BlobLoader size="lg" />
       </div>
     );
   }
@@ -626,8 +592,10 @@ const CreateQuizForm = ({
 
   return (
     <Form
-      id={isEditMode ? "edit-quiz" : "create-quiz"}
-      className="mt-0 w-full lg:h-full"
+      id={formId}
+      // Only the three-column builder fills the screen; the overview is a page that scrolls,
+      // and a fixed height here would end its sticky bar halfway down (docs/RESPONSIVE.md).
+      className={usesOverview ? "mt-0 w-full" : "mt-0 w-full lg:h-full"}
       onSubmit={handleQuizSubmit}
       schema={createQuizInputSchema}
       options={{
@@ -648,9 +616,16 @@ const CreateQuizForm = ({
               shuffleQuestions: editQuiz.shuffleQuestions,
               questions: [],
             }
-          : initialValues
-            ? { ...initialValues, questions: [] }
-            : undefined,
+          : // A new quiz starts Public with instant feedback on — every new quiz, by hand or by
+            // AI (stated 2026-10-17; docs/quiz/quiz-visibility.md, "Defaults"). A restored draft
+            // or the AI handoff can still say otherwise, so their values win. If a lookup is
+            // set to "Unspecified" the publish gate below drops this to Draft, as before.
+            {
+              status: "Public" as const,
+              showFeedbackImmediately: true,
+              ...initialValues,
+              questions: [],
+            },
       }}
     >
       {({ register, formState, setValue, watch, clearErrors }) => {
@@ -804,6 +779,89 @@ const CreateQuizForm = ({
         //   setValue("imageUrl", "");
         // };
 
+        /**
+         * The primary action says what it will do. "Publish quiz" when the quiz is going out
+         * Public — the default for a new quiz — so nobody publishes without the word in front
+         * of them; a Draft is saved, not published.
+         */
+        const submitLabel = isCreatingQuestions
+          ? "Creating questions…"
+          : isEditMode
+            ? "Save changes"
+            : status === "Public"
+              ? "Publish quiz"
+              : status === "Unlisted"
+                ? "Save quiz"
+                : "Save draft";
+
+        if (usesOverview) {
+          return (
+            <>
+              <LeaveUnfinishedQuizDialog
+                isOpen={showLeaveDialog}
+                onConfirm={confirmNavigation}
+                onCancel={cancelNavigation}
+                draftSaved={draftSavedAt !== null}
+              />
+              <QuizOverview
+                flow={aiImportMode ? "ai" : "build"}
+                register={register}
+                watch={watch}
+                setValue={setValue}
+                clearErrors={clearErrors}
+                errors={errors}
+                queryData={queryData}
+                canPublish={canPublish}
+                unspecifiedFields={unspecifiedFields}
+                editingQuestionId={editingQuestionId}
+                onEditingQuestionChange={setEditingQuestionId}
+                detailsOpen={detailsOpen}
+                onDetailsOpenChange={setDetailsOpen}
+                submitCount={formState.submitCount}
+                formId={formId}
+                reviewBack={reviewBack}
+                notices={reviewNotices}
+                footnote={<DraftSavedIndicator savedAt={draftSavedAt} />}
+                submitButton={
+                  <LiftedButton
+                    type="submit"
+                    size="sm"
+                    disabled={isSubmitting}
+                    className="flex items-center justify-center"
+                  >
+                    {/* Spinner over an invisible label, so the button keeps its width. The
+                        arrow says this is the step forward out of the builder (as Finish's
+                        does). Save changes keeps you where you are, so it gets a save icon
+                        instead — an arrow would overpromise, and a bare label read as less of
+                        a button than "+ Add a question" beside it. */}
+                    <span className="relative flex items-center justify-center">
+                      <Spinner
+                        size="sm"
+                        className={isSubmitting ? "absolute visible" : "absolute invisible"}
+                      />
+                      <span
+                        className={
+                          isSubmitting
+                            ? "invisible flex items-center gap-1.5"
+                            : "visible flex items-center gap-1.5"
+                        }
+                      >
+                        {isEditMode && !isCreatingQuestions && (
+                          <Save className="h-4 w-4" aria-hidden="true" />
+                        )}
+                        {submitLabel}
+                        {!isEditMode && !isCreatingQuestions && (
+                          <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                        )}
+                      </span>
+                    </span>
+                  </LiftedButton>
+                }
+              />
+            </>
+          );
+        }
+
         return (
           <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-3 lg:h-full lg:min-h-0">
             <LeaveUnfinishedQuizDialog
@@ -898,224 +956,16 @@ const CreateQuizForm = ({
                     className="flex-1 min-h-0 overflow-hidden mt-0"
                   >
                     <CardContent className="bg-background space-y-4 h-full overflow-y-auto scrollbar-thin py-3">
-                      {/* Basic Information */}
-                      <div className="space-y-2">
-                        <div>
-                          <Label
-                            htmlFor="title"
-                            className="text-sm font-medium flex items-center gap-1"
-                          >
-                            Quiz Title <span className="text-destructive">*</span>
-                          </Label>
-                          <Input
-                            variant={errors.title ? "isIncorrect" : "minimal"}
-                            id="title"
-                            placeholder="Enter quiz title"
-                            className="mt-1"
-                            {...register("title")}
-                            error={errors.title}
-                          />
-                        </div>
-
-                        <div>
-                          <Label
-                            htmlFor="description"
-                            className="text-sm font-medium"
-                          >
-                            Description
-                          </Label>
-                          <Textarea
-                            variant="minimal"
-                            id="description"
-                            placeholder="Describe your quiz"
-                            className="mt-1 min-h-[80px] resize-none"
-                            {...register("description")}
-                            error={errors.description}
-                          />
-                        </div>
-                      </div>
-                      <Separator className="bg-primary/20" />
-
-                      {/* <ImageUpload
-                        onUpload={handleImageUpload}
-                        onRemove={handleImageRemove}
-                        initialImageUrl={editQuiz?.imageUrl ?? null}
-                      /> */}
-
-                      {/* Dropdowns */}
-                      <div className="space-y-3">
-                        {/* "Filters" alone left three dropdowns reading as bare values:
-                            a first-time user sees "Programming" and "Hard" with nothing
-                            saying what either is a *kind* of. Each select already knows its
-                            own name — it just never showed it. Sized and coloured like the
-                            "Status" label under Settings below, so the panel reads as one
-                            list of labelled fields rather than two conventions. */}
-                        <h4 className="text-sm font-semibold text-primary flex items-center gap-1">
-                          Filters
-                        </h4>
-                        <CategorySelect
-                          label="Category"
-                          categories={queryData.categories}
-                          fieldVariant="form"
-                          value={watch("categoryId")?.toString() || ""}
-                          onChange={(selectedValue: string) =>
-                            setValue("categoryId", parseInt(selectedValue, 10))
-                          }
-                          includeAllOption={false}
-                          error={formState.errors["categoryId"]?.message}
-                          clearErrors={() => clearErrors("categoryId")}
-                        />
-
-                        <DifficultySelect
-                          label="Difficulty"
-                          difficulties={queryData.difficulties}
-                          fieldVariant="form"
-                          value={watch("difficultyId")?.toString() || ""}
-                          onChange={(selectedValue: string) =>
-                            setValue("difficultyId", parseInt(selectedValue, 10))
-                          }
-                          includeAllOption={false}
-                          error={formState.errors["difficultyId"]?.message}
-                          clearErrors={() => clearErrors("difficultyId")}
-                        />
-
-                        <LanguageSelect
-                          label="Language"
-                          languages={queryData.languages}
-                          fieldVariant="form"
-                          value={watch("languageId")?.toString() || ""}
-                          includeAllOption={false}
-                          onChange={(selectedValue: string) =>
-                            setValue("languageId", parseInt(selectedValue, 10))
-                          }
-                          error={formState.errors["languageId"]?.message}
-                          clearErrors={() => clearErrors("languageId")}
-                        />
-                      </div>
-
-                      <Separator className="bg-primary/20" />
-
-                      {/* Quiz Settings */}
-                      <div className="space-y-4">
-                        <h4 className="text-sm font-semibold text-primary flex items-center gap-1">
-                          Settings
-                        </h4>
-
-                        <div>
-                          <Label className="text-xs font-medium flex items-center gap-2 mb-2">
-                            Status
-                          </Label>
-                          <Select
-                            value={watch("status") || "Draft"}
-                            onValueChange={(value) =>
-                              setValue(
-                                "status",
-                                value as "Draft" | "Unlisted" | "Public",
-                              )
-                            }
-                          >
-                            <SelectTrigger
-                              variant={errors.status ? "form-error" : "form"}
-                              className="w-full"
-                            >
-                              <SelectValue placeholder="Select status" />
-                            </SelectTrigger>
-                            <SelectContent
-                              variant={errors.status ? "form-error" : "form"}
-                            >
-                              <SelectItem
-                                variant={errors.status ? "form-error" : "form"}
-                                value="Draft"
-                              >
-                                Draft — only you can see it
-                              </SelectItem>
-                              <SelectItem
-                                variant={errors.status ? "form-error" : "form"}
-                                value="Unlisted"
-                              >
-                                Unlisted — playable via share link
-                              </SelectItem>
-                              {/* Radix's own `data-[disabled]` styling (opacity + no pointer
-                                  events) already lives in SelectItem's base class, so disabling is
-                                  the whole change. The option stays *visible* rather than being
-                                  removed: a missing row reads as a feature that doesn't exist,
-                                  where a greyed one plus the note below reads as a condition the
-                                  user can satisfy. */}
-                              <SelectItem
-                                variant={errors.status ? "form-error" : "form"}
-                                value="Public"
-                                disabled={!canPublish}
-                              >
-                                Public — listed for everyone
-                                {!canPublish && " (needs a full classification)"}
-                              </SelectItem>
-                            </SelectContent>
-                          </Select>
-                          {!canPublish && (
-                            <p className="text-muted-foreground mt-1.5 flex items-start gap-1.5 text-xs">
-                              <Info className="mt-0.5 h-3 w-3 shrink-0" />
-                              <span>
-                                Set a real{" "}
-                                <span className="text-foreground font-medium">
-                                  {unspecifiedFields.length === 3
-                                    ? `${unspecifiedFields[0]}, ${unspecifiedFields[1]} and ${unspecifiedFields[2]}`
-                                    : unspecifiedFields.join(" and ")}
-                                </span>{" "}
-                                above to publish this quiz. Draft and Unlisted work
-                                either way.
-                              </span>
-                            </p>
-                          )}
-                          {errors.status && (
-                            <p className="text-sm text-red-500 mt-1">
-                              {errors.status.message
-                                ? errors.status.message
-                                : "Please select a status."}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-
-                      <Separator className="bg-primary/20" />
-
-                      {/* Toggle Options */}
-                      <div className="space-y-3">
-                        <h4 className="text-sm font-semibold text-primary">
-                          Options
-                        </h4>
-
-                        <div className="flex items-center justify-between">
-                          <Label
-                            htmlFor="showFeedback"
-                            className="text-sm font-medium flex items-center gap-2"
-                          >
-                            Instant Feedback
-                          </Label>
-                          <Switch
-                            id="showFeedback"
-                            checked={watch("showFeedbackImmediately") || false}
-                            onCheckedChange={(checked) =>
-                              setValue("showFeedbackImmediately", checked)
-                            }
-                          />
-                        </div>
-
-                        <div className="flex items-center justify-between">
-                          <Label
-                            htmlFor="shuffleQuestions"
-                            className="text-sm font-medium flex items-center gap-2"
-                          >
-                            Shuffle Questions
-                          </Label>
-                          <Switch
-                            id="shuffleQuestions"
-                            checked={watch("shuffleQuestions") || false}
-                            onCheckedChange={(checked) =>
-                              setValue("shuffleQuestions", checked)
-                            }
-                          />
-                        </div>
-                      </div>
+                      <QuizDetailsFields
+                        register={register}
+                        watch={watch}
+                        setValue={setValue}
+                        clearErrors={clearErrors}
+                        errors={errors}
+                        queryData={queryData}
+                        canPublish={canPublish}
+                        unspecifiedFields={unspecifiedFields}
+                      />
                     </CardContent>
                   </TabsContent>
                 </Tabs>
@@ -1125,139 +975,7 @@ const CreateQuizForm = ({
               <Card className="bg-background border-2 border-primary/30 rounded-xl shadow-lg flex flex-col items-center w-full min-w-0 lg:h-full lg:overflow-hidden">
                 <CardHeader className="w-full relative bg-primary/10 p-3 text-center border-b border-primary/30 flex-none">
                   <section className="flex justify-center rounded-lg">
-                    {/* Blurred backdrop while the add-question menu is open. */}
-                    {isAddMenuOpen && (
-                      <div className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm" />
-                    )}
-
-                    <Popover open={isAddMenuOpen} onOpenChange={setIsAddMenuOpen}>
-                      <PopoverTrigger asChild>
-                        <LiftedButton
-                          type="button"
-                          className="flex items-center gap-2"
-                        >
-                          <Plus className="h-4 w-4" />
-                          Add a question
-                        </LiftedButton>
-                      </PopoverTrigger>
-                      <PopoverContent
-                        align="center"
-                        sideOffset={10}
-                        className="z-50 w-64 p-3 flex flex-col gap-3 bg-background dark:border-foreground/20"
-                      >
-                        {/* Browse the public pool — opens the full pool dialog (rendered
-                            outside this menu so it survives the menu closing). */}
-                        <LiftedButton
-                          type="button"
-                          liftColor="muted"
-                          className="w-full justify-center bg-muted text-foreground border border-foreground/20"
-                          onClick={() => {
-                            setIsAddMenuOpen(false);
-                            setIsPoolOpen(true);
-                          }}
-                        >
-                          <Plus className="h-4 w-4" />
-                          Browse Public Pool
-                        </LiftedButton>
-
-                        {/* or */}
-                        <div className="flex items-center gap-3">
-                          <span className="h-px flex-1 bg-border" />
-                          <span className="text-xs font-medium text-muted-foreground">
-                            or
-                          </span>
-                          <span className="h-px flex-1 bg-border" />
-                        </div>
-
-                        {/* Create a brand-new question — opens the type chooser below. */}
-                        <LiftedButton
-                          type="button"
-                          className="w-full justify-center flex items-center gap-2"
-                          onClick={() => {
-                            setIsAddMenuOpen(false);
-                            openAddQuestionDialog();
-                          }}
-                        >
-                          <Plus className="h-4 w-4" />
-                          Create New
-                        </LiftedButton>
-                      </PopoverContent>
-                    </Popover>
-
-                    {/* Public-pool browser — controlled, lives outside the menu. */}
-                    <SelectQuestionComponent
-                      open={isPoolOpen}
-                      onOpenChange={setIsPoolOpen}
-                    />
-
-                    <Dialog
-                      open={isAddQuestionDialogOpen}
-                      onOpenChange={(open) =>
-                        open ? openAddQuestionDialog() : closeAddQuestionDialog()
-                      }
-                    >
-                      <DialogContent className="bg-background p-4 rounded-md pt-8 dark:border border-foreground/30 ">
-                        <DialogHeader>
-                          <DialogTitle className="flex items-center justify-center">
-                            Choose the type of question
-                          </DialogTitle>
-                        </DialogHeader>
-                        {/* A grid, not a flex row. Flex shrinks an item's *content box* while
-                            its padding stays put, so three fixed-padding buttons in a narrow
-                            dialog didn't get smaller — they squeezed their labels into wrapping
-                            mid-phrase, at three different widths (shrink is proportional to
-                            base width). Equal grid columns give one width for all three and
-                            stack them below `sm`, where three across can't fit legibly.
-                            `outerClassName` sizes the button element; `className` is the front
-                            face, and it needs h-full/w-full to fill a stretched grid cell —
-                            otherwise a two-line label makes one blue face taller than the
-                            others. See docs/RESPONSIVE.md. */}
-                        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-                          <LiftedButton
-                            type="button"
-                            outerClassName="w-full"
-                            className="h-full w-full text-center text-sm leading-tight"
-                            onClick={() => {
-                              const tempId = -Date.now();
-                              const newQuestion =
-                                createNewMultipleChoiceQuestion(tempId);
-                              addQuestionToQuiz(newQuestion);
-                              closeAddQuestionDialog();
-                            }}
-                          >
-                            Multiple Choice
-                          </LiftedButton>
-                          <LiftedButton
-                            type="button"
-                            outerClassName="w-full"
-                            className="h-full w-full text-center text-sm leading-tight"
-                            onClick={() => {
-                              const tempId = -Date.now();
-                              const newQuestion =
-                                createNewTrueFalseQuestion(tempId);
-                              addQuestionToQuiz(newQuestion);
-                              closeAddQuestionDialog();
-                            }}
-                          >
-                            True/False
-                          </LiftedButton>
-                          <LiftedButton
-                            type="button"
-                            outerClassName="w-full"
-                            className="h-full w-full text-center text-sm leading-tight"
-                            onClick={() => {
-                              const tempId = -Date.now();
-                              const newQuestion =
-                                createNewTypeTheAnswerQuestion(tempId);
-                              addQuestionToQuiz(newQuestion);
-                              closeAddQuestionDialog();
-                            }}
-                          >
-                            Type The Answer
-                          </LiftedButton>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
+                    <AddQuestionMenu />
                   </section>
                 </CardHeader>
 

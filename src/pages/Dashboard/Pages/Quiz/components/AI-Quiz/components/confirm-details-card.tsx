@@ -60,8 +60,8 @@ export const ConfirmDetailsCard = ({
   suggestedLanguageName,
   onStartOver,
 }: ConfirmDetailsCardProps) => (
-  <Card className="bg-background border-2 border-primary/30">
-    <CardHeader className="bg-primary/10 border-b border-primary/30 py-3">
+  <Card className="bg-card border border-border dark:border-foreground/30">
+    <CardHeader className="bg-muted/50 border-b border-border py-3">
       <p className="font-semibold">Almost there</p>
       <p className="text-muted-foreground text-xs">
         Your questions are ready. We just need one or two details the AI couldn't match.
@@ -110,13 +110,18 @@ export const ConfirmDetailsCard = ({
         </div>
       )}
 
-      <button
-        type="button"
-        onClick={onStartOver}
-        className="text-muted-foreground hover:text-foreground text-sm flex items-center gap-1"
-      >
-        <RotateCcw className="h-3.5 w-3.5" /> Start over
-      </button>
+      {/* pt-4 on top of the card's 16px: Start over discards the questions, so it sits
+          apart from the selects rather than reading as one more field (32px, the same gap
+          the main form puts between its sections). */}
+      <div className="pt-4">
+        <button
+          type="button"
+          onClick={onStartOver}
+          className="text-muted-foreground hover:text-foreground text-sm flex items-center gap-1"
+        >
+          <RotateCcw className="h-3.5 w-3.5" /> Start over
+        </button>
+      </div>
     </CardContent>
   </Card>
 );

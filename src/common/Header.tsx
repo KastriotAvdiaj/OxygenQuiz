@@ -5,9 +5,11 @@ import { HeaderComponent } from "./HeaderComponent";
 import { ModeToggle } from "@/components/ui/mode-toggle";
 import { Divider } from "./Divider";
 import HoverEffect from "./HoverEffect";
+import { cn } from "@/utils/cn";
 import { useUser } from "@/lib/Auth";
 import { NotificationBell } from "@/features/notifications/components/NotificationBell";
 import { getAppScrollContainer } from "@/lib/app-scroll";
+import { CreateQuizMethodDialog } from "@/pages/Dashboard/Pages/Quiz/components/create-quiz-method-dialog";
 
 interface HeaderProps {
   BackgroundColor?: boolean;
@@ -126,6 +128,47 @@ const Header = ({ BackgroundColor }: HeaderProps) => {
               </HoverEffect>
             )}
           </NavLink>
+
+          {/* Creating, from anywhere — until this, only the dashboards and the landing hero
+              led to it. A link like Home and Play, not a button: the header is on every page,
+              mid-quiz included, and a coloured button there would compete with each page's
+              own primary action. It opens the same how-to-create chooser as the hero's
+              "Create a quiz", with the user dashboard's routes; a signed-out visitor is sent
+              to /login by the route's loader and comes back to the step they picked. It
+              never shows as active — it opens a dialog, it isn't a place.
+
+              Its hover sets it apart from the two links beside it, which only underline: the
+              word fills with the primary colour from left to right, with its underline drawn
+              in primary the same way. The fill is a two-colour gradient (primary | foreground)
+              clipped to the text at twice the word's width, slid from showing its right half
+              to its left half; the underline is a scale-x from the left edge. It stays filled
+              while the chooser is open (`data-state=open`, from Radix's trigger) and on
+              keyboard focus. Reduced motion: the colour changes without the sweep. */}
+          <li>
+            <CreateQuizMethodDialog
+              trigger={
+                <button
+                  type="button"
+                  className="group cursor-pointer rounded-sm outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                >
+                  <span
+                    className={cn(
+                      "relative inline-block bg-[linear-gradient(to_right,hsl(var(--primary))_50%,hsl(var(--foreground))_50%)] bg-[length:200%_100%] bg-right bg-clip-text text-transparent transition-[background-position] duration-300 ease-out motion-reduce:transition-none",
+                      "after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-full after:origin-left after:scale-x-0 after:bg-primary after:transition-transform after:duration-300 after:ease-out after:content-[''] motion-reduce:after:transition-none",
+                      "group-hover:bg-left group-hover:after:scale-x-100 group-focus-visible:bg-left group-focus-visible:after:scale-x-100 group-data-[state=open]:bg-left group-data-[state=open]:after:scale-x-100",
+                    )}
+                  >
+                    Create
+                  </span>
+                  <span className="sr-only">, a quiz by hand or with AI</span>
+                </button>
+              }
+              manualPath="/my-dashboard/quizzes/create"
+              aiTopicPath="/my-dashboard/quizzes/create/ai/topic"
+              aiMaterialPath="/my-dashboard/quizzes/create/ai/material"
+              associationsPath="/my-dashboard/quizzes/create/associations"
+            />
+          </li>
         </ul>
       </nav>
 

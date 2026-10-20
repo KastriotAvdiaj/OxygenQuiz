@@ -172,7 +172,9 @@ body {
     --muted-foreground: 240 6% 65%;
     --accent: 240 5% 18%;             /* hover/active surface, a touch lighter */
     --accent-foreground: 240 10% 98%;
-    --destructive: 0 62.8% 37.6%;
+    /* The light theme's red, not a darker one. The old 0 62.8% 37.6% (a dark brick red) was
+       muddy as text on this near-black — every error line and invalid border read as muted. */
+    --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
     --border: 240 5% 18%;
     --input: 240 5% 18%;
@@ -395,11 +397,19 @@ body {
   }
 }
 
+/* The placeholder is smaller and lighter than the text it stands in for. On a phone the field's
+   own text is pinned to 16px at weight 500 (above), and the placeholder used to inherit both —
+   so an example like "e.g. World War II, for high-school students" was set as large as an
+   answer, read as a filled-in value, and was cut off mid-word on a 390px screen. The 16px floor
+   is about the *input's* font-size (that is what iOS checks before zooming on focus); the
+   placeholder can go below it freely. 0.875rem is 14px at the density knob. */
 .minimal-input::placeholder {
   transition: opacity 250ms cubic-bezier(0, 0, 0.2, 1) 0ms;
   opacity: 1;
   user-select: none;
   color: hsl(var(--muted-foreground) / 0.6);
+  font-size: 0.875rem;
+  font-weight: 400;
 }
 
 .minimal-input:focus,

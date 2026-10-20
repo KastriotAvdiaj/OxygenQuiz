@@ -19,6 +19,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/utils/cn";
+import { isRowClick } from "./data-table-row-click";
 
 /**
  * How badly a column wants to be on screen. See `DataTable` and
@@ -138,7 +139,19 @@ interface DataTableProps<TData> {
   tone?: "primary" | "neutral";
   /** See {@link TableDensity}. */
   density?: TableDensity;
+  /**
+   * Makes the whole row a click target — e.g. a quiz row opens that quiz. Clicks on a control
+   * inside the row (a button, link, input or menu item) are left to that control, and so is
+   * anything outside the row's own DOM: Radix renders menus and dialogs in a portal, and React
+   * still bubbles their clicks up to this row, so "Delete" in a row's ⋯ menu would otherwise
+   * also open the quiz. See {@link isRowClick}.
+   *
+   * Pointer-only on purpose: the row's own controls (a View item, a link) are the keyboard path,
+   * so this adds no tab stop per row.
+   */
+  onRowClick?: (row: TData) => void;
 }
+
 
 const TONES = {
   primary: { surface: "bg-muted", stripeA: "bg-primary/10", stripeB: "bg-muted" },
@@ -204,6 +217,7 @@ export function DataTable<TData>({
   getRowId,
   tone = "primary",
   density = "comfortable",
+  onRowClick,
 }: DataTableProps<TData>) {
   const palette = TONES[tone];
   const sizing = DENSITIES[density];
@@ -314,8 +328,16 @@ export function DataTable<TData>({
                         // Neutral hover: it has to be visible on both the tinted and the
                         // muted stripe, which a primary hover can't manage against
                         // `bg-primary/10`.
-                        "hover:bg-foreground/10"
+                        "hover:bg-foreground/10",
+                        onRowClick && "cursor-pointer"
                       )}
+                      onClick={
+                        onRowClick
+                          ? (event) => {
+                              if (isRowClick(event)) onRowClick(row.original);
+                            }
+                          : undefined
+                      }
                     >
                       {hasHiddenColumns && (
                         <TableCell className={cn(sizing.expander, "align-top")}>

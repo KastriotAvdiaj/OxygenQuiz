@@ -23,7 +23,7 @@ Last updated: 2026-08-13. Companion to
 | Input | Topic **or** source material — one per route | Topic only (see below) |
 | Owns | The generate mutation, quota, `AiGenerateError` | The clipboard, the pasted reply |
 
-Everything else — the entity lookups, "what should this quiz be about?", the details form,
+Everything else — the entity lookups, "what's this quiz about?", the details form,
 resolving the model's category/language names into ids, the parser, the confirm-details card,
 the review handoff into the prefilled builder — is **the same code**, and lives in
 `use-ai-quiz-draft.tsx`.
@@ -47,7 +47,8 @@ The practical wins: the browser Back button means something, the state is scoped
 attempt rather than lingering behind a collapsed disclosure, and neither screen has to render
 the other's controls.
 
-**How the user gets there.** One quiet link at the foot of the wizard card. Not a card in the
+**How the user gets there.** A link at the foot of the wizard card — shown only while in-app
+generation is unavailable (below). Not a card in the
 method dialog (§2a): that dialog asks *what should the AI work from*, and "someone else's
 model" is not an answer to that question — it is the same job with the engine swapped, which
 only becomes interesting once you are already looking at the form. It used to sit here
@@ -55,11 +56,12 @@ alongside "Create manually instead"; that second link left with the mode tabs, b
 choosing between manual and AI is the dialog's job and repeating it here is what made the card
 read as a menu.
 
-The link changes weight rather than appearing and disappearing. When in-app generation is
-unavailable (kill switch, quota spent, unverified email) the Generate button goes **disabled**
-rather than vanishing, and this link takes the primary colour with a line above it saying why —
-because in that state it is the only way forward from the page. The rest of the time it stays
-grey, so it reads as a footnote rather than a competing offer.
+When in-app generation is unavailable (kill switch, quota spent, unverified email) the Generate
+button goes **disabled** rather than vanishing, and the link appears in the primary colour with a
+line above it saying why — in that state it is the only way forward from the page. The rest of the
+time it isn't shown (since 2026-10-17; before that it sat there in grey): next to a working
+Generate it was a second offer on a screen with one job. The consequence: while generation works,
+nothing links to the own-AI page — the route still resolves if typed or bookmarked.
 
 ## 2a. The chooser, and why the wizard stopped asking
 
@@ -157,6 +159,9 @@ comment lists what else has to change when it flips — the route, and nothing e
   copy of that guard because each wraps a different button — if you change one, change both.
   (A shared guard would have to know which button it is guarding, which is more coupling than
   the duplication costs.)
+  Each failure is reported under its own field and focuses it: no topic under the topic box, no
+  question type under the type cards (since 2026-10-17 — the type message used to appear under
+  the topic box too). The type rule mirrors the API's (`AiGenerationService.ValidateContent`).
 
 ## 4. State does not travel between them
 

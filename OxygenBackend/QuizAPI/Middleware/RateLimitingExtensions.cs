@@ -3,6 +3,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.SignalR;
 
 namespace QuizAPI.Middleware
 {
@@ -10,17 +11,36 @@ namespace QuizAPI.Middleware
     /// Application-level rate limiting (defense-in-depth behind Cloudflare). See docs/development/rate-limiting.md
     /// for the why, the tuning, and how it fits with the edge layer.
     ///
-    /// Two things to know when reading this:
-    ///  - Partition keys use the *real* client IP (<see cref="ClientIp"/>), read from Cloudflare's
-    ///    <c>CF-Connecting-IP</c> header — without that we'd partition on Cloudflare's edge IPs and
-    ///    throttle every user as if they were one.
-    ///  - The persistent SignalR hubs are exempt from the global limiter; rate-limiting a long-lived
-    ///    WebSocket connection makes no sense and would break multiplayer.
+    /// Three things to know when reading this:
+    ///  - The client IP is <c>Connection.RemoteIpAddress</c> and nothing else (<see cref="ClientIp"/>).
+    ///    Nginx resolves the visitor's address from <c>CF-Connecting-IP</c>, trusting it only from
+    ///    Cloudflare's ranges, and hands it on; <c>UseForwardedHeaders</c> applies it. No header is
+    ///    read here, so a request can't pick its own bucket. See
+    ///    docs/adr/0027-the-client-ip-is-resolved-at-nginx.md.
+    ///  - Signed-in traffic is counted per user, anonymous traffic per IP. A school puts a whole class
+    ///    behind one address, and per-IP counting throttled the class as one client.
+    ///  - Every SignalR hub's connection traffic is exempt from the global limiter (by endpoint
+    ///    metadata, so a new hub can't be forgotten); its <c>negotiate</c> request is still counted.
     /// </summary>
     public static class RateLimitingExtensions
     {
-        /// <summary>Strict per-IP limit for credential / token endpoints (brute-force surface).</summary>
+        /// <summary>
+        /// Per-IP limit for credential / token-guessing endpoints (brute-force surface). Not on
+        /// <c>refresh</c>: its token is 256 random bits, nothing to guess, and the SPA calls it on its
+        /// own — sharing this budget made a user's background refreshes eat their login attempts.
+        /// </summary>
         public const string AuthPolicy = "auth";
+
+        /// <summary>Global cap for a signed-in user, per user, per 10 s.</summary>
+        internal const int UserGlobalLimit = 100;
+
+        /// <summary>
+        /// Global cap for anonymous traffic, per IP, per 10 s. Higher than the per-user cap because one
+        /// IP can be a whole school (NAT): signed-out visitors browsing the catalogue or playing as
+        /// guests share it. Floods are Cloudflare's job (layer 1); this only stops one source
+        /// hammering the box.
+        /// </summary>
+        internal const int AnonymousGlobalLimit = 300;
 
         /// <summary>Per-IP limit for anonymous guest-session creation (abuse surface).</summary>
         public const string GuestPolicy = "guest";
@@ -66,17 +86,19 @@ namespace QuizAPI.Middleware
                 // catches a single source hammering the API. Cloudflare handles real volumetric DDoS.
                 options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
                 {
-                    var path = httpContext.Request.Path;
-
-                    // Never throttle the persistent SignalR connections.
-                    if (path.StartsWithSegments("/quizHub") || path.StartsWithSegments("/notificationHub"))
+                    var key = GlobalPartitionKey(httpContext);
+                    if (key is null)
                         return RateLimitPartition.GetNoLimiter("signalr-hub");
 
+                    var limit = key.StartsWith("user:", StringComparison.Ordinal)
+                        ? UserGlobalLimit
+                        : AnonymousGlobalLimit;
+
                     return RateLimitPartition.GetSlidingWindowLimiter(
-                        partitionKey: ClientIp(httpContext),
+                        partitionKey: key,
                         factory: _ => new SlidingWindowRateLimiterOptions
                         {
-                            PermitLimit = 100,                  // ~10 req/s sustained per client
+                            PermitLimit = limit,
                             Window = TimeSpan.FromSeconds(10),
                             SegmentsPerWindow = 5,
                             QueueLimit = 0,                      // reject immediately, don't queue
@@ -84,25 +106,33 @@ namespace QuizAPI.Middleware
                 });
 
                 // Tight limit for login / signup / refresh / email-token endpoints.
+                //
+                // Sliding, not fixed: a fixed minute allowed 10 at 0:59 and 10 more at 1:00 — double
+                // the stated limit at every boundary. Twenty a minute, not ten: a class signing in
+                // together shares one IP, and ten turned the eleventh student away. Per-account
+                // brute force is not this limiter's job (it can't see the email in the body) — see
+                // known-issues.md, "No per-account login throttle".
                 options.AddPolicy(AuthPolicy, httpContext =>
-                    RateLimitPartition.GetFixedWindowLimiter(
-                        partitionKey: ClientIp(httpContext),
-                        factory: _ => new FixedWindowRateLimiterOptions
+                    RateLimitPartition.GetSlidingWindowLimiter(
+                        partitionKey: $"ip:{ClientIp(httpContext)}",
+                        factory: _ => new SlidingWindowRateLimiterOptions
                         {
-                            PermitLimit = 10,
+                            PermitLimit = 20,
                             Window = TimeSpan.FromMinutes(1),
+                            SegmentsPerWindow = 6,
                             QueueLimit = 0,
                         }));
 
                 // Guest-session creation. The one-free-quiz cookie already limits honest users;
                 // this stops a script from spamming new guest sessions to churn the DB.
                 options.AddPolicy(GuestPolicy, httpContext =>
-                    RateLimitPartition.GetFixedWindowLimiter(
-                        partitionKey: ClientIp(httpContext),
-                        factory: _ => new FixedWindowRateLimiterOptions
+                    RateLimitPartition.GetSlidingWindowLimiter(
+                        partitionKey: $"ip:{ClientIp(httpContext)}",
+                        factory: _ => new SlidingWindowRateLimiterOptions
                         {
                             PermitLimit = 20,
                             Window = TimeSpan.FromMinutes(1),
+                            SegmentsPerWindow = 6,
                             QueueLimit = 0,
                         }));
 
@@ -111,12 +141,13 @@ namespace QuizAPI.Middleware
                 // minutes, and generates again. Nobody honest needs six in a minute. The real
                 // ceiling is the per-user daily quota; this only stops a burst.
                 options.AddPolicy(AiPolicy, httpContext =>
-                    RateLimitPartition.GetFixedWindowLimiter(
+                    RateLimitPartition.GetSlidingWindowLimiter(
                         partitionKey: UserOrIp(httpContext),
-                        factory: _ => new FixedWindowRateLimiterOptions
+                        factory: _ => new SlidingWindowRateLimiterOptions
                         {
                             PermitLimit = 6,
                             Window = TimeSpan.FromMinutes(1),
+                            SegmentsPerWindow = 6,
                             QueueLimit = 0,
                         }));
 
@@ -154,14 +185,16 @@ namespace QuizAPI.Middleware
         /// <para>Safe here specifically because the endpoint is <c>[Authorize]</c>: a caller
         /// can't mint fresh partitions by lying, since the id comes from a signed token. Don't
         /// copy this to an anonymous endpoint, where the IP is the only thing that can't be
-        /// forged — which is why <c>auth</c> and <c>guest</c> stay on <see cref="ClientIp"/>.</para>
+        /// forged — which is why <c>auth</c> and <c>guest</c> stay on <see cref="ClientIp"/>. The global
+        /// limiter uses this too: a request with a valid token is counted for its user, one without
+        /// for its IP, and a forged token is no token (authentication rejects it first).</para>
         ///
         /// <para>Keys are prefixed so a user id can never collide with an IP string.</para>
         ///
         /// <para>This runs after <c>UseAuthentication</c> (see the ordering in Program.cs), so
         /// the principal is populated by the time the limiter reads it.</para>
         /// </summary>
-        private static string UserOrIp(HttpContext context)
+        internal static string UserOrIp(HttpContext context)
         {
             var userId = context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value
                          ?? context.User?.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
@@ -172,23 +205,42 @@ namespace QuizAPI.Middleware
         }
 
         /// <summary>
-        /// Resolves the real client IP. Prefers Cloudflare's <c>CF-Connecting-IP</c>, then the first
-        /// hop of <c>X-Forwarded-For</c>, then the socket address. NOTE: these headers are only
-        /// trustworthy when traffic is forced through the proxy (lock the origin's firewall to
-        /// Cloudflare IP ranges) — otherwise a caller hitting the origin directly can spoof them.
-        /// See docs/development/rate-limiting.md § "Trusting the client IP".
+        /// The global limiter's partition: <c>null</c> for a hub's connection traffic (exempt),
+        /// otherwise <see cref="UserOrIp"/>.
+        ///
+        /// <para>Hubs are recognised by the <see cref="HubMetadata"/> that <c>MapHub</c> puts on every
+        /// endpoint it maps — not by path. The path list this replaced named <c>/quizHub</c> and
+        /// <c>/notificationHub</c>; <c>/hostedGameHub</c>, added later for Host mode, was throttled
+        /// with everything else from the day it shipped.</para>
+        ///
+        /// <para><b><c>negotiate</c> is still counted.</b> It is one request per new connection, so it
+        /// costs a real client nothing — and it is the only cap on how fast a caller can open
+        /// connections. That matters on <c>/hostedGameHub</c>, where a Display gets
+        /// <c>HostedGameHub.MaxCodeAttempts</c> Screen-code guesses <i>per connection</i> (ADR 0024).
+        /// Only the connection's own traffic (the WebSocket, or a fallback transport's polls) is
+        /// exempt.</para>
         /// </summary>
-        private static string ClientIp(HttpContext context)
+        internal static string? GlobalPartitionKey(HttpContext context)
         {
-            var cfIp = context.Request.Headers["CF-Connecting-IP"].FirstOrDefault();
-            if (!string.IsNullOrWhiteSpace(cfIp))
-                return cfIp;
-
-            var forwardedFor = context.Request.Headers["X-Forwarded-For"].FirstOrDefault();
-            if (!string.IsNullOrWhiteSpace(forwardedFor))
-                return forwardedFor.Split(',')[0].Trim();
-
-            return context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+            var isHub = context.GetEndpoint()?.Metadata.GetMetadata<HubMetadata>() is not null;
+            var isNegotiate = context.Request.Path.Value?.EndsWith("/negotiate", StringComparison.OrdinalIgnoreCase) == true;
+            return isHub && !isNegotiate ? null : UserOrIp(context);
         }
+
+        /// <summary>
+        /// The client's IP: the connection's remote address, and deliberately nothing else.
+        ///
+        /// <para>Behind Nginx + Cloudflare this is the visitor's address only because Nginx makes it
+        /// so: it takes <c>CF-Connecting-IP</c> from Cloudflare's ranges alone (<c>real_ip</c>, see
+        /// <c>deploy/nginx/cloudflare-real-ip.conf</c>), overwrites <c>X-Forwarded-For</c> with the
+        /// result, and <c>UseForwardedHeaders</c> applies it here. A request sent straight to the
+        /// origin keeps its own socket address, whatever headers it carries.</para>
+        ///
+        /// <para>This used to read <c>CF-Connecting-IP</c> itself, which let any caller who could reach
+        /// the origin directly choose a fresh bucket per request — unlimited login attempts. See
+        /// docs/adr/0027-the-client-ip-is-resolved-at-nginx.md.</para>
+        /// </summary>
+        internal static string ClientIp(HttpContext context) =>
+            context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
     }
 }

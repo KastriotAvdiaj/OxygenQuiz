@@ -475,7 +475,13 @@ var forwardedOptions = new ForwardedHeadersOptions
     ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor
                      | Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto
 };
-// Nginx is the only ingress and runs on a trusted host, so trust the whole chain.
+// Trust X-Forwarded-For from any peer, because only Nginx can be a peer: the container publishes
+// 5000 on 127.0.0.1 alone (docker-compose.prod.yml), and Docker's NAT presents Nginx's connections
+// from the bridge gateway rather than loopback, so the default loopback-only KnownProxies would
+// ignore them. Nginx writes X-Forwarded-For as exactly one value — the visitor's address, already
+// resolved from CF-Connecting-IP for Cloudflare's ranges only (deploy/nginx/cloudflare-real-ip.conf)
+// — so RemoteIpAddress below this line is the visitor. The rate limiter and the audit log both read
+// it. docs/adr/0027-the-client-ip-is-resolved-at-nginx.md.
 forwardedOptions.KnownNetworks.Clear();
 forwardedOptions.KnownProxies.Clear();
 app.UseForwardedHeaders(forwardedOptions);

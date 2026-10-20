@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { DataTable, Card, Spinner } from "@/components/ui";
+import { DataTable, Card, BlobLoader } from "@/components/ui";
 import { LiftedButton } from "@/common/LiftedButton";
 import { quizColumns } from "./components/Data-Table-Columns/columns";
 import { useSearchQuizzes } from "./api/search-quizzes";
@@ -19,11 +19,16 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Filter } from "lucide-react";
+import { cn } from "@/utils/cn";
 import { QuizFiltersPanel } from "./components/Quiz-Filter";
 import { CreateQuizMethodDialog } from "./components/create-quiz-method-dialog";
+import { HEADER_ACTION_FACE } from "./components/header-action-face";
+import { quizViewPath } from "./quiz-paths";
+import { useNavigate } from "react-router-dom";
 // import { DataTransferControls } from "@/components/data-transfer/DataTransferControls";
 
 export const Quizzes = () => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
   const [categoryIds, setCategoryIds] = useState<number[]>([]);
@@ -87,7 +92,7 @@ export const Quizzes = () => {
   if (isFilterDataLoading) {
     return (
       <div className="flex justify-center items-center h-screen">
-        <Spinner size="lg" />
+        <BlobLoader size="lg" />
       </div>
     );
   }
@@ -152,14 +157,13 @@ export const Quizzes = () => {
           {/* Same lifted treatment as the Questions page — see the note there for why
               `lg:hidden` sits on `outerClassName` and what `liftColor` controls.
 
-              No `text-*` here, deliberately: this has to stand exactly as tall as the
-              "+ Create Quiz" button beside it, and both faces are `py-2` around one line of
-              text, so the height is decided entirely by the font-size. The two are siblings
-              in this row, so inheriting rather than declaring is what keeps them equal —
-              a `text-sm` here made this button 2px shorter than its neighbour. */}
+              The text size comes from `HEADER_ACTION_FACE`, the same string the
+              "+ Create Quiz" trigger uses: both faces are `py-2` around one line, so height
+              is decided by font-size alone, and a size on one but not the other made this
+              button 2px shorter than its neighbour. */}
           <LiftedButton
             outerClassName="w-fit lg:hidden"
-            className="gap-2 bg-background font-medium text-foreground"
+            className={cn("gap-2 bg-background font-medium text-foreground", HEADER_ACTION_FACE)}
             liftColor="muted"
             onClick={() => setFiltersOpen(true)}
           >
@@ -195,11 +199,19 @@ export const Quizzes = () => {
               </p>
             ) : quizData.isLoading ? (
               <div className="flex justify-center items-center py-16">
-                <Spinner size="lg" />
+                <BlobLoader size="lg" />
               </div>
             ) : (
               <>
-                <DataTable data={quizzes} columns={quizColumns} />
+                {/* A click anywhere on the row opens the quiz; the ⋯ menu keeps its own clicks.
+                    Not for a soft-deleted row (shown with "show deleted"): it has no page. */}
+                <DataTable
+                  data={quizzes}
+                  columns={quizColumns}
+                  onRowClick={(quiz) => {
+                    if (!quiz.deletedAt) navigate(quizViewPath(quiz));
+                  }}
+                />
                 <div className="mt-6">
                   <PaginationControls
                     pagination={

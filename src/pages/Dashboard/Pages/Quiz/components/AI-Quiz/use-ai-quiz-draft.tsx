@@ -1,7 +1,8 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useLocation } from "react-router-dom";
 
 import { useUser } from "@/lib/Auth";
+import { useNotifications } from "@/common/Notifications";
 import { readDraft } from "@/lib/drafts/draft-storage";
 import { useDraftAutosave } from "@/hooks/use-draft-autosave";
 import type { QuestionType } from "@/types/question-types";
@@ -30,6 +31,8 @@ import {
   type ParseResult,
 } from "./parse-ai-output";
 import { AI_QUESTION_LIMITS, DEFAULT_QUESTION_COUNT } from "./prompt";
+import { ImportNotices } from "./components/import-notices";
+import { describeDraftAge } from "../draft-notices";
 
 /**
  * Everything the two AI creation paths have in common (docs/quiz/ai-quiz-two-paths.md).
@@ -82,10 +85,32 @@ export const useAiQuizDraft = () => {
   );
   const draft = restored?.data ?? null;
 
-  /** Drives the "picked up where you left off" notice; cleared by "Start fresh". */
+  /** When the restored draft was saved, or null. Cleared once the reply becomes a real quiz. */
   const [restoredAt, setRestoredAt] = useState<number | null>(
     restored?.savedAt ?? null,
   );
+
+  /**
+   * "Picked up where you left off" is a notification, not a banner (2026-10-17): it is news at
+   * the moment of arrival, and a banner kept saying it for as long as the page was open, above
+   * the very work it was about. Announced, not asked about — ADR 0009 still holds; the way to
+   * start fresh is the review's Back → Discard, or clearing the brief.
+   *
+   * Once per mount: the restore is read once, in the initializer above, and the notification
+   * store is the external system this tells.
+   */
+  const { addNotification } = useNotifications();
+  useEffect(() => {
+    if (!restored) return;
+    addNotification({
+      type: "info",
+      title: "Picked up where you left off",
+      message: restored.data.payload
+        ? `Your drafted questions from an earlier visit, saved ${describeDraftAge(restored.savedAt)}.`
+        : `Your brief from an earlier visit, saved ${describeDraftAge(restored.savedAt)}.`,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Both dashboards mount these routes under their own prefix, so every path is derived
   // rather than hard-coded. See the route table in docs/quiz/ai-quiz-two-paths.md.
@@ -431,13 +456,21 @@ export const useAiQuizDraft = () => {
               categoryId: effectiveCategoryId,
               languageId: effectiveLanguageId,
               difficultyId: effectiveDifficultyId,
-              status: "Draft",
+              // Every new quiz starts Public with instant feedback (docs/quiz/quiz-visibility.md,
+              // "Defaults"). The review's primary button reads "Publish quiz" while it is.
+              status: "Public",
               timeLimitInSeconds: 0,
-              showFeedbackImmediately: false,
+              showFeedbackImmediately: true,
               shuffleQuestions: false,
             } satisfies Partial<CreateQuizInput>
           }
           aiImportMode
+          // Back on the review: discard and return to the brief, or save as a draft and leave.
+          reviewBack={{
+            onDiscard: () => setPayload(null),
+            costsAGeneration: draftSlot !== QUIZ_DRAFT_SLOTS.aiOwn,
+          }}
+          reviewNotices={<ImportNotices result={parseResult} />}
           // The quiz exists on the server now, so the reply that produced it is no longer
           // unfinished work. Without this the wizard unmounts on the redirect, flushes its
           // pending write, and offers to restore the quiz the user just created.

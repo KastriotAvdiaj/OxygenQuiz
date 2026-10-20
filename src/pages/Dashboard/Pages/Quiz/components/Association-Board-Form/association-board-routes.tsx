@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Navigate, useLocation, useParams } from "react-router";
 import { Brain } from "lucide-react";
-import { Spinner } from "@/components/ui";
+import { BlobLoader } from "@/components/ui";
 import { useUser } from "@/lib/Auth";
 import { readDraft } from "@/lib/drafts/draft-storage";
 import { useQuizData } from "../../api/get-quiz";
@@ -68,7 +68,7 @@ export const EditAssociationQuizRoute = () => {
   if (quizQuery.isLoading || (isBoard && boardQuery.isLoading)) {
     return (
       <div className="flex h-64 w-full items-center justify-center">
-        <Spinner size="lg" />
+        <BlobLoader size="lg" />
       </div>
     );
   }
