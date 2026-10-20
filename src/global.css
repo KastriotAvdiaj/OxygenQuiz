@@ -29,9 +29,9 @@
      - Anything sized in `px` (arbitrary values like `min-h-[210px]`, and the
        px in plain CSS below). If a component must scale with density, it has
        to be expressed in rem.
-     - Form input text on phones, which is pinned to 16px further down. Below
-       16px iOS Safari zooms the page on focus and never zooms back, so the
-       floor wins over the knob — see `.minimal-input` and docs/RESPONSIVE.md.
+     - Form input text on phones, which is pinned to 16px further down. That
+       floor is no longer what stops iOS focus-zoom — the iOS-only
+       `maximum-scale=1` in index.html is — see docs/RESPONSIVE.md.
 
    Turning this back to 100% restores the previous sizing exactly; there is no
    other change to revert.

@@ -135,12 +135,11 @@ scales *their* default, so a reader on 20px still gets 18.75px.
   put while everything around them shrinks, so a hand-tuned px cap that used to fit its content
   will start clipping it. `.minimal-input`'s `max-height` did exactly this and had to be raised.
   If a value must scale with density, express it in rem.
-- **The 16px input floor**, which must survive the knob and therefore has to be written in a
-  unit the knob cannot move. This is the trap: `.minimal-input` said `font-size: 1rem` and the
-  shared `Input` said `text-base`, both of which *were* 16px and silently became 15px the moment
-  the root moved — reintroducing the iOS focus-zoom those very lines existed to prevent. Both
-  are now literal `16px` / `text-[16px]` on phones, with the density step applied from `sm` up
-  where focus-zoom does not happen. **Any new input needs the same treatment.**
+- **The 16px input floors** (`Input`'s `text-[16px]`, `.minimal-input`'s `font-size: 16px`) are
+  written in px so the knob cannot move them. They used to be `1rem` / `text-base` and silently
+  became 15px when the root moved. They are no longer what stops iOS focus-zoom — the iOS-only
+  `maximum-scale=1` in `index.html` is (see "Inputs and iOS focus-zoom" under Layout patterns) —
+  so a `text-base` field that renders at 15px is a cosmetic difference, not a zoom bug.
 
 ## Width scales layout and display type — not control density
 
@@ -459,28 +458,27 @@ with `env(safe-area-inset-*)`. If you ever add a fixed bottom bar, pad it with
   headline rows `flex-wrap` rather than overflow.
 - **Touch targets:** interactive controls ≥ 36px tall (`h-9`), prefer 40–44px
   for primary actions on mobile.
-- **Inputs must be ≥16px on phones, and check where the size actually comes
-  from.** Below 16px, iOS Safari zooms the whole page when the field takes
-  focus, and it does not zoom back out — the page is left scrolled and
-  oversized. The shared fields handle this now: `Input`'s base classes and the
-  textarea use `text-base sm:text-sm`, `FIELD_MODERN` uses
-  `text-base sm:text-[15px]`, and `.minimal-input` is `font-size: 1rem`.
+- **Inputs and iOS focus-zoom.** Below 16px, iOS Safari zooms the whole page
+  when a field takes focus, and it does not zoom back out — the page is left
+  scrolled and oversized. **The guard is the viewport meta, not the font
+  size:** a script in `index.html` adds `maximum-scale=1` on iOS/iPadOS only.
+  That suppresses the focus-zoom for every field in the app, raw `<input>`s
+  included, while iOS (10+) still ignores it for pinch-zoom, so users can zoom
+  by hand. It is deliberately *not* in the static meta: Android Chrome honours
+  `maximum-scale` and would lose pinch-zoom, and Android never focus-zooms in
+  the first place.
 
-  > **The trap:** this rule was already written here, and `InputField` already
-  > passed `text-base` — but the login/signup fields zoomed anyway for months.
-  > They use `variant="minimal"`, whose styling is the plain `.minimal-input`
-  > rule in `global.css`. That rule sits **outside Tailwind's layers**, so its
-  > `font-size: 0.875rem` beat the utility class silently, along with the
-  > `py-*`/`max-h-none` the same call site passed. A utility class is not proof
-  > of anything if a plain-CSS rule also targets the element — check the
-  > computed style, and put the fix where the losing declaration lives.
-
-  > **The second trap:** the sweep above fixed the *shared* fields — `Input`,
-  > `Textarea`, `FIELD_MODERN`, `.minimal-input`. A raw `<input>` written
-  > inline imports none of that, so it keeps whatever `text-*` its author
-  > typed. The lobby chat composer was a bare `<input className="… text-sm">`
-  > and went on zooming for another two days. Grep for `<input` as well as for
-  > the component when auditing this.
+  > **Why not the font size:** the fix used to be "every input is ≥16px on
+  > phones", enforced field by field — `Input`'s `text-[16px] sm:text-sm`,
+  > `.minimal-input`'s `font-size: 16px`, `text-base` on the textarea and
+  > `FIELD_MODERN`. It leaked for months: a plain-CSS rule outside Tailwind's
+  > layers beat the utility on the login fields; the lobby chat composer was a
+  > raw `<input className="… text-sm">` that imported none of it; and the
+  > density knob turned every `text-base` into 15px, so the textarea and
+  > `FIELD_MODERN` were zooming again while their comments said they didn't.
+  > A per-field rule has to be right on every field forever; the meta tag is
+  > one line. The 16px floors that remain are harmless but no longer
+  > load-bearing — a new input does not need one.
 - **A zoomed page looks like a layout bug.** Once iOS has zoomed in on a focused
   field, the visual viewport is narrower than the layout viewport, so controls
   at the right-hand end of a row sit off-screen and the page scrolls
