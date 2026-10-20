@@ -34,7 +34,7 @@ import { DeleteQuiz } from "../delete-quiz";
 import { Link, useLocation } from "react-router-dom";
 import { useUser } from "@/lib/Auth";
 import { quizPlayPath } from "@/pages/Quiz/quiz-play-path";
-import { useCopyShareLink } from "../../api/use-copy-share-link";
+import { useCopyQuizLink } from "../../api/use-copy-quiz-link";
 import { QuizSummaryDTO } from "@/types/quiz-types";
 
 /**
@@ -193,11 +193,12 @@ function QuizActionsCell({ quiz }: { quiz: QuizSummaryDTO }) {
   // and a summary row carries the author's username, not an id.
   const { data: currentUser } = useUser();
   const isOwn = !isAdminDashboard || quiz.user === currentUser?.username;
-  // Play mirrors `QuizPlayAccess.IsPlayAuthorized` (Public, or yours); Share mirrors
-  // `GenerateShareTokenAsync` (yours) plus the resolver's 404 on a Draft.
+  // Play mirrors `QuizPlayAccess.IsPlayAuthorized` (Public, or yours). Copy link: a Public quiz's
+  // listing URL is public, so anyone may copy it; an Unlisted quiz's share link mirrors
+  // `GenerateShareTokenAsync` (yours); a Draft has no link (docs/quiz/quiz-listing.md).
   const canPlay = !quiz.deletedAt && (quiz.status === "Public" || isOwn);
-  const canShare = !quiz.deletedAt && isOwn && quiz.status !== "Draft";
-  const shareLink = useCopyShareLink();
+  const canShare = !quiz.deletedAt && (quiz.status === "Public" || (isOwn && quiz.status === "Unlisted"));
+  const shareLink = useCopyQuizLink();
   // Separate disclosure for the delete confirmation. It's rendered OUTSIDE the
   // dropdown (below) so closing the menu can't unmount an open dialog and leave
   // `pointer-events: none` stuck on <body>.
@@ -235,10 +236,10 @@ function QuizActionsCell({ quiz }: { quiz: QuizSummaryDTO }) {
           <DropdownMenuItem
             className="hover:bg-background"
             disabled={shareLink.isPending}
-            onClick={() => shareLink.copy(quiz.id)}
+            onClick={() => shareLink.copy(quiz)}
           >
             <Share2 size={16} />
-            {quiz.status === "Unlisted" ? "Copy share link" : "Share"}
+            {quiz.status === "Unlisted" ? "Copy share link" : "Copy link"}
           </DropdownMenuItem>
         )}
         {!quiz.deletedAt && (

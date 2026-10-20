@@ -1,9 +1,8 @@
 # The quiz listing — one public page per quiz, for search and shared links
 
-> **Status: designed 2026-10-20, not built yet.** This describes how the listing *will* behave;
-> the rendering decision is [ADR 0028](../adr/0028-the-worker-renders-the-quiz-listing-for-crawlers.md).
-> Until it ships, [`known-issues.md`](../deployment/known-issues.md) ("No page per quiz for search
-> engines") stays open.
+> **Status: built 2026-10-20.** The rendering decision is
+> [ADR 0028](../adr/0028-the-worker-renders-the-quiz-listing-for-crawlers.md); the Worker side is
+> also in [`frontend-worker.md`](../deployment/frontend-worker.md).
 
 A **quiz listing** is a public page for one quiz at `/q/:id/:slug` — title, description, the
 facts, and a Play button. It exists for two readers that the rest of the app can't serve:
@@ -64,8 +63,9 @@ https://oxygenquiz.com/q/32/kerre-gjeneral-per-makina
 - **Canonical** is always `https://oxygenquiz.com/q/:id/:slug` — the apex. `www` already 301s to the
   apex through a Cloudflare Redirect Rule ([`known-issues.md`](../deployment/known-issues.md)).
 
-The slug is one JavaScript function, used by the Worker (redirects, canonical, sitemap) and by the
-SPA (Copy link, the route's own canonical check), so the two can't disagree on a URL.
+The slug is one JavaScript function, `worker/listing-url.js`, used by the Worker (redirects,
+canonical, sitemap) and by the SPA through `src/lib/quiz-listing-url.ts` (Copy link, the route's own
+canonical check), so the two can't disagree on a URL.
 
 ## What the page shows
 
@@ -113,18 +113,24 @@ renders the page; React takes over when it boots.**
    share previews do).
 3. **404** → `index.html` with status **404** and `X-Robots-Tag: noindex`. The SPA boots and shows
    its not-found screen.
-4. **200, wrong slug** → **301** to the canonical URL.
+4. **200, wrong slug** → **301** to the canonical URL (`Cache-Control: max-age=300`, so a browser
+   doesn't hold a redirect past the next rename for long).
 5. **200, right slug** → `index.html` rewritten with `HTMLRewriter`:
    - `<head>`: `<title>`, `description`, `og:*`, `twitter:*`, `og:url` and
      `<link rel="canonical">`, in the tags `index.html` already carries (as for share previews);
      the quiz's image replaces the default card image when it has one (absolute URL, through
      `API_ORIGIN` for `/uploads/...`).
    - `#root`: real HTML — the `<h1>`, the description, the facts, the Play link.
-   Every value is escaped (`setAttribute` / `setInnerContent`, and `escapeAttribute`/an HTML escape
-   for markup the Worker writes itself), so a title can't inject HTML.
-6. The SPA boots, its `/q/:id/:slug` route reads the same listing endpoint through React Query and
-   renders the styled page in place of the Worker's HTML (`createRoot` replaces the container's
-   children). Same facts in both, which is why this isn't cloaking.
+   Every value is escaped (`setAttribute` / `setInnerContent`, and `escapeAttribute` /
+   `escapeHtml` for markup the Worker writes itself), so a title can't inject HTML. The shell is
+   fetched from assets as a clean `GET /`, so a visitor's conditional headers can't earn a bodiless
+   304 with nothing to rewrite.
+6. The SPA boots, its `/q/:quizId/:slug?` route (`QuizListingPage`) reads the same listing endpoint
+   through React Query and renders the styled page in place of the Worker's HTML (`createRoot`
+   replaces the container's children). Same facts in both, which is why this isn't cloaking — and the
+   description in both comes from one function (`describeListing`). The route also replaces a stale
+   slug with the canonical one, for navigation inside the app and the dev server, which has no
+   Worker; its 404 is the app's not-found screen.
 
 **It fails open.** API slower than 1.5 s, down, or any status other than 200/404 → the plain SPA
 shell, status 200, with `noindex`, not cached. A slow API never delays the page beyond that
@@ -191,16 +197,37 @@ what many listings show, not the quiz itself, and a stale `<lastmod>` only delay
 
 ## Copy link
 
-- **Public quiz:** the quiz row's ⋯ menu and the single-quiz page's ⋯ menu copy the listing URL
-  (`https://oxygenquiz.com/q/:id/:slug`) — built in the browser, no API call.
-- **Unlisted quiz:** they copy the share link, minting the token as today.
+One hook, `useCopyQuizLink`, picks the link by status:
+
+- **Public quiz:** *Copy link* in the quiz row's ⋯ menu and the single-quiz page's ⋯ menu copies the
+  listing URL (`https://oxygenquiz.com/q/:id/:slug`) — built in the browser, no API call. A Public
+  quiz's link is public, so the row menu offers it on anyone's Public quiz, not only the viewer's.
+- **Unlisted quiz:** *Copy share link* copies the share link, minting the token as before — owner
+  only.
 - **The start modal** gains a *Copy link* button for Public quizzes only — a muted secondary
   `LiftedButton` with a link icon, after *Start Quiz*. The modal also opens for an Unlisted quiz
   reached through a share link (`/choose-quiz?shared=…`); it has no Copy link there.
 
 ## Files
 
-To be filled in when it is built: `worker/index.js`, a new pure module beside `worker/preview.js`
-(slug, canonical path, page body, sitemap XML), `wrangler.jsonc` (`run_worker_first` becomes
-`["/play/shared/*", "/q/*", "/sitemap.xml"]`), `public/robots.txt`, `QuizController`,
-`IQuizRepository`, the `UpdatedAt` migration, the SPA route and page, and the Copy link callers.
+| File | Role |
+|---|---|
+| `worker/listing-url.js` (+ `.d.ts`) | The slug and the URL — shared with the SPA |
+| `worker/listing.js` (+ `.d.ts`) | Pure: resolving a path to page / 301 / 404 / fail-open, the `#root` HTML, the sitemap XML |
+| `worker/index.js` | The I/O: API calls with edge caching, `HTMLRewriter`, headers |
+| `wrangler.jsonc` | `run_worker_first: ["/play/shared/*", "/q/*", "/sitemap.xml"]` |
+| `public/robots.txt` | The `Sitemap:` line |
+| `QuizController.GetQuizListing` / `GetQuizListings` | The two anonymous endpoints |
+| `QuizService.GetQuizListingAsync` / `GetQuizListingsAsync` | Eligibility (`Listable()`) |
+| `QuizMappers.ProjectListing` / `ProjectListingEntry` | The SQL projections |
+| `IQuestionRepository.TouchQuizzesContainingAsync` | The question-edit bump |
+| Migration `AddQuizUpdatedAt` | The column, backfilled from `CreatedAt` |
+| `src/pages/Quiz/QuizListing/` | The SPA's page and its query |
+| `src/pages/Dashboard/Pages/Quiz/api/use-copy-quiz-link.ts` | Copy link |
+
+Tests: `QuizAPI.Tests/Discovery/QuizListingTests.cs` (eligibility, the uniform 404 for every
+caller, the DTO's fields), `Discovery/QuizUpdatedAtTests.cs` and
+`Associations/AssociationBoardServiceTests.cs` (the bumps), `worker/__tests__/listing.test.js`
+(slug, 301, 404, fail-open, escaping, XML), `use-copy-quiz-link.test.tsx`, and the E2E journey
+`e2e/quiz-listing.spec.ts`. The bulk `UPDATE` can't run on EF InMemory, so it was checked on
+PostgreSQL 16: a bank edit moved the quiz's `UpdatedAt` and left a quiz without that question alone.

@@ -291,9 +291,10 @@ could reach them. A menu is the same menu at every width, so that duplication is
 
 Two details worth keeping:
 
-- **Share is not offered on a Draft.** The backend mints a token its own resolver 404s, so it
-  could only produce a link that fails at the recipient's end. The copy itself is
-  `useCopyShareLink`, shared with the quiz table's row menu.
+- **The link is not offered on a Draft.** A Public quiz offers *Copy link* (its listing URL,
+  [`quiz-listing.md`](quiz-listing.md)), an Unlisted one *Copy share link*; a Draft has neither —
+  the backend would mint a token its own resolver 404s. The copy itself is `useCopyQuizLink`, shared
+  with the quiz table's row menu and the start modal.
 - **Play is offered only where it would start.** Public, or the viewer owns the quiz — the API's
   `QuizPlayAccess.IsPlayAuthorized`. An admin looking at someone else's Unlisted or Draft quiz gets
   no Play, because the session would be refused.

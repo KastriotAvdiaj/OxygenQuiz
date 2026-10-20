@@ -1,4 +1,4 @@
-# The frontend Worker — link previews, headers, robots
+# The frontend Worker — link previews, quiz listings, sitemap, headers, robots
 
 How `oxygenquiz.com` is served **today**, beyond "Cloudflare serves `dist/`". The deploy itself
 (push to `main` → Workers Builds → `wrangler deploy`) is in [`cheatsheet.md`](cheatsheet.md) and
@@ -8,8 +8,10 @@ How `oxygenquiz.com` is served **today**, beyond "Cloudflare serves `dist/`". Th
 
 | Request | Who answers | Cost |
 |---|---|---|
-| Any path **except** `/play/shared/*` | Cloudflare static assets, straight from `dist/` — the SPA shell for unknown routes (`not_found_handling: "single-page-application"`) | Free, not a Worker invocation |
+| Any path **except** the three below | Cloudflare static assets, straight from `dist/` — the SPA shell for unknown routes (`not_found_handling: "single-page-application"`) | Free, not a Worker invocation |
 | `/play/shared/*` | `worker/index.js` first (`assets.run_worker_first` in `wrangler.jsonc`) | One Worker request, plus one API call per 5 minutes per link (cached) |
+| `/q/*` | `worker/index.js` — the quiz listing | One Worker request, plus one API call per 5 minutes per quiz (cached) |
+| `/sitemap.xml` | `worker/index.js` | One Worker request, plus one API call an hour (cached) |
 
 The script is opt-in per path. Adding a path to `run_worker_first` makes every request to it a
 Worker request — keep the list to routes that need it.
@@ -49,6 +51,33 @@ is an access grant to an Unlisted quiz and must never become a search result.
 `robots.txt` deliberately does **not** list `/play/shared/`: Twitterbot and Slackbot obey
 `robots.txt`, and a disallowed URL gets no preview at all. `noindex` lets them fetch but tells search
 engines not to index.
+
+## Quiz listings (`/q/:id/:slug`)
+
+The public, indexable page for each Public quiz. The full behaviour is
+[`quiz-listing.md`](../quiz/quiz-listing.md) and the decision
+[ADR 0028](../adr/0028-the-worker-renders-the-quiz-listing-for-crawlers.md); in short, the Worker:
+
+1. reads `GET {API_ORIGIN}/api/quiz/{id}/listing` (edge-cached 5 minutes, a 404 for 1);
+2. answers **404** + `X-Robots-Tag: noindex` (the SPA shell, which boots on its not-found screen) for
+   an ineligible id — Draft, Unlisted, deleted, preview format, unknown, all alike;
+3. answers **301** to `https://oxygenquiz.com/q/:id/:slug` for a wrong, old or missing slug;
+4. otherwise rewrites the shell: the same head tags as a shared link plus
+   `<link rel="canonical">`, and real HTML in `#root` (`<h1>`, description, facts, a plain Play link)
+   that the SPA's `/q/:quizId/:slug?` route replaces when it boots — the same facts either way;
+5. **fails open** past 1.5 s or on any other status: the plain shell, 200, `noindex`.
+
+The pure part — slug, path resolution, the `#root` HTML, escaping — is `worker/listing.js` and
+`worker/listing-url.js`, tested in `worker/__tests__/listing.test.js`. A page built here is
+`Cache-Control: public, max-age=0, must-revalidate`, like `index.html`: it names the build's hashed
+files, so a deploy must reach it. Only the API call behind it is cached.
+
+## Sitemap (`/sitemap.xml`)
+
+Built from `GET {API_ORIGIN}/api/quiz/listings` (edge-cached an hour): `/`, `/choose-quiz`, and one
+listing URL per quiz with `<lastmod>` from `Quiz.UpdatedAt`. If the API can't answer it is a **503**
+with `Retry-After`, never an empty sitemap. One file holds 50,000 URLs; see
+[`quiz-listing.md`](../quiz/quiz-listing.md), "Sitemap", for when to switch to an index.
 
 ## Site-wide tags (`index.html`)
 
@@ -103,7 +132,9 @@ to `run_worker_first`, a billed Worker request for every file of every page load
 
 Keeps crawlers out of `/dashboard`, `/my-dashboard`, `/settings`, the play and results routes
 (`/quiz/`, `/associations/`), `/multiplayer` and `/screen` — pages that are personal, need a login,
-or are mid-game. The home page and the catalogue stay crawlable.
+or are mid-game. The home page, the catalogue and the quiz listings (`/q/`) stay crawlable, and the
+file names the sitemap (`Sitemap: https://oxygenquiz.com/sitemap.xml`). A listing's Play link goes
+to `/quiz/` or `/associations/`, so crawlers don't follow it into a game.
 
 ## Testing it locally
 
@@ -112,14 +143,9 @@ npm run build
 npx wrangler dev --var API_ORIGIN:https://api.oxygenquiz.com   # or a local mock
 curl -s http://localhost:8787/play/shared/<token> | grep -E "<title>|og:"
 curl -sI http://localhost:8787/play/shared/<token> | grep -i x-robots
+curl -s  http://localhost:8787/q/<id> -o /dev/null -w "%{http_code} %{redirect_url}\n"   # 301 to the slug
+curl -s  http://localhost:8787/sitemap.xml
 ```
 
 A real token comes from **Copy share link** on one of your quizzes. In production, paste the link
 into https://www.opengraph.xyz or a Discord message to see the card.
-
-## What this does not do (SEO)
-
-Search engines get a description and title for the home page and catalogue, but **no page per quiz
-exists to rank** — `/quiz/:id/play` starts a game, and the catalogue is one URL. Real search
-visibility needs a public quiz landing page (title, description, question count, a Play button) and
-a `sitemap.xml` of Public quizzes. Tracked in known-issues.

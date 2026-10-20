@@ -546,11 +546,10 @@ timeLimit` points, i.e. ~33 pts on a 30s question but ~100 pts (10% of base) on 
 
 ## Operations / deployment
 
-- **P2 — No page per quiz for search engines (found 2026-10-18).** Shared links preview well now
-  (`frontend-worker.md`), but nothing is indexable per quiz: `/quiz/:id/play` starts a game and the
-  catalogue is one URL. Needs a public quiz landing page plus a `sitemap.xml` of Public quizzes,
-  with the Worker filling its tags the same way it does for shared links. Deferred: it is a product
-  feature, not a fix.
+- ~~**P2 — No page per quiz for search engines (found 2026-10-18).**~~ **Fixed 2026-10-20** — every
+  Public quiz has a listing at `/q/:id/:slug`, rendered by the Worker for crawlers, plus
+  `/sitemap.xml` ([`quiz-listing.md`](../quiz/quiz-listing.md), ADR 0028). Was: nothing was
+  indexable per quiz: `/quiz/:id/play` starts a game and the catalogue is one URL.
 - ~~**P3 — Hashed build files aren't cached long-term (2026-10-18).**~~ **Fixed 2026-10-18** — the
   build writes to `dist/_app/` (`build.assetsDir`) and `public/_headers` caches `/_app/*` for a year,
   `immutable`; `/assets/*` and `index.html` still revalidate (`frontend-worker.md`, "Caching";

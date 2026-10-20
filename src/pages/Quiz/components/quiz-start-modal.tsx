@@ -7,7 +7,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { HelpCircle, Clock, User, Calendar, Play, Presentation } from "lucide-react";
+import { HelpCircle, Clock, User, Calendar, Play, Presentation, Link2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "@/lib/Auth";
 import { canHost as hasHostRole } from "@/lib/authorization";
@@ -15,6 +15,7 @@ import type { QuizSummaryDTO } from "@/types/quiz-types";
 import { secondsToMinutes } from "./quiz-duration";
 import { parseQuizPalette, quizEdgeColor, readableTextColor } from "./quiz-palette";
 import { LiftedButton } from "@/common/LiftedButton";
+import { useCopyQuizLink } from "@/pages/Dashboard/Pages/Quiz/api/use-copy-quiz-link";
 
 // Single-player only — multiplayer hosting starts inside the lobby, never from
 // this modal (the old mode="multiplayer" branch was unreachable).
@@ -49,6 +50,10 @@ export function QuizStartModal({
   const navigate = useNavigate();
   const { data: user } = useUser();
   const canHost = quiz.format === "Associations" && hasHostRole(user?.roles);
+  // Public only: its link is the quiz listing (docs/quiz/quiz-listing.md). The modal also opens for
+  // an Unlisted quiz reached through a share link, whose only link is the one already in hand.
+  const canCopyLink = quiz.status === "Public";
+  const quizLink = useCopyQuizLink();
 
   const handleStartQuiz = () => {
     onStartQuiz(quiz.id);
@@ -194,7 +199,7 @@ export function QuizStartModal({
               down to it, and `bg-[var(…)]` is a real Tailwind class, so tailwind-merge
               drops the component's own `bg-primary` / `text-white` instead of leaving two
               background rules to fight over source order. */}
-          <div className="flex justify-center pt-1">
+          <div className="flex flex-wrap justify-center gap-3 pt-1">
             <LiftedButton
               type="button"
               onClick={handleStartQuiz}
@@ -215,7 +220,6 @@ export function QuizStartModal({
               // the one coloured button (CLAUDE.md, "User-facing buttons are LiftedButtons").
               <LiftedButton
                 type="button"
-                outerClassName="ml-3"
                 className="h-11 gap-2 bg-muted text-foreground"
                 liftColor="muted-foreground"
                 onClick={() => {
@@ -224,6 +228,17 @@ export function QuizStartModal({
                 }}
               >
                 <Presentation className="h-4 w-4" /> Host for a class
+              </LiftedButton>
+            )}
+            {canCopyLink && (
+              // Secondary, muted like Host for a class, so Start Quiz stays the one coloured button.
+              <LiftedButton
+                type="button"
+                className="h-11 flex items-center gap-2 bg-muted text-foreground"
+                liftColor="muted-foreground"
+                onClick={() => quizLink.copy(quiz)}
+              >
+                <Link2 className="h-4 w-4" aria-hidden="true" /> Copy link
               </LiftedButton>
             )}
           </div>

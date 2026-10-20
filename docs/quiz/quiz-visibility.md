@@ -10,7 +10,7 @@ enforced inconsistently.
 |---|---|---|---|
 | **Draft** | No | Owner (and admins) only | Work in progress. Share links don't work. |
 | **Unlisted** | No | Anyone with the **share link** or invited into a **lobby** hosting it | Not listed anywhere; the token/lobby is the access grant. |
-| **Public** | Yes | Everyone (including anonymous guests) | Listed in the public catalogue and search. |
+| **Public** | Yes | Everyone (including anonymous guests) | Listed in the public catalogue and search, and has a public [listing](quiz-listing.md) at `/q/:id/:slug` in the sitemap. |
 
 The owner sets the status when creating/editing a quiz, or via `PATCH /api/quiz/{id}/status`.
 
@@ -93,7 +93,9 @@ which only decides what to offer). See [associations.md](associations.md), "Admi
 ### Unlisted via share link
 - The owner gets the link from **Copy share link** — in the quiz row's ⋯ menu (both dashboards) or
   the single-quiz page's ⋯ menu (`/dashboard/quiz/:id` and, since 2026-10-18, `/my-dashboard/quiz/:id`). It
-  is offered on the owner's own non-Draft quizzes only (`use-copy-share-link.ts`).
+  is offered on the owner's own Unlisted quizzes (`use-copy-quiz-link.ts`). The same item on a
+  Public quiz is **Copy link** and copies its listing URL instead — no token
+  ([`quiz-listing.md`](quiz-listing.md), "Copy link").
 - That calls `POST /api/quiz/{id}/share-link` to lazily generate (and thereafter reuse) an
   unguessable `ShareToken`. The token is only ever returned to the owner.
 - A visitor opens `/play/shared/{token}`, which resolves the quiz through
@@ -170,6 +172,10 @@ Two read endpoints take a bare id, and ids are sequential — so "you need the i
 | `GET /api/quiz/{id}` — the quiz's details | Public: anyone. Draft / Unlisted: the owner, an admin, or (Unlisted only) a caller passing `?shareToken=` | 404 |
 | `GET /api/quiz/{id}/questions` — every question **with `isCorrect` on its options** | The owner or an admin, at **any** status — Public included | 404 |
 
+A third read by id is anonymous on purpose: `GET /api/quiz/{id}/listing`, the public
+[quiz listing](quiz-listing.md). It answers only for a Public quiz in a released format, for every
+caller alike, and is the same 404 as an unknown id for everything else.
+
 `/questions` is the authoring view: the quiz page and the editors read it, play never does (a
 session serves one question at a time, without the answers). Both endpoints answered 404 only for a
 Draft until 2026-10-18, which made every Public quiz's answer key one anonymous request away and
@@ -219,5 +225,8 @@ Done:
 
 - A player quiz page, `/my-dashboard/quiz/:id` (2026-10-18) — the same page as the admin one, opened
   from the row's **View** item or a click on the row; Play and Copy share link are in its ⋯ menu too.
+
+- The public quiz listing, `/q/:id/:slug`, and the sitemap (2026-10-20) — Public quizzes only;
+  Copy link on a Public quiz gives its URL ([`quiz-listing.md`](quiz-listing.md)).
 
 Nothing remaining.

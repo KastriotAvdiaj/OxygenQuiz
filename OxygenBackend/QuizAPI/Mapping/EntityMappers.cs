@@ -454,6 +454,34 @@ namespace QuizAPI.Mapping
                 DeletedAt = q.DeletedAt
             };
 
+        /// <summary>
+        /// The quiz listing's page (docs/quiz/quiz-listing.md). Only what the page shows: no status,
+        /// share token, owner id or email, and no questions — the DTO has no field for them.
+        /// </summary>
+        public static readonly Expression<Func<Quiz, QuizListingDTO>> ProjectListing =
+            q => new QuizListingDTO
+            {
+                Id = q.Id,
+                Title = q.Title,
+                Description = q.Description,
+                Category = q.Category == null ? string.Empty : q.Category.Name,
+                ColorPaletteJson = q.Category == null ? null : q.Category.ColorPaletteJson,
+                Gradient = q.Category != null && q.Category.Gradient,
+                Difficulty = q.Difficulty == null ? string.Empty : q.Difficulty.Level,
+                Language = q.Language == null ? string.Empty : q.Language.Language,
+                QuestionCount = q.QuizQuestions.Count(qq => qq.RemovedInVersion == null),
+                TimeLimitInSeconds = q.TimeLimitInSeconds ?? 0,
+                Author = q.User == null ? string.Empty : q.User.Username,
+                ImageUrl = q.ImageUrl,
+                Format = q.Format == QuizFormat.Associations ? FormatNames.Associations : FormatNames.Classic,
+                CreatedAt = q.CreatedAt,
+                UpdatedAt = q.UpdatedAt,
+            };
+
+        /// <summary>One sitemap row: enough for the URL (id + slugged title) and its lastmod.</summary>
+        public static readonly Expression<Func<Quiz, QuizListingEntryDTO>> ProjectListingEntry =
+            q => new QuizListingEntryDTO { Id = q.Id, Title = q.Title, UpdatedAt = q.UpdatedAt };
+
         public static readonly Expression<Func<Quiz, QuizDTO>> ProjectDetail =
             q => new QuizDTO
             {

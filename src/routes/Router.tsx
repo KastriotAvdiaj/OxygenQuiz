@@ -62,6 +62,11 @@ const QuizResultsRouteWrapper = lazy(() =>
     (module) => ({ default: module.QuizResultsRouteWrapper }),
   ),
 );
+const QuizListingPage = lazy(() =>
+  import("@/pages/Quiz/QuizListing/quiz-listing-page").then((module) => ({
+    default: module.QuizListingPage,
+  })),
+);
 const SharedQuizRouteWrapper = lazy(() =>
   import("@/pages/Quiz/Sessions/components/quiz-taking-process/shared-quiz-route-wrapper").then(
     (module) => ({ default: module.SharedQuizRouteWrapper }),
@@ -258,6 +263,17 @@ const createAppRouter = (queryClient: QueryClient) =>
             children={<QuizPageRouteWrapper />}
           />
         </>
+      ),
+    },
+    {
+      // The quiz listing: the public, indexable page for one Public quiz (docs/quiz/quiz-listing.md).
+      // In production the Worker answers this path first — head tags, a body for crawlers, a 404 or
+      // a 301 — and this route replaces its markup when the app boots (ADR 0028). No auth loader:
+      // the page is the same for everyone; only Play differs, and the play route decides that.
+      path: "/q/:quizId/:slug?",
+      errorElement: <DashboardErrorElement />,
+      element: (
+        <HomeLayout headerBehavior={HeaderBehavior.DEFAULT} children={<QuizListingPage />} />
       ),
     },
     {

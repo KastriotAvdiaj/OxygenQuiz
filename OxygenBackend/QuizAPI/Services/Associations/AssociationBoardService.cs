@@ -148,6 +148,7 @@ namespace QuizAPI.Services.Associations
             quiz.Status = status;
             quiz.TimeLimitInSeconds = um.BoardTimeInSeconds;
             quiz.Version = newVersion;
+            quiz.UpdatedAt = DateTime.UtcNow;
 
             await _quizzes.SaveChangesAsync();
 
