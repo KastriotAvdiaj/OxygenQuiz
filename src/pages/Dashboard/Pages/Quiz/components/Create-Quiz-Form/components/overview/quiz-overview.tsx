@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { AnimatePresence, MotionConfig, motion } from "framer-motion";
-import { AlertTriangle, Plus, SlidersHorizontal, Undo2 } from "lucide-react";
+import { AlertTriangle, Check, Plus, SlidersHorizontal, Undo2 } from "lucide-react";
 import type { FieldErrors } from "react-hook-form";
 
 import { LiftedButton } from "@/common/LiftedButton";
@@ -547,8 +547,9 @@ export const QuizOverview = ({
             <LiftedButton
               type="button"
               onClick={() => onDetailsOpenChange(false)}
-              className="px-6"
+              className="flex items-center gap-2 px-6"
             >
+              <Check className="h-4 w-4" aria-hidden="true" />
               Done
             </LiftedButton>
           </div>

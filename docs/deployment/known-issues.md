@@ -280,6 +280,12 @@ timeLimit` points, i.e. ~33 pts on a 30s question but ~100 pts (10% of base) on 
 
 ## Code quality / cleanup
 
+- **P3 — About half the `LiftedButton`s have no icon (2026-10-20).** The rule since 2026-10-20 is that
+  every one leads with an icon naming its action (`CLAUDE.md`, Styling). A rough count found 51 of 97
+  without one. Bring them in line when touching each screen, or in one sweep. Also: the email-change
+  confirmation's *Done* (`IdentityEditors.tsx`) and the invite-code dialog's *Done*
+  (`InviteCodes.tsx`) are flat `Button`s, against the user-facing-button rule.
+
 - ~~**P2 — `UserAnswer.ToDtoList()` silently drops multiple-choice options.**~~ **Fixed 2026-09-26:**
   `GetSessionAnswersAsync` now projects in SQL with `ProjectUserAnswer`, and the compiled twin is
   deleted. Kept below for the reasoning. The sibling of the
