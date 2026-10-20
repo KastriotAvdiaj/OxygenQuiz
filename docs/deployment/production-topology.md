@@ -43,7 +43,7 @@ Facts that pin this down, so a future reader can re-verify rather than trust the
 | Backend port | `127.0.0.1:5000 -> 8080` — localhost only, never exposed publicly |
 | TLS / reverse proxy | **nginx**, installed on the host as a system package (`systemctl status nginx`), *not* in Docker. Caddy is not installed at all. |
 | Frontend host | **Cloudflare Workers**, not the VPS. The VPS serves no static files. |
-| `www.oxygenquiz.com` | **Not served** — answers Cloudflare 522 as of 2026-10-20. Meant to 301 to the apex; see known-issues, "`www.oxygenquiz.com` is down". |
+| `www.oxygenquiz.com` | Proxied `CNAME → oxygenquiz.com`. **Not served** — answers Cloudflare 522 as of 2026-10-20, because the apex's Worker custom domain covers only the apex. Meant to 301 to the apex via a Redirect Rule; see known-issues, "`www.oxygenquiz.com` is down". |
 | Frontend → API | `VITE_API_URL=https://api.oxygenquiz.com/api`, baked into the bundle at build time (`.env.production`) |
 
 Because the frontend is on Workers and the API is on the VPS, **every browser call is

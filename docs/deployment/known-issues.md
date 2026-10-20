@@ -560,13 +560,16 @@ timeLimit` points, i.e. ~33 pts on a 30s question but ~100 pts (10% of base) on 
   *and* a tab that stayed open across the deploy. → `wrangler.jsonc`, `worker/index.js`
 - **P2 — `www.oxygenquiz.com` is down (found 2026-10-20).** It answers Cloudflare **522** (Cloudflare
   reached for an origin server and got no answer), so `www` is not served by the Worker as
-  `production-topology.md` used to say — it has a proxied DNS record pointing at some origin, most
-  likely an old one. Anyone typing `www.` sees an error page, and search engines see two hosts.
+  `production-topology.md` used to say. Its DNS record is a proxied `CNAME www → oxygenquiz.com`
+  (checked 2026-10-20), but the apex is a Worker *custom domain*, which answers for that exact
+  hostname only — so Cloudflare follows the CNAME, finds no origin behind it, and times out. Anyone
+  typing `www.` sees an error page, and search engines see two hosts.
   Fix (dashboard, no code): a **Redirect Rule** sending `www.oxygenquiz.com/*` to
   `https://oxygenquiz.com/${1}` with a 301, keeping the query string (Rules → Redirect Rules, the
   "Redirect from WWW to root" template). It runs at Cloudflare's edge before any origin is asked,
-  so the dead target stops mattering; the `www` DNS record must stay proxied (orange cloud) for the
-  rule to see the request. Then check `curl -sI https://www.oxygenquiz.com/choose-quiz` returns
+  so the dead target stops mattering; keep the CNAME proxied (orange cloud) or the rule never sees
+  the request. Deploying the rule warns that `www` "may not be proxied" — a false alarm with this
+  CNAME: choose *Ignore and deploy rule anyway*, not *Create a new proxied DNS record*. Then check `curl -sI https://www.oxygenquiz.com/choose-quiz` returns
   `301` with `location: https://oxygenquiz.com/choose-quiz`. The quiz listing's canonical URLs are
   on the apex, so this also settles which host search engines index.
   → Cloudflare dashboard (oxygenquiz.com zone)
