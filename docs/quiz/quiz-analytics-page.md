@@ -300,7 +300,10 @@ Two details worth keeping:
 
 **A breadcrumb above the card — `Quizzes › <title>`.** The header's Back is browser history, which
 is wherever you came from (a share, a bookmark, a play), not necessarily the list. The breadcrumb
-is the way *up*. The dashboard rail also keeps **Quizzes** lit on this page: the route is
+is the way *up*. It sits outside the card, on the dashboard background and aligned with the card's
+left edge (since 2026-10-20; it had been inside, in muted grey above the title, and was easy to
+miss), in `text-foreground/70` with the current page in full `text-foreground` —
+`text-muted-foreground` is too close to the dashboard's `bg-muted` to read. The dashboard rail also keeps **Quizzes** lit on this page: the route is
 `quiz/:quizId`, a sibling of `quizzes`, so the Quizzes nav item claims it through `activeOn`
 (`dashboardNavConfig.ts`, `activeNavId`).
 - **Delete opens on the next animation frame.** The confirm dialog is owned by the page and
@@ -342,6 +345,16 @@ two columns inside one narrow column is how you get a 150px-wide chart.
 
 The separator between analytics and questions is `xl:hidden`: from `xl` the column gap does the
 dividing, and a horizontal rule across one column of two reads as a mistake.
+
+**From `xl`, the question rows scroll inside their own area, not the page** (2026-10-20). Opening
+a few rows used to grow the whole card, so the page scrolled and took the left column and the
+column headings with it. Now the rows list has a maximum height — the viewport minus about 22rem
+for everything above and below it, never under 16rem — with `overflow-y-auto` and
+`overscroll-contain`, so reaching the end of the list doesn't carry the scroll on into the page.
+The *Questions* heading, the sort control and the column labels stay above it. If the page above
+or below the list changes height, adjust the `22rem` in `question-performance-table.tsx`.
+Below `xl` there is no inner scroll: the page is one column there, and a scroll area inside a
+scrolling page traps a thumb on a phone.
 
 ### Motion
 
