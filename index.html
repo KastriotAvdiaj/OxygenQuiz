@@ -5,6 +5,20 @@
     <!-- viewport-fit=cover: lets the app extend under notches/rounded corners; the
          app shell pads content back in with env(safe-area-inset-*) (docs/RESPONSIVE.md) -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <!-- iOS only: maximum-scale=1 stops Safari zooming the page when an input under 16px takes
+         focus. iOS ignores it for pinch-zoom (since iOS 10), so users can still zoom by hand.
+         Not set for everyone because Android Chrome *does* honour it and would lose pinch-zoom —
+         and Android never focus-zooms anyway. iPadOS reports itself as a Mac, hence the touch
+         check. See docs/RESPONSIVE.md, "Inputs and iOS focus-zoom". -->
+    <script>
+      (function () {
+        var ua = navigator.userAgent;
+        var isIOS = /iPad|iPhone|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+        if (!isIOS) return;
+        var meta = document.querySelector('meta[name="viewport"]');
+        if (meta) meta.setAttribute("content", meta.getAttribute("content") + ", maximum-scale=1");
+      })();
+    </script>
     <!-- Favicon. The href is a Vite HTML env replacement resolved at build/serve time from
          .env.<mode>, so dev and production get different icons and you can tell the two
          running apps apart in the tab strip:

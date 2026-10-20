@@ -192,7 +192,7 @@ Decisions worth knowing:
   catalogue's facet state and panel were reused unchanged instead of writing a second set.
 - **`status` is computed, not stored.** Its selector is a conditional
   (`AbandonmentReason != null ? Abandoned : IsCompleted ? Completed : InProgress`) that EF
-  translates to a SQL `CASE`, so it filters in the database. Precedence matches the card's badge:
+  translates to a SQL `CASE`, so it filters in the database. Precedence matches the table's Status column:
   abandoned sessions are also `IsCompleted = true`, and must still read as abandoned. The enum
   parses by name or number (`status:in:1,2` and `status:in:Completed,Abandoned` are equivalent).
 - **Date ranges are half-open and in the viewer's timezone.** The UI sends
@@ -271,8 +271,13 @@ Conventions this follows:
   alternating `muted` and `background`, instead of the dashboard tables' primary wash — the
   profile is a tinted page and the history reads as plain content there. On the dashboard it
   sits in a `Card` beside My Quizzes and uses the default `"primary"` tone like that table.
-  Both use `density="compact"` (see [RESPONSIVE.md](../RESPONSIVE.md)): the score renders as
-  number and bar on one line instead of stacked.
+  Both use `density="compact"` (see [RESPONSIVE.md](../RESPONSIVE.md)), which sets the score's
+  type size. The score is the number alone: a thin bar beside it was removed (2026-10-13) — it
+  restated the number, and a page of mostly-zero bars read as empty progress tracks.
+- **Duration is a .NET TimeSpan string** (`[d.]hh:mm:ss[.fffffff]`), parsed by
+  `formatSessionDuration`. A real session's span always has the fractional part; the first parser
+  split on "." and kept the last piece, so it read the fraction as the whole value and every row
+  showed "—" until 2026-10-13.
 - **Score is /100, points are a column of their own.** The headline is the share of questions
   answered correctly × 100 — the same number the results page calls "Final Score"
   (`normalizedScore`), so a row never disagrees with the page it links to. Raw points
@@ -293,9 +298,10 @@ Conventions this follows:
   (a sheet below that) and, like My Quizzes' panel, puts the search field at the top of it
   (`showSearch` — the dashboard's `SearchInput`, submitted with Enter or its button); the
   toolbar there keeps only the sort, and the panel's "Clear all" clears the search too.
-- **Status badges: finished plays are filled, unfinished ones outlined.** Completed is
-  `bg-primary`, Abandoned `bg-destructive`, In progress an outlined primary badge — it is not a
-  result yet.
+- **Status is coloured text, not a badge** (2026-10-13). Completed is `text-primary`, Abandoned
+  `text-destructive` (`dark:text-red-400`, since dark mode's destructive token is too dark to read
+  as text), In progress muted — it is not a result yet. Filled badges on every row made status the
+  loudest column in the table.
 - **Two empty states.** No plays at all → "No quizzes played yet" and no toolbar (a search box
   over nothing is noise). Plays, but none match → "No sessions match these filters" with a
   clear action, toolbar still visible.
@@ -312,6 +318,12 @@ the page and the lookup came back empty.
 ## Two tabs: single player, and multiplayer by lobby
 
 Decided 2026-10-11, for `/my-dashboard/history` (`MyQuizHistory.tsx`).
+
+The page has one header (title and description) and one `Tabs` (`components/ui/tabs.tsx`, the
+sliding primary pill) above both lists; only what is under the tabs changes. Each tab used to
+render its own header and control, so the multiplayer tab lost the description and the pill was
+remounted on every switch instead of sliding. The single-player list's filters and page live on
+the page, so they survive a trip to the other tab.
 
 History used to be one list of sessions, and a match is one session per player — so an evening of
 five rematches in one lobby was five rows that read as five unrelated plays, mixed in among the
