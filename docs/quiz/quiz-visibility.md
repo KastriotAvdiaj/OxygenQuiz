@@ -206,7 +206,7 @@ Done:
   owner-side **share-link generation + copy** in the quiz page's and the quiz row's ⋯ menus (hidden on a Draft).
 - The `/play/shared/:token` route (`SharedQuizRouteWrapper`): sends a signed-out visitor to log in
   and back, resolves the token, then hands off to `/choose-quiz?shared=<token>` so the recipient sees
-  the normal start dialog before anything is timed. `quizPlayPath` carries the token on as
+  the normal start dialog — in the category's colours, like the catalogue — before anything is timed. `quizPlayPath` carries the token on as
   `?shareToken=` into session creation, for Classic and Associations alike.
 - Classroom hosting (Associations, Teacher role): the host setup page lists the host's own boards
   (`scope: "mine"`) alongside public ones, so an Unlisted board can be hosted for a class.
