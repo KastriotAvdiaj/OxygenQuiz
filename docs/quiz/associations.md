@@ -417,7 +417,7 @@ browser: the builder autosaves it locally and guards the exit, exactly like the 
 - **Editing**: `/dashboard/quizzes/edit-quiz/:quizId/board` and
   `/my-dashboard/quizzes/edit/:quizId/board`. **Every Edit link goes through `quizEditPath` /
   `useQuizEditPath`** (`quiz-paths.ts`), and the Classic edit route redirects a board to its own
-  editor, so a board never opens the Classic form. Only the owner can save (the API decides). The
+  editor, so a board never opens the Classic form. The owner, or a caller with `quiz:update:any`, can save (the API decides; since 2026-10-21). The
   edit form is keyed by quiz id + version, like the Classic one.
 
 **Elsewhere in the dashboard:** the quiz table's Questions column says "Board"; the single-quiz

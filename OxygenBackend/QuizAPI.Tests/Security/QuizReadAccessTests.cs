@@ -42,7 +42,7 @@ public class QuizReadAccessTests
         service.Setup(s => s.GetQuizQuestionsAsync(QuizId)).ReturnsAsync(new List<QuizQuestionDTO>());
 
         return new QuizController(service.Object, NullLogger<QuizController>.Instance, caller,
-            Mock.Of<IAuditService>());
+            Mock.Of<IAuditService>(), Mock.Of<QuizAPI.Services.Permissions.IPermissionService>());
     }
 
     private static TestCurrentUserService Anonymous =>

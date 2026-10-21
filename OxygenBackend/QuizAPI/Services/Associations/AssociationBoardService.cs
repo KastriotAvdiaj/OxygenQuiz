@@ -17,8 +17,11 @@ namespace QuizAPI.Services.Associations
         /// <summary>The full Board for the builder, or null when there is none the caller may edit.</summary>
         Task<AssociationBoardDTO?> GetForEditAsync(int quizId, Guid? userId, bool isAdmin);
 
-        /// <summary>Updates the quiz and, if its content changed, replaces the Board copy-on-write. Null = not found / not yours.</summary>
-        Task<QuizDTO?> UpdateAsync(Guid userId, AssociationQuizUM um);
+        /// <summary>
+        /// Updates the quiz and, if its content changed, replaces the Board copy-on-write. The owner,
+        /// or a holder of <c>quiz:update:any</c> for any board. Null = not found / not yours.
+        /// </summary>
+        Task<QuizDTO?> UpdateAsync(Guid userId, AssociationQuizUM um, bool canUpdateAny = false);
     }
 
     /// <summary>
@@ -111,10 +114,13 @@ namespace QuizAPI.Services.Associations
                 : AssociationBoardMapping.ToEditDto(board, quiz.Version, quiz.TimeLimitInSeconds ?? 0);
         }
 
-        public async Task<QuizDTO?> UpdateAsync(Guid userId, AssociationQuizUM um)
+        public async Task<QuizDTO?> UpdateAsync(Guid userId, AssociationQuizUM um, bool canUpdateAny = false)
         {
             var quiz = await _quizzes.GetTrackedAsync(um.Id);
-            if (quiz is null || quiz.UserId != userId) return null;
+            // quiz:update:any may save any board: GetForEditAsync already opens the editor for admins,
+            // and an editor whose save always 404s is the bug the Classic update had
+            // (docs/quiz/quiz-editing.md).
+            if (quiz is null || (!canUpdateAny && quiz.UserId != userId)) return null;
 
             // After ownership: only the owner learns this is the wrong kind of quiz for this endpoint.
             QuizFormatGuard.EnsureFormat(quiz.Format, QuizFormat.Associations);

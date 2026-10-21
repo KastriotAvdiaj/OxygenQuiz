@@ -1028,13 +1028,17 @@ const CreateQuizForm = ({
                             isSubmitting ? "invisible" : "visible"
                           }`}
                         >
+                          {/* Save Changes keeps you where you are, so it gets a save icon, like the
+                              overview's submit; Finish is the step forward out of the builder,
+                              so it gets the arrow. */}
+                          {isEditMode && !isCreatingQuestions && (
+                            <Save className="h-4 w-4" aria-hidden="true" />
+                          )}
                           {isCreatingQuestions
                             ? "Creating Questions..."
                             : isEditMode
                               ? "Save Changes"
                               : "Finish"}
-                          {/* Only on Finish: it's the step forward out of the builder. Save
-                              Changes keeps you where you are, so an arrow would overpromise. */}
                           {!isCreatingQuestions && !isEditMode && (
                             <ArrowRight className="h-4 w-4" aria-hidden="true" />
                           )}

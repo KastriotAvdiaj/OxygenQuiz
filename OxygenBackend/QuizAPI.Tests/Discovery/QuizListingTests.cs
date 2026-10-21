@@ -82,7 +82,8 @@ public class QuizListingTests
         {
             var service = new QuizService(new QuizRepository(ctx), new Mock<IQuestionRepository>().Object,
                 NullLogger<QuizService>.Instance, new Mock<IImageService>().Object, caller);
-            return new QuizController(service, NullLogger<QuizController>.Instance, caller, Mock.Of<IAuditService>())
+            return new QuizController(service, NullLogger<QuizController>.Instance, caller, Mock.Of<IAuditService>(),
+                Mock.Of<QuizAPI.Services.Permissions.IPermissionService>())
             {
                 ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() },
             };

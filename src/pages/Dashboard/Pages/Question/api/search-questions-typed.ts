@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { queryOptions, useQuery } from "@tanstack/react-query";
 import { fetchPaged, type FilterQuery, type PagedResponse } from "@/lib/filtering";
 import { QuestionType } from "@/types/question-types";
 import { questionKeys } from "@/lib/query-keys";
@@ -25,6 +25,17 @@ const searchTypedQuestions = <T>(
   query: FilterQuery
 ): Promise<PagedResponse<T>> => fetchPaged<T>(buildUrl(type, scope), query);
 
+/** Shared by the hook and the Questions route's prefetch, so both use one cache key. */
+export const typedQuestionSearchQueryOptions = <T>(
+  type: QuestionType,
+  scope: QuestionSearchScope,
+  query: FilterQuery,
+) =>
+  queryOptions({
+    queryKey: questionKeys.typedSearch(scope, type, query),
+    queryFn: () => searchTypedQuestions<T>(type, scope, query),
+  });
+
 export const useTypedQuestionSearch = <T>({
   type,
   scope = "all",
@@ -37,7 +48,6 @@ export const useTypedQuestionSearch = <T>({
   enabled?: boolean; // only the active tab fetches
 }) =>
   useQuery({
-    queryKey: questionKeys.typedSearch(scope, type, query),
-    queryFn: () => searchTypedQuestions<T>(type, scope, query),
+    ...typedQuestionSearchQueryOptions<T>(type, scope, query),
     enabled,
   });

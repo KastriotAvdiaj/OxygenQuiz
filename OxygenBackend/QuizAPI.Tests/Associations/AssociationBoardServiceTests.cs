@@ -323,6 +323,21 @@ public class AssociationBoardServiceTests
         Assert.Null(await Service(ctx).UpdateAsync(StrangerId, Um(db, id, version: 1, title: "Hijack")));
     }
 
+    /// <summary>A holder of quiz:update:any can save someone else's board — the editor already opens for admins.</summary>
+    [Fact]
+    public async Task Update_ByAnAdmin_SavesSomeoneElsesBoard()
+    {
+        using var db = new Db();
+        var id = await CreateOne(db);
+
+        await using (var ctx = db.Context())
+            Assert.NotNull(await Service(ctx).UpdateAsync(StrangerId, Um(db, id, version: 1, title: "Moderated"), canUpdateAny: true));
+
+        await using var check = db.Context();
+        Assert.Equal("Moderated", check.Quizzes.Single().Title);
+        Assert.Equal(OwnerId, check.Quizzes.Single().UserId);   // still the owner's quiz
+    }
+
     /// <summary>This endpoint only edits boards; a Classic quiz goes through the Classic update.</summary>
     [Fact]
     public async Task Update_OfAClassicQuiz_IsRefused()

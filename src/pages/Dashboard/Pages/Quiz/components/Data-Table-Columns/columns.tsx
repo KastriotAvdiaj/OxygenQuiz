@@ -28,12 +28,14 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui";
-import { CirclePlay, Copy, Edit2, Eye, MoreHorizontal, Share2, Trash2 } from "lucide-react";
+import { CirclePlay, Copy, Edit2, Eye, EyeOff, MoreHorizontal, Share2, Trash2, Upload } from "lucide-react";
 import { DeleteQuiz } from "../delete-quiz";
 import { Link, useLocation } from "react-router-dom";
 import { useUser } from "@/lib/Auth";
 import { quizPlayPath } from "@/pages/Quiz/quiz-play-path";
 import { useCopyQuizLink } from "../../api/use-copy-quiz-link";
+import { useSetQuizStatus } from "../../api/set-quiz-status";
+import { useNotifications } from "@/common/Notifications";
 import { QuizSummaryDTO } from "@/types/quiz-types";
 
 /**
@@ -198,6 +200,26 @@ function QuizActionsCell({ quiz }: { quiz: QuizSummaryDTO }) {
   const canPlay = !quiz.deletedAt && (quiz.status === "Public" || isOwn);
   const canShare = !quiz.deletedAt && (quiz.status === "Public" || (isOwn && quiz.status === "Unlisted"));
   const shareLink = useCopyQuizLink();
+  // Publish / Unpublish from the row, without opening the quiz first. Same target rule as the
+  // quiz page's menu (Quiz.tsx `handleSetStatus`): a Draft goes Public, anything else back to
+  // Draft. The API lets the owner, or anyone with quiz:update:any (Admin, SuperAdmin), do it —
+  // and both dashboards only list quizzes the viewer is one of those for. A refused Publish (an
+  // "Unspecified" category / language / difficulty) is already toasted with the API's own
+  // message by the axios interceptor.
+  const { addNotification } = useNotifications();
+  const setStatus = useSetQuizStatus();
+  const isDraft = quiz.status === "Draft";
+  const handleToggleStatus = () =>
+    setStatus.mutate(
+      { quizId: quiz.id, status: isDraft ? "Public" : "Draft" },
+      {
+        onSuccess: () =>
+          addNotification({
+            type: "success",
+            title: isDraft ? "Quiz published" : "Quiz moved back to draft",
+          }),
+      },
+    );
   // Separate disclosure for the delete confirmation. It's rendered OUTSIDE the
   // dropdown (below) so closing the menu can't unmount an open dialog and leave
   // `pointer-events: none` stuck on <body>.
@@ -247,6 +269,16 @@ function QuizActionsCell({ quiz }: { quiz: QuizSummaryDTO }) {
             <Link to={editPath(quiz)} className="flex items-center gap-2">
               <Edit2 size={16} /> Edit
             </Link>
+          </DropdownMenuItem>
+        )}
+        {!quiz.deletedAt && (
+          <DropdownMenuItem
+            className="hover:bg-background"
+            disabled={setStatus.isPending}
+            onClick={handleToggleStatus}
+          >
+            {isDraft ? <Upload size={16} /> : <EyeOff size={16} />}
+            {isDraft ? "Publish" : "Unpublish"}
           </DropdownMenuItem>
         )}
         {/* Admin tooling only. A player never needs a quiz's database id — nothing in the

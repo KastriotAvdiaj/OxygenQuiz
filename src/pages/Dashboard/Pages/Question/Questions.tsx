@@ -3,7 +3,9 @@ import { useQuestionCategoryData } from "./Entities/Categories/api/get-question-
 import { useQuestionDifficultyData } from "./Entities/Difficulty/api/get-question-difficulties";
 import { useQuestionLanguageData } from "./Entities/Language/api/get-question-language";
 
-import { Card, BlobLoader } from "@/components/ui";
+import { Card } from "@/components/ui";
+import { FilterPanelSkeleton } from "../../Components/list-page-skeletons";
+import { QUESTIONS_PAGE_SIZE } from "./api/question-filter-query";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useDisclosure } from "@/hooks/use-disclosure";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -41,7 +43,7 @@ export const Questions = () => {
   const [createdTo, setCreatedTo] = useState("");
 
   const [pageNumber, setPageNumber] = useState(1);
-  const [pageSize] = useState(6);
+  const [pageSize] = useState(QUESTIONS_PAGE_SIZE);
 
   const [activeTab, setActiveTab] = useState<QuestionType>(
     QuestionType.MultipleChoice
@@ -90,13 +92,12 @@ export const Questions = () => {
     difficultiesQuery.isLoading ||
     languagesQuery.isLoading;
 
-  if (isFilterDataLoading) {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <BlobLoader size="lg" />
-      </div>
-    );
-  }
+  // <b>No full-page gate.</b> This used to return a full-height BlobLoader until all three
+  // lookups had loaded, so the header, the tabs and the list — none of which need them — waited
+  // too. Only the filter panel does; it shows its own skeleton meanwhile, and the list shows its
+  // own (QuestionTabContent). The Add Question forms read the same lookups, so the button waits
+  // with the panel. See docs/development/loading-states.md §2.1.
+  const filterPanelSkeleton = <FilterPanelSkeleton />;
 
   return (
     // Gutters and vertical rhythm: see the matching note in Quizzes.tsx — `main` owns the
@@ -138,7 +139,7 @@ export const Questions = () => {
             }
           >
             <DialogTrigger asChild>
-              <LiftedButton>Add Question +</LiftedButton>
+              <LiftedButton disabled={isFilterDataLoading}>Add Question +</LiftedButton>
             </DialogTrigger>
             {/* sm:max-w-sm, not the shared max-w-lg: three stacked buttons in a 512px
                 shell read as a half-empty panel. `w-fit` used to be here and did nothing
@@ -185,6 +186,7 @@ export const Questions = () => {
           <SheetHeader className="mb-4">
             <SheetTitle>Filters</SheetTitle>
           </SheetHeader>
+          {isFilterDataLoading ? filterPanelSkeleton : (
           <QuestionFilters
             searchTerm={searchTerm}
             onSearchTermChange={setSearchTerm}
@@ -202,6 +204,7 @@ export const Questions = () => {
             onCreatedFromChange={setCreatedFrom}
             onCreatedToChange={setCreatedTo}
           />
+          )}
         </SheetContent>
       </Sheet>
 
@@ -284,6 +287,7 @@ export const Questions = () => {
 
           {/* Desktop filter sidebar */}
           <aside className="hidden lg:block w-[350px] shrink-0">
+            {isFilterDataLoading ? filterPanelSkeleton : (
             <QuestionFilters
               searchTerm={searchTerm}
               onSearchTermChange={setSearchTerm}
@@ -301,6 +305,7 @@ export const Questions = () => {
               onCreatedFromChange={setCreatedFrom}
               onCreatedToChange={setCreatedTo}
             />
+            )}
           </aside>
         </div>
       </div>

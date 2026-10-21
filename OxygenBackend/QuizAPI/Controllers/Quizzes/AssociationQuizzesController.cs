@@ -5,6 +5,7 @@ using QuizAPI.DTOs.Quiz;
 using QuizAPI.Services.Associations;
 using QuizAPI.Services.Audit;
 using QuizAPI.Services.CurrentUserService;
+using QuizAPI.Services.Permissions;
 
 namespace QuizAPI.Controllers.Quizzes
 {
@@ -29,11 +30,15 @@ namespace QuizAPI.Controllers.Quizzes
         private readonly ICurrentUserService _currentUser;
         private readonly IAuditService _audit;
 
+        private readonly IPermissionService _permissions;
+
         public AssociationQuizzesController(
             IAssociationBoardService boards,
             ICurrentUserService currentUser,
-            IAuditService audit)
+            IAuditService audit,
+            IPermissionService permissions)
         {
+            _permissions = permissions;
             _boards = boards;
             _currentUser = currentUser;
             _audit = audit;
@@ -85,7 +90,9 @@ namespace QuizAPI.Controllers.Quizzes
             if (!MayUseAssociations) return NotFound();
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            var updated = await _boards.UpdateAsync(GetCurrentUserId(), um);
+            var userId = GetCurrentUserId();
+            var canUpdateAny = await _permissions.HasPermissionAsync(userId, QuizPermissions.UpdateAny);
+            var updated = await _boards.UpdateAsync(userId, um, canUpdateAny);
             if (updated is null) return NotFound();
 
             await _audit.LogAsync(AuditActions.QuizUpdated, "Quiz", um.Id.ToString());

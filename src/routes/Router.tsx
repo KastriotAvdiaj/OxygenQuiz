@@ -21,6 +21,14 @@ import { Navigate, Outlet } from "react-router-dom";
 //import  {QuizSelection} from "@/pages/Quiz/Quiz-Selection";
 // import { DashboardErrorElement } from "@/pages/UtilityPages/Error/Dashboard-Error-Element";
 import { quizLoader } from "@/loaders/quiz.loader";
+import { quizEditLoader } from "@/loaders/quiz-edit.loader";
+import {
+  dashboardListLoader,
+  loadQuestionsPage,
+  loadQuizzesPage,
+  prefetchQuestionsPageData,
+  prefetchQuizzesPageData,
+} from "./dashboard-prefetch";
 import { dashboardEntryLoader } from "@/loaders/dashboardEntryLoader";
 import { quizSelectionLoader } from "@/loaders/quiz-selection.loader";
 import {
@@ -464,10 +472,11 @@ const createAppRouter = (queryClient: QueryClient) =>
         {
           path: "questions",
           lazy: async () => {
-            const { Questions } =
-              await import("../pages/Dashboard/Pages/Question/Questions");
+            const { Questions } = await loadQuestionsPage();
             return { Component: Questions };
           },
+          // Starts the lookups and page 1 next to the chunk; doesn't wait (dashboard-prefetch.ts).
+          loader: dashboardListLoader(queryClient, prefetchQuestionsPageData),
         },
         {
           // Placeholder while the reporting screen is finished. The real UI is still in
@@ -522,10 +531,10 @@ const createAppRouter = (queryClient: QueryClient) =>
         {
           path: "quizzes",
           lazy: async () => {
-            const { Quizzes } =
-              await import("../pages/Dashboard/Pages/Quiz/Quizzes");
+            const { Quizzes } = await loadQuizzesPage();
             return { Component: Quizzes };
           },
+          loader: dashboardListLoader(queryClient, prefetchQuizzesPageData),
         },
         {
           // The route component mounts QuizQuestionProvider itself, after reading any stored
@@ -593,6 +602,8 @@ const createAppRouter = (queryClient: QueryClient) =>
               await import("../pages/Dashboard/Pages/Quiz/components/Create-Quiz-Form/edit-quiz");
             return { Component: EditQuizRoute };
           },
+          // Fetches the quiz + questions alongside the chunk, so the editor opens filled in.
+          loader: quizEditLoader(queryClient),
         },
         {
           path: "quiz/:quizId",
@@ -776,8 +787,8 @@ const createAppRouter = (queryClient: QueryClient) =>
         {
           // Owners edit their own quizzes here. The admin dashboard's edit routes are admin-only
           // (its loader 404s everyone else), so until 2026-09-23 a player could create a quiz
-          // but never change it. Same components as the admin routes; the API allows only the
-          // owner to save. `quizEditPath(quiz, "/my-dashboard")` builds these links.
+          // but never change it. Same components as the admin routes; the API lets the owner
+          // (or an admin) save. `quizEditPath(quiz, "/my-dashboard")` builds these links.
           path: "quizzes/edit/:quizId",
           lazy: async () => {
             const { EditQuizRoute } = await import(
@@ -785,6 +796,7 @@ const createAppRouter = (queryClient: QueryClient) =>
             );
             return { Component: EditQuizRoute };
           },
+          loader: quizEditLoader(queryClient),
         },
         {
           path: "quizzes/edit/:quizId/board",

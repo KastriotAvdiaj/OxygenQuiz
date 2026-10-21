@@ -8,11 +8,14 @@ enforced inconsistently.
 
 | Status | Discoverable in the catalogue? | Who can play | Notes |
 |---|---|---|---|
-| **Draft** | No | Owner (and admins) only | Work in progress. Share links don't work. |
+| **Draft** | No | Owner only | Work in progress. Share links don't work. Admins can view and edit it, not play it. |
 | **Unlisted** | No | Anyone with the **share link** or invited into a **lobby** hosting it | Not listed anywhere; the token/lobby is the access grant. |
 | **Public** | Yes | Everyone (including anonymous guests) | Listed in the public catalogue and search, and has a public [listing](quiz-listing.md) at `/q/:id/:slug` in the sitemap. |
 
-The owner sets the status when creating/editing a quiz, or via `PATCH /api/quiz/{id}/status`.
+The owner — or anyone with `quiz:update:any` (Admin and SuperAdmin), on any quiz — sets the status when creating/editing a quiz, or via
+`PATCH /api/quiz/{id}/status`: the **Publish / Unpublish** item in the quiz row's ⋯ menu (both
+dashboards) and on the quiz page's ⋯ menu. Publish takes a Draft to Public; Unpublish takes a
+Public or Unlisted quiz back to Draft.
 
 ## Defaults
 
@@ -191,7 +194,12 @@ every Unlisted quiz readable by counting ids. Pinned by `QuizAPI.Tests/Security/
 | Other signed-in user without the token | ❌ | ❌ | ✅ |
 | Lobby participant (host owns the quiz) | ✅ (via lobby) | ✅ (via lobby) | ✅ |
 | Anonymous guest | ❌ | ❌ | ✅ |
-| Admin | ✅ | ✅ | ✅ |
+| Admin / SuperAdmin | ❌ | ❌ (✅ with the token) | ✅ |
+
+Admins play by the same rules as everyone else — they can view and edit any quiz, but not play
+someone else's Draft or Unlisted one, so their plays never land in another owner's analytics
+([user-role-management.md](../auth/user-role-management.md) §1.1). This row said "Admin ✅" for every
+status until 2026-10-21, which the API never did.
 
 The rows are about **playing**. Reading a quiz's details and its questions by id is narrower — see
 "Reading a quiz by id" above: nobody but the owner and admins reads the questions, of any status.

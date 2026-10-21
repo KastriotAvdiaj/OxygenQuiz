@@ -510,7 +510,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
             }
         }
 
-        public async Task<QuizDTO?> UpdateQuizAsync(Guid userId, QuizUM quizUM)
+        public async Task<QuizDTO?> UpdateQuizAsync(Guid userId, QuizUM quizUM, bool canUpdateAny = false)
         {
             using var transaction = await _quizzes.BeginTransactionAsync();
 
@@ -520,7 +520,9 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                 if (quiz == null)
                     return null;
 
-                if (quiz.UserId != userId)
+                // Owners edit their own quizzes; a caller with quiz:update:any (SuperAdmin always,
+                // Admin as seeded) can edit any quiz. The caller's identity is still what gets audited.
+                if (!canUpdateAny && quiz.UserId != userId)
                 {
                     _logger.LogWarning("User {UserId} attempted to update quiz {QuizId} owned by {OwnerId}",
                         userId, quizUM.Id, quiz.UserId);
@@ -590,7 +592,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
             }
         }
 
-        public async Task<QuizDTO?> SetQuizStatusAsync(Guid userId, int quizId, QuizStatus status)
+        public async Task<QuizDTO?> SetQuizStatusAsync(Guid userId, int quizId, QuizStatus status, bool canUpdateAny = false)
         {
             try
             {
@@ -598,7 +600,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                 if (quiz == null)
                     return null;
 
-                if (quiz.UserId != userId)
+                if (!canUpdateAny && quiz.UserId != userId)
                 {
                     _logger.LogWarning("User {UserId} attempted to change status of quiz {QuizId} owned by {OwnerId}",
                         userId, quizId, quiz.UserId);

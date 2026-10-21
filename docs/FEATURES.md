@@ -103,7 +103,7 @@ Teachers only, while it is tested. **Not shipped** = built in part, not reachabl
 
 | Feature | Status | What it is | Detail |
 |---|---|---|---|
-| Admin dashboard | Live (admins) | Every quiz, question, user and lookup list, with search and filters. | [filtering.md](quiz/filtering.md) |
+| Admin dashboard | Live (admins) | Every quiz, question, user and lookup list, with search and filters. Admins can edit, publish and unpublish any quiz. | [filtering.md](quiz/filtering.md) |
 | Roles and permissions | Live | Role-based access with `resource:action` permissions, cached per user; only a SuperAdmin can grant SuperAdmin. | [user-role-management.md](auth/user-role-management.md) |
 | Audit log | Live (admins) | Append-only record of who did what, to which record, from where. | [audit-logging.md](development/audit-logging.md) |
 | Teacher requests and invite codes | Live (admins) | Approve Teachers; issue invite codes. | [teacher-role.md](auth/teacher-role.md), [invite-code-system.md](auth/invite-code-system.md) |

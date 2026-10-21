@@ -264,6 +264,28 @@ public class ClassicEntryPointGuardTests
         Assert.Null(result);
     }
 
+    /// <summary>
+    /// An admin is not a stranger: their update gets past the ownership check (a superadmin
+    /// editing someone else's quiz used to get null → 404 → "Failed to save changes"), so here
+    /// it is the format guard that refuses — proof the ownership check let them through.
+    /// </summary>
+    [Fact]
+    public async Task ClassicUpdate_ByAnAdmin_PassesOwnership_AndReachesTheFormatGuard()
+    {
+        await using var ctx = NewContext();
+        var quiz = AddBoardQuiz(ctx);
+
+        var ex = await Assert.ThrowsAsync<AppValidationException>(() =>
+            QuizServiceFor(ctx).UpdateQuizAsync(StrangerId, new QuizUM
+            {
+                Id = quiz.Id,
+                Title = "Admin edit",
+                Version = 1,
+            }, canUpdateAny: true));
+
+        Assert.Equal(BoardRefusal, ex.Message);
+    }
+
     // ── Lobby ───────────────────────────────────────────────────────────────
 
     /// <summary>What <c>QuizHub.SelectQuiz</c> reads to refuse a board in a lobby.</summary>

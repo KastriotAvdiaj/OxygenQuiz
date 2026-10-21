@@ -1055,6 +1055,10 @@ and tightening `ClockSkew`. All **P3**.
 
 ## Quiz editing (2026-07-02 — see docs/quiz/quiz-editing.md)
 
+- **P3 — Quiz delete still checks the role, not `quiz:delete:any` (2026-10-21).** Update, status and
+  board saves moved to `quiz:update:any`; `DeleteQuizAsync` still takes `_currentUser.IsAdmin`. Same
+  people today (Admin and SuperAdmin both hold the permission), so it only matters once someone edits
+  Admin's permissions. See docs/auth/user-role-management.md §1.1.
 - ~~**P1 — Editing a played quiz threw an FK violation / edits leaked into live games.**~~
   **Fixed (2026-07-02).** `UpdateQuizAsync` used to delete every `QuizQuestion` row and
   re-insert — but `UserAnswer.QuizQuestionId` / `QuizSession.CurrentQuizQuestionId` FK

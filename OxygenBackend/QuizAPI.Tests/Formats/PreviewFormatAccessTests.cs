@@ -197,7 +197,8 @@ public class PreviewFormatAccessTests
         var controller = new AssociationQuizzesController(
             service.Object,
             new TestCurrentUserService { UserId = admin ? AdminId : PlayerId, IsAdmin = admin, IsAuthenticated = true },
-            new Mock<IAuditService>().Object);
+            new Mock<IAuditService>().Object,
+            Mock.Of<QuizAPI.Services.Permissions.IPermissionService>());
         return (controller, service);
     }
 

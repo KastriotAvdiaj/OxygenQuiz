@@ -88,17 +88,19 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
         /// </summary>
         /// <param name="userId">ID of the user updating the quiz</param>
         /// <param name="quizUM">Quiz update model</param>
+        /// <param name="canUpdateAny">The caller holds <c>quiz:update:any</c>: may update any quiz, not just their own</param>
         /// <returns>Updated quiz or null if not found or user doesn't have permission</returns>
-        Task<QuizDTO?> UpdateQuizAsync(Guid userId, QuizUM quizUM);
+        Task<QuizDTO?> UpdateQuizAsync(Guid userId, QuizUM quizUM, bool canUpdateAny = false);
 
         /// <summary>
-        /// Sets a quiz's status (Draft / Unlisted / Public). Owner-only.
+        /// Sets a quiz's status (Draft / Unlisted / Public). The owner, or a holder of <c>quiz:update:any</c>.
         /// </summary>
         /// <param name="userId">ID of the user changing the status</param>
         /// <param name="quizId">ID of the quiz</param>
         /// <param name="status">The new status</param>
+        /// <param name="canUpdateAny">The caller holds <c>quiz:update:any</c>: may change the status of any quiz</param>
         /// <returns>Updated quiz or null if not found or user doesn't have permission</returns>
-        Task<QuizDTO?> SetQuizStatusAsync(Guid userId, int quizId, QuizStatus status);
+        Task<QuizDTO?> SetQuizStatusAsync(Guid userId, int quizId, QuizStatus status, bool canUpdateAny = false);
 
         /// <summary>
         /// Lazily generates (or returns the existing) share token for an owned quiz so the owner can

@@ -6,6 +6,9 @@ import { DashboardIsland } from "@/pages/Dashboard/Components/DashboardIsland";
 import type { DashboardNavItem } from "@/pages/Dashboard/Components/dashboardNavConfig";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/utils/cn";
+import { RouteProgressBar } from "@/common/RouteProgressBar";
+import { useQueryClient } from "@tanstack/react-query";
+import { prefetchDashboardPage } from "@/routes/dashboard-prefetch";
 import { usePrefersReducedMotion } from "@/hooks/use-prefers-reduced-motion";
 import { activeNavId } from "./active-nav-id";
 
@@ -66,6 +69,11 @@ export const DashboardLayout = ({
   focusPaths = [],
 }: DashboardLayoutProps) => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  // Hovering a nav item starts its page's chunk and first screen of data. Only the admin list
+  // pages have anything to warm; every other id is a no-op (routes/dashboard-prefetch.ts).
+  const prefetchNavPage = (page: string) =>
+    prefetchDashboardPage(`${basePath}/${page}`, queryClient);
   const location = useLocation();
   const [isNavCollapsed, setIsNavCollapsed] = useState(false);
   // The island's overflow drawer. Phones only — the rail is the navigation from `lg` up.
@@ -111,6 +119,7 @@ export const DashboardLayout = ({
   if (isFullWidth) {
     return (
       <div className={cn("text-foreground flex flex-col", SHELL_HEIGHT)}>
+        <RouteProgressBar />
         {/* No header in focus mode. The page owns the whole viewport and provides its
             own way back — see the `focusPaths` doc comment and ADR 0002. */}
         {!isFocusMode && (
@@ -132,6 +141,11 @@ export const DashboardLayout = ({
 
   return (
     <div className={cn("text-foreground flex flex-col", SHELL_HEIGHT)}>
+      {/* Every dashboard page is a route-level `lazy` chunk, and some have loaders, so React
+          Router holds the current page frozen until both resolve. This hairline is the only
+          thing that says the click landed (ADR 0015) — it was mounted in the public layout
+          only, so Edit / View in the dashboard looked like nothing had happened. */}
+      <RouteProgressBar />
       <header className="flex-none">
         <DashboardHeader />
       </header>
@@ -157,6 +171,7 @@ export const DashboardLayout = ({
             activePage={activePage}
             isCollapsed={isNavCollapsed}
             setIsCollapsed={setIsNavCollapsed}
+            onItemIntent={prefetchNavPage}
           />
         </aside>
 
@@ -203,6 +218,7 @@ export const DashboardLayout = ({
             activePage={activePage}
             isCollapsed={false}
             hideCollapseToggle
+            onItemIntent={prefetchNavPage}
           />
         </SheetContent>
       </Sheet>

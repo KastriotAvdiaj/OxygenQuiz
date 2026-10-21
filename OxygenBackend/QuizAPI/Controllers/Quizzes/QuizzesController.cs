@@ -12,6 +12,7 @@ using QuizAPI.Models;
 using QuizAPI.Models.Quiz;
 using QuizAPI.Services.CurrentUserService;
 using QuizAPI.Services.Audit;
+using QuizAPI.Services.Permissions;
 using QuizAPI.Filtering;
 
 namespace QuizAPI.Controllers.Quizzes
@@ -24,13 +25,16 @@ namespace QuizAPI.Controllers.Quizzes
         private readonly ILogger<QuizController> _logger;
         private readonly ICurrentUserService _currentUser;
         private readonly IAuditService _auditService;
+        private readonly IPermissionService _permissions;
 
         public QuizController(
             IQuizService quizService,
             ILogger<QuizController> logger,
             ICurrentUserService currentUser,
-            IAuditService auditService)
+            IAuditService auditService,
+            IPermissionService permissions)
         {
+            _permissions = permissions ?? throw new ArgumentNullException(nameof(permissions));
             _quizService = quizService ?? throw new ArgumentNullException(nameof(quizService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _currentUser = currentUser ?? throw new ArgumentNullException(nameof(currentUser));
@@ -337,7 +341,8 @@ namespace QuizAPI.Controllers.Quizzes
                 }
 
                 var userId = GetCurrentUserId();
-                var updatedQuiz = await _quizService.UpdateQuizAsync(userId, quizUM);
+                var canUpdateAny = await _permissions.HasPermissionAsync(userId, QuizPermissions.UpdateAny);
+                var updatedQuiz = await _quizService.UpdateQuizAsync(userId, quizUM, canUpdateAny);
 
                 if (updatedQuiz == null)
                 {
@@ -366,7 +371,7 @@ namespace QuizAPI.Controllers.Quizzes
         }
 
         /// <summary>
-        /// Sets a quiz's status (Draft / Unlisted / Public). Owner-only.
+        /// Sets a quiz's status (Draft / Unlisted / Public). The owner, or a holder of quiz:update:any.
         /// </summary>
         [HttpPatch("{id}/status")]
         [Authorize]
@@ -382,7 +387,8 @@ namespace QuizAPI.Controllers.Quizzes
             try
             {
                 var userId = GetCurrentUserId();
-                var quiz = await _quizService.SetQuizStatusAsync(userId, id, status);
+                var canUpdateAny = await _permissions.HasPermissionAsync(userId, QuizPermissions.UpdateAny);
+                var quiz = await _quizService.SetQuizStatusAsync(userId, id, status, canUpdateAny);
 
                 if (quiz == null)
                 {

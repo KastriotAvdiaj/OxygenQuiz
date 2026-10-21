@@ -56,7 +56,9 @@ only retires the join row, exactly as intended.
 
 ## The edit flow (`PUT /api/quiz` → `QuizService.UpdateQuizAsync`)
 
-1. Load the quiz with its **live** join rows (owner-only; 404 otherwise).
+1. Load the quiz with its **live** join rows. The owner, or a caller with `quiz:update:any`
+   (Admin as seeded, SuperAdmin always), may update; anyone else gets 404. Until 2026-10-21 this was owner-only, so an admin opening
+   someone else's quiz got a full editor whose save always failed.
 2. **Optimistic concurrency:** if the submitted `version` doesn't match
    `Quiz.Version`, return **409** — the client editing a stale copy must reload.
    This protects editor-vs-editor (two tabs, two devices).

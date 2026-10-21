@@ -134,6 +134,60 @@ always browser cache, not a failed deploy.
 - Verify: Cloudflare dashboard → Workers & Pages → `oxygenquiz` → **Deployments**; newest should be
   **Active**. Troubleshooting + deploy history: [`known-issues.md`](known-issues.md).
 
+### 4c. Debugging a live bug
+
+Connecting to the server is step 2 of 5, not step 1. Start in the browser, because the request
+that failed tells you where to look.
+
+1. **Find the failing request.** Reproduce with DevTools open → **Network**, filter `Fetch/XHR`,
+   click the red request. Note the method, URL, **status code** and the **Response** tab (errors
+   come back as ProblemDetails with a message). A toast like "Failed to save changes" is the
+   client's summary; the status code is the actual answer:
+
+   | Status | Usually means |
+   |---|---|
+   | 400 | A validation rule refused it — the response body names the field. |
+   | 401 | Session expired / not signed in. |
+   | 403 | Signed in but missing a permission. |
+   | **404 on something you can see** | **An ownership check.** This API answers 404, not 403, when a row exists but isn't yours (so ids can't be probed). Look for an `attempted to … owned by` warning in the logs. |
+   | 409 | Version conflict — someone (or another tab) saved first; reload. |
+   | 500 | A real bug — the stack trace is in the backend logs. |
+
+2. **Read the backend logs around that moment.** On the server (step 1 above), in `~/OxygenQuiz`:
+
+   ```bash
+   # Warnings and errors from the last 15 minutes
+   docker compose -f docker-compose.prod.yml logs --since 15m backend | grep -iE "warn|fail|error|exception"
+
+   # Or watch live while you reproduce in the browser (Ctrl+C to stop)
+   docker compose -f docker-compose.prod.yml logs -f backend
+   ```
+
+   Search the code for the log message's fixed text to land on the line that wrote it.
+
+3. **Check who changed what** — admin dashboard → **Audit Logs**, if the bug looks like data
+   changed underneath you.
+
+4. **Look at the data (read-only).**
+
+   ```bash
+   docker compose -f docker-compose.prod.yml exec postgres psql -U postgres -d OxygenQuiz
+   ```
+   ```sql
+   SELECT "Id", "Title", "UserId", "Status", "Version" FROM "Quizzes" WHERE "Id" = 63;
+   ```
+   Table and column names are PascalCase, so they need double quotes. `\q` to leave. Don't
+   `UPDATE` production by hand to make a bug go away — fix the code. If you must change data, dump
+   first: `docker compose -f docker-compose.prod.yml exec postgres pg_dump -U postgres OxygenQuiz > ~/backup-$(date +%F).sql`.
+
+5. **Fix it on your desktop, not the server.** Reproduce locally (`docker-compose.dev.yml` +
+   `dotnet run`), write a test that fails the way production did, fix, then deploy with 4a / 4b.
+   Never edit code on the VPS — the next `git pull` overwrites it.
+
+Worked example (2026-10-21): a SuperAdmin saving someone else's quiz got "Failed to save changes".
+Network showed `PUT /api/quiz` → **404**; the logs showed `User … attempted to update quiz 63
+owned by …`. `UpdateQuizAsync` was owner-only — fixed to allow admins, as delete already did.
+
 ---
 
 ## 5. DONE — Data Protection fix + DNS + CI fix + Origin cert (2026-07-03 → 07-04)
