@@ -312,6 +312,7 @@ namespace QuizAPI.Controllers.Questions.Services
                 await _imageService.AssociateImageWithEntityAsync(questionUM.ImageUrl, "Question", existingQuestion.Id);
 
             await _questions.SaveChangesAsync();
+            await _questions.TouchQuizzesContainingAsync(existingQuestion.Id);
 
             var updated = await _questions.GetMultipleChoiceByIdAsync(existingQuestion.Id);
             return updated?.ToDto();
@@ -335,6 +336,7 @@ namespace QuizAPI.Controllers.Questions.Services
                 await _imageService.AssociateImageWithEntityAsync(questionUM.ImageUrl, "Question", existingQuestion.Id);
 
             await _questions.SaveChangesAsync();
+            await _questions.TouchQuizzesContainingAsync(existingQuestion.Id);
 
             var updated = await _questions.GetTrueFalseByIdAsync(existingQuestion.Id);
             return updated?.ToDto();
@@ -363,6 +365,7 @@ namespace QuizAPI.Controllers.Questions.Services
                 await _imageService.AssociateImageWithEntityAsync(questionUM.ImageUrl, "Question", existingQuestion.Id);
 
             await _questions.SaveChangesAsync();
+            await _questions.TouchQuizzesContainingAsync(existingQuestion.Id);
 
             var updated = await _questions.GetTypeTheAnswerByIdAsync(existingQuestion.Id);
             return updated?.ToDto();

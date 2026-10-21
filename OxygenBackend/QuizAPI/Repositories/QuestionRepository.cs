@@ -119,5 +119,14 @@ namespace QuizAPI.Repositories
         public void Remove(QuestionBase question) => _context.Questions.Remove(question);
 
         public Task<int> SaveChangesAsync(CancellationToken ct = default) => _context.SaveChangesAsync(ct);
+
+        public Task TouchQuizzesContainingAsync(int questionId, CancellationToken ct = default)
+        {
+            var now = DateTime.UtcNow;
+            // Soft-deleted quizzes are left alone by the query filter; they have no listing anyway.
+            return _context.Quizzes
+                .Where(q => q.QuizQuestions.Any(qq => qq.QuestionId == questionId && qq.RemovedInVersion == null))
+                .ExecuteUpdateAsync(s => s.SetProperty(q => q.UpdatedAt, now), ct);
+        }
     }
 }

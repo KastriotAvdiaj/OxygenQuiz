@@ -34,9 +34,11 @@ export function previewFor(card, pageUrl, apiOrigin) {
 
 /**
  * The author's description when there is one; otherwise the facts, phrased without an article so
- * no category needs "a" vs "an" ("6 questions · History. Play it on Oxygen Quiz.").
+ * no category needs "a" vs "an" ("6 questions · History. Play it on Oxygen Quiz."). Shared with
+ * the quiz listing (listing.js), whose page says the same as its card.
+ * @param {Card} card
  */
-function describe(card) {
+export function describe(card) {
   const own = card.description?.trim();
   if (own) return truncate(own, 200);
 
@@ -49,11 +51,13 @@ function describe(card) {
   return facts.length ? `${facts.join(" · ")}. Play it on ${SITE}.` : `Play it on ${SITE}.`;
 }
 
+/** @param {string} text @param {number} max */
 function truncate(text, max) {
   return text.length <= max ? text : `${text.slice(0, max - 1).trimEnd()}…`;
 }
 
-function absolute(path, origin) {
+/** @param {string} path @param {string} origin */
+export function absolute(path, origin) {
   try {
     return new URL(path, origin).toString();
   } catch {

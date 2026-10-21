@@ -21,12 +21,14 @@
   // already exist, wrangler's re-assertion (PUT .../domains/records with replace_state) got
   // a 409 Conflict every deploy, which aborted the whole command ("No targets deployed" +
   // the old bundle kept serving). See docs/deployment/known-issues.md (frontend deploy paths).
-  // The Worker script: link previews for shared quizzes (worker/index.js,
-  // docs/deployment/frontend-worker.md). It runs ONLY for the paths in run_worker_first below;
+  // The Worker script: link previews for shared quizzes, the public quiz listings (/q/) and
+  // /sitemap.xml (worker/index.js, docs/deployment/frontend-worker.md, docs/quiz/quiz-listing.md).
+  // It runs ONLY for the paths in run_worker_first below;
   // every other request is served straight from dist/ as before and never invokes it.
   "main": "./worker/index.js",
   "vars": {
-    // Where the Worker reads a shared link's preview card. Through Cloudflare, like any visitor.
+    // Where the Worker reads a shared link's preview card, a listing and the sitemap's quiz list.
+    // Through Cloudflare, like any visitor.
     "API_ORIGIN": "https://api.oxygenquiz.com"
   },
   "assets": {
@@ -37,6 +39,6 @@
     "not_found_handling": "single-page-application",
     // Opt-in per path. A path not listed here is a static-asset request, which costs nothing and
     // doesn't count against the Workers request quota.
-    "run_worker_first": ["/play/shared/*"]
+    "run_worker_first": ["/play/shared/*", "/q/*", "/sitemap.xml"]
   }
 }

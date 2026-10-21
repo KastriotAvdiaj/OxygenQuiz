@@ -13,7 +13,7 @@ import { useQuizData } from "./api/get-quiz";
 import { useQuizQuestionsData } from "./api/get-quiz-questions";
 import { useQuizAnalytics, type AnalyticsMode } from "./api/get-quiz-analytics";
 import { SegmentedControl } from "@/components/ui/segmented-control";
-import { useCopyShareLink } from "./api/use-copy-share-link";
+import { useCopyQuizLink } from "./api/use-copy-quiz-link";
 import { useSetQuizStatus } from "./api/set-quiz-status";
 import { DeleteQuiz } from "./components/delete-quiz";
 import { AttemptsChart } from "./components/quiz-view/attempts-chart";
@@ -82,7 +82,7 @@ export const QuizRoute = () => {
     mode: analyticsMode,
     queryConfig: { enabled: quizQuery.isSuccess && !isBoard },
   });
-  const shareLink = useCopyShareLink();
+  const shareLink = useCopyQuizLink();
   const setStatus = useSetQuizStatus();
 
   // Owned here rather than by the menu item, so the confirm dialog outlives the menu closing.
@@ -261,7 +261,7 @@ export const QuizRoute = () => {
                 quiz={quiz}
                 isDraft={isDraft}
                 onPlay={canPlay ? () => navigate(quizPlayPath(quiz)) : undefined}
-                onShare={() => shareLink.copy(quizId)}
+                onShare={() => shareLink.copy(quiz)}
                 isSharePending={shareLink.isPending}
                 onSetStatus={handleSetStatus(isDraft ? "Public" : "Draft")}
                 isStatusPending={setStatus.isPending}

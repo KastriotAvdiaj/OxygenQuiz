@@ -84,7 +84,7 @@ Teachers only, while it is tested. **Not shipped** = built in part, not reachabl
 | Quiz cards | Live | Each card in its category's colour palette; admins set palettes, optionally with AI-proposed options. | [quiz-card.md](quiz/quiz-card.md), [category-palettes.md](entities/category-palettes.md) |
 | Share links | Live | An Unlisted quiz is reached only by an unguessable link (sign-in required to play). | [quiz-visibility.md](quiz/quiz-visibility.md) |
 | Link previews | Live | A shared link previews in WhatsApp, Discord, Slack and X with the quiz's own title and description, filled in by a Cloudflare Worker; never indexed by search engines. | [frontend-worker.md](deployment/frontend-worker.md) |
-| Quiz page per quiz for search | Planned | A public, indexable page per Public quiz plus a sitemap. Design agreed 2026-10-20. | [known-issues.md](deployment/known-issues.md) |
+| Quiz page per quiz for search | Live | A public, indexable page per Public quiz at `/q/:id/:slug` — rendered by the Cloudflare Worker for crawlers, taken over by the app in the browser — plus `/sitemap.xml`. Copy link gives a Public quiz this URL. | [quiz-listing.md](quiz/quiz-listing.md), [ADR 0028](adr/0028-the-worker-renders-the-quiz-listing-for-crawlers.md), [known-issues.md](deployment/known-issues.md) |
 
 ## Accounts
 
@@ -125,11 +125,11 @@ Teachers only, while it is tested. **Not shipped** = built in part, not reachabl
 
 | | Count | How to recount |
 |---|---|---|
-| Backend test cases | ~630 `[Fact]`/`[Theory]` | `grep -rE '^\s*\[(Fact\|Theory)' OxygenBackend/QuizAPI.Tests --include=*.cs \| wc -l` |
-| Frontend unit tests | 301 in 45 files | `npx vitest run --project unit` |
-| End-to-end tests | 10 in 4 specs | `grep -rhoE '^\s*test\(' e2e --include=*.spec.ts \| wc -l` |
-| EF Core migrations | 34 | `ls OxygenBackend/QuizAPI/Migrations/*.cs \| grep -v -e Designer -e Snapshot \| wc -l` |
-| ADRs | 30 | `ls docs/adr/*.md \| wc -l` |
+| Backend test cases | ~640 `[Fact]`/`[Theory]` | `grep -rE '^\s*\[(Fact\|Theory)' OxygenBackend/QuizAPI.Tests --include=*.cs \| wc -l` |
+| Frontend unit tests | 323 in 47 files | `npx vitest run --project unit` |
+| End-to-end tests | 11 in 5 specs | `grep -rhoE '^\s*test\(' e2e --include=*.spec.ts \| wc -l` |
+| EF Core migrations | 35 | `ls OxygenBackend/QuizAPI/Migrations/*.cs \| grep -v -e Designer -e Snapshot \| wc -l` |
+| ADRs | 31 | `ls docs/adr/*.md \| wc -l` |
 | Public quizzes live | 12 | `totalItems` from `https://api.oxygenquiz.com/api/quiz/search?pageSize=1` |
 
 ## Not built yet

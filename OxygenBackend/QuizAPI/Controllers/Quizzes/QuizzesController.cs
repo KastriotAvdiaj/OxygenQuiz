@@ -466,6 +466,40 @@ namespace QuizAPI.Controllers.Quizzes
             }
         }
 
+        /// <summary>
+        /// The quiz listing's content (/q/:id/:slug), read by the frontend Worker and the SPA
+        /// (docs/quiz/quiz-listing.md). Anonymous, like GetSharedQuizPreview: crawlers are never
+        /// signed in. 404 unless the quiz is Public in a released format — the same 404 for a Draft,
+        /// an Unlisted, a deleted or a preview-format quiz as for an id that never existed, so ids
+        /// (sequential) reveal nothing. The answer doesn't depend on the caller, which is what makes
+        /// the public Cache-Control safe.
+        /// </summary>
+        [HttpGet("{id}/listing")]
+        [AllowAnonymous]
+        [ProducesResponseType(typeof(QuizListingDTO), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetQuizListing(int id)
+        {
+            var listing = await _quizService.GetQuizListingAsync(id);
+            if (listing == null) return NotFound();
+
+            Response.Headers.CacheControl = ListingCacheControl;
+            return Ok(listing);
+        }
+
+        /// <summary>Every quiz with a listing — the source of the Worker's /sitemap.xml.</summary>
+        [HttpGet("listings")]
+        [AllowAnonymous]
+        [ProducesResponseType(typeof(List<QuizListingEntryDTO>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetQuizListings()
+        {
+            var listings = await _quizService.GetQuizListingsAsync();
+            Response.Headers.CacheControl = ListingCacheControl;
+            return Ok(listings);
+        }
+
+        private const string ListingCacheControl = "public, max-age=300";
+
         [HttpGet("shared/{token}")]
         [Authorize]
         [ProducesResponseType(StatusCodes.Status200OK)]

@@ -51,6 +51,16 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
         Task<QuizDTO?> GetQuizByShareTokenAsync(string shareToken);
 
         /// <summary>
+        /// A quiz's public listing, or null unless the catalogue would show it to a guest: Public and
+        /// a released format. Evaluated as an anonymous caller whoever asks, so every reason for null
+        /// looks the same. docs/quiz/quiz-listing.md.
+        /// </summary>
+        Task<QuizListingDTO?> GetQuizListingAsync(int id);
+
+        /// <summary>Every quiz that has a listing, by id — the sitemap's source.</summary>
+        Task<List<QuizListingEntryDTO>> GetQuizListingsAsync();
+
+        /// <summary>
         /// Get quiz questions with full question details
         /// </summary>
         /// <param name="id">The quiz ID</param>

@@ -261,6 +261,26 @@ public class AssociationBoardServiceTests
         Assert.Equal(1, board.CreatedInVersion);   // still visible to both versions
     }
 
+    /// <summary>A board save is an edit the sitemap must report (docs/quiz/quiz-listing.md, "Quiz.UpdatedAt").</summary>
+    [Fact]
+    public async Task Update_BumpsUpdatedAt()
+    {
+        using var db = new Db();
+        var id = await CreateOne(db);
+        var longAgo = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        await using (var ctx = db.Context())
+        {
+            ctx.Quizzes.Single().UpdatedAt = longAgo;
+            await ctx.SaveChangesAsync();
+        }
+
+        await using (var ctx = db.Context())
+            await Service(ctx).UpdateAsync(OwnerId, Um(db, id, version: 1, board: Board(" v2")));
+
+        await using var check = db.Context();
+        Assert.True(check.Quizzes.Single().UpdatedAt > longAgo);
+    }
+
     /// <summary>Whitespace the validator trims away isn't a change either.</summary>
     [Fact]
     public async Task Update_WithOnlyTrimmableDifferences_KeepsTheSameBoard()

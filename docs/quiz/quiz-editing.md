@@ -35,6 +35,7 @@ tools use.
 | Field | Where | Meaning |
 |---|---|---|
 | `Version` | `Quiz` | Monotonic edit counter; bumped by every update (and by status changes). Also the optimistic-concurrency token. |
+| `UpdatedAt` | `Quiz` | When it last changed — every bump of `Version`, plus an edit to any question live in it (even from the question bank). The sitemap's `<lastmod>`; see [`quiz-listing.md`](quiz-listing.md). |
 | `CreatedInVersion` | `QuizQuestion` | Quiz version this row first appeared in. |
 | `RemovedInVersion` | `QuizQuestion` | Quiz version this row was retired in. `null` = live (current content). |
 | `QuizVersion` | `QuizSession` | The quiz version pinned at session start. |

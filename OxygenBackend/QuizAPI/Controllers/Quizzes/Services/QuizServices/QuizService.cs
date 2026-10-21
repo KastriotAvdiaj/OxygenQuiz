@@ -231,6 +231,19 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
             }
         }
 
+        // ── The quiz listing (docs/quiz/quiz-listing.md) ───────────────────────────
+        // Eligibility is the catalogue's rule for a guest — canSeePreview: false — never the
+        // caller's: the page is one cached document for everyone, so an admin or a Teacher must get
+        // the same answer as anyone else. Soft delete is the query filter's job.
+        private IQueryable<Quiz> Listable() =>
+            _quizzes.Query().VisibleTo(canSeePreview: false).Where(q => q.Status == QuizStatus.Public);
+
+        public async Task<QuizListingDTO?> GetQuizListingAsync(int id) =>
+            await Listable().Where(q => q.Id == id).Select(QuizMappers.ProjectListing).FirstOrDefaultAsync();
+
+        public async Task<List<QuizListingEntryDTO>> GetQuizListingsAsync() =>
+            await Listable().OrderBy(q => q.Id).Select(QuizMappers.ProjectListingEntry).ToListAsync();
+
         public async Task<List<QuizQuestionDTO>?> GetQuizQuestionsAsync(int id)
         {
             try
@@ -561,6 +574,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                 await _quizzes.AddQuizQuestionsAsync(diff.ToAdd);
 
                 quiz.Version = newVersion;
+                quiz.UpdatedAt = DateTime.UtcNow;
                 quiz.TimeLimitInSeconds = quizUM.Questions.Sum(q => q.TimeLimitInSeconds);
 
                 await _quizzes.SaveChangesAsync();
@@ -599,6 +613,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
 
                 quiz.Status = status;
                 quiz.Version += 1;
+                quiz.UpdatedAt = DateTime.UtcNow;
 
                 await _quizzes.SaveChangesAsync();
 

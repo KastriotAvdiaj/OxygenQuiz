@@ -93,7 +93,7 @@ export const QuizActionsMenu = ({
           onClick={onShare}
         >
           <Share2 size={16} />
-          {quiz.status === "Unlisted" ? "Copy share link" : "Share"}
+          {quiz.status === "Unlisted" ? "Copy share link" : "Copy link"}
         </DropdownMenuItem>
       )}
 

@@ -55,5 +55,14 @@ namespace QuizAPI.Repositories.Interfaces
         Task AddTypeTheAnswerAsync(TypeTheAnswerQuestion question, CancellationToken ct = default);
         void Remove(QuestionBase question);
         Task<int> SaveChangesAsync(CancellationToken ct = default);
+
+        /// <summary>
+        /// Sets <c>UpdatedAt</c> to now on every quiz this question is live in
+        /// (<c>RemovedInVersion IS NULL</c>), whoever owns those quizzes — one <c>UPDATE</c>. A
+        /// question is shared across quizzes, so an edit from the question bank changes them all.
+        /// Not supported by the InMemory provider (ExecuteUpdate); tests mock this.
+        /// docs/quiz/quiz-listing.md, "Quiz.UpdatedAt".
+        /// </summary>
+        Task TouchQuizzesContainingAsync(int questionId, CancellationToken ct = default);
     }
 }

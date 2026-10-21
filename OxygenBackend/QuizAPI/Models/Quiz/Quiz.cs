@@ -96,6 +96,15 @@ namespace QuizAPI.Models.Quiz
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+        /// <summary>
+        /// When anything a quiz shows or plays last changed — the sitemap's <c>&lt;lastmod&gt;</c>.
+        /// Bumped by a quiz update, a status change, an Associations board save, and an edit to any
+        /// question live in the quiz (<c>IQuestionRepository.TouchQuizzesContainingAsync</c>).
+        /// Rows from before the column existed were backfilled from <see cref="CreatedAt"/>.
+        /// docs/quiz/quiz-listing.md, "Quiz.UpdatedAt".
+        /// </summary>
+        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
 
         public int Version { get; set; } = 1;
 

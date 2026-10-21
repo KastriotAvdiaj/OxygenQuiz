@@ -126,6 +126,32 @@ namespace QuizAPI.DTOs.Quiz
         public int QuestionCount { get; set; }
     }
 
+    public class QuizListingDTO
+    {
+        public int Id { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string? Description { get; set; }
+        public string Category { get; set; } = string.Empty;
+        public string? ColorPaletteJson { get; set; }
+        public bool Gradient { get; set; }
+        public string Difficulty { get; set; } = string.Empty;
+        public string Language { get; set; } = string.Empty;
+        public int QuestionCount { get; set; }
+        public int TimeLimitInSeconds { get; set; }
+        public string Author { get; set; } = string.Empty;
+        public string? ImageUrl { get; set; }
+        public string Format { get; set; } = string.Empty;
+        public DateTime CreatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; }
+    }
+
+    public class QuizListingEntryDTO
+    {
+        public int Id { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public DateTime UpdatedAt { get; set; }
+    }
+
     public class QuizUM
     {
         [Required] 
