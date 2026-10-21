@@ -26,10 +26,9 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui";
-import { Copy, Edit2, Eye, MoreHorizontal, Play, Share2, Trash2 } from "lucide-react";
+import { CirclePlay, Copy, Edit2, Eye, MoreHorizontal, Share2, Trash2 } from "lucide-react";
 import { DeleteQuiz } from "../delete-quiz";
 import { Link, useLocation } from "react-router-dom";
 import { useUser } from "@/lib/Auth";
@@ -219,7 +218,8 @@ function QuizActionsCell({ quiz }: { quiz: QuizSummaryDTO }) {
       <DropdownMenuContent align="end" className="bg-muted">
         <DropdownMenuLabel>Actions</DropdownMenuLabel>
         {/* Order: the things you do with the quiz, then admin tooling, then Delete last in red —
-            the quiz page's own ⋯ menu (QuizActionsMenu) reads the same way. */}
+            the quiz page's own ⋯ menu (QuizActionsMenu) reads the same way. No separators: they
+            fell between some items and not others and read as accidental (2026-10-20). */}
         <DropdownMenuItem className="hover:bg-background" asChild>
           <Link to={quizViewPath(quiz, base)} className="flex items-center gap-2">
             <Eye size={16} /> View
@@ -228,7 +228,7 @@ function QuizActionsCell({ quiz }: { quiz: QuizSummaryDTO }) {
         {canPlay && (
           <DropdownMenuItem className="hover:bg-background" asChild>
             <Link to={quizPlayPath(quiz)} className="flex items-center gap-2">
-              <Play size={16} /> Play
+              <CirclePlay size={16} /> Play
             </Link>
           </DropdownMenuItem>
         )}
@@ -252,18 +252,15 @@ function QuizActionsCell({ quiz }: { quiz: QuizSummaryDTO }) {
         {/* Admin tooling only. A player never needs a quiz's database id — nothing in the
             player's app takes one. */}
         {isAdminDashboard && (
-          <>
-            <DropdownMenuSeparator className="bg-background/60" />
-            <DropdownMenuItem
-              onClick={() => navigator.clipboard.writeText(String(quiz.id))}
-            >
-              <Copy size={16} /> Copy ID
-            </DropdownMenuItem>
-          </>
+          <DropdownMenuItem
+            className="hover:bg-background"
+            onClick={() => navigator.clipboard.writeText(String(quiz.id))}
+          >
+            <Copy size={16} /> Copy ID
+          </DropdownMenuItem>
         )}
         {!quiz.deletedAt && (
           <>
-            <DropdownMenuSeparator className="bg-background/60" />
             <DropdownMenuItem
               className="text-red-600 focus:text-red-600"
               onSelect={() => {

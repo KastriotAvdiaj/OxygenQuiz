@@ -1,4 +1,4 @@
-import { Edit2, Eye, EyeOff, MoreHorizontal, Play, Share2, Trash2 } from "lucide-react";
+import { CirclePlay, Edit2, Eye, EyeOff, MoreHorizontal, Share2, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -6,7 +6,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { Quiz } from "@/types/quiz-types";
@@ -40,9 +39,12 @@ export interface QuizActionsMenuProps {
  * The trigger deliberately copies the row's `h-8 w-8 p-0 rounded` rather than `size="icon"`,
  * which is 36px and would sit a row taller than everything it lines up with.
  *
- * <b>Not a `Tooltip` on the Publish item.</b> The button it replaced carried one explaining
- * what Unpublish costs; a menu item can say it in the item, and a tooltip inside an open
- * Radix menu fights the menu for the same hover.
+ * <b>One plain list, no separators, no sub-lines</b> (2026-10-20). It used to group the items with
+ * separators (actions / publish / delete) and give Publish a grey second line saying what it
+ * does; the separators fell between some items and not others, which read as accidental, and
+ * the second line made one item twice the height of the rest. Delete is still last and red,
+ * which is grouping enough. Not a `Tooltip` either: inside an open Radix menu it fights the
+ * menu for the same hover.
  */
 export const QuizActionsMenu = ({
   quiz,
@@ -74,7 +76,7 @@ export const QuizActionsMenu = ({
           without this the only route was opening their own share link. */}
       {onPlay && (
         <DropdownMenuItem className="hover:bg-background" onClick={onPlay}>
-          <Play size={16} /> Play quiz
+          <CirclePlay size={16} /> Play quiz
         </DropdownMenuItem>
       )}
 
@@ -95,25 +97,14 @@ export const QuizActionsMenu = ({
         </DropdownMenuItem>
       )}
 
-      <DropdownMenuSeparator className="bg-background/60" />
-
-      {/* The label carries what the old tooltip did — "Unpublish" alone doesn't say what it
-          costs, and there is room here to say it. */}
       <DropdownMenuItem
         className="hover:bg-background"
         disabled={isStatusPending}
         onClick={onSetStatus}
       >
         {isDraft ? <Eye size={16} /> : <EyeOff size={16} />}
-        <span className="flex flex-col">
-          <span>{isDraft ? "Publish" : "Unpublish"}</span>
-          <span className="text-xs text-muted-foreground">
-            {isDraft ? "Anyone can find and play it" : "Back to draft — only you see it"}
-          </span>
-        </span>
+        {isDraft ? "Publish" : "Unpublish"}
       </DropdownMenuItem>
-
-      <DropdownMenuSeparator className="bg-background/60" />
 
       {/* `onSelect` + a frame's delay, not `onClick`: the confirm dialog is owned by the page
           and rendered outside this menu, and opening it while Radix is still closing the menu
