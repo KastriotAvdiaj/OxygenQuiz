@@ -4,6 +4,7 @@ import React, {
   useContext,
   ReactNode,
   useCallback,
+  useRef,
 } from "react";
 import {
   DEFAULT_QUESTION_SETTINGS,
@@ -17,6 +18,15 @@ import { createMultipleChoiceQuestionInputSchema } from "../../../Question/api/M
 import { createTrueFalseQuestionInputSchema } from "../../../Question/api/True_False-Question/create-true_false-question";
 import { createTypeTheAnswerQuestionInputSchema } from "../../../Question/api/Type_The_Answer-Question/create-type-the-answer-question";
 import { QuestionType, AnyQuestion } from "@/types/question-types";
+import {
+  peekRemoval,
+  popRemoval,
+  pushRemoval,
+  reinsert,
+  type RemovedQuestion,
+} from "./question-history";
+import { toEditableCopy } from "./edit-copy";
+import { EditCopyDialog, RemoveQuestionDialog } from "./components/question-action-dialogs";
 
 // Validation error type
 export interface ValidationError {
@@ -34,22 +44,33 @@ interface QuizContextType {
   addedQuestions: QuizQuestion[];
   addedQuestionsCount: number;
   addQuestionToQuiz: (questionObject: QuizQuestion) => void;
+  /**
+   * Removes at once, no questions asked, and records the removal for Undo. UI should call
+   * `requestRemoveQuestion` instead, which confirms first.
+   */
   removeQuestionFromQuiz: (questionId: number) => void;
+  /**
+   * Ask "Remove question N?" and remove on confirm. `onRemoved` runs only if it was removed —
+   * the overview's editor uses it to move on to the next question.
+   */
+  requestRemoveQuestion: (questionId: number, onRemoved?: () => void) => void;
+  /** The removal Undo would reverse next (newest first), or null. */
+  lastRemoval: RemovedQuestion | null;
+  /** How many removals Undo can still walk back. */
+  removalCount: number;
+  /** Put the most recently removed question back where it was. */
+  undoLastRemoval: () => void;
+  /**
+   * Ask "Edit question N for this quiz?" about a saved question and, on confirm, swap it for an
+   * editable draft copy at the same position (edit-copy.ts). `onCopied` gets the copy's id.
+   */
+  requestEditCopy: (questionId: number, onCopied?: (copyId: number) => void) => void;
   /**
    * Replace the order of the quiz's questions. Takes the whole reordered list — the shape
    * framer-motion's `Reorder.Group` hands back — and must contain the same questions.
    * Order is positional: `getQuestionsWithSettings` derives `orderInQuiz` from the index.
    */
   reorderQuestions: (ordered: QuizQuestion[]) => void;
-  /**
-   * Put back a question that was just removed — the overview's Undo. Goes back at `index`
-   * (clamped to the end) with the settings it had, so it returns exactly as it left.
-   */
-  restoreQuestion: (
-    question: QuizQuestion,
-    settings: QuestionSettings,
-    index: number
-  ) => void;
   isQuestionSelected: (questionId: number) => boolean;
 
   // Temporary modal selections
@@ -156,6 +177,16 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
       )
   );
   const [activeTab, setActiveTab] = useState<string>("quiz");
+
+  // ── Undo for removals (question-history.ts) and the two confirmations ──────────────────
+  // The stack lives exactly as long as this provider: the builder remounts it on save
+  // (edit-quiz keys it by quiz version) and on leaving, which is when Undo stops making sense.
+  const [removedStack, setRemovedStack] = useState<RemovedQuestion[]>([]);
+  const [pendingRemovalId, setPendingRemovalId] = useState<number | null>(null);
+  const [pendingCopyId, setPendingCopyId] = useState<number | null>(null);
+  // Callbacks for the pending confirmation. Refs, not state: they are never rendered.
+  const afterRemoval = useRef<(() => void) | undefined>(undefined);
+  const afterCopy = useRef<((copyId: number) => void) | undefined>(undefined);
 
   // NEW: Track which questions have been validated (per-question validation state)
   const [validatedQuestions, setValidatedQuestions] = useState<Set<number>>(
@@ -379,6 +410,20 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
   };
 
   const removeQuestionFromQuiz = (questionId: number): void => {
+    const index = addedQuestions.findIndex((q) => q.id === questionId);
+    if (index >= 0) {
+      setRemovedStack((prev) =>
+        pushRemoval(prev, {
+          question: addedQuestions[index],
+          settings: {
+            ...DEFAULT_QUESTION_SETTINGS,
+            ...questionSettings[questionId],
+            orderInQuiz: index,
+          },
+          index,
+        })
+      );
+    }
     setAddedQuestions((prevSelected) => {
       const filtered = prevSelected.filter((q) => q.id !== questionId);
       if (displayQuestion?.id === questionId) {
@@ -416,22 +461,55 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
     });
   };
 
-  const reorderQuestions = (ordered: QuizQuestion[]): void => {
-    setAddedQuestions(ordered);
+  const requestRemoveQuestion = (questionId: number, onRemoved?: () => void): void => {
+    afterRemoval.current = onRemoved;
+    setPendingRemovalId(questionId);
   };
 
-  const restoreQuestion = (
-    question: QuizQuestion,
-    settings: QuestionSettings,
-    index: number
-  ): void => {
-    setAddedQuestions((prev) => {
-      if (prev.some((q) => q.id === question.id)) return prev;
-      const next = [...prev];
-      next.splice(Math.min(index, next.length), 0, question);
-      return next;
-    });
-    setQuestionSettings((prev) => ({ ...prev, [question.id]: settings }));
+  const confirmRemoval = (): void => {
+    if (pendingRemovalId !== null) {
+      removeQuestionFromQuiz(pendingRemovalId);
+      afterRemoval.current?.();
+    }
+    afterRemoval.current = undefined;
+    setPendingRemovalId(null);
+  };
+
+  const undoLastRemoval = (): void => {
+    const entry = peekRemoval(removedStack);
+    if (!entry) return;
+    setRemovedStack(popRemoval(removedStack));
+    setAddedQuestions((prev) => reinsert(prev, entry));
+    setQuestionSettings((prev) => ({ ...prev, [entry.question.id]: entry.settings }));
+    // Show what came back, so the restore is visible rather than somewhere down the list.
+    setDisplayQuestion(entry.question);
+    setActiveTab("questions");
+  };
+
+  const requestEditCopy = (questionId: number, onCopied?: (copyId: number) => void): void => {
+    afterCopy.current = onCopied;
+    setPendingCopyId(questionId);
+  };
+
+  const confirmEditCopy = (): void => {
+    const original = addedQuestions.find((q) => q.id === pendingCopyId);
+    if (original && original.id > 0) {
+      const copy = toEditableCopy(original as AnyQuestion, -Date.now());
+      setAddedQuestions((prev) => prev.map((q) => (q.id === original.id ? copy : q)));
+      // Same points and time limit, now keyed by the copy.
+      setQuestionSettings((prev) => {
+        const { [original.id]: settings, ...rest } = prev;
+        return { ...rest, [copy.id]: { ...DEFAULT_QUESTION_SETTINGS, ...settings } };
+      });
+      setDisplayQuestion(copy);
+      afterCopy.current?.(copy.id);
+    }
+    afterCopy.current = undefined;
+    setPendingCopyId(null);
+  };
+
+  const reorderQuestions = (ordered: QuizQuestion[]): void => {
+    setAddedQuestions(ordered);
   };
 
   const isQuestionSelected = (questionId: number): boolean => {
@@ -609,14 +687,25 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
     }));
   }, [addedQuestions, questionSettings]);
 
+  const positionOf = (id: number | null) => {
+    const i = id === null ? -1 : addedQuestions.findIndex((q) => q.id === id);
+    return i >= 0 ? i + 1 : null;
+  };
+  const pendingRemovalNumber = positionOf(pendingRemovalId);
+  const pendingCopyNumber = positionOf(pendingCopyId);
+
   const contextValue: QuizContextType = {
     // Permanent selections
     addedQuestions,
     addedQuestionsCount: addedQuestions.length,
     addQuestionToQuiz,
     removeQuestionFromQuiz,
+    requestRemoveQuestion,
+    lastRemoval: peekRemoval(removedStack),
+    removalCount: removedStack.length,
+    undoLastRemoval,
+    requestEditCopy,
     reorderQuestions,
-    restoreQuestion,
     isQuestionSelected,
 
     // Temporary selections
@@ -666,7 +755,26 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
   };
 
   return (
-    <QuizContext.Provider value={contextValue}>{children}</QuizContext.Provider>
+    <QuizContext.Provider value={contextValue}>
+      {children}
+      <RemoveQuestionDialog
+        number={pendingRemovalNumber}
+        isDraft={pendingRemovalId !== null && pendingRemovalId < 0}
+        onConfirm={confirmRemoval}
+        onCancel={() => {
+          afterRemoval.current = undefined;
+          setPendingRemovalId(null);
+        }}
+      />
+      <EditCopyDialog
+        number={pendingCopyNumber}
+        onConfirm={confirmEditCopy}
+        onCancel={() => {
+          afterCopy.current = undefined;
+          setPendingCopyId(null);
+        }}
+      />
+    </QuizContext.Provider>
   );
 };
 

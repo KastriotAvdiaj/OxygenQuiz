@@ -28,6 +28,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useNotifications } from "@/common/Notifications";
 import { useNavigate, useLocation } from "react-router";
 import { ExistingQuestionCard } from "./components/existing-display-quiz-question-card/main-display-quiz-question-export";
+import { SavedQuestionNotice } from "./components/saved-question-notice";
 import { QuestionSettingsCard } from "./components/quiz-question-settings";
 import { NewAnyQuestion, QuizQuestion } from "./types";
 import { inheritQuizClassification } from "./inherit-quiz-classification";
@@ -982,10 +983,12 @@ const CreateQuizForm = ({
                 <CardContent className="flex flex-col w-full flex-1 min-h-0 overflow-y-auto p-3">
                   {displayQuestion !== null ? (
                     isAnyQuestion(displayQuestion) ? (
-                      <ExistingQuestionCard
-                        key={displayQuestion.id}
-                        question={displayQuestion}
-                      />
+                      // A saved question is read-only here (it can be in other quizzes); the
+                      // notice says so and offers an editable copy for this quiz (edit-copy.ts).
+                      <div key={displayQuestion.id} className="flex flex-col gap-3">
+                        <SavedQuestionNotice questionId={displayQuestion.id} />
+                        <ExistingQuestionCard question={displayQuestion} />
+                      </div>
                     ) : isNewAnyQuestion(displayQuestion) ? (
                       <NewQuestionCard
                         key={displayQuestion.id}

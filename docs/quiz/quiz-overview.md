@@ -35,8 +35,11 @@ Code: `src/pages/Dashboard/Pages/Quiz/components/Create-Quiz-Form/components/ove
    **Edit** (default blue) and **Remove** (red).
 3. **The bar** — the bottom of that same card: *Add a question* (muted) and the primary action
    with an arrow, small and centred, sticky to the bottom of the page so it stays in reach while
-   the list scrolls. A removal shows "Question N removed · **Undo**" in it for six seconds; Undo
-   puts the question back in the same place with the same settings.
+   the list scrolls. **Remove** asks first; after a removal the bar shows "Question N removed ·
+   **Undo**" until the quiz is saved, and Undo walks removals back one at a time, newest first,
+   each to its old place with its old settings — the same stack the desktop builder uses
+   ([quiz-editing.md](quiz-editing.md), "Removing a question"). Until 2026-10-21 this was one
+   removal for six seconds.
 
 ## Wide screens
 
@@ -94,8 +97,10 @@ multiple choice.
 edge — a tap there closes it. It holds the same editors the desktop builder uses plus the
 question's settings (points, time limit). Edits apply as they are typed, so there is no Save;
 **Done** closes. **Previous / Next** step through the questions in order, sliding in the direction
-of travel. **Remove** deletes the question (with the same Undo as the card's button) and moves to
-the one that took its place. The question's points and time limit sit under it as "Points and
+of travel. **Remove** asks, removes the question (with the same Undo as the card's button) and
+moves to the one that took its place. A saved question opens read-only under **Edit for this
+quiz**, which swaps in an editable copy ([quiz-editing.md](quiz-editing.md), "Editing a saved
+question"). The question's points and time limit sit under it as "Points and
 time", without repeating the question's text.
 
 A question created from *Add a question → Create New* opens in the editor straight away.

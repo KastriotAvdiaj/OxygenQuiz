@@ -33,8 +33,6 @@ import { useMediaQuery } from "@/hooks/use-media-query";
 
 /** Tailwind's `xl` — where the overview goes two-column with a masonry of questions. */
 const WIDE_QUERY = "(min-width: 1280px)";
-/** How long "Question N removed · Undo" stays up. */
-const UNDO_WINDOW_MS = 6000;
 
 /** The quiz-level fields whose errors the summary card has to surface — they live in a dialog. */
 const QUIZ_FIELD_LABELS: Partial<Record<keyof CreateQuizInput, string>> = {
@@ -124,9 +122,10 @@ export const QuizOverview = ({
     reorderQuestions,
     getQuestionErrors,
     setDisplayQuestion,
-    removeQuestionFromQuiz,
-    restoreQuestion,
-    getQuestionSettings,
+    requestRemoveQuestion,
+    lastRemoval,
+    removalCount,
+    undoLastRemoval,
   } = useQuiz();
   const { watch, errors } = fields;
 
@@ -151,44 +150,17 @@ export const QuizOverview = ({
     });
 
   // ── Remove, with Undo ────────────────────────────────────────────────────────────────
-  // A question removed by mistake — the trash sits next to Edit — comes back with one tap for
-  // a few seconds: same place, same settings. The timer is the external system here.
-  const [lastRemoved, setLastRemoved] = useState<{
-    question: (typeof addedQuestions)[number];
-    settings: ReturnType<typeof getQuestionSettings>;
-    index: number;
-  } | null>(null);
-  useEffect(() => {
-    if (!lastRemoved) return;
-    const id = window.setTimeout(() => setLastRemoved(null), UNDO_WINDOW_MS);
-    return () => window.clearTimeout(id);
-  }, [lastRemoved]);
-
-  const removeQuestion = (id: number) => {
-    const index = addedQuestions.findIndex((q) => q.id === id);
-    if (index < 0) return;
-    setLastRemoved({
-      question: addedQuestions[index],
-      settings: getQuestionSettings(id),
-      index,
-    });
-    removeQuestionFromQuiz(id);
-    setRevealedIds((prev) => {
-      const next = new Set(prev);
-      next.delete(id);
-      return next;
-    });
-  };
-
-  const undoRemove = () => {
-    if (!lastRemoved) return;
-    restoreQuestion(
-      lastRemoved.question,
-      lastRemoved.settings,
-      lastRemoved.index,
+  // Confirmed first, then undoable — the stack lives in the question context so the desktop
+  // builder and this screen share it (question-history.ts). Undo stays offered until the quiz is
+  // saved, walking removals back one at a time, each to where it was.
+  const removeQuestion = (id: number) =>
+    requestRemoveQuestion(id, () =>
+      setRevealedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      }),
     );
-    setLastRemoved(null);
-  };
 
   // ── Reordering ── drag by the grip, with edge auto-scroll (use-drag-reorder.ts).
   const {
@@ -475,7 +447,7 @@ export const QuizOverview = ({
               through that padding. */}
           <div className="sticky -bottom-4 z-20 -mx-3 rounded-b-lg border-t border-border bg-card px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 sm:-bottom-6 sm:-mx-4 sm:px-4 lg:-bottom-8 short:-bottom-4 dark:border-foreground/30 xl:bottom-0 xl:-mx-[calc(1rem+1px)] xl:-mb-px xl:border-x xl:border-b xl:px-[calc(1rem+1px)] xl:after:absolute xl:after:-inset-x-px xl:after:top-[calc(100%+1px)] xl:after:h-10 xl:after:bg-muted xl:after:content-['']">
             <AnimatePresence initial={false}>
-              {lastRemoved && (
+              {lastRemoval && (
                 <motion.div
                   key="undo"
                   initial={{ height: 0, opacity: 0 }}
@@ -489,11 +461,12 @@ export const QuizOverview = ({
                     className="mb-2.5 flex items-center justify-between gap-3 border-b border-border pb-2.5 text-sm"
                   >
                     <span className="text-muted-foreground">
-                      Question {lastRemoved.index + 1} removed.
+                      Question {lastRemoval.index + 1} removed.
+                      {removalCount > 1 && <> {removalCount} removals to undo.</>}
                     </span>
                     <button
                       type="button"
-                      onClick={undoRemove}
+                      onClick={undoLastRemoval}
                       className="inline-flex h-9 items-center gap-1.5 rounded-md px-2 font-semibold text-primary hover:bg-primary/10"
                     >
                       <Undo2 className="h-4 w-4" />
@@ -520,7 +493,6 @@ export const QuizOverview = ({
 
       <QuestionEditorDialog
         questionId={editingQuestionId}
-        onRemove={removeQuestion}
         onQuestionChange={(id) =>
           id === null ? onEditingQuestionChange(null) : openEditor(id)
         }

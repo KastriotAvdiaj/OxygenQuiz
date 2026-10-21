@@ -134,8 +134,10 @@ reports — filters to **live rows only**.
 
 ### Owners edit from their own dashboard
 
-**Who can edit a quiz: its owner, and nobody else** — the API (`UpdateQuizAsync`) saves only
-for the quiz's owner, admins included; there is no "edit any quiz" path.
+**Who can edit a quiz: its owner, or a caller with `quiz:update:any`** — Admin as seeded, the
+SuperAdmin always ([`user-role-management.md`](../auth/user-role-management.md) §1.1). Until
+2026-10-21 `UpdateQuizAsync` saved for the owner only, admins included, so an admin got a full
+editor whose save always failed.
 
 Until 2026-09-23 the UI didn't match that. The editor was mounted only under `/dashboard`, whose
 loader 404s everyone but admins, and "My quizzes" reused the admin table's Edit link — so a player
@@ -144,6 +146,38 @@ save. The player dashboard now mounts the same editors at `/my-dashboard/quizzes
 (and `…/board`), inside its full-width paths, and the shared table links there when it is shown in
 "My quizzes". The table's **View** item is hidden in "My quizzes": the single-quiz page is still
 admin-only (`known-issues.md`).
+
+### Removing a question
+
+Every removal — the desktop list's trash icon, the overview's card and editor, the question bank
+picker — **asks first** ("Remove question N?") and can then be **undone**. The dialog says what
+removal means: a saved question only leaves this quiz and stays in the question bank; a draft that
+was never saved is thrown away.
+
+Undo is a **stack** (`question-history.ts`, held by `QuizQuestionProvider`): remove three, press
+Undo three times, and each comes back — newest first — at the position it left, with the points
+and time limit it had. It only undoes removals. It lasts until the quiz is saved or the page is
+left (the provider remounts). On the desktop the **Undo** button sits in the *Quiz Questions*
+panel's header, with a count when there is more than one to walk back; on the overview it is in
+the bottom bar with "Question N removed".
+
+The confirmation and the stack live in the provider, not in each button, so all four places
+behave the same: `requestRemoveQuestion(id, onRemoved?)` opens the dialog;
+`removeQuestionFromQuiz` is the unconfirmed removal it calls and records.
+
+### Editing a saved question
+
+A question already saved in the question bank (positive id) is shown **read-only** in the builder,
+and always has been: one row can sit in several quizzes, so editing it in place would change
+those quizzes too. A notice above it says so (`SavedQuestionNotice`), with **Edit for this
+quiz**: after a confirmation explaining it, the question is swapped — same position, same points
+and time limit — for an editable **draft copy** (`edit-copy.ts`). Saving the quiz creates the copy
+as a new question and points the quiz at it; the original and every other quiz using it are
+untouched. The copy is the editor's own and starts **Private**, like every question written in
+the builder. Why a copy and never an in-place edit:
+[ADR 0030](../adr/0030-the-builder-edits-a-saved-question-as-a-copy.md).
+
+To change a question everywhere it is used, edit it on the Questions page.
 
 ## Migration
 
@@ -181,3 +215,7 @@ built now.
 insert vs untouched, copy-on-write on every settings change, order normalisation,
 duplicate rejection, retired-row re-adds) and the visibility rule, including an
 end-to-end simulation of "owner edits while a session is pinned to v1".
+
+The builder's removal and copy rules are frontend unit tests in `Create-Quiz-Form/__tests__/`:
+`question-history.test.ts` (the Undo stack's order), `edit-copy.test.ts` (the copy's fields) and
+`question-removal-flow.test.tsx` (the provider's confirm → remove → undo → copy flow).

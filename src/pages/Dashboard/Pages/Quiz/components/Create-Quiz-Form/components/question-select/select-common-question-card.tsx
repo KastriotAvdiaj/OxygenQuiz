@@ -247,7 +247,7 @@ export const CommonSelectQuestionCard: React.FC<CommonSelectQuestionCard> = ({
     isQuestionModalOpen,
     tempSelectedQuestions,
     isQuestionSelected,
-    removeQuestionFromQuiz,
+    requestRemoveQuestion,
   } = useQuiz();
 
   // Memoized computed values
@@ -359,15 +359,16 @@ export const CommonSelectQuestionCard: React.FC<CommonSelectQuestionCard> = ({
       e.stopPropagation();
 
       if (
-        removeQuestionFromQuiz &&
+        requestRemoveQuestion &&
         selectionState.isPermanentlySelected &&
         !isQuestionModalOpen
       ) {
-        removeQuestionFromQuiz(question.id);
+        // Confirms first, and the removal can be undone (Quiz-questions-context).
+        requestRemoveQuestion(question.id);
       }
     },
     [
-      removeQuestionFromQuiz,
+      requestRemoveQuestion,
       selectionState.isPermanentlySelected,
       isQuestionModalOpen,
       question.id,

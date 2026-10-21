@@ -194,11 +194,15 @@ export const EditingAQuestion: Story = {
   },
 };
 
-/** Remove takes the question out, and Undo puts it back where it was. */
+/** Remove asks first, takes the question out, and Undo puts it back where it was. */
 export const RemoveAndUndo: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await userEvent.click(canvas.getByRole("button", { name: "Remove question 2" }));
+    // The confirmation renders in a portal, outside the story's canvas.
+    const page = within(canvasElement.ownerDocument.body);
+    await page.findByText("Remove question 2?");
+    await userEvent.click(page.getByRole("button", { name: "Remove" }));
     // Gone once its exit animation has played.
     await waitFor(() =>
       expect(canvas.queryByText(/The SAT is a standardised test/)).toBeNull(),

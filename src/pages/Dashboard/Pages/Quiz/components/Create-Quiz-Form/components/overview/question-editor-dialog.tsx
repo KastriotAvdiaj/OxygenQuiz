@@ -16,6 +16,7 @@ import type { AnyQuestion } from "@/types/question-types";
 import { useQuiz } from "../../Quiz-questions-context";
 import type { NewAnyQuestion, QuizQuestion } from "../../types";
 import { ExistingQuestionCard } from "../existing-display-quiz-question-card/main-display-quiz-question-export";
+import { SavedQuestionNotice } from "../saved-question-notice";
 import { NewQuestionCard } from "../new-display-quiz-question-card/main-display-quiz-question-card";
 import { QuestionSettingsCard } from "../quiz-question-settings";
 
@@ -23,8 +24,6 @@ export interface QuestionEditorDialogProps {
   /** The question being edited, or null when the dialog is closed. */
   questionId: number | null;
   onQuestionChange: (id: number | null) => void;
-  /** Removes a question — the overview's, so a removal here gets the same Undo. */
-  onRemove: (id: number) => void;
 }
 
 /**
@@ -40,9 +39,8 @@ export interface QuestionEditorDialogProps {
 export const QuestionEditorDialog = ({
   questionId,
   onQuestionChange,
-  onRemove,
 }: QuestionEditorDialogProps) => {
-  const { addedQuestions, setDisplayQuestion } = useQuiz();
+  const { addedQuestions, setDisplayQuestion, requestRemoveQuestion } = useQuiz();
   const reducedMotion = usePrefersReducedMotion();
   // +1 forward, -1 back: which side the next question slides in from.
   const [direction, setDirection] = useState(1);
@@ -64,8 +62,8 @@ export const QuestionEditorDialog = ({
     if (!question) return;
     // Land on the question that takes this one's place, else the one before, else close.
     const neighbour = addedQuestions[index + 1] ?? addedQuestions[index - 1];
-    onRemove(question.id);
-    onQuestionChange(neighbour ? neighbour.id : null);
+    // Confirms first (and can be undone from the overview's bar); move on only if it went.
+    requestRemoveQuestion(question.id, () => onQuestionChange(neighbour ? neighbour.id : null));
   };
 
   const offset = reducedMotion ? 0 : 32;
@@ -114,7 +112,11 @@ export const QuestionEditorDialog = ({
                   className="space-y-4 p-3 sm:p-4"
                 >
                   {question.id > 0 ? (
-                    <ExistingQuestionCard question={question as AnyQuestion} />
+                    <>
+                      {/* The copy takes the question's place under a new id; follow it. */}
+                      <SavedQuestionNotice questionId={question.id} onCopied={onQuestionChange} />
+                      <ExistingQuestionCard question={question as AnyQuestion} />
+                    </>
                   ) : (
                     <NewQuestionCard question={question as NewAnyQuestion} />
                   )}
