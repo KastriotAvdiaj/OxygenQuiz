@@ -552,15 +552,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                 if (!await _quizzes.AllQuestionsExistAsync(questionIds))
                     throw new InvalidOperationException("One or more questions do not exist");
 
-                quiz.Title = quizUM.Title;
-                quiz.Description = quizUM.Description;
-                quiz.CategoryId = quizUM.CategoryId;
-                quiz.LanguageId = quizUM.LanguageId;
-                quiz.DifficultyId = quizUM.DifficultyId;
-                quiz.ShowFeedbackImmediately = quizUM.ShowFeedbackImmediately;
-                quiz.ShuffleQuestions = quizUM.ShuffleQuestions;
-                quiz.Status = QuizMappers.ParseStatus(quizUM.Status);
-
+                var newStatus = QuizMappers.ParseStatus(quizUM.Status);
                 var newVersion = quiz.Version + 1;
 
                 // Copy-on-write question diff (docs/quiz/quiz-editing.md): join rows are never updated
@@ -569,6 +561,39 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                 // and added questions get fresh rows stamped with the new version.
                 var diff = QuizQuestionVersioning.Diff(
                     quiz.QuizQuestions, quizUM.Questions.ToList(), quiz.Id, newVersion);
+
+                // A save that changes nothing is not a new version. Removing questions and putting
+                // them back with Undo, then saving, used to bump the version on every save — the
+                // number then overstated how often the quiz had changed. Blank and null
+                // descriptions are the same thing (the form sends "", the column may hold null).
+                var metadataChanged =
+                    quiz.Title != quizUM.Title
+                    || (quiz.Description ?? "") != (quizUM.Description ?? "")
+                    || quiz.CategoryId != quizUM.CategoryId
+                    || quiz.LanguageId != quizUM.LanguageId
+                    || quiz.DifficultyId != quizUM.DifficultyId
+                    || quiz.ShowFeedbackImmediately != quizUM.ShowFeedbackImmediately
+                    || quiz.ShuffleQuestions != quizUM.ShuffleQuestions
+                    || quiz.Status != newStatus
+                    || (quiz.ImageUrl ?? "") != (quizUM.ImageUrl ?? "");
+                if (!metadataChanged && !diff.HasQuestionChanges)
+                {
+                    await transaction.CommitAsync();
+                    return await GetQuizByIdAsync(quiz.Id, userId);
+                }
+
+                quiz.Title = quizUM.Title;
+                quiz.Description = quizUM.Description;
+                quiz.CategoryId = quizUM.CategoryId;
+                quiz.LanguageId = quizUM.LanguageId;
+                quiz.DifficultyId = quizUM.DifficultyId;
+                quiz.ShowFeedbackImmediately = quizUM.ShowFeedbackImmediately;
+                quiz.ShuffleQuestions = quizUM.ShuffleQuestions;
+                quiz.Status = newStatus;
+                // The edit form sends the image like every other field; until 2026-10-22 this
+                // update ignored it, so changing a quiz's image while editing was silently lost.
+                var imageChanged = (quiz.ImageUrl ?? "") != (quizUM.ImageUrl ?? "");
+                quiz.ImageUrl = string.IsNullOrEmpty(quizUM.ImageUrl) ? null : quizUM.ImageUrl;
 
                 foreach (var row in diff.ToRetire)
                     row.RemovedInVersion = newVersion;
@@ -581,6 +606,10 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
 
                 await _quizzes.SaveChangesAsync();
                 await transaction.CommitAsync();
+
+                // Same as create: tie the uploaded file to the quiz once the row is saved.
+                if (imageChanged && !string.IsNullOrEmpty(quizUM.ImageUrl))
+                    await _imageService.AssociateImageWithEntityAsync(quizUM.ImageUrl, "Quizzes", quiz.Id);
 
                 return await GetQuizByIdAsync(quiz.Id, userId);
             }

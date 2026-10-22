@@ -62,7 +62,12 @@ only retires the join row, exactly as intended.
 2. **Optimistic concurrency:** if the submitted `version` doesn't match
    `Quiz.Version`, return **409** — the client editing a stale copy must reload.
    This protects editor-vs-editor (two tabs, two devices).
-3. Validate references and question ids, then apply metadata changes.
+3. Validate references and question ids, then apply metadata changes — including the quiz
+   **image**, which until 2026-10-22 the update ignored (a changed image was silently lost).
+   **A save that changes nothing is not a new version:** if no field (title, description,
+   classification, status, options, image) differs and the question diff below is empty, the
+   save returns the quiz as it is, version unchanged. Removing questions and putting them back
+   with Undo, then saving, used to add a version on every save.
 4. Diff the live rows against the incoming question list
    (`QuizQuestionVersioning.Diff` — pure, unit-tested, no EF):
    - **removed** question → stamp `RemovedInVersion = newVersion`;

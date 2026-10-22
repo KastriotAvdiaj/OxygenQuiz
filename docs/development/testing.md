@@ -75,6 +75,7 @@ interesting part, so we fake it with Moq (pattern C below).
 
 | File | Type | Covers |
 | --- | --- | --- |
+| `Editing/QuizNoOpSaveTests.cs` | Service + real repository on InMemory DB | `UpdateQuizAsync`: a save with nothing changed (blank vs null description, 0-based client order) keeps the version and retires no rows; a real change bumps it, and the quiz image is actually saved. |
 | `Editing/QuestionEditRuleTests.cs` | Pure unit + repository on InMemory DB | The builder's in-place edit rule (ADR 0031): yours + no other live quiz + never answered → editable; the reasons in order (not yours, played, used elsewhere). The facts query: the quiz being edited, a retired row and a deleted quiz are not "another quiz"; creating counts every quiz; any answer row is "played"; someone else's question reads nothing. |
 | `Users/SettingsAskBeforeRemovingTests.cs` | Service + InMemory DB | "Don't ask again" for the builder's remove confirmation: on by default, off when turned off, and a PUT without the field (an older client) leaves it alone. |
 | `Scoring/QuizScoringTests.cs` | Pure unit | Speed bonus, point-system multipliers, the "never below 1" floor, edge cases (no limit, over-time, negative time). |
