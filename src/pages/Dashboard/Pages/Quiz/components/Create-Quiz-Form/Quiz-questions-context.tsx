@@ -211,8 +211,13 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
   // Which saved questions may be edited in place — asked of the server, which also enforces it.
   const savedIds = addedQuestions.filter((q) => q.id > 0).map((q) => q.id);
   const editability = useQuestionEditability(savedIds, quizId ?? null);
-  const editabilityOf = (questionId: number) =>
-    editability.data?.find((e) => e.questionId === questionId);
+  // If the check fails (or the API predates it), a saved question falls back to the safe path:
+  // read-only with "Edit for this quiz" — never stuck on "Checking…" with no way to edit.
+  const editabilityOf = (questionId: number): QuestionEditability | undefined =>
+    editability.data?.find((e) => e.questionId === questionId) ??
+    (editability.isError
+      ? { questionId, canEditInPlace: false, reason: null, otherQuizCount: 0 }
+      : undefined);
 
   // "Ask before removing a question" — Settings › Quiz, or the dialog's "Don't ask again".
   // Asks until the setting has loaded and says otherwise.

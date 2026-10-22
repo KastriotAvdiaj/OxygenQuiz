@@ -22,7 +22,8 @@ const reasonText = (e: QuestionEditability): string => {
         ? "Another quiz uses this question too."
         : `${e.otherQuizCount} other quizzes use this question too.`;
     default:
-      return "";
+      // The check itself failed — say so rather than invent a reason.
+      return "Couldn't check whether this question can be edited here.";
   }
 };
 

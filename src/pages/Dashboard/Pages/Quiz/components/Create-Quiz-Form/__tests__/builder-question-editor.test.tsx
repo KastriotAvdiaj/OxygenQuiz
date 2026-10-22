@@ -15,8 +15,9 @@ import type { QuestionEditability } from "../../../../Question/api/get-question-
  */
 
 let answer: QuestionEditability[] | undefined;
+let failed = false;
 vi.mock("../../../../Question/api/get-question-editability", () => ({
-  useQuestionEditability: () => ({ data: answer }),
+  useQuestionEditability: () => ({ data: answer, isError: failed }),
 }));
 vi.mock("@/pages/UserRelated/SettingsPage/api/get-settings", () => ({
   useSettingsData: () => ({ data: undefined }),
@@ -55,6 +56,15 @@ describe("BuilderQuestionEditor", () => {
     renderEditor();
     expect(screen.getByText(/2 other quizzes use this question too/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Edit for this quiz/ })).toBeInTheDocument();
+  });
+
+  it("falls back to a copy, never a dead end, when the check fails", () => {
+    answer = undefined;
+    failed = true;
+    renderEditor();
+    expect(screen.getByText(/Couldn't check whether this question can be edited/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Edit for this quiz/ })).toBeInTheDocument();
+    failed = false;
   });
 
   it("says it is checking while the server hasn't answered", () => {
