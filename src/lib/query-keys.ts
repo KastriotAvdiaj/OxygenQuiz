@@ -16,6 +16,9 @@ export const questionKeys = {
     [...questionKeys.all, "typed-search", scope, type, query] as const,
   detail: (questionId: number) =>
     [...questionKeys.all, "detail", questionId] as const,
+  /** Under `all`, so any question edit re-asks whether the builder may edit in place. */
+  editability: (quizId: number | null, ids: readonly number[]) =>
+    [...questionKeys.all, "editability", quizId, ids] as const,
 };
 
 /** Current user's questions (user dashboard + profile total) — ["myQuestions", …]. */

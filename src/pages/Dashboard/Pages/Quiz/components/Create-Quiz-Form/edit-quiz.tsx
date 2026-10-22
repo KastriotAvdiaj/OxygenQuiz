@@ -66,6 +66,7 @@ export const EditQuizRoute = () => {
   return (
     <QuizQuestionProvider
       key={`${quiz.id}-v${quiz.version}`}
+      quizId={quiz.id}
       initialQuestions={initialQuestions}>
       <CreateQuizForm editQuiz={quiz} />
     </QuizQuestionProvider>

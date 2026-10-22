@@ -52,13 +52,17 @@ export type UpdateTypeTheAnswerQuestionInput = z.infer<
 export const updateTypeTheAnswerQuestion = ({
   data,
   questionId,
+  params,
 }: {
   data: UpdateTypeTheAnswerQuestionInput;
   questionId: number;
+  /** See updateMultipleChoiceQuestion. */
+  params?: { fromQuizBuilder: true; quizId?: number };
 }): Promise<TypeTheAnswerQuestion> => {
   return api.put(
     `/questions/typeTheAnswer/${questionId}`,
-    transformFormData(data)
+    transformFormData(data),
+    { params }
   );
 };
 const transformFormData = (data: UpdateTypeTheAnswerQuestionInput) => {

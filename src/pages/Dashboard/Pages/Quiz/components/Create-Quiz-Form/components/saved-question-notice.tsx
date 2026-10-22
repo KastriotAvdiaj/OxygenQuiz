@@ -1,34 +1,57 @@
 import { Lock, Pencil } from "lucide-react";
 import { LiftedButton } from "@/common/LiftedButton";
+import type { QuestionEditability } from "@/pages/Dashboard/Pages/Question/api/get-question-editability";
 import { useQuiz } from "../Quiz-questions-context";
 
 /**
- * Sits above a saved question in the builder, which is shown read-only, and says why — then
- * offers the way to change it anyway: **Edit for this quiz**, which asks first and swaps the
- * question for an editable copy (edit-copy.ts). Used by the desktop builder's centre panel and
- * the overview's editor dialog, so both explain it the same way.
+ * Sits above a saved question the builder may NOT edit in place (QuestionEditRule), says which
+ * rule stopped it in one line, and offers **Edit for this quiz** — a copy (edit-copy.ts). A saved
+ * question that may be edited in place gets no notice: it simply opens in the editor.
  *
- * It replaced nothing: before 2026-10-21 a saved question simply had no edit control, and it read
- * as a bug ("the questions seem to be locked").
+ * Before 2026-10-21 every saved question was read-only with nothing on screen saying why, which
+ * read as a bug ("the questions seem to be locked").
  */
+const reasonText = (e: QuestionEditability): string => {
+  switch (e.reason) {
+    case "NotYours":
+      return "Another author's question.";
+    case "Played":
+      return "Players have answered this question — editing it would change their results.";
+    case "UsedElsewhere":
+      return e.otherQuizCount === 1
+        ? "Another quiz uses this question too."
+        : `${e.otherQuizCount} other quizzes use this question too.`;
+    default:
+      return "";
+  }
+};
+
 export const SavedQuestionNotice = ({
   questionId,
+  editability,
   onCopied,
 }: {
   questionId: number;
+  /** Undefined while the server is being asked. */
+  editability: QuestionEditability | undefined;
   /** Called with the copy's id once it has replaced the question. */
   onCopied?: (copyId: number) => void;
 }) => {
   const { requestEditCopy } = useQuiz();
 
+  if (!editability) {
+    return (
+      <p role="status" className="px-1 text-sm text-muted-foreground">
+        Checking whether this question can be edited here…
+      </p>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-3 rounded-lg border border-border bg-muted/50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between dark:border-foreground/20">
       <p className="flex items-start gap-2 text-sm text-muted-foreground">
         <Lock className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-        <span>
-          A saved question from the question bank — shown as it is. Editing it here makes a copy
-          for this quiz only.
-        </span>
+        <span>{reasonText(editability)} Edit a copy for this quiz instead.</span>
       </p>
       <LiftedButton
         type="button"

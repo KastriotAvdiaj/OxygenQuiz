@@ -11,13 +11,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { usePrefersReducedMotion } from "@/hooks/use-prefers-reduced-motion";
-import type { AnyQuestion } from "@/types/question-types";
 
 import { useQuiz } from "../../Quiz-questions-context";
-import type { NewAnyQuestion, QuizQuestion } from "../../types";
-import { ExistingQuestionCard } from "../existing-display-quiz-question-card/main-display-quiz-question-export";
-import { SavedQuestionNotice } from "../saved-question-notice";
-import { NewQuestionCard } from "../new-display-quiz-question-card/main-display-quiz-question-card";
+import type { QuizQuestion } from "../../types";
+import { BuilderQuestionEditor } from "../builder-question-editor";
 import { QuestionSettingsCard } from "../quiz-question-settings";
 
 export interface QuestionEditorDialogProps {
@@ -111,15 +108,8 @@ export const QuestionEditorDialog = ({
                   transition={{ duration: 0.22, ease: "easeOut" }}
                   className="space-y-4 p-3 sm:p-4"
                 >
-                  {question.id > 0 ? (
-                    <>
-                      {/* The copy takes the question's place under a new id; follow it. */}
-                      <SavedQuestionNotice questionId={question.id} onCopied={onQuestionChange} />
-                      <ExistingQuestionCard question={question as AnyQuestion} />
-                    </>
-                  ) : (
-                    <NewQuestionCard question={question as NewAnyQuestion} />
-                  )}
+                  {/* The copy takes the question's place under a new id; follow it. */}
+                  <BuilderQuestionEditor question={question} onCopied={onQuestionChange} />
                   <section aria-label="Points and time" className="rounded-lg border border-border">
                     <h3 className="border-b border-border px-4 py-2.5 text-sm font-semibold sm:px-5">
                       Points and time

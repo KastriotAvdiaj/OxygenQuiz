@@ -1055,10 +1055,15 @@ and tightening `ClockSkew`. All **P3**.
 
 ## Quiz editing (2026-07-02 — see docs/quiz/quiz-editing.md)
 
-- **P3 — Editing a saved question as a copy leaves the original behind (2026-10-21).** The
-  builder's *Edit for this quiz* always copies (ADR 0030). When the editor owns the question and no
-  other quiz uses it, the original is left in their bank unused. Refinement: edit in place in exactly
-  that case, or offer to delete the original on save.
+- ~~**P3 — Editing a saved question as a copy leaves the original behind.**~~ **Fixed
+  (2026-10-21, ADR 0031).** Your own question that no other quiz uses and nobody has answered is
+  now edited in place; only the rest are copied.
+- **P2 — The Questions page edits a played question in place (found 2026-10-21).** The builder
+  refuses this (ADR 0031), but `PUT /api/questions/{type}/{id}` from the Questions page doesn't: a
+  question players have answered can be reworded or have its correct option changed, and their
+  results then show the new version. Removing an option an answer points at goes through
+  `SyncAnswerOptionsAsync`'s delete. Fix: refuse (or copy-on-write) a played question's content
+  edit there too, or version question content the way quiz membership is versioned.
 - **P3 — Quiz delete still checks the role, not `quiz:delete:any` (2026-10-21).** Update, status and
   board saves moved to `quiz:update:any`; `DeleteQuizAsync` still takes `_currentUser.IsAdmin`. Same
   people today (Admin and SuperAdmin both hold the permission), so it only matters once someone edits

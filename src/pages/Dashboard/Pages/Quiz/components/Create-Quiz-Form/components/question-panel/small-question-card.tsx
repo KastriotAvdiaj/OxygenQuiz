@@ -1,5 +1,6 @@
 import React from "react";
 import { QuestionType } from "@/types/question-types";
+import { isSavedShape } from "../../edit-copy";
 import {
   ExistingSmallQuestionCardProps,
   NewSmallQuestionCardProps,
@@ -18,7 +19,9 @@ import { NewSmallTypeTheAnswerCard } from "./new-small-question-card-components/
 //   | NewSmallQuestionCardProps;
 
 export const SmallQuestionCard: React.FC<SmallQuestionCardProps> = (props) => {
-  const isExisting = props.question.id > 0;
+  // By shape, not id sign: a saved question being edited in place keeps its positive id but is
+  // draft-shaped, and the "existing" cards read lookups as objects it no longer has (edit-copy.ts).
+  const isExisting = isSavedShape(props.question);
 
   switch (props.question.type) {
     case QuestionType.MultipleChoice:

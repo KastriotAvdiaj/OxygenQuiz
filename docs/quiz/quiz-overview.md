@@ -98,9 +98,10 @@ edge — a tap there closes it. It holds the same editors the desktop builder us
 question's settings (points, time limit). Edits apply as they are typed, so there is no Save;
 **Done** closes. **Previous / Next** step through the questions in order, sliding in the direction
 of travel. **Remove** asks, removes the question (with the same Undo as the card's button) and
-moves to the one that took its place. A saved question opens read-only under **Edit for this
-quiz**, which swaps in an editable copy ([quiz-editing.md](quiz-editing.md), "Editing a saved
-question"). The question's points and time limit sit under it as "Points and
+moves to the one that took its place. A saved question opens in the editor when it is yours, used by no
+other quiz and never answered; otherwise read-only, with the reason and **Edit for this quiz** (a
+copy) — the rule is in [quiz-editing.md](quiz-editing.md), "Which questions the builder edits
+directly". The question's points and time limit sit under it as "Points and
 time", without repeating the question's text.
 
 A question created from *Add a question → Create New* opens in the editor straight away.

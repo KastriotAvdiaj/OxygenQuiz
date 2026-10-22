@@ -1865,6 +1865,9 @@ namespace QuizAPI.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<bool>("AskBeforeRemovingQuestion")
+                        .HasColumnType("boolean");
+
                     b.Property<bool>("MusicEnabled")
                         .HasColumnType("boolean");
 

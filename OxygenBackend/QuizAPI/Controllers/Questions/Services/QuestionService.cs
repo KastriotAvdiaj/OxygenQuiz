@@ -33,6 +33,36 @@ namespace QuizAPI.Controllers.Questions.Services
             _imageService = imageService;
         }
 
+        // ── In-place editing from the quiz builder (QuestionEditRule, ADR 0031) ──────
+
+        public async Task<List<QuestionEditabilityDTO>> GetEditabilityAsync(
+            Guid userId, IReadOnlyCollection<int> ids, int? quizId)
+        {
+            var facts = (await _questions.GetEditFactsAsync(ids, userId, quizId))
+                .ToDictionary(f => f.QuestionId);
+
+            return ids.Distinct().Select(id =>
+            {
+                facts.TryGetValue(id, out var f);
+                var reason = QuestionEditRule.Decide(f, userId);
+                return new QuestionEditabilityDTO
+                {
+                    QuestionId = id,
+                    CanEditInPlace = reason == QuestionEditLock.None,
+                    Reason = reason == QuestionEditLock.None ? null : reason.ToString(),
+                    OtherQuizCount = f?.OtherQuizCount ?? 0,
+                };
+            }).ToList();
+        }
+
+        public async Task EnsureEditableInPlaceAsync(Guid userId, int questionId, int? quizId)
+        {
+            var facts = await _questions.GetEditFactsAsync(new[] { questionId }, userId, quizId);
+            var reason = QuestionEditRule.Decide(facts.FirstOrDefault(), userId);
+            if (reason != QuestionEditLock.None)
+                throw new ConflictException(QuestionEditRule.RefusalMessage(reason));
+        }
+
         // ── Classification rules ──────────────────────────────────────────────────
 
         // The name and the match live in QuizAPI.Common.LookupDefaults — one definition for the

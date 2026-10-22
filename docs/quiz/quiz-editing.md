@@ -165,17 +165,55 @@ The confirmation and the stack live in the provider, not in each button, so all 
 behave the same: `requestRemoveQuestion(id, onRemoved?)` opens the dialog;
 `removeQuestionFromQuiz` is the unconfirmed removal it calls and records.
 
-### Editing a saved question
+**Don't ask again.** The dialog has a checkbox; ticking it turns off the user's
+`AskBeforeRemovingQuestion` setting (server-side, so it holds on every device), and a toast says
+where to turn it back on: **Settings › Quiz › Ask before removing a question**. With it off, a
+removal happens at once — Undo still works, which is why it is safe to offer. The setting's PUT
+field is nullable so an older client that doesn't send it can't reset it.
 
-A question already saved in the question bank (positive id) is shown **read-only** in the builder,
-and always has been: one row can sit in several quizzes, so editing it in place would change
-those quizzes too. A notice above it says so (`SavedQuestionNotice`), with **Edit for this
-quiz**: after a confirmation explaining it, the question is swapped — same position, same points
-and time limit — for an editable **draft copy** (`edit-copy.ts`). Saving the quiz creates the copy
-as a new question and points the quiz at it; the original and every other quiz using it are
-untouched. The copy is the editor's own and starts **Private**, like every question written in
-the builder. Why a copy and never an in-place edit:
-[ADR 0030](../adr/0030-the-builder-edits-a-saved-question-as-a-copy.md).
+### Which questions the builder edits directly
+
+**The rule set** (decided 2026-10-21, [ADR 0031](../adr/0031-the-builder-edits-a-saved-question-in-place-only-when-nothing-else-would-notice.md)).
+Every question in the builder is one of these, and nothing else decides it:
+
+| The question is… | In the builder | On save |
+| --- | --- | --- |
+| **A draft** — written here, or a copy | Editor | Created as a new question |
+| **Saved, and** yours **and** in no other live quiz **and** never answered | Editor, no notice | Updated in place, only if its content changed |
+| **Saved, otherwise** | Read-only, under a notice naming the reason, with **Edit for this quiz** | — (or, after *Edit for this quiz*, the copy is created) |
+
+- **Why those three conditions.** They are exactly the ways an edit could reach someone else: a
+  question someone else owns, a quiz that isn't this one, a player's results. With all three
+  clear, editing in place is indistinguishable from editing a draft.
+- **How a question was made is not part of it.** It isn't recorded — a question created inside a
+  quiz looks exactly like one made on the Questions page — and it isn't what makes an edit safe. A
+  question created with this quiz passes the rule on its own merits until someone plays it.
+- **Owner only, admins included.** `question:update:any` lets an admin edit any question on the
+  Questions page, where changing it everywhere is the point; in the builder an admin edits as the
+  quiz's author.
+- **"Another quiz"** means a *live* row in a quiz that isn't soft-deleted and isn't the one being
+  edited (while creating, every quiz counts). A quiz that dropped the question in an earlier
+  version doesn't count. **"Answered"** means any `UserAnswer` row, in any quiz.
+- **The reasons**, in the order the notice gives them: *Another author's question* →
+  *Players have answered this question* → *N other quizzes use this question too*.
+
+**Where it lives.** `QuestionEditRule` (`Common/QuestionEditRule.cs`) is the rule;
+`IQuestionRepository.GetEditFactsAsync` gathers the facts for the caller's own questions only.
+`GET /api/questions/editability?ids=…&quizId=…` answers per question; the builder asks it for
+every saved question it holds (`useQuestionEditability`, via `QuizQuestionProvider`, which
+`edit-quiz.tsx` gives the quiz id). **The API is the gate:** the builder's in-place save sends
+`?fromQuizBuilder=true&quizId=…` to the question update endpoint, which re-checks the rule and
+answers **409** if, say, someone played the quiz in the meantime — the save stops and the message
+says to edit a copy. The Questions page sends neither and is not limited.
+
+**How the builder tells them apart.** By shape, not id sign (`edit-copy.ts`): a saved question is
+`AnyQuestion`-shaped (lookups as objects); the editors only speak draft (`NewAnyQuestion`).
+`BuilderQuestionEditor` — the one component the desktop centre panel and the overview's dialog
+both render — shows a saved question the rule allows on `toInPlaceDraft` (same id, visibility and
+option ids). The editors write back as soon as they open, so the question turns draft-shaped
+without being changed; the provider keeps its original, and the save compares (`sameContent`)
+and skips an unchanged one. **Edit for this quiz** swaps in `toEditableCopy` instead: a new
+negative id, **Private**, fresh option ids — the original and every other quiz stay as they are.
 
 To change a question everywhere it is used, edit it on the Questions page.
 

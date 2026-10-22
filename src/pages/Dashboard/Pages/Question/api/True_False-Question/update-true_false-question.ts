@@ -35,11 +35,15 @@ export type UpdateTrueFalseQuestionInput = z.infer<
 export const updateTrueFalseQuestion = ({
   data,
   questionId,
+  params,
 }: {
   data: UpdateTrueFalseQuestionInput;
   questionId: number;
+  /** `fromQuizBuilder` + `quizId`: the quiz builder's in-place edit, which the API only allows
+   *  under QuestionEditRule (409 otherwise). The Questions page sends none. */
+  params?: { fromQuizBuilder: true; quizId?: number };
 }): Promise<TrueFalseQuestion> => {
-  return api.put(`/questions/truefalse/${questionId}`, data);
+  return api.put(`/questions/truefalse/${questionId}`, data, { params });
 };
 
 type UseUpdateTrueFalseQuestionOptions = {

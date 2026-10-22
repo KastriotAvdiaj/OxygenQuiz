@@ -25,7 +25,14 @@ import {
   reinsert,
   type RemovedQuestion,
 } from "./question-history";
-import { toEditableCopy } from "./edit-copy";
+import { isDraftShape, isSavedShape, toEditableCopy, toInPlaceDraft } from "./edit-copy";
+import {
+  useQuestionEditability,
+  type QuestionEditability,
+} from "../../../Question/api/get-question-editability";
+import { useSettingsData } from "@/pages/UserRelated/SettingsPage/api/get-settings";
+import { useUpdateSettings } from "@/pages/UserRelated/SettingsPage/api/update-settings";
+import { useNotifications } from "@/common/Notifications";
 import { EditCopyDialog, RemoveQuestionDialog } from "./components/question-action-dialogs";
 
 // Validation error type
@@ -65,6 +72,17 @@ interface QuizContextType {
    * editable draft copy at the same position (edit-copy.ts). `onCopied` gets the copy's id.
    */
   requestEditCopy: (questionId: number, onCopied?: (copyId: number) => void) => void;
+  /**
+   * Whether a saved question may be edited in place (QuestionEditRule on the server): undefined
+   * while it's being asked, and for drafts. See edit-copy.ts.
+   */
+  editabilityOf: (questionId: number) => QuestionEditability | undefined;
+  /**
+   * The question as it was before it was edited in place, for a saved question that is now
+   * draft-shaped — saving compares against it and skips an unchanged one. Undefined if unknown
+   * (e.g. restored from a stored draft), in which case saving updates it.
+   */
+  getInPlaceOriginal: (questionId: number) => NewAnyQuestion | undefined;
   /**
    * Replace the order of the quiz's questions. Takes the whole reordered list — the shape
    * framer-motion's `Reorder.Group` hands back — and must contain the same questions.
@@ -142,11 +160,14 @@ interface QuizProviderProps {
     question: QuizQuestion;
     settings: QuestionSettings;
   }>;
+  /** The quiz being edited — "another quiz" for the edit rule means any but this one. */
+  quizId?: number;
 }
 
 export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
   children,
   initialQuestions,
+  quizId,
 }) => {
   // Permanent quiz selections (seeded from the existing quiz in edit mode)
   const [addedQuestions, setAddedQuestions] = useState<QuizQuestion[]>(
@@ -184,6 +205,22 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
   const [removedStack, setRemovedStack] = useState<RemovedQuestion[]>([]);
   const [pendingRemovalId, setPendingRemovalId] = useState<number | null>(null);
   const [pendingCopyId, setPendingCopyId] = useState<number | null>(null);
+  // In-place edits' originals (see updateQuestion). A ref: read only when saving.
+  const inPlaceOriginals = useRef(new Map<number, NewAnyQuestion>());
+
+  // Which saved questions may be edited in place — asked of the server, which also enforces it.
+  const savedIds = addedQuestions.filter((q) => q.id > 0).map((q) => q.id);
+  const editability = useQuestionEditability(savedIds, quizId ?? null);
+  const editabilityOf = (questionId: number) =>
+    editability.data?.find((e) => e.questionId === questionId);
+
+  // "Ask before removing a question" — Settings › Quiz, or the dialog's "Don't ask again".
+  // Asks until the setting has loaded and says otherwise.
+  const settings = useSettingsData();
+  const updateSettings = useUpdateSettings();
+  const { addNotification } = useNotifications();
+  const askBeforeRemoving = settings.data?.askBeforeRemovingQuestion ?? true;
+
   // Callbacks for the pending confirmation. Refs, not state: they are never rendered.
   const afterRemoval = useRef<(() => void) | undefined>(undefined);
   const afterCopy = useRef<((copyId: number) => void) | undefined>(undefined);
@@ -272,8 +309,8 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
     const results = new Map<number, QuestionValidationResult>();
 
     addedQuestions.forEach((question) => {
-      // Only validate new questions (negative IDs)
-      if (question.id < 0) {
+      // Only drafts are validated — written here, copied, or a saved one edited in place.
+      if (isDraftShape(question)) {
         const result = validateQuestion(question as NewAnyQuestion);
         results.set(question.id, result);
 
@@ -303,7 +340,7 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
     let hasErrors = false;
 
     addedQuestions.forEach((question) => {
-      if (question.id < 0) {
+      if (isDraftShape(question)) {
         newValidatedQuestions.add(question.id);
         const result = validateQuestion(question as NewAnyQuestion);
 
@@ -333,7 +370,7 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
 
       // Run validation for this specific question
       const question = addedQuestions.find((q) => q.id === questionId);
-      if (question && question.id < 0) {
+      if (question && isDraftShape(question)) {
         const result = validateQuestion(question as NewAnyQuestion);
         if (!result.isValid) {
           setQuestionErrorsState(
@@ -462,17 +499,35 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
   };
 
   const requestRemoveQuestion = (questionId: number, onRemoved?: () => void): void => {
+    if (!askBeforeRemoving) {
+      removeQuestionFromQuiz(questionId);
+      onRemoved?.();
+      return;
+    }
     afterRemoval.current = onRemoved;
     setPendingRemovalId(questionId);
   };
 
-  const confirmRemoval = (): void => {
+  const confirmRemoval = (dontAskAgain: boolean): void => {
     if (pendingRemovalId !== null) {
       removeQuestionFromQuiz(pendingRemovalId);
       afterRemoval.current?.();
     }
     afterRemoval.current = undefined;
     setPendingRemovalId(null);
+    if (dontAskAgain && settings.data) {
+      updateSettings.mutate(
+        { ...settings.data, askBeforeRemovingQuestion: false },
+        {
+          onSuccess: () =>
+            addNotification({
+              type: "info",
+              title: "Won't ask again",
+              message: "Turn it back on in Settings › Quiz.",
+            }),
+        },
+      );
+    }
   };
 
   const undoLastRemoval = (): void => {
@@ -493,8 +548,8 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
 
   const confirmEditCopy = (): void => {
     const original = addedQuestions.find((q) => q.id === pendingCopyId);
-    if (original && original.id > 0) {
-      const copy = toEditableCopy(original as AnyQuestion, -Date.now());
+    if (original && isSavedShape(original)) {
+      const copy = toEditableCopy(original, -Date.now());
       setAddedQuestions((prev) => prev.map((q) => (q.id === original.id ? copy : q)));
       // Same points and time limit, now keyed by the copy.
       setQuestionSettings((prev) => {
@@ -576,8 +631,8 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
     (questionId: number, updatedQuestion: QuizQuestion): void => {
       console.log("🔄 updateQuestion called for:", questionId);
 
-      // Validate the updated question if it's a new question (negative ID) AND has been marked as validated
-      if (questionId < 0 && validatedQuestions.has(questionId)) {
+      // Validate a draft once it has been marked as validated (a submit was attempted).
+      if (isDraftShape(updatedQuestion) && validatedQuestions.has(questionId)) {
         const validationResult = validateQuestion(
           updatedQuestion as NewAnyQuestion
         );
@@ -589,7 +644,15 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
       }
 
       setAddedQuestions((prevQuestions) =>
-        prevQuestions.map((q) => (q.id === questionId ? updatedQuestion : q))
+        prevQuestions.map((q) => {
+          if (q.id !== questionId) return q;
+          // A saved question's first edit in place: remember how it was, so saving can tell
+          // "opened" from "changed" (the editors write back as soon as they mount).
+          if (isSavedShape(q) && isDraftShape(updatedQuestion) && !inPlaceOriginals.current.has(q.id)) {
+            inPlaceOriginals.current.set(q.id, toInPlaceDraft(q));
+          }
+          return updatedQuestion;
+        })
       );
 
       setDisplayQuestion((prev) =>
@@ -705,6 +768,8 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
     removalCount: removedStack.length,
     undoLastRemoval,
     requestEditCopy,
+    editabilityOf,
+    getInPlaceOriginal: (questionId: number) => inPlaceOriginals.current.get(questionId),
     reorderQuestions,
     isQuestionSelected,
 

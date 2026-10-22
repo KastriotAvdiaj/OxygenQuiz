@@ -8,6 +8,15 @@ namespace QuizAPI.Controllers.Questions.Services
     {
         Task<Guid?> GetQuestionOwnerAsync(int questionId);
 
+        /// <summary>
+        /// For each id, whether the quiz builder may edit it in place for <paramref name="userId"/>
+        /// (QuestionEditRule). <paramref name="quizId"/>: the quiz being edited, null when creating.
+        /// </summary>
+        Task<List<QuestionEditabilityDTO>> GetEditabilityAsync(Guid userId, IReadOnlyCollection<int> ids, int? quizId);
+
+        /// <summary>Throws <see cref="QuizAPI.Exceptions.ConflictException"/> unless the rule allows an in-place edit.</summary>
+        Task EnsureEditableInPlaceAsync(Guid userId, int questionId, int? quizId);
+
         // Get methods
         Task<List<QuestionBaseDTO>> GetAllQuestionsAsync(string visibility = null);
         Task<PagedList<QuestionBaseDTO>> GetPaginatedQuestionsAsync(QuestionFilterParams filterParams);

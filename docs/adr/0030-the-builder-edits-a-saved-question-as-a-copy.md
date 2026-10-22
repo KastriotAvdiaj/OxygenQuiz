@@ -1,7 +1,7 @@
 # 30. The quiz builder edits a saved question as a copy, never in place
 
 Date: 2026-10-21
-Status: Accepted
+Status: Superseded by [ADR 0031](0031-the-builder-edits-a-saved-question-in-place-only-when-nothing-else-would-notice.md) (same day) — "always a copy" became "a copy unless nothing else would notice"
 
 ## Context
 

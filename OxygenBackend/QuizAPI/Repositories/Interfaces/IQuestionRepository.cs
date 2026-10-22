@@ -31,6 +31,15 @@ namespace QuizAPI.Repositories.Interfaces
         Task<bool> IsUsedInAnyQuizAsync(int id, CancellationToken ct = default);
 
         /// <summary>
+        /// The facts <see cref="QuizAPI.Common.QuestionEditRule"/> needs, for those of
+        /// <paramref name="ids"/> that <paramref name="ownerId"/> owns (other ids are simply absent —
+        /// nothing about someone else's question is read). <paramref name="exceptQuizId"/> is the
+        /// quiz being edited, not counted as "another quiz"; null while a quiz is being created.
+        /// </summary>
+        Task<List<QuizAPI.Common.QuestionEditFacts>> GetEditFactsAsync(
+            IReadOnlyCollection<int> ids, Guid ownerId, int? exceptQuizId, CancellationToken ct = default);
+
+        /// <summary>
         /// Display names of the referenced category and language; either is null when that id
         /// doesn't exist. The service uses this to reject the seeded "Unspecified" rows **by name**
         /// rather than by a hard-coded id, matching the frontend's `isUnspecifiedLookup` — row

@@ -15,7 +15,6 @@ import {
   CardHeader,
 } from "@/components/ui/card";
 import { useQuiz } from "./Quiz-questions-context";
-import { AnyQuestion } from "@/types/question-types";
 import { LiftedButton } from "@/common/LiftedButton";
 import {
   CreateQuizInput,
@@ -27,13 +26,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useNotifications } from "@/common/Notifications";
 import { useNavigate, useLocation } from "react-router";
-import { ExistingQuestionCard } from "./components/existing-display-quiz-question-card/main-display-quiz-question-export";
-import { SavedQuestionNotice } from "./components/saved-question-notice";
+import { BuilderQuestionEditor } from "./components/builder-question-editor";
+import { isDraftShape, sameContent } from "./edit-copy";
+import { useUpdateMultipleChoiceQuestion } from "../../../Question/api/Multiple_Choice_Question/update-multiple-choice-question";
+import { useUpdateTrueFalseQuestion } from "../../../Question/api/True_False-Question/update-true_false-question";
+import { useUpdateTypeTheAnswerQuestion } from "../../../Question/api/Type_The_Answer-Question/update-type_the_answer-question";
 import { QuestionSettingsCard } from "./components/quiz-question-settings";
 import { NewAnyQuestion, QuizQuestion } from "./types";
 import { inheritQuizClassification } from "./inherit-quiz-classification";
 import { isUnspecifiedLookup } from "../../../Question/Entities/lookup-visibility";
-import { NewQuestionCard } from "./components/new-display-quiz-question-card/main-display-quiz-question-card";
 import { QuestionType } from "@/types/question-types";
 import { useCreateMultipleChoiceQuestion } from "../../../Question/api/Multiple_Choice_Question/create-multiple-choice-question";
 import { useCreateTrueFalseQuestion } from "../../../Question/api/True_False-Question/create-true_false-question";
@@ -114,6 +115,7 @@ const CreateQuizForm = ({
     resetAllValidationStates,
     activeTab,
     setActiveTab,
+    getInPlaceOriginal,
   } = useQuiz();
   const { addNotification } = useNotifications();
   const navigate = useNavigate();
@@ -169,18 +171,75 @@ const CreateQuizForm = ({
   const createTrueFalseMutation = useCreateTrueFalseQuestion();
   const createTypeTheAnswerMutation = useCreateTypeTheAnswerQuestion();
 
+  // In-place edits of saved questions (QuestionEditRule, edit-copy.ts).
+  const updateMultipleChoiceMutation = useUpdateMultipleChoiceQuestion();
+  const updateTrueFalseMutation = useUpdateTrueFalseQuestion();
+  const updateTypeTheAnswerMutation = useUpdateTypeTheAnswerQuestion();
+
+  /**
+   * A saved question edited where it is: update its row before the quiz is saved — the same
+   * order as creating new ones. Skipped when nothing changed (the editors write back as soon as
+   * they open). `fromQuizBuilder` makes the API re-check the rule: if the question was answered
+   * or put in another quiz since the builder asked, the save stops with a 409 telling the
+   * author to edit a copy. Classification is the question's own, not inherited from the quiz.
+   */
+  const saveInPlaceEdit = async (question: QuizQuestion): Promise<void> => {
+    if (!(question.id > 0 && isDraftShape(question))) return;
+    const original = getInPlaceOriginal(question.id);
+    if (original && sameContent(question, original)) return;
+
+    const params = { fromQuizBuilder: true as const, quizId: editQuiz?.id };
+    const common = {
+      id: question.id,
+      text: question.text,
+      imageUrl: question.imageUrl || null,
+      explanation: question.explanation,
+      difficultyId: question.difficultyId,
+      categoryId: question.categoryId,
+      languageId: question.languageId,
+      visibility: question.visibility,
+    };
+    switch (question.type) {
+      case QuestionType.MultipleChoice:
+        await updateMultipleChoiceMutation.mutateAsync({
+          questionId: question.id,
+          params,
+          data: {
+            ...common,
+            // Kept ids update their rows; new options (negative ids) are sent without one.
+            answerOptions: question.answerOptions.map((o) => ({
+              id: o.id && o.id > 0 ? o.id : undefined,
+              text: o.text,
+              isCorrect: o.isCorrect,
+            })),
+            allowMultipleSelections: question.allowMultipleSelections,
+          },
+        });
+        return;
+      case QuestionType.TrueFalse:
+        await updateTrueFalseMutation.mutateAsync({
+          questionId: question.id,
+          params,
+          data: { ...common, correctAnswer: question.correctAnswer },
+        });
+        return;
+      case QuestionType.TypeTheAnswer:
+        await updateTypeTheAnswerMutation.mutateAsync({
+          questionId: question.id,
+          params,
+          data: {
+            ...common,
+            correctAnswer: question.correctAnswer,
+            acceptableAnswers: question.acceptableAnswers,
+            isCaseSensitive: question.isCaseSensitive,
+            allowPartialMatch: question.allowPartialMatch,
+          },
+        });
+        return;
+    }
+  };
+
   const [isCreatingQuestions, setIsCreatingQuestions] = useState(false);
-
-  // Type guards
-  const isAnyQuestion = (q: any): q is AnyQuestion => {
-    return (
-      q && typeof q.id === "number" && "difficulty" in q && "category" in q
-    );
-  };
-
-  const isNewAnyQuestion = (q: any): q is NewAnyQuestion => {
-    return q && !("difficulty" in q) && !("category" in q);
-  };
 
   // Function to create a new question based on its type
   const createNewQuestion = async (
@@ -400,7 +459,8 @@ const CreateQuizForm = ({
               orderInQuiz: settings.orderInQuiz || index,
             };
 
-            // Existing question picked from the bank during review.
+            // Existing question picked from the bank during review (updated in place above,
+            // if it was edited there).
             if (question.id > 0) {
               return { ...base, existingQuestionId: question.id };
             }
@@ -445,6 +505,7 @@ const CreateQuizForm = ({
         );
 
         try {
+          for (const { question } of questionsWithSettings) await saveInPlaceEdit(question);
           await createAiQuizMutation.mutateAsync({
             data: {
               title: values.title,
@@ -484,7 +545,8 @@ const CreateQuizForm = ({
               inheritQuizClassification(question as NewAnyQuestion, values),
             );
           } else {
-            // Existing question, use its ID
+            // Saved question: update it first if it was edited in place, then use its id.
+            await saveInPlaceEdit(question);
             questionId = question.id;
           }
 
@@ -982,21 +1044,12 @@ const CreateQuizForm = ({
 
                 <CardContent className="flex flex-col w-full flex-1 min-h-0 overflow-y-auto p-3">
                   {displayQuestion !== null ? (
-                    isAnyQuestion(displayQuestion) ? (
-                      // A saved question is read-only here (it can be in other quizzes); the
-                      // notice says so and offers an editable copy for this quiz (edit-copy.ts).
-                      <div key={displayQuestion.id} className="flex flex-col gap-3">
-                        <SavedQuestionNotice questionId={displayQuestion.id} />
-                        <ExistingQuestionCard question={displayQuestion} />
-                      </div>
-                    ) : isNewAnyQuestion(displayQuestion) ? (
-                      <NewQuestionCard
-                        key={displayQuestion.id}
-                        question={displayQuestion}
-                      />
-                    ) : (
-                      <div>Unknown question type</div>
-                    )
+                    // Draft, in-place edit, or read-only + "Edit for this quiz" — decided in one
+                    // place for this panel and the overview's dialog alike.
+                    <BuilderQuestionEditor
+                      key={displayQuestion.id}
+                      question={displayQuestion}
+                    />
                   ) : (
                     <div className="flex flex-1 flex-col items-center justify-center px-6 py-16 text-center">
                       <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full border border-dashed border-foreground/20 text-muted-foreground">

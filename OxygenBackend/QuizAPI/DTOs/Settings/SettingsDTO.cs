@@ -9,6 +9,7 @@ namespace QuizAPI.DTOs.Settings
         public int SoundEffectsVolume { get; set; }
         public string Theme { get; set; } = "system";
         public bool ShowTimer { get; set; }
+        public bool AskBeforeRemovingQuestion { get; set; } = true;
         public string AppFont { get; set; } = "Noto Sans";
         public string QuizFont { get; set; } = "DynaPuff";
     }

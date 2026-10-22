@@ -1,27 +1,41 @@
 import { QuestionType, type AnyQuestion } from "@/types/question-types";
-import type { NewAnyQuestion } from "./types";
+import type { NewAnyQuestion, QuizQuestion } from "./types";
 
 /**
- * A saved question, turned into a new draft so it can be edited **for this quiz only**.
+ * Turning a saved question into something the builder's editors can work on.
  *
- * A saved question (positive id) is a row in the shared question bank: the same row can sit in
- * other quizzes, and played sessions point at it. So the builder never edits it in place.
- * "Edit for this quiz" swaps it, at the same position and with the same points and time limit,
- * for a draft carrying the same content; saving the quiz creates the draft as a new question and
- * points the quiz at it. The original and every other quiz using it are untouched.
+ * The builder holds two shapes: **saved** (`AnyQuestion`, from the bank: lookups as objects) and
+ * **draft** (`NewAnyQuestion`: lookups as ids). The editors only speak draft. A saved question is
+ * drafted one of two ways, decided by `QuestionEditRule` on the server
+ * (docs/quiz/quiz-editing.md, "Which questions the builder edits directly"; ADR 0031):
  *
- * The draft is the user's own and starts **Private**, like every question written in the
- * builder (`DEFAULT_NEW_*`) — copying someone else's Public question must not put a duplicate of
- * it in the public pool under the copier's name.
+ * - **In place** (`toInPlaceDraft`) — yours, used by no other quiz, never answered. The draft
+ *   keeps the question's id, visibility and option ids; saving the quiz updates that row.
+ * - **As a copy** (`toEditableCopy`) — everything else. A new negative id, Private, fresh option
+ *   ids; saving creates a new question and points this quiz at it. The original is untouched.
  *
- * Answer options get fresh negative ids: they are new rows too, and a positive id would read as
- * "already saved" to the forms. See docs/quiz/quiz-editing.md, "Editing a saved question".
+ * Shape, not id sign, says which is which: a saved question being edited in place keeps its
+ * positive id but becomes draft-shaped.
  */
-export const toEditableCopy = (question: AnyQuestion, id: number): NewAnyQuestion => {
+
+/** A question as it came from the bank, untouched. */
+export const isSavedShape = (q: QuizQuestion): q is AnyQuestion =>
+  "difficulty" in q && "category" in q;
+
+/** Editable in the builder: written here, copied, or a saved one being edited in place. */
+export const isDraftShape = (q: QuizQuestion): q is NewAnyQuestion => !isSavedShape(q);
+
+/** Not saved anywhere yet — saving the quiz creates it. */
+export const isUnsaved = (q: QuizQuestion): boolean => q.id < 0;
+
+const toDraft = (
+  question: AnyQuestion,
+  { id, visibility, keepOptionIds }: { id: number; visibility: string; keepOptionIds: boolean },
+): NewAnyQuestion => {
   const base = {
     id,
     text: question.text,
-    visibility: "Private",
+    visibility,
     difficultyId: question.difficulty.id,
     categoryId: question.category.id,
     languageId: question.language.id,
@@ -35,7 +49,8 @@ export const toEditableCopy = (question: AnyQuestion, id: number): NewAnyQuestio
         ...base,
         type: QuestionType.MultipleChoice,
         answerOptions: question.answerOptions.map((o, i) => ({
-          id: -(i + 1),
+          // Kept for an in-place edit, so the server updates these rows instead of replacing them.
+          id: keepOptionIds ? o.id : -(i + 1),
           text: o.text,
           isCorrect: o.isCorrect,
         })),
@@ -53,4 +68,49 @@ export const toEditableCopy = (question: AnyQuestion, id: number): NewAnyQuestio
         acceptableAnswers: (question.acceptableAnswers ?? []).map((value) => ({ value })),
       };
   }
+};
+
+/**
+ * A copy for this quiz only: new negative id, **Private** (copying someone's Public question must
+ * not publish a duplicate under the copier's name), fresh option ids.
+ */
+export const toEditableCopy = (question: AnyQuestion, id: number): NewAnyQuestion =>
+  toDraft(question, { id, visibility: "Private", keepOptionIds: false });
+
+/** The same question, editable where it is: same id, same visibility, same option ids. */
+export const toInPlaceDraft = (question: AnyQuestion): NewAnyQuestion =>
+  toDraft(question, { id: question.id, visibility: question.visibility, keepOptionIds: true });
+
+/**
+ * Whether two drafts say the same thing. The editors write back as soon as they open, so an
+ * in-place question becomes draft-shaped without anyone changing it; saving compares it with its
+ * original and skips the update when nothing changed.
+ */
+export const sameContent = (a: NewAnyQuestion, b: NewAnyQuestion): boolean => {
+  const common = (q: NewAnyQuestion) => [
+    q.type,
+    q.text.trim(),
+    q.imageUrl || "",
+    (q.explanation ?? "").trim(),
+    q.difficultyId,
+    q.categoryId,
+    q.languageId,
+  ];
+  const specific = (q: NewAnyQuestion): unknown[] => {
+    switch (q.type) {
+      case QuestionType.MultipleChoice:
+        return [q.allowMultipleSelections, ...q.answerOptions.map((o) => `${o.isCorrect}:${o.text.trim()}`)];
+      case QuestionType.TrueFalse:
+        return [q.correctAnswer];
+      case QuestionType.TypeTheAnswer:
+        return [
+          q.correctAnswer.trim(),
+          q.isCaseSensitive,
+          q.allowPartialMatch,
+          ...q.acceptableAnswers.map((a) => a.value.trim()),
+        ];
+    }
+  };
+  const key = (q: NewAnyQuestion) => JSON.stringify([...common(q), ...specific(q)]);
+  return key(a) === key(b);
 };

@@ -37,11 +37,15 @@ export type UpdateMultipleChoiceQuestionInput = z.infer<
 export const updateMultipleChoiceQuestion = ({
   data,
   questionId,
+  params,
 }: {
   data: UpdateMultipleChoiceQuestionInput;
   questionId: number;
+  /** `fromQuizBuilder` + `quizId`: the quiz builder's in-place edit, which the API only allows
+   *  under QuestionEditRule (409 otherwise). The Questions page sends none. */
+  params?: { fromQuizBuilder: true; quizId?: number };
 }): Promise<MultipleChoiceQuestion> => {
-  return api.put(`/questions/multiplechoice/${questionId}`, data);
+  return api.put(`/questions/multiplechoice/${questionId}`, data, { params });
 };
 
 type UseUpdateMultipleChoiceQuestionOptions = {

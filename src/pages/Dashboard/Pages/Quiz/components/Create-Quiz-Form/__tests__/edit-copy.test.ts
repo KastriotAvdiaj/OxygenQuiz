@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { QuestionType, type AnyQuestion } from "@/types/question-types";
-import { toEditableCopy } from "../edit-copy";
+import { isDraftShape, isSavedShape, sameContent, toEditableCopy, toInPlaceDraft } from "../edit-copy";
 
 const saved = {
   text: "Capital of Kosovo?",
@@ -79,5 +79,36 @@ describe("toEditableCopy", () => {
       correctAnswer: false,
       explanation: undefined,
     });
+  });
+});
+
+describe("editing a saved question in place", () => {
+  const original = {
+    ...saved,
+    id: 42,
+    type: QuestionType.MultipleChoice,
+    answerOptions: [
+      { id: 100, text: "Prizren", isCorrect: false },
+      { id: 101, text: "Prishtina", isCorrect: true },
+    ],
+    allowMultipleSelections: false,
+  } as unknown as AnyQuestion;
+
+  it("keeps the question's id, visibility and option ids", () => {
+    const draft = toInPlaceDraft(original);
+    expect(draft).toMatchObject({ id: 42, visibility: "Public", categoryId: 7 });
+    expect(draft.type === QuestionType.MultipleChoice && draft.answerOptions.map((o) => o.id)).toEqual([100, 101]);
+  });
+
+  it("tells an opened question from a changed one", () => {
+    const opened = toInPlaceDraft(original);
+    expect(sameContent(opened, toInPlaceDraft(original))).toBe(true);
+    expect(sameContent({ ...opened, text: "Capital of Kosovo? " }, opened)).toBe(true); // whitespace only
+    expect(sameContent({ ...opened, text: "Largest city of Kosovo?" }, opened)).toBe(false);
+  });
+
+  it("decides saved vs draft by shape, not by id sign", () => {
+    expect(isSavedShape(original)).toBe(true);
+    expect(isDraftShape(toInPlaceDraft(original))).toBe(true); // positive id, draft-shaped
   });
 });

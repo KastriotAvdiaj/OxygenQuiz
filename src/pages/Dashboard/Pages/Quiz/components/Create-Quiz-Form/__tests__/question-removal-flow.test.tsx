@@ -1,13 +1,29 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import "@testing-library/jest-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { QuestionType, type AnyQuestion } from "@/types/question-types";
 import { QuizQuestionProvider, useQuiz } from "../Quiz-questions-context";
 
 /**
- * The provider's whole remove / undo / edit-a-copy flow, through its own dialogs: every place in
- * the builder that removes or copies a question calls these same three functions.
+ * The provider's whole remove / undo / copy flow through its own dialogs — every place in the
+ * builder that removes or copies a question calls these same functions. The two server reads it
+ * makes (settings, editability) are stubbed: what they decide is pinned here, how the server
+ * decides is pinned in the backend's QuestionEditRuleTests.
  */
+
+const settingsState = { askBeforeRemovingQuestion: true };
+const updateSettings = vi.fn();
+
+vi.mock("@/pages/UserRelated/SettingsPage/api/get-settings", () => ({
+  useSettingsData: () => ({ data: { ...settingsState } }),
+}));
+vi.mock("@/pages/UserRelated/SettingsPage/api/update-settings", () => ({
+  useUpdateSettings: () => ({ mutate: updateSettings }),
+}));
+vi.mock("../../../../Question/api/get-question-editability", () => ({
+  useQuestionEditability: () => ({ data: [] }),
+}));
 
 const savedQuestion = (id: number, text: string) =>
   ({
@@ -47,14 +63,16 @@ const Harness = () => {
 
 const renderBuilder = () =>
   render(
-    <QuizQuestionProvider
-      initialQuestions={["A", "B", "C"].map((t, i) => ({
-        question: savedQuestion(i + 1, t),
-        settings: { ...settings, orderInQuiz: i },
-      }))}
-    >
-      <Harness />
-    </QuizQuestionProvider>,
+    <QueryClientProvider client={new QueryClient()}>
+      <QuizQuestionProvider
+        initialQuestions={["A", "B", "C"].map((t, i) => ({
+          question: savedQuestion(i + 1, t),
+          settings: { ...settings, orderInQuiz: i },
+        }))}
+      >
+        <Harness />
+      </QuizQuestionProvider>
+    </QueryClientProvider>,
   );
 
 const texts = () =>
@@ -67,6 +85,11 @@ const confirm = async (title: string, button: string) => {
   fireEvent.click(screen.getByRole("button", { name: button }));
   await waitFor(() => expect(screen.queryByText(title)).not.toBeInTheDocument());
 };
+
+beforeEach(() => {
+  settingsState.askBeforeRemovingQuestion = true;
+  updateSettings.mockReset();
+});
 
 describe("removing questions from the quiz builder", () => {
   it("asks first, and Cancel keeps the question", async () => {
@@ -88,15 +111,38 @@ describe("removing questions from the quiz builder", () => {
     expect(texts()).toEqual(["A", "C"]);
     fireEvent.click(screen.getByRole("button", { name: "undo (1)" }));
     expect(texts()).toEqual(["A", "B", "C"]);
-    expect(screen.getByRole("button", { name: "undo (0)" })).toBeInTheDocument();
+  });
+
+  it("'Don't ask again' turns the setting off", async () => {
+    renderBuilder();
+    fireEvent.click(screen.getByRole("button", { name: "remove B" }));
+    await screen.findByText("Remove question 2?");
+    fireEvent.click(screen.getByRole("checkbox", { name: "Don't ask again" }));
+    await confirm("Remove question 2?", "Remove");
+
+    expect(texts()).toEqual(["A", "C"]);
+    expect(updateSettings).toHaveBeenCalledWith(
+      expect.objectContaining({ askBeforeRemovingQuestion: false }),
+      expect.anything(),
+    );
+  });
+
+  it("with the setting off, removes at once — and Undo still works", () => {
+    settingsState.askBeforeRemovingQuestion = false;
+    renderBuilder();
+    fireEvent.click(screen.getByRole("button", { name: "remove B" }));
+    expect(screen.queryByText("Remove question 2?")).not.toBeInTheDocument();
+    expect(texts()).toEqual(["A", "C"]);
+    fireEvent.click(screen.getByRole("button", { name: "undo (1)" }));
+    expect(texts()).toEqual(["A", "B", "C"]);
   });
 });
 
-describe("editing a saved question for this quiz", () => {
+describe("editing a saved question as a copy", () => {
   it("swaps it, after asking, for a draft copy in the same place", async () => {
     const { container } = renderBuilder();
     fireEvent.click(screen.getByRole("button", { name: "copy B" }));
-    await confirm("Edit question 2 for this quiz?", "Edit a copy");
+    await confirm("Edit a copy of question 2?", "Edit a copy");
 
     expect(texts()).toEqual(["A", "B", "C"]);
     const ids = [...container.querySelectorAll("li")].map((li) => Number(li.dataset.id));
