@@ -319,6 +319,12 @@ twice as tall as the rest; Delete last and in red is grouping enough. Play uses 
 matches the outlined icons around it, rather than the bare `Play` triangle. No tooltips inside the
 menu: a tooltip in an open Radix menu fights the menu for the same hover.
 
+**Sized to its items, no heading** (2026-10-22): the fixed `w-56` left the menu half empty and the
+"Actions" label repeated what the ⋯ button says. Icons: `Copy` (two squares) for *Copy link* /
+*Copy share link* — it copies, it doesn't open a share sheet — and `CirclePen`
+(`components/icons/circle-pen.tsx`, drawn in lucide's style because 0.428 has no pen-in-a-circle)
+for *Edit*. On the rows, *Copy ID* uses `Hash`, so it doesn't share the copy icon with *Copy link*.
+
 `BlobLoader` is the loader in all three loading states (page, analytics, questions) — not
 `Spinner`, which this page was written against before the app had its own loader. (It was
 `LoadingWave` in between.)

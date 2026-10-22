@@ -1,11 +1,11 @@
-import { CirclePlay, Edit2, Eye, EyeOff, MoreHorizontal, Share2, Trash2 } from "lucide-react";
+import { CirclePlay, Copy, Eye, EyeOff, MoreHorizontal, Trash2 } from "lucide-react";
+import { CirclePen } from "@/components/icons/circle-pen";
 
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { Quiz } from "@/types/quiz-types";
@@ -31,7 +31,7 @@ export interface QuizActionsMenuProps {
  * Four controls in a full-width strip above the page's own heading, and the same actions
  * written twice so the narrow layout could reach them.
  *
- * The quiz **rows** in the data table already solved this: one 32px ⋯ button, a labelled menu,
+ * The quiz **rows** in the data table already solved this: one 32px ⋯ button, a short menu,
  * destructive item in red at the bottom. Matching it means someone who has used the list knows
  * this page without learning a second pattern — and the duplication disappears, because a menu
  * is the same menu at every width.
@@ -69,8 +69,9 @@ export const QuizActionsMenu = ({
       </Button>
     </DropdownMenuTrigger>
 
-    <DropdownMenuContent align="end" className="w-56 bg-muted">
-      <DropdownMenuLabel>Actions</DropdownMenuLabel>
+    {/* Sized to its items, no "Actions" heading (2026-10-22): a fixed w-56 left the menu half
+        empty, and the heading repeated what the ⋯ button already says. */}
+    <DropdownMenuContent align="end" className="bg-muted">
 
       {/* The owner's way into their own Unlisted or Draft quiz: neither is in the catalogue, so
           without this the only route was opening their own share link. */}
@@ -81,7 +82,7 @@ export const QuizActionsMenu = ({
       )}
 
       <DropdownMenuItem className="hover:bg-background" onClick={onEdit}>
-        <Edit2 size={16} /> Edit quiz
+        <CirclePen size={16} /> Edit quiz
       </DropdownMenuItem>
 
       {/* Not offered on a Draft: the backend mints a token its own resolver 404s, so sharing
@@ -92,7 +93,7 @@ export const QuizActionsMenu = ({
           disabled={isSharePending}
           onClick={onShare}
         >
-          <Share2 size={16} />
+          <Copy size={16} />
           {quiz.status === "Unlisted" ? "Copy share link" : "Copy link"}
         </DropdownMenuItem>
       )}

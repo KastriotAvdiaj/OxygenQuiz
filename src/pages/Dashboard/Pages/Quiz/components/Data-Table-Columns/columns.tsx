@@ -25,10 +25,10 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui";
-import { CirclePlay, Copy, Edit2, Eye, EyeOff, MoreHorizontal, Share2, Trash2, Upload } from "lucide-react";
+import { CirclePlay, Copy, Eye, EyeOff, Hash, MoreHorizontal, Trash2, Upload } from "lucide-react";
+import { CirclePen } from "@/components/icons/circle-pen";
 import { DeleteQuiz } from "../delete-quiz";
 import { Link, useLocation } from "react-router-dom";
 import { useUser } from "@/lib/Auth";
@@ -238,7 +238,6 @@ function QuizActionsCell({ quiz }: { quiz: QuizSummaryDTO }) {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="bg-muted">
-        <DropdownMenuLabel>Actions</DropdownMenuLabel>
         {/* Order: the things you do with the quiz, then admin tooling, then Delete last in red —
             the quiz page's own ⋯ menu (QuizActionsMenu) reads the same way. No separators: they
             fell between some items and not others and read as accidental (2026-10-20). */}
@@ -260,14 +259,14 @@ function QuizActionsCell({ quiz }: { quiz: QuizSummaryDTO }) {
             disabled={shareLink.isPending}
             onClick={() => shareLink.copy(quiz)}
           >
-            <Share2 size={16} />
+            <Copy size={16} />
             {quiz.status === "Unlisted" ? "Copy share link" : "Copy link"}
           </DropdownMenuItem>
         )}
         {!quiz.deletedAt && (
           <DropdownMenuItem className="hover:bg-background" asChild>
             <Link to={editPath(quiz)} className="flex items-center gap-2">
-              <Edit2 size={16} /> Edit
+              <CirclePen size={16} /> Edit
             </Link>
           </DropdownMenuItem>
         )}
@@ -288,7 +287,9 @@ function QuizActionsCell({ quiz }: { quiz: QuizSummaryDTO }) {
             className="hover:bg-background"
             onClick={() => navigator.clipboard.writeText(String(quiz.id))}
           >
-            <Copy size={16} /> Copy ID
+            {/* Hash, not Copy: "Copy link" has the copy icon, and two identical icons would
+                read as the same action. */}
+            <Hash size={16} /> Copy ID
           </DropdownMenuItem>
         )}
         {!quiz.deletedAt && (
