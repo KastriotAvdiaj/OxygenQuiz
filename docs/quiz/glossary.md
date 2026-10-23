@@ -22,16 +22,18 @@ _Avoid_: Asocijacije, association quiz, connections
 
 ## Catalogue
 
-**Official quiz**:
-A `Public` quiz an admin has marked as official — house quizzes by default, and community quizzes
-promoted for quality. The catalogue shows these unless the visitor switches to community quizzes.
-Proposed in [`media-pipeline.md`](../proposals/media-pipeline.md) §3.6; not built yet.
-_Avoid_: featured (suggests a temporary highlight), verified, house quiz (house quizzes are only
-one source of official ones)
+**Picked quiz**:
+A `Public` quiz an admin has picked for the main catalogue — house quizzes automatically, and
+community quizzes chosen for quality. Proposed in
+[`media-pipeline.md`](../proposals/media-pipeline.md) §3.6; not built yet.
+_Avoid_: official quiz (the first name for it; excludes good user quizzes), featured (suggests a
+temporary highlight), approved or verified (imply fact-checking), Oxygen Pick (that is the badge's
+display text, and the brand may change)
 
 **Community quiz**:
-A `Public` quiz that isn't official — written by a user and not reviewed.
-_Avoid_: user quiz, public quiz (an official quiz is Public too), unofficial quiz
+A `Public` quiz that isn't picked — written by a user and not reviewed.
+_Avoid_: user quiz (a picked quiz can be a user's too), public quiz (a picked quiz is Public too),
+unofficial quiz
 
 ## Pages about one quiz
 

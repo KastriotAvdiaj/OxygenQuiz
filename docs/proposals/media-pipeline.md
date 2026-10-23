@@ -1,6 +1,6 @@
 # Proposal: one media pipeline for quizzes and questions, ready for a public launch
 
-**Status: open — being decided in rounds (started 2026-10-23; rounds 2 and 3 settled by 2026-10-24).** §3
+**Status: open — being decided in rounds (started 2026-10-23; rounds 2–4 settled by 2026-10-24).** §3
 records what is settled, §4 what is still open. Nothing in §3 is implemented yet.
 
 An author is building a geography quiz. Question 7 is "Which country's flag is this?" — they
@@ -111,18 +111,26 @@ now, and move to tier when tiers land:
 What counts, and when, is §3.12. Locking media behind payment was rejected: it makes the free
 product look broken.
 
-### 3.6 Official and community quizzes
+### 3.6 Picked and community quizzes
+
+> Revised 2026-10-24 (round 4): first settled as "official quizzes", replaced by "picked" so good
+> user quizzes can join the main pool.
 
 The public catalogue splits in two:
 
-- **Official** — an admin-set flag. House quizzes get it by default; an outstanding community
-  quiz can be promoted. This is the default catalogue, the landing page and the sitemap.
+- **Picked** — an admin-set flag. House quizzes are picked automatically; a community quiz an
+  admin picks joins them. This is the default catalogue and the landing page, and these are the
+  quizzes search engines index — a great user quiz serves the site as well as a house one.
+  A picked *community* quiz carries a badge, provisionally **"Oxygen Pick"**, and its author is
+  notified. A pick is removed automatically when a harmful report against the quiz is upheld.
 - **Community** — every other `Public` quiz, reached through an explicit switch, behind a
   one-time notice that community quizzes are not reviewed and may contain wrong information or
-  disturbing images.
+  disturbing images. Not indexed by search engines at launch.
 
-Official is a flag rather than "written by an admin" because authorship says nothing about
-quality, and promotion gives a curation path.
+Picked is a flag rather than "written by an admin" because authorship says nothing about
+quality. "Approved" was rejected as the badge: it implies the quiz was fact-checked, and that
+unapproved ones are bad. **The badge text is a single display string, never the code's name for
+the concept** (`IsPicked`, "picked quiz") — the brand name "Oxygen" may change.
 
 ### 3.7 Moderation in layers — no paid classifier until there is revenue
 
@@ -131,7 +139,7 @@ quality, and promotion gives a curation path.
 | Cloudflare CSAM Scanning Tool (free on every plan; blocks matches with 451 and notifies) | Yes — the legal floor for hosting user images |
 | Server-side re-encode of every image (strips EXIF/GPS, kills files disguised as images) | Yes |
 | Report button on quizzes and questions → admin queue, auto-hide after N reports | Yes |
-| Official / community split (§3.6) | Yes |
+| Picked / community split (§3.6) | Yes |
 | Automated nudity/gore classifier (Google SafeSearch, Rekognition, Sightengine) | **No** — paid; revisit after the paid version ships |
 
 ### 3.8 Image sources: device, Pexels and Wikimedia Commons — every external image credited
@@ -245,17 +253,20 @@ question; raised from the quiz's menu it is about the quiz. One report per perso
 | Copyright | optional |
 | Other | required |
 
-### 3.19 What a report sets in motion (partly — see §4)
+### 3.19 What a report sets in motion
 
 - **Wrong information goes to the author first**, through the existing notifications, with the
   reporter's text, so they can fix it. It is never hidden automatically. Still open after 5
   reports or 7 days, it reaches the admin queue.
-- **Harmful reasons** (inappropriate media, offensive) reach admins at the first report; a
-  higher count also hides the content automatically until reviewed (threshold and mechanism in
-  §4).
-- **Reports on official quizzes** go straight to admins — the house is the author.
-- **Admins see every report**, sorted into lanes by urgency (names in §4) rather than one list.
-- **The reporter is told the outcome** ("your report led to a change") by notification.
+- **Harmful reasons** (inappropriate media, offensive) reach admins at the first report, and
+  **10 distinct reporters** hide the content automatically until reviewed (§3.21). Wrong-answer
+  reports never hide anything. 10, not 3, because three friends shouldn't be able to take down a
+  quiz they dislike; the cost — a bad image on a rarely played quiz may never reach 10 — is
+  covered by admins seeing it at the first report.
+- **Reports on house quizzes** go straight to admins — the house is the author.
+- **Admins see every report**, sorted into lanes by urgency (§3.22) rather than one list.
+- **The author answers a wrong-answer report** with *Fixed* or *Not a mistake* plus a reason.
+- **The reporter is told the outcome** by notification, either way.
 
 ### 3.20 The credit shows as an ⓘ at play time, in full in the editor
 
@@ -263,14 +274,48 @@ At play time a small ⓘ in the image's corner reveals "Photo: Name / Pexels" on
 line doesn't compete with the question. The editor and review screens show it in full. Pexels
 must approve how the credit looks before lifting its rate limit, so this is what we show them.
 
+### 3.21 Hiding: the media, or the whole quiz — never one question
+
+Nothing in the app could hide content before this. Hiding one question from a quiz would change
+its question count, scoring and sessions already in progress, and a question can sit in several
+quizzes. So:
+
+- **Inappropriate image or audio → only the media is hidden.** The question still plays; the
+  image sits under a cover — "Reported as inappropriate, being reviewed" — with a **Show anyway**
+  button for signed-in users (guests see the cover without it; some may be minors). Once an admin
+  upholds the report the file is removed and the button goes with it. Show anyway is the
+  convention (X, Instagram, Reddit) and keeps a false report from ruining a question.
+- **Offensive text → the quiz is held.** Every quiz the question is live in leaves the catalogue
+  and can't be played; its owner still sees it, with an *Under review* banner.
+- **The hold is a moderation state of its own, not the owner's `Status`** — otherwise the owner
+  could republish it. It is enforced at each entry point, like visibility (ADR 0019).
+
+### 3.22 The admin lanes
+
+| Lane | What's in it |
+|---|---|
+| **Urgent** | any harmful report; anything auto-hidden |
+| **Needs attention** | wrong-answer reports the author left unresolved (5 reports or 7 days); copyright; spam |
+| **With the author** | wrong-answer reports still in the author's window — visible, nothing to do yet |
+| **Resolved** | history |
+
+Most-reported first within a lane.
+
+### 3.23 Upload limits
+
+| Limit | Value | What it stops |
+|---|---|---|
+| Teacher/Admin total storage | 2.5 GB | — (User 100 MB, §3.5) |
+| Uploads per hour, per user | 30 | a script sending thousands of files |
+| Unsaved uploads held at once, per user | 50 | a pile of files nobody saved, waiting out the 7-day sweep |
+
+An *unsaved upload* is invisible to the user: choosing a file in the editor uploads it at once
+(that's how the preview appears), so a file chosen and then replaced, or left behind when the
+editor is closed, sits in storage unreferenced until the sweep. A normal author never comes near
+50; the 51st upload asks them to save or remove images first.
+
 ## 4. Still open
 
-- **Auto-hide threshold** for harmful reports — 10 distinct reporters proposed, against a
-  traffic level where few people may ever see a bad image.
-- **How content is hidden** — nothing in the app can hide a question today.
-- **Admin lanes** — their names and what puts a report in each.
-- **Official vs promoted** — whether the main catalogue is "official" or "admin-picked" quizzes,
-  what the badge is called, and whether picked community quizzes are indexed by search engines.
-- **Teacher/Admin storage** (2.5 GB), the **upload rate limit** and the cap on **unsaved files**.
 - **Test plan** — which suite proves which rule.
-- **Launch limits** — Kestrel body size, Cloudflare upload size, R2 bucket and domain setup.
+- **Launch setup** — buckets, media domain, request size limits, storage in dev and E2E.
+- **Build order** — which parts block the public launch.
