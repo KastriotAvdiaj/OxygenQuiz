@@ -1,4 +1,5 @@
 import { EditPencil } from "@/components/icons/edit-pencil";
+import { PlayTriangle } from "@/components/icons/play-triangle";
 import { ColumnDef } from "@tanstack/react-table";
 // import { Button } from "@/components/ui/button";
 // import { useDisclosure } from "@/hooks/use-disclosure";
@@ -29,7 +30,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui";
 import {
-  CirclePlay,
   Copy,
   Eye,
   EyeOff,
@@ -258,7 +258,7 @@ function QuizActionsCell({ quiz }: { quiz: QuizSummaryDTO }) {
         {canPlay && (
           <DropdownMenuItem className="hover:bg-background" asChild>
             <Link to={quizPlayPath(quiz)} className="flex items-center gap-2">
-              <CirclePlay size={16} /> Play
+              <PlayTriangle size={16} /> Play
             </Link>
           </DropdownMenuItem>
         )}

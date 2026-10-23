@@ -315,9 +315,10 @@ miss), in `text-foreground/70` with the current page in full `text-foreground` �
 **The ⋯ menu is one plain list** (2026-10-20), here and on the quiz rows: no separators, and
 Publish/Unpublish is a single line like every other item. The separators fell between some items
 and not others, and the grey line under Unpublish ("Back to draft — only you see it") made one item
-twice as tall as the rest; Delete last and in red is grouping enough. Play uses `CirclePlay`, which
-matches the outlined icons around it, rather than the bare `Play` triangle. No tooltips inside the
-menu: a tooltip in an open Radix menu fights the menu for the same hover.
+twice as tall as the rest; Delete last and in red is grouping enough. Play uses `PlayTriangle`
+(`components/icons/play-triangle.tsx`): a solid, rounded triangle without a circle, the same family
+as the `EditPencil` beside it (since 2026-10-24; `CirclePlay` before). No tooltips inside the menu:
+a tooltip in an open Radix menu fights the menu for the same hover.
 
 **Sized to its items, no heading** (2026-10-22): the fixed `w-56` left the menu half empty and the
 "Actions" label repeated what the ⋯ button says. Icons: `Copy` (two squares) for *Copy link* /

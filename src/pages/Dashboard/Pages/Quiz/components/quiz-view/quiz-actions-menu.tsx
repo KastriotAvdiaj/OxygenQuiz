@@ -1,5 +1,6 @@
 import { EditPencil } from "@/components/icons/edit-pencil";
-import { CirclePlay, Copy, Eye, EyeOff, MoreHorizontal, Trash2 } from "lucide-react";
+import { PlayTriangle } from "@/components/icons/play-triangle";
+import { Copy, Eye, EyeOff, MoreHorizontal, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -77,7 +78,7 @@ export const QuizActionsMenu = ({
           without this the only route was opening their own share link. */}
       {onPlay && (
         <DropdownMenuItem className="hover:bg-background" onClick={onPlay}>
-          <CirclePlay size={16} /> Play quiz
+          <PlayTriangle size={16} /> Play quiz
         </DropdownMenuItem>
       )}
 
