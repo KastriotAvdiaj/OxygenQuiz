@@ -1,6 +1,7 @@
+import { EditPencil } from "@/components/icons/edit-pencil";
 import { ColumnDef } from "@tanstack/react-table";
 import formatDate from "@/lib/date-format";
-import { Edit } from "lucide-react";
+
 import { DeleteQuestionCategory } from "./delete-question-category";
 import { Authorization, ROLES } from "@/lib/authorization";
 import { LiftedButton } from "@/common/LiftedButton";
@@ -34,7 +35,7 @@ export const categoryColumns: ColumnDef<QuestionCategory>[] = [
             <UpdateQuestionCategoryForm
               triggerButton={
                 <LiftedButton variant="icon">
-                  <Edit size={16} />
+                  <EditPencil size={16} />
                 </LiftedButton>
               }
               category={row.original}

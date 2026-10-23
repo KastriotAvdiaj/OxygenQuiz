@@ -1,5 +1,6 @@
+import { EditPencil } from "@/components/icons/edit-pencil";
 import { useState } from "react";
-import { Pencil, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { LiftedButton } from "@/common/LiftedButton";
 import { ConfirmationDialog } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -91,7 +92,7 @@ export const EditCopyDialog = ({ number, onConfirm, onCancel }: EditCopyDialogPr
     body="The copy replaces it in this quiz only. The original stays as it is."
     confirmButton={
       <LiftedButton type="button" className="flex items-center gap-2 py-1" onClick={onConfirm}>
-        <Pencil className="h-4 w-4" aria-hidden="true" />
+        <EditPencil className="h-4 w-4" aria-hidden="true" />
         Edit a copy
       </LiftedButton>
     }

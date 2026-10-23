@@ -321,9 +321,9 @@ menu: a tooltip in an open Radix menu fights the menu for the same hover.
 
 **Sized to its items, no heading** (2026-10-22): the fixed `w-56` left the menu half empty and the
 "Actions" label repeated what the ⋯ button says. Icons: `Copy` (two squares) for *Copy link* /
-*Copy share link* — it copies, it doesn't open a share sheet — and `CirclePen`
-(`components/icons/circle-pen.tsx`, drawn in lucide's style because 0.428 has no pen-in-a-circle)
-for *Edit*. On the rows, *Copy ID* uses `Hash`, so it doesn't share the copy icon with *Copy link*.
+*Copy share link* — it copies, it doesn't open a share sheet — and `EditPencil`
+(`components/icons/edit-pencil.tsx`, the app-wide edit icon since 2026-10-23; it replaced the
+pen-in-a-circle drawn for this menu the day before) for *Edit*. On the rows, *Copy ID* uses `Hash`, so it doesn't share the copy icon with *Copy link*.
 
 `BlobLoader` is the loader in all three loading states (page, analytics, questions) — not
 `Spinner`, which this page was written against before the app had its own loader. (It was

@@ -1,5 +1,5 @@
+import { EditPencil } from "@/components/icons/edit-pencil";
 import { CirclePlay, Copy, Eye, EyeOff, MoreHorizontal, Trash2 } from "lucide-react";
-import { CirclePen } from "@/components/icons/circle-pen";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -82,7 +82,7 @@ export const QuizActionsMenu = ({
       )}
 
       <DropdownMenuItem className="hover:bg-background" onClick={onEdit}>
-        <CirclePen size={16} /> Edit quiz
+        <EditPencil size={16} /> Edit quiz
       </DropdownMenuItem>
 
       {/* Not offered on a Draft: the backend mints a token its own resolver 404s, so sharing

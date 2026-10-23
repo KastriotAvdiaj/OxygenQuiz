@@ -1,4 +1,5 @@
-import { Lock, Pencil } from "lucide-react";
+import { EditPencil } from "@/components/icons/edit-pencil";
+import { Lock } from "lucide-react";
 import { LiftedButton } from "@/common/LiftedButton";
 import type { QuestionEditability } from "@/pages/Dashboard/Pages/Question/api/get-question-editability";
 import { useQuiz } from "../Quiz-questions-context";
@@ -62,7 +63,7 @@ export const SavedQuestionNotice = ({
         liftColor="muted-foreground"
         onClick={() => requestEditCopy(questionId, onCopied)}
       >
-        <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
+        <EditPencil className="h-3.5 w-3.5" aria-hidden="true" />
         Edit for this quiz
       </LiftedButton>
     </div>

@@ -1,4 +1,5 @@
-import { Pen, Trash2 } from "lucide-react";
+import { EditPencil } from "@/components/icons/edit-pencil";
+import { Trash2 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Form, FormDrawer, Input, Label } from "@/components/ui/form";
@@ -51,7 +52,7 @@ export const UpdateMultipleChoiceQuestionForm: React.FC<
         isDone={updateQuestionMutation.isSuccess}
         triggerButton={
           <IconButtonWithTooltip
-            icon={<Pen className="size-4" />}
+            icon={<EditPencil className="size-4" />}
             tooltip="Edit Question"
             variant="icon"
           />

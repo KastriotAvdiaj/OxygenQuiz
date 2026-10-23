@@ -1,3 +1,4 @@
+import { EditPencil } from "@/components/icons/edit-pencil";
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Form, FormDrawer, Input, Label } from "@/components/ui/form";
@@ -14,7 +15,7 @@ import { CategorySelect } from "../../Entities/Categories/Components/select-ques
 import { LanguageSelect } from "../../Entities/Language/components/select-question-language";
 import { useQuizForm } from "../../../Quiz/components/Create-Quiz-Form/use-quiz-form";
 import { VisibilitySelect } from "../../Entities/select-visibility";
-import { Check, Pen } from "lucide-react";
+import { Check } from "lucide-react";
 import { TrueFalseQuestion } from "@/types/question-types";
 import { IconButtonWithTooltip } from "../Re-Usable-Components/icon-button-with-tooltip";
 import { Authorization } from "@/lib/authorization";
@@ -54,7 +55,7 @@ export const UpdateTrueFalseQuestionForm: React.FC<
         isDone={updateQuestionMutation.isSuccess}
         triggerButton={
           <IconButtonWithTooltip
-            icon={<Pen className="size-4" />}
+            icon={<EditPencil className="size-4" />}
             tooltip="Edit Question"
             variant="icon"
           />

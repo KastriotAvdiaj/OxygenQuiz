@@ -1,3 +1,4 @@
+import { EditPencil } from "@/components/icons/edit-pencil";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -9,7 +10,6 @@ import {
   Gamepad2,
   Trophy,
   Settings as SettingsIcon,
-  Pencil,
   Activity,
   Lock,
   Target,
@@ -145,7 +145,7 @@ export const ProfileView = ({
               </div>
               {isOwnProfile && (
                 <Button disabled className="opacity-70 text-white">
-                  <Pencil className="h-4 w-4" />
+                  <EditPencil className="h-4 w-4" />
                   Edit profile
                 </Button>
               )}
