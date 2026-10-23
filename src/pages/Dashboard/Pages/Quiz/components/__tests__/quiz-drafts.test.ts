@@ -33,7 +33,7 @@ const untouchedManualDraft = (): ManualQuizDraft => ({
   form: {
     title: "",
     description: "",
-    imageUrl: "",
+    cover: null,
     timeLimitInSeconds: 0,
     showFeedbackImmediately: false,
     status: "Draft",

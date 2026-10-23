@@ -51,6 +51,7 @@ import { DraftSavedIndicator, LeaveUnfinishedQuizDialog } from "../draft-notices
 import { DESKTOP_QUERY, useMediaQuery } from "@/hooks/use-media-query";
 import { AddQuestionMenu } from "./components/add-question-menu";
 import { QuizDetailsFields } from "./components/quiz-details-fields";
+import { selectionFrom } from "@/features/media/api/upload-media";
 import { QuizOverview } from "./components/overview/quiz-overview";
 import {
   ManualQuizDraft,
@@ -192,7 +193,7 @@ const CreateQuizForm = ({
     const common = {
       id: question.id,
       text: question.text,
-      imageUrl: question.imageUrl || null,
+      mediaAssetId: question.media?.assetId ?? null,
       explanation: question.explanation,
       difficultyId: question.difficultyId,
       categoryId: question.categoryId,
@@ -241,6 +242,13 @@ const CreateQuizForm = ({
 
   const [isCreatingQuestions, setIsCreatingQuestions] = useState(false);
 
+  // The builder holds a question's media as a selection (with its preview URL); the API takes the
+  // asset id alone — docs/media/media-pipeline.md.
+  const toQuestionRequest = <Q extends NewAnyQuestion>({ media, ...rest }: Q) => ({
+    ...rest,
+    mediaAssetId: media?.assetId ?? null,
+  });
+
   // Function to create a new question based on its type
   const createNewQuestion = async (
     question: NewAnyQuestion,
@@ -248,19 +256,19 @@ const CreateQuizForm = ({
     switch (question.type) {
       case QuestionType.MultipleChoice:
         const mcResult = await createMultipleChoiceMutation.mutateAsync({
-          data: question,
+          data: toQuestionRequest(question),
         });
         return mcResult.id;
 
       case QuestionType.TrueFalse:
         const tfResult = await createTrueFalseMutation.mutateAsync({
-          data: question,
+          data: toQuestionRequest(question),
         });
         return tfResult.id;
 
       case QuestionType.TypeTheAnswer:
         const ttaResult = await createTypeTheAnswerMutation.mutateAsync({
-          data: question,
+          data: toQuestionRequest(question),
         });
         return ttaResult.id;
     }
@@ -471,7 +479,7 @@ const CreateQuizForm = ({
                 ...base,
                 type: QuestionType.MultipleChoice,
                 text: nq.text,
-                imageUrl: nq.imageUrl,
+                mediaAssetId: nq.media?.assetId ?? null,
                 explanation: nq.explanation,
                 answerOptions: nq.answerOptions.map((o) => ({
                   text: o.text,
@@ -485,7 +493,7 @@ const CreateQuizForm = ({
                 ...base,
                 type: QuestionType.TrueFalse,
                 text: nq.text,
-                imageUrl: nq.imageUrl,
+                mediaAssetId: nq.media?.assetId ?? null,
                 explanation: nq.explanation,
                 correctAnswerBoolean: nq.correctAnswer,
               };
@@ -494,7 +502,7 @@ const CreateQuizForm = ({
               ...base,
               type: QuestionType.TypeTheAnswer,
               text: nq.text,
-              imageUrl: nq.imageUrl,
+              mediaAssetId: nq.media?.assetId ?? null,
               explanation: nq.explanation,
               correctAnswerText: nq.correctAnswer,
               acceptableAnswers: nq.acceptableAnswers.map((a) => a.value),
@@ -516,7 +524,7 @@ const CreateQuizForm = ({
               status: values.status,
               showFeedbackImmediately: values.showFeedbackImmediately,
               shuffleQuestions: values.shuffleQuestions,
-              imageUrl: values.imageUrl,
+              coverAssetId: values.cover?.assetId ?? null,
               questions: importQuestions,
             },
           });
@@ -672,7 +680,7 @@ const CreateQuizForm = ({
               categoryId: editQuiz.category.id,
               languageId: editQuiz.language.id,
               difficultyId: editQuiz.difficulty.id,
-              imageUrl: editQuiz.imageUrl ?? "",
+              cover: selectionFrom(editQuiz.coverAssetId, editQuiz.imageUrl, "Image"),
               timeLimitInSeconds: editQuiz.timeLimitInSeconds,
               showFeedbackImmediately: editQuiz.showFeedbackImmediately,
               status: editQuiz.status,
@@ -763,7 +771,7 @@ const CreateQuizForm = ({
             categoryId: formValues.categoryId,
             languageId: formValues.languageId,
             difficultyId: formValues.difficultyId,
-            imageUrl: formValues.imageUrl,
+            cover: formValues.cover,
             timeLimitInSeconds: formValues.timeLimitInSeconds,
             showFeedbackImmediately: formValues.showFeedbackImmediately,
             status: formValues.status,
@@ -824,23 +832,6 @@ const CreateQuizForm = ({
           updateQuizMutation.isPending ||
           createAiQuizMutation.isPending ||
           isCreatingQuestions;
-
-        // const [imageUrl, setImageUrl] = useState(editQuiz?.imageUrl ?? "");
-
-        // useEffect(() => {
-        //   if (imageUrl) {
-        //     setValue("imageUrl", imageUrl);
-        //   }
-        // }, [imageUrl, setValue]);
-
-        // const handleImageUpload = (url: string) => {
-        //   setImageUrl(url);
-        //   setValue("imageUrl", url);
-        // };
-        // const handleImageRemove = () => {
-        //   setImageUrl("");
-        //   setValue("imageUrl", "");
-        // };
 
         /**
          * The primary action says what it will do. "Publish quiz" when the quiz is going out

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { mediaSelectionSchema } from "@/features/media/api/upload-media";
 import { api } from "@/lib/Api-client";
 import { MutationConfig } from "@/lib/React-query";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
@@ -40,7 +41,9 @@ export const createQuizInputSchema = z.object({
     .int()
     .positive({ message: "Difficulty is required" }),
 
-  imageUrl: z.string().optional(),
+  // The cover image, as the form holds it (with its preview URL). Only its asset id is sent —
+  // `toQuizRequest` below — and the API writes the URL (docs/media/media-pipeline.md).
+  cover: mediaSelectionSchema.nullable().optional(),
   // Quiz Settings
   timeLimitInSeconds: z
     .number()
@@ -92,12 +95,21 @@ export const createQuizInputSchema = z.object({
 
 export type CreateQuizInput = z.infer<typeof createQuizInputSchema>;
 
+/**
+ * The request body for a quiz form's values: the cover selection becomes `coverAssetId`, the one
+ * cover field the API accepts (QuizCM/QuizUM.CoverAssetId) — never a URL.
+ */
+export const toQuizRequest = <T extends { cover?: { assetId: string } | null }>({ cover, ...rest }: T) => ({
+  ...rest,
+  coverAssetId: cover?.assetId ?? null,
+});
+
 export const createQuiz = ({
   data,
 }: {
   data: CreateQuizInput;
 }): Promise<QuizSummaryDTO> => {
-  return api.post("/quiz", data);
+  return api.post("/quiz", toQuizRequest(data));
 };
 
 type UseCreateQuizOptions = {

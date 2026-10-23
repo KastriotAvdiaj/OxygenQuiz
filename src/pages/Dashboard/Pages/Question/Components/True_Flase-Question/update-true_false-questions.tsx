@@ -1,10 +1,11 @@
 import { EditPencil } from "@/components/icons/edit-pencil";
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Form, FormDrawer, Input, Label } from "@/components/ui/form";
 import { useNotifications } from "@/common/Notifications";
 import { Separator } from "@/components/ui/separator";
-import ImageUpload from "@/utils/Image-Upload";
+import { MediaPicker } from "@/features/media/components/media-picker";
+import { selectionFrom, type MediaSelection } from "@/features/media/api/upload-media";
 import { ExplanationField } from "@/common/QuestionExplanation";
 import {
   updateTrueFalseQuestionInputSchema,
@@ -28,7 +29,9 @@ export const UpdateTrueFalseQuestionForm: React.FC<
   UpdateTrueFalseQuestionFormProps
 > = ({ question }) => {
   const { addNotification } = useNotifications();
-  const [imageUrl, setImageUrl] = useState(question.imageUrl || "");
+  const [media, setMedia] = useState<MediaSelection | null>(
+    selectionFrom(question.mediaAssetId, question.mediaUrl, question.mediaType),
+  );
   const { queryData } = useQuizForm();
 
   const updateQuestionMutation = useUpdateTrueFalseQuestion({
@@ -81,7 +84,7 @@ export const UpdateTrueFalseQuestionForm: React.FC<
             defaultValues: {
               id: question.id,
               text: question.text,
-              imageUrl: question.imageUrl,
+              mediaAssetId: question.mediaAssetId ?? null,
               explanation: question.explanation ?? "",
               correctAnswer: question.correctAnswer,
               categoryId: question.category.id,
@@ -98,20 +101,10 @@ export const UpdateTrueFalseQuestionForm: React.FC<
           }}
           schema={updateTrueFalseQuestionInputSchema}>
           {({ register, formState, setValue, watch, clearErrors }) => {
-            useEffect(() => {
-              if (imageUrl) {
-                setValue("imageUrl", imageUrl);
-              }
-            }, [imageUrl, setValue]);
 
-            const handleImageUpload = (url: string) => {
-              setImageUrl(url);
-              setValue("imageUrl", url);
-            };
-
-            const handleImageRemove = () => {
-              setImageUrl("");
-              setValue("imageUrl", "");
+            const handleMediaChange = (next: MediaSelection | null) => {
+              setMedia(next);
+              setValue("mediaAssetId", next?.assetId ?? null);
             };
 
             return (
@@ -133,12 +126,7 @@ export const UpdateTrueFalseQuestionForm: React.FC<
                 )}
 
                 {/* Image upload implementation */}
-                <ImageUpload
-                  onUpload={handleImageUpload}
-                  onRemove={handleImageRemove}
-                  initialImageUrl={imageUrl}
-                />
-                <input type="hidden" {...register("imageUrl")} />
+                <MediaPicker value={media} onChange={handleMediaChange} />
 
                 <Separator className="bg-gray-500" />
 

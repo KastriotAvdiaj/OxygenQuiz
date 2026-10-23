@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { NewTypeTheAnswerQuestion } from "../../types";
 import { useQuiz } from "../../Quiz-questions-context";
 import { useDebounce } from "@/hooks/use-debounce";
+import type { MediaSelection } from "@/features/media/api/upload-media";
 import { BaseQuestionFormCard } from "./display-base-quiz-question-card";
 import { Input, Label } from "@/components/ui/form";
 import { Button, Switch } from "@/components/ui";
@@ -29,7 +30,7 @@ export const TypeTheAnswerFormCard: React.FC<TypeTheAnswerFormCardProps> = ({
   question,
 }) => {
   const [questionText, setQuestionText] = useState(question.text);
-  const [imageUrl, setImageUrl] = useState(question.imageUrl || undefined);
+  const [media, setMedia] = useState<MediaSelection | null>(question.media ?? null);
   const [explanation, setExplanation] = useState(question.explanation ?? "");
   const [correctAnswer, setCorrectAnswer] = useState(question.correctAnswer);
   const [isCaseSensitive, setIsCaseSensitive] = useState(
@@ -53,7 +54,7 @@ export const TypeTheAnswerFormCard: React.FC<TypeTheAnswerFormCardProps> = ({
   const currentQuestionState = useMemo(
     () => ({
       text: questionText,
-      imageUrl,
+      media,
       explanation,
       correctAnswer,
       isCaseSensitive,
@@ -62,7 +63,7 @@ export const TypeTheAnswerFormCard: React.FC<TypeTheAnswerFormCardProps> = ({
     }),
     [
       questionText,
-      imageUrl,
+      media,
       explanation,
       correctAnswer,
       isCaseSensitive,
@@ -77,7 +78,7 @@ export const TypeTheAnswerFormCard: React.FC<TypeTheAnswerFormCardProps> = ({
     const updatedQuestion = {
       ...question,
       text: debouncedQuestionState.text,
-      imageUrl: debouncedQuestionState.imageUrl,
+      media: debouncedQuestionState.media,
       explanation: debouncedQuestionState.explanation,
       correctAnswer: debouncedQuestionState.correctAnswer,
       isCaseSensitive: debouncedQuestionState.isCaseSensitive,
@@ -103,13 +104,7 @@ export const TypeTheAnswerFormCard: React.FC<TypeTheAnswerFormCardProps> = ({
     );
   };
 
-  const handleImageUpload = (url: string) => {
-    setImageUrl(url);
-  };
 
-  const handleImageRemove = () => {
-    setImageUrl(undefined);
-  };
 
   const styles = getQuestionTypeStyles(question.type);
   const errorAwareStyles = getErrorAwareStyles(hasErrors, styles);
@@ -117,7 +112,7 @@ export const TypeTheAnswerFormCard: React.FC<TypeTheAnswerFormCardProps> = ({
   // Get general validation errors that don't belong to specific fields
   const generalErrors = getGeneralErrors([
     "text",
-    "imageUrl",
+    "mediaAssetId",
     "explanation",
     "correctAnswer",
     "acceptableAnswers",
@@ -131,10 +126,9 @@ export const TypeTheAnswerFormCard: React.FC<TypeTheAnswerFormCardProps> = ({
       backgroundColor={errorAwareStyles.backgroundColor}
       questionType={QuestionType.TypeTheAnswer}
       // Image upload props
-      imageUrl={imageUrl}
-      onImageUpload={handleImageUpload}
-      onImageRemove={handleImageRemove}
-      showImageUpload={true}
+      media={media}
+        onMediaChange={setMedia}
+        
       questionTextError={getFieldError("text")}
       explanation={explanation}
       onExplanationChange={setExplanation}

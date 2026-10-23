@@ -31,6 +31,7 @@ Switched by `RateLimiting:Enabled` (default on; off in Development — see "In d
 | **`auth`** policy | 20 requests | 1 min sliding, per IP | `login`, `signup`, `external-login`/`-signup`, `validate-invite-code`, `verify-email`, `resend-verification`, password reset |
 | **`guest`** policy | 20 requests | 1 min sliding, per IP | `POST /api/guest-quiz-sessions` (guest session creation) |
 | **`ai`** policy | 6 requests | 1 min sliding, **per user** | `POST /api/quiz/ai-generate` only |
+| **`media-upload`** policy | 30 requests | 1 hour fixed, **per user** | `POST /api/media` only. The media quota counts saves, not uploads, so this is what stops a script uploading thousands of files nobody saves ([`../media/media-pipeline.md`](../media/media-pipeline.md) §5) |
 
 - The **global** limiter is deliberately generous — normal play (loading questions, submitting
   answers) must never trip it. It only catches a single source hammering the API.

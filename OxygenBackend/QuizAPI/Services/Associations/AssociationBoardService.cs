@@ -1,5 +1,4 @@
 using QuizAPI.Common;
-using QuizAPI.Controllers.Image.Services;
 using QuizAPI.Controllers.Quizzes.Services.QuizServices;
 using QuizAPI.DTOs.Quiz;
 using QuizAPI.Exceptions;
@@ -45,20 +44,20 @@ namespace QuizAPI.Services.Associations
         private readonly IAssociationBoardRepository _boards;
         private readonly IQuizService _quizService;
         private readonly IAssociationRulesProvider _rules;
-        private readonly IImageService _images;
+        private readonly QuizAPI.Services.Media.IMediaAttachmentService _media;
 
         public AssociationBoardService(
             IQuizRepository quizzes,
             IAssociationBoardRepository boards,
             IQuizService quizService,
             IAssociationRulesProvider rules,
-            IImageService images)
+            QuizAPI.Services.Media.IMediaAttachmentService media)
         {
             _quizzes = quizzes;
             _boards = boards;
             _quizService = quizService;
             _rules = rules;
-            _images = images;
+            _media = media;
         }
 
         public async Task<QuizDTO> CreateAsync(Guid userId, AssociationQuizCM cm)
@@ -77,7 +76,6 @@ namespace QuizAPI.Services.Associations
                 CategoryId = cm.CategoryId,
                 LanguageId = cm.LanguageId,
                 DifficultyId = cm.DifficultyId,
-                ImageUrl = cm.ImageUrl,
                 Status = status,
                 Format = QuizFormat.Associations,
                 TimeLimitInSeconds = cm.BoardTimeInSeconds,
@@ -91,12 +89,10 @@ namespace QuizAPI.Services.Associations
             var board = AssociationBoardMapping.ToEntity(clean, quizId: 0, createdInVersion: 1);
             board.Quiz = quiz;
 
+            await _media.ApplyToQuizCoverAsync(quiz, cm.CoverAssetId, userId);
             await _quizzes.AddAsync(quiz);
             await _boards.AddAsync(board);
             await _quizzes.SaveChangesAsync();
-
-            if (!string.IsNullOrEmpty(cm.ImageUrl))
-                await _images.AssociateImageWithEntityAsync(cm.ImageUrl, "Quizzes", quiz.Id);
 
             return quiz.ToDto();
         }
@@ -143,23 +139,18 @@ namespace QuizAPI.Services.Associations
                 await _boards.AddAsync(AssociationBoardMapping.ToEntity(clean, quiz.Id, newVersion));
             }
 
-            var imageChanged = !string.Equals(quiz.ImageUrl, um.ImageUrl, StringComparison.Ordinal);
-
             quiz.Title = um.Title.Trim();
             quiz.Description = um.Description;
             quiz.CategoryId = um.CategoryId;
             quiz.LanguageId = um.LanguageId;
             quiz.DifficultyId = um.DifficultyId;
-            quiz.ImageUrl = um.ImageUrl;
+            await _media.ApplyToQuizCoverAsync(quiz, um.CoverAssetId, userId);
             quiz.Status = status;
             quiz.TimeLimitInSeconds = um.BoardTimeInSeconds;
             quiz.Version = newVersion;
             quiz.UpdatedAt = DateTime.UtcNow;
 
             await _quizzes.SaveChangesAsync();
-
-            if (imageChanged && !string.IsNullOrEmpty(um.ImageUrl))
-                await _images.AssociateImageWithEntityAsync(um.ImageUrl, "Quizzes", quiz.Id);
 
             return quiz.ToDto();
         }

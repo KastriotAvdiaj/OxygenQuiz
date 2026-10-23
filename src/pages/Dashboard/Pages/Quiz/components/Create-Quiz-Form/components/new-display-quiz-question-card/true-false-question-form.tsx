@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { NewTrueFalseQuestion } from "../../types";
 import { useQuiz } from "../../Quiz-questions-context";
 import { useDebounce } from "@/hooks/use-debounce";
+import type { MediaSelection } from "@/features/media/api/upload-media";
 import { BaseQuestionFormCard } from "./display-base-quiz-question-card";
 import { Label } from "@/components/ui/form";
 import { getQuestionTypeStyles } from "../existing-display-quiz-question-card/display-multiple-choice-question-card/display-muiltiple-choice-question-card";
@@ -22,7 +23,7 @@ export const TrueFalseFormCard: React.FC<TrueFalseFormCardProps> = ({
   question,
 }) => {
   const [questionText, setQuestionText] = useState(question.text);
-  const [imageUrl, setImageUrl] = useState(question.imageUrl || undefined);
+  const [media, setMedia] = useState<MediaSelection | null>(question.media ?? null);
   const [explanation, setExplanation] = useState(question.explanation ?? "");
   const [correctAnswer, setCorrectAnswer] = useState(question.correctAnswer);
   const { updateQuestion, getQuestionErrors, questionErrors } = useQuiz();
@@ -37,11 +38,11 @@ export const TrueFalseFormCard: React.FC<TrueFalseFormCardProps> = ({
   const currentQuestionState = useMemo(
     () => ({
       text: questionText,
-      imageUrl,
+      media,
       explanation,
       correctAnswer,
     }),
-    [questionText, imageUrl, explanation, correctAnswer]
+    [questionText, media, explanation, correctAnswer]
   );
 
   const debouncedQuestionState = useDebounce(currentQuestionState, 300);
@@ -50,7 +51,7 @@ export const TrueFalseFormCard: React.FC<TrueFalseFormCardProps> = ({
     const updatedQuestion = {
       ...question,
       text: debouncedQuestionState.text,
-      imageUrl: debouncedQuestionState.imageUrl,
+      media: debouncedQuestionState.media,
       explanation: debouncedQuestionState.explanation,
       correctAnswer: debouncedQuestionState.correctAnswer,
     };
@@ -60,15 +61,9 @@ export const TrueFalseFormCard: React.FC<TrueFalseFormCardProps> = ({
   const styles = getQuestionTypeStyles(question.type);
   const errorAwareStyles = getErrorAwareStyles(hasErrors, styles);
 
-  const handleImageUpload = (url: string) => {
-    setImageUrl(url);
-  };
 
-  const handleImageRemove = () => {
-    setImageUrl(undefined);
-  };
 
-  const generalErrors = getGeneralErrors(["text", "imageUrl", "explanation", "correctAnswer"]);
+  const generalErrors = getGeneralErrors(["text", "mediaAssetId", "explanation", "correctAnswer"]);
 
   return (
     <div className="relative">
@@ -78,10 +73,9 @@ export const TrueFalseFormCard: React.FC<TrueFalseFormCardProps> = ({
         borderColor={errorAwareStyles.borderColor}
         backgroundColor={errorAwareStyles.backgroundColor}
         questionType={QuestionType.TrueFalse}
-        imageUrl={imageUrl}
-        onImageUpload={handleImageUpload}
-        onImageRemove={handleImageRemove}
-        showImageUpload={true}
+        media={media}
+        onMediaChange={setMedia}
+        
         questionTextError={getFieldError("text")}
         explanation={explanation}
         onExplanationChange={setExplanation}

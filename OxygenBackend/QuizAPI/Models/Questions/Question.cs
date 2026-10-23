@@ -38,16 +38,31 @@ namespace QuizAPI.Models
         public string Text { get; set; } = string.Empty;
 
         /// <summary>
-        /// Legacy image URL. Superseded by <see cref="MediaUrl"/> + <see cref="MediaType"/>,
-        /// but retained so existing image questions keep working without a data migration.
+        /// The question's optional image or audio clip (docs/media/media-pipeline.md). The only
+        /// writer is <c>MediaAttachmentService</c>, which also sets <see cref="MediaUrl"/> and
+        /// <see cref="MediaType"/> from it — a client sends an asset id, never a URL.
         /// </summary>
-        public string? ImageUrl { get; set; }
+        public Guid? MediaAssetId { get; set; }
 
-        /// <summary>URL of an optional media attachment (image, audio, or video) shown with the question.</summary>
+        [JsonIgnore]
+        public QuizAPI.Models.Media.MediaAsset? MediaAsset { get; set; }
+
+        /// <summary>
+        /// Copy of the asset's URL, kept on the row so every read path — SQL projections, the
+        /// in-memory play DTO, multiplayer rounds — gets it without a join. Written only together
+        /// with <see cref="MediaAssetId"/>.
+        /// </summary>
         public string? MediaUrl { get; set; }
 
         /// <summary>Which kind of media <see cref="MediaUrl"/> points to. None when there is no attachment.</summary>
         public QuestionMediaType MediaType { get; set; } = QuestionMediaType.None;
+
+        /// <summary>
+        /// When this attachment was counted against its saver's daily media quota. Null when the
+        /// asset was already in use elsewhere in the saver's content (a copy, a reused image),
+        /// which costs nothing. docs/media/media-pipeline.md, "Quota counts what you save".
+        /// </summary>
+        public DateTime? MediaCountedAt { get; set; }
 
         /// <summary>
         /// Optional "why" shown to a player after they answer. Null for every question written

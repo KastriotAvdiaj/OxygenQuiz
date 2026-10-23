@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
-using QuizAPI.Controllers.Image.Services;
+using QuizAPI.Services.Media;
 using QuizAPI.Controllers.Questions.Services;
 using QuizAPI.Controllers.Questions.Services.AnswerOptions;
 using QuizAPI.Controllers.Quizzes.Services.QuizServices;
@@ -68,7 +68,7 @@ public class QuizUpdatedAtTests
 
         public QuizService Service(ApplicationDbContext ctx) =>
             new(new QuizRepository(ctx), new Mock<IQuestionRepository>().Object,
-                NullLogger<QuizService>.Instance, new Mock<IImageService>().Object,
+                NullLogger<QuizService>.Instance, new Mock<IMediaAttachmentService>().Object,
                 new TestCurrentUserService { UserId = OwnerId, IsAdmin = false });
 
         public DateTime UpdatedAt()
@@ -120,7 +120,7 @@ public class QuizUpdatedAtTests
             .ReturnsAsync(found);
         repo.Setup(r => r.GetClassificationNamesAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(("History", "English"));
-        return (new QuestionService(repo.Object, Mock.Of<IAnswerOptionService>(), Mock.Of<IImageService>()), repo);
+        return (new QuestionService(repo.Object, Mock.Of<IAnswerOptionService>(), Mock.Of<IMediaAttachmentService>()), repo);
     }
 
     private static TrueFalseQuestionUM Edit => new()

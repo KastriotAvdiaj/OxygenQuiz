@@ -1,4 +1,5 @@
 import { Info } from "lucide-react";
+import { MediaPicker } from "@/features/media/components/media-picker";
 import type {
   FieldErrors,
   UseFormClearErrors,
@@ -95,11 +96,17 @@ export const QuizDetailsFields = ({
     </div>
     <Separator className="bg-primary/20" />
 
-    {/* <ImageUpload
-      onUpload={handleImageUpload}
-      onRemove={handleImageRemove}
-      initialImageUrl={editQuiz?.imageUrl ?? null}
-    /> */}
+    {/* Cover image: shown on the quiz's card, its listing page and link previews. Images only —
+        the API refuses an audio cover (MediaAttachmentService). */}
+    <div className="space-y-1.5">
+      <Label className="text-sm font-medium">Cover image</Label>
+      <MediaPicker
+        allowAudio={false}
+        value={watch("cover") ?? null}
+        onChange={(cover) => setValue("cover", cover, { shouldDirty: true })}
+        className="max-w-none sm:max-w-none"
+      />
+    </div>
 
     {/* Dropdowns */}
     <div className="space-y-3">

@@ -239,15 +239,22 @@ None open in code. The fix below is live only once the backend is rebuilt on the
   `Mapping/EntityMappers.cs` (`ProjectMultipleChoice`),
   `DTOs/Question/QuestionDTOs.cs` (`AnswerOptionDTO.IsCorrect`),
   `src/pages/Dashboard/Pages/Quiz/components/Create-Quiz-Form/components/question-select/`
-- **Proposal — one media pipeline for quizzes and questions.** Storage on R2, quotas, moderation,
-  free image sources, AI-added media; partly settled. See
+- **Proposal — one media pipeline for quizzes and questions.** Phase 1 (pipeline, R2, uploads,
+  quotas, sweep) is built — [`../media/media-pipeline.md`](../media/media-pipeline.md). Moderation, the
+  Pexels/Wikimedia picker and AI-added images remain. See
   [`../proposals/media-pipeline.md`](../proposals/media-pipeline.md).
-- **P3 — Image upload allow-list drifted from `FileService`'s.** `ImageUploadController`
-  maintains its own separate format allow-list (still includes GIF) rather than
-  sharing `FileService`'s. Not a vulnerability on its own, but two allow-lists
-  for the same concern will eventually disagree.
-  _Fix:_ consolidate on one allow-list/service.
-  → `OxygenBackend/QuizAPI/Controllers/Image/ImageUploadController.cs`
+- ~~**P3 — Image upload allow-list drifted from `FileService`'s.**~~ **Fixed 2026-10-24** — there is
+  one pipeline now; `ImageUploadController` is gone and question/quiz media is decided from the bytes
+  by `MediaProcessor` ([`../media/media-pipeline.md`](../media/media-pipeline.md)).
+- **P3 — Avatars still use the old file store, on the VPS disk** (2026-10-24). `AvatarService` writes
+  through `FileService` to `wwwroot/uploads/files`, not through the media pipeline to R2, so avatars
+  stay on one machine and aren't swept. Folding them in needs a `User.AvatarAssetId` reference (the
+  sweep only sees question and quiz references) — deliberately left for after phase 2.
+  → `OxygenBackend/QuizAPI/Controllers/Users/Services/AvatarService.cs`
+- **P3 — Pre-pipeline image files are still on the uploads volume** (2026-10-24). The
+  `AddMediaPipeline` migration cleared every URL pointing at them; the files in
+  `wwwroot/uploads/*.{png,jpg,gif}` (not `uploads/files/`, which holds avatars) are dead weight.
+  Remove by hand once — [`production-runbook.md`](production-runbook.md), "Media on R2".
 - **P3 — Speed-bonus latency credit is a fixed 2s a client can under-report into.**
   Scoring trusts a client-reported think time (`ClientElapsedMs`) when it's within
   `MaxLatencyCreditSeconds` of the server's own window — see
@@ -1301,9 +1308,9 @@ fixed; these were left.
   player-dashboard route. Until then the row menu carries **Play** and **Copy share link**
   (2026-10-17), the two things an owner of an Unlisted quiz couldn't otherwise reach.
   → `src/pages/Dashboard/Pages/Quiz/components/Data-Table-Columns/columns.tsx`
-- **P3 — No image on a Board quiz in the builder.** The API accepts `imageUrl` on create and
-  update; the builder has no upload field, matching the Classic builder, whose `ImageUpload` is
-  commented out.
+- **P3 — No cover image on a Board quiz in the builder.** The API accepts `coverAssetId` on create
+  and update (an asset from `POST /api/media`); the board builder has no `MediaPicker` yet. The
+  Classic builder's cover field is back (2026-10-24, media pipeline phase 1).
 - ~~**P3 — The lobby's quiz picker lists Boards to admins**~~ **Fixed 2026-09-25** by making the
   pick valid: a Board in a lobby is played as a Duel (docs/quiz/associations.md §10).
 - **P3 — "Play again" and "Start over" drop an Unlisted board's share token** (2026-09-23). Both call

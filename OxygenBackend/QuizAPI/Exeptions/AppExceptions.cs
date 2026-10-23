@@ -25,4 +25,11 @@
     public sealed class ForbiddenException(string message) : AppException(message)
     {
     }
+
+    /// <summary>A per-account allowance is used up — a media quota, the cap on unsaved uploads.
+    /// Maps to HTTP 429, like the rate limiter, because the client's move is the same: wait or
+    /// free something up. The message says which.</summary>
+    public sealed class QuotaExceededException(string message) : AppException(message)
+    {
+    }
 }

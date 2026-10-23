@@ -8,7 +8,9 @@ const saved = {
   difficulty: { id: 3, level: "Hard", weight: 3, createdAt: "" },
   category: { id: 7, name: "Geography", emoji: "" },
   language: { id: 2, language: "English", createdAt: "" },
-  imageUrl: "https://img/x.png",
+  mediaAssetId: "8f7e3c1a-1111-4222-8333-444455556666",
+  mediaUrl: "https://img/x.webp",
+  mediaType: "Image",
   explanation: "Since 2008.",
   createdAt: "",
   user: { id: "u", username: "someone" },
@@ -34,7 +36,8 @@ describe("toEditableCopy", () => {
       difficultyId: 3,
       categoryId: 7,
       languageId: 2,
-      imageUrl: "https://img/x.png",
+      // The copy keeps pointing at the same stored file (reusing an image you use is free).
+      media: { assetId: "8f7e3c1a-1111-4222-8333-444455556666", url: "https://img/x.webp", kind: "Image", credit: null },
       explanation: "Since 2008.",
       type: QuestionType.MultipleChoice,
       answerOptions: [

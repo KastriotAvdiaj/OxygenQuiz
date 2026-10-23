@@ -510,7 +510,8 @@ namespace QuizAPI.Services.QuizSessionServices
                 QuestionId = qq.QuestionId,
                 Type = qq.Question.Type.ToString(),
                 Text = qq.Question.Text,
-                ImageUrl = qq.Question.ImageUrl,
+                MediaUrl = qq.Question.MediaUrl,
+                MediaType = qq.Question.MediaType.ToString(),
                 TimeLimitSeconds = qq.TimeLimitInSeconds,
                 // Options were served in stored order, which is authoring order, which for a
                 // model-written question is correct-answer-first — 68% of them, measured. Seeded
@@ -537,7 +538,8 @@ namespace QuizAPI.Services.QuizSessionServices
             QuestionId = round.QuestionId,
             Type = round.Type,
             Text = round.Text,
-            ImageUrl = round.ImageUrl,
+            MediaUrl = round.MediaUrl,
+            MediaType = round.MediaType,
             TimeLimitSeconds = round.TimeLimitSeconds,
             Options = round.Options,
             AllowMultipleSelections = round.AllowMultipleSelections,

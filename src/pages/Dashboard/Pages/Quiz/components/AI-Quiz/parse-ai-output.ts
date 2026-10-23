@@ -284,7 +284,7 @@ const buildQuestion = (
   const common = {
     ...base,
     visibility: "Private" as const,
-    imageUrl: "",
+    media: null,
   };
 
   switch (raw.type) {

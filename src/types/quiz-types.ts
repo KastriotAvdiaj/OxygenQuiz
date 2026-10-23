@@ -100,7 +100,10 @@ export type Quiz = {
   id: number;
   title: string;
   description?: string;
-  imageUrl?: string; 
+  /** The cover's URL, written by the API from `coverAssetId`. */
+  imageUrl?: string;
+  /** The cover image's asset — what the edit form sends back (docs/media/media-pipeline.md). */
+  coverAssetId?: string | null;
   user: UserBasic;
   category: CategoryDTO;
   language: LanguageDTO;

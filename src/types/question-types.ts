@@ -88,7 +88,11 @@ export interface QuestionBase {
   difficulty: DifficultyDTO;
   category: CategoryDTO;
   language: LanguageDTO;
-  imageUrl: string;
+  /** The attached image or clip's asset — what an editor sends back on save. */
+  mediaAssetId?: string | null;
+  /** Written by the API from the asset; null when there's no media. */
+  mediaUrl?: string | null;
+  mediaType?: QuestionMediaType;
   /** Optional "why", shown to players after they answer. Null when the author wrote none. */
   explanation?: string | null;
   createdAt: string;

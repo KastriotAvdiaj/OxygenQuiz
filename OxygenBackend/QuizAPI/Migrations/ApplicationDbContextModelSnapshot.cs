@@ -974,55 +974,6 @@ namespace QuizAPI.Migrations
                     b.ToTable("Files");
                 });
 
-            modelBuilder.Entity("QuizAPI.Models.ImageAsset", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int?>("EntityId")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("EntityType")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<string>("FileFormat")
-                        .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("character varying(10)");
-
-                    b.Property<string>("FileName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<string>("FilePath")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<bool>("IsUsed")
-                        .HasColumnType("boolean");
-
-                    b.Property<DateTime?>("LastModifiedDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("OriginalFileName")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("ImageAssets");
-                });
-
             modelBuilder.Entity("QuizAPI.Models.InviteCode", b =>
                 {
                     b.Property<int>("Id")
@@ -1074,6 +1025,105 @@ namespace QuizAPI.Migrations
                     b.HasIndex("IntendedEmail");
 
                     b.ToTable("InviteCodes");
+                });
+
+            modelBuilder.Entity("QuizAPI.Models.Media.MediaAsset", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<long>("ByteSize")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("ContentHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreditAuthor")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("CreditAuthorUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("CreditLicense")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("CreditLicenseUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("CreditSourceUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<int?>("DurationMs")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("FirstAttachedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("Height")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("RemovedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Source")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("StorageKey")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("ThumbKey")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("ThumbUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTime?>("UnreferencedSince")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("UploadedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<int?>("Width")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ContentHash")
+                        .IsUnique();
+
+                    b.HasIndex("UnreferencedSince");
+
+                    b.HasIndex("UploadedById", "FirstAttachedAt");
+
+                    b.ToTable("MediaAssets");
                 });
 
             modelBuilder.Entity("QuizAPI.Models.Notification", b =>
@@ -1305,11 +1355,14 @@ namespace QuizAPI.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
 
-                    b.Property<string>("ImageUrl")
-                        .HasColumnType("text");
-
                     b.Property<int>("LanguageId")
                         .HasColumnType("integer");
+
+                    b.Property<Guid?>("MediaAssetId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("MediaCountedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("MediaType")
                         .HasColumnType("integer");
@@ -1341,7 +1394,11 @@ namespace QuizAPI.Migrations
 
                     b.HasIndex("LanguageId");
 
+                    b.HasIndex("MediaAssetId");
+
                     b.HasIndex("QuestionLanguageId");
+
+                    b.HasIndex("UserId", "MediaCountedAt");
 
                     b.HasIndex("UserId", "Visibility", "Id");
 
@@ -1492,6 +1549,12 @@ namespace QuizAPI.Migrations
                     b.Property<int>("CategoryId")
                         .HasColumnType("integer");
 
+                    b.Property<Guid?>("CoverAssetId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("CoverCountedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -1549,6 +1612,8 @@ namespace QuizAPI.Migrations
 
                     b.HasIndex("CategoryId");
 
+                    b.HasIndex("CoverAssetId");
+
                     b.HasIndex("DifficultyId");
 
                     b.HasIndex("LanguageId");
@@ -1556,6 +1621,8 @@ namespace QuizAPI.Migrations
                     b.HasIndex("ShareToken")
                         .IsUnique()
                         .HasFilter("\"ShareToken\" IS NOT NULL");
+
+                    b.HasIndex("UserId", "CoverCountedAt");
 
                     b.HasIndex("UserId", "Status", "Id");
 
@@ -2227,6 +2294,11 @@ namespace QuizAPI.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("QuizAPI.Models.Media.MediaAsset", "MediaAsset")
+                        .WithMany()
+                        .HasForeignKey("MediaAssetId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("QuizAPI.Models.QuestionLanguage", null)
                         .WithMany("Questions")
                         .HasForeignKey("QuestionLanguageId");
@@ -2242,6 +2314,8 @@ namespace QuizAPI.Migrations
                     b.Navigation("Difficulty");
 
                     b.Navigation("Language");
+
+                    b.Navigation("MediaAsset");
 
                     b.Navigation("User");
                 });
@@ -2313,6 +2387,11 @@ namespace QuizAPI.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("QuizAPI.Models.Media.MediaAsset", "CoverAsset")
+                        .WithMany()
+                        .HasForeignKey("CoverAssetId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("QuizAPI.Models.QuestionDifficulty", "Difficulty")
                         .WithMany()
                         .HasForeignKey("DifficultyId")
@@ -2332,6 +2411,8 @@ namespace QuizAPI.Migrations
                         .IsRequired();
 
                     b.Navigation("Category");
+
+                    b.Navigation("CoverAsset");
 
                     b.Navigation("Difficulty");
 

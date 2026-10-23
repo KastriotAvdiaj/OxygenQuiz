@@ -1,7 +1,9 @@
 import { Card, CardContent } from "@/components/ui";
 import { Textarea } from "@/components/ui/form";
 import { QuestionType } from "@/types/question-types";
-import ImageUpload from "@/utils/Image-Upload";
+import { MediaPicker } from "@/features/media/components/media-picker";
+import type { MediaSelection } from "@/features/media/api/upload-media";
+import { cn } from "@/utils/cn";
 import { FieldError } from "react-hook-form";
 import { getQuestionTypeTheme } from "../../question-type-theme";
 import { ExplanationField } from "@/common/QuestionExplanation";
@@ -13,12 +15,10 @@ interface BaseQuestionFormCardProps {
   borderColor: string;
   backgroundColor?: string;
   questionType?: QuestionType;
-  // Image upload props
-  imageUrl?: string | null;
-  onImageUpload?: (url: string) => void;
-  onImageRemove?: () => void;
-  imageUploadEndpoint?: string;
-  showImageUpload?: boolean;
+  // The question's image or clip (docs/media/media-pipeline.md).
+  media?: MediaSelection | null;
+  onMediaChange?: (media: MediaSelection | null) => void;
+  showMediaPicker?: boolean;
 
   questionTextError?: FieldError;
 
@@ -36,11 +36,9 @@ export const BaseQuestionFormCard: React.FC<BaseQuestionFormCardProps> = ({
   borderColor,
   backgroundColor,
   questionType,
-  imageUrl = null,
-  onImageUpload,
-  onImageRemove,
-  imageUploadEndpoint = "ImageUpload/question",
-  showImageUpload = true,
+  media = null,
+  onMediaChange,
+  showMediaPicker = true,
   questionTextError,
   explanation = "",
   onExplanationChange,
@@ -105,16 +103,13 @@ export const BaseQuestionFormCard: React.FC<BaseQuestionFormCardProps> = ({
           />
         </div>
 
-        {/* Image Upload Section */}
-        {showImageUpload && onImageUpload && (
+        {/* Image or audio clip */}
+        {showMediaPicker && onMediaChange && (
           <div className="px-0">
-            <ImageUpload
-              initialImageUrl={imageUrl}
-              borderColor={borderColor}
-              backgroundColor={backgroundColor}
-              onUpload={onImageUpload}
-              onRemove={onImageRemove}
-              endpoint={imageUploadEndpoint}
+            <MediaPicker
+              value={media}
+              onChange={onMediaChange}
+              frameClassName={cn(borderColor, backgroundColor)}
               className="w-full"
             />
           </div>

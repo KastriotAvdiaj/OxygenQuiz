@@ -1,3 +1,4 @@
+import { selectionFrom } from "@/features/media/api/upload-media";
 import { QuestionType, type AnyQuestion } from "@/types/question-types";
 import type { NewAnyQuestion, QuizQuestion } from "./types";
 
@@ -39,7 +40,8 @@ const toDraft = (
     difficultyId: question.difficulty.id,
     categoryId: question.category.id,
     languageId: question.language.id,
-    imageUrl: question.imageUrl ?? "",
+    // The copy points at the same stored file; reusing an image you already use is free.
+    media: selectionFrom(question.mediaAssetId, question.mediaUrl, question.mediaType),
     explanation: question.explanation ?? undefined,
   };
 
@@ -90,7 +92,7 @@ export const sameContent = (a: NewAnyQuestion, b: NewAnyQuestion): boolean => {
   const common = (q: NewAnyQuestion) => [
     q.type,
     q.text.trim(),
-    q.imageUrl || "",
+    q.media?.assetId ?? "",
     (q.explanation ?? "").trim(),
     q.difficultyId,
     q.categoryId,

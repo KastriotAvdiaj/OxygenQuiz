@@ -157,6 +157,10 @@ Full version, including the two failure modes this project has actually hit:
 - **Work that outlives a hub invocation takes an `IServiceScopeFactory`, never the hub's
   `IServiceProvider`** — that one is the invocation's scope, disposed when it returns. The
   disconnect grace did this and silently removed nobody (`docs/quiz/multiplayer.md` §3.5).
+- **Media is attached by asset id through `IMediaAttachmentService` — never by URL.** No write model
+  carries a URL or media type (ADR 0032, guarded by `MediaEndpointTests`); the service is the only
+  writer of `Question.MediaUrl`/`MediaType` and `Quiz.ImageUrl`, and it charges the quota. Nothing
+  deletes a stored file directly: `MediaSweeper` removes what nothing points at (ADR 0033).
 - **Validate lookups after the ownership lookup, not before,** for the same reason: failing
   on a bad category id before checking ownership leaks whether the question exists.
 

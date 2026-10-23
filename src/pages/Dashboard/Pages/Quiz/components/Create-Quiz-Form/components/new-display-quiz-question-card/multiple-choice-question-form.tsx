@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuiz } from "../../Quiz-questions-context";
 import { NewAnswerOption, NewMultipleChoiceQuestion } from "../../types";
 import { useDebounce } from "@/hooks/use-debounce";
+import type { MediaSelection } from "@/features/media/api/upload-media";
 import { Input, Label } from "@/components/ui/form";
 import { Button, Switch } from "@/components/ui";
 import { Plus, Trash2 } from "lucide-react";
@@ -22,7 +23,7 @@ export const MultipleChoiceFormCard: React.FC<MultipleChoiceFormCardProps> = ({
   question,
 }) => {
   const [questionText, setQuestionText] = useState(question.text);
-  const [imageUrl, setImageUrl] = useState(question.imageUrl || undefined);
+  const [media, setMedia] = useState<MediaSelection | null>(question.media ?? null);
   const [explanation, setExplanation] = useState(question.explanation ?? "");
   const { updateQuestion, getQuestionErrors, questionErrors } = useQuiz();
 
@@ -38,12 +39,12 @@ export const MultipleChoiceFormCard: React.FC<MultipleChoiceFormCardProps> = ({
   const currentQuestionState = useMemo(
     () => ({
       text: questionText,
-      imageUrl,
+      media,
       explanation,
       allowMultipleSelections,
       answerOptions,
     }),
-    [questionText, imageUrl, explanation, allowMultipleSelections, answerOptions],
+    [questionText, media, explanation, allowMultipleSelections, answerOptions],
   );
 
   const debouncedQuestionState = useDebounce(currentQuestionState, 300);
@@ -57,7 +58,7 @@ export const MultipleChoiceFormCard: React.FC<MultipleChoiceFormCardProps> = ({
       type: question.type,
       visibility: question.visibility,
       text: debouncedQuestionState.text,
-      imageUrl: debouncedQuestionState.imageUrl,
+      media: debouncedQuestionState.media,
       explanation: debouncedQuestionState.explanation,
       allowMultipleSelections: debouncedQuestionState.allowMultipleSelections,
       answerOptions: debouncedQuestionState.answerOptions,
@@ -99,19 +100,13 @@ export const MultipleChoiceFormCard: React.FC<MultipleChoiceFormCardProps> = ({
     );
   };
 
-  const handleImageUpload = (url: string) => {
-    setImageUrl(url);
-  };
 
-  const handleImageRemove = () => {
-    setImageUrl(undefined);
-  };
 
   const styles = getQuestionTypeStyles(question.type);
   const errorAwareStyles = getErrorAwareStyles(hasErrors, styles);
 
   // Get general validation errors that don't belong to specific fields
-  const generalErrors = getGeneralErrors(["text", "imageUrl", "explanation", "answerOptions"]);
+  const generalErrors = getGeneralErrors(["text", "mediaAssetId", "explanation", "answerOptions"]);
 
   return (
     <div className="relative">
@@ -121,10 +116,9 @@ export const MultipleChoiceFormCard: React.FC<MultipleChoiceFormCardProps> = ({
         backgroundColor={errorAwareStyles.backgroundColor}
         questionType={question.type}
         onQuestionTextChange={setQuestionText}
-        imageUrl={imageUrl}
-        onImageUpload={handleImageUpload}
-        onImageRemove={handleImageRemove}
-        showImageUpload={true}
+        media={media}
+        onMediaChange={setMedia}
+        
         questionTextError={getFieldError("text")}
         explanation={explanation}
         onExplanationChange={setExplanation}

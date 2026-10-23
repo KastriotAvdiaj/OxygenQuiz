@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { QuestionMedia } from "@/common/QuestionMedia";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -150,15 +151,7 @@ export const TestQuestionDisplay = ({
       <div className="space-y-4">
         <div className="space-y-2">
           <h3 className="text-lg font-semibold">{question.text}</h3>
-          {question.imageUrl && (
-            <div className="w-full rounded-md overflow-hidden border dark:border-foreground/30">
-              <img
-                src={question.imageUrl}
-                alt="Question image"
-                className="w-full h-auto max-h-64 object-contain mx-auto"
-              />
-            </div>
-          )}
+          <QuestionMedia mediaUrl={question.mediaUrl} mediaType={question.mediaType} className="mb-3" />
         </div>
 
         {/* Answer Input */}

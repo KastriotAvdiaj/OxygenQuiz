@@ -42,7 +42,9 @@ namespace QuizAPI.DTOs.Quiz
 
         public bool ShowFeedbackImmediately { get; set; } = false;
         public bool ShuffleQuestions { get; set; } = false;
-        public string? ImageUrl { get; set; }
+        /// <summary>The cover image: an image asset from <c>POST /api/media</c>, or null for none. The
+        /// server copies its URL into <c>ImageUrl</c>; a URL can't be sent. docs/media/media-pipeline.md.</summary>
+        public Guid? CoverAssetId { get; set; }
 
         [Required]
         [MinLength(1, ErrorMessage = "A quiz must have at least one question.")]
@@ -73,7 +75,10 @@ namespace QuizAPI.DTOs.Quiz
         /// <summary>Resolved (by the client) to an existing difficulty id; re-validated server-side.</summary>
         public int DifficultyId { get; set; }
 
-        public string? ImageUrl { get; set; }
+        /// <summary>An image or audio asset for this question — from the author's own upload, or,
+        /// when the wizard's "Add images" switch is on, one the server resolved from the model's
+        /// search query. Never a URL. docs/media/media-pipeline.md.</summary>
+        public Guid? MediaAssetId { get; set; }
 
         /// <summary>
         /// Optional "why" for the answer. Usually model-written and author-reviewed; an over-long

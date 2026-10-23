@@ -38,7 +38,9 @@ namespace QuizAPI.DTOs.Quiz
             public int DifficultyId { get; set; }
 
             public bool ShuffleQuestions { get; set; } = false;
-            public string? ImageUrl { get; set; }
+            /// <summary>The cover image: an image asset from <c>POST /api/media</c>, or null for none. The
+            /// server copies its URL into <c>ImageUrl</c>; a URL can't be sent. docs/media/media-pipeline.md.</summary>
+            public Guid? CoverAssetId { get; set; }
 
 
         [Required]
@@ -106,6 +108,9 @@ namespace QuizAPI.DTOs.Quiz
         public int Version { get; set; }
 
         public string? ImageUrl { get; set; }
+
+        /// <summary>The cover's asset, for the edit form to send back unchanged.</summary>
+        public Guid? CoverAssetId { get; set; }
 
         public int QuestionCount { get; set; }
         /*public List<QuizQuestionDTO> Questions { get; set; } = new List<QuizQuestionDTO>();*/
@@ -175,7 +180,9 @@ namespace QuizAPI.DTOs.Quiz
 
         /// <summary>Draft / Unlisted / Public (see <see cref="Models.Quiz.QuizStatus"/>).</summary>
         public string Status { get; set; } = nameof(Models.Quiz.QuizStatus.Draft);
-        public string? ImageUrl { get; set; }
+        /// <summary>The cover image: an image asset from <c>POST /api/media</c>, or null for none. The
+        /// server copies its URL into <c>ImageUrl</c>; a URL can't be sent. docs/media/media-pipeline.md.</summary>
+        public Guid? CoverAssetId { get; set; }
 
 
         public int? TimeLimitInSeconds { get; set; }

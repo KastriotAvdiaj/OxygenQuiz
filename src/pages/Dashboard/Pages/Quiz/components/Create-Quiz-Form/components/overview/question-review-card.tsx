@@ -1,4 +1,5 @@
 import { EditPencil } from "@/components/icons/edit-pencil";
+import { QuestionMedia } from "@/common/QuestionMedia";
 import { AnimatePresence, motion, type MotionValue } from "framer-motion";
 import type { KeyboardEvent, PointerEvent } from "react";
 import { AlertTriangle, Check, Eye, EyeOff, GripVertical, Lightbulb, Trash2 } from "lucide-react";
@@ -201,12 +202,8 @@ export const QuestionReviewCard = ({
             )}
           </p>
 
-          {review.imageUrl && (
-            <img
-              src={review.imageUrl}
-              alt=""
-              className="mt-3 max-h-48 w-auto rounded-md border border-border object-contain"
-            />
+          {review.mediaUrl && (
+            <QuestionMedia mediaUrl={review.mediaUrl} mediaType={review.mediaType} alt="" className="mt-3" />
           )}
 
           <div className="mt-4 xl:mt-3">

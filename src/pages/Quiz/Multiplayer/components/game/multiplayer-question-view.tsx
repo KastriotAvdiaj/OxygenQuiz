@@ -203,8 +203,8 @@ function toCurrentQuestion(q: RoundQuestionView, secondsLeft: number): CurrentQu
   return {
     quizQuestionId: q.questionId,
     questionText: q.text,
-    mediaUrl: q.imageUrl,
-    mediaType: q.imageUrl ? "Image" : "None",
+    mediaUrl: q.mediaUrl ?? null,
+    mediaType: q.mediaType ?? "None",
     options,
     timeLimitInSeconds: q.timeLimitSeconds,
     timeRemainingInSeconds: secondsLeft,

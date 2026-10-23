@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { QuestionMedia } from "@/common/QuestionMedia";
 import { Badge } from "@/components/ui/badge";
 import {
   Accordion,
@@ -40,14 +41,12 @@ export const TypeTheAnswerQuestionCard = ({
           <div className="flex flex-wrap items-start justify-between gap-2">
             <CardTitle className="text-sm leading-tight flex-1 font-medium">
               {question.text}
-              {question.imageUrl && (
+              {question.mediaUrl && (
                 <Badge
                   variant="outline"
                   className="ml-2 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800/50">
                   <ImageIcon className="h-3 w-3 mr-1" />
-                  <span className="text-blue-600 dark:text-blue-400 text-xs">
-                    Image
-                  </span>
+                  <span className="text-blue-600 dark:text-blue-400 text-xs">{question.mediaType === "Audio" ? "Audio" : "Image"}</span>
                 </Badge>
               )}
             </CardTitle>
@@ -78,15 +77,7 @@ export const TypeTheAnswerQuestionCard = ({
         </CardHeader>
 
         <CardContent className="pb-2 pt-0">
-          {question.imageUrl && (
-            <div className="w-full mb-3 rounded-md overflow-hidden border dark:border-foreground/30">
-              <img
-                src={question.imageUrl}
-                alt="Question image"
-                className="w-full h-auto max-h-32 object-contain mx-auto"
-              />
-            </div>
-          )}
+          <QuestionMedia mediaUrl={question.mediaUrl} mediaType={question.mediaType} className="mb-3" />
 
           {/* Compact correct answer */}
           <div className="space-y-2 mb-3">
@@ -179,12 +170,12 @@ export const TypeTheAnswerQuestionCard = ({
         <div className="flex flex-wrap items-center justify-between gap-2">
           <CardTitle className="text-lg leading-tight flex-1">
             {question.text}
-            {question.imageUrl && (
+            {question.mediaUrl && (
               <Badge
                 variant="outline"
                 className="ml-2 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800/50">
                 <ImageIcon className="h-3 w-3 mr-1" />
-                <span className="text-blue-600 dark:text-blue-400">Image</span>
+                <span className="text-blue-600 dark:text-blue-400">{question.mediaType === "Audio" ? "Audio" : "Image"}</span>
               </Badge>
             )}
           </CardTitle>
@@ -231,15 +222,7 @@ export const TypeTheAnswerQuestionCard = ({
             </AccordionTrigger>
             <AccordionContent className="pt-1 pb-3">
               <div className="space-y-4">
-                {question.imageUrl && (
-                  <div className="w-full mb-3 rounded-md overflow-hidden border dark:border-foreground/30">
-                    <img
-                      src={question.imageUrl}
-                      alt="Question image"
-                      className="w-full h-auto max-h-48 object-contain mx-auto bg-muted/30 dark:bg-muted/10"
-                    />
-                  </div>
-                )}
+                <QuestionMedia mediaUrl={question.mediaUrl} mediaType={question.mediaType} className="mb-3" />
 
                 {/* Correct Answer Display */}
                 <div className="space-y-1">

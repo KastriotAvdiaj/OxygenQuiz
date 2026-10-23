@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
-using QuizAPI.Controllers.Image.Services;
+using QuizAPI.Services.Media;
 using QuizAPI.Controllers.Quizzes.Services.QuizServices;
 using QuizAPI.Data;
 using QuizAPI.DTOs.Quiz;
@@ -34,8 +34,12 @@ public class QuizNoOpSaveTests
 
     private static QuizService Service(ApplicationDbContext ctx) =>
         new(new QuizRepository(ctx), new Mock<IQuestionRepository>().Object,
-            NullLogger<QuizService>.Instance, new Mock<IImageService>().Object,
+            NullLogger<QuizService>.Instance,
+            new MediaAttachmentService(new MediaRepository(ctx), Unlimited, TimeProvider.System),
             new TestCurrentUserService { UserId = Owner });
+
+    private static readonly IMediaQuotaPolicy Unlimited =
+        Mock.Of<IMediaQuotaPolicy>(p => p.GetQuotaAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()) == Task.FromResult(new MediaQuota()));
 
     /// <summary>A Draft quiz (no publish gate) with two questions, at version 1.</summary>
     private static (int QuizId, int Q1, int Q2, int Cat, int Lang, int Diff) Seed(string db)
@@ -101,12 +105,26 @@ public class QuizNoOpSaveTests
         var db = Guid.NewGuid().ToString();
         var seed = Seed(db);
 
+        var assetId = Guid.NewGuid();
+        await using (var ctx = NewContext(db))
+        {
+            ctx.MediaAssets.Add(new QuizAPI.Models.Media.MediaAsset
+            {
+                Id = assetId, ContentHash = new string('a', 64), Kind = QuizAPI.Models.Media.MediaKind.Image,
+                StorageKey = "images/a.webp", Url = "https://media.test/images/a.webp", ContentType = "image/webp",
+                ByteSize = 1000, CreatedAt = DateTime.UtcNow,
+            });
+            await ctx.SaveChangesAsync();
+        }
+
         var withImage = Unchanged(seed);
-        withImage.ImageUrl = "https://img/body.png";
+        withImage.CoverAssetId = assetId;
         await using (var ctx = NewContext(db))
             Assert.Equal(2, (await Service(ctx).UpdateQuizAsync(Owner, withImage))!.Version);
 
+        // The client sent an asset id; the URL on the row is the asset's, copied by the server.
         await using var check = NewContext(db);
-        Assert.Equal("https://img/body.png", check.Quizzes.Single().ImageUrl);
+        Assert.Equal(assetId, check.Quizzes.Single().CoverAssetId);
+        Assert.Equal("https://media.test/images/a.webp", check.Quizzes.Single().ImageUrl);
     }
 }

@@ -1,7 +1,6 @@
 using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using QuizAPI.Common;
-using QuizAPI.Controllers.Image.Services;
 using QuizAPI.Controllers.Questions.Services.AnswerOptions;
 using QuizAPI.DTOs.Question;
 using QuizAPI.Exceptions;
@@ -9,6 +8,7 @@ using QuizAPI.Filtering;
 using QuizAPI.Mapping;
 using QuizAPI.Models;
 using QuizAPI.Repositories.Interfaces;
+using QuizAPI.Services.Media;
 
 namespace QuizAPI.Controllers.Questions.Services
 {
@@ -21,16 +21,16 @@ namespace QuizAPI.Controllers.Questions.Services
     {
         private readonly IQuestionRepository _questions;
         private readonly IAnswerOptionService _answerOptionService;
-        private readonly IImageService _imageService;
+        private readonly IMediaAttachmentService _media;
 
         public QuestionService(
             IQuestionRepository questions,
             IAnswerOptionService answerOptionService,
-            IImageService imageService)
+            IMediaAttachmentService media)
         {
             _questions = questions;
             _answerOptionService = answerOptionService;
-            _imageService = imageService;
+            _media = media;
         }
 
         // ── In-place editing from the quiz builder (QuestionEditRule, ADR 0031) ──────
@@ -260,11 +260,10 @@ namespace QuizAPI.Controllers.Questions.Services
             question.Visibility = Enum.TryParse(questionCM.Visibility, true, out QuestionVisibility vis)
                 ? vis : QuestionVisibility.Private;
 
+            await _media.ApplyToQuestionAsync(question, questionCM.MediaAssetId, userId);
+
             await _questions.AddMultipleChoiceAsync(question);
             await _questions.SaveChangesAsync();
-
-            if (!string.IsNullOrEmpty(questionCM.ImageUrl))
-                await _imageService.AssociateImageWithEntityAsync(questionCM.ImageUrl, "Question", question.Id);
 
             var created = await _questions.GetMultipleChoiceByIdAsync(question.Id);
             return created?.ToDto();
@@ -282,11 +281,10 @@ namespace QuizAPI.Controllers.Questions.Services
             question.Visibility = Enum.TryParse(questionCM.Visibility, true, out QuestionVisibility vis)
                 ? vis : QuestionVisibility.Global;
 
+            await _media.ApplyToQuestionAsync(question, questionCM.MediaAssetId, userId);
+
             await _questions.AddTrueFalseAsync(question);
             await _questions.SaveChangesAsync();
-
-            if (!string.IsNullOrEmpty(questionCM.ImageUrl))
-                await _imageService.AssociateImageWithEntityAsync(questionCM.ImageUrl, "Question", question.Id);
 
             var created = await _questions.GetTrueFalseByIdAsync(question.Id);
             return created?.ToDto();
@@ -307,11 +305,10 @@ namespace QuizAPI.Controllers.Questions.Services
             question.Visibility = Enum.TryParse(questionCM.Visibility, true, out QuestionVisibility vis)
                 ? vis : QuestionVisibility.Global;
 
+            await _media.ApplyToQuestionAsync(question, questionCM.MediaAssetId, userId);
+
             await _questions.AddTypeTheAnswerAsync(question);
             await _questions.SaveChangesAsync();
-
-            if (!string.IsNullOrEmpty(questionCM.ImageUrl))
-                await _imageService.AssociateImageWithEntityAsync(questionCM.ImageUrl, "Question", question.Id);
 
             var created = await _questions.GetTypeTheAnswerByIdAsync(question.Id);
             return created?.ToDto();
@@ -338,8 +335,7 @@ namespace QuizAPI.Controllers.Questions.Services
 
             await _answerOptionService.SyncAnswerOptionsAsync(existingQuestion, questionUM.AnswerOptions);
 
-            if (!string.IsNullOrEmpty(questionUM.ImageUrl))
-                await _imageService.AssociateImageWithEntityAsync(questionUM.ImageUrl, "Question", existingQuestion.Id);
+            await _media.ApplyToQuestionAsync(existingQuestion, questionUM.MediaAssetId, userId);
 
             await _questions.SaveChangesAsync();
             await _questions.TouchQuizzesContainingAsync(existingQuestion.Id);
@@ -362,8 +358,7 @@ namespace QuizAPI.Controllers.Questions.Services
             if (Enum.TryParse(questionUM.Visibility, true, out QuestionVisibility visibility))
                 existingQuestion.Visibility = visibility;
 
-            if (!string.IsNullOrEmpty(questionUM.ImageUrl))
-                await _imageService.AssociateImageWithEntityAsync(questionUM.ImageUrl, "Question", existingQuestion.Id);
+            await _media.ApplyToQuestionAsync(existingQuestion, questionUM.MediaAssetId, userId);
 
             await _questions.SaveChangesAsync();
             await _questions.TouchQuizzesContainingAsync(existingQuestion.Id);
@@ -391,8 +386,7 @@ namespace QuizAPI.Controllers.Questions.Services
             if (Enum.TryParse(questionUM.Visibility, true, out QuestionVisibility visibility))
                 existingQuestion.Visibility = visibility;
 
-            if (!string.IsNullOrEmpty(questionUM.ImageUrl))
-                await _imageService.AssociateImageWithEntityAsync(questionUM.ImageUrl, "Question", existingQuestion.Id);
+            await _media.ApplyToQuestionAsync(existingQuestion, questionUM.MediaAssetId, userId);
 
             await _questions.SaveChangesAsync();
             await _questions.TouchQuizzesContainingAsync(existingQuestion.Id);
@@ -417,9 +411,8 @@ namespace QuizAPI.Controllers.Questions.Services
 
             try
             {
-                if (!string.IsNullOrEmpty(question.ImageUrl))
-                    await _imageService.DeleteAssociatedImageAsync(question.ImageUrl, "Question", question.Id);
-
+                // Its media isn't deleted here: another question (a builder copy, a reuse) may point at
+                // the same file. MediaSweeper deletes it once nothing does.
                 _questions.Remove(question);
                 await _questions.SaveChangesAsync();
 

@@ -1,7 +1,10 @@
 # Proposal: one media pipeline for quizzes and questions, ready for a public launch
 
-**Status: open — being decided in rounds (started 2026-10-23; rounds 2–4 settled by 2026-10-24).** §3
-records what is settled, §4 what is still open. Nothing in §3 is implemented yet.
+**Status: accepted, being built (settled 2026-10-24).** Phase 1 — the pipeline, R2, uploads, quotas,
+the sweep (§3.1–3.5, 3.8–3.12, 3.15, 3.23) — is built and described in
+[`../media/media-pipeline.md`](../media/media-pipeline.md). Phases 2–4 (moderation and the picked
+catalogue, the Pexels/Wikimedia picker, AI-added images) are next; this file is deleted once they are
+folded in too.
 
 An author is building a geography quiz. Question 7 is "Which country's flag is this?" — they
 want a flag image, and they don't have one on disk. Question 12 is "Name this anthem" and needs
@@ -314,8 +317,21 @@ An *unsaved upload* is invisible to the user: choosing a file in the editor uplo
 editor is closed, sits in storage unreferenced until the sweep. A normal author never comes near
 50; the 51st upload asks them to save or remove images first.
 
+### 3.24 Testing, launch setup and build order (round 5, 2026-10-24)
+
+- **Storage by environment:** R2 in production and in development (the free tier covers one
+  developer: `oxygenquiz-media-dev`); local disk for the unit tests and the E2E stack, so neither
+  needs credentials or the network.
+- **Test plan:** as in round 5 — xUnit for every rule (bytes, quota, dedup, sweep, holds at every
+  entry point, AI licence checks), Vitest for the picker, credit and cover, three E2E journeys.
+- **Launch setup:** two buckets, `media.oxygenquiz.com` on prod, content-hash keys cached forever,
+  CSAM scanning on, a 15 MB request cap on the upload endpoint.
+- **Reporting outcomes:** a rejected report restores the media; every moderation action (uphold,
+  reject, remove media, hold/release, pick/unpick) is on the admin report page.
+- **Sweep timing:** never-saved uploads deleted after 24 hours (hourly job); once-saved files 7 days
+  after the last reference went.
+- **Build order:** 1 pipeline → 2 safety (both block the public launch) → 3 Pexels/Wikimedia → 4 AI.
+
 ## 4. Still open
 
-- **Test plan** — which suite proves which rule.
-- **Launch setup** — buckets, media domain, request size limits, storage in dev and E2E.
-- **Build order** — which parts block the public launch.
+Nothing. Every branch of the design tree has an answer; what remains is building phases 2–4.

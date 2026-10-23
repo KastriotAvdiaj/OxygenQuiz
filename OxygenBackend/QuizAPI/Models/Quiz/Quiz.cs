@@ -55,7 +55,22 @@ namespace QuizAPI.Models.Quiz
 
         public int LanguageId { get; set; }
 
+        /// <summary>
+        /// The cover image's URL, copied from <see cref="CoverAsset"/> by
+        /// <c>MediaAttachmentService</c> — the only writer. Kept on the row (and named ImageUrl on
+        /// the wire) so the catalogue, listings and link previews read it without a join.
+        /// </summary>
         public string? ImageUrl { get; set; }
+
+        /// <summary>The cover image (docs/media/media-pipeline.md). Images only.</summary>
+        public Guid? CoverAssetId { get; set; }
+
+        [JsonIgnore]
+        public QuizAPI.Models.Media.MediaAsset? CoverAsset { get; set; }
+
+        /// <summary>When the cover was counted against the saver's daily media quota; null when it
+        /// cost nothing (the asset was already in use in their content).</summary>
+        public DateTime? CoverCountedAt { get; set; }
 
 
         [JsonIgnore]

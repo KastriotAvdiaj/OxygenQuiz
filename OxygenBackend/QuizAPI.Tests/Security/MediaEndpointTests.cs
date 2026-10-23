@@ -1,0 +1,69 @@
+using System.Reflection;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
+using QuizAPI.Controllers.Media;
+using QuizAPI.DTOs.Question;
+using QuizAPI.DTOs.Quiz;
+using QuizAPI.Middleware;
+using Xunit;
+
+namespace QuizAPI.Tests.Security;
+
+/// <summary>
+/// The media upload endpoint's guards, and the rule that no client can set a media URL
+/// (docs/media/media-pipeline.md).
+/// </summary>
+public class MediaEndpointTests
+{
+    [Fact]
+    public void Uploading_needs_a_signed_in_caller_and_no_action_opts_out()
+    {
+        Assert.NotNull(typeof(MediaController).GetCustomAttribute<AuthorizeAttribute>());
+        Assert.DoesNotContain(
+            typeof(MediaController).GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly),
+            m => m.GetCustomAttribute<AllowAnonymousAttribute>() is not null);
+    }
+
+    [Fact]
+    public void The_upload_is_rate_limited_and_size_capped()
+    {
+        var upload = typeof(MediaController).GetMethod(nameof(MediaController.Upload))!;
+
+        Assert.Equal(RateLimitingExtensions.MediaUploadPolicy, upload.GetCustomAttribute<EnableRateLimitingAttribute>()?.PolicyName);
+        // RequestSizeLimitAttribute keeps its byte count private; its presence is what matters —
+        // without it Kestrel's 30 MB default applies.
+        Assert.NotNull(upload.GetCustomAttribute<RequestSizeLimitAttribute>());
+        Assert.Equal(MediaController.MaxRequestBytes, upload.GetCustomAttribute<RequestFormLimitsAttribute>()?.MultipartBodyLengthLimit);
+    }
+
+    /// <summary>
+    /// Before the media pipeline, a question or quiz save took an image URL straight from the
+    /// client and stored it — any string, shown to every player: a tracking pixel, another site's
+    /// image, a <c>javascript:</c> URL. Media is now attached by asset id and the server writes the
+    /// URL. A URL-shaped property on any write model would reopen that, so none may exist.
+    /// </summary>
+    [Theory]
+    [InlineData(typeof(MultipleChoiceQuestionCM))]
+    [InlineData(typeof(TrueFalseQuestionCM))]
+    [InlineData(typeof(TypeTheAnswerQuestionCM))]
+    [InlineData(typeof(MultipleChoiceQuestionUM))]
+    [InlineData(typeof(TrueFalseQuestionUM))]
+    [InlineData(typeof(TypeTheAnswerQuestionUM))]
+    [InlineData(typeof(QuizCM))]
+    [InlineData(typeof(QuizUM))]
+    [InlineData(typeof(AiQuizImportCM))]
+    [InlineData(typeof(AiImportQuestionCM))]
+    [InlineData(typeof(AssociationQuizCM))]
+    [InlineData(typeof(AssociationQuizUM))]
+    public void No_write_model_accepts_a_media_url(Type model)
+    {
+        var urlish = model.GetProperties()
+            .Where(p => p.Name.Contains("Url", StringComparison.OrdinalIgnoreCase)
+                        || p.Name.Equals("MediaType", StringComparison.OrdinalIgnoreCase))
+            .Select(p => p.Name)
+            .ToList();
+
+        Assert.Empty(urlish);
+    }
+}

@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
-using QuizAPI.Controllers.Image.Services;
+using QuizAPI.Services.Media;
 using QuizAPI.Controllers.Quizzes.Services.QuizServices;
 using QuizAPI.Data;
 using QuizAPI.DTOs.Quiz;
@@ -67,12 +67,12 @@ public class AssociationBoardServiceTests
     {
         var quizzes = new QuizRepository(ctx);
         var quizService = new QuizService(quizzes, new Mock<IQuestionRepository>().Object,
-            NullLogger<QuizService>.Instance, new Mock<IImageService>().Object,
+            NullLogger<QuizService>.Instance, new Mock<IMediaAttachmentService>().Object,
             new TestCurrentUserService { UserId = OwnerId, IsAdmin = true });
         var rules = new Mock<IAssociationRulesProvider>();
         rules.Setup(r => r.GetRulesFor(It.IsAny<int>())).Returns(AssociationRules.Default);
         return new AssociationBoardService(quizzes, new AssociationBoardRepository(ctx), quizService,
-            rules.Object, new Mock<IImageService>().Object);
+            rules.Object, new Mock<IMediaAttachmentService>().Object);
     }
 
     internal static AssociationBoardInput Board(string suffix = "") => new()

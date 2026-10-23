@@ -85,19 +85,32 @@ describe("toQuestionReview", () => {
     }
   });
 
-  it("treats a blank image or explanation as none", () => {
+  it("shows a builder question's chosen media and a saved question's media alike", () => {
+    const drafted: NewTrueFalseQuestion = {
+      ...newBase,
+      id: -5,
+      type: QuestionType.TrueFalse,
+      text: "Name this anthem",
+      correctAnswer: true,
+      media: { assetId: "8f7e3c1a-1111-4222-8333-444455556666", url: "https://media.test/a.mp3", kind: "Audio" },
+    };
+    expect(toQuestionReview(drafted)).toMatchObject({ mediaUrl: "https://media.test/a.mp3", mediaType: "Audio" });
+  });
+
+  it("treats no media and a blank explanation as none", () => {
     const q: NewTrueFalseQuestion = {
       ...newBase,
       id: -4,
       type: QuestionType.TrueFalse,
       text: "x",
       correctAnswer: true,
-      imageUrl: "",
+      media: null,
       explanation: "   ",
     };
 
     const review = toQuestionReview(q);
-    expect(review.imageUrl).toBeNull();
+    expect(review.mediaUrl).toBeNull();
+    expect(review.mediaType).toBeNull();
     expect(review.explanation).toBeNull();
   });
 });

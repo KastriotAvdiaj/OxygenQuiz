@@ -58,38 +58,6 @@ export const useFormValidation = (
 };
 
 /**
- * Common props for image handling
- */
-export interface ImageHandlerProps {
-  imageUrl?: string;
-  onImageUpload: (url: string) => void;
-  onImageRemove: () => void;
-}
-
-/**
- * Hook for common image handling logic
- */
-export const useImageHandler = () => {
-  const handleImageUpload = (
-    url: string,
-    setImageUrl: (url: string | undefined) => void
-  ) => {
-    setImageUrl(url);
-  };
-
-  const handleImageRemove = (
-    setImageUrl: (url: string | undefined) => void
-  ) => {
-    setImageUrl(undefined);
-  };
-
-  return {
-    handleImageUpload,
-    handleImageRemove,
-  };
-};
-
-/**
  * Component for displaying general validation errors
  */
 interface ValidationErrorsDisplayProps {

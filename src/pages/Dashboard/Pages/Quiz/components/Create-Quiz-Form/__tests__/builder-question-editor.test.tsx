@@ -30,7 +30,7 @@ const question = {
   difficulty: { id: 1, level: "Hard", weight: 3, createdAt: "" },
   category: { id: 1, name: "History", emoji: "" },
   language: { id: 1, language: "English", createdAt: "" },
-  imageUrl: "",
+  media: null,
   createdAt: "",
   user: { id: "me", username: "me" },
   type: QuestionType.TrueFalse,

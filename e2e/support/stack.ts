@@ -89,6 +89,9 @@ export function apiServerEnv(): Record<string, string> {
     Auth__BreachedPasswordCheck__Enabled: "false",
     Authentication__Google__Enabled: "false",
     Authentication__Microsoft__Enabled: "false",
+    // Media on local disk, under the API's own uploads folder: development may point Media at a
+    // real R2 bucket through user-secrets, and a test run must never write there.
+    Media__Storage: "Disk",
   };
 }
 

@@ -119,7 +119,7 @@ export const isManualQuizDraftWorthKeeping = (
   draft.questions.length > 0 ||
   hasText(draft.form.title) ||
   hasText(draft.form.description) ||
-  hasText(draft.form.imageUrl) ||
+  draft.form.cover != null ||
   draft.form.categoryId != null ||
   draft.form.languageId != null ||
   draft.form.difficultyId != null;

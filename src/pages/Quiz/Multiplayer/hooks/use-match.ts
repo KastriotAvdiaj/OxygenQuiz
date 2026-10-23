@@ -1,3 +1,4 @@
+import type { QuestionMediaType } from "@/types/question-types";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useMultiplayer } from "@/hooks/useMultiplayer";
@@ -18,7 +19,9 @@ export interface RoundQuestionView {
   questionId: number;
   type: string; // "MultipleChoice" | "TrueFalse" | "TypeTheAnswer"
   text: string;
-  imageUrl?: string | null;
+  /** The question's image or clip — RoundQuestionView.MediaUrl/MediaType. */
+  mediaUrl?: string | null;
+  mediaType?: QuestionMediaType;
   timeLimitSeconds: number;
   options: RoundOption[];
   allowMultipleSelections?: boolean;

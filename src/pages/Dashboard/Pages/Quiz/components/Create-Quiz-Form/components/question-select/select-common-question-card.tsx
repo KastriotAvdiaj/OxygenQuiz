@@ -473,7 +473,7 @@ export const CommonSelectQuestionCard: React.FC<CommonSelectQuestionCard> = ({
                 )}
               >
                 {question.text}
-                {question.imageUrl && (
+                {question.mediaUrl && (
                   <ImageBadge
                     isSelected={
                       isSelected ||

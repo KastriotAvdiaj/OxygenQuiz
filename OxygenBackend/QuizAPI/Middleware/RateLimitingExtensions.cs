@@ -54,6 +54,16 @@ namespace QuizAPI.Middleware
         public const string AiPolicy = "ai";
 
         /// <summary>
+        /// Media uploads: 30 an hour per account (docs/media/media-pipeline.md, "Upload limits").
+        /// The daily media quota counts what a save attaches, not what is uploaded, so on its own
+        /// it can't stop a script uploading thousands of files that are never saved — this can.
+        /// Fixed rather than sliding: an hour is long enough that the boundary doubling a sliding
+        /// window exists to prevent doesn't matter, and a fixed window's Retry-After is honest.
+        /// </summary>
+        public const string MediaUploadPolicy = "media-upload";
+        internal const int MediaUploadsPerHour = 30;
+
+        /// <summary>
         /// Config key that turns every limit here off (<c>false</c>). Missing means on, so a
         /// production box can never lose its limits to a forgotten setting;
         /// <c>appsettings.Development.json</c> sets it to <c>false</c>, because local work (hot
@@ -76,7 +86,7 @@ namespace QuizAPI.Middleware
                     // for them by name, and an unknown policy name throws) but never limits.
                     options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(
                         _ => RateLimitPartition.GetNoLimiter("disabled"));
-                    foreach (var policy in new[] { AuthPolicy, GuestPolicy, AiPolicy })
+                    foreach (var policy in new[] { AuthPolicy, GuestPolicy, AiPolicy, MediaUploadPolicy })
                         options.AddPolicy(policy, _ => RateLimitPartition.GetNoLimiter("disabled"));
                     return;
                 }
@@ -148,6 +158,16 @@ namespace QuizAPI.Middleware
                             PermitLimit = 6,
                             Window = TimeSpan.FromMinutes(1),
                             SegmentsPerWindow = 6,
+                            QueueLimit = 0,
+                        }));
+
+                options.AddPolicy(MediaUploadPolicy, httpContext =>
+                    RateLimitPartition.GetFixedWindowLimiter(
+                        partitionKey: UserOrIp(httpContext),
+                        factory: _ => new FixedWindowRateLimiterOptions
+                        {
+                            PermitLimit = MediaUploadsPerHour,
+                            Window = TimeSpan.FromHours(1),
                             QueueLimit = 0,
                         }));
 

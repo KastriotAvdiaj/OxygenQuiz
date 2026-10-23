@@ -3,7 +3,7 @@ import { api } from "@/lib/Api-client";
 import { MutationConfig } from "@/lib/React-query";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { Quiz } from "@/types/quiz-types";
-import { createQuizInputSchema } from "./create-quiz";
+import { createQuizInputSchema, toQuizRequest } from "./create-quiz";
 import { quizQuestionKeys } from "@/lib/query-keys";
 
 // Same shape as create, plus the id and the optimistic-concurrency version the
@@ -21,7 +21,7 @@ export const updateQuiz = ({
 }: {
   data: UpdateQuizInput;
 }): Promise<Quiz> => {
-  return api.put("/quiz", data);
+  return api.put("/quiz", toQuizRequest(data));
 };
 
 /** True when the failed save was rejected because the quiz changed since it was loaded. */

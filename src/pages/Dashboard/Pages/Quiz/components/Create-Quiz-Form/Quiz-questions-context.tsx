@@ -268,7 +268,7 @@ export const QuizQuestionProvider: React.FC<QuizProviderProps> = ({
           difficultyId: question.difficultyId,
           categoryId: question.categoryId,
           languageId: question.languageId,
-          imageUrl: question.imageUrl,
+          mediaAssetId: question.media?.assetId ?? null,
           explanation: question.explanation,
           visibility: question.visibility,
           ...(question.type === QuestionType.MultipleChoice && {

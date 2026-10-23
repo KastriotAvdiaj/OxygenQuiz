@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { QuestionMedia } from "@/common/QuestionMedia";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -92,15 +93,7 @@ export const TestResults = ({
         <div className="space-y-3">
           <div className="p-4 border rounded-lg dark:border-foreground/30 bg-muted/30">
             <p className="font-medium mb-2">{question.text}</p>
-            {question.imageUrl && (
-              <div className="w-full rounded-md overflow-hidden border dark:border-foreground/30 mt-3">
-                <img
-                  src={question.imageUrl}
-                  alt="Question image"
-                  className="w-full h-auto max-h-48 object-contain mx-auto"
-                />
-              </div>
-            )}
+            <QuestionMedia mediaUrl={question.mediaUrl} mediaType={question.mediaType} className="mb-3" />
           </div>
 
           <div className="p-4 border rounded-lg dark:border-foreground/30 bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-800/50">

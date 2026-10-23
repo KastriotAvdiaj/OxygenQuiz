@@ -13,7 +13,6 @@ using Microsoft.IdentityModel.Tokens;
 // driver package and source files are kept for the future chat system.
 // To re-enable, see docs/data/mongodb.md.
 // using MongoDB.Driver;
-using QuizAPI.Controllers.Image.Services;
 using QuizAPI.Controllers.Questions.Services;
 using QuizAPI.Controllers.Questions.Services.AnswerOptions;
 using QuizAPI.Controllers.Questions.TestQuestions.Services;
@@ -269,9 +268,20 @@ builder.Services.AddScoped<DashboardService>();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddScoped<QuizAPI.Services.SettingsService.ISettingsService, QuizAPI.Services.SettingsService.SettingsService>();
 
-// Image Services (ImageCleanUpService without interface as requested)
-builder.Services.AddScoped<IImageService, ImageService>();
-builder.Services.AddScoped<ImageCleanUpService>();
+// Question and quiz media (docs/media/media-pipeline.md). Storage is chosen once at startup:
+// Disk unless Media:Storage is R2. An incomplete R2 section fails here, at boot, not on the first
+// upload.
+builder.Services.Configure<QuizAPI.Services.Media.MediaOptions>(
+    builder.Configuration.GetSection(QuizAPI.Services.Media.MediaOptions.Section));
+if (string.Equals(builder.Configuration[$"{QuizAPI.Services.Media.MediaOptions.Section}:Storage"], "R2", StringComparison.OrdinalIgnoreCase))
+    builder.Services.AddSingleton<QuizAPI.Services.Media.IMediaStorage, QuizAPI.Services.Media.R2MediaStorage>();
+else
+    builder.Services.AddSingleton<QuizAPI.Services.Media.IMediaStorage, QuizAPI.Services.Media.DiskMediaStorage>();
+builder.Services.AddScoped<QuizAPI.Repositories.Interfaces.IMediaRepository, QuizAPI.Repositories.MediaRepository>();
+builder.Services.AddScoped<QuizAPI.Services.Media.IMediaQuotaPolicy, QuizAPI.Services.Media.RoleMediaQuotaPolicy>();
+builder.Services.AddScoped<QuizAPI.Services.Media.IMediaService, QuizAPI.Services.Media.MediaService>();
+builder.Services.AddScoped<QuizAPI.Services.Media.IMediaAttachmentService, QuizAPI.Services.Media.MediaAttachmentService>();
+builder.Services.AddScoped<QuizAPI.Services.Media.MediaSweeper>();
 
 // Generic file upload service
 builder.Services.AddScoped<QuizAPI.Controllers.Files.Services.IFileService, QuizAPI.Controllers.Files.Services.FileService>();
@@ -623,10 +633,17 @@ static string EveryNMinutes(int minutes) =>
 using (var scope = app.Services.CreateScope())
 {
     var recurringJobs = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
-    recurringJobs.AddOrUpdate<ImageCleanUpService>(
-        "image-cleanup-daily",
-        service => service.RunCleanupAsync(),
-        Cron.Daily(2) // 2 AM every day
+    // The old image pipeline's nightly cleanup. Its job class is gone; recurring jobs live in the
+    // database, so without this a production box would keep trying to run it.
+    recurringJobs.RemoveIfExists("image-cleanup-daily");
+
+    // Deletes media nothing points at: never-saved uploads after 24 hours, once-used files 7 days
+    // after the last reference went (docs/media/media-pipeline.md). Hourly, so the 24 hours is
+    // really 24–25.
+    recurringJobs.AddOrUpdate<QuizAPI.Services.Media.MediaSweeper>(
+        "media-sweep",
+        service => service.RunJobAsync(),
+        Cron.Hourly()
     );
 
     // Frees quota slots held by generations that never finished (crash, dropped connection).

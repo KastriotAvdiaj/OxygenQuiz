@@ -28,9 +28,10 @@ export const TrueFalseCard: React.FC<ExistingQuestionCardProps> = (props) => {
         className="my-8 !text-[1.5rem] py-8"
       />
 
-      {question.imageUrl && (
+      {question.mediaUrl && (
         <QuestionImagePreview
-          imageUrl={question.imageUrl}
+          mediaUrl={question.mediaUrl}
+          mediaType={question.mediaType}
           previewBorderColor={styles.previewBorderColor}
         />
       )}

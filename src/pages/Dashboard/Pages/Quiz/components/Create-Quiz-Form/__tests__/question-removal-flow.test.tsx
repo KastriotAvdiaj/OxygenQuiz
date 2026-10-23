@@ -33,7 +33,7 @@ const savedQuestion = (id: number, text: string) =>
     difficulty: { id: 1, level: "Easy", weight: 1, createdAt: "" },
     category: { id: 1, name: "History", emoji: "" },
     language: { id: 1, language: "English", createdAt: "" },
-    imageUrl: "",
+    media: null,
     createdAt: "",
     user: { id: "u", username: "u" },
     type: QuestionType.TrueFalse,

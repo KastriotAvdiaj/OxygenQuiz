@@ -58,7 +58,7 @@ namespace QuizAPI.Data
 
         public DbSet<QuestionStatistics> QuestionStatistics { get; set; }
 
-        public DbSet<ImageAsset> ImageAssets { get; set; }
+        public DbSet<QuizAPI.Models.Media.MediaAsset> MediaAssets { get; set; }
 
         public DbSet<RefreshToken> RefreshTokens { get; set; }
 
@@ -310,6 +310,31 @@ namespace QuizAPI.Data
                 .WithMany()
                 .HasForeignKey(el => el.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            // Question and quiz media (docs/media/media-pipeline.md). The hash is the identity of a
+            // stored file — unique, so two uploads of the same bytes are one row. The FKs restrict:
+            // only MediaSweeper deletes assets, and only ones nothing points at, so a delete that
+            // would orphan a question is a bug that should fail loudly, not null the reference.
+            modelBuilder.Entity<QuizAPI.Models.Media.MediaAsset>(e =>
+            {
+                e.HasIndex(a => a.ContentHash).IsUnique();
+                e.HasIndex(a => new { a.UploadedById, a.FirstAttachedAt });
+                e.HasIndex(a => a.UnreferencedSince);
+                e.Property(a => a.Kind).HasConversion<int>();
+                e.Property(a => a.Source).HasConversion<int>();
+            });
+            modelBuilder.Entity<QuestionBase>()
+                .HasOne(q => q.MediaAsset).WithMany()
+                .HasForeignKey(q => q.MediaAssetId)
+                .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<QuestionBase>()
+                .HasIndex(q => new { q.UserId, q.MediaCountedAt });
+            modelBuilder.Entity<Quiz>()
+                .HasOne(q => q.CoverAsset).WithMany()
+                .HasForeignKey(q => q.CoverAssetId)
+                .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<Quiz>()
+                .HasIndex(q => new { q.UserId, q.CoverCountedAt });
 
             // Generic file records: index the polymorphic owner for fast lookups.
             modelBuilder.Entity<FileRecord>()

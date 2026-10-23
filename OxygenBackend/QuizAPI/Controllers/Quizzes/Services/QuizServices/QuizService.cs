@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using QuizAPI.Common;
-using QuizAPI.Controllers.Image.Services;
 using QuizAPI.DTOs.Quiz;
 using QuizAPI.Exceptions;
 using QuizAPI.Filtering;
@@ -23,14 +22,14 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
         private readonly IQuizRepository _quizzes;
         private readonly IQuestionRepository _questions;
         private readonly ILogger<QuizService> _logger;
-        private readonly IImageService _imageService;
+        private readonly QuizAPI.Services.Media.IMediaAttachmentService _media;
         private readonly QuizAPI.Services.CurrentUserService.ICurrentUserService _current;
 
         public QuizService(
             IQuizRepository quizzes,
             IQuestionRepository questions,
             ILogger<QuizService> logger,
-            IImageService imageService,
+            QuizAPI.Services.Media.IMediaAttachmentService media,
             QuizAPI.Services.CurrentUserService.ICurrentUserService currentUser)
         {
             // Who is asking decides which quiz *formats* exist for them (QuizFormatAccess):
@@ -39,7 +38,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
             _quizzes = quizzes ?? throw new ArgumentNullException(nameof(quizzes));
             _questions = questions ?? throw new ArgumentNullException(nameof(questions));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _imageService = imageService ?? throw new ArgumentNullException(nameof(imageService));
+            _media = media ?? throw new ArgumentNullException(nameof(media));
         }
 
         // The name and the match live in QuizAPI.Common.LookupDefaults — one definition for the
@@ -287,6 +286,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                 quiz.CreatedAt = DateTime.UtcNow;
                 quiz.Version = 1;
                 quiz.TimeLimitInSeconds = quizCM.Questions.Sum(q => q.TimeLimitInSeconds);
+                await _media.ApplyToQuizCoverAsync(quiz, quizCM.CoverAssetId, userId);
 
                 await _quizzes.AddAsync(quiz);
 
@@ -302,9 +302,6 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                 await _quizzes.AddQuizQuestionsAsync(quizQuestions);
                 await _quizzes.SaveChangesAsync();
                 await transaction.CommitAsync();
-
-                if (!string.IsNullOrEmpty(quizCM.ImageUrl))
-                    await _imageService.AssociateImageWithEntityAsync(quizCM.ImageUrl, "Quizzes", quiz.Id);
 
                 return quiz.ToDto();
             }
@@ -381,7 +378,6 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                     DifficultyId = importCM.DifficultyId,
                     ShowFeedbackImmediately = importCM.ShowFeedbackImmediately,
                     ShuffleQuestions = importCM.ShuffleQuestions,
-                    ImageUrl = importCM.ImageUrl,
                     Status = QuizMappers.ParseStatus(importCM.Status),
                     UserId = userId,
                     CreatedAt = DateTime.UtcNow,
@@ -390,6 +386,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                     TimeLimitInSeconds = importCM.Questions.Sum(q => q.TimeLimitInSeconds),
                 };
 
+                await _media.ApplyToQuizCoverAsync(quiz, importCM.CoverAssetId, userId);
                 await _quizzes.AddAsync(quiz);
 
                 var order = 1;
@@ -417,6 +414,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                         // add it via its typed set so EF stamps the correct TPH type, then link it to
                         // the quiz through the navigation property — EF assigns the FK on save.
                         var question = BuildAiQuestionEntity(q, importCM, userId);
+                        await _media.ApplyToQuestionAsync(question, q.MediaAssetId, userId);
                         await AddAiQuestionAsync(question);
                         quizQuestion.Question = question;
                     }
@@ -427,9 +425,6 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                 await _quizzes.AddQuizQuestionsAsync(quizQuestions);
                 await _quizzes.SaveChangesAsync();
                 await transaction.CommitAsync();
-
-                if (!string.IsNullOrEmpty(importCM.ImageUrl))
-                    await _imageService.AssociateImageWithEntityAsync(importCM.ImageUrl, "Quizzes", quiz.Id);
 
                 return quiz.ToDto();
             }
@@ -478,7 +473,6 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
             };
 
             question.Text = q.Text!;
-            question.ImageUrl = q.ImageUrl;
             question.Explanation = QuestionExplanation.NormalizeAndTruncate(q.Explanation);
             question.DifficultyId = q.DifficultyId;
             question.CategoryId = quiz.CategoryId;   // inherited
@@ -575,7 +569,7 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                     || quiz.ShowFeedbackImmediately != quizUM.ShowFeedbackImmediately
                     || quiz.ShuffleQuestions != quizUM.ShuffleQuestions
                     || quiz.Status != newStatus
-                    || (quiz.ImageUrl ?? "") != (quizUM.ImageUrl ?? "");
+                    || quiz.CoverAssetId != quizUM.CoverAssetId;
                 if (!metadataChanged && !diff.HasQuestionChanges)
                 {
                     await transaction.CommitAsync();
@@ -590,10 +584,9 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
                 quiz.ShowFeedbackImmediately = quizUM.ShowFeedbackImmediately;
                 quiz.ShuffleQuestions = quizUM.ShuffleQuestions;
                 quiz.Status = newStatus;
-                // The edit form sends the image like every other field; until 2026-10-22 this
+                // The edit form sends the cover like every other field; until 2026-10-22 this
                 // update ignored it, so changing a quiz's image while editing was silently lost.
-                var imageChanged = (quiz.ImageUrl ?? "") != (quizUM.ImageUrl ?? "");
-                quiz.ImageUrl = string.IsNullOrEmpty(quizUM.ImageUrl) ? null : quizUM.ImageUrl;
+                await _media.ApplyToQuizCoverAsync(quiz, quizUM.CoverAssetId, userId);
 
                 foreach (var row in diff.ToRetire)
                     row.RemovedInVersion = newVersion;
@@ -606,10 +599,6 @@ namespace QuizAPI.Controllers.Quizzes.Services.QuizServices
 
                 await _quizzes.SaveChangesAsync();
                 await transaction.CommitAsync();
-
-                // Same as create: tie the uploaded file to the quiz once the row is saved.
-                if (imageChanged && !string.IsNullOrEmpty(quizUM.ImageUrl))
-                    await _imageService.AssociateImageWithEntityAsync(quizUM.ImageUrl, "Quizzes", quiz.Id);
 
                 return await GetQuizByIdAsync(quiz.Id, userId);
             }

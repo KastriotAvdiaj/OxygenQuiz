@@ -1,5 +1,5 @@
 import { Trash2 } from "lucide-react";
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Form, FormDrawer, Input, Label } from "@/components/ui/form";
 import { useNotifications } from "@/common/Notifications";
@@ -15,7 +15,8 @@ import {
   createMultipleChoiceQuestionInputSchema,
   useCreateMultipleChoiceQuestion,
 } from "../../../api/Multiple_Choice_Question/create-multiple-choice-question";
-import ImageUpload from "@/utils/Image-Upload";
+import { MediaPicker } from "@/features/media/components/media-picker";
+import { type MediaSelection } from "@/features/media/api/upload-media";
 import { ExplanationField } from "@/common/QuestionExplanation";
 import {
   QuestionCategory,
@@ -34,7 +35,7 @@ export const CreateMultipleChoiceForm: React.FC<
   CreateMultipleChoiceFormProps
 > = ({ categories, difficulties, languages, onSuccess }) => {
   const { addNotification } = useNotifications();
-  const [imageUrl, setImageUrl] = useState("");
+  const [media, setMedia] = useState<MediaSelection | null>(null);
 
   const createQuestionMutation = useCreateMultipleChoiceQuestion({
     mutationConfig: {
@@ -102,12 +103,6 @@ export const CreateMultipleChoiceForm: React.FC<
           const addOptionDisabled = fields.length >= 4;
           const allowMultipleSelections = watch("allowMultipleSelections");
 
-          // Add this effect to update the form state when imageUrl changes
-          useEffect(() => {
-            if (imageUrl) {
-              setValue("imageUrl", imageUrl);
-            }
-          }, [imageUrl, setValue]);
 
           React.useEffect(() => {
             if (fields.length === 0) {
@@ -155,13 +150,9 @@ export const CreateMultipleChoiceForm: React.FC<
             }
           };
 
-          const handleImageUpload = (url: string) => {
-            setImageUrl(url);
-            setValue("imageUrl", url);
-          };
-          const handleImageRemove = () => {
-            setImageUrl("");
-            setValue("imageUrl", "");
+          const handleMediaChange = (next: MediaSelection | null) => {
+            setMedia(next);
+            setValue("mediaAssetId", next?.assetId ?? null);
           };
 
           return (
@@ -183,12 +174,7 @@ export const CreateMultipleChoiceForm: React.FC<
               )}
 
               {/* Modified image upload implementation */}
-              <ImageUpload
-                // variant="admin"
-                onUpload={handleImageUpload}
-                onRemove={handleImageRemove}
-              />
-              <input type="hidden" {...register("imageUrl")} />
+              <MediaPicker value={media} onChange={handleMediaChange} />
 
               <Separator className="bg-gray-500" />
 

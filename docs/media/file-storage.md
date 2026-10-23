@@ -1,12 +1,13 @@
-# Generic File Storage (Files entity)
+# Generic File Storage (Files entity) — avatars only
 
-This documents the **new** generic file store added for the avatar / product-photo /
-document requirements. It is intentionally simpler and more general than the image
-pipeline: **attach-on-upload**, any allowed file type, with an uploader audit trail.
+The generic file store (`FileRecord` + `FileService`): attach-on-upload, polymorphic owner, an
+uploader audit trail. It was built for avatars, product photos and documents; today **only avatars use
+it**, through `AvatarService`, and it has no HTTP endpoint of its own. Question and quiz media live in
+the media pipeline instead ([`media-pipeline.md`](media-pipeline.md)).
 
-> TL;DR — one authenticated `POST` with the file plus its owner (`entity` + `entityId`)
-> creates the file and the DB record in a single step. There is no draft phase and no
-> orphan cleanup, because the owner is known at upload time.
+> TL;DR — a feature service calls `IFileService.UploadAsync(file, entity, entityId, uploadedBy)`, which
+> checks the extension and size, writes `wwwroot/uploads/files/{guid}.{ext}` and inserts the record in
+> one step. No draft phase and no orphan cleanup, because the owner is known at upload time.
 
 ---
 
@@ -109,46 +110,14 @@ the image-content validation the generic store lacks.
 
 ---
 
-## Can both systems coexist? Yes.
+## Relationship to the media pipeline
 
-They do not collide on anything:
+Question and quiz media — images and audio — go through the **media pipeline**
+([`media-pipeline.md`](media-pipeline.md)): content-checked, re-encoded, stored once on R2, attached by
+id, swept when unused. The old image-only pipeline (`ImageAsset`, `ImageUploadController`) that used
+to sit beside this store is gone.
 
-| | Image pipeline (`ImageAsset`) | Generic store (`FileRecord`) |
-|---|---|---|
-| Table | `ImageAssets` | `Files` |
-| Routes | `/api/ImageUpload/*` | none — reached through `AvatarService` |
-| Disk folder | `wwwroot/uploads/` | `wwwroot/uploads/files/` |
-| Service | `ImageService` | `FileService` |
-| Owner link | `EntityType` + `int EntityId` (bookkeeping) | `Entity` + `string EntityId` |
-| Lifecycle | upload → associate → GC orphans | attach-on-upload, no GC |
-| Validation | image content + dimensions (ImageSharp) | extension allowlist + size |
-| Auth | `[Authorize]` (used inside authoring) | `[Authorize]` |
-
-Separate tables, routes, storage folders, and services means no migration or shared state
-is needed for them to run side by side.
-
----
-
-## Which one should I use?
-
-- **Quiz / question images** → keep using the **image pipeline**. You need the upload-
-  before-the-entity-exists draft flow, image-content validation, and orphan cleanup.
-- **Avatars, product photos, documents, any new attachment** → use the **Files store**.
-  The owner already exists, so attach-on-upload is the right shape, and you get the
-  uploader audit trail for free.
-
-### Required vs optional
-
-- The **image pipeline is required infrastructure** for the existing authoring features —
-  removing it would break quiz/question image handling.
-- The **Files store is additive** — it serves the new requirements and nothing depends on
-  it yet. It can grow (or absorb other use cases) without touching the image flow.
-
-### Future convergence (not now)
-
-If you ever want a single system, the clean target is: keep one **storage layer** (write
-bytes / build URL / delete) shared by both, and either (a) keep two record types for the
-two lifecycles, or (b) extend `FileRecord` with a nullable owner + status + an optional
-image-validation path + a cleanup job, then migrate `ImageAsset` rows and retire it. That
-is a deliberate, separately-tested refactor — not a prerequisite for the Files feature.
-See the storage comparison above for the moving parts involved.
+This store now serves **avatars only**. Folding avatars into the media pipeline — so they move to R2
+and are swept like everything else — needs a `User.AvatarAssetId` reference the sweep can see; it is
+deferred ([`../deployment/known-issues.md`](../deployment/known-issues.md), "Avatars still use the old
+file store"). When that lands, `FileRecord` and `FileService` have no caller left and can be removed.

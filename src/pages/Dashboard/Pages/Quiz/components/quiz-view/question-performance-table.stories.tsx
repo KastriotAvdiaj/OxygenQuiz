@@ -28,7 +28,6 @@ const base = {
   difficulty,
   category,
   language,
-  imageUrl: "",
   createdAt: "2026-06-16T10:00:00Z",
   user,
 } as const;

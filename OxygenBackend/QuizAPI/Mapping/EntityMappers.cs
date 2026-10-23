@@ -125,14 +125,14 @@ namespace QuizAPI.Mapping
                 Id = q.Id,
                 Text = q.Text,
                 CreatedAt = q.CreatedAt,
-                ImageUrl = q.ImageUrl,
-                MediaUrl = q.MediaUrl ?? q.ImageUrl,
+                MediaAssetId = q.MediaAssetId,
+                MediaUrl = q.MediaUrl,
                 Explanation = q.Explanation,
                 MediaType =
                     q.MediaType == QuestionMediaType.Image ? "Image" :
                     q.MediaType == QuestionMediaType.Audio ? "Audio" :
                     q.MediaType == QuestionMediaType.Video ? "Video" :
-                    (q.ImageUrl != null ? "Image" : "None"),
+                    "None",
                 Visibility = q.Visibility.ToString(),
                 Type = q.Type.ToString(),
                 Difficulty = q.Difficulty == null ? null : new QuestionDifficultyDTO
@@ -170,14 +170,14 @@ namespace QuizAPI.Mapping
                 Id = q.Id,
                 Text = q.Text,
                 CreatedAt = q.CreatedAt,
-                ImageUrl = q.ImageUrl,
-                MediaUrl = q.MediaUrl ?? q.ImageUrl,
+                MediaAssetId = q.MediaAssetId,
+                MediaUrl = q.MediaUrl,
                 Explanation = q.Explanation,
                 MediaType =
                     q.MediaType == QuestionMediaType.Image ? "Image" :
                     q.MediaType == QuestionMediaType.Audio ? "Audio" :
                     q.MediaType == QuestionMediaType.Video ? "Video" :
-                    (q.ImageUrl != null ? "Image" : "None"),
+                    "None",
                 Visibility = q.Visibility.ToString(),
                 Type = q.Type.ToString(),
                 Difficulty = q.Difficulty == null ? null : new QuestionDifficultyDTO
@@ -219,14 +219,14 @@ namespace QuizAPI.Mapping
                 Id = q.Id,
                 Text = q.Text,
                 CreatedAt = q.CreatedAt,
-                ImageUrl = q.ImageUrl,
-                MediaUrl = q.MediaUrl ?? q.ImageUrl,
+                MediaAssetId = q.MediaAssetId,
+                MediaUrl = q.MediaUrl,
                 Explanation = q.Explanation,
                 MediaType =
                     q.MediaType == QuestionMediaType.Image ? "Image" :
                     q.MediaType == QuestionMediaType.Audio ? "Audio" :
                     q.MediaType == QuestionMediaType.Video ? "Video" :
-                    (q.ImageUrl != null ? "Image" : "None"),
+                    "None",
                 Visibility = q.Visibility.ToString(),
                 Type = q.Type.ToString(),
                 Difficulty = q.Difficulty == null ? null : new QuestionDifficultyDTO
@@ -265,14 +265,14 @@ namespace QuizAPI.Mapping
                 Id = q.Id,
                 Text = q.Text,
                 CreatedAt = q.CreatedAt,
-                ImageUrl = q.ImageUrl,
-                MediaUrl = q.MediaUrl ?? q.ImageUrl,
+                MediaAssetId = q.MediaAssetId,
+                MediaUrl = q.MediaUrl,
                 Explanation = q.Explanation,
                 MediaType =
                     q.MediaType == QuestionMediaType.Image ? "Image" :
                     q.MediaType == QuestionMediaType.Audio ? "Audio" :
                     q.MediaType == QuestionMediaType.Video ? "Video" :
-                    (q.ImageUrl != null ? "Image" : "None"),
+                    "None",
                 Visibility = q.Visibility.ToString(),
                 Type = q.Type.ToString(),
                 Difficulty = q.Difficulty == null ? null : new QuestionDifficultyDTO
@@ -330,17 +330,10 @@ namespace QuizAPI.Mapping
         public static List<QuestionBaseDTO> ToDtoList(this IEnumerable<QuestionBase> questions) =>
             questions.Select(ToDto).ToList();
 
-        // Parses the wire string ("Image"/"Audio"/"Video"/"None") into the enum, defaulting to None.
-        private static QuestionMediaType ParseMediaType(string? s) =>
-            Enum.TryParse<QuestionMediaType>(s, ignoreCase: true, out var t) ? t : QuestionMediaType.None;
-
         // ── Creation models → entities (service sets UserId/CreatedAt/Type/Visibility) ──
         public static MultipleChoiceQuestion ToEntity(this MultipleChoiceQuestionCM cm) => new()
         {
             Text = cm.Text,
-            ImageUrl = cm.ImageUrl,
-            MediaUrl = cm.MediaUrl,
-            MediaType = ParseMediaType(cm.MediaType),
             Explanation = QuestionExplanation.Normalize(cm.Explanation),
             DifficultyId = cm.DifficultyId,
             CategoryId = cm.CategoryId,
@@ -354,9 +347,6 @@ namespace QuizAPI.Mapping
         public static TrueFalseQuestion ToEntity(this TrueFalseQuestionCM cm) => new()
         {
             Text = cm.Text,
-            ImageUrl = cm.ImageUrl,
-            MediaUrl = cm.MediaUrl,
-            MediaType = ParseMediaType(cm.MediaType),
             Explanation = QuestionExplanation.Normalize(cm.Explanation),
             DifficultyId = cm.DifficultyId,
             CategoryId = cm.CategoryId,
@@ -367,9 +357,6 @@ namespace QuizAPI.Mapping
         public static TypeTheAnswerQuestion ToEntity(this TypeTheAnswerQuestionCM cm) => new()
         {
             Text = cm.Text,
-            ImageUrl = cm.ImageUrl,
-            MediaUrl = cm.MediaUrl,
-            MediaType = ParseMediaType(cm.MediaType),
             Explanation = QuestionExplanation.Normalize(cm.Explanation),
             DifficultyId = cm.DifficultyId,
             CategoryId = cm.CategoryId,
@@ -386,9 +373,8 @@ namespace QuizAPI.Mapping
         private static void ApplyBase(QuestionBaseUM um, QuestionBase q)
         {
             q.Text = um.Text;
-            q.ImageUrl = um.ImageUrl;
-            q.MediaUrl = um.MediaUrl;
-            q.MediaType = ParseMediaType(um.MediaType);
+            // Media is not applied here: MediaAttachmentService resolves um.MediaAssetId, checks the
+            // quota and writes the asset's URL — a client never sets a URL directly.
             q.Explanation = QuestionExplanation.Normalize(um.Explanation);
             q.DifficultyId = um.DifficultyId;
             q.CategoryId = um.CategoryId;
@@ -494,6 +480,7 @@ namespace QuizAPI.Mapping
                 CreatedAt = q.CreatedAt,
                 Version = q.Version,
                 ImageUrl = q.ImageUrl,
+                CoverAssetId = q.CoverAssetId,
                 // Live rows only — retired rows belong to past versions (docs/quiz/quiz-editing.md).
                 QuestionCount = q.QuizQuestions.Count(qq => qq.RemovedInVersion == null),
                 Status = q.Status.ToString(),
@@ -562,7 +549,7 @@ namespace QuizAPI.Mapping
             TimeLimitInSeconds = cm.TimeLimitInSeconds,
             ShowFeedbackImmediately = cm.ShowFeedbackImmediately,
             ShuffleQuestions = cm.ShuffleQuestions,
-            ImageUrl = cm.ImageUrl,
+            // The cover is attached by MediaAttachmentService from cm.CoverAssetId.
             Status = ParseStatus(cm.Status)
         };
 
@@ -623,12 +610,12 @@ namespace QuizAPI.Mapping
                 SelectedOptionId = ua.SelectedOptionId,
                 SubmittedAnswer = ua.SubmittedAnswer,
                 QuestionText = ua.QuizQuestion.Question.Text,
-                MediaUrl = ua.QuizQuestion.Question.MediaUrl ?? ua.QuizQuestion.Question.ImageUrl,
+                MediaUrl = ua.QuizQuestion.Question.MediaUrl,
                 MediaType =
                     ua.QuizQuestion.Question.MediaType == QuestionMediaType.Image ? "Image" :
                     ua.QuizQuestion.Question.MediaType == QuestionMediaType.Audio ? "Audio" :
                     ua.QuizQuestion.Question.MediaType == QuestionMediaType.Video ? "Video" :
-                    (ua.QuizQuestion.Question.ImageUrl != null ? "Image" : "None"),
+                    "None",
                 QuestionType = ua.QuizQuestion.Question.Type,
                 TimeLimitInSeconds = ua.QuizQuestion.TimeLimitInSeconds,
                 TimeSpentInSeconds = ua.SubmittedTime.HasValue
@@ -722,12 +709,12 @@ namespace QuizAPI.Mapping
                         SelectedOptionId = ua.SelectedOptionId,
                         SubmittedAnswer = ua.SubmittedAnswer,
                         QuestionText = ua.QuizQuestion.Question.Text,
-                        MediaUrl = ua.QuizQuestion.Question.MediaUrl ?? ua.QuizQuestion.Question.ImageUrl,
+                        MediaUrl = ua.QuizQuestion.Question.MediaUrl,
                         MediaType =
                             ua.QuizQuestion.Question.MediaType == QuestionMediaType.Image ? "Image" :
                             ua.QuizQuestion.Question.MediaType == QuestionMediaType.Audio ? "Audio" :
                             ua.QuizQuestion.Question.MediaType == QuestionMediaType.Video ? "Video" :
-                            (ua.QuizQuestion.Question.ImageUrl != null ? "Image" : "None"),
+                            "None",
                         QuestionType = ua.QuizQuestion.Question.Type,
                         TimeLimitInSeconds = ua.QuizQuestion.TimeLimitInSeconds,
                         TimeSpentInSeconds = ua.SubmittedTime.HasValue
@@ -848,12 +835,8 @@ namespace QuizAPI.Mapping
             {
                 QuizQuestionId = qq.Id,
                 QuestionText = qq.Question.Text,
-                // Prefer the new media fields; fall back to the legacy ImageUrl so old
-                // image-only questions still show during play.
-                MediaUrl = qq.Question.MediaUrl ?? qq.Question.ImageUrl,
-                MediaType = qq.Question.MediaType != QuestionMediaType.None
-                    ? qq.Question.MediaType.ToString()
-                    : (qq.Question.ImageUrl != null ? "Image" : "None"),
+                MediaUrl = qq.Question.MediaUrl,
+                MediaType = qq.Question.MediaType.ToString(),
                 TimeLimitInSeconds = qq.TimeLimitInSeconds,
                 QuestionType = qq.Question.Type.ToString(),
                 Options = options,

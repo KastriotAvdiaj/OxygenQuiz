@@ -9,7 +9,7 @@ namespace QuizAPI.Services.Ai
     /// the user a slot, and the bug is invisible until someone complains they have "4 of 5 left"
     /// forever.
     ///
-    /// Registered as a Hangfire recurring job in Program.cs, matching <c>ImageCleanUpService</c>.
+    /// Registered as a Hangfire recurring job in Program.cs, like the other sweepers.
     /// </summary>
     public sealed class AiReservationSweeper
     {

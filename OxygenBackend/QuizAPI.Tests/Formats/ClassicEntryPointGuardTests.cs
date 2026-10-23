@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
 using QuizAPI.Common;
-using QuizAPI.Controllers.Image.Services;
+using QuizAPI.Services.Media;
 using QuizAPI.Controllers.Quizzes.Services.AnswerGradingServices;
 using QuizAPI.Controllers.Quizzes.Services.QuizServices;
 using QuizAPI.Controllers.Quizzes.Services.QuizSessionServices;
@@ -213,7 +213,7 @@ public class ClassicEntryPointGuardTests
         new(new QuizRepository(ctx),
             new Mock<IQuestionRepository>().Object,
             NullLogger<QuizService>.Instance,
-            new Mock<IImageService>().Object,
+            new Mock<IMediaAttachmentService>().Object,
             // Admin: these tests are about the Classic guards, which must hold even for someone
             // who can see an Associations quiz. The preview gate has its own tests.
             new TestCurrentUserService { UserId = OwnerId, IsAdmin = true });

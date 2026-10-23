@@ -29,7 +29,8 @@ export type ReviewAnswer =
 export interface QuestionReview {
   type: QuestionType;
   text: string;
-  imageUrl: string | null;
+  mediaUrl: string | null;
+  mediaType: "Image" | "Audio" | null;
   explanation: string | null;
   answer: ReviewAnswer;
 }
@@ -37,11 +38,22 @@ export interface QuestionReview {
 const blankToNull = (value: string | null | undefined): string | null =>
   value && value.trim().length > 0 ? value : null;
 
+/** A builder question holds its media as a selection; a saved one carries the API's URL and type. */
+const reviewMedia = (question: QuizQuestion): Pick<QuestionReview, "mediaUrl" | "mediaType"> => {
+  if ("media" in question) {
+    return { mediaUrl: question.media?.url ?? null, mediaType: question.media?.kind ?? null };
+  }
+  const saved = question as { mediaUrl?: string | null; mediaType?: string };
+  return saved.mediaUrl && (saved.mediaType === "Image" || saved.mediaType === "Audio")
+    ? { mediaUrl: saved.mediaUrl, mediaType: saved.mediaType }
+    : { mediaUrl: null, mediaType: null };
+};
+
 export const toQuestionReview = (question: QuizQuestion): QuestionReview => {
   const base = {
     type: question.type,
     text: question.text,
-    imageUrl: blankToNull(question.imageUrl),
+    ...reviewMedia(question),
     explanation: blankToNull(question.explanation),
   };
 

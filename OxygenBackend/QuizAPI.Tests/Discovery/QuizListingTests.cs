@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
-using QuizAPI.Controllers.Image.Services;
+using QuizAPI.Services.Media;
 using QuizAPI.Controllers.Quizzes;
 using QuizAPI.Controllers.Quizzes.Services.QuizServices;
 using QuizAPI.Data;
@@ -81,7 +81,7 @@ public class QuizListingTests
         public QuizController Controller(ApplicationDbContext ctx, TestCurrentUserService caller)
         {
             var service = new QuizService(new QuizRepository(ctx), new Mock<IQuestionRepository>().Object,
-                NullLogger<QuizService>.Instance, new Mock<IImageService>().Object, caller);
+                NullLogger<QuizService>.Instance, new Mock<IMediaAttachmentService>().Object, caller);
             return new QuizController(service, NullLogger<QuizController>.Instance, caller, Mock.Of<IAuditService>(),
                 Mock.Of<QuizAPI.Services.Permissions.IPermissionService>())
             {
