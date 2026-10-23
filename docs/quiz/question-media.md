@@ -17,7 +17,7 @@ A question may have **one** optional media attachment of a single kind:
 
 | Kind  | Examples                          |
 |-------|-----------------------------------|
-| Image | jpg, png, gif, webp, svg          |
+| Image | jpg, png, gif, webp (never SVG — it can carry script) |
 | Audio | mp3, wav, ogg, m4a, aac           |
 | Video | mp4, webm, mov, m4v               |
 
@@ -37,7 +37,7 @@ There are two storage systems in the codebase:
 - **Image entity** (`ImageAsset` + `ImageService` + `ImageUploadController`) — older,
   image-only (validates with ImageSharp), talks to `DbContext` directly. Cannot handle
   audio/video.
-- **File entity** (`FileRecord` + `FileService` + `FilesController`) — newer, generic,
+- **File entity** (`FileRecord` + `FileService`) — newer, generic,
   polymorphic (`Entity` + `EntityId`), repository-based. This is the one we extended.
 
 The legacy `ImageUrl` column on questions is **kept** so existing image questions keep
@@ -91,10 +91,11 @@ Files are written to `wwwroot/uploads/files/{guid}.{ext}` and served statically 
 `/uploads/files/...`. Static serving supports HTTP range requests, which audio/video
 seeking needs.
 
-`Controllers/Files/FilesController.cs` raises the per-request ceiling to 100 MB
-(`[RequestSizeLimit(100 * 1024 * 1024)]`). The actual per-kind cap is enforced in the
-service. **Note:** Kestrel’s global body limit must also be raised for video — see
-[Deployment](#6-deployment-notes).
+The store has no HTTP endpoint of its own: the old `FilesController` (`/api/files`) was removed
+on 2026-10-23 because any signed-in caller could delete or list anyone's files through it
+([file-storage.md](../media/file-storage.md), "No public endpoints"). The question-media upload
+path described below is therefore **not wired**; it is being redesigned in
+[`docs/proposals/media-pipeline.md`](../proposals/media-pipeline.md).
 
 ---
 
@@ -103,7 +104,7 @@ service. **Note:** Kestrel’s global body limit must also be raised for video �
 ### Creating / editing a question
 
 ```
-Question editor (frontend, planned)
+Question editor (frontend, planned — endpoint removed, see §3)
   1. POST /api/files   (multipart: file, entity="Question", entityId)
        → FileService validates kind + size, stores bytes, returns FileDTO { url, kind, contentType }
   2. POST/PUT the question with MediaUrl = FileDTO.url, MediaType = FileDTO.kind
@@ -135,7 +136,6 @@ media at all — this was the gap that kept images out of the quiz-taking screen
 | `Models/FileRecord.cs` | `ContentType` column |
 | `DTOs/Files/FileDTO.cs` | `ContentType` + derived `Kind` |
 | `Controllers/Files/Services/FileService.cs` | kind-based allowlists, per-kind size limits, stores content type, derives kind |
-| `Controllers/Files/FilesController.cs` | upload size ceiling 10 MB → 100 MB |
 | `DTOs/Question/QuestionDTOs.cs` | `MediaUrl` + `MediaType` on base DTO / create / update models |
 | `DTOs/Quiz/QuizSession-UserAnswerDTO.cs` | `MediaUrl` + `MediaType` on `CurrentQuestionDto` |
 | `Mapping/EntityMappers.cs` | media in read projections, create/update mappers, and `ToCurrentQuestionDto`; `ParseMediaType` helper |
@@ -193,8 +193,8 @@ This adds `Questions.MediaUrl`, `Questions.MediaType` (int, default `0` = `None`
 - The answer-**review** screen doesn't show media yet — the `UserAnswer` DTO would need
   `MediaUrl` / `MediaType` (a backend mapper change) before the UI can render it.
 - A dedicated **audio/video** upload path in the editor. Today's editor uploads images via the
-  legacy endpoint; the generic `POST /api/files` route already supports the other kinds, so the
-  remaining work is the picker UI + setting `MediaUrl`/`MediaType` from the returned `FileDTO`.
+  legacy endpoint. The generic `POST /api/files` route that was meant to carry the other kinds was
+  removed as unsafe (§3); the replacement is [`docs/proposals/media-pipeline.md`](../proposals/media-pipeline.md).
 
 ---
 

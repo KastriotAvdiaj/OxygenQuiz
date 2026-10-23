@@ -35,6 +35,14 @@ None open in code. The fix below is live only once the backend is rebuilt on the
   → `OxygenBackend/QuizAPI/Controllers/Quizzes/QuizzesController.cs` (`GetQuizById`,
   `GetQuizQuestions`)
 
+- ~~**P1 — Any signed-in user could delete or list anyone's files (found 2026-10-23).**~~
+  **Fixed 2026-10-23** — `FilesController` (`/api/files`) removed; nothing called it. Live once
+  the backend is rebuilt. Was: `DELETE /api/files/{id}` with no ownership check, `GET` listing any
+  owner's files, and `POST` writing up to 100 MB of extension-checked bytes under any owner name.
+  Guarded by `Security/FileStoreEndpointsTests.cs`; see
+  [`../media/file-storage.md`](../media/file-storage.md), "No public endpoints".
+  → `OxygenBackend/QuizAPI/Controllers/Files/FilesController.cs` (deleted)
+
 ## Security hardening (defense-in-depth — no known active exploit)
 
 - ~~**P2 — The origin answers on its bare IP (found 2026-10-17).**~~ **Fixed 2026-10-18** — Hetzner
@@ -231,6 +239,9 @@ None open in code. The fix below is live only once the backend is rebuilt on the
   `Mapping/EntityMappers.cs` (`ProjectMultipleChoice`),
   `DTOs/Question/QuestionDTOs.cs` (`AnswerOptionDTO.IsCorrect`),
   `src/pages/Dashboard/Pages/Quiz/components/Create-Quiz-Form/components/question-select/`
+- **Proposal — one media pipeline for quizzes and questions.** Storage on R2, quotas, moderation,
+  free image sources, AI-added media; partly settled. See
+  [`../proposals/media-pipeline.md`](../proposals/media-pipeline.md).
 - **P3 — Image upload allow-list drifted from `FileService`'s.** `ImageUploadController`
   maintains its own separate format allow-list (still includes GIF) rather than
   sharing `FileService`'s. Not a vulnerability on its own, but two allow-lists
