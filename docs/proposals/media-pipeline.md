@@ -1,7 +1,7 @@
 # Proposal: one media pipeline for quizzes and questions, ready for a public launch
 
-**Status: open — being decided in rounds (started 2026-10-23).** §3 records what is settled, §4
-what is still open. Nothing in §3 is implemented yet.
+**Status: open — being decided in rounds (started 2026-10-23; round 2 settled the same day).** §3
+records what is settled, §4 what is still open. Nothing in §3 is implemented yet.
 
 An author is building a geography quiz. Question 7 is "Which country's flag is this?" — they
 want a flag image, and they don't have one on disk. Question 12 is "Name this anthem" and needs
@@ -102,13 +102,14 @@ Paid tiers are not merged (their publication is still being decided —
 [`paid-plans-and-payments.md`](./paid-plans-and-payments.md)), so quotas key off **role** for
 now, and move to tier when tiers land:
 
-| Role | Quota |
-|---|---|
-| User | capped (numbers in §4) |
-| Teacher, Admin | higher cap |
-| SuperAdmin | uncapped |
+| Role | New media per day | Total storage |
+|---|---|---|
+| User | 15 | 100 MB |
+| Teacher, Admin | 200 | 2.5 GB (to confirm) |
+| SuperAdmin | uncapped | uncapped |
 
-Locking media behind payment was rejected: it makes the free product look broken.
+What counts, and when, is §3.12. Locking media behind payment was rejected: it makes the free
+product look broken.
 
 ### 3.6 Official and community quizzes
 
@@ -133,17 +134,98 @@ quality, and promotion gives a curation path.
 | Official / community split (§3.6) | Yes |
 | Automated nudity/gore classifier (Google SafeSearch, Rekognition, Sightengine) | **No** — paid; revisit after the paid version ships |
 
+### 3.8 Image sources: device, Pexels and Wikimedia Commons — every external image credited
+
+An author can upload from their device or search **Pexels** (general photos) and **Wikimedia
+Commons** (flags, landmarks, people, artworks — what quiz questions are mostly about). Both are
+searched through our API, so the keys stay on the server; the chosen image is **downloaded and
+goes through the same pipeline as an upload** (§3.10), so it is ours to serve, re-encode and scan.
+
+**The credit is not optional.** Wikimedia's CC-BY licences require it by law; Pexels makes it a
+condition of API access and asks for proof of it before lifting the 200/hour, 20,000/month limit.
+Each stored external image keeps its provider, author, licence and source link, shown as a small
+credit under the image wherever it renders.
+
+- **Why not Unsplash:** its terms require hotlinking — every use loads the image from Unsplash's
+  servers, so it can't be stored, re-encoded or scanned, can vanish, sends every player's IP to
+  Unsplash, and would make a media item either a file or a pointer in every screen that renders
+  one. It adds overlap, not coverage.
+
+### 3.9 Bytes go to R2 through the API
+
+The browser sends the file to our API; the API checks it, re-encodes it and writes it to R2. The
+alternative — a presigned URL that lets the browser upload straight to R2, with the server
+checking afterwards — saves bandwidth only for files large enough to matter (video), and leaves a
+window where an unchecked file sits in the bucket. Re-encoding needs the bytes on the server
+anyway.
+
+### 3.10 What processing produces
+
+| Kind | Accepted | Stored |
+|---|---|---|
+| Image | JPEG, PNG, WebP (decoded, not trusted by extension) | WebP, ≤ 1600px long edge, plus a 400px thumbnail. The original is not kept. |
+| Audio | MP3, M4A, OGG — magic bytes checked | as uploaded, ≤ 10 MB and ≤ 60 seconds; no transcoding at launch |
+
+The 60-second cap is the product rule (a clip, not an album); the byte cap follows from it.
+
+### 3.11 A stored file is immutable, stored once, and swept when nothing points to it
+
+- **Stored once:** a file is identified by its content hash. The same flag uploaded by 300
+  authors is one object in R2 with 300 references.
+- **Immutable:** a stored file never changes. Replacing an image means pointing at a different
+  file.
+- **Swept:** a nightly job deletes files nothing references after a **7-day** grace period. That
+  covers uploads never saved, images replaced, and questions deleted — including the copies ADR
+  0030 makes when a saved question is edited, which share their original's image, so deleting a
+  question can never delete a file directly.
+- **Account closure (ADR 0012):** images stay on the anonymised content; they belong to the quiz
+  now, not to the person.
+
+### 3.12 Quota counts what you save, not what you try
+
+**Uploading or picking an image doesn't count. Saving it does.** A file uploaded into the editor
+is unattached until the question or quiz is saved with it. Swapping images five times before
+saving costs nothing — the four you dropped are swept (§3.11).
+
+- **Counted:** at the save that attaches a file not already on that question or quiz. That adds
+  one to the day's count and the file's size to the author's storage.
+- **Replacing after save:** the new file counts; the old one stops counting against the author
+  once nothing of theirs references it.
+- **Picking from Pexels or Wikimedia** counts the same way — we store a copy, so it costs the same.
+- **What stops upload-without-saving abuse** is not the quota but a rate limit on the upload
+  endpoint itself and the 7-day sweep (numbers in §4).
+
+### 3.13 Community images are shown as-is
+
+No blur. Community images sit behind the one-time notice (§3.6) and the report button; a
+blur-everything rule punishes the fine majority and only works well when a classifier chooses
+what to blur (§3.7). Revisit with the classifier.
+
+### 3.14 The AI adds images only when asked, and only where one helps
+
+The wizard has an **Add images** switch, **off by default**. When on, the model picks the
+questions an image helps (a flag, a landmark, a painting — not "what year did WW2 end") and
+returns a **search query** for each, never a URL or a file. Our code runs the query against
+Wikimedia/Pexels, keeps only allowed licences, downloads and checks the image like an upload,
+and records the credit; the review step shows each image with swap and remove. This is ADR 0003
+applied to media: the model proposes, the code decides.
+
+### 3.15 Existing images are deleted, not migrated
+
+Production holds at most a question or two with an image. Moving them isn't worth a migration:
+the `ImageUrl` column, its fallback read in `ProjectBase`, the `imageUrl` Effects in the question
+forms, `ImageAsset` and the files on the VPS disk all go when the new pipeline lands.
+
 ## 4. Still open
 
-- **Free image sources** — which providers (Pexels, Wikimedia Commons, Unsplash), and how the
-  credit line each requires is stored and shown. Being answered now.
-- **The AI adding media** — triggered how, chosen how, checked by what code (ADR 0003).
-- **Upload path** — through the API, or presigned direct-to-R2.
-- **Image processing** — output format, sizes/variants, max dimensions.
-- **Quota numbers** — per-file size, uploads per day, total storage per role.
-- **Community images without a classifier** — blurred until clicked, or shown as-is.
-- **Lifecycle** — when an attached file is deleted (question deleted, image replaced, a
-  question shared by several quizzes, account closure under ADR 0012).
-- **Migration** — existing `ImageUrl` rows and files on the VPS disk.
+- **Reporting as a general feature** — a report on a question or quiz for any reason (a wrong
+  answer, wrong information, an inappropriate image, offence), not only images: who may report,
+  the reasons, what happens to the content, who sees the queue, whether the author is told. Also
+  its name: `Reports` already means the owner's analytics reports (`docs/quiz/reports.md`).
+- **Teacher/Admin storage** — 2.5 GB assumed (half the first proposal, like the other numbers).
+- **Upload rate limit** and how many unattached files one user may hold at once.
+- **Where the credit shows** — under the image at play time, in the review screen, both.
+- **Official flag mechanics** — who may set it (a permission), where in the UI, what the
+  community switch looks like, whether guests see community quizzes.
 - **Test plan** — which suite proves which rule.
-- **Launch limits** — rate limits, Kestrel body size, Cloudflare upload size.
+- **Launch limits** — Kestrel body size, Cloudflare upload size, R2 bucket and domain setup.
