@@ -1,6 +1,6 @@
 # Proposal: one media pipeline for quizzes and questions, ready for a public launch
 
-**Status: open — being decided in rounds (started 2026-10-23; round 2 settled the same day).** §3
+**Status: open — being decided in rounds (started 2026-10-23; rounds 2 and 3 settled by 2026-10-24).** §3
 records what is settled, §4 what is still open. Nothing in §3 is implemented yet.
 
 An author is building a geography quiz. Question 7 is "Which country's flag is this?" — they
@@ -216,16 +216,61 @@ Production holds at most a question or two with an image. Moving them isn't wort
 the `ImageUrl` column, its fallback read in `ProjectBase`, the `imageUrl` Effects in the question
 forms, `ImageAsset` and the files on the VPS disk all go when the new pipeline lands.
 
+### 3.16 Reporting is one feature, named `ContentReport`; the analytics "Reports" is renamed
+
+A viewer's complaint about a question or quiz — a wrong answer, wrong information, an
+inappropriate image, offence — is a **report**: the button says *Report*, the entity is
+`ContentReport`. It doubles as the fact-checker: most reports on a quiz app will be "the answer
+is wrong".
+
+`docs/quiz/reports.md` already uses "Reports" for something else: the owner's statistics
+(attempts, completion, per-question correct %) with CSV/Excel export, built but never shipped.
+It is renamed **Statistics export** before either ships, so the codebase has one meaning per
+word. The two are not merged: they share no data and answer different people.
+
+### 3.17 Signed-in users report a question or a quiz, once each
+
+Reporting needs an account — a guest report has no one to hold to it, and spam would bury the
+real ones. Raised from a question (during play or on the results screen) it is about that
+question; raised from the quiz's menu it is about the quiz. One report per person per item.
+
+### 3.18 The reasons
+
+| Reason | Text box |
+|---|---|
+| Wrong answer or information | required — "what's correct?" |
+| Inappropriate image or audio | optional |
+| Offensive or hateful | optional |
+| Spam or nonsense | optional |
+| Copyright | optional |
+| Other | required |
+
+### 3.19 What a report sets in motion (partly — see §4)
+
+- **Wrong information goes to the author first**, through the existing notifications, with the
+  reporter's text, so they can fix it. It is never hidden automatically. Still open after 5
+  reports or 7 days, it reaches the admin queue.
+- **Harmful reasons** (inappropriate media, offensive) reach admins at the first report; a
+  higher count also hides the content automatically until reviewed (threshold and mechanism in
+  §4).
+- **Reports on official quizzes** go straight to admins — the house is the author.
+- **Admins see every report**, sorted into lanes by urgency (names in §4) rather than one list.
+- **The reporter is told the outcome** ("your report led to a change") by notification.
+
+### 3.20 The credit shows as an ⓘ at play time, in full in the editor
+
+At play time a small ⓘ in the image's corner reveals "Photo: Name / Pexels" on tap, so a credit
+line doesn't compete with the question. The editor and review screens show it in full. Pexels
+must approve how the credit looks before lifting its rate limit, so this is what we show them.
+
 ## 4. Still open
 
-- **Reporting as a general feature** — a report on a question or quiz for any reason (a wrong
-  answer, wrong information, an inappropriate image, offence), not only images: who may report,
-  the reasons, what happens to the content, who sees the queue, whether the author is told. Also
-  its name: `Reports` already means the owner's analytics reports (`docs/quiz/reports.md`).
-- **Teacher/Admin storage** — 2.5 GB assumed (half the first proposal, like the other numbers).
-- **Upload rate limit** and how many unattached files one user may hold at once.
-- **Where the credit shows** — under the image at play time, in the review screen, both.
-- **Official flag mechanics** — who may set it (a permission), where in the UI, what the
-  community switch looks like, whether guests see community quizzes.
+- **Auto-hide threshold** for harmful reports — 10 distinct reporters proposed, against a
+  traffic level where few people may ever see a bad image.
+- **How content is hidden** — nothing in the app can hide a question today.
+- **Admin lanes** — their names and what puts a report in each.
+- **Official vs promoted** — whether the main catalogue is "official" or "admin-picked" quizzes,
+  what the badge is called, and whether picked community quizzes are indexed by search engines.
+- **Teacher/Admin storage** (2.5 GB), the **upload rate limit** and the cap on **unsaved files**.
 - **Test plan** — which suite proves which rule.
 - **Launch limits** — Kestrel body size, Cloudflare upload size, R2 bucket and domain setup.
