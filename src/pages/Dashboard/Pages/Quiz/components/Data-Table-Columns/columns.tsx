@@ -1,3 +1,5 @@
+import { EditPencil } from "@/components/icons/edit-pencil";
+import { PlayTriangle } from "@/components/icons/play-triangle";
 import { ColumnDef } from "@tanstack/react-table";
 // import { Button } from "@/components/ui/button";
 // import { useDisclosure } from "@/hooks/use-disclosure";
@@ -27,8 +29,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui";
-import { CirclePlay, Copy, Eye, EyeOff, Hash, MoreHorizontal, Trash2, Upload } from "lucide-react";
-import { CirclePen } from "@/components/icons/circle-pen";
+import {
+  Copy,
+  Eye,
+  EyeOff,
+  Hash,
+  MoreHorizontal,
+  Trash2,
+  Upload,
+} from "lucide-react";
 import { DeleteQuiz } from "../delete-quiz";
 import { Link, useLocation } from "react-router-dom";
 import { useUser } from "@/lib/Auth";
@@ -249,7 +258,7 @@ function QuizActionsCell({ quiz }: { quiz: QuizSummaryDTO }) {
         {canPlay && (
           <DropdownMenuItem className="hover:bg-background" asChild>
             <Link to={quizPlayPath(quiz)} className="flex items-center gap-2">
-              <CirclePlay size={16} /> Play
+              <PlayTriangle size={16} /> Play
             </Link>
           </DropdownMenuItem>
         )}
@@ -266,7 +275,7 @@ function QuizActionsCell({ quiz }: { quiz: QuizSummaryDTO }) {
         {!quiz.deletedAt && (
           <DropdownMenuItem className="hover:bg-background" asChild>
             <Link to={editPath(quiz)} className="flex items-center gap-2">
-              <CirclePen size={16} /> Edit
+              <EditPencil size={16} /> Edit
             </Link>
           </DropdownMenuItem>
         )}

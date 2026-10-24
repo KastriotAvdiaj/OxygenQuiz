@@ -89,9 +89,19 @@ avatar-specific safety.
 - **Storage:** the file goes through `IFileService` with `entity = "User"`, `entityId = <user id>`.
   The user's `ProfileImageUrl` is set to the new file's **absolute** URL, and the **previous avatar
   is deleted** so old files don't pile up.
-- **Frontend:** a hover-to-change overlay on the profile avatar (`AvatarUploader`) with client-side
-  type/size guards and an instant local preview; on success it invalidates the `authenticated-user`
-  query so the new picture appears in the profile, header, and drawer at once.
+- **Frontend — crop before upload (since 2026-10-23):** the avatar shows a hover-to-change overlay and
+  a pencil badge (the badge is what a touch screen sees, having no hover). Picking a photo opens
+  `AvatarCropDialog` — drag to position, slider/wheel/pinch to zoom up to 3×, turn in 90° steps,
+  inside a circular mask (`react-easy-crop`). On *Apply*, `cropAvatar`
+  (`Profile/lib/crop-avatar.ts`) draws the chosen square onto a **512×512** canvas and uploads that
+  as WebP (PNG on Safari, which can't encode WebP; the file name follows the bytes, because the
+  server checks both). The circle is only a mask: the square is stored and every avatar is drawn
+  round by CSS. Before this, the picked file was uploaded whole and the round avatar squeezed it,
+  so a wide photo came out as a sliver. Because only the crop is uploaded, the client accepts a
+  source photo up to 20 MB (`MAX_AVATAR_SOURCE_BYTES`, only to spare the browser a huge decode);
+  the server's 5 MB limit applies to the 512px result and is never near. On success the
+  `authenticated-user` query is invalidated so the new picture appears in the profile, header, and
+  drawer at once; on failure the dialog stays open so the user can retry.
 
 Why not the image pipeline? Avatars don't need the draft/associate/orphan-GC dance — the user
 already exists at upload time — so attach-on-upload (this store) is the right shape. We just added

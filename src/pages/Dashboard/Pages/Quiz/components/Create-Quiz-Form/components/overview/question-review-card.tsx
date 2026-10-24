@@ -1,15 +1,7 @@
+import { EditPencil } from "@/components/icons/edit-pencil";
 import { AnimatePresence, motion, type MotionValue } from "framer-motion";
 import type { KeyboardEvent, PointerEvent } from "react";
-import {
-  AlertTriangle,
-  Check,
-  Eye,
-  EyeOff,
-  GripVertical,
-  Lightbulb,
-  Pencil,
-  Trash2,
-} from "lucide-react";
+import { AlertTriangle, Check, Eye, EyeOff, GripVertical, Lightbulb, Trash2 } from "lucide-react";
 
 import { LiftedButton } from "@/common/LiftedButton";
 import { cn } from "@/utils/cn";
@@ -172,7 +164,7 @@ export const QuestionReviewCard = ({
               onClick={onEdit}
               className="xl:p-1.5"
             >
-              <Pencil className="h-4 w-4 xl:h-3.5 xl:w-3.5" />
+              <EditPencil className="h-4 w-4 xl:h-3.5 xl:w-3.5" />
             </LiftedButton>
             <LiftedButton
               type="button"

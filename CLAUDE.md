@@ -97,8 +97,9 @@ Full version, including the two failure modes this project has actually hit:
 
   **Every `LiftedButton` leads with an icon that says what pressing it does** — `Check` to
   finish or confirm (*Done*, *Save*), `ArrowRight` to go on, `Plus` to create, `Play` to start,
-  `X` to cancel, `Trash2` to delete. The word says it, the icon makes it read as an action at a
-  glance. lucide-react, `h-4 w-4` (`h-3.5 w-3.5` on `size="sm"`), `aria-hidden="true"`, before the
+  `X` to cancel, `Trash2` to delete, `EditPencil` (`components/icons/edit-pencil.tsx`, not a lucide
+  pencil) to edit — on every edit action, flat buttons and menu items included. The word says it,
+  the icon makes it read as an action at a glance. lucide-react, `h-4 w-4` (`h-3.5 w-3.5` on `size="sm"`), `aria-hidden="true"`, before the
   label, with `flex items-center gap-2` on `className`. Stated 2026-10-20; older buttons without one
   are being brought in line, so copy a button that has one.
 
