@@ -235,6 +235,26 @@ public class StockImageTests
         Assert.Equal("https://upload.wikimedia.org/thumb/7.png", w.Http.Requests.Last().AbsoluteUri);
     }
 
+    /// <summary>What Commons really answers in 2026 (seen live): resized images come from
+    /// thumb.wikimedia.org with tracking parameters; only an image smaller than the asked width is
+    /// served from upload.wikimedia.org. Allowing only the latter left one result in twenty-four.</summary>
+    [Fact]
+    public async Task Commons_thumbnails_on_thumb_wikimedia_org_are_listed_and_imported()
+    {
+        const string thumb = "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8f/X.jpg/1920px-X.jpg?utm_source=commons.wikimedia.org&utm_content=thumbnail";
+        var w = new World();
+        w.Http.On(WikimediaProvider.ApiUrl, CommonsResult(false,
+                CommonsPage(7, 1, "Public domain").Replace("https://upload.wikimedia.org/thumb/7.png", thumb)))
+              .OnBytes("https://thumb.wikimedia.org/", MediaWorld.Image(10));
+
+        var page = await w.With(s => s.SearchAsync("wikimedia", "United States", 1));
+        Assert.Single(page.Items);
+
+        var asset = await w.With(s => s.ImportAsync(Author, new StockImportCM { Provider = "wikimedia", Id = "7" }));
+        Assert.Equal("Image", asset.Kind);
+        Assert.Equal("thumb.wikimedia.org", w.Http.Requests.Last().Host);
+    }
+
     [Fact]
     public async Task A_licence_that_changed_since_the_search_is_refused_at_import()
     {
@@ -291,7 +311,7 @@ public class StockImageTests
         public string Id => "hostile";
         public string Name => "Hostile";
         public bool Enabled => true;
-        public string DownloadHost => "images.example.com";
+        public IReadOnlySet<string> DownloadHosts { get; } = new HashSet<string> { "images.example.com" };
         public Task<StockSearchResultDTO> SearchAsync(string query, int page, CancellationToken ct) => Task.FromResult(new StockSearchResultDTO());
         public Task<StockImageDetail?> GetAsync(string id, CancellationToken ct) => Task.FromResult<StockImageDetail?>(
             new StockImageDetail(new Uri(downloadUrl), new MediaImportCredit(MediaSource.Pexels, "x", null, null, null, null)));

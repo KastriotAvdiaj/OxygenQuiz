@@ -29,7 +29,7 @@ takes **a provider and an id, nothing else**. The server:
 
 1. asks that provider about that id again — a result is a hint, not a promise, so a licence that
    changed since the search is refused;
-2. downloads only from the single host the provider declares, over https, with redirects off and a
+2. downloads only from the image hosts the provider declares (for Commons, its upload and thumbnail hosts), over https, with redirects off and a
    size cap;
 3. passes the bytes and the provider's credit to the same `MediaService.UploadAsync` an upload uses.
 

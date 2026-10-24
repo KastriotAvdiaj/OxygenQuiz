@@ -9,10 +9,10 @@ namespace QuizAPI.Services.Media.Stock
         string Name { get; }
         bool Enabled { get; }
 
-        /// <summary>The only host an image of this provider is downloaded from. An image whose
-        /// download URL points anywhere else is refused — the import is never a way to make the
+        /// <summary>The only hosts an image of this provider is downloaded (and previewed) from. An
+        /// image whose URL points anywhere else is refused — the import is never a way to make the
         /// server fetch an arbitrary URL.</summary>
-        string DownloadHost { get; }
+        IReadOnlySet<string> DownloadHosts { get; }
 
         Task<StockSearchResultDTO> SearchAsync(string query, int page, CancellationToken ct);
 

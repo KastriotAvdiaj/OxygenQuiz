@@ -62,7 +62,7 @@ namespace QuizAPI.Services.Media.Stock
             // The grid loads these in the author's browser: only https previews from the source's
             // own image host, so a strange answer can't turn the picker into a tracker or a
             // mixed-content page.
-            result.Items = result.Items.Where(i => IsOnHost(i.ThumbUrl, source.DownloadHost)).ToList();
+            result.Items = result.Items.Where(i => IsOnHost(i.ThumbUrl, source.DownloadHosts)).ToList();
             cache.Set(key, result, TimeSpan.FromMinutes(_o.SearchCacheMinutes));
             return result;
         }
@@ -77,7 +77,7 @@ namespace QuizAPI.Services.Media.Stock
                 ?? throw new NotFoundException("That image isn't available any more, or its licence doesn't allow reuse.");
 
             var url = detail.DownloadUrl;
-            if (!IsOnHost(url.AbsoluteUri, source.DownloadHost))
+            if (!IsOnHost(url.AbsoluteUri, source.DownloadHosts))
                 throw new AppValidationException("That image can't be imported.");
 
             var bytes = await DownloadAsync(url, ct);
@@ -112,10 +112,10 @@ namespace QuizAPI.Services.Media.Stock
             throw new NotFoundException("No free image was found for that.");
         }
 
-        private static bool IsOnHost(string? url, string host) =>
+        private static bool IsOnHost(string? url, IReadOnlySet<string> hosts) =>
             Uri.TryCreate(url, UriKind.Absolute, out var uri)
             && uri.Scheme == Uri.UriSchemeHttps
-            && string.Equals(uri.Host, host, StringComparison.OrdinalIgnoreCase);
+            && hosts.Contains(uri.Host);
 
         private IStockImageProvider Resolve(string? provider)
         {

@@ -36,7 +36,10 @@ namespace QuizAPI.Services.Media.Stock
         public string Id => "wikimedia";
         public string Name => "Wikimedia Commons";
         public bool Enabled => true;
-        public string DownloadHost => "upload.wikimedia.org";
+        /// <summary>Originals come from upload.wikimedia.org; since 2026 Commons serves its resized
+        /// thumbnails — which is what we ask for and download — from thumb.wikimedia.org.</summary>
+        public IReadOnlySet<string> DownloadHosts { get; } =
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "upload.wikimedia.org", "thumb.wikimedia.org" };
 
         public async Task<StockSearchResultDTO> SearchAsync(string query, int page, CancellationToken ct)
         {

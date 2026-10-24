@@ -23,7 +23,8 @@ namespace QuizAPI.Services.Media.Stock
         public string Id => "pexels";
         public string Name => "Pexels";
         public bool Enabled => !string.IsNullOrWhiteSpace(_o.PexelsApiKey);
-        public string DownloadHost => "images.pexels.com";
+        public IReadOnlySet<string> DownloadHosts { get; } =
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "images.pexels.com" };
 
         public async Task<StockSearchResultDTO> SearchAsync(string query, int page, CancellationToken ct)
         {
