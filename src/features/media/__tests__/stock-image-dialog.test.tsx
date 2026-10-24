@@ -84,6 +84,29 @@ describe("StockImageDialog", () => {
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 
+  it("searching doesn't submit the form the picker sits in", async () => {
+    get.mockImplementation((url: string) =>
+      Promise.resolve(url === "/media/stock/providers" ? providers(true) : { data: { items: [FLAG], page: 1, hasMore: false } }),
+    );
+    const outerSubmit = vi.fn((e: { preventDefault: () => void }) => e.preventDefault());
+    const user = userEvent.setup();
+    render(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { ...queryConfig } })}>
+        {/* The quiz builder: the picker, and so this dialog, live inside its <form>. */}
+        <form onSubmit={outerSubmit}>
+          <StockImageDialog open onOpenChange={vi.fn()} onPicked={vi.fn()} />
+        </form>
+      </QueryClientProvider>,
+    );
+
+    await user.type(screen.getByLabelText("Search Wikimedia Commons"), "flag");
+    await user.click(screen.getByRole("button", { name: "Search" }));
+    await screen.findByRole("button", { name: /Flag of Kosovo/ });
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+
+    expect(outerSubmit).not.toHaveBeenCalled();
+  });
+
   it("offers Pexels only when the site has a key for it", async () => {
     renderDialog(false);
     expect(await screen.findByLabelText("Search Wikimedia Commons")).toBeInTheDocument();

@@ -83,6 +83,10 @@ export function StockImageDialog({ open, onOpenChange, onPicked }: StockImageDia
             className="flex gap-2"
             onSubmit={(e) => {
               e.preventDefault();
+              // The dialog is portalled out of the DOM, but React still bubbles events up the
+              // component tree — so without this, searching here also submitted the quiz form
+              // the picker sits in.
+              e.stopPropagation();
               setError(null);
               setQuery(draft.trim());
             }}
@@ -170,6 +174,7 @@ export function StockImageDialog({ open, onOpenChange, onPicked }: StockImageDia
           {search.hasNextPage && (
             <div className="flex justify-center pt-3">
               <LiftedButton
+                type="button"
                 size="sm"
                 className="flex items-center gap-2 bg-muted text-foreground"
                 liftColor="muted-foreground"
@@ -185,6 +190,7 @@ export function StockImageDialog({ open, onOpenChange, onPicked }: StockImageDia
 
         <div className="flex justify-end">
           <LiftedButton
+            type="button"
             className="flex items-center gap-2 border border-foreground/30 bg-background text-foreground"
             liftColor="muted"
             onClick={() => onOpenChange(false)}
