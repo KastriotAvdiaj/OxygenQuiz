@@ -52,9 +52,11 @@ namespace QuizAPI.Controllers.Media
         public async Task<ActionResult<QuizAPI.DTOs.Moderation.HiddenMediaDTO>> HiddenQuestionMedia(
             int questionId, [FromServices] QuizAPI.Repositories.Interfaces.IModerationRepository moderation, CancellationToken ct)
         {
-            if (current.UserId is null) throw new UnauthorizedException("Sign in to see hidden media.");
-            var q = await moderation.GetQuestionVisibleToCallerAsync(questionId, ct);
-            if (q is null || q.MediaHiddenAt is null || q.MediaUrl is null) throw new NotFoundException("Nothing hidden here.");
+            if (current.UserId is not Guid userId) throw new UnauthorizedException("Sign in to see hidden media.");
+            var q = await moderation.GetQuestionAsync(questionId, ct);
+            if (q is null || q.MediaHiddenAt is null || q.MediaUrl is null
+                || !await moderation.CanReachQuestionAsync(questionId, userId, ct))
+                throw new NotFoundException("Nothing hidden here.");
             return Ok(new QuizAPI.DTOs.Moderation.HiddenMediaDTO { MediaUrl = q.MediaUrl, MediaType = q.MediaType.ToString() });
         }
 

@@ -16,12 +16,20 @@ namespace QuizAPI.Repositories.Interfaces
         /// <summary>Tracked, unfiltered (a report is a fact about the row, whoever reads it).</summary>
         Task<QuestionBase?> GetQuestionAsync(int id, CancellationToken ct = default);
 
-        /// <summary>The question as the CALLER may see it — the global question filter applies — for
-        /// "Show anyway": you can reveal hidden media only on a question you could already read.</summary>
-        Task<QuestionBase?> GetQuestionVisibleToCallerAsync(int id, CancellationToken ct = default);
 
         /// <summary>Tracked; soft-deleted quizzes are not reportable.</summary>
         Task<Quiz?> GetQuizAsync(int id, CancellationToken ct = default);
+
+        /// <summary>
+        /// Whether <paramref name="userId"/> could have seen this question: the caller's question
+        /// filter lets them read it (public, theirs, in a Public quiz), or they have played a quiz it
+        /// is in — an Unlisted one through its share link, a lobby's. What a report and "Show
+        /// anyway" require, so neither can probe ids the caller was never shown.
+        /// </summary>
+        Task<bool> CanReachQuestionAsync(int questionId, Guid userId, CancellationToken ct = default);
+
+        /// <summary>The same for a quiz: Public, or one the caller has played.</summary>
+        Task<bool> CanReachQuizAsync(int quizId, Guid userId, CancellationToken ct = default);
 
         /// <summary>Distinct reporters with an open report of <paramref name="reason"/> on the target.</summary>
         Task<int> CountOpenReportersAsync(int? questionId, int? quizId, ReportReason reason, CancellationToken ct = default);
@@ -76,11 +84,18 @@ namespace QuizAPI.Repositories
         public Task<QuestionBase?> GetQuestionAsync(int id, CancellationToken ct = default) =>
             db.Questions.IgnoreQueryFilters().FirstOrDefaultAsync(q => q.Id == id, ct);
 
-        public Task<QuestionBase?> GetQuestionVisibleToCallerAsync(int id, CancellationToken ct = default) =>
-            db.Questions.AsNoTracking().FirstOrDefaultAsync(q => q.Id == id, ct);
 
         public Task<Quiz?> GetQuizAsync(int id, CancellationToken ct = default) =>
             db.Quizzes.FirstOrDefaultAsync(q => q.Id == id, ct);
+
+        public async Task<bool> CanReachQuestionAsync(int questionId, Guid userId, CancellationToken ct = default) =>
+            await db.Questions.AnyAsync(q => q.Id == questionId, ct)
+            || await db.QuizQuestions.AnyAsync(qq => qq.QuestionId == questionId
+                && db.QuizSessions.Any(s => s.QuizId == qq.QuizId && s.UserId == userId), ct);
+
+        public Task<bool> CanReachQuizAsync(int quizId, Guid userId, CancellationToken ct = default) =>
+            db.Quizzes.AnyAsync(q => q.Id == quizId
+                && (q.Status == QuizStatus.Public || db.QuizSessions.Any(s => s.QuizId == q.Id && s.UserId == userId)), ct);
 
         public Task<int> CountOpenReportersAsync(int? questionId, int? quizId, ReportReason reason, CancellationToken ct = default) =>
             (questionId is int q

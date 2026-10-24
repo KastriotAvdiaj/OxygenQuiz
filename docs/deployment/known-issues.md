@@ -265,6 +265,11 @@ None open in code. The fix below is live only once the backend is rebuilt on the
   throttled by Commons (429) and has no Pexels key. The first live import attempt is what found
   Commons answering with protocol-relative URLs (now made https). First thing after deploy: one
   search in each source and one import (runbook, "Free images").
+- **P3 — AI pictures share the hourly upload limit** (2026-10-24). Each picture the wizard finds is an
+  import, and imports count towards the 30-an-hour upload limit (`media-upload`). Two or three
+  picture-heavy generations in an hour can reach it; the rest of that quiz's pictures then come back
+  as "none found" rather than "try later". Raise the limit, or give `stock/auto` its own, if authors
+  hit it. → `RateLimitingExtensions.cs`, `StockImagesController.Auto`
 - **P3 — Pre-pipeline image files are still on the uploads volume** (2026-10-24). The
   `AddMediaPipeline` migration cleared every URL pointing at them; the files in
   `wwwroot/uploads/*.{png,jpg,gif}` (not `uploads/files/`, which holds avatars) are dead weight.

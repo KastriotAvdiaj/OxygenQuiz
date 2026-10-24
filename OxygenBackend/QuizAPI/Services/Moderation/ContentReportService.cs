@@ -68,8 +68,11 @@ namespace QuizAPI.Services.Moderation
 
             if (cm.QuestionId is int questionId)
             {
-                question = await repo.GetQuestionAsync(questionId, ct)
-                    ?? throw new NotFoundException("That question no longer exists.");
+                // One answer for "doesn't exist" and "you were never shown it" — a report must not be
+                // a way to find out which ids hold someone's Draft or Unlisted questions.
+                question = await repo.GetQuestionAsync(questionId, ct);
+                if (question is null || !await repo.CanReachQuestionAsync(questionId, reporterId, ct))
+                    throw new NotFoundException("That question no longer exists.");
                 authorId = question.UserId;
                 title = question.Text;
                 if (cm.QuizId is int contextId && await repo.GetQuizAsync(contextId, ct) is null)
@@ -77,7 +80,9 @@ namespace QuizAPI.Services.Moderation
             }
             else if (cm.QuizId is int quizId)
             {
-                quiz = await repo.GetQuizAsync(quizId, ct) ?? throw new NotFoundException("That quiz no longer exists.");
+                quiz = await repo.GetQuizAsync(quizId, ct);
+                if (quiz is null || !await repo.CanReachQuizAsync(quizId, reporterId, ct))
+                    throw new NotFoundException("That quiz no longer exists.");
                 authorId = quiz.UserId;
                 title = quiz.Title;
             }

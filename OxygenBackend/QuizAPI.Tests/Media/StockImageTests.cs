@@ -156,6 +156,19 @@ public class StockImageTests
     }
 
     [Fact]
+    public async Task A_preview_off_the_sources_image_host_is_left_out_of_the_grid()
+    {
+        var w = new World();
+        w.Http.On(WikimediaProvider.ApiUrl, CommonsResult(false,
+            CommonsPage(1, 1, "CC0"),
+            CommonsPage(2, 2, "CC0").Replace("https://upload.wikimedia.org/thumb/2.png", "https://tracker.example/pixel.png")));
+
+        var page = await w.With(s => s.SearchAsync("wikimedia", "flag", 1));
+
+        Assert.Equal(new[] { "1" }, page.Items.Select(i => i.Id));
+    }
+
+    [Fact]
     public async Task The_same_search_twice_asks_the_source_once()
     {
         var w = new World();

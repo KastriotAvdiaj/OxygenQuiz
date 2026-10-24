@@ -3,6 +3,10 @@ using QuizAPI.DTOs.Moderation;
 using QuizAPI.Exceptions;
 using QuizAPI.Models.Moderation;
 using QuizAPI.Services.Moderation;
+using QuizAPI.Models;
+using QuizAPI.Models.Quiz;
+using QuizAPI.ManyToManyTables;
+using QuizAPI.Tests.TestSupport;
 using Xunit;
 
 namespace QuizAPI.Tests.Moderation;
@@ -340,5 +344,67 @@ public class ModerationTests
         Assert.NotNull((await w.Question(w.QuestionId)).MediaHiddenAt);
         await w.With(c => w.Moderation(c).SetMediaHiddenAsync(ModerationWorld.Staff, w.QuestionId, false).ContinueWith(_ => 0));
         Assert.Null((await w.Question(w.QuestionId)).MediaHiddenAt);
+    }
+
+    // ── A report is not a way to probe ids you were never shown ─────────────────────────────
+
+    private static async Task<(int QuizId, int QuestionId)> AddDraftQuiz(ModerationWorld w)
+    {
+        return await w.With(async c =>
+        {
+            var q = new TrueFalseQuestion
+            {
+                Text = "A private draft question", UserId = ModerationWorld.Author, Type = QuestionType.TrueFalse,
+                CategoryId = 1, LanguageId = 1, DifficultyId = 1, Visibility = QuestionVisibility.Private,
+            };
+            var quiz = new Quiz { Title = "Unfinished", UserId = ModerationWorld.Author, Status = QuizStatus.Unlisted, ShareToken = "t" };
+            c.Questions.Add(q);
+            c.Quizzes.Add(quiz);
+            await c.SaveChangesAsync();
+            c.QuizQuestions.Add(new QuizQuestion { QuizId = quiz.Id, QuestionId = q.Id, CreatedInVersion = 1 });
+            await c.SaveChangesAsync();
+            return (quiz.Id, q.Id);
+        });
+    }
+
+    /// <summary>Reports as the reporter's own request would: their caller identity, not an admin's.</summary>
+    private static async Task Submit(ModerationWorld w, Guid reporter, int? questionId, int? quizId)
+    {
+        await using var ctx = w.Context(new TestCurrentUserService { UserId = reporter, IsAdmin = false });
+        await w.Reports(ctx).SubmitAsync(reporter, new SubmitReportCM { QuestionId = questionId, QuizId = quizId, Reason = "Spam" });
+    }
+
+    [Fact]
+    public async Task An_unlisted_quiz_or_private_question_you_never_played_is_the_same_404_as_an_unknown_id()
+    {
+        var w = new ModerationWorld();
+        var (quizId, questionId) = await AddDraftQuiz(w);
+        var stranger = w.Reporters[0];
+
+        var unknown = await Assert.ThrowsAsync<NotFoundException>(() => Submit(w, stranger, questionId: 999_999, quizId: null));
+        var quiz = await Assert.ThrowsAsync<NotFoundException>(() => Submit(w, stranger, null, quizId));
+        var question = await Assert.ThrowsAsync<NotFoundException>(() => Submit(w, stranger, questionId, null));
+
+        Assert.Equal(unknown.Message, question.Message);
+        Assert.Equal("That quiz no longer exists.", quiz.Message);
+        Assert.Empty(await w.With(c => c.ContentReports.ToListAsync()));
+    }
+
+    [Fact]
+    public async Task Someone_who_played_an_unlisted_quiz_through_its_link_can_report_it_and_its_questions()
+    {
+        var w = new ModerationWorld();
+        var (quizId, questionId) = await AddDraftQuiz(w);
+        var player = w.Reporters[1];
+        await w.With(async c =>
+        {
+            c.QuizSessions.Add(new QuizSession { Id = Guid.NewGuid(), QuizId = quizId, UserId = player, StartTime = DateTime.UtcNow });
+            return await c.SaveChangesAsync();
+        });
+
+        await Submit(w, player, null, quizId);
+        await Submit(w, player, questionId, null);
+
+        Assert.Equal(2, await w.With(c => c.ContentReports.CountAsync()));
     }
 }

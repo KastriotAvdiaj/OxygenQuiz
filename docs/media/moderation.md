@@ -17,7 +17,11 @@ storage half). Decided in [`../proposals/media-pipeline.md`](../proposals/media-
 to hold to it, and to tell the outcome to.
 
 **What:** a question (from the play screen, the results review and the multiplayer question view)
-or a whole quiz (from the start dialog). Never your own content — edit it instead.
+or a whole quiz (from the start dialog). Never your own content — edit it instead. Only something
+you could have seen: a Public quiz (or a question you can read), or a quiz you have played — an
+Unlisted one through its link, say. Anything else is the same 404 as an id that doesn't exist, so a
+report can't map which ids hold someone's drafts (`CanReachQuizAsync` / `CanReachQuestionAsync`;
+*Show anyway* checks the same).
 
 **Once:** one open report per person per question or quiz. A second is refused with *You've
 already reported this* (enforced by `IX_ContentReports_OneOpenPerQuestion` / `…PerQuiz`, filtered
