@@ -115,10 +115,15 @@ export type ModerationAction =
 
 const actionRequest = (a: ModerationAction) => {
   switch (a.kind) {
-    case "resolve": {
-      const { kind: _kind, ...body } = a;
-      return api.post("/moderation/resolve", body);
-    }
+    case "resolve":
+      return api.post("/moderation/resolve", {
+        questionId: a.questionId,
+        quizId: a.quizId,
+        outcome: a.outcome,
+        removeMedia: a.removeMedia,
+        holdQuiz: a.holdQuiz,
+        note: a.note,
+      });
     case "hide-media":
     case "show-media":
       return api.post(`/moderation/questions/${a.questionId}/${a.kind}`);

@@ -20,6 +20,9 @@ export type QuizListing = {
   timeLimitInSeconds: number;
   author: string;
   imageUrl?: string | null;
+  /** The cover's credit when it came from Pexels or Wikimedia Commons. */
+  coverCredit?: string | null;
+  coverCreditUrl?: string | null;
   format: QuizFormat;
   createdAt: string;
   updatedAt: string;

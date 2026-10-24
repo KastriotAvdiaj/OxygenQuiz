@@ -1,4 +1,5 @@
 import { useMemo, type CSSProperties, type ReactNode } from "react";
+import { MediaCreditLine } from "@/features/media/components/media-credit";
 import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
 import { Calendar, Clock, Globe, HelpCircle, Play, User } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -74,7 +75,14 @@ function ListingCard({ listing }: { listing: QuizListing }) {
         style={{ "--edge": quizEdgeColor(accent) } as CSSProperties}
       >
         {listing.imageUrl && (
-          <img src={listing.imageUrl} alt="" className="aspect-[2/1] w-full object-cover" />
+          <figure>
+            <img src={listing.imageUrl} alt="" className="aspect-[2/1] w-full object-cover" />
+            {listing.coverCredit && (
+              <figcaption className="px-5 pt-1.5 sm:px-7">
+                <MediaCreditLine credit={{ line: listing.coverCredit, url: listing.coverCreditUrl }} />
+              </figcaption>
+            )}
+          </figure>
         )}
         <div className="space-y-5 p-5 sm:p-7">
           <div className="flex flex-wrap items-center gap-2">

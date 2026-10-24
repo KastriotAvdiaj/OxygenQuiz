@@ -193,6 +193,20 @@ Question and quiz media live in a Cloudflare R2 bucket, served from `media.oxyge
    dead files from the uploads volume — not `files/`, which holds avatars:
    `docker compose -f docker-compose.prod.yml exec backend sh -c 'find /app/wwwroot/uploads -maxdepth 1 -type f \( -name "*.png" -o -name "*.jpg" -o -name "*.jpeg" -o -name "*.gif" \) -print -delete'`
 
+### Free images (Wikimedia Commons, Pexels)
+
+The picker's *Or find a free image* ([`../media/media-pipeline.md`](../media/media-pipeline.md) §7).
+Wikimedia works with no setup. For Pexels:
+
+1. **Key.** pexels.com/api → request a key (free). Set `Media__Stock__PexelsApiKey` in the backend
+   `.env` and restart. Without it the picker shows Wikimedia only.
+2. **Raise the limit.** The free key allows 200 requests an hour and 20,000 a month for the whole
+   site. Pexels lifts it on request once they've seen the credit: send them a screenshot of an
+   imported image with its credit under it in the editor, and one of the ⓘ open at play time.
+3. **Wikimedia, if searches say "busy".** Anonymous Commons requests share a per-IP limit. If the
+   server's address is throttled (a 429 in the log, "Wikimedia Commons is busy" in the picker),
+   create a personal API token at api.wikimedia.org and set `Media__Stock__WikimediaAccessToken`.
+
 ---
 
 ## Updating later

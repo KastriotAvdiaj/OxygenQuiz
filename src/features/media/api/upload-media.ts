@@ -18,6 +18,8 @@ export type MediaAsset = {
 
 export type MediaCredit = {
   provider: string;
+  /** The one-line credit every screen shows ("Photo: Jane Doe / Pexels") — `MediaCredits.Line`. */
+  line: string;
   author?: string | null;
   authorUrl?: string | null;
   sourceUrl?: string | null;
@@ -26,21 +28,36 @@ export type MediaCredit = {
 };
 
 /**
+ * The credit as every screen shows it: one line, linked to the image's page at its source. A saved
+ * question or quiz carries exactly this (`mediaCredit` / `mediaCreditUrl`, `coverCredit` /
+ * `coverCreditUrl`), so a fresh pick and a saved one render the same.
+ */
+export type CreditLine = { line: string; url?: string | null };
+
+export const creditLineOf = (credit: MediaCredit | null | undefined): CreditLine | null =>
+  credit?.line ? { line: credit.line, url: credit.sourceUrl ?? null } : null;
+
+/** A saved question's or quiz's credit fields as a `CreditLine`, or null when there is none. */
+export const creditFrom = (line: string | null | undefined, url?: string | null): CreditLine | null =>
+  line ? { line, url: url ?? null } : null;
+
+/**
  * What an editor holds for a question's or quiz's media: the asset id it will send on save, and
- * what it needs to show a preview. Only `assetId` goes to the API — the server writes the URL.
+ * what it needs to show a preview. Only `assetId` goes to the API — the server writes the URL and
+ * the credit.
  */
 export type MediaSelection = {
   assetId: string;
   url: string;
   kind: "Image" | "Audio";
-  credit?: MediaCredit | null;
+  credit?: CreditLine | null;
 };
 
 export const toSelection = (asset: MediaAsset): MediaSelection => ({
   assetId: asset.id,
   url: asset.url,
   kind: asset.kind,
-  credit: asset.credit ?? null,
+  credit: creditLineOf(asset.credit),
 });
 
 /**
@@ -52,9 +69,12 @@ export const selectionFrom = (
   assetId: string | null | undefined,
   url: string | null | undefined,
   kind: string | null | undefined,
-  credit?: MediaCredit | null,
+  creditLine?: string | null,
+  creditUrl?: string | null,
 ): MediaSelection | null =>
-  assetId && url && (kind === "Image" || kind === "Audio") ? { assetId, url, kind, credit: credit ?? null } : null;
+  assetId && url && (kind === "Image" || kind === "Audio")
+    ? { assetId, url, kind, credit: creditFrom(creditLine, creditUrl) }
+    : null;
 
 // Client-side guards mirror the API (MediaOptions: ImageMaxSourceBytes, AudioMaxBytes) for fast
 // feedback. The API is the gate: it re-checks the size and decides the type from the bytes.
@@ -101,15 +121,5 @@ export const mediaSelectionSchema = z.object({
   assetId: z.string().uuid(),
   url: z.string(),
   kind: z.enum(["Image", "Audio"]),
-  credit: z
-    .object({
-      provider: z.string(),
-      author: z.string().nullable().optional(),
-      authorUrl: z.string().nullable().optional(),
-      sourceUrl: z.string().nullable().optional(),
-      license: z.string().nullable().optional(),
-      licenseUrl: z.string().nullable().optional(),
-    })
-    .nullable()
-    .optional(),
+  credit: z.object({ line: z.string(), url: z.string().nullable().optional() }).nullable().optional(),
 });

@@ -114,6 +114,9 @@ namespace QuizAPI.DTOs.Quiz
         public int Version { get; set; }
 
         public string? ImageUrl { get; set; }
+        /// <summary>The cover's credit when it came from Pexels or Wikimedia Commons.</summary>
+        public string? CoverCredit { get; set; }
+        public string? CoverCreditUrl { get; set; }
 
         /// <summary>The cover's asset, for the edit form to send back unchanged.</summary>
         public Guid? CoverAssetId { get; set; }
@@ -158,6 +161,9 @@ namespace QuizAPI.DTOs.Quiz
         public int TimeLimitInSeconds { get; set; }
         public string Author { get; set; } = string.Empty;
         public string? ImageUrl { get; set; }
+        /// <summary>The cover's credit when it came from Pexels or Wikimedia Commons.</summary>
+        public string? CoverCredit { get; set; }
+        public string? CoverCreditUrl { get; set; }
         public string Format { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }

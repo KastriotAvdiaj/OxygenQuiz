@@ -57,6 +57,8 @@ namespace QuizAPI.Services.Media
                 question.MediaAssetId = null;
                 question.MediaUrl = null;
                 question.MediaType = QuestionMediaType.None;
+                question.MediaCredit = null;
+                question.MediaCreditUrl = null;
                 question.MediaCountedAt = null;
                 return;
             }
@@ -67,6 +69,8 @@ namespace QuizAPI.Services.Media
             question.MediaAssetId = asset.Id;
             question.MediaUrl = asset.Url;
             question.MediaType = asset.Kind == MediaKind.Audio ? QuestionMediaType.Audio : QuestionMediaType.Image;
+            question.MediaCredit = MediaCredits.Line(asset);
+            question.MediaCreditUrl = MediaCredits.Url(asset);
             question.MediaCountedAt = counted;
             MarkAttached(asset);
         }
@@ -79,6 +83,8 @@ namespace QuizAPI.Services.Media
             {
                 quiz.CoverAssetId = null;
                 quiz.ImageUrl = null;
+                quiz.CoverCredit = null;
+                quiz.CoverCreditUrl = null;
                 quiz.CoverCountedAt = null;
                 return;
             }
@@ -91,6 +97,8 @@ namespace QuizAPI.Services.Media
 
             quiz.CoverAssetId = asset.Id;
             quiz.ImageUrl = asset.Url;
+            quiz.CoverCredit = MediaCredits.Line(asset);
+            quiz.CoverCreditUrl = MediaCredits.Url(asset);
             quiz.CoverCountedAt = counted;
             MarkAttached(asset);
         }

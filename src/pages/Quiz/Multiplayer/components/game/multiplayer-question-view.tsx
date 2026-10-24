@@ -9,6 +9,7 @@ import { TrueOrFalseQuestion } from "@/pages/Quiz/Sessions/components/quiz-takin
 import { TypeTheAnswerQuestion } from "@/pages/Quiz/Sessions/components/quiz-taking-process/question-display-type-files/type-the-answer-question";
 import { MultipleChoiceQuestion } from "@/pages/Quiz/Sessions/components/quiz-taking-process/question-display-type-files/multiple-choice-question";
 import { QuestionMedia } from "@/common/QuestionMedia";
+import { creditFrom } from "@/features/media/api/upload-media";
 import type { useMatch, RoundQuestionView } from "../../hooks/use-match";
 import type { Participant } from "../../hooks/use-lobby-connection";
 import { FloatingAvatarCluster, type AvatarClusterPlayer } from "./floating-avatar-cluster";
@@ -169,6 +170,7 @@ export function MultiplayerQuestionView({ match, username, participants }: Multi
           mediaType={currentQuestion.mediaType}
           hidden={currentQuestion.mediaHidden}
           questionId={currentQuestion.questionId}
+          credit={creditFrom(currentQuestion.mediaCredit, currentQuestion.mediaCreditUrl)}
           alt="Question image"
         />
 
@@ -212,6 +214,8 @@ function toCurrentQuestion(q: RoundQuestionView, secondsLeft: number): CurrentQu
     mediaUrl: q.mediaUrl ?? null,
     mediaType: q.mediaType ?? "None",
     mediaHidden: q.mediaHidden ?? false,
+    mediaCredit: q.mediaCredit ?? null,
+    mediaCreditUrl: q.mediaCreditUrl ?? null,
     questionId: q.questionId,
     options,
     timeLimitInSeconds: q.timeLimitSeconds,

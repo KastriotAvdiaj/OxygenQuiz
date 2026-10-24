@@ -62,6 +62,15 @@ namespace QuizAPI.Models.Quiz
         /// </summary>
         public string? ImageUrl { get; set; }
 
+        /// <summary>The cover's credit line when it came from Pexels or Wikimedia Commons, copied with
+        /// <see cref="ImageUrl"/>. Null for the author's own image.</summary>
+        [System.ComponentModel.DataAnnotations.MaxLength(300)]
+        public string? CoverCredit { get; set; }
+
+        /// <summary>The cover's page at its source, which the credit links to.</summary>
+        [System.ComponentModel.DataAnnotations.MaxLength(500)]
+        public string? CoverCreditUrl { get; set; }
+
         /// <summary>The cover image (docs/media/media-pipeline.md). Images only.</summary>
         public Guid? CoverAssetId { get; set; }
 

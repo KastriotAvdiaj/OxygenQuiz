@@ -41,7 +41,7 @@ export const UpdateTypeAnswerQuestionForm: React.FC<
 > = ({ question }) => {
   const { addNotification } = useNotifications();
   const [media, setMedia] = useState<MediaSelection | null>(
-    selectionFrom(question.mediaAssetId, question.mediaUrl, question.mediaType),
+    selectionFrom(question.mediaAssetId, question.mediaUrl, question.mediaType, question.mediaCredit, question.mediaCreditUrl),
   );
   const { queryData } = useQuizForm();
 

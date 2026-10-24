@@ -94,6 +94,9 @@ export interface QuestionBase {
   mediaUrl?: string | null;
   /** Under a moderation cover pending review (docs/media/moderation.md). */
   mediaHidden?: boolean;
+  /** Credit for an image from Pexels or Wikimedia Commons, linked to its source page. */
+  mediaCredit?: string | null;
+  mediaCreditUrl?: string | null;
   mediaType?: QuestionMediaType;
   /** Optional "why", shown to players after they answer. Null when the author wrote none. */
   explanation?: string | null;

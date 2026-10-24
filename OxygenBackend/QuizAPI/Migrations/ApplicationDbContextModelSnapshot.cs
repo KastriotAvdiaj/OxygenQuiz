@@ -1460,6 +1460,14 @@ namespace QuizAPI.Migrations
                     b.Property<DateTime?>("MediaCountedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("MediaCredit")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<string>("MediaCreditUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
                     b.Property<DateTime?>("MediaHiddenAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -1653,6 +1661,14 @@ namespace QuizAPI.Migrations
 
                     b.Property<DateTime?>("CoverCountedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CoverCredit")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)");
+
+                    b.Property<string>("CoverCreditUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");

@@ -248,12 +248,16 @@ namespace QuizAPI.Services.Moderation
                 q.MediaAssetId = null;
                 q.MediaUrl = null;
                 q.MediaType = QuestionMediaType.None;
+                q.MediaCredit = null;
+                q.MediaCreditUrl = null;
                 q.MediaHiddenAt = null;
             }
             foreach (var z in await repo.GetQuizzesUsingAssetAsync(assetId, ct))
             {
                 z.CoverAssetId = null;
                 z.ImageUrl = null;
+                z.CoverCredit = null;
+                z.CoverCreditUrl = null;
             }
             asset.RemovedAt ??= now;
             await repo.SaveChangesAsync(ct);

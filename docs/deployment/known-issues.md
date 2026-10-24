@@ -241,8 +241,8 @@ None open in code. The fix below is live only once the backend is rebuilt on the
   `src/pages/Dashboard/Pages/Quiz/components/Create-Quiz-Form/components/question-select/`
 - **Proposal — one media pipeline for quizzes and questions.** Phase 1 (pipeline, R2, uploads,
   quotas, sweep) is built — [`../media/media-pipeline.md`](../media/media-pipeline.md) — and phase 2
-  (reports, moderation, picked catalogue) — [`../media/moderation.md`](../media/moderation.md). The
-  Pexels/Wikimedia picker and AI-added images remain. See
+  (reports, moderation, picked catalogue) — [`../media/moderation.md`](../media/moderation.md) — and
+  phase 3 (the Wikimedia/Pexels picker) — media-pipeline.md §7. AI-added images remain. See
   [`../proposals/media-pipeline.md`](../proposals/media-pipeline.md).
 - ~~**P3 — Image upload allow-list drifted from `FileService`'s.**~~ **Fixed 2026-10-24** — there is
   one pipeline now; `ImageUploadController` is gone and question/quiz media is decided from the bytes
@@ -253,6 +253,17 @@ None open in code. The fix below is live only once the backend is rebuilt on the
   sweep only sees question and quiz references) and a moderation path for an avatar (there is no
   report on a user yet) — deliberately left out of the media proposal's phases.
   → `OxygenBackend/QuizAPI/Controllers/Users/Services/AvatarService.cs`
+- **P3 — A credited quiz cover shows without its credit in link previews** (2026-10-24). A cover
+  from Wikimedia Commons is the `og:image` of the quiz's listing and share link, and WhatsApp, Discord
+  and X render it with no room for a credit line. The page the preview links to carries it (under
+  the cover), which is the usual reading of CC BY for a thumbnail; a stricter reading would leave
+  credited covers out of `og:image`. → `worker/preview.js`
+- **P3 — Pexels and the Commons import not yet run against the live services** (2026-10-24). Commons
+  search was run live from the app (results, licences and authors as expected); its import, and all
+  of Pexels, are tested against recorded response shapes only — the build machine's IP was then
+  throttled by Commons (429) and has no Pexels key. The first live import attempt is what found
+  Commons answering with protocol-relative URLs (now made https). First thing after deploy: one
+  search in each source and one import (runbook, "Free images").
 - **P3 — Pre-pipeline image files are still on the uploads volume** (2026-10-24). The
   `AddMediaPipeline` migration cleared every URL pointing at them; the files in
   `wwwroot/uploads/*.{png,jpg,gif}` (not `uploads/files/`, which holds avatars) are dead weight.

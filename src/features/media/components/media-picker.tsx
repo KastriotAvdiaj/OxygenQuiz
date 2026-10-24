@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { AlertCircle, Image as ImageIcon, Music, Upload, X } from "lucide-react";
+import { AlertCircle, Globe, Image as ImageIcon, Music, Upload, X } from "lucide-react";
 import { apiErrorMessage } from "@/lib/Api-client";
 import { cn } from "@/utils/cn";
 import {
@@ -10,6 +10,7 @@ import {
   type MediaSelection,
 } from "../api/upload-media";
 import { MediaCreditLine } from "./media-credit";
+import { StockImageDialog } from "./stock-image-dialog";
 
 interface MediaPickerProps {
   /** What's attached now — from the form's state. Null for nothing. */
@@ -46,6 +47,7 @@ export function MediaPicker({
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragActive, setDragActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [stockOpen, setStockOpen] = useState(false);
 
   const accept = allowAudio
     ? "image/jpeg,image/png,image/webp,audio/mpeg,audio/mp4,audio/x-m4a,audio/ogg,.mp3,.m4a,.ogg"
@@ -168,6 +170,15 @@ export function MediaPicker({
                 </>
               )}
             </label>
+            <button
+              type="button"
+              onClick={() => setStockOpen(true)}
+              disabled={disabled || upload.isPending}
+              className="flex w-full items-center justify-center gap-1.5 rounded-lg px-3 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/5 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Globe className="h-3.5 w-3.5" aria-hidden="true" />
+              Or find a free image
+            </button>
             <AnimatePresence>
               {error && (
                 <motion.p
@@ -184,6 +195,14 @@ export function MediaPicker({
           </motion.div>
         )}
       </AnimatePresence>
+      <StockImageDialog
+        open={stockOpen}
+        onOpenChange={setStockOpen}
+        onPicked={(asset) => {
+          setError(null);
+          onChange(toSelection(asset));
+        }}
+      />
     </div>
   );
 }

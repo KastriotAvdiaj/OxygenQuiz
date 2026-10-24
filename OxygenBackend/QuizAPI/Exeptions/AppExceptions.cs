@@ -32,4 +32,12 @@
     public sealed class QuotaExceededException(string message) : AppException(message)
     {
     }
+
+    /// <summary>
+    /// Something outside this site that the request depends on is switched off, down or refusing us
+    /// (an image source, say). 503 — the caller can try again later or another way.
+    /// </summary>
+    public sealed class ServiceUnavailableException(string message) : AppException(message)
+    {
+    }
 }

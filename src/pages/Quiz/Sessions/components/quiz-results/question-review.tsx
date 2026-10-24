@@ -9,6 +9,7 @@ import {
   QuizSession,
 } from "../../../../../types/quiz-session-types";
 import { QuestionMedia } from "@/common/QuestionMedia";
+import { creditFrom } from "@/features/media/api/upload-media";
 import { ReportButton } from "@/features/reports/components/report-dialog";
 import { ExplanationNote } from "@/common/QuestionExplanation";
 import { formatDuration } from "./quiz-session-utils";
@@ -166,6 +167,7 @@ export function QuestionReview({ session }: QuestionReviewProps) {
           mediaType={answer.mediaType}
           hidden={answer.mediaHidden}
           questionId={answer.questionId}
+          credit={creditFrom(answer.mediaCredit, answer.mediaCreditUrl)}
           alt="Question image"
           className="!max-w-md"
         />

@@ -11,6 +11,7 @@ import { MultipleChoiceQuestion } from "./question-display-type-files/multiple-c
 import { FeedbackDisplay } from "./feedback-display";
 import { QuestionCard } from "./question-card";
 import { QuestionMedia } from "@/common/QuestionMedia";
+import { creditFrom } from "@/features/media/api/upload-media";
 import { ReportButton } from "@/features/reports/components/report-dialog";
 import { useState, useRef, useCallback } from "react";
 import { useNotifications } from "@/common/Notifications";
@@ -143,6 +144,7 @@ export function QuestionDisplay({
           mediaType={question.mediaType}
           hidden={question.mediaHidden}
           questionId={question.questionId}
+          credit={creditFrom(question.mediaCredit, question.mediaCreditUrl)}
           alt="Question image"
           className="mt-4"
         />

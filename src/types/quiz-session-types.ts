@@ -45,6 +45,9 @@ export interface CurrentQuestion {
   mediaUrl?: string | null;
   mediaType?: QuestionMediaType;
   mediaHidden?: boolean;
+  /** Credit for an outside image, revealed by the ⓘ on it. */
+  mediaCredit?: string | null;
+  mediaCreditUrl?: string | null;
   options: AnswerOption[];
   timeLimitInSeconds: number;
   timeRemainingInSeconds: number;
@@ -90,6 +93,9 @@ export interface UserAnswer {
   mediaUrl?: string | null;
   mediaType?: QuestionMediaType;
   mediaHidden?: boolean;
+  /** Credit for an outside image, revealed by the ⓘ on it. */
+  mediaCredit?: string | null;
+  mediaCreditUrl?: string | null;
   questionType: QuestionType; // matches backend enum
   timeLimitInSeconds: number;
   timeSpentInSeconds: number | null; // Calculated field

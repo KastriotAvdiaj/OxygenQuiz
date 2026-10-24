@@ -4,8 +4,9 @@
 the sweep (§3.1–3.5, 3.8–3.12, 3.15, 3.23) — is built and described in
 [`../media/media-pipeline.md`](../media/media-pipeline.md). Phase 2 — reports, moderation and the
 picked catalogue (§3.6–3.7, 3.16–3.19, 3.21–3.22) — is built and described in
-[`../media/moderation.md`](../media/moderation.md). Phases 3–4 (the Pexels/Wikimedia picker,
-AI-added images) are next; this file is deleted once they are folded in too.
+[`../media/moderation.md`](../media/moderation.md). Phase 3 — the Wikimedia/Pexels picker and
+credits (§3.8, 3.20) — is in [`../media/media-pipeline.md`](../media/media-pipeline.md) §7. Phase 4
+(AI-added images) is next; this file is deleted once it is folded in too.
 
 An author is building a geography quiz. Question 7 is "Which country's flag is this?" — they
 want a flag image, and they don't have one on disk. Question 12 is "Name this anthem" and needs

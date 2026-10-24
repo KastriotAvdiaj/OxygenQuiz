@@ -58,6 +58,9 @@ namespace QuizAPI.Services.Media
                 // running on them: an unsaved file's 24 hours, or a once-used file's 7 days.
                 if (existing.FirstAttachedAt is null) existing.CreatedAt = now;
                 existing.UnreferencedSince = null;
+                // The same bytes uploaded earlier by hand, now imported from their source: the
+                // credit is owed either way, so the asset gains it. A credit is never removed.
+                if (credit is not null && existing.Source == MediaSource.Upload) ApplyCredit(existing, credit);
                 await media.SaveChangesAsync(ct);
                 return ToDto(existing);
             }
@@ -74,13 +77,8 @@ namespace QuizAPI.Services.Media
                 Kind = kind,
                 UploadedById = uploaderId,
                 CreatedAt = now,
-                Source = credit?.Source ?? MediaSource.Upload,
-                CreditAuthor = Trim(credit?.Author, 200),
-                CreditAuthorUrl = Trim(credit?.AuthorUrl, 500),
-                CreditSourceUrl = Trim(credit?.SourceUrl, 500),
-                CreditLicense = Trim(credit?.License, 100),
-                CreditLicenseUrl = Trim(credit?.LicenseUrl, 500),
             };
+            if (credit is not null) ApplyCredit(asset, credit);
 
             var written = new List<string>();
             try
@@ -155,6 +153,16 @@ namespace QuizAPI.Services.Media
             }
         }
 
+        private static void ApplyCredit(MediaAsset asset, MediaImportCredit credit)
+        {
+            asset.Source = credit.Source;
+            asset.CreditAuthor = Trim(credit.Author, 200);
+            asset.CreditAuthorUrl = MediaCredits.SafeUrl(credit.AuthorUrl);
+            asset.CreditSourceUrl = MediaCredits.SafeUrl(credit.SourceUrl);
+            asset.CreditLicense = Trim(credit.License, 100);
+            asset.CreditLicenseUrl = MediaCredits.SafeUrl(credit.LicenseUrl);
+        }
+
         private static string? Trim(string? s, int max) =>
             string.IsNullOrWhiteSpace(s) ? null : (s.Length <= max ? s.Trim() : s[..max].Trim());
 
@@ -170,7 +178,8 @@ namespace QuizAPI.Services.Media
             ByteSize = a.ByteSize,
             Credit = a.Source == MediaSource.Upload ? null : new MediaCreditDTO
             {
-                Provider = a.Source == MediaSource.Pexels ? "Pexels" : "Wikimedia Commons",
+                Provider = MediaCredits.ProviderName(a.Source),
+                Line = MediaCredits.Line(a) ?? string.Empty,
                 Author = a.CreditAuthor,
                 AuthorUrl = a.CreditAuthorUrl,
                 SourceUrl = a.CreditSourceUrl,

@@ -31,7 +31,8 @@ Switched by `RateLimiting:Enabled` (default on; off in Development — see "In d
 | **`auth`** policy | 20 requests | 1 min sliding, per IP | `login`, `signup`, `external-login`/`-signup`, `validate-invite-code`, `verify-email`, `resend-verification`, password reset |
 | **`guest`** policy | 20 requests | 1 min sliding, per IP | `POST /api/guest-quiz-sessions` (guest session creation) |
 | **`ai`** policy | 6 requests | 1 min sliding, **per user** | `POST /api/quiz/ai-generate` only |
-| **`media-upload`** policy | 30 requests | 1 hour fixed, **per user** | `POST /api/media` only. The media quota counts saves, not uploads, so this is what stops a script uploading thousands of files nobody saves ([`../media/media-pipeline.md`](../media/media-pipeline.md) §5) |
+| **`media-search`** policy | 120 requests | 1 hour fixed, **per user** | `GET /api/media/stock/search` — searching Wikimedia Commons and Pexels. Results are cached an hour, but Pexels allows 200 requests an hour for the whole site, so one account mustn't spend it ([`../media/media-pipeline.md`](../media/media-pipeline.md) §7) |
+| **`media-upload`** policy | 30 requests | 1 hour fixed, **per user** | `POST /api/media` and `POST /api/media/stock/import` (an import stores a file too). The media quota counts saves, not uploads, so this is what stops a script uploading thousands of files nobody saves ([`../media/media-pipeline.md`](../media/media-pipeline.md) §5) |
 
 - The **global** limiter is deliberately generous — normal play (loading questions, submitting
   answers) must never trip it. It only catches a single source hammering the API.

@@ -24,6 +24,8 @@ export interface RoundQuestionView {
   mediaType?: QuestionMediaType;
   /** Under a moderation cover; `mediaUrl` is null. */
   mediaHidden?: boolean;
+  mediaCredit?: string | null;
+  mediaCreditUrl?: string | null;
   timeLimitSeconds: number;
   options: RoundOption[];
   allowMultipleSelections?: boolean;

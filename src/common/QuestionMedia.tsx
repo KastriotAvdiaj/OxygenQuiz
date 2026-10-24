@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Info, Loader2 } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { useUser } from "@/lib/Auth";
 import type { QuestionMediaType } from "@/types/question-types";
 import { fetchHiddenMedia } from "@/features/reports/api/reports";
+import type { CreditLine } from "@/features/media/api/upload-media";
+import { MediaCreditLine } from "@/features/media/components/media-credit";
 
 interface QuestionMediaProps {
   /** Absolute URL of the attachment. Null when there is none — or when it is hidden and this is a
@@ -15,6 +17,9 @@ interface QuestionMediaProps {
   hidden?: boolean;
   /** Needed for "Show anyway" when the URL wasn't sent (play screens). */
   questionId?: number;
+  /** An outside image's credit (Pexels, Wikimedia Commons) — behind an ⓘ so it doesn't compete
+   *  with the question. docs/media/media-pipeline.md, "Outside sources". */
+  credit?: CreditLine | null;
   alt?: string;
   className?: string;
 }
@@ -28,8 +33,9 @@ interface QuestionMediaProps {
  * be a minor, can't. The server enforces that half: play responses carry no hidden URL, and
  * fetching it needs an account.
  */
-export function QuestionMedia({ mediaUrl, mediaType, hidden = false, questionId, alt = "Question media", className }: QuestionMediaProps) {
+export function QuestionMedia({ mediaUrl, mediaType, hidden = false, questionId, credit, alt = "Question media", className }: QuestionMediaProps) {
   const user = useUser();
+  const [creditOpen, setCreditOpen] = useState(false);
   const [revealed, setRevealed] = useState<{ url: string; kind: QuestionMediaType } | null>(null);
   const [loading, setLoading] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -104,10 +110,36 @@ export function QuestionMedia({ mediaUrl, mediaType, hidden = false, questionId,
             className="mx-auto max-h-72 w-full rounded-xl border-2 border-primary/20 bg-background object-contain"
           />
         ) : (
-          <div className="overflow-hidden rounded-xl border-2 border-primary/20 bg-background p-1.5">
+          <div className="relative overflow-hidden rounded-xl border-2 border-primary/20 bg-background p-1.5">
             <img src={url} alt={alt} loading="lazy" className="mx-auto max-h-64 w-auto rounded-lg object-contain" />
+            {credit && (
+              <button
+                type="button"
+                onClick={() => setCreditOpen((o) => !o)}
+                aria-expanded={creditOpen}
+                aria-label={creditOpen ? "Hide image credit" : "Image credit"}
+                className="absolute bottom-2.5 right-2.5 flex h-6 w-6 items-center justify-center rounded-full bg-background/85 text-muted-foreground shadow-sm backdrop-blur transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <Info className="h-3.5 w-3.5" aria-hidden="true" />
+              </button>
+            )}
           </div>
         )}
+        {/* The credit of an outside image: on demand during play (the ⓘ), never omitted. */}
+        <AnimatePresence initial={false}>
+          {credit && creditOpen && kind === "Image" && (
+            <motion.div
+              key="credit"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.18 }}
+              className="overflow-hidden"
+            >
+              <MediaCreditLine credit={credit} className="pt-1 text-center" />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.div>
     </AnimatePresence>
   );

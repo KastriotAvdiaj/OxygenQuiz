@@ -16,6 +16,8 @@ namespace QuizAPI.Services.QuizSessionServices
         public string Type { get; init; } = string.Empty;   // MultipleChoice / TrueFalse / TypeTheAnswer
         public string Text { get; init; } = string.Empty;
         public string? MediaUrl { get; init; }
+        public string? MediaCredit { get; init; }
+        public string? MediaCreditUrl { get; init; }
         public string MediaType { get; init; } = "None";   // None / Image / Audio — as CurrentQuestionDto
         public bool MediaHidden { get; init; }
         public int TimeLimitSeconds { get; init; }
@@ -41,6 +43,8 @@ namespace QuizAPI.Services.QuizSessionServices
         /// <summary>The question's image or audio clip. Until 2026-10 multiplayer sent only the
         /// legacy image column, so audio and every newer image never reached a lobby.</summary>
         public string? MediaUrl { get; init; }
+        public string? MediaCredit { get; init; }
+        public string? MediaCreditUrl { get; init; }
         public string MediaType { get; init; } = "None";
         /// <summary>Under a moderation cover; <see cref="MediaUrl"/> is null.</summary>
         public bool MediaHidden { get; init; }

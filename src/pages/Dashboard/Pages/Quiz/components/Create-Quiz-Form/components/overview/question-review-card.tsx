@@ -203,7 +203,7 @@ export const QuestionReviewCard = ({
           </p>
 
           {review.mediaUrl && (
-            <QuestionMedia mediaUrl={review.mediaUrl} mediaType={review.mediaType} alt="" className="mt-3" />
+            <QuestionMedia mediaUrl={review.mediaUrl} mediaType={review.mediaType} credit={review.mediaCredit} alt="" className="mt-3" />
           )}
 
           <div className="mt-4 xl:mt-3">

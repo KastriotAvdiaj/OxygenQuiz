@@ -41,7 +41,7 @@ const toDraft = (
     categoryId: question.category.id,
     languageId: question.language.id,
     // The copy points at the same stored file; reusing an image you already use is free.
-    media: selectionFrom(question.mediaAssetId, question.mediaUrl, question.mediaType),
+    media: selectionFrom(question.mediaAssetId, question.mediaUrl, question.mediaType, question.mediaCredit, question.mediaCreditUrl),
     explanation: question.explanation ?? undefined,
   };
 

@@ -103,16 +103,18 @@ describe("MediaPicker", () => {
 });
 
 describe("MediaCreditLine", () => {
-  it("credits the author and the provider, linking out without a referrer", () => {
-    render(
-      <MediaCreditLine
-        credit={{ provider: "Pexels", author: "Jane Doe", authorUrl: "https://pexels.com/@jane", sourceUrl: "https://pexels.com/photo/1" }}
-      />,
-    );
+  it("shows the credit line, linked to the source page without a referrer", () => {
+    render(<MediaCreditLine credit={{ line: "Photo: Jane Doe / Pexels", url: "https://www.pexels.com/photo/1" }} />);
 
-    expect(screen.getByText(/Photo:/)).toHaveTextContent("Photo: Jane Doe / Pexels");
-    const author = screen.getByRole("link", { name: "Jane Doe" });
-    expect(author).toHaveAttribute("href", "https://pexels.com/@jane");
-    expect(author).toHaveAttribute("rel", "noopener noreferrer");
+    const link = screen.getByRole("link", { name: "Photo: Jane Doe / Pexels" });
+    expect(link).toHaveAttribute("href", "https://www.pexels.com/photo/1");
+    expect(link).toHaveAttribute("rel", "noopener noreferrer");
+    expect(link).toHaveAttribute("target", "_blank");
+  });
+
+  it("is plain text when there is no source page", () => {
+    render(<MediaCreditLine credit={{ line: "Unknown author · Public domain · Wikimedia Commons" }} />);
+    expect(screen.queryByRole("link")).not.toBeInTheDocument();
+    expect(screen.getByText(/Public domain/)).toBeInTheDocument();
   });
 });

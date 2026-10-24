@@ -127,6 +127,8 @@ namespace QuizAPI.Mapping
                 CreatedAt = q.CreatedAt,
                 MediaAssetId = q.MediaAssetId,
                 MediaUrl = q.MediaUrl,
+                MediaCredit = q.MediaCredit,
+                MediaCreditUrl = q.MediaCreditUrl,
                 MediaHidden = q.MediaHiddenAt != null,
                 Explanation = q.Explanation,
                 MediaType =
@@ -173,6 +175,8 @@ namespace QuizAPI.Mapping
                 CreatedAt = q.CreatedAt,
                 MediaAssetId = q.MediaAssetId,
                 MediaUrl = q.MediaUrl,
+                MediaCredit = q.MediaCredit,
+                MediaCreditUrl = q.MediaCreditUrl,
                 MediaHidden = q.MediaHiddenAt != null,
                 Explanation = q.Explanation,
                 MediaType =
@@ -223,6 +227,8 @@ namespace QuizAPI.Mapping
                 CreatedAt = q.CreatedAt,
                 MediaAssetId = q.MediaAssetId,
                 MediaUrl = q.MediaUrl,
+                MediaCredit = q.MediaCredit,
+                MediaCreditUrl = q.MediaCreditUrl,
                 MediaHidden = q.MediaHiddenAt != null,
                 Explanation = q.Explanation,
                 MediaType =
@@ -270,6 +276,8 @@ namespace QuizAPI.Mapping
                 CreatedAt = q.CreatedAt,
                 MediaAssetId = q.MediaAssetId,
                 MediaUrl = q.MediaUrl,
+                MediaCredit = q.MediaCredit,
+                MediaCreditUrl = q.MediaCreditUrl,
                 MediaHidden = q.MediaHiddenAt != null,
                 Explanation = q.Explanation,
                 MediaType =
@@ -466,6 +474,8 @@ namespace QuizAPI.Mapping
                 TimeLimitInSeconds = q.TimeLimitInSeconds ?? 0,
                 Author = q.User == null ? string.Empty : q.User.Username,
                 ImageUrl = q.ImageUrl,
+                CoverCredit = q.CoverCredit,
+                CoverCreditUrl = q.CoverCreditUrl,
                 Format = q.Format == QuizFormat.Associations ? FormatNames.Associations : FormatNames.Classic,
                 CreatedAt = q.CreatedAt,
                 UpdatedAt = q.UpdatedAt,
@@ -489,6 +499,8 @@ namespace QuizAPI.Mapping
                 CreatedAt = q.CreatedAt,
                 Version = q.Version,
                 ImageUrl = q.ImageUrl,
+                CoverCredit = q.CoverCredit,
+                CoverCreditUrl = q.CoverCreditUrl,
                 CoverAssetId = q.CoverAssetId,
                 IsPicked = q.IsPicked,
                 IsHouse = q.IsHouse,
@@ -624,6 +636,8 @@ namespace QuizAPI.Mapping
                 QuestionText = ua.QuizQuestion.Question.Text,
                 // A hidden file's URL never goes to a player (docs/media/moderation.md, "Hiding").
                 MediaUrl = ua.QuizQuestion.Question.MediaHiddenAt == null ? ua.QuizQuestion.Question.MediaUrl : null,
+                MediaCredit = ua.QuizQuestion.Question.MediaHiddenAt == null ? ua.QuizQuestion.Question.MediaCredit : null,
+                MediaCreditUrl = ua.QuizQuestion.Question.MediaHiddenAt == null ? ua.QuizQuestion.Question.MediaCreditUrl : null,
                 MediaHidden = ua.QuizQuestion.Question.MediaHiddenAt != null,
                 QuestionId = ua.QuizQuestion.QuestionId,
                 MediaType =
@@ -726,6 +740,8 @@ namespace QuizAPI.Mapping
                         QuestionText = ua.QuizQuestion.Question.Text,
                         // A hidden file's URL never goes to a player (docs/media/moderation.md, "Hiding").
                 MediaUrl = ua.QuizQuestion.Question.MediaHiddenAt == null ? ua.QuizQuestion.Question.MediaUrl : null,
+                MediaCredit = ua.QuizQuestion.Question.MediaHiddenAt == null ? ua.QuizQuestion.Question.MediaCredit : null,
+                MediaCreditUrl = ua.QuizQuestion.Question.MediaHiddenAt == null ? ua.QuizQuestion.Question.MediaCreditUrl : null,
                 MediaHidden = ua.QuizQuestion.Question.MediaHiddenAt != null,
                 QuestionId = ua.QuizQuestion.QuestionId,
                         MediaType =
@@ -856,6 +872,8 @@ namespace QuizAPI.Mapping
                 // A hidden file's URL never goes to a player; "Show anyway" asks for it signed in
                 // (GET /api/media/hidden/question/{id}). docs/media/moderation.md, "Hiding".
                 MediaUrl = qq.Question.MediaHiddenAt == null ? qq.Question.MediaUrl : null,
+                MediaCredit = qq.Question.MediaHiddenAt == null ? qq.Question.MediaCredit : null,
+                MediaCreditUrl = qq.Question.MediaHiddenAt == null ? qq.Question.MediaCreditUrl : null,
                 MediaType = qq.Question.MediaType.ToString(),
                 MediaHidden = qq.Question.MediaHiddenAt != null,
                 QuestionId = qq.QuestionId,

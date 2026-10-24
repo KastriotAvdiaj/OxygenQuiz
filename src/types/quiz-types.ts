@@ -110,6 +110,9 @@ export type Quiz = {
   imageUrl?: string;
   /** The cover image's asset — what the edit form sends back (docs/media/media-pipeline.md). */
   coverAssetId?: string | null;
+  /** The cover's credit when it came from Pexels or Wikimedia Commons. */
+  coverCredit?: string | null;
+  coverCreditUrl?: string | null;
   isPicked?: boolean;
   isHouse?: boolean;
   /** Under a moderation hold — only the owner and admins can open it. */

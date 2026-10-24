@@ -680,7 +680,7 @@ const CreateQuizForm = ({
               categoryId: editQuiz.category.id,
               languageId: editQuiz.language.id,
               difficultyId: editQuiz.difficulty.id,
-              cover: selectionFrom(editQuiz.coverAssetId, editQuiz.imageUrl, "Image"),
+              cover: selectionFrom(editQuiz.coverAssetId, editQuiz.imageUrl, "Image", editQuiz.coverCredit, editQuiz.coverCreditUrl),
               timeLimitInSeconds: editQuiz.timeLimitInSeconds,
               showFeedbackImmediately: editQuiz.showFeedbackImmediately,
               status: editQuiz.status,

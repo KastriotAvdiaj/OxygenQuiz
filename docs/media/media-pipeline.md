@@ -4,12 +4,12 @@ How a question gets its optional image or audio clip, and a quiz its cover image
 store, attach on save, charge the quota, sweep what nothing uses. The design was settled in rounds
 in [`../proposals/media-pipeline.md`](../proposals/media-pipeline.md); this doc is what is built.
 
-> **Status: phase 1 implemented (2026-10-24)** — the pipeline, uploads from the device (images and
-> audio), quotas, the sweep, R2 storage. It replaces the image-only `ImageAsset` pipeline
-> (`ImageUploadController`, `ImageService`, the nightly `image-cleanup-daily` job) and the
-> unwired `/api/files` route for question media. Phase 2, reporting and moderation, is in
-> [`moderation.md`](moderation.md); the Pexels/Wikimedia picker and AI-added images are later phases
-> of the same proposal.
+> **Status: phases 1 and 3 implemented (2026-10-24)** — the pipeline, uploads from the device (images
+> and audio), quotas, the sweep, R2 storage, and free images from Wikimedia Commons and Pexels
+> (§7). It replaces the image-only `ImageAsset` pipeline (`ImageUploadController`, `ImageService`,
+> the nightly `image-cleanup-daily` job) and the unwired `/api/files` route for question media.
+> Phase 2, reporting and moderation, is in [`moderation.md`](moderation.md); AI-added images are
+> the proposal's last phase.
 
 ---
 
@@ -138,7 +138,60 @@ setting up the bucket: [`../deployment/production-runbook.md`](../deployment/pro
 R2's free tier (10 GB stored, 1M writes and 10M reads a month, egress always free) covers
 development and an early launch; past it, storage is $0.015 per GB-month.
 
-## 7. Frontend
+## 7. Outside sources — Wikimedia Commons and Pexels
+
+An author who has no image on disk presses **Or find a free image** under the picker and searches
+**Wikimedia Commons** (flags, landmarks, people, artworks — the default tab) or **Pexels** (general
+photos). Choosing a result imports it: from then on it is one of our assets like any upload. Decided
+in the proposal §3.8; the import model is [ADR 0035](../adr/0035-outside-images-are-imported-by-id-never-hotlinked.md).
+
+**Searched through our API** (`GET /api/media/stock/search?provider=&q=&page=`), so the Pexels key
+stays on the server. Results are cached an hour per (source, query, page) — Pexels allows 200
+requests an hour for the whole site — and the endpoint has its own per-account limit
+(`media-search`, 120 an hour). The grid's thumbnails load from the source itself; nothing stores
+them.
+
+**Only licences that allow reuse with credit** come back from Commons
+(`WikimediaProvider.IsAllowedLicense`): public domain, CC0, CC BY, CC BY-SA. Non-commercial,
+no-derivatives, fair use, anything flagged non-free and anything unrecognised are left out. GIFs are
+left out too (Commons renders their thumbnail as a GIF, which the pipeline refuses); SVGs are kept —
+most flags are SVG, and Commons renders them as PNG. Everything on Pexels is under the Pexels License.
+
+**The import takes a provider and an id — never a URL, never a credit**
+(`POST /api/media/stock/import { provider, id }`). The server asks the source about that id again
+(a licence that changed since the search is refused), downloads from the one host that source
+declares (`upload.wikimedia.org`, `images.pexels.com`) over https with redirects off and a 15 MB cap,
+and hands the bytes to `MediaService.UploadAsync` with the credit the source gave. So the import is
+an upload in every other way: sniffed, re-encoded to WebP, deduplicated, counted towards the unsaved
+pile, charged to the quota only when saved, and rate-limited with uploads (`media-upload`). A client
+can't make the server fetch an arbitrary URL, and can't attach a licence an image doesn't have.
+
+**The credit travels with the image.** The asset keeps its author, source page and licence
+(`MediaAsset.Credit*`, https links only — `MediaCredits.SafeUrl`). When a save attaches it,
+`MediaAttachmentService` copies a one-line credit beside the URL: `Question.MediaCredit` /
+`MediaCreditUrl`, `Quiz.CoverCredit` / `CoverCreditUrl` (`MediaCredits.Line`):
+
+- Pexels — "Photo: Ana Lopez / Pexels";
+- Commons — "Jane Doe · CC BY-SA 4.0 · Wikimedia Commons" (CC BY requires the licence).
+
+The line links to the image's page at its source, which names author and licence in full — what
+CC BY 4.0 accepts as attribution. It shows in the editor and the review under the image, on the
+listing page under the cover, and at play time behind an **ⓘ** on the image (single player, results,
+multiplayer), so it doesn't compete with the question. A hidden image's credit is withheld with its
+URL. Removing or replacing the image clears the credit; moderation's Remove media does too.
+
+| Setting | |
+|---|---|
+| `Media:Stock:PexelsApiKey` | blank switches Pexels off; the picker then offers Commons only |
+| `Media:Stock:WikimediaContact` | sent in the User-Agent, which Wikimedia's API policy requires |
+| `Media:Stock:WikimediaAccessToken` | optional; anonymous Commons requests share a per-IP limit a cloud host may already have spent (429) |
+| `PageSize`, `SearchCacheMinutes`, `MaxDownloadBytes`, `DownloadEdge` | 24, 60, 15 MB, 1600 |
+
+**Why not Unsplash:** its terms require hotlinking every image from Unsplash's servers — nothing we
+could store, re-encode or scan, which could vanish, and which would send every player's address to
+Unsplash. It would add overlap, not coverage (proposal §3.8).
+
+## 8. Frontend
 
 - **`MediaPicker`** ([`src/features/media/components/media-picker.tsx`](../../src/features/media/components/media-picker.tsx))
   is the one control: drag or click, client-side precheck (mirrors the API), inline error with the
@@ -148,18 +201,24 @@ development and an early launch; past it, storage is $0.015 per GB-month.
   `coverAssetId` only** (`toQuestionRequest`, `toQuizRequest`). The six dashboard question forms,
   the three builder question cards and the quiz cover all use it; the quiz cover is back in the
   builder's details panel.
+- **`StockImageDialog`** ([`src/features/media/components/stock-image-dialog.tsx`](../../src/features/media/components/stock-image-dialog.tsx))
+  is the outside-source search (§7): a source switch (Pexels only when the site has a key), a
+  search, a grid, *More results*; choosing imports and hands the picker an asset like an upload.
+- A selection's credit is a `CreditLine` — `{ line, url }` — the same shape a saved question's
+  `mediaCredit` / `mediaCreditUrl` make (`creditFrom`), so a fresh pick and a saved one render alike
+  through `MediaCreditLine`.
 - Saved questions render through **`QuestionMedia`** everywhere — dashboard cards, the builder's
   review, the play screens and multiplayer, which until this change sent only the legacy image
   column, so audio never reached a lobby.
 
-## 8. Existing images were dropped
+## 9. Existing images were dropped
 
 The `AddMediaPipeline` migration clears every pre-pipeline media URL (`Questions.MediaUrl`/`MediaType`,
 `Quizzes.ImageUrl`), drops `Questions.ImageUrl` and the `ImageAssets` table. Production held a
 question or two with an image, all on the VPS disk; a URL with no asset behind it could not be
 swept, moderated or moved. The old files stay on the uploads volume until removed by hand (runbook).
 
-## 9. Tests
+## 10. Tests
 
 | Suite | File | Proves |
 |---|---|---|
@@ -167,7 +226,9 @@ swept, moderated or moved. The old files stay on the uploads volume until remove
 | xUnit | `Media/MediaPipelineTests.cs` | Dedup; unsaved cap and its exemptions; removed hash can't return; URL copied on save; unknown/removed asset refused; cover must be an image; charged on save not upload; daily limit and its UTC reset; reuse is free; same asset on edit isn't recharged; storage counts distinct files; a multi-question save is tallied; the sweep's 24 h, 7 d, in-use, copy-survives, undo, tombstone and unreachable-bucket cases |
 | xUnit | `Security/MediaEndpointTests.cs` | Upload needs sign-in, is rate-limited and size-capped; **no write model has a URL or media-type field** |
 | xUnit | `Editing/QuizNoOpSaveTests.cs` | A quiz edit attaches the cover by id and the server writes its URL |
-| Vitest | `src/features/media/__tests__/media-picker.test.tsx` | Precheck mirrors the API; upload hands the form an id; server reason shown inline; covers refuse audio; preview and Remove; the credit line |
+| xUnit | `Media/StockImageTests.cs` | Commons licence filter (PD, CC0, CC BY, CC BY-SA in; NC, ND, fair use, GFDL-only, non-free out); the Artist HTML made plain; search order, GIFs dropped, `hasMore`; one source request for a repeated search; blank query and page range refused; unknown source refused, Pexels without a key unavailable; a Commons and a Pexels import store the image with the source's credit and download from the source's own host; a licence changed since the search refused at import; a protocol-relative or http Commons URL made https; a download URL off the declared host or not https never fetched; the size cap with and without a Content-Length; the credit copied onto a question and cleared with the image; only https credit links stored; hand-uploaded bytes gain the credit when imported |
+| Vitest | `src/features/media/__tests__/media-picker.test.tsx` | Precheck mirrors the API; upload hands the form an id; server reason shown inline; covers refuse audio; preview and Remove; the credit line, linked to the source page |
+| Vitest | `src/features/media/__tests__/stock-image-dialog.test.tsx` | Search sends source and query; an import sends provider and id only; Pexels offered only with a key; a refused import explained in place; the ⓘ reveals an outside image's credit, and the author's own image has none |
 | Vitest | `…/overview/__tests__/review-model.test.ts` | The review shows a builder question's media and a saved one's alike |
 
 Verified by hand against a real PostgreSQL 16 and the running API (2026-10-24): the full migration

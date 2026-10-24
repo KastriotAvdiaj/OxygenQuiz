@@ -24,6 +24,9 @@ namespace QuizAPI.DTOs.Media
     {
         /// <summary>"Pexels" or "Wikimedia Commons".</summary>
         public string Provider { get; set; } = string.Empty;
+        /// <summary>The one-line credit every screen shows (<c>MediaCredits.Line</c>) — the same text
+        /// a question or quiz carries once the asset is saved on it.</summary>
+        public string Line { get; set; } = string.Empty;
         public string? Author { get; set; }
         public string? AuthorUrl { get; set; }
         public string? SourceUrl { get; set; }

@@ -21,6 +21,7 @@ namespace QuizAPI.Middleware
                 ForbiddenException => (StatusCodes.Status403Forbidden, ex.Message),
                 QuotaExceededException => (StatusCodes.Status429TooManyRequests, ex.Message),
                 UnauthorizedException => (StatusCodes.Status401Unauthorized, ex.Message),
+                ServiceUnavailableException => (StatusCodes.Status503ServiceUnavailable, ex.Message),
                 _ => (StatusCodes.Status500InternalServerError, "An unexpected error occurred.")
             };
 

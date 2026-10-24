@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { QuestionMedia } from "@/common/QuestionMedia";
+import { creditFrom } from "@/features/media/api/upload-media";
 import { Badge } from "@/components/ui/badge";
 import {
   Accordion,
@@ -75,7 +76,7 @@ export const MultipleChoiceQuestionCard = ({
         </CardHeader>
 
         <CardContent className="pb-2 pt-0">
-          <QuestionMedia mediaUrl={question.mediaUrl} mediaType={question.mediaType} hidden={question.mediaHidden} className="mb-3" />
+          <QuestionMedia mediaUrl={question.mediaUrl} mediaType={question.mediaType} hidden={question.mediaHidden} credit={creditFrom(question.mediaCredit, question.mediaCreditUrl)} className="mb-3" />
 
           <ul className="space-y-1 mb-3">
             {question.answerOptions.map((option: AnswerOption) => (
@@ -183,7 +184,7 @@ export const MultipleChoiceQuestionCard = ({
             </AccordionTrigger>
             <AccordionContent>
               <div className="space-y-3">
-                <QuestionMedia mediaUrl={question.mediaUrl} mediaType={question.mediaType} hidden={question.mediaHidden} className="mb-3" />
+                <QuestionMedia mediaUrl={question.mediaUrl} mediaType={question.mediaType} hidden={question.mediaHidden} credit={creditFrom(question.mediaCredit, question.mediaCreditUrl)} className="mb-3" />
 
                 <ul className="space-y-2">
                   {question.answerOptions.map((option: AnswerOption) => (

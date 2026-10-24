@@ -283,6 +283,26 @@ builder.Services.AddScoped<QuizAPI.Services.Media.IMediaService, QuizAPI.Service
 builder.Services.AddScoped<QuizAPI.Services.Media.IMediaAttachmentService, QuizAPI.Services.Media.MediaAttachmentService>();
 builder.Services.AddScoped<QuizAPI.Services.Media.MediaSweeper>();
 
+// Outside image sources for the picker (docs/media/media-pipeline.md, "Outside sources"). Pexels is
+// off until Media:Stock:PexelsApiKey is set; Wikimedia needs no key. The download client follows no
+// redirects: the import only ever fetches from the provider's own image host.
+builder.Services.Configure<QuizAPI.Services.Media.Stock.StockImageOptions>(
+    builder.Configuration.GetSection(QuizAPI.Services.Media.Stock.StockImageOptions.Section));
+builder.Services.AddHttpClient<QuizAPI.Services.Media.Stock.PexelsProvider>(QuizAPI.Services.Media.Stock.PexelsProvider.Configure);
+builder.Services.AddHttpClient<QuizAPI.Services.Media.Stock.WikimediaProvider>((sp, client) =>
+    QuizAPI.Services.Media.Stock.WikimediaProvider.Configure(client,
+        sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<QuizAPI.Services.Media.Stock.StockImageOptions>>().Value));
+builder.Services.AddTransient<QuizAPI.Services.Media.Stock.IStockImageProvider>(sp => sp.GetRequiredService<QuizAPI.Services.Media.Stock.WikimediaProvider>());
+builder.Services.AddTransient<QuizAPI.Services.Media.Stock.IStockImageProvider>(sp => sp.GetRequiredService<QuizAPI.Services.Media.Stock.PexelsProvider>());
+builder.Services.AddHttpClient(QuizAPI.Services.Media.Stock.StockImageService.DownloadClient, (sp, client) =>
+    {
+        client.Timeout = TimeSpan.FromSeconds(20);
+        client.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent",
+            $"OxygenQuiz/1.0 ({sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<QuizAPI.Services.Media.Stock.StockImageOptions>>().Value.WikimediaContact})");
+    })
+    .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
+builder.Services.AddScoped<QuizAPI.Services.Media.Stock.IStockImageService, QuizAPI.Services.Media.Stock.StockImageService>();
+
 // Reports and moderation (docs/media/moderation.md).
 builder.Services.Configure<QuizAPI.Services.Moderation.ModerationOptions>(
     builder.Configuration.GetSection(QuizAPI.Services.Moderation.ModerationOptions.Section));

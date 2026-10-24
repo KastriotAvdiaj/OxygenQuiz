@@ -57,6 +57,15 @@ namespace QuizAPI.Models
         /// <summary>Which kind of media <see cref="MediaUrl"/> points to. None when there is no attachment.</summary>
         public QuestionMediaType MediaType { get; set; } = QuestionMediaType.None;
 
+        /// <summary>The credit line of an image from Pexels or Wikimedia Commons, copied from the
+        /// asset with <see cref="MediaUrl"/> (<c>MediaCredits.Line</c>). Null for the author's own.</summary>
+        [System.ComponentModel.DataAnnotations.MaxLength(300)]
+        public string? MediaCredit { get; set; }
+
+        /// <summary>The image's page at its source, which the credit links to.</summary>
+        [System.ComponentModel.DataAnnotations.MaxLength(500)]
+        public string? MediaCreditUrl { get; set; }
+
         /// <summary>
         /// When this attachment was counted against its saver's daily media quota. Null when the
         /// asset was already in use elsewhere in the saver's content (a copy, a reused image),

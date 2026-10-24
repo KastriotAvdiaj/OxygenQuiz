@@ -1,4 +1,5 @@
 import { QuestionType } from "@/types/question-types";
+import { creditFrom, type CreditLine } from "@/features/media/api/upload-media";
 import { QuizQuestion } from "../../types";
 
 /**
@@ -31,6 +32,8 @@ export interface QuestionReview {
   text: string;
   mediaUrl: string | null;
   mediaType: "Image" | "Audio" | null;
+  /** An outside image's credit — shown with it here as everywhere. */
+  mediaCredit: CreditLine | null;
   explanation: string | null;
   answer: ReviewAnswer;
 }
@@ -39,14 +42,18 @@ const blankToNull = (value: string | null | undefined): string | null =>
   value && value.trim().length > 0 ? value : null;
 
 /** A builder question holds its media as a selection; a saved one carries the API's URL and type. */
-const reviewMedia = (question: QuizQuestion): Pick<QuestionReview, "mediaUrl" | "mediaType"> => {
+const reviewMedia = (question: QuizQuestion): Pick<QuestionReview, "mediaUrl" | "mediaType" | "mediaCredit"> => {
   if ("media" in question) {
-    return { mediaUrl: question.media?.url ?? null, mediaType: question.media?.kind ?? null };
+    return {
+      mediaUrl: question.media?.url ?? null,
+      mediaType: question.media?.kind ?? null,
+      mediaCredit: question.media?.credit ?? null,
+    };
   }
-  const saved = question as { mediaUrl?: string | null; mediaType?: string };
+  const saved = question as { mediaUrl?: string | null; mediaType?: string; mediaCredit?: string | null; mediaCreditUrl?: string | null };
   return saved.mediaUrl && (saved.mediaType === "Image" || saved.mediaType === "Audio")
-    ? { mediaUrl: saved.mediaUrl, mediaType: saved.mediaType }
-    : { mediaUrl: null, mediaType: null };
+    ? { mediaUrl: saved.mediaUrl, mediaType: saved.mediaType, mediaCredit: creditFrom(saved.mediaCredit, saved.mediaCreditUrl) }
+    : { mediaUrl: null, mediaType: null, mediaCredit: null };
 };
 
 export const toQuestionReview = (question: QuizQuestion): QuestionReview => {

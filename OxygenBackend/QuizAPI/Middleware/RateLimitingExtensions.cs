@@ -63,6 +63,13 @@ namespace QuizAPI.Middleware
         public const string MediaUploadPolicy = "media-upload";
         internal const int MediaUploadsPerHour = 30;
 
+        /// <summary>Searching Pexels / Wikimedia from the picker (docs/media/media-pipeline.md,
+        /// "Outside sources"). Per account, and generous — paging through results is several calls —
+        /// but low enough that one account can't spend Pexels' site-wide 200 an hour. Results are
+        /// cached for an hour, so a repeated search costs Pexels nothing.</summary>
+        public const string MediaSearchPolicy = "media-search";
+        internal const int MediaSearchesPerHour = 120;
+
         /// <summary>
         /// Config key that turns every limit here off (<c>false</c>). Missing means on, so a
         /// production box can never lose its limits to a forgotten setting;
@@ -86,7 +93,7 @@ namespace QuizAPI.Middleware
                     // for them by name, and an unknown policy name throws) but never limits.
                     options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(
                         _ => RateLimitPartition.GetNoLimiter("disabled"));
-                    foreach (var policy in new[] { AuthPolicy, GuestPolicy, AiPolicy, MediaUploadPolicy })
+                    foreach (var policy in new[] { AuthPolicy, GuestPolicy, AiPolicy, MediaUploadPolicy, MediaSearchPolicy })
                         options.AddPolicy(policy, _ => RateLimitPartition.GetNoLimiter("disabled"));
                     return;
                 }
@@ -167,6 +174,16 @@ namespace QuizAPI.Middleware
                         factory: _ => new FixedWindowRateLimiterOptions
                         {
                             PermitLimit = MediaUploadsPerHour,
+                            Window = TimeSpan.FromHours(1),
+                            QueueLimit = 0,
+                        }));
+
+                options.AddPolicy(MediaSearchPolicy, httpContext =>
+                    RateLimitPartition.GetFixedWindowLimiter(
+                        partitionKey: UserOrIp(httpContext),
+                        factory: _ => new FixedWindowRateLimiterOptions
+                        {
+                            PermitLimit = MediaSearchesPerHour,
                             Window = TimeSpan.FromHours(1),
                             QueueLimit = 0,
                         }));

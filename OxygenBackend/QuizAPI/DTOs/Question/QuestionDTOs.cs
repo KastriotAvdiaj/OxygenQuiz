@@ -24,6 +24,9 @@ namespace QuizAPI.DTOs.Question
         public Guid? MediaAssetId { get; set; }
         public string? MediaUrl { get; set; }
         public string MediaType { get; set; } = "None";
+        /// <summary>Credit for an image from Pexels or Wikimedia Commons; null for the author's own.</summary>
+        public string? MediaCredit { get; set; }
+        public string? MediaCreditUrl { get; set; }
         /// <summary>Hidden behind a moderation cover pending review (docs/media/moderation.md).</summary>
         public bool MediaHidden { get; set; }
         public string? Explanation { get; set; }

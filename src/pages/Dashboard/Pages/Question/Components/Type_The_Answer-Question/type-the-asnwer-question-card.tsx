@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { QuestionMedia } from "@/common/QuestionMedia";
+import { creditFrom } from "@/features/media/api/upload-media";
 import { Badge } from "@/components/ui/badge";
 import {
   Accordion,
@@ -77,7 +78,7 @@ export const TypeTheAnswerQuestionCard = ({
         </CardHeader>
 
         <CardContent className="pb-2 pt-0">
-          <QuestionMedia mediaUrl={question.mediaUrl} mediaType={question.mediaType} hidden={question.mediaHidden} className="mb-3" />
+          <QuestionMedia mediaUrl={question.mediaUrl} mediaType={question.mediaType} hidden={question.mediaHidden} credit={creditFrom(question.mediaCredit, question.mediaCreditUrl)} className="mb-3" />
 
           {/* Compact correct answer */}
           <div className="space-y-2 mb-3">
@@ -222,7 +223,7 @@ export const TypeTheAnswerQuestionCard = ({
             </AccordionTrigger>
             <AccordionContent className="pt-1 pb-3">
               <div className="space-y-4">
-                <QuestionMedia mediaUrl={question.mediaUrl} mediaType={question.mediaType} hidden={question.mediaHidden} className="mb-3" />
+                <QuestionMedia mediaUrl={question.mediaUrl} mediaType={question.mediaType} hidden={question.mediaHidden} credit={creditFrom(question.mediaCredit, question.mediaCreditUrl)} className="mb-3" />
 
                 {/* Correct Answer Display */}
                 <div className="space-y-1">
