@@ -262,9 +262,11 @@ None open in code. The fix below is live only once the backend is rebuilt on the
 - **P3 — Pexels and the Commons import not yet run against the live services** (2026-10-24). Commons
   search was run live from the app (results, licences and authors as expected); its import, and all
   of Pexels, are tested against recorded response shapes only — the build machine's IP was then
-  throttled by Commons (429) and has no Pexels key. The first live import attempt is what found
-  Commons answering with protocol-relative URLs (now made https). First thing after deploy: one
-  search in each source and one import (runbook, "Free images").
+  throttled by Commons (429) and has no Pexels key. The one live import attempt was refused by the
+  download-host check ("That image can't be imported"); the likely cause — Commons expanding URLs as
+  protocol-relative or http — is now normalised to https and tested, but it is unconfirmed against
+  the live API. First thing after deploy: one search in each source and one import (runbook, "Free
+  images"); if the import still fails, log `detail.DownloadUrl` in `StockImageService.ImportAsync`.
 - **P3 — AI pictures share the hourly upload limit** (2026-10-24). Each picture the wizard finds is an
   import, and imports count towards the 30-an-hour upload limit (`media-upload`). Two or three
   picture-heavy generations in an hour can reach it; the rest of that quiz's pictures then come back
